@@ -1,0 +1,2 @@
+src/node_modules/mpv-video-player/native/video-player/build/Release/libmpv-2.dll filter=lfs diff=lfs merge=lfs -text
+src/node_modules/electron-edge-js/lib/native/win32/x64/16.17.1/node.exe filter=lfs diff=lfs merge=lfs -text

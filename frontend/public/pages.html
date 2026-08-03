@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eagle Reverse Preview Pages</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #17181b;
+      color: #f2f3f5;
+      font: 14px/1.6 system-ui, sans-serif;
+      display: grid;
+      place-items: center;
+    }
+    main {
+      width: min(760px, calc(100vw - 40px));
+      padding: 32px 28px;
+      border: 1px solid #33363b;
+      border-radius: 8px;
+      background: #1f2023;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+    p {
+      margin: 0 0 24px;
+      color: #9aa0a6;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    a {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid #36393f;
+      border-radius: 6px;
+      color: #e8eaed;
+      text-decoration: none;
+    }
+    a:hover {
+      border-color: #5b8def;
+      background: #262a31;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Eagle Reverse Preview Pages</h1>
+    <p>复刻工程页面入口，优先用于查看原版渲染效果。</p>
+    <div class="grid">
+      <a href="/workbench.html">资源库管理工作台</a>
+      <a href="/browser-extension/popup.html">浏览器扩展</a>
+      <a href="/src/app/index.html">主界面</a>
+      <a href="/src/app/preferences.html">偏好设置</a>
+      <a href="/src/app/preview-window.html?id=MOCK0001">预览窗口</a>
+      <a href="/src/app/registration.html">注册 / 许可状态</a>
+      <a href="/src/app/manage-device.html">设备管理</a>
+      <a href="/src/app/progress.html">进度窗口</a>
+      <a href="/src/app/collect-window/index.html">采集窗口</a>
+      <a href="/src/app/exif-viewer/index.html?path=%2Fmock-library%2FEagle%20Reverse%20Demo.library%2Fimages%2FMOCK0001.info%2FWelcome%20Library.png&width=1536&height=960&orientation=1">EXIF Viewer</a>
+      <a href="/src/app/font-viewer/font-viewer.html">Font Viewer</a>
+      <a href="/src/app/gif-viewer/index.html?path=%2Fmock-assets%2Fsample.gif&render=normal">GIF Viewer</a>
+      <a href="/src/app/model-viewer/website/index.html#model=/mock-assets/box.glb">Model Viewer</a>
+      <a href="/src/app/native-viewer/index.html?path=%2Fmock-library%2FEagle%20Reverse%20Demo.library%2Fimages%2FMOCK0001.info%2F&name=Welcome%20Library.png&id=MOCK0001&ext=png&width=1536&height=960">Native Viewer</a>
+      <a href="/src/app/raw-viewer/index.html?path=%2Fmock-library%2FEagle%20Reverse%20Demo.library%2Fimages%2FMOCK0001.info%2F&ext=png&name=Welcome%20Library&width=1536&height=960&orientation=1">RAW Viewer</a>
+      <a href="/src/app/text-editor/text-editor.html">Text Editor</a>
+      <a href="/src/app/texture-viewer/index.html?path=%2Fmock-assets%2Fsample.hdr">Texture Viewer</a>
+      <a href="/src/app/pdf-viewer/web/viewer.html?path=%2Fmock-assets%2Fsample.pdf">PDF Viewer</a>
+    </div>
+  </main>
+</body>
+</html>

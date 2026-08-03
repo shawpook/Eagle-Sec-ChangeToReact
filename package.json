@@ -1,0 +1,38 @@
+{
+  "name": "eagle-sec-development",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Eagle 1:1 reconstruction workspace",
+  "scripts": {
+    "dev": "vite --config frontend/vite.preview.config.mjs",
+    "dev:all": "concurrently -k -n vite,backend \"npm run dev\" \"npm run backend\"",
+    "build": "vite build --config frontend/vite.preview.config.mjs",
+    "preview": "vite preview --config frontend/vite.preview.config.mjs",
+    "backend": "node backend/src/server.js",
+    "health": "node scripts/health-check.mjs",
+    "test": "node tests/api-smoke.mjs && node tests/validate-library.mjs && node tests/plugin-smoke.mjs && node tests/importer-search.mjs && node tests/csv-comments-thumbnail.mjs && node tests/eaglepack-duplicates.mjs && node tests/search-index-v2.mjs && node tests/smart-extension-plugin.mjs && node tests/workbench-upload.mjs && node tests/library-stats.mjs && node tests/search-media.mjs && node tests/browser-extension.mjs && node tests/plugin-package.mjs && node tests/import-export-migration.mjs && node tests/library-migration.mjs && node tests/security.mjs",
+    "test:full": "npm test && npm run test:electron && npm run test:electron-main && npm run test:electron-plugin && npm run test:electron-desktop && npm run test:workbench && npm run test:screenshots",
+    "test:electron": "electron tests/electron-smoke.cjs",
+    "test:electron-main": "electron electron/main.cjs --smoke",
+    "test:electron-plugin": "electron electron/main.cjs --smoke-plugin",
+    "test:electron-desktop": "electron electron/main.cjs --smoke-desktop",
+    "test:screenshots": "node tests/screenshot-regression.mjs",
+    "test:workbench": "node tests/workbench-interactions.mjs",
+    "electron": "electron electron/main.cjs"
+  },
+  "dependencies": {
+    "adm-zip": "^0.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jpeg-js": "^0.4.4",
+    "multer": "^2.2.0",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "electron": "^22.3.7",
+    "vite": "^5.4.19"
+  }
+}

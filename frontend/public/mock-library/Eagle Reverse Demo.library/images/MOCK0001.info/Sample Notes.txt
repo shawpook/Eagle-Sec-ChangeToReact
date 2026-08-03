@@ -1,0 +1,5 @@
+Eagle Reverse text editor sample
+
+This file is served by the mock library so the original text editor viewer has a valid local path to load in the browser preview.
+
+Tags, annotation, star rating, and folder placement are represented in the item metadata.

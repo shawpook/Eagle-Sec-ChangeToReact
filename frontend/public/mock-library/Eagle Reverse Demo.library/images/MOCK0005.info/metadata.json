@@ -1,0 +1,41 @@
+{
+  "id": "MOCK0005",
+  "name": "Empty Folder",
+  "ext": "png",
+  "width": 1280,
+  "height": 800,
+  "size": 73742,
+  "url": "",
+  "website": "",
+  "annotation": "空文件夹状态插画。",
+  "tags": [
+    "空状态",
+    "文件夹"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-EMPTY"
+  ],
+  "star": 4,
+  "palettes": [
+    {
+      "color": [
+        250,
+        250,
+        252
+      ]
+    },
+    {
+      "color": [
+        166,
+        175,
+        191
+      ]
+    }
+  ],
+  "modificationTime": 1785320683020,
+  "lastModified": 1785320683020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

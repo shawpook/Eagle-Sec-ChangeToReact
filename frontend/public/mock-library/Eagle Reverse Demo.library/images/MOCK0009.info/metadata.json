@@ -1,0 +1,42 @@
+{
+  "id": "MOCK0009",
+  "name": "AI SDK Intro",
+  "ext": "png",
+  "width": 1600,
+  "height": 900,
+  "size": 412522,
+  "url": "https://developer.eagle.cool",
+  "website": "developer.eagle.cool",
+  "annotation": "AI SDK 介绍图。",
+  "tags": [
+    "插件",
+    "AI",
+    "开发"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-PLUGIN"
+  ],
+  "star": 5,
+  "palettes": [
+    {
+      "color": [
+        23,
+        27,
+        35
+      ]
+    },
+    {
+      "color": [
+        53,
+        143,
+        255
+      ]
+    }
+  ],
+  "modificationTime": 1784975083020,
+  "lastModified": 1784975083020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

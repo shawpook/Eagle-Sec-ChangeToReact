@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eagle Reverse Workbench</title>
+  <style>
+    :root {
+      --bg: #141619;
+      --panel: #1d2024;
+      --panel-2: #24282d;
+      --text: #e8eaed;
+      --muted: #9aa3ad;
+      --line: #343a41;
+      --accent: #4f8cff;
+      --green: #3ecf8e;
+      --orange: #f2a65a;
+      --danger: #e26d5a;
+      --radius: 8px;
+    }
+    :root[data-theme="light"] {
+      --bg: #f4f5f7;
+      --panel: #ffffff;
+      --panel-2: #eef0f3;
+      --text: #1a1d21;
+      --muted: #5f6670;
+      --line: #d7dbe1;
+      --accent: #2f6fe4;
+      --green: #148f59;
+      --orange: #b8751d;
+      --danger: #c43d2b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.5 system-ui, sans-serif;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+    h1 { margin: 0; font-size: 18px; }
+    .muted { color: var(--muted); }
+    .layout {
+      display: grid;
+      grid-template-columns: 290px minmax(0, 1fr) 280px;
+      gap: 16px;
+      padding: 16px;
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+    aside, main { min-width: 0; }
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+    section h2 { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+    label { display: block; margin: 8px 0 4px; font-size: 12px; color: var(--muted); }
+    input, select, textarea {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+    }
+    textarea { resize: vertical; min-height: 54px; }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font: inherit;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+    }
+    button.secondary { background: #3a4149; }
+    button.danger { background: var(--danger); }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      padding: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+    .icon-btn img { width: 18px; height: 18px; pointer-events: none; }
+    .icon-btn.active { outline: 2px solid var(--accent); }
+    #menuPopover {
+      display: none;
+      position: fixed;
+      top: 52px;
+      left: 12px;
+      z-index: 40;
+      min-width: 200px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    }
+    #menuPopover.visible { display: block; }
+    #menuPopover button {
+      width: 100%;
+      margin: 0 0 4px;
+      text-align: left;
+      background: transparent;
+      color: var(--text);
+    }
+    #menuPopover button:hover { background: var(--panel-2); }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+    .status {
+      min-height: 18px;
+      color: var(--green);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .item-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel-2);
+      overflow: hidden;
+    }
+    .item-card img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      background: #101215;
+    }
+    .item-card .meta { padding: 8px 10px; }
+    .item-card .name { font-weight: 600; overflow-wrap: anywhere; }
+    .item-card .tags { color: var(--muted); font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
+    .list-view {
+      grid-template-columns: 1fr;
+    }
+    .list-view .item-card {
+      display: grid;
+      grid-template-columns: 92px 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    .list-view .item-card img { width: 92px; aspect-ratio: 4 / 3; object-fit: cover; }
+    .item-card { cursor: pointer; }
+    .item-card.selected { outline: 2px solid var(--accent); }
+    #dropOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 22px;
+      pointer-events: none;
+    }
+    #dropOverlay.visible { display: flex; }
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .list-item:last-child { border-bottom: 0; }
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #2b3138;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    a { color: var(--accent); }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="row">
+      <button class="icon-btn" id="menuButton" title="Menu" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <h1 style="margin:0;">Eagle Reverse Workbench</h1>
+      <span class="muted" id="libraryName">Library</span>
+      <button class="secondary" id="switchLibrary">Switch to Demo</button>
+      <button class="icon-btn" id="themeToggle" title="Toggle theme">A</button>
+    </div>
+  </header>
+  <div id="menuPopover">
+    <button id="menuSettings">设置</button>
+    <button id="menuExtension">浏览器扩展</button>
+    <button id="menuRefresh">刷新</button>
+  </div>
+  <div id="dropOverlay">Drop files to import</div>
+  <div class="layout">
+    <aside>
+      <section>
+        <h2>Search</h2>
+        <label>Keyword</label>
+        <input id="searchKeyword" placeholder="name / annotation / url">
+        <label>Tags</label>
+        <input id="searchTags" placeholder="UI, 收藏">
+        <label>Min Star</label>
+        <input id="searchStar" type="number" min="0" max="5" value="0">
+        <label>Color</label>
+        <input id="searchColor" type="color" value="#4f8cff">
+        <div class="row">
+          <div style="flex:1;">
+            <label>Min Width</label>
+            <input id="searchMinWidth" type="number" min="0" value="0">
+          </div>
+          <div style="flex:1;">
+            <label>Min Height</label>
+            <input id="searchMinHeight" type="number" min="0" value="0">
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1;">
+            <label>From</label>
+            <input id="searchDateFrom" type="date">
+          </div>
+          <div style="flex:1;">
+            <label>To</label>
+            <input id="searchDateTo" type="date">
+          </div>
+        </div>
+        <label>Sort</label>
+        <select id="searchSort">
+          <option value="">Default</option>
+          <option value="name">Name</option>
+          <option value="size">Size</option>
+          <option value="star">Star</option>
+          <option value="modificationTime">Modified</option>
+        </select>
+        <div class="row" style="margin-top: 10px;">
+          <button id="searchButton">Search</button>
+          <button class="secondary" id="resetSearch">Reset</button>
+        </div>
+        <div class="status" id="searchStatus"></div>
+      </section>
+
+      <section>
+        <h2>Import</h2>
+        <label>File</label>
+        <input id="uploadFile" type="file">
+        <label>Tags</label>
+        <input id="uploadTags" placeholder="UI, 导入">
+        <label>Annotation</label>
+        <textarea id="uploadAnnotation"></textarea>
+        <button id="uploadButton" style="margin-top: 10px;">Upload Item</button>
+        <label>Folder Path</label>
+        <input id="importFolderPath" placeholder="C:\folder\images">
+        <button id="importFolderButton" style="margin-top: 8px;">Import Folder</button>
+        <label>Base64 Data URI</label>
+        <textarea id="importBase64Data"></textarea>
+        <button id="importBase64Button" style="margin-top: 8px;">Import Base64</button>
+        <div class="status" id="uploadStatus"></div>
+      </section>
+
+      <section>
+        <h2>Export</h2>
+        <div class="row">
+          <button class="secondary" id="exportCsv">CSV</button>
+          <button class="secondary" id="exportEaglepack">Eaglepack</button>
+          <button class="secondary" id="backupLibrary">Backup</button>
+          <button class="secondary" id="restoreLibrary">Restore</button>
+        </div>
+        <div class="status" id="exportStatus"></div>
+      </section>
+
+      <section>
+        <h2>Library Stats</h2>
+        <div class="muted" id="statsList">Loading...</div>
+        <div class="row" style="margin-top: 10px;">
+          <button class="secondary" id="statsButton">Refresh</button>
+          <button class="danger" id="repairButton">Repair</button>
+        </div>
+        <div class="status" id="statsStatus"></div>
+      </section>
+
+      <section>
+        <h2>Library Migration</h2>
+        <label>Source Path</label>
+        <input id="migrateSource" placeholder="C:\path\source.library">
+        <label>Dest Dir</label>
+        <input id="migrateDest" placeholder="C:\path\dest">
+        <div class="row" style="margin-top: 10px;">
+          <button class="secondary" id="scanLibraryButton">Scan</button>
+          <button id="migrateLibraryButton">Migrate</button>
+        </div>
+        <div class="status" id="migrateStatus"></div>
+      </section>
+
+      <section>
+        <h2>Smart Folder</h2>
+        <label>Name</label>
+        <input id="smartName" placeholder="Five Star">
+        <label>Field</label>
+        <select id="smartField">
+          <option value="star">star</option>
+          <option value="size">size</option>
+          <option value="width">width</option>
+          <option value="height">height</option>
+          <option value="tags">tags</option>
+          <option value="ext">ext</option>
+        </select>
+        <label>Operator</label>
+        <select id="smartOperator">
+          <option value="=">=</option>
+          <option value=">">&gt;</option>
+          <option value="<">&lt;</option>
+          <option value=">=">&gt;=</option>
+          <option value="<=">&lt;=</option>
+          <option value="contains">contains</option>
+        </select>
+        <label>Value</label>
+        <input id="smartValue" placeholder="5">
+        <label>Conditions JSON</label>
+        <textarea id="smartConditions">[{"field":"star","operator":"=","value":5}]</textarea>
+        <label>Existing Smart Folders</label>
+        <select id="smartList"></select>
+        <div class="row" style="margin-top: 10px;">
+          <button id="createSmart">Create</button>
+          <button class="secondary" id="querySmart">Query</button>
+          <button class="secondary" id="useSmart">Use</button>
+        </div>
+        <div class="status" id="smartStatus"></div>
+      </section>
+
+      <section>
+        <h2>Manage</h2>
+        <div class="row">
+          <button class="secondary" id="duplicatesButton">Duplicates</button>
+          <button class="secondary" id="pluginsButton">Plugins</button>
+        </div>
+        <label>Plugin Package Path</label>
+        <input id="pluginPackFile" placeholder="C:\path\plugin.eagleplugin">
+        <button id="installPluginButton" style="margin-top:8px;">Install Plugin</button>
+        <div id="manageList" class="status"></div>
+      </section>
+    </aside>
+
+    <main>
+      <section>
+        <div class="toolbar">
+          <span class="muted" id="itemCount">0 items</span>
+          <button class="icon-btn active" id="gridButton" title="Grid"><img src="/src/app/assets/images/dark/icons/ic-layout-grid.svg"></button>
+          <button class="icon-btn" id="listButton" title="List"><img src="/src/app/assets/images/dark/icons/ic-layout-list.svg"></button>
+          <button class="secondary" id="refreshItems">Refresh</button>
+        </div>
+        <div class="grid" id="itemGrid"></div>
+      </section>
+    </main>
+    <aside class="right-inspector">
+      <section>
+        <h2>Inspector</h2>
+        <div id="inspector" class="muted">Select an item</div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const API = 'http://127.0.0.1:41595';
+    let currentItems = [];
+    let smartFolderId = '';
+    let selectedItem = null;
+    let theme = localStorage.getItem('eagle-reverse-theme') || 'dark';
+    let viewMode = localStorage.getItem('eagle-reverse-view') || 'grid';
+
+    const $ = (id) => document.getElementById(id);
+
+    async function api(path, options = {}) {
+      const res = await fetch(API + path, options);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || body.status !== 'success') {
+        throw new Error(body.message || `HTTP ${res.status}`);
+      }
+      return body.data;
+    }
+
+    function statusText(target, text) {
+      $(target).textContent = text;
+    }
+
+    function mediaLabel(item) {
+      const ext = String(item.ext || '').toLowerCase();
+      if (['png','jpg','jpeg','gif','webp','bmp','tif','tiff','heic'].includes(ext)) return 'Image';
+      if (['mp4','webm','mov','mkv','avi','m4v'].includes(ext)) return 'Video';
+      if (['mp3','wav','flac','aac','ogg','m4a'].includes(ext)) return 'Audio';
+      if (['ttf','otf','woff','woff2'].includes(ext)) return 'Font';
+      if (['obj','glb','gltf','stl','ply','fbx','3ds'].includes(ext)) return '3D';
+      if (['txt','md','json','csv','log'].includes(ext)) return 'Text';
+      if (['pdf','doc','docx','xls','xlsx','ppt','pptx'].includes(ext)) return 'Doc';
+      return 'Other';
+    }
+
+    function mediaPath(item) {
+      return `/mock-library/Eagle Reverse Demo.library/images/${encodeURIComponent(item.id)}.info/${encodeURIComponent(item.name)}.${item.ext}`;
+    }
+
+    function mediaLink(item) {
+      const ext = String(item.ext || '').toLowerCase();
+      if (['mp4','webm','mov','mkv','avi','m4v'].includes(ext)) {
+        return `/media-viewer/video.html?path=${encodeURIComponent(mediaPath(item))}`;
+      }
+      if (['mp3','wav','flac','aac','ogg','m4a'].includes(ext)) {
+        return `/media-viewer/audio.html?path=${encodeURIComponent(mediaPath(item))}`;
+      }
+      return `/src/app/preview-window.html?id=${encodeURIComponent(item.id)}`;
+    }
+
+    function itemCard(item) {
+      const thumb = `${API}/api/item/thumbnail?id=${encodeURIComponent(item.id)}`;
+      return `
+        <div class="item-card${selectedItem && selectedItem.id === item.id ? ' selected' : ''}" data-id="${item.id}" onclick="selectItem('${item.id}')">
+          <img src="${thumb}" alt="${item.name}" loading="lazy">
+          <div class="meta">
+            <div class="name">${item.name}</div>
+            <div class="tags"><span class="pill">${mediaLabel(item)}</span> ${(item.tags || []).map((tag) => `<span class="pill">${tag}</span>`).join(' ')}</div>
+            <a href="${mediaLink(item)}" target="_blank" style="font-size:12px;">Preview</a>
+          </div>
+        </div>`;
+    }
+
+    window.selectItem = (id) => {
+      selectedItem = currentItems.find((item) => item.id === id) || null;
+      renderItems();
+      renderInspector();
+    };
+
+    function renderInspector() {
+      const target = $('inspector');
+      if (!selectedItem) {
+        target.innerHTML = '<div class="muted">Select an item</div>';
+        return;
+      }
+      const item = selectedItem;
+      target.innerHTML = `
+        <div class="list-item"><span>Name</span><span>${item.name}</span></div>
+        <div class="list-item"><span>Type</span><span>${mediaLabel(item)}</span></div>
+        <div class="list-item"><span>Size</span><span>${item.size || 0} bytes</span></div>
+        <div class="list-item"><span>Dimensions</span><span>${item.width || 0} x ${item.height || 0}</span></div>
+        <div class="list-item"><span>Star</span><span>${item.star || 0}</span></div>
+        <div class="list-item"><span>Tags</span><span>${(item.tags || []).join(', ') || '-'}</span></div>
+        <div class="list-item"><span>URL</span><span>${item.url || '-'}</span></div>
+        <div class="row" style="margin-top:10px;">
+          <a class="pill" href="${mediaLink(item)}" target="_blank">Preview</a>
+          <button class="danger" id="trashItemButton">Trash</button>
+          <button class="secondary" id="copyUrlButton">Copy URL</button>
+        </div>
+        <div class="status" id="inspectorStatus"></div>`;
+      $('trashItemButton').addEventListener('click', async () => {
+        await api('/api/item/moveToTrash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: item.id }),
+        });
+        statusText('inspectorStatus', 'Moved to trash');
+        selectedItem = null;
+        await loadItems();
+      });
+      $('copyUrlButton').addEventListener('click', async () => {
+        if (item.url) await navigator.clipboard.writeText(item.url);
+        statusText('inspectorStatus', item.url ? 'URL copied' : 'No URL');
+      });
+    }
+
+    function applyTheme() {
+      document.documentElement.dataset.theme = theme;
+      localStorage.setItem('eagle-reverse-theme', theme);
+      $('themeToggle').textContent = theme === 'dark' ? 'A' : 'A';
+    }
+
+    function applyView() {
+      localStorage.setItem('eagle-reverse-view', viewMode);
+      $('itemGrid').classList.toggle('list-view', viewMode === 'list');
+      $('gridButton').classList.toggle('active', viewMode === 'grid');
+      $('listButton').classList.toggle('active', viewMode === 'list');
+    }
+
+    async function renderItems() {
+      applyView();
+      $('itemGrid').innerHTML = currentItems.map(itemCard).join('') || '<div class="muted">No items</div>';
+      $('itemCount').textContent = `${currentItems.length} items`;
+    }
+
+    async function uploadFiles(files) {
+      for (const file of files) {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('tags', $('uploadTags').value);
+        form.append('annotation', $('uploadAnnotation').value);
+        const res = await fetch(`${API}/api/item/upload`, { method: 'POST', body: form });
+        const body = await res.json();
+        if (!res.ok) {
+          statusText('uploadStatus', body.message || 'Upload failed');
+          return;
+        }
+      }
+      statusText('uploadStatus', `Uploaded ${files.length} files`);
+      await loadItems();
+    }
+
+    async function loadItems() {
+      currentItems = await api('/api/item/list');
+      await renderItems();
+    }
+
+    async function refreshLibrary() {
+      const info = await api('/api/library/info');
+      $('libraryName').textContent = `${info.library.name} (${info.library.path})`;
+    }
+
+    async function loadStats() {
+      const stats = await api('/api/library/stats');
+      $('statsList').innerHTML = Object.entries(stats)
+        .map(([key, value]) => `<div class="list-item"><span>${key}</span><span>${value}</span></div>`)
+        .join('');
+    }
+
+    $('statsButton').addEventListener('click', loadStats);
+
+    $('repairButton').addEventListener('click', async () => {
+      const report = await api('/api/library/repair', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      statusText('statsStatus', `Repaired ${report.repairedMetadata} metadata, ${report.repairedThumbnails} thumbnails`);
+      await Promise.all([loadStats(), loadItems()]);
+    });
+
+    $('scanLibraryButton').addEventListener('click', async () => {
+      const source = $('migrateSource').value;
+      if (!source) {
+        statusText('migrateStatus', 'Enter source library path');
+        return;
+      }
+      const result = await api(`/api/library/scan?path=${encodeURIComponent(source)}`);
+      statusText('migrateStatus', `Scan: ${result.name}, ${result.itemCount} items, issues ${result.issues.length}`);
+    });
+
+    $('migrateLibraryButton').addEventListener('click', async () => {
+      const sourcePath = $('migrateSource').value;
+      const destDir = $('migrateDest').value;
+      if (!sourcePath) {
+        statusText('migrateStatus', 'Enter source library path');
+        return;
+      }
+      const result = await api('/api/library/migrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourcePath, destDir }),
+      });
+      statusText('migrateStatus', `Migrated ${result.library.itemCount} items -> ${result.destination}`);
+    });
+
+    $('searchButton').addEventListener('click', async () => {
+      const params = new URLSearchParams();
+      if ($('searchKeyword').value) params.set('keyword', $('searchKeyword').value);
+      if ($('searchTags').value) params.set('tags', $('searchTags').value);
+      if (Number($('searchStar').value) > 0) params.set('star', $('searchStar').value);
+      if ($('searchColor').value && $('searchColor').value !== '#4f8cff') params.set('color', $('searchColor').value);
+      if (Number($('searchMinWidth').value) > 0) params.set('minWidth', $('searchMinWidth').value);
+      if (Number($('searchMinHeight').value) > 0) params.set('minHeight', $('searchMinHeight').value);
+      if ($('searchDateFrom').value) params.set('dateFrom', $('searchDateFrom').value);
+      if ($('searchDateTo').value) params.set('dateTo', $('searchDateTo').value);
+      if ($('searchSort').value) params.set('sortBy', $('searchSort').value);
+      currentItems = await api(`/api/item/search?${params.toString()}`);
+      await renderItems();
+      statusText('searchStatus', `Found ${currentItems.length}`);
+    });
+
+    $('resetSearch').addEventListener('click', () => {
+      ['searchKeyword', 'searchTags', 'searchDateFrom', 'searchDateTo'].forEach((id) => $(id).value = '');
+      $('searchStar').value = '0';
+      $('searchMinWidth').value = '0';
+      $('searchMinHeight').value = '0';
+      $('searchColor').value = '#4f8cff';
+      $('searchSort').value = '';
+      loadItems();
+    });
+
+    $('refreshItems').addEventListener('click', async () => {
+      await Promise.all([refreshLibrary(), loadItems()]);
+    });
+
+    $('themeToggle').addEventListener('click', () => {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      applyTheme();
+    });
+
+    function closeMenu() {
+      $('menuPopover').classList.remove('visible');
+    }
+
+    $('menuButton').addEventListener('click', (event) => {
+      event.stopPropagation();
+      $('menuPopover').classList.toggle('visible');
+    });
+
+    $('menuSettings').addEventListener('click', () => {
+      closeMenu();
+      window.open('/src/app/preferences.html', '_blank');
+    });
+
+    $('menuExtension').addEventListener('click', () => {
+      closeMenu();
+      window.open('/browser-extension/popup.html', '_blank');
+    });
+
+    $('menuRefresh').addEventListener('click', async () => {
+      closeMenu();
+      await Promise.all([refreshLibrary(), loadItems(), loadStats()]);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (event.target.id !== 'menuButton' && !$('menuPopover').contains(event.target)) closeMenu();
+    });
+
+    $('gridButton').addEventListener('click', () => {
+      viewMode = 'grid';
+      renderItems();
+    });
+
+    $('listButton').addEventListener('click', () => {
+      viewMode = 'list';
+      renderItems();
+    });
+
+    document.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      $('dropOverlay').classList.add('visible');
+    });
+    document.addEventListener('dragleave', (event) => {
+      if (!event.relatedTarget) $('dropOverlay').classList.remove('visible');
+    });
+    document.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      $('dropOverlay').classList.remove('visible');
+      const files = Array.from(event.dataTransfer?.files || []);
+      if (files.length > 0) await uploadFiles(files);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        $('searchKeyword').focus();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        $('uploadButton').click();
+      }
+      if (event.key === 'Escape') {
+        ['uploadStatus', 'exportStatus', 'searchStatus', 'smartStatus', 'statsStatus', 'migrateStatus', 'manageList'].forEach((id) => {
+          if (typeof $(id).textContent === 'string') $(id).textContent = '';
+        });
+      }
+    });
+
+    $('uploadButton').addEventListener('click', async () => {
+      const file = $('uploadFile').files[0];
+      if (!file) {
+        statusText('uploadStatus', 'Choose a file first');
+        return;
+      }
+      const form = new FormData();
+      form.append('file', file);
+      form.append('tags', $('uploadTags').value);
+      form.append('annotation', $('uploadAnnotation').value);
+      const res = await fetch(`${API}/api/item/upload`, { method: 'POST', body: form });
+      const body = await res.json();
+      if (!res.ok) {
+        statusText('uploadStatus', body.message || 'Upload failed');
+        return;
+      }
+      statusText('uploadStatus', `Uploaded ${body.data.name}`);
+      await loadItems();
+    });
+
+    $('importFolderButton').addEventListener('click', async () => {
+      const folderPath = $('importFolderPath').value;
+      if (!folderPath) {
+        statusText('uploadStatus', 'Enter folder path');
+        return;
+      }
+      const data = await api('/api/item/importFolder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderPath }),
+      });
+      statusText('uploadStatus', `Imported ${data.count} items`);
+      await loadItems();
+    });
+
+    $('importBase64Button').addEventListener('click', async () => {
+      const data = $('importBase64Data').value;
+      if (!data) {
+        statusText('uploadStatus', 'Enter base64 data URI');
+        return;
+      }
+      await api('/api/item/importBase64', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+      statusText('uploadStatus', 'Imported base64 item');
+      await loadItems();
+    });
+
+    $('exportCsv').addEventListener('click', () => {
+      window.open(`${API}/api/export/csv`, '_blank');
+      statusText('exportStatus', 'CSV download started');
+    });
+
+    $('exportEaglepack').addEventListener('click', async () => {
+      const data = await api('/api/export/eaglepack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      statusText('exportStatus', `Packed ${data.count} items -> ${data.path}`);
+    });
+
+    $('backupLibrary').addEventListener('click', async () => {
+      const data = await api('/api/library/backup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      statusText('exportStatus', `Backup -> ${data.path}`);
+    });
+
+    $('restoreLibrary').addEventListener('click', async () => {
+      const file = window.prompt('Backup file path');
+      if (!file) return;
+      await api('/api/library/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file }),
+      });
+      statusText('exportStatus', 'Restored');
+    });
+
+    $('createSmart').addEventListener('click', async () => {
+      let conditions = [];
+      try {
+        conditions = JSON.parse($('smartConditions').value || '[]');
+      } catch (err) {
+        statusText('smartStatus', 'Invalid conditions JSON');
+        return;
+      }
+      const data = await api('/api/v2/smartFolder/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: $('smartName').value || 'Smart Folder',
+          conditions,
+        }),
+      });
+      smartFolderId = data.id;
+      statusText('smartStatus', `Created ${data.name} (${data.id})`);
+      await loadSmartFolders();
+    });
+
+    async function loadSmartFolders() {
+      const list = await api('/api/v2/smartFolder/all');
+      $('smartList').innerHTML = list.map((folder) => `<option value="${folder.id}">${folder.name}</option>`).join('');
+    }
+
+    $('useSmart').addEventListener('click', async () => {
+      smartFolderId = $('smartList').value;
+      if (smartFolderId) $('querySmart').click();
+    });
+
+    $('querySmart').addEventListener('click', async () => {
+      if (!smartFolderId) {
+        statusText('smartStatus', 'Create a smart folder first');
+        return;
+      }
+      currentItems = await api(`/api/v2/smartFolder/getItems?id=${encodeURIComponent(smartFolderId)}`);
+      await renderItems();
+      statusText('smartStatus', `Smart folder returned ${currentItems.length} items`);
+    });
+
+    $('duplicatesButton').addEventListener('click', async () => {
+      const groups = await api('/api/item/duplicates');
+      if (groups.length === 0) {
+        statusText('manageList', 'No duplicates found');
+        return;
+      }
+      $('manageList').innerHTML = groups.slice(0, 5).map((group, index) => `
+        <div class="list-item">
+          <span>Group ${index + 1}: ${group.items.length} items</span>
+          <button class="danger" data-merge='${JSON.stringify(group.items.map((entry) => entry.id))}'>Merge</button>
+        </div>`).join('');
+      document.querySelectorAll('[data-merge]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const ids = JSON.parse(button.getAttribute('data-merge'));
+          await api('/api/item/mergeDuplicates', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids }),
+          });
+          statusText('manageList', 'Merged');
+          await loadItems();
+        });
+      });
+    });
+
+    $('pluginsButton').addEventListener('click', async () => {
+      const plugins = await api('/api/plugins');
+      $('manageList').innerHTML = plugins.map((plugin) => `
+        <div class="list-item">
+          <span>${plugin.name}</span>
+          <a href="${API}${plugin.url}" target="_blank">Open</a>
+          <button class="danger" data-uninstall="${plugin.id}">Uninstall</button>
+          <button class="secondary" data-disable="${plugin.id}">Disable</button>
+        </div>`).join('');
+      document.querySelectorAll('[data-uninstall]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          await api('/api/plugins/uninstall', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: button.getAttribute('data-uninstall') }),
+          });
+          statusText('manageList', 'Uninstalled');
+        });
+      });
+      document.querySelectorAll('[data-disable]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          await api('/api/plugins/disable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: button.getAttribute('data-disable') }),
+          });
+          statusText('manageList', 'Disabled');
+        });
+      });
+    });
+
+    $('installPluginButton').addEventListener('click', async () => {
+      const file = $('pluginPackFile').value;
+      if (!file) {
+        statusText('manageList', 'Enter plugin package path');
+        return;
+      }
+      await api('/api/plugins/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file }),
+      });
+      statusText('manageList', 'Installed');
+    });
+
+    $('switchLibrary').addEventListener('click', async () => {
+      await api('/api/library/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ libraryPath: 'C:\\Program Files\\Eagle\\Eagle-reverse\\library-example\\Demo.library' }),
+      });
+      await refreshLibrary();
+      await loadItems();
+    });
+
+    (async () => {
+      applyTheme();
+      applyView();
+      await refreshLibrary();
+      await loadItems();
+      await loadStats();
+      await loadSmartFolders();
+    })();
+  </script>
+</body>
+</html>

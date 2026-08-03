@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eagle 设备管理</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/manage-device.css">
+  <style>
+    body {
+      min-height: 100vh;
+      background: #1f2023;
+      color: #f5f5f7;
+      display: grid;
+      place-items: center;
+    }
+    .preview-devices {
+      width: min(560px, calc(100vw - 48px));
+      padding: 24px;
+      border-radius: 8px;
+      background: #26272b;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+    }
+    .preview-devices h1 {
+      margin: 0 0 18px;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .device {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 0;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+    }
+    .device strong {
+      display: block;
+      font-size: 14px;
+    }
+    .device span {
+      color: #9aa0a6;
+      font-size: 12px;
+    }
+    .current {
+      padding: 4px 8px;
+      border-radius: 20px;
+      background: rgba(52, 199, 89, .14);
+      color: #34c759;
+      font-size: 12px;
+    }
+    .note {
+      margin-top: 18px;
+      color: #9aa0a6;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <main class="preview-devices">
+    <h1>设备管理</h1>
+    <div class="device">
+      <div>
+        <strong>EAGLE-REVERSE</strong>
+        <span>preview-machine-id</span>
+      </div>
+      <span class="current">当前设备</span>
+    </div>
+    <p class="note">
+      复刻工程使用 mock 设备列表，不调用原版授权设备接口。
+    </p>
+  </main>
+</body>
+</html>

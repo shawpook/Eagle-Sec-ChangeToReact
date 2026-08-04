@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { fork, spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,6 +49,24 @@ function spawnLogged(command, args, env) {
   return { child, output: () => output };
 }
 
+async function createVideoFixture(output, env) {
+  return new Promise((resolve, reject) => {
+    const child = fork(path.join(projectRoot, 'tests', 'video-fixture-worker.cjs'), [], {
+      execPath: electronExecutable,
+      cwd: projectRoot,
+      env: { ...env, EAGLE_VIDEO_FIXTURE_OUTPUT: output },
+      stdio: ['ignore', 'ignore', 'pipe', 'ipc'],
+    });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
+    child.once('message', (message) => {
+      if (message?.ok) resolve(output);
+      else reject(new Error(message?.error || stderr || 'Electron video fixture generation failed'));
+    });
+    child.once('error', reject);
+  });
+}
+
 async function stop(processInfo) {
   if (!processInfo || processInfo.child.exitCode !== null) return;
   processInfo.child.kill();
@@ -88,8 +106,10 @@ try {
 
   const smokeLibraries = path.join(tempRoot, 'libraries');
   const smokeExport = path.join(tempRoot, 'export');
+  const smokeVideo = path.join(tempRoot, 'smoke.webm');
   fs.mkdirSync(smokeLibraries, { recursive: true });
   fs.mkdirSync(smokeExport, { recursive: true });
+  await createVideoFixture(smokeVideo, baseEnv);
   const createResponse = await fetch(`http://localhost:${apiPort}/api/library/create`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -104,6 +124,7 @@ try {
     EAGLE_THUMBNAIL_URL: `http://localhost:${thumbnailPort}`,
     EAGLE_PREVIEW_URL: `http://localhost:${vitePort}/src/app/index.html`,
     EAGLE_SMOKE_IMPORT_SOURCE: path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'),
+    EAGLE_SMOKE_VIDEO_SOURCE: smokeVideo,
     EAGLE_SMOKE_EXPORT_DIR: smokeExport,
     EAGLE_SMOKE_DOWNLOAD_URL: smokeDownloadUrl,
   });
@@ -114,7 +135,7 @@ try {
       throw new Error(`Electron library bridge failed:\n${output}`);
     }
     return null;
-  }, 'Electron library bridge', 30000);
+  }, 'Electron library bridge', 60000);
   console.log(result.match(/LIBRARY_SMOKE_OK[^\r\n]*/)[0]);
   await stop(electron);
 } finally {

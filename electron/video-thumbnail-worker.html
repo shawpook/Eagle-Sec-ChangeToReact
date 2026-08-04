@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+  <video id="video" muted playsinline preload="auto"></video>
+  <canvas id="frame"></canvas>
+  <script>
+    function videoError(message, code) {
+      const error = new Error(message);
+      error.code = code;
+      return error;
+    }
+
+    function waitForEvent(target, successEvent, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const timeout = setTimeout(() => finish(videoError(`Video ${successEvent} timed out`, 'VIDEO_DECODE_TIMEOUT')), timeoutMs);
+        const onSuccess = () => finish();
+        const onError = () => finish(videoError('Video codec or container is not supported', 'VIDEO_CODEC_UNSUPPORTED'));
+        const finish = (error) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeout);
+          target.removeEventListener(successEvent, onSuccess);
+          target.removeEventListener('error', onError);
+          if (error) reject(error);
+          else resolve();
+        };
+        target.addEventListener(successEvent, onSuccess, { once: true });
+        target.addEventListener('error', onError, { once: true });
+      });
+    }
+
+    window.renderVideoThumbnail = async function renderVideoThumbnail(sourceUrl, maxSize, maxImagePixels, requestedStartAt) {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('frame');
+      video.src = sourceUrl;
+      try {
+        await waitForEvent(video, 'loadedmetadata', 30000);
+        const width = Number(video.videoWidth);
+        const height = Number(video.videoHeight);
+        let duration = Number(video.duration);
+        if (!Number.isFinite(duration)) {
+          const durationChange = waitForEvent(video, 'durationchange', 10000);
+          video.currentTime = Number.MAX_SAFE_INTEGER;
+          await durationChange;
+          duration = Number(video.duration);
+          video.currentTime = 0;
+        }
+        if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+          throw videoError('Video dimensions are invalid', 'VIDEO_METADATA_INVALID');
+        }
+        if (width * height > maxImagePixels) {
+          throw videoError('Decoded video dimensions exceed the safety limit', 'THUMBNAIL_PIXELS_EXCEEDED');
+        }
+        if (!Number.isFinite(duration) || duration <= 0) {
+          throw videoError('Video duration is invalid', 'VIDEO_METADATA_INVALID');
+        }
+
+        const hasRequestedStart = Number.isFinite(Number(requestedStartAt)) && Number(requestedStartAt) >= 0;
+        const desiredStart = hasRequestedStart ? Number(requestedStartAt) : Math.min(10, duration / 3);
+        const startAt = Math.max(0.01, Math.min(desiredStart, Math.max(0.01, duration - 0.01)));
+        const scale = Math.min(maxSize / width, maxSize / height, 1);
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
+
+        const seek = waitForEvent(video, 'seeked', 30000);
+        video.currentTime = startAt;
+        await seek;
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const context = canvas.getContext('2d', { alpha: false });
+        context.fillStyle = '#000000';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/png');
+        if (!dataUrl.startsWith('data:image/png;base64,') || dataUrl.length < 100) {
+          throw videoError('Video frame capture returned an empty image', 'VIDEO_FRAME_CAPTURE_FAILED');
+        }
+        return {
+          dataUrl,
+          width,
+          height,
+          duration,
+          startAt,
+          thumbnailWidth: canvas.width,
+          thumbnailHeight: canvas.height,
+        };
+      } finally {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+      }
+    };
+  </script>
+</body>
+</html>

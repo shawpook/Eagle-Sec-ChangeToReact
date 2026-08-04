@@ -570,7 +570,10 @@ npm run electron
 - 成功时同步原始宽高、动画/页数、palettes、`lastModified` 和 `noThumbnail/noPreview`；失败、取消、超时分别持久化稳定错误码，并清理 pending 文件与 `processingThumbnail/thumbnailTask`，不覆盖已有有效缩略图。
 - 新增 V1/V2 `/api/item/thumbnailTask/start|status|cancel`，Electron preload/main 和 renderer shim 提供 start/status/cancel 兼容桥接；`refreshThumbnail` 与 `resetCustomThumbnail` 复用同一任务服务，普通刷新继续保留有效自定义封面。
 - 新增 `tests/thumbnail-task-closed-loop.mjs`，唯一系统临时目录验证五种格式、自动导入入队、V1/V2、并发 3、同条目冲突、排队取消、超时、损坏 SVG、重启持久化和中断状态恢复。自定义缩略图、图片/文件夹导入、颜色分析和 Electron 隐藏窗口桥接回归均通过。
-- 首期未覆盖视频/音频/字体及 PSD/AI/XD/Office/RAW/3D；PDF 子进程按任务启动，后续可升级为受限常驻 worker 池。隔离 Vite 构建仍只转换 2 个模块，不计为独立生产构建完成。
+- 第二阶段视频首片已真实覆盖 MP4/WebM：新增隔离 Electron 视频 worker，基于 Chromium 媒体解码提取默认 `min(10 秒, duration/3)` 或显式 `startAt/thumbnailAt` 帧，统一输出 PNG，并持久化 `width/height`、`resolutionWidth/resolutionHeight`、`duration`、`thumbnailAt` 和 palettes。视频输入上限 2GB、单帧 3000 万像素，禁用导航、新窗口、权限请求和除工作页/源视频外的资源访问；不支持的编码返回 `VIDEO_CODEC_UNSUPPORTED`，无占位成功。
+- 导入器文件类型检测由整文件 `readFileSync` 改为只读取最多 4KB 头部，避免大视频导入产生等量内存峰值；新增 MP4 `ftyp` 与 WebM EBML/DocType 识别及正确 MIME。V1/V2 任务 API、`refreshThumbnail`、Electron preload/main 与原版 `regenerate-video-thumbnail` 兼容事件均支持指定帧；自动导入任务与用户指定帧刷新按同条目串行，避免竞态覆盖。
+- `tests/video-thumbnail-closed-loop.mjs` 在唯一系统临时目录动态生成真实 WebM，覆盖自动入队、默认/指定帧、宽高/时长/色板、运行取消、损坏编码、非法 startAt、真实 worker 超时、旧缩略图保留和重启持久化；公开 H.264 MP4 样本实测得到 320×176、10.026667 秒和 1 秒帧。Electron 隐藏窗口进一步验证视频导入、等待自动任务及指定 0.9 秒刷新。
+- 当前仍未覆盖音频/字体及 PSD/AI/XD/Office/RAW/3D；MP4/WebM 的具体编码支持受 Electron/Chromium 平台构建约束，MOV/MKV/AVI/HEVC 尚未承诺。PDF/视频均按任务启动隔离子进程，后续可升级为受限常驻 worker 池。隔离 Vite 构建仍只转换 2 个模块，不计为独立生产构建完成。
 
 ### 真实自定义缩略图闭环更新（2026-08-04）
 

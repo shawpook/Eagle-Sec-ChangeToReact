@@ -11,13 +11,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
 const electronBinary = path.resolve(projectRoot, 'node_modules/electron/dist/electron.exe');
 const pdfWorker = path.resolve(projectRoot, 'electron/pdf-thumbnail-worker.cjs');
+const videoWorker = path.resolve(projectRoot, 'electron/video-thumbnail-worker.cjs');
 const DEFAULT_CONCURRENCY = 3;
 const DEFAULT_TIMEOUT_MS = 100_000;
 const DEFAULT_MAX_SIZE = 480;
 const MAX_SOURCE_BYTES = 100_000_000;
+const MAX_VIDEO_SOURCE_BYTES = 2_000_000_000;
 const MAX_DECODED_PIXELS = 30_000_000;
 const SHARP_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'tif', 'tiff', 'avif', 'heic', 'heif']);
-const PRIMARY_EXTENSIONS = new Set(['svg', 'gif', 'webp', 'tif', 'tiff', 'pdf']);
+const VIDEO_EXTENSIONS = new Set(['mp4', 'webm']);
+const PRIMARY_EXTENSIONS = new Set(['svg', 'gif', 'webp', 'tif', 'tiff', 'pdf', ...VIDEO_EXTENSIONS]);
 
 export class ThumbnailTaskError extends Error {
   constructor(message, options = {}) {
@@ -70,7 +73,8 @@ function assertSource(library, item) {
   }
   if (!stat.isFile()) throw new ThumbnailTaskError('Original item source must be a regular file', { code: 'INVALID_ITEM_SOURCE', statusCode: 400 });
   if (stat.size <= 0) throw new ThumbnailTaskError('Original item source is empty', { code: 'EMPTY_ITEM_SOURCE', statusCode: 422 });
-  if (stat.size > MAX_SOURCE_BYTES) throw new ThumbnailTaskError(`Original item source exceeds ${MAX_SOURCE_BYTES} bytes`, { code: 'THUMBNAIL_SOURCE_TOO_LARGE', statusCode: 413 });
+  const maxSourceBytes = VIDEO_EXTENSIONS.has(String(item.ext || '').toLowerCase()) ? MAX_VIDEO_SOURCE_BYTES : MAX_SOURCE_BYTES;
+  if (stat.size > maxSourceBytes) throw new ThumbnailTaskError(`Original item source exceeds ${maxSourceBytes} bytes`, { code: 'THUMBNAIL_SOURCE_TOO_LARGE', statusCode: 413 });
   return source;
 }
 
@@ -160,10 +164,10 @@ async function renderSharp(source, output, maxSize, extension) {
   }
 }
 
-function renderPdf(source, output, maxSize, onChild) {
-  if (!fs.existsSync(electronBinary) || !fs.existsSync(pdfWorker)) {
-    return Promise.reject(new ThumbnailTaskError('PDF thumbnail renderer is unavailable', {
-      code: 'PDF_RENDERER_UNAVAILABLE',
+function renderElectronWorker({ worker, envKey, options, label, unavailableCode, startFailedCode, failedCode, onChild }) {
+  if (!fs.existsSync(electronBinary) || !fs.existsSync(worker)) {
+    return Promise.reject(new ThumbnailTaskError(`${label} thumbnail renderer is unavailable`, {
+      code: unavailableCode,
       statusCode: 501,
     }));
   }
@@ -171,13 +175,8 @@ function renderPdf(source, output, maxSize, onChild) {
     const env = { ...process.env };
     delete env.ELECTRON_RUN_AS_NODE;
     delete env.NODE_OPTIONS;
-    env.EAGLE_PDF_THUMBNAIL_OPTIONS = JSON.stringify({
-      source,
-      output,
-      maxSize,
-      maxImagePixels: MAX_DECODED_PIXELS,
-    });
-    const child = fork(pdfWorker, [], {
+    env[envKey] = JSON.stringify(options);
+    const child = fork(worker, [], {
       execPath: electronBinary,
       cwd: projectRoot,
       env,
@@ -193,16 +192,17 @@ function renderPdf(source, output, maxSize, onChild) {
       onChild(null);
       if (!child.killed) child.kill();
       if (message?.ok) resolve(message.result);
-      else reject(new ThumbnailTaskError(`Unable to render PDF first page: ${message?.error || 'Unknown renderer failure'}`, {
-        code: 'PDF_RENDER_FAILED',
-        statusCode: 422,
+      else reject(new ThumbnailTaskError(`Unable to render ${label} thumbnail: ${message?.error || 'Unknown renderer failure'}`, {
+        code: message?.code || failedCode,
+        statusCode: message?.code === 'THUMBNAIL_PIXELS_EXCEEDED' ? 413 : 422,
       }));
     });
     child.on('error', (err) => {
       if (settled) return;
       settled = true;
-      reject(new ThumbnailTaskError(`Unable to start PDF thumbnail renderer: ${err.message}`, {
-        code: 'PDF_RENDERER_FAILED',
+      onChild(null);
+      reject(new ThumbnailTaskError(`Unable to start ${label} thumbnail renderer: ${err.message}`, {
+        code: startFailedCode,
         statusCode: 500,
         cause: err,
       }));
@@ -211,11 +211,37 @@ function renderPdf(source, output, maxSize, onChild) {
       onChild(null);
       if (settled) return;
       settled = true;
-      reject(new ThumbnailTaskError(`PDF thumbnail renderer exited with code ${code}${stderr ? `: ${stderr.trim()}` : ''}`, {
-        code: 'PDF_RENDER_FAILED',
+      reject(new ThumbnailTaskError(`${label} thumbnail renderer exited with code ${code}${stderr ? `: ${stderr.trim()}` : ''}`, {
+        code: failedCode,
         statusCode: 422,
       }));
     });
+  });
+}
+
+function renderPdf(source, output, maxSize, onChild) {
+  return renderElectronWorker({
+    worker: pdfWorker,
+    envKey: 'EAGLE_PDF_THUMBNAIL_OPTIONS',
+    options: { source, output, maxSize, maxImagePixels: MAX_DECODED_PIXELS },
+    label: 'PDF first page',
+    unavailableCode: 'PDF_RENDERER_UNAVAILABLE',
+    startFailedCode: 'PDF_RENDERER_FAILED',
+    failedCode: 'PDF_RENDER_FAILED',
+    onChild,
+  });
+}
+
+function renderVideo(source, output, maxSize, startAt, onChild) {
+  return renderElectronWorker({
+    worker: videoWorker,
+    envKey: 'EAGLE_VIDEO_THUMBNAIL_OPTIONS',
+    options: { source, output, maxSize, maxImagePixels: MAX_DECODED_PIXELS, startAt },
+    label: 'video frame',
+    unavailableCode: 'VIDEO_RENDERER_UNAVAILABLE',
+    startFailedCode: 'VIDEO_RENDERER_FAILED',
+    failedCode: 'VIDEO_RENDER_FAILED',
+    onChild,
   });
 }
 
@@ -262,7 +288,7 @@ export class ThumbnailTaskService {
       });
     }
     const extension = String(item.ext || '').toLowerCase();
-    if (!SHARP_EXTENSIONS.has(extension) && extension !== 'pdf') {
+    if (!SHARP_EXTENSIONS.has(extension) && extension !== 'pdf' && !VIDEO_EXTENSIONS.has(extension)) {
       throw new ThumbnailTaskError(`Thumbnail format is not supported: ${extension || 'unknown'}`, {
         code: 'THUMBNAIL_FORMAT_UNSUPPORTED',
         statusCode: 415,
@@ -328,7 +354,8 @@ export class ThumbnailTaskService {
   }
 
   supports(extension) {
-    return SHARP_EXTENSIONS.has(String(extension || '').toLowerCase()) || String(extension || '').toLowerCase() === 'pdf';
+    const normalized = String(extension || '').toLowerCase();
+    return SHARP_EXTENSIONS.has(normalized) || normalized === 'pdf' || VIDEO_EXTENSIONS.has(normalized);
   }
 
   primaryFormats() {
@@ -399,6 +426,12 @@ export class ThumbnailTaskService {
         clearCustomThumbnail: task.options.clearCustomThumbnail === true,
         ...(info.animated ? { animated: true } : {}),
         ...(info.pages ? { pages: info.pages } : {}),
+        ...(Number.isFinite(info.duration) ? { duration: info.duration } : {}),
+        ...(Number.isFinite(info.startAt) ? { thumbnailAt: info.startAt } : {}),
+        ...(VIDEO_EXTENSIONS.has(task.format) ? {
+          resolutionWidth: info.width || item.resolutionWidth || item.width,
+          resolutionHeight: info.height || item.resolutionHeight || item.height,
+        } : {}),
       });
       task.status = 'complete';
       task.progress = 100;
@@ -423,6 +456,9 @@ export class ThumbnailTaskService {
     if (this.render) return this.render({ task, source, output, maxSize: task.options.maxSize || this.maxSize });
     if (task.format === 'pdf') {
       return renderPdf(source, output, task.options.maxSize || this.maxSize, (child) => { task.child = child; });
+    }
+    if (VIDEO_EXTENSIONS.has(task.format)) {
+      return renderVideo(source, output, task.options.maxSize || this.maxSize, task.options.startAt, (child) => { task.child = child; });
     }
     return renderSharp(source, output, task.options.maxSize || this.maxSize, task.format);
   }

@@ -110,7 +110,10 @@ const thumbnailTasks = new ThumbnailTaskService({
 });
 configureThumbnailTaskService(thumbnailTasks);
 const customThumbnailService = new CustomThumbnailService({
-  regenerate: (library, itemId) => thumbnailTasks.generate(library, itemId, { clearCustomThumbnail: true }),
+  regenerate: (library, itemId, options = {}) => thumbnailTasks.generate(library, itemId, {
+    ...options,
+    clearCustomThumbnail: true,
+  }),
 });
 const controlledDownloader = getControlledDownloadService();
 let currentLibrary = libraryService.currentLibrary();
@@ -1451,7 +1454,9 @@ async function resetCustomThumbnailResponse(req, res) {
 async function refreshThumbnailResponse(req, res) {
   try {
     const id = req.body.id || req.body.itemID || req.body.itemId;
-    const result = await customThumbnailService.refresh(currentLibrary, id);
+    const result = await customThumbnailService.refresh(currentLibrary, id, {
+      startAt: req.body.startAt ?? req.body.thumbnailAt,
+    });
     res.json(ok(result));
   } catch (err) {
     res.status(err.statusCode || 422).json({ ...fail(err.message), code: err.code || 'THUMBNAIL_REFRESH_FAILED' });
@@ -1466,7 +1471,10 @@ function sendThumbnailTaskError(res, err) {
 app.post('/api/item/thumbnailTask/start', (req, res) => {
   try {
     const id = req.body.id || req.body.itemID || req.body.itemId;
-    res.status(202).json(ok(thumbnailTasks.enqueue(currentLibrary, id, { maxSize: req.body.maxSize })));
+    res.status(202).json(ok(thumbnailTasks.enqueue(currentLibrary, id, {
+      maxSize: req.body.maxSize,
+      startAt: req.body.startAt ?? req.body.thumbnailAt,
+    })));
   } catch (err) {
     sendThumbnailTaskError(res, err);
   }
@@ -1917,7 +1925,10 @@ app.post('/api/v2/item/refreshThumbnail', refreshThumbnailResponse);
 app.post('/api/v2/item/thumbnailTask/start', (req, res) => {
   try {
     const id = req.body.id || req.body.itemID || req.body.itemId;
-    res.status(202).json(ok(thumbnailTasks.enqueue(currentLibrary, id, { maxSize: req.body.maxSize })));
+    res.status(202).json(ok(thumbnailTasks.enqueue(currentLibrary, id, {
+      maxSize: req.body.maxSize,
+      startAt: req.body.startAt ?? req.body.thumbnailAt,
+    })));
   } catch (err) {
     sendThumbnailTaskError(res, err);
   }

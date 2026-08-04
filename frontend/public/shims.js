@@ -388,6 +388,37 @@
         }).catch((err) => mockEmit('thumbnail-operation-error', { action: channel, error: err.message }));
         return;
       }
+      if (channel === 'regenerate-video-thumbnail') {
+        const video = params && params.video;
+        const itemId = video && video.id;
+        if (itemId) {
+          const refresh = () => desktopApi.thumbnail.refresh({
+            itemId,
+            startAt: params.startAt ?? video.thumbnailAt,
+          });
+          const automaticTaskId = video.thumbnailTask;
+          const waitForAutomatic = automaticTaskId
+            ? new Promise((resolve, reject) => {
+                const poll = () => desktopApi.thumbnail.status(automaticTaskId).then((status) => {
+                  if (status.status === 'complete') resolve();
+                  else if (status.status === 'failed' || status.status === 'cancelled') reject(new Error(status.error || status.code || 'Automatic thumbnail failed'));
+                  else setTimeout(poll, 50);
+                }).catch(reject);
+                poll();
+              })
+            : Promise.resolve();
+          waitForAutomatic.then(refresh).then((result) => {
+            const updated = result && result.item ? result.item : result;
+            if (updated && updated.id) {
+              const cached = window.__mockLibraryCache || [];
+              const index = cached.findIndex((entry) => entry.id === updated.id);
+              if (index >= 0) cached[index] = updated;
+              mockEmit('thumbnail-generated', updated);
+            }
+          }).catch((err) => mockEmit('thumbnail-operation-error', { action: channel, error: err.message }));
+        }
+        return;
+      }
       if (channel === 'regenerate-thumbnail') {
         const items = Array.isArray(params) ? params : [];
         items.forEach((item) => {

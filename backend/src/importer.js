@@ -40,8 +40,19 @@ function sourceToLocalPath(source) {
   return resolved;
 }
 
+function readFileHeader(filePath, maxBytes = 4096) {
+  const descriptor = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(maxBytes);
+    const bytesRead = fs.readSync(descriptor, buffer, 0, maxBytes, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
 function detectFileType(filePath, hints = {}) {
-  const buffer = fs.readFileSync(filePath);
+  const buffer = readFileHeader(filePath);
   let magicExt = '';
   let mime = '';
   if (buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
@@ -56,6 +67,15 @@ function detectFileType(filePath, hints = {}) {
   } else if (buffer.length >= 12 && buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') {
     magicExt = 'webp';
     mime = 'image/webp';
+  } else if (buffer.length >= 12 && buffer.subarray(4, 8).toString('ascii') === 'ftyp') {
+    const brand = buffer.subarray(8, 12).toString('ascii').toLowerCase();
+    if (['isom', 'iso2', 'mp41', 'mp42', 'avc1', 'dash', 'mmp4'].includes(brand)) {
+      magicExt = 'mp4';
+      mime = 'video/mp4';
+    }
+  } else if (buffer.length >= 4 && buffer.subarray(0, 4).equals(Buffer.from([0x1a, 0x45, 0xdf, 0xa3])) && buffer.includes(Buffer.from('webm'))) {
+    magicExt = 'webm';
+    mime = 'video/webm';
   }
   const originalExt = path.extname(String(hints.originalName || '')).slice(1);
   const pathExt = path.extname(filePath).slice(1);

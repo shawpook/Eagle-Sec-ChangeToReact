@@ -641,12 +641,13 @@ app.whenReady().then(async () => {
     const timeout = setTimeout(() => {
       console.error('LIBRARY_SMOKE_TIMEOUT');
       app.quit();
-    }, 20000);
+    }, 40000);
     createWindow({
       show: false,
       onDidFinishLoad: async (win) => {
         try {
           const smokeSource = process.env.EAGLE_SMOKE_IMPORT_SOURCE || '';
+          const smokeVideoSource = process.env.EAGLE_SMOKE_VIDEO_SOURCE || '';
           const smokeExport = process.env.EAGLE_SMOKE_EXPORT_DIR || '';
           const result = await win.webContents.executeJavaScript(
             `(async () => {
@@ -660,6 +661,29 @@ app.whenReady().then(async () => {
                 : { count: 0, paths: [] };
               const custom = imported.length > 0 && ${JSON.stringify(smokeSource)}
                 ? await window.eagleDesktop.thumbnail.setCustom({ itemId: imported[0].id, filePath: ${JSON.stringify(smokeSource)} })
+                : null;
+              const importedVideo = ${JSON.stringify(smokeVideoSource)}
+                ? await window.eagleDesktop.import.files({ files: [{ path: ${JSON.stringify(smokeVideoSource)}, name: 'Electron Video' }] })
+                : [];
+              const videoRefresh = importedVideo.length > 0
+                ? await new Promise((resolve, reject) => {
+                    require('electron').ipcRenderer.send('regenerate-video-thumbnail', { video: importedVideo[0], startAt: 0.9 });
+                    const deadline = Date.now() + 15000;
+                    const poll = async () => {
+                      const latest = await window.eagleDesktop.library.current();
+                      const updated = Array.isArray(latest.items) ? latest.items.find((item) => item.id === importedVideo[0].id) : null;
+                      if (updated && Math.abs(Number(updated.thumbnailAt) - 0.9) < 0.05 && !updated.processingThumbnail) {
+                        resolve({ item: updated });
+                        return;
+                      }
+                      if (Date.now() >= deadline) {
+                        reject(new Error('regenerate-video-thumbnail persistence timeout'));
+                        return;
+                      }
+                      setTimeout(poll, 50);
+                    };
+                    poll().catch(reject);
+                  })
                 : null;
               const infoPath = imported.length > 0
                 ? current.imagesDir + imported[0].id + '.info/'
@@ -700,6 +724,13 @@ app.whenReady().then(async () => {
                 exportedPaths: exported.paths,
                 customThumbnail: Boolean(custom && custom.item && custom.item.customThumbnail),
                 customPaletteCount: custom && custom.item && Array.isArray(custom.item.palettes) ? custom.item.palettes.length : 0,
+                videoImported: importedVideo.length,
+                videoExt: importedVideo[0] && importedVideo[0].ext,
+                videoDuration: videoRefresh && videoRefresh.item && videoRefresh.item.duration,
+                videoThumbnailAt: videoRefresh && videoRefresh.item && videoRefresh.item.thumbnailAt,
+                videoResolutionWidth: videoRefresh && videoRefresh.item && videoRefresh.item.resolutionWidth,
+                videoResolutionHeight: videoRefresh && videoRefresh.item && videoRefresh.item.resolutionHeight,
+                videoPaletteCount: videoRefresh && videoRefresh.item && Array.isArray(videoRefresh.item.palettes) ? videoRefresh.item.palettes.length : 0,
                 thumbnailUrl,
                 thumbnailLoaded,
                 rawUrl,
@@ -729,7 +760,7 @@ app.whenReady().then(async () => {
             })()`
           );
           const exportedExists = result.exportedPaths.every((file) => fs.existsSync(file));
-          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.customThumbnail && result.customPaletteCount > 0 && result.thumbnailLoaded && result.rawLoaded && result.directDownloadExists && result.compatibilityDownloadExists && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
+          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.customThumbnail && result.customPaletteCount > 0 && result.videoImported === 1 && result.videoExt === 'webm' && result.videoDuration > 0 && Math.abs(result.videoThumbnailAt - 0.9) < 0.05 && result.videoResolutionWidth === 160 && result.videoResolutionHeight === 90 && result.videoPaletteCount > 0 && result.thumbnailLoaded && result.rawLoaded && result.directDownloadExists && result.compatibilityDownloadExists && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
           console.log(ok ? `LIBRARY_SMOKE_OK ${JSON.stringify(result)}` : `LIBRARY_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`LIBRARY_SMOKE_ERROR ${err.message}`);

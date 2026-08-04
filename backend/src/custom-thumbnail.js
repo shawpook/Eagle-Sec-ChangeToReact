@@ -206,7 +206,7 @@ export class CustomThumbnailService {
     return this.#enqueue(library, itemId, () => this.#reset(library, itemId));
   }
 
-  refresh(library, itemId) {
+  refresh(library, itemId, options = {}) {
     return this.#enqueue(library, itemId, async () => {
       const item = this.#findItem(library, itemId);
       if (item.customThumbnail) {
@@ -214,7 +214,7 @@ export class CustomThumbnailService {
         if (fs.existsSync(target)) return { item, path: target, preservedCustomThumbnail: true };
       }
       if (this.regenerate) {
-        const task = await this.regenerate(library, itemId);
+        const task = await this.regenerate(library, itemId, options);
         return { ...task.result, task: task.id };
       }
       return this.#reset(library, itemId);

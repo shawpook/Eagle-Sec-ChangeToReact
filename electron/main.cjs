@@ -1,5 +1,6 @@
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
 
 const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5176/src/app/index.html';
@@ -38,6 +39,7 @@ function saveWindowState(win) {
 
 function createWindow(options = {}) {
   const saved = loadWindowState();
+  const url = options.url || previewUrl;
   const win = new BrowserWindow({
     width: options.width || saved.width || 1280,
     height: options.height || saved.height || 800,
@@ -46,6 +48,7 @@ function createWindow(options = {}) {
     minWidth: options.minWidth || 960,
     minHeight: options.minHeight || 600,
     autoHideMenuBar: true,
+    frame: options.frame !== undefined ? options.frame : url !== previewUrl,
     show: options.show !== false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -55,8 +58,22 @@ function createWindow(options = {}) {
     },
   });
 
-  win.loadURL(options.url || previewUrl);
+  if (typeof options.onDidFinishLoad === 'function') {
+    win.webContents.once('did-finish-load', () => options.onDidFinishLoad(win));
+  }
+  win.loadURL(url);
   if (saved.maximized) win.maximize();
+  const notifyWindowState = () => {
+    if (win.isDestroyed()) return;
+    win.webContents.send('window:state-changed', {
+      maximized: win.isMaximized(),
+      fullScreen: win.isFullScreen(),
+    });
+  };
+  win.on('maximize', notifyWindowState);
+  win.on('unmaximize', notifyWindowState);
+  win.on('enter-full-screen', notifyWindowState);
+  win.on('leave-full-screen', notifyWindowState);
   win.on('resize', () => saveWindowState(win));
   win.on('move', () => saveWindowState(win));
   win.on('close', () => saveWindowState(win));
@@ -64,6 +81,70 @@ function createWindow(options = {}) {
 }
 
 function registerIpc() {
+  ipcMain.handle('window:action', (event, action, value) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) return false;
+    switch (action) {
+      case 'minimize':
+        win.minimize();
+        break;
+      case 'maximize':
+        win.maximize();
+        break;
+      case 'unmaximize':
+        win.unmaximize();
+        break;
+      case 'close':
+        win.close();
+        break;
+      case 'set-full-screen':
+        win.setFullScreen(Boolean(value));
+        break;
+      case 'set-always-on-top':
+        win.setAlwaysOnTop(Boolean(value));
+        break;
+      case 'reload':
+        win.webContents.reload();
+        break;
+      case 'force-reload':
+        win.webContents.reloadIgnoringCache();
+        break;
+      case 'toggle-devtools':
+        win.webContents.toggleDevTools();
+        break;
+      case 'reset-zoom':
+        win.webContents.setZoomLevel(0);
+        break;
+      case 'zoom-in':
+        win.webContents.setZoomLevel((win.webContents.getZoomLevel() || 0) + 0.5);
+        break;
+      case 'zoom-out':
+        win.webContents.setZoomLevel((win.webContents.getZoomLevel() || 0) - 0.5);
+        break;
+      case 'quit':
+        app.quit();
+        break;
+      default:
+        return false;
+    }
+    return true;
+  });
+
+  ipcMain.on('window:query', (event, key) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win) {
+      event.returnValue = false;
+      return;
+    }
+    if (key === 'isMaximized') {
+      event.returnValue = win.isMaximized();
+    } else if (key === 'isFullScreen') {
+      event.returnValue = win.isFullScreen();
+    } else {
+      event.returnValue = false;
+    }
+  });
+
   ipcMain.handle('app:get-info', () => ({
     name: 'Eagle Reverse',
     version: app.getVersion(),
@@ -100,7 +181,7 @@ function registerIpc() {
 
   ipcMain.handle('viewer:open', (event, payload = {}) => {
     const url = payload.url || previewUrl;
-    createWindow({ url, width: payload.width || 1100, height: payload.height || 760 });
+    createWindow({ url, width: payload.width || 1100, height: payload.height || 760, frame: false });
     return true;
   });
 
@@ -214,34 +295,67 @@ async function loadServicePlugins() {
   }
 }
 
+if (smokeMode || pluginSmokeMode || desktopSmokeMode) {
+  app.setPath('userData', path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
+}
+
 app.whenReady().then(async () => {
   registerIpc();
   setupMenu();
   await loadServicePlugins();
   if (desktopSmokeMode) {
     const menuOk = Menu.getApplicationMenu() !== null;
-    const desktopWin = createWindow({ show: false });
-    const sourceFile = path.join(mockLibraryRoot, 'images', 'MOCK0001.info', 'Welcome Library.png');
     const timeout = setTimeout(() => {
       console.error('DESKTOP_SMOKE_TIMEOUT');
       app.quit();
     }, 6000);
-    desktopWin.webContents.on('did-finish-load', async () => {
-      try {
-        const result = await desktopWin.webContents.executeJavaScript(
-          `(async () => {
-            const thumb = await window.eagleDesktop.nativeThumbnail(${JSON.stringify(sourceFile)});
-            const list = await window.eagleDesktop.listDirectory(${JSON.stringify(mockLibraryRoot)});
-            const clip = await window.eagleDesktop.clipboardImage();
-            return { thumbOk: typeof thumb === 'string' && thumb.startsWith('data:image/png'), listOk: list.length > 0, clipboardOk: typeof clip === 'string' && clip.startsWith('data:image/png') };
-          })()`
-        );
-        console.log(result.thumbOk && result.listOk && result.clipboardOk && menuOk ? 'DESKTOP_SMOKE_OK' : `DESKTOP_SMOKE_FAIL ${JSON.stringify({ ...result, menuOk })}`);
-      } catch (err) {
-        console.error(`DESKTOP_SMOKE_ERROR ${err.message}`);
-      }
-      clearTimeout(timeout);
-      app.quit();
+    const sourceFile = path.join(mockLibraryRoot, 'images', 'MOCK0001.info', 'Welcome Library.png');
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          if (win.isMaximized()) {
+            win.unmaximize();
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+          const frameOk = Math.abs(win.getBounds().height - win.getContentBounds().height) <= 2;
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const thumb = await window.eagleDesktop.nativeThumbnail(${JSON.stringify(sourceFile)});
+              const list = await window.eagleDesktop.listDirectory(${JSON.stringify(mockLibraryRoot)});
+              const clip = await window.eagleDesktop.clipboardImage();
+              const win = window.eagleDesktop.window;
+              const initialMaximized = win.isMaximized();
+              if (initialMaximized) {
+                await win.unmaximize();
+              } else {
+                await win.maximize();
+              }
+              await new Promise((resolve) => setTimeout(resolve, 150));
+              const windowActionsOk = win.isMaximized() !== initialMaximized;
+              const bodyScope = angular.element(document.body).scope();
+              if (bodyScope && typeof bodyScope.openApplicationContextMenu === 'function') {
+                bodyScope.openApplicationContextMenu();
+              }
+              await new Promise((resolve) => setTimeout(resolve, 150));
+              const menuOpened = !!document.querySelector('.context-menu.open') && document.querySelectorAll('.context-menu.open .context-menu-item').length > 0;
+              return {
+                thumbOk: typeof thumb === 'string' && thumb.startsWith('data:image/png'),
+                listOk: list.length > 0,
+                clipboardOk: typeof clip === 'string' && clip.startsWith('data:image/png'),
+                windowApiOk: typeof win.minimize === 'function' && typeof win.maximize === 'function' && typeof win.close === 'function' && typeof win.isMaximized() === 'boolean',
+                windowActionsOk,
+                menuOpened,
+              };
+            })()`
+          );
+          console.log(result.thumbOk && result.listOk && result.clipboardOk && result.windowApiOk && result.windowActionsOk && result.menuOpened && menuOk && frameOk ? 'DESKTOP_SMOKE_OK' : `DESKTOP_SMOKE_FAIL ${JSON.stringify({ ...result, menuOk, frameOk })}`);
+        } catch (err) {
+          console.error(`DESKTOP_SMOKE_ERROR ${err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
     });
     return;
   }

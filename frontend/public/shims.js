@@ -337,22 +337,100 @@
 
   const ipcRenderer = new EventEmitter();
 
+  const windowApi = () => (window.eagleDesktop && window.eagleDesktop.window) || null;
+  const windowListeners = new Map();
+  const windowState = (() => {
+    const api = windowApi();
+    return {
+      maximized: api ? Boolean(api.isMaximized()) : false,
+      fullScreen: api ? Boolean(api.isFullScreen()) : false,
+    };
+  })();
+
+  function addWindowListener(channel, callback) {
+    if (!windowListeners.has(channel)) windowListeners.set(channel, []);
+    windowListeners.get(channel).push(callback);
+  }
+
+  function emitWindowEvent(channel, ...args) {
+    (windowListeners.get(channel) || []).slice().forEach((callback) => {
+      try {
+        callback({}, ...args);
+      } catch (err) {
+        console.warn(`[eagle-shim] window listener error on ${channel}`, err);
+      }
+    });
+  }
+
+  (function wireWindowStateEvents() {
+    const api = windowApi();
+    if (!api || typeof api.onStateChanged !== 'function') return;
+    api.onStateChanged((state) => {
+      const previous = { ...windowState };
+      if (typeof state.maximized === 'boolean') windowState.maximized = state.maximized;
+      if (typeof state.fullScreen === 'boolean') windowState.fullScreen = state.fullScreen;
+      if (windowState.maximized && !previous.maximized) emitWindowEvent('maximize');
+      if (!windowState.maximized && previous.maximized) emitWindowEvent('unmaximize');
+      if (windowState.fullScreen && !previous.fullScreen) emitWindowEvent('enter-full-screen');
+      if (!windowState.fullScreen && previous.fullScreen) emitWindowEvent('leave-full-screen');
+    });
+  })();
+
   const currentWindow = {
     id: 1,
     getTitle: () => 'Eagle',
     isDestroyed: () => false,
-    isMaximized: () => false,
-    isFullScreen: () => false,
-    hide() {},
-    show() {},
-    close() {},
-    minimize() {},
-    maximize() {},
-    unmaximize() {},
-    restore() {},
+    isMaximized: () => windowState.maximized,
+    isFullScreen: () => windowState.fullScreen,
+    hide() {
+      const api = windowApi();
+      if (api && typeof api.hide === 'function') api.hide();
+    },
+    show() {
+      const api = windowApi();
+      if (api && typeof api.show === 'function') api.show();
+    },
+    close() {
+      const api = windowApi();
+      if (api && typeof api.close === 'function') api.close();
+    },
+    minimize() {
+      const api = windowApi();
+      if (api && typeof api.minimize === 'function') api.minimize();
+    },
+    maximize() {
+      const api = windowApi();
+      if (api && typeof api.maximize === 'function') {
+        api.maximize();
+        windowState.maximized = true;
+      }
+    },
+    unmaximize() {
+      const api = windowApi();
+      if (api && typeof api.unmaximize === 'function') {
+        api.unmaximize();
+        windowState.maximized = false;
+      }
+    },
+    restore() {
+      const api = windowApi();
+      if (api && typeof api.unmaximize === 'function') {
+        api.unmaximize();
+        windowState.maximized = false;
+      }
+    },
     flashFrame() {},
-    setFullScreen() {},
-    setAlwaysOnTop() {},
+    setFullScreen(value) {
+      const api = windowApi();
+      if (api && typeof api.setFullScreen === 'function') {
+        api.setFullScreen(value);
+        windowState.fullScreen = Boolean(value);
+      }
+    },
+    setAlwaysOnTop(value) {
+      const api = windowApi();
+      if (api && typeof api.setAlwaysOnTop === 'function') api.setAlwaysOnTop(value);
+    },
     getOpacity: () => 1,
     setOpacity() {},
     focus() {},
@@ -362,11 +440,29 @@
     setMinimumSize() {},
     setSize() {},
     getSize: () => [1280, 720],
-    on() {},
-    once() {},
-    addListener() {},
-    removeListener() {},
-    emit() {},
+    on(channel, callback) {
+      addWindowListener(channel, callback);
+      return this;
+    },
+    once(channel, callback) {
+      const wrap = (...args) => {
+        this.removeListener(channel, wrap);
+        callback(...args);
+      };
+      return this.on(channel, wrap);
+    },
+    addListener(channel, callback) {
+      return this.on(channel, callback);
+    },
+    removeListener(channel, callback) {
+      const list = windowListeners.get(channel) || [];
+      windowListeners.set(channel, list.filter((entry) => entry !== callback));
+      return this;
+    },
+    emit(channel, ...args) {
+      emitWindowEvent(channel, ...args);
+      return true;
+    },
     webContents: {
       id: 1,
       send() {},
@@ -419,10 +515,113 @@
     }
   }
 
+  let applicationMenu = null;
+
+  function getRoleClick(role) {
+    const winApi = () => (window.eagleDesktop && window.eagleDesktop.window) || null;
+    switch (role) {
+      case 'reload':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.reload === 'function') api.reload();
+          else window.location.reload();
+        };
+      case 'forceReload':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.forceReload === 'function') api.forceReload();
+          else window.location.reload();
+        };
+      case 'toggleDevTools':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.toggleDevTools === 'function') api.toggleDevTools();
+        };
+      case 'resetZoom':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.resetZoom === 'function') api.resetZoom();
+        };
+      case 'zoomIn':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.zoomIn === 'function') api.zoomIn();
+        };
+      case 'zoomOut':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.zoomOut === 'function') api.zoomOut();
+        };
+      case 'minimize':
+        return () => currentWindow.minimize();
+      case 'close':
+        return () => currentWindow.close();
+      case 'quit':
+        return () => {
+          const api = winApi();
+          if (api && typeof api.quit === 'function') api.quit();
+          else currentWindow.close();
+        };
+      case 'undo':
+        return () => document.execCommand('undo');
+      case 'redo':
+        return () => document.execCommand('redo');
+      case 'cut':
+        return () => document.execCommand('cut');
+      case 'copy':
+        return () => document.execCommand('copy');
+      case 'paste':
+        return () => document.execCommand('paste');
+      case 'selectAll':
+        return () => document.execCommand('selectAll');
+      default:
+        return null;
+    }
+  }
+
+  function normalizeMenuItems(items) {
+    return (Array.isArray(items) ? items : []).map((item) => {
+      if (!item) return { role: 'separator' };
+      if (item.type === 'separator' || item.role === 'separator') return { role: 'separator' };
+
+      const normalized = { ...item };
+      delete normalized.type;
+
+      if (Array.isArray(normalized.submenu)) {
+        normalized.submenu = { items: normalizeMenuItems(normalized.submenu), showSearch: false };
+      } else if (normalized.submenu && Array.isArray(normalized.submenu.items)) {
+        normalized.submenu = { ...normalized.submenu, items: normalizeMenuItems(normalized.submenu.items) };
+      }
+
+      if (normalized.enabled === false) normalized.disabled = true;
+      if (typeof normalized.role === 'string') {
+        const roleClick = getRoleClick(normalized.role);
+        if (roleClick) normalized.click = roleClick;
+        else if (!normalized.submenu) normalized.disabled = true;
+        delete normalized.role;
+      }
+
+      return normalized;
+    });
+  }
+
+  function createShimMenu(template) {
+    const menu = { items: normalizeMenuItems(template || []), showSearch: false };
+    menu.popup = () => {
+      if (typeof ContextMenu !== 'undefined' && typeof ContextMenu.open === 'function') {
+        ContextMenu.open({ items: menu.items, showSearch: false });
+      }
+    };
+    menu.append = () => {};
+    return menu;
+  }
+
   const Menu = {
-    buildFromTemplate: () => ({ popup() {}, append() {}, submenu: [], items: [] }),
-    setApplicationMenu() {},
-    getApplicationMenu: () => null,
+    buildFromTemplate: (template) => createShimMenu(template),
+    setApplicationMenu(menu) {
+      applicationMenu = menu;
+    },
+    getApplicationMenu: () => applicationMenu || createShimMenu([]),
   };
 
   class BrowserWindow {

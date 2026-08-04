@@ -28,6 +28,7 @@ import { migrateLibrary, scanLibrary } from './library-migration.js';
 import { getRequestToken, isLocalRequest } from './security.js';
 import { describeLibrary, LibraryService } from './library-service.js';
 import { exportAsFolder, exportImages } from './export-service.js';
+import { ColorAnalyzerService } from './color-analyzer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -93,6 +94,11 @@ app.use('/plugins', express.static(userPluginsDir));
 const libraryService = new LibraryService({
   stateFile,
   defaultLibraryPath: defaultMockLibrary(),
+});
+const colorAnalyzer = new ColorAnalyzerService({
+  concurrency: 3,
+  timeoutMs: process.env.EAGLE_PALETTE_TIMEOUT_MS === undefined ? 30_000 : Number(process.env.EAGLE_PALETTE_TIMEOUT_MS),
+  delayMs: process.env.EAGLE_PALETTE_DELAY_MS === undefined ? 20 : Number(process.env.EAGLE_PALETTE_DELAY_MS),
 });
 let currentLibrary = libraryService.currentLibrary();
 let folders = currentLibrary.folders;
@@ -1369,8 +1375,38 @@ app.post('/api/item/refreshThumbnail', async (req, res) => {
   res.json(ok({ path: generated }));
 });
 
-app.post('/api/item/refreshPalette', (req, res) => {
-  res.json(ok(true));
+app.post('/api/item/refreshPalette', async (req, res) => {
+  try {
+    const id = req.body.id || req.body.itemID;
+    if (!id) {
+      res.status(400).json(fail('Item id is required'));
+      return;
+    }
+    const result = await colorAnalyzer.enqueue(currentLibrary, id);
+    res.json(ok(result));
+  } catch (err) {
+    res.status(err.statusCode || 422).json({ ...fail(err.message), code: err.code || 'PALETTE_ANALYSIS_FAILED' });
+  }
+});
+
+app.get('/api/item/paletteQueue', (req, res) => {
+  res.json(ok(colorAnalyzer.status()));
+});
+
+app.post('/api/item/paletteQueue/pause', (req, res) => {
+  res.json(ok(colorAnalyzer.pause()));
+});
+
+app.post('/api/item/paletteQueue/resume', (req, res) => {
+  res.json(ok(colorAnalyzer.resume()));
+});
+
+app.post('/api/item/paletteQueue/delay', (req, res) => {
+  try {
+    res.json(ok(colorAnalyzer.setDelay(req.body.delayMs)));
+  } catch (err) {
+    res.status(err.statusCode || 400).json({ ...fail(err.message), code: err.code || 'INVALID_QUEUE_DELAY' });
+  }
 });
 
 app.get('/api/item/thumbnail', (req, res) => {

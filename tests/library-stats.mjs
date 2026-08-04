@@ -19,14 +19,17 @@ const sourceFile = path.join(
 );
 
 async function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer();
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      server.close(() => resolve(address.port));
+  while (true) {
+    const port = await new Promise((resolve, reject) => {
+      const server = http.createServer();
+      server.on('error', reject);
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address();
+        server.close(() => resolve(address.port));
+      });
     });
-  });
+    if (port >= 12_000) return port;
+  }
 }
 
 async function startServer() {

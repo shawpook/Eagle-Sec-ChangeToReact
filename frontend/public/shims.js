@@ -356,6 +356,46 @@
   const mockEmit = ipcRenderer.emit.bind(ipcRenderer);
   const customThumbnailItemIds = new Set();
   const desktopSendChannels = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
+  let itemUpdateQueue = Promise.resolve();
+
+  function mergeCachedItems(updatedItems) {
+    const cached = window.__mockLibraryCache || [];
+    const updates = Array.isArray(updatedItems) ? updatedItems : [updatedItems];
+    updates.forEach((updated) => {
+      if (!updated || !updated.id) return;
+      const index = cached.findIndex((entry) => entry.id === updated.id);
+      if (index >= 0) Object.assign(cached[index], updated);
+      else cached.unshift(updated);
+    });
+    window.__mockLibraryCache = cached;
+    try {
+      if (window.angular) {
+        const scope = angular.element(document.body).scope();
+        updates.forEach((updated) => {
+          if (!updated || !updated.id) return;
+          const targets = [
+            scope && scope.itemMappings && scope.itemMappings[updated.id],
+            ...(scope && Array.isArray(scope.raw) ? scope.raw.filter((item) => item.id === updated.id) : []),
+            ...(scope && Array.isArray(scope.allData) ? scope.allData.filter((item) => item.id === updated.id) : []),
+          ].filter(Boolean);
+          [...new Set(targets)].forEach((target) => Object.assign(target, updated));
+        });
+        if (scope && typeof scope.$evalAsync === 'function') scope.$evalAsync();
+      }
+    } catch (err) {
+      console.warn('[eagle-shim] failed to synchronize updated items', err);
+    }
+    return cached;
+  }
+
+  function emitImportedItems(items, channel) {
+    const imported = (Array.isArray(items) ? items : [items]).filter((item) => item && item.id);
+    mergeCachedItems(imported);
+    imported.forEach((item) => mockEmit('file-uploaded', item));
+    if (imported.length > 0) mockEmit('file-uploaded-end', {});
+    mockEmit('import:operation-result', { ok: true, channel, items: imported });
+    return imported;
+  }
   ipcRenderer.send = function (channel, params) {
     if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {
       if (channel === 'create-library') desktopApi.library.create(params || {}).catch(() => {});
@@ -366,6 +406,41 @@
       desktopApi.library.updateStructure(params || {}).catch((err) => {
         mockEmit('library:operation-result', { ok: false, action: channel, error: err.message });
       });
+      return;
+    }
+    if (desktopApi && desktopApi.item && (channel === 'images-change' || channel === 'image-change')) {
+      const items = channel === 'images-change' ? params : [params];
+      const snapshots = (Array.isArray(items) ? items : []).filter((item) => item && item.id).map((item) => structuredClone(item));
+      itemUpdateQueue = itemUpdateQueue
+        .catch(() => undefined)
+        .then(() => desktopApi.item.updateMany(snapshots))
+        .then((updated) => {
+          mergeCachedItems(updated);
+          mockEmit('item:operation-result', { ok: true, action: channel, items: updated });
+          return updated;
+        })
+        .catch((err) => {
+          mockEmit('item:operation-result', { ok: false, action: channel, error: err.message });
+          return [];
+        });
+      return;
+    }
+    if (desktopApi && desktopApi.clipboard && (channel === 'read-win-files' || channel === 'paste-image' || channel === 'paste-paths')) {
+      const payload = params && params.params ? { ...params.params, folder: params.folder || params.params.folder } : (params || {});
+      if (channel === 'paste-paths') payload.files = Array.isArray(params && params.files) ? params.files : [];
+      desktopApi.clipboard.import(payload).then((items) => emitImportedItems(items, channel)).catch((err) => {
+        mockEmit('import:operation-result', { ok: false, channel, error: err.message });
+        mockEmit('file-uploaded-end', { error: err.message });
+      });
+      return;
+    }
+    if (desktopApi && desktopApi.preview && channel === 'open-preview-window') {
+      const images = Array.isArray(params && params.images)
+        ? params.images.filter((item) => item && item.id).map((item) => structuredClone(item))
+        : [];
+      desktopApi.preview.open({ images }).then((result) => {
+        mockEmit('preview:operation-result', { ok: true, result });
+      }).catch((err) => mockEmit('preview:operation-result', { ok: false, error: err.message }));
       return;
     }
     if (desktopApi && desktopApi.thumbnail) {
@@ -452,7 +527,7 @@
           .then((result) => {
             const batches = channel === 'import-folders' && Array.isArray(result) ? result : [result];
             const items = batches.flatMap((batch) => Array.isArray(batch) ? batch : Array.isArray(batch && batch.items) ? batch.items : batch && batch.id ? [batch] : []);
-            items.forEach((item) => mockEmit('file-uploaded', item));
+            emitImportedItems(items, channel);
             if (channel === 'import-folders') {
               desktopApi.library.current().then((library) => {
                 window.__mockLibrary = { ...window.__mockLibrary, ...library };
@@ -530,6 +605,12 @@
     if (typeof desktopApi.library.onOperationResult === 'function') {
       desktopApi.library.onOperationResult((result) => mockEmit('library:operation-result', result));
     }
+  }
+  if (desktopApi && desktopApi.item && typeof desktopApi.item.onOperationResult === 'function') {
+    desktopApi.item.onOperationResult((result) => mockEmit('item:operation-result', result));
+  }
+  if (desktopApi && desktopApi.preview && typeof desktopApi.preview.onInit === 'function') {
+    desktopApi.preview.onInit((payload) => mockEmit('init', payload));
   }
 
   const windowApi = () => (window.eagleDesktop && window.eagleDesktop.window) || null;
@@ -873,6 +954,29 @@
     require: (id) => (String(id || '').includes('electron-log') ? electronLog : {}),
   };
 
+  function readDesktopClipboardSync() {
+    if (!desktopApi || !desktopApi.clipboard || typeof desktopApi.clipboard.readSync !== 'function') {
+      return { text: '', imageDataUrl: '', filePaths: [], formats: [] };
+    }
+    try {
+      return desktopApi.clipboard.readSync() || { text: '', imageDataUrl: '', filePaths: [], formats: [] };
+    } catch (err) {
+      return { text: '', imageDataUrl: '', filePaths: [], formats: [] };
+    }
+  }
+
+  function clipboardImageFromDataUrl(dataUrl) {
+    const match = /^data:image\/[^;,]+;base64,(.*)$/s.exec(String(dataUrl || ''));
+    const bytes = match ? BrowserBuffer.from(atob(match[1])) : BrowserBuffer.alloc(0);
+    return {
+      isEmpty: () => bytes.length === 0,
+      toPNG: () => bytes,
+      toJPEG: () => bytes,
+      toDataURL: () => dataUrl || '',
+      getSize: () => ({ width: bytes.length > 0 ? 1 : 0, height: bytes.length > 0 ? 1 : 0 }),
+    };
+  }
+
   const electron = {
     ipcRenderer,
     webFrame: {
@@ -882,11 +986,11 @@
     },
     clipboard: {
       writeText() {},
-      readText: () => '',
+      readText: () => readDesktopClipboardSync().text || '',
       writeImage() {},
-      readImage: () => ({ toPNG: () => BrowserBuffer.alloc(0), getSize: () => ({ width: 0, height: 0 }) }),
+      readImage: () => clipboardImageFromDataUrl(readDesktopClipboardSync().imageDataUrl),
       clear() {},
-      availableFormats: () => [],
+      availableFormats: () => readDesktopClipboardSync().formats || [],
     },
     shell: {
       openExternal: () => Promise.resolve(),
@@ -897,6 +1001,26 @@
   };
 
   function writeFileAtomic(file, data, cb) {
+    const target = String(file || '').replace(/\\/g, '/');
+    if (desktopApi && desktopApi.library && target.endsWith('/tags.json')) {
+      let tags;
+      try {
+        tags = typeof data === 'string' ? JSON.parse(data) : data;
+      } catch (err) {
+        if (typeof cb === 'function') setTimeout(() => cb(err), 0);
+        return;
+      }
+      desktopApi.library.updateStructure({
+        libraryPath: window.__mockLibrary && (window.__mockLibrary.rootDir || window.__mockLibrary.path),
+        tags,
+      }).then(() => {
+        if (window.__mockLibrary) window.__mockLibrary.tags = tags;
+        if (typeof cb === 'function') cb(null);
+      }).catch((err) => {
+        if (typeof cb === 'function') cb(err);
+      });
+      return;
+    }
     if (typeof cb === 'function') setTimeout(cb, 0);
   }
 
@@ -1501,6 +1625,10 @@
         errorMsg: '',
       });
     }, 250);
+
+    setTimeout(() => {
+      ipcRenderer.emit('app-status-loading');
+    }, 300);
 
     setTimeout(() => {
       ipcRenderer.emit('preload-library', {

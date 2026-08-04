@@ -12,6 +12,9 @@ const smokeMode = process.argv.includes('--smoke');
 const pluginSmokeMode = process.argv.includes('--smoke-plugin');
 const desktopSmokeMode = process.argv.includes('--smoke-desktop');
 const librarySmokeMode = process.argv.includes('--smoke-library');
+const mainWorkflowSmokeMode = process.argv.includes('--smoke-main-workflow');
+const regressionHostMode = process.argv.includes('--regression-host');
+if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
 const allowedRoots = new Set([mockLibraryRoot, path.resolve(__dirname, '..', '..')]);
 const exportJobs = new Map();
@@ -33,6 +36,33 @@ function loadWindowState() {
   } catch (err) {
     return {};
   }
+}
+
+function normalizeClipboardPath(value) {
+  return String(value || '').replace(/^"|"$/g, '').replace(/^file:\/\//i, '').trim();
+}
+
+function clipboardFilePaths() {
+  const candidates = [];
+  const text = clipboard.readText() || '';
+  candidates.push(...text.split(/\r?\n/));
+  for (const format of ['FileNameW', 'FileName']) {
+    try {
+      const buffer = clipboard.readBuffer(format);
+      if (!buffer || buffer.length === 0) continue;
+      const decoded = format === 'FileNameW' ? buffer.toString('utf16le') : buffer.toString('utf8');
+      candidates.push(...decoded.split(/\0|\r?\n/));
+    } catch (err) {
+      // The format is optional and platform-dependent.
+    }
+  }
+  return [...new Set(candidates.map(normalizeClipboardPath).filter((target) => {
+    try {
+      return target && fs.existsSync(target) && fs.statSync(target).isFile();
+    } catch (err) {
+      return false;
+    }
+  }))];
 }
 
 async function apiRequest(route, options = {}) {
@@ -110,6 +140,7 @@ async function notifyLibraryLoaded(library) {
   allowRoot(library.rootDir || library.path);
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
+      win.webContents.send('app-status-loading');
       win.webContents.send('library:changed', library);
       win.webContents.send('preload-library', { cachePath: library.cachePath });
       win.webContents.send('app-status-library-loaded', libraryLoadedPayload(library));
@@ -169,6 +200,50 @@ function saveWindowState(win) {
   } catch (err) {
     // Ignore window state persistence errors.
   }
+}
+
+function originalPreviewUrl(itemId) {
+  const target = new URL(previewUrl);
+  target.pathname = target.pathname.replace(/\/src\/app\/index\.html$/i, '/src/app/preview-window.html');
+  target.search = itemId ? `?id=${encodeURIComponent(itemId)}` : '';
+  return target.toString();
+}
+
+async function openOriginalPreview(payload = {}) {
+  const items = Array.isArray(payload.images) ? payload.images.filter((item) => item && item.id) : [];
+  if (items.length === 0) throw new Error('Preview requires at least one item');
+  const library = await apiRequest('/api/library/current?includeItems=true');
+  allowRoot(library.rootDir || library.path);
+  const selectedIds = new Set(items.map((item) => item.id));
+  const latestItems = (library.items || []).filter((item) => selectedIds.has(item.id));
+  if (latestItems.length === 0) throw new Error('Preview items were not found in the current library');
+  const initPayload = {
+    images: latestItems,
+    imagesDir: library.imagesDir,
+    rootDir: library.rootDir || library.path,
+    machineID: 'eagle-reverse',
+    Registration: { activated: true, machineID: 'eagle-reverse' },
+    pluginModule: payload.pluginModule || {
+      plugins: [],
+      previewExtension: {
+        thumbnailPluginMap: {},
+        thumbnailPath: {},
+        thumbnailOptions: {},
+        viewerPluginMap: {},
+        viewerURL: {},
+      },
+    },
+  };
+  const win = createWindow({
+    url: originalPreviewUrl(latestItems[0].id),
+    width: payload.width || 1100,
+    height: payload.height || 760,
+    frame: false,
+    onDidFinishLoad(previewWindow) {
+      previewWindow.webContents.send('preview:init', initPayload);
+    },
+  });
+  return { opened: true, windowId: win.id, itemIds: latestItems.map((item) => item.id) };
 }
 
 function createWindow(options = {}) {
@@ -365,6 +440,7 @@ function registerIpc() {
     createWindow({ url, width: payload.width || 1100, height: payload.height || 760, frame: false });
     return true;
   });
+  ipcMain.handle('preview:open-original', (event, payload = {}) => openOriginalPreview(payload));
 
   ipcMain.handle('plugin:open', (event, payload = {}) => {
     const url = payload.url;
@@ -420,6 +496,19 @@ function registerIpc() {
     return image.toDataURL();
   });
 
+  ipcMain.handle('item:update-many', (event, items = []) => apiRequest('/api/item/updateMany', {
+    method: 'POST',
+    body: { items: Array.isArray(items) ? items : [items] },
+  }));
+  ipcMain.handle('item:move-to-trash', (event, ids = []) => apiRequest('/api/item/moveToTrash', {
+    method: 'POST',
+    body: { ids: Array.isArray(ids) ? ids : [ids] },
+  }));
+  ipcMain.handle('item:restore', (event, ids = []) => apiRequest('/api/item/restore', {
+    method: 'POST',
+    body: { ids: Array.isArray(ids) ? ids : [ids] },
+  }));
+
   ipcMain.handle('item:set-custom-thumbnail', (event, params = {}) => apiRequest('/api/item/setCustomThumbnail', {
     method: 'POST',
     body: params,
@@ -446,6 +535,51 @@ function registerIpc() {
   }));
 
   ipcMain.handle('clipboard:readImage', () => clipboard.readImage().toDataURL());
+  ipcMain.on('clipboard:read-sync', (event) => {
+    const image = clipboard.readImage();
+    event.returnValue = {
+      text: clipboard.readText() || '',
+      imageDataUrl: image && !image.isEmpty() ? image.toDataURL() : '',
+      filePaths: clipboardFilePaths(),
+      formats: clipboard.availableFormats(),
+    };
+  });
+  ipcMain.handle('clipboard:read', () => {
+    const image = clipboard.readImage();
+    return {
+      text: clipboard.readText() || '',
+      imageDataUrl: image && !image.isEmpty() ? image.toDataURL() : '',
+      filePaths: clipboardFilePaths(),
+      formats: clipboard.availableFormats(),
+    };
+  });
+  ipcMain.handle('clipboard:import', async (event, params = {}) => {
+    const folder = params.folder && params.folder.id ? params.folder : null;
+    const folderIDs = folder ? [folder.id] : [];
+    const tags = folder && Array.isArray(folder.extendTags) ? folder.extendTags : [];
+    const explicitPaths = Array.isArray(params.files)
+      ? params.files.filter((value) => typeof value === 'string' && value.trim())
+      : clipboardFilePaths();
+    if (explicitPaths.length > 0) {
+      return apiRequest('/api/item/addFromPaths', {
+        method: 'POST',
+        body: { images: explicitPaths.map((sourcePath) => ({ path: sourcePath, folderIDs, tags })) },
+      });
+    }
+    const image = clipboard.readImage();
+    if (!image || image.isEmpty()) throw new Error('Clipboard does not contain an image or file paths');
+    return [await apiRequest('/api/item/importBase64', {
+      method: 'POST',
+      body: {
+        data: image.toDataURL(),
+        name: params.name || `Clipboard - ${new Date().toISOString().replace(/[:T]/g, '-').replace(/\.\d{3}Z$/, '')}`,
+        ext: 'png',
+        tags: tags.join(','),
+        folderIDs,
+        annotation: params.annotation || '',
+      },
+    })];
+  });
 
   ipcMain.handle('item:importPaths', async (event, paths = []) => {
     const list = Array.isArray(paths) ? paths : [paths];
@@ -629,14 +763,260 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode) {
-  app.setPath('userData', path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || regressionHostMode) {
+  app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
 app.whenReady().then(async () => {
   registerIpc();
   setupMenu();
   await loadServicePlugins();
+  if (mainWorkflowSmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('MAIN_WORKFLOW_SMOKE_TIMEOUT');
+      app.quit();
+    }, 70000);
+    const clipboardImageSource = process.env.EAGLE_WORKFLOW_CLIPBOARD_IMAGE_SOURCE || '';
+    if (clipboardImageSource && fs.existsSync(clipboardImageSource)) {
+      clipboard.writeImage(nativeImage.createFromPath(clipboardImageSource));
+    }
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const waitFor = (check, label, timeout = 15000) => new Promise((resolve, reject) => {
+                const deadline = Date.now() + timeout;
+                const poll = async () => {
+                  try {
+                    const value = await check();
+                    if (value) { resolve(value); return; }
+                  } catch (err) {}
+                  if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                  setTimeout(poll, 50);
+                };
+                poll();
+              });
+              const scope = await waitFor(() => {
+                if (!window.angular) return null;
+                const bodyScope = angular.element(document.body).scope();
+                return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
+              }, 'original main scope', 25000);
+              const source = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FILE_SOURCE || '')};
+              const folderSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FOLDER_SOURCE || '')};
+              const clipboardSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_CLIPBOARD_SOURCE || '')};
+              const workflowFolderId = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FOLDER_ID || '')};
+              const sendAndWait = (channel, params, label) => new Promise((resolve, reject) => {
+                const ipc = require('electron').ipcRenderer;
+                const onResult = (_event, result) => {
+                  if (!result || result.channel !== channel) return;
+                  ipc.off('import:operation-result', onResult);
+                  if (result.ok) resolve(result);
+                  else reject(new Error(result.error || label + ' failed'));
+                };
+                ipc.on('import:operation-result', onResult);
+                ipc.send(channel, params);
+              });
+
+              const assertUniqueItems = (label) => {
+                const ids = scope.raw.map((item) => item && item.id).filter(Boolean);
+                if (new Set(ids).size !== ids.length) throw new Error(label + ' inserted duplicate item IDs');
+              };
+              const currentItem = (id) => (scope.itemMappings && scope.itemMappings[id]) || scope.raw.find((item) => item.id === id);
+              const selectItems = async (ids) => {
+                scope.selected = [];
+                scope.selectedMappings = {};
+                ids.forEach((id, index) => {
+                  const item = currentItem(id);
+                  if (!item) throw new Error('selection item not found: ' + id);
+                  scope.select({
+                    button: 0,
+                    ctrlKey: index > 0,
+                    metaKey: false,
+                    shiftKey: false,
+                    stopPropagation() {},
+                    preventDefault() {},
+                  }, item);
+                });
+                scope.current = currentItem(ids[0]);
+                scope.updateSelection();
+                scope.$evalAsync();
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              };
+              const before = scope.raw.length;
+              onDropContainer({
+                preventDefault() {},
+                stopPropagation() {},
+                dataTransfer: {
+                  files: [{ path: source, name: 'Dropped Main.png', type: 'image/png', size: 1, lastModified: Date.now() }],
+                  getData: () => '',
+                },
+              });
+              const dropped = await waitFor(() => scope.raw.find((item) => item.name === 'Dropped Main'), 'file drop import');
+              const droppedId = dropped.id;
+              assertUniqueItems('file drop import');
+
+              onDropContainer({
+                preventDefault() {},
+                stopPropagation() {},
+                dataTransfer: {
+                  files: [{ path: folderSource, name: 'Dropped Folder' }],
+                  getData: () => '',
+                },
+              });
+              const folderItems = await waitFor(() => {
+                const matches = scope.raw.filter((item) => item.id !== droppedId && item.name.startsWith('Folder Item'));
+                return matches.length > 0 ? matches : null;
+              }, 'folder drop import');
+              assertUniqueItems('folder drop import');
+
+              const clipboardResult = await sendAndWait('paste-paths', { files: [clipboardSource], folder: null }, 'clipboard path import');
+              const clipboardItem = await waitFor(() => scope.raw.find((item) => clipboardResult.items.some((entry) => entry.id === item.id)), 'clipboard item refresh');
+              assertUniqueItems('clipboard path import');
+              const clipboardImageResult = await sendAndWait('read-win-files', { folder: null, params: {} }, 'clipboard image import');
+              const clipboardImageItem = await waitFor(() => scope.raw.find((item) => clipboardImageResult.items.some((entry) => entry.id === item.id)), 'clipboard image refresh');
+              assertUniqueItems('clipboard image import');
+
+              const inspector = await waitFor(() => {
+                const element = document.querySelector('inspector');
+                return element && angular.element(element).isolateScope();
+              }, 'original inspector');
+              const selectInspectorItems = async (ids) => {
+                await selectItems(ids);
+                inspector.selected = ids.map((id) => currentItem(id));
+                inspector.current = inspector.selected[0] || null;
+                inspector.updateSelection();
+                inspector.$evalAsync();
+                await waitFor(() => inspector.selected.length === ids.length && inspector.selected.every((item, index) => item && item.id === ids[index]), 'inspector selection');
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              };
+              await selectInspectorItems([droppedId]);
+              inspector.inspector.newName = 'Inspector Renamed';
+              inspector.inspector.newUrl = 'https://example.test/original-main';
+              const firstInspectorResult = new Promise((resolve, reject) => {
+                const ipc = require('electron').ipcRenderer;
+                const timer = setTimeout(() => {
+                  ipc.off('item:operation-result', onResult);
+                  reject(new Error('inspector operation result timeout for ' + droppedId));
+                }, 10000);
+                const onResult = (_event, value) => {
+                  const items = value && Array.isArray(value.items) ? value.items : [];
+                  if (!items.some((item) => item.id === droppedId)) return;
+                  clearTimeout(timer);
+                  ipc.off('item:operation-result', onResult);
+                  resolve(value);
+                };
+                ipc.on('item:operation-result', onResult);
+              });
+              inspector.imagesChange();
+              const firstInspectorOperation = await firstInspectorResult;
+              if (!firstInspectorOperation || !firstInspectorOperation.ok) throw new Error('inspector update failed: ' + JSON.stringify(firstInspectorOperation));
+              const firstUpdatedItem = Array.isArray(firstInspectorOperation.items) ? firstInspectorOperation.items.find((item) => item.id === droppedId) : null;
+              if (!firstUpdatedItem || firstUpdatedItem.name !== 'Inspector Renamed' || firstUpdatedItem.url !== 'https://example.test/original-main') {
+                throw new Error('inspector operation returned unexpected item: ' + JSON.stringify(firstInspectorOperation));
+              }
+              await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                const item = current.items.find((entry) => entry.id === droppedId);
+                return item && item.name === 'Inspector Renamed' && item.url === 'https://example.test/original-main';
+              }, 'inspector name and URL persistence');
+
+              inspector.inspector.newAnnotation = '原版检查器真实持久化';
+              inspector.annotationChange();
+              await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                const item = current.items.find((entry) => entry.id === droppedId);
+                return item && item.annotation === '原版检查器真实持久化';
+              }, 'inspector annotation persistence');
+
+              scope.TagManager.addTags(['main-ui', 'persisted']);
+              const workflowFolder = await waitFor(() => scope.folders.find((folder) => folder.id === workflowFolderId), 'workflow folder');
+              scope.addImagesToFolder([dropped], workflowFolder);
+              scope.changeStar(4, false, true);
+
+              const renamed = await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                const item = current.items.find((entry) => entry.id === droppedId);
+                return item && item.name === 'Inspector Renamed' && item.url === 'https://example.test/original-main' && item.annotation === '原版检查器真实持久化' && item.star === 4 && item.tags.includes('main-ui') && item.folders.includes(workflowFolder.id) ? item : null;
+              }, 'inspector tags folder and star persistence');
+
+              await selectInspectorItems([droppedId, clipboardItem.id]);
+              inspector.inspector.newAnnotation = '多选备注持久化';
+              inspector.annotationChange();
+              scope.TagManager.addTag('batch-ui');
+              scope.changeStar(3, false, true);
+              await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                const targets = current.items.filter((entry) => entry.id === droppedId || entry.id === clipboardItem.id);
+                return targets.length === 2 && targets.every((item) => item.annotation === '多选备注持久化' && item.star === 3 && item.tags.includes('batch-ui'));
+              }, 'multi inspector persistence');
+              await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                const historyTags = current.tags && Array.isArray(current.tags.historyTags) ? current.tags.historyTags : [];
+                return historyTags.includes('main-ui') && historyTags.includes('batch-ui');
+              }, 'tag history persistence', 10000);
+
+              await selectItems([droppedId]);
+              scope.enterDetailMode(null, currentItem(droppedId));
+              const detailMode = await waitFor(() => scope.isDetailMode === true && scope.current && scope.current.id === droppedId, 'detail mode');
+              const previewResultPromise = new Promise((resolve, reject) => {
+                const ipc = require('electron').ipcRenderer;
+                const timer = setTimeout(() => reject(new Error('preview open timeout')), 10000);
+                ipc.once('preview:operation-result', (_event, value) => { clearTimeout(timer); resolve(value); });
+              });
+              require('electron').ipcRenderer.send('open-preview-window', { images: [currentItem(droppedId)], pluginModule: window.pluginModule });
+              const previewResult = await previewResultPromise;
+
+              scope.leaveDetailMode();
+              await selectItems([droppedId]);
+              scope.removeSelected();
+              await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                return current.items.find((item) => item.id === droppedId && item.isDeleted);
+              }, 'trash persistence');
+
+              scope.viewMode = 'trash';
+              const trashedItem = currentItem(droppedId);
+              trashedItem.isDeleted = false;
+              delete trashedItem.deletedTime;
+              require('electron').ipcRenderer.send('images-change', [trashedItem]);
+              await waitFor(async () => {
+                const current = await window.eagleDesktop.library.current();
+                return current.items.find((item) => item.id === droppedId && !item.isDeleted);
+              }, 'restore persistence');
+
+              return {
+                originalPage: location.pathname.endsWith('/src/app/index.html'),
+                originalScope: typeof scope.enterDetailMode === 'function' && typeof scope.removeSelected === 'function',
+                originalInspector: typeof inspector.imagesChange === 'function' && typeof inspector.annotationChange === 'function',
+                before,
+                after: scope.raw.length,
+                fileDrop: Boolean(dropped),
+                folderDrop: folderItems.length,
+                clipboardPath: Boolean(clipboardItem),
+                clipboardImage: Boolean(clipboardImageItem),
+                renamedId: renamed.id,
+                detailMode,
+                previewOpened: Boolean(previewResult && previewResult.ok),
+              };
+            })()`
+          );
+          const current = await apiRequest('/api/library/current?includeItems=true');
+          const renamed = current.items.find((item) => item.id === result.renamedId);
+          const infoDir = renamed ? path.join(current.imagesDir, `${renamed.id}.info`) : '';
+          const diskOk = Boolean(renamed && fs.existsSync(path.join(infoDir, `${renamed.name}.${renamed.ext}`)) && fs.existsSync(path.join(infoDir, `${renamed.name}_thumbnail.png`)));
+          const ok = result.originalPage && result.originalScope && result.originalInspector && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
+          console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, renamed })}`);
+        } catch (err) {
+          console.error(`MAIN_WORKFLOW_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
   if (librarySmokeMode) {
     const timeout = setTimeout(() => {
       console.error('LIBRARY_SMOKE_TIMEOUT');
@@ -825,6 +1205,11 @@ app.whenReady().then(async () => {
         app.quit();
       },
     });
+    return;
+  }
+  if (regressionHostMode) {
+    createWindow({ show: false });
+    console.log('REGRESSION_HOST_READY');
     return;
   }
   if (pluginSmokeMode) {

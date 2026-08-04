@@ -1,11 +1,11 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const token = `${Date.now()}-${process.pid}`;
-const tempRoot = path.join(projectRoot, 'test-run', `import-export-${token}`);
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-import-export-'));
 const tempLib = path.join(tempRoot, 'source.library');
 const importedLib = path.join(tempRoot, 'restored.library');
 const sourceDir = path.join(tempRoot, 'folder-source');

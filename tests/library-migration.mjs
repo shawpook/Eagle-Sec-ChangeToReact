@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,7 +7,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 const mockLibrary = path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library');
 const demoLibrary = path.join(projectRoot, '..', 'library-example/Demo.library');
-const destDir = path.join(projectRoot, 'test-run', `migrated-${Date.now()}-${process.pid}.library`);
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-library-migration-'));
+const destDir = path.join(tempRoot, 'migrated.library');
 const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
 
 async function json(method, url, body) {
@@ -41,7 +43,7 @@ if (info.data.library.items !== 17) throw new Error('switched migrated library f
 await json('POST', `${apiBase}/api/library/switch`, { libraryPath: '/mock-library/Eagle Reverse Demo.library' });
 
 try {
-  fs.rmSync(destDir, { recursive: true, force: true });
+  fs.rmSync(tempRoot, { recursive: true, force: true });
 } catch (err) {
   // Leave temp data if Windows keeps a file locked.
 }

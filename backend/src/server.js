@@ -32,6 +32,7 @@ import { ColorAnalyzerService } from './color-analyzer.js';
 import { CustomThumbnailService } from './custom-thumbnail.js';
 import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
 import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
+import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -42,17 +43,18 @@ const port = Number(process.env.EAGLE_API_PORT || 41695);
 const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41692);
 const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41693);
 const apiToken = process.env.EAGLE_API_TOKEN || 'preview-token';
-const stateFile = path.resolve(process.env.EAGLE_LIBRARY_STATE_FILE || path.join(projectRoot, 'test-run/user-data/library-state.json'));
-const uploadDir = path.join(projectRoot, 'test-run/uploads');
-const userPluginsDir = path.join(projectRoot, 'test-run/user-data/Plugins');
+const userDataDir = path.resolve(process.env.EAGLE_USER_DATA_DIR || path.join(projectRoot, 'test-run/user-data'));
+const stateFile = path.resolve(process.env.EAGLE_LIBRARY_STATE_FILE || path.join(userDataDir, 'library-state.json'));
+const uploadDir = path.join(userDataDir, 'uploads');
+const userPluginsDir = path.join(userDataDir, 'Plugins');
 fs.mkdirSync(uploadDir, { recursive: true });
 fs.mkdirSync(userPluginsDir, { recursive: true });
 const upload = multer({ dest: uploadDir });
 
 const app = express();
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '25mb' }));
+app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 app.use('/mock-library', express.static(mockLibraryDir));
 
 app.get('/plugin-shim.js', (req, res) => {
@@ -116,6 +118,7 @@ const customThumbnailService = new CustomThumbnailService({
   }),
 });
 const controlledDownloader = getControlledDownloadService();
+const itemWorkflow = new ItemWorkflowService();
 let currentLibrary = libraryService.currentLibrary();
 thumbnailTasks.recover(currentLibrary);
 let folders = currentLibrary.folders;
@@ -431,37 +434,6 @@ function batchRenameItems(ids, options = {}) {
   return changed;
 }
 
-function batchUpdateItems(ids, patch = {}) {
-  const allowed = ['name', 'annotation', 'url', 'website', 'star', 'tags', 'folders', 'comments'];
-  const selected = readItems().filter((item) => ids.includes(item.id));
-  const changed = [];
-  for (const item of selected) {
-    const next = { ...patch };
-    if ('name' in next) {
-      const oldName = item.name;
-      const newName = uniqueItemName(currentLibrary, item, next.name);
-      if (newName !== oldName) renameItemFiles(currentLibrary, item, oldName, newName);
-      item.name = newName;
-    }
-    for (const key of allowed) {
-      if (!(key in next) || key === 'name') continue;
-      if (key === 'tags' || key === 'folders') {
-        item[key] = [...new Set(Array.isArray(next[key]) ? next[key].map((value) => String(value).trim()).filter(Boolean) : [])];
-      } else if (key === 'comments') {
-        item[key] = Array.isArray(next[key]) ? next[key] : [];
-      } else if (key === 'star') {
-        item[key] = Math.max(0, Math.min(5, Number(next[key]) || 0));
-      } else {
-        item[key] = next[key];
-      }
-    }
-    item.lastModified = Date.now();
-    changed.push(item);
-  }
-  if (changed.length > 0) saveItems(currentLibrary);
-  return changed.map((item) => ({ id: item.id, name: item.name, tags: item.tags, folders: item.folders }));
-}
-
 function addItemsToFolder(ids, folderId, mode = 'add') {
   const folder = findFolder(folderId);
   if (!folder) throw new Error('Folder not found');
@@ -673,7 +645,7 @@ app.post('/api/plugins/uninstall', (req, res) => {
   }
 });
 
-const pluginStateFile = path.join(projectRoot, 'test-run/user-data/plugin-state.json');
+const pluginStateFile = path.join(userDataDir, 'plugin-state.json');
 function readPluginState() {
   try {
     return JSON.parse(fs.readFileSync(pluginStateFile, 'utf8'));
@@ -809,6 +781,12 @@ app.post('/api/library/structure', (req, res) => {
     if (Array.isArray(req.body.smartFolders)) currentLibrary.smartFolders = req.body.smartFolders;
     if (Array.isArray(req.body.quickAccess)) currentLibrary.quickAccess = req.body.quickAccess;
     if (Array.isArray(req.body.tagsGroups)) currentLibrary.tagsGroups = req.body.tagsGroups;
+    if (req.body.tags && typeof req.body.tags === 'object' && !Array.isArray(req.body.tags)) {
+      currentLibrary.tags = {
+        historyTags: [...new Set((Array.isArray(req.body.tags.historyTags) ? req.body.tags.historyTags : []).filter((tag) => typeof tag === 'string' && tag.trim()).map((tag) => tag.trim()))].slice(0, 120),
+        starredTags: [...new Set((Array.isArray(req.body.tags.starredTags) ? req.body.tags.starredTags : []).filter((tag) => typeof tag === 'string' && tag.trim()).map((tag) => tag.trim()))],
+      };
+    }
     const collectFolderIds = (tree, ids = []) => {
       for (const folder of tree || []) {
         ids.push(folder.id);
@@ -1364,6 +1342,7 @@ app.post('/api/item/importBase64', (req, res) => {
       name: req.body.name,
       ext: req.body.ext,
       tags: req.body.tags ? String(req.body.tags).split(',').map((tag) => tag.trim()).filter(Boolean) : [],
+      folderIDs: Array.isArray(req.body.folderIDs) ? req.body.folderIDs : [],
       annotation: req.body.annotation || '',
     });
     res.json(ok(item));
@@ -1381,26 +1360,57 @@ app.post('/api/item/importBookmark', (req, res) => {
   }
 });
 
-app.post('/api/item/update', (req, res) => {
-  const id = req.body.id || req.body.itemID;
-  const item = readItems().find((entry) => entry.id === id);
-  if (!item) {
-    res.status(404).json(fail('Item not found'));
-    return;
-  }
-  Object.assign(item, req.body, { id, lastModified: Date.now() });
-  saveItems(currentLibrary);
-  res.json(ok(item));
-});
+function sendItemWorkflowError(res, err) {
+  const statusCode = err instanceof ItemWorkflowError ? err.statusCode : 500;
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'ITEM_WORKFLOW_FAILED' });
+}
 
-app.post('/api/item/batchUpdate', (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-  if (ids.length === 0) {
-    res.status(400).json(fail('ids are required'));
-    return;
+function updateItemResponse(req, res) {
+  try {
+    res.json(ok(itemWorkflow.updateMany(currentLibrary, [req.body || {}])[0]));
+  } catch (err) {
+    sendItemWorkflowError(res, err);
   }
-  res.json(ok(batchUpdateItems(ids, req.body.patch || {})));
-});
+}
+
+function updateItemsResponse(req, res) {
+  try {
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    res.json(ok(itemWorkflow.updateMany(currentLibrary, items)));
+  } catch (err) {
+    sendItemWorkflowError(res, err);
+  }
+}
+
+function batchUpdateItemsResponse(req, res) {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) throw new ItemWorkflowError('ids are required', 'ITEM_IDS_REQUIRED');
+    const updates = ids.map((id) => ({ id, ...(req.body.patch || {}) }));
+    res.json(ok(itemWorkflow.updateMany(currentLibrary, updates)));
+  } catch (err) {
+    sendItemWorkflowError(res, err);
+  }
+}
+
+function changeTrashStateResponse(req, res, isDeleted) {
+  try {
+    const ids = Array.isArray(req.body.ids)
+      ? req.body.ids
+      : [req.body.id || req.body.itemID].filter(Boolean);
+    if (ids.length === 0) throw new ItemWorkflowError('ids are required', 'ITEM_IDS_REQUIRED');
+    const items = isDeleted
+      ? itemWorkflow.moveToTrash(currentLibrary, ids)
+      : itemWorkflow.restore(currentLibrary, ids);
+    res.json(ok(items));
+  } catch (err) {
+    sendItemWorkflowError(res, err);
+  }
+}
+
+app.post('/api/item/update', updateItemResponse);
+app.post('/api/item/updateMany', updateItemsResponse);
+app.post('/api/item/batchUpdate', batchUpdateItemsResponse);
 
 app.post('/api/item/batchRename', (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
@@ -1424,13 +1434,8 @@ app.post('/api/item/addToFolder', (req, res) => {
   }
 });
 
-app.post('/api/item/moveToTrash', (req, res) => {
-  const id = req.body.id || req.body.itemID;
-  const item = readItems().find((entry) => entry.id === id);
-  if (item) item.isDeleted = true;
-  saveItems(currentLibrary);
-  res.json(ok(true));
-});
+app.post('/api/item/moveToTrash', (req, res) => changeTrashStateResponse(req, res, true));
+app.post('/api/item/restore', (req, res) => changeTrashStateResponse(req, res, false));
 
 async function setCustomThumbnailResponse(req, res) {
   try {
@@ -1876,26 +1881,11 @@ app.post('/api/v2/item/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-app.post('/api/v2/item/update', (req, res) => {
-  const id = req.body.id || req.body.itemID;
-  const item = readItems().find((entry) => entry.id === id);
-  if (!item) {
-    res.status(404).json(fail('Item not found'));
-    return;
-  }
-  Object.assign(item, req.body, { id, lastModified: Date.now() });
-  saveItems(currentLibrary);
-  res.json(ok(item));
-});
-
-app.post('/api/v2/item/batchUpdate', (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-  if (ids.length === 0) {
-    res.status(400).json(fail('ids are required'));
-    return;
-  }
-  res.json(ok(batchUpdateItems(ids, req.body.patch || {})));
-});
+app.post('/api/v2/item/update', updateItemResponse);
+app.post('/api/v2/item/updateMany', updateItemsResponse);
+app.post('/api/v2/item/batchUpdate', batchUpdateItemsResponse);
+app.post('/api/v2/item/moveToTrash', (req, res) => changeTrashStateResponse(req, res, true));
+app.post('/api/v2/item/restore', (req, res) => changeTrashStateResponse(req, res, false));
 
 app.post('/api/v2/item/batchRename', (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];

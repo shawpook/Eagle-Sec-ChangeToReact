@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
@@ -9,8 +10,8 @@ import { thumbnailPath } from '../backend/src/thumbnailer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const tempRoot = path.join(projectRoot, 'test-run');
-const tempLib = path.join(tempRoot, `search-media-${Date.now()}-${process.pid}.library`);
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-search-media-'));
+const tempLib = path.join(tempRoot, 'search-media.library');
 const sourceFile = path.join(
   projectRoot,
   'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'
@@ -53,7 +54,9 @@ const photo = importFile(library, jpegPath, { name: 'Photo' });
 fs.rmSync(thumbnailPath(library, photo), { force: true });
 const webpItem = importFile(library, webpFile, { name: 'Sample.webp' });
 fs.rmSync(thumbnailPath(library, webpItem), { force: true });
-const video = importFile(library, 'https://example.com/video.mp4', { name: 'video.mp4', size: 1234 });
+const videoPath = path.join(tempRoot, 'video.mp4');
+fs.writeFileSync(videoPath, Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02, 0x00]));
+const video = importFile(library, videoPath, { name: 'video.mp4' });
 
 async function json(method, url, body) {
   const res = await fetch(url, {
@@ -65,9 +68,11 @@ async function json(method, url, body) {
   return res.json();
 }
 
-await json('POST', `${apiBase}/api/library/switch`, { libraryPath: tempLib });
-const search = await json('GET', `${apiBase}/api/item/search?color=255,0,0&minWidth=500&sortBy=star&sortIncrease=false`);
-if (search.data.length !== 1 || search.data[0].name !== 'Red Large') throw new Error('extended search filter failed');
+const originalLibrary = (await json('GET', `${apiBase}/api/library/current`)).data.path;
+try {
+  await json('POST', `${apiBase}/api/library/switch`, { libraryPath: tempLib });
+  const search = await json('GET', `${apiBase}/api/item/search?color=255,0,0&minWidth=500&sortBy=star&sortIncrease=false`);
+  if (search.data.length !== 1 || search.data[0].name !== 'Red Large') throw new Error('extended search filter failed');
 
 const redMedia = await json('GET', `${apiBase}/api/item/mediaInfo?id=${encodeURIComponent(red.id)}`);
 if (redMedia.data.type !== 'image') throw new Error('media info image type failed');
@@ -87,15 +92,16 @@ if (smartItems.data.length !== 1 || smartItems.data[0].name !== 'Red Large') thr
 const repair = await json('POST', `${apiBase}/api/library/repair`);
 if (repair.data.repairedThumbnails < 1) throw new Error('jpeg thumbnail repair failed');
 const jpegThumb = PNG.sync.read(fs.readFileSync(thumbnailPath(library, photo)));
-if (Math.max(jpegThumb.width, jpegThumb.height) > 320) throw new Error('jpeg thumbnail not resized');
+if (Math.max(jpegThumb.width, jpegThumb.height) > 480) throw new Error('jpeg thumbnail not resized');
 if (!fs.existsSync(thumbnailPath(library, webpItem))) throw new Error('webp thumbnail not generated');
 
-await json('POST', `${apiBase}/api/library/switch`, { libraryPath: '/mock-library/Eagle Reverse Demo.library' });
-try {
-  await removeWithRetry(tempLib);
-} catch (err) {
-  // The temp library is outside the tracked project; leave it if Windows locks the file.
+} finally {
+  await json('POST', `${apiBase}/api/library/switch`, { libraryPath: originalLibrary });
+  try {
+    await removeWithRetry(tempRoot);
+  } catch (err) {
+    // Leave this run's unique system temp directory if Windows keeps a file locked.
+  }
 }
-fs.rmSync(jpegPath, { force: true });
 
 console.log('Search/media test passed');

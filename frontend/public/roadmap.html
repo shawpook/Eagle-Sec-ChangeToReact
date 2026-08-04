@@ -462,7 +462,21 @@
   </main>
 
   <script>
-    const API = 'http://127.0.0.1:41695';
+    function resolveApiBase() {
+      const fallback = 'http://127.0.0.1:41695';
+      const configured = new URLSearchParams(window.location.search).get('api');
+      if (!configured) return fallback;
+      try {
+        const url = new URL(configured);
+        const isLoopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname);
+        if (!isLoopback || !['http:', 'https:'].includes(url.protocol)) return fallback;
+        return url.origin;
+      } catch {
+        return fallback;
+      }
+    }
+
+    const API = resolveApiBase();
     const $ = (id) => document.getElementById(id);
     let items = [];
     let folders = [];

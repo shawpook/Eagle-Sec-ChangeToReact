@@ -21,14 +21,17 @@ await new Promise((resolve, reject) => {
 const smokeDownloadUrl = `http://127.0.0.1:${smokeDownloadServer.address().port}/image.png`;
 
 async function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = http.createServer();
-    server.on('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      server.close(() => resolve(address.port));
+  while (true) {
+    const port = await new Promise((resolve, reject) => {
+      const server = http.createServer();
+      server.on('error', reject);
+      server.listen(0, '127.0.0.1', () => {
+        const address = server.address();
+        server.close(() => resolve(address.port));
+      });
     });
-  });
+    if (port >= 12_000) return port;
+  }
 }
 
 async function waitFor(check, label, timeout = 15000) {
@@ -89,9 +92,11 @@ const backend = spawnLogged(process.execPath, ['backend/src/server.js'], {
   EAGLE_THUMBNAIL_PORT: String(thumbnailPort),
   EAGLE_EXTENSION_PORT: String(extensionPort),
   EAGLE_LIBRARY_STATE_FILE: stateFile,
+  EAGLE_USER_DATA_DIR: path.join(tempRoot, 'user-data'),
   EAGLE_DOWNLOAD_ALLOW_HOSTS: '127.0.0.1',
 });
 const vite = spawnLogged(process.execPath, ['node_modules/vite/bin/vite.js', '--config', 'frontend/vite.preview.config.mjs', '--port', String(vitePort)], baseEnv);
+let electron;
 
 try {
   await waitFor(async () => backend.output().includes(`localhost:${apiPort}`), 'backend startup');
@@ -118,7 +123,7 @@ try {
   const createBody = await createResponse.json();
   if (!createResponse.ok || createBody.status !== 'success') throw new Error(`Electron smoke library create failed: ${JSON.stringify(createBody)}`);
 
-  const electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-library'], {
+  electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-library'], {
     ...baseEnv,
     EAGLE_API_URL: `http://localhost:${apiPort}`,
     EAGLE_THUMBNAIL_URL: `http://localhost:${thumbnailPort}`,
@@ -127,6 +132,7 @@ try {
     EAGLE_SMOKE_VIDEO_SOURCE: smokeVideo,
     EAGLE_SMOKE_EXPORT_DIR: smokeExport,
     EAGLE_SMOKE_DOWNLOAD_URL: smokeDownloadUrl,
+    EAGLE_ELECTRON_USER_DATA_DIR: path.join(tempRoot, 'electron-user-data'),
   });
   const result = await waitFor(async () => {
     const output = electron.output();
@@ -139,7 +145,9 @@ try {
   console.log(result.match(/LIBRARY_SMOKE_OK[^\r\n]*/)[0]);
   await stop(electron);
 } finally {
+  await stop(electron);
   await stop(vite);
   await stop(backend);
   await new Promise((resolve) => smokeDownloadServer.close(resolve));
+  fs.rmSync(tempRoot, { recursive: true, force: true });
 }

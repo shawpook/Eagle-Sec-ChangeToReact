@@ -23,6 +23,16 @@ const api = {
   },
   getCollectWindowData: () => ipcRenderer.invoke('get-collect-window-data'),
   openViewer: (payload) => ipcRenderer.invoke('viewer:open', payload),
+  preview: {
+    open: (payload) => ipcRenderer.invoke('preview:open-original', payload),
+    onInit: (callback) => ipcRenderer.on('preview:init', (_event, payload) => callback(payload)),
+  },
+  item: {
+    updateMany: (items) => ipcRenderer.invoke('item:update-many', items),
+    moveToTrash: (ids) => ipcRenderer.invoke('item:move-to-trash', ids),
+    restore: (ids) => ipcRenderer.invoke('item:restore', ids),
+    onOperationResult: (callback) => ipcRenderer.on('item:operation-result', (_event, result) => callback(result)),
+  },
   openPlugin: (payload) => ipcRenderer.invoke('plugin:open', payload),
   openFile: (options) => ipcRenderer.invoke('dialog:openFile', options),
   listDirectory: (target) => ipcRenderer.invoke('fs:list', target),
@@ -39,6 +49,11 @@ const api = {
     cancel: (taskId) => ipcRenderer.invoke('thumbnail-task:cancel', taskId),
   },
   clipboardImage: () => ipcRenderer.invoke('clipboard:readImage'),
+  clipboard: {
+    read: () => ipcRenderer.invoke('clipboard:read'),
+    readSync: () => ipcRenderer.sendSync('clipboard:read-sync'),
+    import: (params) => ipcRenderer.invoke('clipboard:import', params),
+  },
   importPaths: (paths) => ipcRenderer.invoke('item:importPaths', paths),
   import: {
     files: (params) => ipcRenderer.invoke('item:import-files', params),

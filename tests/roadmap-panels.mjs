@@ -1,15 +1,17 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
-const origin = process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5176';
+const origin = process.env.EAGLE_PREVIEW_ORIGIN || process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5176';
 const debugPort = process.env.EAGLE_DEBUG_PORT || 9226;
 const mockLibrary = path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library');
-const tempLibrary = path.join(projectRoot, 'test-run', 'roadmap-test.library');
-const exportFile = path.join(projectRoot, 'test-run', 'roadmap-export.eaglepack');
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-roadmap-panels-'));
+const tempLibrary = path.join(tempRoot, 'roadmap-test.library');
+const exportFile = path.join(tempRoot, 'roadmap-export.eaglepack');
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -68,46 +70,72 @@ async function verifyRoadmapPage() {
   const browser = await connect(version.webSocketDebuggerUrl);
   const targets = await browser.send('Target.getTargets');
   const pageTarget = targets.targetInfos.find((target) => target.type === 'page');
-  if (pageTarget) await browser.send('Target.closeTarget', { targetId: pageTarget.targetId });
-  const created = await browser.send('Target.createTarget', { url: `${origin}/roadmap.html` });
+  assert(pageTarget, 'roadmap debug host has no page target');
   browser.ws.close();
 
-  const page = await connect(`ws://127.0.0.1:${debugPort}/devtools/page/${created.targetId}`);
+  const page = await connect(`ws://127.0.0.1:${debugPort}/devtools/page/${pageTarget.targetId}`);
   await page.send('Runtime.enable');
   await page.send('Page.enable');
-  await new Promise((resolve) => setTimeout(resolve, 3500));
+  const pageUrl = `${origin}/roadmap.html?api=${encodeURIComponent(apiBase)}`;
+  await page.send('Page.navigate', { url: pageUrl });
 
   const evalValue = async (expression) => {
     const result = await page.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    if (result.exceptionDetails) throw new Error(`Roadmap page evaluation failed: ${JSON.stringify(result.exceptionDetails)}`);
     return result.result.value;
   };
+  const waitForPage = async (check, label, timeout = 10000) => {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      const value = await check();
+      if (value) return value;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    throw new Error(`${label} timeout`);
+  };
 
-  const initial = await evalValue(`JSON.stringify({
-    title: document.title,
-    active: document.querySelector('.panel.active')?.id,
-    items: document.querySelectorAll('#batchItems option').length,
-    plugins: document.querySelectorAll('.plugin-card').length
-  })`);
+  const initial = await waitForPage(async () => {
+    const value = await evalValue(`JSON.stringify({
+      title: document.title,
+      active: document.querySelector('.panel.active')?.id,
+      items: document.querySelectorAll('#batchItems option').length,
+      plugins: document.querySelectorAll('.plugin-card').length,
+      api: typeof API === 'string' ? API : null
+    })`);
+    const state = JSON.parse(value);
+    return state.title === 'Eagle Roadmap Panels' && state.items > 0 && state.plugins > 0 ? value : null;
+  }, 'roadmap initial data');
   const parsed = JSON.parse(initial);
-  assert(parsed.title === 'Eagle Roadmap Panels', `roadmap title mismatch: ${initial}`);
   assert(parsed.active === 'panel-A', `roadmap active panel mismatch: ${initial}`);
-  assert(parsed.items > 0, `roadmap item options not loaded: ${initial}`);
-  assert(parsed.plugins > 0, `roadmap plugin cards not loaded: ${initial}`);
+  assert(parsed.api === new URL(apiBase).origin, `roadmap API mismatch: ${initial}`);
 
   await evalValue(`document.querySelector('[data-tab="B"]').click(); true`);
   const tabB = await evalValue(`document.querySelector('#panel-B').classList.contains('active')`);
   assert(tabB, 'roadmap tab B did not activate');
 
-  await evalValue(`document.querySelector('[data-tab="D"]').click(); document.querySelector('#quickKeyword').value = 'Roadmap'; document.querySelector('#quickSearchButton').click(); true`);
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  const quickCount = await evalValue(`document.querySelectorAll('#quickResults .result-item').length`);
-  assert(quickCount > 0, `roadmap quick search returned no results (${quickCount})`);
+  await evalValue(`
+    document.querySelector('[data-tab="D"]').click();
+    const input = document.querySelector('#quickKeyword');
+    input.value = 'Roadmap';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.querySelector('#quickSearchButton').click();
+    true
+  `);
+  const quickState = await waitForPage(async () => {
+    const value = await evalValue(`JSON.stringify({
+      count: document.querySelectorAll('#quickResults .result-item').length,
+      text: document.querySelector('#quickResults').textContent.trim()
+    })`);
+    const state = JSON.parse(value);
+    return state.count > 0 || state.text ? value : null;
+  }, 'roadmap quick search');
+  const quickResult = JSON.parse(quickState);
+  assert(quickResult.count > 0, `roadmap quick search returned no results: ${quickState}`);
 
   page.ws.close();
 }
 
 try {
-  fs.rmSync(tempLibrary, { recursive: true, force: true });
   fs.cpSync(mockLibrary, tempLibrary, { recursive: true });
   await api('/api/library/switch', {
     method: 'POST',
@@ -229,6 +257,12 @@ try {
   const center = await api('/api/plugins/center');
   assert(Array.isArray(center.plugins) && Array.isArray(center.installed), 'plugin center response invalid');
 
+  currentItems = await api('/api/item/list');
+  for (const item of currentItems) {
+    const originalPath = path.join(tempLibrary, 'images', `${item.id}.info`, `${item.name}.${item.ext}`);
+    assert(fs.existsSync(originalPath), `roadmap item original missing before eaglepack export: ${originalPath}`);
+  }
+
   const job = await api('/api/export/eaglepack/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -249,6 +283,5 @@ try {
   } catch (err) {
     console.warn('Failed to switch library back:', err.message);
   }
-  fs.rmSync(tempLibrary, { recursive: true, force: true });
-  fs.rmSync(exportFile, { force: true });
+  fs.rmSync(tempRoot, { recursive: true, force: true });
 }

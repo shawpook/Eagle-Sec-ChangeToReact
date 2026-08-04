@@ -547,6 +547,20 @@ npm run electron
 - 使用 path 路由而不是查询参数，兼容原版追加 `?v=modificationTime` 的缓存刷新逻辑。
 - `tests/electron-library-bridge.mjs` 已扩展为真实创建 `<img>`，分别加载导入后的缩略图和原文件，并断言 `naturalWidth/naturalHeight > 0`；两者均通过。
 
+### 原版主界面真实工作流闭环更新（2026-08-04）
+
+- 不修改反编译原版 `src/app/index.html`、`app.bundle.js`、`js/directives/inspector.*` 和 `preview-window.html`；通过 `frontend/public/shims.js`、`electron/preload.cjs`、`electron/main.cjs` 接回受控后端。
+- 原版主界面已真实加载当前 `.library`，并从原版 `onDropContainer()` 完成文件拖放、文件夹递归拖放；Windows 剪贴板图片和剪贴板文件路径分别经原版 `read-win-files`、`paste-paths` 导入，网格即时收到 `file-uploaded` 且不产生重复 ID。
+- 新增 `backend/src/item-workflow-service.js`，以字段白名单处理原版 `images-change` 完整对象；名称修改会事务式同步重命名原文件和缩略图，冲突、非法 Windows 文件名、源文件缺失和持久化失败均返回明确错误并回滚。
+- 原版 Inspector 单选已验证名称、URL、备注、标签、文件夹和评分；多选已验证批量备注、标签与评分。renderer 端按原版事件顺序冻结快照并串行提交，避免并发完整对象更新相互覆盖。
+- 原版 `TagManager.save()` 已通过受控结构接口持久化 `historyTags/starredTags` 到 `tags.json`，保持 5 秒防抖语义；后端限制历史标签最多 120 个并规范化字符串。
+- 原版 `removeSelected()` 已验证移入回收站，`images-change` 已验证恢复；原版 `enterDetailMode()` 已验证详情模式，`open-preview-window` 已打开真实 `preview-window.html`。预览 IPC 只传可结构化克隆的条目数据，插件模块由主进程受控构造。
+- 新增 `tests/item-workflow-closed-loop.mjs` 与 `tests/main-ui-workflow-closed-loop.mjs`，均使用 `os.tmpdir()` 唯一资源库和随机端口。后者真实启动后端、Vite、Electron，覆盖 5 条导入、原版选择与 Inspector、磁盘重命名、回收站/恢复、详情/预览、`metadata.json`、`cache.json`、`search-index.json`、`tags.json` 及后端重启恢复。
+- 验收结果：`ITEM_WORKFLOW_CLOSED_LOOP_OK`、`MAIN_WORKFLOW_SMOKE_OK`、`MAIN_UI_RESTART_OK`；Electron 资源库桥、导入搜索和统一缩略图任务相邻回归通过。
+- 新增 `tests/full-regression-isolated.mjs` 与 `npm run test:isolated`：每次运行均使用随机安全端口、唯一 library state、唯一后端/Electron user-data，并独立启动后端、Vite 和隐藏 Electron 调试宿主，不依赖或关闭共享 5176/9226 开发进程。
+- Roadmap 页面 API 基址支持受限的本机查询参数注入，默认仍兼容 41695；页面测试改为连接隔离 API、复用 Electron 页面目标并按真实 DOM 状态等待。旧测试中的固定 `test-run`、过期 320px 缩略图合同、Fetch 禁用端口及异常后未恢复资源库等问题已同步修复。
+- 完全隔离的非 Electron 全量套件最终通过：API 13/13、资源库/导入导出/搜索/缩略图/视频/插件/安全/Roadmap 等全部成功，输出 `FULL_REGRESSION_ISOLATED_OK`。
+
 ### 仍未实现 / 未验收
 
 - 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。

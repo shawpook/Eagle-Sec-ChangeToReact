@@ -96,7 +96,7 @@ export default defineConfig({
     },
   ],
   server: {
-    port: 5174,
+    port: 5176,
     strictPort: true,
     open: '/src/app/index.html',
     fs: {

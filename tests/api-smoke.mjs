@@ -3,9 +3,9 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41595';
-const thumbnailBase = process.env.EAGLE_THUMBNAIL_URL || 'http://127.0.0.1:41592';
-const extensionBase = process.env.EAGLE_EXTENSION_URL || 'http://127.0.0.1:41593';
+const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
+const thumbnailBase = process.env.EAGLE_THUMBNAIL_URL || 'http://127.0.0.1:41692';
+const extensionBase = process.env.EAGLE_EXTENSION_URL || 'http://127.0.0.1:41693';
 
 const results = [];
 
@@ -80,7 +80,7 @@ await check('GET /api/v2/aiSearch/isInstalled', async () => {
   await jsonOk(`${apiBase}/api/v2/aiSearch/isInstalled`);
 });
 
-await check('GET 41592 thumbnail', async () => {
+await check('GET 41692 thumbnail', async () => {
   const url = `${thumbnailBase}/?filePath=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library_thumbnail.png')}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`thumbnail HTTP ${res.status}`);
@@ -88,14 +88,14 @@ await check('GET 41592 thumbnail', async () => {
   if (!type.startsWith('image/')) throw new Error(`thumbnail content-type ${type}`);
 });
 
-await check('GET 41593 extension info', async () => {
+await check('GET 41693 extension info', async () => {
   const res = await fetch(`${extensionBase}/`);
   if (!res.ok) throw new Error(`extension HTTP ${res.status}`);
   const body = await res.json();
   if (!body.isVersion4) throw new Error('extension info missing isVersion4');
 });
 
-await check('POST 41593 collect save', async () => {
+await check('POST 41693 collect save', async () => {
   const res = await fetch(`${extensionBase}/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

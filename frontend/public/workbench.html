@@ -220,6 +220,7 @@
     </div>
   </header>
   <div id="menuPopover">
+    <button id="menuRoadmap">路线图</button>
     <button id="menuSettings">设置</button>
     <button id="menuExtension">浏览器扩展</button>
     <button id="menuRefresh">刷新</button>
@@ -393,7 +394,7 @@
   </div>
 
   <script>
-    const API = 'http://127.0.0.1:41595';
+    const API = 'http://127.0.0.1:41695';
     let currentItems = [];
     let smartFolderId = '';
     let selectedItem = null;
@@ -635,6 +636,11 @@
     $('menuSettings').addEventListener('click', () => {
       closeMenu();
       window.open('/src/app/preferences.html', '_blank');
+    });
+
+    $('menuRoadmap').addEventListener('click', () => {
+      closeMenu();
+      window.open('/roadmap.html', '_blank');
     });
 
     $('menuExtension').addEventListener('click', () => {

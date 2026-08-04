@@ -16,7 +16,7 @@ const sourceFile = path.join(
   'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'
 );
 const webpFile = path.join(projectRoot, 'frontend/public/mock-assets/sample.webp');
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41595';
+const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
 
 async function removeWithRetry(target) {
   for (let attempt = 0; attempt < 10; attempt += 1) {

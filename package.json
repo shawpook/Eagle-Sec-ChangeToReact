@@ -7,11 +7,12 @@
   "scripts": {
     "dev": "vite --config frontend/vite.preview.config.mjs",
     "dev:all": "concurrently -k -n vite,backend \"npm run dev\" \"npm run backend\"",
+    "dev:electron": "node scripts/clear-ports.mjs && concurrently -k -n vite,backend,electron \"npm run dev\" \"npm run backend\" \"wait-on http://localhost:5176 && electron electron/main.cjs\"",
     "build": "vite build --config frontend/vite.preview.config.mjs",
     "preview": "vite preview --config frontend/vite.preview.config.mjs",
     "backend": "node backend/src/server.js",
     "health": "node scripts/health-check.mjs",
-    "test": "node tests/api-smoke.mjs && node tests/validate-library.mjs && node tests/plugin-smoke.mjs && node tests/importer-search.mjs && node tests/csv-comments-thumbnail.mjs && node tests/eaglepack-duplicates.mjs && node tests/search-index-v2.mjs && node tests/smart-extension-plugin.mjs && node tests/workbench-upload.mjs && node tests/library-stats.mjs && node tests/search-media.mjs && node tests/browser-extension.mjs && node tests/plugin-package.mjs && node tests/import-export-migration.mjs && node tests/library-migration.mjs && node tests/security.mjs",
+    "test": "node tests/api-smoke.mjs && node tests/validate-library.mjs && node tests/plugin-smoke.mjs && node tests/importer-search.mjs && node tests/csv-comments-thumbnail.mjs && node tests/eaglepack-duplicates.mjs && node tests/search-index-v2.mjs && node tests/smart-extension-plugin.mjs && node tests/workbench-upload.mjs && node tests/library-stats.mjs && node tests/search-media.mjs && node tests/browser-extension.mjs && node tests/plugin-package.mjs && node tests/import-export-migration.mjs && node tests/library-migration.mjs && node tests/security.mjs && node tests/roadmap-panels.mjs",
     "test:full": "npm test && npm run test:electron && npm run test:electron-main && npm run test:electron-plugin && npm run test:electron-desktop && npm run test:workbench && npm run test:screenshots",
     "test:electron": "electron tests/electron-smoke.cjs",
     "test:electron-main": "electron electron/main.cjs --smoke",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "concurrently": "^10.0.4",
     "electron": "^22.3.7",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "wait-on": "^9.1.0"
   }
 }

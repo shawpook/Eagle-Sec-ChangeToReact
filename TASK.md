@@ -478,10 +478,10 @@ npm run electron
 - Phase 1 前端快速预览：原版 `src/app/index.html`、`app.bundle.js`、CSS、JS、assets 直接复用。
 - 浏览器 shim：`frontend/public/shims.js` 提供 `require`、`process`、`electron`、`ipcRenderer`、Node mock。
 - mock 资源库：`frontend/public/mock-data.js` + `mock-library/`，缩略图复用原版 PNG 素材。
-- 已启动地址：`http://localhost:5174/src/app/index.html`
+- 已启动地址：`http://localhost:5176/src/app/index.html`
 - Phase 2 部分页面：偏好设置、预览窗口、进度窗口可渲染；注册/设备管理使用安全替代页。
 - Phase 3/4 初步：生成 `cache.json`，41595 API 服务已提供 library/folder/tag/item 和部分 v2 接口。
-- 页面入口：`http://localhost:5174/pages.html`
+- 页面入口：`http://localhost:5176/pages.html`
 
 已验证：
 
@@ -528,8 +528,8 @@ npm run electron
 当前服务：
 
 ```text
-http://localhost:5174/pages.html
-http://localhost:5174/src/app/collect-window/index.html
+http://localhost:5176/pages.html
+http://localhost:5176/src/app/collect-window/index.html
 http://localhost:41595/
 ```
 
@@ -678,6 +678,27 @@ npm run test:full
 ```powershell
 npm test
 npm run test:full
+```
+
+## 路线图 A-F 执行面板大任务（2026-08-04）
+
+已完成：
+
+- 新增 `frontend/public/roadmap.html` 路线图执行面板，入口已加入 `pages.html` 与 workbench 汉堡菜单。
+- 批量管理：`/api/item/batchRename`、`/api/item/batchUpdate`、`/api/item/addToFolder`、文件夹密码、标签重命名/合并。
+- 重复扫描：`/api/item/duplicates/scan` 与 V2 等价接口，支持 exact/similar 扫描。
+- Inspector：`roadmap.html` 可直接编辑名称、备注、URL、标签、文件夹、评分、comments 并持久化。
+- 筛选搜索：快捷搜索与颜色/尺寸/日期/评分/标签/类型/注释/URL 筛选，使用现有 search API。
+- Eaglepack：`/api/export/eaglepack/start`、`/api/import/eaglepack/start`、`/api/jobs/:id` 提供任务进度。
+- 插件中心：`/api/plugins/center` 汇总已安装插件与模板，`roadmap.html` 支持详情、打开、安装、卸载、打包。
+- 新增 `tests/roadmap-panels.mjs`，截图回归新增 `roadmap.png`。
+
+当前测试命令：
+
+```powershell
+npm test
+npm run test:workbench
+npm run test:screenshots
 ```
 
 ## 自动化验证与发布收尾大任务（2026-08-03）

@@ -2,7 +2,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
 
-const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5174/src/app/index.html';
+const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5176/src/app/index.html';
 const mockLibraryRoot = path.resolve(__dirname, '../frontend/public/mock-library/Eagle Reverse Demo.library');
 const smokeMode = process.argv.includes('--smoke');
 const pluginSmokeMode = process.argv.includes('--smoke-plugin');
@@ -146,7 +146,7 @@ function registerIpc() {
 
   ipcMain.handle('item:importPaths', async (event, paths = []) => {
     const list = Array.isArray(paths) ? paths : [paths];
-    const res = await fetch('http://localhost:41595/api/item/addFromPaths', {
+    const res = await fetch('http://localhost:41695/api/item/addFromPaths', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ paths: list }),
@@ -180,7 +180,7 @@ function setupMenu() {
     {
       label: 'Help',
       submenu: [
-        { label: 'Eagle Reverse Workbench', click: () => shell.openExternal('http://localhost:5174/workbench.html') },
+        { label: 'Eagle Reverse Workbench', click: () => shell.openExternal('http://localhost:5176/workbench.html') },
       ],
     },
   ];
@@ -195,7 +195,7 @@ function setupTray() {
   tray.setToolTip('Eagle Reverse');
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Open Workbench', click: () => createWindow({ url: 'http://localhost:5174/workbench.html' }) },
+      { label: 'Open Workbench', click: () => createWindow({ url: 'http://localhost:5176/workbench.html' }) },
       { label: 'Quit', click: () => app.quit() },
     ])
   );
@@ -248,7 +248,7 @@ app.whenReady().then(async () => {
   if (pluginSmokeMode) {
     const pluginWin = createWindow({
       show: false,
-      url: 'http://localhost:41595/plugins/eagle-reverse-example-service/index.html',
+      url: 'http://localhost:41695/plugins/eagle-reverse-example-service/index.html',
       width: 640,
       height: 480,
     });

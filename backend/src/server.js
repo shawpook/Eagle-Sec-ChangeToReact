@@ -32,9 +32,9 @@ const projectRoot = path.resolve(here, '../..');
 const mockLibraryDir = path.join(projectRoot, 'frontend/public/mock-library');
 const reverseRoot = path.resolve(projectRoot, '..');
 const programRoot = path.resolve(projectRoot, '../..');
-const port = Number(process.env.EAGLE_API_PORT || 41595);
-const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41592);
-const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41593);
+const port = Number(process.env.EAGLE_API_PORT || 41695);
+const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41692);
+const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41693);
 const apiToken = process.env.EAGLE_API_TOKEN || 'preview-token';
 const uploadDir = path.join(projectRoot, 'test-run/uploads');
 const userPluginsDir = path.join(projectRoot, 'test-run/user-data/Plugins');
@@ -309,11 +309,11 @@ function batchRenameItems(ids, options = {}) {
       renameItemFiles(currentLibrary, item, oldName, newName);
       item.name = newName;
       item.lastModified = Date.now();
-      changed.push(item);
+      changed.push({ id: item.id, name: item.name, oldName });
     }
   });
   if (changed.length > 0) saveItems(currentLibrary);
-  return changed.map((item) => ({ id: item.id, name: item.name, oldName: item.oldName }));
+  return changed;
 }
 
 function batchUpdateItems(ids, patch = {}) {
@@ -484,6 +484,18 @@ app.get('/api/plugins', (req, res) => {
   res.json(ok(listPlugins()));
 });
 
+app.get('/api/plugins/center', (req, res) => {
+  const plugins = listPlugins();
+  res.json(
+    ok({
+      plugins,
+      installed: plugins.filter((plugin) => plugin.installed),
+      templates: plugins.filter((plugin) => String(plugin.url || '').includes('/plugin-templates/')),
+      example: plugins.find((plugin) => plugin.id === 'eagle-reverse-example-service') || null,
+    })
+  );
+});
+
 app.get('/api/plugins/installed', (req, res) => {
   res.json(ok(listInstalledPlugins(userPluginsDir)));
 });
@@ -503,7 +515,7 @@ app.post('/api/plugins/open', (req, res) => {
     res.status(404).json(fail('Plugin not found'));
     return;
   }
-  const apiPort = Number(process.env.EAGLE_API_PORT || 41595);
+  const apiPort = Number(process.env.EAGLE_API_PORT || 41695);
   res.json(
     ok({
       url: `http://localhost:${apiPort}${plugin.url}`,
@@ -716,6 +728,8 @@ function filterItems(items, query = {}) {
   const dateTo = query.dateTo ? new Date(String(query.dateTo)).getTime() : NaN;
   const commentsKeyword = String(query.comments || '').toLowerCase();
   const hasComment = query.hasComment === 'true' || query.hasComment === true;
+  const hasAnnotation = query.hasAnnotation === 'true' || query.hasAnnotation === true;
+  const hasUrl = query.hasUrl === 'true' || query.hasUrl === true || query.urlRequired === 'true' || query.urlRequired === true;
   const deletedRaw = query.isDeleted;
   const isDeleted = deletedRaw === 'true' || deletedRaw === true
     ? true
@@ -768,6 +782,8 @@ function filterItems(items, query = {}) {
       if (!commentText.includes(commentsKeyword)) return false;
     }
     if (hasComment && (item.comments || []).length === 0) return false;
+    if (hasAnnotation && !String(item.annotation || '').trim()) return false;
+    if (hasUrl && !String(item.url || '').trim()) return false;
     if (parsedColors.length > 0 && !parsedColors.some((color) => colorMatches(item, color))) return false;
     if (isDeleted !== undefined && Boolean(item.isDeleted) !== isDeleted) return false;
     return true;
@@ -1206,6 +1222,11 @@ app.post('/api/export/eaglepack', (req, res) => {
   res.json(ok({ path: packed, count: target.items.length }));
 });
 
+app.post('/api/export/eaglepack/start', (req, res) => {
+  const job = createJob('eaglepack-export', (currentJob) => startEaglepackExportJob(currentJob, req.body || {}));
+  res.json(ok({ job }));
+});
+
 app.post('/api/export/library', (req, res) => {
   try {
     const destDir = req.body.destDir || path.join(projectRoot, 'exports', currentLibrary.libraryName);
@@ -1260,6 +1281,20 @@ app.post('/api/import/eaglepack', (req, res) => {
   } catch (err) {
     res.status(400).json(fail(err.message));
   }
+});
+
+app.post('/api/import/eaglepack/start', (req, res) => {
+  const job = createJob('eaglepack-import', (currentJob) => startEaglepackImportJob(currentJob, req.body || {}));
+  res.json(ok({ job }));
+});
+
+app.get('/api/jobs/:id', (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) {
+    res.status(404).json(fail('Job not found'));
+    return;
+  }
+  res.json(ok(job));
 });
 
 app.get('/api/item/duplicates', (req, res) => {
@@ -1598,6 +1633,49 @@ app.get('/api/v2/folder/all', (req, res) => {
 app.post('/api/v2/folder/remove', (req, res) => {
   const removed = removeFolder(currentLibrary, req.body.id || req.body.folderID);
   res.json(ok(removed));
+});
+
+app.post('/api/v2/folder/setPassword', (req, res) => {
+  try {
+    const folder = findFolder(req.body.id || req.body.folderID);
+    if (!folder) throw new Error('Folder not found');
+    setFolderPassword(folder, req.body.password || '');
+    res.json(ok({ id: folder.id, hasPassword: true }));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/v2/folder/verifyPassword', (req, res) => {
+  const folder = findFolder(req.body.id || req.body.folderID);
+  res.json(ok(folder ? verifyFolderPassword(folder, req.body.password || '') : false));
+});
+
+app.post('/api/v2/folder/changePassword', (req, res) => {
+  try {
+    const folder = findFolder(req.body.id || req.body.folderID);
+    if (!folder) throw new Error('Folder not found');
+    if (!verifyFolderPassword(folder, req.body.currentPassword || '')) throw new Error('Current password is incorrect');
+    setFolderPassword(folder, req.body.password || '');
+    res.json(ok({ id: folder.id, hasPassword: true }));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/v2/folder/removePassword', (req, res) => {
+  const folder = findFolder(req.body.id || req.body.folderID);
+  if (!folder) {
+    res.status(404).json(fail('Folder not found'));
+    return;
+  }
+  updateFolder(currentLibrary, folder.id, {
+    hasPassword: false,
+    passwordHash: undefined,
+    passwordSalt: undefined,
+    modificationTime: Date.now(),
+  });
+  res.json(ok({ id: folder.id, hasPassword: false }));
 });
 
 function smartFolderFromRequest(req) {

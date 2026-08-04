@@ -16,7 +16,7 @@ try {
 }
 if (!rejected) throw new Error('safeResolve did not reject traversal');
 
-if (!isLocalRequest({ headers: { host: '127.0.0.1:41595' } })) throw new Error('local request rejected');
+if (!isLocalRequest({ headers: { host: '127.0.0.1:41695' } })) throw new Error('local request rejected');
 if (isLocalRequest({ headers: { host: 'evil.example.com' } })) throw new Error('remote request accepted');
 
 console.log('Security test passed');

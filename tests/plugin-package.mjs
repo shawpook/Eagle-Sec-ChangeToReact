@@ -7,7 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 const pluginDir = path.resolve(projectRoot, '..', 'plugins/example-service-plugin');
 const packFile = path.join(projectRoot, 'test-run', 'example-service.eagleplugin');
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41595';
+const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
 
 fs.rmSync(packFile, { force: true });
 await fetch(`${apiBase}/api/plugins/uninstall`, {

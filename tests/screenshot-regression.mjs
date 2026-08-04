@@ -6,7 +6,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 const screenshotDir = path.join(projectRoot, 'screenshots');
 const debugPort = process.env.EAGLE_DEBUG_PORT || 9226;
-const origin = process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5174';
+const origin = process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5176';
 
 fs.mkdirSync(screenshotDir, { recursive: true });
 
@@ -55,6 +55,7 @@ const pages = [
   ['main', `${origin}/src/app/index.html`, 6000, () => document.body.innerText.includes('Welcome Library')],
   ['preferences', `${origin}/src/app/preferences.html`, 6000, () => document.body.innerText.replace(/\s+/g, ' ').length > 200],
   ['workbench', `${origin}/workbench.html`, 4000, () => document.body.innerText.includes('Eagle Reverse Workbench') && document.querySelectorAll('.item-card').length > 0],
+  ['roadmap', `${origin}/roadmap.html`, 4000, () => document.body.innerText.includes('Eagle Roadmap Panels') && document.querySelectorAll('nav button').length >= 6],
   ['collect', `${origin}/src/app/collect-window/index.html`, 6000, () => document.querySelectorAll('.select-panel-item').length >= 5],
   ['exif', `${origin}/src/app/exif-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png')}&width=1536&height=960&orientation=1`, 5000, () => document.querySelector('img')?.getAttribute('src').includes('Welcome Library.png')],
   ['font', `${origin}/src/app/font-viewer/font-viewer.html`, 5000, () => document.body.innerText.includes('Moonlight')],
@@ -65,7 +66,7 @@ const pages = [
   ['native', `${origin}/src/app/native-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/')}&name=${encodeURIComponent('Welcome Library.png')}&id=MOCK0001&ext=png&width=1536&height=960`, 5000, () => document.body.classList.contains('ready')],
   ['model', `${origin}/src/app/model-viewer/website/index.html#model=/mock-assets/box.glb`, 8000, () => document.querySelector('#main_file_name')?.textContent === 'box.glb'],
   ['pdf', `${origin}/src/app/pdf-viewer/web/viewer.html?path=${encodeURIComponent('/mock-assets/sample.pdf')}`, 8000, () => !!document.querySelector('.pdfViewer .page')],
-  ['plugin', 'http://127.0.0.1:41595/plugins/eagle-reverse-example-service/index.html', 3000, () => document.body.innerText.includes('Eagle Reverse Example Service') && typeof window.eagle !== 'undefined'],
+  ['plugin', 'http://127.0.0.1:41695/plugins/eagle-reverse-example-service/index.html', 3000, () => document.body.innerText.includes('Eagle Reverse Example Service') && typeof window.eagle !== 'undefined'],
   ['video', `${origin}/media-viewer/video.html?path=${encodeURIComponent('/mock-assets/sample.webp')}`, 3000, () => !!document.querySelector('video')?.src],
   ['audio', `${origin}/media-viewer/audio.html?path=${encodeURIComponent('/mock-assets/sample.wav')}`, 5000, () => {
     const canvas = document.querySelector('canvas');

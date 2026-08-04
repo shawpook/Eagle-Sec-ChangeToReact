@@ -31,7 +31,7 @@ npm run dev
 浏览器打开：
 
 ```text
-http://localhost:5174/src/app/index.html
+http://localhost:5176/src/app/index.html
 ```
 
 如果端口被占用，可在 `frontend/vite.preview.config.mjs` 中调整 `server.port` 和 `strictPort`。
@@ -47,8 +47,8 @@ npm run electron  桌面版入口（需先安装 Electron）
 当前两个服务已运行：
 
 ```text
-前端预览：http://localhost:5174/
-页面入口：http://localhost:5174/pages.html
+前端预览：http://localhost:5176/
+页面入口：http://localhost:5176/pages.html
 Mock API：http://localhost:41595/
 ```
 
@@ -120,7 +120,7 @@ npm run test:screenshots
 - PNG 缩略图会缩放为最大边 320px。
 - Eaglepack 导入支持 replace/merge 模式。
 - `npm run test:electron-plugin` 可验证 Electron 中插件窗口加载。
-- 新增 `http://localhost:5174/workbench.html` 资源库管理工作台。
+- 新增 `http://localhost:5176/workbench.html` 资源库管理工作台。
 - `/api/item/upload`、`/api/v2/item/upload` 支持文件上传导入。
 - 截图回归现覆盖 workbench 页面，共 13 张。
 - `/api/library/stats`、`/api/v2/library/stats` 提供资源库统计。
@@ -156,5 +156,8 @@ npm run test:screenshots
 - workbench 采用原版三段式布局：左侧管理栏、中间网格、右侧 Inspector。
 - workbench 左上角汉堡菜单包含“设置”“浏览器扩展”“刷新”。
 - 汉堡菜单“设置”可打开原版偏好设置页。
+- 新增 `http://localhost:5176/roadmap.html` 路线图执行面板，集中覆盖批量管理、重复扫描合并、Inspector 编辑、筛选/快捷搜索、Eaglepack 进度、插件中心。
+- 后端新增 `/api/item/batchRename`、`/api/item/batchUpdate`、`/api/item/addToFolder`、文件夹密码、标签重命名/合并、重复扫描、Eaglepack 任务进度、`/api/plugins/center`。
+- `npm test` 新增 `tests/roadmap-panels.mjs`，截图回归新增 `roadmap.png`。
 
 原版资源复用路线图见 `docs/REUSE_ROADMAP.md`。

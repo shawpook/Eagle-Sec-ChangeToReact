@@ -1,4 +1,4 @@
-const API = 'http://localhost:41593';
+const API = 'http://localhost:41693';
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'collect-page' || message.type === 'collect-image') {

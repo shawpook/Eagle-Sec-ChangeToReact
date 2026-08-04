@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 const extensionRoot = path.join(projectRoot, 'frontend/public/browser-extension');
-const extensionBase = process.env.EAGLE_EXTENSION_URL || 'http://127.0.0.1:41593';
+const extensionBase = process.env.EAGLE_EXTENSION_URL || 'http://127.0.0.1:41693';
 
 const manifest = JSON.parse(fs.readFileSync(path.join(extensionRoot, 'manifest.json'), 'utf8'));
 if (manifest.manifest_version !== 3) throw new Error('extension manifest version mismatch');
@@ -25,7 +25,7 @@ const collectRes = await fetch(`${extensionBase}/api/extension/collect`, {
 const collect = await collectRes.json();
 if (collect.status !== 'success' || !collect.data.id) throw new Error('extension collect failed');
 
-const popup = await (await fetch('http://127.0.0.1:5174/browser-extension/popup.html')).text();
+const popup = await (await fetch('http://127.0.0.1:5176/browser-extension/popup.html')).text();
 if (!popup.includes('Eagle Reverse Collector') || !popup.includes('popup.js')) throw new Error('popup page missing');
 
 console.log('Browser extension test passed');

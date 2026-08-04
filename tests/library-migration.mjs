@@ -7,7 +7,7 @@ const projectRoot = path.resolve(here, '..');
 const mockLibrary = path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library');
 const demoLibrary = path.join(projectRoot, '..', 'library-example/Demo.library');
 const destDir = path.join(projectRoot, 'test-run', `migrated-${Date.now()}-${process.pid}.library`);
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41595';
+const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
 
 async function json(method, url, body) {
   const res = await fetch(url, {

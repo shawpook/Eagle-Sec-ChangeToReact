@@ -8,9 +8,10 @@
 
 ## 2. 当前已完成
 
-- 浏览器预览：`http://localhost:5174/src/app/index.html`
-- 工作台：`http://localhost:5174/workbench.html`
-- 页面入口：`http://localhost:5174/pages.html`
+- 浏览器预览：`http://localhost:5176/src/app/index.html`
+- 工作台：`http://localhost:5176/workbench.html`
+- 路线图执行面板：`http://localhost:5176/roadmap.html`
+- 页面入口：`http://localhost:5176/pages.html`
 - 原版页面已接入：
   - 主界面 `index.html`
   - 偏好设置 `preferences.html`
@@ -218,7 +219,11 @@
 
 ## 10. 执行顺序建议
 
+以下大任务已按路线图在 `roadmap.html` 与后端 API 中补齐可操作面板，覆盖 `.library` 持久化、筛选搜索、重复合并、Eaglepack 进度和插件中心；原版组件仍可通过主界面直接打开。
+
 ### 大任务 A：批量管理功能
+
+已完成：`roadmap.html` 提供批量重命名、批量更新、文件夹分配、文件夹密码、标签重命名/合并；后端提供 `/api/item/batchRename`、`/api/item/batchUpdate`、`/api/item/addToFolder`、`/api/folder/*Password`、`/api/tag/update`、`/api/tag/merge`。
 
 1. 接入批量重命名面板。
 2. 接入批量保存面板。
@@ -234,6 +239,8 @@
 
 ### 大任务 B：重复扫描与合并
 
+已完成：`roadmap.html` 提供 exact/similar 扫描、进度展示和分组合并；后端提供 `/api/item/duplicates/scan`、`/api/v2/item/duplicates/scan`，合并继续使用 `/api/item/mergeDuplicates`。
+
 1. 接入原版 duplicate-scan-panel。
 2. 接入 duplicate-modal。
 3. 接入 merge-editor。
@@ -247,6 +254,8 @@
 
 ### 大任务 C：Inspector 编辑
 
+已完成：`roadmap.html` 提供条目名称、备注、URL、标签、文件夹、评分、comments 编辑并持久化到 metadata。
+
 1. 接入原版 Inspector 主组件。
 2. 接入 annotations、folders、information、tags、plugin。
 3. 对接 item update API。
@@ -259,6 +268,8 @@
 
 ### 大任务 D：筛选器与快捷搜索
 
+已完成：`roadmap.html` 提供快捷搜索和颜色、尺寸、日期、评分、标签、类型、注释、URL 筛选，搜索接口与 `/api/item/search` 保持一致。
+
 1. 接入原版 filter-item-* 组件。
 2. 接入 quick-search-modal。
 3. 对接现有 search index。
@@ -269,6 +280,8 @@
 - 搜索结果与 API 一致。
 
 ### 大任务 E：Eaglepack 进度与导入导出
+
+已完成：`roadmap.html` 通过 `/api/export/eaglepack/start`、`/api/import/eaglepack/start`、`/api/jobs/:id` 展示任务进度。
 
 1. 接入 eaglepack-import-progress。
 2. 接入 eaglepack-export-progress。
@@ -281,6 +294,8 @@
 - 完成后索引和缓存正确。
 
 ### 大任务 F：插件中心
+
+已完成：`roadmap.html` 提供插件列表、详情、打开、安装、卸载、打包入口，后端 `/api/plugins/center` 汇总已安装插件与模板。
 
 1. 接入 plugin-center。
 2. 接入 plugin-creator。
@@ -302,6 +317,8 @@
 3. `npm run test:workbench` 通过。
 4. `npm run test:electron-desktop` 通过。
 5. `npm run test:screenshots` 通过，并新增对应页面截图。
+
+当前 `npm test` 已包含 `tests/roadmap-panels.mjs`，截图回归包含 `roadmap.png`。
 
 ## 12. 禁止事项
 

@@ -15,7 +15,7 @@ const sourcePng = path.join(
   projectRoot,
   'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'
 );
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41595';
+const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
 
 fs.mkdirSync(sourceDir, { recursive: true });
 fs.copyFileSync(sourcePng, path.join(sourceDir, 'Folder Image.png'));

@@ -40,7 +40,7 @@ if (!exported || !fs.existsSync(exported)) throw new Error('exported file missin
 fs.rmSync(tempLib, { recursive: true, force: true });
 fs.rmSync(tempExport, { recursive: true, force: true });
 
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41595';
+const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
 const searchRes = await fetch(`${apiBase}/api/item/search?keyword=Welcome`);
 if (!searchRes.ok) throw new Error(`search HTTP ${searchRes.status}`);
 const searchBody = await searchRes.json();

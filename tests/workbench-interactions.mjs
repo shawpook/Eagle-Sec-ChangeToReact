@@ -1,5 +1,5 @@
 const debugPort = process.env.EAGLE_DEBUG_PORT || 9226;
-const origin = process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5174';
+const origin = process.env.EAGLE_PREVIEW_URL || 'http://127.0.0.1:5176';
 
 const version = await (await fetch(`http://127.0.0.1:${debugPort}/json/version`)).json();
 const browserWs = new WebSocket(version.webSocketDebuggerUrl);
@@ -66,6 +66,8 @@ if (initial !== '{"theme":"dark","list":false}') throw new Error(`initial workbe
 await evalValue(`document.querySelector('#menuButton').click(); true`);
 const menuVisible = await evalValue(`document.querySelector('#menuPopover').classList.contains('visible')`);
 if (!menuVisible) throw new Error('hamburger menu did not open');
+const roadmapMenu = await evalValue(`!!document.querySelector('#menuRoadmap')`);
+if (!roadmapMenu) throw new Error('roadmap menu entry missing');
 await evalValue(`document.querySelector('#menuPopover').classList.remove('visible'); true`);
 
 await evalValue(`document.querySelector('.item-card').click(); true`);

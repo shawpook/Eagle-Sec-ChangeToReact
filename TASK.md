@@ -509,7 +509,10 @@ npm run electron
 ### 部分实现 / 未实现
 
 - 已接通资源库创建/打开业务事件，但尚未新增系统文件对话框点击级 UI 自动化；当前以真实 bridge、API 和文件闭环测试验收。
-- 原版文件夹导入入口会继续复用其现有目录树/标签 UI，但后端导入尚未完整复刻原版文件夹树映射、逐项进度和取消语义，标记为部分实现。
+- 文件夹导入已升级为完整核心闭环：后端按原版行为建立同构 Eagle 文件夹树，每个文件绑定直接所属文件夹；嵌套 `.library` 和符号链接会跳过并报告，深度/文件数有上限。
+- 新增 `/api/item/importFolder/start`、`/api/item/importPaths/start`、`/api/jobs/:id/cancel` 和 `/api/jobs/cancel-active`，支持逐项进度、部分错误隔离和文件间取消。
+- Electron/preload/shim 已接通文件/文件夹导入进度、`cancel.all` 和原版 `file-uploaded`；shim 的真实目录判断及 `folders-change` 持久化已补齐。
+- `tests/folder-import-closed-loop.mjs` 使用唯一临时目录验证嵌套树、直接文件夹绑定、`.library` 跳过、未知文件无错误占位缩略图、逐项进度、部分取消及重启恢复，测试通过。
 ### 图片导出闭环更新（2026-08-04）
 
 - 新增 `backend/src/export-service.js`，统一多选图片与目录树导出；同名/已存在文件自动追加序号，不覆盖目标文件。

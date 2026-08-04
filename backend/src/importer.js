@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { resolveLibraryPath, saveItems } from './library-store.js';
+import { resolveLibraryPath, saveItems, saveLibraryState } from './library-store.js';
 import { generateThumbnail, readImageDimensions } from './thumbnailer.js';
 
-function generateId() {
-  return `ITEM-${Date.now()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+function generateId(prefix = 'ITEM') {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
 }
 
 function cleanName(name) {
@@ -159,24 +159,122 @@ export async function importUrl(library, sourceUrl, options = {}) {
   }
 }
 
-export function importFolder(library, folderPath, options = {}) {
+function folderNode(name, parentID) {
+  return {
+    id: generateId('FOLDER'),
+    name: cleanName(name) || 'Folder',
+    description: '',
+    children: [],
+    modificationTime: Date.now(),
+    tags: [],
+    ...(parentID ? { parent: parentID } : {}),
+  };
+}
+
+function scanFolderTree(rootPath, options = {}) {
+  const files = [];
+  const errors = [];
+  let maxDepth = 1;
+  const maxFiles = Number(options.maxFiles) || 100000;
+  const maxDepthAllowed = Number(options.maxDepth) || 15;
+
+  const walk = (directory, parentID, depth) => {
+    if (depth > maxDepthAllowed) throw new Error(`Folder depth exceeds ${maxDepthAllowed}: ${directory}`);
+    maxDepth = Math.max(maxDepth, depth);
+    const node = folderNode(path.basename(directory), parentID);
+    let entries;
+    try {
+      entries = fs.readdirSync(directory, { withFileTypes: true });
+    } catch (err) {
+      errors.push({ path: directory, error: err.message });
+      return node;
+    }
+    entries.sort((left, right) => left.name.localeCompare(right.name, 'zh-CN', { numeric: true, sensitivity: 'base' }));
+    for (const entry of entries) {
+      const fullPath = path.join(directory, entry.name);
+      if (entry.isSymbolicLink()) {
+        errors.push({ path: fullPath, error: 'Symbolic links are skipped' });
+      } else if (entry.isDirectory()) {
+        if (entry.name.toLowerCase().endsWith('.library')) {
+          errors.push({ path: fullPath, error: 'Nested .library directory is skipped' });
+        } else {
+          node.children.push(walk(fullPath, node.id, depth + 1));
+        }
+      } else if (entry.isFile()) {
+        files.push({ path: fullPath, folderID: node.id });
+        if (files.length > maxFiles) throw new Error(`Folder contains more than ${maxFiles} files`);
+      }
+    }
+    return node;
+  };
+
+  return { tree: walk(rootPath, options.parentID, 1), files, errors, depth: maxDepth };
+}
+
+export async function importFolder(library, folderPath, options = {}, hooks = {}) {
   const resolved = path.resolve(folderPath);
   if (!fs.existsSync(resolved) || !fs.statSync(resolved).isDirectory()) {
     throw new Error(`Folder not found: ${folderPath}`);
   }
-  const entries = [];
-  const walk = (dir) => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        walk(fullPath);
-      } else {
-        entries.push(importFile(library, fullPath, options));
-      }
-    }
+  if (resolved.toLowerCase().endsWith('.library')) throw new Error('Importing a .library as a folder is not allowed');
+
+  const scan = scanFolderTree(resolved, options);
+  const imported = [];
+  const errors = [...scan.errors];
+  const originalFolders = library.folders.slice();
+  const originalMetadataFolders = Array.isArray(library.metadata.folders) ? library.metadata.folders.slice() : [];
+  const rootParent = options.parentID
+    ? (() => {
+        const find = (tree) => {
+          for (const folder of tree) {
+            if (folder.id === options.parentID) return folder;
+            const child = find(folder.children || []);
+            if (child) return child;
+          }
+          return null;
+        };
+        return find(library.folders);
+      })()
+    : null;
+  if (options.parentID && !rootParent) throw new Error(`Parent folder not found: ${options.parentID}`);
+  if (rootParent) rootParent.children.push(scan.tree);
+  else library.folders.push(scan.tree);
+
+  const collectFolderIds = (folder, ids = []) => {
+    ids.push(folder.id);
+    for (const child of folder.children || []) collectFolderIds(child, ids);
+    return ids;
   };
-  walk(resolved);
-  return entries;
+  library.metadata.folders = [...new Set([...originalMetadataFolders, ...collectFolderIds(scan.tree)])];
+  library.metadata.modificationTime = Date.now();
+  saveLibraryState(library);
+
+  try {
+    for (let index = 0; index < scan.files.length; index += 1) {
+      if (hooks.isCancelled && hooks.isCancelled()) {
+        return { items: imported, folder: scan.tree, errors, cancelled: true, total: scan.files.length, depth: scan.depth };
+      }
+      const source = scan.files[index];
+      try {
+        const item = importFile(library, source.path, {
+          ...options,
+          folderIDs: [...new Set([...(Array.isArray(options.folderIDs) ? options.folderIDs : []), source.folderID])],
+        });
+        imported.push(item);
+        if (hooks.onProgress) hooks.onProgress({ current: index + 1, total: scan.files.length, item, path: source.path });
+      } catch (err) {
+        errors.push({ path: source.path, error: err.message });
+        if (hooks.onProgress) hooks.onProgress({ current: index + 1, total: scan.files.length, error: err.message, path: source.path });
+      }
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+    return { items: imported, folder: scan.tree, errors, cancelled: false, total: scan.files.length, depth: scan.depth };
+  } catch (err) {
+    library.folders = originalFolders;
+    library.metadata.folders = originalMetadataFolders;
+    saveLibraryState(library);
+    throw err;
+  }
 }
 
 export function importBase64(library, data, options = {}) {

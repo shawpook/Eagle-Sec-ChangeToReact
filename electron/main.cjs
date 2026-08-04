@@ -304,6 +304,11 @@ function registerIpc() {
     body: { history },
   }));
 
+  ipcMain.handle('library:update-structure', (event, params = {}) => apiRequest('/api/library/structure', {
+    method: 'POST',
+    body: params,
+  }));
+
   ipcMain.handle('library:create', async (event, params = {}) => {
     const library = await apiRequest('/api/library/create', { method: 'POST', body: params });
     await notifyLibraryLoaded(library);
@@ -427,21 +432,51 @@ function registerIpc() {
 
   ipcMain.handle('item:import-files', async (event, params = {}) => {
     const files = Array.isArray(params.files) ? params.files : [];
-    return apiRequest('/api/item/addFromPaths', {
+    const started = await apiRequest('/api/item/importPaths/start', {
       method: 'POST',
-      body: { images: files },
+      body: { ...params, files },
     });
+    const jobId = started.job.id;
+    while (true) {
+      const job = await apiRequest(`/api/jobs/${jobId}`);
+      event.sender.send('import-file-progress', job);
+      const previousCount = Number(event.sender.__eagleImportFileCount || 0);
+      const currentItems = job.result && Array.isArray(job.result.items) ? job.result.items : [];
+      for (const item of currentItems.slice(previousCount)) event.sender.send('file-uploaded', item);
+      event.sender.__eagleImportFileCount = currentItems.length;
+      if (job.status === 'complete' || job.status === 'cancelled') {
+        event.sender.__eagleImportFileCount = 0;
+        return currentItems;
+      }
+      if (job.status === 'error') throw new Error(job.error || job.message);
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
   });
 
   ipcMain.handle('item:import-folders', async (event, params = {}) => {
-    const folders = Array.isArray(params.paths) ? params.paths : [params.path || params.folderPath].filter(Boolean);
+    const folderPaths = Array.isArray(params.paths) ? params.paths : [params.path || params.folderPath].filter(Boolean);
     const results = [];
-    for (const folderPath of folders) {
-      const result = await apiRequest('/api/item/importFolder', {
+    for (const folderPath of folderPaths) {
+      const started = await apiRequest('/api/item/importFolder/start', {
         method: 'POST',
         body: { ...params, folderPath },
       });
-      results.push(...(result.items || []));
+      const jobId = started.job.id;
+      while (true) {
+      const job = await apiRequest(`/api/jobs/${jobId}`);
+      event.sender.send('import-folder-progress', job);
+      const previousCount = Number(event.sender.__eagleImportFolderCount || 0);
+      const currentItems = job.result && Array.isArray(job.result.items) ? job.result.items : [];
+      for (const item of currentItems.slice(previousCount)) event.sender.send('file-uploaded', item);
+      event.sender.__eagleImportFolderCount = currentItems.length;
+      if (job.status === 'complete' || job.status === 'cancelled') {
+        event.sender.__eagleImportFolderCount = 0;
+        results.push(job.result);
+        break;
+      }
+        if (job.status === 'error') throw new Error(job.error || job.message);
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      }
     }
     return results;
   });
@@ -477,6 +512,7 @@ function registerIpc() {
   });
   ipcMain.on('cancel.all', () => {
     for (const job of exportJobs.values()) job.cancelled = true;
+    apiRequest('/api/jobs/cancel-active', { method: 'POST', body: {} }).catch(() => {});
   });
   ipcMain.on('show-item-in-folder', (event, target) => {
     if (target) shell.showItemInFolder(path.resolve(target));
@@ -560,7 +596,7 @@ app.whenReady().then(async () => {
     const timeout = setTimeout(() => {
       console.error('LIBRARY_SMOKE_TIMEOUT');
       app.quit();
-    }, 10000);
+    }, 20000);
     createWindow({
       show: false,
       onDidFinishLoad: async (win) => {

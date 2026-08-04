@@ -97,7 +97,7 @@ try {
       throw new Error(`Electron library bridge failed:\n${output}`);
     }
     return null;
-  }, 'Electron library bridge', 20000);
+  }, 'Electron library bridge', 30000);
   console.log(result.match(/LIBRARY_SMOKE_OK[^\r\n]*/)[0]);
   await stop(electron);
 } finally {

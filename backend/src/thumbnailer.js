@@ -1,16 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import jpeg from 'jpeg-js';
 import sharp from 'sharp';
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(here, '../..');
-const placeholderThumbnail = path.join(
-  projectRoot,
-  'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library_thumbnail.png'
-);
 
 export function thumbnailPath(library, item) {
   return path.join(library.rootDir, 'images', `${item.id}.info`, `${item.name}_thumbnail.png`);
@@ -75,11 +67,7 @@ export function generateThumbnail(library, item, options = {}) {
     fs.writeFileSync(target, resized);
     return target;
   }
-  if (fs.existsSync(placeholderThumbnail)) {
-    fs.copyFileSync(placeholderThumbnail, target);
-    return target;
-  }
-  throw new Error(`Cannot generate thumbnail for ${item.id}`);
+  throw new Error(`Cannot generate thumbnail for ${item.id}.${item.ext}`);
 }
 
 export async function generateThumbnailAsync(library, item, options = {}) {

@@ -7,6 +7,7 @@ const api = {
     current: () => ipcRenderer.invoke('library:get-current'),
     history: () => ipcRenderer.invoke('library:get-history'),
     setHistory: (history) => ipcRenderer.invoke('library:set-history', history),
+    updateStructure: (params) => ipcRenderer.invoke('library:update-structure', params),
     create: (params) => ipcRenderer.invoke('library:create', params),
     open: (libraryPath) => ipcRenderer.invoke('library:open', libraryPath),
     switch: (libraryPath) => ipcRenderer.invoke('library:switch', libraryPath),
@@ -30,7 +31,9 @@ const api = {
   importPaths: (paths) => ipcRenderer.invoke('item:importPaths', paths),
   import: {
     files: (params) => ipcRenderer.invoke('item:import-files', params),
+    onFileProgress: (callback) => ipcRenderer.on('import-file-progress', (_event, job) => callback(job)),
     folders: (params) => ipcRenderer.invoke('item:import-folders', params),
+    onFolderProgress: (callback) => ipcRenderer.on('import-folder-progress', (_event, job) => callback(job)),
     url: (params) => ipcRenderer.invoke('item:import-url', params),
     urls: (params) => ipcRenderer.invoke('item:import-urls', params),
   },

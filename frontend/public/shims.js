@@ -347,6 +347,12 @@
       else desktopApi.library.switch(params).catch(() => {});
       return;
     }
+    if (desktopApi && desktopApi.library && channel === 'folders-change') {
+      desktopApi.library.updateStructure(params || {}).catch((err) => {
+        mockEmit('library:operation-result', { ok: false, action: channel, error: err.message });
+      });
+      return;
+    }
     if (desktopApi && desktopApi.import) {
       let action = null;
       if (channel === 'upload-local-files') action = desktopApi.import.files(params || {});
@@ -356,9 +362,17 @@
       if (action) {
         Promise.resolve(action)
           .then((result) => {
-            const items = Array.isArray(result) ? result : [result];
+            const batches = channel === 'import-folders' && Array.isArray(result) ? result : [result];
+            const items = batches.flatMap((batch) => Array.isArray(batch) ? batch : Array.isArray(batch && batch.items) ? batch.items : batch && batch.id ? [batch] : []);
             items.forEach((item) => mockEmit('file-uploaded', item));
-            mockEmit('import:operation-result', { ok: true, channel, items });
+            if (channel === 'import-folders') {
+              desktopApi.library.current().then((library) => {
+                window.__mockLibrary = { ...window.__mockLibrary, ...library };
+                window.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : window.__mockLibraryCache;
+                mockEmit('library:changed', library);
+              }).catch(() => {});
+            }
+            mockEmit('import:operation-result', { ok: true, channel, items, result });
           })
           .catch((err) => mockEmit('import:operation-result', { ok: false, channel, error: err.message }));
         return;
@@ -392,6 +406,14 @@
     }
     return EventEmitter.prototype.invoke.call(this, channel, params);
   };
+  if (desktopApi && desktopApi.import) {
+    if (typeof desktopApi.import.onFileProgress === 'function') {
+      desktopApi.import.onFileProgress((job) => mockEmit('import-file-progress', job));
+    }
+    if (typeof desktopApi.import.onFolderProgress === 'function') {
+      desktopApi.import.onFolderProgress((job) => mockEmit('import-folder-progress', job));
+    }
+  }
   if (desktopApi && desktopApi.library) {
     if (typeof desktopApi.library.onChanged === 'function') {
       desktopApi.library.onChanged((library) => mockEmit('library:changed', library));
@@ -1120,7 +1142,16 @@
       if (req.endsWith('/my_modules/junk')) return { not: () => true, is: () => false };
       if (req.endsWith('/my_modules/is-hidden-file')) return () => false;
       if (req.endsWith('/my_modules/file-icon')) return { getFileIcon: () => Promise.resolve({}), getFileIconSync: () => null };
-      if (req.endsWith('/my_modules/is-directory')) return { check: () => false, checkSync: () => false };
+      if (req.endsWith('/my_modules/is-directory')) return {
+        check: (target) => {
+          if (!nativeFs) return false;
+          try { return nativeFs.statSync(target).isDirectory(); } catch (err) { return false; }
+        },
+        checkSync: (target) => {
+          if (!nativeFs) return false;
+          try { return nativeFs.statSync(target).isDirectory(); } catch (err) { return false; }
+        },
+      };
       if (req.endsWith('/my_modules/access')) return { checkALCs: () => true, checkAccess: () => true, checkACL: () => true };
       if (req.endsWith('/app/js/utils/remainingFilenameLength.js')) return () => 240;
       if (req.endsWith('/app/js/utils/getBestURL.js')) return () => '';

@@ -35,7 +35,10 @@
 ### 仍未完成或仅部分实现
 
 - 尚未做系统文件对话框的点击级 UI 自动化；原版 library-panel 的业务通道已接通，但对话框人工交互仍需后续 UI E2E 补证。
-- 文件夹导入的目录树到 Eagle 文件夹映射、逐项进度/取消仍是部分实现；原版 folder/tag/batch-save UI 已保留并接通基础通道。
+- 文件夹导入缺口已补齐核心闭环：按原版行为生成同构 Eagle 文件夹树，条目绑定直接所属文件夹；嵌套 `.library`、符号链接、深度和文件数均有明确边界。
+- 新增异步文件/文件夹导入作业、逐项进度、部分错误隔离和文件间取消；Electron/preload/shim 已将原版 `upload-local-files`、`importFolders`、`file-uploaded`、`cancel.all` 与 `folders-change` 接到真实实现。
+- 未支持缩略图的格式现在写入 `noThumbnail=true`，不再复制 Welcome Library 占位图。
+- `tests/folder-import-closed-loop.mjs` 已验证嵌套树、`.library` 跳过、直接文件夹绑定、进度、部分取消和后端重启恢复。
 - 构建仍只转换 2 个模块，`dist/frontend` 未包含 `src/app`，不能据此称为独立发布构建。
 ### 图片导出闭环修复更新
 

@@ -183,6 +183,82 @@ function startEaglepackExportJob(job, options = {}) {
   }, 60);
 }
 
+async function startPathImportJob(job, options = {}) {
+  const files = Array.isArray(options.files) ? options.files : Array.isArray(options.images) ? options.images : [];
+  const items = [];
+  const errors = [];
+  updateJob(job, {
+    status: 'running',
+    progress: 0,
+    message: 'Importing files',
+    cancelled: false,
+    result: { items, errors, count: 0, total: files.length, cancelled: false },
+  });
+  for (let index = 0; index < files.length; index += 1) {
+    if (job.cancelled) {
+      updateJob(job, {
+        status: 'cancelled',
+        message: 'File import cancelled',
+        result: { items, errors, count: items.length, total: files.length, cancelled: true },
+      });
+      return;
+    }
+    const source = typeof files[index] === 'string' ? { path: files[index] } : files[index];
+    try {
+      items.push(addMockItems({ images: [source] })[0]);
+    } catch (err) {
+      errors.push({ path: source.path || source.src || '', error: err.message });
+    }
+    updateJob(job, {
+      progress: files.length > 0 ? Math.round(((index + 1) / files.length) * 100) : 100,
+      message: `Imported ${index + 1}/${files.length}`,
+      result: { items, errors, count: items.length, total: files.length, cancelled: false },
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+  updateJob(job, {
+    status: 'complete',
+    progress: 100,
+    message: 'File import complete',
+    result: { items, errors, count: items.length, total: files.length, cancelled: false },
+  });
+}
+
+async function startFolderImportJob(job, options = {}) {
+  updateJob(job, {
+    status: 'running',
+    progress: 0,
+    message: 'Scanning folder',
+    cancelled: false,
+    result: { items: [], errors: [], count: 0, total: 0, cancelled: false },
+  });
+  try {
+    const result = await importFolder(currentLibrary, options.folderPath, options, {
+      isCancelled: () => job.cancelled === true,
+      onProgress(progress) {
+        const percentage = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 100;
+        const prior = job.result || { items: [], errors: [] };
+        const items = progress.item ? [...prior.items, progress.item] : prior.items;
+        const errors = progress.error ? [...prior.errors, { path: progress.path, error: progress.error }] : prior.errors;
+        updateJob(job, {
+          progress: percentage,
+          message: progress.error ? `Skipped ${path.basename(progress.path)}: ${progress.error}` : `Imported ${progress.current}/${progress.total}`,
+          result: { items, errors, count: items.length, total: progress.total, cancelled: false },
+        });
+      },
+    });
+    folders = currentLibrary.folders;
+    updateJob(job, {
+      status: result.cancelled ? 'cancelled' : 'complete',
+      progress: result.cancelled ? job.progress : 100,
+      message: result.cancelled ? 'Folder import cancelled' : 'Folder import complete',
+      result: { ...result, count: result.items.length },
+    });
+  } catch (err) {
+    updateJob(job, { status: 'error', progress: 100, message: err.message, error: err.message });
+  }
+}
+
 function startEaglepackImportJob(job, options = {}) {
   updateJob(job, { status: 'running', progress: 5, message: 'Preparing eaglepack import' });
   setTimeout(() => {
@@ -699,6 +775,38 @@ app.post('/api/library/history', (req, res) => {
   }
 });
 
+app.post('/api/library/structure', (req, res) => {
+  try {
+    const requestedPath = req.body.libraryDir || req.body.libraryPath;
+    if (requestedPath && path.resolve(requestedPath) !== path.resolve(currentLibrary.rootDir)) {
+      throw new Error('Library structure update does not target the current library');
+    }
+    if (Array.isArray(req.body.folders)) currentLibrary.folders = req.body.folders;
+    if (Array.isArray(req.body.smartFolders)) currentLibrary.smartFolders = req.body.smartFolders;
+    if (Array.isArray(req.body.quickAccess)) currentLibrary.quickAccess = req.body.quickAccess;
+    if (Array.isArray(req.body.tagsGroups)) currentLibrary.tagsGroups = req.body.tagsGroups;
+    const collectFolderIds = (tree, ids = []) => {
+      for (const folder of tree || []) {
+        ids.push(folder.id);
+        collectFolderIds(folder.children || [], ids);
+      }
+      return ids;
+    };
+    currentLibrary.metadata.folders = collectFolderIds(currentLibrary.folders);
+    currentLibrary.metadata.smartFolders = currentLibrary.smartFolders;
+    currentLibrary.metadata.quickAccess = currentLibrary.quickAccess;
+    currentLibrary.metadata.tagsGroups = currentLibrary.tagsGroups;
+    currentLibrary.metadata.modificationTime = Date.now();
+    folders = currentLibrary.folders;
+    smartFolders = currentLibrary.smartFolders;
+    tagsGroups = currentLibrary.tagsGroups;
+    saveLibraryState(currentLibrary);
+    res.json(ok(describeLibrary(currentLibrary)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
 app.get('/api/folder/list', (req, res) => {
   res.json(ok(folders));
 });
@@ -1155,13 +1263,18 @@ app.post('/api/item/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-app.post('/api/item/importFolder', (req, res) => {
+app.post('/api/item/importFolder', async (req, res) => {
   try {
-    const items = importFolder(currentLibrary, req.body.folderPath, {
+    const result = await importFolder(currentLibrary, req.body.folderPath, {
       tags: req.body.tags ? String(req.body.tags).split(',').map((tag) => tag.trim()).filter(Boolean) : [],
+      folderIDs: Array.isArray(req.body.folderIDs) ? req.body.folderIDs : [],
+      parentID: req.body.parentID,
       annotation: req.body.annotation || '',
+      maxDepth: req.body.maxDepth,
+      maxFiles: req.body.maxFiles,
     });
-    res.json(ok({ count: items.length, items }));
+    folders = currentLibrary.folders;
+    res.status(201).json(ok({ ...result, count: result.items.length }));
   } catch (err) {
     res.status(400).json(fail(err.message));
   }
@@ -1397,6 +1510,48 @@ app.post('/api/import/eaglepack', (req, res) => {
 app.post('/api/import/eaglepack/start', (req, res) => {
   const job = createJob('eaglepack-import', (currentJob) => startEaglepackImportJob(currentJob, req.body || {}));
   res.json(ok({ job }));
+});
+
+app.post('/api/item/importFolder/start', (req, res) => {
+  const job = createJob('folder-import', (currentJob) => startFolderImportJob(currentJob, req.body || {}));
+  res.status(202).json(ok({ job }));
+});
+
+app.post('/api/item/importPaths/start', (req, res) => {
+  const files = Array.isArray(req.body.files) ? req.body.files : Array.isArray(req.body.images) ? req.body.images : [];
+  if (files.length === 0) {
+    res.status(400).json(fail('At least one file is required'));
+    return;
+  }
+  const job = createJob('file-import', (currentJob) => startPathImportJob(currentJob, { ...req.body, files }));
+  res.status(202).json(ok({ job }));
+});
+
+app.post('/api/jobs/cancel-active', (req, res) => {
+  let count = 0;
+  for (const job of jobs.values()) {
+    if (job.status === 'queued' || job.status === 'running') {
+      job.cancelled = true;
+      updateJob(job, { message: 'Cancellation requested' });
+      count += 1;
+    }
+  }
+  res.json(ok({ count }));
+});
+
+app.post('/api/jobs/:id/cancel', (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) {
+    res.status(404).json(fail('Job not found'));
+    return;
+  }
+  if (job.status === 'complete' || job.status === 'error' || job.status === 'cancelled') {
+    res.json(ok({ job, cancelled: false }));
+    return;
+  }
+  job.cancelled = true;
+  updateJob(job, { message: 'Cancellation requested' });
+  res.json(ok({ job, cancelled: true }));
 });
 
 app.get('/api/jobs/:id', (req, res) => {

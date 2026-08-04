@@ -46,11 +46,23 @@
 - Electron/preload/shim 已接通原版 `export-images`、`export-as-folder` 与 `file-export-progress` 事件模型，逐文件发送进度，`cancel.all` 可在文件间停止后续复制并报告取消。
 - `tests/image-export-closed-loop.mjs` 使用唯一系统临时目录验证平铺多选、同名冲突、目录树、时间戳、取消以及导出文件 SHA-256 与资源库原文件一致。
 
+### Collect 保存闭环修复更新
+
+- `41593` 扩展保存路由已由占位响应改为真实 importer：图片 Data URI 写入当前库的原文件、缩略图和 metadata；URL 采集生成真实 `.url` 文件。
+- `title/name`、`annotation`、`url`、`tags[n]`、`folderIDs[n]` 与 `star` 已按采集窗口表单契约持久化。
+- `tests/collect-save-closed-loop.mjs` 以唯一系统临时库和独立端口验证图片/书签落盘及后端重启恢复；`tests/smart-extension-plugin.mjs` 已隔离端口和临时库，验证三个扩展别名路由真实落盘。
+- 截图回归已复验 18/18 通过，collect-window 文件夹选择面板稳定渲染；主界面断言不再依赖固定条目标题。
+
+### Eaglepack 原版格式兼容修复更新
+
+- 已依据原版 `background.js:4436-4572`、`4862-5085` 将新导出结构改为顶层 `pack.json + <id>.info/`，并在导入时重映射条目/文件夹 ID、coverId、folders、order 和 metadata。
+- 合并导入按原文件 SHA-1 跳过重复内容；缺失原文件/条目目录的损坏包会拒绝，ZIP 条目做路径穿越校验。
+- 保留旧自产 `manifest.json + images/` 包的只读导入兼容；新测试验证原版结构、ID 重映射、文件 SHA-256、重复合并、损坏包拒绝和旧格式恢复。
+- 当前属于源码契约兼容，尚未取得真实 Eagle 客户端外部样本做双向客户端实测。
+
 ### 仍未完成
 
-- collect 截图回归仍失败/未复验通过。
-- 独立发布构建仍只转换 2 个模块且不包含 `src/app`。
-- Eaglepack 原版格式兼容不属于本轮图片导出闭环，仍需后续单独验证。
+- 用户已明确暂不推进独立发布构建；当前构建仍只转换 2 个模块且不包含 `src/app`，不计为完成。
 
 ## 1. 结论摘要
 
@@ -74,7 +86,7 @@
 | `npm test` | 在 importer 测试后失败 | `tests/importer-search.mjs:40-41` 的 `fs.rmSync` 被当前安全删除机制拦截，后续测试未执行 |
 | Electron 四组冒烟 | 清除 `ELECTRON_RUN_AS_NODE=1` 后全部通过 | 证明 Electron 能启动及少量 IPC 可用，不证明资源库业务闭环 |
 | Workbench 交互 | 单独运行通过 | 仅覆盖菜单、Inspector 显示、主题、列表视图、搜索框快捷键 |
-| 截图回归 | 17/18 通过 | `collect` 失败；其余主要验证 DOM 存在/页面可渲染，不验证业务写入 |
+| 截图回归 | 18/18 通过（最新复验） | collect-window 与主界面均稳定渲染；截图验证页面状态，采集业务写入另由独立闭环测试验证 |
 
 ### 构建产物问题
 
@@ -177,7 +189,7 @@ ext: bin
 3. `setCustomThumbnail`、`refreshPalette` 等路由直接返回 success，没有真实实现（`server.js:1149-1165`）。
 4. 非 PNG/JPEG/Sharp 支持格式默认复制 Welcome Library 占位缩略图（`thumbnailer.js:64-67`），会造成内容错误而非“无缩略图”。
 5. AI Search 路由全部是固定 false/空结果（`server.js:1893-1901`）。
-6. Eaglepack 是自定义 `manifest.json` 格式；尚未与原版 `pack.json`、目录结构、兼容性和损坏校验做双向验证。
+6. Eaglepack 已改为原版 `pack.json + <id>.info/` 结构并补损坏校验、ID 重映射和旧格式导入兼容；仍缺真实 Eagle 客户端外部样本的跨客户端双向实测。
 7. API 端口实际为 41695/41692/41693（`server.js:35-37`），TASK/README 多处仍写 41595/41592/41593，影响扩展和工具兼容目标。
 8. Electron `allowedRoots` 包含 `Eagle-reverse` 上级范围但不包含任意用户选择的新库；真正打开外部库时安全模型和可用性冲突。
 
@@ -187,7 +199,7 @@ ext: bin
 2. 大量测试在共享 `test-run/` 上做删除，当前宿主的安全删除机制会中断测试链。
 3. Screenshot 测试多为 DOM 存在断言，不覆盖点击创建库、真实文件选择、导入后预览、导出后校验等行为。
 4. Electron smoke 只验证启动和少量桥接；`--smoke` 主进程测试甚至 1.5 秒后直接退出。
-5. `collect` 截图回归当前失败（17/18），说明 TASK 中“采集窗口已修复”的验收已失效或不稳定。
+5. `collect` 截图回归已在最新复验中通过（18/18）；其真实保存能力由隔离临时库测试单独覆盖，避免仅以 DOM/截图代替业务验收。
 6. TASK.md/README 的端口、shim 行为、完成状态互相矛盾，应按可复现测试重新分级。
 
 ## 5. 仍可复用的反编译资源
@@ -267,7 +279,7 @@ ext: bin
 2. 把 main renderer 的 library/items/folders/tags 生命周期改为真实事件源。
 3. 删除媒体路径对 Demo.library 的硬编码。
 4. 接入 `background.html` 或将其职责拆为主进程/worker 服务。
-5. 修复 collect window，并增加“保存后真实库出现条目”的 E2E。
+5. collect window 已补真实保存闭环与截图回归；后续可再增加 Electron 窗口内点击“保存”的 UI E2E。
 
 ### 里程碑 5：格式、插件与发布
 

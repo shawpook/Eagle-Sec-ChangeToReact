@@ -18,6 +18,20 @@
     }
   }
   const desktopApi = window.eagleDesktop || null;
+  const browserFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+  if (browserFetch) {
+    window.fetch = function (input, init) {
+      let target = typeof input === 'string' ? input : input && input.url;
+      if (typeof target === 'string') {
+        target = target
+          .replace(/^http:\/\/localhost:41595(?=\/|$)/i, 'http://localhost:41695')
+          .replace(/^http:\/\/localhost:41593(?=\/|$)/i, 'http://localhost:41693');
+        if (typeof input === 'string') input = target;
+        else input = new Request(target, input);
+      }
+      return browserFetch(input, init);
+    };
+  }
 
   function syncText(url) {
     try {

@@ -293,16 +293,32 @@ export function importBase64(library, data, options = {}) {
 
 export function importBookmark(library, params = {}) {
   const url = params.url || params.href || '';
-  const name = params.name || params.title || new URL(url).hostname || 'Bookmark';
-  return importFile(library, url, {
-    name,
-    ext: 'url',
-    url,
-    website: params.website || '',
-    annotation: params.annotation || '',
-    tags: params.tags || [],
-    star: params.star || 0,
-  });
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch (err) {
+    throw new Error(`Invalid bookmark URL: ${url}`);
+  }
+  const name = params.name || params.title || parsed.hostname || 'Bookmark';
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-bookmark-'));
+  const tempFile = path.join(tempDir, `${cleanName(name) || 'Bookmark'}.url`);
+  fs.writeFileSync(tempFile, `[InternetShortcut]\r\nURL=${url}\r\n`, 'utf8');
+  try {
+    return importFile(library, tempFile, {
+      name,
+      originalName: path.basename(tempFile),
+      ext: 'url',
+      mime: 'application/internet-shortcut',
+      url,
+      website: params.website || '',
+      annotation: params.annotation || '',
+      tags: params.tags || [],
+      folders: params.folders || params.folderIDs || [],
+      star: params.star || 0,
+    });
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 }
 
 export function exportLibrary(library, destDir) {

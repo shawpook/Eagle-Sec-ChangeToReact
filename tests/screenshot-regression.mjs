@@ -52,7 +52,7 @@ await page.send('Runtime.enable');
 await page.send('Page.enable');
 
 const pages = [
-  ['main', `${origin}/src/app/index.html`, 6000, () => document.body.innerText.includes('Welcome Library')],
+  ['main', `${origin}/src/app/index.html`, 6000, () => getComputedStyle(document.body).display !== 'none' && !!document.querySelector('#main-app') && document.body.innerText.includes('智能文件夹') && document.querySelectorAll('img').length > 20],
   ['preferences', `${origin}/src/app/preferences.html`, 6000, () => document.body.innerText.replace(/\s+/g, ' ').length > 200],
   ['workbench', `${origin}/workbench.html`, 4000, () => document.body.innerText.includes('Eagle Reverse Workbench') && document.querySelectorAll('.item-card').length > 0],
   ['roadmap', `${origin}/roadmap.html`, 4000, () => document.body.innerText.includes('Eagle Roadmap Panels') && document.querySelectorAll('nav button').length >= 6],

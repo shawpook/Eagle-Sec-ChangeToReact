@@ -17,13 +17,6 @@ const statusRes = await fetch(`${extensionBase}/api/extension/status`);
 const status = await statusRes.json();
 if (status.status !== 'success' || !status.enabled) throw new Error('extension status failed');
 
-const collectRes = await fetch(`${extensionBase}/api/extension/collect`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-  body: new URLSearchParams({ type: 'image', title: 'Extension Test', url: 'https://example.com' }),
-});
-const collect = await collectRes.json();
-if (collect.status !== 'success' || !collect.data.id) throw new Error('extension collect failed');
 
 const popup = await (await fetch('http://127.0.0.1:5176/browser-extension/popup.html')).text();
 if (!popup.includes('Eagle Reverse Collector') || !popup.includes('popup.js')) throw new Error('popup page missing');

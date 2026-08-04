@@ -521,10 +521,28 @@ npm run electron
 - Electron 主进程直接执行异步导出服务，逐文件发送进度；取消标记在文件间检查，可停止后续复制并报告取消状态，完成后由原版进度组件定位目标目录。
 - `tests/image-export-closed-loop.mjs` 使用唯一系统临时目录验证多选、同名冲突、目录树、时间戳、取消和 SHA-256 一致，测试通过。
 
+### Collect 保存闭环更新（2026-08-04）
+
+- `41593` 扩展服务的 `/api/item/addFile`、`/api/item/addURL`、`/api/item/import-images`、`/api/collect` 等路由不再返回占位 ID；图片 Data URI 会导入当前真实库，书签会生成真实 `.url` 文件。
+- 采集字段 `title/name`、`annotation`、`url`、`tags[n]`、`folderIDs[n]`、`star` 会写入条目 metadata；图片原文件、缩略图与 metadata 均真实落盘。
+- `frontend/public/shims.js` 已把原版 collect 使用的旧端口 `41595/41593` 映射到当前 `41695/41693`，不修改 `Eagle-reverse/src/app` 原文件。
+- `tests/collect-save-closed-loop.mjs` 使用唯一系统临时库与独立端口，验证图片和书签保存、文件内容、标签/文件夹/评分，以及后端重启恢复，测试通过。
+- `tests/smart-extension-plugin.mjs` 已改为隔离后端和唯一临时库，三个扩展别名路由均验证真实 PNG 落盘，不再删除或污染 `test-run`。
+- 截图回归已复验 18/18 通过，其中 collect-window 的文件夹选择面板稳定渲染；主界面断言已从固定条目标题改为验证原版主框架、侧栏和图片节点。
+
+### Eaglepack 原版格式兼容更新（2026-08-04）
+
+- `backend/src/eaglepack.js` 已按原版 `background.js` 契约导出：压缩包顶层使用 `pack.json`，条目目录为 `<原条目ID>.info/`，不再以 `manifest.json + images/` 作为新导出格式。
+- `pack.json` 保存完整条目 metadata；导出文件夹时同时保存 folder 子树与条目文件夹绑定，多选条目导出会像原版一样清空 folders。
+- 导入原版包时会为条目和文件夹生成新 ID，重写 coverId、folders、order 与每个 `<新ID>.info/metadata.json`，防止与当前库 ID 冲突。
+- 合并导入按原文件 SHA-1 跳过重复内容；缺失 `pack.json`、条目目录或原文件的损坏包会明确拒绝；ZIP 路径会做穿越校验。
+- 仍兼容导入旧自产 `manifest.json + images/` 包，避免已有测试/备份无法恢复。
+- `tests/eaglepack-duplicates.mjs` 已改用唯一系统临时目录，验证原版目录结构、pack.json、文件/文件夹 ID 重映射、SHA-256 一致、重复合并、损坏包拒绝和旧格式向后导入，测试通过。
+
 ### 仍未实现 / 未验收
 
-- Eaglepack 仍是现有自定义格式，不属于本轮“图片导出闭环”完成范围。
-- collect 截图回归和独立发布构建仍未完成；构建虽然成功，仍只转换 2 个模块且未包含 `src/app`。
+- 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。
+- Eaglepack 已按源码契约完成结构兼容，但尚未拿真实 Eagle 客户端生成的外部样本做跨客户端双向实测。
 
 ## 执行状态（2026-08-03）
 

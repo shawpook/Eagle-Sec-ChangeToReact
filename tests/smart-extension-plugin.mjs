@@ -1,71 +1,134 @@
 import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { loadLibrary } from '../backend/src/library-store.js';
-import { importFile } from '../backend/src/importer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const tempRoot = path.join(projectRoot, 'test-run');
-const tempLib = path.join(tempRoot, 'smart-extension-plugin.library');
+const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-smart-extension-'));
+const librariesRoot = path.join(tempRoot, 'libraries');
+const stateFile = path.join(tempRoot, 'library-state.json');
 const sourceFile = path.join(
   projectRoot,
   'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'
 );
-const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';
-const extensionBase = process.env.EAGLE_EXTENSION_URL || 'http://127.0.0.1:41693';
+fs.mkdirSync(librariesRoot, { recursive: true });
+const dataUri = `data:image/png;base64,${fs.readFileSync(sourceFile).toString('base64')}`;
 
-fs.rmSync(tempLib, { recursive: true, force: true });
-fs.mkdirSync(tempLib, { recursive: true });
-fs.writeFileSync(
-  path.join(tempLib, 'metadata.json'),
-  JSON.stringify({ applicationVersion: '4.0.0', folders: [], smartFolders: [], quickAccess: [], tagsGroups: [], modificationTime: Date.now() }),
-  'utf8'
-);
-fs.writeFileSync(path.join(tempLib, 'tags.json'), JSON.stringify({ historyTags: [], starredTags: [] }), 'utf8');
-fs.writeFileSync(path.join(tempLib, 'saved-filters.json'), '[]', 'utf8');
+async function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      server.close(() => resolve(address.port));
+    });
+  });
+}
 
-const library = loadLibrary(tempLib);
-importFile(library, sourceFile, { name: 'Star Five', star: 5, tags: ['UI'] });
-importFile(library, sourceFile, { name: 'Star One', star: 1, tags: ['Other'] });
+async function startServer() {
+  const [apiPort, thumbnailPort, extensionPort] = await Promise.all([freePort(), freePort(), freePort()]);
+  const child = spawn(process.execPath, ['backend/src/server.js'], {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      EAGLE_API_PORT: String(apiPort),
+      EAGLE_THUMBNAIL_PORT: String(thumbnailPort),
+      EAGLE_EXTENSION_PORT: String(extensionPort),
+      EAGLE_LIBRARY_STATE_FILE: stateFile,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let output = '';
+  child.stdout.on('data', (chunk) => { output += chunk.toString(); });
+  child.stderr.on('data', (chunk) => { output += chunk.toString(); });
+  const deadline = Date.now() + 10000;
+  while (!output.includes(`localhost:${apiPort}`)) {
+    if (child.exitCode !== null) throw new Error(`server exited: ${output}`);
+    if (Date.now() > deadline) throw new Error(`server timeout: ${output}`);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+  }
+  return {
+    child,
+    apiBase: `http://127.0.0.1:${apiPort}`,
+    extensionBase: `http://127.0.0.1:${extensionPort}`,
+  };
+}
 
-async function json(method, url, body) {
-  const res = await fetch(url, {
+async function stopServer(server) {
+  if (server.child.exitCode !== null) return;
+  server.child.kill();
+  await new Promise((resolve) => {
+    const timeout = setTimeout(resolve, 3000);
+    server.child.once('exit', () => { clearTimeout(timeout); resolve(); });
+  });
+}
+
+async function json(method, url, body, headers) {
+  const response = await fetch(url, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
+    headers: headers || (body ? { 'Content-Type': 'application/json' } : undefined),
+    body: body ? (headers ? body : JSON.stringify(body)) : undefined,
   });
-  if (!res.ok) throw new Error(`${method} ${url} HTTP ${res.status}`);
-  return res.json();
+  const result = await response.json();
+  if (!response.ok || result.status !== 'success') {
+    throw new Error(`${method} ${url} HTTP ${response.status}: ${JSON.stringify(result)}`);
+  }
+  return result;
 }
 
-await json('POST', `${apiBase}/api/library/switch`, { libraryPath: tempLib });
-const smart = await json('POST', `${apiBase}/api/v2/smartFolder/create`, {
-  name: 'Five Star Only',
-  conditions: [{ field: 'star', operator: '=', value: 5 }],
-});
-const smartItems = await json('GET', `${apiBase}/api/v2/smartFolder/getItems?id=${encodeURIComponent(smart.data.id)}`);
-if (smartItems.data.length !== 1 || smartItems.data[0].name !== 'Star Five') {
-  throw new Error('smart folder rule engine returned wrong items');
-}
-
-for (const route of ['/api/item/addFile', '/api/item/import-images', '/api/collect']) {
-  const res = await fetch(`${extensionBase}${route}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ type: 'image', title: 'Extension Save' }),
+const server = await startServer();
+try {
+  const created = await json('POST', `${server.apiBase}/api/library/create`, {
+    name: 'Smart Extension Plugin',
+    savePath: librariesRoot,
   });
-  const body = await res.json();
-  if (body.status !== 'success' || !body.data.id) throw new Error(`extension route failed: ${route}`);
+  const libraryPath = created.data.path;
+
+  await json('POST', `${server.apiBase}/api/item/addFromPath`, { path: sourceFile, name: 'Star Five', star: 5, tags: ['UI'] });
+  await json('POST', `${server.apiBase}/api/item/addFromPath`, { path: sourceFile, name: 'Star One', star: 1, tags: ['Other'] });
+
+  const smart = await json('POST', `${server.apiBase}/api/v2/smartFolder/create`, {
+    name: 'Five Star Only',
+    conditions: [{ field: 'star', operator: '=', value: 5 }],
+  });
+  const smartItems = await json('GET', `${server.apiBase}/api/v2/smartFolder/getItems?id=${encodeURIComponent(smart.data.id)}`);
+  if (smartItems.data.length !== 1 || smartItems.data[0].name !== 'Star Five') {
+    throw new Error('smart folder rule engine returned wrong items');
+  }
+
+  const extensionItems = [];
+  for (const route of ['/api/item/addFile', '/api/item/import-images', '/api/collect']) {
+    const form = new URLSearchParams({
+      type: 'image',
+      src: dataUri,
+      title: `Extension Save ${extensionItems.length + 1}`,
+      'tags[0]': 'extension',
+    });
+    const result = await json('POST', `${server.extensionBase}${route}`, form, {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    });
+    extensionItems.push(result.data);
+  }
+  if (new Set(extensionItems.map((item) => item.id)).size !== extensionItems.length) {
+    throw new Error('extension routes returned duplicate item IDs');
+  }
+  for (const item of extensionItems) {
+    const infoDir = path.join(libraryPath, 'images', `${item.id}.info`);
+    if (!fs.existsSync(path.join(infoDir, `${item.name}.png`)) || !fs.existsSync(path.join(infoDir, 'metadata.json'))) {
+      throw new Error(`extension item did not persist: ${item.id}`);
+    }
+  }
+
+  const open = await json('POST', `${server.apiBase}/api/plugins/open`, { id: 'eagle-reverse-example-service' });
+  const pluginHtml = await (await fetch(open.data.url)).text();
+  if (!pluginHtml.includes('/plugin-shim.js') || !pluginHtml.includes('Eagle Reverse Example Service')) {
+    throw new Error('plugin page shim or content missing');
+  }
+
+  console.log(`SMART_EXTENSION_PLUGIN_OK ${libraryPath}`);
+} finally {
+  await stopServer(server);
 }
-
-const open = await json('POST', `${apiBase}/api/plugins/open`, { id: 'eagle-reverse-example-service' });
-const pluginHtml = await (await fetch(open.data.url)).text();
-if (!pluginHtml.includes('/plugin-shim.js') || !pluginHtml.includes('Eagle Reverse Example Service')) {
-  throw new Error('plugin page shim or content missing');
-}
-
-await json('POST', `${apiBase}/api/library/switch`, { libraryPath: '/mock-library/Eagle Reverse Demo.library' });
-fs.rmSync(tempLib, { recursive: true, force: true });
-
-console.log('Smart folder/extension/plugin open test passed');

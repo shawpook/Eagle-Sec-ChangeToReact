@@ -1463,7 +1463,7 @@ app.post('/api/export/library', (req, res) => {
 
 app.post('/api/library/backup', (req, res) => {
   const destFile = req.body.destFile || path.join(projectRoot, 'exports', `${currentLibrary.libraryName}-backup.eaglepack`);
-  const packed = packLibrary(currentLibrary, destFile);
+  const packed = packLibrary(currentLibrary, destFile, { includeLibraryState: true });
   res.json(ok({ path: packed, count: currentLibrary.items.length }));
 });
 
@@ -2267,15 +2267,62 @@ extensionApp.post('/', (req, res) => {
   });
 });
 
-function extensionSaveResponse(req, res) {
+function normalizeExtensionArray(body, key) {
+  if (Array.isArray(body[key])) return body[key];
+  const indexed = Object.entries(body)
+    .filter(([name]) => name.startsWith(`${key}[`))
+    .sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true }))
+    .map(([, value]) => value);
+  if (indexed.length > 0) return indexed;
+  if (typeof body[key] === 'string' && body[key].trim()) {
+    try {
+      const parsed = JSON.parse(body[key]);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (err) {
+      return body[key].split(',').map((value) => value.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+async function extensionSaveResponse(req, res) {
   const body = req.body || {};
-  res.json({
-    status: 'success',
-    data: {
-      id: `EXT-ADDED-${Date.now()}`,
-      ...body,
-    },
-  });
+  try {
+    const type = body.type || 'image';
+    if (type === 'image' && (body.src || body.base64)) {
+      const data = body.src || body.base64;
+      if (!String(data).startsWith('data:')) throw new Error('Collect image must be a base64 data URI');
+      const mimeMatch = /^data:([^;,]+);base64,/.exec(String(data));
+      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+      const ext = mime === 'image/jpeg' ? 'jpg' : mime.split('/').pop() || 'png';
+      const item = importBase64(currentLibrary, data, {
+        name: body.title || body.name || 'Collected Image',
+        ext,
+        url: body.url || '',
+        annotation: body.annotation || '',
+        tags: normalizeExtensionArray(body, 'tags'),
+        folderIDs: normalizeExtensionArray(body, 'folderIDs').concat(body.folderID ? [body.folderID] : []),
+        star: body.star,
+      });
+      res.status(201).json(ok(item));
+      return;
+    }
+    if (type === 'save-url' && (body.url || body.src)) {
+      const item = importBookmark(currentLibrary, {
+        name: body.title || body.name,
+        url: body.url || body.src,
+        annotation: body.annotation || '',
+        tags: normalizeExtensionArray(body, 'tags'),
+        folders: normalizeExtensionArray(body, 'folderIDs'),
+        star: body.star,
+      });
+      res.status(201).json(ok(item));
+      return;
+    }
+    throw new Error(`Unsupported collect type: ${type}`);
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 }
 
 extensionApp.post('/api/item/addFile', extensionSaveResponse);

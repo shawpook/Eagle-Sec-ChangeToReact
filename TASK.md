@@ -552,6 +552,16 @@ npm run electron
 - 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。
 - Eaglepack 已按源码契约完成结构兼容，但尚未拿真实 Eagle 客户端生成的外部样本做跨客户端双向实测。
 
+### 受控下载服务与下载 IPC 更新（2026-08-04）
+
+- 新增 `backend/src/controlled-downloader.js`，按 B 类资源边界重建原版下载合同：默认并发 5、单任务超时 5 分钟、最多 5 次重定向、100MB 流式上限，并提供任务状态、排队、运行中/排队中取消、临时文件租约与释放。
+- 默认仅接受 HTTP/HTTPS 且拒绝 URL 凭据；对初始地址和每次重定向都重新解析 DNS 并拦截回环、私网、链路本地、云元数据、IPv4 映射 IPv6、保留和组播地址。仅测试环境可通过 `EAGLE_DOWNLOAD_ALLOW_HOSTS` 显式放行本地夹具服务器。
+- 下载使用唯一 `os.tmpdir()/eagle-download-*` 目录和流式计数，不再 `arrayBuffer()` 后验限额；只转发 Accept、Accept-Language、Referer、User-Agent 白名单头，拒绝 Authorization、Cookie 和任意自定义敏感头。HTML/登录墙、空文件、损坏图片、连接中断、HTTP 错误、超时和超限均返回明确错误码。
+- `backend/src/importer.js` 的单 URL/批量 URL 导入已统一复用受控下载服务；批量任务受全局并发 5 限制，成功后继续复用现有文件识别、`.library` 落盘、metadata/cache/search index 与缩略图生成闭环，并立即释放临时下载。
+- 后端新增 `/api/download/start|status|direct|cancel|release`；Electron main/preload 和 renderer shim 已接通 `downloadWithNet`、`downloadWithRequest` 及任务 API。兼容 IPC 忽略 renderer 传入的任意 directory/filename，只返回后端受控临时路径，支持按任务 ID 或路径释放。
+- 新增 `tests/controlled-download-closed-loop.mjs`，唯一系统临时目录测试覆盖正常/批量/重定向、404、超时、中断、伪 Content-Length、流式超限、HTML、损坏图片、回环/私网/IPv6/重定向绕过、请求头过滤、并发上限、运行中和排队中取消、租约清理、后端重启持久化与无临时目录泄漏。Electron 隐藏窗口验证 preload 下载 API 和两个原版 IPC 均返回真实可读文件且可释放。
+- 图片导入、自定义缩略图、颜色分析回归及隔离 Vite 构建均通过；构建仍仅转换 2 个模块，不计为独立生产构建完成。剩余风险是当前不实现原版 URL 转大图规则、通知音效和下载任务跨进程恢复；跨代理、企业 DNS 与公网多格式样本仍需后续兼容矩阵验证。
+
 ### 真实自定义缩略图闭环更新（2026-08-04）
 
 - 新增 `backend/src/custom-thumbnail.js`，按 B 类资源边界重建原版 `set-custom-thumbnail` 行为：源图片必须为不超过 10MB 的绝对普通文件，拒绝相对路径、目录、符号链接、损坏图片和超过 3000 万像素的解码输入。

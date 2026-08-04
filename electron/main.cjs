@@ -506,6 +506,26 @@ function registerIpc() {
     body: { images: Array.isArray(params) ? params : params.images || params.urls || [] },
   }));
 
+  const downloadDirect = (params = {}) => apiRequest('/api/download/direct', {
+    method: 'POST',
+    body: {
+      url: params.url,
+      headers: params.headers,
+      referer: params.referer,
+      userAgent: params.userAgent,
+      validateImage: params.validateImage,
+    },
+  });
+  ipcMain.handle('download:direct', (event, params = {}) => downloadDirect(params));
+  ipcMain.handle('download:start', (event, params = {}) => apiRequest('/api/download/start', { method: 'POST', body: params }));
+  ipcMain.handle('download:status', (event, taskId) => apiRequest(taskId ? `/api/download/${encodeURIComponent(taskId)}` : '/api/download/status'));
+  ipcMain.handle('download:cancel', (event, taskId) => apiRequest(`/api/download/${encodeURIComponent(taskId)}/cancel`, { method: 'POST', body: {} }));
+  ipcMain.handle('download:release', (event, taskIdOrPath) => apiRequest('/api/download/release', { method: 'POST', body: { taskId: taskIdOrPath, path: taskIdOrPath } }));
+
+  // 原版下载器只需要临时文件路径；目标目录和文件名由后端统一管理，避免 renderer 获得任意写权限。
+  ipcMain.handle('downloadWithNet', async (event, params = {}) => (await downloadDirect(params)).path);
+  ipcMain.handle('downloadWithRequest', async (event, params = {}) => (await downloadDirect(params)).path);
+
   ipcMain.handle('export:images', (event, params = {}) => runExport(event, 'images', params));
   ipcMain.handle('export:as-folder', (event, params = {}) => runExport(event, 'as-folder', params));
   ipcMain.handle('export:cancel', (event, jobId) => {
@@ -649,6 +669,17 @@ app.whenReady().then(async () => {
               const thumbnailUrl = toUrl(thumbnailPath);
               const rawUrl = toUrl(rawPath);
               const [thumbnailLoaded, rawLoaded] = await Promise.all([loadImage(thumbnailUrl), loadImage(rawUrl)]);
+              const smokeDownloadUrl = ${JSON.stringify(process.env.EAGLE_SMOKE_DOWNLOAD_URL || '')};
+              const directDownload = smokeDownloadUrl
+                ? await window.eagleDesktop.download.direct({ url: smokeDownloadUrl, validateImage: true })
+                : null;
+              const compatibilityDownloadPath = smokeDownloadUrl
+                ? await require('electron').ipcRenderer.invoke('downloadWithNet', { url: smokeDownloadUrl, directory: 'ignored', filename: 'ignored', validateImage: true })
+                : '';
+              const directDownloadExists = directDownload ? require('node:fs').existsSync(directDownload.path) : true;
+              const compatibilityDownloadExists = compatibilityDownloadPath ? require('node:fs').existsSync(compatibilityDownloadPath) : true;
+              if (directDownload) await window.eagleDesktop.download.release(directDownload.taskId);
+              if (compatibilityDownloadPath) await window.eagleDesktop.download.release(compatibilityDownloadPath);
               return {
                 currentPath: current.path,
                 itemCount: Array.isArray(current.items) ? current.items.length : -1,
@@ -663,6 +694,9 @@ app.whenReady().then(async () => {
                 thumbnailLoaded,
                 rawUrl,
                 rawLoaded,
+                directDownloadExists,
+                compatibilityDownloadExists,
+                compatibilityDownloadPath,
                 api: [
                   typeof window.eagleDesktop.library.create,
                   typeof window.eagleDesktop.library.open,
@@ -674,12 +708,15 @@ app.whenReady().then(async () => {
                   typeof window.eagleDesktop.thumbnailUrl,
                   typeof window.eagleDesktop.thumbnail.setCustom,
                   typeof window.eagleDesktop.thumbnail.resetCustom,
+                  typeof window.eagleDesktop.download.direct,
+                  typeof window.eagleDesktop.download.start,
+                  typeof require('electron').ipcRenderer.invoke,
                 ],
               };
             })()`
           );
           const exportedExists = result.exportedPaths.every((file) => fs.existsSync(file));
-          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.customThumbnail && result.customPaletteCount > 0 && result.thumbnailLoaded && result.rawLoaded && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
+          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.customThumbnail && result.customPaletteCount > 0 && result.thumbnailLoaded && result.rawLoaded && result.directDownloadExists && result.compatibilityDownloadExists && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
           console.log(ok ? `LIBRARY_SMOKE_OK ${JSON.stringify(result)}` : `LIBRARY_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`LIBRARY_SMOKE_ERROR ${err.message}`);

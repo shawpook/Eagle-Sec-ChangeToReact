@@ -30,6 +30,7 @@ import { describeLibrary, LibraryService } from './library-service.js';
 import { exportAsFolder, exportImages } from './export-service.js';
 import { ColorAnalyzerService } from './color-analyzer.js';
 import { CustomThumbnailService } from './custom-thumbnail.js';
+import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -102,6 +103,7 @@ const colorAnalyzer = new ColorAnalyzerService({
   delayMs: process.env.EAGLE_PALETTE_DELAY_MS === undefined ? 20 : Number(process.env.EAGLE_PALETTE_DELAY_MS),
 });
 const customThumbnailService = new CustomThumbnailService();
+const controlledDownloader = getControlledDownloadService();
 let currentLibrary = libraryService.currentLibrary();
 let folders = currentLibrary.folders;
 let smartFolders = currentLibrary.smartFolders;
@@ -1203,30 +1205,86 @@ app.post('/api/item/addFromPaths', (req, res) => {
   }
 });
 
+function sendDownloadError(res, err) {
+  if (err instanceof DownloadError) {
+    res.status(err.statusCode).json({ status: 'error', message: err.message, code: err.code, detail: err.detail || undefined });
+    return;
+  }
+  res.status(400).json(fail(err.message));
+}
+
+app.post('/api/download/start', (req, res) => {
+  try {
+    const started = controlledDownloader.start(req.body || {});
+    started.promise.catch(() => {});
+    res.status(202).json(ok({ task: controlledDownloader.task(started.id) }));
+  } catch (err) {
+    sendDownloadError(res, err);
+  }
+});
+
+app.get('/api/download/status', (req, res) => {
+  res.json(ok(controlledDownloader.status()));
+});
+
+app.get('/api/download/:id', (req, res) => {
+  const task = controlledDownloader.task(req.params.id);
+  if (!task) {
+    res.status(404).json(fail('Download task not found'));
+    return;
+  }
+  res.json(ok(task));
+});
+
+app.post('/api/download/:id/cancel', (req, res) => {
+  const task = controlledDownloader.task(req.params.id);
+  if (!task) {
+    res.status(404).json(fail('Download task not found'));
+    return;
+  }
+  res.json(ok({ cancelled: controlledDownloader.cancel(req.params.id), task: controlledDownloader.task(req.params.id) }));
+});
+
+app.post('/api/download/direct', async (req, res) => {
+  try {
+    const download = await controlledDownloader.download(req.body || {});
+    res.status(201).json(ok(download));
+  } catch (err) {
+    sendDownloadError(res, err);
+  }
+});
+
+app.post('/api/download/release', (req, res) => {
+  res.json(ok({ released: controlledDownloader.release(req.body.taskId || req.body.path || '') }));
+});
+
+app.post('/api/download/:id/release', (req, res) => {
+  res.json(ok({ released: controlledDownloader.release(req.params.id) }));
+});
+
 app.post('/api/item/addFromURL', async (req, res) => {
   try {
     if (req.body.dryRun === true) {
       res.json(ok(addMockItems(req.body)[0]));
       return;
     }
-    const item = await importUrl(currentLibrary, req.body.url || req.body.src, req.body || {});
+    const item = await importUrl(currentLibrary, req.body.url || req.body.src, { ...req.body, downloadService: controlledDownloader });
     res.status(201).json(ok(item));
   } catch (err) {
-    res.status(400).json(fail(err.message));
+    sendDownloadError(res, err);
   }
 });
 
 app.post('/api/item/addFromURLs', async (req, res) => {
   try {
     const sources = Array.isArray(req.body.images) ? req.body.images : Array.isArray(req.body.urls) ? req.body.urls : [];
-    const items = [];
-    for (const source of sources) {
+    const items = await Promise.all(sources.map((source) => {
       const params = typeof source === 'string' ? { url: source } : source;
-      items.push(await importUrl(currentLibrary, params.url || params.src, params));
-    }
+      return importUrl(currentLibrary, params.url || params.src, { ...params, downloadService: controlledDownloader });
+    }));
     res.status(201).json(ok(items));
   } catch (err) {
-    res.status(400).json(fail(err.message));
+    sendDownloadError(res, err);
   }
 });
 

@@ -45,6 +45,13 @@ const api = {
     url: (params) => ipcRenderer.invoke('item:import-url', params),
     urls: (params) => ipcRenderer.invoke('item:import-urls', params),
   },
+  download: {
+    direct: (params) => ipcRenderer.invoke('download:direct', params),
+    start: (params) => ipcRenderer.invoke('download:start', params),
+    status: (taskId) => ipcRenderer.invoke('download:status', taskId),
+    cancel: (taskId) => ipcRenderer.invoke('download:cancel', taskId),
+    release: (taskId) => ipcRenderer.invoke('download:release', taskId),
+  },
   export: {
     images: (params) => ipcRenderer.invoke('export:images', params),
     asFolder: (params) => ipcRenderer.invoke('export:as-folder', params),

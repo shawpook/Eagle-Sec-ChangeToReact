@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { resolveLibraryPath, saveItems, saveLibraryState } from './library-store.js';
 import { generateThumbnail, readImageDimensions } from './thumbnailer.js';
+import { getControlledDownloadService } from './controlled-downloader.js';
 
 function generateId(prefix = 'ITEM') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
@@ -128,34 +129,25 @@ export function importFiles(library, sources, options = {}) {
 }
 
 export async function importUrl(library, sourceUrl, options = {}) {
-  let parsedUrl;
+  const downloader = options.downloadService || getControlledDownloadService();
+  const download = await downloader.download({
+    url: sourceUrl,
+    headers: options.headers || {},
+    referer: options.referer || options.website,
+    userAgent: options.userAgent,
+    validateImage: options.validateImage !== false,
+  });
   try {
-    parsedUrl = new URL(sourceUrl);
-  } catch (err) {
-    throw new Error(`Invalid URL: ${sourceUrl}`);
-  }
-  if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error(`Unsupported URL protocol: ${parsedUrl.protocol}`);
-  const response = await fetch(parsedUrl, { headers: options.headers || {} });
-  if (!response.ok) throw new Error(`Download failed: HTTP ${response.status}`);
-  const contentLength = Number(response.headers.get('content-length') || 0);
-  if (contentLength > 100 * 1024 * 1024) throw new Error('Remote file exceeds 100 MB import limit');
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.length === 0) throw new Error('Remote file is empty');
-  if (buffer.length > 100 * 1024 * 1024) throw new Error('Remote file exceeds 100 MB import limit');
-  const urlName = decodeURIComponent(path.basename(parsedUrl.pathname || '')) || 'Downloaded Item';
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-url-'));
-  const tempFile = path.join(tempDir, cleanName(urlName) || 'download.bin');
-  fs.writeFileSync(tempFile, buffer);
-  try {
-    return importFile(library, tempFile, {
+    return importFile(library, download.path, {
       ...options,
-      name: options.name || path.parse(urlName).name,
-      originalName: options.originalName || urlName,
-      mime: response.headers.get('content-type') || options.mime,
+      name: options.name || path.parse(download.originalName).name,
+      originalName: options.originalName || download.originalName,
+      mime: download.mime || options.mime,
+      size: download.size,
       url: sourceUrl,
     });
   } finally {
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    downloader.release(download.taskId);
   }
 }
 

@@ -9,6 +9,16 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const electronExecutable = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-electron-library-'));
 const stateFile = path.join(tempRoot, 'library-state.json');
+const smokeDownloadSource = fs.readFileSync(path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'));
+const smokeDownloadServer = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': smokeDownloadSource.length });
+  res.end(smokeDownloadSource);
+});
+await new Promise((resolve, reject) => {
+  smokeDownloadServer.once('error', reject);
+  smokeDownloadServer.listen(0, '127.0.0.1', resolve);
+});
+const smokeDownloadUrl = `http://127.0.0.1:${smokeDownloadServer.address().port}/image.png`;
 
 async function freePort() {
   return new Promise((resolve, reject) => {
@@ -61,6 +71,7 @@ const backend = spawnLogged(process.execPath, ['backend/src/server.js'], {
   EAGLE_THUMBNAIL_PORT: String(thumbnailPort),
   EAGLE_EXTENSION_PORT: String(extensionPort),
   EAGLE_LIBRARY_STATE_FILE: stateFile,
+  EAGLE_DOWNLOAD_ALLOW_HOSTS: '127.0.0.1',
 });
 const vite = spawnLogged(process.execPath, ['node_modules/vite/bin/vite.js', '--config', 'frontend/vite.preview.config.mjs', '--port', String(vitePort)], baseEnv);
 
@@ -94,6 +105,7 @@ try {
     EAGLE_PREVIEW_URL: `http://localhost:${vitePort}/src/app/index.html`,
     EAGLE_SMOKE_IMPORT_SOURCE: path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'),
     EAGLE_SMOKE_EXPORT_DIR: smokeExport,
+    EAGLE_SMOKE_DOWNLOAD_URL: smokeDownloadUrl,
   });
   const result = await waitFor(async () => {
     const output = electron.output();
@@ -108,4 +120,5 @@ try {
 } finally {
   await stop(vite);
   await stop(backend);
+  await new Promise((resolve) => smokeDownloadServer.close(resolve));
 }

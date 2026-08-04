@@ -463,6 +463,14 @@
       if (channel === 'item:set-custom-thumbnail' && desktopApi.thumbnail) return desktopApi.thumbnail.setCustom(params || {});
       if (channel === 'item:reset-custom-thumbnail' && desktopApi.thumbnail) return desktopApi.thumbnail.resetCustom(params || {});
       if (channel === 'item:refresh-thumbnail' && desktopApi.thumbnail) return desktopApi.thumbnail.refresh(params || {});
+      if ((channel === 'downloadWithNet' || channel === 'downloadWithRequest') && desktopApi.download) {
+        return desktopApi.download.direct(params || {}).then((result) => result.path);
+      }
+      if (channel === 'download:direct' && desktopApi.download) return desktopApi.download.direct(params || {});
+      if (channel === 'download:start' && desktopApi.download) return desktopApi.download.start(params || {});
+      if (channel === 'download:status' && desktopApi.download) return desktopApi.download.status(params);
+      if (channel === 'download:cancel' && desktopApi.download) return desktopApi.download.cancel(params);
+      if (channel === 'download:release' && desktopApi.download) return desktopApi.download.release(params);
     }
     return EventEmitter.prototype.invoke.call(this, channel, params);
   };

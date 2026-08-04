@@ -560,6 +560,8 @@ npm run electron
 - 新增 `tests/full-regression-isolated.mjs` 与 `npm run test:isolated`：每次运行均使用随机安全端口、唯一 library state、唯一后端/Electron user-data，并独立启动后端、Vite 和隐藏 Electron 调试宿主，不依赖或关闭共享 5176/9226 开发进程。
 - Roadmap 页面 API 基址支持受限的本机查询参数注入，默认仍兼容 41695；页面测试改为连接隔离 API、复用 Electron 页面目标并按真实 DOM 状态等待。旧测试中的固定 `test-run`、过期 320px 缩略图合同、Fetch 禁用端口及异常后未恢复资源库等问题已同步修复。
 - 完全隔离的非 Electron 全量套件最终通过：API 13/13、资源库/导入导出/搜索/缩略图/视频/插件/安全/Roadmap 等全部成功，输出 `FULL_REGRESSION_ISOLATED_OK`。
+- 提交后自审已修复条目 API 兼容边界：`batchUpdate` 的 patch 不能覆盖目标 ID；V1 回收站/恢复接受原版 `itemIds` 并保持布尔返回；V2 `item/update` 使用独立字段合同，支持 `ext/width/height/noThumbnail/noPreview`，扩展名仅在插件已准备好目标格式文件时更新 metadata，缺失或冲突均拒绝；V1 主界面白名单保持不变。
+- 导入最终成功事件已去重，主界面 E2E 断言每次 `upload-local-files` 只发一次 `import:operation-result`；新增 `tests/item-api-compatibility.mjs` 覆盖 ID 隔离、V1/V2 合同、类型不匹配、扩展名缺失/冲突、真实文件与重启恢复。隔离回归和主界面 E2E 改用当前 Node 运行时并动态解析 npm CLI，不再绑定本机用户名和固定版本路径。
 
 ### 仍未实现 / 未验收
 

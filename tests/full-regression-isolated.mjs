@@ -6,8 +6,8 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const managedNode = 'C:/Users/Administrator/.workbuddy/binaries/node/versions/22.22.2/node.exe';
-const npmCli = 'C:/Users/Administrator/.workbuddy/binaries/node/versions/22.22.2/node_modules/npm/bin/npm-cli.js';
+const nodeExecutable = process.execPath;
+const npmCli = process.env.EAGLE_NPM_CLI || process.env.npm_execpath || path.join(path.dirname(nodeExecutable), 'node_modules', 'npm', 'bin', 'npm-cli.js');
 const electronExecutable = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-full-regression-'));
 const stateFile = path.join(tempRoot, 'library-state.json');
@@ -82,8 +82,8 @@ const env = {
   EAGLE_PREVIEW_URL: `${previewOrigin}/roadmap.html`,
   EAGLE_DEBUG_PORT: String(debugPort),
 };
-const backend = spawnLogged(managedNode, ['backend/src/server.js'], env);
-const vite = spawnLogged(managedNode, [
+const backend = spawnLogged(nodeExecutable, ['backend/src/server.js'], env);
+const vite = spawnLogged(nodeExecutable, [
   'node_modules/vite/bin/vite.js',
   '--config',
   'frontend/vite.preview.config.mjs',
@@ -115,7 +115,8 @@ try {
     }
   }, 'isolated Electron debug host');
 
-  const tests = spawnLogged(managedNode, [npmCli, 'test'], env);
+  if (!fs.existsSync(npmCli)) throw new Error(`npm CLI not found: ${npmCli}`);
+  const tests = spawnLogged(nodeExecutable, [npmCli, 'test'], env);
   const code = await new Promise((resolve) => tests.child.once('exit', resolve));
   process.stdout.write(tests.output());
   if (code !== 0) throw new Error(`Isolated full regression failed with exit code ${code}`);

@@ -17,6 +17,14 @@ const ALLOWED_FIELDS = new Set([
   'deletedTime',
   'modificationTime',
 ]);
+const V2_ALLOWED_FIELDS = new Set([
+  ...ALLOWED_FIELDS,
+  'ext',
+  'width',
+  'height',
+  'noThumbnail',
+  'noPreview',
+]);
 
 export class ItemWorkflowError extends Error {
   constructor(message, code = 'ITEM_WORKFLOW_FAILED', statusCode = 400) {
@@ -42,15 +50,43 @@ function normalizeStringArray(value) {
   return [...new Set((Array.isArray(value) ? value : []).map((entry) => String(entry).trim()).filter(Boolean))];
 }
 
-function normalizePatch(input = {}) {
+function normalizeExtension(value) {
+  const ext = String(value || '').normalize('NFC').trim().replace(/^\.+/, '').toLowerCase();
+  if (!ext || ext.length > 32 || !/^[a-z0-9][a-z0-9._+-]*$/i.test(ext)) {
+    throw new ItemWorkflowError('Item extension is invalid', 'INVALID_ITEM_EXTENSION');
+  }
+  return ext;
+}
+
+function normalizeDimension(value, key) {
+  const dimension = Number(value);
+  if (!Number.isFinite(dimension) || dimension < 0 || dimension > 1_000_000) {
+    throw new ItemWorkflowError(`Item ${key} is invalid`, 'INVALID_ITEM_DIMENSION');
+  }
+  return Math.round(dimension);
+}
+
+function normalizePatch(input = {}, allowedFields = ALLOWED_FIELDS) {
   const patch = {};
-  for (const key of ALLOWED_FIELDS) {
+  for (const key of allowedFields) {
     if (!Object.prototype.hasOwnProperty.call(input, key)) continue;
     if (key === 'name') patch.name = normalizeItemName(input.name);
+    else if (key === 'ext') {
+      if (typeof input.ext !== 'string') continue;
+      patch.ext = normalizeExtension(input.ext);
+    }
+    else if (key === 'width' || key === 'height') {
+      if (typeof input[key] !== 'number') continue;
+      patch[key] = normalizeDimension(input[key], key);
+    }
     else if (key === 'tags' || key === 'folders') patch[key] = normalizeStringArray(input[key]);
     else if (key === 'comments') patch.comments = Array.isArray(input.comments) ? structuredClone(input.comments) : [];
     else if (key === 'star') patch.star = Math.max(0, Math.min(5, Number(input.star) || 0));
     else if (key === 'isDeleted') patch.isDeleted = Boolean(input.isDeleted);
+    else if (key === 'noThumbnail' || key === 'noPreview') {
+      if (typeof input[key] !== 'boolean') continue;
+      patch[key] = input[key];
+    }
     else if (key === 'deletedTime' || key === 'modificationTime') patch[key] = Number(input[key]) || 0;
     else patch[key] = String(input[key] ?? '');
   }
@@ -65,21 +101,38 @@ function samePath(left, right) {
   return normalize(left) === normalize(right);
 }
 
-function itemRenamePairs(library, item, newName) {
-  if (newName === item.name) return [];
+function itemRenamePairs(library, item, patch) {
+  const newName = patch.name ?? item.name;
+  const newExt = patch.ext ?? item.ext;
+  const nameChanged = newName !== item.name;
+  const extChanged = newExt !== item.ext;
+  if (!nameChanged && !extChanged) return [];
   const infoDir = path.join(library.rootDir, 'images', `${item.id}.info`);
-  return [
-    {
-      source: path.join(infoDir, `${item.name}.${item.ext}`),
-      target: path.join(infoDir, `${newName}.${item.ext}`),
-      required: true,
-    },
-    {
+  const source = path.join(infoDir, `${item.name}.${item.ext}`);
+  const target = path.join(infoDir, `${newName}.${newExt}`);
+  const pairs = [];
+
+  if (extChanged) {
+    const sourceExists = fs.existsSync(source);
+    const targetExists = fs.existsSync(target);
+    if (!targetExists) {
+      throw new ItemWorkflowError(`Item extension target is missing: ${path.basename(target)}`, 'ITEM_EXTENSION_TARGET_MISSING', 409);
+    }
+    if (sourceExists && !samePath(source, target)) {
+      throw new ItemWorkflowError(`Item extension target already exists: ${path.basename(target)}`, 'ITEM_RENAME_CONFLICT', 409);
+    }
+  } else {
+    pairs.push({ source, target, required: true });
+  }
+
+  if (nameChanged) {
+    pairs.push({
       source: path.join(infoDir, `${item.name}_thumbnail.png`),
       target: path.join(infoDir, `${newName}_thumbnail.png`),
       required: false,
-    },
-  ];
+    });
+  }
+  return pairs;
 }
 
 function validateRenamePair(pair, item) {
@@ -127,8 +180,9 @@ function rollbackRenames(completed) {
 }
 
 export class ItemWorkflowService {
-  updateMany(library, inputs = []) {
+  updateMany(library, inputs = [], options = {}) {
     const list = Array.isArray(inputs) ? inputs : [inputs];
+    const allowedFields = options.contract === 'v2' ? V2_ALLOWED_FIELDS : ALLOWED_FIELDS;
     if (list.length === 0) throw new ItemWorkflowError('At least one item update is required', 'ITEM_UPDATES_REQUIRED');
 
     const seen = new Set();
@@ -140,9 +194,9 @@ export class ItemWorkflowService {
       const index = library.items.findIndex((entry) => entry.id === id);
       if (index < 0) throw new ItemWorkflowError(`Item not found: ${id}`, 'ITEM_NOT_FOUND', 404);
       const current = library.items[index];
-      const patch = normalizePatch(input.patch && typeof input.patch === 'object' ? input.patch : input);
-      const renamePairs = Object.prototype.hasOwnProperty.call(patch, 'name')
-        ? itemRenamePairs(library, current, patch.name).filter((pair) => validateRenamePair(pair, current))
+      const patch = normalizePatch(input.patch && typeof input.patch === 'object' ? input.patch : input, allowedFields);
+      const renamePairs = Object.prototype.hasOwnProperty.call(patch, 'name') || Object.prototype.hasOwnProperty.call(patch, 'ext')
+        ? itemRenamePairs(library, current, patch).filter((pair) => validateRenamePair(pair, current))
         : [];
       return { id, index, current, patch, renamePairs };
     });

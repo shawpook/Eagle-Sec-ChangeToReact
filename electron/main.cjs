@@ -844,6 +844,13 @@ app.whenReady().then(async () => {
                 scope.$evalAsync();
                 await new Promise((resolve) => setTimeout(resolve, 100));
               };
+              const importResultCounts = {};
+              const importResultListener = (_event, result) => {
+                if (result && result.ok && result.channel) {
+                  importResultCounts[result.channel] = (importResultCounts[result.channel] || 0) + 1;
+                }
+              };
+              require('electron').ipcRenderer.on('import:operation-result', importResultListener);
               const before = scope.raw.length;
               onDropContainer({
                 preventDefault() {},
@@ -855,6 +862,9 @@ app.whenReady().then(async () => {
               });
               const dropped = await waitFor(() => scope.raw.find((item) => item.name === 'Dropped Main'), 'file drop import');
               const droppedId = dropped.id;
+              await waitFor(() => importResultCounts['upload-local-files'] === 1, 'single file import result');
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              if (importResultCounts['upload-local-files'] !== 1) throw new Error('file drop emitted duplicate import results');
               assertUniqueItems('file drop import');
 
               onDropContainer({
@@ -985,6 +995,7 @@ app.whenReady().then(async () => {
                 const current = await window.eagleDesktop.library.current();
                 return current.items.find((item) => item.id === droppedId && !item.isDeleted);
               }, 'restore persistence');
+              require('electron').ipcRenderer.off('import:operation-result', importResultListener);
 
               return {
                 originalPage: location.pathname.endsWith('/src/app/index.html'),

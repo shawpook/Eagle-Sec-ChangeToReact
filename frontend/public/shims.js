@@ -535,7 +535,6 @@
                 mockEmit('library:changed', library);
               }).catch(() => {});
             }
-            mockEmit('import:operation-result', { ok: true, channel, items, result });
           })
           .catch((err) => mockEmit('import:operation-result', { ok: false, channel, error: err.message }));
         return;

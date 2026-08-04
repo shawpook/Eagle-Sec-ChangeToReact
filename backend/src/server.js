@@ -1365,29 +1365,32 @@ function sendItemWorkflowError(res, err) {
   res.status(statusCode).json({ ...fail(err.message), code: err.code || 'ITEM_WORKFLOW_FAILED' });
 }
 
-function updateItemResponse(req, res) {
+function updateItemResponse(req, res, contract = 'v1') {
   try {
-    res.json(ok(itemWorkflow.updateMany(currentLibrary, [req.body || {}])[0]));
+    res.json(ok(itemWorkflow.updateMany(currentLibrary, [req.body || {}], { contract })[0]));
   } catch (err) {
     sendItemWorkflowError(res, err);
   }
 }
 
-function updateItemsResponse(req, res) {
+function updateItemsResponse(req, res, contract = 'v1') {
   try {
     const items = Array.isArray(req.body?.items) ? req.body.items : [];
-    res.json(ok(itemWorkflow.updateMany(currentLibrary, items)));
+    res.json(ok(itemWorkflow.updateMany(currentLibrary, items, { contract })));
   } catch (err) {
     sendItemWorkflowError(res, err);
   }
 }
 
-function batchUpdateItemsResponse(req, res) {
+function batchUpdateItemsResponse(req, res, contract = 'v1') {
   try {
     const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
     if (ids.length === 0) throw new ItemWorkflowError('ids are required', 'ITEM_IDS_REQUIRED');
-    const updates = ids.map((id) => ({ id, ...(req.body.patch || {}) }));
-    res.json(ok(itemWorkflow.updateMany(currentLibrary, updates)));
+    const patch = { ...(req.body.patch || {}) };
+    delete patch.id;
+    delete patch.itemID;
+    const updates = ids.map((id) => ({ ...patch, id }));
+    res.json(ok(itemWorkflow.updateMany(currentLibrary, updates, { contract })));
   } catch (err) {
     sendItemWorkflowError(res, err);
   }
@@ -1397,20 +1400,23 @@ function changeTrashStateResponse(req, res, isDeleted) {
   try {
     const ids = Array.isArray(req.body.ids)
       ? req.body.ids
-      : [req.body.id || req.body.itemID].filter(Boolean);
+      : Array.isArray(req.body.itemIds)
+        ? req.body.itemIds
+        : [req.body.id || req.body.itemID].filter(Boolean);
     if (ids.length === 0) throw new ItemWorkflowError('ids are required', 'ITEM_IDS_REQUIRED');
     const items = isDeleted
       ? itemWorkflow.moveToTrash(currentLibrary, ids)
       : itemWorkflow.restore(currentLibrary, ids);
-    res.json(ok(items));
+    const internalBatchRequest = Array.isArray(req.body.ids);
+    res.json(ok(internalBatchRequest ? items : true));
   } catch (err) {
     sendItemWorkflowError(res, err);
   }
 }
 
-app.post('/api/item/update', updateItemResponse);
-app.post('/api/item/updateMany', updateItemsResponse);
-app.post('/api/item/batchUpdate', batchUpdateItemsResponse);
+app.post('/api/item/update', (req, res) => updateItemResponse(req, res));
+app.post('/api/item/updateMany', (req, res) => updateItemsResponse(req, res));
+app.post('/api/item/batchUpdate', (req, res) => batchUpdateItemsResponse(req, res));
 
 app.post('/api/item/batchRename', (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
@@ -1881,9 +1887,9 @@ app.post('/api/v2/item/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-app.post('/api/v2/item/update', updateItemResponse);
-app.post('/api/v2/item/updateMany', updateItemsResponse);
-app.post('/api/v2/item/batchUpdate', batchUpdateItemsResponse);
+app.post('/api/v2/item/update', (req, res) => updateItemResponse(req, res, 'v2'));
+app.post('/api/v2/item/updateMany', (req, res) => updateItemsResponse(req, res, 'v2'));
+app.post('/api/v2/item/batchUpdate', (req, res) => batchUpdateItemsResponse(req, res, 'v2'));
 app.post('/api/v2/item/moveToTrash', (req, res) => changeTrashStateResponse(req, res, true));
 app.post('/api/v2/item/restore', (req, res) => changeTrashStateResponse(req, res, false));
 

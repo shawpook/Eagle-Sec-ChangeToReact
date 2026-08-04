@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const managedNode = 'C:/Users/Administrator/.workbuddy/binaries/node/versions/22.22.2/node.exe';
+const nodeExecutable = process.execPath;
 const electronExecutable = path.join(projectRoot, 'node_modules', 'electron', 'dist', 'electron.exe');
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-main-ui-workflow-'));
 const stateFile = path.join(tempRoot, 'library-state.json');
@@ -90,8 +90,8 @@ const backendEnv = {
   EAGLE_LIBRARY_STATE_FILE: stateFile,
   EAGLE_USER_DATA_DIR: path.join(tempRoot, 'user-data'),
 };
-const backend = spawnLogged(managedNode, ['backend/src/server.js'], backendEnv);
-const vite = spawnLogged(managedNode, ['node_modules/vite/bin/vite.js', '--config', 'frontend/vite.preview.config.mjs', '--port', String(vitePort)], baseEnv);
+const backend = spawnLogged(nodeExecutable, ['backend/src/server.js'], backendEnv);
+const vite = spawnLogged(nodeExecutable, ['node_modules/vite/bin/vite.js', '--config', 'frontend/vite.preview.config.mjs', '--port', String(vitePort)], baseEnv);
 let electron;
 
 try {
@@ -146,7 +146,7 @@ try {
   await stop(electron);
 
   await stop(backend);
-  const restartedBackend = spawnLogged(managedNode, ['backend/src/server.js'], backendEnv);
+  const restartedBackend = spawnLogged(nodeExecutable, ['backend/src/server.js'], backendEnv);
   try {
     await waitFor(() => restartedBackend.output().includes(`localhost:${apiPort}`), 'restarted backend');
     const response = await fetch(`http://localhost:${apiPort}/api/library/current?includeItems=true`);

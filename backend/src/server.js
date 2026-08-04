@@ -15,7 +15,7 @@ import {
   saveLibraryState,
   updateFolder,
 } from './library-store.js';
-import { exportItem, exportLibrary, importBase64, importBookmark, importFile, importFolder } from './importer.js';
+import { exportItem, exportLibrary, importBase64, importBookmark, importFile, importFolder, importUrl } from './importer.js';
 import { ensureThumbnail, generateThumbnail, generateThumbnailAsync, thumbnailPath } from './thumbnailer.js';
 import { exportCsvFile, itemsToCsv } from './csv-export.js';
 import { importEaglepack, packLibrary } from './eaglepack.js';
@@ -26,6 +26,8 @@ import { getMediaInfo } from './media-info.js';
 import { installPlugin, listInstalledPlugins, packPlugin, uninstallPlugin } from './plugin-package.js';
 import { migrateLibrary, scanLibrary } from './library-migration.js';
 import { getRequestToken, isLocalRequest } from './security.js';
+import { describeLibrary, LibraryService } from './library-service.js';
+import { exportAsFolder, exportImages } from './export-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -36,6 +38,7 @@ const port = Number(process.env.EAGLE_API_PORT || 41695);
 const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41692);
 const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41693);
 const apiToken = process.env.EAGLE_API_TOKEN || 'preview-token';
+const stateFile = path.resolve(process.env.EAGLE_LIBRARY_STATE_FILE || path.join(projectRoot, 'test-run/user-data/library-state.json'));
 const uploadDir = path.join(projectRoot, 'test-run/uploads');
 const userPluginsDir = path.join(projectRoot, 'test-run/user-data/Plugins');
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -87,10 +90,22 @@ app.use('/plugin-templates', pluginHtmlMiddleware(pluginTemplatesRoot));
 app.use('/plugin-templates', express.static(pluginTemplatesRoot));
 app.use('/plugins', express.static(userPluginsDir));
 
-let currentLibrary = loadLibrary(defaultMockLibrary());
+const libraryService = new LibraryService({
+  stateFile,
+  defaultLibraryPath: defaultMockLibrary(),
+});
+let currentLibrary = libraryService.currentLibrary();
 let folders = currentLibrary.folders;
 let smartFolders = currentLibrary.smartFolders;
 let tagsGroups = currentLibrary.tagsGroups;
+
+function activateLibrary(library) {
+  currentLibrary = library;
+  folders = library.folders;
+  smartFolders = library.smartFolders;
+  tagsGroups = library.tagsGroups;
+  return library;
+}
 
 function readItems() {
   return currentLibrary.items;
@@ -591,7 +606,7 @@ app.get('/api/library/info', (req, res) => {
   res.json(
     ok({
       library: {
-        path: currentLibrary.libraryPath,
+        path: currentLibrary.rootDir,
         name: currentLibrary.libraryName,
         folders: folders.length,
         smartFolders: smartFolders.length,
@@ -600,6 +615,36 @@ app.get('/api/library/info', (req, res) => {
       },
     })
   );
+});
+
+app.get('/api/library/current', (req, res) => {
+  res.json(ok(describeLibrary(currentLibrary, { includeItems: req.query.includeItems === 'true' })));
+});
+
+app.post('/api/library/create', (req, res) => {
+  try {
+    const result = libraryService.create(req.body || {});
+    activateLibrary(result.library);
+    res.status(201).json(ok({
+      ...describeLibrary(result.library, { includeItems: true }),
+      createdFiles: result.createdFiles,
+      history: libraryService.history(),
+    }));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/library/open', (req, res) => {
+  try {
+    const library = activateLibrary(libraryService.open(req.body.libraryPath || req.body.path));
+    res.json(ok({
+      ...describeLibrary(library, { includeItems: true }),
+      history: libraryService.history(),
+    }));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/library/stats', (req, res) => {
@@ -643,9 +688,15 @@ app.get('/api/library/validate', (req, res) => {
 });
 
 app.get('/api/library/history', (req, res) => {
-  res.json(
-    ok([currentLibrary.libraryPath, defaultMockLibrary()])
-  );
+  res.json(ok(libraryService.history()));
+});
+
+app.post('/api/library/history', (req, res) => {
+  try {
+    res.json(ok(libraryService.setHistory(req.body.history || req.body.libraryHistory || [])));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/folder/list', (req, res) => {
@@ -844,7 +895,7 @@ app.get('/api/v2/library/info', (req, res) => {
     ok({
       name: currentLibrary.libraryName,
       version: '4.0.0',
-      path: currentLibrary.libraryPath,
+      path: currentLibrary.rootDir,
       itemCount: items.length,
     })
   );
@@ -877,12 +928,11 @@ app.get('/api/application/info', (req, res) => {
 
 app.post('/api/library/switch', (req, res) => {
   try {
-    const nextLibrary = loadLibrary(req.body.libraryPath || defaultMockLibrary());
-    currentLibrary = nextLibrary;
-    folders = nextLibrary.folders;
-    smartFolders = nextLibrary.smartFolders;
-    tagsGroups = nextLibrary.tagsGroups;
-    res.json(ok({ path: nextLibrary.libraryPath, name: nextLibrary.libraryName }));
+    const nextLibrary = activateLibrary(libraryService.switch(req.body.libraryPath || req.body.path || defaultMockLibrary()));
+    res.json(ok({
+      ...describeLibrary(nextLibrary, { includeItems: true }),
+      history: libraryService.history(),
+    }));
   } catch (err) {
     res.status(400).json(fail(err.message));
   }
@@ -969,8 +1019,10 @@ app.post('/api/folder/removePassword', (req, res) => {
 });
 
 function addMockItems(body) {
-  const sources = body.images && typeof body.images === 'string' ? JSON.parse(body.images) : body.images;
+  let sources = body.images && typeof body.images === 'string' ? JSON.parse(body.images) : body.images;
+  if (!sources && Array.isArray(body.paths)) sources = body.paths.map((sourcePath) => ({ path: sourcePath }));
   const list = Array.isArray(sources) ? sources : [body];
+  if (list.length === 0) throw new Error('At least one import source is required');
   if (body.dryRun === true) {
     const now = Date.now();
     return list.map((source, index) => {
@@ -1001,7 +1053,9 @@ function addMockItems(body) {
     const src = source.src || source.url || source.path || '';
     return importFile(currentLibrary, source.path || source.src, {
       name: source.name || source.title,
+      originalName: source.originalName,
       ext: source.ext,
+      mime: source.mime || source.type,
       width: source.width,
       height: source.height,
       size: source.size,
@@ -1011,24 +1065,53 @@ function addMockItems(body) {
       tags: source.tags || [],
       folderIDs: source.folderIDs || source.folders || [],
       star: source.star || 0,
+      modificationTime: source.modificationTime,
+      lastModified: source.lastModified,
     });
   });
 }
 
 app.post('/api/item/addFromPath', (req, res) => {
-  res.json(ok(addMockItems(req.body)[0] || {}));
+  try {
+    res.status(201).json(ok(addMockItems(req.body)[0]));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.post('/api/item/addFromPaths', (req, res) => {
-  res.json(ok(addMockItems(req.body)));
+  try {
+    res.status(201).json(ok(addMockItems(req.body)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
-app.post('/api/item/addFromURL', (req, res) => {
-  res.json(ok(addMockItems(req.body)[0] || {}));
+app.post('/api/item/addFromURL', async (req, res) => {
+  try {
+    if (req.body.dryRun === true) {
+      res.json(ok(addMockItems(req.body)[0]));
+      return;
+    }
+    const item = await importUrl(currentLibrary, req.body.url || req.body.src, req.body || {});
+    res.status(201).json(ok(item));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
-app.post('/api/item/addFromURLs', (req, res) => {
-  res.json(ok(addMockItems(req.body)));
+app.post('/api/item/addFromURLs', async (req, res) => {
+  try {
+    const sources = Array.isArray(req.body.images) ? req.body.images : Array.isArray(req.body.urls) ? req.body.urls : [];
+    const items = [];
+    for (const source of sources) {
+      const params = typeof source === 'string' ? { url: source } : source;
+      items.push(await importUrl(currentLibrary, params.url || params.src, params));
+    }
+    res.status(201).json(ok(items));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.post('/api/item/batchSave', (req, res) => {
@@ -1045,15 +1128,27 @@ app.post('/api/item/upload', upload.single('file'), async (req, res) => {
     return;
   }
   try {
+    const parsed = path.parse(req.file.originalname);
     const item = importFile(currentLibrary, req.file.path, {
-      name: req.file.originalname,
+      name: parsed.name,
+      originalName: req.file.originalname,
+      ext: parsed.ext.slice(1),
+      mime: req.file.mimetype,
       tags: req.body.tags ? String(req.body.tags).split(',').map((tag) => tag.trim()).filter(Boolean) : [],
       folderIDs: req.body.folderIDs ? String(req.body.folderIDs).split(',').map((id) => id.trim()).filter(Boolean) : [],
       annotation: req.body.annotation || '',
     });
-    await generateThumbnailAsync(currentLibrary, item);
+    if (item.noThumbnail) {
+      try {
+        await generateThumbnailAsync(currentLibrary, item);
+        item.noThumbnail = false;
+        saveItems(currentLibrary);
+      } catch (err) {
+        item.noThumbnail = true;
+      }
+    }
     fs.rmSync(req.file.path, { force: true });
-    res.json(ok(item));
+    res.status(201).json(ok(item));
   } catch (err) {
     fs.rmSync(req.file.path, { force: true });
     res.status(500).json(fail(err.message));
@@ -1196,6 +1291,22 @@ app.post('/api/item/export', (req, res) => {
     return;
   }
   res.json(ok({ path: exportedPath }));
+});
+
+app.post('/api/export/images', async (req, res) => {
+  try {
+    res.json(ok(await exportImages(currentLibrary, req.body || {})));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/export/as-folder', async (req, res) => {
+  try {
+    res.json(ok(await exportAsFolder(currentLibrary, req.body || {})));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/export/csv', (req, res) => {
@@ -1359,17 +1470,16 @@ app.get('/api/v2/app/info', (req, res) => {
 });
 
 app.get('/api/v2/library/history', (req, res) => {
-  res.json(ok([currentLibrary.libraryPath, defaultMockLibrary()]));
+  res.json(ok(libraryService.history()));
 });
 
 app.post('/api/v2/library/switch', (req, res) => {
   try {
-    const nextLibrary = loadLibrary(req.body.libraryPath || defaultMockLibrary());
-    currentLibrary = nextLibrary;
-    folders = nextLibrary.folders;
-    smartFolders = nextLibrary.smartFolders;
-    tagsGroups = nextLibrary.tagsGroups;
-    res.json(ok({ path: nextLibrary.libraryPath, name: nextLibrary.libraryName }));
+    const nextLibrary = activateLibrary(libraryService.switch(req.body.libraryPath || req.body.path || defaultMockLibrary()));
+    res.json(ok({
+      ...describeLibrary(nextLibrary, { includeItems: true }),
+      history: libraryService.history(),
+    }));
   } catch (err) {
     res.status(400).json(fail(err.message));
   }
@@ -1425,15 +1535,27 @@ app.post('/api/v2/item/upload', upload.single('file'), async (req, res) => {
     return;
   }
   try {
+    const parsed = path.parse(req.file.originalname);
     const item = importFile(currentLibrary, req.file.path, {
-      name: req.file.originalname,
+      name: parsed.name,
+      originalName: req.file.originalname,
+      ext: parsed.ext.slice(1),
+      mime: req.file.mimetype,
       tags: req.body.tags ? String(req.body.tags).split(',').map((tag) => tag.trim()).filter(Boolean) : [],
       folderIDs: req.body.folderIDs ? String(req.body.folderIDs).split(',').map((id) => id.trim()).filter(Boolean) : [],
       annotation: req.body.annotation || '',
     });
-    await generateThumbnailAsync(currentLibrary, item);
+    if (item.noThumbnail) {
+      try {
+        await generateThumbnailAsync(currentLibrary, item);
+        item.noThumbnail = false;
+        saveItems(currentLibrary);
+      } catch (err) {
+        item.noThumbnail = true;
+      }
+    }
     fs.rmSync(req.file.path, { force: true });
-    res.json(ok(item));
+    res.status(201).json(ok(item));
   } catch (err) {
     fs.rmSync(req.file.path, { force: true });
     res.status(500).json(fail(err.message));

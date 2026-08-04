@@ -47,6 +47,20 @@ function resizeJpegSync(buffer, maxSize = 320) {
   return resizeRgbaSync(source, maxSize);
 }
 
+export function readImageDimensions(filePath, ext) {
+  const normalized = String(ext || path.extname(filePath).slice(1)).toLowerCase();
+  const buffer = fs.readFileSync(filePath);
+  if (normalized === 'png') {
+    const image = PNG.sync.read(buffer);
+    return { width: image.width, height: image.height };
+  }
+  if (normalized === 'jpg' || normalized === 'jpeg') {
+    const image = jpeg.decode(buffer, { useTArray: true });
+    return { width: image.width, height: image.height };
+  }
+  return { width: 0, height: 0 };
+}
+
 export function generateThumbnail(library, item, options = {}) {
   const original = path.join(library.rootDir, 'images', `${item.id}.info`, `${item.name}.${item.ext}`);
   const target = thumbnailPath(library, item);

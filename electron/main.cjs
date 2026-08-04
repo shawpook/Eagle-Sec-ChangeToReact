@@ -1,19 +1,28 @@
 const path = require('node:path');
 const fs = require('node:fs');
+const http = require('node:http');
+const https = require('node:https');
 const os = require('node:os');
 const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell, Tray } = require('electron');
 
 const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5176/src/app/index.html';
+const apiBase = process.env.EAGLE_API_URL || 'http://localhost:41695';
 const mockLibraryRoot = path.resolve(__dirname, '../frontend/public/mock-library/Eagle Reverse Demo.library');
 const smokeMode = process.argv.includes('--smoke');
 const pluginSmokeMode = process.argv.includes('--smoke-plugin');
 const desktopSmokeMode = process.argv.includes('--smoke-desktop');
+const librarySmokeMode = process.argv.includes('--smoke-library');
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
-const allowedRoots = [mockLibraryRoot, path.resolve(__dirname, '..', '..')];
+const allowedRoots = new Set([mockLibraryRoot, path.resolve(__dirname, '..', '..')]);
+const exportJobs = new Map();
+
+function allowRoot(target) {
+  if (target) allowedRoots.add(path.resolve(target));
+}
 
 function safeResolve(target) {
   const resolved = path.resolve(target);
-  const inside = allowedRoots.some((root) => resolved === root || resolved.startsWith(root + path.sep));
+  const inside = [...allowedRoots].some((root) => resolved === root || resolved.startsWith(root + path.sep));
   if (!inside) throw new Error(`Unsafe path: ${target}`);
   return resolved;
 }
@@ -23,6 +32,131 @@ function loadWindowState() {
     return JSON.parse(fs.readFileSync(windowStateFile(), 'utf8'));
   } catch (err) {
     return {};
+  }
+}
+
+async function apiRequest(route, options = {}) {
+  const target = new URL(`${apiBase}${route}`);
+  const body = options.body ? JSON.stringify(options.body) : '';
+  const response = await new Promise((resolve, reject) => {
+    const client = target.protocol === 'https:' ? https : http;
+    const request = client.request(target, {
+      method: options.method || 'GET',
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } : {}),
+        ...(options.headers || {}),
+      },
+    }, (res) => {
+      let text = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { text += chunk; });
+      res.on('end', () => resolve({ statusCode: res.statusCode || 0, text }));
+    });
+    request.on('error', reject);
+    if (body) request.write(body);
+    request.end();
+  });
+  let payload;
+  try {
+    payload = JSON.parse(response.text);
+  } catch (err) {
+    payload = { status: 'error', message: response.text || `HTTP ${response.statusCode}` };
+  }
+  if (response.statusCode < 200 || response.statusCode >= 300 || payload.status !== 'success') {
+    throw new Error(payload.message || `API request failed: HTTP ${response.statusCode}`);
+  }
+  return payload.data;
+}
+
+function mockLibraryDescription() {
+  return {
+    path: mockLibraryRoot,
+    rootDir: mockLibraryRoot,
+    libraryPath: mockLibraryRoot,
+    name: 'Eagle Reverse Demo',
+    libraryName: 'Eagle Reverse Demo',
+    imagesDir: path.join(mockLibraryRoot, 'images') + path.sep,
+    cachePath: path.join(mockLibraryRoot, 'cache.json'),
+    imagesStringPath: path.join(mockLibraryRoot, 'cache.json'),
+    folders: [],
+    smartFolders: [],
+    quickAccess: [],
+    tagsGroups: [],
+    items: [],
+    itemCount: 0,
+  };
+}
+
+function libraryLoadedPayload(library) {
+  return {
+    machineID: 'eagle-reverse',
+    backgroundWindowID: 0,
+    usingCache: true,
+    usingPreloadCache: false,
+    loadedTime: 0,
+    rootDir: library.rootDir || library.path,
+    imagesDir: library.imagesDir,
+    imagesStringPath: library.imagesStringPath || library.cachePath,
+    cachePath: library.cachePath,
+    folders: library.folders || [],
+    smartFolders: library.smartFolders || [],
+    quickAccess: library.quickAccess || [],
+    tagsGroups: library.tagsGroups || [],
+    modificationTime: library.modificationTime || Date.now(),
+  };
+}
+
+async function notifyLibraryLoaded(library) {
+  allowRoot(library.rootDir || library.path);
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send('library:changed', library);
+      win.webContents.send('preload-library', { cachePath: library.cachePath });
+      win.webContents.send('app-status-library-loaded', libraryLoadedPayload(library));
+    }
+  }
+}
+
+async function switchLibrary(libraryPath) {
+  const library = await apiRequest('/api/library/switch', {
+    method: 'POST',
+    body: { libraryPath },
+  });
+  await notifyLibraryLoaded(library);
+  return library;
+}
+
+async function runExport(event, mode, params = {}) {
+  const jobId = params.jobId || `export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const images = Array.isArray(params.images) ? params.images : [];
+  const total = images.length || (params.folder && Array.isArray(params.folder.images) ? params.folder.images.length : 0);
+  const job = { cancelled: false };
+  exportJobs.set(jobId, job);
+  event.sender.send('show-export-task', total);
+  try {
+    const current = await apiRequest('/api/library/current');
+    const [{ loadLibrary }, exportModule] = await Promise.all([
+      import('../backend/src/library-store.js'),
+      import('../backend/src/export-service.js'),
+    ]);
+    const library = loadLibrary(current.path);
+    const exportFunction = mode === 'as-folder' ? exportModule.exportAsFolder : exportModule.exportImages;
+    const totalItems = Array.isArray(params.images) ? params.images.length : total;
+    const result = await exportFunction(library, params, {
+      isCancelled: () => job.cancelled,
+      onProgress(progress) {
+        event.sender.send('finish-export-task', progress.current === (progress.total || totalItems) ? params.savePath : undefined);
+        event.sender.send('export:progress', { jobId, ...progress });
+      },
+    });
+    event.sender.send('export:complete', { jobId, ...result });
+    return { jobId, ...result };
+  } catch (err) {
+    event.sender.send('close-export-task');
+    event.sender.send('export:error', { jobId, error: err.message, cancelled: err.name === 'ExportCancelledError' });
+    throw err;
+  } finally {
+    exportJobs.delete(jobId);
   }
 }
 
@@ -152,11 +286,53 @@ function registerIpc() {
     platform: process.platform,
   }));
 
-  ipcMain.handle('library:get-current', () => ({
-    path: mockLibraryRoot,
-    name: 'Eagle Reverse Demo',
-    imagesDir: path.join(mockLibraryRoot, 'images/'),
+  ipcMain.handle('library:get-current', async () => {
+    try {
+      const library = await apiRequest('/api/library/current?includeItems=true');
+      allowRoot(library.rootDir || library.path);
+      return library;
+    } catch (err) {
+      if (smokeMode || pluginSmokeMode || desktopSmokeMode) return mockLibraryDescription();
+      throw err;
+    }
+  });
+
+  ipcMain.handle('library:get-history', () => apiRequest('/api/library/history'));
+
+  ipcMain.handle('library:set-history', (event, history = []) => apiRequest('/api/library/history', {
+    method: 'POST',
+    body: { history },
   }));
+
+  ipcMain.handle('library:create', async (event, params = {}) => {
+    const library = await apiRequest('/api/library/create', { method: 'POST', body: params });
+    await notifyLibraryLoaded(library);
+    return library;
+  });
+
+  ipcMain.handle('library:open', async (event, libraryPath) => switchLibrary(libraryPath));
+  ipcMain.handle('library:switch', async (event, libraryPath) => switchLibrary(libraryPath));
+
+  ipcMain.on('create-library', async (event, params = {}) => {
+    try {
+      const library = await apiRequest('/api/library/create', { method: 'POST', body: params });
+      await notifyLibraryLoaded(library);
+      event.sender.send('library:operation-result', { ok: true, action: 'create', library });
+    } catch (err) {
+      event.sender.send('library:operation-result', { ok: false, action: 'create', error: err.message });
+    }
+  });
+
+  for (const channel of ['open-library', 'add-to-history-and-open']) {
+    ipcMain.on(channel, async (event, libraryPath) => {
+      try {
+        const library = await switchLibrary(libraryPath);
+        event.sender.send('library:operation-result', { ok: true, action: 'open', library });
+      } catch (err) {
+        event.sender.send('library:operation-result', { ok: false, action: 'open', error: err.message });
+      }
+    });
+  }
 
   ipcMain.handle('get-collect-window-data', () => {
     const name = 'Welcome Library';
@@ -192,9 +368,25 @@ function registerIpc() {
     return true;
   });
 
+  ipcMain.handle('dialog:show-open', async (event, options = {}) => {
+    const normalized = { ...options };
+    delete normalized.browserWindow;
+    return dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), normalized);
+  });
+
+  ipcMain.handle('dialog:show-save', async (event, options = {}) => {
+    const normalized = { ...options };
+    delete normalized.browserWindow;
+    return dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), normalized);
+  });
+
   ipcMain.handle('dialog:openFile', async (event, options = {}) => {
-    const result = await dialog.showOpenDialog({ properties: ['openFile'], ...options });
+    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), { properties: ['openFile'], ...options });
     return result;
+  });
+
+  ipcMain.handle('dialog:openDirectory', async (event, options = {}) => {
+    return dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), { properties: ['openDirectory'], ...options });
   });
 
   ipcMain.handle('fs:list', (event, target = mockLibraryRoot) => {
@@ -227,12 +419,67 @@ function registerIpc() {
 
   ipcMain.handle('item:importPaths', async (event, paths = []) => {
     const list = Array.isArray(paths) ? paths : [paths];
-    const res = await fetch('http://localhost:41695/api/item/addFromPaths', {
+    return apiRequest('/api/item/addFromPaths', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paths: list }),
+      body: { images: list.map((sourcePath) => ({ path: sourcePath })) },
     });
-    return res.json();
+  });
+
+  ipcMain.handle('item:import-files', async (event, params = {}) => {
+    const files = Array.isArray(params.files) ? params.files : [];
+    return apiRequest('/api/item/addFromPaths', {
+      method: 'POST',
+      body: { images: files },
+    });
+  });
+
+  ipcMain.handle('item:import-folders', async (event, params = {}) => {
+    const folders = Array.isArray(params.paths) ? params.paths : [params.path || params.folderPath].filter(Boolean);
+    const results = [];
+    for (const folderPath of folders) {
+      const result = await apiRequest('/api/item/importFolder', {
+        method: 'POST',
+        body: { ...params, folderPath },
+      });
+      results.push(...(result.items || []));
+    }
+    return results;
+  });
+
+  ipcMain.handle('item:import-url', (event, params = {}) => apiRequest('/api/item/addFromURL', {
+    method: 'POST',
+    body: params,
+  }));
+
+  ipcMain.handle('item:import-urls', (event, params = {}) => apiRequest('/api/item/addFromURLs', {
+    method: 'POST',
+    body: { images: Array.isArray(params) ? params : params.images || params.urls || [] },
+  }));
+
+  ipcMain.handle('export:images', (event, params = {}) => runExport(event, 'images', params));
+  ipcMain.handle('export:as-folder', (event, params = {}) => runExport(event, 'as-folder', params));
+  ipcMain.handle('export:cancel', (event, jobId) => {
+    if (!jobId) {
+      for (const job of exportJobs.values()) job.cancelled = true;
+      return exportJobs.size > 0;
+    }
+    const job = exportJobs.get(jobId);
+    if (!job) return false;
+    job.cancelled = true;
+    return true;
+  });
+
+  ipcMain.on('export-images', (event, params = {}) => {
+    runExport(event, 'images', params).catch(() => {});
+  });
+  ipcMain.on('export-as-folder', (event, params = {}) => {
+    runExport(event, 'as-folder', params).catch(() => {});
+  });
+  ipcMain.on('cancel.all', () => {
+    for (const job of exportJobs.values()) job.cancelled = true;
+  });
+  ipcMain.on('show-item-in-folder', (event, target) => {
+    if (target) shell.showItemInFolder(path.resolve(target));
   });
 }
 
@@ -241,7 +488,13 @@ function setupMenu() {
     {
       label: 'File',
       submenu: [
-        { label: 'Open Library', click: () => dialog.showOpenDialog({ properties: ['openDirectory'] }) },
+        {
+          label: 'Open Library',
+          click: async () => {
+            const result = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+            if (!result.canceled && result.filePaths[0]) await switchLibrary(result.filePaths[0]);
+          },
+        },
         { type: 'separator' },
         { role: 'quit' },
       ],
@@ -269,7 +522,7 @@ function setupMenu() {
 }
 
 function setupTray() {
-  if (smokeMode || pluginSmokeMode || desktopSmokeMode) return null;
+  if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode) return null;
   const iconPath = path.join(__dirname, '../frontend/public/browser-extension/icons/icon128.png');
   const icon = fs.existsSync(iconPath) ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
   const tray = new Tray(icon.resize({ width: 16, height: 16 }));
@@ -295,7 +548,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode) {
   app.setPath('userData', path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -303,6 +556,59 @@ app.whenReady().then(async () => {
   registerIpc();
   setupMenu();
   await loadServicePlugins();
+  if (librarySmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('LIBRARY_SMOKE_TIMEOUT');
+      app.quit();
+    }, 10000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const smokeSource = process.env.EAGLE_SMOKE_IMPORT_SOURCE || '';
+          const smokeExport = process.env.EAGLE_SMOKE_EXPORT_DIR || '';
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const current = await window.eagleDesktop.library.current();
+              const history = await window.eagleDesktop.library.history();
+              const imported = ${JSON.stringify(smokeSource)}
+                ? await window.eagleDesktop.import.files({ files: [{ path: ${JSON.stringify(smokeSource)}, name: 'Electron Imported' }] })
+                : [];
+              const exported = imported.length > 0 && ${JSON.stringify(smokeExport)}
+                ? await window.eagleDesktop.export.images({ images: imported, savePath: ${JSON.stringify(smokeExport)} })
+                : { count: 0, paths: [] };
+              return {
+                currentPath: current.path,
+                itemCount: Array.isArray(current.items) ? current.items.length : -1,
+                historyHasCurrent: history.includes(current.path),
+                imported: imported.length,
+                importedExt: imported[0] && imported[0].ext,
+                exported: exported.count,
+                exportedPaths: exported.paths,
+                api: [
+                  typeof window.eagleDesktop.library.create,
+                  typeof window.eagleDesktop.library.open,
+                  typeof window.eagleDesktop.library.switch,
+                  typeof window.eagleDesktop.dialog.openDirectory,
+                  typeof window.eagleDesktop.dialog.save,
+                  typeof window.eagleDesktop.import.files,
+                  typeof window.eagleDesktop.export.images,
+                ],
+              };
+            })()`
+          );
+          const exportedExists = result.exportedPaths.every((file) => fs.existsSync(file));
+          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.api.every((type) => type === 'function');
+          console.log(ok ? `LIBRARY_SMOKE_OK ${JSON.stringify(result)}` : `LIBRARY_SMOKE_FAIL ${JSON.stringify(result)}`);
+        } catch (err) {
+          console.error(`LIBRARY_SMOKE_ERROR ${err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
   if (desktopSmokeMode) {
     const menuOk = Menu.getApplicationMenu() !== null;
     const timeout = setTimeout(() => {

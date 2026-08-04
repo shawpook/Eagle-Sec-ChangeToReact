@@ -7,14 +7,17 @@
   const nativeRequire = typeof window.require === 'function' ? window.require : null;
   const isElectronRuntime =
     typeof process !== 'undefined' && process.versions && typeof process.versions.electron === 'string';
-  let realElectron = null;
-  let realRemote = null;
+  let nativeFs = null;
+  let nativePath = null;
   if (isElectronRuntime && nativeRequire) {
-    // Keep the renderer on the mock IPC path in both browser and Electron so
-    // the original app can receive the same lifecycle events used by the preview.
-    realElectron = null;
-    realRemote = null;
+    try {
+      nativeFs = nativeRequire('node:fs');
+      nativePath = nativeRequire('node:path');
+    } catch (err) {
+      console.warn('[eagle-shim] native filesystem bridge unavailable', err);
+    }
   }
+  const desktopApi = window.eagleDesktop || null;
 
   function syncText(url) {
     try {
@@ -302,7 +305,7 @@
     }
 
     sendTo(id, channel, params) {
-      console.debug('[eagle-shim] ipc sendTo', id, channel, params);
+      this.send(channel, params);
     }
 
     invoke(channel, params) {
@@ -336,6 +339,67 @@
   }
 
   const ipcRenderer = new EventEmitter();
+  const mockEmit = ipcRenderer.emit.bind(ipcRenderer);
+  const desktopSendChannels = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
+  ipcRenderer.send = function (channel, params) {
+    if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {
+      if (channel === 'create-library') desktopApi.library.create(params || {}).catch(() => {});
+      else desktopApi.library.switch(params).catch(() => {});
+      return;
+    }
+    if (desktopApi && desktopApi.import) {
+      let action = null;
+      if (channel === 'upload-local-files') action = desktopApi.import.files(params || {});
+      if (channel === 'upload-url') action = desktopApi.import.url(params || {});
+      if (channel === 'upload-urls') action = desktopApi.import.urls(params || []);
+      if (channel === 'import-folders') action = desktopApi.import.folders(params || {});
+      if (action) {
+        Promise.resolve(action)
+          .then((result) => {
+            const items = Array.isArray(result) ? result : [result];
+            items.forEach((item) => mockEmit('file-uploaded', item));
+            mockEmit('import:operation-result', { ok: true, channel, items });
+          })
+          .catch((err) => mockEmit('import:operation-result', { ok: false, channel, error: err.message }));
+        return;
+      }
+    }
+    if (desktopApi && desktopApi.export) {
+      if (channel === 'export-images') {
+        desktopApi.export.images(params || {}).catch(() => {});
+        return;
+      }
+      if (channel === 'export-as-folder') {
+        desktopApi.export.asFolder(params || {}).catch(() => {});
+        return;
+      }
+      if (channel === 'cancel.all') {
+        desktopApi.export.cancel().catch(() => {});
+        return;
+      }
+      if (channel === 'show-item-in-folder') {
+        console.debug('[eagle-shim] reveal exported item', params);
+        return;
+      }
+    }
+    if (channel === 'update-main-window-id' || channel === 'check-for-update') return;
+    console.debug('[eagle-shim] ipc send', channel, params);
+  };
+  ipcRenderer.invoke = function (channel, params) {
+    if (desktopApi) {
+      if (channel === 'get-collect-window-data') return desktopApi.getCollectWindowData();
+      if (channel === 'library:get-current' && desktopApi.library) return desktopApi.library.current();
+    }
+    return EventEmitter.prototype.invoke.call(this, channel, params);
+  };
+  if (desktopApi && desktopApi.library) {
+    if (typeof desktopApi.library.onChanged === 'function') {
+      desktopApi.library.onChanged((library) => mockEmit('library:changed', library));
+    }
+    if (typeof desktopApi.library.onOperationResult === 'function') {
+      desktopApi.library.onOperationResult((result) => mockEmit('library:operation-result', result));
+    }
+  }
 
   const windowApi = () => (window.eagleDesktop && window.eagleDesktop.window) || null;
   const windowListeners = new Map();
@@ -498,9 +562,21 @@
   };
 
   const nativeTheme = { shouldUseDarkColors: false, on() {}, off() {} };
+  function dialogOptions(first, second) {
+    return second && typeof second === 'object' ? second : (first && typeof first === 'object' && !first.webContents ? first : {});
+  }
+
   const dialog = {
-    showOpenDialog: () => Promise.resolve({ canceled: true, filePaths: [] }),
-    showSaveDialog: () => Promise.resolve({ canceled: true, filePath: '' }),
+    showOpenDialog(first, second) {
+      const options = dialogOptions(first, second);
+      if (desktopApi && desktopApi.dialog) return desktopApi.dialog.open(options);
+      return Promise.resolve({ canceled: true, filePaths: [] });
+    },
+    showSaveDialog(first, second) {
+      const options = dialogOptions(first, second);
+      if (desktopApi && desktopApi.dialog) return desktopApi.dialog.save(options);
+      return Promise.resolve({ canceled: true, filePath: '' });
+    },
     showMessageBox: () => Promise.resolve({ response: 0 }),
   };
 
@@ -704,8 +780,19 @@
 
   const lineByLineMock = class LineByLineMock {
     constructor(filePath, options) {
-      const items = (window.__mockLibraryCache || []).slice();
-      this.lines = items.map((item) => JSON.stringify(item));
+      let lines = [];
+      if (nativeFs) {
+        try {
+          lines = nativeFs.readFileSync(filePath, 'utf8').split(/\r?\n/).filter(Boolean);
+        } catch (err) {
+          lines = [];
+        }
+      }
+      if (lines.length === 0) {
+        const items = (window.__mockLibraryCache || []).slice();
+        lines = items.map((item) => JSON.stringify(item));
+      }
+      this.lines = lines;
       this.index = 0;
     }
 
@@ -803,6 +890,29 @@
     remotePlugin: { install: () => Promise.resolve(), uninstall: () => Promise.resolve() },
   };
 
+  const settingsMemory = {};
+  const settingsPrefix = 'eagle.reverse.settings.';
+  function readSetting(key) {
+    if (Object.prototype.hasOwnProperty.call(settingsMemory, key)) return settingsMemory[key];
+    try {
+      const raw = localStorage.getItem(settingsPrefix + key);
+      return raw === null ? undefined : JSON.parse(raw);
+    } catch (err) {
+      return undefined;
+    }
+  }
+  function writeSetting(key, value) {
+    settingsMemory[key] = value;
+    try {
+      localStorage.setItem(settingsPrefix + key, JSON.stringify(value));
+    } catch (err) {
+      // Keep the in-memory value when storage is unavailable.
+    }
+    if (desktopApi && desktopApi.library && key === 'libraryHistory') {
+      desktopApi.library.setHistory(value).catch(() => {});
+    }
+  }
+
   const electronSettings = {
     getPreferences() {
       const defaults = loadJsModule('/src/app/js/default-preferences.js') || {};
@@ -813,14 +923,26 @@
       };
     },
     getSync(key) {
-      return key === 'colorSpace' ? 'Unmanaged' : undefined;
+      const value = readSetting(key);
+      if (value !== undefined) return value;
+      if (key === 'colorSpace') return 'Unmanaged';
+      if (key === 'libraryHistory') {
+        const current = window.__mockLibrary && window.__mockLibrary.rootDir;
+        return current ? [current] : [];
+      }
+      return undefined;
     },
-    setSync() {},
-    get() {},
-    set() {},
-    has: () => false,
-    delete() {},
-    clear() {},
+    setSync(key, value) { writeSetting(key, value); },
+    get(key) { return Promise.resolve(this.getSync(key)); },
+    set(key, value) { writeSetting(key, value); return Promise.resolve(value); },
+    has: (key) => readSetting(key) !== undefined,
+    delete(key) {
+      delete settingsMemory[key];
+      try { localStorage.removeItem(settingsPrefix + key); } catch (err) {}
+    },
+    clear() {
+      Object.keys(settingsMemory).forEach((key) => delete settingsMemory[key]);
+    },
   };
 
   class MockI18n {
@@ -864,13 +986,13 @@
   }
 
   const bareModules = {
-    'electron': realElectron || electron,
-    '@electron/remote': realRemote || remote,
-    'path': pathModule,
-    'node:path': pathModule,
+    'electron': electron,
+    '@electron/remote': remote,
+    'path': nativePath || pathModule,
+    'node:path': nativePath || pathModule,
     'url': urlModule,
     'node:url': urlModule,
-    'fs': fsModule,
+    'fs': nativeFs || fsModule,
     'os': osModule,
     'console': console,
     'crypto': {
@@ -884,7 +1006,7 @@
       spawnSync: () => ({ stdout: BrowserBuffer.from(''), status: 0 }),
       spawn: () => ({ on() {}, stdout: { on() {} }, stderr: { on() {} } }),
     },
-    'fs-extra': fsModule,
+    'fs-extra': nativeFs || fsModule,
     'async': {
       each() {},
       eachOf() {},
@@ -980,6 +1102,9 @@
 
   function require(request) {
     const req = String(request || '').replace(/\\/g, '/');
+    if (isElectronRuntime && nativeRequire && (req === 'fs' || req === 'node:fs' || req === 'path' || req === 'node:path')) {
+      return nativeRequire(req);
+    }
     if (req === 'app-root-path') return appRootModule;
     if (bareModules[req] !== undefined) return bareModules[req];
     if (req === '/src/i18n' || req === '/src/i18n/index.js') return MockI18n;
@@ -1050,9 +1175,9 @@
   window.global.EAGLE_THUMBNAIL_TEMP_PATH = '/mock-thumbnails';
   window.require = require;
   window.__eagleRequire = require;
-  window.electron = realElectron || electron;
-  window.$$electronIpc = (realElectron && realElectron.ipcRenderer) || ipcRenderer;
-  window.__eagleIpc = (realElectron && realElectron.ipcRenderer) || ipcRenderer;
+  window.electron = electron;
+  window.$$electronIpc = ipcRenderer;
+  window.__eagleIpc = ipcRenderer;
   window.__eagleSyncText = syncText;
   window.electronSettings = electronSettings;
   window.pluginModule = pluginModule;
@@ -1242,9 +1367,31 @@
     }, 550);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', emitMockLifecycle, { once: true });
-  } else {
+  function startLifecycle() {
+    if (desktopApi && desktopApi.library && typeof desktopApi.library.current === 'function') {
+      desktopApi.library.current().then((library) => {
+        window.__mockLibrary = {
+          ...library,
+          rootDir: library.rootDir || library.path,
+          imagesDir: library.imagesDir,
+          libraryName: library.libraryName || library.name,
+        };
+        window.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : [];
+        const storedHistory = readSetting('libraryHistory');
+        settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])].filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
+        emitMockLifecycle();
+      }).catch((err) => {
+        console.warn('[eagle-shim] current library bootstrap failed', err);
+        emitMockLifecycle();
+      });
+      return;
+    }
     emitMockLifecycle();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startLifecycle, { once: true });
+  } else {
+    startLifecycle();
   }
 })();

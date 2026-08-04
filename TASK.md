@@ -470,6 +470,59 @@ npm run electron
 - 前端预览阶段 mock 数据只用于界面验证。
 - 后续 Electron 阶段可以读取真实资源库，但需要自行实现安全边界。
 
+## 资源库创建闭环（2026-08-04）
+
+本轮按源码、真实落盘与重启恢复重新验收，状态如下：
+
+### 完整实现并通过自动化闭环
+
+- 新增 `backend/src/library-service.js`，统一提供 `create/open/switch/history/current`，并以 `library-state.json` 持久化 current/history。
+- 新增 `POST /api/library/create`、`GET /api/library/current`、`POST /api/library/open`，V1/V2 switch/history 统一使用同一服务。
+- 新库会创建 `metadata.json`、`tags.json`、`saved-filters.json`、`folders.json`、`cache.json`、`search-index.json` 与 `images/`。
+- Electron preload/main 已提供目录选择、保存对话框以及 `library:create/open/switch/current/history` 受控桥接。
+- 原版 `library-panel` 与 `app.bundle.js` 的 `create-library`、`open-library`、`add-to-history-and-open` 已由 `frontend/public/shims.js` 转发到真实桥接；Electron 下文件存在性检查和 cache 读取使用真实 Node 文件系统，浏览器预览仍保留 mock。
+- 新增独立临时目录测试：
+  - `tests/library-create-service.mjs`：验证结构落盘及服务重建恢复。
+  - `tests/library-create-api.mjs`：验证独立后端进程创建、退出、重启后恢复 current/history。
+  - `tests/electron-library-bridge.mjs`：清除 `ELECTRON_RUN_AS_NODE`，以独立 Vite/API 进程启动原版 renderer，并在 Electron 页面内真实执行当前库读取 → PNG 导入 → 图片导出 → 导出文件存在验证。
+
+### 本轮验证结果
+
+- 新增/修改 JS 语法检查：通过。
+- 资源库服务创建与重启恢复：通过。
+- API 创建与后端进程重启恢复：通过。
+- Electron 资源库桥接：通过。
+- API 冒烟：13/13 通过。
+- Workbench 交互回归：通过。
+- Electron desktop 冒烟：通过。
+- `npm run build`：通过；但构建仍只转换 2 个模块，`dist/frontend` 仍未包含原版 `src/app`，独立发布问题未解决。
+
+### 图片导入闭环更新（2026-08-04）
+
+- `addFromPaths` 同时兼容 `{ paths: [...] }` 与 `{ images: [{ path }] }`，源文件不存在/不是文件时返回 400，不再生成无原文件条目。
+- `importer.js` 按文件魔数、originalname、MIME 和路径扩展名识别 PNG/JPG/GIF/WebP；PNG/JPG 会写入正确 width/height/mime/size。
+- multer 上传会正确拆分 name/ext，`Uploaded Probe.png` 持久化为 name=`Uploaded Probe`、ext=`png`，不再出现 `.png.bin`。
+- Electron/preload/shim 已接通原版 `upload-local-files`、`upload-url(s)`、`import-folders` 业务通道；成功项通过原版 `file-uploaded` 事件进入 renderer 列表。
+- URL 导入会真实下载远程文件，并限制 100 MB；Base64 导入改用唯一系统临时目录，避免固定临时文件并发冲突。
+- `tests/image-import-closed-loop.mjs` 使用唯一系统临时目录创建真实 PNG/JPG，验证原文件、metadata、缩略图、尺寸、扩展名、MIME、缺失源错误、multer 上传和后端重启恢复，测试通过。
+
+### 部分实现 / 未实现
+
+- 已接通资源库创建/打开业务事件，但尚未新增系统文件对话框点击级 UI 自动化；当前以真实 bridge、API 和文件闭环测试验收。
+- 原版文件夹导入入口会继续复用其现有目录树/标签 UI，但后端导入尚未完整复刻原版文件夹树映射、逐项进度和取消语义，标记为部分实现。
+### 图片导出闭环更新（2026-08-04）
+
+- 新增 `backend/src/export-service.js`，统一多选图片与目录树导出；同名/已存在文件自动追加序号，不覆盖目标文件。
+- 复制使用排他模式并保留源文件时间戳；源文件缺失或条目不存在时明确失败。
+- Electron/preload/shim 已接通原版 `export-images`、`export-as-folder`、`show-export-task`、`finish-export-task`、`close-export-task` 和 `cancel.all`，可驱动原版 `file-export-progress`。
+- Electron 主进程直接执行异步导出服务，逐文件发送进度；取消标记在文件间检查，可停止后续复制并报告取消状态，完成后由原版进度组件定位目标目录。
+- `tests/image-export-closed-loop.mjs` 使用唯一系统临时目录验证多选、同名冲突、目录树、时间戳、取消和 SHA-256 一致，测试通过。
+
+### 仍未实现 / 未验收
+
+- Eaglepack 仍是现有自定义格式，不属于本轮“图片导出闭环”完成范围。
+- collect 截图回归和独立发布构建仍未完成；构建虽然成功，仍只转换 2 个模块且未包含 `src/app`。
+
 ## 执行状态（2026-08-03）
 
 当前已完成：

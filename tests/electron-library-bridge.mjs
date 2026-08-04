@@ -51,6 +51,10 @@ async function stop(processInfo) {
 const [apiPort, thumbnailPort, extensionPort, vitePort] = await Promise.all([freePort(), freePort(), freePort(), freePort()]);
 const baseEnv = { ...process.env };
 delete baseEnv.ELECTRON_RUN_AS_NODE;
+if (baseEnv.NODE_OPTIONS) {
+  baseEnv.NODE_OPTIONS = baseEnv.NODE_OPTIONS.replace(/(?:^|\s)--use-system-ca(?=\s|$)/g, ' ').trim();
+  if (!baseEnv.NODE_OPTIONS) delete baseEnv.NODE_OPTIONS;
+}
 const backend = spawnLogged(process.execPath, ['backend/src/server.js'], {
   ...baseEnv,
   EAGLE_API_PORT: String(apiPort),

@@ -552,6 +552,15 @@ npm run electron
 - 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。
 - Eaglepack 已按源码契约完成结构兼容，但尚未拿真实 Eagle 客户端生成的外部样本做跨客户端双向实测。
 
+### 真实自定义缩略图闭环更新（2026-08-04）
+
+- 新增 `backend/src/custom-thumbnail.js`，按 B 类资源边界重建原版 `set-custom-thumbnail` 行为：源图片必须为不超过 10MB 的绝对普通文件，拒绝相对路径、目录、符号链接、损坏图片和超过 3000 万像素的解码输入。
+- 自定义封面先由 Sharp 解码、自动旋转并规范为 PNG，写入条目目录内唯一临时文件；同条目操作串行，正式文件采用备份与重命名替换，metadata 持久化失败会回滚旧文件和旧条目状态。
+- V1/V2 `setCustomThumbnail` 已关闭固定成功空壳，兼容 `id/itemID/itemId` 与 `thumbnailPath/filePath`；新增 V1/V2 `resetCustomThumbnail`，`refreshThumbnail` 不再覆盖有效自定义封面。成功时同步 `customThumbnail`、宽高、palettes、`lastModified`、metadata/cache，失败返回明确 400/404/413/422/500 错误码。
+- Electron main/preload 和原版 renderer shim 已接通 `set-custom-thumbnail`、`regenerate-thumbnail` 与插件 `ipcRenderer.r2r('item.setCustomThumbnail')`；完成后发送 `thumbnail-generated`，重置操作会恢复从原文件生成的普通缩略图。
+- 新增 `tests/custom-thumbnail-closed-loop.mjs`，使用 `os.tmpdir()` 唯一库验证正常图片、损坏图片无副作用、缺参、不存在 ID、相对路径/目录拒绝、10MB 上限、V1/V2、同条目并发顺序、刷新保留、重置和两轮重启持久化。Electron 隐藏窗口同时验证 preload API、真实文件生成、palettes 和图片解码。
+- 颜色分析与图片导入回归通过；隔离 Vite 构建通过但仍仅转换 2 个模块。剩余风险：跨平台原子替换和更多 Sharp 输入格式仍需在 Windows/macOS/Linux 与真实 Eagle 外部样本矩阵中继续验证；浏览器 HTTP API 的绝对路径输入仍依赖现有本机请求/令牌边界，不能扩展为远程任意文件读取。
+
 ### 真实颜色分析闭环更新（2026-08-04）
 
 - 新增 `backend/src/color-analyzer.js`，按 BUILD_AUDIT_REPORT.md 的 B 类迁移边界重建颜色分析：仅参考原版队列和持久化语义，不加载原版 renderer 全局变量、IPC，也不引入原版 `image-palette` 中夹带的授权检查。

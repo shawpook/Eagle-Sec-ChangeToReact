@@ -420,6 +420,21 @@ function registerIpc() {
     return image.toDataURL();
   });
 
+  ipcMain.handle('item:set-custom-thumbnail', (event, params = {}) => apiRequest('/api/item/setCustomThumbnail', {
+    method: 'POST',
+    body: params,
+  }));
+
+  ipcMain.handle('item:reset-custom-thumbnail', (event, params = {}) => apiRequest('/api/item/resetCustomThumbnail', {
+    method: 'POST',
+    body: params,
+  }));
+
+  ipcMain.handle('item:refresh-thumbnail', (event, params = {}) => apiRequest('/api/item/refreshThumbnail', {
+    method: 'POST',
+    body: params,
+  }));
+
   ipcMain.handle('clipboard:readImage', () => clipboard.readImage().toDataURL());
 
   ipcMain.handle('item:importPaths', async (event, paths = []) => {
@@ -613,6 +628,9 @@ app.whenReady().then(async () => {
               const exported = imported.length > 0 && ${JSON.stringify(smokeExport)}
                 ? await window.eagleDesktop.export.images({ images: imported, savePath: ${JSON.stringify(smokeExport)} })
                 : { count: 0, paths: [] };
+              const custom = imported.length > 0 && ${JSON.stringify(smokeSource)}
+                ? await window.eagleDesktop.thumbnail.setCustom({ itemId: imported[0].id, filePath: ${JSON.stringify(smokeSource)} })
+                : null;
               const infoPath = imported.length > 0
                 ? current.imagesDir + imported[0].id + '.info/'
                 : '';
@@ -639,6 +657,8 @@ app.whenReady().then(async () => {
                 importedExt: imported[0] && imported[0].ext,
                 exported: exported.count,
                 exportedPaths: exported.paths,
+                customThumbnail: Boolean(custom && custom.item && custom.item.customThumbnail),
+                customPaletteCount: custom && custom.item && Array.isArray(custom.item.palettes) ? custom.item.palettes.length : 0,
                 thumbnailUrl,
                 thumbnailLoaded,
                 rawUrl,
@@ -652,12 +672,14 @@ app.whenReady().then(async () => {
                   typeof window.eagleDesktop.import.files,
                   typeof window.eagleDesktop.export.images,
                   typeof window.eagleDesktop.thumbnailUrl,
+                  typeof window.eagleDesktop.thumbnail.setCustom,
+                  typeof window.eagleDesktop.thumbnail.resetCustom,
                 ],
               };
             })()`
           );
           const exportedExists = result.exportedPaths.every((file) => fs.existsSync(file));
-          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.thumbnailLoaded && result.rawLoaded && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
+          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.customThumbnail && result.customPaletteCount > 0 && result.thumbnailLoaded && result.rawLoaded && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
           console.log(ok ? `LIBRARY_SMOKE_OK ${JSON.stringify(result)}` : `LIBRARY_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`LIBRARY_SMOKE_ERROR ${err.message}`);

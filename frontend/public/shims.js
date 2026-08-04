@@ -354,6 +354,7 @@
 
   const ipcRenderer = new EventEmitter();
   const mockEmit = ipcRenderer.emit.bind(ipcRenderer);
+  const customThumbnailItemIds = new Set();
   const desktopSendChannels = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
   ipcRenderer.send = function (channel, params) {
     if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {
@@ -366,6 +367,48 @@
         mockEmit('library:operation-result', { ok: false, action: channel, error: err.message });
       });
       return;
+    }
+    if (desktopApi && desktopApi.thumbnail) {
+      if (channel === 'set-custom-thumbnail') {
+        const item = params && params.item;
+        desktopApi.thumbnail.setCustom({
+          itemId: item && item.id,
+          filePath: params && params.thumbnailPath,
+          width: params && params.width,
+          height: params && params.height,
+        }).then((result) => {
+          const updated = result && result.item ? result.item : result;
+          if (updated && updated.id) {
+            customThumbnailItemIds.add(updated.id);
+            const items = window.__mockLibraryCache || [];
+            const index = items.findIndex((entry) => entry.id === updated.id);
+            if (index >= 0) items[index] = updated;
+            mockEmit('thumbnail-generated', updated);
+          }
+        }).catch((err) => mockEmit('thumbnail-operation-error', { action: channel, error: err.message }));
+        return;
+      }
+      if (channel === 'regenerate-thumbnail') {
+        const items = Array.isArray(params) ? params : [];
+        items.forEach((item) => {
+          const itemId = item && item.id;
+          const shouldReset = Boolean(itemId && (item.customThumbnail || customThumbnailItemIds.has(itemId)));
+          const action = shouldReset
+            ? desktopApi.thumbnail.resetCustom({ itemId })
+            : desktopApi.thumbnail.refresh({ itemId });
+          Promise.resolve(action).then((result) => {
+            const updated = result && result.item ? result.item : result;
+            if (updated && updated.id) {
+              if (!updated.customThumbnail) customThumbnailItemIds.delete(updated.id);
+              const cached = window.__mockLibraryCache || [];
+              const index = cached.findIndex((entry) => entry.id === updated.id);
+              if (index >= 0) cached[index] = updated;
+              mockEmit('thumbnail-generated', updated);
+            }
+          }).catch((err) => mockEmit('thumbnail-operation-error', { action: channel, error: err.message }));
+        });
+        return;
+      }
     }
     if (desktopApi && desktopApi.import) {
       let action = null;
@@ -417,8 +460,18 @@
     if (desktopApi) {
       if (channel === 'get-collect-window-data') return desktopApi.getCollectWindowData();
       if (channel === 'library:get-current' && desktopApi.library) return desktopApi.library.current();
+      if (channel === 'item:set-custom-thumbnail' && desktopApi.thumbnail) return desktopApi.thumbnail.setCustom(params || {});
+      if (channel === 'item:reset-custom-thumbnail' && desktopApi.thumbnail) return desktopApi.thumbnail.resetCustom(params || {});
+      if (channel === 'item:refresh-thumbnail' && desktopApi.thumbnail) return desktopApi.thumbnail.refresh(params || {});
     }
     return EventEmitter.prototype.invoke.call(this, channel, params);
+  };
+  ipcRenderer.r2r = function (targetId, channel, params) {
+    if (desktopApi && desktopApi.thumbnail) {
+      if (channel === 'item.setCustomThumbnail') return desktopApi.thumbnail.setCustom(params || {});
+      if (channel === 'item.refreshThumbnail') return desktopApi.thumbnail.refresh({ itemId: params && (params.itemId || params.id) });
+    }
+    return Promise.resolve(false);
   };
   if (desktopApi && desktopApi.import) {
     if (typeof desktopApi.import.onFileProgress === 'function') {
@@ -1443,6 +1496,9 @@
           libraryName: library.libraryName || library.name,
         };
         window.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : [];
+        window.__mockLibraryCache.forEach((item) => {
+          if (item && item.customThumbnail) customThumbnailItemIds.add(item.id);
+        });
         const storedHistory = readSetting('libraryHistory');
         settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])].filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
         emitMockLifecycle();

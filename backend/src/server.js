@@ -29,6 +29,7 @@ import { getRequestToken, isLocalRequest } from './security.js';
 import { describeLibrary, LibraryService } from './library-service.js';
 import { exportAsFolder, exportImages } from './export-service.js';
 import { ColorAnalyzerService } from './color-analyzer.js';
+import { CustomThumbnailService } from './custom-thumbnail.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -100,6 +101,7 @@ const colorAnalyzer = new ColorAnalyzerService({
   timeoutMs: process.env.EAGLE_PALETTE_TIMEOUT_MS === undefined ? 30_000 : Number(process.env.EAGLE_PALETTE_TIMEOUT_MS),
   delayMs: process.env.EAGLE_PALETTE_DELAY_MS === undefined ? 20 : Number(process.env.EAGLE_PALETTE_DELAY_MS),
 });
+const customThumbnailService = new CustomThumbnailService();
 let currentLibrary = libraryService.currentLibrary();
 let folders = currentLibrary.folders;
 let smartFolders = currentLibrary.smartFolders;
@@ -1360,20 +1362,38 @@ app.post('/api/item/moveToTrash', (req, res) => {
   res.json(ok(true));
 });
 
-app.post('/api/item/setCustomThumbnail', (req, res) => {
-  res.json(ok(true));
-});
-
-app.post('/api/item/refreshThumbnail', async (req, res) => {
-  const id = req.body.id || req.body.itemID;
-  const item = readItems().find((entry) => entry.id === id);
-  if (!item) {
-    res.status(404).json(fail('Item not found'));
-    return;
+async function setCustomThumbnailResponse(req, res) {
+  try {
+    const result = await customThumbnailService.set(currentLibrary, req.body || {});
+    res.json(ok(result));
+  } catch (err) {
+    res.status(err.statusCode || 422).json({ ...fail(err.message), code: err.code || 'CUSTOM_THUMBNAIL_FAILED' });
   }
-  const generated = await generateThumbnailAsync(currentLibrary, item);
-  res.json(ok({ path: generated }));
-});
+}
+
+async function resetCustomThumbnailResponse(req, res) {
+  try {
+    const id = req.body.id || req.body.itemID || req.body.itemId;
+    const result = await customThumbnailService.reset(currentLibrary, id);
+    res.json(ok(result));
+  } catch (err) {
+    res.status(err.statusCode || 422).json({ ...fail(err.message), code: err.code || 'CUSTOM_THUMBNAIL_RESET_FAILED' });
+  }
+}
+
+async function refreshThumbnailResponse(req, res) {
+  try {
+    const id = req.body.id || req.body.itemID || req.body.itemId;
+    const result = await customThumbnailService.refresh(currentLibrary, id);
+    res.json(ok(result));
+  } catch (err) {
+    res.status(err.statusCode || 422).json({ ...fail(err.message), code: err.code || 'THUMBNAIL_REFRESH_FAILED' });
+  }
+}
+
+app.post('/api/item/setCustomThumbnail', setCustomThumbnailResponse);
+app.post('/api/item/resetCustomThumbnail', resetCustomThumbnailResponse);
+app.post('/api/item/refreshThumbnail', refreshThumbnailResponse);
 
 app.post('/api/item/refreshPalette', async (req, res) => {
   try {
@@ -1796,20 +1816,9 @@ app.post('/api/v2/item/addToFolder', (req, res) => {
   }
 });
 
-app.post('/api/v2/item/setCustomThumbnail', (req, res) => {
-  res.json(ok(true));
-});
-
-app.post('/api/v2/item/refreshThumbnail', async (req, res) => {
-  const id = req.body.id || req.body.itemID;
-  const item = readItems().find((entry) => entry.id === id);
-  if (!item) {
-    res.status(404).json(fail('Item not found'));
-    return;
-  }
-  const generated = await generateThumbnailAsync(currentLibrary, item);
-  res.json(ok({ path: generated }));
-});
+app.post('/api/v2/item/setCustomThumbnail', setCustomThumbnailResponse);
+app.post('/api/v2/item/resetCustomThumbnail', resetCustomThumbnailResponse);
+app.post('/api/v2/item/refreshThumbnail', refreshThumbnailResponse);
 
 app.post('/api/v2/item/mergeDuplicates', (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];

@@ -30,6 +30,11 @@ const api = {
   resolvePath: (target) => ipcRenderer.invoke('library:resolve', target),
   nativeThumbnail: (target, options) => ipcRenderer.invoke('thumbnail:native', target, options),
   thumbnailUrl: (target) => `${thumbnailBaseUrl}/file/${encodeURIComponent(String(target || ''))}`,
+  thumbnail: {
+    setCustom: (params) => ipcRenderer.invoke('item:set-custom-thumbnail', params),
+    resetCustom: (params) => ipcRenderer.invoke('item:reset-custom-thumbnail', params),
+    refresh: (params) => ipcRenderer.invoke('item:refresh-thumbnail', params),
+  },
   clipboardImage: () => ipcRenderer.invoke('clipboard:readImage'),
   importPaths: (paths) => ipcRenderer.invoke('item:importPaths', paths),
   import: {

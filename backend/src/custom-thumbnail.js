@@ -192,6 +192,7 @@ function commitThumbnail(library, item, target, tempPath, mutateItem) {
 export class CustomThumbnailService {
   constructor(options = {}) {
     this.analyze = options.analyze || analyzeImagePalettes;
+    this.regenerate = options.regenerate || null;
     this.maxSize = Math.max(1, Number(options.maxSize) || DEFAULT_THUMBNAIL_SIZE);
     this.itemQueues = new Map();
   }
@@ -211,6 +212,10 @@ export class CustomThumbnailService {
       if (item.customThumbnail) {
         const { target } = targetPaths(library, item);
         if (fs.existsSync(target)) return { item, path: target, preservedCustomThumbnail: true };
+      }
+      if (this.regenerate) {
+        const task = await this.regenerate(library, itemId);
+        return { ...task.result, task: task.id };
       }
       return this.#reset(library, itemId);
     });
@@ -274,6 +279,10 @@ export class CustomThumbnailService {
     if (SHARP_REFRESH_EXTENSIONS.has(extension)) {
       info = await renderOriginalThumbnail(library, item, tempPath, this.maxSize);
       palettes = await this.analyze(tempPath);
+    } else if (this.regenerate) {
+      if (fs.existsSync(tempPath)) fs.rmSync(tempPath, { force: true });
+      const task = await this.regenerate(library, itemId);
+      return { ...task.result, customThumbnail: false, task: task.id };
     }
 
     commitThumbnail(library, item, target, info ? tempPath : null, (current) => {

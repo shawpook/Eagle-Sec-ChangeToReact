@@ -15,8 +15,8 @@ import {
   saveLibraryState,
   updateFolder,
 } from './library-store.js';
-import { exportItem, exportLibrary, importBase64, importBookmark, importFile, importFolder, importUrl } from './importer.js';
-import { ensureThumbnail, generateThumbnail, generateThumbnailAsync, thumbnailPath } from './thumbnailer.js';
+import { configureThumbnailTaskService, exportItem, exportLibrary, importBase64, importBookmark, importFile, importFolder, importUrl } from './importer.js';
+import { thumbnailPath } from './thumbnailer.js';
 import { exportCsvFile, itemsToCsv } from './csv-export.js';
 import { importEaglepack, packLibrary } from './eaglepack.js';
 import { findDuplicates, findSimilarDuplicates } from './duplicates.js';
@@ -31,6 +31,7 @@ import { exportAsFolder, exportImages } from './export-service.js';
 import { ColorAnalyzerService } from './color-analyzer.js';
 import { CustomThumbnailService } from './custom-thumbnail.js';
 import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
+import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -102,14 +103,24 @@ const colorAnalyzer = new ColorAnalyzerService({
   timeoutMs: process.env.EAGLE_PALETTE_TIMEOUT_MS === undefined ? 30_000 : Number(process.env.EAGLE_PALETTE_TIMEOUT_MS),
   delayMs: process.env.EAGLE_PALETTE_DELAY_MS === undefined ? 20 : Number(process.env.EAGLE_PALETTE_DELAY_MS),
 });
-const customThumbnailService = new CustomThumbnailService();
+const thumbnailTasks = new ThumbnailTaskService({
+  concurrency: process.env.EAGLE_THUMBNAIL_CONCURRENCY === undefined ? 3 : Number(process.env.EAGLE_THUMBNAIL_CONCURRENCY),
+  timeoutMs: process.env.EAGLE_THUMBNAIL_TIMEOUT_MS === undefined ? 100_000 : Number(process.env.EAGLE_THUMBNAIL_TIMEOUT_MS),
+  maxSize: process.env.EAGLE_THUMBNAIL_MAX_SIZE === undefined ? 480 : Number(process.env.EAGLE_THUMBNAIL_MAX_SIZE),
+});
+configureThumbnailTaskService(thumbnailTasks);
+const customThumbnailService = new CustomThumbnailService({
+  regenerate: (library, itemId) => thumbnailTasks.generate(library, itemId, { clearCustomThumbnail: true }),
+});
 const controlledDownloader = getControlledDownloadService();
 let currentLibrary = libraryService.currentLibrary();
+thumbnailTasks.recover(currentLibrary);
 let folders = currentLibrary.folders;
 let smartFolders = currentLibrary.smartFolders;
 let tagsGroups = currentLibrary.tagsGroups;
 
 function activateLibrary(library) {
+  thumbnailTasks.recover(library);
   currentLibrary = library;
   folders = library.folders;
   smartFolders = library.smartFolders;
@@ -746,7 +757,7 @@ app.get('/api/folder/stats', (req, res) => {
 });
 
 app.post('/api/library/repair', async (req, res) => {
-  res.json(ok(await repairLibrary(currentLibrary)));
+  res.json(ok(await repairLibrary(currentLibrary, { thumbnailTasks })));
 });
 
 app.get('/api/library/scan', (req, res) => {
@@ -1312,11 +1323,9 @@ app.post('/api/item/upload', upload.single('file'), async (req, res) => {
       folderIDs: req.body.folderIDs ? String(req.body.folderIDs).split(',').map((id) => id.trim()).filter(Boolean) : [],
       annotation: req.body.annotation || '',
     });
-    if (item.noThumbnail) {
+    if (item.noThumbnail && thumbnailTasks.supports(item.ext)) {
       try {
-        await generateThumbnailAsync(currentLibrary, item);
-        item.noThumbnail = false;
-        saveItems(currentLibrary);
+        await thumbnailTasks.generate(currentLibrary, item.id);
       } catch (err) {
         item.noThumbnail = true;
       }
@@ -1448,6 +1457,36 @@ async function refreshThumbnailResponse(req, res) {
     res.status(err.statusCode || 422).json({ ...fail(err.message), code: err.code || 'THUMBNAIL_REFRESH_FAILED' });
   }
 }
+
+function sendThumbnailTaskError(res, err) {
+  const statusCode = err instanceof ThumbnailTaskError ? err.statusCode : (err.statusCode || 422);
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'THUMBNAIL_GENERATION_FAILED' });
+}
+
+app.post('/api/item/thumbnailTask/start', (req, res) => {
+  try {
+    const id = req.body.id || req.body.itemID || req.body.itemId;
+    res.status(202).json(ok(thumbnailTasks.enqueue(currentLibrary, id, { maxSize: req.body.maxSize })));
+  } catch (err) {
+    sendThumbnailTaskError(res, err);
+  }
+});
+
+app.get('/api/item/thumbnailTask/status', (req, res) => {
+  try {
+    res.json(ok(thumbnailTasks.status(req.query.taskId || req.query.id)));
+  } catch (err) {
+    sendThumbnailTaskError(res, err);
+  }
+});
+
+app.post('/api/item/thumbnailTask/cancel', (req, res) => {
+  try {
+    res.json(ok(thumbnailTasks.cancel(req.body.taskId || req.body.id)));
+  } catch (err) {
+    sendThumbnailTaskError(res, err);
+  }
+});
 
 app.post('/api/item/setCustomThumbnail', setCustomThumbnailResponse);
 app.post('/api/item/resetCustomThumbnail', resetCustomThumbnailResponse);
@@ -1814,11 +1853,9 @@ app.post('/api/v2/item/upload', upload.single('file'), async (req, res) => {
       folderIDs: req.body.folderIDs ? String(req.body.folderIDs).split(',').map((id) => id.trim()).filter(Boolean) : [],
       annotation: req.body.annotation || '',
     });
-    if (item.noThumbnail) {
+    if (item.noThumbnail && thumbnailTasks.supports(item.ext)) {
       try {
-        await generateThumbnailAsync(currentLibrary, item);
-        item.noThumbnail = false;
-        saveItems(currentLibrary);
+        await thumbnailTasks.generate(currentLibrary, item.id);
       } catch (err) {
         item.noThumbnail = true;
       }
@@ -1877,6 +1914,28 @@ app.post('/api/v2/item/addToFolder', (req, res) => {
 app.post('/api/v2/item/setCustomThumbnail', setCustomThumbnailResponse);
 app.post('/api/v2/item/resetCustomThumbnail', resetCustomThumbnailResponse);
 app.post('/api/v2/item/refreshThumbnail', refreshThumbnailResponse);
+app.post('/api/v2/item/thumbnailTask/start', (req, res) => {
+  try {
+    const id = req.body.id || req.body.itemID || req.body.itemId;
+    res.status(202).json(ok(thumbnailTasks.enqueue(currentLibrary, id, { maxSize: req.body.maxSize })));
+  } catch (err) {
+    sendThumbnailTaskError(res, err);
+  }
+});
+app.get('/api/v2/item/thumbnailTask/status', (req, res) => {
+  try {
+    res.json(ok(thumbnailTasks.status(req.query.taskId || req.query.id)));
+  } catch (err) {
+    sendThumbnailTaskError(res, err);
+  }
+});
+app.post('/api/v2/item/thumbnailTask/cancel', (req, res) => {
+  try {
+    res.json(ok(thumbnailTasks.cancel(req.body.taskId || req.body.id)));
+  } catch (err) {
+    sendThumbnailTaskError(res, err);
+  }
+});
 
 app.post('/api/v2/item/mergeDuplicates', (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];

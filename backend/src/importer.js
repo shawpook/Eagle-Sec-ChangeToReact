@@ -5,6 +5,12 @@ import { resolveLibraryPath, saveItems, saveLibraryState } from './library-store
 import { generateThumbnail, readImageDimensions } from './thumbnailer.js';
 import { getControlledDownloadService } from './controlled-downloader.js';
 
+let thumbnailTaskService = null;
+
+export function configureThumbnailTaskService(service) {
+  thumbnailTaskService = service || null;
+}
+
 function generateId(prefix = 'ITEM') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
 }
@@ -116,6 +122,15 @@ export function importFile(library, source, options = {}) {
     }
     library.items.unshift(item);
     saveItems(library);
+    if (item.noThumbnail && thumbnailTaskService?.supports(item.ext)) {
+      try {
+        const task = thumbnailTaskService.enqueue(library, item.id);
+        item.thumbnailTask = task.id;
+        item.processingThumbnail = true;
+      } catch (err) {
+        if (err.code !== 'THUMBNAIL_TASK_CONFLICT') item.thumbnailError = err.code || 'THUMBNAIL_GENERATION_FAILED';
+      }
+    }
     return item;
   } catch (err) {
     if (fs.existsSync(infoDir)) fs.rmSync(infoDir, { recursive: true, force: true });

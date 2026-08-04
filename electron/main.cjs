@@ -435,6 +435,16 @@ function registerIpc() {
     body: params,
   }));
 
+  ipcMain.handle('thumbnail-task:start', (event, params = {}) => apiRequest('/api/item/thumbnailTask/start', {
+    method: 'POST',
+    body: params,
+  }));
+  ipcMain.handle('thumbnail-task:status', (event, taskId) => apiRequest(`/api/item/thumbnailTask/status?taskId=${encodeURIComponent(String(taskId || ''))}`));
+  ipcMain.handle('thumbnail-task:cancel', (event, taskId) => apiRequest('/api/item/thumbnailTask/cancel', {
+    method: 'POST',
+    body: { taskId },
+  }));
+
   ipcMain.handle('clipboard:readImage', () => clipboard.readImage().toDataURL());
 
   ipcMain.handle('item:importPaths', async (event, paths = []) => {
@@ -708,6 +718,9 @@ app.whenReady().then(async () => {
                   typeof window.eagleDesktop.thumbnailUrl,
                   typeof window.eagleDesktop.thumbnail.setCustom,
                   typeof window.eagleDesktop.thumbnail.resetCustom,
+                  typeof window.eagleDesktop.thumbnail.start,
+                  typeof window.eagleDesktop.thumbnail.status,
+                  typeof window.eagleDesktop.thumbnail.cancel,
                   typeof window.eagleDesktop.download.direct,
                   typeof window.eagleDesktop.download.start,
                   typeof require('electron').ipcRenderer.invoke,

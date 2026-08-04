@@ -67,7 +67,7 @@ export function folderStats(tree) {
   return (tree || []).map(nodeStats);
 }
 
-export async function repairLibrary(library) {
+export async function repairLibrary(library, options = {}) {
   const report = {
     repairedMetadata: 0,
     repairedThumbnails: 0,
@@ -86,7 +86,8 @@ export async function repairLibrary(library) {
       report.missingOriginals.push({ id: item.id, name: item.name, ext: item.ext });
     } else {
       try {
-        await generateThumbnailAsync(library, item);
+        if (options.thumbnailTasks?.supports(item.ext)) await options.thumbnailTasks.generate(library, item.id);
+        else await generateThumbnailAsync(library, item);
         report.repairedThumbnails += 1;
       } catch (err) {
         // Thumbnail cannot be generated for this item.

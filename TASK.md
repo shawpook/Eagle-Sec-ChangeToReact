@@ -562,6 +562,16 @@ npm run electron
 - 新增 `tests/controlled-download-closed-loop.mjs`，唯一系统临时目录测试覆盖正常/批量/重定向、404、超时、中断、伪 Content-Length、流式超限、HTML、损坏图片、回环/私网/IPv6/重定向绕过、请求头过滤、并发上限、运行中和排队中取消、租约清理、后端重启持久化与无临时目录泄漏。Electron 隐藏窗口验证 preload 下载 API 和两个原版 IPC 均返回真实可读文件且可释放。
 - 图片导入、自定义缩略图、颜色分析回归及隔离 Vite 构建均通过；构建仍仅转换 2 个模块，不计为独立生产构建完成。剩余风险是当前不实现原版 URL 转大图规则、通知音效和下载任务跨进程恢复；跨代理、企业 DNS 与公网多格式样本仍需后续兼容矩阵验证。
 
+### 统一缩略图任务服务更新（2026-08-04）
+
+- 新增 `backend/src/thumbnail-task-service.js`，把导入、刷新、重置、资源库修复和显式任务 API 统一到并发 3、默认 100 秒超时的受控队列；同条目拒绝重复任务，支持排队/运行取消、状态查询和后端重启后的处理中状态清理。
+- 第一阶段真实覆盖 SVG、GIF、WebP、TIFF 与 PDF：首页/首帧生成统一 PNG 缩略图。SVG/GIF/WebP/TIFF 使用 Sharp 受限解码，PDF 使用隔离 Electron 子进程加载项目内 PDF.js，仅允许工作页、原 PDF 与反编译 PDF.js 静态资源，禁用窗口打开、权限请求、脚本求值与外部导航。
+- 所有格式限制 100MB 输入、3000 万解码像素和最大 480px 缩略图；先写条目目录唯一 pending 文件，再经备份/重命名原子替换，metadata/cache/search index 持久化失败会回滚旧缩略图和旧条目状态。
+- 成功时同步原始宽高、动画/页数、palettes、`lastModified` 和 `noThumbnail/noPreview`；失败、取消、超时分别持久化稳定错误码，并清理 pending 文件与 `processingThumbnail/thumbnailTask`，不覆盖已有有效缩略图。
+- 新增 V1/V2 `/api/item/thumbnailTask/start|status|cancel`，Electron preload/main 和 renderer shim 提供 start/status/cancel 兼容桥接；`refreshThumbnail` 与 `resetCustomThumbnail` 复用同一任务服务，普通刷新继续保留有效自定义封面。
+- 新增 `tests/thumbnail-task-closed-loop.mjs`，唯一系统临时目录验证五种格式、自动导入入队、V1/V2、并发 3、同条目冲突、排队取消、超时、损坏 SVG、重启持久化和中断状态恢复。自定义缩略图、图片/文件夹导入、颜色分析和 Electron 隐藏窗口桥接回归均通过。
+- 首期未覆盖视频/音频/字体及 PSD/AI/XD/Office/RAW/3D；PDF 子进程按任务启动，后续可升级为受限常驻 worker 池。隔离 Vite 构建仍只转换 2 个模块，不计为独立生产构建完成。
+
 ### 真实自定义缩略图闭环更新（2026-08-04）
 
 - 新增 `backend/src/custom-thumbnail.js`，按 B 类资源边界重建原版 `set-custom-thumbnail` 行为：源图片必须为不超过 10MB 的绝对普通文件，拒绝相对路径、目录、符号链接、损坏图片和超过 3000 万像素的解码输入。

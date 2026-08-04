@@ -86,6 +86,7 @@ try {
   const electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-library'], {
     ...baseEnv,
     EAGLE_API_URL: `http://localhost:${apiPort}`,
+    EAGLE_THUMBNAIL_URL: `http://localhost:${thumbnailPort}`,
     EAGLE_PREVIEW_URL: `http://localhost:${vitePort}/src/app/index.html`,
     EAGLE_SMOKE_IMPORT_SOURCE: path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png'),
     EAGLE_SMOKE_EXPORT_DIR: smokeExport,

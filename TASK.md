@@ -539,6 +539,14 @@ npm run electron
 - 仍兼容导入旧自产 `manifest.json + images/` 包，避免已有测试/备份无法恢复。
 - `tests/eaglepack-duplicates.mjs` 已改用唯一系统临时目录，验证原版目录结构、pack.json、文件/文件夹 ID 重映射、SHA-256 一致、重复合并、损坏包拒绝和旧格式向后导入，测试通过。
 
+### 真实资源显示修复（2026-08-04）
+
+- 修复原版 `FileUrlHelper` 经兼容层调用 `pathToFileURL()` 时，把 Windows 绝对路径误解析为网页 URL 导致网格和 Inspector 破图的问题。
+- Electron preload 现在只暴露受控 `thumbnailUrl()`，将本地绝对路径映射到缩略图服务 `/file/<encoded-path>`；浏览器 mock 相对路径仍走 5176，不受影响。
+- 41692 服务只允许读取当前资源库、项目 public 和反编译 `src` 受控根目录下的文件，拒绝任意绝对路径读取。
+- 使用 path 路由而不是查询参数，兼容原版追加 `?v=modificationTime` 的缓存刷新逻辑。
+- `tests/electron-library-bridge.mjs` 已扩展为真实创建 `<img>`，分别加载导入后的缩略图和原文件，并断言 `naturalWidth/naturalHeight > 0`；两者均通过。
+
 ### 仍未实现 / 未验收
 
 - 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。

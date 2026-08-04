@@ -2225,21 +2225,29 @@ function resolveThumbnailPath(filePath) {
 
   if (/^[a-zA-Z]:[\\/]/.test(decoded)) {
     const candidate = path.resolve(decoded);
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+    const allowedRoots = [currentLibrary.rootDir, ...roots].filter(Boolean).map((root) => path.resolve(root));
+    const allowed = allowedRoots.some((root) => candidate === root || candidate.startsWith(root + path.sep));
+    if (allowed && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
   }
   return null;
 }
 
 const thumbnailApp = express();
 thumbnailApp.use(cors());
-thumbnailApp.get('/', (req, res) => {
-  const filePath = req.query.filePath || req.query.path || '';
+function sendThumbnail(filePath, res) {
   const resolved = resolveThumbnailPath(filePath);
   if (!resolved) {
     res.status(404).json({ status: 'error', message: `Thumbnail not found: ${filePath}` });
     return;
   }
   res.sendFile(resolved);
+}
+
+thumbnailApp.get('/', (req, res) => {
+  sendThumbnail(req.query.filePath || req.query.path || '', res);
+});
+thumbnailApp.get('/file/:encoded', (req, res) => {
+  sendThumbnail(req.params.encoded || '', res);
 });
 
 const extensionApp = express();

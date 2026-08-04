@@ -613,6 +613,24 @@ app.whenReady().then(async () => {
               const exported = imported.length > 0 && ${JSON.stringify(smokeExport)}
                 ? await window.eagleDesktop.export.images({ images: imported, savePath: ${JSON.stringify(smokeExport)} })
                 : { count: 0, paths: [] };
+              const infoPath = imported.length > 0
+                ? current.imagesDir + imported[0].id + '.info/'
+                : '';
+              const thumbnailPath = infoPath ? infoPath + imported[0].name + '_thumbnail.png' : '';
+              const rawPath = infoPath ? infoPath + imported[0].name + '.' + imported[0].ext : '';
+              const toUrl = (target) => target ? window.require('/src/my_modules/url').pathToFileURL(target).href : '';
+              const loadImage = (url) => url
+                ? new Promise((resolve) => {
+                    const image = new Image();
+                    const timer = setTimeout(() => resolve(false), 5000);
+                    image.onload = () => { clearTimeout(timer); resolve(image.naturalWidth > 0 && image.naturalHeight > 0); };
+                    image.onerror = () => { clearTimeout(timer); resolve(false); };
+                    image.src = url;
+                  })
+                : Promise.resolve(false);
+              const thumbnailUrl = toUrl(thumbnailPath);
+              const rawUrl = toUrl(rawPath);
+              const [thumbnailLoaded, rawLoaded] = await Promise.all([loadImage(thumbnailUrl), loadImage(rawUrl)]);
               return {
                 currentPath: current.path,
                 itemCount: Array.isArray(current.items) ? current.items.length : -1,
@@ -621,6 +639,10 @@ app.whenReady().then(async () => {
                 importedExt: imported[0] && imported[0].ext,
                 exported: exported.count,
                 exportedPaths: exported.paths,
+                thumbnailUrl,
+                thumbnailLoaded,
+                rawUrl,
+                rawLoaded,
                 api: [
                   typeof window.eagleDesktop.library.create,
                   typeof window.eagleDesktop.library.open,
@@ -629,12 +651,13 @@ app.whenReady().then(async () => {
                   typeof window.eagleDesktop.dialog.save,
                   typeof window.eagleDesktop.import.files,
                   typeof window.eagleDesktop.export.images,
+                  typeof window.eagleDesktop.thumbnailUrl,
                 ],
               };
             })()`
           );
           const exportedExists = result.exportedPaths.every((file) => fs.existsSync(file));
-          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.api.every((type) => type === 'function');
+          const ok = result.currentPath && result.itemCount >= 0 && result.historyHasCurrent && result.imported === 1 && result.importedExt === 'png' && result.exported === 1 && exportedExists && result.thumbnailLoaded && result.rawLoaded && /^http:\/\/localhost:\d+\/file\//.test(result.thumbnailUrl) && /^http:\/\/localhost:\d+\/file\//.test(result.rawUrl) && result.api.every((type) => type === 'function');
           console.log(ok ? `LIBRARY_SMOKE_OK ${JSON.stringify(result)}` : `LIBRARY_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`LIBRARY_SMOKE_ERROR ${err.message}`);

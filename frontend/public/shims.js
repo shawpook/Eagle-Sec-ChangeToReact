@@ -840,13 +840,34 @@
     close() {}
   };
 
+  function localAssetUrl(value) {
+    const target = String(value || '');
+    if (/^https?:\/\//i.test(target)) return target;
+    if (/^(?:[a-zA-Z]:[\\/]|\\\\)/.test(target)) {
+      if (desktopApi && typeof desktopApi.thumbnailUrl === 'function') {
+        return desktopApi.thumbnailUrl(target);
+      }
+      return `http://localhost:41692/file/${encodeURIComponent(target)}`;
+    }
+    return new URL(target.replace(/^file:\/\//, ''), window.location.origin).href;
+  }
+
   const urlModule = {
     pathToFileURL(p) {
-      const path = String(p || '').replace(/^file:\/\//, '');
-      return new URL(path, window.location.origin);
+      return new URL(localAssetUrl(p));
     },
     fileURLToPath(u) {
-      return String(u || '').replace(/^file:\/\//, '');
+      const value = String(u || '');
+      try {
+        const parsed = new URL(value);
+        if (/^https?:$/i.test(parsed.protocol) && parsed.searchParams.has('filePath')) {
+          return parsed.searchParams.get('filePath');
+        }
+        if (/^https?:$/i.test(parsed.protocol) && parsed.pathname.startsWith('/file/')) {
+          return decodeURIComponent(parsed.pathname.slice('/file/'.length));
+        }
+      } catch (err) {}
+      return value.replace(/^file:\/\//, '');
     },
     format(u) {
       return String(u || '');

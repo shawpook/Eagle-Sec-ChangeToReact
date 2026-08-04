@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692').replace(/\/$/, '');
+
 const api = {
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),
   getCurrentLibrary: () => ipcRenderer.invoke('library:get-current'),
@@ -27,6 +29,7 @@ const api = {
   readFile: (target) => ipcRenderer.invoke('fs:read', target),
   resolvePath: (target) => ipcRenderer.invoke('library:resolve', target),
   nativeThumbnail: (target, options) => ipcRenderer.invoke('thumbnail:native', target, options),
+  thumbnailUrl: (target) => `${thumbnailBaseUrl}/file/${encodeURIComponent(String(target || ''))}`,
   clipboardImage: () => ipcRenderer.invoke('clipboard:readImage'),
   importPaths: (paths) => ipcRenderer.invoke('item:importPaths', paths),
   import: {

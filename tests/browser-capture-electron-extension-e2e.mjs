@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import http from 'node:http';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -88,11 +89,12 @@ async function stop(processInfo) {
 
 async function portInUse(port) {
   return new Promise((resolve) => {
-    const server = http.createServer();
-    server.once('error', () => resolve(true));
-    server.listen(port, '127.0.0.1', () => {
-      server.close(() => resolve(false));
+    const socket = net.connect({ port, host: '127.0.0.1' });
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
     });
+    socket.once('error', () => resolve(false));
   });
 }
 

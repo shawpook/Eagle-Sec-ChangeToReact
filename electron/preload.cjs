@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41592').replace(/\/$/, '');
+const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692').replace(/\/$/, '');
 
 const api = {
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),

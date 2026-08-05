@@ -23,8 +23,8 @@
     window.fetch = function (input, init) {
       let target = typeof input === 'string' ? input : input && input.url;
       if (typeof target === 'string') {
-        const apiBase = window.__EAGLE_API_BASE_URL || 'http://localhost:41595';
-        const extensionBase = window.__EAGLE_EXTENSION_BASE_URL || 'http://localhost:41593';
+        const apiBase = window.__EAGLE_API_BASE_URL || 'http://localhost:41695';
+        const extensionBase = window.__EAGLE_EXTENSION_BASE_URL || 'http://localhost:41693';
         target = target
           .replace(/^http:\/\/localhost:41595(?=\/|$)/i, apiBase.replace(/\/$/, ''))
           .replace(/^http:\/\/localhost:41593(?=\/|$)/i, extensionBase.replace(/\/$/, ''));
@@ -459,8 +459,50 @@
 
   ipcRenderer.send = function (channel, params) {
     if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {
-      if (channel === 'create-library') desktopApi.library.create(params || {}).catch(() => {});
-      else desktopApi.library.switch(params).catch(() => {});
+      const action = channel === 'create-library'
+        ? desktopApi.library.create(params || {})
+        : desktopApi.library.switch(params);
+      const actionName = channel === 'create-library' ? 'create' : 'open';
+      Promise.resolve(action)
+        .then((library) => {
+          if (library) {
+            window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
+            if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
+          }
+          mockEmit('library:changed', library);
+          mockEmit('library:operation-result', { ok: true, action: actionName, library });
+        })
+        .catch((err) => mockEmit('library:operation-result', { ok: false, action: actionName, error: err.message }));
+      return;
+    }
+    if (!desktopApi && desktopSendChannels.has(channel)) {
+      const libraryPath = typeof params === 'string'
+        ? params
+        : params && (params.libraryPath || params.path || params.libraryDir);
+      const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+      const actionName = channel === 'create-library' ? 'create' : 'open';
+      const route = channel === 'create-library' ? '/api/library/create' : '/api/library/switch';
+      const body = channel === 'create-library'
+        ? (params || {})
+        : { libraryPath };
+      Promise.resolve()
+        .then(() => fetch(`${apiBase}${route}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }))
+        .then((response) => response.json())
+        .then((result) => {
+          if (!result || result.status !== 'success') {
+            throw new Error(result && result.message ? result.message : 'Library switch failed');
+          }
+          const library = result.data;
+          window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
+          if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
+          mockEmit('library:changed', library);
+          mockEmit('library:operation-result', { ok: true, action: actionName, library });
+        })
+        .catch((err) => mockEmit('library:operation-result', { ok: false, action: actionName, error: err.message }));
       return;
     }
     if (desktopApi && desktopApi.library && channel === 'folders-change') {

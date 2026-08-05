@@ -48,9 +48,9 @@ const projectRoot = path.resolve(here, '../..');
 const mockLibraryDir = path.join(projectRoot, 'frontend/public/mock-library');
 const reverseRoot = path.resolve(projectRoot, '..');
 const programRoot = path.resolve(projectRoot, '../..');
-const port = Number(process.env.EAGLE_API_PORT || 41595);
-const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41592);
-const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41593);
+const port = Number(process.env.EAGLE_API_PORT || 41695);
+const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41692);
+const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41693);
 const apiToken = process.env.EAGLE_API_TOKEN || 'preview-token';
 const userDataDir = path.resolve(process.env.EAGLE_USER_DATA_DIR || path.join(projectRoot, 'test-run/user-data'));
 const stateFile = path.resolve(process.env.EAGLE_LIBRARY_STATE_FILE || path.join(userDataDir, 'library-state.json'));
@@ -2991,3 +2991,23 @@ thumbnailApp.listen(thumbnailPort, () => {
 extensionApp.listen(extensionPort, () => {
   console.log(`Eagle Reverse extension service listening at http://localhost:${extensionPort}`);
 });
+
+function listenCompatListener(appRef, compatPort, label) {
+  const server = appRef.listen(compatPort, '127.0.0.1', () => {
+    console.log(`Eagle Reverse ${label} compatibility listening at http://127.0.0.1:${compatPort}`);
+  });
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.log(`Eagle Reverse ${label} compatibility port ${compatPort} is already in use; original-port listener skipped`);
+    } else {
+      console.error(`Eagle Reverse ${label} compatibility listener error: ${err && err.message || err}`);
+    }
+  });
+  return server;
+}
+
+if (process.env.EAGLE_API_PORT === undefined && process.env.EAGLE_EXTENSION_PORT === undefined) {
+  listenCompatListener(app, 41595, 'API');
+  listenCompatListener(thumbnailApp, 41592, 'thumbnail');
+  listenCompatListener(extensionApp, 41593, 'extension');
+}

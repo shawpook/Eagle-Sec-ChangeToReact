@@ -7,7 +7,7 @@ eagle逆向目录“C:\Program Files\Eagle\Eagle-reverse”
 
 ### 本轮已证明
 
-- 后端默认端口改为原版兼容的 `41595 API / 41592 缩略图 / 41593 扩展服务`，测试仍通过环境变量使用随机端口隔离。
+- 后端开发端口保持 `41695 API / 41692 缩略图 / 41693 扩展服务`，未显式指定端口时额外尝试绑定原版兼容 `41595 / 41592 / 41593`，测试仍通过环境变量使用随机端口隔离。
 - 新增 `backend/src/capture-service.js`，统一解析原版采集表单字段：`type`、`title/name`、`src/url`、`base64/base64data`、`website/pageUrl`、`annotation`、`tags`、`folderIDs/folders/folderID`、`star`、`headers/referer/userAgent`。
 - 单图 Data URI、单 URL 受控下载、网页书签、页面多图批量任务均会创建真实 `.library` 原文件、缩略图、metadata、`cache.json` 和 `search-index.json`。
 - 远程图片继续走 `ControlledDownloadService`，保留 SSRF、重定向、超时、大小、协议、凭据、HTML 伪图片和内容类型限制；错误码映射到任务要求的稳定错误合同。

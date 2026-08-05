@@ -115,7 +115,7 @@ npm run test:screenshots
 - Electron `plugin:open` IPC 可打开插件窗口。
 - `/api/v2/smartFolder/getItems` 按智能文件夹规则返回条目。
 - 41593 扩展服务支持 addFile/addURL/import-images/collect 采集保存路由。
-- 后端默认监听原版兼容端口：`41595` API、`41592` 缩略图、`41593` 扩展服务；远程图片走受控下载，批量捕获提供任务状态/取消/部分失败。
+- 后端开发端口保持 `41695` API、`41692` 缩略图、`41693` 扩展服务；未显式指定端口时会额外尝试监听原版兼容 `41595/41592/41593`。远程图片走受控下载，批量捕获提供任务状态/取消/部分失败。
 - 外部捕获会通过原版 `file-uploaded` / `file-uploaded-end` / `import:operation-result` 通知链让已打开主界面即时刷新。
 - 新增 `npm run test:browser-capture` 与 `npm run test:electron-extension-e2e`。
 - `/api/item/mergeDuplicates`、`/api/v2/item/mergeDuplicates` 支持重复条目合并。

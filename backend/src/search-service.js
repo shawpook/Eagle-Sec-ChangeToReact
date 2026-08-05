@@ -333,3 +333,7 @@ export function searchItems(items, query = {}) {
 export function filterItems(items, query = {}) {
   return searchItems(items, query);
 }
+
+export function searchItemsByFilterRules(items, rules = {}, query = {}) {
+  return searchItems(items, { ...query, filters: rules });
+}

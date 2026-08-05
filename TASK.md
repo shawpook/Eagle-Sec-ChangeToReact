@@ -591,7 +591,18 @@ npm run electron
 - 新增 `/api/item/emptyTrash`、`/api/v2/item/emptyTrash`，只允许删除已回收条目（可显式 `force`），删除前确认路径在资源库内。
 - `frontend/public/shims.js` 用后端合同替换原版 `eagle.duplicateChecker`：exact 扫描走异步任务并上报真实进度，`empty-trash` IPC 转发到受控后端，similar 返回空结果而不是假成功。
 - 批量重命名补齐 folder/tag/smartFolder 合同：新增 `/api/folder/batchRename`、`/api/v2/folder/batchRename`、`/api/tag/batchRename`、`/api/v2/tag/batchRename`、`/api/v2/smartFolder/batchRename`，各自走结构服务，不把条目文件重命名逻辑套到文件夹/标签。
-- 本轮未完成：原版 duplicate/merge 面板完整 E2E、批量重命名失败注入、大库扫描内存/并发基准和重启恢复专项测试属于下一批。
+- 本轮未完成：原版 duplicate/merge 面板完整 E2E、批量重命名失败注入、大库扫描内存/并发基准和重启恢复专项测试。
+
+### 剩余实现项补齐更新（2026-08-05）
+
+- 条目批量重命名改为事务式：先对整批目标名称做冲突预检，再统一走 `ItemWorkflowService.updateMany()` 执行；任一非法名称、缺失源文件或改名冲突都会整体回滚，不再逐文件半成功。
+- 重复扫描升级为流式 hash：`findDuplicatesWithProgress()` 使用流式读取、默认并发 4，支持 `EAGLE_DUPLICATE_SCAN_CONCURRENCY` 调整；单文件读取失败只记录 `errors`，不中断整批，并保留进度与取消。
+- 原版 merge 事件接后端：renderer 发送的“保留项 + 冗余项”混合 `images-change` 批次会在成功后自动调用后端 `/api/item/mergeDuplicates`，把 metadata 合并和回收站语义落到受控后端。
+- batch-save 口径对齐：原版 `batch-save-panel` 本身是采集/保存面板；多条目 metadata 编辑统一由 `/api/item/batchSave`、`/api/v2/item/batchSave` 和 Electron `item.batchSave` 桥接承担，文档不再把采集面板误当作多条目编辑面板。
+- filterRules 显式合同桥接：新增 `searchItemsByFilterRules()`、`/api/item/search/filters`、`/api/v2/item/query/filters`，原版 `eagle.filter.filterRules` 可直接经同一搜索服务求值。
+- `saveItems()` 加固：cache、条目 metadata、search-index 和库结构文件改为逐文件临时写入后原子替换；写入失败时按快照恢复所有受影响文件，避免批量/合并崩溃后出现“缓存更新但 metadata 没更新”的半落盘状态。
+- similar 视觉扫描结论：原版相似扫描依赖浏览器 Phash/worker 和未提供的后端兼容算法/阈值样本；当前没有可靠证据证明简化实现与原版语义一致，因此继续 exact-only，不承诺 similar，不伪造结果。
+- 验收约定：真实 `.library` 测试、原版主界面 Electron E2E、重启恢复和完全隔离回归由用户执行；`NEXT_TASK_SEARCH_ORGANIZATION.md` 已同步 `batch-save-panel` 采集/保存口径与 `/api/item/batchSave` 多条目编辑合同。
 
 ### 仍未实现 / 未验收
 

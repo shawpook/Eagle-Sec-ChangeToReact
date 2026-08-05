@@ -40,7 +40,7 @@ import { CustomThumbnailService } from './custom-thumbnail.js';
 import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
 import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
 import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
-import { searchItems } from './search-service.js';
+import { searchItems, searchItemsByFilterRules } from './search-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -282,7 +282,7 @@ async function startDuplicateScanJob(job, options = {}) {
     return;
   }
   try {
-    const result = findDuplicatesWithProgress(currentLibrary, items, {
+    const result = await findDuplicatesWithProgress(currentLibrary, items, {
       onProgress: (current, total) => {
         if (job.cancelled) return;
         updateJob(job, {
@@ -291,13 +291,14 @@ async function startDuplicateScanJob(job, options = {}) {
         });
       },
       isCancelled: () => job.cancelled === true,
+      concurrency: Number(process.env.EAGLE_DUPLICATE_SCAN_CONCURRENCY) || 4,
     });
     if (result.cancelled) {
       updateJob(job, {
         status: 'cancelled',
         progress: 100,
         message: 'Duplicate scan cancelled',
-        result: { method, groups: [], elapsedMs: Date.now() - startedAt, scanned: items.length, cancelled: true },
+        result: { method, groups: [], elapsedMs: Date.now() - startedAt, scanned: items.length, cancelled: true, errors: [] },
       });
       return;
     }
@@ -305,7 +306,7 @@ async function startDuplicateScanJob(job, options = {}) {
       status: 'complete',
       progress: 100,
       message: 'Duplicate scan complete',
-      result: { method, groups: result.groups, elapsedMs: Date.now() - startedAt, scanned: items.length, cancelled: false },
+      result: { method, groups: result.groups, elapsedMs: Date.now() - startedAt, scanned: items.length, cancelled: false, errors: result.errors || [] },
     });
   } catch (err) {
     updateJob(job, { status: 'error', progress: 100, message: err.message, error: err.message });
@@ -447,52 +448,38 @@ function formatBatchName(item, template, index) {
   return sanitizeName(name);
 }
 
-function renameItemFiles(library, item, oldName, newName) {
-  const infoDir = path.join(library.rootDir, 'images', `${item.id}.info`);
-  const oldOriginal = path.join(infoDir, `${oldName}.${item.ext}`);
-  const newOriginal = path.join(infoDir, `${newName}.${item.ext}`);
-  const oldThumb = path.join(infoDir, `${oldName}_thumbnail.png`);
-  const newThumb = path.join(infoDir, `${newName}_thumbnail.png`);
-  if (oldOriginal !== newOriginal && fs.existsSync(oldOriginal) && !fs.existsSync(newOriginal)) {
-    fs.renameSync(oldOriginal, newOriginal);
-  }
-  if (oldThumb !== newThumb && fs.existsSync(oldThumb) && !fs.existsSync(newThumb)) {
-    fs.renameSync(oldThumb, newThumb);
-  }
-}
-
-function uniqueItemName(library, item, candidate) {
-  const desired = sanitizeName(candidate);
-  let name = desired;
-  let suffix = 2;
-  while (library.items.some((entry) => entry.id !== item.id && entry.name === name && entry.ext === item.ext)) {
-    name = `${desired} (${suffix})`;
-    suffix += 1;
-  }
-  return name;
-}
-
 function batchRenameItems(ids, options = {}) {
   const selected = readItems().filter((item) => ids.includes(item.id));
   const mode = options.mode === 'replace' ? 'replace' : 'format';
   const startAt = Number(options.startAt) || 1;
-  const changed = [];
-  selected.forEach((item, index) => {
+  const targetOwners = new Map();
+  const plans = selected.map((item, index) => {
     const oldName = item.name;
     let newName = mode === 'replace'
       ? String(oldName).split(options.find || '').join(options.replace || '')
       : formatBatchName(item, options.format || '*', startAt + index);
     newName = applyTextCase(newName, options.textCase);
-    newName = uniqueItemName(currentLibrary, item, newName);
-    if (newName !== oldName) {
-      renameItemFiles(currentLibrary, item, oldName, newName);
-      item.name = newName;
-      item.lastModified = Date.now();
-      changed.push({ id: item.id, name: item.name, oldName });
+    const key = `${String(item.ext || '').toLowerCase()}:${newName.toLowerCase()}`;
+    const owner = targetOwners.get(key);
+    if (owner && owner !== item.id) {
+      throw new Error(`Batch rename conflict: ${newName}`);
     }
+    targetOwners.set(key, item.id);
+    return { id: item.id, oldName, newName };
   });
-  if (changed.length > 0) saveItems(currentLibrary);
-  return changed;
+  const changes = plans.filter((plan) => plan.newName !== plan.oldName);
+  if (changes.length === 0) return [];
+  const updated = itemWorkflow.updateMany(
+    currentLibrary,
+    changes.map((plan) => ({ id: plan.id, name: plan.newName })),
+    { contract: 'v1' },
+  );
+  const updatedMap = new Map(updated.map((item) => [item.id, item]));
+  return changes.map((plan) => ({
+    id: plan.id,
+    name: (updatedMap.get(plan.id) || {}).name || plan.newName,
+    oldName: plan.oldName,
+  }));
 }
 
 function batchRenameFolders(ids, options = {}) {
@@ -1066,6 +1053,11 @@ app.post('/api/item/search', (req, res) => {
   res.json(ok(searchItems(readItems(), req.body || {})));
 });
 
+app.post('/api/item/search/filters', (req, res) => {
+  const rules = req.body.rules || req.body.filters || {};
+  res.json(ok(searchItemsByFilterRules(readItems(), rules, req.body.query || {})));
+});
+
 app.get('/api/item/info', (req, res) => {
   const id = String(req.query.id || '');
   const item = readItems().find((entry) => entry.id === id);
@@ -1412,7 +1404,7 @@ app.post('/api/item/addFromURLs', async (req, res) => {
 });
 
 app.post('/api/item/batchSave', (req, res) => {
-  res.json(ok(addMockItems(req.body)));
+  batchUpdateItemsResponse(req, res);
 });
 
 app.post('/api/item/addBookmark', (req, res) => {
@@ -2074,6 +2066,14 @@ app.post('/api/v2/item/query', (req, res) => {
   res.json(ok({ data: items.slice(offset, offset + limit), total: items.length, offset, limit }));
 });
 
+app.post('/api/v2/item/query/filters', (req, res) => {
+  const rules = req.body.rules || req.body.filters || {};
+  const items = searchItemsByFilterRules(readItems(), rules, req.body.query || {});
+  const limit = Math.min(Number(req.body?.limit || 50), 1000);
+  const offset = Number(req.body?.offset || 0);
+  res.json(ok({ data: items.slice(offset, offset + limit), total: items.length, offset, limit }));
+});
+
 app.get('/api/v2/item/countAll', (req, res) => {
   res.json(ok({ count: readItems().length }));
 });
@@ -2116,6 +2116,7 @@ app.post('/api/v2/item/upload', upload.single('file'), async (req, res) => {
 app.post('/api/v2/item/update', (req, res) => updateItemResponse(req, res, 'v2'));
 app.post('/api/v2/item/updateMany', (req, res) => updateItemsResponse(req, res, 'v2'));
 app.post('/api/v2/item/batchUpdate', (req, res) => batchUpdateItemsResponse(req, res, 'v2'));
+app.post('/api/v2/item/batchSave', (req, res) => batchUpdateItemsResponse(req, res, 'v2'));
 app.post('/api/v2/item/moveToTrash', (req, res) => changeTrashStateResponse(req, res, true));
 app.post('/api/v2/item/restore', (req, res) => changeTrashStateResponse(req, res, false));
 

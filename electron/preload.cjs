@@ -29,6 +29,7 @@ const api = {
   },
   item: {
     updateMany: (items) => ipcRenderer.invoke('item:update-many', items),
+    batchSave: (params) => ipcRenderer.invoke('item:batch-save', params),
     moveToTrash: (ids) => ipcRenderer.invoke('item:move-to-trash', ids),
     restore: (ids) => ipcRenderer.invoke('item:restore', ids),
     onOperationResult: (callback) => ipcRenderer.on('item:operation-result', (_event, result) => callback(result)),

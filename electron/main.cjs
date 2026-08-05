@@ -500,6 +500,10 @@ function registerIpc() {
     method: 'POST',
     body: { items: Array.isArray(items) ? items : [items] },
   }));
+  ipcMain.handle('item:batch-save', (event, params = {}) => apiRequest('/api/item/batchSave', {
+    method: 'POST',
+    body: params,
+  }));
   ipcMain.handle('item:move-to-trash', (event, ids = []) => apiRequest('/api/item/moveToTrash', {
     method: 'POST',
     body: { ids: Array.isArray(ids) ? ids : [ids] },

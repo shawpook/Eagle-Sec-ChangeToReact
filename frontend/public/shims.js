@@ -435,6 +435,17 @@
         .then(() => desktopApi.item.updateMany(snapshots))
         .then((updated) => {
           mergeCachedItems(updated);
+          const keep = snapshots.find((item) => !item.isDeleted);
+          const trash = snapshots.filter((item) => item.isDeleted);
+          if (keep && trash.length > 0 && desktopApi.duplicates) {
+            desktopApi.duplicates.merge({
+              keepId: keep.id,
+              removeIds: trash.map((item) => item.id),
+              keep,
+            }).catch((err) => {
+              mockEmit('duplicate-merge-error', { error: err.message });
+            });
+          }
           mockEmit('item:operation-result', { ok: true, action: channel, items: updated });
           return updated;
         })

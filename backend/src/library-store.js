@@ -45,6 +45,30 @@ function writeJson(file, value) {
   fs.writeFileSync(file, JSON.stringify(value, null, 2), 'utf8');
 }
 
+function writeAtomicFile(file, data) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temp = `${file}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}.tmp`;
+  fs.writeFileSync(temp, data, 'utf8');
+  fs.renameSync(temp, file);
+}
+
+function writeJsonAtomic(file, value) {
+  writeAtomicFile(file, JSON.stringify(value, null, 2));
+}
+
+function fileSnapshot(file) {
+  if (!fs.existsSync(file)) return { file, existed: false, data: null };
+  return { file, existed: true, data: fs.readFileSync(file, 'utf8') };
+}
+
+function restoreFileSnapshot(snapshot) {
+  if (!snapshot.existed) {
+    fs.rmSync(snapshot.file, { force: true });
+    return;
+  }
+  writeAtomicFile(snapshot.file, snapshot.data);
+}
+
 function readCache(file) {
   if (!fs.existsSync(file)) return null;
   return fs
@@ -88,7 +112,7 @@ function buildSearchIndex(items) {
 }
 
 function saveSearchIndex(library, index) {
-  writeJson(path.join(library.rootDir, 'search-index.json'), index);
+  writeJsonAtomic(path.join(library.rootDir, 'search-index.json'), index);
 }
 
 export function resolveLibraryPath(input) {
@@ -172,10 +196,10 @@ export function loadLibrary(input = defaultMockLibrary()) {
 
 export function saveLibraryState(library) {
   const rootDir = library.rootDir;
-  writeJson(path.join(rootDir, 'metadata.json'), library.metadata);
-  writeJson(path.join(rootDir, 'tags.json'), library.tags);
-  writeJson(path.join(rootDir, 'saved-filters.json'), library.savedFilters);
-  writeJson(path.join(rootDir, 'folders.json'), library.folders);
+  writeJsonAtomic(path.join(rootDir, 'metadata.json'), library.metadata);
+  writeJsonAtomic(path.join(rootDir, 'tags.json'), library.tags);
+  writeJsonAtomic(path.join(rootDir, 'saved-filters.json'), library.savedFilters);
+  writeJsonAtomic(path.join(rootDir, 'folders.json'), library.folders);
 }
 
 export function itemOriginalPath(library, item) {
@@ -188,18 +212,40 @@ export function itemThumbnailPath(library, item) {
 
 export function saveItems(library) {
   const cacheFile = path.join(library.rootDir, 'cache.json');
-  fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
-  fs.writeFileSync(cacheFile, library.items.map((item) => JSON.stringify(item)).join('\n') + '\n', 'utf8');
-  for (const item of library.items) {
-    const dir = path.join(library.rootDir, 'images', `${item.id}.info`);
-    fs.mkdirSync(dir, { recursive: true });
-    writeJson(path.join(dir, 'metadata.json'), item);
+  const searchIndexFile = path.join(library.rootDir, 'search-index.json');
+  const cacheData = library.items.map((item) => JSON.stringify(item)).join('\n') + '\n';
+  const searchIndex = buildSearchIndex(library.items);
+  const targets = [
+    { file: cacheFile, data: cacheData },
+    { file: searchIndexFile, data: JSON.stringify(searchIndex, null, 2) },
+    ...library.items.map((item) => ({
+      file: path.join(library.rootDir, 'images', `${item.id}.info`, 'metadata.json'),
+      data: JSON.stringify(item, null, 2),
+    })),
+  ];
+  const stateFiles = [
+    { file: path.join(library.rootDir, 'metadata.json'), value: library.metadata },
+    { file: path.join(library.rootDir, 'tags.json'), value: library.tags },
+    { file: path.join(library.rootDir, 'saved-filters.json'), value: library.savedFilters },
+    { file: path.join(library.rootDir, 'folders.json'), value: library.folders },
+  ];
+  const snapshots = [...targets.map((target) => fileSnapshot(target.file)), ...stateFiles.map((target) => fileSnapshot(target.file))];
+  try {
+    for (const target of targets) writeAtomicFile(target.file, target.data);
+    library.searchIndex = searchIndex;
+    library.metadata.modificationTime = Date.now();
+    for (const target of stateFiles) writeJsonAtomic(target.file, target.value);
+    library.itemMap = new Map(library.items.map((item) => [item.id, item]));
+  } catch (err) {
+    for (const snapshot of snapshots.slice().reverse()) {
+      try {
+        restoreFileSnapshot(snapshot);
+      } catch (restoreError) {
+        // 保留触发回滚的根因。
+      }
+    }
+    throw err;
   }
-  library.searchIndex = buildSearchIndex(library.items);
-  saveSearchIndex(library, library.searchIndex);
-  library.metadata.modificationTime = Date.now();
-  saveLibraryState(library);
-  library.itemMap = new Map(library.items.map((item) => [item.id, item]));
 }
 
 export function saveItem(library, item) {

@@ -8,6 +8,16 @@ function fileHash(file) {
   return crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex');
 }
 
+function fileHashStream(file) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha1');
+    const stream = fs.createReadStream(file);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
 function normalizeName(value) {
   return String(value || '')
     .toLowerCase()
@@ -45,11 +55,13 @@ function groupFromItems(items) {
   };
 }
 
-export function findDuplicatesWithProgress(library, items = library.items, options = {}) {
+export async function findDuplicatesWithProgress(library, items = library.items, options = {}) {
   const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
   const isCancelled = typeof options.isCancelled === 'function' ? options.isCancelled : () => false;
+  const concurrency = Math.max(1, Number(options.concurrency) || 4);
   const total = items.length;
   let current = 0;
+  const errors = [];
   const sizeBuckets = new Map();
   for (const item of items) {
     const size = String(item.size || 0);
@@ -65,22 +77,30 @@ export function findDuplicatesWithProgress(library, items = library.items, optio
       continue;
     }
     const hashBuckets = new Map();
-    for (const item of bucket) {
+    for (let index = 0; index < bucket.length; index += concurrency) {
       if (isCancelled()) {
-        return { cancelled: true, groups: [] };
+        return { cancelled: true, groups: [], errors };
       }
-      const hash = fileHash(itemOriginalPath(library, item));
-      const key = hash || `${String(item.name).toLowerCase()}:${item.ext}`;
-      if (!hashBuckets.has(key)) hashBuckets.set(key, []);
-      hashBuckets.get(key).push(item);
-      current += 1;
-      onProgress(current, total);
+      const chunk = bucket.slice(index, index + concurrency);
+      await Promise.all(chunk.map(async (item) => {
+        if (isCancelled()) return;
+        try {
+          const hash = await fileHashStream(itemOriginalPath(library, item));
+          const key = hash || `${String(item.name).toLowerCase()}:${item.ext}`;
+          if (!hashBuckets.has(key)) hashBuckets.set(key, []);
+          hashBuckets.get(key).push(item);
+        } catch (err) {
+          errors.push({ id: item.id, error: err.message });
+        }
+        current += 1;
+        onProgress(current, total);
+      }));
     }
     for (const duplicateItems of hashBuckets.values()) {
       if (duplicateItems.length > 1) groups.push(groupFromItems(duplicateItems));
     }
   }
-  return { cancelled: false, groups };
+  return { cancelled: false, groups, errors };
 }
 
 export function findDuplicates(library, items = library.items) {

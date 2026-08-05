@@ -4,6 +4,9 @@ const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://local
 
 const api = {
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),
+  onIpc: (channel, callback) => {
+    ipcRenderer.on(channel, (_event, value) => callback(value));
+  },
   getCurrentLibrary: () => ipcRenderer.invoke('library:get-current'),
   library: {
     current: () => ipcRenderer.invoke('library:get-current'),
@@ -32,6 +35,11 @@ const api = {
     batchSave: (params) => ipcRenderer.invoke('item:batch-save', params),
     moveToTrash: (ids) => ipcRenderer.invoke('item:move-to-trash', ids),
     restore: (ids) => ipcRenderer.invoke('item:restore', ids),
+    openDefault: (id) => ipcRenderer.invoke('item:open-default', { id }),
+    reveal: (id) => ipcRenderer.invoke('item:reveal', { id }),
+    copyPath: (id) => ipcRenderer.invoke('item:copy-path', { id }),
+    copyImage: (id) => ipcRenderer.invoke('item:copy-image', { id }),
+    dragStart: (id) => ipcRenderer.invoke('item:drag-start', { id }),
     onOperationResult: (callback) => ipcRenderer.on('item:operation-result', (_event, result) => callback(result)),
   },
   duplicates: {
@@ -81,7 +89,9 @@ const api = {
   export: {
     images: (params) => ipcRenderer.invoke('export:images', params),
     asFolder: (params) => ipcRenderer.invoke('export:as-folder', params),
+    eaglepack: (params) => ipcRenderer.invoke('export:eaglepack', params),
     cancel: (jobId) => ipcRenderer.invoke('export:cancel', jobId),
+    reveal: (jobId) => ipcRenderer.invoke('export:reveal', { jobId }),
     onProgress: (callback) => ipcRenderer.on('export:progress', (_event, progress) => callback(progress)),
     onComplete: (callback) => ipcRenderer.on('export:complete', (_event, result) => callback(result)),
     onError: (callback) => ipcRenderer.on('export:error', (_event, result) => callback(result)),

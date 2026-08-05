@@ -120,6 +120,7 @@ function findFolderById(folders, id) {
 export function packLibrary(library, destFile, options = {}) {
   const Zip = zipModule();
   const zip = new Zip();
+  const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
   const selected = resolveSelectedItems(library, options);
   const sourceFolder = options.folder || (options.folderId ? findFolderById(library.folders, options.folderId) : null);
   const pack = {
@@ -130,6 +131,7 @@ export function packLibrary(library, destFile, options = {}) {
   if (sourceFolder) pack.folder = clone(sourceFolder);
 
   zip.addFile('pack.json', Buffer.from(JSON.stringify(pack), 'utf8'));
+  let processed = 0;
   for (const item of pack.images) {
     const infoDir = path.join(library.rootDir, 'images', `${item.id}.info`);
     const originalFile = path.join(infoDir, `${item.name}.${item.ext}`);
@@ -140,6 +142,8 @@ export function packLibrary(library, destFile, options = {}) {
       throw new Error(`Eaglepack original file is missing: ${item.id}`);
     }
     zip.addLocalFolder(infoDir, `${item.id}.info`);
+    processed += 1;
+    onProgress({ current: processed, total: pack.images.length });
   }
 
   if (options.includeLibraryState) {

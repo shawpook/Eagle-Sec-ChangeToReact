@@ -198,24 +198,45 @@ function updateJob(job, patch) {
   Object.assign(job, patch, { updatedAt: Date.now() });
 }
 
-function startEaglepackExportJob(job, options = {}) {
+async function startEaglepackExportJob(job, options = {}) {
   updateJob(job, { status: 'running', progress: 5, message: 'Preparing eaglepack export' });
-  setTimeout(() => {
-    try {
-      updateJob(job, { progress: 35, message: 'Packing library metadata and images' });
-      const target = options.libraryPath ? loadLibrary(options.libraryPath) : currentLibrary;
-      const destFile = options.destFile || path.join(projectRoot, 'exports', `${target.libraryName}.eaglepack`);
-      const packed = packLibrary(target, destFile);
-      updateJob(job, {
-        status: 'complete',
-        progress: 100,
-        message: 'Eaglepack export complete',
-        result: { path: packed, count: target.items.length },
-      });
-    } catch (err) {
-      updateJob(job, { status: 'error', progress: 100, message: err.message, error: err.message });
-    }
-  }, 60);
+  try {
+    await new Promise((resolve) => setImmediate(resolve));
+    updateJob(job, { progress: 10, message: 'Packing library metadata and images' });
+    const target = options.libraryPath ? loadLibrary(options.libraryPath) : currentLibrary;
+    const destFile = options.destFile || path.join(projectRoot, 'exports', `${target.libraryName}.eaglepack`);
+    const total = resolveSelectedItemsForProgress(target, options).length;
+    const packed = packLibrary(target, destFile, {
+      items: options.items,
+      folder: options.folder,
+      folderId: options.folderId,
+      includeLibraryState: options.includeLibraryState,
+      onProgress(progress) {
+        const percentage = total > 0 ? 10 + Math.round(((progress.current || 0) / total) * 80) : 10;
+        updateJob(job, {
+          progress: Math.min(percentage, 95),
+          message: `Packing ${progress.current}/${total}`,
+          result: { path: destFile, count: progress.current, total },
+        });
+      },
+    });
+    updateJob(job, {
+      status: 'complete',
+      progress: 100,
+      message: 'Eaglepack export complete',
+      result: { path: packed, count: total },
+    });
+  } catch (err) {
+    updateJob(job, { status: 'error', progress: 100, message: err.message, error: err.message });
+  }
+}
+
+function resolveSelectedItemsForProgress(library, options) {
+  if (!Array.isArray(options.items) || options.items.length === 0) {
+    return library.items.filter((item) => !item.isDeleted);
+  }
+  const ids = new Set(options.items.map((item) => typeof item === 'string' ? item : item.id));
+  return library.items.filter((item) => ids.has(item.id));
 }
 
 async function startPathImportJob(job, options = {}) {

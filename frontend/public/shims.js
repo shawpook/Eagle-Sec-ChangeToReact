@@ -33,6 +33,26 @@
     };
   }
 
+  if (typeof HTMLMediaElement !== 'undefined') {
+    const durationDescriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'duration');
+    if (durationDescriptor && typeof durationDescriptor.get === 'function') {
+      const nativeDurationGet = durationDescriptor.get;
+      Object.defineProperty(HTMLMediaElement.prototype, 'duration', {
+        configurable: true,
+        enumerable: durationDescriptor.enumerable,
+        get() {
+          const native = nativeDurationGet.call(this);
+          if (Number.isFinite(native) && native > 0) return native;
+          if (this.readyState >= 1) return 1;
+          return NaN;
+        },
+        set(value) {
+          if (typeof durationDescriptor.set === 'function') durationDescriptor.set.call(this, value);
+        },
+      });
+    }
+  }
+
   function syncText(url) {
     try {
       const xhr = new XMLHttpRequest();
@@ -401,6 +421,28 @@
     mockEmit('import:operation-result', { ok: true, channel, items: imported });
     return imported;
   }
+
+  function previewCurrentItemId() {
+    const scope = window.$bodyScope;
+    return scope && scope.current && scope.current.id ? scope.current.id : '';
+  }
+
+  function runPreviewAction(action, promise) {
+    Promise.resolve(promise)
+      .then((result) => mockEmit('preview:action-result', { ok: true, action, ...(result || {}) }))
+      .catch((err) => mockEmit('preview:action-result', { ok: false, action, error: err.message }));
+  }
+
+  function isCurrentPreviewRawPath(rawPath) {
+    const scope = window.$bodyScope;
+    if (!scope || !scope.current || !scope.current.id || !scope.current.name || !scope.current.ext) return false;
+    const expected = `${scope.libraryImagesPath || ''}/${scope.current.id}.info/${scope.current.name}.${scope.current.ext}`
+      .replace(/\\/g, '/')
+      .replace(/\/+/g, '/');
+    const actual = String(rawPath || '').replace(/\\/g, '/').replace(/\/+/g, '/');
+    return expected === actual;
+  }
+
   ipcRenderer.send = function (channel, params) {
     if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {
       if (channel === 'create-library') desktopApi.library.create(params || {}).catch(() => {});
@@ -472,6 +514,25 @@
         mockEmit('preview:operation-result', { ok: true, result });
       }).catch((err) => mockEmit('preview:operation-result', { ok: false, error: err.message }));
       return;
+    }
+    if (desktopApi && desktopApi.item) {
+      const itemId = previewCurrentItemId();
+      if (channel === 'open-with-default' && itemId) {
+        runPreviewAction('open-with-default', desktopApi.item.openDefault(itemId));
+        return;
+      }
+      if (channel === 'show-item-in-folder' && itemId && !(params && typeof params === 'string' && !isCurrentPreviewRawPath(params))) {
+        runPreviewAction('show-item-in-folder', desktopApi.item.reveal(itemId));
+        return;
+      }
+      if (channel === 'copy-images' && itemId) {
+        runPreviewAction('copy-images', desktopApi.item.copyImage(itemId));
+        return;
+      }
+      if (channel === 'ondragstart' && itemId) {
+        runPreviewAction('ondragstart', desktopApi.item.dragStart(itemId));
+        return;
+      }
     }
     if (desktopApi && desktopApi.thumbnail) {
       if (channel === 'set-custom-thumbnail') {
@@ -572,19 +633,29 @@
     }
     if (desktopApi && desktopApi.export) {
       if (channel === 'export-images') {
-        desktopApi.export.images(params || {}).catch(() => {});
+        const exportParams = params || {};
+        if (String(exportParams.savePath || '').toLowerCase().endsWith('.eaglepack')) {
+          desktopApi.export.eaglepack(exportParams).catch(() => {});
+        } else {
+          desktopApi.export.images(exportParams).catch(() => {});
+        }
         return;
       }
       if (channel === 'export-as-folder') {
         desktopApi.export.asFolder(params || {}).catch(() => {});
         return;
       }
-      if (channel === 'cancel.all') {
-        desktopApi.export.cancel().catch(() => {});
+      if (channel === 'show-item-in-folder') {
+        if (desktopApi.export.reveal && window.__lastExportJobId) {
+          runPreviewAction('show-item-in-folder', desktopApi.export.reveal(window.__lastExportJobId));
+        } else {
+          const itemId = previewCurrentItemId();
+          if (itemId) runPreviewAction('show-item-in-folder', desktopApi.item.reveal(itemId));
+        }
         return;
       }
-      if (channel === 'show-item-in-folder') {
-        console.debug('[eagle-shim] reveal exported item', params);
+      if (channel === 'cancel.all') {
+        desktopApi.export.cancel().catch(() => {});
         return;
       }
     }
@@ -619,6 +690,37 @@
     }
     return Promise.resolve(false);
   };
+  if (desktopApi && typeof desktopApi.onIpc === 'function') {
+    desktopApi.onIpc('show-item-in-folder', (value) => {
+      if (desktopApi.export && desktopApi.export.reveal && window.__lastExportJobId) {
+        runPreviewAction('show-item-in-folder', desktopApi.export.reveal(window.__lastExportJobId));
+      }
+    });
+    for (const channel of [
+      'show-export-task',
+      'finish-export-task',
+      'close-export-task',
+      'show-archive-task',
+      'add-archive-task',
+      'update-archive-percent',
+      'finish-archive-task',
+      'abort-archive-task',
+    ]) {
+      desktopApi.onIpc(channel, (value) => mockEmit(channel, value));
+    }
+  }
+  if (desktopApi && desktopApi.export) {
+    if (typeof desktopApi.export.onProgress === 'function') {
+      desktopApi.export.onProgress((progress) => {
+        if (progress && progress.jobId) window.__lastExportJobId = progress.jobId;
+      });
+    }
+    if (typeof desktopApi.export.onComplete === 'function') {
+      desktopApi.export.onComplete((result) => {
+        if (result && result.jobId) window.__lastExportJobId = result.jobId;
+      });
+    }
+  }
   if (desktopApi && desktopApi.import) {
     if (typeof desktopApi.import.onFileProgress === 'function') {
       desktopApi.import.onFileProgress((job) => mockEmit('import-file-progress', job));
@@ -1014,7 +1116,11 @@
       getResourceUsage: () => ({ images: { count: 0, liveSize: 0 } }),
     },
     clipboard: {
-      writeText() {},
+      writeText(text) {
+        if (desktopApi && desktopApi.item && isCurrentPreviewRawPath(text)) {
+          runPreviewAction('copy-path', desktopApi.item.copyPath(previewCurrentItemId()));
+        }
+      },
       readText: () => readDesktopClipboardSync().text || '',
       writeImage() {},
       readImage: () => clipboardImageFromDataUrl(readDesktopClipboardSync().imageDataUrl),
@@ -1739,6 +1845,7 @@
     }
 
     if (pagePath.includes('preview-window.html')) {
+      if (desktopApi && desktopApi.preview) return;
       const query = new URLSearchParams(window.location.search);
       const id = query.get('id');
       const image = items.find((item) => item.id === id) || items[0];

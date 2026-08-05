@@ -728,6 +728,20 @@ http://localhost:41595/
 
 当前端口：
 
+### 预览、素材交付与原版导出进度更新（2026-08-05）
+
+- 原版预览现在按主窗口传入顺序保序打开多选条目，不再被 shim 的 mock 单条 `init` 覆盖；主进程重新读取当前 `.library`，校验条目未回收、原文件存在，并拒绝伪造 item ID。
+- Electron 新增受控素材操作桥：`item:open-default`、`item:reveal`、`item:copy-path`、`item:copy-image`、`item:drag-start` 都只接收 item ID，由主进程按当前库 metadata 重新解析并验证 realpath 在条目目录内。
+- 原版 `open-with-default`、`show-item-in-folder`、`copy-images`、`ondragstart` 由 shim 转换为 item ID 后调用受控桥；旧 `show-item-in-folder` 路径入口只接受当前库条目或已记录导出任务目标，不再接受任意绝对路径。
+- 原版 `copyAsPath()` 在 Electron 下改为受控 `item:copy-path`，复制的是主进程解析后的真实条目路径；`copyImage()` 仅对可解码图片写入剪贴板，损坏或非图片明确失败。
+- 原版 `export-images` 在 `savePath` 以 `.eaglepack` 结尾时自动走受控 Eaglepack 任务，不再误走平铺图片导出；后端 `packLibrary()` 增加逐条目进度，`eaglepack-export-progress` 的 `show/add/update/finish/abort` 事件由真实任务驱动。
+- `file-export-progress` 与 `eaglepack-export-progress` 的原版 directive 事件已通过 preload/shim 桥接，导出完成后使用主进程保存的 job 目标执行受控定位。
+- 新增 `tests/preview-delivery-closed-loop.mjs`：隔离启动后端/Vite/Electron，导入 PNG/SVG/GIF/PDF/WebM，验证多选前后导航、图片真实加载、视频 readyState/duration，以及默认打开、定位、复制路径、复制图片、拖出均解析到当前库文件。
+- 新增 `tests/export-progress-closed-loop.mjs`：隔离验证平铺与 Eaglepack 导出驱动原版进度 directive、文件哈希一致、Eaglepack 使用 `pack.json + <id>.info/` 结构，并触发受控目标定位。
+- 顺带修复 `findDuplicates()` 的同步合同：该函数此前误返回 async Promise，导致 `tests/eaglepack-duplicates.mjs` 和资源库统计读取 `groups` 时失败；现在同步返回 `group.id/items` 数组。
+- 已验证：`preview-delivery-closed-loop.mjs`、`export-progress-closed-loop.mjs`、`main-ui-workflow-closed-loop.mjs`、`electron-library-bridge.mjs`、`image-export-closed-loop.mjs`、`eaglepack-duplicates.mjs`、`import-export-migration.mjs` 通过。
+- 仍未覆盖：PDF/GIF/SVG 逐页/逐帧像素断言、视频当前帧复制/保存、导出取消 UI 状态、目标目录不可写、符号链接/junction 越界注入，以及后端/Electron 重启后的预览恢复专项测试；这些继续按 `NEXT_TASK_PREVIEW_DELIVERY.md` 的后续阶段执行。
+
 ```text
 41592 缩略图静态服务
 41593 浏览器扩展服务

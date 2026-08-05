@@ -104,7 +104,27 @@ export async function findDuplicatesWithProgress(library, items = library.items,
 }
 
 export function findDuplicates(library, items = library.items) {
-  return findDuplicatesWithProgress(library, items).groups;
+  const sizeBuckets = new Map();
+  for (const item of items) {
+    const size = String(item.size || 0);
+    if (!sizeBuckets.has(size)) sizeBuckets.set(size, []);
+    sizeBuckets.get(size).push(item);
+  }
+  const groups = [];
+  for (const bucket of sizeBuckets.values()) {
+    if (bucket.length < 2) continue;
+    const hashBuckets = new Map();
+    for (const item of bucket) {
+      const hash = fileHash(itemOriginalPath(library, item));
+      const key = hash || `${String(item.name).toLowerCase()}:${item.ext}`;
+      if (!hashBuckets.has(key)) hashBuckets.set(key, []);
+      hashBuckets.get(key).push(item);
+    }
+    for (const duplicateItems of hashBuckets.values()) {
+      if (duplicateItems.length > 1) groups.push(groupFromItems(duplicateItems));
+    }
+  }
+  return groups;
 }
 
 export function findSimilarDuplicates(library, items = library.items, threshold = 0.55) {

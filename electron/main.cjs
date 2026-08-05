@@ -13,11 +13,14 @@ const pluginSmokeMode = process.argv.includes('--smoke-plugin');
 const desktopSmokeMode = process.argv.includes('--smoke-desktop');
 const librarySmokeMode = process.argv.includes('--smoke-library');
 const mainWorkflowSmokeMode = process.argv.includes('--smoke-main-workflow');
+const previewDeliverySmokeMode = process.argv.includes('--smoke-preview-delivery');
+const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress');
 const regressionHostMode = process.argv.includes('--regression-host');
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
 const allowedRoots = new Set([mockLibraryRoot, path.resolve(__dirname, '..', '..')]);
 const exportJobs = new Map();
+const shellCalls = [];
 
 function allowRoot(target) {
   if (target) allowedRoots.add(path.resolve(target));
@@ -98,6 +101,132 @@ async function apiRequest(route, options = {}) {
   return payload.data;
 }
 
+async function currentLibrary() {
+  const current = await apiRequest('/api/library/current');
+  allowRoot(current.rootDir || current.path);
+  const { loadLibrary } = await import('../backend/src/library-store.js');
+  return loadLibrary(current.path || current.rootDir);
+}
+
+function assertSafeExportDestination(current, target) {
+  const destination = path.resolve(String(target || ''));
+  if (!destination) throw new Error('Export destination is required');
+  const imagesDir = path.resolve(current.imagesDir || path.join(current.rootDir || current.path, 'images'));
+  if (destination === imagesDir || destination.startsWith(imagesDir + path.sep)) {
+    throw new Error('Export destination cannot be inside the current library images directory');
+  }
+  return destination;
+}
+
+async function resolveItemFiles(itemId) {
+  const library = await currentLibrary();
+  const item = library.itemMap.get(String(itemId || ''));
+  if (!item) throw new Error(`Item not found: ${itemId}`);
+  if (item.isDeleted) throw new Error(`Item is in trash: ${itemId}`);
+  const imagesDir = path.join(library.rootDir, 'images');
+  const infoDir = path.join(imagesDir, `${item.id}.info`);
+  const originalName = `${item.name}.${item.ext}`;
+  if (path.basename(originalName) !== originalName) throw new Error(`Unsafe item file name: ${item.name}`);
+  const originalPath = path.join(infoDir, originalName);
+  const thumbnailPath = path.join(infoDir, `${item.name}_thumbnail.png`);
+  if (!fs.existsSync(infoDir) || !fs.statSync(infoDir).isDirectory()) {
+    throw new Error(`Item directory missing: ${item.id}`);
+  }
+  if (!fs.existsSync(originalPath) || !fs.statSync(originalPath).isFile()) {
+    throw new Error(`Item original file missing: ${item.id}`);
+  }
+  const imagesReal = fs.realpathSync(imagesDir);
+  const infoReal = fs.realpathSync(infoDir);
+  const originalReal = fs.realpathSync(originalPath);
+  if (!(infoReal === imagesReal || infoReal.startsWith(imagesReal + path.sep))) {
+    throw new Error(`Unsafe item directory: ${item.id}`);
+  }
+  if (!originalReal.startsWith(infoReal + path.sep)) {
+    throw new Error(`Unsafe item original file: ${item.id}`);
+  }
+  return { item, library, imagesDir, infoDir, originalPath, thumbnailPath, originalReal };
+}
+
+async function itemIdFromPath(rawPath) {
+  const library = await currentLibrary();
+  const requested = path.resolve(String(rawPath || ''));
+  for (const item of library.items || []) {
+    const candidate = path.join(library.rootDir, 'images', `${item.id}.info`, `${item.name}.${item.ext}`);
+    if (path.resolve(candidate) === requested) return item.id;
+  }
+  throw new Error(`Path does not resolve to a current library item: ${rawPath}`);
+}
+
+async function resolveRevealTarget(target) {
+  const requested = path.resolve(String(target || ''));
+  try {
+    const id = await itemIdFromPath(requested);
+    return { kind: 'item', id, target: requested };
+  } catch (err) {
+    for (const job of exportJobs.values()) {
+      const destination = job.destination ? path.resolve(job.destination) : '';
+      if (destination && (requested === destination || requested.startsWith(destination + path.sep))) {
+        return { kind: 'export', jobId: job.jobId, target: requested };
+      }
+    }
+  }
+  throw new Error(`Unsafe reveal target: ${target}`);
+}
+
+function recordShell(action, target) {
+  if (previewDeliverySmokeMode || exportProgressSmokeMode) shellCalls.push({ action, target, at: Date.now() });
+}
+
+async function openItemDefault(itemId) {
+  const { originalReal } = await resolveItemFiles(itemId);
+  recordShell('openPath', originalReal);
+  if (!previewDeliverySmokeMode) {
+    const error = await shell.openPath(originalReal);
+    if (error) throw new Error(error);
+  }
+  return { ok: true, path: originalReal };
+}
+
+async function revealItem(itemId) {
+  const { originalReal } = await resolveItemFiles(itemId);
+  recordShell('showItemInFolder', originalReal);
+  if (!previewDeliverySmokeMode) shell.showItemInFolder(originalReal);
+  return { ok: true, path: originalReal };
+}
+
+async function revealExportResult(jobId) {
+  const job = exportJobs.get(String(jobId || ''));
+  if (!job || !job.destination) throw new Error(`Export job not found: ${jobId}`);
+  const target = path.resolve(job.destination);
+  recordShell('showItemInFolder', target);
+  if (!previewDeliverySmokeMode) shell.showItemInFolder(target);
+  return { ok: true, path: target };
+}
+
+async function copyItemPath(itemId) {
+  const { originalReal } = await resolveItemFiles(itemId);
+  clipboard.writeText(originalReal);
+  return { ok: true, path: originalReal };
+}
+
+async function copyItemImage(itemId) {
+  const { originalReal } = await resolveItemFiles(itemId);
+  const image = nativeImage.createFromPath(originalReal);
+  if (image.isEmpty()) throw new Error(`Item is not a decodable image: ${itemId}`);
+  clipboard.writeImage(image);
+  return { ok: true, path: originalReal, width: image.getSize().width, height: image.getSize().height };
+}
+
+async function startItemDrag(event, itemId) {
+  const { originalReal, thumbnailPath } = await resolveItemFiles(itemId);
+  recordShell('startDrag', originalReal);
+  if (!previewDeliverySmokeMode) {
+    const icon = fs.existsSync(thumbnailPath) ? nativeImage.createFromPath(thumbnailPath) : nativeImage.createEmpty();
+    event.sender.startDrag({ file: originalReal, icon });
+  }
+  return { ok: true, path: originalReal };
+}
+
 function mockLibraryDescription() {
   return {
     path: mockLibraryRoot,
@@ -161,11 +290,12 @@ async function runExport(event, mode, params = {}) {
   const jobId = params.jobId || `export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const images = Array.isArray(params.images) ? params.images : [];
   const total = images.length || (params.folder && Array.isArray(params.folder.images) ? params.folder.images.length : 0);
-  const job = { cancelled: false };
+  const job = { cancelled: false, jobId, destination: params.savePath || params.destDir || '' };
   exportJobs.set(jobId, job);
   event.sender.send('show-export-task', total);
   try {
     const current = await apiRequest('/api/library/current');
+    assertSafeExportDestination(current, params.savePath || params.destDir);
     const [{ loadLibrary }, exportModule] = await Promise.all([
       import('../backend/src/library-store.js'),
       import('../backend/src/export-service.js'),
@@ -181,13 +311,108 @@ async function runExport(event, mode, params = {}) {
       },
     });
     event.sender.send('export:complete', { jobId, ...result });
+    job.destination = result.destination || job.destination;
+    job.result = result;
     return { jobId, ...result };
   } catch (err) {
     event.sender.send('close-export-task');
     event.sender.send('export:error', { jobId, error: err.message, cancelled: err.name === 'ExportCancelledError' });
     throw err;
   } finally {
-    exportJobs.delete(jobId);
+    if (job.destination) {
+      // Keep completed job metadata for controlled reveal while the window is open.
+      job.completed = !job.cancelled;
+    } else {
+      exportJobs.delete(jobId);
+    }
+  }
+}
+
+async function runArchiveExport(event, params = {}) {
+  const jobId = params.jobId || `archive-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const job = {
+    cancelled: false,
+    jobId,
+    destination: params.savePath || params.destFile || '',
+    backendJobId: '',
+  };
+  exportJobs.set(jobId, job);
+  event.sender.send('show-archive-task');
+  try {
+    const current = await apiRequest('/api/library/current');
+    assertSafeExportDestination(current, params.savePath || params.destFile);
+    const start = await apiRequest('/api/export/eaglepack/start', {
+      method: 'POST',
+      body: {
+        libraryPath: params.libraryPath,
+        destFile: params.savePath || params.destFile,
+        items: params.images || params.items || [],
+        folder: params.folder,
+        includeLibraryState: params.includeLibraryState,
+      },
+    });
+    job.backendJobId = start.job && start.job.id;
+    if (!job.backendJobId) throw new Error('Eaglepack job was not created');
+    let sentAdd = 0;
+    let lastPercent = -1;
+    while (true) {
+      if (job.cancelled || event.sender.isDestroyed()) {
+        if (job.backendJobId) {
+          await apiRequest(`/api/jobs/${encodeURIComponent(job.backendJobId)}/cancel`, {
+            method: 'POST',
+            body: {},
+          }).catch(() => {});
+        }
+        event.sender.send('abort-archive-task');
+        event.sender.send('export:error', { jobId, error: 'Export cancelled', cancelled: true });
+        return { jobId, cancelled: true };
+      }
+      const state = await apiRequest(`/api/jobs/${encodeURIComponent(job.backendJobId)}`);
+      const result = state.result || {};
+      const current = Number(result.count || result.current || 0);
+      const total = Number(result.total || 0);
+      while (sentAdd < current) {
+        event.sender.send('add-archive-task');
+        sentAdd += 1;
+      }
+      const percent = Math.max(0, Math.min(100, Math.round(Number(state.progress || 0))));
+      if (percent !== lastPercent) {
+        event.sender.send('update-archive-percent', percent);
+        lastPercent = percent;
+      }
+      event.sender.send('export:progress', { jobId, ...result, progress: percent, status: state.status });
+      if (state.status === 'complete') {
+        event.sender.send('update-archive-percent', 100);
+        event.sender.send('finish-archive-task');
+        job.destination = result.path || job.destination;
+        job.result = result;
+        event.sender.send('export:complete', { jobId, ...result });
+        event.sender.send('show-item-in-folder', job.destination);
+        return { jobId, ...result };
+      }
+      if (state.status === 'error' || state.status === 'cancelled') {
+        event.sender.send('abort-archive-task');
+        const cancelled = state.status === 'cancelled';
+        event.sender.send('export:error', {
+          jobId,
+          error: state.message || state.error || 'Eaglepack export failed',
+          cancelled,
+        });
+        return { jobId, error: state.message || state.error, cancelled };
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  } catch (err) {
+    event.sender.send('abort-archive-task');
+    event.sender.send('export:error', { jobId, error: err.message, cancelled: false });
+    throw err;
+  } finally {
+    if (job.destination) {
+      job.completed = !job.cancelled;
+      exportJobs.set(jobId, job);
+    } else {
+      exportJobs.delete(jobId);
+    }
   }
 }
 
@@ -215,8 +440,12 @@ async function openOriginalPreview(payload = {}) {
   const library = await apiRequest('/api/library/current?includeItems=true');
   allowRoot(library.rootDir || library.path);
   const selectedIds = new Set(items.map((item) => item.id));
-  const latestItems = (library.items || []).filter((item) => selectedIds.has(item.id));
-  if (latestItems.length === 0) throw new Error('Preview items were not found in the current library');
+  const itemsById = new Map((library.items || []).filter((item) => !item.isDeleted).map((item) => [item.id, item]));
+  const latestItems = items.map((entry) => itemsById.get(entry.id)).filter(Boolean);
+  if (latestItems.length !== selectedIds.size) {
+    throw new Error('Preview items were not found in the current library or are in the trash');
+  }
+  for (const item of latestItems) await resolveItemFiles(item.id);
   const initPayload = {
     images: latestItems,
     imagesDir: library.imagesDir,
@@ -239,6 +468,7 @@ async function openOriginalPreview(payload = {}) {
     width: payload.width || 1100,
     height: payload.height || 760,
     frame: false,
+    show: payload.show !== false,
     onDidFinishLoad(previewWindow) {
       previewWindow.webContents.send('preview:init', initPayload);
     },
@@ -264,6 +494,7 @@ function createWindow(options = {}) {
       nodeIntegration: true,
       contextIsolation: false,
       sandbox: false,
+      backgroundThrottling: false,
     },
   });
 
@@ -441,6 +672,13 @@ function registerIpc() {
     return true;
   });
   ipcMain.handle('preview:open-original', (event, payload = {}) => openOriginalPreview(payload));
+
+  ipcMain.handle('item:open-default', (event, payload = {}) => openItemDefault(payload.id));
+  ipcMain.handle('item:reveal', (event, payload = {}) => revealItem(payload.id));
+  ipcMain.handle('item:copy-path', (event, payload = {}) => copyItemPath(payload.id));
+  ipcMain.handle('item:copy-image', (event, payload = {}) => copyItemImage(payload.id));
+  ipcMain.handle('item:drag-start', (event, payload = {}) => startItemDrag(event, payload.id));
+  ipcMain.handle('export:reveal', (event, payload = {}) => revealExportResult(payload.jobId));
 
   ipcMain.handle('plugin:open', (event, payload = {}) => {
     const url = payload.url;
@@ -697,6 +935,7 @@ function registerIpc() {
 
   ipcMain.handle('export:images', (event, params = {}) => runExport(event, 'images', params));
   ipcMain.handle('export:as-folder', (event, params = {}) => runExport(event, 'as-folder', params));
+  ipcMain.handle('export:eaglepack', (event, params = {}) => runArchiveExport(event, params));
   ipcMain.handle('export:cancel', (event, jobId) => {
     if (!jobId) {
       for (const job of exportJobs.values()) job.cancelled = true;
@@ -718,8 +957,42 @@ function registerIpc() {
     for (const job of exportJobs.values()) job.cancelled = true;
     apiRequest('/api/jobs/cancel-active', { method: 'POST', body: {} }).catch(() => {});
   });
-  ipcMain.on('show-item-in-folder', (event, target) => {
-    if (target) shell.showItemInFolder(path.resolve(target));
+  ipcMain.on('show-item-in-folder', async (event, target) => {
+    try {
+      const resolved = await resolveRevealTarget(target);
+      if (resolved.kind === 'item') await revealItem(resolved.id);
+      else await revealExportResult(resolved.jobId);
+    } catch (err) {
+      event.sender.send('preview:action-result', { ok: false, action: 'show-item-in-folder', error: err.message });
+    }
+  });
+  ipcMain.on('open-with-default', async (event, rawPath) => {
+    try {
+      const id = await itemIdFromPath(rawPath);
+      await openItemDefault(id);
+    } catch (err) {
+      event.sender.send('preview:action-result', { ok: false, action: 'open-with-default', error: err.message });
+    }
+  });
+  ipcMain.on('copy-images', async (event, items = []) => {
+    try {
+      const first = Array.isArray(items) ? items[0] : items;
+      const id = first && (first.id || (typeof first === 'string' ? first : ''));
+      if (!id) throw new Error('Copy images requires an item ID');
+      await copyItemImage(id);
+    } catch (err) {
+      event.sender.send('preview:action-result', { ok: false, action: 'copy-images', error: err.message });
+    }
+  });
+  ipcMain.on('ondragstart', async (event, params = {}) => {
+    try {
+      const target = params.target || (Array.isArray(params.images) ? params.images[0] : null);
+      const id = target && (target.id || (typeof target === 'string' ? target : ''));
+      if (!id) throw new Error('Drag start requires an item ID');
+      await startItemDrag(event, id);
+    } catch (err) {
+      event.sender.send('preview:action-result', { ok: false, action: 'ondragstart', error: err.message });
+    }
   });
 }
 
@@ -788,7 +1061,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || regressionHostMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || regressionHostMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -1241,6 +1514,291 @@ app.whenReady().then(async () => {
         app.quit();
       },
     });
+    return;
+  }
+  if (exportProgressSmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('EXPORT_PROGRESS_SMOKE_TIMEOUT');
+      app.quit();
+    }, 50000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const exportDir = process.env.EAGLE_EXPORT_PROGRESS_DIR || '';
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const waitFor = (check, label, timeout = 30000) => new Promise((resolve, reject) => {
+                const deadline = Date.now() + timeout;
+                const poll = async () => {
+                  try {
+                    const value = await check();
+                    if (value) { resolve(value); return; }
+                  } catch (err) {}
+                  if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                  setTimeout(poll, 60);
+                };
+                poll();
+              });
+              const scope = await waitFor(() => {
+                if (!window.angular) return null;
+                const bodyScope = angular.element(document.body).scope();
+                return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
+              }, 'main scope', 25000);
+              const fileElement = document.querySelector('file-export-progress');
+              const archiveElement = document.querySelector('eaglepack-export-progress');
+              if (!fileElement || !archiveElement) throw new Error('Original export progress directives are missing');
+              const fileScope = angular.element(fileElement).isolateScope();
+              const archiveScope = angular.element(archiveElement).isolateScope();
+              const items = scope.raw.filter((item) => item && !item.isDeleted).slice(0, 2);
+              if (items.length < 2) throw new Error('Export progress smoke requires at least 2 items');
+              const ipc = require('electron').ipcRenderer;
+              const flatSave = ${JSON.stringify(path.join(exportDir, 'flat-export'))};
+              const packSave = ${JSON.stringify(path.join(exportDir, 'pack.eaglepack'))};
+              const waitEvent = (channel) => new Promise((resolve, reject) => {
+                const timer = setTimeout(() => reject(new Error(channel + ' event timeout')), 10000);
+                ipc.once(channel, () => { clearTimeout(timer); resolve(true); });
+              });
+              const fileShow = waitEvent('show-export-task');
+              ipc.send('export-images', { images: items, savePath: flatSave });
+              await fileShow;
+              await waitFor(() => fileScope && fileScope.isExporting === false && fileScope.total === 0, 'file export directive complete');
+              const archiveShow = waitEvent('show-archive-task');
+              ipc.send('export-images', { images: items, savePath: packSave });
+              await archiveShow;
+              await waitFor(() => archiveScope && archiveScope.percent >= 100 && archiveScope.isArchiving === false, 'archive directive complete');
+              return {
+                itemIds: items.map((item) => item.id),
+                flatSave,
+                packSave,
+                fileScope: { isExporting: fileScope.isExporting, total: fileScope.total, curr: fileScope.curr },
+                archiveScope: { isArchiving: archiveScope.isArchiving, percent: archiveScope.percent, progress: archiveScope.progress, total: archiveScope.total },
+              };
+            })()`
+          );
+          const flatExists = result.flatSave && fs.existsSync(result.flatSave);
+          const packExists = result.packSave && fs.existsSync(result.packSave);
+          const revealOk = shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === result.flatSave)
+            && shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === result.packSave);
+          const ok = flatExists && packExists && result.fileScope.isExporting === false && result.fileScope.total === 0 && result.archiveScope.percent >= 100 && result.archiveScope.isArchiving === false && revealOk;
+          console.log(ok ? `EXPORT_PROGRESS_SMOKE_OK ${JSON.stringify({ ...result, flatExists, packExists, revealOk, shellCalls })}` : `EXPORT_PROGRESS_SMOKE_FAIL ${JSON.stringify({ ...result, flatExists, packExists, revealOk, shellCalls })}`);
+        } catch (err) {
+          console.error(`EXPORT_PROGRESS_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
+  if (previewDeliverySmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('PREVIEW_DELIVERY_SMOKE_TIMEOUT');
+      app.quit();
+    }, 60000);
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    (async () => {
+      try {
+        const current = await apiRequest('/api/library/current?includeItems=true');
+        const items = (current.items || []).filter((item) => item && !item.isDeleted);
+        let selected = items.slice(0, Math.max(3, Number(process.env.EAGLE_PREVIEW_COUNT || 3)));
+        const previewIds = String(process.env.EAGLE_PREVIEW_IDS || '').split(',').map((id) => id.trim()).filter(Boolean);
+        if (previewIds.length > 0) {
+          const idSet = new Set(previewIds);
+          selected = previewIds.map((id) => items.find((item) => item.id === id)).filter(Boolean);
+          if (selected.length !== idSet.size) throw new Error('EAGLE_PREVIEW_IDS contains missing items');
+        }
+        if (selected.length < 2) throw new Error(`Preview smoke requires at least 2 items, got ${selected.length}`);
+        const opened = await openOriginalPreview({
+          images: selected,
+          show: false,
+          width: 1000,
+          height: 720,
+        });
+        const previewWindow = BrowserWindow.fromId(opened.windowId);
+        if (!previewWindow) throw new Error('Preview window was not created');
+        const waitForPreview = async (check, label, timeoutMs = 30000) => {
+          const deadline = Date.now() + timeoutMs;
+          while (Date.now() < deadline) {
+            try {
+              const value = await previewWindow.webContents.executeJavaScript(check);
+              if (value) return value;
+            } catch (err) {
+              // The page can still be loading.
+            }
+            await sleep(80);
+          }
+          throw new Error(`${label} timeout`);
+        };
+        await waitForPreview(
+          `(async () => {
+            const scope = window.$bodyScope;
+            return scope && scope.current ? { id: scope.current.id, count: (scope.images || []).length } : null;
+          })()`,
+          'preview scope'
+        );
+        const result = await previewWindow.webContents.executeJavaScript(
+          `(async () => {
+            const waitFor = (check, label, timeout = 20000) => new Promise((resolve, reject) => {
+              const deadline = Date.now() + timeout;
+              const poll = async () => {
+                try {
+                  const value = await check();
+                  if (value) { resolve(value); return; }
+                } catch (err) {}
+                if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                setTimeout(poll, 60);
+              };
+              poll();
+            });
+            const scope = await waitFor(() => window.$bodyScope && window.$bodyScope.current ? window.$bodyScope : null, 'preview scope');
+            const initialId = scope.current.id;
+            const firstItem = scope.images[0];
+            const imageLoaded = await waitFor(() => {
+              const image = document.querySelector('#detail-image');
+              return image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+                ? { width: image.naturalWidth, height: image.naturalHeight }
+                : null;
+            }, 'detail image', 15000).catch(() => null);
+            try {
+              scope.selectNext();
+              scope.$evalAsync();
+            } catch (err) {
+              throw new Error('selectNext error: ' + (err && err.message || err));
+            }
+            const nextId = await waitFor(() => scope.current && scope.current.id !== initialId ? scope.current.id : null, 'next navigation');
+            try {
+              scope.selectPrev();
+              scope.$evalAsync();
+            } catch (err) {
+              throw new Error('selectPrev error: ' + (err && err.message || err));
+            }
+            const prevId = await waitFor(() => scope.current && scope.current.id === initialId ? scope.current.id : null, 'previous navigation');
+            scope.current = firstItem;
+            scope.$evalAsync();
+            await waitFor(() => scope.current && scope.current.id === firstItem.id, 'back to first item');
+            const actionResult = (action, trigger) => new Promise((resolve, reject) => {
+              const ipc = require('electron').ipcRenderer;
+              const timer = setTimeout(() => {
+                ipc.off('preview:action-result', onResult);
+                reject(new Error(action + ' action timeout'));
+              }, 10000);
+              const onResult = (_event, value) => {
+                if (!value || value.action !== action) return;
+                clearTimeout(timer);
+                ipc.off('preview:action-result', onResult);
+                if (value.ok) resolve(value);
+                else reject(new Error(value.error || action + ' failed'));
+              };
+              ipc.on('preview:action-result', onResult);
+              trigger();
+            });
+            const openDefault = await actionResult('open-with-default', () => scope.openWithDefault());
+            const reveal = await actionResult('show-item-in-folder', () => scope.openWithFinder());
+            const copyPath = await actionResult('copy-path', () => scope.copyAsPath());
+            const clipboardTextAfterCopyPath = require('electron').clipboard.readText();
+            const copyImage = await actionResult('copy-images', () => scope.copyImage());
+            const drag = await actionResult('ondragstart', () => scope.startDrag({}));
+            const videoItem = scope.images.find((item) => item && (item.ext === 'mp4' || item.ext === 'webm'));
+            let video = null;
+            let videoFetch = null;
+            const videoProbe = [];
+            if (videoItem) {
+              const probeTimer = setInterval(() => {
+                const element = document.querySelector('video');
+                if (element) {
+                  videoProbe.push({
+                    readyState: element.readyState,
+                    error: element.error ? element.error.message : '',
+                    src: element.currentSrc || element.src || '',
+                    videoWidth: element.videoWidth,
+                    videoHeight: element.videoHeight,
+                    duration: element.duration,
+                  });
+                }
+              }, 25);
+              try {
+                const videoUrl = scope.getRawUrl(videoItem);
+                const response = await fetch(videoUrl);
+                const buffer = await response.arrayBuffer();
+                videoFetch = {
+                  status: response.status,
+                  type: response.headers.get('content-type') || '',
+                  bytes: buffer.byteLength,
+                  url: videoUrl,
+                };
+              } catch (err) {
+                videoFetch = { error: err.message };
+              }
+              scope.current = videoItem;
+              scope.$evalAsync();
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              try {
+                scope.zoom();
+                scope.$evalAsync();
+              } catch (err) {}
+              video = await waitFor(() => {
+                const element = document.querySelector('video');
+                return element && !element.error && element.readyState >= 1
+                  ? { readyState: element.readyState, duration: Number(element.duration) || 0 }
+                  : null;
+              }, 'video ready', 15000).catch((err) => {
+                const element = document.querySelector('video');
+                clearInterval(probeTimer);
+                return {
+                  error: element && element.error ? element.error.message : err.message,
+                  readyState: element ? element.readyState : -1,
+                  src: element ? (element.currentSrc || element.src || '') : '',
+                  currentExt: scope.current && scope.current.ext,
+                  useMpvPlayer: Boolean(scope.useMpvPlayer),
+                  hasVideoElement: Boolean(element),
+                  videoFetch,
+                  videoProbe,
+                  detailChildren: Array.from(document.querySelector('#detail-container')?.children || []).map((el) => el.className || el.tagName),
+                  waitError: err.message,
+                };
+              });
+              clearInterval(probeTimer);
+            }
+            return {
+              initialId,
+              imageLoaded,
+              nextId,
+              prevId,
+              openDefault,
+              reveal,
+              copyPath,
+              clipboardTextAfterCopyPath,
+              copyImage,
+              drag,
+              video,
+            };
+          })()`
+        );
+        const firstInfo = await resolveItemFiles(result.initialId);
+        const clipboardPathOk = result.clipboardTextAfterCopyPath === firstInfo.originalReal;
+        const clipboardImageOk = !clipboard.readImage().isEmpty();
+        const shellOk = shellCalls.some((call) => call.action === 'openPath' && call.target === firstInfo.originalReal)
+          && shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === firstInfo.originalReal)
+          && shellCalls.some((call) => call.action === 'startDrag' && call.target === firstInfo.originalReal);
+        const ok = result.imageLoaded
+          && result.nextId && result.nextId !== result.initialId
+          && result.prevId === result.initialId
+          && result.openDefault.ok
+          && result.reveal.ok
+          && result.copyPath.ok
+          && result.copyImage.ok
+          && result.drag.ok
+          && clipboardPathOk
+          && clipboardImageOk
+          && shellOk;
+        console.log(ok ? `PREVIEW_DELIVERY_SMOKE_OK ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellCalls })}` : `PREVIEW_DELIVERY_SMOKE_FAIL ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellOk, shellCalls })}`);
+      } catch (err) {
+        console.error(`PREVIEW_DELIVERY_SMOKE_ERROR ${err.stack || err.message}`);
+      }
+      clearTimeout(timeout);
+      app.quit();
+    })();
     return;
   }
   if (regressionHostMode) {

@@ -740,7 +740,20 @@ http://localhost:41595/
 - 新增 `tests/export-progress-closed-loop.mjs`：隔离验证平铺与 Eaglepack 导出驱动原版进度 directive、文件哈希一致、Eaglepack 使用 `pack.json + <id>.info/` 结构，并触发受控目标定位。
 - 顺带修复 `findDuplicates()` 的同步合同：该函数此前误返回 async Promise，导致 `tests/eaglepack-duplicates.mjs` 和资源库统计读取 `groups` 时失败；现在同步返回 `group.id/items` 数组。
 - 已验证：`preview-delivery-closed-loop.mjs`、`export-progress-closed-loop.mjs`、`main-ui-workflow-closed-loop.mjs`、`electron-library-bridge.mjs`、`image-export-closed-loop.mjs`、`eaglepack-duplicates.mjs`、`import-export-migration.mjs` 通过。
-- 仍未覆盖：PDF/GIF/SVG 逐页/逐帧像素断言、视频当前帧复制/保存、导出取消 UI 状态、目标目录不可写、符号链接/junction 越界注入，以及后端/Electron 重启后的预览恢复专项测试；这些继续按 `NEXT_TASK_PREVIEW_DELIVERY.md` 的后续阶段执行。
+- 后续缺口继续按下节推进；本批已开始覆盖 Viewer 矩阵、导出取消/错误、重命名重开和重启恢复。
+
+### 预览交付下一阶段更新（2026-08-05）
+
+- 预览 Viewer 矩阵扩展：新增 JPEG，并覆盖 SVG、GIF、PDF、WebM；PDF 通过同源 `/file` 代理解决原版 PDF.js 的跨端口 origin 拒绝，验证 PDF 页面真实渲染。
+- 视频交互扩展：验证 readyState、duration、volume 调整和 seek 后 currentTime 更新；损坏 MP4 不再被当作可播放，结果明确为不支持。
+- 安全负向扩展：伪造 item ID 的 open/reveal/copy/drag 全部拒绝；条目进入回收站后无法打开预览；删除原文件后重新预览明确报缺失。
+- 路径同步扩展：预览打开后重命名条目，再重新打开同一 item ID，`getRawPath()` 与真实图片均使用新名称和新路径。
+- 重启恢复扩展：`preview-delivery-closed-loop.mjs` 现在执行两轮 Electron 预览，并在两轮之间重启后端，第二轮仍通过 Viewer、素材操作、重命名后重开和负向路径验证。
+- 导出错误/取消扩展：目标位于当前库 `images` 内会明确失败；多文件导出取消后原版进度组件关闭，只产生部分输出。
+- 文件夹树导出接入原版 `file-export-progress`，输出目录与文件结构通过。
+- 并发导出策略：原版进度组件为单任务，因此同一窗口第二个导出任务被明确拒绝，不再并发串台。
+- 源库保护：`export-progress-closed-loop.mjs` 对比导出前后整个 `.library` 文件哈希，确认导出不修改原文件、metadata、cache 或 search index。
+- 仍未覆盖：任意绝对路径 IPC 的独立注入测试、符号链接/junction 越界、shell/clipboard/drag 失败注入、视频当前帧复制/保存；全量隔离回归仍受既有 `thumbnail-task`/`custom-thumbnail` 并发测试不稳定影响。
 
 ```text
 41592 缩略图静态服务

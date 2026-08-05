@@ -3,6 +3,7 @@ import path from 'node:path';
 import { itemOriginalPath } from './library-store.js';
 
 const RESERVED_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
+const exportYieldMs = Math.max(0, Number(process.env.EAGLE_EXPORT_YIELD_MS || 0));
 
 function sanitizeSegment(value, fallback = 'Untitled') {
   let result = String(value || '')
@@ -73,6 +74,8 @@ export async function exportImages(library, params = {}, hooks = {}) {
     await copyWithTimestamps(source, target);
     outputPaths.push(target);
     if (hooks.onProgress) hooks.onProgress({ current: index + 1, total: selected.length, item, path: target });
+    if (exportYieldMs > 0) await new Promise((resolve) => setTimeout(resolve, exportYieldMs));
+    else await new Promise((resolve) => setImmediate(resolve));
   }
   return { destination, paths: outputPaths, count: outputPaths.length };
 }

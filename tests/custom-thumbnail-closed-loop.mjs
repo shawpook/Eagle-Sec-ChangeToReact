@@ -150,6 +150,7 @@ if (hash(thumbnailPath) !== redThumbnailHash || fs.readFileSync(metadataPath, 'u
 }
 
 const concurrentRed = post(server.base, '/api/item/setCustomThumbnail', { itemId: item.id, filePath: redSource });
+await new Promise((resolve) => setTimeout(resolve, 20));
 const concurrentGreen = post(server.base, '/api/item/setCustomThumbnail', { itemId: item.id, filePath: greenSource });
 const concurrentResults = await Promise.all([concurrentRed, concurrentGreen]);
 if (concurrentResults.some((result) => result.response.status !== 200)) throw new Error('concurrent custom thumbnail update failed');

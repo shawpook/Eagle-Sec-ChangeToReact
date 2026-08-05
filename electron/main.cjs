@@ -20,6 +20,7 @@ if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
 const allowedRoots = new Set([mockLibraryRoot, path.resolve(__dirname, '..', '..')]);
 const exportJobs = new Map();
+const activeExportSenders = new Set();
 const shellCalls = [];
 
 function allowRoot(target) {
@@ -288,6 +289,14 @@ async function switchLibrary(libraryPath) {
 
 async function runExport(event, mode, params = {}) {
   const jobId = params.jobId || `export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const senderKey = String(event.sender.id);
+  if (activeExportSenders.has(senderKey)) {
+    const error = 'Another export task is already running';
+    event.sender.send('close-export-task');
+    event.sender.send('export:error', { jobId, error, cancelled: false });
+    throw new Error(error);
+  }
+  activeExportSenders.add(senderKey);
   const images = Array.isArray(params.images) ? params.images : [];
   const total = images.length || (params.folder && Array.isArray(params.folder.images) ? params.folder.images.length : 0);
   const job = { cancelled: false, jobId, destination: params.savePath || params.destDir || '' };
@@ -319,6 +328,7 @@ async function runExport(event, mode, params = {}) {
     event.sender.send('export:error', { jobId, error: err.message, cancelled: err.name === 'ExportCancelledError' });
     throw err;
   } finally {
+    activeExportSenders.delete(senderKey);
     if (job.destination) {
       // Keep completed job metadata for controlled reveal while the window is open.
       job.completed = !job.cancelled;
@@ -1550,8 +1560,8 @@ app.whenReady().then(async () => {
               if (!fileElement || !archiveElement) throw new Error('Original export progress directives are missing');
               const fileScope = angular.element(fileElement).isolateScope();
               const archiveScope = angular.element(archiveElement).isolateScope();
-              const items = scope.raw.filter((item) => item && !item.isDeleted).slice(0, 2);
-              if (items.length < 2) throw new Error('Export progress smoke requires at least 2 items');
+              const items = scope.raw.filter((item) => item && !item.isDeleted && (item.name === 'Progress Export A' || item.name === 'Progress Export B'));
+              if (items.length < 2) throw new Error('Export progress smoke requires the two named items');
               const ipc = require('electron').ipcRenderer;
               const flatSave = ${JSON.stringify(path.join(exportDir, 'flat-export'))};
               const packSave = ${JSON.stringify(path.join(exportDir, 'pack.eaglepack'))};
@@ -1567,10 +1577,58 @@ app.whenReady().then(async () => {
               ipc.send('export-images', { images: items, savePath: packSave });
               await archiveShow;
               await waitFor(() => archiveScope && archiveScope.percent >= 100 && archiveScope.isArchiving === false, 'archive directive complete');
+              const library = await window.eagleDesktop.library.current();
+              const withTimeout = (promise, label) => Promise.race([
+                promise,
+                new Promise((resolve, reject) => setTimeout(() => reject(new Error(label + ' timeout')), 15000)),
+              ]);
+              const insideErrorPromise = new Promise((resolve) => window.eagleDesktop.export.onError(resolve));
+              ipc.send('export-images', { images: items, savePath: library.imagesDir });
+              const insideError = await withTimeout(insideErrorPromise, 'inside library export error');
+              await waitFor(() => fileScope && fileScope.isExporting === false && fileScope.total === 0, 'inside library directive close');
+              const cancelSave = ${JSON.stringify(path.join(exportDir, 'cancel-export'))};
+              const cancelItems = scope.raw.filter((item) => item && !item.isDeleted).slice(0, 20);
+              const cancelProgressPromise = new Promise((resolve) => window.eagleDesktop.export.onProgress((progress) => {
+                if (progress && progress.jobId && Number(progress.current || 0) >= 1) resolve(progress.jobId);
+              }));
+              const cancelErrorPromise = new Promise((resolve) => window.eagleDesktop.export.onError(resolve));
+              ipc.send('export-images', { images: cancelItems, savePath: cancelSave });
+              const cancelJobId = await withTimeout(cancelProgressPromise, 'cancel export progress');
+              await window.eagleDesktop.export.cancel(cancelJobId);
+              const cancelResult = await withTimeout(cancelErrorPromise, 'cancel export error');
+              await waitFor(() => fileScope && fileScope.isExporting === false && fileScope.total === 0, 'cancel directive close');
+              const folderSave = ${JSON.stringify(path.join(exportDir, 'folder-export'))};
+              const folderShow = waitEvent('show-export-task');
+              ipc.send('export-as-folder', {
+                folder: { id: 'FOLDER-ROOT', name: 'Root Folder', images: items.map((item) => item.id), children: [] },
+                images: items,
+                savePath: folderSave,
+              });
+              await folderShow;
+              await waitFor(() => fileScope && fileScope.isExporting === false && fileScope.total === 0, 'folder export directive complete');
+              const concurrentA = ${JSON.stringify(path.join(exportDir, 'concurrent-a'))};
+              const concurrentB = ${JSON.stringify(path.join(exportDir, 'concurrent-b'))};
+              const firstExportPromise = window.eagleDesktop.export.images({ images: cancelItems, savePath: concurrentA });
+              const secondRejected = await window.eagleDesktop.export.images({ images: cancelItems, savePath: concurrentB })
+                .then(() => ({ ok: true }))
+                .catch((err) => ({ ok: false, error: err.message }));
+              const firstConcurrentComplete = await withTimeout(
+                firstExportPromise,
+                'first concurrent export complete'
+              );
+              await waitFor(() => fileScope && fileScope.isExporting === false && fileScope.total === 0, 'concurrent directive close');
               return {
                 itemIds: items.map((item) => item.id),
                 flatSave,
                 packSave,
+                cancelSave,
+                folderSave,
+                concurrentA,
+                cancelItemsLength: cancelItems.length,
+                insideError,
+                cancelResult,
+                secondRejected,
+                firstConcurrentComplete,
                 fileScope: { isExporting: fileScope.isExporting, total: fileScope.total, curr: fileScope.curr },
                 archiveScope: { isArchiving: archiveScope.isArchiving, percent: archiveScope.percent, progress: archiveScope.progress, total: archiveScope.total },
               };
@@ -1578,10 +1636,26 @@ app.whenReady().then(async () => {
           );
           const flatExists = result.flatSave && fs.existsSync(result.flatSave);
           const packExists = result.packSave && fs.existsSync(result.packSave);
+          const cancelExists = result.cancelSave && fs.existsSync(result.cancelSave);
+          const cancelFiles = cancelExists
+            ? fs.readdirSync(result.cancelSave).filter((name) => name.endsWith('.png')).length
+            : 0;
+          const cancelPartial = cancelFiles > 0 && cancelFiles < Number(result.cancelItemsLength || 0);
+          const folderExists = result.folderSave && fs.existsSync(result.folderSave);
+          const concurrentFiles = result.concurrentA && fs.existsSync(result.concurrentA)
+            ? fs.readdirSync(result.concurrentA).filter((name) => name.endsWith('.png')).length
+            : 0;
+          const concurrentOk = result.secondRejected && !result.secondRejected.ok
+            && concurrentFiles > 0
+            && Number(result.firstConcurrentComplete && result.firstConcurrentComplete.count || 0) > 0;
+          const errorOk = result.insideError
+            && String(result.insideError.error || '').includes('inside the current library images')
+            && result.cancelResult
+            && result.cancelResult.cancelled === true;
           const revealOk = shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === result.flatSave)
             && shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === result.packSave);
-          const ok = flatExists && packExists && result.fileScope.isExporting === false && result.fileScope.total === 0 && result.archiveScope.percent >= 100 && result.archiveScope.isArchiving === false && revealOk;
-          console.log(ok ? `EXPORT_PROGRESS_SMOKE_OK ${JSON.stringify({ ...result, flatExists, packExists, revealOk, shellCalls })}` : `EXPORT_PROGRESS_SMOKE_FAIL ${JSON.stringify({ ...result, flatExists, packExists, revealOk, shellCalls })}`);
+          const ok = flatExists && packExists && folderExists && result.fileScope.isExporting === false && result.fileScope.total === 0 && result.archiveScope.percent >= 100 && result.archiveScope.isArchiving === false && revealOk && cancelPartial && errorOk && concurrentOk;
+          console.log(ok ? `EXPORT_PROGRESS_SMOKE_OK ${JSON.stringify({ ...result, flatExists, packExists, folderExists, cancelFiles, cancelPartial, concurrentFiles, concurrentOk, errorOk, revealOk, shellCalls })}` : `EXPORT_PROGRESS_SMOKE_FAIL ${JSON.stringify({ ...result, flatExists, packExists, folderExists, cancelFiles, cancelPartial, concurrentFiles, concurrentOk, errorOk, revealOk, shellCalls })}`);
         } catch (err) {
           console.error(`EXPORT_PROGRESS_SMOKE_ERROR ${err.stack || err.message}`);
         }
@@ -1699,8 +1773,62 @@ app.whenReady().then(async () => {
             const clipboardTextAfterCopyPath = require('electron').clipboard.readText();
             const copyImage = await actionResult('copy-images', () => scope.copyImage());
             const drag = await actionResult('ondragstart', () => scope.startDrag({}));
+            const viewItem = async (item, label, predicate) => {
+              if (!item) return null;
+              scope.current = item;
+              scope.$evalAsync();
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              try {
+                scope.zoom();
+                scope.$evalAsync();
+              } catch (err) {}
+              return waitFor(predicate, label, 20000).catch((err) => ({
+                error: err.message,
+                currentExt: scope.current && scope.current.ext,
+                iframeSrc: document.querySelector('#pdf-viewer') ? document.querySelector('#pdf-viewer').src : '',
+                bodySnippet: document.querySelector('#pdf-viewer') && document.querySelector('#pdf-viewer').contentDocument
+                  ? String(document.querySelector('#pdf-viewer').contentDocument.body.textContent || '').slice(0, 400)
+                  : '',
+              }));
+            };
+            const svgItem = scope.images.find((item) => item && item.ext === 'svg');
+            const svg = await viewItem(svgItem, 'svg viewer', () => {
+              const image = document.querySelector('#detail-image');
+              return image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+                ? { width: image.naturalWidth, height: image.naturalHeight }
+                : null;
+            });
+            const jpgItem = scope.images.find((item) => item && (item.ext === 'jpg' || item.ext === 'jpeg'));
+            const jpg = await viewItem(jpgItem, 'jpeg viewer', () => {
+              const image = document.querySelector('#detail-image');
+              return image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0
+                ? { width: image.naturalWidth, height: image.naturalHeight }
+                : null;
+            });
+            const gifItem = scope.images.find((item) => item && item.ext === 'gif');
+            const gif = await viewItem(gifItem, 'gif viewer', () => {
+              const image = document.querySelector('#detail-image');
+              if (image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) {
+                return { mode: 'image', width: image.naturalWidth, height: image.naturalHeight };
+              }
+              const frame = document.querySelector('#gif-viewer');
+              if (frame && frame.contentDocument && frame.contentDocument.querySelector('canvas')) {
+                return { mode: 'gif-viewer' };
+              }
+              return null;
+            });
+            const pdfItem = scope.images.find((item) => item && item.ext === 'pdf');
+            const pdf = await viewItem(pdfItem, 'pdf viewer', () => {
+              const frame = document.querySelector('#pdf-viewer');
+              if (!frame || !frame.contentDocument) return null;
+              const doc = frame.contentDocument;
+              const page = doc.querySelector('.pdfViewer .page, #viewerContainer .page, #viewer .page, .page, canvas');
+              const bodyText = doc.body ? (doc.body.textContent || '').trim() : '';
+              return page ? { page: true, viewer: Boolean(doc.querySelector('.pdfViewer')), textLength: bodyText.length } : null;
+            });
             const videoItem = scope.images.find((item) => item && (item.ext === 'mp4' || item.ext === 'webm'));
             let video = null;
+            let videoInteraction = null;
             let videoFetch = null;
             const videoProbe = [];
             if (videoItem) {
@@ -1759,6 +1887,44 @@ app.whenReady().then(async () => {
                 };
               });
               clearInterval(probeTimer);
+              const videoElement = document.querySelector('video');
+              if (videoElement) {
+                videoElement.volume = 0.5;
+                videoElement.currentTime = 0.1;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                videoInteraction = {
+                  volume: videoElement.volume,
+                  currentTime: videoElement.currentTime,
+                  duration: videoElement.duration,
+                  readyState: videoElement.readyState,
+                };
+              }
+            }
+            const fakeOpen = await window.eagleDesktop.item.openDefault('FAKE-ITEM-ID')
+              .then(() => ({ ok: true }))
+              .catch((err) => ({ ok: false, error: err.message }));
+            const fakeCopy = await window.eagleDesktop.item.copyPath('FAKE-ITEM-ID')
+              .then(() => ({ ok: true }))
+              .catch((err) => ({ ok: false, error: err.message }));
+            const fakeReveal = await window.eagleDesktop.item.reveal('FAKE-ITEM-ID')
+              .then(() => ({ ok: true }))
+              .catch((err) => ({ ok: false, error: err.message }));
+            const fakeDrag = await window.eagleDesktop.item.dragStart('FAKE-ITEM-ID')
+              .then(() => ({ ok: true }))
+              .catch((err) => ({ ok: false, error: err.message }));
+            const badVideoItem = scope.images.find((item) => item && item.ext === 'mp4');
+            let badVideo = null;
+            if (badVideoItem) {
+              scope.current = badVideoItem;
+              scope.$evalAsync();
+              await new Promise((resolve) => setTimeout(resolve, 1200));
+              const element = document.querySelector('video');
+              badVideo = {
+                unsupported: !element || element.readyState === 0 || Boolean(element.error),
+                readyState: element ? element.readyState : -1,
+                error: element && element.error ? element.error.message : '',
+                useMpvPlayer: Boolean(scope.useMpvPlayer),
+              };
             }
             return {
               initialId,
@@ -1771,7 +1937,17 @@ app.whenReady().then(async () => {
               clipboardTextAfterCopyPath,
               copyImage,
               drag,
+              jpg,
+              svg,
+              gif,
+              pdf,
               video,
+              videoInteraction,
+              fakeOpen,
+              fakeCopy,
+              fakeReveal,
+              fakeDrag,
+              badVideo,
             };
           })()`
         );
@@ -1781,6 +1957,103 @@ app.whenReady().then(async () => {
         const shellOk = shellCalls.some((call) => call.action === 'openPath' && call.target === firstInfo.originalReal)
           && shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === firstInfo.originalReal)
           && shellCalls.some((call) => call.action === 'startDrag' && call.target === firstInfo.originalReal);
+        const viewerOk = result.jpg && !result.jpg.error
+          && result.svg && !result.svg.error
+          && result.gif && !result.gif.error
+          && result.pdf && !result.pdf.error
+          && result.badVideo && result.badVideo.unsupported
+          && result.videoInteraction
+          && Math.abs(Number(result.videoInteraction.volume) - 0.5) < 0.01
+          && Number(result.videoInteraction.currentTime) > 0.05;
+        const negativeOk = result.fakeOpen && !result.fakeOpen.ok
+          && result.fakeCopy && !result.fakeCopy.ok
+          && result.fakeReveal && !result.fakeReveal.ok
+          && result.fakeDrag && !result.fakeDrag.ok;
+        await apiRequest('/api/item/updateMany', {
+          method: 'POST',
+          body: { items: [{ id: result.initialId, name: 'Preview Renamed PNG' }] },
+        });
+        const reopened = await openOriginalPreview({
+          images: selected,
+          show: false,
+          width: 1000,
+          height: 720,
+        });
+        const reopenedWindow = BrowserWindow.fromId(reopened.windowId);
+        if (!reopenedWindow) throw new Error('Reopened preview window was not created');
+        const waitForReopened = async (check, label) => {
+          const deadline = Date.now() + 30000;
+          while (Date.now() < deadline) {
+            try {
+              const value = await reopenedWindow.webContents.executeJavaScript(check);
+              if (value) return value;
+            } catch (err) {}
+            await sleep(80);
+          }
+          throw new Error(`${label} timeout`);
+        };
+        await waitForReopened(
+          `(async () => {
+            const scope = window.$bodyScope;
+            return scope && scope.current ? { id: scope.current.id, count: (scope.images || []).length } : null;
+          })()`,
+          'reopened preview scope'
+        );
+        const renamedResult = await reopenedWindow.webContents.executeJavaScript(
+          `(async () => {
+            const waitFor = (check, label, timeout = 20000) => new Promise((resolve, reject) => {
+              const deadline = Date.now() + timeout;
+              const poll = async () => {
+                try {
+                  const value = await check();
+                  if (value) { resolve(value); return; }
+                } catch (err) {}
+                if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                setTimeout(poll, 60);
+              };
+              poll();
+            });
+            const scope = await waitFor(() => window.$bodyScope && window.$bodyScope.current ? window.$bodyScope : null, 'renamed scope');
+            const first = scope.images[0];
+            const image = await waitFor(() => {
+              const element = document.querySelector('#detail-image');
+              return element && element.complete && element.naturalWidth > 0 && element.naturalHeight > 0
+                ? { width: element.naturalWidth, height: element.naturalHeight }
+                : null;
+            }, 'renamed image', 15000);
+            return {
+              id: first.id,
+              name: first.name,
+              ext: first.ext,
+              rawPath: scope.getRawPath(first),
+              imageLoaded: image,
+            };
+          })()`
+        );
+        let trashRejected = true;
+        let missingRejected = true;
+        if (process.env.EAGLE_PREVIEW_RUN_NEGATIVES === '1') {
+          await apiRequest('/api/item/moveToTrash', {
+            method: 'POST',
+            body: { ids: [selected[0].id] },
+          });
+          trashRejected = await openOriginalPreview({ images: [selected[0]], show: false })
+            .then(() => false)
+            .catch((err) => /trash/i.test(err.message));
+          await apiRequest('/api/item/restore', {
+            method: 'POST',
+            body: { ids: [selected[0].id] },
+          });
+          const afterRestore = await apiRequest('/api/library/current?includeItems=true');
+          const restoredItem = (afterRestore.items || []).find((item) => item.id === selected[0].id);
+          if (restoredItem) {
+            const originalPath = path.join(afterRestore.imagesDir, `${restoredItem.id}.info`, `${restoredItem.name}.${restoredItem.ext}`);
+            fs.rmSync(originalPath, { force: true });
+          }
+          missingRejected = await openOriginalPreview({ images: [selected[0]], show: false })
+            .then(() => false)
+            .catch((err) => /missing/i.test(err.message));
+        }
         const ok = result.imageLoaded
           && result.nextId && result.nextId !== result.initialId
           && result.prevId === result.initialId
@@ -1791,8 +2064,15 @@ app.whenReady().then(async () => {
           && result.drag.ok
           && clipboardPathOk
           && clipboardImageOk
-          && shellOk;
-        console.log(ok ? `PREVIEW_DELIVERY_SMOKE_OK ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellCalls })}` : `PREVIEW_DELIVERY_SMOKE_FAIL ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellOk, shellCalls })}`);
+          && shellOk
+          && viewerOk
+          && negativeOk
+          && renamedResult.name === 'Preview Renamed PNG'
+          && decodeURIComponent(renamedResult.rawPath).endsWith('Preview Renamed PNG.png')
+          && renamedResult.imageLoaded
+          && trashRejected
+          && missingRejected;
+        console.log(ok ? `PREVIEW_DELIVERY_SMOKE_OK ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, viewerOk, negativeOk, trashRejected, missingRejected, renamedResult, shellCalls })}` : `PREVIEW_DELIVERY_SMOKE_FAIL ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellOk, viewerOk, negativeOk, trashRejected, missingRejected, renamedResult, shellCalls })}`);
       } catch (err) {
         console.error(`PREVIEW_DELIVERY_SMOKE_ERROR ${err.stack || err.message}`);
       }

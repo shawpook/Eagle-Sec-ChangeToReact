@@ -95,7 +95,10 @@ const backend = spawnLogged(process.execPath, ['backend/src/server.js'], {
   EAGLE_USER_DATA_DIR: path.join(tempRoot, 'user-data'),
   EAGLE_DOWNLOAD_ALLOW_HOSTS: '127.0.0.1',
 });
-const vite = spawnLogged(process.execPath, ['node_modules/vite/bin/vite.js', '--config', 'frontend/vite.preview.config.mjs', '--port', String(vitePort)], baseEnv);
+const vite = spawnLogged(process.execPath, ['node_modules/vite/bin/vite.js', '--config', 'frontend/vite.preview.config.mjs', '--port', String(vitePort)], {
+  ...baseEnv,
+  EAGLE_THUMBNAIL_URL: `http://127.0.0.1:${thumbnailPort}`,
+});
 let electron;
 
 try {

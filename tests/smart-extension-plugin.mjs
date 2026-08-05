@@ -92,7 +92,7 @@ try {
 
   const smart = await json('POST', `${server.apiBase}/api/v2/smartFolder/create`, {
     name: 'Five Star Only',
-    conditions: [{ field: 'star', operator: '=', value: 5 }],
+    conditions: [{ rules: [{ property: 'rating', method: 'equal', value: '5' }] }],
   });
   const smartItems = await json('GET', `${server.apiBase}/api/v2/smartFolder/getItems?id=${encodeURIComponent(smart.data.id)}`);
   if (smartItems.data.length !== 1 || smartItems.data[0].name !== 'Star Five') {

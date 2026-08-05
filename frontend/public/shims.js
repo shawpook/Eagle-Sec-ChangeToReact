@@ -696,10 +696,23 @@
         runPreviewAction('show-item-in-folder', desktopApi.export.reveal(window.__lastExportJobId));
       }
     });
+    desktopApi.onIpc('close-export-task', (value) => {
+      const element = document.querySelector('file-export-progress');
+      if (element && window.angular) {
+        const fileScope = angular.element(element).isolateScope();
+        if (fileScope) {
+          fileScope.isExporting = false;
+          fileScope.total = 0;
+          fileScope.curr = 0;
+          fileScope.timeLeftInSeconds = 0;
+          fileScope.$evalAsync();
+        }
+      }
+      mockEmit('close-export-task', value);
+    });
     for (const channel of [
       'show-export-task',
       'finish-export-task',
-      'close-export-task',
       'show-archive-task',
       'add-archive-task',
       'update-archive-percent',
@@ -1223,10 +1236,13 @@
     const target = String(value || '');
     if (/^https?:\/\//i.test(target)) return target;
     if (/^(?:[a-zA-Z]:[\\/]|\\\\)/.test(target)) {
+      if (window.location && /^https?:$/.test(window.location.protocol)) {
+        return `${window.location.origin}/file/${encodeURIComponent(target)}`;
+      }
       if (desktopApi && typeof desktopApi.thumbnailUrl === 'function') {
         return desktopApi.thumbnailUrl(target);
       }
-      return `http://localhost:41692/file/${encodeURIComponent(target)}`;
+      return `${window.location.origin}/file/${encodeURIComponent(target)}`;
     }
     return new URL(target.replace(/^file:\/\//, ''), window.location.origin).href;
   }

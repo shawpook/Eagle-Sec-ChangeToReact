@@ -60,6 +60,24 @@ async function stop(processInfo) {
   });
 }
 
+function sha256File(file) {
+  return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+}
+
+function snapshotLibrary(root) {
+  const snapshot = {};
+  const walk = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      if (String(entry.name).endsWith('.tmp')) continue;
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile()) snapshot[path.relative(root, full).replace(/\\/g, '/')] = sha256File(full);
+    }
+  };
+  if (fs.existsSync(root)) walk(root);
+  return JSON.stringify(snapshot);
+}
+
 const [apiPort, thumbnailPort, extensionPort, vitePort] = await Promise.all([freePort(), freePort(), freePort(), freePort()]);
 const baseEnv = { ...process.env };
 delete baseEnv.ELECTRON_RUN_AS_NODE;
@@ -74,6 +92,7 @@ const backendEnv = {
   EAGLE_EXTENSION_PORT: String(extensionPort),
   EAGLE_LIBRARY_STATE_FILE: stateFile,
   EAGLE_USER_DATA_DIR: path.join(tempRoot, 'user-data'),
+  EAGLE_EXPORT_YIELD_MS: '10',
 };
 const backend = spawnLogged(nodeExecutable, ['backend/src/server.js'], backendEnv);
 const vite = spawnLogged(nodeExecutable, [
@@ -83,7 +102,10 @@ const vite = spawnLogged(nodeExecutable, [
   '--port',
   String(vitePort),
   '--strictPort',
-], baseEnv);
+], {
+  ...baseEnv,
+  EAGLE_THUMBNAIL_URL: `http://127.0.0.1:${thumbnailPort}`,
+});
 let electron;
 
 try {
@@ -103,6 +125,7 @@ try {
   });
   const createBody = await createResponse.json();
   if (!createResponse.ok || createBody.status !== 'success') throw new Error(`Library create failed: ${JSON.stringify(createBody)}`);
+  const libraryPath = createBody.data.path;
 
   const sourceA = path.join(sourcesRoot, 'Progress Export A.png');
   const sourceB = path.join(sourcesRoot, 'Progress Export B.png');
@@ -111,13 +134,32 @@ try {
     sourceA
   );
   fs.copyFileSync(sourceA, sourceB);
+  const largeCancelSource = path.join(sourcesRoot, 'Large Cancel.png');
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const largePayload = Buffer.alloc(5 * 1024 * 1024);
+  pngSignature.copy(largePayload, 0);
+  largePayload.fill(0xaa, pngSignature.length);
+  fs.writeFileSync(largeCancelSource, largePayload);
+  const cancelSources = [];
+  for (let index = 0; index < 20; index += 1) {
+    const source = path.join(sourcesRoot, `Progress Cancel ${index}.png`);
+    fs.copyFileSync(largeCancelSource, source);
+    cancelSources.push({ path: source });
+  }
   const importResponse = await fetch(`http://127.0.0.1:${apiPort}/api/item/addFromPaths`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ images: [{ path: sourceA }, { path: sourceB }] }),
+    body: JSON.stringify({ images: [{ path: sourceA }, { path: sourceB }, ...cancelSources] }),
   });
   const importBody = await importResponse.json();
   if (!importResponse.ok || importBody.status !== 'success') throw new Error(`Fixture import failed: ${JSON.stringify(importBody)}`);
+  await waitFor(async () => {
+    const response = await fetch(`http://127.0.0.1:${apiPort}/api/library/current?includeItems=true`);
+    const payload = await response.json();
+    const items = payload.data && payload.data.items ? payload.data.items : [];
+    return items.every((item) => !item.processingThumbnail && !item.thumbnailTask);
+  }, 'import thumbnail tasks settle', 30000);
+  const beforeLibrary = snapshotLibrary(libraryPath);
 
   electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-export-progress'], {
     ...baseEnv,
@@ -146,8 +188,7 @@ try {
   if (!fs.existsSync(exportedA) || !fs.existsSync(exportedB)) {
     throw new Error(`Flat export names mismatch: ${JSON.stringify(flatFiles)}`);
   }
-  const hash = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
-  if (hash(exportedA) !== hash(sourceA) || hash(exportedB) !== hash(sourceB)) {
+  if (sha256File(exportedA) !== sha256File(sourceA) || sha256File(exportedB) !== sha256File(sourceB)) {
     throw new Error('Flat export hash mismatch');
   }
 
@@ -164,6 +205,26 @@ try {
     throw new Error(`Eaglepack item directories are missing: ${JSON.stringify(infoEntries)}`);
   }
   if (!result.revealOk) throw new Error('Original progress directives did not reveal exported targets');
+  if (!result.errorOk || !result.cancelPartial || result.cancelFiles <= 0 || result.cancelFiles >= result.cancelItemsLength) {
+    throw new Error(`Export error/cancel semantics were not proven: ${JSON.stringify({
+      errorOk: result.errorOk,
+      cancelPartial: result.cancelPartial,
+      cancelFiles: result.cancelFiles,
+      cancelItemsLength: result.cancelItemsLength,
+    })}`);
+  }
+  if (!result.folderExists || !result.concurrentOk) {
+    throw new Error(`Folder export or concurrent rejection was not proven: ${JSON.stringify({
+      folderExists: result.folderExists,
+      concurrentOk: result.concurrentOk,
+      secondRejected: result.secondRejected,
+      concurrentFiles: result.concurrentFiles,
+    })}`);
+  }
+  const afterLibrary = snapshotLibrary(libraryPath);
+  if (beforeLibrary !== afterLibrary) {
+    throw new Error('Export modified the source library');
+  }
 
   console.log(`EXPORT_PROGRESS_CLOSED_LOOP_OK ${JSON.stringify({
     library: createBody.data.path,
@@ -171,6 +232,10 @@ try {
     packImages: pack.images.length,
     fileScope: result.fileScope,
     archiveScope: result.archiveScope,
+    cancel: { cancelFiles: result.cancelFiles, cancelItemsLength: result.cancelItemsLength },
+    folderExport: result.folderExists,
+    concurrentRejected: result.secondRejected && !result.secondRejected.ok,
+    sourceLibraryUnchanged: beforeLibrary === afterLibrary,
   })}`);
   await stop(electron);
 } finally {

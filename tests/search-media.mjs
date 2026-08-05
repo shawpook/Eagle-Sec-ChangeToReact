@@ -82,8 +82,8 @@ if (videoMedia.data.type !== 'video') throw new Error('media info video type fai
 const smart = await json('POST', `${apiBase}/api/v2/smartFolder/create`, {
   name: 'Multi Condition',
   conditions: [
-    { field: 'star', operator: '>=', value: 5 },
-    { field: 'width', operator: '>=', value: 500 },
+    { rules: [{ property: 'rating', method: 'equal', value: '5' }] },
+    { rules: [{ property: 'width', method: '>=', value: 500 }] },
   ],
 });
 const smartItems = await json('GET', `${apiBase}/api/v2/smartFolder/getItems?id=${encodeURIComponent(smart.data.id)}`);

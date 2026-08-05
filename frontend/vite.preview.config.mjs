@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, '../../');
 const frontendPublic = path.resolve(here, 'public');
+const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692';
 
 function injectPreviewScripts(html) {
   return html.replace(
@@ -99,6 +100,12 @@ export default defineConfig({
     port: 5176,
     strictPort: true,
     open: '/src/app/index.html',
+    proxy: {
+      '/file': {
+        target: thumbnailTarget,
+        changeOrigin: true,
+      },
+    },
     fs: {
       allow: [workspaceRoot],
     },

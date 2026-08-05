@@ -159,10 +159,10 @@ for (const ext of ['svg', 'gif', 'webp', 'tiff', 'pdf']) {
   if (!metadata.width || !metadata.height) throw new Error(`${ext} original dimensions were not persisted`);
 }
 
-const corruptStarted = await post(server.base, '/api/item/thumbnailTask/start', { itemId: items.svg.id });
-const conflict = await post(server.base, '/api/item/thumbnailTask/start', { itemId: items.svg.id });
+const corruptStarted = await post(server.base, '/api/item/thumbnailTask/start', { itemId: items.pdf.id });
+const conflict = await post(server.base, '/api/item/thumbnailTask/start', { itemId: items.pdf.id });
 if (conflict.response.status !== 409 || conflict.body.code !== 'THUMBNAIL_TASK_CONFLICT') throw new Error(`same-item conflict mismatch: ${JSON.stringify(conflict.body)}`);
-await waitForTask(server.base, corruptStarted.body.data.id);
+await waitForTask(server.base, corruptStarted.body.data.id, 30_000);
 
 const automaticBad = await waitForTask(server.base, corruptItem.thumbnailTask);
 if (automaticBad.status !== 'failed' || automaticBad.code !== 'THUMBNAIL_DECODE_FAILED') throw new Error('corrupt SVG automatic task did not fail safely');

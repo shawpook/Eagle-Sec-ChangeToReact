@@ -563,6 +563,15 @@ npm run electron
 - 提交后自审已修复条目 API 兼容边界：`batchUpdate` 的 patch 不能覆盖目标 ID；V1 回收站/恢复接受原版 `itemIds` 并保持布尔返回；V2 `item/update` 使用独立字段合同，支持 `ext/width/height/noThumbnail/noPreview`，扩展名仅在插件已准备好目标格式文件时更新 metadata，缺失或冲突均拒绝；V1 主界面白名单保持不变。
 - 导入最终成功事件已去重，主界面 E2E 断言每次 `upload-local-files` 只发一次 `import:operation-result`；新增 `tests/item-api-compatibility.mjs` 覆盖 ID 隔离、V1/V2 合同、类型不匹配、扩展名缺失/冲突、真实文件与重启恢复。隔离回归和主界面 E2E 改用当前 Node 运行时并动态解析 npm CLI，不再绑定本机用户名和固定版本路径。
 
+### 搜索与筛选合同更新（2026-08-05）
+
+- 新增 `backend/src/search-service.js`，把原先堆在 `server.js` 里的 `filterItems()` 拆为可独立测试的搜索服务，并补充原版 `filterRules` 形状映射：type/tag/folder、评分、颜色、分辨率、文件大小、duration/bpm、注释/备注/URL、import/mtime 和 shape。
+- `/api/item/search`、`/api/export/csv` 与 `/api/v2/item/query` 已统一使用该搜索服务；V2 仍返回 `{ data, total, offset, limit }`，V1 保持数组返回。
+- `/api/library/structure` 已接受 `savedFilters`，与 `library-store.saveLibraryState()` 的 `saved-filters.json` 写入闭环。
+- `frontend/public/shims.js` 不再固定把 `saved-filters.json` 返回为 `[]`：浏览器 fallback 优先读取当前库的 `savedFilters`，Electron 写入会经 `library.updateStructure` 持久化。
+- 原版快捷搜索依赖的 `pinyinlite`、`tiny-pinyin`、`chinese_convert`、`cartesian-product` 改为加载 `Eagle-reverse/src/my_modules` 真实实现；简繁转换和拼音组合不再使用恒等/空结果 stub。
+- 本轮未完成：原版 filter directive 的完整事件/状态机逐项 E2E、V1/V2 合同专项测试、`/api/v2/smartFolder/getRules` 与智能文件夹规则服务属于下一批。
+
 ### 仍未实现 / 未验收
 
 - 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。

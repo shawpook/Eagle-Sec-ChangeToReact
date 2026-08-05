@@ -33,6 +33,7 @@ import { CustomThumbnailService } from './custom-thumbnail.js';
 import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
 import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
 import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
+import { searchItems } from './search-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -781,6 +782,7 @@ app.post('/api/library/structure', (req, res) => {
     if (Array.isArray(req.body.smartFolders)) currentLibrary.smartFolders = req.body.smartFolders;
     if (Array.isArray(req.body.quickAccess)) currentLibrary.quickAccess = req.body.quickAccess;
     if (Array.isArray(req.body.tagsGroups)) currentLibrary.tagsGroups = req.body.tagsGroups;
+    if (Array.isArray(req.body.savedFilters)) currentLibrary.savedFilters = req.body.savedFilters;
     if (req.body.tags && typeof req.body.tags === 'object' && !Array.isArray(req.body.tags)) {
       currentLibrary.tags = {
         historyTags: [...new Set((Array.isArray(req.body.tags.historyTags) ? req.body.tags.historyTags : []).filter((tag) => typeof tag === 'string' && tag.trim()).map((tag) => tag.trim()))].slice(0, 120),
@@ -858,117 +860,12 @@ app.get('/api/item/list', (req, res) => {
   res.json(ok(readItems()));
 });
 
-function normalizeSearchValue(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '') {
-    if (value.startsWith('[')) {
-      try {
-        return JSON.parse(value);
-      } catch (err) {
-        return value.split(',').map((entry) => entry.trim()).filter(Boolean);
-      }
-    }
-    return value.split(',').map((entry) => entry.trim()).filter(Boolean);
-  }
-  return [];
-}
-
-function filterItems(items, query = {}) {
-  const keyword = String(query.keyword || query.search || '').toLowerCase();
-  const name = String(query.name || '').toLowerCase();
-  const tags = normalizeSearchValue(query.tags);
-  const folders = normalizeSearchValue(query.folders || query.folderIDs);
-  const colors = query.colors ? normalizeSearchValue(query.colors) : query.color ? [query.color] : [];
-  const star = Number(query.star);
-  const ext = String(query.ext || '').toLowerCase();
-  const minWidth = Number(query.minWidth);
-  const minHeight = Number(query.minHeight);
-  const maxWidth = Number(query.maxWidth);
-  const maxHeight = Number(query.maxHeight);
-  const dateFrom = query.dateFrom ? new Date(String(query.dateFrom)).getTime() : NaN;
-  const dateTo = query.dateTo ? new Date(String(query.dateTo)).getTime() : NaN;
-  const commentsKeyword = String(query.comments || '').toLowerCase();
-  const hasComment = query.hasComment === 'true' || query.hasComment === true;
-  const hasAnnotation = query.hasAnnotation === 'true' || query.hasAnnotation === true;
-  const hasUrl = query.hasUrl === 'true' || query.hasUrl === true || query.urlRequired === 'true' || query.urlRequired === true;
-  const deletedRaw = query.isDeleted;
-  const isDeleted = deletedRaw === 'true' || deletedRaw === true
-    ? true
-    : deletedRaw === 'false' || deletedRaw === false
-      ? false
-      : undefined;
-
-  function colorMatches(item, target) {
-    const palettes = item.palettes || [];
-    return palettes.some((palette) => {
-      const color = Array.isArray(palette) ? palette : palette.color;
-      return Array.isArray(color) && color.length >= 3 &&
-        Math.abs(Number(color[0]) - target[0]) <= 12 &&
-        Math.abs(Number(color[1]) - target[1]) <= 12 &&
-        Math.abs(Number(color[2]) - target[2]) <= 12;
-    });
-  }
-
-  function parseColor(value) {
-    if (Array.isArray(value)) return value.slice(0, 3).map(Number);
-    const text = String(value || '').trim();
-    if (text.startsWith('#')) {
-      const hex = text.replace('#', '');
-      if (hex.length === 6) return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
-    }
-    const parts = text.split(',').map(Number);
-    return parts.length >= 3 ? parts.slice(0, 3) : null;
-  }
-
-  const parsedColors = colors.map(parseColor).filter(Boolean);
-
-  const filtered = items.filter((item) => {
-    if (keyword) {
-      const haystack = `${item.name} ${item.annotation || ''} ${item.url || ''} ${(item.tags || []).join(' ')} ${(item.comments || []).map((comment) => comment.text || '').join(' ')}`.toLowerCase();
-      if (!haystack.includes(keyword)) return false;
-    }
-    if (name && !String(item.name || '').toLowerCase().includes(name)) return false;
-    if (tags.length > 0 && !tags.every((tag) => (item.tags || []).includes(tag))) return false;
-    if (folders.length > 0 && !folders.some((folderId) => (item.folders || []).includes(folderId))) return false;
-    if (star && Number(item.star) !== star) return false;
-    if (ext && String(item.ext || '').toLowerCase() !== ext) return false;
-    if (minWidth && Number(item.width) < minWidth) return false;
-    if (minHeight && Number(item.height) < minHeight) return false;
-    if (maxWidth && Number(item.width) > maxWidth) return false;
-    if (maxHeight && Number(item.height) > maxHeight) return false;
-    if (!Number.isNaN(dateFrom) && Number(item.modificationTime) < dateFrom) return false;
-    if (!Number.isNaN(dateTo) && Number(item.modificationTime) > dateTo) return false;
-    if (commentsKeyword) {
-      const commentText = (item.comments || []).map((comment) => comment.text || '').join(' ').toLowerCase();
-      if (!commentText.includes(commentsKeyword)) return false;
-    }
-    if (hasComment && (item.comments || []).length === 0) return false;
-    if (hasAnnotation && !String(item.annotation || '').trim()) return false;
-    if (hasUrl && !String(item.url || '').trim()) return false;
-    if (parsedColors.length > 0 && !parsedColors.some((color) => colorMatches(item, color))) return false;
-    if (isDeleted !== undefined && Boolean(item.isDeleted) !== isDeleted) return false;
-    return true;
-  });
-
-  const sortBy = String(query.sortBy || '');
-  const sortIncrease = query.sortIncrease === 'true' || query.sortIncrease === true;
-  if (sortBy) {
-    filtered.sort((a, b) => {
-      const left = a[sortBy] ?? '';
-      const right = b[sortBy] ?? '';
-      const result = typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right));
-      return sortIncrease ? result : -result;
-    });
-  }
-  return filtered;
-}
-
 app.get('/api/item/search', (req, res) => {
-  res.json(ok(filterItems(readItems(), req.query)));
+  res.json(ok(searchItems(readItems(), req.query)));
 });
 
 app.post('/api/item/search', (req, res) => {
-  res.json(ok(filterItems(readItems(), req.body || {})));
+  res.json(ok(searchItems(readItems(), req.body || {})));
 });
 
 app.get('/api/item/info', (req, res) => {
@@ -1595,14 +1492,14 @@ app.post('/api/export/as-folder', async (req, res) => {
 });
 
 app.get('/api/export/csv', (req, res) => {
-  const items = filterItems(readItems(), req.query);
+  const items = searchItems(readItems(), req.query);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="items.csv"');
   res.send(itemsToCsv(items));
 });
 
 app.post('/api/export/csv', (req, res) => {
-  const items = filterItems(readItems(), req.body || {});
+  const items = searchItems(readItems(), req.body || {});
   if (req.body.destFile) {
     const exported = exportCsvFile(items, req.body.destFile);
     res.json(ok({ path: exported, count: items.length }));
@@ -1842,7 +1739,7 @@ app.post('/api/v2/item/get', (req, res) => {
 });
 
 app.post('/api/v2/item/query', (req, res) => {
-  const items = filterItems(readItems(), req.body || {});
+  const items = searchItems(readItems(), req.body || {});
   const limit = Math.min(Number(req.body?.limit || 50), 1000);
   const offset = Number(req.body?.offset || 0);
   res.json(ok({ data: items.slice(offset, offset + limit), total: items.length, offset, limit }));

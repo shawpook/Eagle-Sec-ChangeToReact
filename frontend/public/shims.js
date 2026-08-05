@@ -174,7 +174,11 @@
       if (s.endsWith('tags.json')) {
         return JSON.stringify({ historyTags: ['UI', '空状态'], starredTags: ['UI', '收藏'] });
       }
-      if (s.endsWith('saved-filters.json')) return '[]';
+      if (s.endsWith('saved-filters.json')) {
+        // 浏览器 fallback 读取当前库真实保存筛选，不再固定返回空数组。
+        const savedFilters = window.__mockLibrary && window.__mockLibrary.savedFilters;
+        return Array.isArray(savedFilters) ? JSON.stringify(savedFilters) : '[]';
+      }
       if (s.endsWith('.js') && s.includes('/src/i18n/')) return syncText(s) || '{}';
       const url = toFileUrl(s);
       if (encoding === 'utf8' || encoding === 'utf-8') {
@@ -208,7 +212,8 @@
         return;
       }
       if (s.endsWith('saved-filters.json')) {
-        setTimeout(() => callback(null, '[]'), 0);
+        const savedFilters = window.__mockLibrary && window.__mockLibrary.savedFilters;
+        setTimeout(() => callback(null, Array.isArray(savedFilters) ? JSON.stringify(savedFilters) : '[]'), 0);
         return;
       }
       const xhr = new XMLHttpRequest();
@@ -1001,6 +1006,31 @@
 
   function writeFileAtomic(file, data, cb) {
     const target = String(file || '').replace(/\\/g, '/');
+    if (desktopApi && desktopApi.library && target.endsWith('/saved-filters.json')) {
+      // Electron 下把原版 writeFileAtomic 的 saved-filters 写入转接到受控结构接口。
+      let savedFilters;
+      try {
+        savedFilters = typeof data === 'string' ? JSON.parse(data) : data;
+      } catch (err) {
+        if (typeof cb === 'function') setTimeout(() => cb(err), 0);
+        return;
+      }
+      if (!Array.isArray(savedFilters)) {
+        const err = new Error('Saved filters must be an array');
+        if (typeof cb === 'function') setTimeout(() => cb(err), 0);
+        return;
+      }
+      desktopApi.library.updateStructure({
+        libraryPath: window.__mockLibrary && (window.__mockLibrary.rootDir || window.__mockLibrary.path),
+        savedFilters,
+      }).then(() => {
+        if (window.__mockLibrary) window.__mockLibrary.savedFilters = savedFilters;
+        if (typeof cb === 'function') cb(null);
+      }).catch((err) => {
+        if (typeof cb === 'function') cb(err);
+      });
+      return;
+    }
     if (desktopApi && desktopApi.library && target.endsWith('/tags.json')) {
       let tags;
       try {
@@ -1375,6 +1405,56 @@
     return module.exports;
   }
 
+  function loadOriginalModule(urlPath) {
+    try {
+      return loadJsModule(urlPath);
+    } catch (err) {
+      console.warn(`[eagle-shim] failed to load ${urlPath}`, err);
+      return undefined;
+    }
+  }
+
+  // 加载反编译目录中的真实拼音/简繁模块，保证原版快捷搜索的拼音与简繁路径可工作。
+  const pinyinliteDict = loadOriginalModule('/src/my_modules/pinyinlite/src/dict_full.js');
+  const pinyinliteFactory = loadOriginalModule('/src/my_modules/pinyinlite/src/pinyin.js');
+  const pinyinlite = typeof pinyinliteFactory === 'function' && pinyinliteDict
+    ? pinyinliteFactory(pinyinliteDict)
+    : function pinyinliteFallback() { return []; };
+  pinyinlite.searchAll = function searchAllFallback() { return []; };
+
+  const tw2cnMap = loadOriginalModule('/src/my_modules/chinese_convert/tw2cn.js');
+  const cn2twMap = loadOriginalModule('/src/my_modules/chinese_convert/cn2tw.js');
+  function convertByMap(text, map) {
+    if (typeof text !== 'string' || !map) return text || '';
+    let result = '';
+    for (const ch of text) result += map[ch] === undefined ? ch : map[ch];
+    return result;
+  }
+  const chineseConvert = {
+    charMap(ch, map) { return map && map[ch] !== undefined ? map[ch] : ch; },
+    textMap(text, map) { return convertByMap(text, map); },
+    cn2tw(text) { return convertByMap(text, cn2twMap); },
+    tw2cn(text) { return convertByMap(text, tw2cnMap); },
+    t2s(text) { return convertByMap(text, tw2cnMap); },
+    s2t(text) { return convertByMap(text, cn2twMap); },
+    convert(text, mode) {
+      return mode === 's2t' || mode === 'cn2tw' ? convertByMap(text, cn2twMap) : convertByMap(text, tw2cnMap);
+    },
+  };
+
+  const tinyPinyin = loadOriginalModule('/src/my_modules/tiny-pinyin/index.js') || {
+    convertToPinyin: (text) => String(text || '').split('').join(''),
+  };
+  const cartesianProduct = loadOriginalModule('/src/my_modules/cartesian-product/index.js') || (() => []);
+
+  bareModules['tiny-pinyin'] = tinyPinyin;
+  bareModules['pinyinlite'] = pinyinlite;
+  bareModules['chinese_convert'] = chineseConvert;
+  bareModules['cartesian-product'] = cartesianProduct;
+  window.tinyPinyin = window.tinyPinyin || tinyPinyin;
+  window.pinyinlite = window.pinyinlite || pinyinlite;
+  window.chineseConvert = window.chineseConvert || chineseConvert;
+
   function require(request) {
     const req = String(request || '').replace(/\\/g, '/');
     if (isElectronRuntime && nativeRequire && (req === 'fs' || req === 'node:fs' || req === 'path' || req === 'node:path')) {
@@ -1414,7 +1494,7 @@
       if (req.endsWith('/app/js/utils/rotateImage.js')) return () => {};
       if (req.endsWith('/my_modules/tiny-pinyin')) return bareModules['tiny-pinyin'];
       if (req.endsWith('/my_modules/pinyinlite')) return bareModules['pinyinlite'];
-      if (req.endsWith('/my_modules/cartesian-product')) return () => [];
+      if (req.endsWith('/my_modules/cartesian-product')) return bareModules['cartesian-product'];
       if (req.endsWith('/my_modules/sanitize-filename')) return bareModules['sanitize-filename'];
       if (req.endsWith('/my_modules/chinese_convert')) return bareModules['chinese_convert'];
       if (req.endsWith('/my_modules/get-drive-type')) return () => 'local';
@@ -1472,7 +1552,7 @@
     if (!window.tinyPinyin || typeof window.tinyPinyin.convertToPinyin !== 'function') {
       window.tinyPinyin = bareModules['tiny-pinyin'];
     }
-    if (!window.pinyinlite || typeof window.pinyinlite.searchAll !== 'function') {
+    if (typeof window.pinyinlite !== 'function') {
       window.pinyinlite = bareModules['pinyinlite'];
     }
   }, 50);

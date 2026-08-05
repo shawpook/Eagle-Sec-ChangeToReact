@@ -7,12 +7,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   createFolder,
+  createSmartFolder,
   defaultMockLibrary,
+  findSmartFolder,
   loadLibrary,
+  moveFolder,
+  moveSmartFolder,
   removeFolder,
+  removeSmartFolder,
   resolveLibraryPath,
   saveItems,
   saveLibraryState,
+  updateSmartFolder,
   updateFolder,
 } from './library-store.js';
 import { configureThumbnailTaskService, exportItem, exportLibrary, importBase64, importBookmark, importFile, importFolder, importUrl } from './importer.js';
@@ -21,6 +27,7 @@ import { exportCsvFile, itemsToCsv } from './csv-export.js';
 import { importEaglepack, packLibrary } from './eaglepack.js';
 import { findDuplicates, findSimilarDuplicates } from './duplicates.js';
 import { getSmartFolderItems } from './smart-folders.js';
+import { getSerializableRules, validateConditions } from './smart-folder-rules.js';
 import { computeStats, folderStats, repairLibrary } from './library-stats.js';
 import { getMediaInfo } from './media-info.js';
 import { installPlugin, listInstalledPlugins, packPlugin, uninstallPlugin } from './plugin-package.js';
@@ -440,7 +447,9 @@ function addItemsToFolder(ids, folderId, mode = 'add') {
   if (!folder) throw new Error('Folder not found');
   const selected = readItems().filter((item) => ids.includes(item.id));
   for (const item of selected) {
-    if (mode === 'move') {
+    if (mode === 'remove') {
+      item.folders = (item.folders || []).filter((entry) => entry !== folder.id);
+    } else if (mode === 'move') {
       item.folders = [folderId];
     } else {
       item.folders = [...new Set([...(item.folders || []), folderId])];
@@ -480,6 +489,12 @@ function replaceTag(oldName, newName) {
       group.tags = [...new Set(group.tags.map((tag) => (tag === source ? target : tag)))];
     }
   }
+  if (Array.isArray(currentLibrary.tags.historyTags)) {
+    currentLibrary.tags.historyTags = currentLibrary.tags.historyTags.map((tag) => (tag === source ? target : tag));
+  }
+  if (Array.isArray(currentLibrary.tags.starredTags)) {
+    currentLibrary.tags.starredTags = currentLibrary.tags.starredTags.map((tag) => (tag === source ? target : tag));
+  }
   currentLibrary.metadata.tagsGroups = tagsGroups;
   saveItems(currentLibrary);
 }
@@ -498,8 +513,38 @@ function mergeTags(source, target) {
       group.tags = [...new Set(group.tags.map((tag) => (tag === from ? to : tag)).filter((tag) => tag !== from))];
     }
   }
+  if (Array.isArray(currentLibrary.tags.historyTags)) {
+    currentLibrary.tags.historyTags = [...new Set(currentLibrary.tags.historyTags.map((tag) => (tag === from ? to : tag)).filter((tag) => tag !== from))];
+  }
+  if (Array.isArray(currentLibrary.tags.starredTags)) {
+    currentLibrary.tags.starredTags = [...new Set(currentLibrary.tags.starredTags.map((tag) => (tag === from ? to : tag)).filter((tag) => tag !== from))];
+  }
   currentLibrary.metadata.tagsGroups = tagsGroups;
   saveItems(currentLibrary);
+}
+
+function removeTag(name) {
+  // 删除标签时同步清理条目、标签组和历史/常用标签引用。
+  const target = String(name || '').trim();
+  if (!target) throw new Error('Tag name is required');
+  for (const item of readItems()) {
+    item.tags = (item.tags || []).filter((tag) => tag !== target);
+  }
+  for (const group of tagsGroups) {
+    group.tags = (group.tags || []).filter((tag) => tag !== target);
+  }
+  currentLibrary.tags.historyTags = (currentLibrary.tags.historyTags || []).filter((tag) => tag !== target);
+  currentLibrary.tags.starredTags = (currentLibrary.tags.starredTags || []).filter((tag) => tag !== target);
+  currentLibrary.metadata.tagsGroups = tagsGroups;
+  saveItems(currentLibrary);
+}
+
+function createTag(name) {
+  const target = String(name || '').trim();
+  if (!target) throw new Error('Tag name is required');
+  currentLibrary.tags.historyTags = [target, ...(currentLibrary.tags.historyTags || []).filter((tag) => tag !== target)].slice(0, 120);
+  saveItems(currentLibrary);
+  return { name: target, imageCount: readItems().filter((item) => (item.tags || []).includes(target)).length, groups: [] };
 }
 
 app.get('/', (req, res) => {
@@ -819,18 +864,29 @@ app.get('/api/folder/listRecent', (req, res) => {
   res.json(ok(folders));
 });
 
+function tagObjects() {
+  // 标签列表返回真实条目计数，避免侧栏计数与搜索合同不一致。
+  return tagsGroups
+    .flatMap((group) => group.tags || [])
+    .map((name) => ({
+      name,
+      imageCount: readItems().filter((item) => (item.tags || []).includes(name)).length,
+      groups: [],
+    }));
+}
+
 app.get('/api/tag/all', (req, res) => {
-  const tags = tagsGroups.flatMap((group) => group.tags).map((name) => ({ name, imageCount: 0, groups: [] }));
+  const tags = tagObjects();
   res.json(ok({ tags }));
 });
 
 app.get('/api/tag/list', (req, res) => {
-  const tags = tagsGroups.flatMap((group) => group.tags).map((name) => ({ name, imageCount: 0, groups: [] }));
+  const tags = tagObjects();
   res.json(ok(tags));
 });
 
 app.get('/api/tag/listRecent', (req, res) => {
-  const tags = tagsGroups.flatMap((group) => group.tags).map((name) => ({ name, imageCount: 0, groups: [] }));
+  const tags = tagObjects();
   res.json(ok(tags.slice(0, 8)));
 });
 
@@ -850,6 +906,23 @@ app.post('/api/tag/update', (req, res) => {
 app.post('/api/tag/merge', (req, res) => {
   try {
     mergeTags(req.body.source, req.body.target);
+    res.json(ok(true));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/tag/create', (req, res) => {
+  try {
+    res.json(ok(createTag(req.body.name)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/tag/remove', (req, res) => {
+  try {
+    removeTag(req.body.name);
     res.json(ok(true));
   } catch (err) {
     res.status(400).json(fail(err.message));
@@ -972,6 +1045,29 @@ app.post('/api/folder/update', (req, res) => {
     return;
   }
   res.json(ok(folder));
+});
+
+app.post('/api/folder/remove', (req, res) => {
+  const removed = removeFolder(currentLibrary, req.body.folderId || req.body.id);
+  if (!removed) {
+    res.status(404).json(fail('Folder not found'));
+    return;
+  }
+  res.json(ok(true));
+});
+
+app.post('/api/folder/move', (req, res) => {
+  try {
+    const folder = moveFolder(
+      currentLibrary,
+      req.body.folderId || req.body.id,
+      req.body.parentId || req.body.parentID || req.body.targetId,
+      Number.isInteger(req.body.index) ? req.body.index : undefined,
+    );
+    res.json(ok(folder));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.post('/api/folder/unlock', (req, res) => {
@@ -1978,6 +2074,20 @@ app.post('/api/v2/folder/remove', (req, res) => {
   res.json(ok(removed));
 });
 
+app.post('/api/v2/folder/move', (req, res) => {
+  try {
+    const folder = moveFolder(
+      currentLibrary,
+      req.body.id || req.body.folderID,
+      req.body.parentId || req.body.parentID || req.body.targetId,
+      Number.isInteger(req.body.index) ? req.body.index : undefined,
+    );
+    res.json(ok(folder));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
 app.post('/api/v2/folder/setPassword', (req, res) => {
   try {
     const folder = findFolder(req.body.id || req.body.folderID);
@@ -2022,7 +2132,7 @@ app.post('/api/v2/folder/removePassword', (req, res) => {
 });
 
 function smartFolderFromRequest(req) {
-  return smartFolders.find((entry) => entry.id === (req.query.id || req.body?.id || req.body?.smartFolderID));
+  return findSmartFolder(smartFolders, req.query.id || req.body?.id || req.body?.smartFolderID);
 }
 
 app.get('/api/v2/smartFolder/get', (req, res) => {
@@ -2044,40 +2154,68 @@ app.post('/api/v2/smartFolder/get', (req, res) => {
 });
 
 app.post('/api/v2/smartFolder/create', (req, res) => {
-  const folder = {
-    id: `SMART-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-    name: String(req.body.name || 'New Smart Folder').trim() || 'New Smart Folder',
-    description: req.body.description || '',
-    conditions: req.body.conditions || [],
-    modificationTime: Date.now(),
-  };
-  smartFolders.push(folder);
-  currentLibrary.metadata.smartFolders = smartFolders;
-  currentLibrary.metadata.modificationTime = Date.now();
-  saveLibraryState(currentLibrary);
-  res.json(ok(folder));
+  try {
+    const conditions = Array.isArray(req.body.conditions) ? req.body.conditions : [];
+    if (conditions.length > 0) validateConditions(conditions);
+    const folder = createSmartFolder(currentLibrary, {
+      name: req.body.name,
+      description: req.body.description,
+      conditions,
+      parentID: req.body.parentID || req.body.parentId,
+      index: req.body.index,
+      icon: req.body.icon,
+      iconColor: req.body.iconColor,
+      children: req.body.children,
+    });
+    smartFolders = currentLibrary.smartFolders;
+    res.json(ok(folder));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.post('/api/v2/smartFolder/update', (req, res) => {
-  const folder = smartFolderFromRequest(req);
-  if (!folder) {
-    res.status(404).json(fail('Smart folder not found'));
-    return;
+  try {
+    const folder = smartFolderFromRequest(req);
+    if (!folder) {
+      res.status(404).json(fail('Smart folder not found'));
+      return;
+    }
+    if (Array.isArray(req.body.conditions)) validateConditions(req.body.conditions);
+    const patch = { ...req.body };
+    delete patch.id;
+    delete patch.smartFolderID;
+    const updated = updateSmartFolder(currentLibrary, folder.id, patch);
+    smartFolders = currentLibrary.smartFolders;
+    res.json(ok(updated));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
   }
-  Object.assign(folder, req.body, { id: folder.id, modificationTime: Date.now() });
-  currentLibrary.metadata.smartFolders = smartFolders;
-  currentLibrary.metadata.modificationTime = Date.now();
-  saveLibraryState(currentLibrary);
-  res.json(ok(folder));
 });
 
 app.post('/api/v2/smartFolder/remove', (req, res) => {
-  const index = smartFolders.findIndex((entry) => entry.id === (req.body.id || req.body.smartFolderID));
-  if (index >= 0) smartFolders.splice(index, 1);
-  currentLibrary.metadata.smartFolders = smartFolders;
-  currentLibrary.metadata.modificationTime = Date.now();
-  saveLibraryState(currentLibrary);
+  const removed = removeSmartFolder(currentLibrary, req.body.id || req.body.smartFolderID);
+  if (!removed) {
+    res.status(404).json(fail('Smart folder not found'));
+    return;
+  }
+  smartFolders = currentLibrary.smartFolders;
   res.json(ok(true));
+});
+
+app.post('/api/v2/smartFolder/move', (req, res) => {
+  try {
+    const folder = moveSmartFolder(
+      currentLibrary,
+      req.body.id || req.body.smartFolderID,
+      req.body.parentId || req.body.parentID || req.body.targetId,
+      Number.isInteger(req.body.index) ? req.body.index : undefined,
+    );
+    smartFolders = currentLibrary.smartFolders;
+    res.json(ok(folder));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/v2/smartFolder/getItems', (req, res) => {
@@ -2091,13 +2229,13 @@ app.post('/api/v2/smartFolder/getItems', (req, res) => {
 });
 
 app.get('/api/v2/smartFolder/getRules', (req, res) => {
-  res.json(ok([]));
+  res.json(ok(getSerializableRules()));
 });
 
 function tagsFromRequest(req) {
   const name = req.query.name || req.body?.name;
   if (!name) return null;
-  return { name, imageCount: readItems().filter((item) => item.tags.includes(name)).length, groups: [] };
+  return { name, imageCount: readItems().filter((item) => (item.tags || []).includes(name)).length, groups: [] };
 }
 
 app.get('/api/v2/tag/get', (req, res) => {
@@ -2119,16 +2257,16 @@ app.post('/api/v2/tag/get', (req, res) => {
 });
 
 app.get('/api/v2/tag/all', (req, res) => {
-  const tags = tagsGroups.flatMap((group) => group.tags).map((name) => ({ name, imageCount: 0, groups: [] }));
+  const tags = tagObjects();
   res.json(ok(tags));
 });
 
 app.get('/api/v2/tag/getRecentTags', (req, res) => {
-  res.json(ok(readItems().flatMap((item) => item.tags).slice(0, 12)));
+  res.json(ok(currentLibrary.tags.historyTags || []));
 });
 
 app.get('/api/v2/tag/getStarredTags', (req, res) => {
-  res.json(ok(['UI', '收藏']));
+  res.json(ok(currentLibrary.tags.starredTags || []));
 });
 
 app.post('/api/v2/tag/update', (req, res) => {
@@ -2149,22 +2287,47 @@ app.post('/api/v2/tag/merge', (req, res) => {
   }
 });
 
+app.post('/api/v2/item/removeFromFolder', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(addItemsToFolder(ids, req.body.folderID || req.body.folderId, 'remove')));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/item/removeFromFolder', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(addItemsToFolder(ids, req.body.folderID || req.body.folderId, 'remove')));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/v2/tag/create', (req, res) => {
+  try {
+    res.json(ok(createTag(req.body.name)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
 app.post('/api/v2/tag/remove', (req, res) => {
-  const name = req.body.name;
-  if (!name) {
-    res.status(400).json(fail('Tag name is required'));
-    return;
+  try {
+    removeTag(req.body.name);
+    res.json(ok(true));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
   }
-  for (const item of readItems()) {
-    item.tags = (item.tags || []).filter((tag) => tag !== name);
-  }
-  for (const group of tagsGroups) {
-    group.tags = (group.tags || []).filter((tag) => tag !== name);
-  }
-  saveItems(currentLibrary);
-  currentLibrary.metadata.tagsGroups = tagsGroups;
-  saveLibraryState(currentLibrary);
-  res.json(ok(true));
 });
 
 function tagGroupFromRequest(req) {

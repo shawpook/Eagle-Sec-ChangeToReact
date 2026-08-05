@@ -218,8 +218,9 @@ export function createFolder(library, params = {}) {
     children: [],
     modificationTime: Date.now(),
   };
-  if (params.parentID) {
-    const parent = findFolder(library.folders, params.parentID);
+  const parentId = params.parentID || params.parentId;
+  if (parentId) {
+    const parent = findFolder(library.folders, parentId);
     if (parent) parent.children.push(folder);
     else library.folders.push(folder);
   } else {
@@ -250,6 +251,15 @@ export function updateFolder(library, id, patch = {}) {
 }
 
 export function removeFolder(library, id) {
+  // 删除文件夹时同步清理条目引用，不删除原文件。
+  const collectIds = (folder, ids = []) => {
+    ids.push(folder.id);
+    for (const child of folder.children || []) collectIds(child, ids);
+    return ids;
+  };
+  const target = findFolder(library.folders, id);
+  if (!target) return false;
+  const removedIds = collectIds(target);
   const removeFrom = (tree) => {
     for (let index = 0; index < tree.length; index += 1) {
       if (tree[index].id === id) {
@@ -262,9 +272,159 @@ export function removeFolder(library, id) {
   };
   const removed = removeFrom(library.folders);
   if (removed) {
-    library.metadata.folders = (library.metadata.folders || []).filter((folderId) => folderId !== id);
+    library.metadata.folders = (library.metadata.folders || []).filter((folderId) => !removedIds.includes(folderId));
+    for (const item of library.items) {
+      item.folders = (item.folders || []).filter((folderId) => !removedIds.includes(folderId));
+    }
     library.metadata.modificationTime = Date.now();
-    saveLibraryState(library);
+    saveItems(library);
   }
   return removed;
+}
+
+function detachFolder(tree, id) {
+  for (let index = 0; index < tree.length; index += 1) {
+    if (tree[index].id === id) {
+      const folder = tree[index];
+      tree.splice(index, 1);
+      return { folder, index };
+    }
+    const found = detachFolder(tree[index].children || [], id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function isDescendant(folder, candidateId) {
+  if (folder.id === candidateId) return true;
+  return (folder.children || []).some((child) => isDescendant(child, candidateId));
+}
+
+export function moveFolder(library, id, parentId, index) {
+  // 移动文件夹到目标父级，禁止移入自身或子孙节点形成循环。
+  const folder = findFolder(library.folders, id);
+  if (!folder) throw new Error('Folder not found');
+  const parent = parentId ? findFolder(library.folders, parentId) : null;
+  if (parentId && !parent) throw new Error('Target folder not found');
+  if (parent && (parent.id === folder.id || isDescendant(folder, parent.id))) {
+    throw new Error('Cannot move a folder into itself or its descendant');
+  }
+  const detached = detachFolder(library.folders, id);
+  if (!detached) throw new Error('Folder not found');
+  const target = parent ? parent.children : library.folders;
+  const insertAt = Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
+  target.splice(insertAt, 0, detached.folder);
+  library.metadata.folders = collectFolderIds(library.folders);
+  library.metadata.modificationTime = Date.now();
+  saveLibraryState(library);
+  return folder;
+}
+
+function collectFolderIds(tree, ids = []) {
+  for (const folder of tree || []) {
+    ids.push(folder.id);
+    collectFolderIds(folder.children || [], ids);
+  }
+  return ids;
+}
+
+export function findSmartFolder(tree, id) {
+  for (const folder of tree || []) {
+    if (folder.id === id) return folder;
+    const child = findSmartFolder(folder.children || [], id);
+    if (child) return child;
+  }
+  return null;
+}
+
+function collectSmartFolderIds(tree, ids = []) {
+  for (const folder of tree || []) {
+    ids.push(folder.id);
+    collectSmartFolderIds(folder.children || [], ids);
+  }
+  return ids;
+}
+
+function detachSmartFolder(tree, id) {
+  for (let index = 0; index < tree.length; index += 1) {
+    if (tree[index].id === id) {
+      const folder = tree[index];
+      tree.splice(index, 1);
+      return { folder, index };
+    }
+    const found = detachSmartFolder(tree[index].children || [], id);
+    if (found) return found;
+  }
+  return null;
+}
+
+function isSmartFolderDescendant(folder, candidateId) {
+  if (folder.id === candidateId) return true;
+  return (folder.children || []).some((child) => isSmartFolderDescendant(child, candidateId));
+}
+
+export function createSmartFolder(library, params = {}) {
+  // 智能文件夹与普通文件夹一样保存为可嵌套树结构。
+  const folder = {
+    id: `SMART-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+    name: String(params.name || 'New Smart Folder').trim() || 'New Smart Folder',
+    description: params.description || '',
+    conditions: Array.isArray(params.conditions) ? params.conditions : [],
+    children: Array.isArray(params.children) ? params.children : [],
+    icon: params.icon,
+    iconColor: params.iconColor,
+    modificationTime: Date.now(),
+  };
+  const parentId = params.parentID || params.parentId;
+  const parent = parentId ? findSmartFolder(library.smartFolders, parentId) : null;
+  if (parentId && !parent) throw new Error('Smart folder parent not found');
+  const target = parent ? parent.children : library.smartFolders;
+  const index = Number.isInteger(params.index) && params.index >= 0 && params.index <= target.length ? params.index : target.length;
+  target.splice(index, 0, folder);
+  library.metadata.smartFolders = library.smartFolders;
+  library.metadata.modificationTime = Date.now();
+  saveLibraryState(library);
+  return folder;
+}
+
+export function updateSmartFolder(library, id, patch = {}) {
+  const folder = findSmartFolder(library.smartFolders, id);
+  if (!folder) return null;
+  Object.assign(folder, patch, { id, modificationTime: Date.now() });
+  if (!Array.isArray(folder.children)) folder.children = [];
+  library.metadata.smartFolders = library.smartFolders;
+  library.metadata.modificationTime = Date.now();
+  saveLibraryState(library);
+  return folder;
+}
+
+export function removeSmartFolder(library, id) {
+  const target = findSmartFolder(library.smartFolders, id);
+  if (!target) return false;
+  const removedIds = collectSmartFolderIds([target]);
+  const removed = detachSmartFolder(library.smartFolders, id);
+  if (!removed) return false;
+  library.metadata.smartFolders = library.smartFolders;
+  library.metadata.modificationTime = Date.now();
+  saveLibraryState(library);
+  return true;
+}
+
+export function moveSmartFolder(library, id, parentId, index) {
+  const folder = findSmartFolder(library.smartFolders, id);
+  if (!folder) throw new Error('Smart folder not found');
+  const parent = parentId ? findSmartFolder(library.smartFolders, parentId) : null;
+  if (parentId && !parent) throw new Error('Target smart folder not found');
+  if (parent && (parent.id === folder.id || isSmartFolderDescendant(folder, parent.id))) {
+    throw new Error('Cannot move a smart folder into itself or its descendant');
+  }
+  const detached = detachSmartFolder(library.smartFolders, id);
+  if (!detached) throw new Error('Smart folder not found');
+  const target = parent ? parent.children : library.smartFolders;
+  const insertAt = Number.isInteger(index) && index >= 0 && index <= target.length ? index : target.length;
+  target.splice(insertAt, 0, detached.folder);
+  library.metadata.smartFolders = library.smartFolders;
+  library.metadata.modificationTime = Date.now();
+  saveLibraryState(library);
+  return folder;
 }

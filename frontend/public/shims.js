@@ -408,7 +408,12 @@
       return;
     }
     if (desktopApi && desktopApi.library && channel === 'folders-change') {
-      desktopApi.library.updateStructure(params || {}).catch((err) => {
+      desktopApi.library.updateStructure(params || {}).then((library) => {
+        if (library) {
+          window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
+          if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
+        }
+      }).catch((err) => {
         mockEmit('library:operation-result', { ok: false, action: channel, error: err.message });
       });
       return;

@@ -570,7 +570,18 @@ npm run electron
 - `/api/library/structure` 已接受 `savedFilters`，与 `library-store.saveLibraryState()` 的 `saved-filters.json` 写入闭环。
 - `frontend/public/shims.js` 不再固定把 `saved-filters.json` 返回为 `[]`：浏览器 fallback 优先读取当前库的 `savedFilters`，Electron 写入会经 `library.updateStructure` 持久化。
 - 原版快捷搜索依赖的 `pinyinlite`、`tiny-pinyin`、`chinese_convert`、`cartesian-product` 改为加载 `Eagle-reverse/src/my_modules` 真实实现；简繁转换和拼音组合不再使用恒等/空结果 stub。
-- 本轮未完成：原版 filter directive 的完整事件/状态机逐项 E2E、V1/V2 合同专项测试、`/api/v2/smartFolder/getRules` 与智能文件夹规则服务属于下一批。
+- 本轮未完成：原版 filter directive 的完整事件/状态机逐项 E2E、V1/V2 合同专项测试。
+
+### 文件夹、标签与智能文件夹组织更新（2026-08-05）
+
+- `library-store.js` 新增文件夹删除的子树收集与条目引用清理：删除文件夹及其子文件夹时，只从条目 `folders` 移除引用，不误删原文件；新增 `moveFolder`、`createSmartFolder`、`updateSmartFolder`、`removeSmartFolder`、`moveSmartFolder` 与智能文件夹树查找/防循环移动。
+- 后端新增 `/api/folder/remove`、`/api/folder/move`、`/api/v2/folder/move`、`/api/item/removeFromFolder`、`/api/v2/item/removeFromFolder`，支持文件夹删除、层级移动和从原文件夹移除条目。
+- 标签合同补齐：新增 `/api/tag/create`、`/api/tag/remove`、`/api/v2/tag/create`；`replaceTag/mergeTags/removeTag` 现在同步条目、标签组、`historyTags` 与 `starredTags`；`/api/tag/all` 和 V2 标签列表返回真实 `imageCount`。
+- 新增 `backend/src/smart-folder-rules.js`，`/api/v2/smartFolder/getRules` 不再固定返回空数组，改为返回原版属性/方法/值类型合同。
+- `smart-folders.js` 改为按原版 `conditions[].rules[]` 结构执行：支持字符串、数值、日期、集合、type/rating/shape/color/fontActivated 规则，以及 condition 的 AND/OR、TRUE/FALSE 组合。
+- 智能文件夹 create/update 增加规则校验；create/update/remove/move 支持父子层级并通过 `metadata.smartFolders` 持久化。
+- `shims.js` 的 `folders-change` 在 Electron 结构写入成功后同步 `window.__mockLibrary` 与缓存，避免后续快捷搜索/侧栏数据过期。
+- 本轮未完成：原版侧栏拖拽排序的逐项 E2E、标签管理面板/智能文件夹面板完整状态机验收，以及组织操作的后端重启专项测试属于下一批。
 
 ### 仍未实现 / 未验收
 

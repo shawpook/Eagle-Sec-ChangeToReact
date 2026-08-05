@@ -26,7 +26,7 @@ if (!Array.isArray(metadata.folders) || !Array.isArray(metadata.smartFolders) ||
   throw new Error('metadata defaults are invalid');
 }
 const index = JSON.parse(fs.readFileSync(path.join(libraryPath, 'search-index.json'), 'utf8'));
-if (index.version !== 1 || index.items.length !== 0) throw new Error('search index defaults are invalid');
+if (index.version !== 2 || index.items.length !== 0) throw new Error('search index defaults are invalid');
 if (fs.readFileSync(path.join(libraryPath, 'cache.json'), 'utf8') !== '') throw new Error('new library cache must be empty');
 
 const restarted = new LibraryService({

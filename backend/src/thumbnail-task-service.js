@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { analyzeImagePalettes } from './color-analyzer.js';
 import { itemOriginalPath, itemThumbnailPath, saveItems } from './library-store.js';
+import { isTextThumbnailExtension } from './file-format-policy.js';
+import { renderTextThumbnail } from './text-thumbnail-renderer.js';
+import { OFFICE_EXTENSIONS } from './office-document-support.js';
+import { renderOfficeThumbnail } from './office-thumbnail-renderer.js';
+import { LEGACY_OFFICE_EXTENSIONS, renderLegacyOfficeThumbnail } from './legacy-office-thumbnail-renderer.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -15,12 +20,17 @@ const videoWorker = path.resolve(projectRoot, 'electron/video-thumbnail-worker.c
 const DEFAULT_CONCURRENCY = 3;
 const DEFAULT_TIMEOUT_MS = 100_000;
 const DEFAULT_MAX_SIZE = 480;
+const DEFAULT_MAX_PENDING = 1024;
 const MAX_SOURCE_BYTES = 100_000_000;
+const MAX_TEXT_SOURCE_BYTES = 10_000_000_000;
 const MAX_VIDEO_SOURCE_BYTES = 2_000_000_000;
+const MAX_OFFICE_SOURCE_BYTES = 512 * 1024 * 1024;
+const DEFAULT_OFFICE_CONVERT_TIMEOUT_MS = 60_000;
 const MAX_DECODED_PIXELS = 30_000_000;
+const NEUTRAL_TEXT_PALETTES = [{ color: [248, 250, 252], ratio: 100 }];
 const SHARP_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'tif', 'tiff', 'avif', 'heic', 'heif']);
 const VIDEO_EXTENSIONS = new Set(['mp4', 'webm']);
-const PRIMARY_EXTENSIONS = new Set(['svg', 'gif', 'webp', 'tif', 'tiff', 'pdf', ...VIDEO_EXTENSIONS]);
+const PRIMARY_EXTENSIONS = new Set(['svg', 'gif', 'webp', 'tif', 'tiff', 'pdf', ...VIDEO_EXTENSIONS, ...OFFICE_EXTENSIONS, ...LEGACY_OFFICE_EXTENSIONS]);
 
 export class ThumbnailTaskError extends Error {
   constructor(message, options = {}) {
@@ -61,6 +71,8 @@ function assertItem(library, itemId) {
 
 function assertSource(library, item) {
   const source = itemOriginalPath(library, item);
+  const isText = isTextThumbnailExtension(item.ext);
+  const isOffice = OFFICE_EXTENSIONS.has(String(item.ext || '').toLowerCase()) || LEGACY_OFFICE_EXTENSIONS.has(String(item.ext || '').toLowerCase());
   let stat;
   try {
     stat = fs.statSync(source);
@@ -72,8 +84,14 @@ function assertSource(library, item) {
     });
   }
   if (!stat.isFile()) throw new ThumbnailTaskError('Original item source must be a regular file', { code: 'INVALID_ITEM_SOURCE', statusCode: 400 });
-  if (stat.size <= 0) throw new ThumbnailTaskError('Original item source is empty', { code: 'EMPTY_ITEM_SOURCE', statusCode: 422 });
-  const maxSourceBytes = VIDEO_EXTENSIONS.has(String(item.ext || '').toLowerCase()) ? MAX_VIDEO_SOURCE_BYTES : MAX_SOURCE_BYTES;
+  if (stat.size <= 0 && !isText && !isOffice) throw new ThumbnailTaskError('Original item source is empty', { code: 'EMPTY_ITEM_SOURCE', statusCode: 422 });
+  const maxSourceBytes = isText
+    ? MAX_TEXT_SOURCE_BYTES
+    : isOffice
+      ? MAX_OFFICE_SOURCE_BYTES
+      : VIDEO_EXTENSIONS.has(String(item.ext || '').toLowerCase())
+      ? MAX_VIDEO_SOURCE_BYTES
+      : MAX_SOURCE_BYTES;
   if (stat.size > maxSourceBytes) throw new ThumbnailTaskError(`Original item source exceeds ${maxSourceBytes} bytes`, { code: 'THUMBNAIL_SOURCE_TOO_LARGE', statusCode: 413 });
   return source;
 }
@@ -250,9 +268,11 @@ export class ThumbnailTaskService {
     const concurrency = Number(options.concurrency);
     const timeoutMs = Number(options.timeoutMs);
     const maxSize = Number(options.maxSize);
+    const maxPending = Number(options.maxPending);
     this.concurrency = Math.max(1, Number.isFinite(concurrency) ? concurrency : DEFAULT_CONCURRENCY);
     this.timeoutMs = Math.max(1, Number.isFinite(timeoutMs) ? timeoutMs : DEFAULT_TIMEOUT_MS);
     this.maxSize = Math.max(1, Number.isFinite(maxSize) ? maxSize : DEFAULT_MAX_SIZE);
+    this.maxPending = Math.max(1, Number.isFinite(maxPending) ? Math.floor(maxPending) : DEFAULT_MAX_PENDING);
     this.analyze = options.analyze || analyzeImagePalettes;
     this.render = options.render || null;
     this.pending = [];
@@ -271,6 +291,7 @@ export class ThumbnailTaskService {
       concurrency: this.concurrency,
       timeoutMs: this.timeoutMs,
       maxSize: this.maxSize,
+      maxPending: this.maxPending,
       active: this.active,
       pending: this.pending.length,
       length: this.active + this.pending.length,
@@ -288,10 +309,16 @@ export class ThumbnailTaskService {
       });
     }
     const extension = String(item.ext || '').toLowerCase();
-    if (!SHARP_EXTENSIONS.has(extension) && extension !== 'pdf' && !VIDEO_EXTENSIONS.has(extension)) {
+    if (!SHARP_EXTENSIONS.has(extension) && extension !== 'pdf' && !VIDEO_EXTENSIONS.has(extension) && !isTextThumbnailExtension(extension) && !OFFICE_EXTENSIONS.has(extension) && !LEGACY_OFFICE_EXTENSIONS.has(extension)) {
       throw new ThumbnailTaskError(`Thumbnail format is not supported: ${extension || 'unknown'}`, {
         code: 'THUMBNAIL_FORMAT_UNSUPPORTED',
         statusCode: 415,
+      });
+    }
+    if (this.pending.length >= this.maxPending) {
+      throw new ThumbnailTaskError(`Thumbnail queue is full (${this.maxPending})`, {
+        code: 'THUMBNAIL_QUEUE_FULL',
+        statusCode: 429,
       });
     }
     const task = {
@@ -355,7 +382,7 @@ export class ThumbnailTaskService {
 
   supports(extension) {
     const normalized = String(extension || '').toLowerCase();
-    return SHARP_EXTENSIONS.has(normalized) || normalized === 'pdf' || VIDEO_EXTENSIONS.has(normalized);
+    return SHARP_EXTENSIONS.has(normalized) || normalized === 'pdf' || VIDEO_EXTENSIONS.has(normalized) || isTextThumbnailExtension(normalized) || OFFICE_EXTENSIONS.has(normalized) || LEGACY_OFFICE_EXTENSIONS.has(normalized);
   }
 
   primaryFormats() {
@@ -417,7 +444,9 @@ export class ThumbnailTaskService {
       clearTimeout(timeout);
       if (task.cancelRequested) throw new ThumbnailTaskError('Thumbnail task was cancelled', { code: 'THUMBNAIL_CANCELLED', statusCode: 409 });
       task.progress = 75;
-      const palettes = await this.analyze(pending);
+      const palettes = info.skipPaletteAnalysis
+        ? info.palettes || NEUTRAL_TEXT_PALETTES
+        : await this.analyze(pending);
       if (task.cancelRequested) throw new ThumbnailTaskError('Thumbnail task was cancelled', { code: 'THUMBNAIL_CANCELLED', statusCode: 409 });
       commitThumbnail(task.library, item, target, pending, {
         width: info.width || item.width,
@@ -454,6 +483,39 @@ export class ThumbnailTaskService {
 
   async #render(task, source, output) {
     if (this.render) return this.render({ task, source, output, maxSize: task.options.maxSize || this.maxSize });
+    if (isTextThumbnailExtension(task.format)) {
+      const item = assertItem(task.library, task.itemId);
+      return renderTextThumbnail({
+        source,
+        output,
+        maxSize: task.options.maxSize || this.maxSize,
+        extension: task.format,
+        item,
+      });
+    }
+    if (OFFICE_EXTENSIONS.has(task.format)) {
+      const item = assertItem(task.library, task.itemId);
+      return renderOfficeThumbnail({
+        source,
+        output,
+        maxSize: task.options.maxSize || this.maxSize,
+        extension: task.format,
+        item,
+      });
+    }
+    if (LEGACY_OFFICE_EXTENSIONS.has(task.format)) {
+      const item = assertItem(task.library, task.itemId);
+      return renderLegacyOfficeThumbnail({
+        source,
+        output,
+        maxSize: task.options.maxSize || this.maxSize,
+        extension: task.format,
+        item,
+        renderPdf,
+        onChild: (child) => { task.child = child; },
+        timeoutMs: Number(process.env.EAGLE_OFFICE_CONVERT_TIMEOUT_MS) || DEFAULT_OFFICE_CONVERT_TIMEOUT_MS,
+      });
+    }
     if (task.format === 'pdf') {
       return renderPdf(source, output, task.options.maxSize || this.maxSize, (child) => { task.child = child; });
     }
@@ -474,7 +536,13 @@ export class ThumbnailTaskService {
   }
 
   #finishFailed(task, cause) {
-    const error = cause instanceof ThumbnailTaskError ? cause : new ThumbnailTaskError(cause.message, { cause });
+    const error = cause instanceof ThumbnailTaskError
+      ? cause
+      : new ThumbnailTaskError(cause.message, {
+        cause,
+        code: cause.code || 'THUMBNAIL_GENERATION_FAILED',
+        statusCode: cause.statusCode || 422,
+      });
     task.status = 'failed';
     task.completedAt = Date.now();
     task.error = error.message;

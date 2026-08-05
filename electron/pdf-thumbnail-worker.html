@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <script src="../../src/app/pdf-viewer/build/pdf.js"></script>
+  <script src="./pdf-viewer/build/pdf.js"></script>
 </head>
 <body>
   <canvas id="page"></canvas>
   <script>
     window.renderPdfThumbnail = async function renderPdfThumbnail(sourceUrl, maxSize, maxImagePixels) {
+      const loadDeadline = Date.now() + 10000;
+      while (!window.pdfjsLib) {
+        if (Date.now() > loadDeadline) throw new Error('pdf.js failed to load');
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
       const loadingTask = window.pdfjsLib.getDocument({
         url: sourceUrl,
         disableAutoFetch: true,

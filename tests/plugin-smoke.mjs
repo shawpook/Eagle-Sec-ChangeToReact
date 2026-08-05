@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { loadServicePlugin } from '../backend/src/plugin-runtime.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const pluginRoot = path.resolve(here, '../..', 'plugins/example-service-plugin');
+const projectRoot = path.resolve(here, '..');
+const pluginRoot = path.join(projectRoot, 'tests/fixtures/plugins/example-service-plugin');
 const markerPath = path.join(os.tmpdir(), 'eagle-reverse-plugin-marker.txt');
 
 fs.rmSync(markerPath, { force: true });

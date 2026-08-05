@@ -2,11 +2,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { commitLibrarySnapshot } from './library-transaction-coordinator.js';
+import { SEARCH_INDEX_VERSION, buildSearchIndex as buildContentSearchIndex } from './search-index-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
 const mockLibraryDir = path.join(projectRoot, 'frontend/public/mock-library');
 const reverseRoot = path.resolve(projectRoot, '..');
+const fixtureLibraryExampleDir = path.join(projectRoot, 'tests/fixtures/library-example');
 
 const defaultFolders = [
   {
@@ -94,24 +96,6 @@ function scanItemMetadata(rootDir) {
   return items;
 }
 
-function buildSearchIndex(items) {
-  return {
-    version: 1,
-    updatedAt: Date.now(),
-    items: items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      ext: item.ext,
-      tags: item.tags || [],
-      folders: item.folders || [],
-      annotation: item.annotation || '',
-      url: item.url || '',
-      star: item.star || 0,
-      modificationTime: item.modificationTime || 0,
-    })),
-  };
-}
-
 function saveSearchIndex(library, index) {
   writeJsonAtomic(path.join(library.rootDir, 'search-index.json'), index);
 }
@@ -128,7 +112,7 @@ export function resolveLibraryPath(input) {
   const absolute = path.resolve(value);
   if (fs.existsSync(absolute)) return absolute;
   if (value.endsWith('.library') && !path.isAbsolute(value)) {
-    return path.join(reverseRoot, 'library-example', value);
+    return path.join(fixtureLibraryExampleDir, value);
   }
   return absolute;
 }
@@ -155,9 +139,10 @@ export function loadLibrary(input = defaultMockLibrary()) {
   const cacheItems = readCache(path.join(rootDir, 'cache.json'));
   const items = cacheItems || scanItemMetadata(rootDir);
   const searchIndexFile = path.join(rootDir, 'search-index.json');
-  const searchIndex = fs.existsSync(searchIndexFile)
-    ? readJson(searchIndexFile, buildSearchIndex(items))
-    : buildSearchIndex(items);
+  const existingSearchIndex = fs.existsSync(searchIndexFile) ? readJson(searchIndexFile, null) : null;
+  const searchIndex = existingSearchIndex?.version === SEARCH_INDEX_VERSION
+    ? existingSearchIndex
+    : buildContentSearchIndex({ rootDir, items, searchIndex: existingSearchIndex });
   const libraryName = path.basename(rootDir).replace(/\.library$/i, '') || 'Untitled';
   const isMock = rootDir.startsWith(mockLibraryDir + path.sep);
 

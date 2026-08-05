@@ -12,7 +12,7 @@
     "preview": "vite preview --config frontend/vite.preview.config.mjs",
     "backend": "node backend/src/server.js",
     "health": "node scripts/health-check.mjs",
-    "test": "node tests/api-smoke.mjs && node tests/validate-library.mjs && node tests/plugin-smoke.mjs && node tests/library-create-service.mjs && node tests/library-create-api.mjs && node tests/image-import-closed-loop.mjs && node tests/folder-import-closed-loop.mjs && node tests/collect-save-closed-loop.mjs && node tests/image-export-closed-loop.mjs && node tests/color-palette-closed-loop.mjs && node tests/custom-thumbnail-closed-loop.mjs && node tests/controlled-download-closed-loop.mjs && node tests/thumbnail-task-closed-loop.mjs && node tests/video-thumbnail-closed-loop.mjs && node tests/item-workflow-closed-loop.mjs && node tests/item-api-compatibility.mjs && node tests/importer-search.mjs && node tests/csv-comments-thumbnail.mjs && node tests/eaglepack-duplicates.mjs && node tests/search-index-v2.mjs && node tests/smart-extension-plugin.mjs && node tests/workbench-upload.mjs && node tests/library-stats.mjs && node tests/search-media.mjs && node tests/browser-extension.mjs && node tests/plugin-package.mjs && node tests/import-export-migration.mjs && node tests/library-migration.mjs && node tests/security.mjs && node tests/roadmap-panels.mjs && node tests/library-transaction-faults.mjs && node tests/library-crash-recovery.mjs && node tests/library-concurrency.mjs && node tests/library-consistency-scan.mjs && node tests/library-backup-restore.mjs && node tests/library-repair-plan.mjs",
+    "test": "node tests/api-smoke.mjs && node tests/validate-library.mjs && node tests/plugin-smoke.mjs && node tests/library-create-service.mjs && node tests/library-create-api.mjs && node tests/image-import-closed-loop.mjs && node tests/folder-import-closed-loop.mjs && node tests/collect-save-closed-loop.mjs && node tests/image-export-closed-loop.mjs && node tests/color-palette-closed-loop.mjs && node tests/custom-thumbnail-closed-loop.mjs && node tests/controlled-download-closed-loop.mjs && node tests/thumbnail-task-closed-loop.mjs && node tests/text-thumbnail-closed-loop.mjs && node tests/text-detail-closed-loop.mjs && node tests/text-save-closed-loop.mjs && node tests/office-thumbnail-closed-loop.mjs && node tests/legacy-office-thumbnail-closed-loop.mjs && node tests/text-search-closed-loop.mjs && node tests/video-thumbnail-closed-loop.mjs && node tests/item-workflow-closed-loop.mjs && node tests/item-api-compatibility.mjs && node tests/importer-search.mjs && node tests/csv-comments-thumbnail.mjs && node tests/eaglepack-duplicates.mjs && node tests/search-index-v2.mjs && node tests/smart-extension-plugin.mjs && node tests/workbench-upload.mjs && node tests/library-stats.mjs && node tests/search-media.mjs && node tests/browser-extension.mjs && node tests/plugin-package.mjs && node tests/import-export-migration.mjs && node tests/library-migration.mjs && node tests/security.mjs && node tests/roadmap-panels.mjs && node tests/library-transaction-faults.mjs && node tests/library-crash-recovery.mjs && node tests/library-concurrency.mjs && node tests/library-consistency-scan.mjs && node tests/library-backup-restore.mjs && node tests/library-repair-plan.mjs",
     "test:full": "npm test && npm run test:electron && npm run test:electron-main && npm run test:electron-plugin && npm run test:electron-desktop && npm run test:electron-library && npm run test:preview-delivery && npm run test:export-progress && npm run test:video-detail && npm run test:browser-capture && npm run test:workbench && npm run test:screenshots",
     "test:electron": "electron tests/electron-smoke.cjs",
     "test:electron-main": "electron electron/main.cjs --smoke",
@@ -33,9 +33,13 @@
   },
   "dependencies": {
     "adm-zip": "^0.6.0",
+    "chardet": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "fast-xml-parser": "^5.10.1",
+    "iconv-lite": "^0.7.3",
     "jpeg-js": "^0.4.4",
+    "jszip": "^3.10.1",
     "multer": "^2.2.0",
     "pngjs": "^7.0.0",
     "sharp": "^0.35.3"

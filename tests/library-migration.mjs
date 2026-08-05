@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
 const mockLibrary = path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library');
-const demoLibrary = path.join(projectRoot, '..', 'library-example/Demo.library');
+const demoLibrary = path.join(projectRoot, 'tests/fixtures/library-example/Demo.library');
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-library-migration-'));
 const destDir = path.join(tempRoot, 'migrated.library');
 const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';

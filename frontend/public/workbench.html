@@ -896,7 +896,7 @@
       await api('/api/library/switch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ libraryPath: 'C:\\Program Files\\Eagle\\Eagle-reverse\\library-example\\Demo.library' }),
+        body: JSON.stringify({ libraryPath: 'Demo.library' }),
       });
       await refreshLibrary();
       await loadItems();

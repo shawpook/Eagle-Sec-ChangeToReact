@@ -6,7 +6,7 @@ import { packPlugin } from '../backend/src/plugin-package.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '..');
-const pluginDir = path.resolve(projectRoot, '..', 'plugins/example-service-plugin');
+const pluginDir = path.join(projectRoot, 'tests/fixtures/plugins/example-service-plugin');
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-plugin-package-'));
 const packFile = path.join(tempRoot, 'example-service.eagleplugin');
 const apiBase = process.env.EAGLE_API_URL || 'http://127.0.0.1:41695';

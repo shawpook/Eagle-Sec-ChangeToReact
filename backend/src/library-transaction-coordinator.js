@@ -13,6 +13,7 @@ import {
   transactionDirectory,
   writeJsonSync,
 } from './library-strict.js';
+import { buildSearchIndex as buildContentSearchIndex } from './search-index-service.js';
 
 const LOCK_FILE = 'lock.json';
 const DEFAULT_STALE_LOCK_MS = 60_000;
@@ -139,21 +140,7 @@ function buildLibraryTargets(library) {
   const cacheData = (library.items || []).map((item) => JSON.stringify(item)).join('\n') + '\n';
   targets.push({ relative: 'cache.json', data: cacheData });
 
-  const searchIndex = {
-    version: 1,
-    updatedAt: now,
-    items: (library.items || []).map((item) => ({
-      id: item.id,
-      name: item.name,
-      ext: item.ext,
-      tags: item.tags || [],
-      folders: item.folders || [],
-      annotation: item.annotation || '',
-      url: item.url || '',
-      star: item.star || 0,
-      modificationTime: item.modificationTime || 0,
-    })),
-  };
+  const searchIndex = buildContentSearchIndex(library);
   targets.push({ relative: 'search-index.json', data: JSON.stringify(searchIndex, null, 2) });
 
   for (const item of library.items || []) {

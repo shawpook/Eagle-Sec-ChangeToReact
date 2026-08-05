@@ -27,7 +27,7 @@ fs.writeFileSync(path.join(libraryPath, 'cache.json'), JSON.stringify({
   folders: ['FOLDER-MISSING'],
 }), 'utf8');
 fs.writeFileSync(path.join(libraryPath, 'search-index.json'), JSON.stringify({
-  version: 1,
+  version: 2,
   updatedAt: Date.now(),
   items: [],
 }), 'utf8');

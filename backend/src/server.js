@@ -10,6 +10,7 @@ import {
   createSmartFolder,
   defaultMockLibrary,
   findSmartFolder,
+  itemOriginalPath,
   loadLibrary,
   moveFolder,
   moveSmartFolder,
@@ -40,6 +41,11 @@ import { CustomThumbnailService } from './custom-thumbnail.js';
 import { DownloadError, getControlledDownloadService } from './controlled-downloader.js';
 import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
 import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
+import { isTextThumbnailExtension } from './file-format-policy.js';
+import { TextDetailError, readTextItemDetail } from './text-detail-service.js';
+import { TextSaveError, TextSaveService } from './text-save-service.js';
+import { OFFICE_EXTENSIONS } from './office-document-support.js';
+import { LEGACY_OFFICE_EXTENSIONS } from './legacy-office-thumbnail-renderer.js';
 import { searchItems, searchItemsByFilterRules } from './search-service.js';
 import { CaptureError, CaptureService } from './capture-service.js';
 import { LibraryTransactionCoordinator, recoverLibrary } from './library-transaction-coordinator.js';
@@ -106,7 +112,8 @@ function pluginHtmlMiddleware(root, staticRoot) {
   };
 }
 
-const examplePluginRoot = path.join(reverseRoot, 'plugins/example-service-plugin');
+const bundledPluginsRoot = path.join(projectRoot, 'tests/fixtures/plugins');
+const examplePluginRoot = path.join(bundledPluginsRoot, 'example-service-plugin');
 const pluginTemplatesRoot = path.join(programRoot, 'resources/plugin_templates');
 app.use('/plugins/eagle-reverse-example-service', pluginHtmlMiddleware(examplePluginRoot));
 app.use('/plugins/eagle-reverse-example-service', express.static(examplePluginRoot));
@@ -127,8 +134,12 @@ const thumbnailTasks = new ThumbnailTaskService({
   concurrency: process.env.EAGLE_THUMBNAIL_CONCURRENCY === undefined ? 3 : Number(process.env.EAGLE_THUMBNAIL_CONCURRENCY),
   timeoutMs: process.env.EAGLE_THUMBNAIL_TIMEOUT_MS === undefined ? 100_000 : Number(process.env.EAGLE_THUMBNAIL_TIMEOUT_MS),
   maxSize: process.env.EAGLE_THUMBNAIL_MAX_SIZE === undefined ? 480 : Number(process.env.EAGLE_THUMBNAIL_MAX_SIZE),
+  maxPending: process.env.EAGLE_THUMBNAIL_MAX_PENDING === undefined ? undefined : Number(process.env.EAGLE_THUMBNAIL_MAX_PENDING),
 });
 configureThumbnailTaskService(thumbnailTasks);
+const textSaveService = new TextSaveService({
+  regenerate: (library, itemId) => thumbnailTasks.generate(library, itemId),
+});
 const customThumbnailService = new CustomThumbnailService({
   regenerate: (library, itemId, options = {}) => thumbnailTasks.generate(library, itemId, {
     ...options,
@@ -143,9 +154,29 @@ const captureService = new CaptureService({
 });
 const itemWorkflow = new ItemWorkflowService();
 const libraryTransactionCoordinator = new LibraryTransactionCoordinator();
+
+function enqueueMissingThumbnails(library) {
+  for (const item of library.items || []) {
+    if (item.isDeleted || item.processingThumbnail) continue;
+    const extension = String(item.ext || '').toLowerCase();
+    if (!isTextThumbnailExtension(extension) && !OFFICE_EXTENSIONS.has(extension) && !LEGACY_OFFICE_EXTENSIONS.has(extension)) continue;
+    if (!thumbnailTasks.supports(extension)) continue;
+    if (fs.existsSync(thumbnailPath(library, item))) continue;
+    if (!fs.existsSync(itemOriginalPath(library, item))) continue;
+    try {
+      thumbnailTasks.enqueue(library, item.id);
+    } catch (err) {
+      if (err.code !== 'THUMBNAIL_TASK_CONFLICT') {
+        item.thumbnailError = err.code || 'THUMBNAIL_GENERATION_FAILED';
+      }
+    }
+  }
+}
+
 const startupRecovery = recoverLibrary(libraryService.currentPath());
 let currentLibrary = libraryService.currentLibrary();
 thumbnailTasks.recover(currentLibrary);
+enqueueMissingThumbnails(currentLibrary);
 let folders = currentLibrary.folders;
 let smartFolders = currentLibrary.smartFolders;
 let tagsGroups = currentLibrary.tagsGroups;
@@ -153,6 +184,7 @@ let tagsGroups = currentLibrary.tagsGroups;
 function activateLibrary(library) {
   recoverLibrary(library.rootDir);
   thumbnailTasks.recover(library);
+  enqueueMissingThumbnails(library);
   currentLibrary = library;
   folders = library.folders;
   smartFolders = library.smartFolders;
@@ -701,7 +733,7 @@ app.get('/', (req, res) => {
 
 function listPlugins() {
   const roots = [
-    path.join(reverseRoot, 'plugins'),
+    bundledPluginsRoot,
     path.join(programRoot, 'resources/plugin_templates'),
   ];
   const plugins = [];
@@ -1202,16 +1234,16 @@ app.get('/api/item/list', (req, res) => {
 });
 
 app.get('/api/item/search', (req, res) => {
-  res.json(ok(searchItems(readItems(), req.query)));
+  res.json(ok(searchItems(readItems(), req.query, currentLibrary.searchIndex)));
 });
 
 app.post('/api/item/search', (req, res) => {
-  res.json(ok(searchItems(readItems(), req.body || {})));
+  res.json(ok(searchItems(readItems(), req.body || {}, currentLibrary.searchIndex)));
 });
 
 app.post('/api/item/search/filters', (req, res) => {
   const rules = req.body.rules || req.body.filters || {};
-  res.json(ok(searchItemsByFilterRules(readItems(), rules, req.body.query || {})));
+  res.json(ok(searchItemsByFilterRules(readItems(), rules, req.body.query || {}, currentLibrary.searchIndex)));
 });
 
 app.get('/api/item/info', (req, res) => {
@@ -1222,6 +1254,34 @@ app.get('/api/item/info', (req, res) => {
     return;
   }
   res.json(ok(item));
+});
+
+app.get('/api/item/textDetail', (req, res) => {
+  try {
+    const id = req.query.id || req.query.itemId || req.query.itemID;
+    res.json(ok(readTextItemDetail(currentLibrary, id, {
+      offset: req.query.offset,
+      limit: req.query.limit,
+    })));
+  } catch (err) {
+    sendTextDetailError(res, err);
+  }
+});
+
+app.post('/api/item/textSave', async (req, res) => {
+  try {
+    res.json(ok(await textSaveService.save(currentLibrary, req.body.id || req.body.itemId || req.body.itemID, req.body)));
+  } catch (err) {
+    sendTextSaveError(res, err);
+  }
+});
+
+app.post('/api/item/textUndo', async (req, res) => {
+  try {
+    res.json(ok(await textSaveService.undo(currentLibrary, req.body.id || req.body.itemId || req.body.itemID)));
+  } catch (err) {
+    sendTextSaveError(res, err);
+  }
 });
 
 app.get('/api/item/mediaInfo', (req, res) => {
@@ -1758,6 +1818,16 @@ function sendThumbnailTaskError(res, err) {
   res.status(statusCode).json({ ...fail(err.message), code: err.code || 'THUMBNAIL_GENERATION_FAILED' });
 }
 
+function sendTextDetailError(res, err) {
+  const statusCode = err instanceof TextDetailError ? err.statusCode : (err.statusCode || 422);
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'TEXT_DETAIL_READ_FAILED' });
+}
+
+function sendTextSaveError(res, err) {
+  const statusCode = err instanceof TextSaveError ? err.statusCode : (err.statusCode || 422);
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'TEXT_SAVE_FAILED' });
+}
+
 app.post('/api/item/thumbnailTask/start', (req, res) => {
   try {
     const id = req.body.id || req.body.itemID || req.body.itemId;
@@ -1874,14 +1944,14 @@ app.post('/api/export/as-folder', async (req, res) => {
 });
 
 app.get('/api/export/csv', (req, res) => {
-  const items = searchItems(readItems(), req.query);
+  const items = searchItems(readItems(), req.query, currentLibrary.searchIndex);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="items.csv"');
   res.send(itemsToCsv(items));
 });
 
 app.post('/api/export/csv', (req, res) => {
-  const items = searchItems(readItems(), req.body || {});
+  const items = searchItems(readItems(), req.body || {}, currentLibrary.searchIndex);
   if (req.body.destFile) {
     const exported = exportCsvFile(items, req.body.destFile);
     res.json(ok({ path: exported, count: items.length }));
@@ -2206,6 +2276,34 @@ app.get('/api/v2/item/get', (req, res) => {
   res.json(ok(item));
 });
 
+app.get('/api/v2/item/textDetail', (req, res) => {
+  try {
+    const id = req.query.id || req.query.itemId || req.query.itemID;
+    res.json(ok(readTextItemDetail(currentLibrary, id, {
+      offset: req.query.offset,
+      limit: req.query.limit,
+    })));
+  } catch (err) {
+    sendTextDetailError(res, err);
+  }
+});
+
+app.post('/api/v2/item/textSave', async (req, res) => {
+  try {
+    res.json(ok(await textSaveService.save(currentLibrary, req.body.id || req.body.itemId || req.body.itemID, req.body)));
+  } catch (err) {
+    sendTextSaveError(res, err);
+  }
+});
+
+app.post('/api/v2/item/textUndo', async (req, res) => {
+  try {
+    res.json(ok(await textSaveService.undo(currentLibrary, req.body.id || req.body.itemId || req.body.itemID)));
+  } catch (err) {
+    sendTextSaveError(res, err);
+  }
+});
+
 app.post('/api/v2/item/get', (req, res) => {
   const item = getItemFromRequest(req);
   if (!item) {
@@ -2216,7 +2314,7 @@ app.post('/api/v2/item/get', (req, res) => {
 });
 
 app.post('/api/v2/item/query', (req, res) => {
-  const items = searchItems(readItems(), req.body || {});
+  const items = searchItems(readItems(), req.body || {}, currentLibrary.searchIndex);
   const limit = Math.min(Number(req.body?.limit || 50), 1000);
   const offset = Number(req.body?.offset || 0);
   res.json(ok({ data: items.slice(offset, offset + limit), total: items.length, offset, limit }));
@@ -2224,7 +2322,7 @@ app.post('/api/v2/item/query', (req, res) => {
 
 app.post('/api/v2/item/query/filters', (req, res) => {
   const rules = req.body.rules || req.body.filters || {};
-  const items = searchItemsByFilterRules(readItems(), rules, req.body.query || {});
+  const items = searchItemsByFilterRules(readItems(), rules, req.body.query || {}, currentLibrary.searchIndex);
   const limit = Math.min(Number(req.body?.limit || 50), 1000);
   const offset = Number(req.body?.offset || 0);
   res.json(ok({ data: items.slice(offset, offset + limit), total: items.length, offset, limit }));

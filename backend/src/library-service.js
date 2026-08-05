@@ -207,7 +207,7 @@ export class LibraryService {
     writeJson(path.join(libraryPath, 'folders.json'), []);
     fs.writeFileSync(path.join(libraryPath, 'cache.json'), '', 'utf8');
     writeJson(path.join(libraryPath, 'search-index.json'), {
-      version: 1,
+      version: 2,
       updatedAt: Date.now(),
       items: [],
     });

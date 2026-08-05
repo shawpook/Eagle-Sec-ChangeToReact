@@ -236,6 +236,7 @@ function matchesSimpleQuery(item, query = {}) {
       item.name,
       item.annotation,
       item.url,
+      item.__searchText || item.searchText || '',
       (item.tags || []).join(' '),
       (item.comments || []).map((comment) => comment.text || comment.annotation || '').join(' '),
       (item.folders || []).join(' '),
@@ -313,9 +314,17 @@ function matchesSimpleQuery(item, query = {}) {
   return true;
 }
 
-export function searchItems(items, query = {}) {
+export function searchItems(items, query = {}, searchIndex = null) {
   const filters = query.filters && typeof query.filters === 'object' ? query.filters : {};
-  const filtered = (items || []).filter((item) => matchesSimpleQuery(item, query) && matchesFilterRules(item, filters));
+  const contentById = new Map(
+    Array.isArray(searchIndex?.items)
+      ? searchIndex.items.map((entry) => [entry.id, entry.textContent || ''])
+      : []
+  );
+  const searchableItems = (items || []).map((item) => (
+    contentById.has(item.id) ? { ...item, __searchText: contentById.get(item.id) } : item
+  ));
+  const filtered = searchableItems.filter((item) => matchesSimpleQuery(item, query) && matchesFilterRules(item, filters));
 
   const sortBy = String(query.sortBy || '');
   const sortIncrease = query.sortIncrease === 'true' || query.sortIncrease === true;
@@ -330,10 +339,10 @@ export function searchItems(items, query = {}) {
   return filtered;
 }
 
-export function filterItems(items, query = {}) {
-  return searchItems(items, query);
+export function filterItems(items, query = {}, searchIndex = null) {
+  return searchItems(items, query, searchIndex);
 }
 
-export function searchItemsByFilterRules(items, rules = {}, query = {}) {
-  return searchItems(items, { ...query, filters: rules });
+export function searchItemsByFilterRules(items, rules = {}, query = {}, searchIndex = null) {
+  return searchItems(items, { ...query, filters: rules }, searchIndex);
 }

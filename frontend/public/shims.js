@@ -23,9 +23,11 @@
     window.fetch = function (input, init) {
       let target = typeof input === 'string' ? input : input && input.url;
       if (typeof target === 'string') {
+        const apiBase = window.__EAGLE_API_BASE_URL || 'http://localhost:41595';
+        const extensionBase = window.__EAGLE_EXTENSION_BASE_URL || 'http://localhost:41593';
         target = target
-          .replace(/^http:\/\/localhost:41595(?=\/|$)/i, 'http://localhost:41695')
-          .replace(/^http:\/\/localhost:41593(?=\/|$)/i, 'http://localhost:41693');
+          .replace(/^http:\/\/localhost:41595(?=\/|$)/i, apiBase.replace(/\/$/, ''))
+          .replace(/^http:\/\/localhost:41593(?=\/|$)/i, extensionBase.replace(/\/$/, ''));
         if (typeof input === 'string') input = target;
         else input = new Request(target, input);
       }
@@ -379,6 +381,18 @@
 
   const ipcRenderer = new EventEmitter();
   const mockEmit = ipcRenderer.emit.bind(ipcRenderer);
+  const emitIpc = ipcRenderer.emit.bind(ipcRenderer);
+  ipcRenderer.emit = function (channel, ...args) {
+    if (channel === 'file-uploaded' && args[0] && args[0].id) {
+      try {
+        const scope = window.angular ? angular.element(document.body).scope() : null;
+        if (scope && Array.isArray(scope.raw) && scope.raw.some((item) => item && item.id === args[0].id)) return true;
+      } catch (err) {
+        // Fall through to the normal event dispatch.
+      }
+    }
+    return emitIpc(channel, ...args);
+  };
   const customThumbnailItemIds = new Set();
   const desktopSendChannels = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
   let itemUpdateQueue = Promise.resolve();
@@ -416,7 +430,7 @@
   function emitImportedItems(items, channel) {
     const imported = (Array.isArray(items) ? items : [items]).filter((item) => item && item.id);
     mergeCachedItems(imported);
-    imported.forEach((item) => mockEmit('file-uploaded', item));
+    imported.forEach((item) => ipcRenderer.emit('file-uploaded', item));
     if (imported.length > 0) mockEmit('file-uploaded-end', {});
     mockEmit('import:operation-result', { ok: true, channel, items: imported });
     return imported;
@@ -1780,6 +1794,45 @@
   }, 100);
   setTimeout(() => clearInterval(duplicateCheckerGuard), 8000);
 
+  let capturePollStarted = false;
+  let capturePollLibraryPath = '';
+  function startCapturePolling() {
+    if (capturePollStarted || !desktopApi || !desktopApi.library || typeof desktopApi.library.current !== 'function') return;
+    const pagePath = window.location.pathname || '';
+    if (!pagePath.endsWith('/src/app/index.html')) return;
+    capturePollStarted = true;
+    const known = new Set();
+    (window.__mockLibraryCache || []).forEach((item) => {
+      if (item && item.id) known.add(item.id);
+    });
+    const tick = async () => {
+      try {
+        const library = await desktopApi.library.current();
+        const items = Array.isArray(library.items) ? library.items : [];
+        const nextPath = library.path || library.rootDir || '';
+        if (capturePollLibraryPath && capturePollLibraryPath !== nextPath) known.clear();
+        capturePollLibraryPath = nextPath;
+        const cachedIds = new Set((window.__mockLibraryCache || []).map((item) => item && item.id).filter(Boolean));
+        let rawIds = new Set();
+        try {
+          const scope = window.angular ? angular.element(document.body).scope() : null;
+          rawIds = new Set((scope && Array.isArray(scope.raw) ? scope.raw : []).map((item) => item && item.id).filter(Boolean));
+        } catch (err) {
+          // Ignore scope access failures; the cache check still protects against local imports.
+        }
+        const fresh = items.filter((item) => item && item.id && !known.has(item.id) && !cachedIds.has(item.id) && !rawIds.has(item.id));
+        if (fresh.length > 0) {
+          fresh.forEach((item) => known.add(item.id));
+          emitImportedItems(fresh, 'browser-capture');
+          mockEmit('library:changed', library);
+        }
+      } catch (err) {
+        // Polling is best effort; the next lifecycle or user action will reload the library.
+      }
+    };
+    setInterval(tick, 700);
+  }
+
   function emitMockLifecycle() {
     const lib = window.__mockLibrary || {
       rootDir: '/mock-library/Eagle Reverse Demo.library',
@@ -1973,6 +2026,7 @@
         });
         const storedHistory = readSetting('libraryHistory');
         settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])].filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
+        startCapturePolling();
         emitMockLifecycle();
       }).catch((err) => {
         console.warn('[eagle-shim] current library bootstrap failed', err);

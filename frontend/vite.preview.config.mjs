@@ -6,12 +6,14 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, '../../');
 const frontendPublic = path.resolve(here, 'public');
-const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692';
+const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41592';
+const apiTarget = process.env.EAGLE_API_URL || 'http://localhost:41595';
+const extensionTarget = process.env.EAGLE_EXTENSION_URL || 'http://localhost:41593';
 
 function injectPreviewScripts(html) {
   return html.replace(
     '<head>',
-    '<head>\n    <script src="/mock-data.js"></script>\n    <script src="/shims.js"></script>'
+    `<head>\n    <script>window.__EAGLE_API_BASE_URL=${JSON.stringify(apiTarget)};window.__EAGLE_EXTENSION_BASE_URL=${JSON.stringify(extensionTarget)};</script>\n    <script src="/mock-data.js"></script>\n    <script src="/shims.js"></script>`
   );
 }
 

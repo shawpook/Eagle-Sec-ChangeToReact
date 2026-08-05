@@ -41,15 +41,16 @@ import { DownloadError, getControlledDownloadService } from './controlled-downlo
 import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-service.js';
 import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
 import { searchItems, searchItemsByFilterRules } from './search-service.js';
+import { CaptureError, CaptureService } from './capture-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
 const mockLibraryDir = path.join(projectRoot, 'frontend/public/mock-library');
 const reverseRoot = path.resolve(projectRoot, '..');
 const programRoot = path.resolve(projectRoot, '../..');
-const port = Number(process.env.EAGLE_API_PORT || 41695);
-const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41692);
-const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41693);
+const port = Number(process.env.EAGLE_API_PORT || 41595);
+const thumbnailPort = Number(process.env.EAGLE_THUMBNAIL_PORT || 41592);
+const extensionPort = Number(process.env.EAGLE_EXTENSION_PORT || 41593);
 const apiToken = process.env.EAGLE_API_TOKEN || 'preview-token';
 const userDataDir = path.resolve(process.env.EAGLE_USER_DATA_DIR || path.join(projectRoot, 'test-run/user-data'));
 const stateFile = path.resolve(process.env.EAGLE_LIBRARY_STATE_FILE || path.join(userDataDir, 'library-state.json'));
@@ -126,6 +127,11 @@ const customThumbnailService = new CustomThumbnailService({
   }),
 });
 const controlledDownloader = getControlledDownloadService();
+const captureService = new CaptureService({
+  downloadService: controlledDownloader,
+  maxBatchItems: Number(process.env.EAGLE_CAPTURE_MAX_BATCH_ITEMS) || 200,
+  screenshotLimitBytes: Number(process.env.EAGLE_CAPTURE_SCREENSHOT_BYTES) || 30 * 1024 * 1024,
+});
 const itemWorkflow = new ItemWorkflowService();
 let currentLibrary = libraryService.currentLibrary();
 thumbnailTasks.recover(currentLibrary);
@@ -671,7 +677,11 @@ app.get('/', (req, res) => {
   res.json(
     ok({
       name: 'Eagle Reverse API',
-      version: '0.1.0',
+      version: '4.0.0',
+      buildVersion: 20250801,
+      platform: process.platform,
+      isVersion4: true,
+      preferences: {},
       api: ['/api/library/info', '/api/folder/list', '/api/tag/all', '/api/item/list'],
     })
   );
@@ -2775,9 +2785,22 @@ thumbnailApp.get('/file/:encoded', (req, res) => {
 });
 
 const extensionApp = express();
-extensionApp.use(cors());
-extensionApp.use(express.urlencoded({ extended: true }));
-extensionApp.use(express.json());
+const allowedExtensionOrigin = (origin) => {
+  if (!origin || origin === 'null') return true;
+  if (/^chrome-extension:\/\//i.test(origin)) return true;
+  return /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(origin);
+};
+extensionApp.use(cors({
+  origin(origin, callback) {
+    if (allowedExtensionOrigin(origin)) callback(null, true);
+    else callback(new Error('Origin not allowed'));
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Content-Length'],
+  maxAge: 600,
+}));
+extensionApp.use(express.urlencoded({ extended: true, limit: '30mb' }));
+extensionApp.use(express.json({ limit: '30mb' }));
 extensionApp.get('/', (req, res) => {
   res.json({
     status: 'success',
@@ -2786,16 +2809,7 @@ extensionApp.get('/', (req, res) => {
     platform: 'win32',
     isVersion4: true,
     buildVersion: 20250801,
-  });
-});
-extensionApp.post('/', (req, res) => {
-  const body = req.body || {};
-  res.json({
-    status: 'success',
-    data: {
-      id: `MOCK-ADDED-${Date.now()}`,
-      ...body,
-    },
+    preferences: {},
   });
 });
 
@@ -2817,52 +2831,125 @@ function normalizeExtensionArray(body, key) {
   return [];
 }
 
-async function extensionSaveResponse(req, res) {
-  const body = req.body || {};
+function sendCaptureError(res, err) {
+  const statusCode = err instanceof CaptureError ? err.statusCode : 500;
+  res.status(statusCode).json({
+    status: 'error',
+    message: err && err.message ? err.message : 'Capture failed',
+    code: err && err.code ? err.code : 'CAPTURE_FAILED',
+    ...(err && err.detail ? { detail: err.detail } : {}),
+  });
+}
+
+function hasBatchField(body) {
+  if (!body || typeof body !== 'object') return false;
+  if (Array.isArray(body.images) || Array.isArray(body.items)) return true;
+  if (Object.keys(body).some((name) => /^(images|items)\[/.test(name))) return true;
+  if (typeof body.images === 'string' && /^\[/.test(body.images.trim())) return true;
+  if (typeof body.items === 'string' && /^\[/.test(body.items.trim())) return true;
+  return false;
+}
+
+async function extensionSingleCapture(req, res) {
   try {
-    const type = body.type || 'image';
-    if (type === 'image' && (body.src || body.base64)) {
-      const data = body.src || body.base64;
-      if (!String(data).startsWith('data:')) throw new Error('Collect image must be a base64 data URI');
-      const mimeMatch = /^data:([^;,]+);base64,/.exec(String(data));
-      const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-      const ext = mime === 'image/jpeg' ? 'jpg' : mime.split('/').pop() || 'png';
-      const item = importBase64(currentLibrary, data, {
-        name: body.title || body.name || 'Collected Image',
-        ext,
-        url: body.url || '',
-        annotation: body.annotation || '',
-        tags: normalizeExtensionArray(body, 'tags'),
-        folderIDs: normalizeExtensionArray(body, 'folderIDs').concat(body.folderID ? [body.folderID] : []),
-        star: body.star,
-      });
-      res.status(201).json(ok(item));
-      return;
-    }
-    if (type === 'save-url' && (body.url || body.src)) {
-      const item = importBookmark(currentLibrary, {
-        name: body.title || body.name,
-        url: body.url || body.src,
-        annotation: body.annotation || '',
-        tags: normalizeExtensionArray(body, 'tags'),
-        folders: normalizeExtensionArray(body, 'folderIDs'),
-        star: body.star,
-      });
-      res.status(201).json(ok(item));
-      return;
-    }
-    throw new Error(`Unsupported collect type: ${type}`);
+    const item = await captureService.captureSingle(currentLibrary, req.body || {});
+    res.status(201).json(ok(item));
   } catch (err) {
-    res.status(400).json(fail(err.message));
+    sendCaptureError(res, err);
   }
 }
 
-extensionApp.post('/api/item/addFile', extensionSaveResponse);
-extensionApp.post('/api/item/addURL', extensionSaveResponse);
-extensionApp.post('/api/item/addURLs', extensionSaveResponse);
-extensionApp.post('/api/item/batchSave', extensionSaveResponse);
-extensionApp.post('/api/item/import-images', extensionSaveResponse);
-extensionApp.post('/api/collect', extensionSaveResponse);
+async function extensionBatchCapture(req, res) {
+  if (!hasBatchField(req.body)) {
+    await extensionSingleCapture(req, res);
+    return;
+  }
+  try {
+    const job = captureService.startBatch(currentLibrary, req.body || {});
+    if (req.query.sync === 'true') {
+      const done = await captureService.awaitJob(job.id);
+      res.status(201).json(ok({
+        jobId: job.id,
+        status: done.status,
+        ...done.result,
+      }));
+      return;
+    }
+    res.status(202).json(ok(job));
+  } catch (err) {
+    sendCaptureError(res, err);
+  }
+}
+
+async function extensionRootCapture(req, res) {
+  if (req.body && String(req.body.dryRun) === 'true') {
+    res.json(ok({
+      id: `MOCK-ADDED-${Date.now()}`,
+      name: req.body.title || req.body.name || 'Smoke Save',
+      ext: 'png',
+    }));
+    return;
+  }
+  if (hasBatchField(req.body)) {
+    await extensionBatchCapture(req, res);
+    return;
+  }
+  await extensionSingleCapture(req, res);
+}
+
+extensionApp.post('/', extensionRootCapture);
+extensionApp.post('/api/capture', extensionSingleCapture);
+extensionApp.post('/api/capture/batch', extensionBatchCapture);
+extensionApp.get('/api/capture/status', (req, res) => {
+  res.json(ok(captureService.status()));
+});
+extensionApp.get('/api/capture/jobs/:id', (req, res) => {
+  const task = captureService.task(req.params.id);
+  if (!task) {
+    res.status(404).json(fail('Capture job not found'));
+    return;
+  }
+  res.json(ok(task));
+});
+extensionApp.post('/api/capture/jobs/:id/cancel', (req, res) => {
+  const task = captureService.task(req.params.id);
+  if (!task) {
+    res.status(404).json(fail('Capture job not found'));
+    return;
+  }
+  res.json(ok({ cancelled: captureService.cancel(task.id), task: captureService.task(task.id) }));
+});
+extensionApp.post('/api/item/addFile', upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    await extensionSingleCapture(req, res);
+    return;
+  }
+  try {
+    const parsed = path.parse(req.file.originalname);
+    const item = importFile(currentLibrary, req.file.path, {
+      name: parsed.name,
+      originalName: req.file.originalname,
+      ext: parsed.ext.slice(1),
+      mime: req.file.mimetype,
+      url: req.body.url || '',
+      website: req.body.website || '',
+      annotation: req.body.annotation || '',
+      tags: normalizeExtensionArray(req.body, 'tags'),
+      folderIDs: normalizeExtensionArray(req.body, 'folderIDs').concat(req.body.folderID ? [req.body.folderID] : []),
+      star: req.body.star,
+    });
+    res.status(201).json(ok(item));
+  } catch (err) {
+    sendCaptureError(res, err);
+  } finally {
+    fs.rmSync(req.file.path, { force: true });
+  }
+});
+extensionApp.post('/api/item/addURL', extensionSingleCapture);
+extensionApp.post('/api/item/addURLs', extensionBatchCapture);
+extensionApp.post('/api/item/batchSave', extensionBatchCapture);
+extensionApp.post('/api/item/import-images', extensionBatchCapture);
+extensionApp.post('/api/collect', extensionRootCapture);
 extensionApp.get('/api/version', (req, res) => {
   res.json({ status: 'success', version: '4.0.0', platform: 'win32', isVersion4: true });
 });
@@ -2871,10 +2958,19 @@ extensionApp.get('/api/extension/status', (req, res) => {
     status: 'success',
     enabled: true,
     version: '1.0.0',
-    endpoints: ['/api/collect', '/api/item/addFile', '/api/item/addURL', '/api/item/batchSave', '/api/item/import-images'],
+    endpoints: ['/api/capture', '/api/capture/batch', '/api/collect', '/api/item/addFile', '/api/item/addURL', '/api/item/addURLs', '/api/item/batchSave', '/api/item/import-images'],
   });
 });
-extensionApp.post('/api/extension/collect', extensionSaveResponse);
+extensionApp.post('/api/extension/collect', extensionRootCapture);
+extensionApp.use((err, req, res, next) => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+  const code = err && err.type === 'entity.too.large' ? 'REQUEST_TOO_LARGE' : 'INVALID_CAPTURE_REQUEST';
+  const statusCode = err && err.message === 'Origin not allowed' ? 403 : err && err.statusCode ? err.statusCode : code === 'REQUEST_TOO_LARGE' ? 413 : 400;
+  res.status(statusCode).json({ status: 'error', message: err && err.message ? err.message : 'Invalid capture request', code });
+});
 
 app.use((err, req, res, next) => {
   if (res.headersSent) {

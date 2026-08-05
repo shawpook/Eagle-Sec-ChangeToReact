@@ -99,7 +99,7 @@ await check('POST 41693 collect save', async () => {
   const res = await fetch(`${extensionBase}/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ type: 'image', title: 'Smoke Save' }),
+    body: new URLSearchParams({ type: 'image', title: 'Smoke Save', dryRun: 'true' }),
   });
   if (!res.ok) throw new Error(`extension post HTTP ${res.status}`);
   const body = await res.json();

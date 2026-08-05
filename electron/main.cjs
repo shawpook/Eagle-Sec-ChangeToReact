@@ -13,6 +13,7 @@ const pluginSmokeMode = process.argv.includes('--smoke-plugin');
 const desktopSmokeMode = process.argv.includes('--smoke-desktop');
 const librarySmokeMode = process.argv.includes('--smoke-library');
 const mainWorkflowSmokeMode = process.argv.includes('--smoke-main-workflow');
+const browserCaptureUiSmokeMode = process.argv.includes('--smoke-browser-capture-ui');
 const previewDeliverySmokeMode = process.argv.includes('--smoke-preview-delivery');
 const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress');
 const videoDetailSmokeMode = process.argv.includes('--smoke-video-detail');
@@ -1072,7 +1073,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -1080,6 +1081,100 @@ app.whenReady().then(async () => {
   registerIpc();
   setupMenu();
   await loadServicePlugins();
+  if (browserCaptureUiSmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('BROWSER_CAPTURE_UI_SMOKE_TIMEOUT');
+      app.quit();
+    }, 60000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const waitFor = (check, label, timeout = 15000) => new Promise((resolve, reject) => {
+                const deadline = Date.now() + timeout;
+                const poll = async () => {
+                  try {
+                    const value = await check();
+                    if (value) { resolve(value); return; }
+                  } catch (err) {}
+                  if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                  setTimeout(poll, 75);
+                };
+                poll();
+              });
+              const scope = await waitFor(() => {
+                if (!window.angular) return null;
+                const bodyScope = angular.element(document.body).scope();
+                return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
+              }, 'original main scope', 25000);
+              const extensionBase = ${JSON.stringify(process.env.EAGLE_EXTENSION_URL || 'http://localhost:41593')};
+              const imageUrl = ${JSON.stringify(process.env.EAGLE_CAPTURE_IMAGE_URL || '')};
+              const folderId = ${JSON.stringify(process.env.EAGLE_CAPTURE_FOLDER_ID || '')};
+              const ipc = require('electron').ipcRenderer;
+              const counts = { fileUploaded: 0, fileUploadedEnd: 0, operationResult: 0 };
+              const countListener = (_event, value) => {
+                if (value && value.items) counts.operationResult += 1;
+              };
+              ipc.on('file-uploaded', () => { counts.fileUploaded += 1; });
+              ipc.on('file-uploaded-end', () => { counts.fileUploadedEnd += 1; });
+              ipc.on('import:operation-result', countListener);
+              const before = scope.raw.length;
+              const body = new URLSearchParams({
+                type: 'image',
+                src: imageUrl,
+                title: 'Browser Capture UI',
+                url: imageUrl,
+                website: 'http://127.0.0.1:1',
+                'tags[0]': 'capture-ui',
+              });
+              if (folderId) body.set('folderIDs[0]', folderId);
+              const response = await fetch(extensionBase + '/api/item/addURL', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body,
+              });
+              const payload = await response.json();
+              if (payload.status !== 'success') throw new Error('capture API failed: ' + JSON.stringify(payload));
+              const item = await waitFor(() => scope.raw.find((entry) => entry && entry.name === 'Browser Capture UI'), 'capture item refresh', 15000);
+              await waitFor(() => counts.fileUploaded >= 1 && counts.fileUploadedEnd >= 1 && counts.operationResult >= 1, 'capture UI events', 10000);
+              return {
+                before,
+                after: scope.raw.length,
+                itemId: item.id,
+                fileUploaded: counts.fileUploaded,
+                fileUploadedEnd: counts.fileUploadedEnd,
+                operationResult: counts.operationResult,
+                apiName: payload.data.name,
+              };
+            })()`
+          );
+          const current = await apiRequest('/api/library/current?includeItems=true');
+          const item = current.items.find((entry) => entry.id === result.itemId);
+          const infoDir = item ? path.join(current.imagesDir, `${item.id}.info`) : '';
+          const diskOk = Boolean(
+            item &&
+            fs.existsSync(path.join(infoDir, `${item.name}.${item.ext}`)) &&
+            fs.existsSync(path.join(infoDir, `${item.name}_thumbnail.png`)) &&
+            fs.existsSync(path.join(infoDir, 'metadata.json'))
+          );
+          const ok = result.after >= result.before + 1 &&
+            result.fileUploaded === 1 &&
+            result.fileUploadedEnd === 1 &&
+            result.operationResult === 1 &&
+            result.apiName === 'Browser Capture UI' &&
+            diskOk;
+          console.log(ok ? `BROWSER_CAPTURE_UI_OK ${JSON.stringify({ ...result, diskOk })}` : `BROWSER_CAPTURE_UI_FAIL ${JSON.stringify({ ...result, diskOk, item })}`);
+        } catch (err) {
+          console.error(`BROWSER_CAPTURE_UI_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
   if (mainWorkflowSmokeMode) {
     const timeout = setTimeout(() => {
       console.error('MAIN_WORKFLOW_SMOKE_TIMEOUT');
@@ -1130,7 +1225,13 @@ app.whenReady().then(async () => {
 
               const assertUniqueItems = (label) => {
                 const ids = scope.raw.map((item) => item && item.id).filter(Boolean);
-                if (new Set(ids).size !== ids.length) throw new Error(label + ' inserted duplicate item IDs');
+                if (new Set(ids).size !== ids.length) {
+                  const counts = ids.reduce((result, id) => {
+                    result[id] = (result[id] || 0) + 1;
+                    return result;
+                  }, {});
+                  throw new Error(label + ' inserted duplicate item IDs: ' + JSON.stringify(Object.entries(counts).filter(([, count]) => count > 1)));
+                }
               };
               const currentItem = (id) => (scope.itemMappings && scope.itemMappings[id]) || scope.raw.find((item) => item.id === id);
               const selectItems = async (ids) => {

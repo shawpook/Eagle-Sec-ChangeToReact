@@ -3,6 +3,29 @@
 eagle安装目录“C:\Program Files\Eagle”
 eagle逆向目录“C:\Program Files\Eagle\Eagle-reverse”
 
+## 浏览器捕获集成状态（2026-08-05）
+
+### 本轮已证明
+
+- 后端默认端口改为原版兼容的 `41595 API / 41592 缩略图 / 41593 扩展服务`，测试仍通过环境变量使用随机端口隔离。
+- 新增 `backend/src/capture-service.js`，统一解析原版采集表单字段：`type`、`title/name`、`src/url`、`base64/base64data`、`website/pageUrl`、`annotation`、`tags`、`folderIDs/folders/folderID`、`star`、`headers/referer/userAgent`。
+- 单图 Data URI、单 URL 受控下载、网页书签、页面多图批量任务均会创建真实 `.library` 原文件、缩略图、metadata、`cache.json` 和 `search-index.json`。
+- 远程图片继续走 `ControlledDownloadService`，保留 SSRF、重定向、超时、大小、协议、凭据、HTML 伪图片和内容类型限制；错误码映射到任务要求的稳定错误合同。
+- 批量捕获支持 `queued/running/complete/partial/failed/cancelled`、逐项结果、部分失败、取消和任务终态查询。
+- 原版主界面无需重启即可显示外部捕获新条目：`frontend/public/shims.js` 增加受控轮询，识别后端新条目后通过原版 `file-uploaded`、`file-uploaded-end`、`import:operation-result` 通知链刷新 Angular scope。
+- 新增并通过：
+  - `tests/browser-capture-protocol.mjs`
+  - `tests/browser-capture-download.mjs`
+  - `tests/browser-capture-ui-closed-loop.mjs`
+  - `tests/browser-capture-electron-extension-e2e.mjs`
+- 相邻回归通过：`collect-save-closed-loop.mjs`、`smart-extension-plugin.mjs`、`controlled-download-closed-loop.mjs`、`main-ui-workflow-closed-loop.mjs`。
+
+### 明确未完成
+
+- 工程中未发现未经修改的原版 Eagle 浏览器捕获插件包，也没有可从本机已安装扩展中确认的原版插件资产。
+- 因此“原版插件真实 E2E”未验收；当前浏览器扩展 E2E 使用 `tests/fixtures/browser-extension-mv2` 夹具，真实加载扩展，验证内容脚本→后台→`127.0.0.1:41593`→受控导入的完整消息链，但该夹具不能替代原版插件最终验收。
+- 原版 `batchSave` 桌面侧批量保存面板复用仍待原版插件请求和主窗口 IPC 联合验证。
+
 ## 目标
 
 在以下目录创建 Eagle 的 1:1 复刻项目：

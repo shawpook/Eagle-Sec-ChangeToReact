@@ -10,4 +10,5 @@ async function send(type) {
 
 document.querySelector('#collectPage').addEventListener('click', () => send('collect-page'));
 document.querySelector('#collectImage').addEventListener('click', () => send('collect-image'));
+document.querySelector('#collectScreenshot').addEventListener('click', () => send('collect-screenshot'));
 document.querySelector('#openWorkbench').addEventListener('click', () => chrome.tabs.create({ url: 'http://localhost:5176/workbench.html' }));

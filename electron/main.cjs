@@ -1379,7 +1379,31 @@ app.whenReady().then(async () => {
 
               await selectItems([droppedId]);
               scope.enterDetailMode(null, currentItem(droppedId));
+              const detailContainer = document.querySelector('#detail-container');
+              const detailLockedBeforeOriginal = document.body.classList.contains('eagle-detail-awaiting-original')
+                && detailContainer
+                && Number(getComputedStyle(detailContainer).opacity) === 0
+                && window.__eagleDetailDeliveryState
+                && window.__eagleDetailDeliveryState.itemId === droppedId
+                && window.__eagleDetailDeliveryState.mode === 'waiting';
               const detailMode = await waitFor(() => scope.isDetailMode === true && scope.current && scope.current.id === droppedId, 'detail mode');
+              const detailDelivery = await waitFor(() => {
+                const state = window.__eagleDetailDeliveryState;
+                if (!state || state.itemId !== droppedId || !state.releasedAt || state.mode !== 'canvas') return null;
+                const canvas = document.querySelector('#bitmap-viewer canvas');
+                return canvas && canvas.width > 1 && canvas.height > 1
+                  ? {
+                      itemId: state.itemId,
+                      mode: state.mode,
+                      tileCount: state.tileCount,
+                      lockedDuration: state.releasedAt - state.lockedAt,
+                      canvasWidth: canvas.width,
+                      canvasHeight: canvas.height,
+                      visible: !document.body.classList.contains('eagle-detail-awaiting-original')
+                        && Number(getComputedStyle(document.querySelector('#detail-container')).opacity) > 0,
+                    }
+                  : null;
+              }, 'detail original delivery', 20000);
               const previewResultPromise = new Promise((resolve, reject) => {
                 const ipc = require('electron').ipcRenderer;
                 const timer = setTimeout(() => reject(new Error('preview open timeout')), 10000);
@@ -1419,6 +1443,8 @@ app.whenReady().then(async () => {
                 clipboardImage: Boolean(clipboardImageItem),
                 renamedId: renamed.id,
                 detailMode,
+                detailLockedBeforeOriginal,
+                detailDelivery,
                 previewOpened: Boolean(previewResult && previewResult.ok),
               };
             })()`
@@ -1427,7 +1453,7 @@ app.whenReady().then(async () => {
           const renamed = current.items.find((item) => item.id === result.renamedId);
           const infoDir = renamed ? path.join(current.imagesDir, `${renamed.id}.info`) : '';
           const diskOk = Boolean(renamed && fs.existsSync(path.join(infoDir, `${renamed.name}.${renamed.ext}`)) && fs.existsSync(path.join(infoDir, `${renamed.name}_thumbnail.png`)));
-          const ok = result.originalPage && result.originalScope && result.originalInspector && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
+          const ok = result.originalPage && result.originalScope && result.originalInspector && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
           console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, renamed })}`);
         } catch (err) {
           console.error(`MAIN_WORKFLOW_SMOKE_ERROR ${err.stack || err.message}`);

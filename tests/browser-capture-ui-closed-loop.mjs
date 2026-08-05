@@ -123,6 +123,11 @@ try {
       return false;
     }
   }, 'Vite startup');
+  const inspectorResponse = await fetch(`http://127.0.0.1:${vitePort}/src/app/js/directives/inspector.html`);
+  const inspectorHtml = await inspectorResponse.text();
+  if (!inspectorResponse.ok || inspectorHtml.includes('palettes.length <= 1') || !inspectorHtml.includes('palettes.length === 0')) {
+    throw new Error('Vite inspector response still hides valid single-color palettes');
+  }
 
   const createResponse = await fetch(`http://127.0.0.1:${apiPort}/api/library/create`, {
     method: 'POST',
@@ -138,6 +143,17 @@ try {
   });
   const folder = await folderResponse.json();
   if (!folderResponse.ok || folder.status !== 'success') throw new Error(`Folder create failed: ${JSON.stringify(folder)}`);
+  const startupSource = path.join(tempRoot, 'Startup Palette.png');
+  fs.writeFileSync(startupSource, pngBuffer);
+  const startupImportResponse = await fetch(`http://127.0.0.1:${apiPort}/api/item/addFromPath`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: startupSource }),
+  });
+  const startupImport = await startupImportResponse.json();
+  if (!startupImportResponse.ok || startupImport.status !== 'success' || Array.isArray(startupImport.data.palettes)) {
+    throw new Error(`Startup palette fixture import failed: ${JSON.stringify(startupImport)}`);
+  }
 
   electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-browser-capture-ui'], {
     ...baseEnv,
@@ -169,6 +185,18 @@ try {
   if (!fs.existsSync(path.join(infoDir, 'Browser Capture UI.png')) || !fs.existsSync(path.join(infoDir, 'Browser Capture UI_thumbnail.png')) || !fs.existsSync(path.join(infoDir, 'metadata.json'))) {
     throw new Error(`UI capture disk files incomplete: ${infoDir}`);
   }
+  const analyzedItem = await waitFor(async () => {
+    const response = await fetch(`http://127.0.0.1:${apiPort}/api/item/info?id=${encodeURIComponent(result.itemId)}`);
+    const payload = await response.json();
+    return response.ok && Array.isArray(payload.data?.palettes) && payload.data.palettes.length > 0 ? payload.data : null;
+  }, 'captured item palette analysis');
+  if (analyzedItem.palettes.length !== 1) throw new Error(`single-color palette mismatch: ${JSON.stringify(analyzedItem.palettes)}`);
+  const startupAnalyzedItem = await waitFor(async () => {
+    const response = await fetch(`http://127.0.0.1:${apiPort}/api/item/info?id=${encodeURIComponent(startupImport.data.id)}`);
+    const payload = await response.json();
+    return response.ok && Array.isArray(payload.data?.palettes) && payload.data.palettes.length > 0 ? payload.data : null;
+  }, 'startup palette backfill');
+  if (startupAnalyzedItem.palettes.length !== 1) throw new Error(`startup palette mismatch: ${JSON.stringify(startupAnalyzedItem.palettes)}`);
   const cache = fs.readFileSync(path.join(libraryPath, 'cache.json'), 'utf8');
   const searchIndex = JSON.parse(fs.readFileSync(path.join(libraryPath, 'search-index.json'), 'utf8'));
   if (!cache.includes(result.itemId) || !searchIndex.items.some((entry) => entry.id === result.itemId && entry.name === 'Browser Capture UI')) {

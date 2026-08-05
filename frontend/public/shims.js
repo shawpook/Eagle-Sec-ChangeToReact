@@ -569,6 +569,7 @@
   };
   const customThumbnailItemIds = new Set();
   const desktopSendChannels = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
+  const paletteAnalysisRequests = new Map();
   let itemUpdateQueue = Promise.resolve();
 
   function mergeCachedItems(updatedItems) {
@@ -607,7 +608,67 @@
     imported.forEach((item) => ipcRenderer.emit('file-uploaded', item));
     if (imported.length > 0) mockEmit('file-uploaded-end', {});
     mockEmit('import:operation-result', { ok: true, channel, items: imported });
+    scheduleMissingPaletteAnalysis(imported);
     return imported;
+  }
+
+  function canAnalyzePalette(item) {
+    return Boolean(
+      item &&
+      item.id &&
+      !item.isDeleted &&
+      !item.noPreview &&
+      Number(item.width) > 0 &&
+      Number(item.height) > 0
+    );
+  }
+
+  function analyzeItemPalette(item, options) {
+    const force = Boolean(options && options.force);
+    if (!canAnalyzePalette(item) || (!force && Array.isArray(item.palettes))) return Promise.resolve(item);
+    if (paletteAnalysisRequests.has(item.id)) return paletteAnalysisRequests.get(item.id);
+
+    item.processingPalette = true;
+    mergeCachedItems(item);
+    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+    const request = fetch(`${apiBase}/api/item/refreshPalette`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id }),
+    })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok || !result || result.status !== 'success') {
+          throw new Error(result && result.message ? result.message : `Palette analysis failed: HTTP ${response.status}`);
+        }
+        const updated = result.data && result.data.item ? result.data.item : result.data;
+        if (updated && updated.id) {
+          const belongsToCurrentLibrary = (window.__mockLibraryCache || []).some((entry) => entry && entry.id === updated.id);
+          if (belongsToCurrentLibrary) {
+            mergeCachedItems(updated);
+            mockEmit('image.palette.updated', updated);
+          }
+          return updated;
+        }
+        return item;
+      })
+      .catch((err) => {
+        delete item.processingPalette;
+        const belongsToCurrentLibrary = (window.__mockLibraryCache || []).some((entry) => entry && entry.id === item.id);
+        if (belongsToCurrentLibrary) mergeCachedItems(item);
+        console.warn(`[eagle-shim] palette analysis failed for ${item.id}`, err);
+        return item;
+      })
+      .finally(() => paletteAnalysisRequests.delete(item.id));
+    paletteAnalysisRequests.set(item.id, request);
+    return request;
+  }
+
+  function scheduleMissingPaletteAnalysis(items) {
+    const list = Array.isArray(items) ? items : [items];
+    list.forEach((item) => {
+      if (canAnalyzePalette(item) && !Array.isArray(item.palettes)) analyzeItemPalette(item);
+    });
   }
 
   function previewCurrentItemId() {
@@ -632,6 +693,11 @@
   }
 
   ipcRenderer.send = function (channel, params) {
+    if (channel === 'regenerate-palette') {
+      const items = Array.isArray(params) ? params : [];
+      items.forEach((item) => analyzeItemPalette(item, { force: true }));
+      return;
+    }
     if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {
       const action = channel === 'create-library'
         ? desktopApi.library.create(params || {})
@@ -642,6 +708,7 @@
           if (library) {
             window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
             if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
+            scheduleMissingPaletteAnalysis(library.items || []);
           }
           mockEmit('library:changed', library);
           mockEmit('library:operation-result', { ok: true, action: actionName, library });
@@ -673,6 +740,7 @@
           const library = result.data;
           window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
           if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
+          scheduleMissingPaletteAnalysis(library.items || []);
           mockEmit('library:changed', library);
           mockEmit('library:operation-result', { ok: true, action: actionName, library });
         })
@@ -2240,6 +2308,7 @@
         window.__mockLibraryCache.forEach((item) => {
           if (item && item.customThumbnail) customThumbnailItemIds.add(item.id);
         });
+        scheduleMissingPaletteAnalysis(window.__mockLibraryCache);
         const storedHistory = readSetting('libraryHistory');
         settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])].filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
         startCapturePolling();

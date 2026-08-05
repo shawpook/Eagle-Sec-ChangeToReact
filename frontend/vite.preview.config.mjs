@@ -24,6 +24,13 @@ function sanitizeCollectTemplates(html) {
   );
 }
 
+function allowSingleColorPalette(html) {
+  return html.replace(
+    'selected[0].palettes.length <= 1',
+    '!selected[0].palettes || selected[0].palettes.length === 0'
+  );
+}
+
 function readPreviewIndex() {
   const file = path.join(workspaceRoot, 'src/app/index.html');
   return injectPreviewScripts(fs.readFileSync(file, 'utf8'));
@@ -72,7 +79,7 @@ export default defineConfig({
                 html = sanitizeCollectTemplates(html);
               }
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
-              res.end(injectPreviewScripts(html));
+              res.end(injectPreviewScripts(allowSingleColorPalette(html)));
               return;
             }
           }

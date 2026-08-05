@@ -39,6 +39,16 @@ async function startFixture() {
       res.end(pngBuffer);
       return;
     }
+    if (req.url === '/sample.mp4') {
+      const video = Buffer.concat([
+        Buffer.from([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
+        Buffer.from('isom'),
+        Buffer.alloc(1024, 0),
+      ]);
+      res.writeHead(200, { 'Content-Type': 'video/mp4', 'Content-Length': video.length });
+      res.end(video);
+      return;
+    }
     if (req.url === '/redirect') {
       res.writeHead(302, { Location: '/ok.png' });
       res.end();
@@ -186,6 +196,11 @@ try {
     throw new Error(`Referer download failed: ${JSON.stringify(referer.payload)}`);
   }
 
+  const video = await postCapture(server.extension, `${base}/sample.mp4`, { title: 'Video Download' });
+  if (video.response.status !== 201 || video.payload.data.ext !== 'mp4' || video.payload.data.mime !== 'video/mp4') {
+    throw new Error(`Video download failed: ${JSON.stringify(video.payload)}`);
+  }
+
   const cases = [
     ['/403', 'DOWNLOAD_HTTP_ERROR'],
     ['/404', 'DOWNLOAD_HTTP_ERROR'],
@@ -212,7 +227,7 @@ try {
 
   const cache = fs.readFileSync(path.join(libraryPath, 'cache.json'), 'utf8');
   const searchIndex = JSON.parse(fs.readFileSync(path.join(libraryPath, 'search-index.json'), 'utf8'));
-  for (const item of [ok.payload.data, redirect.payload.data, referer.payload.data]) {
+  for (const item of [ok.payload.data, redirect.payload.data, referer.payload.data, video.payload.data]) {
     if (!cache.includes(item.id) || !searchIndex.items.some((entry) => entry.id === item.id)) {
       throw new Error(`Cache/search index missing for ${item.id}`);
     }

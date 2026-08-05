@@ -130,6 +130,11 @@ export function importFile(library, source, options = {}) {
     noThumbnail: false,
     isDeleted: false,
     comments: [],
+    ...(options.medium ? { medium: options.medium } : {}),
+    ...(options.videoID ? { videoID: options.videoID } : {}),
+    ...(options.videoEmbed ? { videoEmbed: options.videoEmbed } : {}),
+    ...(options.duration ? { duration: options.duration } : {}),
+    ...(options.videoThumb ? { videoThumb: options.videoThumb } : {}),
   };
 
   fs.mkdirSync(infoDir, { recursive: true });
@@ -342,6 +347,11 @@ export function importBookmark(library, params = {}) {
       tags: params.tags || [],
       folders: params.folders || params.folderIDs || [],
       star: params.star || 0,
+      medium: params.medium || '',
+      videoID: params.videoID || '',
+      videoEmbed: params.videoEmbed || '',
+      duration: params.duration || 0,
+      videoThumb: params.videoThumb || '',
     });
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

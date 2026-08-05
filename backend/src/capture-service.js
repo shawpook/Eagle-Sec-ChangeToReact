@@ -3,6 +3,7 @@ import { importBase64, importBookmark, importUrl } from './importer.js';
 
 const DEFAULT_MAX_BATCH_ITEMS = 200;
 const DEFAULT_SCREENSHOT_BYTES = 30 * 1024 * 1024;
+const VIDEO_EXTENSIONS = new Set(['mp4', 'm4v', 'webm', 'ogv', 'ogg', 'mov', 'mkv', 'avi', 'flv', 'wmv', 'ts']);
 
 export class CaptureError extends Error {
   constructor(message, code = 'INVALID_CAPTURE_REQUEST', statusCode = 400, detail = '') {
@@ -36,6 +37,20 @@ function isHttpUrl(value) {
   } catch (err) {
     return false;
   }
+}
+
+function isVideoUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  try {
+    const extension = new URL(value.trim()).pathname.split('.').pop().toLowerCase();
+    return VIDEO_EXTENSIONS.has(extension);
+  } catch (err) {
+    return false;
+  }
+}
+
+function hasVideoMeta(body = {}) {
+  return Boolean(body.medium || body.videoID || body.videoEmbed || body.videoDuration || body.videoThumb);
 }
 
 function isLocalPath(value) {
@@ -144,6 +159,11 @@ function itemMeta(body = {}, fallback = {}) {
     modificationTime: toNumber(body.modificationTime),
     ext: cleanString(body.ext || fallback.ext),
     mime: cleanString(body.mime),
+    medium: cleanString(body.medium || fallback.medium),
+    videoID: cleanString(body.videoID || body.videoId || fallback.videoID),
+    videoEmbed: cleanString(body.videoEmbed || fallback.videoEmbed),
+    videoDuration: toNumber(body.videoDuration || body.duration || fallback.videoDuration),
+    videoThumb: cleanString(body.videoThumb || fallback.videoThumb),
   };
 }
 
@@ -200,6 +220,9 @@ function normalizeCaptureRequest(body = {}) {
   }
   if (src && isDataUri(src)) {
     return { kind: 'image-data', type, data: src, meta: itemMeta(body) };
+  }
+  if ((src || url) && isHttpUrl(src || url) && (isVideoUrl(src || url) || hasVideoMeta(body))) {
+    return { kind: 'remote-video', type, url: cleanString(src || url), meta: itemMeta(body) };
   }
   if (src && isHttpUrl(src)) {
     return { kind: 'remote-image', type, url: src, meta: itemMeta(body) };
@@ -261,6 +284,11 @@ export class CaptureService {
           tags: meta.tags,
           folders: meta.folders,
           star: meta.star,
+          medium: meta.medium,
+          videoID: meta.videoID,
+          videoEmbed: meta.videoEmbed,
+          duration: meta.videoDuration,
+          videoThumb: meta.videoThumb,
         });
       } catch (err) {
         throw new CaptureError(errorMessage(err), errorCode(err), 400, errorDetail(err));
@@ -307,6 +335,32 @@ export class CaptureService {
           userAgent: meta.userAgent,
           downloadService: this.downloadService,
           validateImage: true,
+        });
+      } catch (err) {
+        if (err instanceof DownloadError) {
+          throw new CaptureError(errorMessage(err), captureDownloadCode(errorCode(err)), err.statusCode || 502, errorDetail(err));
+        }
+        throw new CaptureError(errorMessage(err), errorCode(err), 502, errorDetail(err));
+      }
+    }
+
+    if (normalized.kind === 'remote-video') {
+      const meta = normalized.meta;
+      assertNoLocalPath(normalized.url);
+      try {
+        return await importUrl(library, normalized.url, {
+          name: meta.name,
+          website: meta.website,
+          annotation: meta.annotation,
+          tags: meta.tags,
+          folderIDs: meta.folders,
+          star: meta.star,
+          modificationTime: meta.modificationTime,
+          headers: meta.headers,
+          referer: meta.referer || meta.website,
+          userAgent: meta.userAgent,
+          downloadService: this.downloadService,
+          validateImage: false,
         });
       } catch (err) {
         if (err instanceof DownloadError) {

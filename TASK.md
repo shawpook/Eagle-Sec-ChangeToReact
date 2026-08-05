@@ -11,6 +11,7 @@ eagle逆向目录“C:\Program Files\Eagle\Eagle-reverse”
 - 新增 `backend/src/capture-service.js`，统一解析原版采集表单字段：`type`、`title/name`、`src/url`、`base64/base64data`、`website/pageUrl`、`annotation`、`tags`、`folderIDs/folders/folderID`、`star`、`headers/referer/userAgent`。
 - 单图 Data URI、单 URL 受控下载、网页书签、页面多图批量任务均会创建真实 `.library` 原文件、缩略图、metadata、`cache.json` 和 `search-index.json`。
 - 远程图片继续走 `ControlledDownloadService`，保留 SSRF、重定向、超时、大小、协议、凭据、HTML 伪图片和内容类型限制；错误码映射到任务要求的稳定错误合同。
+- 视频采集补齐两条链路：视频页书签保留 `medium/videoID/videoEmbed/duration` 元数据；直接视频 URL 走受控下载并以真实视频文件入库。
 - 批量捕获支持 `queued/running/complete/partial/failed/cancelled`、逐项结果、部分失败、取消和任务终态查询。
 - 原版主界面无需重启即可显示外部捕获新条目：`frontend/public/shims.js` 增加受控轮询，识别后端新条目后通过原版 `file-uploaded`、`file-uploaded-end`、`import:operation-result` 通知链刷新 Angular scope。
 - 新增并通过：

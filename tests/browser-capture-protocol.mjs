@@ -167,6 +167,28 @@ try {
     throw new Error(`Protocol bookmark mismatch: ${JSON.stringify(bookmark.data)}`);
   }
 
+  const videoBookmarkForm = new URLSearchParams({
+    type: 'save-url',
+    title: 'Protocol Video Bookmark',
+    url: 'https://www.youtube.com/watch?v=abc123',
+    src: 'https://www.youtube.com/watch?v=abc123',
+    medium: 'youtube',
+    videoID: 'abc123',
+    videoEmbed: 'https://www.youtube-nocookie.com/embed/abc123',
+    videoDuration: '123',
+    website: 'https://www.youtube.com/',
+  });
+  const videoBookmark = await successJson(await raw('POST', `${server.extension}/api/item/addURL`, videoBookmarkForm));
+  if (
+    videoBookmark.data.ext !== 'url' ||
+    videoBookmark.data.medium !== 'youtube' ||
+    videoBookmark.data.videoID !== 'abc123' ||
+    videoBookmark.data.videoEmbed !== 'https://www.youtube-nocookie.com/embed/abc123' ||
+    Number(videoBookmark.data.duration) !== 123
+  ) {
+    throw new Error(`Protocol video bookmark mismatch: ${JSON.stringify(videoBookmark.data)}`);
+  }
+
   const batchForm = new URLSearchParams({
     type: 'import-images',
     title: 'Batch Page',
@@ -217,14 +239,14 @@ try {
   }
 
   const libraryPath = created.data.path;
-  for (const item of [image.data, remote.data, bookmark.data, batch.data.items[0]]) {
+  for (const item of [image.data, remote.data, bookmark.data, videoBookmark.data, batch.data.items[0]]) {
     const infoDir = path.join(libraryPath, 'images', `${item.id}.info`);
     if (!fs.existsSync(path.join(infoDir, 'metadata.json'))) throw new Error(`Missing metadata for ${item.id}`);
     if (!fs.existsSync(path.join(infoDir, `${item.name}.${item.ext}`))) throw new Error(`Missing original for ${item.id}`);
   }
   const cache = fs.readFileSync(path.join(libraryPath, 'cache.json'), 'utf8');
   const searchIndex = JSON.parse(fs.readFileSync(path.join(libraryPath, 'search-index.json'), 'utf8'));
-  for (const item of [image.data, remote.data, bookmark.data, batch.data.items[0]]) {
+  for (const item of [image.data, remote.data, bookmark.data, videoBookmark.data, batch.data.items[0]]) {
     if (!cache.includes(item.id)) throw new Error(`Cache missing ${item.id}`);
     if (!searchIndex.items.some((entry) => entry.id === item.id)) throw new Error(`Search index missing ${item.id}`);
   }

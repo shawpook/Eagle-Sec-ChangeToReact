@@ -1303,6 +1303,18 @@
       viewerPluginMap: {},
       viewerURL: {},
       getViewerPlugin: () => undefined,
+      getViewerPluginExt(item) {
+        if (!item) return undefined;
+        if (this.viewerPluginMap && this.viewerPluginMap[item.ext]) return 'plugin';
+        const imageTypes = {
+          jpg: true, jpeg: true, png: true, webp: true, avif: true, insp: true,
+          jfif: true, jpe: true, jxl: true, bmp: true, tif: true, tiff: true,
+          hif: true, heif: true, heic: true,
+        };
+        if (imageTypes[item.ext]) return 'image';
+        if (item.customThumbnail && window.EagleConfig && !window.EagleConfig.SUPPORT_FORMATS[item.ext]) return 'custom';
+        return item.ext;
+      },
       allowZoom: () => false,
       getInspectorPluginURL: () => '',
       hasInspectorPlugin: () => false,

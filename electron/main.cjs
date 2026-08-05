@@ -15,6 +15,7 @@ const librarySmokeMode = process.argv.includes('--smoke-library');
 const mainWorkflowSmokeMode = process.argv.includes('--smoke-main-workflow');
 const previewDeliverySmokeMode = process.argv.includes('--smoke-preview-delivery');
 const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress');
+const videoDetailSmokeMode = process.argv.includes('--smoke-video-detail');
 const regressionHostMode = process.argv.includes('--regression-host');
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
@@ -1071,7 +1072,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || regressionHostMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -1658,6 +1659,110 @@ app.whenReady().then(async () => {
           console.log(ok ? `EXPORT_PROGRESS_SMOKE_OK ${JSON.stringify({ ...result, flatExists, packExists, folderExists, cancelFiles, cancelPartial, concurrentFiles, concurrentOk, errorOk, revealOk, shellCalls })}` : `EXPORT_PROGRESS_SMOKE_FAIL ${JSON.stringify({ ...result, flatExists, packExists, folderExists, cancelFiles, cancelPartial, concurrentFiles, concurrentOk, errorOk, revealOk, shellCalls })}`);
         } catch (err) {
           console.error(`EXPORT_PROGRESS_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
+  if (videoDetailSmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('VIDEO_DETAIL_SMOKE_TIMEOUT');
+      app.quit();
+    }, 60000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const waitFor = (check, label, timeout = 25000) => new Promise((resolve, reject) => {
+                const deadline = Date.now() + timeout;
+                const poll = async () => {
+                  try {
+                    const value = await check();
+                    if (value) { resolve(value); return; }
+                  } catch (err) {}
+                  if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                  setTimeout(poll, 60);
+                };
+                poll();
+              });
+              const scope = await waitFor(() => {
+                if (!window.angular) return null;
+                const bodyScope = angular.element(document.body).scope();
+                return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
+              }, 'main scope');
+              const videoItem = scope.raw.find((item) => item && !item.isDeleted && (item.ext === 'mp4' || item.ext === 'webm'));
+              if (!videoItem) throw new Error('No video item in current library');
+              scope.selected = [videoItem];
+              scope.selectedMappings = {};
+              scope.current = videoItem;
+              if (typeof scope.updateSelection === 'function') scope.updateSelection();
+              scope.enterDetailMode(null, videoItem);
+              scope.$evalAsync();
+              await waitFor(() => scope.isDetailMode && scope.current && scope.current.id === videoItem.id, 'detail mode');
+              const player = await waitFor(() => {
+                const element = document.querySelector('.detail-wrap video');
+                return element && !element.error && element.readyState >= 1 && element.videoWidth > 0 && element.videoHeight > 0
+                  ? {
+                      src: element.currentSrc || element.src || '',
+                      readyState: element.readyState,
+                      videoWidth: element.videoWidth,
+                      videoHeight: element.videoHeight,
+                      duration: Number(element.duration) || 0,
+                    }
+                  : null;
+              }, 'native detail video', 25000).catch((err) => {
+                const element = document.querySelector('.detail-wrap video');
+                return {
+                  error: err.message,
+                  hasVideo: Boolean(element),
+                  hasMpv: Boolean(document.querySelector('.detail-wrap mpv-video')),
+                  readyState: element ? element.readyState : -1,
+                  src: element ? (element.currentSrc || element.src || '') : '',
+                  videoCount: document.querySelectorAll('video').length,
+                  initDetailMode: Boolean(scope.initDetailMode),
+                  useMpvPlayer: Boolean(scope.useMpvPlayer),
+                  detailWrapCount: document.querySelectorAll('.detail-wrap').length,
+                  detailHtml: String(document.querySelector('.detail-wrap')?.innerHTML || '').slice(0, 500),
+                  detailContainerHtml: String(document.querySelector('#detail-container')?.innerHTML || '').slice(0, 500),
+                  contentPanelClass: document.querySelector('.content-panel.detail-mode')?.className || '',
+                  currentExt: scope.current && scope.current.ext,
+                };
+              });
+              let interaction = null;
+              const videoElement = document.querySelector('.detail-wrap video');
+              if (videoElement && !videoElement.error && videoElement.readyState >= 1) {
+                videoElement.volume = 0.5;
+                videoElement.currentTime = 0.1;
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                interaction = {
+                  volume: videoElement.volume,
+                  currentTime: videoElement.currentTime,
+                  duration: Number(videoElement.duration) || 0,
+                };
+              }
+              return {
+                videoItemId: videoItem.id,
+                videoExt: videoItem.ext,
+                detailMode: Boolean(scope.isDetailMode),
+                player,
+                interaction,
+              };
+            })()`
+          );
+          const ok = result.detailMode
+            && result.player && !result.player.error
+            && result.player.videoWidth > 0
+            && result.player.videoHeight > 0
+            && result.interaction
+            && Math.abs(result.interaction.volume - 0.5) < 0.01
+            && Number(result.interaction.currentTime) > 0.05;
+          console.log(ok ? `VIDEO_DETAIL_SMOKE_OK ${JSON.stringify(result)}` : `VIDEO_DETAIL_SMOKE_FAIL ${JSON.stringify(result)}`);
+        } catch (err) {
+          console.error(`VIDEO_DETAIL_SMOKE_ERROR ${err.stack || err.message}`);
         }
         clearTimeout(timeout);
         app.quit();

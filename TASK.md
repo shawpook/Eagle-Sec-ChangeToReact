@@ -755,6 +755,13 @@ http://localhost:41595/
 - 源库保护：`export-progress-closed-loop.mjs` 对比导出前后整个 `.library` 文件哈希，确认导出不修改原文件、metadata、cache 或 search index。
 - 仍未覆盖：任意绝对路径 IPC 的独立注入测试、符号链接/junction 越界、shell/clipboard/drag 失败注入、视频当前帧复制/保存；全量隔离回归仍受既有 `thumbnail-task`/`custom-thumbnail` 并发测试不稳定影响。
 
+### 主界面视频详情播放修复（2026-08-05）
+
+- 定位到原版主界面详情模式视频不显示的根因：`index.html` 的 `ng-switch` 依赖 `pluginModule.previewExtension.getViewerPluginExt(current)`，而 shim 的 `pluginModule` 只提供了 `getViewerPlugin`，没有提供该分流函数，导致视频分支不渲染。
+- 在 `frontend/public/shims.js` 的 `pluginModule.previewExtension` 中补充默认 `getViewerPluginExt()`，按扩展名区分 plugin/image/custom/原生扩展，使主界面详情模式的视频 `<video media-element>` 分支能够进入。
+- 新增 `tests/video-detail-mode-closed-loop.mjs` 和 `--smoke-video-detail`：真实导入 WebM 后进入原版主界面详情模式，验证原生 video 元素 readyState、videoWidth/videoHeight、src、volume 和 seek。
+- 已验证 `preview-delivery-closed-loop.mjs`、`main-ui-workflow-closed-loop.mjs` 与新增视频详情测试通过。
+
 ```text
 41592 缩略图静态服务
 41593 浏览器扩展服务

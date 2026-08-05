@@ -418,6 +418,15 @@
       });
       return;
     }
+    if (desktopApi && desktopApi.duplicates && channel === 'empty-trash') {
+      const ids = String(params || '').split(',').map((id) => id.trim()).filter(Boolean);
+      if (ids.length > 0) {
+        desktopApi.duplicates.emptyTrash(ids, { force: true }).catch((err) => {
+          mockEmit('item:operation-result', { ok: false, action: channel, error: err.message });
+        });
+      }
+      return;
+    }
     if (desktopApi && desktopApi.item && (channel === 'images-change' || channel === 'image-change')) {
       const items = channel === 'images-change' ? params : [params];
       const snapshots = (Array.isArray(items) ? items : []).filter((item) => item && item.id).map((item) => structuredClone(item));
@@ -1562,6 +1571,69 @@
     }
   }, 50);
   setTimeout(() => clearInterval(tinyPinyinGuard), 6000);
+
+  async function pollDuplicateJob(jobId, cancelToken, onProgress, total) {
+    const deadline = Date.now() + 120000;
+    while (Date.now() < deadline) {
+      if (cancelToken && typeof cancelToken.isCancelled === 'function' && cancelToken.isCancelled()) {
+        if (desktopApi && desktopApi.duplicates) desktopApi.duplicates.cancel(jobId).catch(() => {});
+        return { cancelled: true, groups: [] };
+      }
+      const job = await desktopApi.duplicates.status(jobId);
+      if (job.status === 'complete') {
+        if (typeof onProgress === 'function' && total > 0) onProgress(total, total);
+        return job.result || { groups: [] };
+      }
+      if (job.status === 'error') throw new Error(job.message || 'Duplicate scan failed');
+      if (job.status === 'cancelled') return { cancelled: true, groups: [] };
+      if (typeof onProgress === 'function' && total > 0) {
+        onProgress(Math.round((total * Number(job.progress || 0)) / 100), total);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    throw new Error('Duplicate scan timeout');
+  }
+
+  function enrichDuplicateGroups(groups, sourceItems) {
+    const mapping = new Map((sourceItems || []).map((item) => [item.id, item]));
+    return (groups || []).map((group) => ({
+      ...group,
+      items: (group.items || []).map((entry) => mapping.get(entry.id) || entry),
+    }));
+  }
+
+  function patchDuplicateChecker() {
+    if (!window.eagle) return;
+    if (window.eagle.duplicateChecker && window.eagle.duplicateChecker.__shimmed) return;
+    if (!desktopApi || !desktopApi.duplicates) return;
+    window.eagle.duplicateChecker = {
+      __shimmed: true,
+      async findDuplicateFiles(items, cancelToken, options = {}) {
+        const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
+        const list = Array.isArray(items) ? items : [];
+        const job = await desktopApi.duplicates.scan({
+          method: 'same',
+          ids: list.map((item) => item.id),
+          async: true,
+        });
+        const result = await pollDuplicateJob(job.id, cancelToken, onProgress, list.length);
+        if (result.cancelled) return { cancel: true, groups: [] };
+        return { groups: enrichDuplicateGroups(result.groups, list) };
+      },
+      async findSimilarFiles(items, cancelToken, options = {}) {
+        const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
+        const list = Array.isArray(items) ? items : [];
+        // 本轮只承诺 exact；similar 不返回伪造结果。
+        if (typeof onProgress === 'function' && list.length > 0) onProgress(list.length, list.length);
+        return { groups: [], fingerprintMap: {} };
+      },
+    };
+  }
+
+  const duplicateCheckerGuard = setInterval(() => {
+    if (window.eagle && window.eagle.duplicateChecker && desktopApi && desktopApi.duplicates) patchDuplicateChecker();
+  }, 100);
+  setTimeout(() => clearInterval(duplicateCheckerGuard), 8000);
 
   function emitMockLifecycle() {
     const lib = window.__mockLibrary || {

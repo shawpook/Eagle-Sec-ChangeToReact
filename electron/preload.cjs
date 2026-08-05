@@ -33,6 +33,13 @@ const api = {
     restore: (ids) => ipcRenderer.invoke('item:restore', ids),
     onOperationResult: (callback) => ipcRenderer.on('item:operation-result', (_event, result) => callback(result)),
   },
+  duplicates: {
+    scan: (params) => ipcRenderer.invoke('duplicates:scan', params),
+    merge: (params) => ipcRenderer.invoke('duplicates:merge', params),
+    emptyTrash: (ids, options) => ipcRenderer.invoke('duplicates:empty-trash', { ids, ...(options || {}) }),
+    status: (jobId) => ipcRenderer.invoke('duplicates:status', jobId),
+    cancel: (jobId) => ipcRenderer.invoke('duplicates:cancel', jobId),
+  },
   openPlugin: (payload) => ipcRenderer.invoke('plugin:open', payload),
   openFile: (options) => ipcRenderer.invoke('dialog:openFile', options),
   listDirectory: (target) => ipcRenderer.invoke('fs:list', target),

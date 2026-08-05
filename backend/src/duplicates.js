@@ -1,3 +1,4 @@
+// 重复扫描服务：exact 按真实文件 hash 分组，similar 本轮不承诺视觉相似结果。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { itemOriginalPath } from './library-store.js';
@@ -29,25 +30,61 @@ function nameSimilarity(left, right) {
       matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
     }
   }
-  const distance = matrix[a.length][b.length];
-  return 1 - distance / Math.max(a.length, b.length);
+  return 1 - matrix[a.length][b.length] / Math.max(a.length, b.length);
+}
+
+function groupId() {
+  return crypto.randomUUID();
+}
+
+function groupFromItems(items) {
+  return {
+    id: groupId(),
+    key: items.map((item) => item.id).join('|'),
+    items,
+  };
+}
+
+export function findDuplicatesWithProgress(library, items = library.items, options = {}) {
+  const onProgress = typeof options.onProgress === 'function' ? options.onProgress : () => {};
+  const isCancelled = typeof options.isCancelled === 'function' ? options.isCancelled : () => false;
+  const total = items.length;
+  let current = 0;
+  const sizeBuckets = new Map();
+  for (const item of items) {
+    const size = String(item.size || 0);
+    if (!sizeBuckets.has(size)) sizeBuckets.set(size, []);
+    sizeBuckets.get(size).push(item);
+  }
+
+  const groups = [];
+  for (const bucket of sizeBuckets.values()) {
+    if (bucket.length < 2) {
+      current += bucket.length;
+      onProgress(current, total);
+      continue;
+    }
+    const hashBuckets = new Map();
+    for (const item of bucket) {
+      if (isCancelled()) {
+        return { cancelled: true, groups: [] };
+      }
+      const hash = fileHash(itemOriginalPath(library, item));
+      const key = hash || `${String(item.name).toLowerCase()}:${item.ext}`;
+      if (!hashBuckets.has(key)) hashBuckets.set(key, []);
+      hashBuckets.get(key).push(item);
+      current += 1;
+      onProgress(current, total);
+    }
+    for (const duplicateItems of hashBuckets.values()) {
+      if (duplicateItems.length > 1) groups.push(groupFromItems(duplicateItems));
+    }
+  }
+  return { cancelled: false, groups };
 }
 
 export function findDuplicates(library, items = library.items) {
-  const buckets = new Map();
-  for (const item of items) {
-    const file = itemOriginalPath(library, item);
-    const hash = fileHash(file);
-    const key = hash ? `${item.size}:${hash}` : `${String(item.name).toLowerCase()}:${item.ext}`;
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key).push(item);
-  }
-  return Array.from(buckets.values())
-    .filter((group) => group.length > 1)
-    .map((group) => ({
-      key: `${group[0].size}:${fileHash(itemOriginalPath(library, group[0])) || `${group[0].name}:${group[0].ext}`}`,
-      items: group.map((item) => ({ id: item.id, name: item.name, ext: item.ext, size: item.size })),
-    }));
+  return findDuplicatesWithProgress(library, items).groups;
 }
 
 export function findSimilarDuplicates(library, items = library.items, threshold = 0.55) {
@@ -69,12 +106,7 @@ export function findSimilarDuplicates(library, items = library.items, threshold 
         seen.add(j);
       }
     }
-    if (group.length > 1) {
-      groups.push({
-        key: `${group[0].size}:similar:${group.map((item) => item.id).join('|')}`,
-        items: group.map((item) => ({ id: item.id, name: item.name, ext: item.ext, size: item.size })),
-      });
-    }
+    if (group.length > 1) groups.push(groupFromItems(group));
   }
   return groups;
 }

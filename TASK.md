@@ -583,6 +583,16 @@ npm run electron
 - `shims.js` 的 `folders-change` 在 Electron 结构写入成功后同步 `window.__mockLibrary` 与缓存，避免后续快捷搜索/侧栏数据过期。
 - 本轮未完成：原版侧栏拖拽排序的逐项 E2E、标签管理面板/智能文件夹面板完整状态机验收，以及组织操作的后端重启专项测试属于下一批。
 
+### 批量管理与重复合并更新（2026-08-05）
+
+- `backend/src/duplicates.js` 改为返回原版面板需要的 `group.id/items` 形状，并新增 `findDuplicatesWithProgress()`，exact 扫描按真实文件 hash 逐项推进；similar 本轮不承诺，不伪造视觉相似结果。
+- `/api/item/duplicates/scan` 与 `/api/v2/item/duplicates/scan` 支持 `async: true` 创建扫描任务，任务带进度、完成/错误/取消状态；Electron preload/main 增加 `duplicates.scan/status/cancel/merge/emptyTrash` 桥接。
+- `/api/item/mergeDuplicates` 与 V2 共用真实合并逻辑：可传入 `keep` 合并数据，默认把冗余条目按原版语义移入回收站；`removeMode: permanent` 时使用 staging 临时目录安全删除，失败回滚并重建索引。
+- 新增 `/api/item/emptyTrash`、`/api/v2/item/emptyTrash`，只允许删除已回收条目（可显式 `force`），删除前确认路径在资源库内。
+- `frontend/public/shims.js` 用后端合同替换原版 `eagle.duplicateChecker`：exact 扫描走异步任务并上报真实进度，`empty-trash` IPC 转发到受控后端，similar 返回空结果而不是假成功。
+- 批量重命名补齐 folder/tag/smartFolder 合同：新增 `/api/folder/batchRename`、`/api/v2/folder/batchRename`、`/api/tag/batchRename`、`/api/v2/tag/batchRename`、`/api/v2/smartFolder/batchRename`，各自走结构服务，不把条目文件重命名逻辑套到文件夹/标签。
+- 本轮未完成：原版 duplicate/merge 面板完整 E2E、批量重命名失败注入、大库扫描内存/并发基准和重启恢复专项测试属于下一批。
+
 ### 仍未实现 / 未验收
 
 - 用户已明确暂不推进独立发布构建；现有构建仍只转换 2 个模块且未包含 `src/app`，不计为已完成。

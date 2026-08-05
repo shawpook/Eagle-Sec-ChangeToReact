@@ -509,6 +509,27 @@ function registerIpc() {
     body: { ids: Array.isArray(ids) ? ids : [ids] },
   }));
 
+  ipcMain.handle('duplicates:scan', (event, params = {}) => apiRequest('/api/item/duplicates/scan', {
+    method: 'POST',
+    body: params,
+  }));
+
+  ipcMain.handle('duplicates:merge', (event, params = {}) => apiRequest('/api/item/mergeDuplicates', {
+    method: 'POST',
+    body: params,
+  }));
+
+  ipcMain.handle('duplicates:empty-trash', (event, params = {}) => apiRequest('/api/item/emptyTrash', {
+    method: 'POST',
+    body: params,
+  }));
+
+  ipcMain.handle('duplicates:status', (event, jobId) => apiRequest(`/api/jobs/${encodeURIComponent(jobId)}`));
+  ipcMain.handle('duplicates:cancel', (event, jobId) => apiRequest(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, {
+    method: 'POST',
+    body: {},
+  }));
+
   ipcMain.handle('item:set-custom-thumbnail', (event, params = {}) => apiRequest('/api/item/setCustomThumbnail', {
     method: 'POST',
     body: params,

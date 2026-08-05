@@ -25,7 +25,7 @@ import { configureThumbnailTaskService, exportItem, exportLibrary, importBase64,
 import { thumbnailPath } from './thumbnailer.js';
 import { exportCsvFile, itemsToCsv } from './csv-export.js';
 import { importEaglepack, packLibrary } from './eaglepack.js';
-import { findDuplicates, findSimilarDuplicates } from './duplicates.js';
+import { findDuplicates, findDuplicatesWithProgress, findSimilarDuplicates } from './duplicates.js';
 import { getSmartFolderItems } from './smart-folders.js';
 import { getSerializableRules, validateConditions } from './smart-folder-rules.js';
 import { computeStats, folderStats, repairLibrary } from './library-stats.js';
@@ -259,6 +259,59 @@ async function startPathImportJob(job, options = {}) {
   });
 }
 
+async function startDuplicateScanJob(job, options = {}) {
+  // 异步重复扫描任务：通过 job 状态轮询真实进度并支持取消。
+  const method = options.method === 'similar' ? 'similar' : 'same';
+  const ids = Array.isArray(options.ids) ? options.ids : [];
+  const items = ids.length > 0 ? readItems().filter((item) => ids.includes(item.id)) : readItems();
+  const startedAt = Date.now();
+  updateJob(job, {
+    status: 'running',
+    progress: 0,
+    message: `Scanning ${items.length} items`,
+    cancelled: false,
+    result: null,
+  });
+  if (method === 'similar') {
+    updateJob(job, {
+      status: 'complete',
+      progress: 100,
+      message: 'Similar scan is not part of this batch',
+      result: { method, groups: [], elapsedMs: 0, scanned: items.length, cancelled: false },
+    });
+    return;
+  }
+  try {
+    const result = findDuplicatesWithProgress(currentLibrary, items, {
+      onProgress: (current, total) => {
+        if (job.cancelled) return;
+        updateJob(job, {
+          progress: total > 0 ? Math.round((current / total) * 100) : 100,
+          message: `Hashed ${current}/${total}`,
+        });
+      },
+      isCancelled: () => job.cancelled === true,
+    });
+    if (result.cancelled) {
+      updateJob(job, {
+        status: 'cancelled',
+        progress: 100,
+        message: 'Duplicate scan cancelled',
+        result: { method, groups: [], elapsedMs: Date.now() - startedAt, scanned: items.length, cancelled: true },
+      });
+      return;
+    }
+    updateJob(job, {
+      status: 'complete',
+      progress: 100,
+      message: 'Duplicate scan complete',
+      result: { method, groups: result.groups, elapsedMs: Date.now() - startedAt, scanned: items.length, cancelled: false },
+    });
+  } catch (err) {
+    updateJob(job, { status: 'error', progress: 100, message: err.message, error: err.message });
+  }
+}
+
 async function startFolderImportJob(job, options = {}) {
   updateJob(job, {
     status: 'running',
@@ -439,6 +492,65 @@ function batchRenameItems(ids, options = {}) {
     }
   });
   if (changed.length > 0) saveItems(currentLibrary);
+  return changed;
+}
+
+function batchRenameFolders(ids, options = {}) {
+  const mode = options.mode === 'replace' ? 'replace' : 'format';
+  const startAt = Number(options.startAt) || 1;
+  const changed = [];
+  ids.forEach((id, index) => {
+    const folder = findFolder(id);
+    if (!folder) return;
+    const oldName = folder.name;
+    let newName = mode === 'replace'
+      ? String(oldName).split(options.find || '').join(options.replace || '')
+      : formatBatchName(folder, options.format || '*', startAt + index);
+    newName = applyTextCase(newName, options.textCase);
+    if (newName !== oldName) {
+      updateFolder(currentLibrary, folder.id, { name: newName });
+      changed.push({ id: folder.id, name: newName, oldName });
+    }
+  });
+  return changed;
+}
+
+function batchRenameSmartFolders(ids, options = {}) {
+  const mode = options.mode === 'replace' ? 'replace' : 'format';
+  const startAt = Number(options.startAt) || 1;
+  const changed = [];
+  ids.forEach((id, index) => {
+    const folder = findSmartFolder(smartFolders, id);
+    if (!folder) return;
+    const oldName = folder.name;
+    let newName = mode === 'replace'
+      ? String(oldName).split(options.find || '').join(options.replace || '')
+      : formatBatchName(folder, options.format || '*', startAt + index);
+    newName = applyTextCase(newName, options.textCase);
+    if (newName !== oldName) {
+      updateSmartFolder(currentLibrary, folder.id, { name: newName });
+      changed.push({ id: folder.id, name: newName, oldName });
+    }
+  });
+  return changed;
+}
+
+function batchRenameTags(names, options = {}) {
+  const mode = options.mode === 'replace' ? 'replace' : 'format';
+  const startAt = Number(options.startAt) || 1;
+  const changed = [];
+  names.forEach((name, index) => {
+    const oldName = String(name || '').trim();
+    if (!oldName) return;
+    let newName = mode === 'replace'
+      ? oldName.split(options.find || '').join(options.replace || '')
+      : formatBatchName({ name: oldName, modificationTime: Date.now() }, options.format || '*', startAt + index);
+    newName = applyTextCase(newName, options.textCase);
+    if (newName && newName !== oldName) {
+      replaceTag(oldName, newName);
+      changed.push({ name: newName, oldName });
+    }
+  });
   return changed;
 }
 
@@ -920,6 +1032,19 @@ app.post('/api/tag/create', (req, res) => {
   }
 });
 
+app.post('/api/tag/batchRename', (req, res) => {
+  try {
+    const names = Array.isArray(req.body.names) ? req.body.names : [];
+    if (names.length === 0) {
+      res.status(400).json(fail('names are required'));
+      return;
+    }
+    res.json(ok(batchRenameTags(names, req.body)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
 app.post('/api/tag/remove', (req, res) => {
   try {
     removeTag(req.body.name);
@@ -1036,6 +1161,19 @@ app.post('/api/folder/rename', (req, res) => {
     return;
   }
   res.json(ok(folder));
+});
+
+app.post('/api/folder/batchRename', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(batchRenameFolders(ids, req.body)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.post('/api/folder/update', (req, res) => {
@@ -1732,7 +1870,110 @@ app.get('/api/item/duplicates', (req, res) => {
   res.json(ok(findDuplicates(currentLibrary)));
 });
 
+function permanentDeleteItems(library, ids, options = {}) {
+  // 先暂存待删目录，落盘成功后再清理，失败时恢复原条目和目录。
+  const idSet = new Set(ids);
+  const items = library.items.filter((item) => idSet.has(item.id));
+  if (items.length !== idSet.size) {
+    const missingId = ids.find((id) => !items.some((item) => item.id === id));
+    throw new Error(`Item not found: ${missingId}`);
+  }
+  if (!options.force && items.some((item) => !item.isDeleted)) {
+    throw new Error('Items must be in trash before permanent deletion');
+  }
+  const previousItems = library.items.slice();
+  const staged = [];
+  const root = library.rootDir;
+  try {
+    for (const item of items) {
+      const dir = path.join(root, 'images', `${item.id}.info`);
+      if (fs.existsSync(dir)) {
+        const stagedDir = path.join(root, 'images', `.delete-${item.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        fs.renameSync(dir, stagedDir);
+        staged.push({ dir, stagedDir });
+      }
+    }
+    library.items = library.items.filter((item) => !idSet.has(item.id));
+    saveItems(library);
+    for (const entry of staged) fs.rmSync(entry.stagedDir, { recursive: true, force: true });
+    return { count: items.length, removedIds: ids };
+  } catch (err) {
+    library.items = previousItems;
+    for (const entry of staged.slice().reverse()) {
+      if (fs.existsSync(entry.stagedDir) && !fs.existsSync(entry.dir)) fs.renameSync(entry.stagedDir, entry.dir);
+    }
+    try {
+      saveItems(library);
+    } catch (rollbackError) {
+      // 保留触发回滚的根因。
+    }
+    throw err;
+  }
+}
+
+function mergeDuplicatesResponse(req, res) {
+  // 合并保留项元数据，冗余项默认进入回收站，permanent 模式才清理真实目录。
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    const keepId = req.body.keepId || ids[0];
+    const removeIds = Array.isArray(req.body.removeIds) ? req.body.removeIds : ids.slice(1);
+    if (!keepId || removeIds.length === 0) {
+      res.status(400).json(fail('keepId and removeIds are required'));
+      return;
+    }
+    if (removeIds.includes(keepId)) {
+      res.status(400).json(fail('removeIds must not include keepId'));
+      return;
+    }
+    let keep = readItems().find((item) => item.id === keepId);
+    if (!keep) {
+      res.status(404).json(fail('Keep item not found'));
+      return;
+    }
+    const removeItems = readItems().filter((item) => removeIds.includes(item.id));
+    if (req.body.keep && typeof req.body.keep === 'object') {
+      const patch = { ...req.body.keep, id: keepId };
+      delete patch.itemID;
+      delete patch.id;
+      patch.id = keepId;
+      keep = itemWorkflow.updateMany(currentLibrary, [patch], { contract: 'v2' })[0];
+    } else {
+      for (const remove of removeItems) {
+        keep.tags = [...new Set([...(keep.tags || []), ...(remove.tags || [])])];
+        keep.folders = [...new Set([...(keep.folders || []), ...(remove.folders || [])])];
+        keep.comments = [...(keep.comments || []), ...(remove.comments || [])];
+        if (!keep.annotation && remove.annotation) keep.annotation = remove.annotation;
+        if (!keep.url && remove.url) keep.url = remove.url;
+        if (!keep.star && remove.star) keep.star = remove.star;
+      }
+      keep.lastModified = Date.now();
+    }
+    if (req.body.removeMode === 'permanent' || req.body.permanent) {
+      permanentDeleteItems(currentLibrary, removeIds, { force: true });
+    } else {
+      const now = Date.now();
+      for (const remove of removeItems) {
+        remove.isDeleted = true;
+        remove.deletedTime = now;
+      }
+      saveItems(currentLibrary);
+    }
+    res.json(ok(keep));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+}
+
 app.post('/api/item/duplicates/scan', (req, res) => {
+  if (req.body.async === true) {
+    const job = createJob('duplicate-scan', (jobInstance) => startDuplicateScanJob(jobInstance, {
+      method: req.body.method,
+      ids: req.body.ids,
+      threshold: req.body.threshold,
+    }));
+    res.status(202).json(ok(job));
+    return;
+  }
   const method = req.body.method === 'similar' ? 'similar' : 'same';
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
   const items = ids.length > 0 ? readItems().filter((item) => ids.includes(item.id)) : readItems();
@@ -1744,28 +1985,20 @@ app.post('/api/item/duplicates/scan', (req, res) => {
 });
 
 app.post('/api/item/mergeDuplicates', (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-  const keepId = req.body.keepId || ids[0];
-  const removeIds = req.body.removeIds || ids.slice(1);
-  if (!keepId || removeIds.length === 0) {
-    res.status(400).json(fail('keepId and removeIds are required'));
-    return;
+  mergeDuplicatesResponse(req, res);
+});
+
+app.post('/api/item/emptyTrash', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(permanentDeleteItems(currentLibrary, ids, { force: req.body.force === true })));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
   }
-  const keep = readItems().find((item) => item.id === keepId);
-  if (!keep) {
-    res.status(404).json(fail('Keep item not found'));
-    return;
-  }
-  for (const removeId of removeIds) {
-    const remove = readItems().find((item) => item.id === removeId);
-    if (!remove) continue;
-    keep.tags = [...new Set([...(keep.tags || []), ...(remove.tags || [])])];
-    keep.folders = [...new Set([...(keep.folders || []), ...(remove.folders || [])])];
-    keep.comments = [...(keep.comments || []), ...(remove.comments || [])];
-    currentLibrary.items = currentLibrary.items.filter((item) => item.id !== removeId);
-  }
-  saveItems(currentLibrary);
-  res.json(ok(keep));
 });
 
 app.post('/api/script/inject', (req, res) => {
@@ -1938,31 +2171,19 @@ app.post('/api/v2/item/thumbnailTask/cancel', (req, res) => {
 });
 
 app.post('/api/v2/item/mergeDuplicates', (req, res) => {
-  const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
-  const keepId = req.body.keepId || ids[0];
-  const removeIds = req.body.removeIds || ids.slice(1);
-  if (!keepId || removeIds.length === 0) {
-    res.status(400).json(fail('keepId and removeIds are required'));
-    return;
-  }
-  const keep = readItems().find((item) => item.id === keepId);
-  if (!keep) {
-    res.status(404).json(fail('Keep item not found'));
-    return;
-  }
-  for (const removeId of removeIds) {
-    const remove = readItems().find((item) => item.id === removeId);
-    if (!remove) continue;
-    keep.tags = [...new Set([...(keep.tags || []), ...(remove.tags || [])])];
-    keep.folders = [...new Set([...(keep.folders || []), ...(remove.folders || [])])];
-    keep.comments = [...(keep.comments || []), ...(remove.comments || [])];
-    currentLibrary.items = currentLibrary.items.filter((item) => item.id !== removeId);
-  }
-  saveItems(currentLibrary);
-  res.json(ok(keep));
+  mergeDuplicatesResponse(req, res);
 });
 
 app.post('/api/v2/item/duplicates/scan', (req, res) => {
+  if (req.body.async === true) {
+    const job = createJob('duplicate-scan', (jobInstance) => startDuplicateScanJob(jobInstance, {
+      method: req.body.method,
+      ids: req.body.ids,
+      threshold: req.body.threshold,
+    }));
+    res.status(202).json(ok(job));
+    return;
+  }
   const method = req.body.method === 'similar' ? 'similar' : 'same';
   const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
   const items = ids.length > 0 ? readItems().filter((item) => ids.includes(item.id)) : readItems();
@@ -1971,6 +2192,19 @@ app.post('/api/v2/item/duplicates/scan', (req, res) => {
     ? findSimilarDuplicates(currentLibrary, items, Number(req.body.threshold) || 0.55)
     : findDuplicates(currentLibrary, items);
   res.json(ok({ method, groups, elapsedMs: Date.now() - startedAt, scanned: items.length }));
+});
+
+app.post('/api/v2/item/emptyTrash', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(permanentDeleteItems(currentLibrary, ids, { force: req.body.force === true })));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/v2/item/getComments', (req, res) => {
@@ -2063,6 +2297,19 @@ app.post('/api/v2/folder/update', (req, res) => {
     return;
   }
   res.json(ok(folder));
+});
+
+app.post('/api/v2/folder/batchRename', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(batchRenameFolders(ids, req.body)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/v2/folder/all', (req, res) => {
@@ -2193,6 +2440,19 @@ app.post('/api/v2/smartFolder/update', (req, res) => {
   }
 });
 
+app.post('/api/v2/smartFolder/batchRename', (req, res) => {
+  try {
+    const ids = Array.isArray(req.body.ids) ? req.body.ids : [];
+    if (ids.length === 0) {
+      res.status(400).json(fail('ids are required'));
+      return;
+    }
+    res.json(ok(batchRenameSmartFolders(ids, req.body)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
 app.post('/api/v2/smartFolder/remove', (req, res) => {
   const removed = removeSmartFolder(currentLibrary, req.body.id || req.body.smartFolderID);
   if (!removed) {
@@ -2316,6 +2576,19 @@ app.post('/api/item/removeFromFolder', (req, res) => {
 app.post('/api/v2/tag/create', (req, res) => {
   try {
     res.json(ok(createTag(req.body.name)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/v2/tag/batchRename', (req, res) => {
+  try {
+    const names = Array.isArray(req.body.names) ? req.body.names : [];
+    if (names.length === 0) {
+      res.status(400).json(fail('names are required'));
+      return;
+    }
+    res.json(ok(batchRenameTags(names, req.body)));
   } catch (err) {
     res.status(400).json(fail(err.message));
   }

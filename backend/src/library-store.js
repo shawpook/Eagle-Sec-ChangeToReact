@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { commitLibrarySnapshot } from './library-transaction-coordinator.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -195,11 +196,7 @@ export function loadLibrary(input = defaultMockLibrary()) {
 }
 
 export function saveLibraryState(library) {
-  const rootDir = library.rootDir;
-  writeJsonAtomic(path.join(rootDir, 'metadata.json'), library.metadata);
-  writeJsonAtomic(path.join(rootDir, 'tags.json'), library.tags);
-  writeJsonAtomic(path.join(rootDir, 'saved-filters.json'), library.savedFilters);
-  writeJsonAtomic(path.join(rootDir, 'folders.json'), library.folders);
+  return commitLibrarySnapshot(library);
 }
 
 export function itemOriginalPath(library, item) {
@@ -210,42 +207,8 @@ export function itemThumbnailPath(library, item) {
   return path.join(library.rootDir, 'images', `${item.id}.info`, `${item.name}_thumbnail.png`);
 }
 
-export function saveItems(library) {
-  const cacheFile = path.join(library.rootDir, 'cache.json');
-  const searchIndexFile = path.join(library.rootDir, 'search-index.json');
-  const cacheData = library.items.map((item) => JSON.stringify(item)).join('\n') + '\n';
-  const searchIndex = buildSearchIndex(library.items);
-  const targets = [
-    { file: cacheFile, data: cacheData },
-    { file: searchIndexFile, data: JSON.stringify(searchIndex, null, 2) },
-    ...library.items.map((item) => ({
-      file: path.join(library.rootDir, 'images', `${item.id}.info`, 'metadata.json'),
-      data: JSON.stringify(item, null, 2),
-    })),
-  ];
-  const stateFiles = [
-    { file: path.join(library.rootDir, 'metadata.json'), value: library.metadata },
-    { file: path.join(library.rootDir, 'tags.json'), value: library.tags },
-    { file: path.join(library.rootDir, 'saved-filters.json'), value: library.savedFilters },
-    { file: path.join(library.rootDir, 'folders.json'), value: library.folders },
-  ];
-  const snapshots = [...targets.map((target) => fileSnapshot(target.file)), ...stateFiles.map((target) => fileSnapshot(target.file))];
-  try {
-    for (const target of targets) writeAtomicFile(target.file, target.data);
-    library.searchIndex = searchIndex;
-    library.metadata.modificationTime = Date.now();
-    for (const target of stateFiles) writeJsonAtomic(target.file, target.value);
-    library.itemMap = new Map(library.items.map((item) => [item.id, item]));
-  } catch (err) {
-    for (const snapshot of snapshots.slice().reverse()) {
-      try {
-        restoreFileSnapshot(snapshot);
-      } catch (restoreError) {
-        // 保留触发回滚的根因。
-      }
-    }
-    throw err;
-  }
+export function saveItems(library, options = {}) {
+  return commitLibrarySnapshot(library, options);
 }
 
 export function saveItem(library, item) {

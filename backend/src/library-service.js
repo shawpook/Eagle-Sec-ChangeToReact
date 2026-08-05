@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { loadLibrary, resolveLibraryPath } from './library-store.js';
+import { recoverLibrary } from './library-transaction-coordinator.js';
 
 const INVALID_NAME = /[<>:"/\\|?*\u0000-\u001f]/;
 const RESERVED_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i;
@@ -145,6 +146,10 @@ export class LibraryService {
     return loadLibrary(validateLibraryDirectory(this.state.currentLibraryPath));
   }
 
+  currentPath() {
+    return validateLibraryDirectory(this.state.currentLibraryPath);
+  }
+
   history() {
     this.state.history = this.#normalizeHistory(this.state.history);
     this.#saveState();
@@ -160,6 +165,7 @@ export class LibraryService {
 
   open(libraryPath, options = {}) {
     const resolved = validateLibraryDirectory(libraryPath);
+    recoverLibrary(resolved);
     const library = loadLibrary(resolved);
     if (options.makeCurrent !== false) {
       this.state.currentLibraryPath = resolved;

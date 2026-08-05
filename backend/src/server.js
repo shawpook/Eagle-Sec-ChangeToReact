@@ -42,6 +42,15 @@ import { ThumbnailTaskError, ThumbnailTaskService } from './thumbnail-task-servi
 import { ItemWorkflowError, ItemWorkflowService } from './item-workflow-service.js';
 import { searchItems, searchItemsByFilterRules } from './search-service.js';
 import { CaptureError, CaptureService } from './capture-service.js';
+import { LibraryTransactionCoordinator, recoverLibrary } from './library-transaction-coordinator.js';
+import { scanLibraryConsistency, verifyScanReport } from './library-consistency-service.js';
+import {
+  createRecoveryPoint,
+  listRecoveryPoints,
+  recoveryPointManifest,
+  restoreRecoveryPoint,
+  verifyRecoveryPoint,
+} from './library-backup-service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -133,6 +142,8 @@ const captureService = new CaptureService({
   screenshotLimitBytes: Number(process.env.EAGLE_CAPTURE_SCREENSHOT_BYTES) || 30 * 1024 * 1024,
 });
 const itemWorkflow = new ItemWorkflowService();
+const libraryTransactionCoordinator = new LibraryTransactionCoordinator();
+const startupRecovery = recoverLibrary(libraryService.currentPath());
 let currentLibrary = libraryService.currentLibrary();
 thumbnailTasks.recover(currentLibrary);
 let folders = currentLibrary.folders;
@@ -140,6 +151,7 @@ let smartFolders = currentLibrary.smartFolders;
 let tagsGroups = currentLibrary.tagsGroups;
 
 function activateLibrary(library) {
+  recoverLibrary(library.rootDir);
   thumbnailTasks.recover(library);
   currentLibrary = library;
   folders = library.folders;
@@ -865,6 +877,10 @@ app.get('/api/library/info', (req, res) => {
   );
 });
 
+app.get('/api/library/recovery', (req, res) => {
+  res.json(ok(startupRecovery));
+});
+
 app.get('/api/library/current', (req, res) => {
   res.json(ok(describeLibrary(currentLibrary, { includeItems: req.query.includeItems === 'true' })));
 });
@@ -909,6 +925,115 @@ app.get('/api/folder/stats', (req, res) => {
 
 app.post('/api/library/repair', async (req, res) => {
   res.json(ok(await repairLibrary(currentLibrary, { thumbnailTasks })));
+});
+
+app.post('/api/library/consistency/scan', (req, res) => {
+  const rootDir = currentLibrary.rootDir;
+  const job = createJob('consistency-scan', (jobInstance) => {
+    updateJob(jobInstance, { status: 'running', progress: 10, message: 'Scanning library' });
+    try {
+      const report = scanLibraryConsistency(rootDir);
+      updateJob(jobInstance, {
+        status: 'complete',
+        progress: 100,
+        message: 'Consistency scan complete',
+        result: report,
+      });
+    } catch (err) {
+      updateJob(jobInstance, { status: 'error', progress: 100, message: err.message, error: err.message });
+    }
+  });
+  res.status(202).json(ok(job));
+});
+
+app.get('/api/library/consistency/jobs/:id', (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) {
+    res.status(404).json(fail('Consistency job not found'));
+    return;
+  }
+  res.json(ok(job));
+});
+
+app.post('/api/library/consistency/jobs/:id/cancel', (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) {
+    res.status(404).json(fail('Consistency job not found'));
+    return;
+  }
+  if (job.status === 'queued' || job.status === 'running') {
+    job.cancelled = true;
+    updateJob(job, { message: 'Cancellation requested' });
+  }
+  res.json(ok({ job, cancelled: job.cancelled === true }));
+});
+
+app.post('/api/library/repair/plan', async (req, res) => {
+  try {
+    const report = req.body?.report || {};
+    if (!report.reportDigest || report.generation === undefined) {
+      res.status(400).json({ ...fail('A consistency report digest and generation are required'), code: 'REPAIR_PLAN_INVALID' });
+      return;
+    }
+    const verified = verifyScanReport(currentLibrary.rootDir, report);
+    if (!verified.ok) {
+      res.status(409).json({ ...fail(`Consistency report is stale: ${verified.reason}`), code: 'CONSISTENCY_REPORT_STALE' });
+      return;
+    }
+    const recoveryPoint = createRecoveryPoint(currentLibrary.rootDir, { label: 'repair-plan' });
+    const repaired = await repairLibrary(currentLibrary, { thumbnailTasks });
+    const after = scanLibraryConsistency(currentLibrary.rootDir);
+    res.json(ok({ recoveryPoint, repaired, after }));
+  } catch (err) {
+    res.status(400).json({ ...fail(err.message), code: err.code || 'REPAIR_PLAN_INVALID' });
+  }
+});
+
+app.post('/api/library/backups', (req, res) => {
+  try {
+    const manifest = createRecoveryPoint(currentLibrary.rootDir, { label: req.body?.label || 'recovery point' });
+    res.status(201).json(ok(manifest));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.get('/api/library/backups', (req, res) => {
+  try {
+    res.json(ok(listRecoveryPoints(currentLibrary.rootDir)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.get('/api/library/backups/:id', (req, res) => {
+  try {
+    res.json(ok(recoveryPointManifest(currentLibrary.rootDir, req.params.id)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/library/backups/:id/verify', (req, res) => {
+  try {
+    res.json(ok(verifyRecoveryPoint(currentLibrary.rootDir, req.params.id)));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
+});
+
+app.post('/api/library/backups/:id/restore', (req, res) => {
+  try {
+    const destDir = req.body?.destDir;
+    if (!destDir) {
+      res.status(400).json({ ...fail('destDir is required'), code: 'RESTORE_TARGET_UNSAFE' });
+      return;
+    }
+    const result = restoreRecoveryPoint(currentLibrary.rootDir, req.params.id, destDir);
+    res.json(ok(result));
+  } catch (err) {
+    res.status(400).json(fail(err.message));
+  }
 });
 
 app.get('/api/library/scan', (req, res) => {

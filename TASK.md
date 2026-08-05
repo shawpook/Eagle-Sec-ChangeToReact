@@ -27,6 +27,41 @@ eagle逆向目录“C:\Program Files\Eagle\Eagle-reverse”
 - 因此“原版插件真实 E2E”未验收；当前浏览器扩展 E2E 使用 `tests/fixtures/browser-extension-mv2` 夹具，真实加载扩展，验证内容脚本→后台→`127.0.0.1:41593`→受控导入的完整消息链，但该夹具不能替代原版插件最终验收。
 - 原版 `batchSave` 桌面侧批量保存面板复用仍待原版插件请求和主窗口 IPC 联合验证。
 
+## 资料库事务一致性、崩溃恢复与备份修复闭环（2026-08-05）
+
+### 本轮已完成
+
+- 新增 `backend/src/library-transaction-coordinator.js`，所有 `saveItems()` / `saveLibraryState()` 统一进入持久化事务提交路径；同一资料库写操作按根路径串行，不同资料库可并行。
+- 事务目录固定在 `<library>/backup/recovery-v1/transactions/`，包含 `manifest.json`、`before/`、`staged/`；状态机覆盖 `PREPARED -> COMMITTING -> COMMITTED -> CLEANED` 与 `ROLLED_BACK`。
+- 提交前校验 generation；外部或并发修改导致版本变化时返回 `LIBRARY_VERSION_CONFLICT`；进程级独占 lock 提供 `LIBRARY_WRITE_LOCKED` 错误。
+- 后端启动和 `LibraryService.open()` 会先执行 `recoverLibrary()`，对未完成事务做确定性 roll-forward 或 rollback；`COMMITTED` 事务仅继续清理。
+- 条目重命名的原文件/缩略图 rename 已随同一事务提交，Windows 仅大小写改名保留兼容处理。
+- 新增 `backend/src/library-consistency-service.js`：默认只读严格扫描，覆盖损坏 JSON、cache/search index 分歧、重复 ID、缺失原文件/缩略图、孤立 item、无效 folder 引用等，并生成稳定 report digest。
+- 新增 `backend/src/library-backup-service.js`：可创建/列出/校验/恢复版本化恢复点，默认恢复到新 `.library`；修复计划执行前自动创建恢复点。
+- 新增 API：
+  - `POST /api/library/consistency/scan`
+  - `GET /api/library/consistency/jobs/:id`
+  - `POST /api/library/consistency/jobs/:id/cancel`
+  - `POST /api/library/repair/plan`
+  - `POST /api/library/backups`
+  - `GET /api/library/backups`
+  - `GET /api/library/backups/:id`
+  - `POST /api/library/backups/:id/verify`
+  - `POST /api/library/backups/:id/restore`
+- 新增专项测试并纳入 `npm test`：
+  - `tests/library-transaction-faults.mjs`
+  - `tests/library-crash-recovery.mjs`
+  - `tests/library-concurrency.mjs`
+  - `tests/library-consistency-scan.mjs`
+  - `tests/library-backup-restore.mjs`
+  - `tests/library-repair-plan.mjs`
+
+### 仍保留的边界
+
+- `Eagle-reverse/src` 仍只读，不改原版文件。
+- 自定义缩略图、普通/视频缩略图替换、永久删除等物理文件操作仍保留原有局部 pending/backup/rollback 机制，尚未全部改成同一持久化事务操作；JSON、cache、search index 和条目重命名已纳入统一事务。
+- 真实原版插件资产 E2E、跨平台磁盘故障矩阵仍是后续验收项。
+
 ## 目标
 
 在以下目录创建 Eagle 的 1:1 复刻项目：

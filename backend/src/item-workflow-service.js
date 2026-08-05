@@ -202,14 +202,10 @@ export class ItemWorkflowService {
     });
 
     const previousItems = library.items.slice();
-    const completedRenames = [];
+    const renameOperations = plans
+      .flatMap((plan) => plan.renamePairs)
+      .map((pair) => ({ kind: 'rename-file', source: pair.source, target: pair.target }));
     try {
-      for (const plan of plans) {
-        for (const pair of plan.renamePairs) {
-          completedRenames.push(...renameFileSafely(pair.source, pair.target));
-        }
-      }
-
       const now = Date.now();
       const updated = plans.map((plan) => {
         const next = {
@@ -223,11 +219,10 @@ export class ItemWorkflowService {
         library.items[plan.index] = next;
         return next;
       });
-      saveItems(library);
+      saveItems(library, { fileOperations: renameOperations });
       return updated;
     } catch (err) {
       library.items = previousItems;
-      rollbackRenames(completedRenames);
       try {
         saveItems(library);
       } catch (rollbackError) {

@@ -1208,6 +1208,8 @@ app.whenReady().then(async () => {
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'original main scope', 25000);
               const source = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FILE_SOURCE || '')};
+              const textSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_TEXT_SOURCE || '')};
+              const markdownSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_MARKDOWN_SOURCE || '')};
               const folderSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FOLDER_SOURCE || '')};
               const clipboardSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_CLIPBOARD_SOURCE || '')};
               const workflowFolderId = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FOLDER_ID || '')};
@@ -1255,12 +1257,101 @@ app.whenReady().then(async () => {
                 await new Promise((resolve) => setTimeout(resolve, 100));
               };
               const importResultCounts = {};
+              const importResultErrors = [];
+              const thumbnailGeneratedCounts = {};
               const importResultListener = (_event, result) => {
                 if (result && result.ok && result.channel) {
                   importResultCounts[result.channel] = (importResultCounts[result.channel] || 0) + 1;
+                } else if (result && result.channel && result.error) {
+                  importResultErrors.push(result);
                 }
               };
+              const thumbnailGeneratedListener = (_event, item) => {
+                if (item && item.id) thumbnailGeneratedCounts[item.id] = true;
+              };
               require('electron').ipcRenderer.on('import:operation-result', importResultListener);
+              require('electron').ipcRenderer.on('thumbnail-generated', thumbnailGeneratedListener);
+              const textDrop = textSource ? await waitFor(async () => {
+                onDropContainer({
+                  preventDefault() {},
+                  stopPropagation() {},
+                  dataTransfer: {
+                    files: [{ path: textSource, name: 'Dropped Text.txt', type: 'text/plain', size: 1, lastModified: Date.now() }],
+                    getData: () => '',
+                  },
+                });
+                const item = await waitFor(() => scope.raw.find((entry) => entry.name === 'Dropped Text'), 'text file drop import');
+                if (item.ext !== 'txt') throw new Error('text drop imported unexpected extension: ' + item.ext);
+                return item;
+              }, 'text file drop import') : null;
+              let markdownDrop = null;
+              if (markdownSource) {
+                onDropContainer({
+                  preventDefault() {},
+                  stopPropagation() {},
+                  dataTransfer: {
+                    files: [{ path: markdownSource, name: 'Dropped Markdown.md', type: 'text/markdown', size: 1, lastModified: Date.now() }],
+                    getData: () => '',
+                  },
+                });
+                const item = await new Promise((resolve, reject) => {
+                  const deadline = Date.now() + 15000;
+                  const poll = () => {
+                    const found = scope.raw.find((entry) => entry.name === 'Dropped Markdown');
+                    if (found) { resolve(found); return; }
+                    const error = importResultErrors.find((entry) => entry.channel === 'upload-local-files');
+                    if (error) { reject(new Error(error.error || 'markdown file drop import failed')); return; }
+                    if (Date.now() >= deadline) {
+                      reject(new Error('markdown file drop import timeout queue=' + (scope.uploadQueue || []).length + ' finish=' + (scope.finishQueue || []).length + ' raw=' + (scope.raw || []).map((entry) => entry && entry.name).join(',')));
+                      return;
+                    }
+                    setTimeout(poll, 50);
+                  };
+                  poll();
+                });
+                if (item.ext !== 'md') throw new Error('markdown drop imported unexpected extension: ' + item.ext);
+                markdownDrop = item;
+              }
+              await new Promise((resolve) => setTimeout(resolve, 100));
+              if (textDrop) await waitFor(() => thumbnailGeneratedCounts[textDrop.id], 'text thumbnail generated');
+              if (markdownDrop) {
+                await new Promise((resolve, reject) => {
+                  const deadline = Date.now() + 15000;
+                  const poll = async () => {
+                    if (thumbnailGeneratedCounts[markdownDrop.id]) {
+                      resolve(true);
+                      return;
+                    }
+                    let taskStatus = null;
+                    try {
+                      taskStatus = await window.eagleDesktop.thumbnail.status(markdownDrop.thumbnailTask);
+                    } catch (err) {
+                      taskStatus = { error: err.message };
+                    }
+                    if (Date.now() >= deadline) {
+                      reject(new Error('markdown thumbnail generated timeout ' + JSON.stringify({
+                        taskStatus,
+                        thumbnailGeneratedCounts,
+                        taskId: markdownDrop.thumbnailTask,
+                      })));
+                      return;
+                    }
+                    setTimeout(poll, 50);
+                  };
+                  poll();
+                });
+              }
+              if (markdownDrop) {
+                const latest = currentItem(markdownDrop.id);
+                if (!latest || !Number(latest.width) || !Number(latest.height)) {
+                  throw new Error('markdown placeholder dimensions lost after thumbnail refresh');
+                }
+                await waitFor(() => {
+                  const meta = document.querySelector('#box-' + markdownDrop.id + ' .metas');
+                  const text = meta && meta.textContent.trim();
+                  return text && !/×/.test(text);
+                }, 'markdown meta shows file size');
+              }
               const before = scope.raw.length;
               onDropContainer({
                 preventDefault() {},
@@ -1272,9 +1363,10 @@ app.whenReady().then(async () => {
               });
               const dropped = await waitFor(() => scope.raw.find((item) => item.name === 'Dropped Main'), 'file drop import');
               const droppedId = dropped.id;
-              await waitFor(() => importResultCounts['upload-local-files'] === 1, 'single file import result');
+              const uploadResultCount = 1 + (textDrop ? 1 : 0) + (markdownDrop ? 1 : 0);
+              await waitFor(() => importResultCounts['upload-local-files'] === uploadResultCount, 'single file import result');
               await new Promise((resolve) => setTimeout(resolve, 100));
-              if (importResultCounts['upload-local-files'] !== 1) throw new Error('file drop emitted duplicate import results');
+              if (importResultCounts['upload-local-files'] !== uploadResultCount) throw new Error('file drop emitted duplicate import results');
               assertUniqueItems('file drop import');
 
               onDropContainer({
@@ -1366,11 +1458,32 @@ app.whenReady().then(async () => {
               inspector.annotationChange();
               scope.TagManager.addTag('batch-ui');
               scope.changeStar(3, false, true);
-              await waitFor(async () => {
-                const current = await window.eagleDesktop.library.current();
-                const targets = current.items.filter((entry) => entry.id === droppedId || entry.id === clipboardItem.id);
-                return targets.length === 2 && targets.every((item) => item.annotation === '多选备注持久化' && item.star === 3 && item.tags.includes('batch-ui'));
-              }, 'multi inspector persistence');
+              await new Promise((resolve, reject) => {
+                const deadline = Date.now() + 15000;
+                const poll = async () => {
+                  try {
+                    const current = await window.eagleDesktop.library.current();
+                    const targets = current.items.filter((entry) => entry.id === droppedId || entry.id === clipboardItem.id);
+                    if (targets.length === 2 && targets.every((item) => item.annotation === '多选备注持久化' && item.star === 3 && item.tags.includes('batch-ui'))) {
+                      resolve(targets);
+                      return;
+                    }
+                    if (Date.now() >= deadline) {
+                      reject(new Error('multi inspector persistence timeout ' + JSON.stringify({
+                        droppedId,
+                        clipboardId: clipboardItem && clipboardItem.id,
+                        targets,
+                        selectedIds: scope.selected && scope.selected.map((item) => item && item.id),
+                      })));
+                      return;
+                    }
+                  } catch (err) {
+                    if (Date.now() >= deadline) reject(err);
+                  }
+                  setTimeout(poll, 50);
+                };
+                poll();
+              });
               await waitFor(async () => {
                 const current = await window.eagleDesktop.library.current();
                 const historyTags = current.tags && Array.isArray(current.tags.historyTags) ? current.tags.historyTags : [];
@@ -1438,6 +1551,12 @@ app.whenReady().then(async () => {
                 before,
                 after: scope.raw.length,
                 fileDrop: Boolean(dropped),
+                textDrop: Boolean(textDrop),
+                textDropExt: textDrop && textDrop.ext,
+                textThumbnailGenerated: Boolean(textDrop && thumbnailGeneratedCounts[textDrop.id]),
+                markdownDrop: Boolean(markdownDrop),
+                markdownDropExt: markdownDrop && markdownDrop.ext,
+                markdownThumbnailGenerated: Boolean(markdownDrop && thumbnailGeneratedCounts[markdownDrop.id]),
                 folderDrop: folderItems.length,
                 clipboardPath: Boolean(clipboardItem),
                 clipboardImage: Boolean(clipboardImageItem),
@@ -1453,7 +1572,7 @@ app.whenReady().then(async () => {
           const renamed = current.items.find((item) => item.id === result.renamedId);
           const infoDir = renamed ? path.join(current.imagesDir, `${renamed.id}.info`) : '';
           const diskOk = Boolean(renamed && fs.existsSync(path.join(infoDir, `${renamed.name}.${renamed.ext}`)) && fs.existsSync(path.join(infoDir, `${renamed.name}_thumbnail.png`)));
-          const ok = result.originalPage && result.originalScope && result.originalInspector && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
+          const ok = result.originalPage && result.originalScope && result.originalInspector && result.textDrop && result.textDropExt === 'txt' && result.textThumbnailGenerated && result.markdownDrop && result.markdownDropExt === 'md' && result.markdownThumbnailGenerated && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
           console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, renamed })}`);
         } catch (err) {
           console.error(`MAIN_WORKFLOW_SMOKE_ERROR ${err.stack || err.message}`);

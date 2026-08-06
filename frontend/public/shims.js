@@ -22,6 +22,17 @@
     'avif', 'bmp', 'heic', 'heif', 'hif', 'insp', 'jfif', 'jpe', 'jpeg', 'jpg', 'jxl',
     'png', 'svg', 'tif', 'tiff', 'webp',
   ]);
+  const textThumbnailExtensions = new Set([
+    'txt', 'md', 'markdown', 'log', 'rst', 'json', 'xml', 'yaml', 'yml', 'csv', 'tsv',
+  ]);
+  const resolutionMediaExtensions = new Set([
+    'png', 'jpg', 'jpeg', 'jfif', 'jpe', 'gif', 'webp', 'bmp', 'tif', 'tiff', 'heic',
+    'heif', 'hif', 'avif', 'svg', 'psd', 'psdt', 'psb', 'ai', 'ait', 'raw', 'cr2',
+    'cr3', 'crw', 'dng', 'raf', 'rw2', 'orf', 'nef', 'nrw', 'arw', '3fr', 'erf',
+    'srw', 'sr2', 'pef', 'x3f', 'mrw', 'jxl', 'hdr', 'exr', 'ico', 'icns',
+    'mp4', 'm4v', 'webm', 'mkv', 'avi', 'mov', 'mpg', 'mts', 'wmv', 'flv', 'ts',
+    'f4v', '3gp', '360', 'afx', 'eva', 'vap',
+  ]);
   const detailRenderState = {
     itemId: '',
     lockedAt: 0,
@@ -603,13 +614,244 @@
   }
 
   function emitImportedItems(items, channel) {
-    const imported = (Array.isArray(items) ? items : [items]).filter((item) => item && item.id);
+    const imported = (Array.isArray(items) ? items : [items])
+      .filter((item) => item && item.id)
+      .map((item) => {
+        if (!item.width && !item.height && textThumbnailExtensions.has(String(item.ext || '').toLowerCase())) {
+          item.width = 480;
+          item.height = 480;
+        }
+        return item;
+      });
     mergeCachedItems(imported);
     imported.forEach((item) => ipcRenderer.emit('file-uploaded', item));
     if (imported.length > 0) mockEmit('file-uploaded-end', {});
     mockEmit('import:operation-result', { ok: true, channel, items: imported });
     scheduleMissingPaletteAnalysis(imported);
+    refreshImportedThumbnails(imported);
     return imported;
+  }
+
+  async function browserUploadLocalFiles(files) {
+    const list = Array.isArray(files) ? files : [];
+    if (list.length === 0) return [];
+    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+    const blobFiles = list.filter((file) => file && typeof Blob !== 'undefined' && file instanceof Blob);
+    const pathFiles = list.filter((file) => file && !(typeof Blob !== 'undefined' && file instanceof Blob) && typeof file.path === 'string' && file.path);
+    const imported = [];
+
+    for (const file of blobFiles) {
+      const form = new FormData();
+      form.append('file', file);
+      const tags = Array.isArray(file.tags) ? file.tags.join(',') : file.tags;
+      if (tags) form.append('tags', tags);
+      if (file.annotation) form.append('annotation', file.annotation);
+      if (Array.isArray(file.folders) && file.folders.length > 0) form.append('folderIDs', file.folders.join(','));
+      const response = await fetch(`${apiBase}/api/item/upload`, { method: 'POST', body: form });
+      const payload = await response.json();
+      if (!response.ok || !payload || payload.status !== 'success') {
+        throw new Error(payload && payload.message ? payload.message : `Upload failed: HTTP ${response.status}`);
+      }
+      imported.push(payload.data);
+    }
+
+    if (pathFiles.length > 0) {
+      const response = await fetch(`${apiBase}/api/item/addFromPaths`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          images: pathFiles.map((file) => ({
+            path: file.path,
+            name: file.name,
+            type: file.type,
+            tags: Array.isArray(file.tags) ? file.tags : [],
+            folders: Array.isArray(file.folders) ? file.folders : [],
+            annotation: file.annotation || '',
+          })),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload || payload.status !== 'success') {
+        throw new Error(payload && payload.message ? payload.message : `Path import failed: HTTP ${response.status}`);
+      }
+      imported.push(...(Array.isArray(payload.data) ? payload.data : []));
+    }
+    return imported;
+  }
+
+  function browserImportLocalFiles(files, channel = 'upload-local-files') {
+    return browserUploadLocalFiles(files)
+      .then((items) => {
+        emitImportedItems(items, channel);
+        return items;
+      })
+      .catch((err) => {
+        mockEmit('import:operation-result', { ok: false, channel, error: err.message });
+        mockEmit('file-uploaded-end', { error: err.message });
+        throw err;
+      });
+  }
+
+  async function browserImportUrl(params, channel = 'upload-url') {
+    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+    const response = await fetch(`${apiBase}/api/item/addFromURL`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params || {}),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload || payload.status !== 'success') {
+      throw new Error(payload && payload.message ? payload.message : `URL import failed: HTTP ${response.status}`);
+    }
+    emitImportedItems([payload.data], channel);
+    return payload.data;
+  }
+
+  async function browserImportUrls(params, channel = 'upload-urls') {
+    const list = Array.isArray(params)
+      ? params
+      : (params && (params.images || params.urls)) || [];
+    if (list.length === 0) return [];
+    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+    const response = await fetch(`${apiBase}/api/item/addFromURLs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images: list.map((source) => typeof source === 'string' ? { url: source } : source),
+      }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload || payload.status !== 'success') {
+      throw new Error(payload && payload.message ? payload.message : `URL batch import failed: HTTP ${response.status}`);
+    }
+    emitImportedItems(payload.data, channel);
+    return payload.data;
+  }
+
+  async function thumbnailTaskSnapshot(taskId) {
+    if (desktopApi && desktopApi.thumbnail && typeof desktopApi.thumbnail.status === 'function') {
+      return desktopApi.thumbnail.status(taskId);
+    }
+    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+    const response = await fetch(`${apiBase}/api/item/thumbnailTask/status?taskId=${encodeURIComponent(String(taskId || ''))}`);
+    const payload = await response.json();
+    if (!response.ok || !payload || payload.status !== 'success') {
+      throw new Error(payload && payload.message ? payload.message : `Thumbnail status failed: HTTP ${response.status}`);
+    }
+    return payload.data;
+  }
+
+  async function libraryItemsSnapshot() {
+    if (desktopApi && desktopApi.library && typeof desktopApi.library.current === 'function') {
+      const library = await desktopApi.library.current();
+      return Array.isArray(library.items) ? library.items : [];
+    }
+    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+    const response = await fetch(`${apiBase}/api/library/current?includeItems=true`);
+    const payload = await response.json();
+    if (!response.ok || !payload || payload.status !== 'success') {
+      throw new Error(payload && payload.message ? payload.message : `Library refresh failed: HTTP ${response.status}`);
+    }
+    return Array.isArray(payload.data.items) ? payload.data.items : [];
+  }
+
+  async function refreshImportedThumbnails(items) {
+    const list = (Array.isArray(items) ? items : [items]).filter((item) => item && item.thumbnailTask);
+    for (const item of list) {
+      try {
+        let complete = false;
+        const deadline = Date.now() + 30000;
+        while (Date.now() < deadline) {
+          const task = await thumbnailTaskSnapshot(item.thumbnailTask);
+          if (task && task.status === 'complete') {
+            complete = true;
+            break;
+          }
+          if (task && (task.status === 'failed' || task.status === 'cancelled' || task.error)) break;
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+        if (!complete) continue;
+        const libraryItems = await libraryItemsSnapshot();
+        const updated = libraryItems.find((entry) => entry && entry.id === item.id);
+        if (updated && !updated.processingThumbnail) {
+          if (!Number(updated.width) || !Number(updated.height)) {
+            updated.width = Number(item.width) || 480;
+            updated.height = Number(item.height) || 480;
+          }
+          mergeCachedItems(updated);
+          mockEmit('thumbnail-generated', updated);
+        }
+      } catch (err) {
+        console.warn('[eagle-shim] imported thumbnail refresh failed', err);
+      }
+    }
+  }
+
+  function installBrowserDropImport() {
+    if (desktopApi || isElectronRuntime) return;
+    if (!window.location.pathname.endsWith('/src/app/index.html')) return;
+    document.addEventListener('drop', (event) => {
+      const files = Array.from((event.dataTransfer && event.dataTransfer.files) || []);
+      if (files.length === 0) return;
+      const target = event.target;
+      if (!target || typeof target.closest !== 'function' || !target.closest('#box-container')) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      browserImportLocalFiles(files).catch(() => {});
+    }, true);
+  }
+
+  function installImportTransitionStyle() {
+    if (!window.location.pathname.endsWith('/src/app/index.html')) return;
+    const style = document.createElement('style');
+    style.textContent = `
+      .box-list .box .thumbnail,
+      .box-list .box .thumbnail img,
+      .box-list .box .thumbnail video {
+        transition: opacity 220ms ease !important;
+      }
+      .box-list .box.show .thumbnail img,
+      .box-list .box.show .thumbnail video {
+        animation: boxImgfadeIn 220ms ease forwards !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function formatFileSize(bytes) {
+    const value = Number(bytes) || 0;
+    if (value < 1024) return `${value} B`;
+    const units = ['KB', 'MB', 'GB', 'TB'];
+    let size = value;
+    let unitIndex = -1;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+      size /= 1024;
+      unitIndex += 1;
+    }
+    return `${size >= 100 ? Math.round(size) : size.toFixed(1)} ${units[unitIndex]}`;
+  }
+
+  function patchNonMediaMeta() {
+    document.querySelectorAll('#box-container .box').forEach((box) => {
+      const extClass = Array.from(box.classList).find((name) => name.startsWith('ext-'));
+      const ext = extClass ? extClass.slice(4).toLowerCase() : '';
+      if (!ext || resolutionMediaExtensions.has(ext)) return;
+      const meta = box.querySelector('.metas');
+      if (!meta || !/^\d+\s*×\s*\d+$/.test(meta.textContent.trim())) return;
+      const sizeElement = box.querySelector('.prop.size');
+      const sizeText = sizeElement && sizeElement.textContent.trim();
+      const scope = window.angular ? angular.element(document.body).scope() : null;
+      const item = scope && scope.itemMappings && scope.itemMappings[box.getAttribute('data-box-id')];
+      meta.textContent = sizeText || formatFileSize(item && item.size);
+    });
+  }
+
+  function installNonMediaMetaPatcher() {
+    if (!window.location.pathname.endsWith('/src/app/index.html')) return;
+    const target = document.querySelector('#box-container .box-list') || document;
+    const observer = new MutationObserver(patchNonMediaMeta);
+    observer.observe(target, { childList: true, subtree: true });
+    patchNonMediaMeta();
   }
 
   function canAnalyzePalette(item) {
@@ -904,6 +1146,18 @@
         });
         return;
       }
+    }
+    if (!desktopApi && channel === 'upload-local-files') {
+      browserImportLocalFiles(params && params.files ? params.files : []).catch(() => {});
+      return;
+    }
+    if (!desktopApi && channel === 'upload-url') {
+      browserImportUrl(params).catch(() => {});
+      return;
+    }
+    if (!desktopApi && channel === 'upload-urls') {
+      browserImportUrls(params).catch(() => {});
+      return;
     }
     if (desktopApi && desktopApi.import) {
       let action = null;
@@ -1930,7 +2184,7 @@
       if (req.endsWith('/my_modules/n-readlines')) return lineByLineMock;
       if (req.endsWith('/my_modules/appdata-path')) return () => '/mock-user-data';
       if (req.endsWith('/my_modules/junk')) return { not: () => true, is: () => false };
-      if (req.endsWith('/my_modules/is-hidden-file')) return () => false;
+      if (req.endsWith('/my_modules/is-hidden-file')) return { check: () => false };
       if (req.endsWith('/my_modules/file-icon')) return { getFileIcon: () => Promise.resolve({}), getFileIconSync: () => null };
       if (req.endsWith('/my_modules/is-directory')) return {
         check: (target) => {
@@ -2323,8 +2577,16 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', startLifecycle, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      installImportTransitionStyle();
+      installBrowserDropImport();
+      installNonMediaMetaPatcher();
+      startLifecycle();
+    }, { once: true });
   } else {
+    installImportTransitionStyle();
+    installBrowserDropImport();
+    installNonMediaMetaPatcher();
     startLifecycle();
   }
 })();

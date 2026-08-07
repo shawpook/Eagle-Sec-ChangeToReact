@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, '../');
 const frontendPublic = path.resolve(here, 'public');
+const documentViewerEntry = path.resolve(here, 'document-viewer/index.html');
 const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692';
 const apiTarget = process.env.EAGLE_API_URL || 'http://localhost:41695';
 const extensionTarget = process.env.EAGLE_EXTENSION_URL || 'http://localhost:41693';
@@ -14,6 +16,13 @@ function injectPreviewScripts(html) {
   return html.replace(
     '<head>',
     `<head>\n    <script>window.__EAGLE_API_BASE_URL=${JSON.stringify(apiTarget)};window.__EAGLE_EXTENSION_BASE_URL=${JSON.stringify(extensionTarget)};</script>\n    <script src="/mock-data.js"></script>\n    <script src="/shims.js"></script>`
+  );
+}
+
+function injectViewerConfig(html) {
+  return html.replace(
+    '<head>',
+    `<head>\n    <script>window.__EAGLE_API_BASE_URL=${JSON.stringify(apiTarget)};window.__EAGLE_THUMBNAIL_URL=${JSON.stringify(thumbnailTarget)};</script>`
   );
 }
 
@@ -45,6 +54,7 @@ export default defineConfig({
   base: '/',
   publicDir: frontendPublic,
   plugins: [
+    react(),
     {
       name: 'eagle-preview-shims',
       configureServer(server) {
@@ -95,6 +105,9 @@ export default defineConfig({
         });
       },
       transformIndexHtml(html) {
+        if (html.includes('<title>Eagle Document Viewer</title>')) {
+          return injectViewerConfig(html);
+        }
         if (!html.includes('<title>Eagle</title>')) {
           return html;
         }
@@ -123,7 +136,10 @@ export default defineConfig({
     outDir: path.resolve(here, '../dist/frontend'),
     emptyOutDir: true,
     rollupOptions: {
-      input: path.join(frontendPublic, 'pages.html'),
+      input: {
+        pages: path.join(frontendPublic, 'pages.html'),
+        'document-viewer': documentViewerEntry,
+      },
     },
   },
 });

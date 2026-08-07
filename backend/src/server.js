@@ -46,6 +46,16 @@ import { TextDetailError, readTextItemDetail } from './text-detail-service.js';
 import { TextSaveError, TextSaveService } from './text-save-service.js';
 import { OFFICE_EXTENSIONS } from './office-document-support.js';
 import { LEGACY_OFFICE_EXTENSIONS } from './legacy-office-thumbnail-renderer.js';
+import {
+  OfficeDocumentViewerError,
+  readOfficeDocumentViewer,
+  saveOfficeDocumentViewer,
+} from './office-document-viewer.js';
+import {
+  DocumentPreviewServiceError,
+  resolveDocumentPreviewFile,
+  resolveDocumentPreviewSource,
+} from './document-preview-service.js';
 import { searchItems, searchItemsByFilterRules } from './search-service.js';
 import { CaptureError, CaptureService } from './capture-service.js';
 import { LibraryTransactionCoordinator, recoverLibrary } from './library-transaction-coordinator.js';
@@ -1828,6 +1838,16 @@ function sendTextSaveError(res, err) {
   res.status(statusCode).json({ ...fail(err.message), code: err.code || 'TEXT_SAVE_FAILED' });
 }
 
+function sendOfficeViewerError(res, err) {
+  const statusCode = err instanceof OfficeDocumentViewerError ? err.statusCode : (err.statusCode || 422);
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'OFFICE_VIEWER_FAILED' });
+}
+
+function sendDocumentPreviewError(res, err) {
+  const statusCode = err instanceof DocumentPreviewServiceError ? err.statusCode : (err.statusCode || 422);
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'DOCUMENT_PREVIEW_FAILED' });
+}
+
 app.post('/api/item/thumbnailTask/start', (req, res) => {
   try {
     const id = req.body.id || req.body.itemID || req.body.itemId;
@@ -2301,6 +2321,59 @@ app.post('/api/v2/item/textUndo', async (req, res) => {
     res.json(ok(await textSaveService.undo(currentLibrary, req.body.id || req.body.itemId || req.body.itemID)));
   } catch (err) {
     sendTextSaveError(res, err);
+  }
+});
+
+// ── Document viewer: Office read / quick-edit save ─────────────────────────
+app.get('/api/v2/item/officeDocument', async (req, res) => {
+  try {
+    const id = req.query.id || req.query.itemId || req.query.itemID;
+    res.json(ok(await readOfficeDocumentViewer(currentLibrary, id)));
+  } catch (err) {
+    sendOfficeViewerError(res, err);
+  }
+});
+
+app.post('/api/v2/item/officeSave', async (req, res) => {
+  try {
+    const id = req.body.id || req.body.itemId || req.body.itemID;
+    const result = await saveOfficeDocumentViewer(currentLibrary, id, req.body, req.body.expectedMtimeMs);
+    res.json(ok(result));
+  } catch (err) {
+    sendOfficeViewerError(res, err);
+  }
+});
+
+// ── Document viewer: controlled PDF / derived-PDF preview source ────────────
+app.get('/api/v2/item/documentPreviewSource', async (req, res) => {
+  try {
+    const id = req.query.id || req.query.itemId || req.query.itemID;
+    const hostBase = `${req.protocol}://${req.get('host')}`;
+    const source = await resolveDocumentPreviewSource(currentLibrary, id, hostBase);
+    if (!source) {
+      res.status(404).json(fail('Document preview is not available'));
+      return;
+    }
+    res.json(ok(source));
+  } catch (err) {
+    sendDocumentPreviewError(res, err);
+  }
+});
+
+app.get('/api/v2/item/documentPreviewFile', async (req, res) => {
+  try {
+    const file = await resolveDocumentPreviewFile(currentLibrary, req.query.id || req.query.itemId, req.query.t);
+    if (!file) {
+      res.status(404).json(fail('Document preview file is not available'));
+      return;
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="document-preview.pdf"');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, max-age=60');
+    res.sendFile(file.filePath);
+  } catch (err) {
+    sendDocumentPreviewError(res, err);
   }
 });
 

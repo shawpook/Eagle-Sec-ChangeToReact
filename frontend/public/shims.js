@@ -25,6 +25,19 @@
   const textThumbnailExtensions = new Set([
     'txt', 'md', 'markdown', 'log', 'rst', 'json', 'xml', 'yaml', 'yml', 'csv', 'tsv',
   ]);
+  // Unified document workspace activation set: text/structured text, Office
+  // Open XML, direct PDF, and legacy/OpenDocument formats the backend can
+  // either read structurally or convert to a derived PDF. `.key/.numbers/
+  // .pages/.xla/.xlam` are intentionally absent — the backend cannot convert
+  // them, so routing them into the viewer would only degrade their preview.
+  const documentViewerExtensions = new Set([
+    'txt', 'md', 'markdown', 'log', 'rst', 'json', 'xml', 'yaml', 'yml', 'csv', 'tsv',
+    'docx', 'xlsx', 'pptx',
+    'pdf',
+    'doc', 'docm', 'dot', 'dotm', 'dotx', 'dps', 'et', 'epub', 'odp', 'ods', 'odt',
+    'pot', 'potm', 'potx', 'pps', 'ppsm', 'ppsx', 'ppt', 'pptm', 'rtf', 'wps',
+    'xls', 'xlsb', 'xlsm', 'xlt', 'xltm', 'xltx',
+  ]);
   const resolutionMediaExtensions = new Set([
     'png', 'jpg', 'jpeg', 'jfif', 'jpe', 'gif', 'webp', 'bmp', 'tif', 'tiff', 'heic',
     'heif', 'hif', 'avif', 'svg', 'psd', 'psdt', 'psb', 'ai', 'ait', 'raw', 'cr2',
@@ -167,9 +180,16 @@
     const scope = window.$bodyScope;
     if (!scope || typeof scope.enterDetailMode !== 'function' || scope.enterDetailMode.__eagleOriginalGate) return;
     const enterDetailMode = scope.enterDetailMode;
+    originalDetailModeEntry = enterDetailMode;
     scope.enterDetailMode = function (event, item) {
       const target = item || (Array.isArray(this.selected) ? this.selected[this.selected.length - 1] : null);
       const extension = String(target && target.ext || '').toLowerCase();
+      if (target && documentViewerEnabled() && documentViewerExtensions.has(extension)) {
+        // Unified in-app document workspace: open the isolated viewer overlay
+        // instead of the original detail flow or the system default app.
+        openDocumentViewer(target, 'workspace');
+        return;
+      }
       if (target && detailBitmapExtensions.has(extension)) {
         detailRenderState.previousItemId = detailRenderState.itemId;
         detailRenderState.itemId = target.id;
@@ -196,12 +216,161 @@
     if (typeof scope.leaveDetailMode === 'function') {
       const leaveDetailMode = scope.leaveDetailMode;
       scope.leaveDetailMode = function () {
+        closeDocumentViewer();
         document.body.classList.remove('eagle-detail-awaiting-original');
         return leaveDetailMode.apply(this, arguments);
       };
     }
     clearInterval(detailHookTimer);
   }, 25);
+
+  // ── Unified in-app document viewer (OrcaBox workspace) ───────────────────
+  let originalDetailModeEntry = null;
+  const documentViewerState = {
+    itemId: '',
+    mode: 'workspace',
+    container: null,
+    iframe: null,
+    pendingFallbackTimer: 0,
+  };
+
+  function documentViewerEnabled() {
+    return window.__EAGLE_ORCABOX_DOCUMENT_VIEWER_ENABLED !== false;
+  }
+
+  function collectVisibleAssetIds() {
+    const boxes = document.querySelectorAll('#box-container .box');
+    const ids = [];
+    boxes.forEach((box) => {
+      const id = box && box.getAttribute('data-box-id');
+      if (id) ids.push(id);
+    });
+    if (ids.length > 0) return ids;
+    const scope = window.$bodyScope;
+    const items = (scope && Array.isArray(scope.raw))
+      ? scope.raw
+      : (Array.isArray(window.__mockLibraryCache) ? window.__mockLibraryCache : []);
+    return items.filter((item) => item && item.id && !item.isDeleted).map((item) => item.id);
+  }
+
+  function viewerBaseUrl() {
+    const origin = window.location.origin;
+    return `${origin}/frontend/document-viewer/index.html`;
+  }
+
+  function ensureViewerContainer() {
+    if (documentViewerState.container && documentViewerState.iframe) {
+      return documentViewerState;
+    }
+    const container = document.createElement('div');
+    container.id = 'eagle-document-viewer-container';
+    container.style.cssText = 'position:fixed; top:0; bottom:0; left:0; right:0; z-index:2147483000; display:flex;';
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals');
+    iframe.setAttribute('allow', 'clipboard-read; clipboard-write');
+    iframe.style.cssText = 'width:100%; height:100%; border:0; background:#17181b;';
+    container.appendChild(iframe);
+    document.body.appendChild(container);
+    documentViewerState.container = container;
+    documentViewerState.iframe = iframe;
+    return documentViewerState;
+  }
+
+  function applyViewerMode(mode) {
+    const state = documentViewerState;
+    const container = state.container;
+    if (!container) return;
+    state.mode = mode === 'fullscreen' ? 'fullscreen' : 'workspace';
+    if (state.mode === 'fullscreen') {
+      container.style.cssText = 'position:fixed; inset:0; z-index:2147483000; display:flex;';
+    } else {
+      const sidebar = document.querySelector('#sidebar');
+      const sidebarWidth = sidebar ? sidebar.offsetWidth || 0 : 0;
+      container.style.cssText = `position:fixed; top:0; bottom:0; left:${sidebarWidth}px; right:0; z-index:2147483000; display:flex;`;
+    }
+  }
+
+  function openDocumentViewer(item, mode) {
+    if (!item || !item.id || !documentViewerEnabled()) return false;
+    const state = ensureViewerContainer();
+    const ids = collectVisibleAssetIds();
+    const query = new URLSearchParams({
+      id: item.id,
+      mode: mode === 'fullscreen' ? 'fullscreen' : 'workspace',
+      ids: ids.join(','),
+    });
+    state.itemId = item.id;
+    state.iframe.src = `${viewerBaseUrl()}?${query.toString()}`;
+    applyViewerMode(mode);
+    // If the viewer page never handshakes, fall back to the original detail flow.
+    window.clearTimeout(state.pendingFallbackTimer);
+    state.pendingFallbackTimer = window.setTimeout(() => {
+      if (documentViewerState.itemId !== item.id) return;
+      if (documentViewerState.container && documentViewerState.container.querySelector('[data-viewer-ready]')) return;
+      closeDocumentViewer();
+      fallbackToOriginalDetail(item.id);
+    }, 4000);
+    return true;
+  }
+
+  function fallbackToOriginalDetail(itemId) {
+    try {
+      const scope = window.$bodyScope;
+      const item = (scope && Array.isArray(scope.raw))
+        ? scope.raw.find((entry) => entry && entry.id === itemId)
+        : null;
+      if (item && typeof originalDetailModeEntry === 'function') {
+        originalDetailModeEntry.call(scope, null, item);
+      }
+    } catch (err) {
+      console.warn('[eagle-shim] document viewer fallback failed', err);
+    }
+  }
+
+  function closeDocumentViewer() {
+    window.clearTimeout(documentViewerState.pendingFallbackTimer);
+    if (documentViewerState.iframe) {
+      documentViewerState.iframe.src = 'about:blank';
+    }
+    if (documentViewerState.container) {
+      documentViewerState.container.remove();
+    }
+    documentViewerState.container = null;
+    documentViewerState.iframe = null;
+    documentViewerState.itemId = '';
+    documentViewerState.mode = 'workspace';
+  }
+
+  function handleDocumentViewerMessage(event) {
+    const message = event && event.data;
+    if (!message || message.source !== 'eagle-document-viewer') return;
+    const state = documentViewerState;
+    if (message.type === 'ready') {
+      window.clearTimeout(state.pendingFallbackTimer);
+      if (state.container) state.container.setAttribute('data-viewer-ready', '1');
+      return;
+    }
+    if (message.type === 'mode') {
+      applyViewerMode(message.mode);
+      return;
+    }
+    if (message.type === 'close') {
+      closeDocumentViewer();
+      // Restore any non-detail grid state left behind by the original app.
+      try {
+        const scope = window.$bodyScope;
+        if (scope && typeof scope.leaveDetailMode === 'function' && scope.isDetailMode) {
+          scope.leaveDetailMode();
+        }
+      } catch (err) {
+        console.warn('[eagle-shim] document viewer close scope restore failed', err);
+      }
+    }
+  }
+  window.addEventListener('message', handleDocumentViewerMessage);
+
+  // Close the viewer when the shell reloads.
+  window.addEventListener('beforeunload', () => closeDocumentViewer());
 
   const browserFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
   if (browserFetch) {
@@ -575,6 +744,10 @@
       } catch (err) {
         // Fall through to the normal event dispatch.
       }
+    }
+    if (channel === 'library:changed' || channel === 'preload-library' || channel === 'app-status-library-loaded') {
+      // The library (or its items) changed under the document viewer — unmount it.
+      closeDocumentViewer();
     }
     return emitIpc(channel, ...args);
   };

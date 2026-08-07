@@ -21,3 +21,7 @@ Thumbs.db
 # src 已移入项目根，node_modules 全量纳入 git（反编译原版完整依赖）
 !src/node_modules/
 !src/node_modules/**
+
+# 豁免 src 原版 my_modules 的 dist 构建产物，保持全量跟踪
+!src/my_modules/*/dist/
+!src/my_modules/*/dist/**

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useUIStore } from './stores/ui-store'
 import { useLibraryStore } from './stores/library-store'
 import AssetPreviewStage from './components/AssetPreviewStage'
@@ -57,15 +57,25 @@ export default function DocumentViewerApp() {
   }, [])
 
   // Keep the AngularJS shell in sync with the workspace/fullscreen mode and
-  // request unmount when the viewer fully closes.
+  // request unmount when the viewer fully closes. The close message is only
+  // sent on a real open→closed transition (never on the initial mount, which
+  // would make the shell tear the viewer down before it hydrates).
+  const previousPreviewRef = useRef<{ id: string | null; mode: PreviewMode | null }>({ id: null, mode: null })
+
   useEffect(() => {
+    const previous = previousPreviewRef.current
+    previousPreviewRef.current = { id: previewAssetId, mode: previewMode }
+
+    const isClosed = previewAssetId === null && previewMode === null
+    const wasOpen = previous.id !== null || previous.mode !== null
+    if (isClosed && wasOpen) {
+      postParent({ source: 'eagle-document-viewer', type: 'close' })
+      return
+    }
     if (previewMode === 'fullscreen') {
       postParent({ source: 'eagle-document-viewer', type: 'mode', mode: 'fullscreen' })
     } else if (previewMode === 'workspace') {
       postParent({ source: 'eagle-document-viewer', type: 'mode', mode: 'workspace' })
-    }
-    if (previewAssetId === null && previewMode === null) {
-      postParent({ source: 'eagle-document-viewer', type: 'close' })
     }
   }, [previewAssetId, previewMode])
 

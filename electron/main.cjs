@@ -13,6 +13,7 @@ const pluginSmokeMode = process.argv.includes('--smoke-plugin');
 const desktopSmokeMode = process.argv.includes('--smoke-desktop');
 const librarySmokeMode = process.argv.includes('--smoke-library');
 const mainWorkflowSmokeMode = process.argv.includes('--smoke-main-workflow');
+const documentViewerSmokeMode = process.argv.includes('--smoke-document-viewer');
 const browserCaptureUiSmokeMode = process.argv.includes('--smoke-browser-capture-ui');
 const previewDeliverySmokeMode = process.argv.includes('--smoke-preview-delivery');
 const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress');
@@ -1073,7 +1074,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -1576,6 +1577,104 @@ app.whenReady().then(async () => {
           console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, renamed })}`);
         } catch (err) {
           console.error(`MAIN_WORKFLOW_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
+  if (documentViewerSmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('DOCUMENT_VIEWER_SMOKE_TIMEOUT');
+      app.quit();
+    }, 70000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const result = await win.webContents.executeJavaScript(
+            `(async () => {
+              const waitFor = (check, label, timeout = 15000) => new Promise((resolve, reject) => {
+                const deadline = Date.now() + timeout;
+                const poll = async () => {
+                  try {
+                    const value = await check();
+                    if (value) { resolve(value); return; }
+                  } catch (err) {}
+                  if (Date.now() >= deadline) { reject(new Error(label + ' timeout')); return; }
+                  setTimeout(poll, 75);
+                };
+                poll();
+              });
+              const itemId = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_ITEM_ID || '')};
+              const expectedText = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_EXPECTED_TEXT || '')};
+              const scope = await waitFor(() => {
+                if (!window.angular) return null;
+                const bodyScope = angular.element(document.body).scope();
+                return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
+              }, 'original main scope', 25000);
+              const item = await waitFor(() => scope.raw.find((entry) => entry && entry.id === itemId), 'document item', 10000);
+
+              // Activate the document through the shim-patched double-click path.
+              scope.enterDetailMode(null, item);
+              await new Promise((resolve) => setTimeout(resolve, 300));
+
+              const container = await waitFor(() => document.querySelector('#eagle-document-viewer-container'), 'viewer container', 10000);
+              await waitFor(() => container.hasAttribute('data-viewer-ready'), 'viewer ready handshake', 10000);
+              const iframe = container.querySelector('iframe');
+              if (!iframe) throw new Error('viewer iframe missing');
+              const viewerUrl = String(iframe.src);
+              if (!viewerUrl.includes('/frontend/document-viewer/index.html')) {
+                throw new Error('unexpected viewer url: ' + viewerUrl);
+              }
+
+              // The migrated document surface must render inside the viewer.
+              const viewerDoc = await waitFor(() => {
+                const doc = iframe.contentDocument;
+                if (!doc) return null;
+                return doc.querySelector('.w-md-editor, .text-document-surface, .office-document-surface, .document-preview') ? doc : null;
+              }, 'viewer rendered surface', 20000);
+
+              const bodyText = viewerDoc.body.textContent || '';
+              const contentOk = Boolean(expectedText && bodyText.includes(expectedText));
+              const stageTitleOk = Boolean(viewerDoc.querySelector('[data-preview-stage-header]'));
+
+              // Workspace → fullscreen → workspace via the stage controls.
+              let expandFound = false;
+              let modeSequence = [];
+              const expandButton = viewerDoc.querySelector('[data-preview-stage-header] button[title="占满整个软件预览"]');
+              if (expandButton) {
+                expandFound = true;
+                expandButton.click();
+                modeSequence.push(await waitFor(() => container.getAttribute('data-viewer-mode') === 'fullscreen' ? 'fullscreen' : null, 'fullscreen mode', 8000));
+                const returnButton = await waitFor(() => viewerDoc.querySelector('[data-preview-stage-header] button[title="返回中间预览"]'), 'return button', 8000);
+                returnButton.click();
+                modeSequence.push(await waitFor(() => container.getAttribute('data-viewer-mode') === 'workspace' ? 'workspace' : null, 'workspace restore', 8000));
+              }
+
+              // Close via the shell-facing message (the shims listener lives on
+              // the main window, so dispatch to it directly).
+              window.postMessage({ source: 'eagle-document-viewer', type: 'close' }, '*');
+              await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'viewer close', 8000);
+
+              return {
+                itemId: item.id,
+                itemExt: item.ext,
+                containerMounted: true,
+                viewerUrl,
+                contentOk,
+                stageTitleOk,
+                expandFound,
+                modeSequence,
+                viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
+              };
+            })()`
+          );
+          const ok = result.containerMounted && result.contentOk && result.stageTitleOk && result.expandFound && result.modeSequence.join(',') === 'fullscreen,workspace' && result.viewerClosed;
+          console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
+        } catch (err) {
+          console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);
         }
         clearTimeout(timeout);
         app.quit();

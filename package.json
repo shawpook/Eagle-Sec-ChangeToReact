@@ -29,6 +29,7 @@
     "test:isolated": "node tests/full-regression-isolated.mjs",
     "test:screenshots": "node tests/screenshot-regression.mjs",
     "test:workbench": "node tests/workbench-interactions.mjs",
+    "test:document-viewer": "node tests/document-viewer-api-smoke.mjs && node tests/document-viewer-ui-closed-loop.mjs",
     "electron": "electron electron/main.cjs"
   },
   "dependencies": {

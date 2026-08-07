@@ -281,6 +281,7 @@
     const container = state.container;
     if (!container) return;
     state.mode = mode === 'fullscreen' ? 'fullscreen' : 'workspace';
+    container.setAttribute('data-viewer-mode', state.mode);
     if (state.mode === 'fullscreen') {
       container.style.cssText = 'position:fixed; inset:0; z-index:2147483000; display:flex;';
     } else {
@@ -306,7 +307,7 @@
     window.clearTimeout(state.pendingFallbackTimer);
     state.pendingFallbackTimer = window.setTimeout(() => {
       if (documentViewerState.itemId !== item.id) return;
-      if (documentViewerState.container && documentViewerState.container.querySelector('[data-viewer-ready]')) return;
+      if (documentViewerState.container && documentViewerState.container.hasAttribute('data-viewer-ready')) return;
       closeDocumentViewer();
       fallbackToOriginalDetail(item.id);
     }, 4000);

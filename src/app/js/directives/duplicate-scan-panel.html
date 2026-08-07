@@ -1,0 +1,277 @@
+<div id="duplicate-scan-panel" class="duplicate-scan-panel" ng-class="{'open': isOpen}">
+    <!-- 步驟1 - 選擇掃描方式 -->
+    <div class="page" ng-if="step==='INITIAL'">
+        <div class="panel-header">
+            <div class="left">
+                <div class="ic-btn back" ng-click="back()" style="opacity: 0; pointer-events: none;">
+                    <img src="assets/images/{{theme|themePath}}/icons/ic-modal-back.svg">
+                </div>
+            </div>
+            <div class="center"><div class="title">{{'duplicatePanel.step1.title' | i18n}}</div></div>
+            <div class="right">
+                <div class="ic-btn close" ng-click="close()">
+                    <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                </div>
+            </div>
+        </div>
+        <div class="panel-content">
+            <div class="methods" ng-class="{'animating-same': scanMethod === 'SAME', 'animating-similar': scanMethod === 'SIMILAR' }">
+                <!-- 掃描相同 -->
+                <div class="method">
+                    <img src="assets/images/{{theme|themePath}}/illustrations/duplicate-same-scanning.png" width="300" height="144">
+                    <div class="title">{{'duplicatePanel.same.title' | i18n}}</div>
+                    <div class="desc">{{'duplicatePanel.same.desc' | i18n}}</div>
+                    <div class="button button-primary" ng-click="scanSame()"><img ng-src="assets/images/base/icons/ic-duplicate-scan.svg">{{'duplicatePanel.step1.scanBtn' | i18n}}</div>
+                </div>
+                <!-- 掃描相似 -->
+                <div class="method">
+                    <img src="assets/images/{{theme|themePath}}/illustrations/duplicate-similar-scanning.png" width="300" height="144">
+                    <div class="title">{{'duplicatePanel.similar.title' | i18n}}</div>
+                    <div class="desc">{{'duplicatePanel.similar.desc' | i18n}}</div>
+                    <div class="button button-primary" ng-click="scanSimilar()"><img ng-src="assets/images/base/icons/ic-duplicate-scan.svg">{{'duplicatePanel.step1.scanBtn' | i18n}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 步驟2 - 掃描中 -->
+    <div ng-if="step==='SCAN'" ng-switch on="scanMethod" style="height: 100%;">
+
+        <!-- 相同 -->
+        <div class="page" ng-switch-when="SAME">
+            <div class="panel-header">
+                <div class="left">
+                    <div class="ic-btn back" ng-click="back()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-back.svg">
+                    </div>
+                </div>
+                <div class="center"><div class="title">{{'duplicatePanel.same.title' | i18n}}</div></div>
+                <div class="right">
+                    <div class="ic-btn close" ng-click="close()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                    </div>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="scan-progress">
+                    <img src="assets/images/{{theme|themePath}}/illustrations/duplicate-same-scanning.png" width="300" height="144">
+                    <div class="title">{{'duplicatePanel.step2.title' | i18n}}</div>
+                    <div class="progress">
+                        <div class="curr" style="width: {{scanProgress}}%;"></div>
+                    </div>
+                    <div class="desc">{{current|number:0}}/{{total|number:0}}<span>({{scanProgress}}%)</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 相似 -->
+        <div class="page" ng-switch-when="SIMILAR">
+            <div class="panel-header">
+                <div class="left">
+                    <div class="ic-btn back" ng-click="back()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-back.svg">
+                    </div>
+                </div>
+                <div class="center"><div class="title">{{'duplicatePanel.similar.title' | i18n}}</div></div>
+                <div class="right">
+                    <div class="ic-btn close" ng-click="close()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                    </div>
+                </div>
+            </div>
+            <div class="panel-content">
+                <div class="scan-progress">
+                    <img src="assets/images/{{theme|themePath}}/illustrations/duplicate-similar-scanning.png" width="300" height="144">
+                    <div class="title">{{'duplicatePanel.step2.title' | i18n}}</div>
+                    <div class="progress">
+                        <div class="curr" style="width: {{scanProgress}}%;"></div>
+                    </div>
+                    <div class="desc">{{current|number:0}}/{{total|number:0}}
+                        <span>({{scanProgress}}%)</span>
+                        <span class="counter" ng-show="timeLeftInSeconds"> ({{timeLeftInSeconds | second2time}})</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 步驟3 - 掃描結果 -->
+    <div ng-if="step=='SCAN-RESULT'" ng-switch on="scanMethod" style="height: 100%;">
+
+        <!-- 相同 -->
+        <div class="page" ng-switch-when="SAME">
+            <div class="panel-header">
+                <div class="left">
+                    <div class="ic-btn back" ng-click="back()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-back.svg">
+                    </div>
+                </div>
+                <div class="center"><div class="title">{{'duplicatePanel.same.title' | i18n}}</div></div>
+                <div class="right">
+                    <div class="ic-btn close" ng-click="close()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                    </div>
+                </div>
+            </div>
+            <!-- 空狀態 -->
+            <div class="panel-content" ng-if="groups.length === 0">
+                <div class="empty-state">
+                    <img src="assets/images/{{theme|themePath}}/illustrations/duplicate-same-empty.png" width="286" height="144">
+                    <div class="title">{{'duplicatePanel.step3.empty.title' | i18n}}</div>
+                    <div class="desc">{{'duplicatePanel.step3.empty.same' | i18n}}</div>
+                </div>
+            </div>
+            <!-- 結果列表 -->
+            <div class="panel-content" ng-if="groups.length > 0">
+                <div class="duplicate-groups" vs-excess="10" vs-repeat="275" vs-size="size">
+                    <div 
+                        class="duplicate-group"
+                        ng-repeat="group in groups"
+                    >
+                        <div class="group-header">
+                            <div class="title" ng-click="toggleGroupSelection(group)">
+                                <div class="checkbox" ng-class="{'checked': isGroupSelected(group)}"><div class="check-icon"></div></div>
+                                <b>{{group.items.length}}</b>{{'duplicatePanel.step3.list.same' | i18n}}
+                            </div>
+                            <div class="right">
+                                <div class="ic-btn" tippy tippy-content="{{'duplicatePanel.step3.list.removeFromList' | i18n}}" tippy-placement="top" ng-click="removeGroup(group)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-duplicate-remove-group.svg"></div>
+                            </div>
+                        </div>
+                        <div class="group-items">
+                            <div class="group-item" ng-repeat="item in group.items" ng-right-click="openItemContextMenu(group, item)" ng-mouseup="onItemMouseup($event, item)">
+                                <div class="thumbnail">
+                                    <img ng-if="!item.noPreview" ng-src="{{getThumbnailUrl(item)}}" style="aspect-ratio: {{item.width}}/{{item.height}}">
+                                    <ext-icon ng-if="item.noPreview" item-id="{{item.id}}"></ext-icon>
+                                </div>
+                                <div class="title">{{item.name}}</div>
+                                <div class="meta">{{item.ext}}・{{item.size | filesize}}</div>
+                                <div class="meta" ng-if="item.width > 0">{{item.width | number:0}} × {{item.height | number:0}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-footer" ng-if="groups.length > 0">
+                <div class="left" ng-show="selectedItems.length > 0">
+                    {{'duplicatePanel.footer.selectedMsg1' | i18n}}<b>{{selectedItems.length | number:0}}</b>{{'duplicatePanel.footer.selectedMsg2' | i18n}}<b>{{reducedSize | filesize}}</b>{{'duplicatePanel.footer.selectedMsg3' | i18n}}
+                </div>
+                <div class="right">
+                    <div class="button button-primary" ng-click="startMerge()" ng-class="{'button-disabled': selectedItems.length === 0}"><img ng-src="assets/images/base/icons/ic-duplicate-merge-all.svg">{{'duplicatePanel.footer.nextBtn' | i18n}}<span ng-show="selectedItems.length > 0"> ({{selectedItems.length}})</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 相似 -->
+        <div class="page" ng-switch-when="SIMILAR">
+            <div class="panel-header">
+                <div class="left">
+                    <div class="ic-btn back" ng-click="back()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-back.svg">
+                    </div>
+                </div>
+                <div class="center"><div class="title">{{'duplicatePanel.similar.title' | i18n}}</div></div>
+                <div class="right">
+                    <div class="ic-btn close" ng-click="close()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                    </div>
+                </div>
+            </div>
+            <!-- 空狀態 -->
+            <div class="panel-content" ng-if="groups.length === 0">
+                <div class="empty-state">
+                    <img src="assets/images/{{theme|themePath}}/illustrations/duplicate-similar-empty.png" width="286" height="144">
+                    <div class="title">{{'duplicatePanel.step3.empty.title' | i18n}}</div>
+                    <div class="desc">{{'duplicatePanel.step3.empty.similar' | i18n}}</div>
+                </div>
+            </div>
+            <!-- 結果列表 -->
+            <div class="panel-content" ng-if="groups.length > 0">
+                <div class="duplicate-groups" vs-excess="10" vs-repeat="275" vs-size="size">
+                    <div 
+                        class="duplicate-group"
+                        ng-repeat="group in groups"
+                    >
+                        <!-- 未合併狀態 -->
+                        <div class="group-header">
+                            <div class="title" ng-click="toggleGroupSelection(group)">
+                                <div class="checkbox" ng-class="{'checked': isGroupSelected(group)}"><div class="check-icon"></div></div>
+                                <b>{{group.items.length}}</b>{{'duplicatePanel.step3.list.similar' | i18n}}
+                            </div>
+                            <div class="right">
+                                <div class="ic-btn" tippy tippy-content="{{'duplicatePanel.step3.list.removeFromList' | i18n}}" tippy-placement="top" ng-click="removeGroup(group)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-duplicate-remove-group.svg"></div>
+                            </div>
+                        </div>
+                        <div class="group-items">
+                            <div 
+                                data-box-id="{{item.id}}"
+                                data-hover-delay="500"
+                                class="group-item similar-item box"
+                                ng-class="{'selected': group.choice === item}" 
+                                ng-repeat="item in group.items"
+                                ng-click="selectChoice(group, item)"
+                                ng-right-click="openItemContextMenu(group, item)"
+                                ng-mouseup="onItemMouseup($event, item)"
+                            >
+                                <div class="thumbnail">
+                                    <div class="img-wrap" ng-class="{'fit-width': item.width > item.height, 'fit-height' : item.width <= item.height}">
+                                        <div class="choice-icon" ng-if="group.choice === item"><img ng-src="assets/images/base/icons/ic-duplicate-choice.svg"/></div>
+                                        <img class="zoom-btn" ng-if="!item.noPreview" ng-src="{{getThumbnailUrl(item)}}" style="aspect-ratio: {{item.width}}/{{item.height}}">
+                                        <ext-icon ng-if="item.noPreview" item-id="{{item.id}}"></ext-icon>
+                                    </div>
+                                </div>
+                                <div class="title">{{item.name}}</div>
+                                <div class="meta">{{item.ext}}・{{item.size | filesize}}</div>
+                                <div class="meta" ng-if="item.width > 0">{{item.width | number:0}} × {{item.height | number:0}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 相似度滑塊區域，只在有潛在相似結果時顯示 -->
+            <div class="panel-footer" ng-show="hasPotentialSimilarResults">
+                <div class="left" ng-show="selectedItems.length > 0 && groups.length > 0">
+                    {{'duplicatePanel.footer.selectedMsg1' | i18n}}<b>{{selectedItems.length | number:0}}</b>{{'duplicatePanel.footer.selectedMsg2' | i18n}}<b>{{reducedSize | filesize}}</b>{{'duplicatePanel.footer.selectedMsg3' | i18n}}
+                </div>
+                <div class="right">
+                    {{'duplicatePanel.footer.similarity' | i18n}}
+                    <div class="sliders-bar has-btn">
+                        <div class="slider">
+                            <div class="range-wrap">
+                                <div class="range-progressbar">
+                                    <div class="current" style="width: {{ (similarity - 1) / 0.15 * 100}}%"></div>
+                                </div>
+                                <input class="range" type="range" name="points" min="0.8" max="1" step="0.01" tabIndex="-1" ng-model="similarity" ng-change="changeSimilarity(similarity)">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="button button-primary" ng-click="startMerge()" ng-class="{'button-disabled': selectedItems.length === 0 || groups.length === 0}"><img ng-src="assets/images/base/icons/ic-duplicate-merge-all.svg">{{'duplicatePanel.footer.nextBtn' | i18n}}</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 步驟4 - 合併預覽 -->
+    <div class="page" ng-if="step=='MERGE'">
+        <div class="page">
+            <div class="panel-header">
+                <div class="left">
+                    <div class="ic-btn back" ng-click="goResult()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-back.svg">
+                    </div>
+                </div>
+                <div class="center"><div class="title">{{'duplicatePanel.step4.title' | i18n}}</div></div>
+                <div class="right">
+                    <div class="ic-btn close" ng-click="close()">
+                        <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                    </div>
+                </div>
+            </div>
+            <div class="panel-content">
+                <merge-editor theme="theme" groups="groups" selected-group-map="selectedGroupMap" method="scanMethod" on-merged="onMerged" folder-mappings="folderMappings"></merge-editor>  
+            </div>
+        </div>
+    </div>
+</div>
+<div class="duplicate-scan-panel-overlay"></div>

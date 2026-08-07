@@ -1,0 +1,115 @@
+.labels-input {
+    padding: 8px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border-secondary);
+    min-height: 36px;
+    cursor: text;
+    box-sizing: border-box;
+    transition: border-color var(--timing-function-super) 200ms;
+
+    @include dark {
+        background: var(--color-black-25);
+    }
+
+    @include light {
+        background: var(--color-white-50);
+    }
+
+    &:hover {
+        border-color: var(--color-primary);
+    }
+
+    .empty {
+        font-size: 13px;
+        color: var(--color-text-secondary);
+        padding: 2px;
+    }
+
+    .label-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+
+        .label-item {
+            display: inline-flex;
+            gap: 4px;
+            align-items: center;
+            height: 26px;
+            box-sizing: border-box;
+            padding: 0 4px 0 8px;
+            border-radius: 6px;
+            transition: all var(--timing-function-super) 200ms;
+            color: var(--color-text-primary);
+    
+            @include dark {
+                background-color: var(--color-lightgray-5);
+                border: 1px solid var(--color-lightgray-15);
+                &:hover {
+                    cursor: pointer;
+                    background-color: var(--color-lightgray-10);
+                    border: 1px solid var(--color-lightgray-30);
+                }
+            }
+    
+            @include light {
+                background-color: var(--color-dark-5);
+                border: 1px solid var(--color-dark-15);
+                &:hover {
+                    cursor: pointer;
+                    background-color: var(--color-dark-10);
+                    border: 1px solid var(--color-dark-30);
+                }   
+            }
+    
+    
+            .label-item-name {
+                max-width: 120px;
+                overflow: hidden;
+                white-space: nowrap;
+                height: 16px;
+                line-height: 16px;
+            }
+    
+            .label-item-remove-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                opacity: 0.5;
+                transition: all var(--timing-function-super) 200ms;
+                &:hover {
+                    opacity: 1;
+                }
+            }
+        }
+        .create-label-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            color: var(--color-text-primary);
+            border-radius: 6px;
+            img {
+                opacity: 0.5;
+                transition: all var(--timing-function-super) 200ms;
+            }
+            &:hover {
+                img {
+                    opacity: 1;
+                }
+            }
+            &.full-width {
+                gap: 8px;
+                padding: 0 24px 0 16px;
+                width: 100%;
+                img {
+                    opacity: 0.8;
+                }
+            }
+        }
+    }
+}
+

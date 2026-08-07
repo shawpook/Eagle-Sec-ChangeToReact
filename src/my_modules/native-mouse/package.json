@@ -1,0 +1,70 @@
+{
+  "_from": "native-mouse",
+  "_id": "native-mouse@1.2.0",
+  "_inBundle": false,
+  "_integrity": "sha512-FpJSOuF/6lj2WCm0VTkJqarJaW6e/QOSJWbb04MwzgHfNbKyNHZRmxQ3FyIlY9ZUHgEE+FqwGtp6yO4U2M+BCQ==",
+  "_location": "/native-mouse",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "native-mouse",
+    "name": "native-mouse",
+    "escapedName": "native-mouse",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/native-mouse/-/native-mouse-1.2.0.tgz",
+  "_shasum": "40e3e4b30153c67bc62eea2e13efccfa75ce288c",
+  "_spec": "native-mouse",
+  "_where": "C:\\Users\\User\\Desktop\\global-mouse",
+  "author": {
+    "name": "Hans Koch"
+  },
+  "bugs": {
+    "url": "https://github.com/Hammster/native-mouse/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "nan": "^2.14.0"
+  },
+  "deprecated": false,
+  "description": "Native Mouse events",
+  "devDependencies": {
+    "@types/node": "^12.6.9",
+    "esm": "^3.2.25"
+  },
+  "gypfile": true,
+  "homepage": "https://github.com/Hammster/native-mouse",
+  "keywords": [
+    "track",
+    "mouse",
+    "events",
+    "windows",
+    "mac",
+    "osx",
+    "native",
+    "screen",
+    "display",
+    "position"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "name": "native-mouse",
+  "scripts": {
+    "install": "node-gyp rebuild",
+    "rebuild": "node-gyp rebuild",
+    "test": "node -r esm ./test/index.js"
+  },
+  "overrides": {
+    "nan": "github:jkleinsc/nan#remove_accessor_signature"
+  },
+  "typings": "./index.d.ts",
+  "version": "1.2.0"
+}

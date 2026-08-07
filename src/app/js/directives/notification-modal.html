@@ -1,0 +1,10 @@
+<div class="notification-modal modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+    <div class="modal-header">
+        <div class="name">{{'modal.notification.title' | i18n}}</div>
+        <div class="close" ng-click="close()"></div>
+    </div>
+    <div class="modal-content" ng-if="isOpen">
+        <iframe ng-src="{{getPageUrl()}}"></iframe>
+    </div>
+</div>
+<div class="notification-modal-overlay modal-overlay" ng-click="close()"></div>

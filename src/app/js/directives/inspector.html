@@ -1,0 +1,221 @@
+<!-- 檢視區塊 -->
+<div class="inspector" style="width: {{inspector.width}}px;" resizable="w" on-resize="onInspectorResize(event, ui)" ng-show="viewMode !== 'alltags'">
+
+    <!-- 右上角按鈕 -->
+    <div class="inspector-header">
+        <corner-btns theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
+    </div>
+
+    <!-- 資料夾信息 -->
+    <div class="inspector-content" ng-show="inspector.activeTab === 'SIDEBAR'">
+        <!-- 資料夾名、描述 -->
+        <form class="properties-form" name="properties-form">
+            <div
+                data-placeholder="{{'inspector.selection>title' | i18n}}"
+                contenteditable="plaintext-only"
+                ng-class="{'disable': !inspector.category.editable}"
+                ng-model="inspector.category.newName"
+                ng-change="inspectorCategoryNameChange();"
+                ng-keydown="preventEnter($event)"
+                no-line-breaks="true"
+                editable-selectall
+                tabindex="0"
+                style="margin-bottom: 8px;"
+            ></div>
+            <div
+                ng-show="inspector.category.editable"
+                class="annotation"
+                data-placeholder="{{'inspector.selection>description' | i18n}}"
+                contenteditable="plaintext-only"
+                ng-class="{'disable': !inspector.category.editable}"
+                ng-model="inspector.category.newDescription"
+                ng-change="inspectorCategoryDescriptionChange()"
+                strip-br="false"
+                allow-link="true"
+                editable-selectall
+                tabindex="0"
+                style="margin-bottom: 8px;"
+            ></div>
+        </form>
+        <!-- 資料夾屬性 -->
+        <div class="info-section" ng-class="{'expand': inspector.showProperties}">
+            <div class="info-section-label" ng-click="inspector.showProperties = !inspector.showProperties;">
+                <div class="name">{{'inspector.infoLabel' | i18n}}</div>
+                <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+            </div>
+            <div class="info-section-container">
+                <div class="prop">
+                    <div class="keys">
+                        <div ng-hide="inspector.inspectorFolder && inspector.inspectorFolder.password && !inspector.inspectorFolder.isUnLock" class="key">{{'inspector.props.count' | i18n}}</div>
+                        <div ng-hide="inspector.inspectorFolder && inspector.inspectorFolder.password && !inspector.inspectorFolder.isUnLock" class="key">{{'inspector.props.folderSize' | i18n}}</div>
+                        <div ng-if="inspector.category.createDate" class="key">{{'inspector.props.createAt' | i18n}}</div>
+                        <div ng-if="inspector.inspectorFolder" class="key">{{'context.folder.password' | i18n}}</div>
+                    </div>
+                    <div class="values">
+                        <div ng-hide="inspector.inspectorFolder && inspector.inspectorFolder.password && !inspector.inspectorFolder.isUnLock" class="value">{{inspector.category.imageCount | number:0}}</div>
+                        <div ng-hide="inspector.inspectorFolder && inspector.inspectorFolder.password && !inspector.inspectorFolder.isUnLock" class="value">{{inspector.category.fileSize | filesize}}</div>
+                        <div ng-if="inspector.category.createDate" class="value">{{inspector.category.createDate | date:"yyyy/MM/dd h:mm"}}</div>
+                        <div ng-if="inspector.inspectorFolder">
+                            <div ng-if="!inspector.inspectorFolder.password">
+                                <div class="value" ng-if="!inspector.inspectorFolder.password">
+                                    <span class="clickable" ng-click="setFolderPassword(inspector.inspectorFolder)">{{'context.folder.password>create' | i18n}}</span>
+                                </div>
+                            </div>
+                            <div ng-if="inspector.inspectorFolder.password && $root.selectedFolders.length === 0">
+                                <div class="value" ng-if="!inspector.inspectorFolder.password">
+                                    <span class="clickable" ng-click="setFolderPassword(inspector.inspectorFolder)">{{'context.folder.password>create' | i18n}}</span>
+                                </div>
+                                <div class="value" ng-if="inspector.inspectorFolder.password && $root.selectedFolders.length === 0">
+                                    <span class="clickable" ng-click="changeFolderPassword(inspector.inspectorFolder)">{{'context.folder.password>change' | i18n}}</span>
+                                    |
+                                    <span class="clickable" ng-click="resetFolderPassword(inspector.inspectorFolder)">{{'context.folder.password>reset' | i18n}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="export-container" ng-if="inspector.category.exportable && inspector.category.imageCount > 0">
+                    <div ng-if="currentFolder" class="ic-btn export-btn has-bg" ng-click="openFolderExportContextMenu($event, inspector.inspectorFolder)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-export.svg">{{'inspector.selection>export' | i18n}}</div>
+                    <div ng-if="currentSmartFolder" class="ic-btn export-btn has-bg" ng-click="openSmartFolderExportContextMenu($event, currentSmartFolder)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-export.svg">{{'inspector.selection>export' | i18n}}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 檔案信息 -->
+    <div class="inspector-content" ng-show="selected.length > 0 && inspector.activeTab === 'ITEM'">
+
+        <!-- 縮略圖預覽 -->
+        <div class="selected-preview">
+            <div
+                ng-if="selected.length !== 1"
+                class="image {{::image.ext}} bg-{{image.background}}"
+                ng-class="{'no-preview': image.noPreview, 'no-animation': selected.length >= 5,'odd': selectedIndexMappings[image.id] % 2 === 0, 'even': selectedIndexMappings[image.id] % 2 === 1, 'no-border': image.noPreview}"
+                draggable="true"
+                ondragend="onDragEndContainer(event)"
+                ondragstart="onDragStartContainer(event)"
+                ondrop="onDropInspector(event)"
+                ng-click="autoScroll()"
+                ng-repeat="image in selected | limitTo:5:inspectorPreviewStartIndex track by image.id"
+                ng-switch on="image.ext"
+            >
+                <div ng-switch-when="svg" class="svg" style="background-image: url('{{::getLastestThumbnailPath(image)}}')"></div>
+                <div ng-switch-when="txt">
+                    <div class="txt-content">
+                        <div>
+                            <h4>{{image.name}}</h4>
+                            <p>{{image.text}}</p>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    ng-switch-default
+                    ng-class="{ 'pixelated': image.width <= 120 || image.height <= 120, 'fit-height': image.height >= image.width && image.height > 200, 'square': image.width === image.height }"
+                >
+                    <iframe ng-if="image.orientation && image.orientation !== 1 && !image.noThumbnail" ng-src="{{getExifPath(image)}}" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+                    <img ng-if="!image.noPreview && (!image.orientation || image.orientation === 1 || image.noThumbnail) && (isDetailMode || (!image.disable && (!image.orientation || image.orientation === 1)))" ng-src="{{getLastestThumbnailPath(image)}}" retry-when-thumb-error="image">
+                    <div class="type-label {{image.ext}}" ng-show="!image.noPreview && (image.ext !== 'jpg' || image.ext !== 'png')"><span>{{image.ext}}</span></div>
+                    <ext-icon ng-if="image.noPreview" item-id="{{image.id}}"></ext-icon>
+                </div>
+            </div>
+            <div
+                ng-if="selected.length === 1"
+                class="image {{selected[0].ext}} bg-{{selected[0].background}}"
+                ng-class="{'no-preview': selected[0].noPreview, 'no-border': selected[0].noPreview}"
+                draggable="true"
+                ondragend="onDragEndContainer(event)"
+                ondragstart="onDragStartContainer(event)"
+                ondrop="onDropInspector(event)"
+                ng-click="autoScroll()"
+                ng-switch on="selected[0].ext"
+            >
+                <div ng-switch-when="svg" class="svg" ng-if="selected[0].ext=='svg'" style="background-image: url('{{getLastestThumbnailPath(selected[0])}}')"></div>
+                <div ng-switch-when="txt">
+                    <div class="txt-content">
+                        <div>
+                            <h4>{{selected[0].name}}</h4>
+                            <p>{{selected[0].text}}</p>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    ng-switch-default
+                    ng-class="{'pixelated': selected[0].width <= 120 || selected[0].height <= 120, 'fit-height': selected[0].height >= selected[0].width && selected[0].height > 200, 'square': selected[0].width === selected[0].height}"
+                >   
+                    <iframe ng-if="selected[0].orientation && selected[0].orientation !== 1 && !selected[0].noThumbnail" ng-src="{{getExifPath(selected[0])}}" frameborder="0" sandbox="allow-scripts allow-same-origin"></iframe>
+                    <img ng-if="!selected[0].noPreview && (!selected[0].orientation || selected[0].orientation === 1 || selected[0].noThumbnail) && (isDetailMode || (!selected[0].disable && (!selected[0].orientation || selected[0].orientation === 1 || selected[0].noThumbnail)))" ng-src="{{getLastestThumbnailPath(selected[0])}}" retry-when-thumb-error="selected[0]">
+                    <div class="type-label {{selected[0].ext}}" ng-show="!selected[0].noPreview && (selected[0].ext !== 'jpg' || selected[0].ext !== 'png')"><span>{{selected[0].ext}}</span></div>
+                    <ext-icon ng-if="selected[0].noPreview" item-id="{{selected[0].id}}"></ext-icon>
+                </div>                            
+            </div>
+            
+        </div>
+        
+        <!-- 色票 -->
+        <div class="palette" ng-if="selected.length == 1 && !selected[0].processingPalette && !(selected[0].noPreview || selected[0].ext === 'txt' || FONT_TYPES[selected[0].ext] || AUDIO_TYPES[selected[0].ext] || selected[0].palettes.length <= 1)">
+            <div class="color-wrap" tippy tippy-placement="top" tippy-content="{{rgbToHex(palette.color[0], palette.color[1], palette.color[2])}} ({{palette.ratio|number:1}}%)"
+            ng-click="openColorContextMenu(palette)"
+            ng-right-click="hexColor = rgbToHex(palette.color[0], palette.color[1], palette.color[2]);filterWithColor(palette.color);"
+            ng-repeat="palette in selected[0].palettes | limitTo:10 | sortHSL">
+                <div class="color" style="background-color: rgba({{palette.color[0]}}, {{palette.color[1]}}, {{palette.color[2]}}, 1)"></div>
+            </div>
+        </div>
+
+        <!-- 已選取 N 個 -->
+        <div class="selected-count" ng-class="{'warning': selected.length >= 100}" ng-if="selected.length > 1">
+            <div class="icon"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-warning.png"></div>
+            {{'inspector.itemSelected1' | i18n}}
+            <span class="count">{{selected.length}}</span>
+            {{'inspector.itemSelected2' | i18n}}
+        </div>
+
+        <!-- 屬性：標籤、文件夾、標注、基本信息 -->
+        <form class="properties-form" name="properties-form">
+            <!-- 文件名 -->
+            <div
+                id="inspector-name"
+                ng-hide="selected.length > 1"
+                data-placeholder="{{'inspector.namePlaceholder' | i18n}}"
+                contenteditable="plaintext-only"
+                ng-model="inspector.newName"
+                ng-keydown="preventEnter($event)"
+                ng-change="inspectorNameChange();"
+                no-line-breaks="true"
+                editable-selectall
+                tabindex="0"
+            ></div>
+            <!-- 註釋 -->
+            <div
+                class="annotation"
+                data-placeholder="{{'inspector.notePlaceholder' | i18n}}"
+                contenteditable="plaintext-only"
+                ng-model="inspector.newAnnotation"
+                ng-change="annotationChange()"
+                strip-br="false"
+                allow-link="true"
+                editable-selectall
+                tabindex="0"
+            ></div>
+            <!-- 連結 -->
+            <div class="link-input" title="{{inspector.newUrl}}" ondragenter="onDragEnterLinkInput(event)" ondragleave="onDragLeaveLinkInput(event)" ondrop="onDropLinkInput(event)">
+                <input tabindex="0" type="text" name="url" maxlength="4096" ng-focus="selectLinkInput($event);" selectall placeholder="{{inspector.newUrlPlaceholder}}" ng-model="inspector.newUrl" ng-change="urlChange()" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 200, 'blur': 0 } }" ng-keydown="preventEnter($event)" ng-keyup="newUrlKeyup($event)">
+                <div class="open-link ic-btn" tippy tippy-placement="bottom" tippy-content="{{'inspector.openUrlBtn' | i18n}}{{'<key>⌘</key><key>Shift</key><key>O</key>'| shortcuts}}" ng-show="inspector.newUrl" ng-click="openLink($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-open-link.svg"></div>
+            </div>
+        </form>
+        <div style="width: 100%;" ui-sortable="inspector.sortableOptions" ng-model="inspector.inspectorItems">
+            <div style="width: 100%;" ng-repeat="inspectorItem in inspector.inspectorItems track by inspectorItem.id" ng-switch on="inspectorItem.type">
+                <inspector-tags ng-switch-when="tags"></inspector-tags>
+                <inspector-folders ng-switch-when="folders"></inspector-folders>
+                <inspector-annotations ng-switch-when="annotations"></inspector-annotations>
+                <inspector-information ng-switch-when="information"></inspector-information>
+                <inspector-plugin ng-switch-when="plugin"></inspector-plugin>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部幫助按鈕、試用到期提示 -->
+    <div class="help-area">
+        <div class="trial-remain" ng-if="trialRemain > 0 && trialRemain <= 31" ng-click="openTrialModal(trialRemain)">{{'titlebar.remian' | i18n}} {{trialRemain}} {{'titlebar.day' | i18n}}</div>
+        <div class="help-btn" ng-click="openHelpContextMenu($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-help-btn.svg"></div>
+    </div>
+</div>

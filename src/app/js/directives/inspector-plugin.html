@@ -1,0 +1,13 @@
+<div style="width: 100%;" ng-show="hasInspectorPlugin(inspectorItem.plugin, selected)">
+    <div class="inspector-plugin-section">
+        <div class="info-section" ng-class="{'expand': !hidePluginMap[inspectorItem.plugin.manifest.id]}">
+            <div class="info-section-label" ng-click="togglePlugin(inspectorItem.plugin);">
+                <div class="name">{{inspectorItem.plugin.manifest.name}}</div>
+                <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+            </div>
+            <div class="info-section-container">
+                <inspector-plugin-view id="plugin-viewer" hide-plugin-map="hidePluginMap" items="selected" plugin="inspectorItem.plugin"></inspector-plugin-view>
+            </div>
+        </div>
+    </div>
+</div>

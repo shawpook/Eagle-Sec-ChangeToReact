@@ -1,0 +1,26 @@
+.modal.notification-modal {
+    width: 480px;
+    max-width: 90vw;
+    height: 80vh;
+    max-height: 1000px;
+
+    &.open {
+        z-index: 100000 - 10;
+
+        ~.notification-modal-overlay {
+            z-index: 100000 - 11;
+        }
+
+        input {
+            -webkit-app-region: no-drag;
+        }
+    }
+
+    .modal-content {
+        height: 100%;
+        iframe {
+            height: 100%;
+            width: 100%;
+        }
+    }
+}

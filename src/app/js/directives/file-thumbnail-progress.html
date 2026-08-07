@@ -1,0 +1,10 @@
+<div class="progress-dialog" ng-class="{'open' : regenerateThumbnailQueue.length > 0}">
+    <div class="progress-dialog-content" ng-if="regenerateThumbnailQueue.length > 0">
+        <div class="message">{{'progress.regenerateThumbanil.msg' | i18n}}...<span class="counter">({{finishGenerateQueue.length}}/{{regenerateThumbnailQueue.length}})</span></div>
+        <div class="progressbar" ng-show="regenerateThumbnailQueue.length > 0">
+            <div class="current" style="width: {{finishGenerateQueue.length/regenerateThumbnailQueue.length*100}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancelRegenerateThumbnail()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

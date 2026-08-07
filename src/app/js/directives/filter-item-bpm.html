@@ -1,0 +1,17 @@
+<div id="bpm-filter-item" ng-right-click="clearBPMFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.bpm'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-bpm.svg"><div>{{displayName}}</div></div>
+    <div class="menu-wrap" close-filter-item><div class="filter-menu" style="width: 160px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div class="file-size-filter">
+                <div class="item">
+                    <div class="range">
+                        <input maxlength="256" type="text" placeholder="{{'filter.duration>Min' | i18n}}" ng-change="changeDisplayName()" ng-model="eagle.filter.filterRules.bpm.min" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                        <span>-</span>
+                        <input maxlength="256" type="text" placeholder="{{'filter.duration>Max' | i18n}}" ng-change="changeDisplayName()" ng-model="eagle.filter.filterRules.bpm.max" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearBPMFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

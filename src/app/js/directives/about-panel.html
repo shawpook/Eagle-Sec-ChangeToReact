@@ -1,0 +1,22 @@
+<div id="about-panel" class="about-panel">
+    <div class="about-panel-header">
+		<div class="close" ng-click="close()"></div>
+    </div>
+    <div class="about-panel-content">
+
+        <img src="assets/images/base/logo_80.png" class="logo">
+
+        <div class="title">Eagle</div>
+
+        <div class="sub-title">{{'aboutWindow.title' | i18n}}</div>
+
+        <div class="meta">
+            <div class="version">{{appVersion}} Build{{buildNumber}} ({{buildVersion}})</div>
+        </div>
+
+        <div class="button button-primary" ng-click="close();">{{'general.ok' | i18n}}</div>
+
+        <div class="copyright">Copyright © 2017-2026 OGDESIGN</div>
+    </div>
+</div>
+<div class="about-panel-overlay"></div>

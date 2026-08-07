@@ -1,0 +1,25 @@
+<div class="info-section" ng-class="{'expand': inspector.showTags}" ng-right-click="tagsInputMouseDown($event); $event.stopPropagation();">
+    <div class="info-section-label" ng-click="inspector.showTags = !inspector.showTags;">
+        <div class="name">{{'inspector.includesTagsLabel' | i18n}}</div>
+        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+    </div>
+    <div class="info-section-container">
+        <div class="label-container" ng-click="openInspectorTagSelectPanel($event)">
+            <div 
+                class="label-item color-{{TagManager.tagMappings[tag].color}}"
+                ng-repeat="tag in inspector.newTags track by $index"
+                ng-right-click="tagsInputMouseDown($event, tag); $event.stopPropagation();"
+            >
+                <span class="label-item-name" title="{{tag | longTitle}}">{{tag | substring:0:200}}</span>
+                <div class="ic-btn label-item-remove-btn" ng-click="$event.stopPropagation(); TagManager.removeTag(tag); $event.stopPropagation();">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+                </div>
+            </div>
+            <!-- 新增資料夾（空狀態） -->
+            <div ng-click="$event.stopPropagation(); openInspectorTagSelectPanel($event)" ng-show="inspector.newTags.length === 0" class="ic-btn has-bg create-label-btn full-width" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.tagInputPlaceholder' | i18n }}<key>T</key>"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"><span>{{'inspector.tagInputPlaceholder' | i18n}}</span></div>
+
+            <!-- 新增資料夾（已有資料狀態） -->
+            <div ng-click="$event.stopPropagation(); openInspectorTagSelectPanel($event)" ng-show="inspector.newTags.length > 0" class="ic-btn create-label-btn" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.tagInputPlaceholder' | i18n }}<key>T</key>"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"></div>
+        </div>
+    </div>
+</div>

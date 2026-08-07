@@ -1,0 +1,60 @@
+.toggle {
+    
+    @include dark {
+        --toggle-background: var(--color-lightgray-10);
+        --toggle-slider-background: var(--color-lightgray-25);
+        --toggle-checked-background: var(--color-brand);
+        --toggle-checked-slider-background: var(--color-white);
+    }
+
+    @include light {
+        --toggle-background: var(--color-dark-10);
+        --toggle-slider-background: var(--color-white);
+        --toggle-checked-background: var(--color-brand);
+        --toggle-checked-slider-background: var(--color-white);
+    }
+
+    position: relative;
+    display: inline-block;
+    height: 20px;
+    width: 32px;
+
+    input {
+        opacity: 0;
+        height: 0;
+        width: 0;
+    }
+
+    .slider {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        border-radius: 10px;
+        background-color: var(--toggle-background);
+        cursor: pointer;
+        transition: transform .2s var(--timing-function-super);
+    
+        &:before {
+            position: absolute;
+            bottom: 2px;
+            left: 2px;
+            content: "";
+            border-radius: 50%;
+            background-color: var(--toggle-slider-background);
+            height: 16px;
+            width: 16px;
+            transition: transform .2s var(--timing-function-super);
+        }
+    }
+    
+    input:checked+.slider {
+        background-color: var(--toggle-checked-background);
+    }
+    
+    input:checked+.slider:before {
+        transform: translateX(12px);
+        background-color: var(--toggle-checked-slider-background);
+    }
+}

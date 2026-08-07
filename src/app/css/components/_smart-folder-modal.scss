@@ -1,0 +1,94 @@
+.modal.smart-folder-modal {
+	width: 600px;
+	.tips {
+		color: inherit;
+		margin-top: 12px; 
+		line-height: 1.4;
+		opacity: 0.8;
+		a {
+			color: inherit;
+		}
+	}
+	.select {
+		margin: 0 2px;
+    	display: inline-table;
+	}
+	.rules-section {
+	    max-height: calc(80vh - 120px);
+    	// overflow: auto;
+	}
+	.set {
+		margin-bottom: 12px;
+	}
+	.condition {
+	    margin-bottom: 12px;
+		border-top: 1px solid rgba(0, 0, 0, 0.3);
+		padding-top: 12px;
+		&:first-child {
+			border-top: none;
+			padding-top: 0;
+		}
+	}
+	.rules {
+	    padding-left: 24px;
+		.rule {
+			margin-bottom: 6px;
+			.rule-value {
+			    width: calc(100% - 70px);
+			    display: inline-block;
+			    margin-right: 6px;
+			    vertical-align: top;
+			    input[type="number"] {
+			    	&::-webkit-outer-spin-button,
+	    			&::-webkit-inner-spin-button {
+	    				-webkit-appearance: none;
+	    				margin: 0;
+	    			}
+			    }
+			}
+			.select {
+				overflow: initial;
+			}
+			.select, .select select {
+				display: block;
+				width: 100%;
+			}
+			input[type="text"], input[type="number"] {
+				height: 26px;
+				margin-left: 5px;
+			}
+			.color-picker {
+				position: relative;
+				vertical-align: middle;
+				display: block;
+				width: 100%;
+				input[type="color"] {
+					position: absolute;
+				    left: 13px;
+    				top: 7px;
+	    			height: 12px;
+	    		}
+	    		input[type="text"] {
+	    			text-transform: uppercase;
+	    			padding-left: 24px;
+	    		}
+			}
+		}
+	}
+	.preview {
+		text-align: left;
+		line-height: 16px;
+		margin: 6px 0;
+		float: left;
+		font-size: 12px;
+		max-width: 272px;
+	}
+	.row {
+	    margin-right: 0px;
+		margin-left: -6px;
+	}
+	.col-xs, .col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6, .col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12, .col-xs-offset-0, .col-xs-offset-1, .col-xs-offset-2, .col-xs-offset-3, .col-xs-offset-4, .col-xs-offset-5, .col-xs-offset-6, .col-xs-offset-7, .col-xs-offset-8, .col-xs-offset-9, .col-xs-offset-10, .col-xs-offset-11, .col-xs-offset-12 {
+	    padding-right: 3px;
+	    padding-left: 3px;
+	}
+}

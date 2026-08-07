@@ -1,0 +1,91 @@
+<div class="modal batch-rename-modal" ng-class="{'open': isOpen}">
+
+    <!-- header -->
+    <div class="modal-header">
+        <div class="name">{{'modal.batchRename.title' | i18n}} ({{items.length}})</div>
+        <div class="close" ng-click="close()"></div>
+    </div>
+
+    <div class="batch-rename-modal-container">
+        <!-- 側欄 -->
+        <div class="batch-rename-modal-sidebar">
+            <!-- 重新命名設定 -->
+            <div class="batch-rename-modal-sidebar-form">
+
+                <div class="form-item">
+                    <label>{{'modal.batchRename.method' | i18n}}</label>
+                    <div class="segment-control">
+                        <div class="segment" ng-class="{'active': replaceMethod === 'format'}" ng-click="changeReplaceMethod('format')">{{'modal.batchRename.format' | i18n}}</div>
+                        <div class="segment" ng-class="{'active': replaceMethod === 'replace'}" ng-click="changeReplaceMethod('replace')">{{'modal.batchRename.replace' | i18n}}</div>
+                    </div>
+                </div>
+
+                <div class="form-item" ng-show="replaceMethod == 'format'">
+                    <label>{{'modal.batchRename.name' | i18n}}</label>
+                    <input type="text" maxlength="1024" selectall placeholder="{{'modal.batchRename.placeholder' | i18n}}" tabindex="-1" ng-model="newName" ng-trim="false" auto-focus="OPEN_RENAME" ng-keydown="onKeydown($event)">
+                    <div class="insert-btns">
+                        <div class="insert-btn" ng-class="{'disabled': hasIndex}" ng-click="insertIndex()">{{'modal.batchRename.insert>index' | i18n}}</div>
+                        <div class="insert-btn" ng-class="{'disabled': hasDate}" ng-click="insertDate()">{{'modal.batchRename.insert>date' | i18n}}</div>
+                        <div class="insert-btn" ng-class="{'disabled': hasTags}" ng-click="insertTags()">{{'modal.batchRename.insert>tags' | i18n}}</div>
+                        <div class="insert-btn" ng-class="{'disabled': hasFolders}" ng-click="insertFolders()">{{'modal.batchRename.insert>folders' | i18n}}</div>
+                        <div class="insert-btn" ng-class="{'disabled': hasOriginal}" ng-click="insertOriginal()">{{'modal.batchRename.insert>original' | i18n}}</div>
+                    </div>
+                </div>
+
+                <div class="form-item" ng-show="hasIndex && replaceMethod == 'format'">
+                    <label>{{'modal.batchRename.index' | i18n}}</label>
+                    <input type="number" min="0" selectall placeholder="1" tabindex="-1" ng-model="startAt" ng-keydown="onKeydown($event)">
+                </div>
+
+                <div class="form-item" ng-show="replaceMethod == 'replace'">
+                    <label>{{'modal.batchRename.findString' | i18n}}</label>
+                    <div class="input-autocomplete-container">
+                        <input type="text" maxlength="1024" selectall tabindex="-1" ng-model="findString" ng-trim="false" placeholder="{{'modal.batchRename.findStringPlaceholder' | i18n}}" auto-focus="OPEN_RENAME" ng-keydown="onFindStringKeydown($event)" ng-focus="showAutocomplete()" ng-blur="hideAutocomplete()">
+                        <find-string-autocomplete></find-string-autocomplete>
+                    </div>
+                </div>
+
+                <div class="form-item" ng-show="replaceMethod == 'replace'">
+                    <label for="">{{'modal.batchRename.replaceString' | i18n}}</label>
+                    <input type="text" maxlength="1024" selectall tabindex="-1" ng-model="replaceString" ng-trim="false" ng-keydown="onKeydown($event)">
+                </div>
+
+                <div class="form-item">
+                    <label>{{'modal.batchRename.textFormat' | i18n}}</label>
+                    <div class="segment-control">
+                        <div class="segment" ng-class="{'active': textCase === 'none'}" ng-click="changeTextCase('none')">-</div>
+                        <div class="segment" ng-class="{'active': textCase === 'uppercase'}" ng-click="changeTextCase('uppercase')">AG</div>
+                        <div class="segment" ng-class="{'active': textCase === 'lowercase'}" ng-click="changeTextCase('lowercase')">ag</div>
+                        <div class="segment" ng-class="{'active': textCase === 'capitalize'}" ng-click="changeTextCase('capitalize')">Ag</div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- 底部工具列 -->
+            <div class="batch-rename-modal-sidebar-controls">
+                <div class="button button-xs button-primary" ng-click="rename()" ng-class="{'button-disabled': (!newName && replaceMethod == 'format') || (replaceMethod == 'replace' && !findString)}"><img ng-src="assets/images/base/icons/ic-rename.svg">{{'modal.batchRename.renameBtn' | i18n}}</div>
+            </div>
+        </div>
+        <!-- 預覽區域 -->
+        <div class="batch-rename-modal-preview">
+            <div class="table" ng-class="{'hide-thumbnail': type !== 'IMAGE'}">
+                <div class="thead">
+                    <div class="thumbnail"></div>
+                    <div class="before">{{'modal.batchRename.original' | i18n}}</div>
+                    <div class="after">{{'modal.batchRename.new' | i18n}}</div>
+                </div>
+                <div class="tbody" vs-excess="30" vs-repeat="41" vs-size="size">
+                    <div class="tr" ng-repeat="preview in previews">
+                        <div class="thumbnail" ng-if="type === 'IMAGE'">
+                            <img ng-if="!preview.item.noPreview" ng-src="{{preview.thumbnail}}" style="aspect-ratio: {{preview.item.width}}/{{preview.item.height}}">
+                            <ext-icon ng-if="preview.item.noPreview" item-id="{{preview.item.id}}"></ext-icon>
+                        </div>
+                        <div class="before" ng-bind-html="preview.before"></div>
+                        <div class="after" ng-bind-html="preview.after"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay"></div>

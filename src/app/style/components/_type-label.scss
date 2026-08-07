@@ -1,0 +1,68 @@
+.type-label {
+    $ext-colors: (
+        mp3: #333,
+        wav: #333,
+        flac: #333,
+        ogg: #333,
+        aac: #333,
+        m4a: #333,
+
+        '3gp': #333,
+        afx: #333,
+        eva: #333,
+        vap: #333,
+        '360': #333,
+        mp4: #333,
+        mov: #333,
+        m4v: #333,
+        webm: #333,
+        mkv: #333,
+        avi: #333,
+        wmv: #333,
+        mpg: #333,
+        ts: #333,
+
+        gif: #bb1404,
+
+        eps: #E97D34,
+        svg: #E97D34,
+
+        doc: #265CB9,
+        docx: #265CB9,
+        xls: #2A7B35,
+        xlsx: #2A7B35,
+        ppt: #C03E29,
+        pptx: #C03E29,
+        potx: #C03E29,
+
+        pdf: #C3001A,
+
+        pages: #c27106,
+        numbers: #0eb819,
+        key: #007eb4,
+
+        psd: #055ea5,
+        psdt: #055ea5,
+        psb: #055ea5,
+        ai: #ba4c08,
+        indd: #bf0b5c,
+    );
+
+    @each $name, $color in $ext-colors {
+        $str-name: '#{$name}';
+        $first-char: str-slice($str-name, 1, 1);
+        $is-numeric: str-index('0123456789', $first-char);
+
+        @if $is-numeric {
+            &[class~="#{$name}"] {
+                background-color: rgba($color, 0.6) !important;
+                border: 1px solid rgba($color, 0.5) !important;
+            }
+        } @else {
+            &.#{$name} {
+                background-color: rgba($color, 0.6) !important;
+                border: 1px solid rgba($color, 0.5) !important;
+            }
+        }
+    }
+}

@@ -1,0 +1,44 @@
+<div id="folders-filter-item" ng-right-click="clearFoldersFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.folder'] | shortcutsWrapper | shortcuts}}" title="{{displayName}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-folder.svg"><div>{{displayName}}</div></div>
+    <div class="menu-wrap"><div class="filter-menu" style="width: 360px; max-width: 360px;" ng-mousedown="$event.stopPropagation();">
+
+        <div class="menu-header">
+            <div class="search">
+                <input id="filter-panel-folders-search" maxlength="1024" type="search" class="search shortcut-input focus" placeholder="{{'filter.folders>search' | i18n}}" ng-change="foldersFilterChange()" ng-model="eagle.filter.filterFolderKeyword" ng-model-options="{ debounce: { 'default': 100, 'blur': 0 } }">
+            </div>
+            {{'Filter.Tags.Rule' | i18n}}
+            <div class="tabs">
+                <div class="tab" ng-click="changeRule('OR')" ng-class="{'active': eagle.filter.folderFilterLogic === 'OR'}" tippy tippy-placement="top" tippy-content="{{'Filter.Tags.Any' | i18n}}">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/filter/ic-logic-any.svg">
+                </div>
+                <div class="tab" ng-click="changeRule('AND')" ng-class="{'active': eagle.filter.folderFilterLogic === 'AND'}" tippy tippy-placement="top" tippy-content="{{'Filter.Tags.All' | i18n}}">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/filter/ic-logic-all.svg">
+                </div>
+                <div class="tab" ng-click="changeRule('EQUAL')" ng-class="{'active': eagle.filter.folderFilterLogic === 'EQUAL'}" tippy tippy-placement="top" tippy-content="{{'Filter.Tags.Equal' | i18n}}">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/filter/ic-logic-equal.svg">
+                </div>
+            </div>
+        </div>
+        
+        <div class="menu-content" style="margin: 4px 0 0;">
+            <div class="empty" ng-show="filtereds.length === 0 && foldersList.length === 0">{{'filter.emptyMsg' | i18n}}</div>
+            <div id="filter-folder-list" class="folder-list" vs-repeat="28" vs-excess="50" ng-mouseup="focusInput();">
+                <div class="check-item" ng-repeat="folder in foldersList" ng-class="{'checked': eagle.filter.filterRules.folder.includes[folder.id], 'excluded': eagle.filter.filterRules.folder.excludes[folder.id]}" ng-click="focusInput(); filterWithFolder(folder); changeDisplayName();" ng-right-click="$event.stopPropagation(); focusInput(); excludeWithFolder(folder); changeDisplayName();">
+                    <div class="check-icon">
+                        <div class="checkbox"></div>
+                    </div>
+                    <div class="name" ng-bind-html="folder.name | fuzzyMatch:eagle.filter.filterFolderKeyword | substring:0:200" title="{{folder.name | longTitle}}"></div>
+                    <div class="badge">{{folder.imageCount | number:0}}</div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="menu-footer" style="position: initial;">
+                <div class="left">
+                    <div class="shortcut-tip">{{'filter.select' | i18n}}<key>{{'general.l-click' | i18n}}</key></div>
+                    <div class="shortcut-tip">{{'filter.exclude' | i18n}}<key>{{'general.r-click' | i18n}}</key></div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearFoldersFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

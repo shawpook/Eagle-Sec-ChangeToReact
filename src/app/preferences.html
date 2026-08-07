@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+
+<html ng-cloak ng-app="PreferenceApp" ng-controller="PreferencesController">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/preferences.css">
+    <script src="js/vendors/jquery-1.8.0.min.js"></script>
+    <script src="js/vendors/tippy.js"></script>
+    <script src="js/vendors/lodash.js"></script>
+    <script src="js/vendors/angular.min.js"></script>
+    <script src="js/services/shortcut-manager.js"></script>
+    <script src="js/directives/shortcut-input.js"></script>
+    <script src="js/vendors/mousetrap.min.js"></script>
+    <script src="js/modules/wMousetrap.js"></script>
+    <script src="js/modules/tippy.js"></script>
+    <script src="js/preferences.js"></script>
+</head>
+
+<body 
+    ng-show="preferences" 
+    theme="{{themeAttr()}}"
+    platform="{{::platform}}"
+    vibrancy="{{::vibrancyEnabled}}"
+    class="{{::platform}} {{language}} theme-{{themeName}}" 
+    w-mousetrap="{
+        'mod+f': focusSearch,
+        'mod+enter': save, 
+        'esc': escHandler
+    }"
+>
+
+    <div class="preferences-layout">
+    <!-- 侧边栏 -->
+    <div class="sidebar">
+        <div class="title" style="-webkit-app-region: drag;">{{'preferencesWindow.title' | i18n}}</div>
+        <input id="sidebar-search" type="search" ng-model="keyword" select-all ng-change="onKeywordChange($event)" placeholder="{{'general.search' | i18n}}">
+        <div class="sidebar-items">
+            <div ng-repeat="panel in sidebarPanels" ng-switch on="panel.type">
+                <!-- 項目 -->
+                <div ng-switch-when="panel" class="sidebar-item" ng-class="{'active': panel.name === currentPanel.name}" ng-click="switchPanel(panel)">
+                    <div class="icon" style="-webkit-mask-image: url(assets/images/base/preferences/{{panel.iconPath}});"></div>
+                    <div class="name">{{panel.i18n}}</div>
+                    <img ng-if="panel.ai" ng-src="assets/images/{{themeAttr() | themePath}}/icons/context-menu/ic-ai.svg">
+                </div>
+                <!-- 分隔 -->
+                <div ng-switch-when="separator" class="separator"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header" style="-webkit-app-region: drag;">
+            <div class="panel-title">{{currentPanel.i18n}} <img ng-if="currentPanel.ai" ng-src="assets/images/{{themeAttr() | themePath}}/icons/context-menu/ic-ai.svg"><span class="devtools-trigger header-devtools" ng-if="(currentPanel.name === 'ai-search' && aiSearchPluginInstalled) || (currentPanel.name === 'ai-sdk' && aiSdkPluginInstalled) || (currentPanel.name === 'mcp-server' && mcpPluginInstalled)" ng-click="openPluginDevTools(currentPanel.name)" style="-webkit-app-region: no-drag;">Debug</span></div>
+            <div class="close" ng-click="cancel()"></div>
+        </div>
+
+        <!-- 快捷鍵搜索框 -->
+        <div ng-if="currentPanel.name === 'shortcuts'" class="shortcut-search-container">
+            <input id="shortcut-input" type="search" placeholder="{{'general.search' | i18n}}" select-all ng-model="shortcutKeyword" ng-change="updateKeybinds()">
+        </div>
+        
+        <div class="content" ng-switch on="currentPanel.name" ng-class="{'content-fullscreen': (currentPanel.name === 'ai-search' && aiSearchPluginInstalled && !aiSearchPluginDisabled) || (currentPanel.name === 'ai-sdk' && aiSdkPluginInstalled && !aiSdkPluginDisabled) || (currentPanel.name === 'mcp-server' && mcpPluginInstalled && !mcpPluginDisabled)}">
+
+            <div ng-if="showSearchEmpty" class="panel-empty">
+                <div class="icon"><img style="width: 400px; height: 144px;" ng-src="assets/images/{{themeAttr() | themePath}}/illustrations/preferences-search-empty.png"></div>
+                <div class="title">{{ 'preferencesWindow.searchEmpty.title' | i18n }}</div>
+                <p>{{ 'preferencesWindow.searchEmpty.desc' | i18n }}</p>
+            </div>
+
+            <!-- 常用设定 -->
+            <div class="panel-content" ng-switch-when="general|search" ng-switch-when-separator="|">
+
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="general badge theme color language locale zoom 主题 皮肤 颜色 语系 语言 缩放 主題 主題 顏色 語系 語言 縮放 dark light blue purple gray auto">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.general.appearance' | i18n}}</div>
+
+                        <div class="label-item">
+                            <label for="">{{'preferencesWindow.sidebar.themes' | i18n}}</label>
+                            <div class="right">
+                                <div class="themes-picker">
+                                    <div class="theme {{theme.css}}" 
+                                        tippy tippy-content="{{ 'preferencesWindow.themes.' + theme.name | i18n}}" tippy-placement="top"
+                                        ng-repeat="theme in themes" 
+                                        ng-class="{'active': theme.name == currentTheme.name}" 
+                                        ng-click="changeTheme(theme)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+
+                        <div class="label-items">
+                            <div class="label-item">
+                                <label for="">{{'preferencesWindow.general.language' | i18n}}</label>
+                                <div class="right">
+                                    <div class="select">
+                                        <select ng-model="preferences.general.language" ng-change="languageChange({{'preferences.general.language'}})">
+                                            <option value="en">English</option>
+                                            <option value="es_ES">Español</option>
+                                            <option value="de_DE">Deutsch</option>
+                                            <option value="ru_RU">Русский</option>
+                                            <option value="zh_TW">繁體中文</option>
+                                            <option value="zh_CN">简体中文</option>
+                                            <option value="ja_JP">日本語</option>
+                                            <option value="ko_KR">한국어</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="separator vertical"></div>
+                            <div class="label-item">
+                                <label for="">{{'preferencesWindow.general.zoom' | i18n}}</label>
+                                <div class="right">
+                                    <div class="select">
+                                        <select ng-model="preferences.general.zoom" ng-change="changeZoom(preferences.general.zoom)">
+                                            <option value="50">50%</option>
+                                            <option value="75">75%</option>
+                                            <option value="80">80%</option>
+                                            <option value="90">90%</option>
+                                            <option value="100">100%</option>
+                                            <option value="110">110%</option>
+                                            <option value="125">125%</option>
+                                            <option value="150">150%</option>
+                                            <option value="175">175%</option>
+                                            <option value="200">200%</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.enableVibrancy" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.enableVibrancy' | i18n}}
+                            </label>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.showSidebarBadge" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.showSidebarBadge' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item" ng-if="platform=='darwin'">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.showMenuItem" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.showMenuItem' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item" ng-if="platform=='darwin'">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.keepDockIcon" ng-true-value="'true'"
+                                    ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.keepDockIcon' | i18n}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="general launch startup login gpu 顯示卡 显卡 啟動 启动 开机 開機">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.general.launch' | i18n}}</div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="launchAtLogin" ng-change="changeAutoLaunch(launchAtLogin)" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.lauchAtLogin' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item" ng-if="!isAppleSilicon">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.enableGPU" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.enableGPU' | i18n}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="general auto select 自动 选择 自動 選取">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.general.collect' | i18n}}</div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.autoSelect" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.autoSelect' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.when.repeatImage" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.notification.repeatImage' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.showCollectModal" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.showCollectModal' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.screencapture.useRetina" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.notification.useRetina' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.IPTC" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.IPTC' | i18n}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+             <!-- 側邊欄 -->
+             <div class="panel-content" ng-switch-when="sidebar|search" ng-switch-when-separator="|">
+
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="sidebar rename expand collapse">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.habits.dblclickSidebarItem' | i18n}}</div>
+
+                        <div class="checkbox-items grid-3">
+                            <div class="checkbox-item">
+                                <label class="control radio inline">
+                                    <input id="radio-scroll" name="radio-scroll" ng-model="preferences.habits.dblclickSidebarItem" type="radio" value="rename">
+                                    <span class="control-indicator"></span> {{'preferencesWindow.habits.dblclickSidebarItem>rename' | i18n}}
+                                </label>
+                            </div>
+                            <div class="checkbox-item">
+                                <label class="control radio inline">
+                                    <input id="radio-page" name="radio-scroll" ng-model="preferences.habits.dblclickSidebarItem" type="radio" value="collapse">
+                                    <span class="control-indicator"></span> {{'preferencesWindow.habits.dblclickSidebarItem>collapse' | i18n}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="sidebar smart folder">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.sidebar.label' | i18n}}</div>
+                        <div class="checkbox-items grid-3">
+                            <div class="checkbox-item">
+                                <label class="control checkbox disable">
+                                    <input type="checkbox" checked="">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.all' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.unfiled" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.unfiled' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.untagged" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.untagged' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.recent" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'general.pages.recent' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.random" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.random' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.community2" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.community' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox disable">
+                                    <input type="checkbox" checked="">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.allTags' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox disable">
+                                    <input type="checkbox" checked="">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.trash' | i18n}}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+
+                        <div class="checkbox-items grid-3">
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.quickAccess" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.quickAccess' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.smartFolder" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.smartFolder' | i18n}}
+                                </label>
+                            </div>
+
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.sidebar.folder" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.sidebar.folder' | i18n}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- 操控 -->
+            <div class="panel-content" ng-switch-when="control|search" ng-switch-when-separator="|">
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="control mouse scroll hover double click middle button">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.controls.mouse' | i18n}}</div>
+                        <!-- 滾輪 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.scrollBehavior' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-scroll" name="radio-scroll" ng-model="preferences.habits.scrollBehavior" type="radio" value="scroll">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.scrollBehavior>scroll' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-page" name="radio-scroll" ng-model="preferences.habits.scrollBehavior" type="radio" value="paging">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.scrollBehavior>paging' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-zoom" name="radio-scroll" ng-model="preferences.habits.scrollBehavior" type="radio" value="zoom">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.scrollBehavior>zoom' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 懸停 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.hoverZoom' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-hoverZoom" ng-model="preferences.habits.hoverZoom" type="radio" value="on">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.hoverZoom>on' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-hoverZoom" ng-model="preferences.habits.hoverZoom" type="radio" value="off">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.hoverZoom>off' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 雙擊 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.doubleclick' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-doubleclick" ng-model="preferences.habits.doubleclick" type="radio" value="internal">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.doubleclick>internal' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-doubleclick" ng-model="preferences.habits.doubleclick" type="radio" value="external">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.doubleclick>external' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 滾輪按鈕 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.middleBtnBehavior' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-middleBtn" ng-model="preferences.habits.middleBtn" type="radio" value="openNewWindow">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.middleBtnBehavior>openNewWindow' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-middleBtn" ng-model="preferences.habits.middleBtn" type="radio" value="none">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.middleBtnBehavior>none' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-middleBtn" ng-model="preferences.habits.middleBtn" type="radio" value="openPluginPanel">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.middleBtnBehavior>plugin' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="control keyboard space scroll">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.controls.keyboard' | i18n}}</div>
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.spaceBehavior' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-keyspace" ng-model="preferences.habits.keyspace" type="radio" value="preview">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.spaceBehavior>preview' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline" ng-show="platform === 'darwin'">
+                                            <input name="radio-keyspace" ng-model="preferences.habits.keyspace" type="radio" value="preview-native">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.spaceBehavior>previewNative' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-keyspace" ng-model="preferences.habits.keyspace" type="radio" value="scroll">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.spaceBehavior>scroll' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 习惯设定 -->
+            <div class="panel-content" ng-switch-when="habits|search" ng-switch-when-separator="|">
+                <!-- 通用 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="view viewer detail hover zoom pixel last ratio transparency grid 懸停 放大 縮放 像素 最後 比例 透明 網格 格 悬停 放大 缩放 像素 最后 比例 透明 网格">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.habits.image' | i18n}}</div>
+                        <!-- 放大細節 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">
+                                {{'preferencesWindow.habits.renderBehavior' | i18n}} 
+                                <div class="hover-tip">
+                                    <img ng-src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-hover-tip.svg">
+                                    <div class="hover-tip-content">
+                                        <div class="thumb"><img ng-src="assets/images/{{themeAttr() | themePath}}/illustrations/preferences/illustration-pixelate.png" width="320" height="180"></div>
+                                        <div class="title">{{'preferencesWindow.hoverTip.pixelate.title' | i18n}}</div>
+                                        <div class="desc">{{'preferencesWindow.hoverTip.pixelate.desc' | i18n}}</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-scroll" name="radio-zoom" ng-model="preferences.habits.renderBehavior" type="radio" value="pixelated">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.renderBehavior>pixelated' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-page" name="radio-zoom" ng-model="preferences.habits.renderBehavior" type="radio" value="non-pixelated">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.renderBehavior>nonpixelated' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 記住上次位置 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.rememberLastZoom' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-rememberLastZoom" ng-model="preferences.habits.rememberLastZoom" type="radio" value="on">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.rememberLastZoom>on' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-rememberLastZoom" ng-model="preferences.habits.rememberLastZoom" type="radio" value="off">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.rememberLastZoom>off' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 默認比例 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.defaultRatio' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-ratio" ng-model="preferences.habits.defaultRatio" type="radio" value="auto">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.defaultRatio>auto' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-ratio" ng-model="preferences.habits.defaultRatio" type="radio" value="100%">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.defaultRatio>100' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 圖片變換操作 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.imageRotateMode' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-imageRotateMode" ng-model="preferences.habits.imageRotateMode" type="radio" value="preview">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.imageRotateMode>preview' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-imageRotateMode" ng-model="preferences.habits.imageRotateMode" type="radio" value="write">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.imageRotateMode>write' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <!-- 透明背景 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">
+                                {{'preferencesWindow.habits.transparency' | i18n}}
+                                <div class="hover-tip">
+                                    <img ng-src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-hover-tip.svg">
+                                    <div class="hover-tip-content">
+                                        <div class="thumb"><img ng-src="assets/images/{{themeAttr() | themePath}}/illustrations/preferences/illustration-transparent-grid.png" width="320" height="180"></div>
+                                        <div class="title">{{'preferencesWindow.hoverTip.transparentGrid.title' | i18n}}</div>
+                                        <div class="desc">{{'preferencesWindow.hoverTip.transparentGrid.desc' | i18n}}</div>
+                                    </div>
+                                </div>
+                            </label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-transparency" ng-model="preferences.habits.transparency" type="radio" value="show">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.transparency>show' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input name="radio-transparency" ng-model="preferences.habits.transparency" type="radio" value="hide">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.transparency>hide' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 視頻 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="video movie 视频 影片 loop hover 懸停 悬停 scroll 滚动 滾動">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.habits.video' | i18n}}</div>
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.habits.videoScrollBehavior' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-scroll" name="radio-scroll" ng-model="preferences.habits.videoScrollBehavior" type="radio" value="progress">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.videoScrollBehavior>progress' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <label class="control radio inline">
+                                            <input id="radio-page" name="radio-scroll" ng-model="preferences.habits.videoScrollBehavior" type="radio" value="volume">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.habits.videoScrollBehavior>volume' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.video.hoverPlay" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.video.hoverPlay' | i18n}}
+                                <div class="hover-tip">
+                                    <img ng-src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-hover-tip.svg">
+                                    <div class="hover-tip-content" style="margin-top: -60px;">
+                                        <div class="thumb"><img ng-src="assets/images/{{themeAttr() | themePath}}/illustrations/preferences/illustration-hover-preview.png" width="320" height="180"></div>
+                                        <div class="title">{{'preferencesWindow.hoverTip.hoverPreview.title' | i18n}}</div>
+                                        <div class="desc">{{'preferencesWindow.hoverTip.hoverPreview.desc' | i18n}}</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.video.zoomFill" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.video.zoomFill' | i18n}}
+                            </label>
+                        </div>
+                        
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.video.autoPlay" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.video.autoPlay' | i18n}}
+                            </label>
+                        </div>
+                        
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.video.rememberPosition" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.video.rememberPosition' | i18n}}
+                            </label>
+                        </div>
+                        
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.video.loopShortVideo" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.video.loopShortVideo' | i18n}}
+                            </label>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <!-- GIF/動圖 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="gif webp 動畫 动画 动图 動圖">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.habits.gif' | i18n}}</div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.habits.alwaysPlayGIF" ng-true-value="'on'" ng-false-value="'off'">
+                                <span class="control-indicator"></span> {{'preferencesWindow.habits.alwaysPlayGIF' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.habits.gifViewer" ng-true-value="'on'" ng-false-value="'off'">
+                                <span class="control-indicator"></span> {{'preferencesWindow.habits.gifViewer' | i18n}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 字型 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="font 字體 字体 字型 字形">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.habits.font' | i18n}}</div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" ng-model="preferences.font.autoTag" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.font.autoTag' | i18n}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- 快捷建设定 -->
+            <div class="panel-content" ng-switch-when="shortcuts|search" ng-switch-when-separator="|">                
+                <div ng-repeat="group in keybindGroupResult" class="panel-block" search-show="{{keyword}}" search-keywords="shortcuts {{group.name}}">
+                    <div class="block-content shortcut-block">
+                        <div class="block-title">{{'shortcuts.group.' + group.name | i18n}} ({{group.items.length}})</div>
+                        <div class="shortcut-table enhanced-shortcut-table">
+                            <div class="tbody">
+                                <div class="table-row" ng-repeat="keybind in group.items">
+                                    <div class="table-col function-name">
+                                        <div class="function-name-text">{{'shortcuts.' + keybind.key | i18n}}</div>
+                                        <div class="function-description" ng-if="keybind.description">{{keybind.description}}</div>
+                                    </div>
+                                    <div class="table-col function-shortcut">
+                                        <div class="shortcut-input-container">
+                                            <input type="text"
+                                                   shortcut-input
+                                                   shortcut-name="{{keybind.key}}"
+                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
+                                                   ng-model="preferences.shortcuts.keybinds[keybind.key]">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div ng-show="filteredInstallPlugins.length > 0" class="panel-block" search-show="{{keyword}}" search-keywords="shortcuts plugin">
+                    <div class="block-content shortcut-block">
+                        <div class="block-title">{{'preferencesWindow.shortcuts.plugin' | i18n}} ({{filteredInstallPlugins.length}})</div>
+                        <div class="shortcut-table enhanced-shortcut-table">
+                            <div class="tbody">
+                                <div class="table-row" ng-repeat="installPlugin in filteredInstallPlugins track by $index">
+                                    <div class="table-col function-name">
+                                        <div class="function-name-text">{{installPlugin.name}}</div>
+                                    </div>
+                                    <div class="table-col function-shortcut">
+                                        <div class="shortcut-input-container">
+                                            <input type="text"
+                                                   shortcut-input
+                                                   shortcut-name="{{installPlugin.id}}"
+                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
+                                                   ng-change="onPluginShortcutChange(installPlugin)"
+                                                   ng-model="installPlugin.formatShortcut">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Restore Defaults Section -->
+                <div class="restore-defaults-section" ng-show="keybindGroupResult.length > 0" search-show="{{keyword}}" search-keywords="shortcuts 快捷鍵 快捷键 恢復默認 恢复默认">
+                    <div class="separator"></div>
+                    <div class="restore-defaults-container">
+                        <div class="button button-grey" ng-click="restoreDefaultShortcuts()">
+                            {{'preferencesWindow.shortcuts.restoreDefaults' | i18n}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- 通知设定 -->
+            <div class="panel-content" ng-switch-when="notification|search" ng-switch-when-separator="|">
+    
+                 <!-- 音效 -->
+                 <div class="panel-block" search-show="{{keyword}}" search-keywords="notification sound 通知 音效">
+                    <div class="block-content">
+                        <div class="block-title">
+                            {{'preferencesWindow.general.soundEffect' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.soundEffect.enable" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div ng-if="preferences.notification.soundEffect.enable === 'true'" style="margin-top: 8px;">
+                        <div class="checkbox-items">
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.notification.soundEffect.when.deleteImage" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.general.soundEffect>deleteImage' | i18n}}
+                                </label>
+                            </div>
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.notification.soundEffect.when.deleteFolder" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.general.soundEffect>deleteFolder' | i18n}}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="checkbox-items">
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.notification.soundEffect.when.screencapture" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.general.soundEffect>screencapture' | i18n}}
+                                </label>
+                            </div>
+                            <div class="checkbox-item">
+                                <label class="control checkbox">
+                                    <input type="checkbox" checked="" ng-model="preferences.notification.soundEffect.when.extension" ng-true-value="'true'" ng-false-value="'false'">
+                                    <span class="control-indicator"></span>
+                                    {{'preferencesWindow.general.soundEffect>extension' | i18n}}
+                                </label>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 弹窗 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="notification alert 通知 弹窗">
+                    <div class="block-content">
+                        <div class="block-title">
+                            {{'preferencesWindow.notification.popup' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.enable" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div ng-if="preferences.notification.notification.enable !== 'false'" style="margin-top: 8px;">
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.when.screencapture" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.notification.soundEffect.screencapture' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.when.extension" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.notification.soundEffect.extension' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.when.repeatImage" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.notification.repeatImage' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.when.autoImport" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.notification.autoImport' | i18n}}
+                            </label>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- 截图设定 -->
+            <div class="panel-content" ng-switch-when="screencapture|search" ng-switch-when-separator="|">
+
+                <!-- 通用 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="screencapture screenshot quality format 質量 品質">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.screencCapture.formatNquality' | i18n}}</div>
+                        <!-- 保存格式 -->
+                        <div class="label-item">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.screencCapture.format' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item" style="width: 32%;">
+                                        <label class="control radio inline">
+                                            <input id="radio-page" name="radio-scroll" ng-model="preferences.screencapture.format" type="radio" value="png">
+                                            <span class="control-indicator"></span> PNG
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item" style="width: 32%;">
+                                        <label class="control radio inline">
+                                            <input id="radio-scroll" name="radio-scroll" ng-model="preferences.screencapture.format" type="radio" value="jpg">
+                                            <span class="control-indicator"></span> JPG
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item" style="width: 32%;">
+                                        <label class="control radio inline">
+                                            <input id="radio-scroll" name="radio-scroll" ng-model="preferences.screencapture.format" type="radio" value="webp">
+                                            <span class="control-indicator"></span> WebP
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="separator" ng-show="preferences.screencapture.format !== 'png'"></div>
+                        <!-- 保存品质 -->
+                        <div class="label-item" ng-show="preferences.screencapture.format !== 'png'">
+                            <label for="" style="width: 240px;">{{'preferencesWindow.screencCapture.quality' | i18n}}</label>
+                            <div class="right">
+                                <div class="checkbox-items">
+                                    <div class="checkbox-item" style="width: 32%;">
+                                        <label class="control radio inline">
+                                            <input name="radio-quality" ng-model="preferences.screencapture.quality" type="radio" value="90">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.screencCapture.quality>high' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item" style="width: 32%;">
+                                        <label class="control radio inline">
+                                            <input name="radio-quality" ng-model="preferences.screencapture.quality" type="radio" value="80">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.screencCapture.quality>medium' | i18n}}
+                                        </label>
+                                    </div>
+                                    <div class="checkbox-item" style="width: 32%;">
+                                        <label class="control radio inline">
+                                            <input name="radio-quality" ng-model="preferences.screencapture.quality" type="radio" value="70">
+                                            <span class="control-indicator"></span> {{'preferencesWindow.screencCapture.quality>low' | i18n}}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>                        
+                    </div>
+                </div>
+                <!-- 快速键 -->
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="keyboard shortcut screencapture screenshot 快速键 快捷鍵">
+                    <div class="block-content shortcut-toggle-block">
+                        <div class="shortcut-toggle-header">
+                            <span class="shortcut-toggle-label">{{'preferencesWindow.screencCapture.shortcutsEnable' | i18n}}</span>
+                            <label class="toggle">
+                                <input type="checkbox" checked="" ng-model="preferences.screencapture.shortcutsEnable" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="shortcut-table enhanced-shortcut-table" ng-show="preferences.screencapture.shortcutsEnable == 'true'">
+                            <div class="tbody">
+                                <div class="table-row">
+                                    <div class="table-col function-name">
+                                        <div class="function-name-text">{{'shortcuts.global.capture.area' | i18n}}</div>
+                                    </div>
+                                    <div class="table-col function-shortcut">
+                                        <div class="shortcut-input-container">
+                                            <input type="text"
+                                                   shortcut-input
+                                                   shortcut-name="global.capture.area"
+                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
+                                                   ng-model="preferences.shortcuts.keybinds['global.capture.area']"
+                                                   ng-disabled="preferences.screencapture.shortcutsEnable == 'false'">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-row">
+                                    <div class="table-col function-name">
+                                        <div class="function-name-text">{{'shortcuts.global.capture.window' | i18n}}</div>
+                                    </div>
+                                    <div class="table-col function-shortcut">
+                                        <div class="shortcut-input-container">
+                                            <input type="text"
+                                                   shortcut-input
+                                                   shortcut-name="global.capture.window"
+                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
+                                                   ng-model="preferences.shortcuts.keybinds['global.capture.window']"
+                                                   ng-disabled="preferences.screencapture.shortcutsEnable == 'false'">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-row">
+                                    <div class="table-col function-name">
+                                        <div class="function-name-text">{{'shortcuts.global.capture.full' | i18n}}</div>
+                                    </div>
+                                    <div class="table-col function-shortcut">
+                                        <div class="shortcut-input-container">
+                                            <input type="text"
+                                                   shortcut-input
+                                                   shortcut-name="global.capture.full"
+                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
+                                                   ng-model="preferences.shortcuts.keybinds['global.capture.full']"
+                                                   ng-disabled="preferences.screencapture.shortcutsEnable == 'false'">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 进阶设置 -->
+                <div class="panel-block" search-show="{{keyword}}">
+                    <div class="block-content">
+                        <div class="block-title">{{'preferencesWindow.screencCapture.options' | i18n}}</div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.general.showCaptureCollectModal" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.general.showCaptureCollectModal' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.notification.notification.when.screencapture" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.screencCapture.notification' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.screencapture.autoTagging.enable" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.screencCapture.autoTagging' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.screencapture.autoWriteClipboard" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.screencCapture.autoWriteClipboard' | i18n}}
+                            </label>
+                        </div>
+                        <div class="checkbox-item">
+                            <label class="control checkbox">
+                                <input type="checkbox" checked="" ng-model="preferences.screencapture.useRetina" ng-true-value="'true'" ng-false-value="'false'">
+                                <span class="control-indicator"></span>
+                                {{'preferencesWindow.screencCapture.useRetina' | i18n}}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Privacy 設定 -->
+            <div class="panel-content" ng-switch-when="privacy|search" ng-switch-when-separator="|">
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="app lock password pwd">
+                    <div class="block-content" ng-class="{'disable': preferences.privacy.enable === 'false'}">
+                        <div class="block-title">
+                            {{'preferencesWindow.privacy.enable' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" ng-model="preferences.privacy.enable" ng-true-value="'true'" ng-false-value="'false'" ng-click="openPasswordModal($event, 'new')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="block-hint">
+                            <p class="auto-import-hint">{{'preferencesWindow.privacy.tips' | i18n}}</p>
+                        </div>
+                        <div ng-if="preferences.privacy.enable === 'true'">
+                        <div class="separator"></div>
+                        <div class="list-item" ng-click="openPasswordModal($event, 'change')">
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-edit.svg" width="20" height="20">
+                            {{'preferencesWindow.privacy.change' | i18n}}
+                            <div class="right">
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-next.svg" width="16" height="16">
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="list-item" ng-click="lockNow()">
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-lock.svg" width="20" height="20">
+                            {{'preferencesWindow.privacy.lock' | i18n}}
+                            <div class="right">
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-next.svg" width="16" height="16">
+                            </div>
+                        </div>
+                        <!-- Touch ID 選項 - 僅在 macOS 且支援 Touch ID 時顯示 -->
+                        <div class="separator" ng-if="platform === 'darwin' && canUseTouchID"></div>
+                        <div class="list-item" ng-if="platform === 'darwin' && canUseTouchID" ng-click="toggleTouchIDClick($event)">
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-touchid.svg" width="20" height="20">
+                            {{'preferencesWindow.privacy.touchid' | i18n}}
+                            <div class="right">
+                                <label class="toggle">
+                                    <input type="checkbox" 
+                                        ng-model="preferences.privacy.enableTouchID" 
+                                        ng-true-value="'true'" 
+                                        ng-false-value="'false'"
+                                        ng-change="toggleTouchID()">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- autoImport -->
+            <div class="panel-content" ng-switch-when="autoImport|search" ng-switch-when-separator="|">
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="auto import watch">
+                    <div class="block-content" ng-class="{'disable': preferences.autoImport.enable === 'false'}">
+                        <div class="block-title">
+                            {{'preferencesWindow.autoImport.enable' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" ng-model="preferences.autoImport.enable" ng-true-value="'true'" ng-false-value="'false'" ng-click="openAutoImport($event)">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="block-hint">
+                            <p class="auto-import-hint">{{'preferencesWindow.autoImport.tips' | i18n}}</p>
+                        </div>
+                        <div ng-if="preferences.autoImport.enable === 'true'">
+                        <div class="separator"></div>
+                        <div class="list-item" ng-click="chooseAutoImportPath($event)">
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-watch-folder.svg" width="20" height="20">
+                            {{'preferencesWindow.autoImport.chooseBtn' | i18n}}
+                            <div class="right" tippy tippy-content="{{ preferences.autoImport.path }}" tippy-placement="top">
+                                <div class="value">{{preferences.autoImport.path}}</div>
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-next.svg" width="16" height="16">
+                            </div>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="list-item" ng-click="revealAutoImportPath($event)">
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-folder.svg" width="20" height="20">
+                            {{'preferencesWindow.autoImport.revealBtn' | i18n}}
+                            <div class="right">
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-next.svg" width="16" height="16">
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- developer -->
+            <div class="panel-content" ng-switch-when="developer|search" ng-switch-when-separator="|">
+                <div class="panel-block" search-show="{{keyword}}" search-keywords="developer development api token restful">
+                    <div class="block-content api-token-container">
+                        <div class="block-title">
+                            {{'preferencesWindow.developer.apiToken' | i18n}}
+                        </div>
+                        <div class="api-token-block">
+                            <div class="api-token" ng-click="copyApiToken()">
+                                <div class="value">{{preferences.developer.apiToken}}</div>
+                                <div class="copy-btn" ng-click="copyApiToken()" tippy tippy-placement="top" tippy-content="{{'appmenu.edit>copy' | i18n}}">
+                                    <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-copy.svg">
+                                </div>
+                            </div>
+                            <div class="button button-grey button-xs" ng-click="regenerateApiToken($event)">{{'preferencesWindow.developer.regenerate' | i18n}}</div>
+                        </div>
+                        <div class="separator"></div>
+                        <div class="checkbox-item api-token-url">
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg">
+                            <a class="auto-import-hint" href="http://localhost:41595/?token={{preferences.developer.apiToken}}" target="_blank">http://localhost:41595/?token={{preferences.developer.apiToken}}</a>
+                            <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-next.svg">
+                        </div>                        
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP -->
+            <!-- Eagle 5.0 -->
+            <div class="panel-content" ng-switch-when="mcp-server" ng-switch-when-separator="|">
+                <!-- 未安裝：顯示狀態 + 介紹 -->
+                <div class="panel-block" ng-if="!mcpPluginInstalled" search-show="{{keyword}}" search-keywords="mcp eagle ai agent model context protocol">
+                    <div class="block-content">
+                        <div class="plugin-status-item">
+                            <span class="status-label">{{'preferencesWindow.mcp.enable' | i18n}}</span>
+                            <label class="toggle">
+                                <input type="checkbox" ng-checked="false" ng-click="handleMcpAction($event)" readonly>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" ng-if="!mcpPluginInstalled" search-show="{{keyword}}" search-keywords="mcp eagle ai what is introduction">
+                    <div class="block-content">
+                        <div class="plugin-header-item">
+                            <span class="header-title">{{'preferencesWindow.mcp.title' | i18n}}</span>
+                            <div class="action-btn" ng-click="openMcpDocs()">
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg" width="16" height="16">
+                                {{'preferencesWindow.mcp.viewDocs' | i18n}}
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+
+                        <div class="plugin-intro">
+                            <div class="intro-text">
+                                {{'preferencesWindow.mcp.intro.text' | i18n}}
+                            </div>
+
+                            <div class="intro-list">
+                                <ul>
+                                    <li>{{'preferencesWindow.mcp.intro.item1' | i18n}}</li>
+                                    <li>{{'preferencesWindow.mcp.intro.item2' | i18n}}</li>
+                                    <li>{{'preferencesWindow.mcp.intro.item3' | i18n}}</li>
+                                </ul>
+                            </div>
+
+                            <div class="intro-illustration">
+                                <img src="assets/images/{{themeAttr() | themePath}}/illustrations/mcp-intro.png" alt="MCP Introduction">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已安裝但已禁用：顯示 toggle 啟用提示 -->
+                <div class="panel-block" ng-if="mcpPluginInstalled && mcpPluginDisabled" search-show="{{keyword}}" search-keywords="mcp eagle ai agent model context protocol">
+                    <div class="block-content">
+                        <div class="block-title">
+                            {{'preferencesWindow.pluginDisabled.enableLabel' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" ng-checked="false" ng-click="enableServicePlugin('mcp-server')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="block-hint">
+                            <p>{{'preferencesWindow.pluginDisabled.desc' | i18n}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已安裝且啟用：iframe 吃滿整個面板 -->
+                <div class="ai-search-webview" ng-if="mcpPluginInstalled && !mcpPluginDisabled" search-show="{{keyword}}" search-keywords="mcp eagle ai agent model context protocol">
+                    <iframe iframe-auto-retry="http://localhost:41596/web-ui" ng-src="{{getMcpIframeUrl()}}" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
+                </div>
+            </div>
+
+            <!-- AI Search -->
+            <div class="panel-content" ng-switch-when="ai-search" ng-switch-when-separator="|">
+                <!-- 未安裝：顯示狀態 + 介紹 -->
+                <div class="panel-block" ng-if="!aiSearchPluginInstalled" search-show="{{keyword}}" search-keywords="ai search 搜尋 智能">
+                    <div class="block-content">
+                        <div class="plugin-status-item">
+                            <span class="status-label">AI Search</span>
+                            <label class="toggle">
+                                <input type="checkbox" ng-checked="false" ng-click="handleAiSearchAction($event)" readonly>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" ng-if="!aiSearchPluginInstalled" search-show="{{keyword}}" search-keywords="ai search introduction">
+                    <div class="block-content">
+                        <div class="plugin-header-item">
+                            <span class="header-title">{{'preferencesWindow.aiSearch.title' | i18n}}</span>
+                            <div class="action-btn" ng-click="openAiSearchDocs()">
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg" width="16" height="16">
+                                {{'preferencesWindow.mcp.viewDocs' | i18n}}
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+
+                        <div class="plugin-intro">
+                            <div class="intro-text">
+                                {{'preferencesWindow.aiSearch.intro.text' | i18n}}
+                            </div>
+
+                            <div class="intro-list">
+                                <ul>
+                                    <li>{{'preferencesWindow.aiSearch.intro.item1' | i18n}}</li>
+                                    <li>{{'preferencesWindow.aiSearch.intro.item2' | i18n}}</li>
+                                    <li>{{'preferencesWindow.aiSearch.intro.item3' | i18n}}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已安裝但已禁用：顯示 toggle 啟用提示 -->
+                <div class="panel-block" ng-if="aiSearchPluginInstalled && aiSearchPluginDisabled" search-show="{{keyword}}" search-keywords="ai search 搜尋 智能 AI 搜索">
+                    <div class="block-content">
+                        <div class="block-title">
+                            {{'preferencesWindow.pluginDisabled.enableLabel' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" ng-checked="false" ng-click="enableServicePlugin('ai-search')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="block-hint">
+                            <p>{{'preferencesWindow.pluginDisabled.desc' | i18n}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已安裝且啟用：iframe 吃滿整個面板 -->
+                <div class="ai-search-webview" ng-if="aiSearchPluginInstalled && !aiSearchPluginDisabled" search-show="{{keyword}}" search-keywords="ai search 搜尋 智能 AI 搜索">
+                    <iframe iframe-auto-retry="http://127.0.0.1:38766/api/health" ng-src="{{getAiSearchIframeUrl()}}" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
+                </div>
+            </div>
+
+            <!-- AI SDK -->
+            <div class="panel-content" ng-switch-when="ai-sdk" ng-switch-when-separator="|">
+                <!-- 未安裝：顯示狀態 + 介紹 -->
+                <div class="panel-block" ng-if="!aiSdkPluginInstalled" search-show="{{keyword}}" search-keywords="ai sdk model 模型 配置">
+                    <div class="block-content">
+                        <div class="plugin-status-item">
+                            <span class="status-label">{{'preferencesWindow.mcp.enable' | i18n}}</span>
+                            <label class="toggle">
+                                <input type="checkbox" ng-checked="false" ng-click="handleAiSdkAction($event)" readonly>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-block" ng-if="!aiSdkPluginInstalled" search-show="{{keyword}}" search-keywords="ai sdk model introduction">
+                    <div class="block-content">
+                        <div class="plugin-header-item">
+                            <span class="header-title">{{'preferencesWindow.aiSdk.title' | i18n}}</span>
+                            <div class="action-btn" ng-click="openAiSdkDocs()">
+                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg" width="16" height="16">
+                                {{'preferencesWindow.mcp.viewDocs' | i18n}}
+                            </div>
+                        </div>
+
+                        <div class="separator"></div>
+
+                        <div class="plugin-intro">
+                            <div class="intro-illustration">
+                                <img src="assets/images/{{themeAttr() | themePath}}/illustrations/ai-sdk-intro.png" alt="AI SDK Introduction" style="width: 440px; display: block; margin: 0 auto;">
+                            </div>
+
+                            <div class="intro-text">
+                                {{'preferencesWindow.aiSdk.intro.text' | i18n}}
+                            </div>
+
+                            <div class="intro-list">
+                                <ul>
+                                    <li>{{'preferencesWindow.aiSdk.intro.item1' | i18n}}</li>
+                                    <li>{{'preferencesWindow.aiSdk.intro.item2' | i18n}}</li>
+                                    <li>{{'preferencesWindow.aiSdk.intro.item3' | i18n}}</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已安裝但已禁用：顯示 toggle 啟用提示 -->
+                <div class="panel-block" ng-if="aiSdkPluginInstalled && aiSdkPluginDisabled" search-show="{{keyword}}" search-keywords="ai sdk model 模型 配置 AI 模型">
+                    <div class="block-content">
+                        <div class="block-title">
+                            {{'preferencesWindow.pluginDisabled.enableLabel' | i18n}}
+                            <label class="toggle">
+                                <input type="checkbox" ng-checked="false" ng-click="enableServicePlugin('ai-sdk')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div class="block-hint">
+                            <p>{{'preferencesWindow.pluginDisabled.desc' | i18n}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 已安裝且啟用：iframe 吃滿整個面板 -->
+                <div class="ai-search-webview" ng-if="aiSdkPluginInstalled && !aiSdkPluginDisabled" search-show="{{keyword}}" search-keywords="ai sdk model 模型 配置 AI 模型">
+                    <iframe iframe-auto-retry="http://localhost:41597/web-ui" ng-src="{{getAiSdkIframeUrl()}}" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer" ng-hide="(currentPanel.name === 'ai-search' && aiSearchPluginInstalled && !aiSearchPluginDisabled) || (currentPanel.name === 'ai-sdk' && aiSdkPluginInstalled && !aiSdkPluginDisabled) || (currentPanel.name === 'mcp-server' && mcpPluginInstalled && !mcpPluginDisabled)">
+            <div class="right">
+                <div class="button button-primary" ng-click="save()">{{'preferencesWindow.saveBtn' | i18n}}</div>
+                <div class="button button-grey" ng-click="apply()">{{'preferencesWindow.apply' | i18n}}</div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- 密码设置 -->
+    <div ng-controller="PasswordController">
+        <div class="modal folder-password-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+            <div class="modal-header">
+                <div class="name">{{'context.folder.password' | i18n}}</div>
+                <div class="close" ng-click="folderPwdScope.cancel()"></div>
+            </div>
+            <div class="section">
+                <div ng-show="folderPwdScope.mode == 'new'">
+                    <label for="">{{'modal.folderPassword.password' | i18n}}</label>
+                    <input id="new-folder-password-input" type="password" select-all placeholder="" ng-model="folderPwdScope.newPassword" auto-focus="SET-FOLDER-PASSWORD">
+                    <div class="margin-bottom-12"></div>
+                    <label for="">{{'modal.folderPassword.rePassword' | i18n}}</label>
+                    <input type="password" select-all placeholder="" ng-model="folderPwdScope.newRePassword">
+                    <div class="margin-bottom-12"></div>
+                    <label for="">{{'modal.folderPassword.passwordTips' | i18n}}</label>
+                    <textarea name="" id="" cols="30" rows="2" placeholder="" ng-model="folderPwdScope.passwordTips" select-all></textarea>
+                </div>
+        
+                <div ng-show="folderPwdScope.mode == 'change'">
+                    <label for="">{{'modal.folderPassword.oldPassword' | i18n}}</label>
+                    <input id="change-folder-password-input" type="password" select-all placeholder="" ng-model="folderPwdScope.oldPassword" auto-focus="SET-FOLDER-PASSWORD">
+                    <div class="margin-bottom-12"></div>
+                    <label for="">{{'modal.folderPassword.newPassword' | i18n}}</label>
+                    <input type="password" select-all placeholder="" ng-model="folderPwdScope.newPassword">
+                    <div class="margin-bottom-12"></div>
+                    <label for="">{{'modal.folderPassword.rePassword' | i18n}}</label>
+                    <input type="password" select-all placeholder="" ng-model="folderPwdScope.newRePassword">
+                    <div class="margin-bottom-12"></div>
+                    <label for="">{{'modal.folderPassword.passwordTips' | i18n}}</label>
+                    <textarea name="" id="" cols="30" rows="2" placeholder="" ng-model="folderPwdScope.passwordTips" select-all></textarea>
+                </div>
+        
+                <div ng-show="folderPwdScope.mode == 'reset'">
+                    <label for="">{{'modal.folderPassword.currentPassword' | i18n}}</label>
+                    <input id="reset-folder-password-input" type="password" select-all ng-model="folderPwdScope.oldPassword" auto-focus="SET-FOLDER-PASSWORD">
+                </div>
+            </div>
+            <div class="section darken textAlign-right">
+                <div ng-show="folderPwdScope.mode == 'new'" class="button button-s button-block button-primary" ng-click="folderPwdScope.save()" ng-class="{'button-disabled': false}">{{'modal.folderPassword.saveNew' | i18n}}</div>
+                <div ng-show="folderPwdScope.mode == 'change'" class="button button-s button-block button-primary" ng-click="folderPwdScope.save()" ng-class="{'button-disabled': false}">{{'modal.folderPassword.saveChange' | i18n}}</div>
+                <div ng-show="folderPwdScope.mode == 'reset'" class="button button-s button-block button-primary" ng-click="folderPwdScope.save()" ng-class="{'button-disabled': false}">{{'modal.folderPassword.saveReset' | i18n}}</div>
+            </div>
+        </div>
+        <div class="modal-overlay"></div>
+    </div>
+</body>
+</html>

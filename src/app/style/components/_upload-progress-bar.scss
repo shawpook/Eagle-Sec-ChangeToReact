@@ -1,0 +1,76 @@
+.upload-progress-bar {
+
+    @include dark {
+		--progress-bar-background: var(--color-lightgray-10);
+		--progress-bar-current-background: var(--color-brand-lighter);
+	}
+
+	@include light {
+		--progress-bar-background: var(--color-dark-10);
+		--progress-bar-current-background: var(--color-brand);
+	} 
+    z-index: 10001;
+    position: fixed;
+    bottom: 0;
+    opacity: 0;
+    transform: translateY(100%);
+    display: flex;
+    align-items: center;
+    background-color: var(--box-background);
+    height: 48px;
+    box-sizing: border-box;
+    padding: 0 12px 0 16px;
+    color: var(--color-text-primary);
+    cursor: default;
+    transition: transform var(--timing-function-super) 300ms;
+
+    -webkit-font-smoothing: antialiased;
+    backdrop-filter: var(--box-background-blur);
+    box-shadow: 0 -1px 0 var(--color-border-secondary);
+
+    &.open {
+    	opacity: 1;
+    	transform: translateY(0);
+    	transition: transform var(--timing-function-super) 300ms 0;
+    	.progressbar {
+    		display: block;
+	    	.current {
+	    		width: 20%;
+	    	}
+	    }
+    }
+
+	.message {
+	    display: inline-block;
+	    padding-left: 12px;
+        font-size: 13px;
+	    .counter {
+	    	font-family: 'Fira Mono', 'Roboto Mono', 'Monaco', 'Consolas', monospace;
+	    }
+	}
+	.cancel {
+        display: flex;
+		margin-left: 12px;
+		height: 28px;
+		width: 28px;
+	}
+	.progressbar {
+	    position: relative;
+	    display: none;
+	    border-radius: 10px;
+	    background-color: var(--progress-bar-background);
+	    height: 4px;
+	    overflow: hidden;
+	    flex: 1;
+		.current {
+			position: absolute;
+			top: 0;
+			left: 0;
+    		border-radius: 10px;
+			background-color: var(--progress-bar-current-background);
+		    background-size: 10px 10px;
+		    height: 4px;
+			width: 0%;
+		}
+	}
+}

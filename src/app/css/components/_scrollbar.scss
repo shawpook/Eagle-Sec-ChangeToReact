@@ -1,0 +1,83 @@
+@charset "utf-8";
+
+::-webkit-scrollbar {
+	margin-right: 4px;
+	height: 4px !important;
+	overflow: scroll !important;
+	width: 11px !important;
+	-webkit-appearance: none;
+}
+
+::-webkit-scrollbar-thumb {
+  	background: rgba($scrollbar-color-normal, 0.5) !important;
+	background-clip: padding-box !important;
+	border: 3px solid transparent !important;
+	border-image: initial !important;
+	min-height: 30px !important;
+	padding: 50px 0px 0px !important;
+   	opacity:.6;
+	border-radius: 20px !important;
+	transition: background 100ms ease !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	border: 3px solid transparent !important;
+  	background: $scrollbar-color-hover  !important;
+	background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-button {
+	height: 0px !important;
+	width: 0px !important;
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent !important;
+}
+
+#box-container, 
+.sidebar-item-container,
+#tag-manager .tag-manager-container,
+#tag-manager .tag-manager-sidebar,
+.inspector .content,
+.box-container .box .txt-content {
+	color: rgba($scrollbar-color-normal, 0);
+	transition: color 100ms ease 50ms;
+	&::-webkit-scrollbar-thumb {
+		box-shadow: inset 0 0 0 10px;
+		background-color: transparent !important;
+	}
+	&:hover {
+		color: rgba($scrollbar-color-normal, 0.5);
+		transition: color 100ms ease;
+		&::-webkit-scrollbar-thumb {
+			background-color: transparent !important;
+		}
+		&::-webkit-scrollbar-thumb:hover {
+			color: $scrollbar-color-hover;
+			background-color:transparent !important;
+		}
+	}
+}
+
+.content-panel {
+	#box-container-scrollbar .box-container-scrollbar-thumb:not(.dragging) {
+		opacity: 0;
+		transition: opacity 100ms ease 100ms !important;
+	}
+
+	&:hover {
+		#box-container-scrollbar .box-container-scrollbar-thumb {
+			opacity: 1;
+			transition: opacity 100ms ease !important;
+		}
+	}
+}
+
+#box-container.hide-scrollbar {
+	&::-webkit-scrollbar-thumb {
+		background-color: transparent !important;
+		box-shadow: none !important;
+		border: none !important;
+	}
+}

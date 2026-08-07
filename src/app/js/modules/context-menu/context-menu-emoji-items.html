@@ -1,0 +1,7 @@
+<div class="context-menu-emoji-list">
+    <div class="emoji-group" ng-repeat="emojiGroup in emojiGroups">
+        <div class="emoji" ng-repeat="emoji in emojiGroup" ng-click="item.click(emoji.icon)">
+            <div class="fake-svg icon" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_{{emoji.icon || 'folder-close'}}.png) !important"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,151 @@
+<div id="welcome-page" class="welcome-page" ng-if="isOpen">
+
+    <!-- 頂部工具列 -->
+    <div class="welcome-page-header">
+        <!-- Windows 選單按鈕 -->
+        <div class="icon-btn application-menu-btn fixed" ng-click="$body.openApplicationContextMenu($event);">
+            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-app-menu.svg">
+        </div>
+        <!-- 拖拽區域 -->
+        <div class="drag-area"></div>
+        <!-- Windows 右上角按鈕 -->
+        <corner-btns theme="theme" is-always-on-top="$body.isAlwaysOnTop" hide-always-on-top="true"></corner-btns>
+    </div>
+
+    <!-- 底部工具列 -->
+    <div class="welcome-page-footer" ng-hide="welcomeStep === 5">
+        <div class="ic-btn prev-btn" ng-hide="welcomeStep <= 1" ng-click="prev()">{{ 'welcome.prev' | i18n }}</div>
+        <div class="pagination">
+            <div class="dot" ng-class="{'active': welcomeStep === step}" ng-click="gotoStep($index + 1)" ng-repeat="step in totalSteps"></div>
+        </div>
+        <div class="ic-btn next-btn primary" ng-hide="welcomeStep <= 1 || welcomeStep === totalSteps.length" ng-click="next()">{{ 'welcome.next' | i18n }}<img ng-src="assets/images/base/icons/ic-welcome-next.svg"></div>
+        <div class="ic-btn next-btn primary" ng-hide="welcomeStep > 1 || welcomeStep === totalSteps.length" ng-click="next()">{{ 'welcome.start' | i18n }}<img ng-src="assets/images/base/icons/ic-welcome-next.svg"></div>
+    </div>
+
+    <div class="welcome-page-container">
+        
+        <!-- Step1: 歡迎 -->
+        <div class="step step1" ng-class="{ 'step-show': welcomeStep === 1, 'step-hide': welcomeStep > 1 }">
+            <div class="app-logo">
+                <img ng-src="assets/images/base/logo_72.png" width="72" height="72">
+            </div>
+            <h2>{{ 'welcome.step1.title' | i18n }}</h2>
+            <p>{{ 'welcome.step1.desc' | i18n }}</p>
+            <p class="small" ng-bind-html="'welcome.agree' | i18n"></p>
+            <img class="hero-image" src="assets/images/{{theme|themePath}}/illustrations/welcome-hero-{{platform}}.png" width="1080" height="464">
+        </div>
+
+        <!-- Step2: 設定主題 -->
+        <div class="step step2" ng-class="{ 'step-show': welcomeStep === 2, 'step-left': welcomeStep < 2, 'step-right': welcomeStep > 2 }">
+            <h2>{{'welcome.step2.title' | i18n}}</h2>
+            <p>{{'welcome.step2.desc' | i18n}}</p>
+            <div class="theme-picker">
+                <div class="theme-item auto" ng-click="selectTheme('Auto');" ng-class="{'active': currentTheme === 'Auto'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.Auto' | i18n}}"><div class="circle"></div></div>
+                <div class="theme-item light" ng-click="selectTheme('LIGHT');" ng-class="{'active': currentTheme === 'LIGHT'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.LIGHT' | i18n}}"><div class="circle"></div></div>
+                <div class="theme-item lightgray" ng-click="selectTheme('LIGHTGRAY');" ng-class="{'active': currentTheme === 'LIGHTGRAY'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.LIGHTGRAY' | i18n}}"><div class="circle"></div></div>
+                <div class="theme-item gray" ng-click="selectTheme('GRAY');" ng-class="{'active': currentTheme === 'GRAY'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.GRAY' | i18n}}"><div class="circle"></div></div>
+                <div class="theme-item dark" ng-click="selectTheme('DARK');" ng-class="{'active': currentTheme === 'DARK'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.DARK' | i18n}}"><div class="circle"></div></div>
+                <div class="theme-item blue" ng-click="selectTheme('BLUE');" ng-class="{'active': currentTheme === 'BLUE'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.BLUE' | i18n}}"><div class="circle"></div></div>
+                <div class="theme-item purple" ng-click="selectTheme('PURPLE');" ng-class="{'active': currentTheme === 'PURPLE'}" tippy tippy-placement="top" tippy-content="{{'preferencesWindow.themes.PURPLE' | i18n}}"><div class="circle"></div></div>
+            </div>
+            <img class="hero-image" src="assets/images/{{theme|themePath}}/illustrations/welcome-hero-{{platform}}.png" width="1080" height="464">
+        </div>
+
+        <!-- Step3: 瀏覽器擴充 -->
+        <div class="step step3" ng-class="{ 'step-show': welcomeStep === 3, 'step-left': welcomeStep < 3, 'step-right': welcomeStep > 3 }">
+            <h2>{{'welcome.step3.title' | i18n}}</h2>
+            <p>{{'welcome.step3.desc' | i18n}}</p>
+            <div class="extension-picker">
+                <a class="extension-item" href="https://chrome.google.com/webstore/detail/eagle/lieogkinebikhdchceieedcigeafdkid" target="_blank">
+                    <div class="icon" style="background-image: url('assets/images/base/icons/ic-welcome-extenstion-chrome.png');"></div>
+                    <div class="name">Chrome</div>
+                    <div class="download" style="background-image: url('assets/images/{{theme|themePath}}/icons/ic-welcome-extenstion-download.svg')"></div>
+                </a>
+                <a class="extension-item" href="https://microsoftedge.microsoft.com/addons/detail/cfgchmkedjfehclfhhmgedljhcibojcm" target="_blank">
+                    <div class="icon" style="background-image: url('assets/images/base/icons/ic-welcome-extenstion-edge.png');"></div>
+                    <div class="name">Edge</div>
+                    <div class="download" style="background-image: url('assets/images/{{theme|themePath}}/icons/ic-welcome-extenstion-download.svg')"></div>
+                </a>
+                <a class="extension-item" href="https://apps.apple.com/app/id1526651672" target="_blank">
+                    <div class="icon" style="background-image: url('assets/images/base/icons/ic-welcome-extenstion-safari.png');"></div>
+                    <div class="name">Safari</div>
+                    <div class="download" style="background-image: url('assets/images/{{theme|themePath}}/icons/ic-welcome-extenstion-download.svg')"></div>
+                </a>
+                <a class="extension-item" href="https://addons.mozilla.org/firefox/addon/eagle-app/" target="_blank">
+                    <div class="icon" style="background-image: url('assets/images/base/icons/ic-welcome-extenstion-firefox.png');"></div>
+                    <div class="name">Firefox</div>
+                    <div class="download" style="background-image: url('assets/images/{{theme|themePath}}/icons/ic-welcome-extenstion-download.svg')"></div>
+                </a>
+                <a class="extension-item other" href="https://eagle.cool/extensions" target="_blank">
+                    <div class="name">{{'welcome.step3.others' | i18n}}</div>
+                    <div class="download" style="background-image: url('assets/images/{{theme|themePath}}/icons/ic-welcome-extenstion-download.svg')"></div>
+                </a>
+            </div>
+            <div class="hero-image-wrap">
+                <img class="hero-image" src="assets/images/{{theme|themePath}}/illustrations/welcome-extension-{{platform}}.png" width="1080" height="464">
+                <img class="extension-popup" ng-src="assets/images/{{theme|themePath}}/illustrations/welcome-extension-popup.png" width="270" height="303">
+            </div>
+        </div>
+
+        <!-- Step4: 建立資源庫 -->
+        <div class="step step4" ng-class="{ 'step-show': welcomeStep === 4, 'step-left': welcomeStep < 4, 'step-right': welcomeStep > 4 }">
+            <h2>{{'welcome.step4.title' | i18n}}</h2>
+            <p ng-bind-html="'welcome.step4.desc' | i18n"></p>
+            <div class="hero-image-wrap">
+                <img class="hero-image" src="assets/images/{{theme|themePath}}/illustrations/welcome-library-{{platform}}.png" width="1080" height="380">
+                <div class="library-items">
+                    <div class="library-item">
+                        <div class="icon"><img src="assets/images/base/icons/ic-welcome-library-icon.png" width="72" height="72"></div>
+                        <div class="name">{{'welcome.step4.example1' | i18n}}</div>
+                    </div>
+                    <div class="library-item">
+                        <div class="icon"><img src="assets/images/base/icons/ic-welcome-library-icon.png" width="72" height="72"></div>
+                        <div class="name">{{'welcome.step4.example2' | i18n}}</div>
+                    </div>
+                    <div class="library-item">
+                        <div class="icon"><img src="assets/images/base/icons/ic-welcome-library-icon.png" width="72" height="72"></div>
+                        <div class="name">{{'welcome.step4.example3' | i18n}}</div>
+                    </div>
+                    <div class="library-item">
+                        <div class="icon"><img src="assets/images/base/icons/ic-welcome-library-icon.png" width="72" height="72"></div>
+                        <div class="name">{{'welcome.step4.example4' | i18n}}</div>
+                    </div>
+                    <div class="library-item">
+                        <div class="icon"><img src="assets/images/base/icons/ic-welcome-library-icon.png" width="72" height="72"></div>
+                        <div class="name">{{'welcome.step4.example5' | i18n}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="library-controls">
+                <div class="buttons">
+                    <div class="button button-primary" ng-click="$body.createLibrary()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-welcome-library-create.svg">{{'welcome.step4.create' | i18n}}</div>
+                    <div class="button button-grey" ng-click="$body.importLibrary()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-welcome-library-import.svg">{{'welcome.step4.import' | i18n}}</div>
+                </div>
+                <div class="hint-message">{{'welcome.step4.hint' | i18n}}</div>
+            </div>
+        </div>
+
+        <!-- Step5: 資源庫遺失 -->
+        <div class="step step5" ng-class="{ 'step-show': welcomeStep === 5 }">
+            <h2>{{'libraryMissing.title' | i18n}}</h2>
+            <p>{{'libraryMissing.desc1' | i18n}}<b>{{libraryPath}}</b><span ng-bind-html="'libraryMissing.desc2' | i18n"</span></p>
+            <div class="hero-image-wrap">
+                <img class="hero-image" src="assets/images/{{theme|themePath}}/illustrations/welcome-library-{{platform}}.png" width="1080" height="380">
+                <div class="library-items">
+                    <div class="library-item">
+                        <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-welcome-library-missing-icon.png" width="72" height="72"></div>
+                        <div class="name">{{libraryName}}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="library-controls">
+                <div class="buttons">
+                    <div class="button button-primary" ng-click="$body.refresh()">{{'libraryMissing.refresh' | i18n}}</div>
+                    <div class="button button-grey" ng-click="$body.switchLibrary($event)">{{'libraryMissing.reimport' | i18n}}</div>
+                </div>
+                <div class="hint-message">{{'libraryMissing.recreateTip' | i18n}}<a ng-click="$body.createLibrary()">{{'libraryMissing.recreateBtn' | i18n}}</a></div>
+            </div>
+        </div>
+
+    </div>
+</div>

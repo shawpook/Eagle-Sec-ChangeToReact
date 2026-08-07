@@ -1,0 +1,107 @@
+[eagle-extension] {
+	.loader {
+		z-index: 19003;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translateX(-50%) translateY(-50%);
+		background-color: var(--box-background);
+		border-top: var(--box-border-top);
+		border-left: var(--box-border-left);
+		border-right: var(--box-border-right);
+		border-bottom: var(--box-border-bottom);
+		box-shadow: var(--box-border-shadow-small);
+		backdrop-filter: var(--box-background-blur);
+		padding: 20px;
+		display: -webkit-box;
+		display: -webkit-flex;
+		display: -ms-flexbox;
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		border-radius: 10px;
+
+		.path {
+			stroke: var(--color-text-primary);
+		}
+	}
+
+	.spinner {
+		-webkit-animation: rotator 1.4s linear infinite;
+		animation: rotator 1.4s linear infinite;
+	}
+
+	.loader-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 2;
+	}
+
+	@-webkit-keyframes rotator {
+		0% {
+			-webkit-transform: rotate(0deg);
+			transform: rotate(0deg);
+		}
+		100% {
+			-webkit-transform: rotate(270deg);
+			transform: rotate(270deg);
+		}
+	}
+
+	@keyframes rotator {
+		0% {
+			-webkit-transform: rotate(0deg);
+			transform: rotate(0deg);
+		}
+		100% {
+			-webkit-transform: rotate(270deg);
+			transform: rotate(270deg);
+		}
+	}
+
+	.path {
+		stroke-dasharray: 187;
+		stroke-dashoffset: 0;
+		stroke: #fff;
+		-webkit-transform-origin: center;
+		-ms-transform-origin: center;
+		transform-origin: center;
+		-webkit-animation: dash 1.4s ease-in-out infinite;
+		animation: dash 1.4s ease-in-out infinite;
+	}
+
+	@-webkit-keyframes dash {
+		0% {
+			stroke-dashoffset: 187;
+		}
+		50% {
+			stroke-dashoffset: 46.75;
+			-webkit-transform: rotate(135deg);
+			transform: rotate(135deg);
+		}
+		100% {
+			stroke-dashoffset: 187;
+			-webkit-transform: rotate(450deg);
+			transform: rotate(450deg);
+		}
+	}
+
+	@keyframes dash {
+		0% {
+			stroke-dashoffset: 187;
+		}
+		50% {
+			stroke-dashoffset: 46.75;
+			-webkit-transform: rotate(135deg);
+			transform: rotate(135deg);
+		}
+		100% {
+			stroke-dashoffset: 187;
+			-webkit-transform: rotate(450deg);
+			transform: rotate(450deg);
+		}
+	}
+}

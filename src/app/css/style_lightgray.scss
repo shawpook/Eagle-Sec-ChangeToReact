@@ -1,0 +1,17 @@
+// $black-color: #343141;
+$black-color: darken(#35373e, 5%);
+$light-black: #121516;
+$lighter-color: #e2e4e6;
+$light-color: #dadcde;
+$white-color: #dadcde;
+$input-color: #ebedef;
+$active-color: #d3d5d7;
+$border-color: #c6c8c9;
+$svg-icon-color: #555;
+
+$sidebar-name-color: lighten($light-black, 3%);
+$sidebar-item-bg-hover-background-color: darken($active-color, 3%);
+$sidebar-item-bg-background-color: darken($active-color, 7%);
+$sidebar-item-background-color: #e2e4e6 !default;
+
+@import "style_light.scss";

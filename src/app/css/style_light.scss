@@ -1,0 +1,826 @@
+$black-color: darken(#26282A, 5%);
+$light-black: #26272B !default;
+// $light-color: #f8f8f8 !default;
+$lighter-color: #fff !default;
+$light-color: #f0f1f3 !default;
+$white-color: #fff !default;
+$input-color: #fff !default;
+$active-color: #d8d9db !default;
+$border-color: #e3e5e7 !default;
+$folder-color-red: #db4035 !default;
+$folder-color-orange: #cc6b08 !default;
+$folder-color-yellow: #9a8207 !default;
+$folder-color-green: #20770d !default;
+$folder-color-aqua: #037486 !default;
+$folder-color-blue: #3068bd !default;
+$folder-color-purple: #4c3e9c !default;
+$folder-color-pink: #942e6b !default;
+$svg-icon-color: #66686a !default;
+
+$icon-btn-color: rgba($light-black,0.7) !default;
+$icon-btn-active-color: rgba($light-black,0.9) !default;
+$icon-btn-bg: transparent !default;
+$icon-btn-active-bg: lighten($active-color, 2%) !default;
+$icon-btn-hover-bg: rgba($icon-btn-active-bg, 0.5) !default;
+$icon-btn-active-hover-bg: lighten($active-color, 1%) !default;
+$icon-btn-disable-bg: transparent !default;
+
+$sidebar-badge-color: rgba($light-black,0.7) !default;
+$sidebar-label-color: rgba($light-black,0.7) !default;
+$sidebar-label-hover-background-color: rgba($light-black, 0.05) !default;
+$sidebar-name-color: lighten($light-black, 5%) !default;
+$sidebar-name-hight-color: $light-black !default;
+$sidebar-item-lock-background-color: #f2f3f5 !default;
+$sidebar-item-background-color: #F8f9FB !default;
+$sidebar-item-bg-background-color: lighten($active-color, 3%) !default;
+$sidebar-item-bg-hover-background-color: lighten($active-color, 8%) !default;
+$sidebar-item-drop-background-color: rgba(#0072EF,0.30) !default;
+$sidebar-item-trash-background-color: rgba(#FF0016,0.20) !default;
+$sidebar-item-context-hightlight-color: rgba($light-black, 0.5) !default;
+$sidebar-item-grid-color: darken($border-color, 3%) !default;
+
+$modal-border: 1px solid $active-color !default;
+$modal-box-shadow: rgba(0,0,0,0.07) 0px 4px 44px !default;
+$modal-overlay-bg: rgba(#000, 0.4) !default;
+
+$scrollbar-color-normal: lighten($light-black, 60%) !default;
+$scrollbar-color-hover: lighten($light-black, 40%) !default;
+
+$ui-negative-color: #ff5a7b !default;
+
+@import "style.scss";
+
+
+.sm-spiner {
+  border: 1px solid rgba($light-black, .2);
+  border-left-color: $light-black;
+}
+
+body.slideshow {
+    .content-panel {
+        .smooth_zoom_preloader {
+            background: #000 !important;
+            #detail-container {
+                background: #000 !important;
+                .detail-wrap {
+                    background: #000 !important;
+                }
+            }
+        }
+    }
+}
+
+.icon, .tree-node, .group-item {
+    svg {
+        path {
+            stroke: #444;
+            // fill: #dedede;
+        }
+    }
+    &.color-red {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-red, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-red, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-red !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-red, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-red !important;
+                fill: lighten($folder-color-red, 30%) !important;
+            }
+        }
+    }
+    &.color-orange {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-orange, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-orange, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-orange !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-orange, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-orange !important;
+                fill: lighten($folder-color-orange, 30%) !important;
+            }
+        }
+    }
+    &.color-green {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-green, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-green, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-green !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-green, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-green !important;
+                fill: lighten($folder-color-green, 30%) !important;
+            }
+        }
+    }
+    &.color-aqua {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-aqua, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-aqua, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-aqua !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-aqua, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-aqua !important;
+                fill: lighten($folder-color-aqua, 30%) !important;
+            }
+        }
+    }
+    &.color-yellow  {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-yellow, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-yellow, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-yellow !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-yellow, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-yellow !important;
+                fill: lighten($folder-color-yellow, 35%) !important;
+            }
+        }
+    }
+    &.color-blue  {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-blue, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-blue, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-blue !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-blue, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-blue !important;
+                fill: lighten($folder-color-blue, 30%) !important;
+            }
+        }
+    }
+    &.color-purple  {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-purple, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-purple, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-purple !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-purple, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-purple !important;
+                fill: lighten($folder-color-purple, 20%) !important;
+            }
+        }
+    }
+    &.color-pink  {
+        ~ .angular-ui-tree-nodes:after {
+            border-color: rgba($folder-color-pink, 0.5) !important;
+        }
+        ~ .angular-ui-tree-nodes > .angular-ui-tree-node > .tree-node-content .icon {
+            &:after {
+                border-color: rgba($folder-color-pink, 0.5 / 0.7);
+            }
+        }
+        .fake-svg {
+            background: $folder-color-pink !important;
+        }
+        svg {
+            g {
+                fill: rgba($folder-color-pink, 0.1) !important;
+            }
+            path {
+                stroke: $folder-color-pink !important;
+                fill: lighten($folder-color-pink, 20%) !important;
+            }
+        }
+    }
+}
+
+.website-panel {
+    background-color: $lighter-color;
+}
+
+body.win32 {
+    border: 1px solid #505050;
+}
+
+.button {
+    &.button-primary {
+        @include button-style($primary-color, $primary-color, darken($primary-color, 5%), darken($primary-color, 5%), white);
+        @include button-ghost($primary-color, $primary-color);
+        background-image: none;
+        box-shadow: none !important;
+        border: none !important;
+    }
+    &.button-grey {
+        @include button-style($input-color, $input-color, darken($input-color, 5%), darken($input-color, 5%), lighten($light-black, 10%));
+        border: 1px solid $border-color !important;
+        box-shadow: none !important;
+        background-image: none;
+        &:hover {
+            background-color: darken($input-color, 2%);
+            border: 1px solid $border-color;
+        }
+    }
+}
+
+::-webkit-scrollbar-thumb {
+  	background: $scrollbar-color-normal !important;
+    border: 3px solid transparent !important;
+    background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: $scrollbar-color-hover !important;
+    border: 2px solid transparent !important;
+    // border: 1px solid darken($active-color, 15%) !important;
+	background-clip: padding-box !important;
+}
+
+.switch {
+    // border: 1px solid $border-color;
+    // background: $active-color;
+    box-shadow: none;
+    .switch-selection {
+        background-color: transparent;
+        border-top: 1px solid $light-black;
+        box-shadow: none;
+    }
+    .switch-input:checked+.switch-label {
+        color: $light-black;
+    }
+    .switch-label {
+        text-shadow: none;
+        color: #9b9b9b;
+    }
+}
+
+.sidebar {
+    // background: $sidebar-item-background-color;
+    // border-right: 1px solid $border-color;
+    .main-nav {
+        .library-item {
+            border: 1px solid $border-color;
+        }
+        .nav-item {
+            img {
+                opacity: 0.5;
+            }
+            &.active {
+                img {
+                    opacity: 1;
+                }
+                .bar {
+                    background-color: $light-black;
+                }
+            }
+        }
+    }
+    
+    .ps-container .ps-scrollbar-y {
+    	background-color: #d4d6d9;
+    }
+    .expand-icon {
+    	color: rgba($light-black, 0.7);
+    }
+    .group {
+        .group-item {
+            opacity: 1;
+            .group-item-name {
+                .icon {
+                    opacity: 0.9;
+                    .fake-svg {
+                        background-color: $svg-icon-color;
+                    }
+                }
+            }
+        }
+        .group-name  {
+        	// box-shadow: inset 0 -1px 0 0 #d9d9d9, 0 -1px 0 0 #d9d9d9, inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+            .group-item-name {
+                .icon {
+                    .fake-svg {
+                        background-color: $svg-icon-color;
+                    }
+                }
+                .hide-btn {
+                    opacity: 0.9;
+                    // color: rgba($light-black, 0.7);
+                    // &:hover {
+                    //     color: $sidebar-name-color;
+                    // }
+                }
+                .name {
+                    color: rgba($light-black, 1);
+                    &.expandable:hover {
+						cursor: pointer;
+						color: rgba($light-black, 1);
+						background-color: rgba($light-black, 0.05);
+					}
+                }
+                .right {
+                    .tool-btn {
+                        color: $sidebar-name-color;
+                        &:hover {
+                            cursor: pointer;
+                            // color: rgba($light-black, 1);
+                        }
+                    }
+                }
+            }
+    	}
+    }
+    .group-item {
+    	&.level-2 {
+			.group-item-name {
+				.icon {
+    				border-left: 1px dotted rgba(0,0,0,0.15);
+                    &:after {
+                        background-color: $light-color;
+                    }
+    			}
+    		}
+    	}
+    	.group-item-name {
+    		&:hover {
+    		}
+    		.name {
+				color: $sidebar-name-color;
+                b {
+                    color: $sidebar-name-color;
+                }
+                // font-weight: 400;
+    		}
+    		.right .badge {
+    			color: rgba($light-black, 0.5);
+    		}
+    	}
+    	&.active {
+            .expand-icon {
+                color: #fff;
+            }
+            > .group-item-name {
+                background-color: $active-color;
+                .name {
+                    color: $light-black;
+                    b {
+
+                    }
+                }
+                .right .badge {
+                    color: $sidebar-name-color;
+                }
+
+        		&:hover {
+                    > .group-item-name {
+            			.name {
+            				color: #fff;
+            			}
+                        .right .badge {
+                            color: $sidebar-name-color;
+                        }
+                    }
+        		}
+            }
+        }
+        &.context-activate {
+            > .group-item-name {
+                border: 1px solid $border-color;
+            }
+        }
+    	&.active.disable {
+			> .group-item-name {
+			    background-color: rgba(0, 110, 255, 0.7);
+			    .name {
+		    	    color: #fff;
+			    }
+			}
+    	}
+    }
+}
+
+.angular-ui-tree-nodes .angular-ui-tree-nodes {
+    .angular-ui-tree-node .icon {
+        &:after {
+            content: "";
+            top: 50%;
+            // left: -20px;
+            position: absolute;
+            // width: 10px;
+            height: 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+        }
+    }
+}
+
+.angular-ui-tree-nodes .angular-ui-tree-nodes {
+    &:after {
+        border-left: 1px solid rgba(0, 0, 0, 0.18);
+    }
+}
+
+.sidebar .group-name {
+    background: $light-color;
+}
+
+.select select {
+    background-color: $input-color;
+    background-image: linear-gradient(-180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);
+    border: 1px solid #d5d5da;
+    color: $light-black;
+}
+.select:after {
+    color: $light-black;
+}
+
+.modal .btn {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: lighten($sidebar-name-color, 10%);
+    // color: $sidebar-name-color;
+    img {
+        opacity: 0.8;
+    }
+}
+
+.modal .btn.disabled {
+	background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    // color: $sidebar-name-color;
+    color: lighten($sidebar-name-color, 10%);
+    opacity: 0.5;
+    img {
+        opacity: 0.5;
+    }
+    &:active {
+        box-shadow: none;
+        background: $input-color;
+    }
+}
+
+.modal .btn:hover, .modal .btn:hover {
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: $light-black;
+    box-shadow: none;
+}
+
+.modal .btn:active, .modal .btn.active {
+    background-color: lighten($active-color, 2%);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    color: $light-black;
+    box-shadow: none;
+}
+
+// UI Tree
+.angular-ui-tree-handle {
+    background-color: $light-color;
+    color: $sidebar-name-color;
+    opacity: 1;
+    // &:hover {
+    //     color: $sidebar-name-color;
+    // }
+
+    // &:hover .active-bg {
+        // background-color: $light-color;
+        // background-color: rgba(#000, 0.03);
+    // }
+
+    &.active {
+        color: #333;
+        .name {
+            color: rgba($light-black, 1);
+        }
+        .active-bg {
+            background-color: $active-color;
+            // background: $active-color;
+        }
+    }
+
+    &.selected {
+        .active-bg {
+            background-color: $active-color;
+            // border: 1px solid rgba(#000, 0.1);
+        }
+    }
+
+    &.context-activate {
+        > .active-bg {
+            border: 1px solid $border-color;
+        }
+    }
+
+    &.drop {
+        .active-bg {
+            background: rgba(0,110,255,0.30) !important;
+            border: 1px solid rgba(0,110,255,1) !important;
+        }
+    }
+
+    .name {
+        color: $sidebar-name-color;
+    }
+
+    .icon {
+        position: relative;
+        opacity: 0.9;
+        img, svg {
+            margin-top: -2px;
+            vertical-align: middle;
+            display: inline-block;
+            max-width: 18px;
+            max-height: 18px;
+            pointer-events: none;
+        }
+        .fake-svg {
+            background-color: $svg-icon-color;
+        }
+        svg {
+            path {
+                stroke: #444;
+                // fill: #dedede;
+            }
+        }
+    }
+
+    .badge {
+        // color: $light-black;
+        color: rgba($light-black, 0.5);
+    }
+}
+
+.angular-ui-tree-placeholder {
+    background: rgba(0, 110, 255, 0.2);
+    border: 1px dashed #0072EF;
+}
+
+.angular-ui-tree-drag {
+    opacity: 0.5 !important;
+}
+
+.tree-handle {
+    padding: 10px;
+    color: #FFF;
+}
+
+.error-modal {
+    .table, table {
+        .tr, tr {
+            border-bottom: 1px solid $border-color;
+            &:hover {
+                cursor: default;
+                background-color: #f8fafc;
+            }
+            &.header {
+                background-color: $light-color;
+                border-bottom: 1px solid $border-color;
+                &:hover {
+                    background-color: transparent;
+                }
+            }
+            .td, td {
+                a {
+                    color: $light-black;
+                    &:hover {
+                    }
+                }
+                &.remove {
+                    &:hover {
+                        color: $light-black;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// tag popup
+.tags-popup {
+    // background-color: $light-color;
+    // background-color: $input-color;
+    // border: 1px solid $border-color;
+    // box-shadow: 0 2px 20px 0 rgba(0, 0, 0, 0.2);
+    color: $light-black;
+    .multiple-tips {
+        background-color: $input-color;
+    }
+    .triangle {
+        content: "";
+        background-color: $input-color;
+        border-right: 1px solid $border-color;
+        border-bottom: 1px solid $border-color;
+        right: -7px;
+    }
+    .tabs {
+        // background: $light-color;
+        // box-shadow: 0 1px 0 0 $border-color;
+        border-bottom: none;
+        .tab {
+            color: $light-black;
+            &:hover {
+            }
+            &.active {
+                color: $light-black;
+                // border-bottom: 1px solid $light-black;
+            }
+        }
+    }
+
+    .tags-popup-container {
+        &::-webkit-scrollbar {
+            overflow: auto !important;
+            width: 10px !important;
+            background: transparent;
+            border-left: none;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: $active-color !important;
+            background-clip: padding-box !important;
+            border: 2px solid transparent !important;
+            opacity:.6;
+        }
+        &::-webkit-scrollbar-thumb:hover {
+            background: darken(#d4d6d9, 10%) !important;
+            background-clip: padding-box !important;
+        }
+    }
+    .empty-state {
+        color: rgba($light-black, 0.5);
+    }
+    .minimap {
+        .group-scroll-item {
+            opacity: 0.8;
+            color: $light-black;
+        }
+    }
+    .group {
+        .label {
+            color: $light-black;
+        }
+    }
+    .tags {
+        .tag {
+            color: $sidebar-name-color;
+            background: $light-color;
+            border: 1px solid $active-color;
+            box-sizing: border-box;
+            line-height: 20px;
+            .icon {
+                .tag-circle {
+                    background-color: transparent;
+                }
+            }
+            &.active {
+                color: rgba($light-black, 1);
+            }
+            &:hover {
+                color: rgba($light-black, 1);
+                background: darken($light-color, 5%);
+                border: 1px solid $border-color;
+            }
+            &.selected {
+                color: $input-color;
+                background: $primary-color;
+                border: 1px solid $primary-color;
+                &:hover {
+                    color: $input-color;
+                    background: $primary-color;
+                }
+            }
+            &.active {
+                box-shadow: 0 0 0 2px $input-color, 0 0 0 3px rgba($light-black, 0.5);
+            }
+        }
+    }
+}
+
+.not-support-preview {
+    .not-support-preview-content {
+    }
+    .thumbnail {
+        img {
+        }
+    }
+    .title {
+        opacity: 0.9;
+        color: $light-black;
+    }
+    p {
+        opacity: 0.8;
+        color: $light-black;
+    }
+    .btn {
+        background: $input-color;
+        border: 1px solid $border-color;
+        border-radius: 2px;
+        color: $sidebar-name-color;
+    }
+    .btn.disabled {
+        background: $input-color;
+        border: 1px solid $border-color;
+        border-radius: 2px;
+        color: $sidebar-name-color;
+        opacity: 0.5;
+    }
+    .btn.active, .btn:active {
+        background-color: $input-color;
+        border: 1px solid $border-color;
+        border-radius: 2px;
+        color: $light-black;
+        box-shadow: -1px 1px 1px rgba(0, 0, 0, 0.1) inset;
+    }
+}
+
+
+.saved-filter-panel {
+    background-color: $white-color;
+    background-image: none;
+    border: 1px solid $border-color;
+    box-shadow: 0 3px 10px 0 rgba(0,0,0,0.1);
+    .split {
+        background-color: $border-color;
+    }
+    .saved-filter-item {
+        color: $light-black;
+        &:hover {
+            color: #fff;
+        }
+        &.disabled {
+            cursor: default;
+            opacity: 0.5;
+            &:hover {
+                color: $light-black;
+                background-color: transparent;
+            }
+        }
+    }
+}
+
+.website-panel {
+    background: $sidebar-item-background-color;
+    .website-panel-webview-control {
+        border-bottom: 1px solid $border-color;
+    }
+}

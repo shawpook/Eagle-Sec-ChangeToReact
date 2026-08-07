@@ -1,0 +1,141 @@
+@mixin dark() {
+    body[theme="gray"] &,
+    body[theme="dark"] &,
+    body[theme="purple"] &,
+    body[theme="blue"] & {
+        @content;
+    }
+}
+
+@mixin light() {
+    body[theme="light"] &,
+    body[theme="lightgray"] & {
+        @content;
+    }
+}
+
+@mixin body-status($status) {
+    body#{$status} & {
+        @content;
+    }
+}
+
+@import "base/_reset";
+@import "base/_color";
+@import "base/_layout";
+@import "base/_typography";
+@import "base/_font";
+@import "base/_animation";
+@import "base/_position";
+@import "base/_borderRadius";
+@import "components/_scrollbar";
+@import "components/_grid";
+
+// TODO: 陸續移植到 style 架構
+@import "components/_button";
+
+// TODO: 陸續移植到 style 架構
+@import "components/_form-elements";
+
+@import "components/_smart-folder-modal";
+@import "components/_ext-icon";
+@import "components/_annotation-preview";
+@import "components/_import-artstation-modal.scss";
+@import "components/_crop-image-tool.scss";
+
+body {
+	
+	&.window-blur {
+		#tags-popup-overlay, .filter-toolbar-overlay {
+			pointer-events: none;
+		}
+	}
+
+	&:not(.is-comment-mode) {
+		.content-panel .detail-container .comments .comment {
+			opacity: 0;
+			cursor: default !important;
+			.remove, .ui-resizable-handle {
+				display: none !important;
+			}
+			&.highlight, &:hover {
+				opacity: 1;
+			}
+		}
+	}
+
+	&.hide-sidebar {
+		.hover-show-sidebar {
+			pointer-events: initial;
+		}
+		.sidebar {
+			transform: translateX(-100%);
+			&.hover-show {
+				transform: translateX(0%);
+			}
+		}
+		.filter-toolbar, .box-container-droparea, .content-panel, .upload-progress-bar, #website-panel {
+			left: 0 !important;
+		}
+		#toggle-all-btn {
+			display: inline-flex;
+		}
+		&.darwin {
+		    #website-panel {
+		    	.website-panel-webview-control {
+		    		padding-left: 80px;
+		    	}
+		    	.drag-area {
+		    		left: 200px;
+		    	}
+		    }
+		}
+	}
+	&.hide-inspector {
+		.inspector {
+			transform: translateX(100%);
+		}
+		.filter-toolbar, .box-container-droparea, .content-panel, .upload-progress-bar {
+			right: 0 !important;
+		}
+		&.win32 {
+		    .search-suggestions {
+			    right: 166px;
+			}
+		}
+	}
+	#toggle-all-btn {
+		display: none;
+	}
+		
+}
+
+
+
+.hidden {
+    display: none!important;
+    visibility: hidden!important;
+}
+
+[contenteditable] {
+	&:focus {
+		outline: none;
+	}
+}
+
+[contenteditable]:empty:before{
+	content: attr(placeholder);
+	display: block;
+	color: rgba($black-color, 0.5);
+	cursor: text;
+}
+
+.vjs-user-inactive.vjs-playing .vjs-control-bar {
+	opacity: 1 !important;
+}
+
+@import "components/_content-area";
+@import "components/_website-panel";
+@import "components/_slideshow";
+@import "components/_error-modal";
+@import "components/_spinner";

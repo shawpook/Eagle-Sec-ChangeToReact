@@ -1,0 +1,11 @@
+<div id="extract-eaglepack-progress" class="progress-dialog" ng-class="{'open' : isExtracting}">
+    <div class="progress-dialog-content" ng-if="isExtracting">
+        <div class="message" ng-show="total==0">{{'progress.extractPack.startMsg' | i18n}}...</div>
+        <div class="message" ng-show="total>0">{{'progress.extractPack.doningMsg' | i18n}}... <span class="counter" ng-show="timeLeftInSeconds">({{timeLeftInSeconds | second2time}})</span></div>
+        <div class="progressbar" ng-show="isExtracting">
+            <div class="current" style="width: {{curr/total*100}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

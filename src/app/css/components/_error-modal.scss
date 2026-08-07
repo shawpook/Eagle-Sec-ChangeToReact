@@ -1,0 +1,107 @@
+.modal.error-modal {
+    width: calc(100vw - 100px);
+    max-width: 1200px;
+	.error-list {
+		// max-height: 360px;
+	 //    min-height: 160px;
+		// overflow: auto;
+	}
+	.table {
+		max-height: 360px;
+	    min-height: 160px;
+		overflow: auto;
+	}
+	.table, table {
+		user-select: text;
+		width: 100%;
+	    table-layout: fixed;
+		.tr, tr {
+	        height: 60px;
+			line-height: 1.4;
+		    border-bottom: 1px solid var(--color-border-primary);
+		    box-sizing: border-box;
+	        display: flex;
+            align-items: center;
+    		width: 100%;
+
+			&:hover {
+				cursor: default;
+				background-color: var(--color-bg-hover);
+			}
+			&.header {
+				height: 36px;
+				-webkit-app-region: drag;
+			    background-color: var(--color-bg-hover);
+    			border-bottom: 1px solid var(--color-border-primary);
+    			&:hover {
+    				background-color: transparent;	
+    			}
+			}
+
+    		.td, td {
+    			// white-space: nowrap;
+			    max-height: 2.8em;
+			    overflow: hidden;
+			    text-overflow: ellipsis;
+			    table-layout: fixed;
+		        display: table-cell;
+			    a {
+    				color: var(--color-text-secondary);
+    				text-decoration: none;
+    				&:hover {
+    					cursor: pointer;
+    					text-decoration: underline;
+    				}
+    			}
+	    		&.name {
+	    			width: 200px;
+	    			padding-right: 10px;
+	    			padding-left: 20px;
+	    		}
+	    		&.origin {
+	    			width: 300px;
+	    			padding-right: 10px;
+	    		}
+	    		&.reason {
+	    			// width: 200px;
+	    			width: 50%;
+	    			padding-right: 10px;
+	    			a {
+	    				text-decoration: underline;
+	    			}
+	    		}
+				&.icon {
+					width: 32px;
+				    height: 32px;
+				    line-height: 32px;
+				    text-align: center;
+				    display: flex;
+					align-items: center;
+					justify-content: center;
+				}
+				&.remove {
+					&:hover {
+						cursor: pointer;
+						color: var(--color-text-primary);
+					}
+				}
+			}
+		}
+	}
+	.example {
+	    text-align: left;
+	    line-height: 16px;
+	    margin: 6px 0;
+	    float: left;
+	    font-size: 12px;
+	    max-width: 200px;
+	    height: 16px;
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	}
+	.tips {
+		opacity: 0.8;
+		font-size: 12px;
+	}
+}

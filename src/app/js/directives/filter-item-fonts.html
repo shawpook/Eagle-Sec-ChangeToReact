@@ -1,0 +1,24 @@
+<div id="fontActivated-filter-item" ng-right-click="clearFontActivatedFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" title="{{displayName}}" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.fonts'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-font.svg"><div>{{displayName}}</div></div>
+    <input tabindex="-1" type="text" class="shortcut-input">
+    <div class="menu-wrap"><div class="filter-menu" style="min-height: 40px; min-width: 200px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div class="empty" ng-show="eagle.filter.filterCounts['fontActivated']['activated'] === 0 && eagle.filter.filterCounts['fontActivated']['deactivated'] === 0">{{'filter.emptyMsg' | i18n}}</div>
+            <div class="check-item" ng-if="eagle.filter.filterCounts['fontActivated']['activated'] > 0" ng-class="{'checked': eagle.filter.filterRules.font.activated}" ng-click="focusInput(); eagle.filter.filterRules.font.activated = !eagle.filter.filterRules.font.activated; eagle.filter.filterRules.font.deactivated = false; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.fontActivated>activated' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['fontActivated']['activated'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="eagle.filter.filterCounts['fontActivated']['deactivated'] > 0" ng-class="{'checked': eagle.filter.filterRules.font.deactivated}" ng-click="focusInput(); eagle.filter.filterRules.font.deactivated = !eagle.filter.filterRules.font.deactivated; eagle.filter.filterRules.font.activated = false; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.fontActivated>deactivated' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['fontActivated']['deactivated'] | number:0}}</div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearFontActivatedFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

@@ -1,0 +1,38 @@
+<div class="modal new-version-notification-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+
+    <div class="modal-header">
+        <div class="name">{{'modal.updateApp.title' | i18n}} {{autoUpdateScope.version}} <span class="sub-title">/ {{'modal.updateApp.desc' | i18n}} {{autoUpdateScope.currentVersion}}</span></div>
+        <div class="close" ng-click="close()"></div>
+    </div>
+
+    <div class="content section">
+        <div class="update-message" ng-bind-html="autoUpdateScope.detail"></div>
+        <!-- <div class="update-message" >
+            <img src="https://oss-blog.eagle.cool/post/4.0-beta/cn/Eagle%204.0%20beta%20cover.webp?x-oss-process=image/resize,w_1400/format,webp/quality,q_80" width="1400" height="735">
+            <h1>Eagle 4.0.0 发布</h1>
+            <p>各位 Eagle 用户久等了！在经历了一年多的精心打磨，我们兴奋地宣布：Eagle 4.0.0 正式发布了！</p>
+            <p>这个全新的版本带来了一系列重磅级别的更新，包括：「插件系统」「UI 风格」以及「AI 工具」等。所有这些，都是为了提供给用户更加优质的使用体验，让工作的流程更加流畅，更加高效。</p>
+            <h2><span class="icon">🦄</span>新增亮点</h2>
+            <ul>
+                <li><strong>插件系统：</strong>Eagle 插件系统允许开发者创建自定义插件来扩展 Eagle 的功能。Eagle 插件使用 HTML 和 JavaScript 进行编写，容易学习，能让开发者快速上手！</li>
+                <li><strong>插件中心：</strong>用户可以在插件中心找到来自我们官方以及其他开发者的各种插件。这些插件覆盖了各种类型和功能。</li>
+                <li><strong>界面设计：</strong>对整个应用程序的界面设计进行了全面的升级。除了视觉上的提升，我们也对许多重要的功能进行了重新设计和调整，优化了界面逻辑，使得用户的交互体验更加顺畅和便捷。</li>
+                <li><strong>浏览器扩展：</strong>不仅引入了全新的界面设计，更重要的是：将整个扩展的核心升级到了 Manifest V3。新版本的 Manifest V3 带来了显著的性能提升，新的 Service Worker 技術，可以减少扩展程序对计算机资源的占用，从而节省内存使用，并且运行更快。</li>
+            </ul>
+            <h2><span class="icon">🐞</span>问题修复</h2>
+            <ul>
+                <li>Google 图片搜索功能失效的问题。</li>
+                <li>部分 32 位 TIF 图像无法显示的问题。</li>
+                <li>视频逐帧播放功能不够精准的问题。</li>
+                <li>3D 模型文件名如果包含逗号，将无法导入和预览的问题。</li>
+                <li>文件名如果包含半浊音日文符号「ぱぴぷぺぽ」，半浊音符号不应改变成浊音，导致缩略图显示的问题。</li>
+            </ul>
+        </div> -->
+    </div>
+
+    <div class="section darken textAlign-right">
+        <div class="button button-s button-primary fontWeight-bold" ng-click="autoUpdateScope.download()"><img ng-src="assets/images/base/icons/ic-download.svg">{{'modal.updateApp.installBtn' | i18n}}（{{'modal.updateApp.aboutSize' | i18n}} {{autoUpdateScope.size|filesize}}）</div>
+        <div class="button button-s button-grey" ng-click="autoUpdateScope.cancel()"><img ng-src="assets/images/{{ theme | themePath }}/icons/ic-remind-later.svg">{{'modal.updateApp.remindBtn' | i18n}}</div>
+    </div>
+</div>
+<div class="modal-overlay"></div>

@@ -1,0 +1,10 @@
+<div class="progress-dialog" ng-class="{'open' : fixUtils.isCleaningEmptyFolders}" ng-if="fixUtils.isCleaningEmptyFolders">
+    <div class="progress-dialog-content" ng-if="fixUtils.isCleaningEmptyFolders">
+        <div class="message">{{'progress.fixUtils.removeEmptyFolder.msg' | i18n}}<span class="counter"> ({{fixUtils.currentEmptyfolderRemoved | number:0}}/{{fixUtils.emptyFolderRemoved | number:0}})</span></div>
+        <div class="progressbar" ng-show="fixUtils.isCleaningEmptyFolders">
+            <div class="current" style="width: {{fixUtils.currentEmptyfolderRemoved/fixUtils.emptyFolderRemoved*100}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

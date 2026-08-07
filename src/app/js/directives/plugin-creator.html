@@ -1,0 +1,48 @@
+<div class="modal plugin-creator" ng-class="{'open': isOpen}">
+	<div class="modal-header">
+		<div class="name">{{ 'modal.createPlugin.title' | i18n }}</div>
+		<div class="close" ng-click="close()"></div>
+	</div>
+	<div class="section">
+		<input type="text" maxlength="128" selectall placeholder="{{ 'modal.createPlugin.name' | i18n }}" tabindex="-1" ng-model="pluginName" auto-focus="OPEN_PLUGIN_CREATOR" ng-keydown="onKeydown($event)">
+		<div class="plugin-types">
+			<div class="plugin-type" ng-class="{'checked': type === 'window'}" ng-click="chooseType('window')">
+				<div class="icon-check"></div>
+				<div class="illustration"><img ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-type-window.png"></div>
+				<div class="plugin-intro">
+					<h4>{{ 'modal.createPlugin.type.window.title' | i18n }}</h4>
+					<p>{{ 'modal.createPlugin.type.window.desc' | i18n }}</p>
+				</div>
+			</div>
+			<div class="plugin-type" ng-class="{'checked': type === 'service'}" ng-click="chooseType('service')">
+				<div class="icon-check"></div>
+				<div class="illustration"><img ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-type-service.png"></div>
+				<div class="plugin-intro">
+					<h4>{{ 'modal.createPlugin.type.service.title' | i18n }}</h4>
+					<p>{{ 'modal.createPlugin.type.service.desc' | i18n }}</p>
+				</div>
+			</div>
+			<div class="plugin-type" ng-class="{'checked': type === 'preview'}" ng-click="chooseType('preview')">
+				<div class="icon-check"></div>
+				<div class="illustration"><img ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-type-preview.png"></div>
+				<div class="plugin-intro">
+					<h4>{{ 'modal.createPlugin.type.format.title' | i18n }}</h4>
+					<p>{{ 'modal.createPlugin.type.format.desc' | i18n }}</p>
+				</div>
+			</div>
+			<div class="plugin-type" ng-class="{'checked': type === 'inspector'}" ng-click="chooseType('inspector')">
+				<div class="icon-check"></div>
+				<div class="illustration"><img ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-type-inspector.png"></div>
+				<div class="plugin-intro">
+					<h4>{{ 'modal.createPlugin.type.inspector.title' | i18n }}</h4>
+					<p>{{ 'modal.createPlugin.type.inspector.desc' | i18n }}</p>
+				</div>
+			</div>
+		</div>
+		<div class="textAlign-right">
+			<div class="button button-xs button-primary" ng-click="create()" ng-class="{'button-disabled': pluginName.length === 0}">{{ 'modal.createPlugin.create' | i18n }}</div>
+			<div class="button button-xs button-grey" ng-click="close()">{{'general.cancel' | i18n}}</div>
+		</div>
+	</div>
+</div>
+<div class="modal-overlay"></div>

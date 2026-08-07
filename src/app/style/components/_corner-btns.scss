@@ -1,0 +1,56 @@
+.corner-btns {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+    gap: 8px;
+    .ic-btn {
+        -webkit-app-region: no-drag;
+        width: 24px;
+        height: 24px;
+    }
+    .separator {
+        width: 1px;
+        height: 16px;
+        background-color: var(--color-border-secondary);
+    }
+    .windows-btns {
+        display: flex;
+        align-items: center;
+        .close-btn-wrap {
+            width: 48px;
+            height: 48px;
+            align-items: center;
+            justify-content: center;
+            display: flex;
+            margin-right: -8px;
+            -webkit-app-region: no-drag;
+            cursor: pointer;
+
+            &:hover {
+                #close-btn {
+                    background-image: url(../assets/images/base/icons/ic-windows-hover.svg) !important;
+                    background-color: #F25022;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                }
+            }
+        }
+        .ic-btn.windows-btn {
+            -webkit-app-region: no-drag;
+            width: 32px;
+            height: 32px;
+            background-repeat: no-repeat;
+            background-position: center;
+            border-radius: 6px;
+            &#close-btn {
+                border-radius: 6px;
+                &:hover {
+                    background-image: url(../assets/images/base/icons/ic-windows-hover.svg) !important;
+                    background-color: #F25022;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                }
+            }
+        }
+    }
+}

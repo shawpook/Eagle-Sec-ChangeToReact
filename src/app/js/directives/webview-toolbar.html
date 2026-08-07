@@ -1,0 +1,27 @@
+<div class="webview-toolbar">
+    <div class="left-panel">
+        <div class="ic-btn backward-btn" ng-class="{'disabled': !webviewControl.canGoBack()}" ng-click="webviewControl.goBack()" tippy tippy-placement="bottom" tippy-content="{{'webview.goback' | i18n}}">
+            <img ng-src="assets/images/{{theme | themePath}}/icons/webview/ic-webview-backward.svg">
+        </div>
+        <div class="ic-btn forward-btn" ng-class="{'disabled': !webviewControl.canGoForward()}" ng-click="webviewControl.goForward()" tippy tippy-placement="bottom" tippy-content="{{'webview.goforward' | i18n}}">
+            <img ng-src="assets/images/{{theme | themePath}}/icons/webview/ic-webview-forward.svg">
+        </div>
+        <div class="ic-btn reload-btn" ng-click="webviewControl.reload();" tippy tippy-placement="bottom" tippy-content="{{'webview.reload' | i18n}}">
+            <img ng-src="assets/images/{{theme | themePath}}/icons/webview/ic-webview-refresh.svg">
+        </div>
+        <div class="ic-btn open-external-btn" ng-click="webviewControl.openExternal();" tippy tippy-placement="bottom" tippy-content="{{'webview.openInBrowser' | i18n}}">
+            <img ng-src="assets/images/{{theme | themePath}}/icons/webview/ic-webview-open-external.svg">
+        </div>
+    </div>
+    <div class="separator"></div>
+    <div class="center-panel">
+        <div class="favicon" style="background-image: url({{webviewControl.favicon}})"></div>
+        <div class="title" tippy tippy-placement="bottom" tippy-content="{{webviewControl.getTitle()}}">{{webviewControl.getTitle()}}</div>
+        <div class="url" tippy tippy-placement="bottom" tippy-content="{{webviewControl.getURL()}}">{{webviewControl.getURL()}}</div>
+    </div>
+    <div class="right-panel">
+        <div class="ic-btn copy-url-btn" ng-click="webviewControl.copyURL();" tippy tippy-placement="bottom" tippy-content="{{'webview.copyUrl' | i18n}}">
+            <img ng-src="assets/images/{{theme | themePath}}/icons/webview/ic-webview-copy-url.svg">
+        </div>
+    </div>
+</div>

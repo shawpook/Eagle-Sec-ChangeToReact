@@ -1,0 +1,84 @@
+<div id="shape-filter-item" ng-right-click="clearShapeFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.shape'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-shape.svg"><div>{{displayName}}</div></div>
+    <input tabindex="-1" type="text" class="shortcut-input">
+    <div class="menu-wrap"><div class="filter-menu" style="min-height: 40px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div></div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['landscape'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape.landscape}" ng-click="focusInput(); eagle.filter.filterRules.shape.landscape = !eagle.filter.filterRules.shape.landscape; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.orientation>landscape' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['landscape'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['portrait'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape.portrait}" ng-click="focusInput(); eagle.filter.filterRules.shape.portrait = !eagle.filter.filterRules.shape.portrait; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.orientation>portrait' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['portrait'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['square'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape.square}" ng-click="focusInput(); eagle.filter.filterRules.shape.square = !eagle.filter.filterRules.shape.square; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.orientation>square' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['square'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['panoramic-landscape'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape.panoramicLandscape}" ng-click="focusInput(); eagle.filter.filterRules.shape.panoramicLandscape = !eagle.filter.filterRules.shape.panoramicLandscape; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.orientation>panoramicLandscape' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['panoramic-landscape'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['panoramic-portrait'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape.panoramicPortrait}" ng-click="focusInput(); eagle.filter.filterRules.shape.panoramicPortrait = !eagle.filter.filterRules.shape.panoramicPortrait; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.orientation>panoramicPortrait' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['panoramic-portrait'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['4:3'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape['43']}" ng-click="focusInput(); eagle.filter.filterRules.shape['43'] = !eagle.filter.filterRules.shape['43']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">4:3</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['4:3'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['3:4'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape['34']}" ng-click="focusInput(); eagle.filter.filterRules.shape['34'] = !eagle.filter.filterRules.shape['34']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">3:4</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['3:4'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['16:9'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape['169']}" ng-click="focusInput(); eagle.filter.filterRules.shape['169'] = !eagle.filter.filterRules.shape['169']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">16:9</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['16:9'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['shape']['9:16'] > 0" ng-class="{'checked': eagle.filter.filterRules.shape['916']}" ng-click="focusInput(); eagle.filter.filterRules.shape['916'] = !eagle.filter.filterRules.shape['916']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">9:16</div>
+                <div class="badge">{{eagle.filter.filterCounts['shape']['9:16'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.shape.custom}" ng-click="focusCustomFilterWidth(); eagle.filter.filterRules.shape.custom = !eagle.filter.filterRules.shape.custom; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.orientation>custom' | i18n}}</div>
+            </div>
+            <div class="custom-shapre-item row" ng-if="eagle.filter.filterRules.shape.custom">
+                <input id="custom-shape-filter-w" class="col-xs-4" type="number" placeholder="W" ng-change="changeDisplayName();" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }" ng-model="eagle.filter.filterRules.shape.width" />
+                :
+                <input class="col-xs-4" type="number" placeholder="H" ng-change="changeDisplayName();" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }" ng-model="eagle.filter.filterRules.shape.height" />
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearShapeFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

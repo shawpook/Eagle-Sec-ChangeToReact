@@ -1,0 +1,14 @@
+<div id="tags-input" class="labels-input">
+    <div class="empty" ng-show="tags.length === 0">{{'inspector.tagInputPlaceholder' | i18n}}</div>
+    <div class="label-container">
+        <div 
+            class="label-item"
+            ng-repeat="tag in tags track by $index"
+        >
+            <span class="label-item-name">{{tag}}</span>
+            <div class="ic-btn label-item-remove-btn" ng-click="$event.stopPropagation(); remove(tag)">
+                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+            </div>
+        </div>
+    </div>
+</div>

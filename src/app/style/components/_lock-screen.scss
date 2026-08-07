@@ -1,0 +1,111 @@
+.lock-screen {
+    -webkit-font-smoothing: antialiased;
+    z-index: 5000;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    &.app-lock-screen {
+        z-index: 90002;
+        top: 0;
+        background-color: var(--color-theme-90);
+        backdrop-filter: blur(50px);
+    }
+
+    corner-btns {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+    }
+
+    .info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: var(--color-text-primary);
+        text-align: center;
+        padding: 40px;
+        box-sizing: border-box;
+        img {
+            display: inline-block;
+            -webkit-user-select: none;
+            -webkit-app-region: drag;
+            -webkit-user-drag: none;
+            margin-bottom: 24px;
+        }
+        h4 {
+            font-size: 16px;
+            line-height: 24px;
+            margin-bottom: 8px;
+            font-weight: var(--font-weight-bold);
+            max-width: 480px;
+        }
+        p {
+            opacity: 0.5;
+            font-size: 12px;
+            line-height: 18px;
+            margin-bottom: 16px;
+            max-width: 480px;
+        }
+        
+        // 密碼輸入框容器
+        .password-input-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        input {
+            @include dark {
+                --border-focus-color: var(--color-brand-lighter);
+            }
+            @include light {
+                --border-focus-color: var(--color-brand);
+            }
+            margin: 0;
+            height: 36px;
+            font-size: 13px;
+            letter-spacing: 0;
+            width: 220px;
+            padding-right: 42px; // 給 Touch ID 按鈕留空間
+            border-radius: 6px;
+            border: 1px solid var(--color-border-secondary);
+            &:focus {
+                outline: none;
+                border-color: var(--border-focus-color);
+            }
+        }
+        
+        // Touch ID 內嵌按鈕
+        .touchid-btn-inline {
+            position: absolute;
+            right: 6px;
+            padding: 0 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            outline: none;
+            border: none;
+            &.animation--shake-horizontal {
+                animation: shake-horizontal 0.5s;
+            }
+            
+            img {
+                margin: 0;
+                -webkit-user-drag: none;
+            }
+        }
+    }
+}
+
+// 動畫定義
+@keyframes shake-horizontal {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+}

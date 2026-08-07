@@ -1,0 +1,118 @@
+<div id="image-filter-item" 
+     ng-right-click="clearImageFilter($event)" 
+     class="filter-item" 
+     ng-class="{
+         'active': (eagle.filter.filterRules.image.itemId || eagle.filter.filterRules.image.base64), 
+         'hide-filter': !(eagle.filter.filterRules.image.itemId || eagle.filter.filterRules.image.base64) && !eagle.filter.pinned[item.type]
+     }" 
+     filter-item>
+    
+    <!-- 主要顯示區域 -->
+    <div class="name" 
+         tippy 
+         tippy-placement="bottom" 
+         tippy-content="{{preferences.shortcuts.keybinds['find.filter.image'] | shortcutsWrapper | shortcuts}}">
+        
+        <!-- Eagle 內部項目圖片 -->
+        <img ng-if="eagle.filter.filterRules.image.itemId && !eagle.filter.filterRules.image.base64" 
+             ng-src="{{$body.getThumbnailUrl($body.itemMappings[eagle.filter.filterRules.image.itemId])}}" 
+             class="filter-thumbnail">
+        
+        <!-- 外部文件圖片 (base64) -->
+        <img ng-if="eagle.filter.filterRules.image.base64" 
+             ng-src="{{eagle.filter.filterRules.image.base64}}" 
+             class="filter-thumbnail">
+        
+        <!-- 預設圖示 -->
+        <img ng-if="!eagle.filter.filterRules.image.itemId && !eagle.filter.filterRules.image.base64" 
+             ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-image.svg"
+             class="filter-icon">
+        
+        <span>{{'filter.image' | i18n}}</span>
+    </div>
+    
+    <!-- 下拉選單 -->
+    <div class="menu-wrap" close-filter-item>
+        <div class="filter-menu" 
+             style="min-width: 280px; width: 280px;" 
+             ng-mousedown="$event.stopPropagation();">
+            
+            <div class="menu-content" style="margin: 0;">
+                <div class="ai-search-section">
+
+                    <!-- 載入中狀態 -->
+                    <div class="ai-search-state loading"
+                         ng-if="(!eagle.aiSearch.isInitialized || (eagle.aiSearch.isInstalled && !eagle.aiSearch.isReady)) && !eagle.filter.filterRules.image.itemId && !eagle.filter.filterRules.image.base64">
+                        <svg class="spinner" width="24px" height="24px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+                            <circle class="path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+                        </svg>
+                        <p>{{'filter.imageDrop>loading' | i18n}}</p>
+                    </div>
+
+                    <!-- 空狀態 -->
+                    <div class="ai-search-state installed"
+                         ng-if="eagle.aiSearch.isInitialized && (!eagle.aiSearch.isInstalled || eagle.aiSearch.isReady) && !eagle.filter.filterRules.image.itemId && !eagle.filter.filterRules.image.base64"
+                         ng-click="selectImage()"
+                         style="background-image: url('assets/images/{{theme|themePath}}/illustrations/search-by-image-empty-bg.png');">
+
+                        <img width="80"
+                             height="80"
+                             ng-src="assets/images/{{theme|themePath}}/icons/ic-search-by-image-empty.svg"
+                             style="margin-top: 24px;">
+
+                        <div class="ai-content">
+                            <h4>{{'filter.imageDrop>title' | i18n}}</h4>
+                            <p>{{'filter.imageDrop>desc' | i18n}}</p>
+                            <div class="button button-grey ai-select-btn"
+                                 ng-click="selectImage(); $event.stopPropagation();">
+                                {{'filter.imageDrop>button' | i18n}}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Eagle 內部項目 -->
+                    <div class="ai-search-state installed"
+                         ng-if="eagle.filter.filterRules.image.itemId && !eagle.filter.filterRules.image.base64"
+                         ng-click="selectImage()">
+
+                        <img width="232"
+                             height="232"
+                             ng-src="{{$body.getThumbnailUrl($body.itemMappings[eagle.filter.filterRules.image.itemId])}}"
+                             style="object-fit: contain; border-radius: 8px;">
+
+                        <div class="ai-content">
+                            <div class="button button-grey ai-select-btn"
+                                 ng-click="selectImage(); $event.stopPropagation();">
+                                {{'filter.imageDrop>button' | i18n}}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 外部圖片 (base64) -->
+                    <div class="ai-search-state installed"
+                         ng-if="eagle.filter.filterRules.image.base64"
+                         ng-click="selectImage()">
+
+                        <img width="232"
+                             height="232"
+                             ng-src="{{eagle.filter.filterRules.image.base64}}"
+                             style="object-fit: contain; border-radius: 8px;">
+
+                        <div class="ai-content">
+                            <div class="button button-grey button-xs ai-select-btn"
+                                 ng-click="selectImage(); $event.stopPropagation();">
+                                {{'filter.imageDrop>button' | i18n}}
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- 清除按鈕 -->
+    <div class="clear-btn" ng-click="clearImageFilter($event)">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png">
+    </div>
+</div>

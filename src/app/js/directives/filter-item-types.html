@@ -1,0 +1,31 @@
+<div id="types-filter-item" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.type'] | shortcutsWrapper | shortcuts}}" title="{{displayName}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-ext.svg"><div>{{displayName}}</div></div>
+    <div class="menu-wrap"><div class="filter-menu" style="width: 240px; max-width: 240px; min-height: 40px;" ng-mousedown="$event.stopPropagation();">
+        <input id="filter-panel-types-search" maxlength="1024" type="search"  ng-hide="filtereds.length === 0" class="search shortcut-input focus" placeholder="{{'filter.folders>search' | i18n}}" ng-change="typesFilterChange()" ng-model="typesKeyword" ng-model-options="{ debounce: { 'default': 100, 'blur': 0 } }">
+        <div class="menu-content" style="overflow: auto; max-height: 480px">
+            <div class="empty" ng-show="typeResult.length === 0 || filtereds.length === 0">{{'filter.emptyMsg' | i18n}}</div>
+            <div 
+                class="check-item" 
+                ng-if="eagle.filter.filterCounts['type'][typeItem] > 0 || eagle.filter.filterRules.type.excludes[typeItem]"
+                ng-repeat="typeItem in typeResult = (eagle.filter.filterTypes | filter:typesKeyword)" 
+                ng-class="{'checked': eagle.filter.filterRules.type.includes[typeItem], 'excluded': eagle.filter.filterRules.type.excludes[typeItem]}" 
+                ng-click="focusInput(); $body.toggleExtFilter(typeItem); page = 1; filterContent(); changeDisplayName(); onTypeItemClick();" 
+                ng-right-click="focusInput(); $body.toggleExtFilterExclude(typeItem); page = 1; filterContent(); changeDisplayName(); onTypeItemClick();"
+            >
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{typeItem}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['type'][typeItem]| number:0}}</div>
+            </div>
+        </div>
+        <!-- Footer -->
+        <div class="menu-footer" style="position: initial;">
+            <div class="left">
+                <div class="shortcut-tip">{{'filter.select' | i18n}}<key>{{'general.l-click' | i18n}}</key></div>
+                <div class="shortcut-tip">{{'filter.exclude' | i18n}}<key>{{'general.r-click' | i18n}}</key></div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearTypesFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

@@ -1,0 +1,87 @@
+@import "_mixins";
+@import "base/_animation";
+@import "base/_color";
+@import "base/_font-family";
+@import "components/_btn";
+@import "components/_form-elements";
+@import "components/_toggle";
+@import "components/_tippy";
+@import "components/_toast";
+@import "components/_modal";
+@import "components/_swal";
+
+body {
+    &[theme="dark"],
+    &[theme="gray"],
+    &[theme="blue"],
+    &[theme="purple"] {
+        &[platform="darwin"] {
+            &::after {
+                z-index: 2147483647;
+                content: "";
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                position: fixed;
+                pointer-events: none;
+                border-top: var(--box-border-top);
+                border-right: var(--box-border-right);
+                border-bottom: var(--box-border-bottom);
+                border-left: var(--box-border-left);
+                box-shadow: 0 0 0 1px var(--color-black-50);
+                border-radius: 10px;
+            }
+
+            &.slideshow, &.fullscreen {
+                &::after {
+                    border: none !important;
+                    border-radius: 0;
+                }
+            }
+        }
+    }
+}
+
+::-webkit-scrollbar {
+	
+	overflow: scroll !important;
+	-webkit-appearance: none;
+    width: 11px !important;
+
+    &:horizontal {
+        height: 12px !important;
+    }
+
+    &:vertical {
+        margin-right: 4px;
+        height: 4px !important;
+    }
+}
+
+::-webkit-scrollbar-thumb {
+  	background: var(--scrollbar-thumb-background) !important;
+	background-clip: padding-box !important;
+	border: 3px solid transparent !important;
+	border-image: initial !important;
+	min-height: 30px !important;
+	padding: 50px 0px 0px !important;
+   	opacity:.6;
+	border-radius: 20px !important;
+	transition: background 100ms ease !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	border: 3px solid transparent !important;
+  	background: var(--scrollbar-thumb-hover-background)  !important;
+	background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-button {
+	height: 0px !important;
+	width: 0px !important;
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent !important;
+}

@@ -106,25 +106,25 @@ C:\Program Files\Eagle\Eagle-reverse\Eagle-Sec-development
 | Bundle 源码定位 | [RENDERER_SOURCE_MAP.md](../docs/RENDERER_SOURCE_MAP.md) |
 | Bundle 定位数据 | [analysis/bundle-source-map.json](../analysis/bundle-source-map.json) |
 | Bundle 分类数据 | [analysis/bundle-source-categories.json](../analysis/bundle-source-categories.json) |
-| 原版前端资源 | [src/app](../src/app) |
-| 多语言资源 | [src/i18n](../src/i18n) |
+| 原版前端资源 | [src/app](src/app) |
+| 多语言资源 | [src/i18n](src/i18n) |
 
 ### API 与后台
 
 | 用途 | 文档/资源 |
 | --- | --- |
 | 本地 HTTP API | [API.md](../docs/API.md) |
-| API 服务源码 | [api-server.js](../src/app/js/api-server.js) |
-| V2 API 路由 | [api-server-v2.js](../src/app/js/api-server-v2.js) |
-| API 参数定义 | [api-v2-playground-config.js](../src/app/js/api-v2-playground-config.js) |
-| JSON REST 实现 | [my_modules/json-rest-light](../src/my_modules/json-rest-light) |
+| API 服务源码 | [api-server.js](src/app/js/api-server.js) |
+| V2 API 路由 | [api-server-v2.js](src/app/js/api-server-v2.js) |
+| API 参数定义 | [api-v2-playground-config.js](src/app/js/api-v2-playground-config.js) |
+| JSON REST 实现 | [my_modules/json-rest-light](src/my_modules/json-rest-light) |
 
 ### 插件系统
 
 | 用途 | 文档/资源 |
 | --- | --- |
 | 插件系统说明 | [PLUGIN_SYSTEM.md](../docs/PLUGIN_SYSTEM.md) |
-| 插件运行时源码 | [src/app/js/plugin](../src/app/js/plugin) |
+| 插件运行时源码 | [src/app/js/plugin](src/app/js/plugin) |
 | 官方插件模板 | [../resources/plugin_templates](../resources/plugin_templates) |
 | 示例 service 插件 | [plugins/example-service-plugin](../plugins/example-service-plugin) |
 | 插件测试工具 | [tools/test-plugin.mjs](../tools/test-plugin.mjs) |
@@ -134,7 +134,7 @@ C:\Program Files\Eagle\Eagle-reverse\Eagle-Sec-development
 | 用途 | 文档/资源 |
 | --- | --- |
 | 资源库格式 | [LIBRARY_FORMAT.md](../docs/LIBRARY_FORMAT.md) |
-| 后台资源库逻辑 | [background.js](../src/app/js/background.js) |
+| 后台资源库逻辑 | [background.js](src/app/js/background.js) |
 | 示例资源库 | [library-example/Demo.library](../library-example/Demo.library) |
 | 资源库校验工具 | [tools/validate-library.mjs](../tools/validate-library.mjs) |
 
@@ -282,7 +282,7 @@ Eagle-Sec-development/
 
 ### 阶段 3：资源库与数据层
 
-参考文档：`../docs/LIBRARY_FORMAT.md`、`../src/app/js/background.js`、`../library-example/Demo.library`。
+参考文档：`../docs/LIBRARY_FORMAT.md`、`src/app/js/background.js`、`../library-example/Demo.library`。
 
 - 实现 `.library` 目录结构：
   - `metadata.json`
@@ -295,7 +295,7 @@ Eagle-Sec-development/
 
 ### 阶段 4：API 服务
 
-参考文档：`../docs/API.md`、`../src/app/js/api-server.js`、`../src/app/js/api-server-v2.js`。
+参考文档：`../docs/API.md`、`src/app/js/api-server.js`、`src/app/js/api-server-v2.js`。
 
 - 复刻 V1 API：
   - `/api/library/*`
@@ -325,7 +325,7 @@ Eagle-Sec-development/
 
 ### 阶段 6：插件系统
 
-参考文档：`../docs/PLUGIN_SYSTEM.md`、`../src/app/js/plugin`、`../resources/plugin_templates`。
+参考文档：`../docs/PLUGIN_SYSTEM.md`、`src/app/js/plugin`、`../resources/plugin_templates`。
 
 - 复用：
   - `Eagle-reverse/src/app/js/plugin/*`
@@ -340,7 +340,7 @@ Eagle-Sec-development/
 
 ### 阶段 7：功能迁移
 
-参考文档：`../src/app/js/background.js`、`../src/app/js/global.js`、`../src/app/js/preview-window.js`。
+参考文档：`src/app/js/background.js`、`src/app/js/global.js`、`src/app/js/preview-window.js`。
 
 - 导入：
   - 本地文件
@@ -434,7 +434,7 @@ import { defineConfig } from 'vite';
 import path from 'node:path';
 
 export default defineConfig({
-  root: path.resolve(__dirname, '../src/app'),
+  root: path.resolve(__dirname, 'src/app'),
   base: '/',
   server: {
     port: 5173,

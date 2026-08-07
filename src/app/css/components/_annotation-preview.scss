@@ -1,0 +1,103 @@
+#annotation-preview-container {
+	z-index: -1;
+	position: absolute;
+	&.show {
+		z-index: 20002;
+        top: 0;
+        left: 0;
+		.annotation-box {
+			opacity: 1;
+			display: inline-block;
+			pointer-events: initial;
+			&:focus {
+				opacity: 1;
+				display: inline-block;
+				pointer-events: initial;
+				~ .annotation-arrow {
+					display: block;
+				}
+			}
+			~ .annotation-arrow {
+				display: block;
+			}
+		}
+	}
+	.annotation-box {
+		z-index: 20002;
+		z-index: 10;
+		position: relative;
+		left: 0;
+		border-radius: 5px;
+		box-sizing: border-box;
+		transform-origin: center;
+		overflow-y: auto;
+		padding: 14px;
+		max-width: 400px;
+		min-width: 40px;
+		min-height: 40px;
+		max-height: calc(1.5em * 8 + 30px);
+		background: #FFFFFF;
+		border: 1px solid #CCCCCC;
+		box-shadow: 0 0 10px 0 rgba(0,0,0,0.10);
+		transform: translateX(-50%) translateY(-100%);
+		font-size: 14px;
+		color: #4A4A4A;
+		line-height: 1.5;
+		min-height: 1.5em;
+		// display: none;
+		opacity: 0;
+		pointer-events: none;
+		
+		&:hover {
+			opacity: 1;
+			display: inline-block;
+			pointer-events: initial;
+			~ .annotation-arrow {
+				display: block;
+			}
+		}
+		&::-webkit-scrollbar {
+			margin-right: 4px;
+			height: 4px !important;
+			overflow: scroll !important;
+			width: 10px !important;
+			-webkit-appearance: none;
+		}
+
+		&::-webkit-scrollbar-thumb {
+		  	background: lighten(#777, 25%) !important;
+			background-clip: padding-box !important;
+			border: 2px solid transparent !important;
+			border-image: initial !important;
+			min-height: 50px !important;
+			padding: 50px 0px 0px !important;
+		   	opacity:.6;
+			border-radius: 20px !important;
+			transition: all 350ms ease !important;
+		}
+
+		&::-webkit-scrollbar-thumb:hover {
+		  	background: lighten(#777, 15%)  !important;
+			background-clip: padding-box !important;
+		}
+
+		&::-webkit-scrollbar-thumb:window-inactive {
+			background-clip: padding-box !important;
+		}
+
+	}
+	.annotation-arrow {
+		pointer-events: none;
+		z-index: 20003;
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 10px;
+		height: 10px;
+		transform: rotate(45deg);
+		background-color: #fff;
+		display: none;
+		box-shadow: 3px 3px 3px rgba(0,0,0, 0.1);
+	}
+}

@@ -1,0 +1,60 @@
+.txt-content {
+    position: relative;
+    direction: ltr;
+    font-size: 14px;
+    width: 100%;
+    height: calc(100% - 10px);
+    line-height: 1;
+    overflow: auto;
+    box-sizing: border-box;
+    border-radius: 3px;
+    transition: none;
+    > div {
+        color: var(--color-text-primary);
+        margin: auto;
+        width: calc(100% - 40px);
+        padding-top: 20px;
+        padding-bottom: 2%;
+        h4 {
+            font-size: 16px;
+            line-height: 1.2em;
+            margin-bottom: 0.75em;
+            font-weight: bold;
+        }
+        p {
+            line-height: 1.5;
+            margin-bottom: 0.5em;
+            opacity: 0.9;
+        }
+    }
+    &:after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 5%;
+    }
+    @include body-status(".is-small-box") {
+        font-size: 11px;
+        > div {
+            width: 84%;
+            padding-top: 5%;
+            padding-bottom: 2%;
+        }
+        > div h4 {
+            font-size: 13px;
+        }
+    }
+    @include body-status(".is-middle-box") {
+        font-size: 12px;
+        > div {
+            width: 84%;
+            padding-top: 8%;
+            padding-bottom: 2%;
+        }
+        > div h4 {
+            font-size: 14px;
+        }
+    }
+}

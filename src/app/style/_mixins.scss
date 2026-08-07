@@ -1,0 +1,21 @@
+@mixin dark() {
+    body[theme="gray"] &,
+    body[theme="dark"] &,
+    body[theme="purple"] &,
+    body[theme="blue"] & {
+        @content;
+    }
+}
+
+@mixin light() {
+    body[theme="light"] &,
+    body[theme="lightgray"] & {
+        @content;
+    }
+}
+
+@mixin body-status($status) {
+    body#{$status} & {
+        @content;
+    }
+}

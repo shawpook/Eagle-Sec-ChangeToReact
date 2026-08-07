@@ -1,0 +1,42 @@
+<div class="progress-dialog library-loading-dialog" ng-class="{'open' : loadProgress.isOpen }">
+    <div class="progress-dialog-content" ng-if="loadProgress.isOpen" ng-switch on="loadProgress.status">
+        
+        <!-- 初始化 -->
+        <div ng-switch-when="init" class="message">{{'loadProgress.msg.initialize' | i18n}}</div>
+
+        <!-- 初始化 .NET Framework... -->
+        <div ng-switch-when="module-loading" class="message">{{'loadProgress.msg.moduleLoading' | i18n}}</div>
+
+        <!-- 載入資源庫 -->
+        <div ng-switch-when="library-loading" class="message">{{'loadProgress.msg.libraryLoading' | i18n}}</div>
+
+        <!-- 載入資源庫文件清單... -->
+        <div ng-switch-when="dir-loading" class="message">{{'loadProgress.msg.dirLoading' | i18n}}</div>
+
+        <!-- 載入資源庫緩存... -->
+        <div ng-switch-when="cache-loading" class="message">{{'loadProgress.msg.cacheLoading' | i18n}}</div>
+
+        <!-- 載入資源庫數據... -->
+        <div ng-switch-when="metadata-loading" class="message">
+            {{'loadProgress.msg.metadataLoading' | i18n}} <span class="counter" ng-show="loadProgress.libraryTotal">({{loadProgress.currentLoaded/loadProgress.libraryTotal*100 | number:2}}%)</span><span class="counter" ng-show="loadProgress.loadLibraryTimeLeftInSeconds"> ({{loadProgress.loadLibraryTimeLeftInSeconds | second2time}})</span>
+        </div>
+
+        <!-- 緩存有差異的狀態 -->
+        <!-- <div ng-show="loadProgress.isMetadataLoaded && loadProgress.isReadDirLoaded && loadProgress.libraryDiffCurr" class="message">
+            {{'progress.launch.cacheMsg' | i18n}} <span class="counter">({{loadProgress.libraryDiffCurr}}/{{loadProgress.libraryDiffCount}})...</span>
+        </div> -->
+
+        <!-- 資源庫載入完成 -->
+        <!-- <div ng-switch-when="metadata-loaded" class="message">{{'loadProgress.msg.libraryLoaded' | i18n}}</div> -->
+
+        <!-- 即将完成 -->
+        <div ng-switch-when="library-loaded" ng-switch-when-separator="|" class="message">{{'loadProgress.msg.almostDone' | i18n}}...</div>
+
+        <div ng-switch-default class="message">{{'loadProgress.msg.almostDone' | i18n}}...</div>
+
+        <!-- 進度條 -->
+        <div class="progressbar" ng-show="loadProgress.isOpen">
+            <div class="current" style="width: {{loadProgress.progress}}%;"></div>
+        </div>
+    </div>
+</div>

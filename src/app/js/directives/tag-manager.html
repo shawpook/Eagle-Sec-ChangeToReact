@@ -1,0 +1,157 @@
+<div
+    id="tag-manager"
+    ng-show="!isDetailMode && viewMode=='alltags'"
+    ng-class="{'list-mode': tagViewLayoutMode === 'LIST'}"
+    tag-select
+>
+
+    <!-- 側欄 -->
+    <div class="tag-manager-sidebar" style="width: {{:refreshContainSize:containerSize.tagSidebar}}px;" resizable="e" on-resize="onTagSidebarResize(event, ui)" ng-mousedown="$event.stopPropagation()">
+        <!-- 全部 -->
+        <div class="sidebar-item" ng-class="{'active': tagViewMode == 'ALL'}" ng-click="openTagAllGroup()" ng-mousedown="$event.stopPropagation();">
+            <div class="icon"><div class="fake-svg" style="-webkit-mask-image: url(assets/images/{{theme|themePath}}/icons/ic-tag-manager-all.svg); -webkit-mask-size: 16px;"></div></div>
+            <div class="name">{{'pages.allTags.sidebar.all' | i18n}}</div>
+            <div class="count" ng-show="TagManager.allTags.length > 0">{{TagManager.allTags.length}}</div>
+        </div>
+        <!-- 未分類 -->
+        <div class="sidebar-item" ng-class="{'active': tagViewMode == 'UNFILED'}" ng-click="openUnfiledGroup()" ng-mousedown="$event.stopPropagation();">
+            <div class="icon"><div class="fake-svg" style="-webkit-mask-image: url(assets/images/{{theme|themePath}}/icons/ic-tag-manager-unfiled.svg); -webkit-mask-size: 16px;"></div></div>
+            <div class="name">{{'pages.allTags.sidebar.unfiled' | i18n}}</div>
+            <div class="count" ng-show="TagManager.unfiledTags.length > 0">{{TagManager.unfiledTags.length}}</div>
+        </div>
+        <!-- 最愛 -->
+        <div class="sidebar-item" ng-class="{'active': tagViewMode == 'STARRED'}" ng-click="openStarredGroup()" ng-mousedown="$event.stopPropagation();"
+            ondrop="onDropStarredTag(event)"
+            ondragover="onDragOverTag(event)"
+        >
+            <div class="icon"><div class="fake-svg" style="-webkit-mask-image: url(assets/images/{{theme|themePath}}/icons/ic-tag-manager-starred.svg); -webkit-mask-size: 16px;"></div></div>
+            <div class="name">{{'pages.allTags.sidebar.starred' | i18n}}</div>
+            <div class="count" ng-show="TagManager.starredTags.length > 0">{{TagManager.starredTags.length}}</div>
+        </div>
+        <!-- 群組s -->
+        <label>{{'pages.allTags.sidebar.groupsLabel' | i18n}} <span ng-show="TagManager.groups.length > 0">({{TagManager.groups.length}})</span><div class="ic-btn new-btn" tippy tippy-placement="bottom" tippy-content="{{'context.tagGroup.create' | i18n}}" ng-click="createTagGroup()" ng-mousedown="$event.stopPropagation();"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-sidebar-add.svg"></div></label>
+        <div ui-sortable="tagGroupSortableOptions" ng-model="TagManager.groups">
+            <div
+                class="sidebar-item group-item color-{{group.color}}"
+                ng-repeat="group in TagManager.groups"
+                ng-click="openTagGroup(group);"
+                ng-dblclick="renameTagGroup(group)"
+                ng-right-click="openTagGroupContextMenu($event, group)"
+                ng-class="{'active': currentTagGroup == group}"
+                ondrop="onDropTag(event)"
+                ondragenter="onDragOverTag(event)"
+            >
+                <div class="icon">
+                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/icons/ic-tag-select-tag.png)"></div>
+                </div>
+                <div class="name" ng-if="!group.editable">{{group.name}}</div>
+                <div class="name" ng-if="group.editable">
+                    <input id="group-input-{{group.id}}" type="text" maxlength="2048" ng-click="$event.stopPropagation()" ng-model="newGroupName" ng-blur="renameTagGroupBlur(group, newGroupName)" ng-keydown="renameTagGroupKeyup($event, group, newGroupName)" ng-mousedown="$event.stopPropagation()" ng-mouseup="$event.stopPropagation()">
+                </div>
+                <div class="count" ng-if="!group.editable">{{group.tags.length}}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 標籤列表 -->
+    <div 
+        class="tag-manager-container"
+        style="left: {{:refreshContainSize:containerSize.tagSidebar}}px;"
+        ng-right-click="openTagGroupListContextMenu($event, currentTagGroup)"
+        vs-repeat="26" vs-excess="30" vs-size="size"
+        scroll-position-saver="{{tagViewModeName}}"
+    >
+        <div ng-repeat="item in TagManager.tagsResult.display" ng-switch on="item.type">
+            <!-- 群組名 -->
+            <div
+                ng-switch-when="group"
+                class="group-header"
+            >
+                <div class="group-name" style="height: 32px; line-height: 32px;">
+                    {{item.name}} <span class="count">({{item.count}})</span>
+                    <div ng-if="currentTagGroup" class="ic-btn" ng-click="addGroupTags(currentTagGroup)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-sidebar-add.svg"></div>
+                </div>
+                <div
+                    ng-if="currentTagGroup"
+                    class="group-description"
+                    data-placeholder="{{'pages.allTags.group.descriptionPlaceholder' | i18n}}"
+                    contenteditable="plaintext-only"
+                    ng-model="currentTagGroup.description"
+                    ng-focus="tagGroupDescriptionFocus()"
+                    ng-blur="tagGroupDescriptionBlur()"
+                    strip-br="true"
+                    tabindex="0"
+                ></div>
+            </div>
+            <!-- 群組名 -->
+            <div 
+                ng-switch-when="starred"
+                class="group-name"
+                style="height: 32px; line-height: 32px;"
+            >{{item.name}} <span class="count">({{item.count}})</span>
+                <div class="ic-btn" ng-click="addStarredTags()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-sidebar-add.svg"></div>
+            </div>
+            <!-- 標籤組 -->
+            <div 
+                ng-switch-when="row" 
+                class="tag-group-tags" 
+                style="height: 27px; line-height: 27px;"
+            >
+                <span
+                    class="tag color-{{TagManager.tagMappings[tag].color}}"
+                    ng-class="{'has-color': TagManager.tagMappings[tag].color, 'selected': selectedTags[TagManager.tagMappings[tag].name] || selectingTags[tag], 'first': $index === 0, 'disable-sort': keyword}"
+                    ng-click="selectTag($event, TagManager.tagMappings[tag])"
+                    ng-dblclick="openTag(TagManager.tagMappings[tag].name)"
+                    ng-right-click="openTagContextMenu($event, TagManager.tagMappings[tag])"
+                    draggable="true"
+                    ng-mousedown="$event.stopPropagation();"
+                    ondragend="onDragTagEnd(event)"
+                    ondragstart="onDragTagStart(event)"
+                    ondrag="onDragTag(event)"
+                    ng-repeat="tag in item.tags track by $index"
+                >
+                    <div class="icon">
+                        <div class="dot"></div>
+                    </div>
+                    <div class="name" ng-bind-html="tag | fuzzyMatch:keyword | substring:0:200"></div>
+                    <span class="count">({{TagManager.tagMappings[tag].imageCount}})</span>
+                </span>
+            </div>
+            <!-- 分隔線 -->
+            <div ng-switch-when="separator" class="separator" style="height: 25px;"></div>
+        </div>
+    </div>
+    <!-- 空白狀態 -->
+    <div class="tag-manager-container empty" ng-show="!keyword && TagManager.tagsResult.tags.length === 0">
+
+        <!-- 未分類，全空 -->
+        <div class="empty-state" ng-show="TagManager.rawdata.length === 0 && TagManager.tagsResult.tags.length === 0 && tagViewMode == 'UNFILED'">
+            <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-tag-manager-all.png" width="400" height="144">
+            <h2>{{'empty.tags.title' | i18n}}</h2>
+            <p>{{'empty.tags.desc' | i18n}}</p>
+        </div>
+
+        <!-- 未分類，完成 -->
+        <div class="empty-state" ng-show="TagManager.rawdata.length !== 0 && TagManager.tagsResult.tags.length === 0 && tagViewMode == 'UNFILED'">
+            <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-tag-manager-done.png" width="400" height="144">
+            <h2>{{'empty.allTags.done.title' | i18n}}</h2>
+            <p>{{'empty.allTags.done.desc' | i18n}}</p>
+        </div>
+
+        <!-- 其它 -->
+        <div class="empty-state" ng-show="TagManager.tagsResult.tags.length === 0 && tagViewMode != 'UNFILED'">
+            <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-tag-manager-all.png" width="400" height="144">
+            <h2>{{'empty.tags.title' | i18n}}</h2>
+            <p>{{'empty.tags.desc' | i18n}}</p>
+        </div>
+    </div>
+
+    <!-- 搜寻空 -->
+    <div class="tag-manager-container empty" ng-show="keyword && TagManager.tagsResult.tags.length === 0">
+        <div class="empty-state">
+            <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-search.png" width="256" height="144">
+            <h2>{{'empty.search.title' | i18n}}</h2>
+            <p>{{'empty.search.desc' | i18n}}</p>
+        </div>
+    </div>
+</div>

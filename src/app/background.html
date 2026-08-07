@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title></title>
+	<link href="fonts/fallback/fallback-outline.css" rel="stylesheet">
+	<style>
+		.font-preview {
+			position: absolute;
+			width: 600px;
+			height: 600px;
+			color: #333;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-family: "Fallback Outline";
+		}
+		.font-preview .font-text {
+		    font-size: 100px;
+		    line-height: 1.35;
+		    width: 400px;
+		    text-align: left;
+		    display: block;
+		}
+		.font-preview .font-text span {
+		    text-align: left;
+		    display: block;
+		    white-space:nowrap;
+		    width: 800px;
+		}
+		.font-preview .font-name {
+			display: none;
+			/*font-family: "PingFang SC","Microsoft Yahei", 微软雅黑, "\5FAE\8F6F\96C5\9ED1", "Helvetica Neue",Helvetica,Arial, Arial, sans-serif;*/
+			/*font-family: "Fallback Outline";*/
+			position: absolute;
+		    bottom: 50px;
+		    left: 50%;
+		    transform: translateX(-50%);
+		    font-size: 24px;
+		    width: calc(100% - 10vw);
+		    text-align: center;
+		    opacity: 0.5;
+		}
+		.svg-preview {
+			position: absolute;
+			width: 1440px;
+			height: 1440px;
+			background-color: #fff;
+		}
+		.svg-preview img {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			/*max-width: 600px;*/
+			/*max-height: 600px;*/
+			/*width: 100%;*/
+			transform: translateX(-50%) translateY(-50%);
+		}
+		.waveform {
+			position: absolute;
+			/*position: absolute;*/
+			top: 0;
+			left: 0;
+			width: 280px;
+			height: 140px;
+		    /*height: 180px;*/
+			/*visibility: hidden;*/
+		}
+	</style>
+</head>
+<body>
+	<script>
+		function throttle(fn, delay, immediate, debounce) {
+			var curr = +new Date(),
+				last_call = 0,
+				last_exec = 0,
+				timer = null,
+				diff,
+				context,
+				args,
+				exec = function() {
+					last_exec = curr;
+					fn.apply(context, args);
+				};
+			return function() {
+				curr = +new Date();
+				context = this,
+					args = arguments,
+					diff = curr - (debounce ? last_call : last_exec) - delay;
+				clearTimeout(timer);
+				if (debounce) {
+					if (immediate) {
+						timer = setTimeout(exec, delay);
+					} else if (diff >= 0) {
+						exec();
+					}
+				} else {
+					if (diff >= 0) {
+						exec();
+					} else if (immediate) {
+						timer = setTimeout(exec, -diff);
+					}
+				}
+				last_call = curr;
+			}
+		};
+
+		function debounce(func, wait, immediate) {
+			var timeout;
+			return function() {
+				var context = this,
+					args = arguments;
+				var later = function() {
+					timeout = null;
+					if (!immediate) func.apply(context, args);
+				};
+				var callNow = immediate && !timeout;
+				clearTimeout(timeout);
+				timeout = setTimeout(later, wait);
+				if (callNow) func.apply(context, args);
+			};
+		};
+	</script>
+	<script src="js/vendors/lodash.js"></script>
+	<script src="js/vendors/is.min.js"></script>
+	<script src="js/vendors/jquery-1.8.0.min.js"></script>
+	<script src="js/vendors/jquery-audio.js"></script>
+	<script src="js/lib/eagle-api.js"></script>
+	<script src="js/lib/api/screen-capture.js"></script>
+	<script src="js/lib/api/url-enlarger.js"></script>
+	<script src="js/tree.helper.js"></script>
+	<script src="js/background.js"></script>
+    <script src="js/vendors/ga4.js"></script>
+	<script src="js/vendors/ga.js"></script>
+	<script src="js/vendors/music-tempo.min.js"></script>
+	<script>
+		eagle.urlEnlargerRemote.load();
+	</script>
+</body>
+</html>

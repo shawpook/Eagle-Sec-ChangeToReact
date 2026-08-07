@@ -1,0 +1,15 @@
+<div 
+    class="not-support-preview" 
+    mouse-gesture
+>
+    <div class="not-support-preview-content" ng-switch on="current.ext">
+        <img class="icon" style="width: 192px; height: 144px;" ng-src="assets/images/{{theme | themePath}}/illustrations/not-supported-format.png">
+        <div class="title"><span>{{current.name}}</span>.{{current.ext}}</div>
+        <p class="desc" ng-show="!hasPlugin">{{'pages.noPreview.desc' | i18n}}</p>
+        <p class="desc" ng-show="hasPlugin">{{'pages.noPreview.plugin' | i18n}}</p>
+        <div class="buttons">
+            <div ng-show="hasPlugin" class="button button-xs button-primary" ng-dblclick="$event.stopPropagation()" ng-click="openPluginCenter()"><img ng-src="assets/images/dark/icons/context-menu/ic-plugin.svg">{{'pages.noPreview.downloadPlugin' | i18n}}</div>
+            <div class="button button-xs button-grey" ng-dblclick="$event.stopPropagation()" ng-click="openItemContextMenu($event, current)"><img ng-src="assets/images/{{theme | themePath}}/icons/context-menu/ic-open-other.svg">{{'pages.noPreview.openOther' | i18n}}</div>
+        </div>
+    </div>
+</div>

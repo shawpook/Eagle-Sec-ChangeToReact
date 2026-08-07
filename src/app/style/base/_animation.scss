@@ -1,0 +1,8 @@
+:root {
+    --timing-function-linear: linear;
+    --timing-function-ease: ease;
+    --timing-function-scaleIn: cubic-bezier(0,.89,.44,1);
+    --timing-function-scaleOut: cubic-bezier(.165,.84,.44,1);
+    --timing-function-scaleUp: cubic-bezier(.68,-.55,.265,1.55);
+    --timing-function-super: cubic-bezier(0.4,0,0.22,1);
+}

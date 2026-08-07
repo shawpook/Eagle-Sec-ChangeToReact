@@ -1,0 +1,52 @@
+<div id="rating-filter-item" ng-right-click="clearRatingFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.rating'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-rating.svg"><div>{{displayName}}</div></div>
+    <input tabindex="-1" type="text" class="shortcut-input">
+    <div class="menu-wrap"><div class="filter-menu" style="min-width: 180px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div class="empty" ng-show="filtereds.length === 0">{{'filter.emptyMsg' | i18n}}</div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['rating']['5'] > 0" ng-class="{'checked': eagle.filter.filterRules.rating['5']}" ng-click="focusInput(); eagle.filter.filterRules.rating['5'] = !eagle.filter.filterRules.rating['5']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name"><s></s><s></s><s></s><s></s><s></s></div>
+                <div class="badge">{{eagle.filter.filterCounts['rating']['5'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['rating']['4'] > 0" ng-class="{'checked': eagle.filter.filterRules.rating['4']}" ng-click="focusInput(); eagle.filter.filterRules.rating['4'] = !eagle.filter.filterRules.rating['4']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name"><s></s><s></s><s></s><s></s><s class="empty"></s></div>
+                <div class="badge">{{eagle.filter.filterCounts['rating']['4'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['rating']['3'] > 0" ng-class="{'checked': eagle.filter.filterRules.rating['3']}" ng-click="focusInput(); eagle.filter.filterRules.rating['3'] = !eagle.filter.filterRules.rating['3']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name"><s></s><s></s><s></s><s class="empty"></s><s class="empty"></s></div>
+                <div class="badge">{{eagle.filter.filterCounts['rating']['3'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['rating']['2'] > 0" ng-class="{'checked': eagle.filter.filterRules.rating['2']}" ng-click="focusInput(); eagle.filter.filterRules.rating['2'] = !eagle.filter.filterRules.rating['2']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name"><s></s><s></s><s class="empty"></s><s class="empty"></s><s class="empty"></s></div>
+                <div class="badge">{{eagle.filter.filterCounts['rating']['2'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['rating']['1'] > 0" ng-class="{'checked': eagle.filter.filterRules.rating['1']}" ng-click="focusInput(); eagle.filter.filterRules.rating['1'] = !eagle.filter.filterRules.rating['1']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name"><s></s><s class="empty"></s><s class="empty"></s><s class="empty"></s><s class="empty"></s></div>
+                <div class="badge">{{eagle.filter.filterCounts['rating']['1'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-if="filtereds.length > 0 && eagle.filter.filterCounts['rating']['0'] > 0" ng-class="{'checked': eagle.filter.filterRules.rating['0']}" ng-click="focusInput(); eagle.filter.filterRules.rating['0'] = !eagle.filter.filterRules.rating['0']; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.rating>none' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['rating']['0'] | number:0}}</div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearRatingFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

@@ -1,0 +1,10 @@
+<div class="progress-dialog library-loading-dialog" ng-class="{'open' : isCleaningTrash}">
+    <div class="progress-dialog-content" ng-if="isCleaningTrash">
+        <div class="message">{{'sidebar.cleanTrashMsg' | i18n}}<span class="counter">({{removeProgress | number:1 }}%)</span></div>
+        <div class="progressbar">
+            <div class="current" style="width: {{removeProgress}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button cancel" ng-click="cancelEmptyTrash()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

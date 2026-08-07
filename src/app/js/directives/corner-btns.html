@@ -1,0 +1,25 @@
+<div ng-if="$parent.platform==='win32'" class="corner-btns win32" ng-hide="$parent.isInlineMode" ng-dblclick="$event.stopPropagation(); $event.preventDefault();">
+    <div ng-if="!hideAlwaysOnTop" class="ic-btn" ng-click="toggleAlwaysOnTop()" tippy tippy-placement="bottom" tippy-content="{{'titlebar.alwayTop.on' | i18n}}{{preferences.shortcuts.keybinds['view.alwaysOnTop'] | shortcutsWrapper | shortcuts}}" ng-show="!isAlwaysOnTop">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-window-pin.svg">
+    </div>
+    <div ng-if="!hideAlwaysOnTop" class="ic-btn active" ng-click="toggleAlwaysOnTop()" tippy tippy-placement="bottom" tippy-content="{{'titlebar.alwayTop.off' | i18n}}{{preferences.shortcuts.keybinds['view.alwaysOnTop'] | shortcutsWrapper | shortcuts}}" ng-show="isAlwaysOnTop">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-window-unpin.svg">
+    </div>
+    <div ng-if="!hideAlwaysOnTop" class="separator"></div>
+    <div class="windows-btns">
+        <div ng-click="minimize()" class="ic-btn windows-btn" style="background-image: url(assets/images/{{theme|themePath}}/icons/ic-windows-hide.svg)"></div>
+        <div ng-click="maximize()" ng-show="!isMaximize"class="ic-btn windows-btn" style="background-image: url(assets/images/{{theme|themePath}}/icons/ic-windows-fullscreen.svg)"></div>
+        <div ng-click="restore()" ng-show="isMaximize" class="ic-btn windows-btn" style="background-image: url(assets/images/{{theme|themePath}}/icons/ic-windows-restore.svg)"></div>
+        <div ng-click="close()" class="close-btn-wrap">
+            <div ng-click="close()" id="close-btn" class="ic-btn windows-btn" style="background-image: url(assets/images/{{theme|themePath}}/icons/ic-windows-close.svg)"></div>
+        </div>
+    </div>
+</div>
+<div ng-if="$parent.platform==='darwin'" class="corner-btns darwin" ng-hide="$parent.isInlineMode" ng-dblclick="$event.stopPropagation(); $event.preventDefault();">
+    <div ng-if="!hideAlwaysOnTop" class="ic-btn" ng-click="toggleAlwaysOnTop()" tippy tippy-placement="bottom" tippy-content="{{'titlebar.alwayTop.on' | i18n}}{{preferences.shortcuts.keybinds['view.alwaysOnTop'] | shortcutsWrapper | shortcuts}}" ng-show="!isAlwaysOnTop">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-window-pin.svg">
+    </div>
+    <div ng-if="!hideAlwaysOnTop" class="ic-btn active" ng-click="toggleAlwaysOnTop()" tippy tippy-placement="bottom" tippy-content="{{'titlebar.alwayTop.off' | i18n}}{{preferences.shortcuts.keybinds['view.alwaysOnTop'] | shortcutsWrapper | shortcuts}}" ng-show="isAlwaysOnTop">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-window-unpin.svg">
+    </div>
+</div>

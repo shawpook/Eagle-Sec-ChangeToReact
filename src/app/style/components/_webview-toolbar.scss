@@ -1,0 +1,82 @@
+webview-toolbar {
+    display: flex;
+    flex: 1;
+}
+
+.webview-toolbar {
+
+    @include dark {
+        --background-color: var(--color-lightgray-5);
+    }
+
+    @include light {
+        --background-color: var(--color-dark-10);
+    }
+    
+    display: flex;
+    align-items: center;
+    border-radius: 6px;
+    background-color: var(--background-color);
+    height: 32px;
+    width: 100%;
+    overflow: hidden;
+    padding: 0 6px;
+    font-size: 13px;
+    color: var(--color-text-primary);
+    gap: 8px;
+
+    .separator {
+        background-color: var(--color-border-secondary);
+        height: 16px;
+        width: 1px;
+    }
+
+    .ic-btn {
+        height: 20px;
+        width: 20px;
+    }
+
+    .left-panel {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .center-panel {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        font-size: 13px;
+        line-height: 1em;
+        flex: 1;
+        .favicon {
+            margin-right: 8px;
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            height: 16px;
+            min-width: 16px;
+            width: 16px;
+        }
+        .title {
+            margin-right: 4px;
+            max-height: 13px;
+            overflow: hidden;
+            word-break: break-all;
+            text-overflow: ellipsis;
+        }
+        .url {
+            opacity: 0.5;
+            margin-right: 4px;
+            max-height: 13px;
+            overflow: hidden;
+            word-break: break-all;
+            text-overflow: ellipsis;
+        }
+    }
+    
+    .right-panel {
+        display: flex;
+        align-items: center;
+    }
+}

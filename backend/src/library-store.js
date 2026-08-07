@@ -107,7 +107,7 @@ export function resolveLibraryPath(input) {
     return path.join(mockLibraryDir, value.replace(/^\/mock-library\//, ''));
   }
   if (value.startsWith('/src/')) {
-    return path.join(reverseRoot, value.replace(/^\//, ''));
+    return path.join(projectRoot, value.replace(/^\//, ''));
   }
   const absolute = path.resolve(value);
   if (fs.existsSync(absolute)) return absolute;

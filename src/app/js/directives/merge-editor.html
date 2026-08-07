@@ -1,0 +1,134 @@
+<div class="merge-editor" ng-class="{'is-merging': isMerging}">
+
+    <!-- 側欄 -->
+    <div class="merge-editor-sidebar">
+        <!-- 群組s -->
+        <div class="group-list" vs-excess="30" vs-repeat="56">
+            <div 
+                class="group-item"
+                ng-class="{'selected': group === currentGroup}"
+                ng-repeat="group in selectedGroups"
+                ng-click="selectGroup(group)"
+            >
+                <div class="thumbnail" style="background-image: url('{{group.mergedData.thumbnailUrl}}');">
+                    <ext-icon ng-if="group.choice.noPreview" item-id="{{group.choice.id}}"></ext-icon>
+                </div>
+                <div class="info">
+                    <div class="name">{{group.mergedData.name}}</div>
+                    <div class="meta">{{group.items.length}} {{'duplicatePanel.step4.list.items' | i18n}}</div>
+                </div>
+            </div>
+        </div>
+        <!-- 底部工具列 -->
+        <div class="bottom">
+            <!-- 进度条 -->
+            <div class="merge-progress" ng-show="isMerging">
+                <div class="progress-bar">
+                    <div class="current" style="width: {{mergeProgress}}%;"></div>
+                </div>
+                <div class="message">{{'duplicatePanel.step4.progress.msg' | i18n}} 2 / 8</div>
+            </div>
+            <!-- 按鈕 -->
+            <div ng-show="!isMerging" ng-click="merge()" class="button button-primary"><img ng-src="assets/images/base/icons/ic-duplicate-merge-all.svg">{{'duplicatePanel.footer.mergeBtn' | i18n}}<span ng-show="selectedItems.length > 1">({{selectedItems.length}})</span></div>
+            <div ng-show="isMerging" class="button button-primary button-disabled"><img ng-src="assets/images/base/icons/ic-duplicate-merge-all.svg">{{'duplicatePanel.footer.mergeBtn' | i18n}}<span ng-show="selectedItems.length > 1">({{selectedItems.length}})</span></div>
+        </div>
+    </div>
+    <!-- 屬性編輯器 -->
+    <div class="merge-editor-content">
+        <!-- 文件名稱 -->
+        <div class="prop">
+            <div class="label">{{'duplicatePanel.step4.prop.filename' | i18n}}</div>
+            <div ng-show="currentGroup.props.names.length > 1" class="value">
+                <div class="radio-items">
+                    <div 
+                        class="radio-item"
+                        ng-click="changeName(currentGroup, name)"
+                        ng-repeat="name in currentGroup.props.names"
+                        ng-class="{'selected': currentGroup.mergedData.name === name}"
+                    >
+                        <div class="icon"></div>
+                        <div class="name">{{name}}</div>
+                    </div>
+                </div>
+            </div>
+            <div ng-show="currentGroup.props.names.length === 1" class="value empty">{{currentGroup.mergedData.name}}</div>
+        </div>
+        <!-- 链接 -->
+        <div class="prop">
+            <div class="label">{{'duplicatePanel.step4.prop.link' | i18n}}</div>
+            <div ng-show="currentGroup.props.urls.length > 0" class="value">
+                <div class="radio-items">
+                    <div 
+                        class="radio-item"
+                        ng-click="changeUrl(currentGroup, url)"
+                        ng-repeat="url in currentGroup.props.urls"
+                        ng-class="{'selected': currentGroup.mergedData.url === url}"
+                    >
+                        <div class="icon"></div>
+                        <div class="name">{{url}}</div>
+                    </div>
+                </div>
+            </div>
+            <div ng-show="currentGroup.props.urls.length <= 0" class="value empty">{{'duplicatePanel.step4.prop.empty.link' | i18n}}</div>
+        </div>
+        <!-- 文件夹 -->
+        <div class="prop">
+            <div class="label">{{'duplicatePanel.step4.prop.folder' | i18n}}</div>
+            <div ng-show="currentGroup.props.folders.length > 0" class="value">
+                <div class="checkbox-items">
+                    <div 
+                        class="checkbox-item folder"
+                        ng-click="toggleFolder(currentGroup, folder)"
+                        ng-class="{'selected': currentGroup.mergedData.foldersMap[folder]}"
+                        ng-repeat="folder in currentGroup.props.folders"
+                    >
+                        <div class="icon"></div>
+                        <div class="name">{{folderMappings[folder].name}}</div>
+                    </div>
+                </div>
+            </div>
+            <div ng-show="currentGroup.props.folders.length === 0" class="value empty">{{'duplicatePanel.step4.prop.empty.folder' | i18n}}</div>
+        </div>
+        <!-- 标签 -->
+        <div class="prop">
+            <div class="label">{{'duplicatePanel.step4.prop.tag' | i18n}}</div>
+            <div ng-show="currentGroup.props.tags.length > 0" class="value">
+                <div class="checkbox-items">
+                    <div 
+                        class="checkbox-item tag"
+                        ng-click="toggleTag(currentGroup, tag)"
+                        ng-class="{'selected': currentGroup.mergedData.tagsMap[tag]}"
+                        ng-repeat="tag in currentGroup.props.tags"
+                    >
+                        <div class="icon"></div>
+                        <div class="name">{{tag}}</div>
+                    </div>
+                </div>
+            </div>
+            <div ng-show="currentGroup.props.tags.length === 0" class="value empty">{{'duplicatePanel.step4.prop.empty.tag' | i18n}}</div>
+        </div>
+        <!-- 注释 -->
+        <div class="prop">
+            <div class="label">{{'duplicatePanel.step4.prop.note' | i18n}}</div>
+            <div ng-show="currentGroup.props.annotations.length > 0" class="value">
+                <div class="radio-items">
+                    <div 
+                        class="radio-item"
+                        ng-click="changeAnnotation(currentGroup, annotation)"
+                        ng-repeat="annotation in currentGroup.props.annotations"
+                        ng-class="{'selected': currentGroup.mergedData.annotation === annotation}"
+                    >
+                        <div class="icon"></div>
+                        <div class="name">{{annotation}}</div>
+                    </div>
+                    <div class="radio-item" ng-class="{'selected': currentGroup.customAnnotation}" ng-click="selectCustomAnnotation(currentGroup)">
+                        <div class="icon"></div>
+                        <div class="name">{{'duplicatePanel.step4.prop.mergeNote' | i18n}}</div>
+                    </div>
+                    <textarea ng-show="currentGroup.customAnnotation" ng-model="currentGroup.mergedData.mergedAnnotation"></textarea>
+                </div>
+            </div>
+            <div ng-show="currentGroup.props.annotations.length <= 0" class="value empty">{{'duplicatePanel.step4.prop.empty.note' | i18n}}</div>
+        </div>
+    </div>
+</div>

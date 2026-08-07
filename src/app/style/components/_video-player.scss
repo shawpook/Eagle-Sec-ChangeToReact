@@ -1,0 +1,758 @@
+#detail-container .detail-wrap .video-js {
+    
+    --progress-height: 4px;
+    background-color: transparent;
+
+    // 音量控制器
+    .vjs-volume-panel {
+        align-items: center;
+        width: auto;
+        .vjs-volume-control {
+            display: flex;
+            align-items: center;
+            .vjs-slider-horizontal {
+
+                @include dark {
+                    --bar-current-bg: var(--color-lightgray-50);
+                    --bar-total-bg: var(--color-lightgray-25);
+                    --bar-thumb-bg: var(--color-white);
+                    --bar-thumb-border: 1px solid var(--color-black-10);
+                }
+
+                @include light {
+                    --bar-current-bg: var(--color-gray-50);
+                    --bar-total-bg: var(--color-gray-25);
+                    --bar-thumb-bg: var(--color-white);
+                    --bar-thumb-border: 1px solid var(--color-black-10);
+                }
+                border-radius: 4px;
+                margin: 0;
+                background-color: var(--bar-total-bg);
+
+                height: 2px;
+
+                .vjs-volume-level {
+                    border-radius: 4px;
+                    background-color: var(--bar-current-bg);
+                    height: 2px;
+                }
+                .vjs-volume-level:before {
+                    top: -4px;
+                    content: "";
+                    border: var(--bar-thumb-border);
+                    border-radius: 50%;
+                    background: var;
+                    background-color: var(--bar-thumb-bg);
+                    height: 10px;
+                    width: 10px;
+                }
+            }
+        }
+    }
+
+    .vjs-big-play-button {
+        display: none !important;
+    }
+
+    // 播放速度控制器
+    .vjs-progress-control {
+
+        margin: 0 12px;
+
+        .vjs-progress-holder {
+
+            margin: 0 !important;
+            background: transparent !important;
+            height: 48px;
+            padding: 20px 0 !important;
+
+            &.vjs-slider {
+                // 懸停預覽
+                #video-preview-thumb {
+                    position: absolute;
+                    bottom: 72px;
+                    opacity: 0;
+                    transform: translateX(-50%);
+                    border-top: var(--box-border-top);
+                    border-right: var(--box-border-right);
+                    border-bottom: var(--box-border-bottom);
+                    border-left: var(--box-border-left);
+                    border-radius: 6px;
+                    background-color: var(--box-background);
+                    max-height: 200px !important;
+                    min-height: 64px !important;
+                    height: 10vw;
+                    pointer-events: none;
+                    border-top-width: 3px;
+                    border-left-width: 3px;
+                    border-right-width: 3px;
+                    border-bottom-width: 3px;
+                    box-shadow: var(--box-border-shadow);
+                }
+                &:hover {
+                    #video-preview-thumb {
+                        opacity: 1;
+                        transition: opacity 200ms ease;
+                    }
+                }
+            }
+
+            .vjs-load-progress,
+            .vjs-play-progress {
+                margin-top: 22px !important;
+                height: var(--progress-height) !important;
+            }
+
+            // 整體進度條顏色
+            .vjs-load-progress {
+
+                @include dark {
+                    --progress-bg: var(--color-lightgray-25);
+                }
+
+                @include light {
+                    --progress-bg: var(--color-gray-25);
+                }
+                border-radius: 20px;
+                background: var(--progress-bg);
+
+                width: 100%;
+                width: 100%;
+            }
+
+            // 當前進度位置
+            .vjs-play-progress {
+                background: transparent !important;
+                .vjs-time-tooltip {
+                    display: none;
+                }
+                &:before {
+                    content: "";
+                }
+                &:after {
+
+                    @include dark {
+                        --line-color: var(--color-lightgray);
+                    }
+
+                    @include light {
+                        --line-color: var(--color-dark);
+                    }
+                    position: absolute;
+                    top: -18px;
+                    right: 0px;
+                    
+                    content: "";
+                    border-radius: 10px;
+                    background-color: var(--line-color);
+                    height: 37px;
+                    width: 1px;
+                    box-sizing: content-box;
+                }
+            }
+
+            // 滑鼠懸停時間顯示
+            .vjs-mouse-display {
+                top: 0;
+                background-color: #ccc;
+                pointer-events: none !important;
+                .vjs-time-tooltip {
+                    z-index: 10;
+                    top: -13px;
+                    opacity: 1;
+                    display: flex;
+                    align-items: center;
+                    border-top: var(--box-border-top);
+                    border-right: var(--box-border-right);
+                    border-bottom: var(--box-border-bottom);
+                    border-left: var(--box-border-left);
+                    border-radius: 4px;
+                    background: var(--box-background);
+                    height: 24px;
+                    padding: 0 4px;
+                    font-size: 13px;
+                    color: var(--color-text-primary);
+                    box-shadow: var(--box-border-shadow);
+                    backdrop-filter: var(--box-background-blur);
+                }
+            }
+        }
+
+        .resize-bar {
+            position: absolute;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0;
+            right: 0;
+            height: 48px !important;
+            pointer-events: none;
+            .bar {
+
+                @include dark {
+                    --progress-bg: var(--color-lightgray-50);
+                }
+
+                @include light {
+                    --progress-bg: var(--color-gray-75);
+                }
+                position: absolute;
+                top: 22px;
+                left: 0;
+                right: 0;
+                background: var(--progress-bg);
+                height: var(--progress-height);
+
+                pointer-events: none;
+            }
+            .ui-resizable-w {
+                left: -3px;
+            }
+            .ui-resizable-e {
+                right: -3px;
+            }
+            .ui-resizable-w, .ui-resizable-e {
+
+                @include dark {
+                    --handler-bg: var(--color-lightgray);
+                }
+
+                @include light {
+                    --handler-bg: #A7AAAD;
+                }
+
+                cursor: col-resize;
+                top: 15px;
+                bottom: 15px;
+                border-radius: 10px;
+                background: var(--handler-bg);
+                height: auto;
+                width: 3px;
+                cursor: col-resize;
+
+                pointer-events: all;
+            }
+        }
+
+        // 視頻標注
+        .video-comments {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            pointer-events: none;
+            .video-comment {
+
+                @include dark {
+                    --comment-background: var(--color-dark-60);
+                }
+
+                @include light {
+                    --comment-background: var(--color-white-60);
+                }
+                z-index: 10;
+                position: absolute;
+                top: 22px;
+                margin-left: -2px;
+                background-color: var(--comment-background);
+                height: var(--progress-height);
+                width: 4px;
+                cursor: context-menu;
+
+                pointer-events: all;
+                &:hover {
+                    @include dark {
+                        --comment-background: var(--color-dark-80);
+                    }
+    
+                    @include light {
+                        --comment-background: var(--color-white-80);
+                    }
+                    transition: opacity 200ms ease;
+                    .annotation {
+                        display: flex;
+                    }
+                }
+                .annotation {
+                    position: absolute;
+                    bottom: 52px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    display: none;
+                    justify-content: center;
+                    width: 200px;
+                    line-height: 1.4;
+                    pointer-events: none;
+                    text-align: left;
+                    > div {
+                        display: inline-block;
+                        border-top: var(--box-border-top);
+                        border-right: var(--box-border-right);
+                        border-bottom: var(--box-border-bottom);
+                        border-left: var(--box-border-left);
+                        border-radius: 6px;
+                        background: var(--box-background);
+                        padding: 6px 8px;
+                        font-size: 12px;
+                        line-height: 18px;
+                        color: var(--color-text-primary);
+                        box-shadow: var(--box-border-shadow);
+                        backdrop-filter: var(--box-background-blur);
+                    }
+                }
+            }
+        }
+
+    }
+
+    .vjs-slider:focus {
+        outline: none;
+        text-shadow: none;
+        box-shadow: none;
+    }
+
+    // 控制列按鈕、文字相關
+    .vjs-control-bar {
+
+        @include light {
+            background-image: none;
+        }
+        align-items: center;
+
+        background-image: linear-gradient(-180deg, var(--color-black-20) 0%, var(--color-black-20) 100%);
+        background-color: var(--box-background);
+        height: 48px;
+        padding: 0 8px;
+        backdrop-filter: var(--box-background-blur);
+        box-shadow: 0 -1px 0 0 var(--color-border-secondary);
+
+        // 時間顯示
+        .vjs-time-control {
+            display: block;
+            padding: 0;
+            padding-left: 0;
+            letter-spacing: 0;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+            line-height: 48px;
+            color: var(--color-text-primary);
+            text-align: center;
+            &.vjs-current-time {
+                padding-left: 0px;
+            }
+            &.vjs-duration {
+                opacity: 0.5;
+                padding-right: 0px;
+            }
+        }
+        
+        // 剩餘時間（隱藏）
+        .vjs-remaining-time {
+            display: none;
+        }
+
+        // 字幕
+        .vjs-subs-caps-button {
+            &:focus { outline: none; }
+            .vjs-menu-content {
+                width: 200px;
+                &:focus { outline: none; }
+                .vjs-menu-item {
+                    &:focus { outline: none; }
+                }
+                .vjs-texttrack-settings {
+                    display: none;
+                }
+            }
+        }
+
+        // 下拉選單
+        .vjs-menu {
+            width: 70px;
+            .vjs-menu-content {
+                border-top: var(--box-border-top);
+                border-right: var(--box-border-right);
+                border-bottom: var(--box-border-bottom);
+                border-left: var(--box-border-left);
+                border-radius: 6px;
+                background-color: var(--box-background);
+                max-height: initial;
+                padding: 6px;
+                box-shadow: var(--box-border-shadow-small);
+                backdrop-filter: var(--box-background-blur);
+
+                .vjs-menu-item {
+
+                    @include dark {
+                        --item-background-color: transparent;
+                        --item-background-image: url(../assets/images/dark/icons/player/ic-menu.check.svg);
+                    }
+                
+                    @include light {
+                        --item-background-color: transparent;
+                        --item-background-image: url(../assets/images/light/icons/player/ic-menu.check.svg);
+                    }
+                    display: flex;
+                    align-items: center;
+                    border-radius: 4px;
+                    background-color: var(--item-background-color);
+                    height: 28px;
+                    padding: 0 6px 0 28px;
+
+                    color: var(--color-text-secondary);
+
+                    &:hover, &:focus {
+                        @include dark {
+                            --item-background-color: var(--color-lightgray-5);
+                        }
+                    
+                        @include light {
+                            --item-background-color: var(--color-dark-5);
+                        }
+                    }
+                    &.vjs-selected {
+                        background-image: var(--item-background-image);
+                        background-color: var(--item-background-color);
+                        background-position: 6px center;
+                        background-repeat: no-repeat;
+                        color: var(--color-text-primary);
+                        &:hover, &:focus {
+                            background-color: var(--item-background-color);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 播放速度按鈕
+        .vjs-playback-rate {
+            height: 24px;
+            width: 36px;
+            padding: 0;
+            >.vjs-menu-button {
+                display: none;
+            }
+            .vjs-playback-rate-value {
+                position: static;
+                font-size: 11px;
+                line-height: 24px;
+                font-weight: var(--font-weight-bold);
+                color: var(--color-text-primary);
+                pointer-events: none;
+                text-align: center;
+            }
+            .vjs-menu {
+                left: -25px;
+                .vjs-menu-content {
+                    bottom: 8px;
+                }
+            }
+        }
+        // 重複播放按鈕
+        .vjs-icon-loop {
+            opacity: 0.5;
+            &.enabled {
+                opacity: 1;
+            }
+            &:hover {
+                cursor: pointer;
+            }
+        }
+    }
+
+    > video {
+        max-height: initial !important;
+        max-width: initial !important;
+        width: 100%;
+        height: calc(100% - 48px);
+        margin-top: -48px;
+        transform-origin: center;
+        
+        &:focus {
+            outline: none;
+        }
+
+        &.fit {
+            width: auto;
+            height: auto;
+            max-width: 100% !important;
+            max-height: calc(100% - 48px) !important;
+        }
+
+        &.flip {
+            transform: scaleX(-1);
+            object-fit: contain;
+        }
+
+        &.r90 {
+            transform: rotate(90deg);
+            &.flip {
+                transform: rotate(90deg) scaleX(-1);
+            }
+        }
+        &.r180 {
+            transform: rotate(180deg);
+            &.flip {
+                transform: rotate(180deg) scaleX(-1);
+            }
+        }
+        &.r270 {
+            transform: rotate(270deg);
+            &.flip {
+                transform: rotate(270deg) scaleX(-1);
+            }
+        }
+    }
+
+    .vjs-control.vjs-subs-caps-button {
+        align-items: center;
+        display: flex;
+        width: 36px;
+        justify-content: center;
+        .vjs-subs-caps-button {
+            margin: 0;
+            padding: 0;
+        }
+    }
+
+    // 圖示重新調整
+    .vjs-button[type="button"] {
+
+        @include dark {
+            --background: transparent;
+            --icon-background: #BDBEC0;
+        }
+        
+        @include light {
+            --background: transparent;
+            --icon-background: #50555B;
+        }
+        border-radius: 4px;
+
+        margin: 0 4px;
+        background-color: var(--background);
+        transition: all 150ms var(--timing-function-super);
+
+        &:hover {
+            @include dark {
+                --background: var(--color-lightgray-5);
+            }
+        
+            @include light {
+                --background: var(--color-dark-5);
+            }
+        }
+
+        &.vjs-mute-control {
+            padding-right: 0;
+            padding-bottom: 0;
+            padding-left: 0;
+        }
+
+        &.vjs-subs-caps-button[type="button"],
+        &.vjs-paused,
+        &.vjs-playing,
+        &.vjs-icon-note,
+        &.vjs-icon-forward,
+        &.vjs-icon-backward,
+        &.vjs-icon-loop,
+        &.vjs-vol-0,
+        &.vjs-vol-1,
+        &.vjs-vol-2,
+        &.vjs-vol-3,
+        &.vjs-fullscreen-control {
+
+            height: 24px;
+            width: 24px;
+
+            .vjs-icon-placeholder {
+                display: block;
+                background-color: var(--icon-background);
+                height: 24px;
+                width: 24px;
+                cursor: pointer;
+                -webkit-mask-size: 24px !important;
+
+                &:before {
+                    content: "";
+                    display: none;
+                }
+            }
+        }
+        .vjs-subs-caps-button+.vjs-menu .vjs-captions-menu-item .vjs-menu-item-text .vjs-icon-placeholder:before {
+            display: none;
+        }
+        &.vjs-subs-caps-button[type="button"] .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-subtitle.png) no-repeat center center;
+        }
+        &.vjs-icon-note .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-note.png) no-repeat center center;
+        }
+        &.vjs-icon-forward .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-forward.png) no-repeat center center;
+        }
+        &.vjs-icon-backward .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-backward.png) no-repeat center center;
+        }
+        &.vjs-icon-loop .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-loop.png) no-repeat center center;
+        }
+        &.vjs-paused .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-play.png) no-repeat center center;
+        }
+        &.vjs-playing .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-pause.png) no-repeat center center;
+        }
+        &.vjs-vol-0 .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-0.png) no-repeat center center;
+        }
+        &.vjs-vol-1 .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-1.png) no-repeat center center;
+        }
+        &.vjs-vol-2 .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-2.png) no-repeat center center;
+        }
+        &.vjs-vol-3 .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-3.png) no-repeat center center;
+        }
+        &.vjs-fullscreen-control .vjs-icon-placeholder {
+            -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-fullscreen.png) no-repeat center center;
+        }
+    }
+}
+
+.video-player-tips {
+    z-index: 99;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: none;
+
+    &.vol-0 .tip .icon {
+        -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-0.png) no-repeat center center;
+        -webkit-mask-size: 24px;
+    }
+    &.vol-1 .tip .icon {
+        -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-1.png) no-repeat center center;
+        -webkit-mask-size: 24px;
+    }
+    &.vol-2 .tip .icon {
+        -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-2.png) no-repeat center center;
+        -webkit-mask-size: 24px;
+    }
+    &.vol-3 .tip .icon {
+        -webkit-mask: url(../assets/images/base/icons/player/ic-toolbar-volume-3.png) no-repeat center center;
+        -webkit-mask-size: 24px;
+    }
+    
+    .tip {
+
+        @include dark {
+            --bg-color: var(--color-black-70);
+        }
+        
+        @include light {
+            --bg-color: var(--color-white-70);
+        }
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 8px;
+        background-color: var(--bg-color);
+        padding: 4px 12px 4px 8px;
+        font-size: 12px;
+        color: var(--color-text-primary);
+        gap: 2px;
+
+        .icon {
+
+            @include dark {
+                --icon-background: #BDBEC0;
+            }
+            
+            @include light {
+                --icon-background: #50555B;
+            }
+            display: block;
+            background-color: var(--icon-background);
+                
+            height: 24px;
+            width: 24px;
+        }
+        .value {
+            display: inline-block;
+        }
+    }
+}
+
+#detail-container .detail-wrap .video-js {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    max-height: initial !important;
+    height: 100%;
+    max-width: initial !important;
+    width: 100%;
+    // background-color: transparent;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .vjs-tech {
+        position: initial;
+    }
+}
+
+body.fullscreen {
+    #detail-container .detail-wrap .video-js {
+        > video {
+            transition: none !important;
+            max-height: initial !important;
+            max-width: initial !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin-top: 0 !important;
+            
+            &.fit {
+                width: auto !important;
+                height: auto !important;
+                max-height: 100% !important;
+            }
+        }
+    }
+}
+
+#preview-window {
+    #detail-container .detail-wrap .video-js {
+        > video {
+            height: calc(100% - 48px);
+            &.fit {
+                margin-top: 0px;
+                height: 100%;
+            }
+        }
+    }
+    @media screen and (max-width: 500px) {
+        .vjs-icon-backward, .vjs-icon-forward {
+            display: none;
+        }
+    }
+    @media screen and (max-width: 400px) {
+        .vjs-volume-panel, .vjs-icon-loop {
+            display: none;
+        }
+    }
+
+    @media screen and (max-width: 360px) {
+        .vjs-playback-rate {
+            display: none;
+        }
+    }
+    @media screen and (max-width: 240px) {
+        .vjs-time-control {
+            display: none !important;
+        }
+    }
+}

@@ -1,0 +1,103 @@
+<div id="plugin-panel" class="plugin-panel" ng-click="focusInput();">
+    <div class="plugin-panel-header">
+        <input id="plugin-panel-search" maxlength="1024" type="search" class="search shortcut-input" placeholder="{{ 'modal.pluginPanel.searchPlaceholder' | i18n }}" ng-change="calculateList(); scrollToTop();" ng-model="searchKeyword" ng-model-options="{ debounce: { 'default': 50, 'blur': 0 } }">
+		<div class="close" ng-click="close()"></div>
+    </div>
+
+    <div class="tabs">
+        <!-- <div class="tab" ng-class="{'active': searchMode=='FOLDERS'}" ng-click="folderMode()">{{'quickSearch.tabs.folderLabel' | i18n}}<span ng-show="folderList.length > 0">({{folderList.length}})</span></div> -->
+        <div class="tab" ng-class="{'active': typeFilter === 'window'}" ng-click="selectType('window')">{{'modal.pluginPanel.tabs.window' | i18n}}</div>
+        <div class="tab" ng-class="{'active': typeFilter === 'format'}" ng-click="selectType('format')">{{'modal.pluginPanel.tabs.format' | i18n}}</div>
+        <div class="tab" ng-class="{'active': typeFilter === 'inspector'}" ng-click="selectType('inspector')">{{'modal.pluginPanel.tabs.inspector' | i18n}}</div>
+        <div class="tab" ng-class="{'active': typeFilter === 'service'}" ng-click="selectType('service')">{{'modal.pluginPanel.tabs.service' | i18n}}</div>
+        <div class="tab" ng-class="{'active': typeFilter === 'development'}" ng-click="selectType('development')">{{'modal.pluginPanel.tabs.development' | i18n}}</div>
+    </div>
+
+	<!-- 尚未安装任何插件 -->
+	<div class="plugin-container empty" ng-show="!searchKeyword && listItems.length == 0">
+		<div class="empty" ng-show="typeFilter !== 'development' && typeFilter !== 'service'">
+			<div class="icon"><img style="width: 256px;" ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-empty.png"></div>
+			<div class="title">{{ 'modal.pluginPanel.empty.title' | i18n }}</div>
+			<p>{{ 'modal.pluginPanel.empty.desc' | i18n }}</p>
+            <div class="button button-xs button-grey" ng-click="installPlugin()"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-install.svg"/>{{'dialog.installPlugin.title' | i18n}}</div>
+		</div>
+        <div class="empty" ng-show="typeFilter === 'development'">
+			<div class="icon"><img style="width: 256px;" ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-empty.png"></div>
+			<div class="title">{{ 'modal.pluginPanel.empty.dev.title' | i18n }}</div>
+			<p>{{ 'modal.pluginPanel.empty.dev.desc' | i18n }}</p>
+            <div class="button button-xs button-grey" ng-click="openDevelopmentDocs()"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-developer.svg"/>{{'modal.pluginPanel.contextMenu.docs' | i18n}}</div>
+		</div>
+        <div class="empty" ng-show="typeFilter === 'service'">
+			<div class="icon"><img style="width: 256px;" ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-empty.png"></div>
+			<div class="title">{{ 'modal.pluginPanel.empty.service.title' | i18n }}</div>
+			<p>{{ 'modal.pluginPanel.empty.service.desc' | i18n }}</p>
+            <div class="button button-xs button-grey" ng-click="openDevelopmentDocs()"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-developer.svg"/>{{'modal.pluginPanel.contextMenu.docs' | i18n}}</div>
+		</div>
+	</div>
+
+	<!-- 搜索空状态 -->
+	<div class="plugin-container empty" ng-show="searchKeyword && resultList.length == 0">
+		<div class="empty">
+			<div class="icon"><img style="width: 90px;" ng-src="assets/images/{{theme | themePath}}/illustrations/plugin-search-empty.png"></div>
+			<div class="title">{{ 'modal.pluginPanel.searchEmpty.title' | i18n }}</div>
+			<p>{{ 'modal.pluginPanel.searchEmpty.desc' | i18n }}</p>
+		</div>
+	</div>
+
+    <!-- 一般模式 -->
+    <div ng-show="!searchKeyword && listItems.length > 0" class="plugin-container" ng-mouseup="focusInput();">
+        <div ng-repeat="item in listItems track by item.id" ng-switch on="item.type">
+            <div ng-switch-when="separator">
+                <div class="separator"></div>
+            </div>
+            <div ng-switch-when="label">
+                <div class="label">{{item.name}}</div>
+            </div>
+            <div ng-switch-when="plugin" class="check-item" ng-class="{'active': currentIndex === $index, 'disabled': !item.executable, 'plugin-disabled': item.isDisabled}" ng-mouseenter="hoverItem($index)" ng-right-click="openSubmenu($event, item);" ng-click="onItemClick(item); focusInput();">
+                <div class="icon-wrap">
+                    <div class="icon" style='background-image: url("{{item.icon}}");'></div>
+                    <img class="local-badge" ng-show="item.isLocal" tippy tippy-content="{{item.plugin.path}}" tippy-placement="top" ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-local.svg">
+                </div>
+                <div class="info">
+                    <div class="plugin-name">{{item.name}}<span class="shortcut" ng-show="pluginModule.pluginShortcuts[item.plugin.manifest.id]">{{pluginModule.pluginShortcuts[item.plugin.manifest.id] | shortcuts}}</span></div>
+                </div>
+                <div class="more">
+                    <div ng-if="!item.isPreviewPlugin" ng-show="pluginModule.pinnedPluginMaps[item.plugin.manifest.id] && !item.isDisabled" class="ic-btn" ng-click="unpinPlugin($event, item);">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/context-menu/ic-filter-pinned.svg"/>
+                    </div>
+                    <div ng-if="!item.isPreviewPlugin" ng-show="!pluginModule.pinnedPluginMaps[item.plugin.manifest.id] && !item.isDisabled" class="ic-btn" ng-click="pinPlugin($event, item);">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/context-menu/ic-filter-pin.svg"/>
+                    </div>
+                    <div class="ic-btn" ng-click="openSubmenu($event, item);">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-more.svg"/>
+                        <div class="badge-count" ng-show="pluginModule.needUpdatePluginMaps[item.plugin.manifest.id]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜尋模式 -->
+    <div ng-show="searchKeyword && resultList.length > 0" class="plugin-container" ng-mouseup="focusInput();">
+        <div class="check-item" ng-repeat="item in resultList track by item.id" ng-class="{'active': currentIndex === $index, 'disabled': !item.executable, 'plugin-disabled': item.isDisabled}" ng-mouseenter="hoverItem($index)" ng-right-click="openSubmenu($event, item);" ng-click="onItemClick(item); focusInput();">
+            <div class="icon-wrap">
+                <div class="icon" style='background-image: url("{{item.icon}}");'></div>
+                <img class="local-badge" ng-show="item.isLocal" tippy tippy-content="{{item.plugin.path}}" tippy-placement="top" ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-local.svg">
+            </div>
+			<div class="info">
+				<div class="plugin-name"><span ng-bind-html="item.name | fuzzyMatch:searchKeyword"></span> <span class="shortcut" ng-show="pluginModule.pluginShortcuts[item.plugin.manifest.id]">{{pluginModule.pluginShortcuts[item.plugin.manifest.id] | shortcuts}}</span></div>
+			</div>
+            <div class="more">
+                <div class="ic-btn" ng-click="openSubmenu($event, item);">
+					<img ng-src="assets/images/{{theme | themePath}}/icons/ic-more.svg"/>
+					<div class="badge-count" ng-show="pluginModule.needUpdatePluginMaps[item.plugin.manifest.id]"></div>
+				</div>
+            </div>
+        </div>
+    </div>
+    <div class="fucntion-list">
+        <div class="function-item"><div class="icon"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-install.svg"/></div><div class="name" ng-click="openPluginCenter($event)">{{ 'modal.pluginPanel.function.install' | i18n }}</div></div>
+        <div class="function-item"><div class="icon"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-plugin-developer.svg"/></div><div class="name" ng-click="openDevMenu($event)">{{ 'modal.pluginPanel.function.developer' | i18n }}</div></div>
+    </div>
+</div>
+<div class="plugin-panel-overlay" ng-click="close();"></div>

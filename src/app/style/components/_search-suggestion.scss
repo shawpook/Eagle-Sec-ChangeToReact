@@ -1,0 +1,125 @@
+.search-suggestions {
+	z-index: 10000;
+	position: absolute;
+    top: 44px;
+    right: 16px;
+    border-top: var(--box-border-top);
+    border-right: var(--box-border-right);
+    border-bottom: var(--box-border-bottom);
+    border-left: var(--box-border-left);
+	border-radius: 6px;
+
+    background-color: var(--box-background);
+    width: 200px;
+    box-sizing: border-box;
+    overflow: auto;
+    padding: 6px;
+    color: var(--color-text-secondary);
+    animation: animate-search-suggestions-open 150ms var(--timing-function-super);
+	box-shadow: var(--box-border-shadow-small);
+    backdrop-filter: var(--box-background-blur);
+
+	.suggestion {
+
+        @include dark {
+            --item-background: transparent;
+        }
+    
+        @include light {
+            --item-background: transparent;
+        }
+
+        position: relative;
+        display: flex;
+        align-items: center;
+        border-radius: 4px;
+        margin-bottom: 2px;
+        background-color: var(--item-background);
+	    height: 24px;
+	    padding: 0 6px;
+	    font-size: 13px;
+	    color: var(--color-text-primary);
+
+        .name {
+            max-width: calc(100% - 20px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        b {
+            font-weight: var(--font-weight-bold);
+            color: var(--color-primary);
+            @include dark {
+                filter: brightness(125%);
+            }
+        }
+
+        &last-child {
+            margin-bottom: 0;
+        }
+
+	    &:hover, &.selected {
+            
+            @include dark {
+                --item-background: var(--color-lightgray-5);
+            }
+        
+            @include light {
+                --item-background: var(--color-dark-5);
+            }
+	    	cursor: default;
+
+            .remove-history {
+                display: flex;
+            }
+	    }
+        .remove-history {
+            @include dark {
+                --btn-background: transparent;
+            }
+        
+            @include light {
+                --btn-background: transparent;
+            }
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            display: flex;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            border-radius: 4px;
+            background-color: var(--btn-background);
+            height: 20px;
+            width: 20px;
+            transition: all 250ms var(--timing-function-super);
+            img {
+                opacity: 0.5;
+                transition: all 250ms var(--timing-function-super);
+            }
+            &:hover {
+                @include dark {
+                    --btn-background: var(--color-lightgray-5);
+                }
+            
+                @include light {
+                    --btn-background: var(--color-dark-5);
+                }
+                cursor: pointer;
+                img {
+                    opacity: 1;
+                }
+            }
+        }
+	}
+}
+
+@keyframes animate-search-suggestions-open {  
+    0% {
+        transform: translateY(-3px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}

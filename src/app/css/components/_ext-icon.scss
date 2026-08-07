@@ -1,0 +1,30 @@
+.box-container .box .thumbnail .ext-icon-name {
+	z-index: 2001;
+	display: none;
+    position: absolute;
+    color: var(--color-text-primary);
+    font-size: 12px;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    text-align: center;
+    max-height: 28px;
+    height: 28px;
+    line-height: 28px;
+    padding: 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+    pointer-events: none;
+}
+
+.inspector .content .selected-preview .image>div .ext-icon {
+	max-width: 120px;
+    margin: auto;
+}
+
+.ext-icon {
+	img {
+		object-fit: scale-down;
+	}
+}

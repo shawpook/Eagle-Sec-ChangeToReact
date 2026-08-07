@@ -1,0 +1,80 @@
+<div id="tags-filter-item" ng-right-click="clearTagsFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.tag'] | shortcutsWrapper | shortcuts}}" title="{{displayName}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-tag.svg"><div>{{displayName}}</div></div>
+    <div class="menu-wrap" close-filter-item><div class="filter-menu" style="max-width: 540px; width: 540px; height: 480px;" ng-mousedown="$event.stopPropagation();">
+
+        <!-- 搜尋 -->
+        <div class="menu-header">
+            <div class="search">
+                <input id="filter-panel-tags-search" maxlength="1024" type="search" class="search shortcut-input focus" placeholder="{{'filter.tags>search' | i18n}}" ng-change="tagsFilterChange()" ng-model="$body.tagKeyword" ng-model-options="{ debounce: { 'default': 100, 'blur': 0 } }">
+            </div>
+            {{'Filter.Tags.Rule' | i18n}}
+            <div class="tabs">
+                <div class="tab" ng-click="changeRule('OR')" ng-class="{'active': eagle.filter.tagFilterLogic === 'OR'}" tippy tippy-placement="top" tippy-content="{{'Filter.Tags.Any' | i18n}}">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/filter/ic-logic-any.svg">
+                </div>
+                <div class="tab" ng-click="changeRule('AND')" ng-class="{'active': eagle.filter.tagFilterLogic === 'AND'}" tippy tippy-placement="top" tippy-content="{{'Filter.Tags.All' | i18n}}">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/filter/ic-logic-all.svg">
+                </div>
+                <div class="tab" ng-click="changeRule('EQUAL')" ng-class="{'active': eagle.filter.tagFilterLogic === 'EQUAL'}" tippy tippy-placement="top" tippy-content="{{'Filter.Tags.Equal' | i18n}}">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/filter/ic-logic-equal.svg">
+                </div>
+            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="menu-sidebar" ng-click="focusInput();">
+            <div class="menu-sidebar-container">
+                <div class="menu-sidebar-item" ng-class="{'active': filterMode=== 'SELECTED'}" ng-click="filterSelected();">
+                    <div class="name">{{'Filter.Tags.Sidebar.Selected' | i18n}}</div>
+                    <div class="badge" ng-show="selectedCount">{{selectedCount | number:0}}</div>
+                </div>
+                <div class="menu-sidebar-item" ng-class="{'active': filterMode=== 'ALL'}" ng-click="filterAll();">
+                    <div class="name">{{'Filter.Tags.Sidebar.All' | i18n}}</div>
+                    <div class="badge" ng-show="allTagsCount">{{allTagsCount | number:0}}</div>
+                </div>
+                <div class="menu-sidebar-item" ng-repeat="group in $body.TagManager.groups" ng-class="{'active': selectedGroup === group && filterMode=== 'GROUP'}" ng-show="tagsGroupsSidebar[group.id]" ng-click="filterWithGroup(group);">
+                    <div class="name">{{group.name}}</div>
+                    <div class="badge">{{tagsGroupsSidebar[group.id] | number:0}}</div>
+                </div>
+            </div>
+        </div>
+        <!-- 内容 -->
+        <div class="menu-container" ng-click="focusInput();">
+            <div class="menu-content">
+                <div class="tags-container" ng-mouseup="focusInput();" ng-show="tagsList.length == 0">
+                    <div class="empty" ng-hide="filterMode === 'SELECTED'">{{'filter.tags>noTags' | i18n}}</div>
+                </div>
+                <div id="filter-tags-container" class="tags-container" vs-repeat="28" ng-mouseup="focusInput();" ng-class="{'has-footer': filterMode=== 'GROUP'}">
+                    <div class="check-item color-{{tag.group.color}}" ng-repeat="tag in tagsList" ng-class="{'checked': tag.isSelected, 'excluded': tag.isExcluded}" ng-click="focusInput(); filterWithTag(tag); changeDisplayName();" ng-right-click="$event.stopPropagation(); focusInput(); excludeWithTag(tag); changeDisplayName();">
+                        <div class="check-icon">
+                            <div class="checkbox"></div>
+                        </div>
+                        <div class="icon"><div class="fake-svg png"></div></div>
+                        <div class="name" ng-bind-html="tag.name | fuzzyMatch:tagKeyword | substring:0:200" title="{{tag.name | longTitle}}"></div>
+                        <div class="badge">{{tag.imageCount | number:0}}</div>
+                    </div>
+                </div>
+                <div class="tags-container-footer" ng-show="filterMode=== 'GROUP'">
+                    <div class="check-item" style="margin-top: 6px;" ng-class="{'checked': isAllSelected() }" ng-click="toggleAllTags();">
+                        <div class="check-icon">
+                            <div class="checkbox"></div>
+                        </div>
+                        <div class="name">{{'filter.tags>selectAll' | i18n}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="menu-footer">
+            <div class="left">
+                <div class="shortcut-tip">{{'filter.select' | i18n}}<key>{{'general.l-click' | i18n}}</key></div>
+                <div class="shortcut-tip">{{'filter.exclude' | i18n}}<key>{{'general.r-click' | i18n}}</key></div>
+            </div>
+            <div class="right">
+                <div class="shortcut-tip">{{'selectFolderPanel.shortcuts.close' | i18n}}<key>︎ESC</key></div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearTagsFilter($event);"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

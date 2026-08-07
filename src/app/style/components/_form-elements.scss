@@ -1,0 +1,190 @@
+input[type="color"] {
+    -webkit-appearance: none;
+    outline: none;
+    border: none;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border-radius: 5px;
+    overflow: hidden;
+
+    &:hover {
+        padding: 1px;
+    }
+
+    &::-webkit-color-swatch-wrapper {
+        -webkit-appearance: none;
+        padding: 0;
+        border: none;
+    }
+
+    &::-webkit-color-swatch {
+        -webkit-appearance: none;
+        border: none;
+        outline: none;
+    }
+}
+
+
+textarea,
+input[type="text"],
+input[type="search"],
+input[type="url"],
+input[type="email"],
+input[type="password"],
+input[type="number"] {
+
+    @include dark {
+        --input-background-color: var(--color-black-20);
+        --input-border: 1px solid var(--color-border-primary);
+    }
+
+    @include light {
+        --input-background-color: var(--color-white-50);
+        --input-border: 1px solid var(--color-border-primary);
+    }
+
+    padding: 0 10px;
+    box-shadow: none;
+    outline: none;
+    height: 36px;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    transition: border 250ms ease;
+    box-sizing: border-box;
+    background-color: var(--input-background-color);
+    border: var(--input-border);
+    font-size: 13px;
+    color: var(--color-text-primary);
+    display: block;
+    width: 100%;
+    margin-right: 10px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+
+    &::selection { background: var(--color-primary); color: #fff; }
+
+    &:focus {
+        border: 1px solid var(--color-primary);
+    }
+
+    &::-webkit-input-placeholder {
+        color: var(--color-text-tertiary);
+    }
+
+    &.input-xs {
+        width: 160px;
+        height: 36px;
+    }
+
+    &.input-s {
+        width: 160px;
+        height: 40px;
+    }
+
+    &.input-m {
+        width: 160px;
+        height: 44px;
+    }
+
+    &.input-l {
+        width: 200px;
+        height: 50px;
+    }
+
+    &.input-xl {
+        width: 200px;
+        padding-left: 15px;
+        padding-right: 15px;
+        height: 56px;
+    }
+
+    &.input-block {
+        display: block;
+        width: 100%;
+    }
+
+    &.input-disabled {
+        cursor: default;
+        pointer-events: none;
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    &.input-positive {
+        border-color: var(--color-positive);
+    }
+
+    &.input-negative,
+    &.ng-invalid-url {
+        border-color: var(--color-negative);
+    }
+
+    &.input-warning {
+        border-color: var(--color-warning);
+    }
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    resize: none;
+    line-height: 1.7em;
+}
+
+input[type="password"] {
+    font-family: sans-serif !important;
+    letter-spacing: 2px;
+}
+
+input[type="search"] {
+
+    @include dark {
+        background-image: url(../assets/images/dark/icons/ic_search.svg);
+    }
+
+    @include light {
+        background-image: url(../assets/images/light/icons/ic_search.svg);
+    }
+    
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-position: 8px;
+    background-repeat: no-repeat;
+    position: relative;
+    padding-right: 24px;
+    padding-left: 28px;
+
+
+    &::-webkit-search-cancel-button {
+        z-index: 100;
+        -webkit-appearance: none;
+        width: 26px;
+        height: 100%;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        position: absolute;
+        background-size: 12px;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.8;
+
+        @include dark {
+            background-image: url(../assets/images/dark/icons/ic_search_close.svg);
+        }
+
+        @include light {
+            background-image: url(../assets/images/light/icons/ic_search_close.svg);
+        }
+
+        &:hover {
+            opacity: 1;
+            cursor: pointer;
+        }
+    }
+}

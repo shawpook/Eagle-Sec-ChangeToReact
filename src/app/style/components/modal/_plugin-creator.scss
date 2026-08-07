@@ -1,0 +1,159 @@
+.plugin-creator {
+	min-height: 480px;
+    max-width: calc(100% - 40px);
+	width: 1074px;
+	&.open {
+		z-index: 100219;
+		~ .modal-overlay {
+			z-index: 100218;
+		}
+	}
+	.section {
+		padding: 24px;
+		input {
+			height: 32px;
+			line-height: 1em;
+		}
+		label {
+			margin-bottom: 16px;
+			font-size: 16px;
+			font-weight: 700;
+		}
+	}
+	.plugin-types {
+		display: flex;
+		margin-top: 24px;
+		margin-bottom: 24px;
+		gap: 16px;
+		overflow-x: auto;
+		padding: 5px 5px;
+
+		.plugin-type {
+
+            @include dark {
+                --background-color: transparent;
+                --background-image: none;
+                --title-color: var(--color-text-primary);
+                --description-color: var(--color-text-secondary);
+                --border-color: var(--color-border-primary);
+                --box-shadow: 0 0 0 1px var(--color-black-50);
+
+                --check-background-color: var(--color-theme);
+                --check-border: 1px solid var(--color-white-50);
+                --check-box-shadow: 0 0 2px 0 var(--color-black-20);
+            }
+
+            @include light {
+                --background-color: transparent;
+                --background-image: none;
+                --title-color: var(--color-text-primary);
+                --description-color: var(--color-text-secondary);
+                --border-color: var(--color-border-primary);
+                --box-shadow: none;
+
+                --check-background-color: var(--color-theme);
+                --check-border: 1px solid var(--color-black-10);
+                --check-box-shadow: none;
+            }
+			width: 240px;
+			position: relative;
+			display: inline-flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			border: 1px solid var(--border-color);
+			border-radius: 12px;
+            background-image: var(--background-image);
+			background-color: var(--background-color);
+
+			min-height: 280px;
+			transition: all 250ms ease;
+			box-shadow: var(--box-shadow);
+			&:hover {
+                @include dark {
+                    --border-color: var(--color-lightgray-40);
+                }
+    
+                @include light {
+                    --border-color: var(--color-black-20);
+                }
+				opacity: 1;
+				cursor: pointer;
+				.illustration {
+					opacity: 1;
+				}
+				.plugin-intro {
+					opacity: 1;
+				}
+			}
+			&.checked {
+                @include dark {
+                    --border-color: var(--color-lightgray-40);
+                    --background-color: var(--color-brand);
+                    --background-image: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.00) 100%);
+
+                    --check-background-color: var(--color-primary);
+                    --check-border: 3px solid var(--color-white);
+					background: radial-gradient(100% 100% at 50% 0%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.1) 100%), rgba(0, 114, 239, 0.9);
+                }
+    
+                @include light {
+                    --border-color: var(--color-black-20);
+                    --check-background-color: var(--color-white);
+                    --check-border: 3px solid var(--color-brand);
+					outline: 2px solid var(--color-brand);
+					border-color: transparent;
+                }
+				opacity: 1;
+				.illustration {
+					opacity: 1;
+				}
+				.plugin-intro {
+					opacity: 1;
+				}
+			}
+			.icon-check {
+				z-index: 10;
+				position: absolute;
+				top: 9px;
+				left: 9px;
+				border: var(--check-border);
+				border-radius: 50%;
+				background-color: var(--check-background-color);
+				height: 14px;
+				width: 14px;
+				box-sizing: border-box;
+				transition: all 250ms ease;
+				box-shadow: var(--check-box-shadow);
+			}
+			.illustration {
+				opacity: 0.5;
+				height: 192px;
+				width: 240px;
+				transition: all 250ms ease;
+				img {
+					width: 100%;
+					object-fit: contain;
+				}
+			}
+			.plugin-intro {
+				opacity: 0.8;
+				padding: 4px 24px 24px;
+				transition: all 250ms ease;
+				h4 {
+					text-align: center;
+					margin-bottom: 8px;
+					font-size: 14px;
+					font-weight: 600;
+                    color: var(--title-color);
+				}
+				p {
+					text-align: center;
+					font-size: 12px;
+					line-height: 1.5;
+                    color: var(--description-color);
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,27 @@
+#detail-container .detail-wrap #text-editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+
+    @include body-status(".is-inline-mode") {
+        width: calc(100vw - 160px);
+        max-width: 920px;
+        transform: translateX(-50%) !important;
+        left: 50% !important;
+        top: 5px;
+        height: calc(100% - 10px);
+        border-top: var(--box-border-top);
+        border-right: var(--box-border-right);
+        border-bottom: var(--box-border-bottom);
+        border-left: var(--box-border-left);
+        background-color: var(--box-background);
+        box-shadow: var(--box-border-no-shadow);
+        backdrop-filter: var(--box-background-blur);
+        border-radius: 8px;
+    }
+}

@@ -1,0 +1,31 @@
+<div id="semantic-filter-item" ng-right-click="clearSemanticFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.semantic'] | shortcutsWrapper | shortcuts}}">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-semantic.svg" class="filter-icon">
+        <span style="max-width: 100px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{displayName}}</span>
+    </div>
+    <div class="menu-wrap" close-filter-item><div class="filter-menu" style="min-width: 240px; width: 240px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <!-- 載入中狀態 -->
+            <div class="ai-search-loading" ng-if="!eagle.aiSearch.isInitialized || (eagle.aiSearch.isInstalled && !eagle.aiSearch.isReady)">
+                <svg class="spinner" width="16px" height="16px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+                </svg>
+                <span>{{'filter.semantic>loading' | i18n}}</span>
+            </div>
+            <!-- 正常狀態 -->
+            <div ng-if="eagle.aiSearch.isInitialized && (!eagle.aiSearch.isInstalled || eagle.aiSearch.isReady)" class="semantic-search-wrap">
+                <textarea
+                    maxlength="1024" name="" id="" cols="30" rows="2" placeholder="{{'filter.semantic>placeholder' | i18n}}"
+                    ng-paste="$event.stopPropagation();"
+                    ng-model="eagle.filter.filterRules.semantic.value"
+                    ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 1000, 'blur': 0 } }"
+                    ng-change="onSemanticChange()"></textarea>
+                <svg ng-if="isSearching" class="semantic-searching spinner" width="14px" height="14px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+                    <circle class="path" fill="none" stroke-width="6" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+                </svg>
+            </div>
+        </div>
+    </div></div>
+
+    <div class="clear-btn" ng-click="clearSemanticFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

@@ -1,0 +1,48 @@
+<div style="width: 100%">
+    <!-- 文件夾（單選） -->
+    <div class="info-section" ng-if="selected.length == 1" ng-class="{'expand': inspector.showFolders}">
+        <div class="info-section-label" ng-click="inspector.showFolders = !inspector.showFolders;">
+            <div class="name">{{'inspector.includesFoldersLabel' | i18n}}</div>
+            <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+        </div>
+        <div class="info-section-container">
+            <div class="label-container" ng-click="openInspectorFolderSelectPanel($event,true)">
+                <div class="label-item color-{{folderMappings[folder].iconColor}}" ng-right-click="openFolderFullPathContextMenu($event, folderMappings[folder])" title="{{getFolderFullPath(folderMappings[folder])}}" ng-show="selected[0].folders.length > 0" ng-if="folderMappings[folder].name" ng-click="$event.stopPropagation(); quickOpenFolder(folderMappings[folder])" ng-repeat="folder in selected[0].folders track by $index">
+                    <span class="label-item-name">{{folderMappings[folder].name}}</span>
+                    <div class="ic-btn label-item-remove-btn" ng-click="$event.stopPropagation(); removeFromFolder($event, folder)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+                    </div>
+                </div>
+                <!-- 新增資料夾（空狀態） -->
+                <div ng-show="selected[0].folders.length === 0" class="ic-btn has-bg create-label-btn full-width" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.includesFoldersBtn' | i18n }}<key>F</key>" ng-click="$event.stopPropagation(); openInspectorFolderSelectPanel($event,true)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"><span>{{'inspector.includesFoldersBtn' | i18n}}</span></div>
+
+                <!-- 新增資料夾（已有資料狀態） -->
+                <div ng-show="selected[0].folders.length > 0" class="ic-btn create-label-btn" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.includesFoldersBtn' | i18n }}<key>F</key>" ng-click="$event.stopPropagation(); openInspectorFolderSelectPanel($event,true)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件夾（多選） -->
+    <div class="info-section" ng-if="selected.length > 1" ng-class="{'expand': inspector.showFolders}">
+        <div class="info-section-label" ng-click="inspector.showFolders = !inspector.showFolders;">
+            <div class="name">{{'inspector.includesFoldersLabel' | i18n}}</div>
+            <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+        </div>
+        <div class="info-section-container">
+            <div class="label-container">
+                <div class="label-item color-{{folderMappings[folder].iconColor}}" ng-right-click="openFolderFullPathContextMenu($event, folderMappings[folder])" title="{{getFolderFullPath(folderMappings[folder])}}" ng-show="inspector.folders.length > 0" ng-if="folderMappings[folder].name" ng-click="$event.stopPropagation(); quickOpenFolder(folderMappings[folder])" ng-repeat="folder in inspector.folders track by $index">
+                    <span class="label-item-name">{{folderMappings[folder].name}}</span>
+                    <div class="ic-btn label-item-remove-btn" ng-click="removeFromFolder($event, folder)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+                    </div>
+                </div>
+
+                <!-- 新增資料夾（空狀態） -->
+                <div ng-show="inspector.folders.length === 0" class="ic-btn has-bg create-label-btn full-width" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.includesFoldersBtn' | i18n }}<key>F</key>" ng-click="openInspectorFolderSelectPanel($event,true)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"><span>{{'inspector.includesFoldersBtn' | i18n}}</span></div>
+
+                <!-- 新增資料夾（已有資料狀態） -->
+                <div ng-show="inspector.folders.length > 0" class="ic-btn create-label-btn" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.includesFoldersBtn' | i18n }}<key>F</key>" ng-click="openInspectorFolderSelectPanel($event,true)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"></div>
+            </div>
+        </div>
+    </div>
+</div>

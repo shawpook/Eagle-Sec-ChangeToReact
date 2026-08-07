@@ -1,0 +1,78 @@
+body.slideshow {
+
+	&:after {
+		display: none !important;
+	}
+
+	&.win32.is-maximize {
+	    position: absolute;
+	    top: 0;
+	    left: 0;
+	    max-width: 100%;
+	    max-height: 100vh;
+	}
+
+	&.win32 {
+		border: none !important;
+	}
+
+	.sidebar, .footer, .sliders-bar {
+		display: none !important;
+	}
+	.vjs-user-inactive.vjs-playing .vjs-control-bar {
+    	opacity: 0 !important;
+    }
+
+	.inspector {
+	    transform: translateX(100%);
+	}
+	
+	.content-panel {
+		top: 0 !important;
+	    left: 0 !important;
+	    right: 0 !important;
+	    bottom: 0 !important;
+	    z-index: 20000 !important;
+	    .detail-container .wrap {
+    	    max-height: 100%;
+    		width: 100%;
+	    }
+		#bitmap-viewer {
+			z-index: 3 !important;
+		}
+		&.detail-mode.inline-mode {
+			background: #000 !important;
+		}
+	    .smooth_zoom_preloader {
+			top: 0 !important;
+	    	background: #000 !important;
+			height: 100% !important;
+	    	#detail-container {
+				background: #000 !important;
+				.detail-wrap {
+					background: #000 !important;
+				}
+				&.hidden-footer {
+					top: 0% !important;
+					bottom: 0% !important;
+				}
+			}
+	    }
+	    .smooth_zoom_preloader .smooth_zoom_scrollbar.vertical {
+	    	top: 0;
+			bottom: 0;
+		}
+		.smooth_zoom_preloader .smooth_zoom_scrollbar.horizontal {
+			bottom: 0;
+		}
+	    .detail-container, .smooth_zoom_preloader, .detail-wrap {
+	    	// background: #000 !important;
+	    	&.fixed {
+  				height: 100vh !important;
+  			}
+	    }
+	    .filter-bar, .filter-toolbar {
+	    	display: none !important;
+	    }
+	}
+}

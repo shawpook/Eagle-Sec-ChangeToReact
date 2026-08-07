@@ -1,0 +1,136 @@
+<div id="quick-search-panel" class="quick-search" ng-class="{'open' : isOpenQuickSearch}">
+
+    <!-- Header -->
+    <div class="panel-header">
+        <input selectall id="quick-search-input" class="search" maxlength="1024" type="search" placeholder="{{'quickSearch.searchPlaceholder' | i18n}}" ng-keydown="quickSeachKeyup($event)" ng-model="quickSearchKeyword" ng-change="quickSearchKeywordChange($event)" ng-model-options="{ debounce: { 'default': 50, 'blur': 0 } }" tabindex="-1">
+        <div class="close" ng-click="close()"></div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab" ng-class="{'active': searchMode=='FOLDERS'}" ng-click="folderMode()">{{'quickSearch.tabs.folderLabel' | i18n}}<span ng-show="folderList.length > 0">({{folderList.length}})</span></div>
+        <div class="tab" ng-class="{'active': searchMode=='TAGS'}" ng-click="tagMode()">{{'quickSearch.tabs.tagLabel' | i18n}}<span ng-show="tags.length > 0">({{tags.length}})</span></div>
+        <div class="tab" ng-class="{'active': searchMode=='SMARTFOLDERS'}" ng-click="smartFolderMode()">{{'quickSearch.tabs.smartFolderLabel' | i18n}}<span ng-show="smartFolderList.length > 0">({{smartFolderList.length}})</span></div>
+        <div class="tab" ng-class="{'active': searchMode=='ITEMS'}" ng-click="itemMode()">{{'general.document' | i18n}} <span ng-show="all.length > 0">({{all.length}})</span></div>
+    </div>
+    
+    <!-- 資料夾列表 -->
+    <div 
+        class="search-result" 
+        ng-show="searchMode=='FOLDERS'" 
+        scroll-to-active 
+        scroll-container="#folder-search-result-container" 
+        index="quickSearchIndex" 
+        enable="quickScrollEnable">
+        <div class="empty" ng-show="quickSearchResult.length == 0 && !quickSearchKeyword">{{'quickSearch.empty.folder' | i18n}}</div>
+        <div class="empty" ng-show="quickSearchResult.length == 0 && quickSearchKeyword">{{'quickSearch.searchEmpty.folder' | i18n}}</div>
+        <div id="folder-search-result-container" ng-show="quickSearchResult.length > 0" class="search-result-container" vs-repeat="28">
+            <div 
+                class="search-result-item color-{{folder.iconColor}} icon-{{folder.icon}} depth-{{folder.depth}}"
+                ng-repeat="folder in quickSearchResult" 
+                ng-class="{'active active-item' : quickSearchIndex == $index, 'search-mode': folder.isRecent || quickSearchKeyword.length > 0 }"
+                ng-click="openQuickSearchResult(folder)"
+                ng-mouseenter="selectQuickSearchResult($index)"
+            >
+                <div class="guidelines" ng-if="!folder.isRecent">
+                    <div class="guideline color-{{line}} depth-{{$index + 1}}" ng-hide="folder.depth === $index" ng-repeat="line in folder.guidelines track by $index">
+                        <div class="top"></div>
+                        <div class="middle"></div>
+                        <div class="bottom"></div>
+                    </div>
+                </div>
+                <div class="icon">
+                    <div class="fake-svg"></div>
+                    <div ng-if="folder.isRecent" class="history-badge"></div>
+                </div>
+                <div class="info">
+                    <div class="name" ng-bind-html="folder.name | fuzzyMatch:quickSearchKeyword"></div>
+                    <div class="right"><span class="parent-name" ng-if="folder.parent" ng-click="$event.stopPropagation(); $parentScope.openFolder($parentScope.folderMappings[folder.parent]); $parentScope.closeQuickSearch();">{{$parentScope.folderMappings[folder.parent].name}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 標籤列表 -->
+    <div class="search-result" ng-show="searchMode=='TAGS'" scroll-to-active scroll-container="#tags-search-result-container" index="quickSearchIndex">
+        <div class="empty" ng-show="quickSearchResult.length == 0 && !quickSearchKeyword">{{'quickSearch.empty.tag' | i18n}}</div>
+        <div class="empty" ng-show="quickSearchResult.length == 0 && quickSearchKeyword">{{'quickSearch.searchEmpty.tag' | i18n}}</div>
+        <div id="tags-search-result-container" ng-show="quickSearchResult.length > 0" class="search-result-container" vs-repeat="28">
+            <div 
+                class="search-result-item color-{{tag.color}}" 
+                ng-repeat="tag in quickSearchResult"
+                ng-class="{'active' : quickSearchIndex == $index}" 
+                ng-click="openQuickSearchResult(tag)" 
+                ng-mouseenter="selectQuickSearchResult($index)"
+            >
+                <div class="icon">
+                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/icons/ic-tag-select-tag.png)"></div>
+                </div>
+                <div class="info">
+                    <div class="name" ng-bind-html="tag.name | fuzzyMatch:quickSearchKeyword"></div>
+                    <div class="right"><span class="parent-name" ng-if="tag.groups[0]">{{$parentScope.TagManager.groupMappings[tag.groups[0]].name}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 智能文件夾 -->
+    <div class="search-result" ng-show="searchMode=='SMARTFOLDERS'" scroll-to-active scroll-container="#smartfolder-search-result-container" index="quickSearchIndex" enable="quickScrollEnable">
+        <div class="empty" ng-show="quickSearchResult.length == 0 && !quickSearchKeyword">{{'quickSearch.empty.folder' | i18n}}</div>
+        <div class="empty" ng-show="quickSearchResult.length == 0 && quickSearchKeyword">{{'quickSearch.searchEmpty.folder' | i18n}}</div>
+        <div id="smartfolder-search-result-container" ng-show="quickSearchResult.length > 0" class="search-result-container" vs-repeat="28">
+            <div 
+                class="search-result-item color-{{smartFolder.iconColor}} icon-{{smartFolder.icon}} depth-{{smartFolder.depth}}" 
+                ng-repeat="smartFolder in quickSearchResult" 
+                ng-class="{'active active-item' : quickSearchIndex == $index, 'search-mode': smartFolder.isRecent || quickSearchKeyword.length > 0 }"
+                ng-click="openQuickSearchResult(smartFolder)" 
+                ng-mouseenter="selectQuickSearchResult($index)"
+            >
+                <div class="guidelines" ng-if="!smartFolder.isRecent">
+                    <div class="guideline color-{{line}} depth-{{$index + 1}}" ng-hide="smartFolder.depth === $index" ng-repeat="line in smartFolder.guidelines track by $index">
+                        <div class="top"></div>
+                        <div class="middle"></div>
+                        <div class="bottom"></div>
+                    </div>
+                </div>
+                <div class="icon">
+                    <div class="fake-svg"></div>
+                    <div ng-if="smartFolder.isRecent" class="history-badge"></div>
+                </div>
+                <div class="info">
+                    <div class="name" ng-bind-html="smartFolder.name | fuzzyMatch:quickSearchKeyword"></div>
+                    <div class="right"><span class="parent-name" ng-if="smartFolder.parent" ng-click="$event.stopPropagation(); $parentScope.openSmartFolder($parentScope.smartFolderMappings[smartFolder.parent]); $parentScope.closeQuickSearch();">{{$parentScope.smartFolderMappings[smartFolder.parent].name}}</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 項目 -->
+    <div class="search-result" ng-show="searchMode=='ITEMS'" scroll-to-active scroll-container="#items-search-result-container" index="quickSearchIndex" enable="quickScrollEnable">
+        <div class="empty" ng-show="quickSearchResult.length == 0 && !quickSearchKeyword">{{'quickSearch.empty.folder' | i18n}}</div>
+        <div class="empty" ng-show="quickSearchResult.length == 0 && quickSearchKeyword">{{'quickSearch.searchEmpty.folder' | i18n}}</div>
+        <div id="items-search-result-container" ng-show="quickSearchResult.length > 0" class="search-result-container" vs-repeat="92">
+            <div class="search-result-item large" ng-repeat="item in quickSearchResult" ng-class="{'active active-item' : quickSearchIndex == $index}" ng-click="openQuickSearchResult(item)" ng-mouseenter="selectQuickSearchResult($index)">
+                <div ng-if="searchMode=='ITEMS'" class="icon">
+                    <img src="{{::getThumbnailUrl(item)}}">
+                    <ext-icon ng-if="item.noPreview" item-id="{{item.id}}"></ext-icon>
+                </div>
+                <div class="info">
+                    <div class="name" ng-bind-html="item.name | fuzzyMatch:quickSearchKeyword"></div>
+                    <div class="meta">{{item.modificationTime | date:"yyyy/MM/dd HH:mm"}}<span ng-show="item.folders.length > 0">・</span><span class="parent" ng-repeat="folderId in item.folders" ng-click="$parentScope.openItemLocation(item, $parentScope.folderMappings[folderId])"><a>{{$parentScope.folderMappings[folderId].name}} </a></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-footer">
+        <div class="left">
+            <div class="shortcut-tip">{{'selectFolderPanel.shortcuts.switch' | i18n}}<key>Tab</key></div>
+            <div class="shortcut-tip">{{'selectFolderPanel.shortcuts.move' | i18n}}<div class="keys"><key>↑</key><key>↓</key></div></div>
+            <div class="shortcut-tip">{{'selectFolderPanel.shortcuts.select' | i18n}}<key>︎⏎</key></div>
+        </div>
+        <div class="right">
+            <div class="shortcut-tip">{{'selectFolderPanel.shortcuts.close' | i18n}}<key>︎ESC</key></div>
+        </div>
+    </div>
+</div>
+<div class="quick-search-overlay" ng-click="$parentScope.closeQuickSearch()"></div>

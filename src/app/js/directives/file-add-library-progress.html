@@ -1,0 +1,10 @@
+<div id="add-to-library-progress" class="progress-dialog" ng-class="{'open' : isAdding}">
+    <div class="progress-dialog-content" ng-if="isAdding">
+        <div class="message">{{msg}} <span class="counter">({{curr}}/{{total}})</span></div>
+        <div class="progressbar" ng-show="isAdding">
+            <div class="current" style="width: {{curr/total*100}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

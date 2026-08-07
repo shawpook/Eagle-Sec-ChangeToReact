@@ -1,0 +1,270 @@
+@import "_mixins";
+@import "components/_spinner";
+
+
+*:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+body {
+    margin: 0;
+	width: 100vw;
+	height: 100vh;
+	-webkit-user-select: none;
+    -webkit-font-smoothing: antialiased;
+    
+    &.ru_RU {
+		&, input, textarea, select, button {
+    		font-family: var(--font-family-ru_RU);
+		}
+    }
+    &.ja_JP {
+		&, input, textarea, select, button {
+    		font-family: var(--font-family-ja_JP);
+		}
+    }
+    &.ko_KR {
+		&, input, textarea, select, button {
+			font-family: var(--font-family-ko_KR);
+		}
+    }
+    &.zh_TW {
+		&, input, textarea, select, button {
+			font-family: var(--font-family-zh_TW);
+		}
+    }
+	font-family: var(--font-family-zh_CN);
+	input, textarea, select, button {
+		font-family: var(--font-family-zh_CN);
+	}
+	
+	a {
+		color: var(--color-primary);
+	}
+
+    img {
+        -webkit-user-drag: none;
+        -webkit-user-select: none;
+    }
+
+	overflow: hidden;
+
+	&[platform="win32"] {
+		background-color: var(--color-theme);
+	}
+	&[platform="darwin"] {
+		background-color: var(--color-theme-75);
+        &[vibrancy="false"] {
+            background-color: var(--color-theme);
+        }
+	}
+}
+
+.loader {
+    z-index: 99999 + 3;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+    position: absolute;
+    background: var(--color-black-80);
+    backdrop-filter: var(--box-background-blur);
+    height: 100px;
+    width: 100px;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-align: center;
+    -webkit-align-items: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -webkit-justify-content: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    border-radius: 20px;
+}
+
+.manage-device-window {
+    display: flex;
+    padding: 24px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    -webkit-app-region: drag;
+
+    .manage-device-close {
+        border-radius: 4px;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        -webkit-app-region: no-drag;
+    }
+
+    .illustration {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 24px;
+        margin-bottom: 24px;
+    }
+        
+    .title {
+        max-width: 360px;
+        color: var(--color-text-primary);
+        font-size: 20px;
+        line-height: 26px;
+        margin-bottom: 8px;
+        font-weight: var(--font-weight-bold);
+        text-align: center;
+    }
+    
+    .desc {
+        max-width: 360px;
+        color: var(--color-text-tertiary);
+        font-size: 13px;
+        line-height: 20px;
+        margin-bottom: 24px;
+        text-align: center;
+        -webkit-app-region: no-drag;
+        
+        b {
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text-primary);
+            margin: 0 1px;
+            @include dark {
+                filter: brightness(125%);
+            }
+        }
+
+        a {
+            color: var(--color-primary);
+            padding-bottom: 1px;
+            border-bottom: 1px solid var(--color-primary);
+            text-decoration: none;
+            font-weight: var(--font-weight-bold);
+            margin: 0 2px;
+        }
+    }
+
+    .devices {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        -webkit-app-region: no-drag;
+        max-width: 600px;
+        width: 600px;
+        max-height: 320px;
+        overflow: auto;
+        padding: 0 24px;
+        box-sizing: border-box;
+
+        .device {
+            display: flex;
+            align-items: center;
+            min-height: 40px;
+            border-bottom: 1px solid var(--color-border-secondary);
+
+            &:last-child {
+                border-bottom: none;
+            }
+
+            &.current {
+                .status-icon {
+                    &::after {
+                        @include dark {
+                            background-color: var(--color-positive)
+                        }
+                        @include light {
+                            background-color: var(--color-positive)
+                        }
+                    }
+                }
+            }
+
+            .status-icon {
+                position: relative;
+                display: flex;
+                min-width: 12px;
+                height: 12px;
+                margin-right: 6px;
+
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 2px;
+                    left: 2px;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    @include dark {
+                        background-color: var(--color-lightgray-25);
+                        outline: 1px solid var(--color-white-10);
+                        outline-offset: -1px;
+                    }
+                    @include light {
+                        background-color: var(--color-dark-25);
+                        outline: 1px solid var(--color-dark-10);
+                        outline-offset: -1px;
+                    }
+                }
+            }
+
+            .platform-icon {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-width: 16px;
+                height: 16px;
+                margin-right: 4px;
+                path {
+                    fill: var(--color-text-secondary);
+                }
+            }
+
+            .device-name {
+                // flex: 1;
+                margin-right: 4px;
+                color: var(--color-text-primary);
+                font-size: 13px;
+                line-height: 20px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .date {
+                margin-left: auto;
+                color: var(--color-text-tertiary);
+                font-family: var(--font-family-mono);
+                font-size: 12px;
+                line-height: 18px;
+                margin-right: 12px;
+                white-space: nowrap;
+            }
+
+            .edit-btn {
+                min-width: 24px;
+                height: 24px;
+                border-radius: 4px;
+                margin-right: 4px;
+                opacity: 0.5;
+                &:hover {
+                    opacity: 1;
+                }
+            }
+
+            .remove-btn {
+                min-width: 24px;
+                height: 24px;
+                border-radius: 4px;
+                opacity: 0.5;
+                &:hover {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+          
+}

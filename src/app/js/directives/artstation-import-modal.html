@@ -1,0 +1,40 @@
+<div id="artstation-import-modal" class="import-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+
+    <div class="close" ng-click="close()"><img src="assets/images/light/icons/ic-modal-close.svg"></div>
+    <div class="loader" ng-if="isLoading">
+        <svg class="spinner" width="32px" height="32px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+            <circle class="path" fill="none" stroke-width="3" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+        </svg>
+        <div class="message">{{'modal.importArtstation.loading' | i18n}}<span class="counter" ng-show="total">({{current}}/{{total}})</span></div>
+    </div>
+    <div class="title">
+        <img ng-src="./images/icon-artstation.png" alt="">
+        <h2>{{'modal.importArtstation.title' | i18n}}</h2>
+    </div>
+    <div class="form">
+        <div class="margin-m"></div>
+        <label for="">{{'modal.importArtstation.urlLabel' | i18n}}</label>
+        <input id="artstation-url" type="text" maxlength="1024" tabindex="-1" placeholder="https://www.artstation.com/user_name" ng-model="artStationScope.pageUrl" ng-blur="vaildateUrl()" ng-class="{'error': urlError}" ng-keydown="urlKeydown($event)">
+        <div class="error-message" ng-show="urlError">{{'modal.importArtstation.urlError' | i18n}}</div>
+
+        <div class="margin-m"></div>
+        <div ng-if="isOpen">
+            <label for="">{{'modal.importArtstation.folderLabel' | i18n}}</label>
+            <div class="select select-xs folder" ng-if="isOpen">
+                <select tabindex="-1" ng-mousedown="$event.preventDefault(); $event.stopPropagation(); selectFolders($event);">
+                    <option value="none">{{getFolderNames()}}</option>
+                </select>
+            </div>
+        </div>
+        <div class="margin-m"></div>
+        <div class="row">
+            <div class="col-md-8">
+                <div class="btn red" ng-click="importUrl()">{{'modal.importArtstation.import' | i18n}}</div>
+            </div>
+            <div class="col-md-4" style="padding-left: 0;">
+                <div class="btn import-manual" ng-click="importUrlManual()">{{'modal.importArtstation.importManual' | i18n}}</div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="import-modal-overlay"></div>

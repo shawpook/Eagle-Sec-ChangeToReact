@@ -1,0 +1,29 @@
+<div class="modal mousewheel-setting-modal" ng-class="{'open': isOpen}">
+    <div class="content" ng-if="isOpen">
+        <h2>{{'MousewheeloWindow.title' | i18n}}</h2>
+        <p>{{'MousewheeloWindow.desc' | i18n}}</p>
+        <div class="items">
+            <div class="item" ng-class="{'active': mode === 'scroll'}" ng-click="changeMode('scroll')">
+                <div class="thumbnail">
+                    <img ng-src="assets/images/{{theme|themePath}}/illustrations/illustration-mousewhell-scroll.png" width="192" height="192">
+                </div>
+                <div class="label">{{'MousewheeloWindow.modeScroll' | i18n}}</div>
+            </div>
+            <div class="item" ng-class="{'active': mode === 'zoom'}" ng-click="changeMode('zoom')">
+                <div class="thumbnail">
+                    <img ng-src="assets/images/{{theme|themePath}}/illustrations/illustration-mousewhell-zoom.png" width="192" height="192">
+                </div>
+                <div class="label">{{'MousewheeloWindow.modeZoom' | i18n}}</div>
+            </div>
+            <div class="item" ng-class="{'active': mode === 'paging'}" ng-click="changeMode('paging')">
+                <div class="thumbnail">
+                    <img ng-src="assets/images/{{theme|themePath}}/illustrations/illustration-mousewhell-paging.png" width="192" height="192">
+                </div>
+                <div class="label">{{'MousewheeloWindow.modePaging' | i18n}}</div>
+            </div>
+        </div>
+        <div class="tips" ng-bind-html="'MousewheeloWindow.tips' | i18n"></div>
+        <div class="button button-m button-primary" ng-click="save()">{{'MousewheeloWindow.saveBtn' | i18n}}</div>
+    </div>
+</div>
+<div class="modal-overlay"></div>

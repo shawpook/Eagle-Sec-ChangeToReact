@@ -1,0 +1,87 @@
+body.win32 {
+    .website-panel {
+        .drag-area {
+            right: 170px;
+        }
+    }
+}
+
+.website-panel {
+    z-index: 9003;
+    position: absolute;
+    top: 0;
+    left: 48px;
+    right: 0;
+    bottom: 0;
+    background-color: $sidebar-item-background-color;
+    overflow: hidden;
+    > div {
+        width: 100%;
+        height: 100%;
+    }
+    .loader {
+        z-index: 8;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    webview, iframe {
+        z-index: 9;
+        position: absolute;
+        top: 40px;
+        bottom: 0;
+    	width: 100%;
+        border-radius: 5px;
+    }
+
+    .drag-area {
+        z-index: 11;
+        position: absolute;
+        top: 0;
+        left: 105px;
+        right: 0;
+        height: 40px;
+        -webkit-app-region: drag;
+        // background-color: $sidebar-item-background-color;
+        background-color: transparent;
+    }
+
+    .website-panel-webview-control {
+        z-index: 10;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        height: 40px;
+        background-color: $sidebar-item-background-color;
+        border-bottom: 1px solid rgba(0,1,5,0.2);
+        align-items: center;
+        padding-left: 8px;
+        color: $sidebar-name-color;
+        font-size: 12px;
+        .title {
+            margin-left: 5px;
+            opacity: 0.7;
+            white-space: nowrap;
+        }
+        .icon-btn {
+            -webkit-app-region: no-drag;
+            margin: 0;
+            &.disabled {
+                opacity: 0.5;
+            }
+        }
+        corner-btns {
+            -webkit-app-region: no-drag;
+            margin-left: auto;
+        }
+    }
+}

@@ -1,0 +1,136 @@
+.modal.new-version-notification-modal {
+	width: 640px;
+
+	&.open {
+		z-index: 200001;
+	}
+
+	.modal-header {
+		span.sub-title {
+			color: var(--color-text-tertiary);
+		}
+	}
+
+	.section.content {
+		padding: 0;
+
+		.update-message {
+			padding: 24px;
+			min-height: 100px;
+		    max-height: calc(90vh - 200px);
+			overflow: auto;
+		    border-radius: 2px;
+			color: var(--color-text-primary);
+			user-select: text;
+
+			*:last-child {
+				margin-bottom: 0;
+			}
+
+		    a {
+		    	color: var(--color-text-primary) !important;
+		    }
+
+			h1, h2, h3, h4 {
+				color: var(--color-text-primary);
+				font-weight: var(--font-weight-bold);
+
+				.icon {
+					font-size: 14px;
+					display: inline-block;
+					width: 16px;
+					height: 16px;
+					margin-right: 8px;
+				}
+
+				&:first-child {
+					margin-top: 0;
+				}
+			}
+
+			h1 {
+				font-size: 16px;
+				line-height: 22px;
+				font-weight: var(--font-weight-bold);
+				margin-top: 0;
+				margin-bottom: 16px;
+			}
+
+			h2 {
+				font-size: 16px;
+				line-height: 22px;
+				font-weight: var(--font-weight-bold);
+				margin-top: 24px;
+				margin-bottom: 16px;
+			}
+
+			p {
+			    line-height: 18px;
+			    margin-bottom: 12px;
+				color: var(--color-text-secondary);
+				font-size: 13px;
+			}
+
+			b, strong {
+				color: var(--color-text-primary);
+				font-weight: var(--font-weight-bold);
+			}
+
+			iframe {
+				width: 100%;
+				border: 0;
+			}
+
+			img {
+			    width: 100%;
+				height: auto;
+    			image-rendering: -webkit-optimize-contrast;
+				border-radius: 6px;
+				margin-bottom: 16px;
+			}
+
+			ul {
+				display: flex;
+				flex-direction: column;
+				gap: 12px;
+				color: var(--color-text-secondary);
+				margin-bottom: 24px;
+
+				li {
+					font-size: 13px;
+					line-height: 18px;
+					list-style: none;
+					padding-left: 24px;
+					position: relative;
+					// a dash line before the list item
+					&::before {
+						content: "";
+						display: inline-block;
+						width: 8px;
+						height: 1px;
+						background-color: var(--color-text-tertiary);
+						margin-right: 10px;
+						margin-bottom: 4px;
+						position: absolute;
+						left: 4px;
+						top: 8px;
+					}
+				}
+			}
+		}
+	}
+
+	.section.darken {
+		display: flex;
+		gap: 10px;
+		border-top: 1px solid var(--color-border-secondary);
+
+		.button-primary {
+			flex: 1;
+		}
+
+		.button-grey {
+			min-width: 140px;
+		}
+	}
+}

@@ -1,0 +1,63 @@
+@keyframes animate-select-panel-open {
+	0% {
+		transform: scale(0.96);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+select-panel-overlay {
+	z-index: 200118;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	display: none;
+}
+
+select-panel {
+	z-index: 200119;
+	position: fixed;
+	display: block;
+	top: 200px;
+	left: 500px;
+	display: none;
+	flex-direction: column;
+	border-top: var(--box-border-top);
+	border-right: var(--box-border-right);
+	border-bottom: var(--box-border-bottom);
+	border-left: var(--box-border-left);
+	border-radius: 8px;
+	background-color: var(--box-background);
+	min-height: 240px;
+	width: 360px;
+	box-sizing: border-box;
+	overflow: hidden;
+	font-size: 13px;
+
+	-webkit-font-smoothing: antialiased;
+	box-shadow: var(--box-border-shadow);
+	backdrop-filter: var(--box-background-blur);
+
+	&.open {
+		display: flex;
+		animation: animate-select-panel-open 70ms var(--timing-function-scaleIn);
+		~ select-panel-overlay {
+			display: block;
+			pointer-events: all;
+		}
+	}
+
+	select-panel-list {
+		position: relative;
+		display: block;
+		overflow: auto;
+		height: 200px;
+		width: 100%;
+
+		select-panel-item {
+		}
+	}
+}

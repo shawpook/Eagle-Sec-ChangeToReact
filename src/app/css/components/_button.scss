@@ -1,0 +1,327 @@
+@mixin button-hover-style($name, $bg-color, $border-color, $color) {
+    @if $name != "" {
+        &.button-hover-#{$name} {
+            &:hover, &:active {
+                text-decoration: none;
+                background-color: $bg-color;
+                border-color: $border-color;
+                color: $color;
+            }
+        }
+    }
+    @else {
+        &:hover, &:active {
+            text-decoration: none;
+            background-color: $bg-color;
+            border-color: $border-color;
+            color: $color;
+        }
+    }
+}
+
+// 按鈕樣式
+// -------------------------------
+@mixin button-style($bg-color, $border-color, $active-bg-color, $active-border-color, $color) {
+    background-color: $bg-color;
+    border: 1px solid $border-color;
+    color: $color;
+    &:hover, &:active {
+        text-decoration: none;
+        background-color: $active-bg-color;
+        border: 1px solid $active-border-color;
+        color: $color;
+    }
+}
+
+// 僅有框線的Button
+// -------------------------------
+@mixin button-ghost($color, $text-color: "") {
+    &.button-ghost {
+        border-width: 1px;
+        border-color: $color;
+        background: transparent;
+        @if $text-color == "" {
+            $text-color: $color;
+        }
+        color: $text-color;
+        // &:hover, &:active {
+        //     background: transparent;
+        //     box-shadow: none;
+        //     color: $text-color;
+        // }
+    }
+}
+
+.button {
+    padding: 0 15px;
+    display: inline-block;
+    vertical-align: middle;
+    min-width: 32px;
+    height: 44px;
+    line-height: 44px;
+    box-sizing: content-box;
+    // border: 1px solid $primary-color;
+    cursor: pointer;
+    transition-property: all;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    @include button-style($primary-color, $primary-color, darken($primary-color, 10%), darken($primary-color, 10%), white);
+    @include button-ghost(#777, #777);
+    @extend .fontSize-s;
+    @extend .borderRadius-s;
+    @extend .textAlign-center;
+    @extend .marginRight-xs;
+    // @extend .marginBottom-xs;
+    @extend .transitionDuration-l;
+    @extend .transitionTimingFunction-cb--scaleOut;
+
+    // border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    // border-bottom: 1px solid rgba(0, 0, 0, 0.12) !important;
+    // border-left-color: rgba(0, 0, 0, 0) !important;
+    // border-right-color: rgba(0, 0, 0, 0) !important;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.2) !important;
+    font-weight: 500;
+        
+    // font-weight: 600;
+    // @include button-hover-style("", transparent, $black-color, $black-color);
+    
+    &.button-grey {
+		background-color: rgba(#fff, 0.05);
+        @include button-style(rgba(240, 245, 255, 0.05), rgba(240, 245, 255, 0.07), rgba(240, 245, 255, 0.1), rgba(240, 245, 255, 0.2), white);
+        @include button-ghost($slate-color, $slate-color);
+    }
+    &.button-white {
+        @include button-style(white, white, darken(white, 5%), darken(white, 5%), #333333);
+        @include button-ghost(white, white);
+    }
+    &.button-orange {
+        @include button-style($primary-color, $primary-color, lighten($primary-color, 5%), lighten($primary-color, 5%), white);
+        @include button-ghost($primary-color, $primary-color);
+    }
+    &.button-primary {
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-primary);
+        background-color: var(--color-primary-90);
+
+        &:hover {
+            background-color: var(--color-primary);
+        }
+        // @include button-style($primary-color, rgba(255,255,255,0.15), lighten($primary-color, 5%), rgba(255,255,255,0.2), white);
+        // @include button-ghost($primary-color, $primary-color);
+    }
+    &.button-secondary {
+        @include button-style($secondary-color, $secondary-color, darken($secondary-color, 5%), darken($secondary-color, 5%), white);
+        @include button-ghost($secondary-color, $secondary-color);
+    }
+    &.button-third {
+        @include button-style($third-color, $third-color, darken($third-color, 5%), darken($third-color, 5%), white);
+        @include button-ghost($third-color, $third-color);
+    }
+    &.button-positive {
+        @include button-style($ui-positive-color, $ui-positive-color, darken($ui-positive-color, 5%), darken($ui-positive-color, 5%), white);
+        @include button-ghost($ui-positive-color, $ui-positive-color);
+    }
+    &.button-negative {
+        @include button-style($ui-negative-color, $ui-negative-color, darken($ui-negative-color, 5%), darken($ui-negative-color, 5%), white);
+        @include button-ghost($ui-negative-color, $ui-negative-color);
+    }
+    &.button-warning {
+        @include button-style($ui-warning-color, $ui-warning-color, darken($ui-warning-color, 5%), darken($ui-warning-color, 5%), white);
+        @include button-ghost($ui-warning-color, $ui-warning-color);
+    }
+    &.button-facebook {
+        @include button-style(#4080FF, #4080FF, darken(#4080FF, 5%), darken(#4080FF, 5%), white);
+        @include button-ghost(#4080FF, #4080FF);
+    }
+    &.button-twitter {
+        @include button-style(#1DA1F2, #1DA1F2, darken(#1DA1F2, 5%), darken(#1DA1F2, 5%), white);
+        @include button-ghost(#1DA1F2, #1DA1F2);
+    }
+    &.button-ligth-gray {
+        @include button-style(#555, #555, darken(#555, 10%), darken(#555, 10%), white);
+        @include button-ghost(#555, #555);
+    }
+    &.button-disabled {
+        opacity: 0.5;
+        cursor: default;
+        pointer-events: none;
+    }
+    &.button-block {
+        display: block;
+        text-align: center;
+    }
+
+    &.button-xs {
+        padding: 0 16px;
+        height: 26px;
+        line-height: 26px;
+        font-size: 13px;
+        border-radius: 6px;
+    }
+    &.button-s {
+        padding: 0 24px;
+        height: 36px;
+        line-height: 36px;
+        font-size: 14px;
+        border-radius: 6px;
+    }
+    &.button-m {
+        height: 44px;
+        line-height: 44px;
+        padding: 0 15px;
+        border-radius: 6px;
+    }
+    &.button-l {
+        height: 48px;
+        line-height: 48px;
+        padding: 0 20px;
+        font-size: 16px;
+        border-radius: 6px;
+    }
+    &.button-xl {
+        padding: 0 40px;
+        font-size: 16px;
+        height: 56px;
+        line-height: 56px;
+    }
+    &.button-rounded {
+        //@include border-radius(50px);
+        border-radius:50px;
+    }
+
+    @include button-hover-style("grey", $slate-color, $slate-color, #fff);
+    @include button-hover-style("primary", $primary-color, $primary-color, #fff);
+    @include button-hover-style("secondary", $secondary-color, $secondary-color, #fff);
+    @include button-hover-style("third", $third-color, $third-color, #fff);
+    @include button-hover-style("positive", $ui-positive-color, $ui-positive-color, #fff);
+    @include button-hover-style("negative", $ui-negative-color, $ui-negative-color, #fff);
+    @include button-hover-style("warning", $ui-warning-color, $ui-warning-color, #fff);
+}
+
+// 群組按鈕
+// -------------------------------
+.button-group {
+    display: inline-block;
+    vertical-align: middle;
+    border: 1px solid $smoke-color;
+    overflow: hidden;
+    @extend .borderRadius-m;
+    @extend .marginRight-xs;
+    @extend .marginBottom-xs;
+    .button {
+        float: left;
+        border: none;
+        box-shadow: -1px 0 0 $smoke-color inset;
+        @extend .borderRadius-0;
+        @extend .textColor-slate;
+        @extend .bgColor-white;
+        @extend .margin-0;
+        &:last-child {
+            box-shadow: 0 0 0 $smoke-color inset;
+        }
+    }
+}
+
+.icon-btn {
+    -webkit-app-region: no-drag;
+    position: relative;
+    vertical-align: middle;
+    background-color: $icon-btn-bg;
+    height: 24px;
+    line-height: 24px;
+    min-width: 24px;
+    text-align: center;
+    color: $icon-btn-color;
+    display: inline-flex;
+    border-radius: 5px;
+    font-size: 11px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    margin: 0 1px;
+    transition: all 150ms $timing-function-super;
+    box-sizing: border-box;
+    &.has-padding {
+        padding: 0 10px;
+    }
+	&.no-padding {
+        padding: 0;
+		img {
+			max-width: initial;
+		}
+    }
+    &.primary {
+        background-color: $primary-color;
+        color: #fff;
+        img {
+            opacity: 1 !important;
+        }
+        &:active, &:hover {
+            background-color: darken($primary-color, 5%);
+            color: #fff;
+        }
+    }
+    img {
+        // opacity: 0.7;
+        display: inline-block;
+        -webkit-user-drag: none;
+        -webkit-user-select: none;
+        max-width: 18px;
+    }
+    .badge {
+        z-index: 10;
+        position: absolute;
+        top: -2px;
+        right: -5px;
+        min-width: 13px;
+        height: 13px;
+        color: #fff;
+        background: $primary-color;
+        line-height: 13px;
+        font-size: 10px;
+        text-align: center;
+        border-radius: 50px;
+        display: inline-block;
+        font-weight: bold;
+    }
+    &:hover {
+        cursor: default;
+        color: $icon-btn-active-color;
+        background-color: $icon-btn-hover-bg;
+        img {
+            opacity: 0.9;
+        }
+    }
+    &:active {
+        color: $icon-btn-active-color;
+        background-color: $icon-btn-active-bg;
+        img {
+            opacity: 0.8;
+        }
+    }
+    &.disabled {
+        color: rgba($icon-btn-color, 0.5);
+        img {
+            opacity: 0.4;
+        }
+        &:hover {
+            cursor: default;
+            background-color: $icon-btn-disable-bg;
+        }
+        &:active {
+            background-color: $icon-btn-disable-bg;
+        }
+    }
+    &.active {
+        color: $icon-btn-active-color;
+        background-color: $icon-btn-active-bg;
+        &:hover {
+            background-color: $icon-btn-active-hover-bg;
+        }
+    }
+}
+
+

@@ -1,0 +1,33 @@
+@import "_mixins";
+@import "components/_webview-toolbar";
+@import "components/_video-player";
+@import "components/_gif-player";
+@import "components/_text-editor";
+
+
+body.win32 .container {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+}
+
+body.alway-show-toolbar .container {
+    top: 48px !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+}
+
+#detail-container .detail-wrap .video-js>video.fit {
+    max-height: 100% !important;
+}
+
+body.fullscreen #detail-container .detail-wrap .video-js>video.fit {
+    max-height: initial !important;
+    max-width: initial !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin-top: 0 !important;
+    background-color: black !important;
+}

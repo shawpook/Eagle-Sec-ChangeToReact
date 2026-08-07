@@ -1,0 +1,61 @@
+<div class="modal duplicate-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+    <div class="modal-header">
+        <div class="name">{{'modal.duplicate.title' | i18n}}<span ng-show="duplicates.length > 1"> ({{duplicates.length}})</span></div>
+        <div class="close" ng-click="duplicateScope.cancel()"></div>
+    </div>
+    <div class="section">
+        <div class="duplicate-container">
+            <div class="duplicate" ng-switch on="duplicateScope.left.ext">
+                <div class="image {{left.ext}}">
+                    <iframe ng-if="left.orientation && left.orientation !== 1" ng-src="{{duplicateScope.$body.getExifPath(left)}}" frameborder="0"></iframe>
+                    <img ng-if="!(left.orientation && left.orientation !== 1)" ng-src="{{duplicateScope.$body.getThumbnailUrl(left)}}" alt="">
+                    <ext-icon ng-if="left.noPreview" item-id="{{left.id}}"></ext-icon>
+                    <div class="label">{{'modal.duplicate.exist' | i18n}}</div>
+                </div>
+                <div class="name">{{left.name}}.{{left.ext}}</div>
+                <div class="metas" ng-switch-when="ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v" ng-switch-when-separator="|">{{left.width}} × {{left.height}} / {{left.size/1024 | number:0}}KB / {{left.ext | uppercase}}</div>
+                <div class="metas" ng-switch-default><span ng-show="left.width > 0">{{left.width}} × {{left.height}} / </span>{{left.size/1024 | number:0}}KB</div>
+                <div class="folder">
+                    <span ng-if="left.folders.length > 0" ng-click="$body.quickOpenFolder(folderMappings[left.folders[0]], left)">{{folderMappings[left.folders[0]].name}}</span>
+                    <span ng-if="left.folders.length === 0" ng-click="revealInUnfiled(left);">{{'modal.duplicate.unfiled' | i18n}}</span>    
+                </div>
+            </div>
+            <div class="duplicate" ng-switch on="duplicateScope.right.ext">
+                <div class="image {{right.ext}}" ng-class="{'fade': usingExist === 'true'}">
+                    <iframe ng-if="(right.orientation && right.orientation !== 1)" ng-src="{{duplicateScope.$body.getExifPath(left)}}" frameborder="0"></iframe>
+                    <img ng-if="!(right.orientation && right.orientation !== 1)" ng-src="{{duplicateScope.$body.getThumbnailUrl(right)}}" alt="">
+                    <ext-icon ng-if="right.noPreview" item-id="{{right.id}}"></ext-icon>
+                    <div class="label new">{{'modal.duplicate.now' | i18n}}</div>
+                </div>
+                <div class="name">{{right.name}}.{{right.ext}}</div>
+                <div class="metas" ng-switch-when="ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v" ng-switch-when-separator="|">{{right.width}} × {{right.height}} / {{right.size/1024 | number:0}}KB / {{right.ext | uppercase}}</div>
+                <div class="metas" ng-switch-default><span ng-show="right.width > 0">{{right.width}} × {{right.height}} / </span>{{right.size/1024 | number:0}}KB</div>
+                <div class="folder" ng-if="right.folders.length > 0">
+                    <span>{{folderMappings[right.folders[0]].name}}</span>
+                </div>
+            </div>
+        </div>
+        <input id="duplicate-input" style="opacity:0; height:0;" ng-keydown="duplicateScope.onKeyup($event)" auto-focus="OPEN_DUPLICATE" tabindex="-1">
+    </div>
+    <div class="section darken textAlign-right">
+
+        <label class="control radio" style="margin-right: 12px;">
+            <input type="checkbox" checked="" ng-model="duplicateScope.usingExist" ng-true-value="'true'" ng-false-value="'false'">
+            <span class="control-indicator"></span>
+            {{'modal.duplicate.usingExist' | i18n}}
+        </label>
+        <label class="control radio">
+            <input type="checkbox" ng-model="duplicateScope.usingExist" ng-true-value="'false'" ng-false-value="'true'">
+            <span class="control-indicator"></span>
+            {{'modal.duplicate.keepBoth' | i18n}}
+        </label>
+
+        <label class="control checkbox" ng-show="duplicates.length > 1" style="margin-right: 12px;">
+            <input type="checkbox" checked="" ng-model="duplicateScope.applyAll" ng-true-value="'true'" ng-false-value="'false'">
+            <span class="control-indicator"></span>
+            {{'modal.duplicate.applyAll' | i18n}}({{duplicates.length}})
+        </label>
+        <div class="button button-xs button-primary" ng-click="duplicateScope.save()" ng-class="{'button-disabled': hasSelected()}">{{'modal.duplicate.importBtn' | i18n}}</div>
+    </div>
+</div>
+<div class="modal-overlay"></div>

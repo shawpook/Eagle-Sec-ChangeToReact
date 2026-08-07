@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html ng-app="EagleApp" ng-cloak ng-controller="RootController">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <link rel="shortcut icon" , href="icon.svg" , type="image/x-icon">
+    <link rel="stylesheet" href="css/modules/angular-notify/angular-notify.min.css">
+    <link rel="stylesheet" href="css/vendors/sweetalert2/sweetalert2.min.css">
+    <title>Eagle</title>
+    <style>
+        body {
+            display: none;
+        }
+        [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+          display: none !important;
+        }
+    </style>
+    <link rel="stylesheet" href="css/jquery-ui.min.css">
+    <link rel="stylesheet" href="css/icons.css">
+    <link id="app-style" rel="stylesheet" ng-href="css/style_{{theme}}.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/modules/flatpicker/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="css/modules/flatpicker/themes/airbnb.css">
+    <link rel="stylesheet" href="css/modules/nouislider/nouislider.min.css">
+    <link href="css/vendors/videojs/video-js.css" rel="stylesheet">
+    <link href="js/vendors/colorpicker/css/colorpicker.css" rel="stylesheet">
+</head>
+<body 
+    tabindex="-1"
+    ng-controller="EagleController"
+    theme="{{theme}}"
+    platform="{{::platform}}"
+    vibrancy="{{vibrancyEnabled}}"
+    class="{{::platform}} {{language}} current-focus-{{currentFocus}} {{viewMode}}-view" 
+    ng-class="
+    {
+        'layout-fill': layoutOptions === 'Fill',
+        'is-windows-11': isWin11,
+        'is-detail-mode': isDetailMode,
+        'is-inline-mode': isInlineMode,
+        'is-comment-mode': isCommentMode,
+        'is-grayscale-mode': isGrayscaleMode,
+        'hide-navigator': isHideNavigator || !smoothZoomDone,
+        'is-small-box': imageSize.height < 150,
+        'is-middle-box': imageSize.height <= 250 && imageSize.height >= 150,
+        'is-square-layout': layout === 'SquareLayout',
+        'show-list-resolution': listLayoutSettings.props.resolution,
+        'show-list-dateImported': listLayoutSettings.props.dateImported,
+        'show-list-tags': listLayoutSettings.props.tags,
+        'show-list-rating': listLayoutSettings.props.rating,
+        'show-list-extension': listLayoutSettings.props.extension,
+        'show-list-fileSize': listLayoutSettings.props.fileSize,
+        'box-sortable': currentFolder && ((currentFolder.orderBy === 'MANUAL' || currentFolder.orderBy === 'IMPORT') || (!currentFolder.orderBy && orderBy === 'IMPORT')) && !eagle.filter.filterBadge && !keyword,
+        'cropping': isCropMode,
+        'is-maximize': isMaximize,
+        'hide-sidebar': isHideSidebar,
+        'hide-inspector': inspector.isHideInspector,
+        'hide-all': inspector.isHideInspector && isHideSidebar,
+        'is-filter-open' : eagle.filter.isOpen,
+        'slideshow': isSlideshowMode,
+        'hide-badge': $root.preferences.general.showSidebarBadge == 'false',
+        'hide-zoom-btn': $root.preferences.habits.hoverZoom == 'off',
+        'show-transparent-grid': $root.preferences.habits.transparency == 'show',
+    }" 
+>
+
+    <div class="icon-btn application-menu-btn fixed" ng-show="isLoading" style="position: absolute;left: 12px;top: 12px;" ng-click="openApplicationContextMenu($event);">
+        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-app-menu.svg">
+    </div>
+
+    <div id="main-app" ng-class="{'ui-ready': !isUILoaded || isLoading}">
+
+        <!-- 側邊欄 -->
+        <div class="hover-show-sidebar" ng-hover-intent="hoverShowSidebar($event)"></div>
+        <div id="sidebar" class="sidebar" ng-mouseleave="hoverHideSidebar($event)" ng-mousedown="sidebarFocus($event)" style="width: {{:refreshContainSize:containerSize.sidebar}}px;" resizable="e" on-resize="onSidebarResize(event, ui)" ondragleave="onDragLeaveSidebar(event)">
+            <div class="icon-btn application-menu-btn" style="z-index: 12; position: absolute;left: 12px;top: 12px;" ng-click="openApplicationContextMenu($event);" ng-mousedown="$event.stopPropagation(); $event.preventDefault();">
+                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-app-menu.svg">
+            </div>
+            <div id="sidebar-scroll-to-top" class="scroll-to-top"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-scroll-top.svg"></div>
+
+            <!-- 側欄 header -->
+            <div ng-if="isUILoaded" class="sidebar-header" ng-dblclick="$event.preventDefault(); maximize()" ng-dblclick="">
+                <div class="sidebar-library-info" ng-if="libraryPath">
+
+                    <!-- 效能過慢提示 -->
+                    <!-- mac 使用 NTFS 硬碟提示 -->
+                    <div id="library-warning" ng-if="(!showSlowNotify && showNTFSWarning)" class="ic-btn library-warning show"><div class="icon"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-slow-warning.svg" alt=""></div><div class="message" ng-bind-html="'notify.ntfsWarning.message' | i18n"></div></div>
+                    <!-- 资源库性能异常提示 -->
+                    <div id="library-warning" ng-if="showSlowNotify" class="ic-btn library-warning"><div class="icon"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-slow-warning.svg" alt=""></div><div class="message" ng-bind-html="'notify.slowDisk.message' | i18n"></div></div>
+
+                    <!-- 顏色分析 spinner -->
+                    <span 
+                        id="background-state-spinner" 
+                        class="library-spinner"
+                        ng-click="$event.stopPropagation(); togglePaletteProcessing()"
+                        style="display: none;"
+                        tippy tippy-content="{{(paletteQueuePaused)? 'sidebar.state.title.pausing' : 'sidebar.state.title.analysing' | i18n}} ({{currentProcessCount}})" tippy-placement="right"
+                    >
+                        <div class="sm-spiner" style="margin-top: 0; display: block;"></div>
+                        <div class="pause-icon"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-status-pause.svg"></div>
+                    </span>
+
+                    <!-- 資源庫切換按鈕 -->
+                    <div class="library-switch-btn" tippy tippy-content="{{'sidebar.switchLibrary' | i18n}}{{preferences.shortcuts.keybinds['library.switch'] | shortcutsWrapper | shortcuts}}" tippy-placement="right" ng-click="switchLibrary($event)" ng-dblclick="$event.preventDefault(); $event.stopPropagation();">
+                        <div class="library-icon" library-icon="small" library-path="{{libraryPath}}" ></div>
+                        <span class="library-name">{{libraryName}}</span>
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_unfold-more.svg">
+                    </div>
+                </div>
+                <div class="sidebar-toolbar">
+                    <!-- 通知中心 -->
+                    <!-- <div class="icon-btn" style="margin-right: 2px;" notification-btn tippy tippy-placement="bottom" tippy-content="{{'modal.notification.title' | i18n}}" ng-click="openNofication();">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_notification.svg">
+                        <div ng-show="unreadNotification > 0" class="badge-count"></div>
+                    </div> -->
+                    <!-- 新增 -->
+                    <div class="icon-btn" tippy tippy-placement="bottom" tippy-content="{{'sidebar.addItems' | i18n}}{{preferences.shortcuts.keybinds['file.create.new'] | shortcutsWrapper | shortcuts}}" ng-click="openNewContextMenu()">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_add.svg">
+                    </div>
+                    <!-- 切換資料夾 -->
+                    <div class="icon-btn" tippy tippy-placement="bottom" tippy-content="{{'sidebar.switchFolderBtn' | i18n}}<key>J</key>" ng-click="openQuickSearch();">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_switch.svg">
+                    </div>
+                    <!-- 顯示/隱藏欄 -->
+                    <div class="icon-btn" tippy tippy-placement="bottom" tippy-content="{{'context.order.toggle>all' | i18n}}<key>Tab</key>" ng-right-click="openSidebarMenu();" ng-click="toggleAll($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_toggle-sidebar.svg">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 侧边栏项目列表 -->
+            <div 
+                class="sidebar-container"
+                ondragenter="onDragEnterSidebar(event)"
+                ondragover="onDragOverSidebar(event)"
+                ondrop="onDropSidebar(event)"
+                vs-auto-scroll
+                vs-size="27"
+                scroll-container=".sidebar-container .sidebar-item-container"
+                index="sidebarIndex"
+            >
+                <div class="sidebar-scroll-helper top"></div>
+                <div class="sidebar-scroll-helper bottom"></div>
+                <div id="sidebar-item-container" class="sidebar-item-container" vs-excess="50" vs-repeat="27" vs-size="size" ng-class="{'padding-bottom' : isCleaningTrash}">
+                    <div ng-repeat="node in sidebarList">
+                        <div ng-switch on="node.vstype">
+                            
+                            <div 
+                                ng-switch-when="folder"
+                                sidebar-folder-item
+                                id="folder-{{::node.id}}" 
+                                parent="{{node.parent}}"
+                                class="item sidebar-folder-item"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-class="getNodeClass(node)" 
+                                ng-click="clickNode($event, node)" 
+                                ng-right-click="openFolderContextMenu($event, node)"
+                                ng-mousedown="preventMiddleClick($event)"
+                                ng-dblclick="rename($event, node)"
+                                ondrop="onDropFolder(event)" 
+                                ondragenter="onDragEnterFolder(event)"
+                                ondragover="onDragOverFolder(event)"
+                                ondragleave="onDragLeaveFolder(event)"
+                            >
+                                <!-- 引導線 -->
+                                <div class="guidelines">
+                                    <div class="guideline color-{{line}} depth-{{$index + 1}}" ng-repeat="line in node.guidelines track by $index">
+                                        <div class="top" ng-hide="($index + 1 === node.styles.depth) && node.children.length > 0"></div>
+                                        <div class="middle" ng-hide="($index + 1 === node.styles.depth) && node.children.length > 0"></div>
+                                        <div class="bottom" ng-hide="($index + 1 === node.styles.depth) && node.children.length > 0"></div>
+                                    </div>
+                                </div>
+                                <div class="expand-icon" ng-click="toggleFolderExpand($event, node)" ng-mousedown="$event.stopPropagation()" ng-mouseup="$event.stopPropagation()"
+                                    ng-right-click="openFolderExpandContextMenu($event, node)">
+                                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">
+                                </div>
+                                <div class="icon" ng-dblclick="toggleFolderExpand($event, node)">
+                                    <div class="lock-icon lock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-lock-folder.svg"></div>
+                                    <div class="fake-svg png"></div>
+                                </div>
+                                <div class="name" ng-dblclick="$event.stopPropagation(); dblclickSidebarFolder($event, node)" title="{{node.name | longTitle}}" ng-bind-html="node.name | fuzzyMatch:folderKeyword"></div>
+                                <input type="text" maxlength="2048" id="folder-input-{{::node.id}}" ng-click="$event.stopPropagation();" ng-mousedown="$event.stopPropagation()" ng-mouseup="$event.stopPropagation()"
+                                    ng-init="node.newFolderName=node.name" ng-model="node.newFolderName" ng-keydown="onRenameKeydown($event, node)"
+                                    ng-blur="changeFolderName(node, node.newFolderName);" autofocus
+                                    ng-paste="onPasteFolderName($event, node)"
+                                >
+                                <div class="badge self" ng-dblclick="toggleFolderExpand($event, node)">{{node.imageCount | number:0 | noZero}}</div>
+                                <div class="badge descendant" ng-dblclick="toggleFolderExpand($event, node)">{{node.descendantImageCount | number:0 | noZero}}</div>
+                                <div class="active-bg"></div>
+                                <div class="multiple-drop-folder-top-area"></div>
+                                <div class="multiple-drop-folder-name-area"></div>
+                                <div class="multiple-drop-folder-bottom-area"></div>
+                            </div>
+
+                            <!-- All -->
+                            <div 
+                                ng-switch-when="all"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'all'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openAll();"
+                                ng-right-click="openSidebarVisibleContextMenu($event)"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_all.png)"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.all' | i18n }}</div>
+                                <div class="badge" ng-show="all.length">{{all.length | number:0}}</div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- 未分类 -->
+                            <div 
+                                ng-switch-when="unfiled"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'unfiled'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openUnfiled()"
+                                ng-right-click="openSidebarVisibleContextMenu($event)"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_unfield.png)"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.unfiled' | i18n }}</div>
+                                <div class="badge" ng-show="unfiledCount">{{unfiledCount | number:0}}</div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- 未标签 -->
+                            <div 
+                                ng-switch-when="untagged"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'untagged'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openUntagged()"
+                                ng-right-click="openSidebarVisibleContextMenu($event)"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_untaggeds.png)"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.untagged' | i18n }}</div>
+                                <div class="badge" ng-show="untaggedCount">{{untaggedCount | number:0}}</div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- Recent -->
+                            <div 
+                                ng-switch-when="recent"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'recent'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openRecent();"
+                                ng-right-click="openRecentContextMenu($event)"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_clock.png);"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.recent' | i18n }}</div>
+                                <div class="badge" ng-click="$event.stopPropagation(); openSidebarVisibleContextMenu()">
+                                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-more.svg">
+                                </div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- Random -->
+                            <div 
+                                ng-switch-when="random"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'random'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openRandom();"
+                                ng-mousedown="preventMiddleClick($event)"
+                                ng-right-click="openSidebarVisibleContextMenu($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_random.png); margin-left: -1px;"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.random' | i18n }}</div>
+                                <div class="badge" ng-click="$event.stopPropagation(); openSidebarVisibleContextMenu()">
+                                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-more.svg">
+                                </div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- 社區 -->
+                            <div 
+                                ng-switch-when="community"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'community'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openCommunity()"
+                                ng-right-click="openSidebarVisibleContextMenu($event)"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_community.png)"></div>
+                                </div>
+                                <div class="name" style="display: flex; align-items: center; gap: 6px;">{{'preferencesWindow.sidebar.community' | i18n}}</div>
+                                <div class="badge" ng-click="$event.stopPropagation(); openSidebarVisibleContextMenu()">
+                                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-more.svg">
+                                </div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- 全部标签 -->
+                            <div 
+                                ng-switch-when="allTags"
+                                class="item depth-0"
+                                ng-class="{'active active-item' : viewMode == 'alltags'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openAllTags()"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_alltags.png)"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.allTags' | i18n }}</div>
+                                <div class="badge" ng-show="tags.length">{{tags.length | number:0}}</div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- 垃圾桶 -->
+                            <div 
+                                ng-switch-when="trash"
+                                id="trash-item"
+                                class="item depth-0 trash"
+                                ng-class="{'active active-item' : viewMode == 'trash'}"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-click="openTrash()"
+                                ng-mousedown="preventMiddleClick($event)"
+                                ng-right-click="openTrashContextMenu($event)"
+                                ondragover="onDragOverTrash(event)" ondrop="onDropTrash(event)" ondragleave="onDragLeaveSidebar(event)"
+                            >
+                                <div class="icon">
+                                    <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_trashbin.png)"></div>
+                                </div>
+                                <div class="name">{{ 'general.pages.trash' | i18n }}</div>
+                                <div class="badge" ng-show="trash.length">{{trash.length | number:0}}</div>
+                                <div class="active-bg"></div>
+                            </div>
+                            <!-- 空白 -->
+                            <div ng-switch-when="separator" class="separator" ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"></div>
+
+                            <!-- 快速访问区隔 -->
+                            <div ng-switch-when="label-qucik-access" id="quickAccess-header" class="sidebar-item-label" ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }">
+                                <div class="sidebar-item-label-warp">
+                                    <div class="name expandable" ng-click="toggleQuickAccessVisible()">{{'sidebar.quickAccessLabel' | i18n}}<span ng-show="quickAccess.length > 0"> ({{quickAccess.length}})</span><span class="expand"
+                                            ng-class="{'collapse': !isExpandQuickAccess}">
+                                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">
+                                        </span></div>
+                                </div>
+                            </div>
+
+                            <!-- 快速访问项目 -->
+                            <div 
+                                ng-switch-when="quickAccess"
+                            >
+                                <div 
+                                    sidebar-quick-access-item
+                                    id="quick-access-{{::node.id}}"
+                                    ng-if="node.type === 'folder'"
+                                    class="item depth-0 sidebar-quick-access-item"
+                                    ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                    ng-class="getQuickAccessClass(node)" 
+                                    ng-click="openFolder(folderMappings[node.id], false, 'quickaccess-' + folderMappings[node.id].id)"
+                                    ng-right-click="openQuickAccessContextMenu($event, node)"
+                                    ng-mousedown="preventMiddleClick($event)"
+                                    ondrop="onDropFolder(event)" 
+                                    ondragenter="onDragEnterFolder(event)"
+                                    ondragover="onDragOverFolder(event)"
+                                    ondragleave="onDragLeaveFolder(event)"
+                                >
+                                    <div class="icon">
+                                        <div class="lock-icon lock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-lock-folder.svg"></div>
+                                        <div class="fake-svg png"></div>
+                                    </div>
+                                    <div class="name" title="{{folderMappings[node.id].name | longTitle}}" ng-bind-html="folderMappings[node.id].name | fuzzyMatch:folderKeyword"></div>
+                                    <div class="badge">{{folderMappings[node.id].imageCount | number:0 | noZero}}</div>
+                                    <div class="active-bg"></div>
+                                    <div class="multiple-drop-quick-access-top-area"></div>
+                                    <div class="multiple-drop-quick-access-bottom-area"></div>
+                                </div>
+
+                                <div 
+                                    sidebar-quick-access-item
+                                    id="quick-access-{{::node.id}}"
+                                    ng-if="node.type === 'smartFolder'"
+                                    class="item depth-0 sidebar-quick-access-item"
+                                    ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                    ng-class="getQuickAccessClass(node)" 
+                                    ng-click="openSmartFolder(smartFolderMappings[node.id], false, 'quickaccess-' + smartFolderMappings[node.id].id)"
+                                    ng-right-click="openQuickAccessContextMenu($event, node)"
+                                    ng-mousedown="preventMiddleClick($event)"
+                                >
+                                    <div class="icon">
+                                        <div class="lock-icon lock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-lock-folder.svg"></div>
+                                        <div class="fake-svg png" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_smart-folder.png)"></div>
+                                    </div>
+                                    <div class="name" title="{{smartFolderMappings[node.id].name | longTitle}}">{{smartFolderMappings[node.id].name}}</div>
+                                    <div class="badge">{{smartFolderMappings[node.id].imageCount | number:0 | noZero}}</div>
+                                    <div class="active-bg"></div>
+                                    <div class="multiple-drop-quick-access-top-area"></div>
+                                    <div class="multiple-drop-quick-access-bottom-area"></div>
+                                </div>
+                            </div>
+
+                            <!-- 智能文件夹区隔 -->
+                            <div ng-switch-when="label-smart-folder" class="sidebar-item-label" ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }">
+                                <div class="sidebar-item-label-warp">
+                                    <div class="hide-btns">
+                                        <div class="icon-btn" tippy tippy-placement="bottom" tippy-content="{{'sidebar.newSmartFolderHint' | i18n}}{{preferences.shortcuts.keybinds['file.create.smartfolder'] | shortcutsWrapper | shortcuts}}" ng-click="openNewSmartFolderContextMenu($event)">
+                                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-sidebar-add.svg">
+                                        </div>
+                                    </div>
+                                    <div class="name expandable" ng-click="toggleSmartFolderVisible()">{{'sidebar.smartFolderLabel' | i18n}}<span
+                                            ng-show="smartFolders.length > 0"> ({{smartFolderList.length}})</span><span class="expand" ng-class="{'collapse': !isExpandSmartFolder}">
+                                                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">    
+                                            </span></div>
+                                </div>
+                            </div>
+                            <!-- 智能文件夹 -->
+                            <div 
+                                ng-switch-when="smartFolder"
+                                sidebar-smart-folder-item
+                                id="smart-folder-{{::node.id}}" 
+                                class="item depth-{{node.styles.depth}} sidebar-smart-folder-item"
+                                ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }"
+                                ng-class="getSmartFolderClass(node)" 
+                                ng-click="clickSmartNode($event, node)"
+                                ng-right-click="openSmartFolderContextMenu($event, node)"
+                                ng-mousedown="preventMiddleClick($event)"
+                            >
+                                <!-- 引導線 -->
+                                <div class="guidelines">
+                                    <div class="guideline color-{{line}} depth-{{$index + 1}}" ng-repeat="line in node.guidelines track by $index">
+                                        <div class="top"></div>
+                                        <div class="middle" ng-hide="($index + 1 === node.styles.depth) && node.children.length > 0"></div>
+                                        <div class="bottom"></div>
+                                    </div>
+                                </div>
+                                <div class="expand-icon" ng-click="toggleSmartFolderExpand($event, node)" ng-mousedown="$event.stopPropagation()" ng-mouseup="$event.stopPropagation()" ng-right-click="openSmartFolderExpandContextMenu($event, node)">
+                                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">
+                                </div>
+                                <div class="icon" ng-dblclick="toggleSmartFolderExpand($event, node)">
+                                    <div class="fake-svg png" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_smart-folder.png)"></div>
+                                </div>
+                                <div class="name" ng-dblclick="$event.stopPropagation(); dblclickSidebarSmartFolderGroup($event, node)" title="{{node.name | longTitle}}" ng-bind-html="node.name | fuzzyMatch:folderKeyword"></div>
+                                <input type="text" maxlength="2048" id="folder-input-{{::node.id}}" ng-click="$event.stopPropagation();" ng-mousedown="$event.stopPropagation()" ng-mouseup="$event.stopPropagation()"
+                                    auto-focus="rename-folder-{{::node.id}}" ng-init="node.newFolderName=node.name" ng-model="node.newFolderName" ng-keydown="onRenameKeydown($event, node)" ng-blur="changeSmartFolderName(node, node.newFolderName);node.editable = false;">
+                                <div class="badge" ng-dblclick="toggleSmartFolderExpand($event, node)">{{node.imageCount | number:0 | noZero}}</div>
+                                <div class="active-bg"></div>
+                                <div class="multiple-drop-smart-folder-top-area"></div>
+                                <div class="multiple-drop-smart-folder-name-area"></div>
+                                <div class="multiple-drop-smart-folder-bottom-area"></div>
+                            </div>
+                            
+                            <!-- 文件夹区隔 -->
+                            <div ng-switch-when="label-folder" id="folders-header" class="sidebar-item-label" ng-style="{ 'z-index': 100000 - node.index, 'height': node.size + 'px' }">
+                                <div class="sidebar-item-label-warp">
+                                    <div class="hide-btns">
+                                        <div id="add-folder-btn" class="icon-btn" tippy tippy-placement="bottom" tippy-content="{{'sidebar.newFolderHint' | i18n}}{{preferences.shortcuts.keybinds['file.create.folder'] | shortcutsWrapper | shortcuts}}" ng-click="newFolder()">
+                                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-sidebar-add.svg">
+                                        </div>
+                                    </div>
+                                    <div class="name expandable" ng-click="toggleFolderVisible()">{{'sidebar.folderLabel' | i18n}}<span ng-show="folderList.length > 0"> ({{folderList.length}})</span><span class="expand"
+                                            ng-class="{'collapse': !isExpandFolder}">
+                                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">
+                                        </span></div>
+                                </div>
+                            </div>
+                            
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            
+            <!-- 文件夹拖拽区域 -->
+            <div
+                class="sidebar-droparea"
+                /*style="width: {{:refreshContainSize:containerSize.sidebar}}px"*/
+                ondrop="onDropSidebar(event)"
+                ondragleave="onDragLeaveSidebar(event)"
+                onmousemove="onMouseMoveSidebar(event)"
+            >
+                <div class="tips">{{'pages.droparea.sidebar' | i18n}}</div>
+            </div>
+
+            <!-- 篩選文件夾 -->
+            <div class="sidebar-footer">
+                <input id="folder-search" tabindex="-1" maxlength="1024" type="search" selectall class="search" placeholder="{{'sidebar.filterLabel' | i18n}}" ng-model="folderKeyword" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 50, 'blur': 0 } }">
+            </div>
+        </div>
+
+        <!-- 網頁瀏覽器 -->
+        <div id="website-panel" class="website-panel" ng-controller="WebsitePanelController" ng-show="viewMode == 'community'" style="left: {{:refreshContainSize:containerSize.sidebar + 1}}px;">
+            <div ng-show="viewMode == 'community'" ng-if="isUILoaded">
+                <div class="drag-area"></div>
+                <div class="loader">
+                    <svg class="spinner" width="32px" height="32px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
+                        <circle class="path" fill="none" stroke-width="3" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
+                    </svg>
+                </div>
+                <webview id="website-panel-webview" website-panel-webview frameborder="0" allowpopups></webview>
+                <div class="website-panel-webview-control">
+                    <div id="toggle-all-btn" class="icon-btn" ng-right-click="openSidebarMenu($event)" ng-click="toggleAll($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic_toggle-sidebar.svg"></div>
+                    <div id="website-panel-webview-go-back" class="disabled icon-btn no-padding" ng-click="goBack()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-prev.svg"></div>
+                    <div id="website-panel-webview-go-forward" class="disabled icon-btn no-padding" ng-click="goForward()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-next.svg"></div>
+                    <div class="icon-btn" ng-click="refresh()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic_refresh.svg"></div>
+                    <div class="website-panel-webview-control-btn icon-btn" ng-click="openInBrowser()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-open-default.svg"></div>
+                    <div id="website-panel-webview-title" class="title"></div>
+                    <corner-btns theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
+                </div>
+            </div>
+        </div>
+
+        <!-- 圖片列表 -->
+        <div id="list-content-panel" class="content-panel" ng-class="{'hide': viewMode == 'community', 'filter-open' : eagle.filter.isOpen, 'small-list': imageSize.height <= 100, 'expand-right': viewMode == 'alltags'}" style="left: {{containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;">
+
+            <!-- 文件写入进度条 -->
+            <div id="saving-progress-bar" class="saving-progress-bar">
+                <div class="message"></div>
+                <div class="progressbar">
+                    <div class="current" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- 檔案添加進度條 -->
+            <div id="upload-queue-progress" ng-hide="isDetailMode" class="upload-progress-bar" style="left: {{containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;" ng-class="{'open': uploadQueue.length > 0}">
+                <div class="progressbar" ng-show="uploadQueue.length > 0">
+                    <div class="current" ng-show="uploadQueue.length > 1" style="width: {{finishQueue.length/uploadQueue.length*100}}%;"></div>
+                    <div class="current" ng-show="uploadQueue.length == 1" style="width: {{progress*100}}%;"></div>
+                </div>
+                <div class="message" ng-show="uploadQueue.length > 0">
+                    <span>{{'progress.uppload.addingImages' | i18n}} </span>
+                    <span class="counter percentage">{{finishQueue.length}}/{{uploadQueue.length}}</span>
+                    <span ng-show="addImageTimeLeftInSeconds" class="counter remain"> ({{addImageTimeLeftInSeconds | second2time}})</span>
+                </div>
+                <div ng-show="uploadQueue.length > 0" class="ic-btn cancel" ng-click="cancelAllTasks()">
+                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                </div>
+            </div>
+
+            <!-- 搜寻自动提示 -->
+            <div class="search-suggestions" ng-show="showSuggestions && (keywordSuggestions.length > 0 || hsks.length > 0)">
+                <div class="suggestions section" ng-show="keywordSuggestions.length > 0">
+                    <div class="suggestion" ng-repeat="suggestion in keywordSuggestions" ng-class="{'selected': searchIndex == $index}" ng-mouseenter="hoverSuggestion($index)" ng-click="selectSuggestion($index)"><span class="name" ng-bind-html="suggestion.word | fuzzyMatch:keyword"></span></div>
+                </div>
+                <div class="section" ng-show="hsks.length > 0">
+                    <div class="suggestion" ng-repeat="history in hsks track by $index" ng-class="{'selected': searchIndex == $index + 100}" ng-click="selectHistoryKeyword($index)" ng-mouseenter="hoverHistory($index)"><span class="name" ng-bind-html="history | fuzzyMatch:keyword"></span><div class="remove-history" ng-click="removeSeachKeyword($event, history)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-search-history-remove.svg"></div></div>
+                </div>
+            </div>
+
+            <!-- 列表模式工具列 -->
+            <div class="toolbar" ng-show="!isDetailMode || isInlineMode" ng-dblclick="maximize()">
+                <!-- 麵包削 -->
+                <div class="breadcrumbs" ng-dblclick="$event.stopPropagation();">
+
+                    <!-- Windows 應用選單 -->
+                    <div ng-if="isHideSidebar" class="ic-btn application-menu-btn" ng-click="openApplicationContextMenu($event);">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-app-menu.svg">
+                    </div>
+                    <!-- 側欄隱藏/顯示 -->
+                    <div id="toggle-all-btn" class="ic-btn" ng-right-click="openSidebarMenu($event)" ng-click="toggleAll($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_toggle-sidebar.svg">
+                    </div>
+                    <!-- 上一頁 -->
+                    <div class="ic-btn prev no-padding" tippy tippy-content="{{'<key>⌘</key><key>←</key>' | shortcuts}}" tippy-placement="bottom" ng-class="{'disabled': !UrlStateService.canGoBack()}" ng-click="prevHistory($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-prev.svg">
+                    </div>
+                    <!-- 下一頁 -->
+                    <div class="ic-btn next no-padding" tippy tippy-content="{{'<key>⌘</key><key>→</key>' | shortcuts}}" tippy-placement="bottom" ng-class="{'disabled': !UrlStateService.canGoForward()}" ng-click="nextHistory($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-next.svg">
+                    </div>
+
+                    <ul>
+                        <li ng-show="viewMode == 'all'" ng-click="resetKeyword(); resetFilter(); filterContent(); openAll()">{{'general.pages.all' | i18n}}</li>
+                        <li ng-show="viewMode == 'unfiled'" ng-click="resetKeyword(); resetFilter();filterContent();openUnfiled()">{{'general.pages.unfiled' | i18n}}</li>
+                        <li ng-show="viewMode == 'untagged'" ng-click="resetKeyword(); resetFilter();filterContent();openUntagged()">{{'general.pages.untagged' | i18n}}</li>
+                        <li ng-show="viewMode == 'recent'" ng-click="resetKeyword(); resetFilter();filterContent();openRecent()">{{'general.pages.recent' | i18n}}</li>
+
+                        <li ng-if="viewMode == 'alltags' || currentTag" ng-click="openAllTags()">
+                            <span ng-if="getSelectedTags().length === 0">{{'general.pages.allTags' | i18n}} ({{tags.length}})</span>
+                            <span ng-if="getSelectedTags().length > 0">{{'toolbar.breadcumbs.selected' | i18n}} ({{getSelectedTags().length}})</span>
+                        </li>
+
+                        <li ng-show="viewMode == 'random'" ng-click="resetKeyword(); resetFilter();filterContent();">{{'general.pages.random' | i18n}}</li>
+                        <li ng-show="viewMode == 'trash'" ng-click="resetKeyword(); resetFilter();filterContent();openTrash()">{{'general.pages.trash' | i18n}}</li>
+                        <li ng-show="!viewMode && $root.selectedFolders.length > 0">{{'toolbar.breadcumbs.selected' | i18n}} {{$root.selectedFolders.length}} {{'toolbar.breadcumbs.folders' | i18n}}</li>
+                        <li ng-show="!viewMode && $root.selectedSmartFolders.length > 0">{{'toolbar.breadcumbs.selected' | i18n}} {{$root.selectedSmartFolders.length}} {{'toolbar.breadcumbs.smartFolders' | i18n}}</li>
+
+                        <li ng-class="{'has-parent': !!currentFolder.parent}" ng-show="!viewMode && currentFolder && $root.selectedFolders.length === 0" ng-click="resetKeyword(); resetFilter();filterContent(); openFolder(currentFolder); changeSidebarIndex(currentFolder)" ng-right-click="openFolderFullPathContextMenu($event, currentFolder)" title="{{currentFolderPath}}">{{currentFolder.name}}</li>
+
+                        <li ng-show="!viewMode && currentSmartFolder && $root.selectedSmartFolders.length === 0" ng-click="resetKeyword(); resetFilter();filterContent();openSmartFolder(currentSmartFolder)">{{currentSmartFolder.name}}</li>
+
+                        <!-- 筛选器 -->
+                        <li style="-webkit-app-region: drag;" ng-if="viewMode !== 'alltags' && (eagle.filter.filterBadge || keyword)" ng-class="{'active show': eagle.filter.filterBadge || keyword, 'out': (!eagle.filter.filterBadge && !keyword)}" title="{{'toolbar.breadcumbs.searchResult' | i18n}} ({{allData.length | number:0}})"><img src="assets/images/{{theme|themePath}}/icons/ic-separator.svg">{{'toolbar.breadcumbs.searchResult' | i18n}} ({{allData.length | number:0}})</li>
+                        
+                    </ul>
+                </div>
+
+                <div id="box-list-slider" class="sliders-bar has-btn" ng-show="!isDetailMode || isInlineMode" ng-dblclick="$event.stopPropagation();">
+                    <div class="slider" ng-hide="viewMode=='alltags'">
+                        <div class="ic-btn zoom-btn" ng-click="zoomOut($event);" tippy tippy-content="{{'appmenu.view>zoomOut' | i18n}} <key>-</key>" tippy-placement="bottom"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-zoom-out.svg"></div>
+                        <div class="range-wrap">
+                            <div class="range-progressbar">
+                                <div class="current" style="width: {{imageSize.height / MAX_LIST_WIDTH * 100}}%"></div>
+                            </div>
+                            <input class="range" type="range" name="points" min="75" max="{{::MAX_LIST_WIDTH}}" step="5" tabIndex="-1" ng-model="imageSize.height" ng-change="onListSizeChange()">
+                        </div>
+                        <div class="ic-btn zoom-btn" ng-click="zoomIn($event);" tippy tippy-content="{{'appmenu.view>zoomIn' | i18n}} <key>+</key>" tippy-placement="bottom"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-zoom-in.svg"></div>
+                    </div>
+                </div>
+
+                <div class="right" ng-hide="viewMode=='random'" ng-dblclick="$event.stopPropagation();">
+
+                    <!-- 置頂插件 -->
+                    <div class="pinned-plugins" ng-show="pluginModule.pinnedPlugins.length > 0" ui-sortable="pluginModule.pinPluginSortableOptions" ng-model="pluginModule.pinnedPlugins">
+                        <div class="ic-btn" ng-repeat="plugin in pluginModule.pinnedPlugins" ng-click="pluginModule.open(plugin)" tippy tippy-content="{{plugin.manifest.name}}" tippy-placement="bottom"><img width="20" height="20" src="{{plugin.icon}}"></div>
+                    </div>
+
+                    <div class="ic-btn filter-btn no-padding" tippy tippy-content="{{'general.plugin' | i18n}} <key>P</key>" tippy-placement="bottom" ng-hide="viewMode=='alltags'" ng-click="openPluginPanel($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-plugin.svg">
+                        <div ng-show="pluginModule.needUpdatePluginCount > 0" class="badge-count"></div>
+                    </div>
+                    <!-- 文件夹模式随机按钮 -->
+                    <div id="refresh-random" ng-if="(currentFolder && currentFolder.orderBy === 'RANDOM') || (currentSmartFolder && currentSmartFolder.orderBy === 'RANDOM')" class="ic-btn" tippy tippy-content="{{'toolbar.randomRefhreshBtn' | i18n}}<key>R</key>" tippy-placement="bottom" ng-click="refreshRandom()">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_refresh.svg">
+                    </div>
+                    <div class="ic-btn filter-btn no-padding" tippy tippy-content="{{ 'appmenu.actions' | i18n }} <key>G</key>" tippy-placement="bottom" ng-hide="viewMode=='alltags'" ng-click="openActionsPanel($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-action.svg">
+                    </div>
+                    <!-- 筛选按钮 -->
+                    <div class="ic-btn filter-btn no-padding" tippy tippy-content="{{ 'context.order.orderBy' | i18n | shortcuts}}" tippy-placement="bottom" ng-hide="viewMode=='alltags'" ng-click="openOrderMenu($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-layout.svg">
+                    </div>
+                    <div class="ic-btn filter-btn no-padding" tippy tippy-content="{{ 'toolbar.filterHint' | i18n }}{{preferences.shortcuts.keybinds['find.filter.toggle'] | shortcutsWrapper | shortcuts}}" tippy-placement="bottom" ng-hide="viewMode=='alltags'" ng-class="{'active': eagle.filter.isOpen}" ng-click="toggleFilter()">
+                        <div class="badge" ng-show="eagle.filter.filterBadge > 0">{{eagle.filter.filterBadge}}</div>
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-filter.svg">
+                    </div>
+
+                    <!-- 标签管理按钮 -->
+                    <div class="tabs" ng-show="viewMode=='alltags'" style="margin-right: 4px;">
+                        <!-- 格狀 -->
+                        <div class="tab" ng-click="toggleTagLayout()" ng-class="{'active': viewMode=='alltags' && tagViewLayoutMode === 'INLINE'}">
+                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-tag-manager-layout-grid.svg">
+                        </div>
+                        <!-- 列表 -->
+                        <div class="tab" ng-click="toggleTagLayout()" ng-class="{'active': viewMode=='alltags' && tagViewLayoutMode === 'LIST'}">
+                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-tag-manager-layout-list.svg">
+                        </div>
+                    </div>
+
+                    <div class="ic-btn no-padding" ng-show="viewMode=='alltags'" ng-click="openTagGroupListContextMenu($event)"  style="margin-right: 4px;">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-tag-manager-sort.svg">
+                    </div>
+
+                    <!-- 搜寻框 -->
+                    <div class="search-wrap">
+                        <div class="scope-select" ng-click="openSearchScopeMenu($event)" tippy tippy-content="{{'Context.SearchScope.Label' | i18n}}" tippy-placement="bottom">
+                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-arrow-down.svg">
+                        </div>
+                        <input id="search" tabindex="-1" maxlength="4096" type="search" selectall class="search" placeholder="{{'toolbar.searchPlaceholder' | i18n}}" ng-model="keyword" ng-keydown="seachKeyup($event)" ng-focus="searchFocus()" ng-blur="searchBlur()" ng-click="searchFocus()">
+                        <!-- Eagle 5.0 -->
+                        <div class="search-by-image icon-btn">
+                            <div class="loader" 
+                                 ng-show="eagle.aiSearch.isInstalled && (eagle.aiSearch.isStarting || eagle.aiSearch.isSyncing)" 
+                                 tippy 
+                                 tippy-placement="bottom" 
+                                 tippy-content="{{eagle.aiSearch.isStarting ? ('aiSearch.statusMsg.starting' | i18n) : ('aiSearch.statusMsg.syncing' | i18n)}}" 
+                                 ng-click="eagle.aiSearch.open()"></div>
+                            <img ng-click="toggleFilterByType('image')" 
+                                 ng-hide="keyword || eagle.aiSearch.isStarting || eagle.aiSearch.isSyncing" 
+                                 ng-src="assets/images/{{theme|themePath}}/icons/ic-search-by-image.svg" 
+                                 tippy 
+                                 tippy-placement="bottom" 
+                                 tippy-content="{{'filter.image>dropTips' | i18n}}">
+                        </div>
+                       
+                    </div>
+
+                    <corner-btns ng-if="inspector.isHideInspector || viewMode=='alltags'" theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
+
+                </div>
+
+                <div class="right" ng-show="viewMode=='random'" ng-dblclick="$event.stopPropagation();">
+                    <div id="refresh-random" class="ic-btn" tippy tippy-content="{{'toolbar.randomRefhreshBtn' | i18n}}<key>R</key>" tippy-placement="bottom" ng-click="refreshRandom()">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_refresh.svg">
+                    </div>
+                    <div class="ic-btn filter-btn no-padding" ng-hide="viewMode=='alltags'" ng-class="{'active': eagle.filter.isOpen}" ng-click="toggleFilter()">
+                        <div class="badge" ng-show="eagle.filter.filterBadge">{{eagle.filter.filterBadge}}</div>
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-filter.svg">
+                    </div>
+                    <!-- 搜寻框-随机模式 -->
+                    <div class="search-wrap" ng-class="{'no-dropdown' : viewMode=='alltags'}">
+                        <div class="scope-select" tippy tippy-content="{{'Context.SearchScope.Label' | i18n}}" tippy-placement="bottom" ng-click="openSearchScopeMenu($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-arrow-down.svg"></div>
+                        <input id="search" maxlength="4096" type="search" selectall class="search" placeholder="{{'toolbar.searchPlaceholder' | i18n}}" ng-model="keyword" ng-change="search(keyword)" ng-keydown="seachKeyup($event)" ng-focus="searchFocus()" ng-blur="searchBlur()" ng-model-options="{ debounce: { 'default': 200, 'blur': 0 } }" ng-click="searchFocus()">
+                    </div>
+
+                    <corner-btns ng-if="inspector.isHideInspector" theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
+                </div>
+            </div>
+
+            <!-- 失败重试提示 -->
+            <div class="toast-alert" ng-click="openErrorModal()" ng-show="errorList.length > 0">
+                <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-toast-error.svg"></div>
+                <div class="message">{{errorList.length}} <span ng-show="errorList.length==1">{{'notify.errorToast.errorMsg1' | i18n}}</span><span ng-show="errorList.length > 1">{{'notify.errorToast.errorMsg2' | i18n}}</span></div>
+                <div class="ic-btn clean-btn" ng-click="cleanAllError($event);"><img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg"></div>
+            </div>
+
+            <!-- 本地服务器无法访问题是窗口 -->
+            <div class="toast-alert warning bottom" ng-if="localhostError">
+                <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-toast-error.svg"></div>
+                <div class="message" ng-bind-html="'notify.localhostError.msg' | i18n"></div>
+                <div class="ic-btn clean-btn" ng-click="cleanLocalhostError();"><img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg"></div>
+            </div>
+
+            <!-- 資源庫沒有寫入權限提示 -->
+            <div class="toast-alert warning bottom" ng-if="libraryPathPermissionError">
+                <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-toast-error.svg"></div>
+                <div class="message" ng-bind-html="'notify.libraryPermissionError.msg' | i18n"></div>
+                <div class="ic-btn clean-btn" ng-click="cleanLibraryPathPermissionError()"><img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg"></div>
+            </div>
+
+            <!-- 篩選工具列 -->
+            <div 
+            id="filter-toolbar" 
+            class="filter-toolbar" 
+            ng-hide="viewMode == 'alltags'"
+            ng-class="{ 'hide-filter': isDetailMode }"
+            ng-mousedown="$event.stopPropagation();"
+            >
+                <div class="filter-items">
+                    <input style="height: 1px; width: 1px; position: absolute; visibility: hidden;" id="colors-picker" color-picker hex-color="$body.hexColor" tabindex="-1" type="color" name="favcolor" value="#ff0000" ng-change="filterWithColor(hexToRGB($body.hexColor));" ng-model="$body.hexColor" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 100, 'blur': 0 } }">
+                    <div ui-sortable="eagle.filter.toolbarSortableOptions" ng-model="eagle.filter.toolbar" ng-show="eagle.filter.isOpen">
+                        <div ng-repeat="item in eagle.filter.toolbar" ng-switch on="item.type" >
+                            <filter-item-image ng-switch-when="image"></filter-item-image>
+                            <filter-item-semantic ng-switch-when="semantic"></filter-item-semantic>
+                            <filter-item-color ng-switch-when="color"></filter-item-color>
+                            <filter-item-folders ng-switch-when="folders"></filter-item-folders>
+                            <filter-item-tags ng-switch-when="tags"></filter-item-tags>
+                            <filter-item-rating ng-switch-when="rating"></filter-item-rating>
+                            <filter-item-fonts ng-switch-when="fontActivated"></filter-item-fonts>
+                            <filter-item-camera ng-switch-when="camera"></filter-item-camera>
+                            <filter-item-shape ng-switch-when="shape"></filter-item-shape>
+                            <filter-item-types ng-switch-when="types"></filter-item-types>
+                            <filter-item-import ng-switch-when="import"></filter-item-import>
+                            <filter-item-mtime ng-switch-when="mtime"></filter-item-mtime>
+                            <filter-item-duration ng-switch-when="duration"></filter-item-duration>
+                            <filter-item-bpm ng-switch-when="bpm"></filter-item-bpm>
+                            <filter-item-size ng-switch-when="size"></filter-item-size>
+                            <filter-item-resolution ng-switch-when="resolution"></filter-item-resolution>
+                            <filter-item-annotation ng-switch-when="annotation"></filter-item-annotation>
+                            <filter-item-note ng-switch-when="note"></filter-item-note>
+                            <filter-item-url ng-switch-when="url"></filter-item-url>
+                        </div>    
+                        <!-- 新增篩選器按鈕 -->
+                        <div class="ic-btn filter-add-btn" ng-click="openFilterAddContextMenu()">
+                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-add.svg">
+                        </div>
+                    </div>
+                    
+                </div>
+                <div class="filter-right" ng-show="eagle.filter.filterBadge > 0 || SavedFilter.filters.length > 0">
+                    <div class="separator"></div>
+                    <div class="ic-btns">
+                        <div class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'savedFilter.filterButton' | i18n}}" ng-show="eagle.filter.filterBadge > 0 || SavedFilter.filters.length > 0 || keyword.length > 0" ng-class="{'active': SavedFilter.isOpen}" ng-click="SavedFilter.toggle($event);"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-saved.svg"></div>
+                        <div ng-show="eagle.filter.filterBadge > 0 || keyword" class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'Filter.Lock' | i18n}}" ng-class="{'active': eagle.filter.isLock}" ng-click="eagle.filter.isLock = !eagle.filter.isLock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-lock.svg"></div>
+                        <div ng-show="eagle.filter.filterBadge > 0 || keyword" class="ic-btn" ng-show="eagle.filter.filterBadge > 0" tippy tippy-placement="bottom" tippy-content="{{'Filter.Reset' | i18n}}{{preferences.shortcuts.keybinds['find.filter.reset'] | shortcutsWrapper | shortcuts}}" ng-click="resetFilter(); filterContent();"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-reset.svg"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="filter-toolbar-overlay" class="filter-toolbar-overlay"></div>
+
+            <!-- 自定义滚轴 -->
+            <div id="box-container-scrollbar" class="box-container-scrollbar" box-container-scrollbar>
+                <div class="box-container-scrollbar-thumb"></div>
+            </div>
+
+            <!-- 標籤管理 -->
+            <tag-manager></tag-manager>
+
+            <div ng-hide="isDetailMode || viewMode=='alltags'" id="scroll-to-top" class="scroll-to-top"><img src="assets/images/{{theme|themePath}}/icons/ic-scroll-top.svg"></div>
+
+            <!-- 图片列表页面 -->
+            <div
+                auto-scroll
+                rect-select
+                id="box-container" class="box-container grid-layout"
+                ng-show="viewMode!='alltags'"
+                ng-class="{'empty': !isLoading && filtereds.length <= 0, 'pixelated': $root.preferences.habits.renderBehavior == 'pixelated'}"
+                ondragenter="onDragEnterContainer(event)"
+                ondrop="onDropContainer(event)"
+                ondragover="onDragOverContainer(event)"
+                ng-right-click="openFileListContextMenu($event)"
+            >   
+                <!-- Scroll to top sentinel for main content -->
+                <div scroll-to-top-sentinel 
+                     target="#scroll-to-top" 
+                     threshold="200"
+                     scroll-container="#box-container"></div>
+                
+                <!-- 空状态；全部图片 -->
+                <div id="image-drop-area" class="drop-area" ng-hide="isLoading || viewMode=='trash' || viewMode=='unfiled' || viewMode=='untagged' || allData.length > 0 || keyword || currentSmartFolder || eagle.filter.filterBadge > 0 || currentFolder.children.length > 0">
+                    <div class="dash-line"></div>
+                    <!-- 全部 -->
+                    <div class="message" ng-show="viewMode=='all' || viewMode=='random'">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-library.png" width="352" height="144">
+                        <h2>{{'empty.all.title' | i18n}}</h2>
+                        <p>{{'empty.all.desc' | i18n}}</p>
+                        <div class="buttons">
+                            <div class="button button-xs button-grey" ng-click="importFolders()">{{'dialog.importLocalFolder.title' | i18n}}</div>
+                            <a class="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank">{{'appmenu.help>installExtension' | i18n}}</a>
+                        </div>
+                    </div>
+                    <!-- 資料夾 -->
+                    <div class="message" ng-show="(viewMode!='all' && viewMode!='random') && !(currentFolder.password && !currentFolder.isUnLock)">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-folder.png" width="352" height="144">
+                        <h2>{{'empty.folder.title' | i18n}}</h2>
+                        <p>{{'empty.all.desc' | i18n}}</p>
+                        <div class="buttons">
+                            <div class="button button-xs button-grey" ng-click="importFolders(currentFolder)">{{'dialog.importLocalFolder.title' | i18n}}</div>
+                            <a class="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank">{{'appmenu.help>installExtension' | i18n}}</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件夹密码输入 -->
+                <div class="lock-screen" ng-show="currentFolder && currentFolder.password && !currentFolder.isUnLock" ng-click="focusUnlockPassword()">
+                    <div class="info">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/lock-screen.png" width="400" height="144">
+                        <h4>{{'pages.unlock.title' | i18n}}</h4>
+                        <p ng-show="currentFolder.passwordTips">{{'pages.unlock.passwordTips' | i18n}}{{currentFolder.passwordTips}}</p>
+                        <div class="password-input-wrapper">
+                            <input id="lock-password-input" type="password" placeholder="{{'pages.unlock.placeholder' | i18n}}" select-all ng-model="unlockPassword" ng-keyup="unlockPasswordKeyup($event)">
+                            <!-- Touch ID 按鈕 - 整合在輸入框內 -->
+                            <button class="ic-btn touchid-btn-inline" 
+                                    ng-if="canUseTouchID"
+                                    ng-click="unlockFolderWithTouchID($event)"
+                            >
+                                <img src="assets/images/{{theme|themePath}}/icons/ic-touchid.svg" width="20" height="20">
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 空状态；搜索 -->
+                <div class="drop-area" ng-if="currentSmartFolder && filtereds.length==0 && !keyword">
+                    <div class="message">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-search.png" width="256" height="144">
+                        <h2>{{'empty.search.title' | i18n}}</h2>
+                        <p>{{'empty.search.desc' | i18n}}</p>
+                    </div>
+                </div>
+
+                <!-- 空状态；未归类 -->
+                <div class="drop-area fill" ng-if="viewMode=='unfiled' && unfiledCount==0 && !keyword && allData.length == 0">
+                    <div class="message" ng-show="raw.length > 0">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-unfiled-done.png" width="400" height="144">
+                        <h2>{{'empty.unfiled.done.title' | i18n}}</h2>
+                        <p>{{'empty.unfiled.done.desc' | i18n}}</p>
+                    </div>
+                    <div class="message" ng-show="raw.length === 0">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-unfiled-intro.png" width="400" height="144">
+                        <h2>{{'empty.unfiled.intro.title' | i18n}}</h2>
+                        <p>{{'empty.unfiled.intro.desc' | i18n}}</p>
+                    </div>
+                </div>
+
+                <!-- 空状态；未标签 -->
+                <div class="drop-area fill" ng-if="viewMode=='untagged' && untaggedCount==0 && !keyword">
+                    <div class="message" ng-show="raw.length > 0">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-untagged-done.png" width="400" height="144">
+                        <h2>{{'empty.untagged.done.title' | i18n}}</h2>
+                        <p>{{'empty.untagged.done.desc' | i18n}}</p>
+                    </div>
+                    <div class="message" ng-show="raw.length === 0">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-untagged-intro.png" width="400" height="144">
+                        <h2>{{'empty.untagged.intro.title' | i18n}}</h2>
+                        <p>{{'empty.untagged.intro.desc' | i18n}}</p>
+                    </div>
+                </div>
+
+                <!-- 空状态；垃圾桶 -->
+                <div class="drop-area" ng-if="viewMode=='trash' && trash.length==0 && !(keyword || eagle.filter.filterBadge)">
+                    <div class="message">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-trash.png" width="124" height="144">
+                        <h2>{{'empty.trash.title' | i18n}}</h2>
+                        <p>{{'empty.trash.desc' | i18n}}</p>
+                    </div>
+                </div>
+
+                <div class="drop-area" ng-if="filtereds.length==0 && (keyword || eagle.filter.filterBadge)" style="pointer-events: none;">
+                <!-- <div class="drop-area" ng-show="viewMode!='trash' && viewMode!='unfiled' && viewMode!='untagged' && filtereds.length==0 && (keyword || eagle.filter.filterBadge)"> -->
+                    <div class="message" ng-show="subFolders && subFolders.length === 0">
+                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-search.png" width="256" height="144">
+                        <h2>{{'empty.search.title' | i18n}}</h2>
+                        <p>{{'empty.search.desc' | i18n}}</p>
+                    </div>
+                </div>
+                <!-- 內容列表 -->
+                <!-- <div class="wrap" infinite-scroll-disalbe='loadMore()' infinite-scroll-distance='0' infinite-scroll-container="'#box-container'" infinite-scroll-parent> -->
+
+                    <!-- 文件夹列表 -->
+                    <div 
+                        id="sub-folder-container" 
+                        ng-if="$root.selectedFolders.length === 0 && currentFolder && currentFolder.children.length > 0 && subFolders.length > 0" 
+                        ng-show="listDone && eagle.filter.filterBadge == 0 && !(currentFolder && currentFolder.password && !currentFolder.isUnLock)" 
+                        style="width: 100%"
+                    >
+                        <!-- <div ng-if="isHideSubFolder" class="marginBottom-m"></div> -->
+                        <div class="list-label" ng-show="subFolders.length > 0">
+                            <div ng-click="toggleSubFolderList()" style="display: inline-flex;">
+                                {{'subFolderList.sectionLabel' | i18n}} ({{currentFolder.children.length}})
+                                <div class="expand-icon" ng-class="{'expand': !isHideSubFolder}"><img src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg"></div>
+                            </div>
+                            <div class="toggle-subfolder-content-btn" ng-click="showListSubfolderContent()">
+                                <div class="checkbox" ng-class="{'checked' : showSubfolderContent}"></div>
+                                {{'subFolderList.showSubFolderContentLabel' | i18n}}
+                            </div>
+                        </div>
+                        <div ng-if="isHideSubFolder" class="sub-folder-list" ui-sortable="subFolderSortableOptions" ng-model="currentFolder.children" ng-mousedown="$event.stopPropagation();" ng-click="cleanSelected($event);">
+                            <div
+                                class="sub-folder"
+                                ondrop="onDropFolder(event)"
+                                ondragover="onDragOverSubFolder(event)"
+                                ondragleave="onDragEndSubFolder(event)"
+                                ng-repeat="folder in subFolders"
+                                ng-click="$event.stopPropagation() ;selectFolder($event, folder)"
+                                ng-dblclick="openFolder(folder, undefined, undefined, undefined, 'content');"
+                                ng-right-click="openSubFolderContextMenu($event, folder)"
+                                ng-class="{'selected': selectedFolderMappings[folder.id], 'locked': folder.password && !folder.isUnLock}">
+                                <div
+                                    class="thumbnail"
+                                    ng-click="$event.stopPropagation() ;selectFolder($event, folder)"
+                                    ng-right-click="openSubFolderContextMenu($event, folder)"
+                                >
+                                    <div class="pic" ng-bind-html="folder.covers[0]"></div>
+                                    <div class="pic"></div>
+                                    <div class="pic"></div>
+                                    <div class="lock-icon lock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-sub-folder-lock.svg"></div>
+                                </div>
+                                <div class="name" ng-dblclick="$event.stopPropagation(); enableSubFolderNameEditable($event, folder)">{{folder.name}}</div>
+                                <div class="metas"><span>{{folder.imageCount}} {{'subFolderList.itemsLabel' | i18n}}</span><span ng-if="folder.children.length > 0">．{{folder.children.length}} {{'subFolderList.subFolderLabel' | i18n}}</span></div>
+                                <div class="metas mtime" style="display: none;"><span>{{folder.modificationTime | date:"yyyy/MM/dd hh:mm"}}</span></div>
+                            </div>
+                        </div>
+                        <div ng-if="isHideSubFolder" class="marginBottom-m"></div>
+                        <div ng-if="isHideSubFolder" class="list-label" ng-show="filtereds.length>0 && listDone && subFolders.length > 0">{{'subFolderList.contentLabel' | i18n}} ({{allData.length}})</div>
+                    </div>
+                    <div id="list-layout-header" ng-show="filtereds.length > 0" ng-if="layout === 'ListLayout'" ng-right-click="openListPropContextMenu($event)">
+                        <div class="prop thumbnail"></div>
+                        <div class="prop name" ng-class="{'active' : currentOrderBy === 'NAME'}" ng-click="changeListOrderBy('NAME')">
+                            <div class="name">{{'context.order.displayItems>name' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                        <div class="prop tags" ng-class="{'active' : currentOrderBy === 'TAGS'}" ng-click="changeListOrderBy('TAGS')">
+                            <div class="name">{{'context.order.metaItems>tags' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                        <div class="prop resolution" ng-class="{'active' : currentOrderBy === 'RESOLUTION'}" ng-click="changeListOrderBy('RESOLUTION')">
+                            <div class="name">{{'context.order.orderBy>resolution' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                        <div class="prop rating" ng-class="{'active' : currentOrderBy === 'RATING'}" ng-click="changeListOrderBy('RATING')">
+                            <div class="name">{{'context.order.orderBy>rating' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                        <div class="prop ext" ng-class="{'active' : currentOrderBy === 'EXT'}" ng-click="changeListOrderBy('EXT')">
+                            <div class="name">{{'context.order.displayItems>ext' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                        <div class="prop size" ng-class="{'active' : currentOrderBy === 'FILESIZE'}" ng-click="changeListOrderBy('FILESIZE')">
+                            <div class="name">{{'context.order.orderBy>filesize' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                        <div class="prop mtime" ng-class="{'active' : currentOrderBy === 'IMPORT'}" ng-click="changeListOrderBy('IMPORT')">
+                            <div class="name">{{'context.order.orderBy>import' | i18n}}</div>
+                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
+                        </div>
+                    </div> 
+                    <div
+						id="box-list"
+                        class="box-list"
+                        ng-grid-layout
+                        items="items"
+                        options="options"
+                        ng-mousedown="cleanSelected($event);"
+                        ng-right-click="openFileListContextMenu($event)"
+                        current-index="currentIndex"
+                    >
+                    </div>
+            </div>
+            <div
+                class="box-container-droparea"
+                ondragenter="onDragEnterContainer(event)"
+                ondragleave="onDragLeaveContainer(event)"
+                ondrop="onDropContainer(event)"
+                ondragover="onDragOverContainer(event)"
+                onmousemove="onMouseMoveContainer(event)"
+            >
+                <div class="tips">{{'pages.droparea.container' | i18n}}</div>
+            </div>
+        </div>
+
+        <!-- 詳情模式 -->
+        <div class="content-panel detail-mode" ng-show="isDetailMode" style="left: {{:refreshContainSize:containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;" ng-dblclick="dblclickContentPanel()" ng-mousedown="contentFocus($event)">
+
+
+            <!-- 詳情模式工具列 -->
+            <div class="toolbar has-border" ng-dblclick="$event.stopPropagation(); maximize();">
+
+                <!-- 麵包削 -->
+                <div class="breadcrumbs" style="min-width: 24px;" ng-dblclick="$event.stopPropagation();">
+                    <div id="toggle-all-btn" class="ic-btn" ng-right-click="openSidebarMenu($event)" ng-click="toggleAll($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic_toggle-sidebar.svg">
+                    </div>
+                    <div class="ic-btn prev no-padding" tippy tippy-content="{{'toolbar.exitBtn' | i18n}}<key>ESC</key>" tippy-placement="bottom" ng-click="leaveDetailMode()">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-exit.svg">
+                    </div>
+                    <ul style="max-width: initial;">
+                        <li class="show" style="margin-left: 5px;"><div class="counter">{{currentIndex()}} / {{allData.length}}</div></li>
+                    </ul>
+                </div>
+                
+                <!-- 圖片放大縮小滑塊 -->
+                <div 
+                    class="sliders-bar center long" 
+                    ng-dblclick="$event.stopPropagation();" 
+                    ng-show="!isInlineMode && isDetailMode && !URL_TYPES[current.ext] && !FONT_TYPES[current.ext] && !VIDEO_TYPES[current.ext] && !AUDIO_TYPES[current.ext] && (!pluginModule.previewExtension.viewerPluginMap[current.ext] || pluginModule.previewExtension.allowZoom(current.ext))"
+                >
+                    <div class="slider" ng-hide="DISABLE_ZOOM_TYPES[current.ext] || FONT_TYPES[current.ext] || VIDEO_TYPES[current.ext] || AUDIO_TYPES[current.ext] || MODEL_TYPES[current.ext] || current.ext == 'pdf'">
+                        <div class="range-wrap">
+                            <div class="range-progressbar">
+                                <div class="current" style="width: {{sliderZoomRatio / 200 * 100}}%"></div>
+                            </div>
+                            <input id="detail-slider-ratio" class="range" type="range" name="points" min="5" max="200" tabIndex="-1" ng-model="sliderZoomRatio">
+                        </div>
+                        <div class="ic-btn" ng-right-click="toggleRatioContextMenu($event)" ng-mouseup="$event.stopPropagation()" ng-click="openRatioContextMenu()">{{imageSize.zoomRatioExp | number:0}}%</div>
+                    </div>
+                </div>
+            
+                <!-- 書籤工具列 -->
+                <webview-toolbar ng-if="isDetailMode && URL_TYPES[current.ext]" item="current" theme="theme" webview-id="webview-{{current.id}}" style="margin: 0 8px;"></webview-toolbar>
+            
+                <!-- 裁切模式工具列 -->
+                <div class="right" ng-if="isCropMode" ng-dblclick="$event.stopPropagation();">
+                    <input id="crop-width" type="number" placeholder="{{'general.w' | i18n}}">
+                    <input id="crop-height" type="number" placeholder="{{'general.h' | i18n}}" style="margin-right: 12px;">
+                    <div class="ic-btn has-padding primary" ng-click="saveCrop()">
+                        {{'toolbar.cropSaveBtn' | i18n}}
+                    </div>
+                    <div class="ic-btn has-padding" ng-click="saveCrop(true)">
+                        {{'toolbar.cropSaveAs' | i18n}}
+                    </div>
+                    <div class="ic-btn has-padding" ng-click="cancelCrop()">
+                        {{'general.cancel' | i18n}}
+                    </div>
+                </div>
+            
+                <!-- 插件工具列 -->
+                <div class="right" ng-if="(pluginModule.previewExtension.viewerPluginMap[current.ext] && !pluginModule.previewExtension.allowZoom(current.ext))" ng-dblclick="$event.stopPropagation();">
+                    <div class="ic-btn prev no-padding" ng-class="{'disabled': currentIndex() == 1}" ng-click="selectPrev($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-prev.svg">
+                    </div>
+                    <div class="ic-btn next no-padding" ng-class="{'disabled': currentIndex() == allData.length}" ng-click="selectNext($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-next.svg">
+                    </div>
+                </div>
+            
+                <!-- 通用工具列 -->
+                <div class="right" ng-if="!isCropMode && (!pluginModule.previewExtension.viewerPluginMap[current.ext] || pluginModule.previewExtension.allowZoom(current.ext))" ng-dblclick="$event.stopPropagation();">
+            
+                    <!-- 置頂插件 -->
+                    <div class="pinned-plugins" ng-show="pluginModule.pinnedPlugins.length > 0" ui-sortable="pluginModule.pinPluginSortableOptions" ng-model="pluginModule.pinnedPlugins">
+                        <div class="ic-btn" ng-repeat="plugin in pluginModule.pinnedPlugins" ng-click="pluginModule.open(plugin)" tippy tippy-content="{{plugin.manifest.name}}" tippy-placement="bottom"><img width="20" height="20" src="{{plugin.icon}}"></div>
+                    </div>
+
+                    <div class="ic-btn filter-btn no-padding" tippy tippy-content="{{'general.plugin' | i18n}} <key>P</key>" tippy-placement="bottom" ng-hide="viewMode=='alltags'" ng-click="openPluginPanel($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-plugin.svg">
+                        <div ng-show="pluginModule.needUpdatePluginCount > 0" class="badge-count"></div>
+                    </div>
+
+                    <!-- 影片工具 -->
+                    <div ng-if="VIDEO_TYPES[current.ext]" class="ic-btn" tippy tippy-content="{{'toolbar.openInDefaultBtn' | i18n}}{{preferences.shortcuts.keybinds['view.file.opendefault'] | shortcutsWrapper | shortcuts}}" tippy-placement="bottom" ng-click="openFileWithDefault(current)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-open-default.svg"></div>
+                    <div ng-if="VIDEO_TYPES[current.ext]" class="ic-btn" tippy tippy-content="{{'toolbar.flipBtnHint' | i18n}}{{preferences.shortcuts.keybinds['edit.image.flip'] | shortcutsWrapper | shortcuts}}" tippy-placement="bottom" ng-click="flipVideo($event, current)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-flip.svg">
+                    </div>
+                    <div
+                        ng-if="VIDEO_TYPES[current.ext]"
+                        class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'toolbar.rotateBtnHint' | i18n}}{{preferences.shortcuts.keybinds['edit.image.rotate'] | shortcutsWrapper | shortcuts}}" ng-click="rotateVideo($event, current)">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-toolbar-rotate.svg">
+                    </div>
+                    
+                    <!-- 逐帧播放 -->
+                    <div
+                        ng-show="isDetailMode && current.ext === 'gif'"
+                        ng-class="{'active': usingGifPlayer}"
+                        class="ic-btn" ng-click="toggleGifPlayerMode($event)"
+                        tippy tippy-placement="bottom" tippy-content="{{'gifViewer.enableBtn' | i18n}}"
+                    >
+                        <img ng-src="assets/images/{{ theme | themePath }}/icons/ic-toolbar-gif-frames.svg">
+                    </div>
+                    <!-- 标注模式 -->
+                    <div
+                        ng-hide="isCropMode || VIDEO_TYPES[current.ext] || AUDIO_TYPES[current.ext] || FONT_TYPES[current.ext] || MODEL_TYPES[current.ext] || URL_TYPES[current.ext] || current.ext == 'pdf' || current.ext == 'txt'" 
+                        ng-dblclick="$event.stopPropagation();"
+                        ng-class="{'active': isCommentMode}"
+                        style="cursor: context-menu;"
+                        class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'general.viewMode.annotation' | i18n}}<key>C</key>" ng-click="toggleCommentMode($event)">
+                        <img ng-src="assets/images/{{ theme | themePath }}/icons/ic-toolbar-comment.svg">
+                        <div class="badge" ng-show="current.comments.length>0">{{current.comments.length}}</div>
+                    </div>
+                    
+                    <div
+                        ng-show="(current.ext=='jpg' || current.ext=='png' || current.ext=='webp' || current.ext==='bmp' || current.ext==='avif')"
+                        ng-class="{ 'disabled': !$root.supportRotate }"
+                        class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'toolbar.flipBtnHint' | i18n}}{{'<key>Shift</key><key>F</key>' | shortcuts}}" ng-click="flipImage($event, current, true)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-flip.svg">
+                    </div>
+                    <!-- 旋轉 -->
+                    <div
+                        ng-show="(current.ext=='jpg' || current.ext=='png' || current.ext=='webp' || current.ext==='bmp')"
+                        ng-class="{ 'disabled': !$root.supportRotate }"
+                        class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'toolbar.rotateBtnHint' | i18n}}{{'<key>Shift</key><key>R</key>' | shortcuts}}" ng-click="rotateImage($event, current)">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-toolbar-rotate.svg">
+                    </div>
+                    <div 
+                        ng-show="(current.ext === 'avif')"
+                        class="ic-btn disabled" tippy tippy-placement="bottom" tippy-content="{{'toolbar.notSupport' | i18n}}">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-toolbar-rotate.svg">
+                    </div>
+                    <!-- 裁切按鈕（可互動） -->
+                    <div
+                        ng-show="(current.ext=='jpg' || current.ext=='png' || current.ext=='webp')"
+                        ng-class="{ 'disabled': !$root.supportCrop }"
+                        class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'toolbar.cropBtnHint' | i18n}}{{preferences.shortcuts.keybinds['edit.image.crop'] | shortcutsWrapper | shortcuts}}" ng-click="cropImage($event, current)">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-toolbar-crop.svg">
+                    </div>
+                    <div
+                        ng-show="(current.ext=='avif')"
+                        class="ic-btn disabled" tippy tippy-placement="bottom" tippy-content="{{'toolbar.notSupport' | i18n}}">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-toolbar-crop.svg">
+                    </div>
+                    <div ng-hide="DISABLE_ZOOM_TYPES[current.ext]" class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'toolbar.zoomActualBtn' | i18n}}{{preferences.shortcuts.keybinds['view.zoom.actual'] | shortcutsWrapper | shortcuts}}" ng-click="zoomActual($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-zoom-actual.svg">
+                    </div>
+                    <div ng-class="{'active': lastZoomMode === 'edge'}" ng-hide="DISABLE_ZOOM_TYPES[current.ext]" class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'toolbar.zoomFitPage' | i18n}}{{'<key>`</key>' | shortcuts}}" ng-click="toggleZoom($event)">
+                        <img ng-src="assets/images/{{theme | themePath}}/icons/ic-toolbar-zoom-fit.svg">
+                    </div>
+                    <div class="ic-btn prev no-padding" ng-class="{'disabled': currentIndex() == 1}" ng-click="selectPrev($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-prev.svg">
+                    </div>
+                    <div class="ic-btn next no-padding" ng-class="{'disabled': currentIndex() == allData.length}" ng-click="selectNext($event)">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-next.svg">
+                    </div>
+                </div>
+
+                <corner-btns ng-if="inspector.isHideInspector" theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
+            </div>
+
+            <!-- Gif 播放器工具列 -->
+            <div class="footbar" ng-show="isDetailMode && current.ext === 'gif'" ng-dblclick="$event.stopPropagation();"  ng-if="$root.preferences.habits.gifViewer === 'on' || usingGifPlayer">
+                <div class="gif-toolbar in" ng-show="isGifReady">
+                    <div class="gif-toolbar-btn play-btn" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); toggleGifPlay();" ng-show="!gifViewer.playing"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-play.svg"></div>
+                    <div class="gif-toolbar-btn pause-btn" tippy tippy-placement="top" tippy-content="<key>Space</key>" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); toggleGifPlay();" ng-show="gifViewer.playing"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-pause.svg"></div>
+                    <div class="gif-toolbar-btn" tippy tippy-placement="top" tippy-content="{{'appmenu.view>prevFrame' | i18n}}{{preferences.shortcuts.keybinds['player.prev1frame'] | shortcutsWrapper | shortcuts}}" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); prevGifFrame();"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-backward.svg"></div>
+                    <div class="gif-toolbar-btn" tippy tippy-placement="top" tippy-content="{{'appmenu.view>nextFrame' | i18n}}{{preferences.shortcuts.keybinds['player.next1frame'] | shortcutsWrapper | shortcuts}}" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); nextGifFrame();"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-forward.svg"></div>
+                    <div class="current-frame"></div>
+                    <div class="total-frame"></div>
+                    <div class="progress-bar">
+                        <div id="gif-progress-indicator"></div>
+                        <div id="thumbnail-preview" class="thumbnail-preview">
+                            <img src="">
+                            <div class="current-index"></div>
+                        </div>
+                        <div class="bar"></div>
+                        <!-- <div class="current" style="width: 0%"></div> -->
+                        <div class="resize-bar">
+                            <div class="bar"></div>
+                        </div>
+                    </div>
+                    <div class="gif-toolbar-btn speed"><span>1x</span>
+                        <div class="speed-menu">
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 8}" ng-click="gifViewer.setSpeed(8)">8x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 4}" ng-click="gifViewer.setSpeed(4)">4x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 3}" ng-click="gifViewer.setSpeed(3)">3x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 2}" ng-click="gifViewer.setSpeed(2)">2x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1.75}" ng-click="gifViewer.setSpeed(1.75)">1.75x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1.5}" ng-click="gifViewer.setSpeed(1.5)">1.5x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1.25}" ng-click="gifViewer.setSpeed(1.25)">1.25x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1}" ng-click="gifViewer.setSpeed(1)">1x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 0.75}" ng-click="gifViewer.setSpeed(0.75)">0.75x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 0.5}" ng-click="gifViewer.setSpeed(0.5)">0.5x</div>
+                            <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 0.25}" ng-click="gifViewer.setSpeed(0.25)">0.25x</div>
+                        </div>
+                    </div>
+                    <div class="gif-toolbar-btn more" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); openGifContextMenu($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-more.svg"></div>
+                </div>
+                <div class="gif-toolbar init" ng-show="!isGifReady" ng-if="$root.preferences.habits.gifViewer === 'on' || usingGifPlayer">
+                    <div class="progress-bar">
+                        <div class="bar"></div>
+                        <div class="current" style="width: 0%"></div>
+                    </div>
+                    <div class="message">{{'progress.loadGifViewer.msg' | i18n}}(<span class="percent"></span>)</div>
+                </div>
+            </div>
+
+            <!-- 已是最后一张 -->
+            <div id="is-last-item" class="image-player-tips">
+                <div class="tip">{{'viewer.isLastItem' | i18n}}</div>
+            </div>
+
+            <div id="is-first-item" class="image-player-tips">
+                <div class="tip">{{'viewer.isFirstItem' | i18n}}</div>
+            </div>
+
+            <!-- 解析度过大无法预览的图 -->
+            <div 
+                class="not-support-preview" 
+                mouse-gesture 
+                ng-if="!current.customThumbnail && current.width * current.height > MAX_DIMENSION && (current.ext === 'tif' || current.ext === 'tiff' || current.ext === 'heic' || current.ext === 'heif' || current.ext === 'hif' || current.ext === 'tga')"
+            >
+                <div class="not-support-preview-content">
+                    <div class="thumbnail">
+                        <img ng-src="{{getThumbnailUrl(current)}}">
+                    </div>
+                    <div class="title">{{'pages.tooBigPreview.title' | i18n}}</div>
+                    <p>{{'pages.tooBigPreview.desc1' | i18n}} {{MAX_DIMENSION | number:0}} {{'pages.tooBigPreview.desc2' | i18n}}</p>
+                    <div class="icon-btn active has-padding" ng-dblclick="$event.stopPropagation()" ng-click="openItemContextMenu($event, current)">{{'pages.tooBigPreview.button' | i18n}}</div>
+                </div>
+            </div>
+
+			<!-- 无法预览的图（如果插件有能力預覽，就不該跳出此訊息） -->
+            <not-support-preview 
+                id="not-support-preview"
+                ng-if="current && !current.customThumbnail && (!SUPPORT_FORMATS[current.ext]) && !pluginModule.previewExtension.viewerPluginMap[current.ext]"
+                theme="$parent.theme"
+                current="current"
+            ></not-support-preview>
+            
+            <div class="inline-toolbar" ng-show="isInlineMode" ng-dblclick="$event.stopPropagation()">
+                <div class="inline-toolbar-btn prev-btn" ng-class="{'inline-mode': isInlineMode, 'disabled': currentIndex() == 1}" ng-click="selectPrev($event)"><img src="assets/images/{{theme|themePath}}/icons/ic-inline-prev-btn.svg"></div>
+                <div class="inline-pages">
+                    <div class="curr">{{currentIndex()}}</div>
+                    <img ng-src="assets/images/{{ theme | themePath}}/icons/ic-inline-mode-split.svg">
+                    <div class="total">{{allData.length}}</div>
+                </div>
+                <div class="inline-toolbar-btn next-btn" ng-class="{'inline-mode': isInlineMode, 'disabled': currentIndex() == allData.length}" ng-click="selectNext($event)"><img src="assets/images/{{theme|themePath}}/icons/ic-inline-next-btn.svg"></div>
+            </div>
+
+            <div id="inline-close-btn" class="inline-float-btn" ng-show="isInlineMode" ng-click="leaveDetailMode()" tippy tippy-content="{{'toolbar.exitBtn' | i18n}}<key>Space</key>" tippy-placement="left">
+                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inline-exit-btn.svg"/>
+            </div>
+            <div id="detail-container" class="detail-container" ng-click="onDetailClick($event)" rect-comment enabled="isCommentMode" image="current" rect="commentRect" 
+				ng-class="{'comment-mode': isCommentMode, 
+				'hidden-footer': MODEL_TYPES[current.ext] || URL_TYPES[current.ext] || current.ext=='pdf' || current.ext=='txt' || VIDEO_TYPES[current.ext] || AUDIO_TYPES[current.ext] || FONT_TYPES[current.ext], 
+				'is-model': MODEL_TYPES[current.ext], 'is-pdf': current.ext == 'pdf', 'is-font': FONT_TYPES[current.ext] || current.ext=='txt' ,
+				'is-audio': AUDIO_TYPES[current.ext], 'is-url': URL_TYPES[current.ext], 'is-video': VIDEO_TYPES[current.ext], 
+				'is-plugin': pluginModule.previewExtension.viewerPluginMap[current.ext], 
+                'plugin-allow-zoom': (pluginModule.previewExtension.viewerPluginMap[current.ext] && pluginModule.previewExtension.allowZoom(current.ext)),
+                'no-effect': !showDetailImage}" 
+				ng-switch on="pluginModule.previewExtension.getViewerPluginExt(current)"
+			>
+
+				<input id="comment-blur" type="" name="" style="opacity: 0; position: absolute; z-index: -1;">
+				<div ng-if="smoothZoomDone" mouse-gesture=".noSel"></div>
+
+				<!-- Plugin -->
+				<div ng-if="isDetailMode" ng-switch-when="plugin" class="detail-wrap" ng-class="{'fixed': !pluginModule.previewExtension.allowZoom(current.ext)}">
+					<!-- 無工具列 -->
+					<plugin-view 
+                        ng-if="!pluginModule.previewExtension.allowZoom(current.ext)"
+                        id="plugin-viewer" 
+                        item="current" 
+                        ng-src="{{pluginModule.previewExtension.getViewerPluginURL(current)}}"
+                    ></plugin-view>
+                    <!-- 有工具列 -->
+                    <div ng-if="pluginModule.previewExtension.allowZoom(current.ext)" class="image-wrap">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<div id="detail-image">
+                            <plugin-view 
+                                ng-if="pluginModule.previewExtension.allowZoom(current.ext)"
+                                id="plugin-viewer" 
+                                item="current" 
+                                ng-src="{{pluginModule.previewExtension.getViewerPluginURL(current)}}"
+                                width="{{current.width}}"
+                                height="{{current.height}}"
+                            ></plugin-view>
+						</div>
+					</div>
+				</div>
+
+				<!-- PDF Viewer -->
+				<div ng-if="isDetailMode" ng-switch-when="pdf" class="detail-wrap fixed {{current.ext}}">
+					<iframe id="pdf-viewer" ng-src="{{getPDFPath()}}"></iframe>
+				</div>
+
+				<!-- GIF Viewer -->
+				<div ng-if="isDetailMode" ng-switch-when="gif" class="detail-wrap {{current.ext}}" ng-mousedown="gifViewer.mousedown($event);" ng-mouseup="gifViewer.mouseup($event);">
+					<div class="image-wrap">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<iframe id="detail-image" ng-if="$root.preferences.habits.gifViewer === 'on' || usingGifPlayer" class="gif-viewer" ng-src="{{getGIFPath()}}" width="{{current.width}}" height="{{current.height}}"></iframe>
+						<img
+							id="detail-image"
+							ng-if="$root.preferences.habits.gifViewer !== 'on' && !usingGifPlayer"
+							ng-class="{'zoom-in': imageSize.zoomRatioExp >= 200, 'pixelated': $root.preferences.habits.renderBehavior == 'pixelated'}"
+							ng-src="{{getRawUrl(current)}}"
+							retry-when-error="current"
+						>
+					</div>
+				</div>
+
+				<!-- Raw Viewer -->
+				<div ng-if="isDetailMode" ng-switch-when="3fr|arw|cr2|cr3|crw|dng|erf|pef|raf|rw2|sr2|srw|x3f|orf|mrw|nef|nrw|raw" ng-switch-when-separator="|" class="detail-wrap {{current.ext}}">
+					<div class="image-wrap">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<div id="detail-image">
+							<iframe class="raw-viewer" ng-src="{{getRawViewerPath()}}" width="{{current.width}}" height="{{current.height}}"></iframe>
+						</div>
+					</div>
+				</div>
+
+                <!-- Video Viewer (Native + MPV Fallback) -->
+				<div ng-if="isDetailMode && !inspector.isRenaming" ng-switch-when="ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v" ng-switch-when-separator="|" class="detail-wrap fixed {{current.ext}}" ng-dblclick="$event.stopPropagation()" >
+					<div id="video-player-tips" class="video-player-tips">
+						<div class="tip volume"><div class="icon vol-0"></div><div class="value">90</div></div>
+					</div>
+					<!-- Native Video Player (default) -->
+					<video class="video-js vjs-default-skin" media-element controls ng-if="isDetailMode && initDetailMode && !useMpvPlayer" ng-src="{{getRawUrl(current)}}">
+						<source ng-src="{{getRawUrl(current)}}" type='video/mp4' />
+					</video>
+					<!-- MPV Fallback Player -->
+					<mpv-video mpv-media-element controls controls-mode="always" autoplay ng-if="isDetailMode && initDetailMode && useMpvPlayer" ng-src="{{getRawUrl(current)}}"></mpv-video>
+                    <div class="not-support-preview" style="display: none;">
+                        <div class="not-support-preview-content" ng-switch on="current.ext">
+                            <img class="icon" style="width: 192px; height: 144px;" ng-src="assets/images/{{$parent.theme | themePath}}/illustrations/not-supported-format.png">
+                            <div class="title"><span>{{current.name}}</span>.{{current.ext}}</div>
+                            <p class="desc" ng-bind-html="'pages.noPreview.video' | i18n"></p>
+                            <div class="buttons">
+                                <div class="button button-xs button-grey" ng-dblclick="$event.stopPropagation()" ng-click="openItemContextMenu($event, current)"><img ng-src="assets/images/{{$parent.theme | themePath}}/icons/context-menu/ic-open-other.svg">{{'pages.tooBigPreview.button' | i18n}}</div>
+                            </div>
+                        </div>
+                    </div>
+				</div>
+
+				<!-- Audio Viewer -->
+				<div ng-if="isDetailMode && !inspector.isRenaming" ng-switch-when="mp3|wav|ogg|flac|aac" ng-switch-when-separator="|" class="detail-wrap fixed {{current.ext}}" ng-dblclick="$event.stopPropagation()" >
+					<div id="video-player-tips" class="video-player-tips">
+						<div class="tip volume"><div class="icon vol-0"></div><div class="value">90</div></div>
+					</div>
+					<video class="video-js vjs-default-skin" audio-media-element controls ng-if="isDetailMode && initDetailMode" ng-src="{{getRawUrl(current)}}">
+						<source ng-src="{{getRawUrl(current)}}" type='audio/{{current.ext}}' />
+					</video>
+					<div id="detail-wavesurfer"></div>
+				</div>
+
+				<!-- Note: m4a 如果要撥放，必須騙過 video tag -->
+				<div ng-if="isDetailMode && !inspector.isRenaming" ng-switch-when="m4a" ng-switch-when-separator="|" class="detail-wrap fixed {{current.ext}}" ng-dblclick="$event.stopPropagation()" >
+					<div id="video-player-tips" class="video-player-tips">
+						<div class="tip volume">{{'videoplayer.volume' | i18n}} : <div class="value">90</div></div>
+					</div>
+					<video class="video-js vjs-default-skin" audio-media-element controls ng-if="isDetailMode && initDetailMode" ng-src="{{getRawUrl(current)}}">
+						<source ng-src="{{getRawUrl(current)}}" type='audio/mp3' />
+					</video>
+					<div id="detail-wavesurfer"></div>
+				</div>
+
+				<!-- Font Viewer -->
+				<div ng-if="isDetailMode" ng-switch-when="ttc|ttf|otf|woff|woff2" ng-switch-when-separator="|" class="detail-wrap full {{current.ext}}">
+					<iframe id="font-viewer" ng-src="{{getFontPath()}}"></iframe>
+				</div>
+
+				<!-- Txt Editor -->
+				<div ng-if="isDetailMode" ng-switch-when="txt" ng-switch-when-separator="|" class="detail-wrap full {{current.ext}}">
+					<iframe id="text-editor" ng-src="{{getTxtPath()}}"></iframe>
+				</div>
+
+				<!-- TIF TIFF -->
+				<div ng-if="isDetailMode" ng-switch-when="tif|tiff" ng-switch-when-separator="|" class="detail-wrap" ng-if="current.width * current.height <= MAX_DIMENSION" ng-class="{'large': current.width * current.height >= 25000000, 'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
+					<div class="image-wrap" ng-class="{'hide' : !showDetailImage }">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<img
+							tif-img="current"
+							id="detail-image"
+							ng-class="{'zoom-in': imageSize.zoomRatioExp >= 200, 'pixelated': $root.preferences.habits.renderBehavior == 'pixelated'}"
+							ng-show="showDetailImage"
+							width="{{current.width}}"
+							height="{{current.height}}"
+							ng-src="{{getThumbnailUrl(current)}}">
+					</div>
+				</div>
+
+				<!-- TGA -->
+				<div ng-if="isDetailMode" ng-switch-when="tga" ng-switch-when-separator="|" class="detail-wrap"
+					ng-if="current.width * current.height <= MAX_DIMENSION"
+					ng-class="{'large': current.width * current.height >= 25000000, 'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
+					<div class="image-wrap" ng-class="{'hide' : !showDetailImage }">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h"
+								style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;">
+							</div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0"
+								ng-repeat="comment in current.comments track by $index"
+								style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;"
+									ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<img tga-img="getRawPath(current)" id="detail-image"
+							ng-class="{'zoom-in': imageSize.zoomRatioExp >= 200, 'pixelated': $root.preferences.habits.renderBehavior == 'pixelated'}"
+							ng-show="showDetailImage" width="{{current.width}}" height="{{current.height}}"
+							ng-src="{{getThumbnailUrl(current)}}">
+					</div>
+				</div>
+
+				<!-- Model Viewer -->
+				<div ng-if="isDetailMode" ng-switch-when="fbx|obj|3ds|3mf|dae|ifc|ply|stl|glb" ng-switch-when-separator="|" class="detail-wrap fixed {{current.ext}}">
+					<iframe id="model-viewer" ng-src="{{getModelPath()}}"></iframe>
+				</div>
+
+				<!-- 特殊格式 -->
+				<div ng-if="isDetailMode" ng-switch-when="hdr|exr|ico|graffle|xmind|mindnode|psd|psdt|indd|idml|indt|psb|xd|c4d|blend|clip|skp|dwg|dds|prd|pxd|sketch|fig|afdesign|af|afpub|afphoto|ai|sketchraw|icns|skt|eps|key|potx|pptx|ppt|docx|doc|pages|xlsx|xls|eddx|emmx|numbers|cdr" ng-switch-when-separator="|" class="detail-wrap" ng-class="{'large': current.width * current.height >= 25000000, 'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
+					<div class="image-wrap" ng-class="{'hide' : !showDetailImage }" ng-if="!current.noPreview">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<iframe style="z-index: 10; position: absolute; pointer-events: none;" ng-src="{{getNativeViewerPath()}}" width="{{current.width}}" height="{{current.height}}"></iframe>
+						<img
+							id="detail-image"
+							ng-show="showDetailImage"
+							width="{{current.width}}"
+							height="{{current.height}}"
+							ng-src="{{getLastestThumbnailPath(current)}}"
+							retry-when-thumb-error="current"
+						>
+					</div>
+				</div>
+
+                <!-- 自訂縮圖 -->
+				<div ng-if="isDetailMode" ng-switch-when="custom" ng-switch-when-separator="|" class="detail-wrap" ng-class="{'large': current.width * current.height >= 25000000, 'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
+					<div class="image-wrap" ng-class="{'hide' : !showDetailImage }" ng-if="!current.noPreview">
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-show="comment.y * 1/ratio > 0" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+						<img
+							id="detail-image"
+							ng-show="showDetailImage"
+							width="{{current.width}}"
+							height="{{current.height}}"
+							ng-src="{{getLastestThumbnailPath(current)}}"
+							retry-when-thumb-error="current"
+						>
+					</div>
+				</div>
+
+				<!-- URL Viewer -->
+				<div ng-if="isDetailMode" ng-switch-when="url|html|mhtml" ng-switch-when-separator="|" class="detail-wrap full {{current.ext}}">
+					<web-view id="webview-{{current.id}}" src="{{getURLSrc()}}"></web-view>
+				</div>
+
+                <!-- SVG -->
+				<div ng-if="isDetailMode" ng-switch-when="svg" class="detail-wrap {{current.ext}} movable bg-{{current.background}}">
+					<div class="image-wrap">
+						<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+                        <img
+							id="detail-image"
+							width="{{current.width}}"
+							height="{{current.height}}"
+                            src="{{getRawUrl(current)}}"
+						>
+					</div>
+				</div>
+
+				<!-- 一般图片 -->
+				<div ng-if="isDetailMode" ng-switch-when="image" ng-switch-when-separator="|" class="detail-wrap {{current.ext}} movable bg-{{current.background}}" ng-class="{'movable': imageSize.zoomRatio > 100, 'large': current.width * current.height >= 25000000, 'long': ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
+					<div class="image-wrap">
+						<div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
+						<div id="crop-image-tool" ng-if="isCropMode && isDetailMode" class="crop-image-tool" crop-image>
+							<div class="crop-area">
+                                <div id="crop-overlay" class="crop-overlay" style="width: {{current.width}}px; height: {{current.height}}px;">
+                                    <div class="overlay top"></div>
+                                    <div class="overlay left"></div>
+                                    <div class="overlay right"></div>
+                                    <div class="overlay bottom"></div>
+                                </div>
+							</div>
+						</div>
+						<div class="comments" comments-container image="current" ratio="ratio">
+							<div id="comment-{{comment.id}}" comment-item class="comment" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
+								<div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
+								<div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
+							</div>
+						</div>
+                        <img
+							id="detail-image"
+							width="{{current.width}}"
+							height="{{current.height}}"
+                            src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC"
+                            style="margin-left: -2px;"
+						>
+					</div>
+				</div>
+                <!-- NOTE: 避免 zoomer 沒有任何圖片初始化會造成 zoomming 功能異常，因此這裡強制給一張圖 -->
+                <img style="opacity: 0; pointer-events: none;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC">
+            </div>
+            <!-- <bitmap-viewer url="{{getRawUrl(current)}}"></bitmap-viewer> -->
+            <div id="crop-size" class="crop-size" ng-if="isCropMode"></div>
+        </div>
+        
+        <!-- 檢查器 -->
+        <inspector 
+            platform="platform"
+            view-mode="viewMode"
+            theme="theme"
+            is-always-on-top="isAlwaysOnTop"
+            current="current"
+            selected="selected"
+            current-folder="currentFolder"
+            current-smart-folder="currentSmartFolder"
+            folder-mappings="folderMappings"
+            selected-folder-mappings="selectedFolderMappings"
+            tag-manager="TagManager"
+            trial-remain="trialRemain"
+        ></inspector>
+        
+        
+        <quick-search-modal class="modal-flex-center"></quick-search-modal>
+        <batch-rename-modal class="modal-flex-center"></batch-rename-modal>
+        <artstation-import-modal></artstation-import-modal>
+
+        <!-- 图片分类窗口 -->
+        <div class="modal-flex-center" ng-controller="AddToFolderController">
+            <div class="modal move-folder-modal" ng-class="{'open': isOpen}" ng-click="focusSeach()">
+				<div class="modal-header">
+                    <div class="name">{{'modal.addToFolder.addToFolderBtn' | i18n}}</div>
+                    <div class="close" ng-click="cancel()"></div>
+                </div>
+                <div class="section search">
+                    <div class="search">
+                        <input id="add-to-folder-search" selectall maxlength="1024" type="search" placeholder="{{'modal.addToFolder.searchPlaceholder' | i18n}}" ng-keydown="onSearchKeyup($event)" auto-focus="OPEN-ADD-FOLDER-MODAL" ng-model="filterFolderKeyword" tabindex="-1"  ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 50, 'blur': 0 } }" ng-change="keywordChange($event)">
+                    </div>
+                </div>
+                <div class="search-result" scroll-to-active index="selectedFolder" scroll-container=".move-to-folder-modal .sidebar-item-container" enable="searchScrollEnable">
+                    <div 
+                        class="result-content" 
+                        vs-auto-scroll
+                        vs-size="28"
+                        scroll-container=".move-to-folder-modal .sidebar-item-container"
+                        index="currentIndex"
+                    >
+
+                        <!-- 空状态 -->
+                        <div class="empty-state" ng-if="resultList.length == 0">
+                            {{'modal.addToFolder.empty' | i18n}}
+                        </div>
+
+                        <div class="sidebar-item-container" vs-excess="50" vs-repeat="28" vs-size="size" ng-show="resultList.length > 0">
+                            <div ng-repeat="node in resultList">
+                                <div ng-switch on="node.vstype">
+                                    <!-- 标签 -->
+                                    <div ng-switch-when="label-folder" class="sidebar-item-label" ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }">
+                                        <div class="sidebar-item-label-warp">
+                                            <div class="name expandable">{{'modal.addToFolder.folderLabel' | i18n}} ({{::folderList.length}})</div>
+                                            <div class="hide-btns show">
+                                                <div class="hide-btn" tippy tippy-placement="bottom" tippy-content="{{'modal.addToFolder.newFolderHint' | i18n}}" ng-click="newFolder($event)">
+                                                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-sidebar-add.svg">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 间隔 -->
+                                    <div ng-switch-when="separator" class="separator" ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }"></div>
+                                    <!-- 文件夹 -->
+                                    <div 
+                                        ng-switch-when="folder"
+                                        id="modal-folder-{{::node.id}}" 
+                                        class="item depth-{{node.styles.depth}}"
+                                        ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }"
+                                        ng-class="getMoveFolderItemClass(node, node.name, selectedFolder)"
+                                        ng-click="select(node)" 
+                                        ng-mouseover="hoverFolder(node)"
+                                        ng-mousedown="preventMiddleClick($event)"
+                                        ng-right-click="moreButtonClick($event, node)"
+                                    >
+                                        <!-- 引導線 -->
+                                        <div class="guidelines">
+                                            <div class="guideline color-{{line}} depth-{{$index + 1}}" ng-repeat="line in node.guidelines track by $index">
+                                                <div class="top"></div>
+                                                <div class="middle" ng-if="$index !== node.depth && node.children.length === 0"></div>
+                                                <div class="bottom"></div>
+                                            </div>
+                                        </div>
+                                        <div class="expand-icon" ng-click="toggleFolder($event, node)">
+                                            <img src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">
+                                        </div>
+                                        <div class="icon">
+                                            <div class="fake-svg png"></div>
+                                        </div>
+                                        <div class="checked-icon">
+                                            <img src="assets/images/{{theme|themePath}}/icons/ic-check.svg">
+                                        </div>
+                                        <div class="more-icon" ng-click="moreButtonClick($event, node)">
+                                            <img src="assets/images/{{theme|themePath}}/icons/ic-more.svg">
+                                        </div>
+                                        <div class="name" ng-bind-html="node.name | fuzzyMatch:filterFolderKeyword"></div>
+                                        <div class="active-bg"></div>
+                                    </div>
+                                    <!-- 近期存取 -->
+                                    <div 
+                                        ng-switch-when="recentFolder"
+                                        id="modal-recent-folder-{{::node.id}}" 
+                                        class="item depth-0"
+                                        ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }"
+                                        ng-class="getMoveFolderItemClass(node, node.name, selectedFolder)"
+                                        ng-click="select(node)" 
+                                        ng-mouseover="hoverFolder(node)"
+                                        ng-mousedown="preventMiddleClick($event)"
+                                    >
+                                        <div class="icon">
+                                            <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/mask-icons/ic_clock.png) !important"></div>
+                                        </div>
+                                        <div class="checked-icon">
+                                            <img src="assets/images/{{theme|themePath}}/icons/ic-check.svg">
+                                        </div>
+                                        <div class="more-icon" ng-click="removeRecentFolder($event, node)">
+                                            <img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
+                                        </div>
+                                        <div class="name" ng-bind-html="node.name | fuzzyMatch:filterFolderKeyword"></div>
+                                        <div class="active-bg"></div>
+                                    </div>
+                                    <!-- 创建文件夹 -->
+                                    <div 
+                                        ng-switch-when="createFolder"
+                                        class="item depth-0 sidebar-folder-item"
+                                        ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }"
+                                        ng-class="getMoveFolderItemClass(node, node.name, selectedFolder)"
+                                        ng-click="createFolder()" 
+                                        ng-mouseover="hoverFolder(node)"
+                                        ng-mousedown="preventMiddleClick($event)"
+                                    >
+                                        <div class="icon">
+                                            <div class="fake-svg" style="-webkit-mask-image: url(assets/images/base/icons/ic-plus.svg) !important"></div>
+                                        </div>
+                                        <div class="name">{{'modal.addToFolder.newFolderBtn' | i18n}} “{{filterFolderKeyword}}”</div>
+                                        <div class="active-bg"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section darken textAlign-right">
+                    <label class="control checkbox" ng-show="current">
+                        <input type="checkbox" checked="" ng-model="isRemoveFromOriginal" ng-true-value="'true'" ng-false-value="'false'">
+                        <span class="control-indicator"></span>
+                        {{'modal.addToFolder.removeFromCurrentFolderBtn' | i18n}}
+                    </label>
+                    <div class="button button-xs button-primary" ng-click="save()" ng-class="{'button-disabled': !hasSelected()}">{{'modal.addToFolder.addToFolderBtn' | i18n}}</div>
+                    <div class="button button-xs button-grey" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+                </div>
+            </div>
+            <div class="modal-overlay" ng-click="focusSeach()"></div>
+        </div>
+        
+        <!-- TODO: 改 Directive 文件夹移动窗口 -->
+        <div class="modal-flex-center" ng-controller="MoveFolderController">
+            <div class="modal move-folder-modal" ng-class="{'open': isOpen}" ng-click="$event.stopPropagation(); focusSeach()">
+				<div class="modal-header">
+                    <div class="name">{{'context.folder.moveFolder' | i18n}}</div>
+                    <div class="close" ng-click="cancel()"></div>
+                </div>
+                <div class="section search">
+                    <div class="search">
+                        <input id="move-folder-search" selectall maxlength="1024" type="search" placeholder="{{'modal.moveFolder.searchPlaceholder' | i18n}}" ng-keydown="onSearchKeyup($event)" auto-focus="OPEN-MOVE-FOLDER-MODAL" ng-model="filterFolderKeyword" tabindex="-1"  ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 50, 'blur': 0 } }" ng-change="keywordChange($event)">
+                    </div>
+                </div>
+                <div class="search-result">
+                    <div 
+                        class="result-content" 
+                        vs-auto-scroll
+                        vs-size="27"
+                    >
+
+                        <!-- 空状态 -->
+                        <div class="empty-state" ng-if="resultList.length == 2">
+                            {{'modal.moveFolder.searchEmpty' | i18n}}
+                        </div>
+
+                        <div class="sidebar-item-container" vs-excess="50" vs-repeat="27" vs-size="size" ng-show="resultList.length > 0">
+                            <div ng-repeat="node in resultList">
+                                <div ng-switch on="node.vstype">
+                                    <!-- 标签 -->
+                                    <div ng-switch-when="label-folder" class="sidebar-item-label" ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }">
+                                        <div class="sidebar-item-label-warp">
+                                            <div class="name expandable">{{'modal.moveFolder.tipLabel' | i18n}}</div>
+                                        </div>
+                                    </div>
+                                    <!-- 间隔 -->
+                                    <div ng-switch-when="separator" class="separator" ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }"></div>
+                                    <!-- 文件夹 -->
+                                    <div 
+                                        ng-switch-when="folder"
+                                        id="modal-move-folder-{{::node.id}}" 
+                                        class="item depth-{{node.styles.depth}}"
+                                        ng-style="{ 'z-index': 100000 - $index, 'height': node.size + 'px' }"
+                                        ng-class="getMoveFolderItemClass(node, node.name, selectedFolder)"
+                                        ng-mousedown="preventMiddleClick($event)"
+                                    >
+                                        <!-- 引導線 -->
+                                        <div class="guidelines">
+                                            <div class="guideline color-{{line}} depth-{{$index + 1}}" ng-repeat="line in node.guidelines track by $index">
+                                                <div class="top"></div>
+                                                <div class="middle" ng-if="$index !== node.depth && node.children.length === 0"></div>
+                                                <div class="bottom"></div>
+                                            </div>
+                                        </div>
+                                        <div class="expand-icon" ng-click="toggleFolder($event, node)">
+                                            <img src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg">
+                                        </div>
+                                        <div class="icon">
+                                            <div class="fake-svg png"></div>
+                                        </div>
+                                        <div class="name" ng-bind-html="node.name | fuzzyMatch:filterFolderKeyword"></div>
+                                        <div class="active-bg"></div>
+                                        <div class="multiple-drop-folder-top-area" ng-click="moveToFolderTop(node)"></div>
+                                        <div class="multiple-drop-folder-name-area" ng-click="moveToFolderInner(node)"></div>
+                                        <div class="multiple-drop-folder-bottom-area" ng-click="moveToFolderBottom(node)"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="move-folder-modal-overlay modal-overlay" ng-click="cancel()"></div>
+        </div>
+
+        <!-- TODO: 改 Directive 自动标签窗口 -->
+        <div class="modal-flex-center" ng-controller="AutoTaggingController">
+            <div class="modal auto-tagging-modal" ng-class="{'open': isOpen}">
+				<div class="modal-header">
+                    <div class="name">{{'context.folder.autoTagging' | i18n}}</div>
+                    <div class="close" ng-click="cancel()"></div>
+                </div>
+                <div class="section">
+                    <label for="">{{'general.folderName' | i18n}}</label>
+                    <input id="auto-tagging-name-input" maxlength="1024" type="text" selectall placeholder="" ng-model="folderName" ng-keydown="nameKeydown($event)" tabindex="-1">
+                </div>
+                <div class="section" ng-show="isOpen">
+                    <label for="">{{'modal.autoTagging.tagsLabel' | i18n}}</label>
+                    <tags-input style="min-height: 56px;" theme="theme" tags="folderTags"></tags-input>
+                </div>
+                <div class="section textAlign-right">
+                    <div class="button button-xs button-primary" ng-click="save()">{{'modal.autoTagging.saveBtn' | i18n}}</div>
+                    <div class="button button-xs button-grey" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+                </div>
+            </div>
+            <div class="modal-overlay"></div>
+        </div>
+
+        <!-- TODO: 改 Directive 新增智能文件夾 -->
+        <div class="modal-flex-center" ng-controller="NewSmartFolderController">
+            <div class="modal smart-folder-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+				<div class="modal-header">
+                    <div class="name" ng-show="isEditMode">{{'context.smartFolder.editRules' | i18n}}</div>
+					<div class="name" ng-show="!isEditMode">{{'appmenu.file>createSmartFolder' | i18n}}</div>
+                    <div class="close" ng-click="cancel()"></div>
+                </div>
+                <div class="section">
+                    <label for="">{{'modal.smartFolder.name' | i18n}}</label>
+                    <input id="smart-folder-name-input" maxlength="1024" type="text" selectall placeholder="" ng-model="smartFolderScope.folderName" ng-keydown="nameKeydown($event)" tabindex="-1" selectall ng-class="{'input-negative': smartFolderScope.isNoFolderName}">
+                    <p class="tips" ng-bind-html="'hint.whatIsSmartFolder' | i18n"></p>
+                </div>
+                <div class="section rules-section" ng-show="isOpen" style="overflow: auto;">
+                    <div class="btn" ng-if="conditions.length === 0" ng-click="createCondition($index + 1)"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-condition-add.svg"/></div>
+                    <div class="condition" ng-repeat="condition in conditions">
+                        <div class="set">
+                            <span ng-if="$index === 0">{{'modal.smartFolder.match' | i18n}}</span>
+                            <span ng-if="$index !== 0">{{'modal.smartFolder.matchAnd' | i18n}}</span>
+                            <div class="select select-xs">
+                                <select tabindex="-1" ng-model="condition.match" ng-change="recalculateResult()">
+                                    <option value="AND">{{'modal.smartFolder.conditionAll' | i18n}}</option>
+                                    <option value="OR">{{'modal.smartFolder.conditionAny' | i18n}}</option>
+                                </select>
+                            </div>
+                            <span>{{'modal.smartFolder.match2' | i18n}}</span>
+                            <div class="select select-xs">
+                                <select tabindex="-1" ng-model="condition.boolean" ng-change="recalculateResult()">
+                                    <option value="TRUE">{{'modal.smartFolder.true' | i18n}}</option>
+                                    <option value="FALSE">{{'modal.smartFolder.false' | i18n}}</option>
+                                </select>
+                            </div>
+                            <div style="float: right; padding-right: 7px;">
+                                <div class="btn" ng-click="removeCondition(condition)"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-condition-remove.svg"/></div>
+                                <div class="btn" ng-click="createCondition($index + 1)"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-condition-add.svg"/></div>
+                            </div>
+                        </div>
+                        <div class="rules" ng-repeat="rule in condition.rules">
+                            <div class="row top-md rule">
+                                <div class="col-xs-3">
+                                    <div class="select select-xs">
+                                        <select tabindex="-1" ng-model="rule.property" ng-change="changeProperty(rule)">
+                                            <option value="name">{{'modal.smartFolder.rule.propertyName' | i18n}}</option>
+                                            <option value="type">{{'modal.smartFolder.rule.propertyType' | i18n}}</option>
+                                            <option value="tags">{{'modal.smartFolder.rule.propertyTags' | i18n}}</option>
+                                            <option value="folders">{{'modal.smartFolder.rule.propertyFolders' | i18n}}</option>
+											<option value="folderName">{{'modal.smartFolder.rule.propertyFolderName' | i18n}}</option>
+                                            <option value="color">{{'modal.smartFolder.rule.propertyColor' | i18n}}</option>
+                                            <option value="createTime">{{'modal.smartFolder.rule.propertyCreateTime' | i18n}}</option>
+                                            <option value="mtime">{{'modal.smartFolder.rule.propertyMTime' | i18n}}</option>
+                                            <option value="btime">{{'modal.smartFolder.rule.propertyBTime' | i18n}}</option>
+                                            <option value="url">{{'modal.smartFolder.rule.propertyUrl' | i18n}}</option>
+                                            <option value="annotation">{{'modal.smartFolder.rule.propertyAnnotation' | i18n}}</option>
+                                            <option value="width">{{'modal.smartFolder.rule.propertyWidth' | i18n}}</option>
+                                            <option value="height">{{'modal.smartFolder.rule.propertyHeight' | i18n}}</option>
+                                            <option value="fileSize">{{'modal.smartFolder.rule.propertySize' | i18n}}</option>
+                                            <option value="shape">{{'modal.smartFolder.rule.propertyShape' | i18n}}</option>
+                                            <option value="rating">{{'modal.smartFolder.rule.propertyRating' | i18n}}</option>
+                                            <option value="comments">{{'modal.smartFolder.rule.propertyComments' | i18n}}</option>
+                                            <option value="duration">{{'modal.smartFolder.rule.duration' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['font']" value="fontActivated">{{'modal.smartFolder.rule.fontActivated' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['raw'] || rule.property.property === 'camera'" value="camera">{{'modal.smartFolder.rule.camera' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['raw'] || rule.property.property === 'iso'" value="iso">{{'modal.smartFolder.rule.iso' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['raw'] || rule.property.property === 'aperture'" value="aperture">{{'modal.smartFolder.rule.aperture' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['raw'] || rule.property.property === 'focalLength'" value="focalLength">{{'modal.smartFolder.rule.focalLength' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['raw'] || rule.property.property === 'shutter'" value="shutter">{{'modal.smartFolder.rule.shutter' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['raw'] || rule.property.property === 'timestamp'" value="timestamp">{{'modal.smartFolder.rule.timestamp' | i18n}}</option>
+                                            <option ng-show="eagle.filter.filterExtensions['audio']" value="bpm">BPM</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-xs-3" ng-switch on="rule.property">
+                                    <!-- 標題、網址、註釋專用 -->
+                                    <div class="select select-xs" ng-switch-when="name|folderName|url|annotation|comments|camera" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="contain">{{'modal.smartFolder.method.contain' | i18n}}</option>
+                                            <option value="uncontain">{{'modal.smartFolder.method.unconatin' | i18n}}</option>
+                                            <option value="startWith">{{'modal.smartFolder.method.startWith' | i18n}}</option>
+                                            <option value="endWith">{{'modal.smartFolder.method.endWith' | i18n}}</option>
+                                            <option value="equal">{{'modal.smartFolder.method.equal' | i18n}}</option>
+                                            <option value="empty">{{'modal.smartFolder.method.empty' | i18n}}</option>
+                                            <option value="not-empty">{{'modal.smartFolder.method.notEmpty' | i18n}}</option>
+                                            <option value="regex">{{'modal.smartFolder.method.regex' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 寬、高、文件大小、視頻長度、BPM 專用 -->
+                                    <div class="select select-xs" ng-switch-when="width|height|fileSize|duration|bpm|iso|aperture|focalLength|shutter" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value=">">{{'modal.smartFolder.method.>' | i18n}}</option>
+                                            <option value=">=">{{'modal.smartFolder.method.>=' | i18n}}</option>
+                                            <option value="=">{{'modal.smartFolder.method.=' | i18n}}</option>
+                                            <option value="<">{{'modal.smartFolder.method.<' | i18n}}</option>
+                                            <option value="<=">{{'modal.smartFolder.method.<=' | i18n}}</option>
+                                            <option value="between">{{'modal.smartFolder.method.Between' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 字体 -->
+                                    <div class="select select-xs" ng-switch-when="fontActivated" ng-switch-when-separator="|" style="width: 336px;">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="activate">{{'modal.smartFolder.method.activate' | i18n}}</option>
+                                            <option value="deactivate">{{'modal.smartFolder.method.deactivate' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 日期專用 -->
+                                    <div class="select select-xs" ng-switch-when="createTime|mtime|btime|timestamp" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="before">{{'modal.smartFolder.method.before' | i18n}}</option>
+                                            <option value="after">{{'modal.smartFolder.method.after' | i18n}}</option>
+                                            <option value="between">{{'modal.smartFolder.method.dateBetween' | i18n}}</option>
+                                            <option value="on">{{'modal.smartFolder.method.on' | i18n}}</option>
+                                            <option value="within">{{'modal.smartFolder.method.within' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 類型專用 -->
+                                    <div class="select select-xs" ng-switch-when="type" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="equal">{{'modal.smartFolder.method.is' | i18n}}</option>
+                                            <option value="unequal">{{'modal.smartFolder.method.not' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 形狀專用 -->
+                                    <div class="select select-xs" ng-switch-when="shape" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="equal">{{'modal.smartFolder.method.is' | i18n}}</option>
+                                            <option value="unequal">{{'modal.smartFolder.method.not' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 評分專用 -->
+                                    <div class="select select-xs" ng-switch-when="rating" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="equal">{{'modal.smartFolder.method.is' | i18n}}</option>
+                                            <option value="unequal">{{'modal.smartFolder.method.not' | i18n}}</option>
+                                            <option value="contain">{{'modal.smartFolder.method.contain' | i18n}}</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- 顏色專用 -->
+                                    <div class="select select-xs" ng-switch-when="color" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="similar">{{'modal.smartFolder.method.similar' | i18n}}</option>
+                                            <option value="accuracy">{{'modal.smartFolder.method.accuracy' | i18n}}</option>
+											<option value="grayscale">{{'modal.smartFolder.method.grayscale' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                    <!-- 標籤、資料夾專用 -->
+                                    <div class="select select-xs" ng-switch-when="tags|folders" ng-switch-when-separator="|">
+                                        <select tabindex="-1" ng-model="rule.method" ng-change="changeMethod(rule)">
+                                            <option value="union">{{'modal.smartFolder.method.union' | i18n}}</option>
+                                            <option value="intersection">{{'modal.smartFolder.method.intersection' | i18n}}</option>
+                                            <option value="equal">{{'modal.smartFolder.method.equal' | i18n}}</option>
+                                            <option value="identity">{{'modal.smartFolder.method.identity' | i18n}}</option>
+                                            <option value="empty">{{'modal.smartFolder.method.empty' | i18n}}</option>
+                                            <option value="not-empty">{{'modal.smartFolder.method.notEmpty' | i18n}}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-xs-6" ng-switch on="rule.property">
+                                    <div class="rule-value">
+                                        <!-- 標題、網址、註釋專用 -->
+                                        <input type="text" name="" ng-switch-when="name|folderName|url|annotation|comments|camera" maxlength="2048" ng-switch-when-separator="|" ng-model="rule.value" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall ng-hide="rule.method === 'empty' || rule.method === 'not-empty'">
+                                        <!-- 寬高專用 -->
+                                        <div class="row" ng-switch-when="width|height|iso" ng-switch-when-separator="|">
+                                            <div class="col-xs-12" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-12" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 85px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 85px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                        </div>
+                                        <!-- 檔案大小 -->
+                                        <div class="row" ng-switch-when="fileSize" ng-switch-when-separator="|">
+                                            <div class="col-xs-8" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-8" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 54px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 54px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <div class="select select-xs">
+                                                    <select tabindex="-1" ng-model="rule.unit" ng-change="changeValue()">
+                                                        <option value="kb">KB</option>
+                                                        <option value="mb">MB</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 視頻長度 -->
+                                        <div class="row" ng-switch-when="duration" ng-switch-when-separator="|">
+                                            <div class="col-xs-8" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-8" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 54px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 54px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-4">
+                                                <div class="select select-xs">
+                                                    <select tabindex="-1" ng-model="rule.unit" ng-change="changeValue()">
+                                                        <option value="s">{{'modal.smartFolder.ruleValue.s' | i18n}}</option>
+                                                        <option value="m">{{'modal.smartFolder.ruleValue.m' | i18n}}</option>
+                                                        <option value="h">{{'modal.smartFolder.ruleValue.h' | i18n}}</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- BPM -->
+                                        <div class="row" ng-switch-when="bpm" ng-switch-when-separator="|">
+                                            <div class="col-xs-12" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-12" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 54px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 54px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                        </div>
+                                        <!-- 光圈 -->
+                                        <div class="row" ng-switch-when="aperture" ng-switch-when-separator="|">
+                                            <div class="col-xs-2" style="text-align: right; line-height: 26px;">f/</div>
+                                            <div class="col-xs-10" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-10" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 54\px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 54px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 500, 'blur': 0 } }" selectall>
+                                            </div>
+                                        </div>
+
+                                        <!-- 焦距 -->
+                                        <div class="row" ng-switch-when="focalLength" ng-switch-when-separator="|">
+                                            <div class="col-xs-10" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-10" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 54px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 54px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 500, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-2" style="text-align: left; line-height: 26px;"> mm</div>
+                                        </div>
+
+                                        <!-- 快门时间 -->
+                                        <div class="row" ng-switch-when="shutter" ng-switch-when-separator="|">
+                                            <div class="col-xs-2" style="text-align: right; line-height: 26px;">1/</div>
+                                            <div class="col-xs-10" ng-if="rule.method != 'between'">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-10" ng-if="rule.method == 'between'">
+                                                <input type="number" name="" style="display: inline-block; width: 54px; margin: 0 0 0 6px;" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall> ~ <input type="number" name="" style="display: inline-block; width: 54px; margin: 0;" ng-model="rule.value[1]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- 日期專用 -->
+                                        <input ng-flatpickr fp-opts="dateOpts1" fp-on-setup="datePostSetup(fpItem, rule)" ng-model="rule.import" data-enabletime="true" ng-switch-when="btime|mtime|createTime|timestamp" ng-switch-when-separator="|" ng-if="rule.method != 'between' && rule.method != 'within'">
+                                        <input ng-flatpickr fp-opts="dateOpts2" fp-on-setup="datePostSetup(fpItem, rule)" ng-model="rule.import" data-enabletime="true" ng-switch-when="btime|mtime|createTime|timestamp" ng-switch-when-separator="|" ng-if="rule.method == 'between'">
+                                        <div class="row" ng-if="rule.method == 'within'">
+                                            <div class="col-xs-9">
+                                                <input type="number" name="" ng-model="rule.value[0]" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                            </div>
+                                            <div class="col-xs-3" style="line-height: 26px; padding-left: 10px;">{{'modal.smartFolder.ruleValue.typeDays' | i18n}}</div>
+                                        </div>
+
+                                        <!-- 形狀專用 -->
+                                        <div class="select select-xs" ng-switch-when="shape" ng-switch-when-separator="|">
+                                            <select tabindex="-1" ng-model="rule.value" ng-change="changeValue()">
+                                                <option value="landscape">{{'modal.smartFolder.ruleValue.shapeLandscape' | i18n}}</option>
+                                                <option value="portrait">{{'modal.smartFolder.ruleValue.shapePortrait' | i18n}}</option>
+                                                <option value="square">{{'modal.smartFolder.ruleValue.shapeSquare' | i18n}}</option>
+                                                <option value="panoramic-landscape">{{'modal.smartFolder.ruleValue.shapePanoramicLandscape' | i18n}}</option>
+                                                <option value="panoramic-portrait">{{'modal.smartFolder.ruleValue.shapePanoramicPortrait' | i18n}}</option>
+                                                <option value="custom">{{'filter.orientation>custom' | i18n}}</option>
+                                            </select>
+                                        </div>
+                                        <div class="custom-shapre-item row" ng-if="rule.value === 'custom'" style="padding: 8px 0 8px 4px; line-height: 26px;">
+                                            <input class="col-xs-4" type="number" placeholder="W" ng-change="changeValue();" ng-model="rule.width" style="text-align: center; margin-right: 8px;"/>
+                                            :
+                                            <input class="col-xs-4" type="number" placeholder="H" ng-change="changeValue();" ng-model="rule.height" style="text-align: center; margin-left: 8px;"/>
+                                        </div>
+                                        <!-- 評分專用 -->
+                                        <div ng-switch-when="rating">
+                                            <div class="select select-xs" ng-if="rule.method != 'contain'">
+                                            <select tabindex="-1" ng-model="rule.value" ng-change="changeValue()">
+                                                <option value="1">⭑</option>
+                                                <option value="2">⭑⭑</option>
+                                                <option value="3">⭑⭑⭑</option>
+                                                <option value="4">⭑⭑⭑⭑</option>
+                                                <option value="5">⭑⭑⭑⭑⭑</option>
+                                                <option value="none">None</option>
+                                            </select>
+                                        </div>
+                                        <input ng-if="rule.method == 'contain'" maxlength="256" type="text" ng-switch-when-separator="|" ng-model="rule.value" ng-change="changeValue()" ng-model-options="{ debounce: { 'default': 300, 'blur': 0 } }" selectall>
+                                        </div>
+                                        <!-- 類型專用 -->
+                                        <div class="select select-xs" ng-switch-when="type" ng-switch-when-separator="|">
+                                            <select tabindex="-1" ng-model="rule.value" ng-change="changeValue()">
+                                                <option ng-repeat="type in eagle.filter.filterTypes track by $index" value="{{type}}">{{type}}</option>
+                                            </select>
+                                        </div>
+                                        <div class="color-picker" ng-switch-when="color" ng-switch-when-separator="|">
+                                            <input ng-show="rule.method !== 'grayscale'" tabindex="-1" type="text" placeholder="#FF0000" selectall ng-model="rule.value" selectall>
+                                            <input ng-show="rule.method !== 'grayscale'" color-picker tabindex="-1" type="color" name="favcolor" value="#ff0000" ng-model="rule.value" ng-change="changeValue()" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 200, 'blur': 0 } }">
+                                        </div>
+
+                                        <div ng-switch-when="tags" ng-switch-when-separator="|" ng-hide="rule.method === 'empty' || rule.method === 'not-empty'">
+                                            <tags-input style="margin-left: 3px;" theme="theme" tags="rule.value" on-change="changeValue()"></tags-input>
+                                        </div>
+
+                                        <div ng-switch-when="folders" ng-switch-when-separator="|" ng-hide="rule.method === 'empty' || rule.method === 'not-empty'">
+                                            <folders-input style="margin-left: 3px;" theme="theme" folder-ids="rule.value" on-change="changeValue()"></folders-input>
+                                        </div>
+
+                                    </div>
+                                    <div class="btn" ng-click="removeRule(condition, rule)" ng-class="{'disabled': condition.rules.length <= 1}"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-condition-remove.svg"/></div>
+                                    <div class="btn" ng-click="createRule(condition, $index + 1)" ng-class="{'disabled': condition.rules.length >= 30}"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-condition-add.svg"/></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section textAlign-right darken" style="display: flex; justify-content: flex-end;">
+                    <div class="preview" style="margin-right: auto;">{{'modal.smartFolder.hitMsg.found' | i18n}}{{totalCount}}{{'modal.smartFolder.hitMsg.result' | i18n}}</div>
+                    <div class="button button-xs button-primary" ng-show="isEditMode" ng-click="save()">{{'modal.smartFolder.buttons.saveChanges' | i18n}}</div>
+                    <div class="button button-xs button-primary" ng-show="!isEditMode" ng-click="save()">{{'modal.smartFolder.buttons.create' | i18n}}</div>
+                    <div class="button button-xs button-grey" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+                </div>
+            </div>
+            <div class="modal-overlay"></div>
+        </div>
+
+
+        <!-- TODO: 改 Directive 錯誤提示彈窗 -->
+        <div class="modal-flex-center" ng-controller="ErrorModalController">
+            <div class="modal error-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
+                <table>
+                    <tbody>
+                        <tr class="header">
+                            <td class="name">{{'modal.importError.thead.name' | i18n}}</td>
+                            <td class="origin">{{'modal.importError.thead.origin' | i18n}}</td>
+                            <td class="reason">{{'modal.importError.thead.reason' | i18n}}</td>
+                            <td class="icon"></td>
+                            <td width="10px" ng-show="errorList.length > 10"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="error-list">
+                    <div class="table" vs-repeat="60" vs-excess="30">
+                        <div class="tr" ng-repeat="error in errorList"> 
+                            <div ng-if="error.type==='DOWNLOAD_ERROR'" class="td name"><a ng-href="{{error.object.website}}" target="_blank">{{error.object.name}}</a></div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR'" class="td origin"><a ng-if="error.object.url" ng-href="{{error.object.url}}" target="_blank" title="{{error.object.url}}">{{error.object.url}}</a><a ng-if="!error.object.url">-</a></div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='BASE64_ERROR'" class="td reason">{{'modal.importError.reason.base64' | i18n}}</div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='NETWORK_TIMEOUT'" class="td reason">{{'modal.importError.reason.timeout' | i18n}}</div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='NO_FILE'" class="td reason" ng-bind-html="'modal.importError.reason.noFile' | i18n"></div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='UNRECOGNIZED'" class="td reason">{{'modal.importError.reason.unrecognized' | i18n}}</div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='HTTP_ERROR'" class="td reason">{{'modal.importError.reason.httpError' | i18n}}<span ng-if="error.detail">，{{error.detail}}</span></div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='CONTENT_TYPE_BLOCKED'" class="td reason">{{'modal.importError.reason.contentTypeBlocked' | i18n}}<span ng-if="error.detail"> ({{error.detail}})</span></div>
+                            <div ng-if="error.type==='DOWNLOAD_ERROR'" class="td icon remove" ng-click="remove(error)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-remove.svg"></div>
+                            <!-- TODO: 本地无法添加时，处理方式 -->
+                            <div ng-if="error.type==='ADD_ERROR'" class="td name" title="{{error.object.name}}">{{error.object.name}}</div>
+                            <div ng-if="error.type==='ADD_ERROR'" class="td origin" ng-click="openPath(error.object.path)"><a title="{{error.object.path}}">{{error.object.path}}</a></div>
+                            <div ng-if="error.type==='ADD_ERROR'" class="td reason" ng-bind-html="error.reason"></div>
+                            <div ng-if="error.type==='ADD_ERROR'" class="td icon remove" ng-click="remove(error)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-remove.svg"></div>
+                            <!-- 编辑错误 -->
+                            <div ng-if="error.type==='EDIT_ERROR'" class="td name" title="{{error.object.name}}">{{error.object.name}}</div>
+                            <div ng-if="error.type==='EDIT_ERROR'" class="td origin" ng-click="openPath(error.object.path)"><a title="{{error.object.path}}">{{error.object.path}}</a></div>
+                            <div ng-if="error.type==='EDIT_ERROR'" class="td reason" title="{{::error.reason}}" ng-bind-html="error.reason"></div>
+                            <div ng-if="error.type==='EDIT_ERROR'" class="td icon remove" ng-click="remove(error)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-remove.svg"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section darken textAlign-right">
+                    <div class="button button-xs button-grey" style="float: left;"  ng-click="cleanAll()">{{'modal.importError.button.removeAll' | i18n}}</div>
+                    <div class="button button-xs button-grey" style="float: left;"  ng-click="copyAll()">{{'modal.importError.button.copyAll' | i18n}}</div>
+                    <div class="button button-xs button-primary" ng-click="retryAll()"><img ng-src="assets/images/dark/icons/ic-refresh.svg"> {{'modal.importError.button.retryAll' | i18n}}</div>
+                    <div class="button button-xs button-grey" ng-click="close()">{{'modal.importError.button.cancel' | i18n}}</div>
+                </div>
+            </div>
+            <div class="modal-overlay">
+            </div>
+        </div>
+
+        <batch-save-panel class="modal-flex-center" theme="theme" tag-manager="TagManager" folders="folders" folder-mappings="folderMappings" upload-queue="uploadQueue" upload-urls="uploadUrls" add-to-recent-folders="addToRecentFolders"></batch-save-panel>
+		<plugin-panel theme="theme"></plugin-panel>
+		<plugin-creator class="modal-flex-center"></plugin-creator>
+		<plugin-center class="modal-flex-center"></plugin-center>
+        <layout-panel theme="theme"></layout-panel>
+        <folder-select-panel theme="theme"></folder-select-panel>
+        <general-tag-select-panel theme="theme"></general-tag-select-panel>
+        <inspector-tag-select-panel theme="theme" selected="selected" tag-manager="TagManager"></inspector-tag-select-panel>
+        <duplicate-scan-panel theme="theme" folder-mappings="folderMappings"></duplicate-scan-panel>
+        <duplicate-modal theme="theme" class="modal-flex-center" folder-mappings="folderMappings" item-mappings="itemMappings"></duplicate-modal>
+        <mousewheel-setting-modal class="modal-flex-center" theme="theme"></mousewheel-setting-modal>
+        <context-menu theme="theme"></context-menu>
+        <folder-password-modal class="modal-flex-center" theme="theme"></folder-password-modal>
+        <notification-modal class="modal-flex-center" theme="theme"></notification-modal>
+    </div>
+    
+
+    <!-- 歡迎頁面 -->
+    <welcome-page theme="theme"></welcome-page>
+
+    <!-- 新版提示 -->
+    <new-version-notification-modal class="modal-flex-center" theme="theme"></new-version-notification-modal>
+
+    <!-- 關於 -->
+    <about-panel class="modal-flex-center" theme="theme"></about-panel>
+
+    <library-panel theme="theme" library-history="libraryHistory"></library-panel>
+
+    <!-- 進度條 -->
+    <empty-trash-progress></empty-trash-progress>
+    <library-load-progress></library-load-progress>
+    <library-merge-progress></library-merge-progress>
+    <eaglepack-import-progress></eaglepack-import-progress>
+    <eaglepack-export-progress></eaglepack-export-progress>
+    <file-thumbnail-progress></file-thumbnail-progress>
+    <file-export-progress></file-export-progress>
+    <file-add-library-progress></file-add-library-progress>
+    <debug-report-progress></debug-report-progress>
+    <webp-convert-progress></webp-convert-progress>
+    <fixutil-clean-empty-folder-progress></fixutil-clean-empty-folder-progress>
+    <fixutil-progress></fixutil-progress>
+
+
+    <!-- TODO:重構，應移動到 directive，应用锁密码输入 -->
+    <div class="lock-screen app-lock-screen" ng-if="$root.preferences.privacy.enable !=='false' && $root.isAppLocked && isUILoaded" ng-show="$root.isAppLocked" ng-click="focusAppUnlockPassword()">
+        <corner-btns theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
+        <div class="info">
+            <img ng-src="assets/images/{{theme|themePath}}/illustrations/lock-screen.png" width="400" height="144">
+            <h4>{{'pages.unlock.apptitle' | i18n}}</h4>
+            <p ng-show="$root.preferences.privacy.passwordTips">{{'pages.unlock.passwordTips' | i18n}}{{$root.preferences.privacy.passwordTips}}</p>
+            <div class="password-input-wrapper">
+                <input id="app-lock-password-input" type="password" always-focus placeholder="{{'pages.unlock.placeholder' | i18n}}" select-all ng-keyup="unlockAppPasswordKeyup($event)" ng-keydown="unlockAppPasswordKeydown($event)">
+                <!-- Touch ID 按鈕 - 整合在輸入框內 -->
+                <button class="ic-btn touchid-btn-inline" 
+                        ng-if="canUseTouchID && $root.preferences.privacy.enableTouchID === 'true'"
+                        ng-click="unlockWithTouchID($event)"
+                >
+                    <img src="assets/images/{{theme|themePath}}/icons/ic-touchid.svg" width="20" height="20">
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="multiple-drag-placeholder"></div>
+
+    <input style="display: none;" id="colors-picker" color-picker hex-color="$body.hexColor" tabindex="-1" type="color" name="favcolor" value="#ff0000" ng-change="filterWithColor(hexToRGB($body.hexColor));" ng-model="$body.hexColor" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 200, 'blur': 0 } }">
+
+    <!-- 圖片標注 -->
+    <div id="annotation-preview-container" ng-if="isDetailMode">
+        <div 
+            ng-show="currentComment"
+            class="annotation-box" 
+            ng-mousedown="$event.stopPropagation()"
+            ng-dblclick="$event.stopPropagation()"
+            placeholder="{{'annotation.newAnnotationPlaceholder' | i18n}}"
+            contenteditable="plaintext-only"
+            strip-br="false"
+            allow-link="true"
+            editable-selectall
+        >
+        </div>
+        <div class="annotation-arrow"></div>
+        <input id="annotation-preview-container-input" type="text" style="width: 1px; height: 1px; pointer-events: none; opacity: 0;">
+    </div>
+
+    <!-- 懸停預覽 -->
+    <div id="hover-preview-container">
+        <div class="image-wraper">
+            <img src="">
+        </div>
+        <div class="hover-preview-container-overlay"></div>
+    </div>
+
+    <div id="tag-manager-drag-badge" class="tag-manager-drag-badge"></div>
+
+    <script src="js/lib/eagle-api.js"></script>
+    <script src="js/lib/api/url-enlarger.js"></script>
+    <script src="js/vendors/tippy.js"></script>
+    <script src="js/vendors/jquery-1.8.0.min.js"></script>
+    <script src="js/vendors/jquery-long-click.js"></script>
+    <script src="js/vendors/jquery.bez.js"></script>
+    <script src="js/vendors/lodash.js"></script>
+    <script src="js/vendors/mousetrap.min.js"></script>
+    <script>
+        if (typeof module === 'object') { window.module = module; module = undefined; }
+        if (window.module) module = window.module;
+        var appRoot = require('app-root-path');
+        window.i18n = new(require(appRoot + '/i18n'));
+        window.EagleConfig = require(appRoot + '/config.js');
+    </script>
+    <script src="js/services/lazy-load-manager.js"></script>
+    <script src="app.bundle.js"></script>
+    <script src="js/services/shortcut-manager.js"></script>
+    <script src="js/vendors/colorpicker/js/colorpicker.js"></script>
+    <script src="js/vendors/colorpicker/js/eye.js"></script>
+    <script src="js/vendors/colorpicker/js/utils.js"></script>
+    <script>
+        eagle.urlEnlargerRemote.load();
+    </script>
+</body>
+</html>

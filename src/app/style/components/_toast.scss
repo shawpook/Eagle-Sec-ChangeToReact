@@ -1,0 +1,153 @@
+// .cg-notify-message {
+// 	top: 0;
+// 	transition: top .4s cubic-bezier(0, 1.1, 0.79, 1.03), opacity .4s cubic-bezier(0, 1.1, 0.79, 1.03);
+// }
+
+.cg-notify-message { 
+    z-index: 2147483647;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    opacity: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    border-top: var(--box-border-top);
+    border-right: var(--box-border-right);
+    border-bottom: var(--box-border-bottom);
+    border-left: var(--box-border-left);
+    border-radius: 8px;
+    background-color: var(--box-background);
+    min-width: 100px;
+	box-sizing: border-box;
+    padding: 0 8px;
+    color: var(--color-text-primary);
+    cursor: pointer;
+    -webkit-font-smoothing: antialiased;
+	box-shadow: var(--box-border-shadow);
+    backdrop-filter: var(--box-background-blur);
+    transition: top .4s cubic-bezier(0, 1.1, 0.79, 1.03), opacity .4s cubic-bezier(0, 1.1, 0.79, 1.03);
+    transform: translateY(48px);
+    
+    &.warning {
+    	.icon {
+    		color: var(--color-warning);
+    	}
+    }
+    &.bottom {
+	    top: initial;
+    	bottom: 15px;
+    }
+    &:hover {
+    	cursor: pointer;
+    }
+    .icon {
+	    margin-right: 5px;
+        height: 36px;
+    	width: 20px;
+	    float: left;
+	    line-height: 36px;
+	    color: var(--color-negative);
+    }
+    .cg-notify-close {
+        @include dark {
+            --close-btn-url: url(../assets/images/dark/icons/ic-modal-close.svg);
+        }
+    
+        @include light {
+            --close-btn-url: url(../assets/images/light/icons/ic-modal-close.svg);
+        }
+        position: initial;
+        opacity: 0.7;
+    	display: flex;
+        margin-left: 4px;
+        height: 24px;
+        width: 24px;
+        border-radius: 4px;
+        float: right;
+	    color: var(--color-text-primary);
+        text-align: center;
+        margin-left: 24px;
+        align-items: center;
+        background-color: transparent;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-image: var(--close-btn-url);
+        &::before {
+            content: "";
+            width: 1px;
+            background-color: var(--color-border-secondary);
+            display: block;
+            height: 16px;
+            margin-left: -12px;
+        }
+	    &:hover {
+	    	opacity: 1;
+	    	cursor: pointer;
+            @include dark {
+                background-color: var(--color-lightgray-5);
+            }
+        
+            @include light {
+                background-color: var(--color-dark-5);
+            }
+	    }
+	    span {
+            display: none;
+        }
+    }
+    .cg-notify-message-template {
+
+        @include dark {
+            --success-icon-url: url(../assets/images/dark/icons/ic-toast-success.svg);
+            --warning-icon-url: url(../assets/images/dark/icons/ic-toast-warning.svg);
+            --error-icon-url: url(../assets/images/dark/icons/ic-toast-error.svg);
+        }
+    
+        @include light {
+            --success-icon-url: url(../assets/images/light/icons/ic-toast-success.svg);
+            --warning-icon-url: url(../assets/images/light/icons/ic-toast-warning.svg);
+            --error-icon-url: url(../assets/images/light/icons/ic-toast-error.svg);
+        }
+
+		display: inline-flex;
+        align-items: center;
+		max-width: 640px;
+		overflow: hidden;
+		white-space:nowrap;
+        font-size: 13px;
+		height: 36px;
+		color: var(--color-text-primary);
+        cursor: default;
+
+        > span {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        icon {
+            display: inline-flex;
+            width: 24px;
+            height: 24px;
+            margin-right: 4px;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-image: var(--success-icon-url);
+            &.error {
+                background-image: var(--error-icon-url);
+            }
+            &.warning {
+                background-image: var(--warning-icon-url);
+            }
+        }
+		a {
+			text-decoration: underline;
+			color: inherit;
+            font-weight: normal;
+            &[ng-click] {
+                margin-left: 12px !important;
+            }
+		}
+    }
+}

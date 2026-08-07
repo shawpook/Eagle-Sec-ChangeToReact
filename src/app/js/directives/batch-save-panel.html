@@ -1,0 +1,246 @@
+<div id="batch-save-panel" class="modal batch-save-panel" ng-class="{'open': isOpen}" ng-click="focusInput();">
+
+    <input id="batch-save-panel-input" style="position: absolute; opacity:0; height:0; margin-bottom: 0;" ng-keydown="onKeyup($event)" auto-focus="OPEN_DUPLICATE" tabindex="-1">
+
+    
+    <div class="modal-header">
+        <div class="name">{{'batchImport.import' | i18n}} <span class="count" ng-show="selected.length">({{selected.length}})</span></div>
+        <div class="sliders-bar has-btn">
+            <div class="slider">
+                <div class="ic-btn zoom-btn" ng-click="zoomOut($event);"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-zoom-out.svg"></div>
+                <div class="range-wrap">
+                    <div class="range-progressbar">
+                        <div class="current" style="width: {{listSize / 600 * 100}}%"></div>
+                    </div>
+                    <input id="batch-save-panel-slider" class="range" type="range" name="points" min="50" max="600" step="5" tabIndex="-1" ng-model="listSize">
+                </div>
+                <div class="ic-btn zoom-btn" ng-click="zoomIn($event);"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-zoom-in.svg"></div>
+            </div>
+        </div>
+        <div class="right">
+            <div class="ic-btns">
+                <div class="ic-btn" ng-click="selectAll()"><img ng-src="assets/images/{{theme|themePath}}/icons/batch-save-select-all.svg"/>{{'batchImport.selectAll' | i18n}}</div>
+                <div class="ic-btn" ng-click="invertSelected()"><img ng-src="assets/images/{{theme|themePath}}/icons/batch-save-select-invert.svg"/>{{'batchImport.reverseSelect' | i18n}}</div>
+            </div>
+            <input id="batch-save-panel-search" maxlength="4096" type="search" selectall class="search" placeholder="{{'toolbar.searchPlaceholder' | i18n}}" ng-model="filter.keyword" ng-change="onFilterChange()" ng-model-options="{ debounce: { 'default': 50, 'blur': 0 } }" ng-click="$event.stopPropagation();">
+            <div class="close" ng-click="close()"></div>
+        </div>
+    </div>
+
+    <div class="batch-save-panel-container">
+        <!-- 內容列表 -->
+        <div class="gallery" ng-mousedown="cleanSelected($event);" batch-rect-select>
+            <div class="gallery-container" style="grid-template-columns: repeat(auto-fill, minmax({{listSize}}px, 1fr));">
+                <div class="empty" ng-show="displayed.length==0">
+                    <img ng-src="assets/images/{{theme|themePath}}/illustrations/batch-save-empty.png" width="256" height="144"/>
+                    {{'batchImport.empty' | i18n}}
+                </div>
+                <div 
+                    class="item" 
+                    ng-show="items.length>0"
+                    ng-repeat="image in displayed"
+                    ng-class="{'selected': isSelected(image)}" 
+                    ng-mousedown="select($event, image)"
+                >
+                    <div class="thumbnail" ng-switch="image.original.type">
+                        <!-- 视频类型 -->
+                        <video ng-switch-when="video" controls controlsList="nodownload nofullscreen" ng-src="{{image.original.src || image.src}}"></video>
+                        <!-- 默认情况，显示图片 -->
+                        <img ng-switch-default ng-src="{{image.original.blobUrl || image.original.src}}" />
+                    </div>
+    
+                    <div class="info">
+                        <div class="name" ng-bind-html="image.title | fuzzyMatch:filter.keyword" title="{{::image.title}}"></div>
+                        <!-- 圖片資訊 -->
+                        <div ng-if="image.original.type === 'image' && !image.hasLarge" class="metas">{{image.original.width}} × {{image.original.height}} / {{image.original.ext}}</div>
+                        <div ng-if="image.original.type === 'image' && image.hasLarge" class="metas">
+                            <span ng-if="!image.large.width">{{'batchImport.originalSize' | i18n}}</span>
+                            <span ng-if="image.large.width">{{image.large.width}} × {{image.large.height}} / {{image.large.ext}}</span>
+                        </div>
+                        <!-- 影片資訊 -->
+                        <div ng-if="image.original.type === 'video'" class="metas">{{image.original.duration | duration}} / {{image.original.width}} × {{image.original.height}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 側欄 -->
+        <div class="gallery-sidebar">
+
+            <div class="gallery-sidebar-sections">
+                <!-- 大小篩選 -->
+                <div class="gallery-sidebar-section" ng-class="{'expand': batchSaver.showSize}">
+                    <div class="info-section-label" ng-click="batchSaver.showSize = !batchSaver.showSize;">
+                        <div class="name">{{'batchImport.size' | i18n}}</div>
+                        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+                    </div>
+                    <div class="info-section-container options">
+                        <div class="option" ng-class="{'selected': !filter.size}" ng-click="filter.size = undefined; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.typeAll' | i18n}}</div>
+                        </div>
+                        <div class="option" ng-class="{'selected': filter.size === 'large'}" ng-click="filter.size = 'large'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.size>large' | i18n}}</div>
+                            <div class="count"><span ng-show="counts.selected.size['large']">{{counts.selected.size['large']}} / </span>{{counts.size['large']}}</div>
+                        </div>
+                        <div class="option" ng-class="{'selected': filter.size === 'medium'}" ng-click="filter.size = 'medium'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.size>medium' | i18n}}</div>
+                            <div class="count"><span ng-show="counts.selected.size['medium']">{{counts.selected.size['medium']}} / </span>{{counts.size['medium']}}</div>
+                        </div>
+                        <div class="option" ng-class="{'selected': filter.size === 'small'}" ng-click="filter.size = 'small'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.size>small' | i18n}}</div>
+                            <div class="count"><span ng-show="counts.selected.size['small']">{{counts.selected.size['small']}} / </span>{{counts.size['small']}}</div>
+                        </div>
+                        <div class="option" ng-class="{'selected': filter.size === 'advanced'}" ng-click="filter.size = 'advanced'; focusMinWInput(); onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.size>custom' | i18n}}</div>
+                        </div>
+                        <div class="image-size-filter" ng-show="filter.size === 'advanced'" ng-click="$event.stopPropagation()">
+                            <div class="item">
+                                <div class="label">{{'filter.resolution>width' | i18n}}</div>
+                                <div class="range">
+                                    <input id="batch-saver-min-w" maxlength="256" type="text" placeholder="{{'filter.resolution>min' | i18n}}" ng-change="onFilterChange()" ng-model="batchSaver.filterMinW" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                                    -
+                                    <input id="batch-saver-max-w" maxlength="256" type="text" placeholder="{{'filter.resolution>max' | i18n}}" ng-change="onFilterChange()" ng-model="batchSaver.filterMaxW" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                                </div>
+                            </div>
+                            <div class="item">
+                                <div class="label">{{'filter.resolution>height' | i18n}}</div>
+                                <div class="range">
+                                    <input id="batch-saver-min-h" maxlength="256" type="text" placeholder="{{'filter.resolution>min' | i18n}}" ng-change="onFilterChange()" ng-model="batchSaver.filterMinH" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                                    -
+                                    <input id="batch-saver-max-h" maxlength="256" type="text" placeholder="{{'filter.resolution>max' | i18n}}" ng-change="onFilterChange()" ng-model="batchSaver.filterMaxH" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 格式篩選 -->
+                <div class="gallery-sidebar-section" ng-class="{'expand': batchSaver.showExt}">
+                    <div class="info-section-label" ng-click="batchSaver.showExt = !batchSaver.showExt;">
+                        <div class="name">{{'batchImport.type' | i18n}}</div>
+                        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+                    </div>
+                    <div class="info-section-container options">
+                        <div class="option" ng-class="{'selected': !filter.ext}" ng-click="filter.ext = undefined; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.typeAll' | i18n}}</div>
+                            
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['avif']" ng-class="{'selected': filter.ext === 'avif'}" ng-click="filter.ext = 'avif'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">avif</div>
+                            <div class="count"><span ng-show="counts.selected.ext['avif']">{{counts.selected.ext['avif']}} / </span>{{counts.ext['avif']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['gif']" ng-class="{'selected': filter.ext === 'gif'}" ng-click="filter.ext = 'gif'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">gif</div>
+                            <div class="count"><span ng-show="counts.selected.ext['gif']">{{counts.selected.ext['gif']}} / </span>{{counts.ext['gif']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['jpg']" ng-class="{'selected': filter.ext === 'jpg'}" ng-click="filter.ext = 'jpg'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">jpg</div>
+                            <div class="count"><span ng-show="counts.selected.ext['jpg']">{{counts.selected.ext['jpg']}} / </span>{{counts.ext['jpg']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['png']" ng-class="{'selected': filter.ext === 'png'}" ng-click="filter.ext = 'png'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">png</div>
+                            <div class="count"><span ng-show="counts.selected.ext['png']">{{counts.selected.ext['png']}} / </span>{{counts.ext['png']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['svg']" ng-class="{'selected': filter.ext === 'svg'}" ng-click="filter.ext = 'svg'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">svg</div>
+                            <div class="count"><span ng-show="counts.selected.ext['svg']">{{counts.selected.ext['svg']}} / </span>{{counts.ext['svg']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['webp']" ng-class="{'selected': filter.ext === 'webp'}" ng-click="filter.ext = 'webp'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">webp</div>
+                            <div class="count"><span ng-show="counts.selected.ext['webp']">{{counts.selected.ext['webp']}} / </span>{{counts.ext['webp']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['mp4']" ng-class="{'selected': filter.ext === 'mp4'}" ng-click="filter.ext = 'mp4'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">mp4</div>
+                            <div class="count"><span ng-show="counts.selected.ext['mp4']">{{counts.selected.ext['mp4']}} / </span>{{counts.ext['mp4']}}</div>
+                        </div>
+                        <div class="option" ng-show="counts.has.ext['webm']" ng-class="{'selected': filter.ext === 'webm'}" ng-click="filter.ext = 'webm'; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">webm</div>
+                            <div class="count"><span ng-show="counts.selected.ext['webm']">{{counts.selected.ext['webm']}} / </span>{{counts.ext['webm']}}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 域名篩選 -->
+                <div class="gallery-sidebar-section" ng-class="{'expand': batchSaver.showDomains}" ng-show="domains.length > 1">
+                    <div class="info-section-label" ng-click="batchSaver.showDomains = !batchSaver.showDomains;">
+                        <div class="name">{{'batchImport.domain' | i18n}}</div>
+                        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+                    </div>
+                    <div class="info-section-container options">
+                        <div class="option" ng-class="{'selected': !filter.domain}" ng-click="filter.domain = undefined; onFilterChange();">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{'batchImport.typeAll' | i18n}}</div>
+                            
+                        </div>
+                        <div class="option" ng-class="{'selected': domain === filter.domain}" ng-click="filter.domain = domain; onFilterChange();" ng-repeat="domain in domains">
+                            <div class="radio-icon"></div>
+                            <div class="name">{{domain}}</div>
+                            <div class="count"><span ng-show="counts.selected.domain[domain]">{{counts.selected.domain[domain]}} / </span>{{counts.domain[domain]}}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文件夾 -->
+                <div class="gallery-sidebar-section" ng-class="{'expand': batchSaver.showFolders}">
+                    <div class="info-section-label" ng-click="batchSaver.showFolders = !batchSaver.showFolders;">
+                        <div class="name">{{'inspector.includesFoldersLabel' | i18n}}</div>
+                        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+                    </div>
+                    <div class="info-section-container label-container">
+                        <div class="label-item color-{{folderMappings[folder.id].iconColor}}" ng-show="importFolders.length > 0" ng-repeat="folder in importFolders track by $index">
+                            <span class="label-item-name">{{folderMappings[folder.id].name}}</span>
+                            <div class="ic-btn label-item-remove-btn" ng-click="removeImportFolder($event, folder)">
+                                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+                            </div>
+                        </div>
+                        <!-- 新增資料夾（空狀態） -->
+                        <div ng-show="importFolders.length === 0" class="ic-btn has-bg create-label-btn full-width" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.includesFoldersBtn' | i18n }}<key>F</key>" ng-click="selectFolders($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"><span>{{'inspector.includesFoldersBtn' | i18n}}</span></div>
+
+                        <!-- 新增資料夾（已有資料狀態） -->
+                        <div ng-show="importFolders.length > 0" class="ic-btn create-label-btn" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.includesFoldersBtn' | i18n }}<key>F</key>" ng-click="selectFolders($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"></div>
+                    </div>
+                </div>
+
+                <!-- 標籤 -->
+                <div class="gallery-sidebar-section" ng-class="{'expand': batchSaver.showTags}">
+                    <div class="info-section-label" ng-click="batchSaver.showTags = !batchSaver.showTags;">
+                        <div class="name">{{'inspector.includesTagsLabel' | i18n}}</div>
+                        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+                    </div>
+                    <div class="info-section-container label-container">
+                        <div class="label-item color-{{TagManager.tagMappings[tag].color}}" ng-show="tags.length > 0" ng-repeat="tag in tags track by $index">
+                            <span class="label-item-name">{{tag}}</span>
+                            <div class="ic-btn label-item-remove-btn" ng-click="removeImportTag($event, tag)">
+                                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+                            </div>
+                        </div>
+                        <!-- 新增資料夾（空狀態） -->
+                        <div ng-show="tags.length === 0" class="ic-btn has-bg create-label-btn full-width" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.tagInputPlaceholder' | i18n }}<key>T</key>" ng-click="selectTags($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"><span>{{'inspector.tagInputPlaceholder' | i18n}}</span></div>
+
+                        <!-- 新增資料夾（已有資料狀態） -->
+                        <div ng-show="tags.length > 0" class="ic-btn create-label-btn" tippy tippy-placement="bottom" tippy-content="{{ 'inspector.tagInputPlaceholder' | i18n }}<key>T</key>" ng-click="selectTags($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-add-label.svg"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 按鈕 -->
+            <div class="gallery-controls">
+                <div class="button button-xs button-primary button-block" ng-click="import()" ng-class="{'button-disabled': selected.length==0}"><img ng-src="assets/images/base/icons/batch-save-import.svg"/>{{'batchImport.import' | i18n}} <span ng-show="selected.length > 0">({{selected.length}})</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay"></div>

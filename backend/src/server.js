@@ -1352,7 +1352,7 @@ app.post('/api/library/switch', (req, res) => {
 });
 
 app.get('/api/library/icon', (req, res) => {
-  const iconPath = path.join(projectRoot, '..', 'src/app/collect-window/assets/images/base/icons/default-library-icon.png');
+  const iconPath = path.join(projectRoot, 'src/app/collect-window/assets/images/base/icons/default-library-icon.png');
   if (fs.existsSync(iconPath)) res.sendFile(iconPath);
   else res.status(404).json(fail('Library icon not found'));
 });
@@ -2257,7 +2257,7 @@ app.post('/api/v2/library/switch', (req, res) => {
 });
 
 app.get('/api/v2/library/icon', (req, res) => {
-  const iconPath = path.join(projectRoot, '..', 'src/app/collect-window/assets/images/base/icons/default-library-icon.png');
+  const iconPath = path.join(projectRoot, 'src/app/collect-window/assets/images/base/icons/default-library-icon.png');
   if (fs.existsSync(iconPath)) res.sendFile(iconPath);
   else res.status(404).json(fail('Library icon not found'));
 });
@@ -2966,7 +2966,7 @@ function resolveThumbnailPath(filePath) {
 
   const roots = [
     path.join(projectRoot, 'frontend/public'),
-    path.join(projectRoot, '..', 'src'),
+    path.join(projectRoot, 'src'),
   ];
   let rel = decoded;
   if (decoded.startsWith('/mock-library/')) rel = decoded.slice(1);

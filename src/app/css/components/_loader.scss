@@ -1,0 +1,14 @@
+.loader {
+	z-index: 1000;
+	@extend .position-fixed;
+	@extend .posPinCenter;
+	@extend .borderRadius-l;
+	padding: 40px;
+	background-color: rgba($black-color, 0.8);
+}
+.loader-overlay {
+	z-index: 999;
+	@extend .position-fixed;
+	@extend .posPinFill;
+	background-color: rgba($black-color, 0.2);
+}

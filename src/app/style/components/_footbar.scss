@@ -1,0 +1,28 @@
+.content-panel .footbar {
+    z-index: 9999;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: var(--color-text-primary);
+    box-sizing: border-box;
+    height: 48px;
+    line-height: 48px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    align-content: center;
+    background-color: var(--box-background);
+    backdrop-filter: var(--box-background-blur);
+    box-shadow: 0 -1px 0 var(--color-border-secondary);
+
+    @include body-status(".is-inline-mode") {
+        bottom: 48px;
+		box-shadow: none;
+		border: 1px solid var(--color-border-secondary);
+		border-radius: 8px;
+		right: 16px;
+		left: 16px;
+		width: auto;
+    }
+}

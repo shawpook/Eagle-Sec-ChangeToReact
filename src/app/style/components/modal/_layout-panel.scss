@@ -1,0 +1,201 @@
+@keyframes animate-layout-panel-open {  
+    0% {
+        transform: scale(0.96);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+body.window-blur .layout-panel-overlay {
+    pointer-events: none;
+}
+
+.layout-panel-overlay {
+	z-index: 100118;
+	position: fixed;
+	top: 0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	display: none;
+	// background: var(--box-overlay-background);
+}
+
+.layout-panel {
+	z-index: 100119;
+	position: fixed;
+	top: 200px;
+	left: 500px;
+    display: none;
+    border-top: var(--box-border-top);
+    border-right: var(--box-border-right);
+    border-bottom: var(--box-border-bottom);
+    border-left: var(--box-border-left);
+	border-radius: 8px;
+    background-color: var(--box-background);
+	min-height: 240px;
+	min-width: 320px;
+    box-sizing: border-box;
+	overflow: hidden;
+	font-size: 13px;
+
+    -webkit-font-smoothing: antialiased;
+	box-shadow: var(--box-border-shadow);
+    backdrop-filter: var(--box-background-blur);
+
+    &.open {
+        display: flex;
+		animation: animate-layout-panel-open 70ms var(--timing-function-scaleIn);
+        ~ .layout-panel-overlay {
+			display: block;
+		}
+    }
+
+    .shortcut-input {
+        position: absolute;
+        opacity: 0;
+        height: 1;
+        pointer-events: none;
+    }
+
+    .layout-panel-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        padding: 16px;
+        font-size: 13px;
+        color: var(--color-text-primary);
+        gap: 6px;
+
+        .separator {
+            margin: 4px 0;
+            background-color: var(--color-border-secondary);
+            height: 1px;
+        }
+
+        .panel-item {
+            display: flex;
+            align-items: center;
+            height: 28px;
+            gap: 24px;
+
+            .label {
+                flex: 1;
+            }
+            .value {
+                display: flex;
+                align-items: center;
+                margin-left: auto;
+                gap: 8px;
+
+                .select {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    margin: 0;
+                    height: 32px;
+
+                    .select-content {
+
+                        @include dark {
+                            --select-background: var(--color-black-20);
+                        }
+                    
+                        @include light {
+                            --select-background: var(--color-white-50);
+                        }
+
+                        display: flex;
+                        border: 1px solid var(--color-border-primary);
+                        border-radius: 6px;
+                        background-color: var(--select-background);
+                        height: 32px;
+                        box-sizing: border-box;
+                        padding-right: 24px;
+                        padding-left: 8px;
+                        line-height: 30px;
+                        color: var(--color-text-primary);
+
+                        .select-value {
+                            display: flex;
+                            align-items: center;
+                            gap: 6px;
+                            img {
+                                height: 16px;
+                                width: 16px;
+                            }
+                        }
+                    }
+                    select {
+                        position: absolute;
+                        top: 0;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        opacity: 0;
+                        height: 32px;
+                        &:after {
+                            right: 8px;
+                        }
+                    }
+                }
+                .btn-group {
+
+                    @include dark {
+                        --btn-background: var(--color-lightgray-10);
+                        --btn-group-background: var(--color-black-20);
+                    }
+                
+                    @include light {
+                        --btn-background: var(--color-white-70);
+                        --btn-group-background: var(--color-dark-5);
+                    }
+        
+                    display: flex;
+                    align-items: center;
+                    border-radius: 6px;
+                    background-color: var(--btn-group-background);
+                    height: 32px;
+                    padding: 0 2px;
+
+                    .btn {
+                        display: inline-flex;
+                        justify-content: center;
+                        align-items: center;
+                        border-radius: 4px;
+                        height: 28px;
+                        width: 28px;
+                        cursor: pointer;
+                        &.active {
+                            background-color: var(--btn-background);
+                            @include light {
+                                box-shadow: 0 0 2px var(--color-black-25);
+                            }
+                            img {
+                                opacity: 1;
+                            }
+                        }
+                        img {
+                            opacity: 0.5;
+                        }
+                    }
+
+                    &.label-mode {
+                        .btn {
+                            width: initial;
+                            padding: 0 12px;
+                        }
+                    }
+                }
+                .toggle {
+                    height: 20px;
+                    cursor: pointer;
+                    input[type="checkbox"] {
+                        pointer-events: none;
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,11 @@
+<div class="progress-dialog" ng-class="{'open' : isArchiving}">
+    <div class="progress-dialog-content" ng-if="isArchiving">
+        <div class="message" ng-show="total==0">{{'progress.archive.startMsg' | i18n}}...</div>
+        <div class="message" ng-show="total>0">{{'progress.archive.doingMsg' | i18n}}... <span class="counter" ng-show="timeLeftInSeconds">({{timeLeftInSeconds | second2time}})</span></div>
+        <div class="progressbar" ng-show="isArchiving">
+            <div class="current" style="width: {{percent}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

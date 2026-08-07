@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>HDR / EXR texture loader</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<link type="text/css" rel="stylesheet" href="main.css">
+</head>
+
+<body>
+	<script src="three.min.js"></script>
+	<script src="lil-gui.module.min.js"></script>
+	<script src="RGBELoader.js"></script>
+	<script src="fflate.module.js"></script>
+	<script src="EXRLoader.js"></script>
+	<script>
+		function trimCanvas(c) {
+			var ctx = c.getContext('2d'),
+				copy = document.createElement('canvas').getContext('2d'),
+				pixels = ctx.getImageData(0, 0, c.width, c.height),
+				l = pixels.data.length,
+				i,
+				bound = {
+					top: null,
+					left: null,
+					right: null,
+					bottom: null
+				},
+				x, y;
+			
+			// Iterate over every pixel to find the highest
+			// and where it ends on every axis ()
+			for (i = 0; i < l; i += 4) {
+				if (pixels.data[i + 3] !== 0) {
+					x = (i / 4) % c.width;
+					y = ~~((i / 4) / c.width);
+
+					if (bound.top === null) {
+						bound.top = y;
+					}
+
+					if (bound.left === null) {
+						bound.left = x;
+					} else if (x < bound.left) {
+						bound.left = x;
+					}
+
+					if (bound.right === null) {
+						bound.right = x;
+					} else if (bound.right < x) {
+						bound.right = x;
+					}
+
+					if (bound.bottom === null) {
+						bound.bottom = y;
+					} else if (bound.bottom < y) {
+						bound.bottom = y;
+					}
+				}
+			}
+			
+			var trimHeight = bound.bottom - bound.top,
+				trimWidth = bound.right - bound.left,
+				trimmed = ctx.getImageData(bound.left, bound.top, trimWidth, trimHeight);
+
+			copy.canvas.width = trimWidth;
+			copy.canvas.height = trimHeight;
+			copy.putImageData(trimmed, 0, 0);
+
+			return copy.canvas;
+		}
+	</script>
+	<script type="module">
+
+		const urlParams = new URLSearchParams(window.location.search);
+		const filePath = urlParams.get('path');
+
+		let frameCallback = () => {};
+		const CALLBACK_FUN_NAME = window?.frameElement?.getAttribute("callback");
+		const parentCallback = parent[CALLBACK_FUN_NAME] || function (err, result) { if (err) console.error(err); };
+
+		if (CALLBACK_FUN_NAME) {
+			frameCallback = (err, textureData) => {
+				if (err) {
+					parentCallback(eventParams?.error_message);
+				}
+				else {
+					let canvas = document.querySelector("canvas");
+					let base64 = canvas.toDataURL();
+					// let trimmedCanvas = document.createElement('canvas');
+					// trimmedCanvas.width = canvas.width;
+					// trimmedCanvas.height = canvas.height;
+					// let trimmedCtx = trimmedCanvas.getContext('2d');
+					// let img = new Image();
+					// img.onload = function () {
+					// 	try {
+					// 		trimmedCtx.drawImage(img, 0, 0, trimmedCanvas.width, trimmedCanvas.height);
+					// 		trimmedCanvas = trimCanvas(trimmedCanvas);
+					// 		trimmedCanvas.id = "preview";
+					// 		document.body.appendChild(trimmedCanvas);
+					// 		let resultCanvas = document.createElement('canvas');
+					// 		let resultCtx = resultCanvas.getContext("2d");
+					// 		let trimmedBase64 = trimmedCanvas.toDataURL();
+							parentCallback(undefined, {
+								width: textureData.width,
+								height: textureData.height,
+								base64: base64
+							});
+					// 	}
+					// 	catch (err) {
+					// 		parentCallback(err);
+					// 	}
+					// };
+					// img.onerror = function () {
+					// 	parentCallback(new Error(`Image load fail`));
+					// }
+					// img.src = base64;
+				}
+			}
+		}
+
+		const params = {
+			exposure: 1.0
+		};
+
+		let renderer, scene, camera;
+
+		setTimeout(() => {
+			init();
+		}, 100);
+
+		function init() {
+
+			let loader;
+
+			if (filePath.includes(".hdr")) {
+				loader = new RGBELoader();
+			}
+			else {
+				loader = new EXRLoader();
+			}
+
+			loader.load(filePath, function (texture, textureData) {
+				renderer = new THREE.WebGLRenderer({ alpha: true });
+				renderer.setClearColor( 0xffffff, 0 );
+				renderer.setPixelRatio(window.devicePixelRatio);
+				renderer.setSize(textureData.width, textureData.height);
+				document.body.appendChild(renderer.domElement);
+
+				if (window.parent.document.getElementById('texture-viewer')) {
+					window.parent.document.getElementById('texture-viewer').width = textureData.width + "px";
+					window.parent.document.getElementById('texture-viewer').height = textureData.height + "px";
+				}
+
+				renderer.toneMapping = THREE.ReinhardToneMapping;
+				renderer.toneMappingExposure = params.exposure;
+
+				renderer.outputEncoding = THREE.sRGBEncoding;
+
+				scene = new THREE.Scene();
+				const aspect = textureData.width / textureData.height;
+				camera = new THREE.OrthographicCamera( - aspect, aspect, 1, - 1, 0, 1 );
+
+			// loader.load(filePath, function (texture, textureData) {
+				const material = new THREE.MeshBasicMaterial({ map: texture });
+				const quad = new THREE.PlaneGeometry(2 * textureData.width / textureData.height, 2);
+				const mesh = new THREE.Mesh(quad, material);
+				scene.add(mesh);
+				render();
+				console.log("done")
+				frameCallback(undefined, textureData);
+
+				window.addEventListener('resize', onWindowResize);
+
+			}, () => {}, (err) => {
+				frameCallback(err);
+			});
+
+			
+		}
+
+		function onWindowResize() {
+			const aspect = window.innerWidth / window.innerHeight;
+
+			const frustumHeight = camera.top - camera.bottom;
+
+			camera.left = - frustumHeight * aspect / 2;
+			camera.right = frustumHeight * aspect / 2;
+
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+
+			render();
+		}
+
+		function render() {
+			renderer.toneMappingExposure = params.exposure;
+			renderer.render(scene, camera);
+		}
+
+	</script>
+</body>
+
+</html>

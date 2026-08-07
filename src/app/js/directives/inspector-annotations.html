@@ -1,0 +1,32 @@
+<div class="info-section" ng-if="selected.length == 1" ng-show="selected[0].comments.length > 0" style="overflow: initial;" ng-class="{'expand': inspector.showComments}">
+    <div class="info-section-label" ng-click="inspector.showComments = !inspector.showComments;">
+        <div class="name">{{'inspector.annotationLabel' | i18n}}</div>
+        <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+    </div>
+    <div class="info-section-container">
+        <div class="comments" ui-sortable="imageCommentsSortableOptions" ng-model="selected[0].comments">
+
+            <!-- 圖片標註 -->
+            <div ng-if="!comment.duration" class="comment image" ng-repeat="comment in selected[0].comments track by $index">
+                <div class="preview-image">
+                    <div ng-if="comment.width > comment.height" style="zoom: {{36/comment.width}}; aspect-ratio: {{comment.width/comment.height}}; width: {{comment.width}}px; height: {{comment.height}}px; background-size: {{selected[0].width}}px; background-position: {{-comment.x}}px {{-comment.y}}px; background-image: url('{{getThumbnailUrl(selected[0])}}')"></div>
+                    <div ng-if="comment.height >= comment.width" style="zoom: {{36/comment.height}}; aspect-ratio: {{comment.width/comment.height}}; width: {{comment.width}}px; height: {{comment.height}}px; background-size: {{selected[0].width}}px; background-position: {{-comment.x}}px {{-comment.y}}px; background-image: url('{{getThumbnailUrl(selected[0])}}')"></div>
+                </div>
+                <div ng-if="comment.annotation" ng-click="openComment($event, image, comment);" ng-right-click="copyComment($event, image, comment)" ng-mouseover="highlightAnnotation($event, comment)" ng-mouseleave="removeHighlightAnnotation($event, comment)" class="annotation" ng-bind-html="comment.annotation"></div>
+                <div ng-if="!comment.annotation" ng-click="openComment($event, image, comment);" ng-mouseover="highlightAnnotation($event, comment)" ng-mouseleave="removeHighlightAnnotation($event, comment)" class="annotation">{{'inspector.untitledAnnotation' | i18n}}</div>
+                <div class="remove" ng-click="removeComment(selected[0], $index)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-comment-remove.svg"></div>
+            </div>
+
+            <!-- 視頻標註 -->
+            <div ng-if="comment.duration" class="comment video" ng-repeat="comment in selected[0].comments track by $index" ng-click="openVideoComment($event, selected[0], comment);" ng-right-click="editVideoComment($event, selected[0], comment);">
+                <video class="preview-video" comment-video duration="comment.duration">
+                    <source type='video/mp4'/>
+                </video>
+                <div class="duration">{{comment.duration | duration}}</div><div class="separator"></div>
+                <div ng-if="comment.annotation" class="annotation" ng-bind-html="comment.annotation"></div>
+                <div class="remove" ng-click="removeVideoComment($event, selected[0], comment)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-comment-remove.svg"></div>
+                <div class="ic-btn edit" ng-click="editVideoComment($event, selected[0], comment);"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-comment-edit.svg"></div>
+            </div>
+        </div>
+    </div>
+</div>

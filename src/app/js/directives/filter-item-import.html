@@ -1,0 +1,66 @@
+<div id="import-filter-item" ng-right-click="clearDateFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.date'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-duration.svg"><div>{{displayName}}</div></div>
+    <input tabindex="-1" type="text" class="shortcut-input">
+    <div class="menu-wrap"><div class="filter-menu" style="min-width: 220px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div></div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.today}" ng-click="focusInput(); eagle.filter.filterRules.import.today = !eagle.filter.filterRules.import.today; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>today' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['import']['today'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.yesterday}" ng-click="focusInput(); eagle.filter.filterRules.import.yesterday = !eagle.filter.filterRules.import.yesterday; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>yesterday' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['import']['yesterday'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.last7day}" ng-click="focusInput(); eagle.filter.filterRules.import.last7day = !eagle.filter.filterRules.import.last7day; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>last7Days' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['import']['7day'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.last30day}" ng-click="focusInput(); eagle.filter.filterRules.import.last30day = !eagle.filter.filterRules.import.last30day; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>last30Days' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['import']['30day'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.last90day}" ng-click="focusInput(); eagle.filter.filterRules.import.last90day = !eagle.filter.filterRules.import.last90day; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>last90Days' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['import']['90day'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.last365day}" ng-click="focusInput(); eagle.filter.filterRules.import.last365day = !eagle.filter.filterRules.import.last365day; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>last365Days' | i18n}}</div>
+                <div class="badge">{{eagle.filter.filterCounts['import']['365day'] | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.selectedMonths[obj.key]}" ng-click="focusInput(); filterImportYYYYMM(obj.key); page = 1; filterContent(); changeDisplayName();" ng-repeat="obj in filterImportDateMonths | orderBy:'-key'">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name" style="font-family: 'Fira Mono', 'Roboto Mono', 'Monaco', 'Consolas', monospace;">{{obj.key}}</div>
+                <div class="badge">{{obj.value | number:0}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.import.usingRange}" ng-click="focusDatePicker(); eagle.filter.filterRules.import.usingRange = !eagle.filter.filterRules.import.usingRange; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.import>range' | i18n}}</div>
+            </div>
+            <input id="filter-date-picker" ng-if="eagle.filter.filterRules.import.usingRange" ng-flatpickr fp-opts="dateFilterOptions" ng-model="eagle.filter.filterRules.import.model" data-enabletime="true" placeholder="{{'filter.import>rangePlaceholder' | i18n}}">
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearDateFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

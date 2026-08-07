@@ -1,0 +1,174 @@
+@import "_mixins";
+@import "components/_type-label";
+@import "components/_range";
+@import "components/_labels-input";
+@import "components/_context-menu";
+@import "components/_hover-preview";
+@import "components/modal/_select-panel";
+
+@import "components/modal/_about-panel";
+@import "components/_welcome-page";
+@import "components/_sidebar";
+@import "components/_sidebar-list";
+@import "components/_corner-btns";
+@import "components/_inspector";
+@import "components/_tag-manager";
+@import "components/_toolbar";
+@import "components/_filter-panel";
+@import "components/_footbar";
+@import "components/_box-container";
+@import "components/_txt-content";
+@import "components/_list-layout";
+@import "components/_sub-folder-list";
+
+@import "components/modal/_move-folder-modal";
+@import "components/modal/_batch-rename-modal";
+@import "components/modal/_batch-save-panel";
+@import "components/modal/_duplicate-scan-panel";
+@import "components/modal/_duplicate-modal";
+@import "components/modal/_merge-editor";
+@import "components/modal/_quick-search";
+@import "components/modal/_library-panel";
+@import "components/modal/_plugin-panel";
+@import "components/modal/_plugin-creator";
+@import "components/modal/_plugin-center";
+@import "components/modal/_folder-select-panel";
+@import "components/modal/_tag-select-panel";
+@import "components/modal/_layout-panel";
+@import "components/modal/_mousewheel-setting-modal";
+@import "components/modal/_folder-password-modal";
+@import "components/modal/_notification-modal";
+@import "components/modal/_new-version-notification-modal";
+@import "components/_search-suggestion";
+@import "components/_upload-progress-bar";
+@import "components/_progress-dialog";
+@import "components/_saving-progress";
+@import "components/_toast-alert";
+@import "components/_webview-toolbar";
+@import "components/_video-player";
+@import "components/_gif-player";
+@import "components/_text-editor";
+
+@import "components/_empty-area";
+@import "components/_lock-screen";
+
+::selection { background: var(--color-primary); color: #fff; }
+
+:focus {
+    outline: -webkit-focus-ring-color auto 0;
+    outline-color: -webkit-focus-ring-color;
+    outline-style: auto;
+    outline-width: 0;
+}
+
+*:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+
+html {
+	height: 100vh;
+	width: 100vw;
+}
+
+body {
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    height: 100vh;
+	width: 100vw;
+	font-size: 16px;
+    font-family: var(--font-family-zh_CN);
+    -webkit-user-select: none;
+    display: block;
+	padding-right: 0 !important;
+
+    &[platform="win32"] {
+        background-color: var(--color-theme);
+        box-sizing: border-box;
+
+        .application-menu-btn.fixed {
+            z-index: 99999;
+            position: fixed;
+            top: 8px;
+            left: 0px;
+            -webkit-app-region: no-drag;
+        }
+    }
+    &[platform="darwin"] {
+        background-color: var(--color-theme);
+        // background-color: var(--color-theme-75);   
+        &[vibrancy="false"] {
+            background-color: var(--color-theme);
+        }
+
+        .application-menu-btn {
+            display: none !important;
+        }
+    }
+
+    a {
+        color: var(--color-primary);
+    }
+
+    img {
+        -webkit-user-drag: none;
+    }
+
+    button {
+        &:focus {
+            outline: none;
+        }
+    }
+
+    .font-mono {
+		font-family: 'Fira Mono', 'Roboto Mono', 'Monaco', 'Consolas', monospace;
+	}
+	
+    input, textarea, select, button {
+		font-family: var(--font-family-zh_CN);
+	}
+
+    &.ru_RU {
+    	font-family: var(--font-family-ru_RU);
+		-webkit-user-select: none;
+		input, textarea, select, button {
+			font-family: var(--font-family-ru_RU);
+		}
+    }
+
+    &.ja_JP {
+    	font-family: var(--font-family-ja_JP);
+		-webkit-user-select: none;
+		input, textarea, select, button {
+			font-family: var(--font-family-ja_JP);
+		}
+		.inspector .content .properties .info .prop .keys {
+			min-width: 50px;
+		}
+    }
+
+    &.ko_KR {
+		font-family: var(--font-family-ko_KR);
+		-webkit-user-select: none;
+		input, textarea, select, button {
+			font-family: var(--font-family-ko_KR);
+		}
+    }
+
+    &.zh_TW {
+		font-family: var(--font-family-zh_TW);
+		-webkit-user-select: none;
+		input, textarea, select, button {
+			font-family: var(--font-family-zh_TW);
+		}
+    }
+}
+
+.ui-resizable-handle {
+    touch-action: auto !important;
+}
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
+}

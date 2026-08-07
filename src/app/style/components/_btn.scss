@@ -1,0 +1,136 @@
+.ic-btn {
+
+    @include dark {
+        --btn-background-color: transparent;
+    }
+
+    @include light {
+        --btn-background-color: transparent;
+    }
+    position: relative;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    background-color: var(--btn-background-color);
+    height: 24px;
+    box-sizing: border-box;
+    line-height: 24px;
+    transition: all 150ms var(--timing-function-super);
+    color: var(--color-text-primary);
+    font-size: 12px;
+
+    -webkit-app-region: no-drag;
+    text-align: center;
+
+    img {
+        display: inline-block;
+        -webkit-user-drag: none;
+        -webkit-user-select: none;
+    }
+
+    .badge {
+        z-index: 10;
+        position: absolute;
+        top: -2px;
+        right: -5px;
+        min-width: 13px;
+        height: 13px;
+        color: #fff;
+        background: var(--color-primary);
+        line-height: 13px;
+        font-size: 10px;
+        text-align: center;
+        border-radius: 50px;
+        display: inline-block;
+        font-weight: bold;
+    }
+    &.has-padding {
+        padding: 0 10px;
+    }
+    &:hover {
+        @include dark {
+            --btn-background-color: var(--color-lightgray-10);
+        }
+    
+        @include light {
+            --btn-background-color: var(--color-dark-10);
+        }
+        cursor: pointer;
+    }
+
+    &.active, &:active {
+        @include dark {
+            --btn-background-color: var(--color-lightgray-10);
+        }
+    
+        @include light {
+            --btn-background-color: var(--color-dark-10);
+        }
+    }
+
+    &.primary {
+        background-color: var(--color-primary);
+        color: #fff;
+        &:hover {
+            background-color: var(--color-primary-90);
+        }
+    }
+
+    &.has-bg {
+        @include dark {
+            --btn-background-color: var(--color-lightgray-5);
+        }
+    
+        @include light {
+            --btn-background-color: var(--color-dark-5);
+        }
+        &:hover {
+            @include dark {
+                --btn-background-color: var(--color-lightgray-10);
+            }
+        
+            @include light {
+                --btn-background-color: var(--color-dark-10);
+            }
+            cursor: pointer;
+        }
+    
+        &.active, &:active {
+            @include dark {
+                --btn-background-color: var(--color-lightgray-10);
+            }
+        
+            @include light {
+                --btn-background-color: var(--color-dark-10);
+            }
+        }
+    }
+
+    &.disabled {
+        opacity: 0.25;
+        &:hover, &:active {
+            @include dark {
+                --btn-background-color: transparent;
+            }
+        
+            @include light {
+                --btn-background-color: transparent;
+            }
+        }
+    }
+}
+
+
+
+
+// .btn {
+//     display: flex;
+//     align-items: center;
+//     .icon {
+
+//     }
+//     &:hover {
+
+//     }
+// }

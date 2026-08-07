@@ -1,0 +1,23 @@
+<div id="note-filter-item" ng-right-click="clearNoteFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.note'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-note.svg"><div>{{displayName}}</div></div>
+    <input tabindex="-1" type="text" class="shortcut-input">
+    <div class="menu-wrap"><div class="filter-menu" style="min-width: 240px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div></div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.note.has}" ng-click="focusInput(); eagle.filter.filterRules.note.has = !eagle.filter.filterRules.note.has; eagle.filter.filterRules.note.no = false; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.annotation>has' | i18n}}</div>
+            </div>
+            <div class="check-item" ng-class="{'checked': eagle.filter.filterRules.note.no}" ng-click="focusInput(); eagle.filter.filterRules.note.no = !eagle.filter.filterRules.note.no; eagle.filter.filterRules.note.has = false; page = 1; filterContent(); changeDisplayName();">
+                <div class="check-icon">
+                    <div class="checkbox"></div>
+                </div>
+                <div class="name">{{'filter.annotation>hasNot' | i18n}}</div>
+            </div>
+            <textarea maxlength="1024" name="" id="" cols="30" rows="2" placeholder="{{'filter.annotation>placeholder' | i18n}}" ng-class="{'input-disabled' : !eagle.filter.filterRules.note.has }" ng-paste="$event.stopPropagation();" ng-model="eagle.filter.filterRules.note.keywords" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }" ng-change="page = 1; filterContent(); changeDisplayName();"></textarea>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearNoteFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

@@ -1,0 +1,56 @@
+<div id="color-filter-item" ng-right-click="clearColorFilter($event)" class="filter-item" ng-class="{'active': (eagle.filter.filterRules.color.value || eagle.filter.filterRules.color.gray), 'hide-filter': !(eagle.filter.filterRules.color.value || eagle.filter.filterRules.color.gray) && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.color'] | shortcutsWrapper | shortcuts}}">
+        <div class="color">
+            <img ng-show="!eagle.filter.filterRules.color.value && !eagle.filter.filterRules.color.gray" ng-src="assets/images/{{theme|themePath}}/icons/ic-rainbow-btn.png">
+            <img ng-show="!eagle.filter.filterRules.color.value && eagle.filter.filterRules.color.gray" ng-src="assets/images/base/icons/ic-filter-grayscale.png">
+            <div ng-show="eagle.filter.filterRules.color.value && !eagle.filter.filterRules.color.gray" class="circle" style="background-color: {{rgbArrayToHex(eagle.filter.filterRules.color.value)}}"></div>                                    
+            <span>{{'filter.color' | i18n}}</span>
+        </div>
+    </div>
+    <div class="menu-wrap" close-filter-item><div class="filter-menu" style="min-width: 202px; width: 202px;" ng-mousedown="$event.stopPropagation();">
+        <div class="menu-content">
+            <div class="color-filter">
+                <div filter-color-picker>
+                    <div id="colorpickerHolder" style="margin: -10px -14px 0px;"></div>
+                </div>
+                <div class="palettes">
+                    <div class="palette none" ng-click="focusInput(); filterWithColor()" ng-class="{'active' : !eagle.filter.filterRules.color.gray && !rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #ccc"></div>
+                    <div class="palette gray" ng-click="focusInput(); filterWithHexColor('gray')" ng-class="{'active' : eagle.filter.filterRules.color.gray}"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#111111')" ng-class="{'active' : '#111111' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #111111"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#FFFFFF')" ng-class="{'active' : '#FFFFFF' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #FFFFFF"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#9E9E9E')" ng-class="{'active' : '#9E9E9E' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #9E9E9E"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#A48057')" ng-class="{'active' : '#A48057' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #A48057"></div>
+                    <!-- <div class="palette" ng-click="focusInput(); filterWithHexColor('#F3EBC7')" ng-class="{'active' : '#F3EBC7' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #F3EBC7"></div> -->
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#FC85B3')" ng-class="{'active' : '#FC85B3' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #FC85B3"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#FF2727')" ng-class="{'active' : '#FF2727' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #FF2727"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#FFA34B')" ng-class="{'active' : '#FFA34B' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #FFA34B"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#FFD534')" ng-class="{'active' : '#FFD534' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #FFD534"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#47C595')" ng-class="{'active' : '#47C595' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #47C595"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#51C4C4')" ng-class="{'active' : '#51C4C4' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #51C4C4"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#2B76E7')" ng-class="{'active' : '#2B76E7' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #2B76E7"></div>
+                    <div class="palette" ng-click="focusInput(); filterWithHexColor('#6D50ED')" ng-class="{'active' : '#6D50ED' == rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2])}" style="background-color: #6D50ED"></div>
+                </div>
+                <div class="colors-picker" ng-init="$body.hexColor='#FFFFFF'">
+                    <input id="colors-picker-value" maxlength="256" tabindex="-1" type="text" placeholder="#FF0000" selectall ng-change="filterWithHexColor($body.hexColor)" ng-model="$body.hexColor">
+                    <div class="fake-color-input" ng-click="openColorPicker()" style="background-color: {{$body.hexColor}};"></div>
+                    <div class="open-palette-btn" ng-click="openColorPicker()">
+                        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-rainbow-btn.png">
+                    </div>
+                </div>
+                <div 
+                ng-show="$body.hexColor"
+                style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    font-size: 12px;
+                    margin-top: 12px;
+                    line-height: 1em;
+                ">
+                    <div style="opacity: 0.7; white-space: nowrap;">{{'filter.accuracy' | i18n}}</div><input style="transform: scaleX(-1); width: 100%; margin-left: 10px; height: 12px;" class="range" type="range" name="points" min="5" max="40" step="1" tabIndex="-1" ng-model="eagle.filter.filterRules.color.accuracy" ng-model-options="{ debounce: { 'default': 100, 'blur': 0 } }" ng-change="filterWithHexColor($body.hexColor)">
+                </div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearColorFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

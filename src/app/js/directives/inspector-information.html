@@ -1,0 +1,96 @@
+<div style="width: 100%;">
+    <div class="info-section" ng-if="selected.length == 1" ng-class="{'expand': inspector.showProperties}">
+        <div class="info-section-label" ng-click="inspector.showProperties = !inspector.showProperties;">
+            <div class="name">{{'inspector.infoLabel' | i18n}}</div>
+            <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+        </div>
+        <div class="info-section-container">
+            <div class="prop">
+                <div class="keys">
+                    <div class="key">{{'inspector.props.rating' | i18n}}</div>
+                    <div class="key" ng-hide="!selected[0].width || selected[0].ext === 'txt' || FONT_TYPES[selected[0].ext] || AUDIO_TYPES[selected[0].ext]">{{'inspector.props.resolution' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].duration">{{'inspector.props.duration' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].bpm">BPM</div>
+                    <div class="key">{{'inspector.props.fileSize' | i18n}}</div>
+                    <div class="key">{{'inspector.props.fileType' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].rawMetas">{{'inspector.props.camera' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].rawMetas">{{'inspector.props.focalLength' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].rawMetas">{{'inspector.props.isoSpeed' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].rawMetas">{{'inspector.props.aperture' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].rawMetas">{{'inspector.props.shutter' | i18n}}</div>
+                    <div class="key" ng-if="selected[0].rawMetas">{{'inspector.props.timestamp' | i18n}}</div>
+                    <div class="key">{{'inspector.props.createAt' | i18n}}</div>
+                    <div class="key">{{'inspector.props.btime' | i18n}}</div>
+                    <div class="key">{{'inspector.props.mtime' | i18n}}</div>
+                </div>
+                <div class="values">
+                    <div class="value">
+                        <div class="rating-container star-{{selected[0].star}}">
+                            <div ng-click="changeStar(1)"></div>
+                            <div ng-click="changeStar(2)"></div>
+                            <div ng-click="changeStar(3)"></div>
+                            <div ng-click="changeStar(4)"></div>
+                            <div ng-click="changeStar(5)"></div>
+                        </div>
+                    </div>
+                    <div class="value" ng-show="VIDEO_TYPES[selected[0].ext] && (selected[0].resolutionWidth || selected[0].width)">{{selected[0].resolutionWidth || selected[0].width}} × {{selected[0].resolutionHeight || selected[0].height}}</div>
+                    <div class="value" ng-hide="VIDEO_TYPES[selected[0].ext] || !selected[0].width || selected[0].ext === 'txt' || FONT_TYPES[selected[0].ext] || AUDIO_TYPES[selected[0].ext]">{{selected[0].width}} × {{selected[0].height}}</div>
+                    <div class="value" ng-if="selected[0].duration">{{selected[0].duration | duration}}</div>
+                    <div class="value" ng-if="selected[0].bpm">{{selected[0].bpm}}</div>
+                    <div class="value">{{selected[0].size | filesize}}</div>
+                    <div class="value extension-value" 
+                         ng-click="changeExtension()" 
+                         style="cursor: pointer;"
+                         tippy tippy-content="{{'inspector.clickToChangeExtension' | i18n}}" tippy-placement="left"
+                    >
+                        {{selected[0].ext | uppercase}}
+                    </div>
+                    <div class="value" ng-if="selected[0].rawMetas">{{selected[0].rawMetas.camera}}</div>
+                    <div class="value" ng-if="selected[0].rawMetas">{{selected[0].rawMetas.focalLength}}</div>
+                    <div class="value" ng-if="selected[0].rawMetas">{{selected[0].rawMetas.isoSpeed}}</div>
+                    <div class="value" ng-if="selected[0].rawMetas">{{selected[0].rawMetas.aperture}}</div>
+                    <div class="value" ng-if="selected[0].rawMetas">{{selected[0].rawMetas.shutter}}</div>
+                    <div class="value" ng-if="selected[0].rawMetas">{{selected[0].rawMetas.timestamp | date:"yyyy/MM/dd HH:mm"}}</div>
+                    <div class="value">{{ (selected[0].modificationTime) | date:"yyyy/MM/dd HH:mm"}}</div>
+                    <div class="value">{{ (selected[0].btime || selected[0].modificationTime) | date:"yyyy/MM/dd HH:mm"}}</div>
+                    <div class="value">{{(selected[0].mtime || selected[0].modificationTime) | date:"yyyy/MM/dd HH:mm"}}</div>
+                </div>
+            </div>
+
+            <div class="export-container">
+                <div class="ic-btn export-btn has-bg" ng-click="openImageExportContextMenu($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-export.svg">{{'context.image.export' | i18n}}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-section" ng-if="selected.length > 1 && inspector.size" ng-class="{'expand': inspector.showProperties}">
+        <div class="info-section-label" ng-click="inspector.showProperties = !inspector.showProperties;">
+            <div class="name">{{'inspector.infoLabel' | i18n}}</div>
+            <div class="ic-btn info-section-expand"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-expand.svg"></div>
+        </div>
+        <div class="info-section-container">
+            <div class="prop">
+                <div class="keys">
+                    <div class="key">{{'inspector.props.rating' | i18n}}</div>
+                    <div class="key" ng-show="inspector.size > 0">{{'inspector.props.fileSize' | i18n}}</div>
+                </div>
+                <div class="values">
+                    <div class="value">
+                        <div class="rating-container star-{{inspector.star}}">
+                            <div ng-click="changeStar(1)"></div>
+                            <div ng-click="changeStar(2)"></div>
+                            <div ng-click="changeStar(3)"></div>
+                            <div ng-click="changeStar(4)"></div>
+                            <div ng-click="changeStar(5)"></div>
+                        </div>
+                    </div>
+                    <div class="value" ng-show="inspector.size > 0" ng-if="inspector.size/1024 < 1">{{inspector.size | filesize}}</div>
+                    <div class="value" ng-show="inspector.size > 0" ng-if="inspector.size/1024 >= 1">{{inspector.size | filesize}}</div>
+                </div>
+            </div>
+            <div class="export-container">
+                <div class="ic-btn export-btn has-bg" ng-click="openImageExportContextMenu($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-export.svg">{{'context.image.export' | i18n}}</div>
+            </div>
+        </div>
+    </div>
+</div>

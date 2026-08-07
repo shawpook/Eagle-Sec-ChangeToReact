@@ -1,0 +1,24 @@
+<div id="duration-filter-item" ng-right-click="clearDurationFilter($event)" class="filter-item" ng-class="{'active': isEnabled, 'hide-filter': !isEnabled && !eagle.filter.pinned[item.type]}" filter-item>
+    <div class="name" tippy tippy-placement="bottom" tippy-content="{{preferences.shortcuts.keybinds['find.filter.duration'] | shortcutsWrapper | shortcuts}}"><img ng-src="assets/images/{{theme|themePath}}/icons/context-menu/ic-filter-item-duration.svg"><div>{{displayName}}</div></div>
+    <div class="menu-wrap" close-filter-item><div class="filter-menu file-size">
+        <div class="menu-content">
+            <div class="file-size-filter">
+                <div class="item">
+                    <div class="range">
+                        <input maxlength="256" type="text" placeholder="{{'filter.duration>Min' | i18n}}" ng-change="changeDisplayName()" ng-model="eagle.filter.filterRules.duration.min" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                        <span>-</span>
+                        <input maxlength="256" type="text" placeholder="{{'filter.duration>Max' | i18n}}" ng-change="changeDisplayName()" ng-model="eagle.filter.filterRules.duration.max" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 300, 'blur': 0 } }">
+                        <div class="select select-xs">
+                            <select tabindex="-1" ng-change="changeDisplayName(); page = 1; filterContent();" ng-model="eagle.filter.filterRules.duration.unit">
+                                <option value="s">{{'modal.smartFolder.ruleValue.s' | i18n}}</option>
+                                <option value="m">{{'modal.smartFolder.ruleValue.m' | i18n}}</option>
+                                <option value="h">{{'modal.smartFolder.ruleValue.h' | i18n}}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div></div>
+    <div class="clear-btn" ng-click="clearDurationFilter($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-clear-btn.png"></div>
+</div>

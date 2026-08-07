@@ -1,0 +1,149 @@
+@import "_mixins";
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none !important;
+}
+
+*:focus-visible {
+	outline: none;
+	box-shadow: none;
+}
+
+html, body {
+	-webkit-font-smoothing: antialiased;
+	&.ru_RU {
+    	font-family: var(--font-family-ru_RU);
+    }
+    &.ja_JP {
+    	font-family: var(--font-family-ja_JP);
+    }
+    &.ko_KR {
+		font-family: var(--font-family-ko_KR);
+    }
+    &.zh_TW {
+		font-family: var(--font-family-zh_TW);
+    }
+	font-family: var(--font-family-zh_CN);
+}
+
+body {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+	&:after {
+		display: none !important;
+	}
+}
+
+.progress-dialog {
+    position: fixed;
+    top: 12px;
+    right: 0px;
+    padding: 8px;
+    display: flex;
+    align-items: flex-start;
+    width: 300px;
+    opacity: 0;
+    transition: all var(--timing-function-super) 200ms;
+    transform: translateX(100%);
+    cursor: pointer;
+    box-sizing: border-box;
+
+	border-radius: 8px;
+	border-top: var(--box-border-top);
+    border-right: var(--box-border-right);
+    border-bottom: var(--box-border-bottom);
+    border-left: var(--box-border-left);
+    background-color: var(--box-background);
+	box-shadow: var(--box-border-shadow-small);
+    backdrop-filter: var(--box-background-blur);
+
+	-webkit-animation-fill-mode: forwards;
+    -webkit-font-smoothing: antialiased;
+    
+	&.open {
+		transition: all var(--timing-function-super) 600ms;
+		z-index: 10001;
+		opacity: 1;
+		transform: translateX(calc(0% - 20px));
+	}
+
+	&.dargging {
+    	transition: none;
+    }
+	
+	.wrap {
+		width: 100%;
+		display: flex;
+	    align-items: center;
+		padding-right: 8px;
+	    .info {
+	        width: 100%;
+	    }
+	}
+
+	.thumbnail {
+		position: relative;
+		background-size: cover;
+		background-position: top center;
+		background-repeat: no-repeat;
+		min-width: 44px;
+		width: 44px;
+		min-height: 44px;
+		height: 44px;
+		border-radius: 6px;
+		margin-right: 8px;
+		margin-bottom: auto;
+		box-shadow: 0 0 0 1px var(--color-black-10) inset;
+
+		video {
+			z-index: 1000;
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			width: 100%;
+			height: 100%;
+			background-color: var(--color-theme);
+		}
+	}
+
+	.title {
+		font-size: 14px;
+		line-height: 14px;
+		margin-bottom: 4px;
+	    color: var(--color-text-primary);
+	    font-weight: var(--font-weight-bold);
+	}
+
+	.message {
+	    font-size: 13px;
+		line-height: 18px;
+	    color: var(--color-text-secondary);
+		max-height: 36px;
+		overflow: hidden;
+	}
+
+	.progressbar {
+		position: relative;
+	    background-color: rgba(255, 255, 255, 0.1);
+	    border-radius: 3px;
+	    height: 3px;
+	    border-radius: 3px;
+	    overflow: hidden;
+		margin-top: 8px;
+		margin-bottom: 6px;
+		.current {
+			position: absolute;
+			top: 0;
+			left: 0;
+			height: 10px;
+			border-radius: 2px;
+			background-color: var(--color-primary);
+		    background-size: 10px 10px;
+		}
+	}
+}

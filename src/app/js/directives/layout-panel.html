@@ -1,0 +1,236 @@
+<div id="layout-panel" class="layout-panel">
+    <input id="layout-panel-search" type="text" class="shortcut-input">
+    <div class="layout-panel-container">
+        <!-- 佈局方式 -->
+        <div class="panel-item">
+            <div class="label">{{'layoutPanel.label.layout' | i18n}}</div>
+            <div class="value">
+                <div class="select select-xs" ng-click="$event.stopPropagation();">
+                    <select tabindex="-1" ng-model="$parent.layout" ng-change="onLayoutChange($parent.layout)">
+                        <option value="GridLayout">{{'context.order.layout>grid' | i18n}}</option>
+                        <option value="JustifiedLayout">{{'context.order.layout>justified' | i18n}}</option>
+                        <option value="SquareLayout">{{'context.order.layout>square' | i18n}}</option>
+                        <option value="ListLayout">{{'context.order.layout>list' | i18n}}</option>
+                    </select>
+                    <div class="select-content">
+                        <div class="select-value" ng-if="$parent.layout === 'GridLayout'"><img src="assets/images/{{theme|themePath}}/icons/ic-layout-pinterest.svg">{{'context.order.layout>grid' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.layout === 'JustifiedLayout'"><img src="assets/images/{{theme|themePath}}/icons/ic-layout-justified.svg">{{'context.order.layout>justified' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.layout === 'SquareLayout'"><img src="assets/images/{{theme|themePath}}/icons/ic-layout-grid.svg">{{'context.order.layout>square' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.layout === 'ListLayout'"><img src="assets/images/{{theme|themePath}}/icons/ic-layout-list.svg">{{'context.order.layout>list' | i18n}}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 填充方式 -->
+        <div class="panel-item" ng-show="$parent.layout === 'SquareLayout'" style="margin-top: 8px;">
+            <div class="label">{{'layoutPanel.label.fill' | i18n}}</div>
+            <div class="value">
+                <div class="btn-group label-mode">
+                    <div class="btn" ng-click="$parent.switchLayoutOtpions('Fit');" ng-class="{'active': $parent.layoutOptions === 'Fit'}">{{'context.order.layoutOptions>fit' | i18n}}</div>
+                    <div class="btn" ng-click="$parent.switchLayoutOtpions('Fill');" ng-class="{'active': $parent.layoutOptions === 'Fill'}">{{'context.order.layoutOptions>fill' | i18n}}</div>
+                </div>
+            </div>
+        </div>
+        <!-- 縮略圖選項 -->
+        <div class="panel-item" style="margin-top: 8px;">
+            <div class="label">{{'layoutPanel.label.thumbnail' | i18n}}</div>
+            <div class="value">
+                <div class="btn-group label-mode">
+                    <div class="btn" ng-click="$parent.toggleShowOriginalImageWhenLarge();" ng-class="{'active': !$parent.showOriginalImageWhenLarge }">{{'layoutPanel.label.thumbnail>speed' | i18n}}</div>
+                    <div class="btn" ng-click="$parent.toggleShowOriginalImageWhenLarge();" ng-class="{'active': $parent.showOriginalImageWhenLarge}">{{'layoutPanel.label.thumbnail>quality' | i18n}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="separator"></div>
+        <!-- 排列方式 -->
+        <div class="panel-item">
+            <div class="label">{{'layoutPanel.label.sortBy' | i18n}}</div>
+            <div class="value">
+                <div ng-show="$parent.currentFolder" class="select select-xs" ng-click="$event.stopPropagation();">
+                    <select tabindex="-1" ng-model="$parent.currentFolder.orderBy" ng-change="$parent.changeOrderBy($parent.currentFolder.orderBy)">
+                        <option value="">{{'context.order.orderBy>default' | i18n}}</option>
+                        <option value="MANUAL">{{'context.order.orderBy>manual' | i18n}}</option>
+                        <option value="IMPORT">{{'context.order.orderBy>import' | i18n}}</option>
+                        <option value="MTIME">{{'context.order.orderBy>mtime' | i18n}}</option>
+                        <option value="BTIME">{{'context.order.orderBy>btime' | i18n}}</option>
+                        <option value="NAME">{{'context.order.orderBy>name' | i18n}}</option>
+                        <option value="EXT">{{'context.order.displayItems>ext' | i18n}}</option>
+                        <option value="FILESIZE">{{'context.order.orderBy>filesize' | i18n}}</option>
+                        <option value="RESOLUTION">{{'context.order.orderBy>resolution' | i18n}}</option>
+                        <option value="RATING">{{'context.order.orderBy>rating' | i18n}}</option>
+                        <option value="DURATION">{{'context.order.orderBy>duration' | i18n}}</option>
+                        <option value="RANDOM">{{'appmenu.view>random' | i18n}}</option>
+                    </select>
+                    <div class="select-content">
+                        <div class="select-value" ng-if="!$parent.currentFolder.orderBy">{{'context.order.orderBy>default' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'MANUAL'">{{'context.order.orderBy>manual' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'IMPORT'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-importAt.svg">{{'context.order.orderBy>import' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'MTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-modifiedAt.svg">{{'context.order.orderBy>mtime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'BTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-createdAt.svg">{{'context.order.orderBy>btime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'NAME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-name.svg">{{'context.order.orderBy>name' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'EXT'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-ext.svg">{{'context.order.displayItems>ext' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'FILESIZE'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-fileSize.svg">{{'context.order.orderBy>filesize' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'RESOLUTION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-dimension.svg">{{'context.order.orderBy>resolution' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'RATING'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-rating.svg">{{'context.order.orderBy>rating' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'DURATION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-duration.svg">{{'context.order.orderBy>duration' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentFolder.orderBy == 'RANDOM'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-shuffle.svg">{{'context.order.orderBy>duration' | i18n}}{{'appmenu.view>random' | i18n}}</div>
+                    </div>
+                </div>
+                <div ng-show="$parent.currentSmartFolder" class="select select-xs" ng-click="$event.stopPropagation();">
+                    <select tabindex="-1" ng-model="$parent.currentSmartFolder.orderBy" ng-change="$parent.changeOrderBy($parent.currentSmartFolder.orderBy)">
+                        <option value="">{{'context.order.orderBy>default' | i18n}}</option>
+                        <option value="IMPORT">{{'context.order.orderBy>import' | i18n}}</option>
+                        <option value="MTIME">{{'context.order.orderBy>mtime' | i18n}}</option>
+                        <option value="BTIME">{{'context.order.orderBy>btime' | i18n}}</option>
+                        <option value="NAME">{{'context.order.orderBy>name' | i18n}}</option>
+                        <option value="EXT">{{'context.order.displayItems>ext' | i18n}}</option>
+                        <option value="FILESIZE">{{'context.order.orderBy>filesize' | i18n}}</option>
+                        <option value="RESOLUTION">{{'context.order.orderBy>resolution' | i18n}}</option>
+                        <option value="RATING">{{'context.order.orderBy>rating' | i18n}}</option>
+                        <option value="DURATION">{{'context.order.orderBy>duration' | i18n}}</option>
+                        <option value="RANDOM">{{'appmenu.view>random' | i18n}}</option>
+                    </select>
+                    <div class="select-content">
+                        <div class="select-value" ng-if="!$parent.currentSmartFolder.orderBy">{{'context.order.orderBy>default' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'IMPORT'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-importAt.svg">{{'context.order.orderBy>import' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'MTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-modifiedAt.svg">{{'context.order.orderBy>mtime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'BTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-createdAt.svg">{{'context.order.orderBy>btime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'NAME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-name.svg">{{'context.order.orderBy>name' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'EXT'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-ext.svg">{{'context.order.displayItems>ext' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'FILESIZE'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-fileSize.svg">{{'context.order.orderBy>filesize' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'RESOLUTION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-dimension.svg">{{'context.order.orderBy>resolution' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'RATING'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-rating.svg">{{'context.order.orderBy>rating' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'DURATION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-duration.svg">{{'context.order.orderBy>duration' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentSmartFolder.orderBy == 'RANDOM'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-shuffle.svg">{{'appmenu.view>random' | i18n}}</div>
+                    </div>
+                </div>
+                <div ng-show="!$parent.currentFolder && !$parent.currentSmartFolder" class="select select-xs" ng-click="$event.stopPropagation();">
+                    <select tabindex="-1" ng-model="$parent.currentOrderBy" ng-change="$parent.changeOrderBy($parent.currentOrderBy)">
+                        <option value="IMPORT">{{'context.order.orderBy>import' | i18n}}</option>
+                        <option value="MTIME">{{'context.order.orderBy>mtime' | i18n}}</option>
+                        <option value="BTIME">{{'context.order.orderBy>btime' | i18n}}</option>
+                        <option value="NAME">{{'context.order.orderBy>name' | i18n}}</option>
+                        <option value="EXT">{{'context.order.displayItems>ext' | i18n}}</option>
+                        <option value="FILESIZE">{{'context.order.orderBy>filesize' | i18n}}</option>
+                        <option value="RESOLUTION">{{'context.order.orderBy>resolution' | i18n}}</option>
+                        <option value="RATING">{{'context.order.orderBy>rating' | i18n}}</option>
+                        <option value="DURATION">{{'context.order.orderBy>duration' | i18n}}</option>
+                    </select>
+                    <div class="select-content">
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'IMPORT'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-importAt.svg">{{'context.order.orderBy>import' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'MTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-modifiedAt.svg">{{'context.order.orderBy>mtime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'BTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-createdAt.svg">{{'context.order.orderBy>btime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'NAME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-name.svg">{{'context.order.orderBy>name' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'EXT'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-ext.svg">{{'context.order.displayItems>ext' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'FILESIZE'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-fileSize.svg">{{'context.order.orderBy>filesize' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'RESOLUTION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-dimension.svg">{{'context.order.orderBy>resolution' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'RATING'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-rating.svg">{{'context.order.orderBy>rating' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.currentOrderBy == 'DURATION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-duration.svg">{{'context.order.orderBy>duration' | i18n}}</div>
+                    </div>
+                </div>
+               
+                <div class="btn-group">
+                    <div class="btn" ng-click="$parent.changeSortIncrease(true)" ng-class="{'active': $parent.currentSortIncrease}" tippy tippy-placement="bottom" tippy-content="{{'context.order.orderBy>increase' | i18n}}"><img src="assets/images/{{theme|themePath}}/icons/ic-sortIncreace.svg"></div>
+                    <div class="btn" ng-click="$parent.changeSortIncrease(false)" ng-class="{'active': !$parent.currentSortIncrease}" tippy tippy-placement="bottom" tippy-content="{{'context.order.orderBy>decrease' | i18n}}"><img src="assets/images/{{theme|themePath}}/icons/ic-sortDecreace.svg"></div>
+                </div>
+            </div>
+        </div>
+        <div class="separator"></div>
+        <!-- 顯示/隱藏信息 -->
+        <div class="panel-item" ng-click="$parent.showListName()">
+            <div class="label">{{'layoutPanel.label.showName' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="$parent.showName">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-item" ng-click="$event.stopPropagation(); $parent.showListMetas()">
+            <div class="label">{{'layoutPanel.label.showInfo' | i18n}}</div>
+            <div class="value">
+                <div class="select select-xs" ng-click="$event.stopPropagation();" ng-show="$parent.showMetas">
+                    <select tabindex="-1" ng-model="$parent.listMetaType">
+                        <option value="RESOLUTION">{{'context.order.metaItems>resolution' | i18n}}</option>
+                        <option value="FILESIZE">{{'context.order.metaItems>fileSize' | i18n}}</option>
+                        <option value="TAGS">{{'context.order.metaItems>tags' | i18n}}</option>
+                        <option value="RATING">{{'context.order.metaItems>rating' | i18n}}</option>
+                        <option value="MTIME">{{'context.order.metaItems>mtime' | i18n}}</option>
+                        <option value="BTIME">{{'context.order.metaItems>btime' | i18n}}</option>
+                    </select>
+                    <div class="select-content">
+                        <div class="select-value" ng-if="$parent.listMetaType == 'RESOLUTION'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-dimension.svg">{{'context.order.metaItems>resolution' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.listMetaType == 'FILESIZE'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-fileSize.svg">{{'context.order.metaItems>fileSize' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.listMetaType == 'TAGS'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-tag.svg">{{'context.order.metaItems>tags' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.listMetaType == 'RATING'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-rating.svg">{{'context.order.metaItems>rating' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.listMetaType == 'MTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-modifiedAt.svg">{{'context.order.metaItems>mtime' | i18n}}</div>
+                        <div class="select-value" ng-if="$parent.listMetaType == 'BTIME'"><img src="assets/images/{{theme|themePath}}/icons/ic-prop-createdAt.svg">{{'context.order.metaItems>btime' | i18n}}</div>
+                    </div>
+                </div>
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="$parent.showMetas">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-item" ng-click="$parent.showListExtension()">
+            <div class="label">{{'layoutPanel.label.showExtension' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="$parent.showFileExtension">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-item" ng-click="$parent.showListExtensionLabel()">
+            <div class="label">{{'layoutPanel.label.showExtensionLabel' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="$parent.showFileExtensionLabel">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-item" ng-click="$parent.showListAnnotation()">
+            <div class="label">{{'layoutPanel.label.showAnnotation' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="$parent.showAnnotation">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-item" ng-click="$parent.showListSubfolderContent()">
+            <div class="label">{{'layoutPanel.label.showSubFolder' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="$parent.showSubfolderContent">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="separator"></div>
+        <div class="panel-item" ng-click="$parent.toggleSidebar()">
+            <div class="label">{{'layoutPanel.label.showSidebar' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="!$parent.isHideSidebar">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="panel-item" ng-click="$parent.inspector.toggle()">
+            <div class="label">{{'layoutPanel.label.showInspector' | i18n}}</div>
+            <div class="value">
+                <label class="toggle" ng-click="$event.preventDefault()">
+                    <input type="checkbox" ng-checked="!$parent.inspector.isHideInspector">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="separator"></div>
+        <div class="button button-xs button-block button-grey" style="margin: 0" ng-click="$parent.reload()">{{'context.order.refresh' | i18n}}</div>
+    </div>
+</div>
+<div class="layout-panel-overlay" ng-click="closePanel();"></div>

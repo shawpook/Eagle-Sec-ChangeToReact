@@ -1,0 +1,252 @@
+.crop-size {
+    z-index: 999999;
+    position: fixed;
+    height: 20px;
+    line-height: 20px;
+    padding: 0 8px;
+    background: rgba(#000, 0.8);
+    color: #fff;
+    opacity: 1;
+    transition: opacity ease 500ms 250ms;
+    font-size: 12px;
+    border-radius: 2px;
+    white-space: nowrap;
+    font-family: 'Fira Mono', 'Roboto Mono', 'Monaco', 'Consolas', monospace;
+    // 东北
+    &.orientation-ne {
+        margin-top: -30px;
+        margin-left: 10px;
+        transform: translateX(-50%);
+    }
+    // 东南
+    &.orientation-se {
+        margin-top: 10px;
+        margin-left: 10px;
+        transform: translateX(-50%);
+    }
+    // 西北
+    &.orientation-nw {
+        margin-top: -30px;
+        margin-left: -10px;
+        transform: translateX(-50%);
+    }
+    // 西南
+    &.orientation-sw {
+        margin-top: 10px;
+        margin-left: -10px;
+        transform: translateX(-50%);
+    }
+    // 北
+    &.orientation-n {
+        margin-top: -30px;
+        transform: translateX(-50%);
+    }
+    // 南
+    &.orientation-s {
+        margin-top: 10px;
+        transform: translateX(-50%);
+    }
+    // 东
+    &.orientation-e {
+        margin-left: 10px;
+        transform: translateY(-50%);
+    }
+    // 西
+    &.orientation-w {
+        margin-left: -10px;
+        margin-top: -10px;
+        transform: translateX(-100%);
+    }
+}
+.crop-image-tool {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    outline: 2px solid transparent;
+    overflow: hidden;
+    
+    .crop-area {
+        z-index: 999999;
+        position: absolute;
+        width: 100px;
+        height: 100px;
+        // border: 2px solid rgba(#fff,0.5);
+        border-width: inherit;
+        background-repeat: no-repeat;
+        cursor: move;
+        transform: translateZ(0);
+        box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.4);
+        &.ui-resizable-resizing {
+            .crop-size, &:before, &:after {
+                transition: opacity ease 200ms;
+                opacity: 1;
+            }
+        }
+        &:after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 33.3333%;
+            width: 33.3333%;
+            border: 1px solid rgba(#fff,0.8);
+            box-shadow: -1px 0 0 rgba(128,128,128,1), 1px 0 0 rgba(128,128,128,1);
+            border-width: inherit;
+            opacity: 0;
+            transition: opacity ease 500ms 250ms;
+        }
+        &:before {
+            content: '';
+            position: absolute;
+            top: 33.3333%;
+            left: 0;
+            right: 0;
+            height: 33.3333%;
+            border: 1px solid rgba(#fff,0.8);
+            box-shadow: 0 -1px 0 rgba(128,128,128,1), 0 1px 0 rgba(128,128,128,1);
+            border-width: inherit;
+            opacity: 0;
+            transition: opacity ease 500ms 250ms;
+        }
+
+        .ui-resizable-w, .ui-resizable-e, .ui-resizable-s, .ui-resizable-n, .ui-resizable-ne, .ui-resizable-se, .ui-resizable-sw, .ui-resizable-nw {
+            z-index: 999999 !important;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.7);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            &:after {
+                content: '';
+                position: absolute;
+                width: 500%;
+                height: 500%;
+                top: -7px;
+                left: -7px;
+            }
+        }
+
+        .ui-resizable-nw {
+            left: 0px;
+            top: 0px;
+            overflow: initial;
+            border: none;
+            border-top: 4px solid #fff;
+            border-left: 4px solid #fff;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .ui-resizable-sw {
+            left: 0px;
+            bottom: 0px;
+            overflow: initial;
+            border: none;
+            border-bottom: 4px solid #fff;
+            border-left: 4px solid #fff;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .ui-resizable-se {
+            right: 0px;
+            bottom: 0px;
+            overflow: initial;
+            border: none;
+            border-right: 4px solid #fff;
+            border-bottom: 4px solid #fff;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .ui-resizable-ne {
+            right: 0px;
+            top: 0px;
+            overflow: initial;
+            border: none;
+            border-top: 4px solid #fff;
+            border-right: 4px solid #fff;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .ui-resizable-w {
+            left: -5px;
+            top: 50%;
+            margin-top: -5px;
+            cursor: col-resize;
+        }
+
+        .ui-resizable-s {
+            left: 50%;
+            bottom: -5px;
+            margin-left: -5px;
+        }
+
+        .ui-resizable-n {
+            left: 50%;
+            margin-left: -5px;
+            top: -5px;
+        }
+
+        .ui-resizable-e {
+            right: -5px;
+            top: 50%;
+            margin-top: -5px;
+            cursor: col-resize;
+        }
+
+        .crop-overlay {
+            z-index: 999998;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100% !important;
+            height: 100% !important;
+            cursor: -webkit-grab;
+            box-shadow: 0 0 0 1px inset grey;
+    
+            .overlay {
+                pointer-events: none;
+                position: absolute;
+                background-color: rgba(#000, 0.5);
+
+                &.top {
+                    top: -1000000px;
+                    left: -1000000px;
+                    right: -1000000px;
+                    bottom: 100%;
+                }
+
+                &.left {
+                    top: 0;
+                    left: -100000px;
+                    right: 100%;
+                    bottom: 0;
+                }
+
+                &.right {
+                    top: 0;
+                    left: 100%;
+                    right: -100000px;
+                    bottom: 0;
+                }
+
+                &.bottom {
+                    top: 100%;
+                    left: -1000000px;
+                    right: -1000000px;
+                    bottom: -1000000px;
+                }
+            }
+    
+            &:active {
+                cursor: -webkit-grabbing;
+            }
+        }
+    }
+}

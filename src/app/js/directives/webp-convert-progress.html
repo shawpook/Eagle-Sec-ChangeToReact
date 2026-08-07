@@ -1,0 +1,10 @@
+<div class="progress-dialog" ng-class="{'open' : webpConvertQueue.length > 0}">
+    <div class="progress-dialog-content" ng-if="webpConvertQueue.length > 0">
+        <div class="message">{{'progress.webpConvert.msg' | i18n}}... <span class="counter">({{webpConvertFinishQueue.length}}/{{webpConvertQueue.length}})</span></div>
+        <div class="progressbar" ng-show="webpConvertQueue.length > 0">
+            <div class="current" style="width: {{webpConvertFinishQueue.length/webpConvertQueue.length*100}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancelWebpConvert()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

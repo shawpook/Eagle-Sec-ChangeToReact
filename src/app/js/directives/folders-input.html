@@ -1,0 +1,14 @@
+<div id="folders-input" class="labels-input">
+    <div class="empty" ng-show="folderIds.length===0">{{'createAction.rule.addFolders' | i18n}}</div>
+    <div class="label-container">
+        <div 
+            class="label-item color-{{folderMappings[folderId].iconColor}}"
+            ng-repeat="folderId in folderIds track by $index"
+        >
+            <span class="label-item-name">{{folderMappings[folderId].name}}</span>
+            <div class="ic-btn label-item-remove-btn" ng-click="$event.stopPropagation(); remove(index)">
+                <img ng-src="assets/images/{{theme|themePath}}/icons/ic-inspector-remove-label.svg">
+            </div>
+        </div>
+    </div>
+</div>

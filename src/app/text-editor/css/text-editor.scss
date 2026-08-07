@@ -1,0 +1,219 @@
+html {
+	font-size: 62.5%;
+	width: 100%;
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	overflow-x: hidden;
+	transition: all cubic-bezier(0.4, 0, 0.22, 1) 200ms;
+	font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+	-webkit-font-smoothing: antialiased;
+
+	&.ru_RU {
+		font-family: Arial, sans-serif;
+	}
+
+	&.ja_JP {
+		font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", Osaka, メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", "ＭＳ ゴシック", "MS Gothic", "Noto Sans CJK JP", TakaoPGothic, sans-serif;
+	}
+
+	&.ko_KR {
+		font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+	}
+}
+
+::selection {
+	background-color: #0072EF !important;
+	color: white;
+}
+
+[ng\:cloak],
+[ng-cloak],
+[data-ng-cloak],
+[x-ng-cloak],
+.ng-cloak,
+.x-ng-cloak {
+	display: none !important;
+}
+
+.range {
+	-webkit-appearance: none;
+	vertical-align: middle;
+	outline: none;
+	border: none;
+	padding: 0;
+	background: none;
+	margin-top: -2px;
+	max-width: 100%;
+	height: 28px;
+}
+
+.range::-webkit-slider-runnable-track {
+	height: 5px;
+	border-radius: 3px;
+	border: 1px solid transparent;
+	background: rgba(255, 255, 255, 0.15);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.range::-webkit-slider-thumb {
+	-webkit-appearance: none !important;
+	border-radius: 2px;
+	background: #D5D5DA;
+	box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+	height: 12px;
+	width: 6px;
+	margin-top: -5px;
+}
+
+.range::-webkit-slider-thumb:hover {
+	background: #eee;
+}
+
+.range:active::-webkit-slider-thumb {
+	outline: none;
+}
+
+
+::selection {
+	background: #b2d1fa;
+	// color: #fff;
+}
+
+::-webkit-scrollbar {
+	margin-right: 4px;
+	height: 4px !important;
+	overflow: scroll !important;
+	width: 10px !important;
+	-webkit-appearance: none;
+}
+
+::-webkit-scrollbar-thumb {
+	background: lighten(#777, 15%) !important;
+	background-clip: padding-box !important;
+	border: 2px solid transparent !important;
+	border-image: initial !important;
+	min-height: 50px !important;
+	padding: 50px 0px 0px !important;
+	opacity: .6;
+	border-radius: 20px !important;
+	transition: all 350ms ease !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: lighten(#777, 25%) !important;
+	background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-thumb:window-inactive {
+	background-clip: padding-box !important;
+}
+
+::-webkit-scrollbar-button {
+	height: 0px !important;
+	width: 0px !important;
+}
+
+::-webkit-scrollbar-track {}
+
+::-webkit-scrollbar-corner {
+	background: transparent !important;
+}
+
+body.light,
+body.lightgray {
+
+	.range::-webkit-slider-runnable-track {
+		background: #d5d6d7;
+		box-shadow: none;
+	}
+
+	.range::-webkit-slider-thumb {
+		background: #fff;
+		border: 1px solid darken(#d5d6d7, 5%);
+		box-shadow: none;
+		height: 14px;
+		width: 8px;
+		margin-top: -6px;
+		border-radius: 3px;
+	}
+
+	.range::-webkit-slider-thumb:hover {
+		background: #fff;
+	}
+
+	.page-wrap {
+		color: #111;
+	}
+
+	background: #fff;
+}
+
+
+.page-wrap {
+	// display: flex;
+	// justify-content: center;
+	// align-items: center;
+	width: 100%;
+	height: 100%;
+	color: #fff;
+}
+
+.page {
+	margin: 0 auto;
+	max-width: 920px;
+	width: 100%;
+	min-height: 100%;
+
+	h4 {
+		font-size: 2.0rem;
+		font-weight: 600;
+		margin: 0;
+		line-height: 1.2em;
+		padding: 30px 40px 5px;
+
+		&:focus {
+			outline: none;
+		}
+	}
+
+	#content {
+		font-size: 1.4rem;
+		line-height: 1.6;
+		// opacity: 0.9;
+		padding: 30px 30px 30px;
+		min-height: calc(100vh - 160px);
+		white-space: pre-wrap;
+
+		// word-break: break-all;
+		&:focus {
+			outline: none;
+		}
+	}
+
+	h4,
+	#content {
+		// pointer-events: none;
+	}
+
+	[contenteditable]:empty:before {
+		content: attr(data-placeholder);
+		color: inherit;
+		opacity: 0.45;
+	}
+
+	@media screen and (max-width: 660px) {
+		h4 {
+			padding: 32px 32px 5px;
+		}
+
+		#content {
+			padding: 16px 32px 40px;
+		}
+	}
+}

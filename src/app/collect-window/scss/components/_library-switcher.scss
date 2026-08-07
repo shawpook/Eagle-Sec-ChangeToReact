@@ -1,0 +1,38 @@
+.library-switcher {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	color: var(--color-text-secondary);
+	border-radius: 4px;
+	padding: 0 2px 0 6px;
+	height: 26px;
+	&:hover {
+		cursor: pointer;
+		background-color: var(--color-bg-hover);
+		color: var(--color-text-primary);
+		.switcher-icon {
+			background-color: var(--color-text-primary);
+		}
+	}
+
+	.switcher-name {
+		white-space: nowrap;
+		max-width: 100px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.switcher-icon {
+		width: 20px;
+		height: 20px;
+		mask-repeat: no-repeat;
+		-webkit-mask-image: url(../assets/images/base/icons/ic-switcher.png);
+		mask-image: url(../assets/images/base/icons/ic-switcher.png);
+		-webkit-mask-repeat: no-repeat;
+		mask-position: center;
+		-webkit-mask-position: center;
+		mask-size: 20px;
+		-webkit-mask-size: 20px;
+		background-color: var(--color-text-secondary);
+	}
+}

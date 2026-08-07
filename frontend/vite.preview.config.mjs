@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(here, '../../');
+const workspaceRoot = path.resolve(here, '../');
 const frontendPublic = path.resolve(here, 'public');
 const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692';
 const apiTarget = process.env.EAGLE_API_URL || 'http://localhost:41695';

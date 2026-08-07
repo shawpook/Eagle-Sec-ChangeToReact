@@ -1,0 +1,72 @@
+<div id="library-panel" class="library-panel" ng-click="focusInput();">
+    <div class="library-panel-header">
+        <input id="library-panel-search" maxlength="1024" type="search" class="search shortcut-input" placeholder="{{'appmenu.find>search' | i18n}}" ng-change="calculateList(); scrollToTop();" ng-model="searchKeyword" ng-model-options="{ debounce: { 'default': 50, 'blur': 0 } }">
+		<div class="close" ng-click="close()"></div>
+    </div>
+	<!-- 搜索空状态 -->
+	<div class="library-container" ng-show="searchKeyword && resultList.length === 0">
+		<div class="empty">
+			<div class="icon"><img style="width: 90px;" ng-src="assets/images/{{theme | themePath}}/illustrations/library-search-empty.png"></div>
+			<div class="title">{{ 'modal.libraryPanel.empty.title' | i18n }}</div>
+			<p>{{ 'modal.libraryPanel.empty.desc' | i18n }}</p>
+		</div>
+	</div>
+    <!-- 一般列表 -->
+    <div ng-show="!searchKeyword && listItems.length > 0" class="library-container" ng-mouseup="focusInput();" ui-sortable="sortableOptions" ng-model="listItems">
+        <div class="check-item" ng-repeat="item in listItems track by item.path" ng-class="{'opened': item.isOpened, 'active': currentIndex === $index }" ng-mouseenter="hoverItem($index)" ng-right-click="openSubmenu($event, item);" ng-click="onItemClick(item); focusInput();">
+            <div class="drag-helper" ng-click="$event.stopPropagation();"><img src="assets/images/{{theme | themePath}}/icons/ic-drag-help.svg"></div>
+            <div class="icon-wrap">
+                <div class="icon" library-icon library-path="{{item.path}}"></div>
+            </div>
+			<div class="info">
+                <div class="library-name">{{item.name}}</div>
+                <div class="library-path" title="{{item.dir}}">{{item.dir}}</div>
+            </div>
+            <div class="more">
+                <img class="icon-checked" ng-src="assets/images/{{theme | themePath}}/icons/ic-library-opened.svg"/>
+                <div class="ic-btn" ng-click="openSubmenu($event, item);">
+					<img ng-src="assets/images/{{theme | themePath}}/icons/ic-more.svg"/>
+				</div>
+            </div>
+        </div>
+    </div>
+    <!-- 搜尋結果 -->
+    <div ng-show="searchKeyword && resultList.length > 0" class="library-container" ng-mouseup="focusInput();">
+        <div class="check-item" ng-repeat="item in resultList track by item.path" ng-class="{'opened': item.isOpened, 'active': currentIndex === $index }" ng-mouseenter="hoverItem($index)" ng-right-click="openSubmenu($event, item);" ng-click="onItemClick(item); focusInput();">
+            <div class="drag-helper" ng-click="$event.stopPropagation();"><img src="assets/images/{{theme | themePath}}/icons/ic-drag-help.svg"></div>
+            <div class="icon-wrap">
+                <div class="icon" library-icon library-path="{{item.path}}"></div>
+            </div>
+			<div class="info">
+                <div class="library-name"><span ng-bind-html="item.name | fuzzyMatch:searchKeyword"></span></div>
+                <div class="library-path" title="{{item.dir}}">{{item.dir}}</div>
+            </div>
+            <div class="more">
+                <img class="icon-checked" ng-src="assets/images/{{theme | themePath}}/icons/ic-library-opened.svg"/>
+                <div class="ic-btn" ng-click="openSubmenu($event, item);">
+					<img ng-src="assets/images/{{theme | themePath}}/icons/ic-more.svg"/>
+				</div>
+            </div>
+        </div>
+    </div>
+    <!-- 功能列 -->
+    <div class="fucntion-list">
+        <div class="function-item">
+            <div class="icon"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-library-panel-create.svg"/></div>
+            <div class="name" ng-click="createLibrary()">{{ 'appmenu.library>create' | i18n }}</div>
+        </div>
+        <div class="function-item">
+            <div class="icon"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-library-panel-load.svg"/></div>
+            <div class="name" ng-click="loadLibrary()">{{ 'appmenu.library>load' | i18n }}</div>
+        </div>
+        <div class="function-item">
+            <div class="icon"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-library-panel-reload.svg"/></div>
+            <div class="name" ng-click="reloadLibrary()">{{ 'appmenu.library>reload' | i18n }}</div>
+        </div>
+        <div class="function-item">
+            <div class="icon"><img ng-src="assets/images/{{theme | themePath}}/icons/ic-library-panel-merge.svg"/></div>
+            <div class="name" ng-click="mergeLibrary()">{{ 'appmenu.library>merge' | i18n }}</div>
+        </div>
+    </div>
+</div>
+<div class="library-panel-overlay" ng-click="close();"></div>

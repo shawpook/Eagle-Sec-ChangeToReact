@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<script src="../js/vendors/jquery-1.8.0.min.js"></script>
+		<script type="text/javascript" src="./raw-player.js"></script>
+		<script type="text/javascript" src="../../my_modules/raw-parser/dcraw.js"></script>
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+		<title></title>
+		<style>
+			html, body {
+				width: 100%;
+				height: 100%;
+				overflow: hidden;
+			}
+			body {
+				pointer-events: none;
+				margin: 0;
+				text-align: center;
+			}
+			img, canvas {
+				z-index: 99;
+			    position: absolute;
+			    top: 50%;
+			    left: 50%;
+			    transform: translateX(-50%) translateY(-50%);
+			    border-radius: 3px;
+			    opacity: 0;
+			    transition: opacity ease-in-out 75ms;
+			}
+			canvas {
+				z-index: 100;
+			}
+			img.fit-height, canvas.fit-height {
+				height: 100vh;
+			}
+			img.fit-height2, canvas.fit-height2 {
+				height: 100vw;
+			}
+			img.fit-width, canvas.fit-width {
+				width: 100vw;
+			}
+			img.fit-width2, canvas.fit-width2 {
+				width: 100vh;
+			}
+			img.r8, canvas.r8 {
+			    transform: translateX(-50%) translateY(-50%) rotate(-90deg);
+			}
+			img.r7, canvas.r7 {
+			    transform: translateX(-50%) translateY(-50%) rotate(-270deg) scaleX(-1);
+			}
+			img.r6, canvas.r6 {
+			    transform: translateX(-50%) translateY(-50%) rotate(90deg);
+			}
+			img.r5, canvas.r5 {
+			    transform: translateX(-50%) translateY(-50%) rotate(270deg) scaleX(-1);
+			}
+			img.r4, canvas.r4 {
+			    transform: translateX(-50%) translateY(-50%) scaleY(-1);
+			}
+			img.r3, canvas.r3 {
+			    transform: translateX(-50%) translateY(-50%) scaleX(-1) scaleY(-1);
+			}
+			img.r2, canvas.r2 {
+			    transform: translateX(-50%) translateY(-50%) scaleX(-1);
+			}
+			img.show, canvas.show {
+				opacity: 1;
+			}
+		</style>
+	</head>
+
+	<body>
+		<img id="main-image"/>
+		<canvas id="canvas"></canvas>
+	</body>
+</html>

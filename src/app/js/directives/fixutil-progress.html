@@ -1,0 +1,10 @@
+<div class="progress-dialog" ng-class="{'open' : fixUtils.isFixing}" ng-if="fixUtils.isFixing">
+    <div class="progress-dialog-content" ng-if="fixUtils.isFixing">
+        <div class="message">Scaning... <span class="counter">({{fixUtils.fixingCurr | number:0}}/{{fixUtils.fixingTotal | number:0}})</span></div>
+        <div class="progressbar" ng-show="fixUtils.isFixing">
+            <div class="current" style="width: {{fixUtils.fixingCurr/fixUtils.fixingTotal*100}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

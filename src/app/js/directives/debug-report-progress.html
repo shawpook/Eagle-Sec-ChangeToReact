@@ -1,0 +1,10 @@
+<div id="export-debug-report-dialog" class="progress-dialog" ng-class="{'open' : debugReportStatus.isExporting}">
+    <div class="progress-dialog-content" ng-if="debugReportStatus.isExporting">
+        <div class="message">{{'dialog.debugReport.exporting' | i18n}}</div>
+        <div class="progressbar" ng-show="debugReportStatus.isExporting">
+            <div class="current" style="width: {{debugReportStatus.progress}}%;"></div>
+        </div>
+        <div class="button button-xs button-grey cancel-button cancel">{{'general.cancel' | i18n}}</div>
+    </div>
+</div>
+<div class="progress-dialog-overlay"></div>

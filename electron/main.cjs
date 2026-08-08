@@ -1589,7 +1589,7 @@ app.whenReady().then(async () => {
       console.error('DOCUMENT_VIEWER_SMOKE_TIMEOUT');
       app.quit();
     }, 70000);
-    createWindow({
+    const smokeWin = createWindow({
       show: false,
       onDidFinishLoad: async (win) => {
         try {
@@ -1638,19 +1638,29 @@ app.whenReady().then(async () => {
 
               const bodyText = viewerDoc.body.textContent || '';
               const contentOk = Boolean(expectedText && bodyText.includes(expectedText));
-              const stageTitleOk = Boolean(viewerDoc.querySelector('[data-preview-stage-actions]'));
+              // External-chrome mode: the generic stage actions (navigation,
+              // favorite, reveal…) are hidden; Eagle's own sidebar toggle stays
+              // usable and the document area reflows with it.
+              const inIframeStageActions = Boolean(viewerDoc.querySelector('[data-preview-stage-actions]'));
 
-              // Workspace → fullscreen → workspace via the stage controls.
-              let expandFound = false;
-              let modeSequence = [];
-              const expandButton = viewerDoc.querySelector('[data-preview-stage-actions] button[title="占满整个软件预览"]');
-              if (expandButton) {
-                expandFound = true;
-                expandButton.click();
-                modeSequence.push(await waitFor(() => container.getAttribute('data-viewer-mode') === 'fullscreen' ? 'fullscreen' : null, 'fullscreen mode', 8000));
-                const returnButton = await waitFor(() => viewerDoc.querySelector('[data-preview-stage-actions] button[title="返回中间预览"]'), 'return button', 8000);
-                returnButton.click();
-                modeSequence.push(await waitFor(() => container.getAttribute('data-viewer-mode') === 'workspace' ? 'workspace' : null, 'workspace restore', 8000));
+              // Sidebar toggle (via Eagle's native toggleAll) must reflow the
+              // viewer container: with the sidebar hidden the document area
+              // expands to the window edge.
+              const sidebarHiddenAtStart = document.body.classList.contains('hide-sidebar');
+              scope.toggleAll();
+              await waitFor(() => document.body.classList.contains('hide-sidebar') !== sidebarHiddenAtStart, 'sidebar class toggled', 8000);
+              const sidebarNowHidden = document.body.classList.contains('hide-sidebar');
+              if (sidebarNowHidden) {
+                await waitFor(() => container.style.left === '0px', 'container left 0 when sidebar hidden', 8000);
+              } else {
+                await waitFor(() => container.style.left !== '0px', 'container left offset when sidebar shown', 8000);
+              }
+              const sidebarClosedLeft = container.style.left;
+              // Restore the sidebar for the close step.
+              if (document.body.classList.contains('hide-sidebar')) {
+                scope.toggleAll();
+                await waitFor(() => !document.body.classList.contains('hide-sidebar'), 'sidebar restore', 8000);
+                await waitFor(() => container.style.left !== '0px', 'container left restored', 8000);
               }
 
               // Close via the shell-facing message (the shims listener lives on
@@ -1664,14 +1674,13 @@ app.whenReady().then(async () => {
                 containerMounted: true,
                 viewerUrl,
                 contentOk,
-                stageTitleOk,
-                expandFound,
-                modeSequence,
+                inIframeStageActions,
+                sidebarClosedLeft,
                 viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
               };
             })()`
           );
-          const ok = result.containerMounted && result.contentOk && result.stageTitleOk && result.expandFound && result.modeSequence.join(',') === 'fullscreen,workspace' && result.viewerClosed;
+          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.sidebarClosedLeft === '0px' && result.viewerClosed;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);
@@ -1679,6 +1688,9 @@ app.whenReady().then(async () => {
         clearTimeout(timeout);
         app.quit();
       },
+    });
+    smokeWin.webContents.on('console-message', (event, level, message, line, sourceId) => {
+      console.log(`[doc-viewer:renderer] ${String(message || '').slice(0, 2000)}`);
     });
     return;
   }

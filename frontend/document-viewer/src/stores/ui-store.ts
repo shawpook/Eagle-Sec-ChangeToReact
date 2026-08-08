@@ -25,12 +25,14 @@ interface DocumentViewerUIState {
   previewReturnMode: PreviewMode | null
   selectedAssetId: string | null
   visibleAssetIds: string[]
+  externalChrome: boolean
 
   setTheme: (theme: AppTheme) => void
   setDocumentFontPreset: (preset: DocumentFontPreset) => void
   setDocumentEditorColorMode: (mode: DocumentEditorColorMode) => void
   setFollowSystemTheme: (enabled: boolean) => void
   setLocale: (locale: Locale) => void
+  setExternalChrome: (enabled: boolean) => void
 
   openPreview: (id: string, mode?: PreviewMode, returnMode?: PreviewMode | null) => void
   setPreviewMode: (mode: PreviewMode, returnMode?: PreviewMode | null) => void
@@ -52,12 +54,14 @@ export const useUIStore = create<DocumentViewerUIState>((set) => ({
   previewReturnMode: null,
   selectedAssetId: null,
   visibleAssetIds: [],
+  externalChrome: false,
 
   setTheme: (theme) => set({ theme }),
   setDocumentFontPreset: (documentFontPreset) => set({ documentFontPreset }),
   setDocumentEditorColorMode: (documentEditorColorMode) => set({ documentEditorColorMode }),
   setFollowSystemTheme: (followSystemTheme) => set({ followSystemTheme }),
   setLocale: (locale) => set({ locale }),
+  setExternalChrome: (externalChrome) => set({ externalChrome }),
 
   openPreview: (id, mode = 'workspace', returnMode = null) => set((state) => ({
     previewAssetId: id,

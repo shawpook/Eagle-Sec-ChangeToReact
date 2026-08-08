@@ -32,6 +32,7 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
   const forceClosePreview = useUIStore((s) => s.forceClosePreview)
   const selectAsset = useUIStore((s) => s.selectAsset)
   const visibleAssetIds = useUIStore((s) => s.visibleAssetIds)
+  const externalChrome = useUIStore((s) => s.externalChrome)
   const { data: asset, isFetched: assetFetched } = useAsset(previewAssetId)
   const updateAsset = useUpdateAsset()
   const isActive = previewAssetId !== null && previewMode === mode
@@ -269,8 +270,8 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
                 onNextAsset={nextAssetId ? () => navigatePreview(nextAssetId) : null}
                 hasPreviousAsset={Boolean(prevAssetId)}
                 hasNextAsset={Boolean(nextAssetId)}
-                pageIndicator={pageIndicator}
-                stageActions={stageActions}
+                pageIndicator={externalChrome ? null : pageIndicator}
+                stageActions={externalChrome ? null : stageActions}
               />
             </motion.div>
           ) : (

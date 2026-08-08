@@ -37,6 +37,10 @@ export default function DocumentViewerApp() {
     [params],
   )
   const initialLibraryPath = params.get('library') || 'eagle'
+  // `chrome=external` is set by the Eagle shell shim: the shell injects its own
+  // Eagle-native `.toolbar` and drives the viewer over postMessage, so the
+  // viewer hides its generic stage actions and reports state back instead.
+  const externalChrome = params.get('chrome') === 'external'
 
   const previewAssetId = useUIStore((s) => s.previewAssetId)
   const previewMode = useUIStore((s) => s.previewMode)
@@ -45,6 +49,7 @@ export default function DocumentViewerApp() {
   // Hydrate the initial preview state once from URL parameters.
   useEffect(() => {
     setLibraryPath(initialLibraryPath)
+    useUIStore.getState().setExternalChrome(externalChrome)
     useUIStore.getState().setVisibleAssetIds(initialVisibleAssetIds)
     useUIStore.getState().openPreview(
       initialAssetId,

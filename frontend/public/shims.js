@@ -232,6 +232,10 @@
     container: null,
     iframe: null,
     pendingFallbackTimer: 0,
+    sidebarObserver: null,
+    sidebarResizeObserver: null,
+    windowResizeHandler: null,
+    windowResizeBound: false,
   };
 
   function documentViewerEnabled() {
@@ -258,13 +262,44 @@
     return `${origin}/frontend/document-viewer/index.html`;
   }
 
+  function installSidebarWatchers() {
+    if (typeof MutationObserver === 'function' && !documentViewerState.sidebarObserver) {
+      const observer = new MutationObserver(() => {
+        if (!documentViewerState.container) return;
+        applyViewerMode(documentViewerState.mode);
+      });
+      observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      documentViewerState.sidebarObserver = observer;
+    }
+    if (typeof ResizeObserver === 'function' && !documentViewerState.sidebarResizeObserver) {
+      const sidebar = document.querySelector('#sidebar');
+      if (sidebar) {
+        const resizeObserver = new ResizeObserver(() => {
+          if (!documentViewerState.container) return;
+          applyViewerMode(documentViewerState.mode);
+        });
+        resizeObserver.observe(sidebar);
+        documentViewerState.sidebarResizeObserver = resizeObserver;
+      }
+    }
+    if (!documentViewerState.windowResizeBound) {
+      const handler = () => {
+        if (!documentViewerState.container) return;
+        applyViewerMode(documentViewerState.mode);
+      };
+      window.addEventListener('resize', handler);
+      documentViewerState.windowResizeBound = true;
+      documentViewerState.windowResizeHandler = handler;
+    }
+  }
+
   function ensureViewerContainer() {
     if (documentViewerState.container && documentViewerState.iframe) {
       return documentViewerState;
     }
     const container = document.createElement('div');
     container.id = 'eagle-document-viewer-container';
-    container.style.cssText = 'position:fixed; top:0; bottom:0; left:0; right:0; z-index:2147483000; display:flex;';
+    container.style.cssText = 'position:fixed; top:0; bottom:0; left:0; right:0; z-index:2147483000;';
     const iframe = document.createElement('iframe');
     iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals');
     iframe.setAttribute('allow', 'clipboard-read; clipboard-write');
@@ -273,6 +308,7 @@
     document.body.appendChild(container);
     documentViewerState.container = container;
     documentViewerState.iframe = iframe;
+    installSidebarWatchers();
     return documentViewerState;
   }
 
@@ -283,11 +319,14 @@
     state.mode = mode === 'fullscreen' ? 'fullscreen' : 'workspace';
     container.setAttribute('data-viewer-mode', state.mode);
     if (state.mode === 'fullscreen') {
-      container.style.cssText = 'position:fixed; inset:0; z-index:2147483000; display:flex;';
+      container.style.cssText = 'position:fixed; inset:0; z-index:2147483000;';
     } else {
+      // Eagle hides the sidebar via translateX(-100%), so its offsetWidth is
+      // unchanged; only treat it as occupying space when it is actually visible.
+      const isSidebarHidden = document.body.classList.contains('hide-sidebar');
       const sidebar = document.querySelector('#sidebar');
-      const sidebarWidth = sidebar ? sidebar.offsetWidth || 0 : 0;
-      container.style.cssText = `position:fixed; top:0; bottom:0; left:${sidebarWidth}px; right:0; z-index:2147483000; display:flex;`;
+      const sidebarWidth = (!isSidebarHidden && sidebar) ? (sidebar.offsetWidth || 0) : 0;
+      container.style.cssText = `position:fixed; top:0; bottom:0; left:${sidebarWidth}px; right:0; z-index:2147483000;`;
     }
   }
 
@@ -299,6 +338,7 @@
       id: item.id,
       mode: mode === 'fullscreen' ? 'fullscreen' : 'workspace',
       ids: ids.join(','),
+      chrome: 'external',
     });
     state.itemId = item.id;
     state.iframe.src = `${viewerBaseUrl()}?${query.toString()}`;
@@ -330,6 +370,19 @@
 
   function closeDocumentViewer() {
     window.clearTimeout(documentViewerState.pendingFallbackTimer);
+    if (documentViewerState.sidebarObserver) {
+      documentViewerState.sidebarObserver.disconnect();
+      documentViewerState.sidebarObserver = null;
+    }
+    if (documentViewerState.sidebarResizeObserver) {
+      documentViewerState.sidebarResizeObserver.disconnect();
+      documentViewerState.sidebarResizeObserver = null;
+    }
+    if (documentViewerState.windowResizeHandler) {
+      window.removeEventListener('resize', documentViewerState.windowResizeHandler);
+      documentViewerState.windowResizeHandler = null;
+      documentViewerState.windowResizeBound = false;
+    }
     if (documentViewerState.iframe) {
       documentViewerState.iframe.src = 'about:blank';
     }

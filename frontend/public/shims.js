@@ -234,6 +234,7 @@
     pendingFallbackTimer: 0,
     sidebarObserver: null,
     sidebarResizeObserver: null,
+    sidebarPollTimer: 0,
     windowResizeHandler: null,
     windowResizeBound: false,
   };
@@ -262,14 +263,81 @@
     return `${origin}/frontend/document-viewer/index.html`;
   }
 
-  // Eagle-native border strip for the document viewer. It carries no buttons:
-  // sidebar toggling is driven by Eagle's own sidebar buttons, and the exit
+  // Measure Eagle's own top toolbar so the viewer container leaves exactly the
+  // right amount of room at the top: too little would cover its draggable
+  // strip (window can't be dragged), too much wastes space.
+  function topToolbarHeight() {
+    try {
+      const toolbar = document.querySelector('#list-content-panel .toolbar')
+        || document.querySelector('.content-panel .toolbar');
+      if (toolbar) {
+        const rect = toolbar.getBoundingClientRect();
+        if (rect.height > 0 && rect.bottom > 0) return rect.bottom;
+      }
+    } catch (err) {
+      // Fall through to the default.
+    }
+    return 48;
+  }
+
+  // When the sidebar is auto-collapsed Eagle shows a hover strip on the left
+  // edge (`.hover-show-sidebar`) to reopen it. That strip sits over the top
+  // toolbar's left drag area, so while the document workspace is open we keep
+  // it from intercepting pointer events (the left/right rail buttons still
+  // control the sidebar).
+  function suppressSidebarHoverStrip() {
+    try {
+      const strip = document.querySelector('.hover-show-sidebar');
+      if (strip) strip.style.pointerEvents = 'none';
+    } catch (err) {
+      // Ignore.
+    }
+  }
+
+  // The viewer leaves room for Eagle's own top toolbar at the top so its
+  // buttons stay clickable and the window can still be dragged; the exit (×)
   // action lives inside the viewer's editor toolbar (preview → ×).
-  function buildDocumentChrome() {
-    const toolbar = document.createElement('div');
-    toolbar.className = 'eagle-doc-toolbar toolbar has-border';
-    toolbar.style.cssText = 'position:relative; flex:0 0 auto; height:48px; -webkit-app-region:no-drag; z-index:2;';
-    return toolbar;
+  function sidebarVisibilityState() {
+    const sidebar = document.querySelector('#sidebar');
+    if (!sidebar) return { hidden: true, width: 0 };
+    let hidden = document.body.classList.contains('hide-sidebar');
+    let width = sidebar.offsetWidth || 0;
+    try {
+      const rect = sidebar.getBoundingClientRect();
+      if (rect.width > 0) hidden = rect.right <= 0;
+    } catch (err) {
+      // Keep the class-based value.
+    }
+    return { hidden, width };
+  }
+
+  // The right rail (inspector) width lives on the Angular scope; when the
+  // component is actually rendered we prefer its measured width.
+  function inspectorVisibilityState() {
+    try {
+      const scope = window.$bodyScope;
+      const inspector = scope && scope.inspector;
+      let width = (inspector && Number(inspector.width)) || 0;
+      let hidden = Boolean(inspector && inspector.isHideInspector);
+      const element = document.querySelector('inspector');
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        if (rect.width > 0) {
+          width = rect.width;
+          hidden = false;
+        }
+      }
+      return { hidden, width: hidden ? 0 : width };
+    } catch (err) {
+      return { hidden: true, width: 0 };
+    }
+  }
+
+  function viewerInsetsState() {
+    return JSON.stringify({
+      sidebar: sidebarVisibilityState(),
+      inspector: inspectorVisibilityState(),
+    });
   }
 
   function installSidebarWatchers() {
@@ -301,6 +369,21 @@
       documentViewerState.windowResizeBound = true;
       documentViewerState.windowResizeHandler = handler;
     }
+    // Poll as a fallback: the left/right rail visibility can change via
+    // transform without a body-class mutation or an offsetWidth change, which
+    // would otherwise leave the viewer container stuck at the wrong offset.
+    if (!documentViewerState.sidebarPollTimer) {
+      let last = viewerInsetsState();
+      documentViewerState.sidebarPollTimer = window.setInterval(() => {
+        if (!documentViewerState.container) return;
+        suppressSidebarHoverStrip();
+        const current = viewerInsetsState();
+        if (current !== last) {
+          last = current;
+          applyViewerMode(documentViewerState.mode);
+        }
+      }, 250);
+    }
   }
 
   function ensureViewerContainer() {
@@ -309,13 +392,11 @@
     }
     const container = document.createElement('div');
     container.id = 'eagle-document-viewer-container';
-    container.style.cssText = 'position:fixed; top:0; bottom:0; left:0; right:0; z-index:2147483000; display:flex; flex-direction:column;';
-    const toolbar = buildDocumentChrome();
+    container.style.cssText = `position:fixed; top:${topToolbarHeight()}px; bottom:0; left:0; right:0; z-index:2147483000;`;
     const iframe = document.createElement('iframe');
     iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals');
     iframe.setAttribute('allow', 'clipboard-read; clipboard-write');
-    iframe.style.cssText = 'flex:1; width:100%; height:100%; border:0; background:#17181b;';
-    container.appendChild(toolbar);
+    iframe.style.cssText = 'width:100%; height:100%; border:0; background:#17181b;';
     container.appendChild(iframe);
     document.body.appendChild(container);
     documentViewerState.container = container;
@@ -330,21 +411,38 @@
     if (!container) return;
     state.mode = mode === 'fullscreen' ? 'fullscreen' : 'workspace';
     container.setAttribute('data-viewer-mode', state.mode);
-    const baseLayout = 'z-index:2147483000; display:flex; flex-direction:column;';
     if (state.mode === 'fullscreen') {
-      container.style.cssText = `position:fixed; inset:0; ${baseLayout}`;
+      container.style.cssText = 'position:fixed; inset:0; z-index:2147483000;';
     } else {
-      // Eagle hides the sidebar via translateX(-100%), so its offsetWidth is
-      // unchanged; only treat it as occupying space when it is actually visible.
-      const isSidebarHidden = document.body.classList.contains('hide-sidebar');
-      const sidebar = document.querySelector('#sidebar');
-      const sidebarWidth = (!isSidebarHidden && sidebar) ? (sidebar.offsetWidth || 0) : 0;
-      container.style.cssText = `position:fixed; top:0; bottom:0; left:${sidebarWidth}px; right:0; ${baseLayout}`;
+      // Keep Eagle's top toolbar visible so its buttons stay clickable and
+      // the window can still be dragged; let both rails breathe too.
+      const { hidden: sidebarHidden, width: sidebarWidth } = sidebarVisibilityState();
+      const { hidden: inspectorHidden, width: inspectorWidth } = inspectorVisibilityState();
+      const left = sidebarHidden ? 0 : sidebarWidth;
+      const right = inspectorHidden ? 0 : inspectorWidth;
+      container.style.cssText = `position:fixed; top:${topToolbarHeight()}px; bottom:0; left:${left}px; right:${right}px; z-index:2147483000;`;
+    }
+  }
+
+  // Entering the document workspace auto-collapses the left rail so the
+  // viewer fills the window; Eagle's own left/right rail buttons can still
+  // reopen it and the viewer container reflows accordingly.
+  function autoCollapseSidebar() {
+    try {
+      if (document.body.classList.contains('hide-sidebar')) return;
+      const scope = window.$bodyScope;
+      if (scope && typeof scope.toggleAll === 'function') {
+        scope.toggleAll();
+      }
+    } catch (err) {
+      console.warn('[eagle-shim] document auto-collapse sidebar failed', err);
     }
   }
 
   function openDocumentViewer(item, mode) {
     if (!item || !item.id || !documentViewerEnabled()) return false;
+    autoCollapseSidebar();
+    suppressSidebarHoverStrip();
     const state = ensureViewerContainer();
     const ids = collectVisibleAssetIds();
     const query = new URLSearchParams({
@@ -383,6 +481,10 @@
 
   function closeDocumentViewer() {
     window.clearTimeout(documentViewerState.pendingFallbackTimer);
+    if (documentViewerState.sidebarPollTimer) {
+      window.clearInterval(documentViewerState.sidebarPollTimer);
+      documentViewerState.sidebarPollTimer = 0;
+    }
     if (documentViewerState.sidebarObserver) {
       documentViewerState.sidebarObserver.disconnect();
       documentViewerState.sidebarObserver = null;

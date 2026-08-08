@@ -1645,25 +1645,23 @@ app.whenReady().then(async () => {
               const exitButton = viewerDoc.querySelector('button[title="退出 (ESC)"]');
               const exitOk = Boolean(exitButton);
 
-              // Sidebar toggling is driven by Eagle's own sidebar buttons; the
-              // viewer container must follow the sidebar width so the document
-              // area reflows to the window edge when the sidebar hides.
-              const sidebarHiddenAtStart = document.body.classList.contains('hide-sidebar');
+              // The document workspace auto-collapses the left rail on entry.
+              await waitFor(() => document.body.classList.contains('hide-sidebar'), 'sidebar auto-collapsed', 8000);
+              await waitFor(() => container.style.left === '0px', 'container left 0 on entry', 8000);
+              const autoCollapsed = true;
+
+              // Eagle's rail buttons can still reopen it; the container then
+              // reflows inward to make room for the rail.
               scope.toggleAll();
-              await waitFor(() => document.body.classList.contains('hide-sidebar') !== sidebarHiddenAtStart, 'sidebar class toggled', 8000);
-              const sidebarNowHidden = document.body.classList.contains('hide-sidebar');
-              if (sidebarNowHidden) {
-                await waitFor(() => container.style.left === '0px', 'container left 0 when sidebar hidden', 8000);
-              } else {
-                await waitFor(() => container.style.left !== '0px', 'container left offset when sidebar shown', 8000);
-              }
-              const sidebarClosedLeft = container.style.left;
-              // Restore the sidebar for the close step.
-              if (document.body.classList.contains('hide-sidebar')) {
-                scope.toggleAll();
-                await waitFor(() => !document.body.classList.contains('hide-sidebar'), 'sidebar restore', 8000);
-                await waitFor(() => container.style.left !== '0px', 'container left restored', 8000);
-              }
+              await waitFor(() => !document.body.classList.contains('hide-sidebar'), 'sidebar expanded', 8000);
+              await waitFor(() => container.style.left !== '0px', 'container left offset when sidebar shown', 8000);
+              const sidebarExpandedLeft = container.style.left;
+
+              // Collapse it again for the close step.
+              scope.toggleAll();
+              await waitFor(() => document.body.classList.contains('hide-sidebar'), 'sidebar collapsed again', 8000);
+              await waitFor(() => container.style.left === '0px', 'container left 0 when sidebar hidden', 8000);
+              const sidebarCollapsedLeft = container.style.left;
 
               // Close via the viewer's exit (×) button in the editor toolbar.
               exitButton.click();
@@ -1677,12 +1675,14 @@ app.whenReady().then(async () => {
                 contentOk,
                 inIframeStageActions,
                 exitOk,
-                sidebarClosedLeft,
+                autoCollapsed,
+                sidebarExpandedLeft,
+                sidebarCollapsedLeft,
                 viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
               };
             })()`
           );
-          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.sidebarClosedLeft === '0px' && result.viewerClosed;
+          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.viewerClosed;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);

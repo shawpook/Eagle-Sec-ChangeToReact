@@ -12,6 +12,9 @@ electron-main.png
 preview.png
 preview-*.png
 
+# 预览台 UI 参考截图（本地工作资料，不入库）
+/图片参考定位组件位置/
+
 .env
 .env.*
 

@@ -59,12 +59,16 @@ interface TextDocumentSurfaceProps {
   asset: Asset
   className?: string
   editable?: boolean
+  pageIndicator?: React.ReactNode
+  stageActions?: React.ReactNode
 }
 
 export default function TextDocumentSurface({
   asset,
   className,
   editable = false,
+  pageIndicator = null,
+  stageActions = null,
 }: TextDocumentSurfaceProps) {
   const appTheme = useUIStore((state) => state.theme)
   const locale = useUIStore((state) => state.locale)
@@ -301,6 +305,12 @@ export default function TextDocumentSurface({
         <div className="min-w-0">
           <div className="truncate text-[13px] font-semibold text-[color:var(--document-heading)]">{asset.name}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[color:var(--document-muted)]">
+            {pageIndicator ? (
+              <>
+                <span className="font-medium text-[color:var(--document-heading)]">{pageIndicator}</span>
+                <span>•</span>
+              </>
+            ) : null}
             <span>{asset.extension.replace(/^\./, '').toUpperCase()}</span>
             {encodingLabel ? (
               <>
@@ -360,6 +370,12 @@ export default function TextDocumentSurface({
               <ModeButton active={previewMode === 'preview'} title="Preview" onClick={() => setPreviewMode('preview')}>
                 <Eye className="h-3.5 w-3.5" />
               </ModeButton>
+            </>
+          ) : null}
+          {stageActions ? (
+            <>
+              <span className="h-5 w-px shrink-0 bg-[color:var(--document-border)]" />
+              {stageActions}
             </>
           ) : null}
         </div>

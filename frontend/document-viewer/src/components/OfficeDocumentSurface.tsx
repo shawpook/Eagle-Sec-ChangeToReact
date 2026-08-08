@@ -32,6 +32,8 @@ interface OfficeDocumentSurfaceProps {
   className?: string
   fallback?: ReactNode
   presentation?: 'auto' | 'preview' | 'editor' | 'compact'
+  pageIndicator?: ReactNode
+  stageActions?: ReactNode
 }
 
 type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
@@ -189,6 +191,8 @@ export default function OfficeDocumentSurface({
   className,
   fallback,
   presentation = 'auto',
+  pageIndicator = null,
+  stageActions = null,
 }: OfficeDocumentSurfaceProps) {
   const { t } = useI18n()
   const documentQuery = usePreviewOfficeDocument(asset.id)
@@ -401,6 +405,8 @@ export default function OfficeDocumentSurface({
         onReload={handleReload}
         onReset={handleResetDraft}
         onSave={handleSave}
+        pageIndicator={pageIndicator}
+        stageActions={stageActions}
         t={t}
       />
 
@@ -524,6 +530,8 @@ function OfficeWorkspaceHeader({
   onReload,
   onReset,
   onSave,
+  pageIndicator,
+  stageActions,
   t,
 }: {
   asset: Asset
@@ -539,6 +547,8 @@ function OfficeWorkspaceHeader({
   onReload: () => void
   onReset: () => void
   onSave: () => void
+  pageIndicator?: ReactNode
+  stageActions?: ReactNode
   t: (zh: string, en: string) => string
 }) {
   const kind = document?.readerKind ?? inferOfficeKindFromExtension(asset.extension)
@@ -566,6 +576,9 @@ function OfficeWorkspaceHeader({
               {asset.name}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]" style={{ color: 'var(--document-muted)' }}>
+              {pageIndicator ? (
+                <span className="text-[11px] font-semibold" style={{ color: 'var(--document-heading)' }}>{pageIndicator}</span>
+              ) : null}
               <HeaderChip>{asset.extension.replace(/^\./, '').toUpperCase()}</HeaderChip>
               <HeaderChip>{renderOfficeKindLabel(kind, t)}</HeaderChip>
               <SaveIndicator state={saveState} t={t} />
@@ -594,6 +607,12 @@ function OfficeWorkspaceHeader({
           <ToolbarButton title={t('重新载入文档', 'Reload document')} onClick={onReload}>
             <RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />
           </ToolbarButton>
+          {stageActions ? (
+            <>
+              <span className="h-5 w-px shrink-0" style={{ backgroundColor: 'var(--document-border)' }} />
+              {stageActions}
+            </>
+          ) : null}
         </div>
       </div>
     </div>

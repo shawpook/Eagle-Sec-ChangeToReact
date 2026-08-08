@@ -1638,17 +1638,17 @@ app.whenReady().then(async () => {
 
               const bodyText = viewerDoc.body.textContent || '';
               const contentOk = Boolean(expectedText && bodyText.includes(expectedText));
-              const stageTitleOk = Boolean(viewerDoc.querySelector('[data-preview-stage-header]'));
+              const stageTitleOk = Boolean(viewerDoc.querySelector('[data-preview-stage-actions]'));
 
               // Workspace → fullscreen → workspace via the stage controls.
               let expandFound = false;
               let modeSequence = [];
-              const expandButton = viewerDoc.querySelector('[data-preview-stage-header] button[title="占满整个软件预览"]');
+              const expandButton = viewerDoc.querySelector('[data-preview-stage-actions] button[title="占满整个软件预览"]');
               if (expandButton) {
                 expandFound = true;
                 expandButton.click();
                 modeSequence.push(await waitFor(() => container.getAttribute('data-viewer-mode') === 'fullscreen' ? 'fullscreen' : null, 'fullscreen mode', 8000));
-                const returnButton = await waitFor(() => viewerDoc.querySelector('[data-preview-stage-header] button[title="返回中间预览"]'), 'return button', 8000);
+                const returnButton = await waitFor(() => viewerDoc.querySelector('[data-preview-stage-actions] button[title="返回中间预览"]'), 'return button', 8000);
                 returnButton.click();
                 modeSequence.push(await waitFor(() => container.getAttribute('data-viewer-mode') === 'workspace' ? 'workspace' : null, 'workspace restore', 8000));
               }

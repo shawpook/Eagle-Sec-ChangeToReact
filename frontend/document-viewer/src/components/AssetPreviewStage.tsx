@@ -144,6 +144,87 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
     return null
   }
 
+  // Unified stage chrome: the outer window-style toolbar is gone. The page
+  // indicator and the stage action buttons are injected into the document
+  // surface's own header (right of the in-surface controls) through
+  // AssetPreviewSurface, so the preview keeps a single toolbar.
+  const pageIndicator = currentIndex >= 0
+    ? `${currentIndex + 1} / ${visibleAssetIds.length}`
+    : null
+
+  const stageActions = (
+    <div data-preview-stage-actions className="flex shrink-0 items-center gap-1">
+      <StageButton title={t('上一个素材', 'Previous asset')} onClick={() => navigatePreview(prevAssetId)} disabled={!prevAssetId}>
+        <ChevronLeft className="h-4 w-4" />
+      </StageButton>
+      <StageButton title={t('下一个素材', 'Next asset')} onClick={() => navigatePreview(nextAssetId)} disabled={!nextAssetId}>
+        <ChevronRight className="h-4 w-4" />
+      </StageButton>
+      <StageButton
+        title={asset?.favorite ? t('取消收藏', 'Remove favorite') : t('收藏', 'Favorite')}
+        onClick={() => {
+          if (!asset) return
+          updateAsset.mutate({ id: asset.id, input: { favorite: !asset.favorite } })
+        }}
+        disabled={!asset}
+      >
+        <Star className={cn('h-4 w-4', asset?.favorite && 'fill-yellow-400 text-yellow-400')} />
+      </StageButton>
+      <StageButton
+        title={t('在系统中显示', 'Reveal in Finder')}
+        onClick={async () => {
+          if (!asset) return
+          const ok = await api.asset.reveal(asset.id)
+          showToast({
+            tone: ok ? 'success' : 'error',
+            title: ok ? t('已在系统中显示', 'Revealed in Finder') : t('显示失败', 'Reveal failed'),
+            message: ok ? asset.name : t('Eagle 无法显示该文件。', 'Eagle could not reveal this file.'),
+          })
+        }}
+        disabled={!asset}
+      >
+        <FolderOpen className="h-4 w-4" />
+      </StageButton>
+      <StageButton
+        title={t('复制文件路径', 'Copy file path')}
+        onClick={async () => {
+          if (!asset) return
+          const ok = await api.asset.copyPath(asset.id)
+          showToast({
+            tone: ok ? 'success' : 'error',
+            title: ok ? t('路径已复制', 'Path copied') : t('复制失败', 'Copy failed'),
+            message: ok ? asset.filePath ?? asset.name : t('Eagle 无法复制该文件的路径。', 'Eagle could not copy the path for this file.'),
+          })
+        }}
+        disabled={!asset}
+      >
+        <Copy className="h-4 w-4" />
+      </StageButton>
+      <StageButton
+        title={t('打开原文件', 'Open original file')}
+        onClick={() => {
+          if (!asset) return
+          void api.asset.open(asset.id)
+        }}
+        disabled={!asset}
+      >
+        <ExternalLink className="h-4 w-4" />
+      </StageButton>
+      {mode === 'workspace' ? (
+        <StageButton title={t('占满整个软件预览', 'Open full-app preview')} onClick={() => setPreviewMode('fullscreen', 'workspace')}>
+          <Maximize2 className="h-4 w-4" />
+        </StageButton>
+      ) : (
+        <StageButton title={t('返回中间预览', 'Return to centered preview')} onClick={() => setPreviewMode('workspace', null)}>
+          <Minimize2 className="h-4 w-4" />
+        </StageButton>
+      )}
+      <StageButton title={t('关闭预览', 'Close preview')} onClick={closeStagePreview}>
+        <X className="h-4 w-4" />
+      </StageButton>
+    </div>
+  )
+
   return (
     <div
       data-preview-stage
@@ -161,92 +242,6 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
           {toast.message ? <div className="mt-0.5 text-[11px] opacity-85">{toast.message}</div> : null}
         </div>
       ) : null}
-
-      <div
-        data-preview-stage-header
-        className="app-drag flex items-center justify-between gap-3 border-b border-[color:var(--preview-stage-border)] bg-[color:var(--preview-stage-chrome-bg)] px-4 py-3 backdrop-blur-xl"
-      >
-        <div className="min-w-0">
-          <div className="truncate text-sm font-medium text-foreground">
-            {asset?.name ?? t('正在加载预览…', 'Loading preview…')}
-          </div>
-          <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-            <span>{currentIndex >= 0 ? `${currentIndex + 1} / ${visibleAssetIds.length}` : '-- / --'}</span>
-            {asset ? <span className="truncate">{asset.extension.replace(/^\./, '').toUpperCase()}</span> : null}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1">
-          <StageButton title={t('上一个素材', 'Previous asset')} onClick={() => navigatePreview(prevAssetId)} disabled={!prevAssetId}>
-            <ChevronLeft className="h-4 w-4" />
-          </StageButton>
-          <StageButton title={t('下一个素材', 'Next asset')} onClick={() => navigatePreview(nextAssetId)} disabled={!nextAssetId}>
-            <ChevronRight className="h-4 w-4" />
-          </StageButton>
-          <StageButton
-            title={asset?.favorite ? t('取消收藏', 'Remove favorite') : t('收藏', 'Favorite')}
-            onClick={() => {
-              if (!asset) return
-              updateAsset.mutate({ id: asset.id, input: { favorite: !asset.favorite } })
-            }}
-            disabled={!asset}
-          >
-            <Star className={cn('h-4 w-4', asset?.favorite && 'fill-yellow-400 text-yellow-400')} />
-          </StageButton>
-          <StageButton
-            title={t('在系统中显示', 'Reveal in Finder')}
-            onClick={async () => {
-              if (!asset) return
-              const ok = await api.asset.reveal(asset.id)
-              showToast({
-                tone: ok ? 'success' : 'error',
-                title: ok ? t('已在系统中显示', 'Revealed in Finder') : t('显示失败', 'Reveal failed'),
-                message: ok ? asset.name : t('Eagle 无法显示该文件。', 'Eagle could not reveal this file.'),
-              })
-            }}
-            disabled={!asset}
-          >
-            <FolderOpen className="h-4 w-4" />
-          </StageButton>
-          <StageButton
-            title={t('复制文件路径', 'Copy file path')}
-            onClick={async () => {
-              if (!asset) return
-              const ok = await api.asset.copyPath(asset.id)
-              showToast({
-                tone: ok ? 'success' : 'error',
-                title: ok ? t('路径已复制', 'Path copied') : t('复制失败', 'Copy failed'),
-                message: ok ? asset.filePath ?? asset.name : t('Eagle 无法复制该文件的路径。', 'Eagle could not copy the path for this file.'),
-              })
-            }}
-            disabled={!asset}
-          >
-            <Copy className="h-4 w-4" />
-          </StageButton>
-          <StageButton
-            title={t('打开原文件', 'Open original file')}
-            onClick={() => {
-              if (!asset) return
-              void api.asset.open(asset.id)
-            }}
-            disabled={!asset}
-          >
-            <ExternalLink className="h-4 w-4" />
-          </StageButton>
-          {mode === 'workspace' ? (
-            <StageButton title={t('占满整个软件预览', 'Open full-app preview')} onClick={() => setPreviewMode('fullscreen', 'workspace')}>
-              <Maximize2 className="h-4 w-4" />
-            </StageButton>
-          ) : (
-            <StageButton title={t('返回中间预览', 'Return to centered preview')} onClick={() => setPreviewMode('workspace', null)}>
-              <Minimize2 className="h-4 w-4" />
-            </StageButton>
-          )}
-          <StageButton title={t('关闭预览', 'Close preview')} onClick={closeStagePreview}>
-            <X className="h-4 w-4" />
-          </StageButton>
-        </div>
-      </div>
 
       <div className={cn('app-drag relative min-h-0 flex-1 bg-[image:var(--preview-stage-content-bg)]', mode === 'fullscreen' ? 'p-0' : 'p-1.5')}>
         <AnimatePresence mode="wait" initial={false}>
@@ -274,6 +269,8 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
                 onNextAsset={nextAssetId ? () => navigatePreview(nextAssetId) : null}
                 hasPreviousAsset={Boolean(prevAssetId)}
                 hasNextAsset={Boolean(nextAssetId)}
+                pageIndicator={pageIndicator}
+                stageActions={stageActions}
               />
             </motion.div>
           ) : (
@@ -289,17 +286,6 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      <div className="app-drag flex items-center justify-between gap-3 border-t border-[color:var(--preview-stage-border)] bg-[color:var(--preview-stage-chrome-bg)] px-4 py-2 text-[11px] text-muted-foreground backdrop-blur-xl">
-        <span>
-          {mode === 'workspace'
-            ? t('空格切到整窗预览。', 'Space switches to full-app preview.')
-            : t('Esc 返回素材面板，左右方向键切换素材。', 'Esc returns to the asset browser, Left/Right switches assets.')}
-        </span>
-        <span>
-          {t('Esc 关闭 · ←/→ 切换 · F 收藏', 'Esc closes · Left/Right switches · F favorite')}
-        </span>
       </div>
     </div>
   )
@@ -322,7 +308,7 @@ function StageButton({
       title={title}
       disabled={disabled}
       className={cn(
-        'app-no-drag ui-lift inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--preview-stage-button-border)] bg-[color:var(--preview-stage-button-bg)] text-[color:var(--preview-stage-button-fg)] backdrop-blur-md transition hover:bg-[color:var(--preview-stage-button-hover-bg)] hover:text-[color:var(--preview-stage-button-hover-fg)] disabled:cursor-not-allowed disabled:opacity-35',
+        'app-no-drag ui-lift inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] text-[color:var(--document-muted)] backdrop-blur-md transition hover:border-primary/30 hover:bg-primary/10 hover:text-[color:var(--document-heading)] disabled:cursor-not-allowed disabled:opacity-35',
       )}
     >
       {children}

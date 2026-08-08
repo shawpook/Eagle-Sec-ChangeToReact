@@ -18,6 +18,8 @@ interface AssetPreviewSurfaceProps {
   onNextAsset?: (() => void) | null
   hasPreviousAsset?: boolean
   hasNextAsset?: boolean
+  pageIndicator?: ReactNode
+  stageActions?: ReactNode
 }
 
 /**
@@ -35,6 +37,8 @@ export default function AssetPreviewSurface({
   onNextAsset = null,
   hasPreviousAsset = false,
   hasNextAsset = false,
+  pageIndicator = null,
+  stageActions = null,
 }: AssetPreviewSurfaceProps) {
   if (asset.status === 'missing') {
     return (
@@ -54,6 +58,8 @@ export default function AssetPreviewSurface({
         asset={asset}
         className={className}
         editable={editable}
+        pageIndicator={pageIndicator}
+        stageActions={stageActions}
       />
     )
   }
@@ -65,6 +71,8 @@ export default function AssetPreviewSurface({
         className={className}
         presentation={documentPresentation}
         fallback={<DocumentPreviewSurface asset={asset} className={className} />}
+        pageIndicator={pageIndicator}
+        stageActions={stageActions}
       />
     )
   }

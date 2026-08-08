@@ -1663,6 +1663,23 @@ app.whenReady().then(async () => {
               await waitFor(() => container.style.left === '0px', 'container left 0 when sidebar hidden', 8000);
               const sidebarCollapsedLeft = container.style.left;
 
+              // Electron's draggable-region hit testing is unreliable when the
+              // document viewer iframe also declares app-region styles, so the
+              // iframe must stay neutral and let Eagle's own toolbar drag.
+              const iframeAppRegionCount = (() => {
+                try {
+                  const doc = iframe.contentDocument;
+                  if (!doc) return -1;
+                  return Array.from(doc.querySelectorAll('*')).filter((element) => {
+                    const style = getComputedStyle(element);
+                    const value = style.webkitAppRegion || style.appRegion;
+                    return value && value !== 'auto' && value !== 'none';
+                  }).length;
+                } catch (err) {
+                  return -1;
+                }
+              })();
+
               // Close via the viewer's exit (×) button in the editor toolbar.
               exitButton.click();
               await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'viewer close', 8000);
@@ -1678,11 +1695,12 @@ app.whenReady().then(async () => {
                 autoCollapsed,
                 sidebarExpandedLeft,
                 sidebarCollapsedLeft,
+                iframeAppRegionCount,
                 viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
               };
             })()`
           );
-          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.viewerClosed;
+          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.autoCollapsed && result.sidebarExpandedLeft !== '0px' && result.sidebarCollapsedLeft === '0px' && result.iframeAppRegionCount === 0 && result.viewerClosed;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);

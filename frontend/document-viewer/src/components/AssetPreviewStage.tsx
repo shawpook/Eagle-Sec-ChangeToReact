@@ -226,10 +226,13 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
     </div>
   )
 
+  // Keep this iframe free of -webkit-app-region styles: Electron does not
+  // reliably drag windows from subframes, and no-drag inside the iframe can
+  // disable the outer Eagle toolbar's drag region on Windows.
   return (
     <div
       data-preview-stage
-      className={cn('app-drag relative flex h-full min-h-0 flex-col bg-[color:var(--preview-stage-bg)] overflow-hidden', className)}
+      className={cn('relative flex h-full min-h-0 flex-col bg-[color:var(--preview-stage-bg)] overflow-hidden', className)}
     >
       {toast ? (
         <div className="pointer-events-none absolute bottom-14 left-1/2 z-50 -translate-x-1/2 rounded-lg border px-4 py-2 text-xs shadow-lg"
@@ -244,13 +247,13 @@ export default function AssetPreviewStage({ mode, className }: AssetPreviewStage
         </div>
       ) : null}
 
-      <div className={cn('app-drag relative min-h-0 flex-1 bg-[image:var(--preview-stage-content-bg)]', mode === 'fullscreen' ? 'p-0' : 'p-1.5')}>
+      <div className={cn('relative min-h-0 flex-1 bg-[image:var(--preview-stage-content-bg)]', mode === 'fullscreen' ? 'p-0' : 'p-1.5')}>
         <AnimatePresence mode="wait" initial={false}>
           {asset ? (
             <motion.div
               key={asset.id}
               className={cn(
-                'app-no-drag h-full',
+                'h-full',
                 'overflow-hidden',
                 mode === 'fullscreen'
                   ? 'border-0 bg-transparent shadow-none rounded-none'
@@ -309,7 +312,7 @@ function StageButton({
       title={title}
       disabled={disabled}
       className={cn(
-        'app-no-drag ui-lift inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] text-[color:var(--document-muted)] backdrop-blur-md transition hover:border-primary/30 hover:bg-primary/10 hover:text-[color:var(--document-heading)] disabled:cursor-not-allowed disabled:opacity-35',
+        'ui-lift inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] text-[color:var(--document-muted)] backdrop-blur-md transition hover:border-primary/30 hover:bg-primary/10 hover:text-[color:var(--document-heading)] disabled:cursor-not-allowed disabled:opacity-35',
       )}
     >
       {children}

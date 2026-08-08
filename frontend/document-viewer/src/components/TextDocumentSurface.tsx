@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import MDEditor from '@uiw/react-md-editor'
 import remarkGfm from 'remark-gfm'
-import { AlertTriangle, CheckCircle2, Eye, LoaderCircle, Moon, PencilLine, SplitSquareVertical, Sun } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Eye, LoaderCircle, Moon, PencilLine, SplitSquareVertical, Sun, X } from 'lucide-react'
 import type { Asset, DocumentEditorColorMode, DocumentFontPreset } from '../shared/types'
 import { isMarkdownDocumentExtension, isTextEditableDocumentExtension } from '../shared/asset-formats'
 import { cn } from '../lib/utils'
@@ -77,6 +77,7 @@ export default function TextDocumentSurface({
   const documentEditorColorMode = useUIStore((state) => state.documentEditorColorMode)
   const setDocumentEditorColorMode = useUIStore((state) => state.setDocumentEditorColorMode)
   const followSystemTheme = useUIStore((state) => state.followSystemTheme)
+  const forceClosePreview = useUIStore((state) => state.forceClosePreview)
   const systemTheme = useSystemLightDarkTheme()
   const appResolvedColorMode: ResolvedDocumentEditorColorMode =
     (followSystemTheme ? systemTheme : appTheme) === 'light' ? 'light' : 'dark'
@@ -372,6 +373,9 @@ export default function TextDocumentSurface({
               </ModeButton>
             </>
           ) : null}
+          <ModeButton title="退出 (ESC)" onClick={forceClosePreview}>
+            <X className="h-3.5 w-3.5" />
+          </ModeButton>
           {stageActions ? (
             <>
               <span className="h-5 w-px shrink-0 bg-[color:var(--document-border)]" />

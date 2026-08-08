@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Save,
   Table2,
+  X,
 } from 'lucide-react'
 import type {
   Asset,
@@ -26,6 +27,7 @@ import {
   useSavePreviewOfficeDocument,
 } from '../hooks/use-preview'
 import { useI18n } from '../lib/i18n'
+import { useUIStore } from '../stores/ui-store'
 
 interface OfficeDocumentSurfaceProps {
   asset: Asset
@@ -557,6 +559,7 @@ function OfficeWorkspaceHeader({
     : kind === 'pptx'
       ? Presentation
       : FileText
+  const forceClosePreview = useUIStore((state) => state.forceClosePreview)
 
   return (
     <div
@@ -594,6 +597,9 @@ function OfficeWorkspaceHeader({
               t={t}
             />
           ) : null}
+          <ToolbarButton title={t('退出预览 (ESC)', 'Exit preview (ESC)')} onClick={forceClosePreview}>
+            <X className="h-4 w-4" />
+          </ToolbarButton>
           {canReset ? (
             <ToolbarButton title={t('放弃当前草稿并重新载入', 'Discard draft and reload')} onClick={onReset}>
               <RotateCcw className="h-4 w-4" />

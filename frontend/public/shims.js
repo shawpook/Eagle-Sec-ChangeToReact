@@ -262,6 +262,16 @@
     return `${origin}/frontend/document-viewer/index.html`;
   }
 
+  // Eagle-native border strip for the document viewer. It carries no buttons:
+  // sidebar toggling is driven by Eagle's own sidebar buttons, and the exit
+  // action lives inside the viewer's editor toolbar (preview → ×).
+  function buildDocumentChrome() {
+    const toolbar = document.createElement('div');
+    toolbar.className = 'eagle-doc-toolbar toolbar has-border';
+    toolbar.style.cssText = 'position:relative; flex:0 0 auto; height:48px; -webkit-app-region:no-drag; z-index:2;';
+    return toolbar;
+  }
+
   function installSidebarWatchers() {
     if (typeof MutationObserver === 'function' && !documentViewerState.sidebarObserver) {
       const observer = new MutationObserver(() => {
@@ -299,11 +309,13 @@
     }
     const container = document.createElement('div');
     container.id = 'eagle-document-viewer-container';
-    container.style.cssText = 'position:fixed; top:0; bottom:0; left:0; right:0; z-index:2147483000;';
+    container.style.cssText = 'position:fixed; top:0; bottom:0; left:0; right:0; z-index:2147483000; display:flex; flex-direction:column;';
+    const toolbar = buildDocumentChrome();
     const iframe = document.createElement('iframe');
     iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-modals');
     iframe.setAttribute('allow', 'clipboard-read; clipboard-write');
-    iframe.style.cssText = 'width:100%; height:100%; border:0; background:#17181b;';
+    iframe.style.cssText = 'flex:1; width:100%; height:100%; border:0; background:#17181b;';
+    container.appendChild(toolbar);
     container.appendChild(iframe);
     document.body.appendChild(container);
     documentViewerState.container = container;
@@ -318,15 +330,16 @@
     if (!container) return;
     state.mode = mode === 'fullscreen' ? 'fullscreen' : 'workspace';
     container.setAttribute('data-viewer-mode', state.mode);
+    const baseLayout = 'z-index:2147483000; display:flex; flex-direction:column;';
     if (state.mode === 'fullscreen') {
-      container.style.cssText = 'position:fixed; inset:0; z-index:2147483000;';
+      container.style.cssText = `position:fixed; inset:0; ${baseLayout}`;
     } else {
       // Eagle hides the sidebar via translateX(-100%), so its offsetWidth is
       // unchanged; only treat it as occupying space when it is actually visible.
       const isSidebarHidden = document.body.classList.contains('hide-sidebar');
       const sidebar = document.querySelector('#sidebar');
       const sidebarWidth = (!isSidebarHidden && sidebar) ? (sidebar.offsetWidth || 0) : 0;
-      container.style.cssText = `position:fixed; top:0; bottom:0; left:${sidebarWidth}px; right:0; z-index:2147483000;`;
+      container.style.cssText = `position:fixed; top:0; bottom:0; left:${sidebarWidth}px; right:0; ${baseLayout}`;
     }
   }
 

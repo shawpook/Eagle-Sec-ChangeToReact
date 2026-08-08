@@ -1639,13 +1639,15 @@ app.whenReady().then(async () => {
               const bodyText = viewerDoc.body.textContent || '';
               const contentOk = Boolean(expectedText && bodyText.includes(expectedText));
               // External-chrome mode: the generic stage actions (navigation,
-              // favorite, reveal…) are hidden; Eagle's own sidebar toggle stays
-              // usable and the document area reflows with it.
+              // favorite, reveal…) are hidden; the exit (×) action lives in
+              // the viewer's editor toolbar right of the preview button.
               const inIframeStageActions = Boolean(viewerDoc.querySelector('[data-preview-stage-actions]'));
+              const exitButton = viewerDoc.querySelector('button[title="退出 (ESC)"]');
+              const exitOk = Boolean(exitButton);
 
-              // Sidebar toggle (via Eagle's native toggleAll) must reflow the
-              // viewer container: with the sidebar hidden the document area
-              // expands to the window edge.
+              // Sidebar toggling is driven by Eagle's own sidebar buttons; the
+              // viewer container must follow the sidebar width so the document
+              // area reflows to the window edge when the sidebar hides.
               const sidebarHiddenAtStart = document.body.classList.contains('hide-sidebar');
               scope.toggleAll();
               await waitFor(() => document.body.classList.contains('hide-sidebar') !== sidebarHiddenAtStart, 'sidebar class toggled', 8000);
@@ -1663,9 +1665,8 @@ app.whenReady().then(async () => {
                 await waitFor(() => container.style.left !== '0px', 'container left restored', 8000);
               }
 
-              // Close via the shell-facing message (the shims listener lives on
-              // the main window, so dispatch to it directly).
-              window.postMessage({ source: 'eagle-document-viewer', type: 'close' }, '*');
+              // Close via the viewer's exit (×) button in the editor toolbar.
+              exitButton.click();
               await waitFor(() => !document.querySelector('#eagle-document-viewer-container'), 'viewer close', 8000);
 
               return {
@@ -1675,12 +1676,13 @@ app.whenReady().then(async () => {
                 viewerUrl,
                 contentOk,
                 inIframeStageActions,
+                exitOk,
                 sidebarClosedLeft,
                 viewerClosed: !document.querySelector('#eagle-document-viewer-container'),
               };
             })()`
           );
-          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.sidebarClosedLeft === '0px' && result.viewerClosed;
+          const ok = result.containerMounted && result.contentOk && !result.inIframeStageActions && result.exitOk && result.sidebarClosedLeft === '0px' && result.viewerClosed;
           console.log(ok ? `DOCUMENT_VIEWER_SMOKE_OK ${JSON.stringify(result)}` : `DOCUMENT_VIEWER_SMOKE_FAIL ${JSON.stringify(result)}`);
         } catch (err) {
           console.error(`DOCUMENT_VIEWER_SMOKE_ERROR ${err.stack || err.message}`);

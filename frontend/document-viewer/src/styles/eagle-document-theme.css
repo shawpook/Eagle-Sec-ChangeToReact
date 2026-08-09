@@ -1,0 +1,452 @@
+/* Eagle-style document workspace overrides.
+   The document viewer is mounted inside Eagle's original AngularJS shell, so
+   these styles intentionally replace the migrated OrcaBox look with Eagle's
+   compact dark/light palette, small-radius controls and quieter surfaces. */
+
+html[data-eagle-theme] {
+  --color-primary: #3297ff !important;
+  --color-ring: #3297ff !important;
+  --color-accent: #3297ff !important;
+  --color-background: #18191c !important;
+  --color-foreground: #f2f3f5 !important;
+  --color-card: #202225 !important;
+  --color-card-foreground: #f2f3f5 !important;
+  --color-border: #ffffff14 !important;
+  --color-muted: #2c2f32 !important;
+  --color-muted-foreground: #a6adb4 !important;
+  --color-secondary: #2c2f32 !important;
+  --color-secondary-foreground: #f2f3f5 !important;
+  --preview-stage-bg: #000 !important;
+  --preview-stage-content-bg: #000 !important;
+  --preview-stage-card-shadow: none !important;
+  --preview-ui-shadow: none !important;
+  --preview-ui-bg: #1a1d21 !important;
+  --preview-ui-menu-bg: #1a1d21 !important;
+}
+
+html[data-eagle-theme="light"],
+html[data-eagle-theme="lightgray"] {
+  --color-primary: #0072ef !important;
+  --color-ring: #0072ef !important;
+  --color-accent: #0072ef !important;
+  --color-background: #e3e4e6 !important;
+  --color-foreground: #2c2f32 !important;
+  --color-card: #ffffff !important;
+  --color-card-foreground: #2c2f32 !important;
+  --color-border: #d2d4d7 !important;
+  --color-muted: #f3f4f6 !important;
+  --color-muted-foreground: #73777c !important;
+  --color-secondary: #f3f4f6 !important;
+  --color-secondary-foreground: #2c2f32 !important;
+  --preview-stage-bg: #e3e4e6 !important;
+  --preview-stage-content-bg: #e3e4e6 !important;
+  --preview-stage-card-shadow: none !important;
+  --preview-ui-shadow: none !important;
+  --preview-ui-bg: #f3f4f6 !important;
+  --preview-ui-menu-bg: #f3f4f6 !important;
+}
+
+html[data-eagle-theme="blue"] {
+  --eagle-workspace-bg: #0d1630;
+  --eagle-workspace-header: #111c3d;
+  --eagle-workspace-shell: #15203f;
+  --eagle-workspace-toolbar: #0a1125f2;
+}
+
+html[data-eagle-theme="purple"] {
+  --eagle-workspace-bg: #1c1424;
+  --eagle-workspace-header: #241a30;
+  --eagle-workspace-shell: #2a1f37;
+  --eagle-workspace-toolbar: #140d1bf2;
+}
+
+html[data-eagle-theme] .text-document-surface[data-document-color-mode="dark"],
+html[data-eagle-theme] .markdown-document-surface[data-document-color-mode="dark"] {
+  --document-surface-bg: var(--eagle-workspace-bg, #18191c);
+  --document-header-bg: var(--eagle-workspace-header, #202225);
+  --document-shell-bg: var(--eagle-workspace-shell, #242629);
+  --document-toolbar-bg: var(--eagle-workspace-toolbar, #2c2f32f2);
+  --document-border: #ffffff14;
+  --document-text: #f2f3f5;
+  --document-heading: #ffffff;
+  --document-muted: #a6adb4;
+  --document-blockquote-bg: #ffffff0d;
+  --document-code-bg: #111316;
+  --document-table-bg: #ffffff0a;
+  --document-editor-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif;
+  --document-preview-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif;
+  --document-heading-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif;
+}
+
+html[data-eagle-theme="light"] .text-document-surface[data-document-color-mode="light"],
+html[data-eagle-theme="lightgray"] .text-document-surface[data-document-color-mode="light"],
+html[data-eagle-theme="light"] .markdown-document-surface[data-document-color-mode="light"],
+html[data-eagle-theme="lightgray"] .markdown-document-surface[data-document-color-mode="light"] {
+  --document-surface-bg: #e3e4e6;
+  --document-header-bg: #f3f4f6;
+  --document-shell-bg: #ffffff;
+  --document-toolbar-bg: #e9eaecf2;
+  --document-border: #d2d4d7;
+  --document-text: #2c2f32;
+  --document-heading: #18191c;
+  --document-muted: #73777c;
+  --document-blockquote-bg: #f3f4f6;
+  --document-code-bg: #f3f4f6;
+  --document-table-bg: #ffffff;
+  --document-editor-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif;
+  --document-preview-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif;
+  --document-heading-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif;
+}
+
+.eagle-document-surface {
+  font-family: var(--document-preview-font-family, "SF Pro Text", -apple-system, "PingFang SC", "Microsoft Yahei", sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+.eagle-document-surface .eagle-document-header {
+  min-height: 42px;
+  padding: 8px 12px !important;
+  background: var(--document-header-bg) !important;
+  border-bottom: 1px solid var(--document-border) !important;
+  box-shadow: none !important;
+}
+
+.eagle-document-surface .eagle-document-header .truncate {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.eagle-document-surface .eagle-document-header .text-\[11px\] {
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.eagle-document-surface .eagle-document-select,
+.eagle-document-surface .eagle-document-button,
+.eagle-document-surface .eagle-stage-button {
+  height: 28px;
+  min-height: 28px;
+  border-radius: 9999px;
+  border: 1px solid var(--document-border);
+  background: transparent;
+  color: var(--document-muted);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.eagle-document-surface .eagle-document-select:hover,
+.eagle-document-surface .eagle-document-button:hover,
+.eagle-document-surface .eagle-stage-button:hover {
+  background: var(--document-toolbar-bg);
+  border-color: var(--document-border);
+  color: var(--document-heading);
+}
+
+.eagle-document-surface .eagle-document-button:disabled,
+.eagle-document-surface .eagle-stage-button:disabled {
+  opacity: 0.38;
+}
+
+.eagle-document-surface .w-md-editor {
+  background: var(--document-shell-bg) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.eagle-document-surface.text-document-surface[data-document-color-mode="dark"] .w-md-editor,
+.eagle-document-surface.markdown-document-surface[data-document-color-mode="dark"] .w-md-editor,
+.eagle-document-surface.text-document-surface[data-document-color-mode="dark"] .markdown-preview-shell,
+.eagle-document-surface.text-document-surface[data-document-color-mode="dark"] .text-document-preview-shell,
+.eagle-document-surface.markdown-document-surface[data-document-color-mode="dark"] .markdown-preview-shell {
+  background: var(--document-shell-bg) !important;
+}
+
+.eagle-document-surface .w-md-editor-toolbar {
+  min-height: 38px !important;
+  background: var(--document-toolbar-bg) !important;
+  border-bottom: 1px solid var(--document-border) !important;
+  gap: 2px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.eagle-document-surface .w-md-editor-toolbar ul > li button {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 9999px !important;
+  color: var(--document-muted) !important;
+}
+
+.eagle-document-surface .w-md-editor-toolbar ul > li button:hover,
+.eagle-document-surface .w-md-editor-toolbar ul > li button:focus-visible {
+  background: var(--document-toolbar-bg) !important;
+  color: var(--document-heading) !important;
+}
+
+.eagle-document-surface .w-md-editor-toolbar-divider {
+  background: var(--document-border) !important;
+}
+
+.eagle-document-surface .w-md-editor-text,
+.eagle-document-surface .w-md-editor-text-pre,
+.eagle-document-surface .w-md-editor-text-input,
+.eagle-document-surface .w-md-editor-text-pre > code {
+  font-family: var(--document-editor-font-family, "SF Pro Text", -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft Yahei", "Segoe UI", sans-serif) !important;
+  font-size: 14px !important;
+  line-height: 22px !important;
+  letter-spacing: 0 !important;
+  font-variant-ligatures: common-ligatures !important;
+  tab-size: 4 !important;
+}
+
+.eagle-document-surface .w-md-editor-text {
+  padding: 16px 18px !important;
+}
+
+.eagle-document-surface .w-md-editor-text-input {
+  padding: inherit !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.eagle-document-surface .w-md-editor-text-pre,
+.eagle-document-surface .w-md-editor-text-pre > code {
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.eagle-document-surface .w-md-editor-text-input {
+  color: var(--document-text) !important;
+  caret-color: var(--color-primary) !important;
+}
+
+.eagle-document-surface .w-md-editor-text-input::selection,
+.eagle-document-surface .w-md-editor-text-input::-moz-selection {
+  background: color-mix(in srgb, var(--color-primary) 26%, transparent) !important;
+}
+
+.eagle-document-surface .markdown-preview-shell,
+.eagle-document-surface .text-document-preview-shell {
+  background: var(--document-shell-bg) !important;
+}
+
+.eagle-document-surface .wmde-markdown {
+  --color-canvas-default: transparent !important;
+  --color-fg-default: var(--document-text) !important;
+  --color-accent-fg: var(--color-primary) !important;
+  --color-border-default: var(--document-border) !important;
+  --color-neutral-muted: var(--document-border) !important;
+  max-width: 920px !important;
+  color: var(--document-text) !important;
+  background: none !important;
+  font-size: 14px !important;
+  line-height: 1.8 !important;
+  letter-spacing: 0 !important;
+  padding: 20px 24px 28px !important;
+}
+
+.eagle-document-surface .wmde-markdown h1,
+.eagle-document-surface .wmde-markdown h2,
+.eagle-document-surface .wmde-markdown h3,
+.eagle-document-surface .wmde-markdown h4 {
+  color: var(--document-heading) !important;
+  letter-spacing: 0 !important;
+  border-bottom-color: var(--document-border) !important;
+}
+
+.eagle-document-surface .wmde-markdown h1 {
+  font-size: 22px !important;
+}
+
+.eagle-document-surface .wmde-markdown h2 {
+  font-size: 18px !important;
+}
+
+.eagle-document-surface .wmde-markdown h3 {
+  font-size: 16px !important;
+}
+
+.eagle-document-surface .wmde-markdown h4 {
+  font-size: 14px !important;
+}
+
+.eagle-document-surface .wmde-markdown a {
+  color: var(--color-primary) !important;
+  text-decoration: none;
+}
+
+.eagle-document-surface .wmde-markdown a:hover {
+  text-decoration: underline;
+}
+
+.eagle-document-surface .wmde-markdown blockquote {
+  color: var(--document-muted) !important;
+  background: var(--document-blockquote-bg) !important;
+  border-left: 3px solid var(--color-primary) !important;
+  border-radius: 0 !important;
+  padding: 0.65rem 1rem !important;
+}
+
+.eagle-document-surface .wmde-markdown pre {
+  border: 1px solid var(--document-border) !important;
+  background: var(--document-code-bg) !important;
+  border-radius: 6px !important;
+}
+
+.eagle-document-surface .wmde-markdown pre > code.code-highlight {
+  display: block;
+  overflow-x: auto;
+}
+
+.eagle-document-surface .wmde-markdown .code-line {
+  display: block;
+  min-height: 1.45em;
+  padding-left: 1rem;
+  padding-right: 2.5rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  border-left: 3px solid transparent;
+  white-space: pre;
+}
+
+.eagle-document-surface .wmde-markdown .code-line.line-number::before {
+  min-width: 1.25rem;
+  margin-right: 0.75rem;
+  margin-left: -0.5rem;
+  color: var(--document-muted);
+  user-select: none;
+}
+
+.eagle-document-surface .wmde-markdown .highlight-line {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent) !important;
+  border-left-color: var(--color-primary);
+}
+
+.eagle-document-surface .wmde-markdown pre .copied {
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--document-border);
+  border-radius: 9999px;
+  background: var(--document-shell-bg);
+  color: var(--document-muted);
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 120ms ease, transform 120ms ease, background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.eagle-document-surface .wmde-markdown pre:hover .copied,
+.eagle-document-surface .wmde-markdown pre .copied:focus-visible {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+}
+
+.eagle-document-surface .wmde-markdown pre .copied:hover {
+  border-color: var(--document-border);
+  background: var(--document-toolbar-bg);
+  color: var(--document-heading);
+}
+
+.eagle-document-surface .wmde-markdown pre .copied.active,
+.eagle-document-surface .wmde-markdown pre .copied:active {
+  border-color: color-mix(in srgb, var(--color-primary) 32%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+}
+
+.eagle-document-surface .wmde-markdown code {
+  font-family: var(--font-family-mono, "SF Mono", "Fira Mono", "Roboto Mono", "Consolas", monospace) !important;
+}
+
+.eagle-document-surface .wmde-markdown table {
+  border: 1px solid var(--document-border) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.eagle-document-surface .wmde-markdown table th,
+.eagle-document-surface .wmde-markdown table td {
+  border-color: var(--document-border) !important;
+}
+
+.eagle-document-surface .wmde-markdown table th {
+  background: var(--document-toolbar-bg) !important;
+}
+
+.eagle-document-surface .wmde-markdown hr {
+  border-color: var(--document-border) !important;
+}
+
+.eagle-document-surface .text-doc-textarea {
+  color: var(--document-text) !important;
+  caret-color: var(--color-primary) !important;
+}
+
+.eagle-document-surface .text-doc-textarea::selection {
+  background: color-mix(in srgb, var(--color-primary) 26%, transparent) !important;
+}
+
+.eagle-document-surface .text-doc-pre {
+  color: var(--document-text) !important;
+}
+
+.eagle-document-surface .text-doc-table {
+  border-color: var(--document-border) !important;
+  background: var(--document-table-bg) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+.eagle-document-surface .text-doc-table td {
+  border-color: var(--document-border) !important;
+  color: var(--document-text) !important;
+  background: var(--document-shell-bg) !important;
+}
+
+.eagle-document-surface .text-doc-table tr:first-child td {
+  color: var(--document-heading) !important;
+  background: var(--document-toolbar-bg) !important;
+}
+
+.eagle-document-surface ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.eagle-document-surface ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+
+.eagle-document-surface ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html[data-eagle-theme="light"] .eagle-document-surface ::-webkit-scrollbar-thumb,
+html[data-eagle-theme="lightgray"] .eagle-document-surface ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.24);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+html[data-eagle-theme="light"] .eagle-document-surface ::-webkit-scrollbar-thumb:hover,
+html[data-eagle-theme="lightgray"] .eagle-document-surface ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.36);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}

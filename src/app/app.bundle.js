@@ -25999,7 +25999,7 @@ EagleApp.controller('EagleController', ['$rootScope', '$scope', '$http', '$timeo
 
             function shouldIgnoreShortcut(originalClick) {
                 return async function (menuItem, browserWindow, event) {
-                    if (event.triggeredByAccelerator) {
+                    if (event && event.triggeredByAccelerator) {
                         if (!browserWindow || !browserWindow.webContents) {
                             // 沒有視窗或 webContents，直接執行
                             return originalClick(menuItem, browserWindow, event);

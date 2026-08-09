@@ -451,6 +451,8 @@
       ids: ids.join(','),
       chrome: 'external',
     });
+    const eagleTheme = document.body.getAttribute('theme') || 'dark';
+    query.set('theme', eagleTheme);
     state.itemId = item.id;
     state.iframe.src = `${viewerBaseUrl()}?${query.toString()}`;
     applyViewerMode(mode);
@@ -1280,6 +1282,22 @@
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
       items.forEach((item) => analyzeItemPalette(item, { force: true }));
+      return;
+    }
+    if (channel === 'open.preferences') {
+      if (nativeRequire) {
+        try {
+          nativeRequire('electron').ipcRenderer.send('open.preferences', params || {});
+          return;
+        } catch (err) {
+          console.warn('[eagle-shim] native preferences IPC unavailable, opening directly', err);
+        }
+      }
+      const query = new URLSearchParams();
+      if (params && params.panel) query.set('panel', String(params.panel));
+      if (params && params.keyword) query.set('keyword', String(params.keyword));
+      const search = query.toString();
+      window.open(`/src/app/preferences.html${search ? `?${search}` : ''}`, '_blank');
       return;
     }
     if (desktopApi && desktopApi.library && desktopSendChannels.has(channel)) {

@@ -6,6 +6,7 @@ import DocumentViewerApp from './DocumentViewerApp'
 import './styles/orcabox-compiled-tailwind.css'
 import '@uiw/react-md-editor/markdown-editor.css'
 import '@uiw/react-markdown-preview/markdown.css'
+import './styles/eagle-document-theme.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {

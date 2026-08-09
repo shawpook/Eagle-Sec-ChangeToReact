@@ -312,7 +312,7 @@ function StageButton({
       title={title}
       disabled={disabled}
       className={cn(
-        'ui-lift inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] text-[color:var(--document-muted)] backdrop-blur-md transition hover:border-primary/30 hover:bg-primary/10 hover:text-[color:var(--document-heading)] disabled:cursor-not-allowed disabled:opacity-35',
+        'eagle-stage-button ui-lift inline-flex h-8 w-8 items-center justify-center rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] text-[color:var(--document-muted)] backdrop-blur-md transition hover:border-primary/30 hover:bg-primary/10 hover:text-[color:var(--document-heading)] disabled:cursor-not-allowed disabled:opacity-35',
       )}
     >
       {children}

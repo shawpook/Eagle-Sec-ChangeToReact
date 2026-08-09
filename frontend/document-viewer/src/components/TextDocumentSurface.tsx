@@ -1,7 +1,33 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import MDEditor from '@uiw/react-md-editor'
+import MDEditor, { commands as mdCommands, type ICommand } from '@uiw/react-md-editor'
 import remarkGfm from 'remark-gfm'
-import { AlertTriangle, CheckCircle2, Eye, LoaderCircle, Moon, PencilLine, SplitSquareVertical, Sun, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  Bold,
+  CheckCircle2,
+  CircleHelp,
+  Code,
+  Eye,
+  Heading,
+  Image,
+  Italic,
+  Link,
+  List,
+  ListChecks,
+  ListOrdered,
+  LoaderCircle,
+  MessageSquare,
+  Minus,
+  Moon,
+  PencilLine,
+  Quote,
+  SplitSquareVertical,
+  SquareCode,
+  Strikethrough,
+  Sun,
+  Table,
+  X,
+} from 'lucide-react'
 import type { Asset, DocumentEditorColorMode, DocumentFontPreset } from '../shared/types'
 import { isMarkdownDocumentExtension, isTextEditableDocumentExtension } from '../shared/asset-formats'
 import { cn } from '../lib/utils'
@@ -21,7 +47,57 @@ const DOCUMENT_EDITOR_COLOR_MODE_STORAGE_KEY = 'eagle.document-editor-color-mode
 
 const MARKDOWN_PREVIEW_OPTIONS = {
   remarkPlugins: [remarkGfm],
+  disableCopy: false,
+  pluginsFilter: (type: 'rehype' | 'remark', plugins: any[]) => (
+    type === 'rehype'
+      ? plugins.map((plugin) => {
+          if (!Array.isArray(plugin)) return plugin
+          const [fn, options] = plugin as [unknown, Record<string, unknown> | undefined]
+          if (options && typeof options === 'object' && 'ignoreMissing' in options) {
+            return [fn, { ...options, showLineNumbers: true }] as typeof plugin
+          }
+          return plugin
+        })
+      : plugins
+  ),
 }
+
+const MARKDOWN_TOOLBAR_COMMANDS: ICommand[] = [
+  { ...mdCommands.bold, icon: <Bold className="h-3.5 w-3.5" /> },
+  { ...mdCommands.italic, icon: <Italic className="h-3.5 w-3.5" /> },
+  { ...mdCommands.strikethrough, icon: <Strikethrough className="h-3.5 w-3.5" /> },
+  { ...mdCommands.hr, icon: <Minus className="h-3.5 w-3.5" /> },
+  mdCommands.group(
+    [
+      mdCommands.title1,
+      mdCommands.title2,
+      mdCommands.title3,
+      mdCommands.title4,
+      mdCommands.title5,
+      mdCommands.title6,
+    ],
+    {
+      name: 'title',
+      groupName: 'title',
+      buttonProps: { 'aria-label': 'Insert title', title: 'Insert title' },
+      icon: <Heading className="h-3.5 w-3.5" />,
+    },
+  ),
+  mdCommands.divider,
+  { ...mdCommands.link, icon: <Link className="h-3.5 w-3.5" /> },
+  { ...mdCommands.quote, icon: <Quote className="h-3.5 w-3.5" /> },
+  { ...mdCommands.code, icon: <Code className="h-3.5 w-3.5" /> },
+  { ...mdCommands.codeBlock, icon: <SquareCode className="h-3.5 w-3.5" /> },
+  { ...mdCommands.comment, icon: <MessageSquare className="h-3.5 w-3.5" /> },
+  { ...mdCommands.image, icon: <Image className="h-3.5 w-3.5" /> },
+  { ...mdCommands.table, icon: <Table className="h-3.5 w-3.5" /> },
+  mdCommands.divider,
+  { ...mdCommands.unorderedListCommand, icon: <List className="h-3.5 w-3.5" /> },
+  { ...mdCommands.orderedListCommand, icon: <ListOrdered className="h-3.5 w-3.5" /> },
+  { ...mdCommands.checkedListCommand, icon: <ListChecks className="h-3.5 w-3.5" /> },
+  mdCommands.divider,
+  { ...mdCommands.help, icon: <CircleHelp className="h-3.5 w-3.5" /> },
+]
 
 const DOCUMENT_FONT_STACKS: Record<DocumentFontPreset, string> = {
   pingfang: "'PingFang SC', 'PingFang TC', 'Hiragino Sans GB', 'Noto Sans CJK SC', 'Microsoft YaHei', 'Source Han Sans SC', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif",
@@ -300,9 +376,9 @@ export default function TextDocumentSurface({
       data-color-mode={editorColorMode}
       data-document-color-mode={editorColorMode}
       style={documentFontStyle}
-      className={cn('text-document-surface flex h-full min-h-0 flex-col overflow-hidden bg-[color:var(--document-surface-bg)]', className)}
+      className={cn('eagle-document-surface text-document-surface flex h-full min-h-0 flex-col overflow-hidden bg-[color:var(--document-surface-bg)]', className)}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-[color:var(--document-border)] bg-[color:var(--document-header-bg)] px-4 py-2.5">
+      <div className="eagle-document-header flex items-center justify-between gap-3 border-b border-[color:var(--document-border)] bg-[color:var(--document-header-bg)] px-4 py-2.5">
         <div className="min-w-0">
           <div className="truncate text-[13px] font-semibold text-[color:var(--document-heading)]">{asset.name}</div>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-[color:var(--document-muted)]">
@@ -345,7 +421,7 @@ export default function TextDocumentSurface({
             value={documentFontPreset}
             onChange={(event) => handleDocumentFontChange(event.currentTarget.value as DocumentFontPreset)}
             title={locale === 'zh' ? '文档字体' : 'Document font'}
-            className="h-8 rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] px-3 text-[11px] text-[color:var(--document-text)] outline-none transition hover:border-primary/30 focus:border-primary/40"
+            className="eagle-document-select h-8 rounded-full border border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] px-3 text-[11px] text-[color:var(--document-text)] outline-none transition hover:border-primary/30 focus:border-primary/40"
           >
             {documentFontOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -430,11 +506,13 @@ function MarkdownBody({
       <MDEditor
         value={value}
         onChange={(nextValue) => onChange(nextValue ?? '')}
+        commands={MARKDOWN_TOOLBAR_COMMANDS}
         preview={previewMode}
         previewOptions={MARKDOWN_PREVIEW_OPTIONS}
+        extraCommands={[]}
         visibleDragbar={false}
         height="100%"
-        className="markdown-editor-shell h-full"
+        className="eagle-md-editor markdown-editor-shell h-full"
         textareaProps={{ placeholder: 'Write Markdown here…' }}
         data-color-mode={editorColorMode}
       />
@@ -442,11 +520,11 @@ function MarkdownBody({
   }
 
   return (
-    <div className="markdown-preview-shell allow-text-selection h-full overflow-auto bg-[color:var(--document-shell-bg)] px-5 py-4">
+    <div className="eagle-markdown-preview markdown-preview-shell allow-text-selection h-full overflow-auto bg-[color:var(--document-shell-bg)] px-5 py-4">
       <MDEditor.Markdown
         source={content}
+        {...MARKDOWN_PREVIEW_OPTIONS}
         style={{ whiteSpace: 'pre-wrap', backgroundColor: 'transparent', color: 'var(--document-text)' }}
-        remarkPlugins={[remarkGfm]}
       />
     </div>
   )
@@ -557,7 +635,7 @@ function ModeButton({
       title={title}
       onClick={onClick}
       className={cn(
-        'inline-flex h-8 w-8 items-center justify-center rounded-full border text-[color:var(--document-muted)] transition',
+        'eagle-document-button inline-flex h-8 w-8 items-center justify-center rounded-full border text-[color:var(--document-muted)] transition',
         active
           ? 'border-primary/40 bg-primary/12 text-primary'
           : 'border-[color:var(--document-border)] bg-[color:var(--document-shell-bg)] hover:border-primary/30 hover:bg-primary/10 hover:text-[color:var(--document-heading)]',

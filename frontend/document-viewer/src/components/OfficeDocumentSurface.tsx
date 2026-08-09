@@ -40,7 +40,7 @@ interface OfficeDocumentSurfaceProps {
 
 type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
 type OfficeWorkspaceMode = 'preview' | 'edit'
-type OfficeSurfaceThemeId = 'paper' | 'ivory' | 'mint' | 'graphite'
+type OfficeSurfaceThemeId = 'paper' | 'ivory' | 'mint' | 'graphite' | 'eagle-dark' | 'eagle-light'
 
 const OFFICE_SURFACE_THEMES: Record<OfficeSurfaceThemeId, {
   swatch: string
@@ -111,6 +111,34 @@ const OFFICE_SURFACE_THEMES: Record<OfficeSurfaceThemeId, {
     muted: '#93a4bb',
     accent: '#6ca2ff',
     selectionBg: 'rgba(108, 162, 255, 0.34)',
+  },
+  'eagle-dark': {
+    swatch: 'linear-gradient(135deg, #202225, #18191c)',
+    surfaceBg: '#18191c',
+    headerBg: '#202225',
+    shellBg: '#242629',
+    toolbarBg: '#2c2f32f2',
+    mutedPanelBg: '#2c2f32',
+    border: 'rgba(255, 255, 255, 0.14)',
+    text: '#f2f3f5',
+    heading: '#ffffff',
+    muted: '#a6adb4',
+    accent: '#3297ff',
+    selectionBg: 'rgba(50, 151, 255, 0.26)',
+  },
+  'eagle-light': {
+    swatch: 'linear-gradient(135deg, #ffffff, #eef0f3)',
+    surfaceBg: '#e3e4e6',
+    headerBg: '#f3f4f6',
+    shellBg: '#ffffff',
+    toolbarBg: '#e9eaecf2',
+    mutedPanelBg: '#f3f4f6',
+    border: '#d2d4d7',
+    text: '#2c2f32',
+    heading: '#18191c',
+    muted: '#73777c',
+    accent: '#0072ef',
+    selectionBg: 'rgba(0, 114, 239, 0.20)',
   },
 }
 
@@ -211,7 +239,8 @@ export default function OfficeDocumentSurface({
 
   const lastSavedSnapshotRef = useRef<string | null>(null)
   const saveStateResetTimerRef = useRef<number | null>(null)
-  const surfaceTheme: OfficeSurfaceThemeId = 'paper'
+  const appTheme = useUIStore((state) => state.theme)
+  const surfaceTheme: OfficeSurfaceThemeId = appTheme === 'light' ? 'eagle-light' : 'eagle-dark'
 
   const surfaceStyle = useMemo<CSSProperties>(() => {
     const theme = OFFICE_SURFACE_THEMES[surfaceTheme]
@@ -389,7 +418,7 @@ export default function OfficeDocumentSurface({
 
   return (
     <div
-      className={cn('office-document-surface flex h-full min-h-0 flex-col overflow-hidden', className)}
+      className={cn('eagle-document-surface office-document-surface flex h-full min-h-0 flex-col overflow-hidden', className)}
       style={surfaceStyle}
     >
       <style>{DOCX_HTML_FALLBACK_STYLES}</style>
@@ -455,7 +484,7 @@ function CompactOfficeDocumentPreview({
 
   return (
     <div
-      className={cn('office-document-surface relative h-full min-h-0 overflow-hidden', className)}
+      className={cn('eagle-document-surface office-document-surface relative h-full min-h-0 overflow-hidden', className)}
       style={style}
     >
       <style>{DOCX_HTML_FALLBACK_STYLES}</style>
@@ -1217,7 +1246,7 @@ function EditableParagraph({
       )}
       style={{
         borderColor: 'var(--document-border)',
-        background: level > 0 ? 'rgba(59, 130, 246, 0.05)' : 'transparent',
+        background: level > 0 ? 'color-mix(in srgb, var(--document-accent) 6%, transparent)' : 'transparent',
         color: 'var(--document-text)',
       }}
       placeholder={placeholder}
@@ -1250,7 +1279,7 @@ function EditorSidebar({
             onClick={item.onClick}
             className="flex w-full items-start justify-between gap-2 rounded-md px-3 py-2 text-left transition"
             style={item.active
-              ? { background: 'rgba(59, 130, 246, 0.10)' }
+              ? { background: 'color-mix(in srgb, var(--document-accent) 10%, transparent)' }
               : undefined}
           >
             <span className="min-w-0 flex-1 truncate text-[12px]" style={{ color: 'var(--document-text)', paddingLeft: `${(item.depth ?? 0) * 10}px` }}>
@@ -1326,7 +1355,7 @@ function ToolbarButton({
       disabled={disabled}
       className="inline-flex h-9 w-9 items-center justify-center rounded-lg border transition disabled:cursor-not-allowed disabled:opacity-45"
       style={primary
-        ? { borderColor: 'rgba(59, 130, 246, 0.28)', background: 'rgba(59, 130, 246, 0.14)', color: '#60a5fa' }
+        ? { borderColor: 'color-mix(in srgb, var(--document-accent) 28%, transparent)', background: 'color-mix(in srgb, var(--document-accent) 14%, transparent)', color: 'var(--document-accent)' }
         : { borderColor: 'var(--document-border)', background: 'var(--document-shell-bg)', color: 'var(--document-muted)' }}
     >
       {children}

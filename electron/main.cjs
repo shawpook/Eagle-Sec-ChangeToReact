@@ -447,6 +447,42 @@ function originalPreviewUrl(itemId) {
   return target.toString();
 }
 
+let preferencesWindow = null;
+
+function preferencesUrl(params = {}) {
+  const target = new URL(previewUrl);
+  target.pathname = '/src/app/preferences.html';
+  const query = new URLSearchParams();
+  if (params.panel) query.set('panel', String(params.panel));
+  if (params.keyword) query.set('keyword', String(params.keyword));
+  const search = query.toString();
+  target.search = search ? `?${search}` : '';
+  return target.toString();
+}
+
+function openPreferencesWindow(params = {}) {
+  if (preferencesWindow && !preferencesWindow.isDestroyed()) {
+    const nextUrl = preferencesUrl(params);
+    if (preferencesWindow.webContents.getURL() !== nextUrl) {
+      preferencesWindow.loadURL(nextUrl);
+    }
+    preferencesWindow.focus();
+    return { opened: true, windowId: preferencesWindow.id, focused: true };
+  }
+
+  const win = createWindow({
+    url: preferencesUrl(params),
+    width: Number(params.width) || 980,
+    height: Number(params.height) || 720,
+    frame: false,
+  });
+  preferencesWindow = win;
+  win.on('closed', () => {
+    if (preferencesWindow === win) preferencesWindow = null;
+  });
+  return { opened: true, windowId: win.id, focused: false };
+}
+
 async function openOriginalPreview(payload = {}) {
   const items = Array.isArray(payload.images) ? payload.images.filter((item) => item && item.id) : [];
   if (items.length === 0) throw new Error('Preview requires at least one item');
@@ -684,6 +720,7 @@ function registerIpc() {
     createWindow({ url, width: payload.width || 1100, height: payload.height || 760, frame: false });
     return true;
   });
+  ipcMain.on('open.preferences', (event, params = {}) => openPreferencesWindow(params));
   ipcMain.handle('preview:open-original', (event, payload = {}) => openOriginalPreview(payload));
 
   ipcMain.handle('item:open-default', (event, payload = {}) => openItemDefault(payload.id));

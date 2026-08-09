@@ -30,6 +30,7 @@ function postParent(message: ParentMessage) {
 
 export default function DocumentViewerApp() {
   const params = useMemo(() => new URLSearchParams(window.location.search), [])
+  const initialEagleTheme = params.get('theme') || 'dark'
   const initialAssetId = params.get('id') || ''
   const initialMode = (params.get('mode') === 'fullscreen' ? 'fullscreen' : 'workspace') as PreviewMode
   const initialVisibleAssetIds = useMemo(
@@ -42,6 +43,13 @@ export default function DocumentViewerApp() {
   // viewer hides its generic stage actions and reports state back instead.
   const externalChrome = params.get('chrome') === 'external'
 
+  // Eagle's original shell exposes the active theme on `body[theme=...]`.
+  // Mirror it into the viewer so the document workspace can use the same
+  // dark/light family without coupling to OrcaBox's default palette.
+  const mappedEagleTheme: 'light' | 'dark' = ['light', 'lightgray'].includes(initialEagleTheme) ? 'light' : 'dark'
+  document.documentElement.dataset.eagleTheme = initialEagleTheme
+  document.documentElement.dataset.theme = mappedEagleTheme
+
   const previewAssetId = useUIStore((s) => s.previewAssetId)
   const previewMode = useUIStore((s) => s.previewMode)
   const setLibraryPath = useLibraryStore((s) => s.setLibraryPath)
@@ -50,6 +58,7 @@ export default function DocumentViewerApp() {
   useEffect(() => {
     setLibraryPath(initialLibraryPath)
     useUIStore.getState().setExternalChrome(externalChrome)
+    useUIStore.getState().setTheme(mappedEagleTheme)
     useUIStore.getState().setVisibleAssetIds(initialVisibleAssetIds)
     useUIStore.getState().openPreview(
       initialAssetId,

@@ -2407,7 +2407,17 @@
     const merged = mergePreferenceValue(currentPreferences(), value || {});
     const next = replaceActivePreferences(merged);
     writeSetting(preferencesSettingKey, next);
+    syncNativePreferences(next);
     return next;
+  }
+
+  function syncNativePreferences(preferences) {
+    if (!nativeRequire) return;
+    try {
+      nativeRequire('electron').ipcRenderer.send('preferences:update', preferences);
+    } catch (err) {
+      // The native preferences bridge is optional in browser preview mode.
+    }
   }
 
   function applyPreferencesToCurrentDocument() {
@@ -2476,7 +2486,10 @@
     },
     setSync(key, value) {
       writeSetting(key, value);
-      if (key === preferencesSettingKey) applyPreferencesToCurrentDocument();
+      if (key === preferencesSettingKey) {
+        applyPreferencesToCurrentDocument();
+        syncNativePreferences(currentPreferences());
+      }
     },
     get(key) { return Promise.resolve(this.getSync(key)); },
     set(key, value) {
@@ -2794,6 +2807,9 @@
   window.__eagleIpc = ipcRenderer;
   window.__eagleSyncText = syncText;
   window.electronSettings = electronSettings;
+  if (nativeRequire) {
+    setTimeout(() => syncNativePreferences(currentPreferences()), 250);
+  }
   window.pluginModule = pluginModule;
   window.tinyPinyin = bareModules['tiny-pinyin'];
   window.pinyinlite = bareModules['pinyinlite'];

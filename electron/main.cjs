@@ -21,10 +21,85 @@ const videoDetailSmokeMode = process.argv.includes('--smoke-video-detail');
 const regressionHostMode = process.argv.includes('--regression-host');
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
+const preferencesStateFile = () => path.join(app.getPath('userData'), 'eagle-reverse-preferences.json');
 const allowedRoots = new Set([mockLibraryRoot, path.resolve(__dirname, '..', '..')]);
 const exportJobs = new Map();
 const activeExportSenders = new Set();
 const shellCalls = [];
+const defaultPreferencesState = {
+  general: { enableVibrancy: 'true', zoom: '100', language: 'zh_CN' },
+  theme: { name: 'DARK', css: 'dark' },
+};
+let preferencesState = null;
+
+function readPreferencesState() {
+  try {
+    return JSON.parse(fs.readFileSync(preferencesStateFile(), 'utf8'));
+  } catch (err) {
+    return {};
+  }
+}
+
+function currentPreferencesState() {
+  if (!preferencesState) {
+    const saved = readPreferencesState();
+    preferencesState = {
+      ...defaultPreferencesState,
+      general: { ...defaultPreferencesState.general, ...(saved.general || {}) },
+      theme: { ...defaultPreferencesState.theme, ...(saved.theme || {}) },
+    };
+  }
+  return preferencesState;
+}
+
+function writePreferencesState(next) {
+  const merged = {
+    ...defaultPreferencesState,
+    general: { ...defaultPreferencesState.general, ...((next && next.general) || {}) },
+    theme: { ...defaultPreferencesState.theme, ...((next && next.theme) || {}) },
+  };
+  preferencesState = merged;
+  try {
+    fs.mkdirSync(path.dirname(preferencesStateFile()), { recursive: true });
+    fs.writeFileSync(preferencesStateFile(), JSON.stringify(merged, null, 2), 'utf8');
+  } catch (err) {
+    // Persistence is best-effort; in-memory state still applies for this session.
+  }
+  return merged;
+}
+
+function vibrancyTypeForTheme(name) {
+  const map = {
+    LIGHT: 'light',
+    LIGHTGRAY: 'light',
+    GRAY: 'dark',
+    DARK: 'dark',
+    BLUE: 'dark',
+    PURPLE: 'dark',
+  };
+  return map[name] || 'dark';
+}
+
+function applyWindowTransparencyEffect(win) {
+  if (!win || win.isDestroyed()) return;
+  const preferences = currentPreferencesState();
+  const enabled = preferences.general.enableVibrancy !== 'false';
+  if (process.platform === 'darwin') {
+    try {
+      win.setVibrancy(enabled ? vibrancyTypeForTheme(preferences.theme.name) : null);
+    } catch (err) {
+      // Vibrancy is optional on unsupported macOS builds.
+    }
+    return;
+  }
+  if (process.platform === 'win32') {
+    try {
+      win.setOpacity(enabled ? 0.95 : 1);
+    } catch (err) {
+      // Window opacity is best-effort.
+    }
+  }
+}
 
 function allowRoot(target) {
   if (target) allowedRoots.add(path.resolve(target));
@@ -528,7 +603,7 @@ async function openOriginalPreview(payload = {}) {
 function createWindow(options = {}) {
   const saved = loadWindowState();
   const url = options.url || previewUrl;
-  const win = new BrowserWindow({
+  const windowOptions = {
     width: options.width || saved.width || 1280,
     height: options.height || saved.height || 800,
     x: options.x || saved.x,
@@ -545,7 +620,15 @@ function createWindow(options = {}) {
       sandbox: false,
       backgroundThrottling: false,
     },
-  });
+  };
+  if (process.platform === 'darwin' && currentPreferencesState().general.enableVibrancy !== 'false') {
+    windowOptions.vibrancy = vibrancyTypeForTheme(currentPreferencesState().theme.name);
+    windowOptions.transparent = true;
+    windowOptions.backgroundColor = '#00000000';
+  }
+
+  const win = new BrowserWindow(windowOptions);
+  applyWindowTransparencyEffect(win);
 
   if (typeof options.onDidFinishLoad === 'function') {
     win.webContents.once('did-finish-load', () => options.onDidFinishLoad(win));
@@ -721,6 +804,13 @@ function registerIpc() {
     return true;
   });
   ipcMain.on('open.preferences', (event, params = {}) => openPreferencesWindow(params));
+  ipcMain.on('preferences:update', (event, next) => {
+    const merged = writePreferencesState(next || {});
+    for (const win of BrowserWindow.getAllWindows()) {
+      applyWindowTransparencyEffect(win);
+    }
+    return merged;
+  });
   ipcMain.handle('preview:open-original', (event, payload = {}) => openOriginalPreview(payload));
 
   ipcMain.handle('item:open-default', (event, payload = {}) => openItemDefault(payload.id));

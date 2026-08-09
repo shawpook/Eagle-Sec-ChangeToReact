@@ -1284,6 +1284,46 @@
       items.forEach((item) => analyzeItemPalette(item, { force: true }));
       return;
     }
+    if (channel === 'chnage-preferences' && params && typeof params === 'object') {
+      savePreferences(params);
+      applyPreferencesToCurrentDocument();
+      return;
+    }
+    if (channel === 'change-theme' && params && typeof params === 'object') {
+      savePreferences({ theme: params });
+      applyPreferencesToCurrentDocument();
+      return;
+    }
+    if (channel === 'change-zoom' && params) {
+      savePreferences({ general: { zoom: String(params) } });
+      applyPreferencesToCurrentDocument();
+      return;
+    }
+    if (channel === 'chnage-shortcut' && params && typeof params === 'object') {
+      savePreferences({
+        shortcuts: {
+          keybinds: {
+            'global.capture.area': params.screenCaptureShortcut || '',
+            'global.capture.window': params.windowCaptureShortcut || '',
+          },
+        },
+      });
+      applyPreferencesToCurrentDocument();
+      return;
+    }
+    if (channel === 'chnage-scrollBehavior' && params) {
+      savePreferences({ habits: { scrollBehavior: String(params) } });
+      applyPreferencesToCurrentDocument();
+      return;
+    }
+    if (channel === 'lock-now') {
+      broadcastIpc('lock-now');
+      return;
+    }
+    if (channel === 'update-preferences') {
+      applyPreferencesToCurrentDocument();
+      return;
+    }
     if (channel === 'open.preferences') {
       if (nativeRequire) {
         try {
@@ -2036,8 +2076,35 @@
   const electron = {
     ipcRenderer,
     webFrame: {
-      setZoomFactor() {},
-      getZoomFactor: () => 1,
+      setZoomFactor(factor) {
+        if (nativeRequire) {
+          try {
+            const nativeWebFrame = nativeRequire('electron').webFrame;
+            if (nativeWebFrame && typeof nativeWebFrame.setZoomFactor === 'function') {
+              nativeWebFrame.setZoomFactor(Number(factor) || 1);
+              return;
+            }
+          } catch (err) {
+            // Fall back to the browser shim below.
+          }
+        }
+        const zoom = String(Number(factor) || 1);
+        if (document.body) document.body.style.zoom = zoom;
+        else if (document.documentElement) document.documentElement.style.zoom = zoom;
+      },
+      getZoomFactor() {
+        if (nativeRequire) {
+          try {
+            const nativeWebFrame = nativeRequire('electron').webFrame;
+            if (nativeWebFrame && typeof nativeWebFrame.getZoomFactor === 'function') {
+              return nativeWebFrame.getZoomFactor();
+            }
+          } catch (err) {
+            // Fall through to the browser shim.
+          }
+        }
+        return Number((document.body && document.body.style.zoom) || (document.documentElement && document.documentElement.style.zoom)) || 1;
+      },
       getResourceUsage: () => ({ images: { count: 0, liveSize: 0 } }),
     },
     clipboard: {
@@ -2268,6 +2335,8 @@
 
   const settingsMemory = {};
   const settingsPrefix = 'eagle.reverse.settings.';
+  const preferencesSettingKey = 'preferences';
+  const broadcastSettingKey = 'broadcast';
   function readSetting(key) {
     if (Object.prototype.hasOwnProperty.call(settingsMemory, key)) return settingsMemory[key];
     try {
@@ -2289,15 +2358,112 @@
     }
   }
 
+  function cloneValue(value) {
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function mergePreferenceValue(target, source) {
+    if (source === undefined || source === null) return cloneValue(target);
+    if (Array.isArray(target) || Array.isArray(source)) return cloneValue(source);
+    if (typeof target !== 'object' || typeof source !== 'object') return cloneValue(source);
+    const result = cloneValue(target) || {};
+    for (const key of Object.keys(source)) {
+      result[key] = mergePreferenceValue(result[key], source[key]);
+    }
+    return result;
+  }
+
+  function defaultPreferences() {
+    const defaults = cloneValue(loadJsModule('/src/app/js/default-preferences.js')) || {};
+    defaults.general = { ...(defaults.general || {}), language: 'zh_CN' };
+    defaults.theme = { ...(defaults.theme || {}), name: 'DARK', css: 'dark' };
+    return defaults;
+  }
+
+  let activePreferences = null;
+
+  function replaceActivePreferences(next) {
+    if (!activePreferences) {
+      activePreferences = next;
+      return activePreferences;
+    }
+    Object.keys(activePreferences).forEach((key) => delete activePreferences[key]);
+    Object.assign(activePreferences, next);
+    return activePreferences;
+  }
+
+  function currentPreferences(forceReload) {
+    if (activePreferences && !forceReload) return activePreferences;
+    if (forceReload) delete settingsMemory[preferencesSettingKey];
+    const defaults = defaultPreferences();
+    const saved = readSetting(preferencesSettingKey);
+    return replaceActivePreferences(
+      saved && typeof saved === 'object' ? mergePreferenceValue(defaults, saved) : defaults
+    );
+  }
+
+  function savePreferences(value) {
+    const merged = mergePreferenceValue(currentPreferences(), value || {});
+    const next = replaceActivePreferences(merged);
+    writeSetting(preferencesSettingKey, next);
+    return next;
+  }
+
+  function applyPreferencesToCurrentDocument() {
+    delete settingsMemory[preferencesSettingKey];
+    const preferences = currentPreferences(true);
+    if (window.__eagleMockI18n) window.__eagleMockI18n.reload();
+    mockEmit('update-preferences');
+    if (preferences.theme && preferences.theme.name) mockEmit('change.current.theme', preferences.theme);
+    if (preferences.general && preferences.general.zoom) mockEmit('change.zoom', preferences.general.zoom);
+    if (preferences.general && typeof window.languageBCP !== 'undefined') {
+      window.languageBCP = String(preferences.general.language || 'en').replace('_', '-');
+    }
+    try {
+      if (window.angular && angular.element(document.body).scope) {
+        const scope = angular.element(document.body).scope();
+        if (scope) {
+          scope.preferences = preferences;
+          if (preferences.theme && scope.theme !== undefined) scope.theme = preferences.theme.css || 'gray';
+          if (preferences.general && scope.language !== undefined) scope.language = preferences.general.language || 'en';
+          if (typeof scope.$evalAsync === 'function') scope.$evalAsync();
+        }
+      }
+    } catch (err) {
+      // Angular may not be ready on pages that only use the shim.
+    }
+  }
+
+  function broadcastIpc(channel, params) {
+    mockEmit(channel, params);
+    try {
+      localStorage.setItem(settingsPrefix + broadcastSettingKey, JSON.stringify({ channel, params, at: Date.now() }));
+    } catch (err) {
+      // Cross-window sync is best-effort; the current window already received the event.
+    }
+  }
+
+  function handleSettingsStorage(event) {
+    if (!event || !event.key) return;
+    if (event.key === settingsPrefix + preferencesSettingKey) {
+      applyPreferencesToCurrentDocument();
+      return;
+    }
+    if (event.key === settingsPrefix + broadcastSettingKey) {
+      try {
+        const payload = JSON.parse(event.newValue || 'null');
+        if (payload && payload.channel && Date.now() - payload.at < 5000) {
+          mockEmit(payload.channel, payload.params);
+        }
+      } catch (err) {
+        // Ignore malformed broadcast payloads.
+      }
+    }
+  }
+
   const electronSettings = {
-    getPreferences() {
-      const defaults = loadJsModule('/src/app/js/default-preferences.js') || {};
-      return {
-        ...defaults,
-        general: { ...(defaults.general || {}), language: 'zh_CN' },
-        theme: { ...(defaults.theme || {}), name: 'DARK', css: 'dark' },
-      };
-    },
+    getPreferences: currentPreferences,
     getSync(key) {
       const value = readSetting(key);
       if (value !== undefined) return value;
@@ -2308,23 +2474,34 @@
       }
       return undefined;
     },
-    setSync(key, value) { writeSetting(key, value); },
+    setSync(key, value) {
+      writeSetting(key, value);
+      if (key === preferencesSettingKey) applyPreferencesToCurrentDocument();
+    },
     get(key) { return Promise.resolve(this.getSync(key)); },
-    set(key, value) { writeSetting(key, value); return Promise.resolve(value); },
+    set(key, value) {
+      this.setSync(key, value);
+      return Promise.resolve(value);
+    },
     has: (key) => readSetting(key) !== undefined,
     delete(key) {
       delete settingsMemory[key];
       try { localStorage.removeItem(settingsPrefix + key); } catch (err) {}
+      if (key === preferencesSettingKey) activePreferences = null;
     },
     clear() {
       Object.keys(settingsMemory).forEach((key) => delete settingsMemory[key]);
+      activePreferences = null;
     },
   };
+
+  window.addEventListener('storage', handleSettingsStorage);
 
   class MockI18n {
     constructor() {
       this.locale = 'zh_CN';
       this.translations = this.load(this.locale);
+      window.__eagleMockI18n = this;
       if (Object.keys(this.translations).length === 0) {
         const retry = setInterval(() => {
           const loaded = this.load(this.locale);
@@ -2402,14 +2579,16 @@
     },
     'auto-launch': class AutoLaunchMock {
       constructor() {
-        this._enabled = false;
+        this._enabled = readSetting('autoLaunch') === true;
       }
       enable() {
         this._enabled = true;
+        writeSetting('autoLaunch', true);
         return Promise.resolve();
       }
       disable() {
         this._enabled = false;
+        writeSetting('autoLaunch', false);
         return Promise.resolve();
       }
       isEnabled() {

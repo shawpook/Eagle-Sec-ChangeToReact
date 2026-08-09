@@ -661,21 +661,6 @@
                             <img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-arrow-down.svg">
                         </div>
                         <input id="search" tabindex="-1" maxlength="4096" type="search" selectall class="search" placeholder="{{'toolbar.searchPlaceholder' | i18n}}" ng-model="keyword" ng-keydown="seachKeyup($event)" ng-focus="searchFocus()" ng-blur="searchBlur()" ng-click="searchFocus()">
-                        <!-- Eagle 5.0 -->
-                        <div class="search-by-image icon-btn">
-                            <div class="loader" 
-                                 ng-show="eagle.aiSearch.isInstalled && (eagle.aiSearch.isStarting || eagle.aiSearch.isSyncing)" 
-                                 tippy 
-                                 tippy-placement="bottom" 
-                                 tippy-content="{{eagle.aiSearch.isStarting ? ('aiSearch.statusMsg.starting' | i18n) : ('aiSearch.statusMsg.syncing' | i18n)}}" 
-                                 ng-click="eagle.aiSearch.open()"></div>
-                            <img ng-click="toggleFilterByType('image')" 
-                                 ng-hide="keyword || eagle.aiSearch.isStarting || eagle.aiSearch.isSyncing" 
-                                 ng-src="assets/images/{{theme|themePath}}/icons/ic-search-by-image.svg" 
-                                 tippy 
-                                 tippy-placement="bottom" 
-                                 tippy-content="{{'filter.image>dropTips' | i18n}}">
-                        </div>
                        
                     </div>
 
@@ -734,8 +719,6 @@
                     <input style="height: 1px; width: 1px; position: absolute; visibility: hidden;" id="colors-picker" color-picker hex-color="$body.hexColor" tabindex="-1" type="color" name="favcolor" value="#ff0000" ng-change="filterWithColor(hexToRGB($body.hexColor));" ng-model="$body.hexColor" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 100, 'blur': 0 } }">
                     <div ui-sortable="eagle.filter.toolbarSortableOptions" ng-model="eagle.filter.toolbar" ng-show="eagle.filter.isOpen">
                         <div ng-repeat="item in eagle.filter.toolbar" ng-switch on="item.type" >
-                            <filter-item-image ng-switch-when="image"></filter-item-image>
-                            <filter-item-semantic ng-switch-when="semantic"></filter-item-semantic>
                             <filter-item-color ng-switch-when="color"></filter-item-color>
                             <filter-item-folders ng-switch-when="folders"></filter-item-folders>
                             <filter-item-tags ng-switch-when="tags"></filter-item-tags>

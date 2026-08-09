@@ -20031,7 +20031,6 @@ EagleApp.controller('RootController', function($rootScope, $scope, $filter, $tim
     });
     setTimeout(() => {
         pluginModule.checkAllDependencies();
-        eagle.aiSearch.init();
         eagle.action.init();
         eagle.customExport.init();
         eagle.combineImages.init();
@@ -20714,42 +20713,6 @@ EagleApp.controller('EagleController', ['$rootScope', '$scope', '$http', '$timeo
             }
 
             let items = [
-                // Eagle 5.0
-                // 以圖找圖
-                {
-                    id: "image",
-                    label: i18n.__('filter.image'),
-                    keywords: "image photo reverse 以圖找圖",
-                    icon: 'ic-filter-item-image.svg',
-                    role: "toggle",
-                    pinned: eagle.filter.pinned['image'],
-                    ai: true,
-                    toggle: (pinned) => {
-                        pinFilter('image', pinned);
-                        $scope.$evalAsync();
-                    },
-                    click: () => {
-                        openFilter('image');
-                    }
-                },
-                // 語義搜尋
-                {
-                    id: "semantic",
-                    label: i18n.__('filter.semantic'),
-                    keywords: "semantic search natural language 語義",
-                    icon: 'ic-filter-item-semantic.svg',
-                    role: "toggle",
-                    pinned: eagle.filter.pinned['semantic'],
-                    ai: true,
-                    toggle: (pinned) => {
-                        pinFilter('semantic', pinned);
-                        $scope.$evalAsync();
-                    },
-                    click: () => {
-                        openFilter('semantic');
-                    }
-                },
-                // 顏色
                 {
                     id: "color",
                     label: i18n.__('filter.color'),
@@ -25074,15 +25037,6 @@ EagleApp.controller('EagleController', ['$rootScope', '$scope', '$http', '$timeo
                                         $scope.$evalAsync();
                                     }
                                 },
-                                // Eagle 5.0
-                                {
-                                    label: i18n.__('appmenu.find>filter>semantic'),
-                                    accelerator: preferences.shortcuts.keybinds['find.filter.semantic'],
-                                    click: function () {
-                                        $scope.toggleFilterByType('semantic');
-                                        $scope.$evalAsync();
-                                    }
-                                },
                                 {
                                     label: i18n.__('appmenu.find>filter>bpm'),
                                     accelerator: preferences.shortcuts.keybinds['find.filter.bpm'],
@@ -25112,14 +25066,6 @@ EagleApp.controller('EagleController', ['$rootScope', '$scope', '$http', '$timeo
                                     accelerator: preferences.shortcuts.keybinds['find.filter.import'],
                                     click: function () {
                                         $scope.toggleFilterByType('import');
-                                        $scope.$evalAsync();
-                                    }
-                                },
-                                {
-                                    label: i18n.__('appmenu.find>filter>image'),
-                                    accelerator: preferences.shortcuts.keybinds['find.filter.image'],
-                                    click: function () {
-                                        $scope.toggleFilterByType('image');
                                         $scope.$evalAsync();
                                     }
                                 },

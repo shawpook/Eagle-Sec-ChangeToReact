@@ -479,8 +479,6 @@ PreferenceApp.controller("PreferencesController", function ($scope, $rootScope, 
                 { key: 'find.filter.bpm' },
                 { key: 'find.filter.camera' },
                 { key: 'find.filter.fonts' },
-                { key: 'find.filter.image' },
-                { key: 'find.filter.semantic' },
                 { key: 'find.filter.other' }
             ]
         },
@@ -741,31 +739,6 @@ PreferenceApp.controller("PreferencesController", function ($scope, $rootScope, 
             name: "autoImport",
             "iconPath": "ic-autoimport.svg",
             "i18n": i18n.__("preferencesWindow.sidebar.autoImport")
-        },
-        {
-            type: "separator"
-        },
-        // Eagle 5.0
-        {
-            type: "panel",
-            name: "ai-search",
-            ai: true,
-            "iconPath": "ic-ai-search.svg",
-            "i18n": i18n.__("sidebar.aiSearch")
-        },
-        {
-            type: "panel",
-            name: "ai-sdk",
-            ai: true,
-            "iconPath": "ic-ai-sdk.svg",
-            "i18n": i18n.__("sidebar.aiSdk")
-        },
-        {
-            type: "panel",
-            name: "mcp-server",
-            ai: true,
-            "iconPath": "ic-mcp.svg",
-            "i18n": "Eagle MCP"
         },
         {
             type: "separator"
@@ -1265,99 +1238,11 @@ PreferenceApp.controller("PreferencesController", function ($scope, $rootScope, 
                 } catch (e) {}
             }
         });
-        $scope.mcpPluginInstalled = pluginModule.checkPluginInstalled("mcp-server");
-        $scope.aiSearchPluginInstalled = pluginModule.checkPluginInstalled("ai-search");
-        $scope.aiSdkPluginInstalled = pluginModule.checkPluginInstalled("ai-sdk");
-
-        $scope.mcpPluginDisabled = pluginModule.isPluginDisabled("mcp-server");
-        $scope.aiSearchPluginDisabled = pluginModule.isPluginDisabled("ai-search");
-        $scope.aiSdkPluginDisabled = pluginModule.isPluginDisabled("ai-sdk");
-
         // 初始化過濾後的插件清單
         $scope.filteredInstallPlugins = $scope.installPlugins || [];
     }
 
-    $scope.handleMcpAction = function($event) {
-        $event.preventDefault();
-        if (!$scope.mcpPluginInstalled) {
-            ipcRenderer.send('install-plugin', { pluginId: 'mcp-server' });
-        }
-    };
-
-    $scope.getMcpIframeUrl = function() {
-        var url = 'http://localhost:41596/web-ui?theme=' + $scope.themeAttr() + '&locale=' + (i18n.locale || 'en');
-        return $sce.trustAsResourceUrl(url);
-    };
-
-    $scope.openMcpDocs = function() {
-        const shell = require('electron').shell;
-        shell.openExternal('https://eagle.cool/support/article/eagle-mcp-server');
-    };
-
-    $scope.getAiSearchIframeUrl = function() {
-        var url = 'http://127.0.0.1:38766/?theme=' + $scope.themeAttr() + '&locale=' + (i18n.locale || 'en');
-        return $sce.trustAsResourceUrl(url);
-    };
-
-    $scope.handleAiSearchAction = function($event) {
-        $event.preventDefault();
-        if (!$scope.aiSearchPluginInstalled) {
-            ipcRenderer.send('install-plugin', { pluginId: 'ai-search' });
-        }
-    };
-
-    $scope.openAiSearchDocs = function() {
-        const shell = require('electron').shell;
-        shell.openExternal('https://eagle.cool/support/article/ai-search');
-    };
-
-    $scope.getAiSdkIframeUrl = function() {
-        var url = 'http://localhost:41597/web-ui?theme=' + $scope.themeAttr() + '&locale=' + (i18n.locale || 'en');
-        return $sce.trustAsResourceUrl(url);
-    };
-
-    $scope.handleAiSdkAction = function($event) {
-        $event.preventDefault();
-        if (!$scope.aiSdkPluginInstalled) {
-            ipcRenderer.send('install-plugin', { pluginId: 'ai-sdk' });
-        }
-    };
-
-    $scope.openAiSdkDocs = function() {
-        const shell = require('electron').shell;
-        shell.openExternal('https://eagle.cool/support/article/ai-sdk');
-    };
-
-    $scope.enableServicePlugin = function(pluginId) {
-        ipcRenderer.send('enable-plugin', pluginId);
-    };
-
-    $scope.openPluginDevTools = function(pluginId) {
-        ipcRenderer.send('open-plugin-devtools', pluginId);
-    };
-
     // 即時監聽插件安裝/移除事件，更新偏好設定畫面
-    ipcRenderer.on('plugin-installed', (event, pluginId) => {
-        if (pluginId === 'mcp-server') $scope.mcpPluginInstalled = true;
-        if (pluginId === 'ai-search') $scope.aiSearchPluginInstalled = true;
-        if (pluginId === 'ai-sdk') $scope.aiSdkPluginInstalled = true;
-        $scope.$evalAsync();
-    });
-
-    ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
-        if (pluginId === 'mcp-server') $scope.mcpPluginInstalled = false;
-        if (pluginId === 'ai-search') $scope.aiSearchPluginInstalled = false;
-        if (pluginId === 'ai-sdk') $scope.aiSdkPluginInstalled = false;
-        $scope.$evalAsync();
-    });
-
-    ipcRenderer.on('plugin-enabled', (event, pluginId) => {
-        if (pluginId === 'mcp-server') $scope.mcpPluginDisabled = false;
-        if (pluginId === 'ai-search') $scope.aiSearchPluginDisabled = false;
-        if (pluginId === 'ai-sdk') $scope.aiSdkPluginDisabled = false;
-        $scope.$evalAsync();
-    });
-
     $scope.onPluginShortcutChange = (plugin) => {
         preferences.shortcuts.keybinds[plugin.id] = plugin.formatShortcut;
     };

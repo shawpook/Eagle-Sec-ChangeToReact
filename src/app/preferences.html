@@ -52,7 +52,7 @@
 
     <div class="container">
         <div class="header" style="-webkit-app-region: drag;">
-            <div class="panel-title">{{currentPanel.i18n}} <img ng-if="currentPanel.ai" ng-src="assets/images/{{themeAttr() | themePath}}/icons/context-menu/ic-ai.svg"><span class="devtools-trigger header-devtools" ng-if="(currentPanel.name === 'ai-search' && aiSearchPluginInstalled) || (currentPanel.name === 'ai-sdk' && aiSdkPluginInstalled) || (currentPanel.name === 'mcp-server' && mcpPluginInstalled)" ng-click="openPluginDevTools(currentPanel.name)" style="-webkit-app-region: no-drag;">Debug</span></div>
+            <div class="panel-title">{{currentPanel.i18n}}</div>
             <div class="close" ng-click="cancel()"></div>
         </div>
 
@@ -61,7 +61,7 @@
             <input id="shortcut-input" type="search" placeholder="{{'general.search' | i18n}}" select-all ng-model="shortcutKeyword" ng-change="updateKeybinds()">
         </div>
         
-        <div class="content" ng-switch on="currentPanel.name" ng-class="{'content-fullscreen': (currentPanel.name === 'ai-search' && aiSearchPluginInstalled && !aiSearchPluginDisabled) || (currentPanel.name === 'ai-sdk' && aiSdkPluginInstalled && !aiSdkPluginDisabled) || (currentPanel.name === 'mcp-server' && mcpPluginInstalled && !mcpPluginDisabled)}">
+        <div class="content" ng-switch on="currentPanel.name">
 
             <div ng-if="showSearchEmpty" class="panel-empty">
                 <div class="icon"><img style="width: 400px; height: 144px;" ng-src="assets/images/{{themeAttr() | themePath}}/illustrations/preferences-search-empty.png"></div>
@@ -1169,212 +1169,8 @@
                 </div>
             </div>
 
-            <!-- MCP -->
-            <!-- Eagle 5.0 -->
-            <div class="panel-content" ng-switch-when="mcp-server" ng-switch-when-separator="|">
-                <!-- 未安裝：顯示狀態 + 介紹 -->
-                <div class="panel-block" ng-if="!mcpPluginInstalled" search-show="{{keyword}}" search-keywords="mcp eagle ai agent model context protocol">
-                    <div class="block-content">
-                        <div class="plugin-status-item">
-                            <span class="status-label">{{'preferencesWindow.mcp.enable' | i18n}}</span>
-                            <label class="toggle">
-                                <input type="checkbox" ng-checked="false" ng-click="handleMcpAction($event)" readonly>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="panel-block" ng-if="!mcpPluginInstalled" search-show="{{keyword}}" search-keywords="mcp eagle ai what is introduction">
-                    <div class="block-content">
-                        <div class="plugin-header-item">
-                            <span class="header-title">{{'preferencesWindow.mcp.title' | i18n}}</span>
-                            <div class="action-btn" ng-click="openMcpDocs()">
-                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg" width="16" height="16">
-                                {{'preferencesWindow.mcp.viewDocs' | i18n}}
-                            </div>
-                        </div>
-
-                        <div class="separator"></div>
-
-                        <div class="plugin-intro">
-                            <div class="intro-text">
-                                {{'preferencesWindow.mcp.intro.text' | i18n}}
-                            </div>
-
-                            <div class="intro-list">
-                                <ul>
-                                    <li>{{'preferencesWindow.mcp.intro.item1' | i18n}}</li>
-                                    <li>{{'preferencesWindow.mcp.intro.item2' | i18n}}</li>
-                                    <li>{{'preferencesWindow.mcp.intro.item3' | i18n}}</li>
-                                </ul>
-                            </div>
-
-                            <div class="intro-illustration">
-                                <img src="assets/images/{{themeAttr() | themePath}}/illustrations/mcp-intro.png" alt="MCP Introduction">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 已安裝但已禁用：顯示 toggle 啟用提示 -->
-                <div class="panel-block" ng-if="mcpPluginInstalled && mcpPluginDisabled" search-show="{{keyword}}" search-keywords="mcp eagle ai agent model context protocol">
-                    <div class="block-content">
-                        <div class="block-title">
-                            {{'preferencesWindow.pluginDisabled.enableLabel' | i18n}}
-                            <label class="toggle">
-                                <input type="checkbox" ng-checked="false" ng-click="enableServicePlugin('mcp-server')">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div class="block-hint">
-                            <p>{{'preferencesWindow.pluginDisabled.desc' | i18n}}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 已安裝且啟用：iframe 吃滿整個面板 -->
-                <div class="ai-search-webview" ng-if="mcpPluginInstalled && !mcpPluginDisabled" search-show="{{keyword}}" search-keywords="mcp eagle ai agent model context protocol">
-                    <iframe iframe-auto-retry="http://localhost:41596/web-ui" ng-src="{{getMcpIframeUrl()}}" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
-                </div>
-            </div>
-
-            <!-- AI Search -->
-            <div class="panel-content" ng-switch-when="ai-search" ng-switch-when-separator="|">
-                <!-- 未安裝：顯示狀態 + 介紹 -->
-                <div class="panel-block" ng-if="!aiSearchPluginInstalled" search-show="{{keyword}}" search-keywords="ai search 搜尋 智能">
-                    <div class="block-content">
-                        <div class="plugin-status-item">
-                            <span class="status-label">AI Search</span>
-                            <label class="toggle">
-                                <input type="checkbox" ng-checked="false" ng-click="handleAiSearchAction($event)" readonly>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel-block" ng-if="!aiSearchPluginInstalled" search-show="{{keyword}}" search-keywords="ai search introduction">
-                    <div class="block-content">
-                        <div class="plugin-header-item">
-                            <span class="header-title">{{'preferencesWindow.aiSearch.title' | i18n}}</span>
-                            <div class="action-btn" ng-click="openAiSearchDocs()">
-                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg" width="16" height="16">
-                                {{'preferencesWindow.mcp.viewDocs' | i18n}}
-                            </div>
-                        </div>
-
-                        <div class="separator"></div>
-
-                        <div class="plugin-intro">
-                            <div class="intro-text">
-                                {{'preferencesWindow.aiSearch.intro.text' | i18n}}
-                            </div>
-
-                            <div class="intro-list">
-                                <ul>
-                                    <li>{{'preferencesWindow.aiSearch.intro.item1' | i18n}}</li>
-                                    <li>{{'preferencesWindow.aiSearch.intro.item2' | i18n}}</li>
-                                    <li>{{'preferencesWindow.aiSearch.intro.item3' | i18n}}</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 已安裝但已禁用：顯示 toggle 啟用提示 -->
-                <div class="panel-block" ng-if="aiSearchPluginInstalled && aiSearchPluginDisabled" search-show="{{keyword}}" search-keywords="ai search 搜尋 智能 AI 搜索">
-                    <div class="block-content">
-                        <div class="block-title">
-                            {{'preferencesWindow.pluginDisabled.enableLabel' | i18n}}
-                            <label class="toggle">
-                                <input type="checkbox" ng-checked="false" ng-click="enableServicePlugin('ai-search')">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div class="block-hint">
-                            <p>{{'preferencesWindow.pluginDisabled.desc' | i18n}}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 已安裝且啟用：iframe 吃滿整個面板 -->
-                <div class="ai-search-webview" ng-if="aiSearchPluginInstalled && !aiSearchPluginDisabled" search-show="{{keyword}}" search-keywords="ai search 搜尋 智能 AI 搜索">
-                    <iframe iframe-auto-retry="http://127.0.0.1:38766/api/health" ng-src="{{getAiSearchIframeUrl()}}" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
-                </div>
-            </div>
-
-            <!-- AI SDK -->
-            <div class="panel-content" ng-switch-when="ai-sdk" ng-switch-when-separator="|">
-                <!-- 未安裝：顯示狀態 + 介紹 -->
-                <div class="panel-block" ng-if="!aiSdkPluginInstalled" search-show="{{keyword}}" search-keywords="ai sdk model 模型 配置">
-                    <div class="block-content">
-                        <div class="plugin-status-item">
-                            <span class="status-label">{{'preferencesWindow.mcp.enable' | i18n}}</span>
-                            <label class="toggle">
-                                <input type="checkbox" ng-checked="false" ng-click="handleAiSdkAction($event)" readonly>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel-block" ng-if="!aiSdkPluginInstalled" search-show="{{keyword}}" search-keywords="ai sdk model introduction">
-                    <div class="block-content">
-                        <div class="plugin-header-item">
-                            <span class="header-title">{{'preferencesWindow.aiSdk.title' | i18n}}</span>
-                            <div class="action-btn" ng-click="openAiSdkDocs()">
-                                <img src="assets/images/{{themeAttr() | themePath}}/icons/preferences/ic-link.svg" width="16" height="16">
-                                {{'preferencesWindow.mcp.viewDocs' | i18n}}
-                            </div>
-                        </div>
-
-                        <div class="separator"></div>
-
-                        <div class="plugin-intro">
-                            <div class="intro-illustration">
-                                <img src="assets/images/{{themeAttr() | themePath}}/illustrations/ai-sdk-intro.png" alt="AI SDK Introduction" style="width: 440px; display: block; margin: 0 auto;">
-                            </div>
-
-                            <div class="intro-text">
-                                {{'preferencesWindow.aiSdk.intro.text' | i18n}}
-                            </div>
-
-                            <div class="intro-list">
-                                <ul>
-                                    <li>{{'preferencesWindow.aiSdk.intro.item1' | i18n}}</li>
-                                    <li>{{'preferencesWindow.aiSdk.intro.item2' | i18n}}</li>
-                                    <li>{{'preferencesWindow.aiSdk.intro.item3' | i18n}}</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 已安裝但已禁用：顯示 toggle 啟用提示 -->
-                <div class="panel-block" ng-if="aiSdkPluginInstalled && aiSdkPluginDisabled" search-show="{{keyword}}" search-keywords="ai sdk model 模型 配置 AI 模型">
-                    <div class="block-content">
-                        <div class="block-title">
-                            {{'preferencesWindow.pluginDisabled.enableLabel' | i18n}}
-                            <label class="toggle">
-                                <input type="checkbox" ng-checked="false" ng-click="enableServicePlugin('ai-sdk')">
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                        <div class="block-hint">
-                            <p>{{'preferencesWindow.pluginDisabled.desc' | i18n}}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 已安裝且啟用：iframe 吃滿整個面板 -->
-                <div class="ai-search-webview" ng-if="aiSdkPluginInstalled && !aiSdkPluginDisabled" search-show="{{keyword}}" search-keywords="ai sdk model 模型 配置 AI 模型">
-                    <iframe iframe-auto-retry="http://localhost:41597/web-ui" ng-src="{{getAiSdkIframeUrl()}}" frameborder="0" allow="clipboard-read; clipboard-write"></iframe>
-                </div>
-            </div>
-        </div>
-
-        <div class="footer" ng-hide="(currentPanel.name === 'ai-search' && aiSearchPluginInstalled && !aiSearchPluginDisabled) || (currentPanel.name === 'ai-sdk' && aiSdkPluginInstalled && !aiSdkPluginDisabled) || (currentPanel.name === 'mcp-server' && mcpPluginInstalled && !mcpPluginDisabled)">
+        <div class="footer">
             <div class="right">
                 <div class="button button-primary" ng-click="save()">{{'preferencesWindow.saveBtn' | i18n}}</div>
                 <div class="button button-grey" ng-click="apply()">{{'preferencesWindow.apply' | i18n}}</div>

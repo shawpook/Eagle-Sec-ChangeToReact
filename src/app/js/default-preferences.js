@@ -103,12 +103,10 @@ module.exports = {
             "find.filter.annotation": "",
             "find.filter.note": "",
             "find.filter.url": "",
-            "find.filter.semantic": "",
             "find.filter.bpm": "",
             "find.filter.camera": "",
             "find.filter.fonts": "",
             "find.filter.import": "",
-            "find.filter.image": "",
 
             "find.reverse.eagle": "",
             "find.reverse.google": "Shift + G",

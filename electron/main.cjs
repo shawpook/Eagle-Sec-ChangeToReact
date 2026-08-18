@@ -19,6 +19,9 @@ const previewDeliverySmokeMode = process.argv.includes('--smoke-preview-delivery
 const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress');
 const videoDetailSmokeMode = process.argv.includes('--smoke-video-detail');
 const regressionHostMode = process.argv.includes('--regression-host');
+const dragSmokeMode = process.argv.includes('--smoke-drag') || process.env.EAGLE_DRAG_SMOKE === '1';
+const dragStartCalls = [];
+let cachedCurrentLibrary = null;
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
 const preferencesStateFile = () => path.join(app.getPath('userData'), 'eagle-reverse-preferences.json');
@@ -226,6 +229,32 @@ async function resolveItemFiles(itemId) {
   return { item, library, imagesDir, infoDir, originalPath, thumbnailPath, originalReal };
 }
 
+function resolveItemFilesSync(itemId) {
+  if (!cachedCurrentLibrary || cachedCurrentLibrary.itemMap.size === 0) return null;
+  try {
+    const id = String(itemId || '');
+    const item = cachedCurrentLibrary.itemMap.get(id);
+    if (!item) return null;
+    if (item.isDeleted) return null;
+    const imagesDir = cachedCurrentLibrary.imagesDir;
+    const infoDir = path.join(imagesDir, `${item.id}.info`);
+    const originalName = `${item.name}.${item.ext}`;
+    if (path.basename(originalName) !== originalName) return null;
+    const originalPath = path.join(infoDir, originalName);
+    const thumbnailPath = path.join(infoDir, `${item.name}_thumbnail.png`);
+    if (!fs.existsSync(infoDir) || !fs.statSync(infoDir).isDirectory()) return null;
+    if (!fs.existsSync(originalPath) || !fs.statSync(originalPath).isFile()) return null;
+    const imagesReal = fs.realpathSync(imagesDir);
+    const infoReal = fs.realpathSync(infoDir);
+    const originalReal = fs.realpathSync(originalPath);
+    if (!(infoReal === imagesReal || infoReal.startsWith(imagesReal + path.sep))) return null;
+    if (!originalReal.startsWith(infoReal + path.sep)) return null;
+    return { item, library: cachedCurrentLibrary, imagesDir, infoDir, originalPath, thumbnailPath, originalReal };
+  } catch (err) {
+    return null;
+  }
+}
+
 async function itemIdFromPath(rawPath) {
   const library = await currentLibrary();
   const requested = path.resolve(String(rawPath || ''));
@@ -297,13 +326,20 @@ async function copyItemImage(itemId) {
 }
 
 async function startItemDrag(event, itemId) {
-  const { originalReal, thumbnailPath } = await resolveItemFiles(itemId);
+  const resolved = cachedCurrentLibrary
+    ? resolveItemFilesSync(itemId)
+    : null;
+  const { originalReal, thumbnailPath } = resolved || await resolveItemFiles(itemId);
   recordShell('startDrag', originalReal);
+  if (dragSmokeMode) {
+    dragStartCalls.push({ itemId: String(itemId || ''), path: originalReal, at: Date.now() });
+    return { ok: true, path: originalReal, sync: Boolean(resolved), recorded: true };
+  }
   if (!previewDeliverySmokeMode) {
     const icon = fs.existsSync(thumbnailPath) ? nativeImage.createFromPath(thumbnailPath) : nativeImage.createEmpty();
     event.sender.startDrag({ file: originalReal, icon });
   }
-  return { ok: true, path: originalReal };
+  return { ok: true, path: originalReal, sync: Boolean(resolved) };
 }
 
 function mockLibraryDescription() {
@@ -344,8 +380,31 @@ function libraryLoadedPayload(library) {
   };
 }
 
+function updateCachedCurrentLibrary(library) {
+  if (!library) return;
+  const rootDir = path.resolve(library.rootDir || library.path);
+  const imagesDir = path.resolve(library.imagesDir || path.join(rootDir, 'images'));
+  const items = Array.isArray(library.items) ? library.items : [];
+  cachedCurrentLibrary = {
+    rootDir,
+    imagesDir,
+    itemMap: new Map(items.map((item) => [String(item.id), item])),
+  };
+}
+
+async function refreshCachedCurrentLibrary() {
+  try {
+    const library = await apiRequest('/api/library/current?includeItems=true');
+    updateCachedCurrentLibrary(library);
+    return library;
+  } catch (err) {
+    return null;
+  }
+}
+
 async function notifyLibraryLoaded(library) {
   allowRoot(library.rootDir || library.path);
+  updateCachedCurrentLibrary(library);
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
       win.webContents.send('app-status-loading');
@@ -728,6 +787,7 @@ function registerIpc() {
     try {
       const library = await apiRequest('/api/library/current?includeItems=true');
       allowRoot(library.rootDir || library.path);
+      updateCachedCurrentLibrary(library);
       return library;
     } catch (err) {
       if (smokeMode || pluginSmokeMode || desktopSmokeMode) return mockLibraryDescription();
@@ -986,10 +1046,12 @@ function registerIpc() {
 
   ipcMain.handle('item:importPaths', async (event, paths = []) => {
     const list = Array.isArray(paths) ? paths : [paths];
-    return apiRequest('/api/item/addFromPaths', {
+    const result = await apiRequest('/api/item/addFromPaths', {
       method: 'POST',
       body: { images: list.map((sourcePath) => ({ path: sourcePath })) },
     });
+    await refreshCachedCurrentLibrary();
+    return result;
   });
 
   ipcMain.handle('item:import-files', async (event, params = {}) => {
@@ -1008,6 +1070,7 @@ function registerIpc() {
       event.sender.__eagleImportFileCount = currentItems.length;
       if (job.status === 'complete' || job.status === 'cancelled') {
         event.sender.__eagleImportFileCount = 0;
+        await refreshCachedCurrentLibrary();
         return currentItems;
       }
       if (job.status === 'error') throw new Error(job.error || job.message);
@@ -1034,6 +1097,7 @@ function registerIpc() {
       if (job.status === 'complete' || job.status === 'cancelled') {
         event.sender.__eagleImportFolderCount = 0;
         results.push(job.result);
+        await refreshCachedCurrentLibrary();
         break;
       }
         if (job.status === 'error') throw new Error(job.error || job.message);
@@ -1043,15 +1107,23 @@ function registerIpc() {
     return results;
   });
 
-  ipcMain.handle('item:import-url', (event, params = {}) => apiRequest('/api/item/addFromURL', {
-    method: 'POST',
-    body: params,
-  }));
+  ipcMain.handle('item:import-url', async (event, params = {}) => {
+    const result = await apiRequest('/api/item/addFromURL', {
+      method: 'POST',
+      body: params,
+    });
+    await refreshCachedCurrentLibrary();
+    return result;
+  });
 
-  ipcMain.handle('item:import-urls', (event, params = {}) => apiRequest('/api/item/addFromURLs', {
-    method: 'POST',
-    body: { images: Array.isArray(params) ? params : params.images || params.urls || [] },
-  }));
+  ipcMain.handle('item:import-urls', async (event, params = {}) => {
+    const result = await apiRequest('/api/item/addFromURLs', {
+      method: 'POST',
+      body: { images: Array.isArray(params) ? params : params.images || params.urls || [] },
+    });
+    await refreshCachedCurrentLibrary();
+    return result;
+  });
 
   const downloadDirect = (params = {}) => apiRequest('/api/download/direct', {
     method: 'POST',
@@ -1201,7 +1273,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -2688,6 +2760,30 @@ app.whenReady().then(async () => {
       clearTimeout(timeout);
       app.quit();
     })();
+    return;
+  }
+  if (dragSmokeMode) {
+    const timeout = setTimeout(() => {
+      console.error('DRAG_SMOKE_TIMEOUT');
+      app.quit();
+    }, 30000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const library = await apiRequest('/api/library/current?includeItems=true');
+          updateCachedCurrentLibrary(library);
+          const first = (library.items || []).find((item) => item && !item.isDeleted);
+          if (!first) throw new Error('No draggable item in current library');
+          const result = await startItemDrag({ sender: win.webContents }, first.id);
+          console.log(`DRAG_SMOKE_OK ${JSON.stringify({ ...result, callCount: dragStartCalls.length })}`);
+        } catch (err) {
+          console.error(`DRAG_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
     return;
   }
   if (regressionHostMode) {

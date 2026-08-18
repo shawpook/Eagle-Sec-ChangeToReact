@@ -1262,6 +1262,23 @@
     return scope && scope.current && scope.current.id ? scope.current.id : '';
   }
 
+  function dragStartItemId(params) {
+    const value = params && typeof params === 'object' ? params : {};
+    let target = value.target || null;
+    if (!target && typeof value.images === 'string') {
+      try {
+        const images = JSON.parse(value.images);
+        target = Array.isArray(images) ? images[0] : images;
+      } catch (err) {
+        target = null;
+      }
+    }
+    if (!target && Array.isArray(value.images)) target = value.images[0] || null;
+    if (target && typeof target === 'object' && target.id) return target.id;
+    if (typeof target === 'string' && target) return target;
+    return '';
+  }
+
   function runPreviewAction(action, promise) {
     Promise.resolve(promise)
       .then((result) => mockEmit('preview:action-result', { ok: true, action, ...(result || {}) }))
@@ -1469,9 +1486,12 @@
         runPreviewAction('copy-images', desktopApi.item.copyImage(itemId));
         return;
       }
-      if (channel === 'ondragstart' && itemId) {
-        runPreviewAction('ondragstart', desktopApi.item.dragStart(itemId));
-        return;
+      if (channel === 'ondragstart') {
+        const itemId = dragStartItemId(params) || previewCurrentItemId();
+        if (itemId) {
+          runPreviewAction('ondragstart', desktopApi.item.dragStart(itemId));
+          return;
+        }
       }
     }
     if (desktopApi && desktopApi.thumbnail) {

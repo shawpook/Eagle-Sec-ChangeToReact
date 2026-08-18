@@ -1,0 +1,165 @@
+// ============================================================
+//  Eagle 设计令牌系统（HSL 单一 H 值 + raised/sunken shadow + 间距阶）
+//  本文件是新体系令牌源；旧 _color.scss 的 hex/rgba 令牌保留给未改造组件使用，
+//  改造后的组件一律使用本文件定义的令牌。
+//  设计方向：无边框无分割线；布局用 gap + shadow；嵌套用 raised/sunken 交替；
+//  颜色用 HSL 且大部分共用同一 H；主题切换 = 改 --h。
+//
+//  关键 CSS 机制：依赖 --h 的派生令牌必须定义在 body 上（而非 :root），
+//  因为自定义属性值中嵌套的 var(--h) 在"定义所在元素"上解析。
+//  :root 上的 --h 恒为 220，若派生令牌定义在 :root，则永远不会跟随主题覆盖。
+// ============================================================
+
+// 基底：--h 等原语放 :root，供 body 继承与主题覆盖
+:root {
+    --h: 220;               // 中性色与品牌色共享色相，主题切换只改它
+    --surf-sat: 6%;         // 中性面饱和度
+    --brand-sat: 90%;
+    --brand-light: 50%;
+
+    // ---- 间距阶（gap 体系）不依赖 --h，可安全放 :root ----
+    --space-xxs: 2px;
+    --space-xs:  4px;
+    --space-s:   8px;
+    --space-m:   12px;
+    --space-l:   16px;
+    --space-xl:  24px;
+    --space-2xl: 32px;
+    --pad-surface: var(--space-m);
+    --pad-control: var(--space-s);
+}
+
+// 语义色（独立 hue，不随主题）放 :root
+:root {
+    --semantic-positive: hsl(142 63% 44%);
+    --semantic-negative: hsl(354 83% 56%);
+    --semantic-warning:  hsl(38 95% 55%);
+}
+
+// 依赖 --h 的派生令牌全部定义在 body 上
+body {
+    // ---- 中性面同 H 派生（深主题阶梯）----
+    --surface-1: hsl(var(--h) var(--surf-sat) 11%);   // 画布最深
+    --surface-2: hsl(var(--h) var(--surf-sat) 14%);   // 凹陷层 sunken
+    --surface-3: hsl(var(--h) var(--surf-sat) 18%);   // 浮起层 raised
+    --surface-4: hsl(var(--h) var(--surf-sat) 22%);   // hover
+    --surface-5: hsl(var(--h) var(--surf-sat) 96%);   // 浅主题面
+
+    // ---- 文字（同 H 派生）----
+    --text-primary:   hsl(var(--h) 30% 95%);
+    --text-secondary: hsl(var(--h) 20% 75%);
+    --text-tertiary:  hsl(var(--h) 15% 60%);
+    --text-on-brand:  hsl(var(--h) 100% 98%);
+    --text-placeholder: hsl(var(--h) 15% 60% / 0.7);
+
+    // ---- 品牌色（同 H 派生）----
+    --color-brand:       hsl(var(--h) var(--brand-sat) var(--brand-light));
+    --color-brand-50:    hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.50);
+    --color-brand-15:    hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.15);
+    --color-brand-20:    hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.20);
+    --color-brand-30:    hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.30);
+
+    // ---- raised / sunken shadow 对（替代所有 border 与 box-border-*）----
+    --shadow-raised:    0 1px 2px hsl(var(--h) 8% 4% / 0.08),
+                        0 8px 24px hsl(var(--h) 8% 4% / 0.12);
+    --shadow-raised-sm: 0 1px 2px hsl(var(--h) 8% 4% / 0.10);
+    --shadow-raised-lg: 0 12px 24px hsl(var(--h) 8% 4% / 0.16),
+                        0 24px 48px hsl(var(--h) 8% 4% / 0.10);
+    --shadow-sunken:    inset 0 1px 2px hsl(var(--h) 8% 4% / 0.18),
+                        inset 0 2px 8px hsl(var(--h) 8% 4% / 0.12);
+    --shadow-sunken-sm: inset 0 1px 2px hsl(var(--h) 8% 4% / 0.15);
+    --shadow-ring:      0 0 0 2px hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.50);
+    --shadow-ring-brand: 0 0 0 2px var(--color-brand);
+
+    // ---- 交互态（同 H 派生）----
+    --action-hover:    hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.12);
+    --action-active:   hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.20);
+    --action-selected: hsl(var(--h) var(--brand-sat) var(--brand-light) / 0.20);
+
+    // ---- 语义角色别名（供组件消费）----
+    --layer-raised: var(--shadow-raised);
+    --layer-raised-sm: var(--shadow-raised-sm);
+    --layer-raised-lg: var(--shadow-raised-lg);
+    --layer-sunken: var(--shadow-sunken);
+    --layer-sunken-sm: var(--shadow-sunken-sm);
+    --layer-ring:   var(--shadow-ring);
+
+    // ---- 滚动条（同 H 派生）----
+    --scrollbar-thumb: hsl(var(--h) 8% 50% / 0.35);
+    --scrollbar-thumb-hover: hsl(var(--h) 8% 50% / 0.55);
+}
+
+// ---- 工具类 ----
+.raised    { box-shadow: var(--shadow-raised); }
+.raised-sm { box-shadow: var(--shadow-raised-sm); }
+.raised-lg { box-shadow: var(--shadow-raised-lg); }
+.sunken    { box-shadow: var(--shadow-sunken); }
+.sunken-sm { box-shadow: var(--shadow-sunken-sm); }
+.ring      { box-shadow: var(--shadow-ring); }
+
+// ============================================================
+//  主题切换：仅覆盖 --h（与必要时的饱和度/L 基准）
+// ============================================================
+body {
+    &[theme="dark"] {
+        --h: 220; --surf-sat: 6%;
+    }
+    &[theme="gray"] {
+        --h: 220; --surf-sat: 4%;
+        --surface-1: hsl(var(--h) var(--surf-sat) 19%);
+        --surface-2: hsl(var(--h) var(--surf-sat) 22%);
+        --surface-3: hsl(var(--h) var(--surf-sat) 26%);
+        --surface-4: hsl(var(--h) var(--surf-sat) 30%);
+    }
+    &[theme="blue"] {
+        --h: 232; --surf-sat: 8%;
+        --surface-1: hsl(var(--h) var(--surf-sat) 12%);
+        --surface-2: hsl(var(--h) var(--surf-sat) 16%);
+        --surface-3: hsl(var(--h) var(--surf-sat) 20%);
+        --surface-4: hsl(var(--h) var(--surf-sat) 25%);
+    }
+    &[theme="purple"] {
+        --h: 265; --surf-sat: 8%;
+        --surface-1: hsl(var(--h) var(--surf-sat) 11%);
+        --surface-2: hsl(var(--h) var(--surf-sat) 15%);
+        --surface-3: hsl(var(--h) var(--surf-sat) 20%);
+        --surface-4: hsl(var(--h) var(--surf-sat) 25%);
+    }
+    &[theme="light"],
+    &[theme="lightgray"] {
+        // 浅主题：同 H，翻转 L 阶梯与文字 L
+        --surf-sat: 10%;
+        --surface-1: hsl(var(--h) var(--surf-sat) 96%);
+        --surface-2: hsl(var(--h) var(--surf-sat) 92%);
+        --surface-3: hsl(var(--h) var(--surf-sat) 88%);
+        --surface-4: hsl(var(--h) var(--surf-sat) 82%);
+        --surface-5: hsl(var(--h) var(--surf-sat) 100%);
+
+        --text-primary:   hsl(var(--h) 10% 11%);
+        --text-secondary: hsl(var(--h) 8% 30%);
+        --text-tertiary:  hsl(var(--h) 8% 45%);
+        --text-on-brand:  hsl(var(--h) 100% 98%);
+        --text-placeholder: hsl(var(--h) 8% 45% / 0.7);
+
+        // 浅主题阴影更轻
+        --shadow-raised:    0 1px 2px hsl(var(--h) 8% 4% / 0.06),
+                            0 8px 24px hsl(var(--h) 8% 4% / 0.08);
+        --shadow-raised-sm: 0 1px 2px hsl(var(--h) 8% 4% / 0.08);
+        --shadow-raised-lg: 0 12px 24px hsl(var(--h) 8% 4% / 0.10),
+                            0 24px 48px hsl(var(--h) 8% 4% / 0.06);
+        --shadow-sunken:    inset 0 1px 2px hsl(var(--h) 8% 4% / 0.10),
+                            inset 0 2px 8px hsl(var(--h) 8% 4% / 0.06);
+        --shadow-sunken-sm: inset 0 1px 2px hsl(var(--h) 8% 4% / 0.08);
+
+        --scrollbar-thumb: hsl(var(--h) 8% 50% / 0.30);
+        --scrollbar-thumb-hover: hsl(var(--h) 8% 50% / 0.45);
+    }
+
+    &[theme="lightgray"] {
+        --surf-sat: 8%;
+        --surface-1: hsl(var(--h) var(--surf-sat) 92%);
+        --surface-2: hsl(var(--h) var(--surf-sat) 88%);
+        --surface-3: hsl(var(--h) var(--surf-sat) 84%);
+        --surface-4: hsl(var(--h) var(--surf-sat) 78%);
+    }
+}

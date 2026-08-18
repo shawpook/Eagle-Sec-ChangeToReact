@@ -1,0 +1,166 @@
+/* ==========================================================================
+   Eagle Browser Tab Bar — 浏览器/Figma 风格标签栏
+   注入路径: frontend/public/tab-bar.css（由 vite.preview.config.mjs 注入）
+   定位：压在 Eagle 原生顶部工具栏之上，是主框架最顶层的一层。
+   主题：复用 Eagle 的 --box-background / --color-theme-* 变量，暗/亮/灰/蓝/紫全自适应。
+   ========================================================================== */
+
+/* ---- 顶层标签栏：z-index 高于 sidebar(9001) / content-panel(9002) / toolbar(9999) ---- */
+/* 注意：不能加 -webkit-app-region: drag。drag 区域在 webview 类环境（如 IAB）会吞掉
+   整条标签栏的指针事件，导致标签/+/× 全部点不动；窗口拖动由下方 Eagle 原生工具栏
+   （自身是 drag 区）承担。 */
+#eagle-tab-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 34px;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 4px;
+  box-sizing: border-box;
+  background-color: var(--box-background);
+  border-bottom: 1px solid var(--color-border-secondary);
+  backdrop-filter: var(--box-background-blur);
+  user-select: none;
+  overflow: hidden;
+}
+
+/* ---- 标签列表 ---- */
+#eagle-tab-bar .eagle-tab-list {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding-top: 4px;
+  overflow: hidden;
+}
+
+/* ---- 单个标签 ---- */
+#eagle-tab-bar .eagle-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 8px 8px 0 0;
+  cursor: default;
+  color: var(--color-text-primary);
+  opacity: 0.78;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+#eagle-tab-bar .eagle-tab:hover {
+  opacity: 1;
+  background-color: var(--color-theme-85);
+}
+
+#eagle-tab-bar .eagle-tab.active {
+  opacity: 1;
+  background-color: var(--color-theme-95);
+}
+
+#eagle-tab-bar .eagle-tab-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  line-height: 30px;
+}
+
+/* ---- 关闭按钮 ---- */
+#eagle-tab-bar .eagle-tab-close {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  opacity: 0;
+  transition: opacity 100ms ease, background-color 100ms ease;
+}
+
+#eagle-tab-bar .eagle-tab:hover .eagle-tab-close,
+#eagle-tab-bar .eagle-tab.active .eagle-tab-close {
+  opacity: 0.7;
+}
+
+#eagle-tab-bar .eagle-tab-close:hover {
+  opacity: 1;
+  background-color: var(--color-theme-80);
+}
+
+/* ---- 新增按钮 ---- */
+#eagle-tab-bar .eagle-tab-add {
+  flex: 0 0 26px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: default;
+  opacity: 0.7;
+  transition: opacity 100ms ease, background-color 100ms ease;
+}
+
+#eagle-tab-bar .eagle-tab-add:hover {
+  opacity: 1;
+  background-color: var(--color-theme-85);
+}
+
+/* ---- 双击重命名输入框 ---- */
+#eagle-tab-bar .eagle-tab-rename {
+  width: 100%;
+  min-width: 40px;
+  height: 22px;
+  border: 1px solid var(--color-primary, #0072ef);
+  border-radius: 4px;
+  background: var(--color-theme-95);
+  color: var(--color-text-primary);
+  font-size: 12px;
+  padding: 0 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   布局下推：让 Eagle 原生顶部空间下沉，空出 34px 给标签栏。
+   使用更高特异性 + !important，覆盖 Eagle 自身的 top 规则（含 .content-panel 的
+   top:0 !important 与 z-index:20000 的 fill 布局状态）。
+   ========================================================================== */
+body #sidebar {
+  top: 34px !important;
+  height: calc(100% - 34px) !important;
+}
+
+body .content-panel {
+  top: 34px !important;
+  bottom: 0 !important;
+}
+
+body #website-panel {
+  top: 34px !important;
+}

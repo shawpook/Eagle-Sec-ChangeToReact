@@ -488,6 +488,9 @@
 
             <!-- 篩選文件夾 -->
             <div class="sidebar-footer">
+                <div id="source-mode-footer-add" style="display: none;">
+                    <button id="source-mode-add-folder" type="button" class="source-mode-footer-button">＋ 添加来源文件夹</button>
+                </div>
                 <input id="folder-search" tabindex="-1" maxlength="1024" type="search" selectall class="search" placeholder="{{'sidebar.filterLabel' | i18n}}" ng-model="folderKeyword" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 50, 'blur': 0 } }">
             </div>
         </div>

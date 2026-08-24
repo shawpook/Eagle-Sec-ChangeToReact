@@ -55,61 +55,65 @@ export function createSourceModeService(libraryRoot, options = {}) {
     },
     getVirtualLibrary(sourceRootId = '') {
       const roots = indexer.buildTree();
-      const root = roots.find((entry) => entry.id === sourceRootId) || roots[0] || null;
-      const rootId = root ? root.id : '';
-      const rootFolderId = rootId ? sourceFolderId(rootId) : '';
-      const folders = root
-        ? [{
+      const selectedRoot = roots.find((entry) => entry.id === sourceRootId) || roots[0] || null;
+      const rootId = selectedRoot ? selectedRoot.id : '';
+      const folders = [];
+      const items = [];
+
+      for (const root of roots) {
+        const rid = root.id;
+        const rootFolderId = sourceFolderId(rid);
+        const folderIdByRelativePath = new Map([['.', rootFolderId]]);
+        const collectFolderIds = (directory) => {
+          folderIdByRelativePath.set(directory.relativePath, sourceFolderId(rid, directory.relativePath));
+          for (const child of directory.children || []) collectFolderIds(child);
+        };
+        for (const directory of root.directories || []) collectFolderIds(directory);
+
+        folders.push({
           id: rootFolderId,
           name: root.name,
           relativePath: '.',
-          children: (root.directories || []).map((directory) => mapSourceDirectoryNode(directory, rootId)),
+          children: (root.directories || []).map((directory) => mapSourceDirectoryNode(directory, rid)),
           images: [],
-        }]
-        : [];
-      const folderIdByRelativePath = new Map([['.', rootFolderId]]);
-      const collectFolderIds = (directory) => {
-        folderIdByRelativePath.set(directory.relativePath, sourceFolderId(rootId, directory.relativePath));
-        for (const child of directory.children || []) collectFolderIds(child);
-      };
-      if (root) {
-        for (const directory of root.directories || []) collectFolderIds(directory);
-      }
-      const assets = root ? indexer.listAllAssets(root.id) : [];
-      const items = assets.map((asset) => {
-        const dirname = path.posix.dirname(asset.relativePath);
-        const folderChain = [];
-        let current = dirname;
-        while (current && current !== '.') {
-          const folderId = folderIdByRelativePath.get(current);
-          if (folderId) folderChain.unshift(folderId);
-          current = path.posix.dirname(current);
+        });
+
+        for (const asset of indexer.listAllAssets(rid)) {
+          const dirname = path.posix.dirname(asset.relativePath);
+          const folderChain = [];
+          let current = dirname;
+          while (current && current !== '.') {
+            const folderId = folderIdByRelativePath.get(current);
+            if (folderId) folderChain.unshift(folderId);
+            current = path.posix.dirname(current);
+          }
+          const foldersForItem = rootFolderId ? [rootFolderId, ...folderChain] : [];
+          items.push({
+            id: asset.id,
+            sourceAssetId: asset.id,
+            name: asset.name,
+            ext: asset.ext,
+            size: asset.sizeBytes,
+            width: asset.width,
+            height: asset.height,
+            url: '',
+            website: '',
+            annotation: '',
+            tags: [],
+            folders: foldersForItem,
+            star: 0,
+            modificationTime: asset.mtimeMs,
+            lastModified: asset.mtimeMs,
+            palettes: [],
+            noThumbnail: asset.kind !== 'image',
+            isDeleted: false,
+          });
         }
-        const foldersForItem = rootFolderId ? [rootFolderId, ...folderChain] : [];
-        return {
-          id: asset.id,
-          sourceAssetId: asset.id,
-          name: asset.name,
-          ext: asset.ext,
-          size: asset.sizeBytes,
-          width: asset.width,
-          height: asset.height,
-          url: '',
-          website: '',
-          annotation: '',
-          tags: [],
-          folders: foldersForItem,
-          star: 0,
-          modificationTime: asset.mtimeMs,
-          lastModified: asset.mtimeMs,
-          palettes: [],
-          noThumbnail: asset.kind !== 'image',
-          isDeleted: false,
-        };
-      });
+      }
+
       const cachePath = path.join(db.root, 'virtual-cache.json');
       fs.writeFileSync(cachePath, `${items.map((item) => JSON.stringify(item)).join('\n')}\n`, 'utf8');
-      const rootDir = root ? root.path : db.libraryRoot;
+      const rootDir = selectedRoot ? selectedRoot.path : db.libraryRoot;
       return {
         mode: 'source',
         sourceRootId: rootId,

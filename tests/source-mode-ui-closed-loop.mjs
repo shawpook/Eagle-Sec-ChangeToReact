@@ -210,7 +210,10 @@ try {
 
   await waitFor(async () => {
     const result = await page.send('Runtime.evaluate', {
-      expression: `Boolean(document.querySelector('#source-mode-add-folder'))`,
+      expression: `(() => {
+        const button = document.querySelector('#source-mode-add-folder');
+        return Boolean(button && button.offsetParent !== null);
+      })()`,
       returnByValue: true,
     });
     return result.result && result.result.value;
@@ -260,7 +263,11 @@ try {
 
   await waitFor(async () => {
     const result = await page.send('Runtime.evaluate', {
-      expression: `!document.querySelector('#eagle-source-mode-sidebar') && !document.querySelector('#source-mode-add-folder')`,
+      expression: `(() => {
+        const button = document.querySelector('#source-mode-add-folder');
+        const hidden = !button || button.offsetParent === null;
+        return hidden && !document.querySelector('#eagle-source-mode-sidebar');
+      })()`,
       returnByValue: true,
     });
     return result.result && result.result.value;

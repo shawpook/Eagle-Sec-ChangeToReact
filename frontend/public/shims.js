@@ -3136,6 +3136,8 @@
     view: 'tree',
     expanded: {},
     originalContainerDisplay: '',
+    originalContainerBottom: '',
+    transitionTimer: 0,
   };
 
   function sourceModeApiBase() {
@@ -3201,17 +3203,19 @@
     style.textContent = `
       #eagle-source-mode-sidebar {
         position: absolute;
-        top: 86px;
         left: 0;
         right: 0;
         bottom: 44px;
+        height: 44px;
         display: flex;
-        flex-direction: column;
-        background: var(--sidebar-background-color, #1b1d22);
+        align-items: center;
+        justify-content: center;
+        background: var(--sidebar-background-color, transparent);
         color: var(--sidebar-text, #e8e9ed);
         z-index: 10000;
         font-size: 12px;
-        overflow: hidden;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        border-bottom: 1px solid rgba(255,255,255,0.08);
       }
       #eagle-source-mode-sidebar .source-mode-header {
         display: flex;
@@ -3385,6 +3389,30 @@
         gap: 6px;
         margin-top: 6px;
       }
+      .sidebar-footer.source-mode-active {
+        height: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .sidebar-footer.source-mode-active input[type="search"] {
+        width: 100%;
+      }
+      .source-mode-footer-button {
+        width: 100%;
+        height: 28px;
+        line-height: 28px;
+        border: 1px solid var(--color-border-secondary);
+        border-radius: 6px;
+        background: var(--color-black-20, rgba(255,255,255,0.06));
+        color: var(--color-text-primary);
+        font-size: 12px;
+        cursor: pointer;
+        text-align: center;
+      }
+      .source-mode-footer-button:hover {
+        border-color: var(--color-primary);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -3392,84 +3420,44 @@
   function createSourceModeSidebar() {
     if (sourceModeState.panel) return sourceModeState.panel;
     ensureSourceModeStyles();
-    const sidebar = document.querySelector('#sidebar');
-    if (!sidebar) return null;
-    // #sidebar 本身是 position: fixed；不要改写它的 position，否则会破坏原布局。
-    // 保留原 .sidebar-header（新增/切换文件夹/显示隐藏栏那一行）不变，只替换下方列表区。
+    const footer = document.querySelector('.sidebar-footer');
+    const wrapper = document.getElementById('source-mode-footer-add');
     const container = document.querySelector('.sidebar-container');
+    // 直接使用原框架里的 .sidebar-footer：按钮是原 DOM 结构的一部分，不是浮层。
+    // 先只预留空间，按钮显示延后到 Angular 生命周期动画完成后，避免不同步。
     if (container) {
-      sourceModeState.originalContainerDisplay = container.style.display;
-      container.style.display = 'none';
+      sourceModeState.originalContainerBottom = container.style.bottom;
+      const footerHeight = footer ? footer.getBoundingClientRect().height : 64;
+      container.style.bottom = `${Math.max(64, Math.ceil(footerHeight) + 16)}px`;
     }
-    const panel = document.createElement('div');
-    panel.id = 'eagle-source-mode-sidebar';
-    panel.innerHTML = `
-      <div class="source-mode-tabs">
-        <button type="button" class="source-mode-tab active" data-source-view="tree">来源目录</button>
-        <button type="button" class="source-mode-tab" data-source-view="manage">管理来源</button>
-      </div>
-      <div class="source-mode-body" data-source-body></div>
-      <div class="source-mode-footer">
-        <button type="button" id="source-mode-add-folder" class="source-mode-add-button">＋ 添加来源文件夹</button>
-      </div>
-    `;
-    panel.addEventListener('click', (event) => {
-      const target = event.target.closest('button, [data-source-action], [data-source-view], [data-source-folder], [data-source-root], [data-source-rescan], [data-source-remove]');
-      if (!target) return;
-      const action = target.getAttribute('data-source-action');
-      if (action === 'close') {
-        closeSourceMode();
-        return;
-      }
-      if (target.id === 'source-mode-add-folder') {
-        void handleSourceAdd();
-        return;
-      }
-      const view = target.getAttribute('data-source-view');
-      if (view) {
-        sourceModeState.view = view;
-        renderSourceModeSidebar();
-        return;
-      }
-      const rootId = target.getAttribute('data-source-root') || '';
-      const relativePath = target.getAttribute('data-source-relative-path') || '.';
-      if (target.hasAttribute('data-source-folder')) {
-        void handleSourceSelectFolder(rootId, relativePath);
-        return;
-      }
-      if (target.hasAttribute('data-source-root')) {
-        const actionName = target.getAttribute('data-source-action');
-        if (actionName === 'toggle-root') {
-          sourceModeState.expanded[rootId] = !sourceModeState.expanded[rootId];
-          renderSourceModeSidebar();
-        } else if (actionName === 'rescan') {
-          void handleRescanRoot(rootId);
-        } else if (actionName === 'remove') {
-          void handleRemoveRoot(rootId);
+    if (wrapper && !wrapper.__sourceModeListener) {
+      wrapper.addEventListener('click', (event) => {
+        if (event.target.id === 'source-mode-add-folder') {
+          void handleSourceAdd();
         }
-        return;
-      }
-      if (target.hasAttribute('data-source-rescan')) {
-        void handleRescanRoot(target.getAttribute('data-source-rescan'));
-        return;
-      }
-      if (target.hasAttribute('data-source-remove')) {
-        void handleRemoveRoot(target.getAttribute('data-source-remove'));
-      }
-    });
-    sidebar.appendChild(panel);
-    sourceModeState.panel = panel;
-    return panel;
+      });
+      wrapper.__sourceModeListener = true;
+    }
+    sourceModeState.panel = wrapper;
+    return wrapper;
+  }
+
+  function showSourceModeControls() {
+    const footer = document.querySelector('.sidebar-footer');
+    const wrapper = document.getElementById('source-mode-footer-add');
+    if (footer) footer.classList.add('source-mode-active');
+    if (wrapper) wrapper.style.display = 'block';
   }
 
   function destroySourceModeSidebar() {
-    if (sourceModeState.panel) {
-      sourceModeState.panel.remove();
-      sourceModeState.panel = null;
-    }
+    const footer = document.querySelector('.sidebar-footer');
+    const wrapper = document.getElementById('source-mode-footer-add');
+    if (footer) footer.classList.remove('source-mode-active');
+    if (wrapper) wrapper.style.display = 'none';
     const container = document.querySelector('.sidebar-container');
-    if (container) container.style.display = sourceModeState.originalContainerDisplay;
-    sourceModeState.originalContainerDisplay = '';
+    if (container) container.style.bottom = sourceModeState.originalContainerBottom;
+    sourceModeState.originalContainerBottom = '';
+    sourceModeState.panel = null;
   }
 
   function renderDirectoryNode(node, rootId, selectedRootId, selectedRelativePath) {
@@ -3577,9 +3565,13 @@
       applyVirtualLibrary(virtual);
       sourceModeState.roots = roots;
       createSourceModeSidebar();
-      renderSourceModeSidebar();
       sourceModeState.active = true;
       emitMockLifecycle();
+      clearTimeout(sourceModeState.transitionTimer);
+      sourceModeState.transitionTimer = setTimeout(() => {
+        showSourceModeControls();
+        renderSourceModeSidebar();
+      }, 600);
     } catch (err) {
       console.warn('[eagle-shim] open source mode failed', err);
     }
@@ -3682,7 +3674,7 @@
   function closeSourceMode() {
     if (!sourceModeState.active) return;
     sourceModeState.active = false;
-    destroySourceModeSidebar();
+    clearTimeout(sourceModeState.transitionTimer);
     if (sourceModeState.savedLibrary) window.__mockLibrary = sourceModeState.savedLibrary;
     if (Array.isArray(sourceModeState.savedCache)) window.__mockLibraryCache = sourceModeState.savedCache;
     sourceModeApi('/api/source-mode/state', {
@@ -3699,6 +3691,10 @@
     sourceModeState.view = 'tree';
     sourceModeState.expanded = {};
     emitMockLifecycle();
+    // 等 Angular 列表恢复动画结束后再隐藏按钮，保证和整体切换动画同步。
+    sourceModeState.transitionTimer = setTimeout(() => {
+      destroySourceModeSidebar();
+    }, 600);
   }
 
   function installModeSwitch() {

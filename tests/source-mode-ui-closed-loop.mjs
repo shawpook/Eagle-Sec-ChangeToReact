@@ -260,7 +260,7 @@ try {
 
   await waitFor(async () => {
     const result = await page.send('Runtime.evaluate', {
-      expression: `!document.querySelector('#source-mode-add-folder')`,
+      expression: `!document.querySelector('#eagle-source-mode-sidebar') && !document.querySelector('#source-mode-add-folder')`,
       returnByValue: true,
     });
     return result.result && result.result.value;

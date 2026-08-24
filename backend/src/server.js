@@ -67,6 +67,8 @@ import {
   restoreRecoveryPoint,
   verifyRecoveryPoint,
 } from './library-backup-service.js';
+import { createSourceModeRouter } from './source-mode/source-routes.js';
+import { createSourceModeService } from './source-mode/service.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, '../..');
@@ -191,7 +193,23 @@ let folders = currentLibrary.folders;
 let smartFolders = currentLibrary.smartFolders;
 let tagsGroups = currentLibrary.tagsGroups;
 
+let sourceModeService = null;
+function getSourceModeService() {
+  if (!sourceModeService) {
+    sourceModeService = createSourceModeService(currentLibrary.rootDir, {
+      onActivity() {
+        // Activity events are currently consumed by polling state; keep the hook available.
+      },
+    });
+  }
+  return sourceModeService;
+}
+
 function activateLibrary(library) {
+  if (sourceModeService) {
+    sourceModeService.dispose();
+    sourceModeService = null;
+  }
   recoverLibrary(library.rootDir);
   thumbnailTasks.recover(library);
   enqueueMissingThumbnails(library);
@@ -221,6 +239,8 @@ app.use((req, res, next) => {
   }
   res.status(401).json(fail('Unauthorized'));
 });
+
+app.use(createSourceModeRouter({ getService: getSourceModeService }));
 
 function findFolder(id, tree = folders) {
   for (const folder of tree) {
@@ -3020,7 +3040,27 @@ app.post('/api/v2/search/rebuild', (req, res) => {
   res.json(ok({ count: currentLibrary.items.length }));
 });
 
-function resolveThumbnailPath(filePath) {
+async function resolveSourceVirtualThumbnailPath(decoded) {
+  if (!sourceModeService) return null;
+  const match = decoded.match(/(?:^|[\\/])([^\\/]+?)\.info[\\/]/);
+  if (!match) return null;
+  const assetId = decodeURIComponent(match[1]);
+  if (!assetId) return null;
+  const asset = sourceModeService.indexer.getAssetById(assetId);
+  if (!asset) return null;
+  const isThumbnailRequest = /\.info\/[^/]+_thumbnail\.png$/i.test(decoded);
+  if (isThumbnailRequest) {
+    const thumbnail = await sourceModeService.thumbnails.ensureThumbnail(asset);
+    if (thumbnail && fs.existsSync(thumbnail)) return thumbnail;
+    if (sourceModeService.thumbnails.isBrowserRenderableImage(asset)) {
+      return sourceModeService.thumbnails.originalPath(asset);
+    }
+    return null;
+  }
+  return sourceModeService.thumbnails.originalPath(asset);
+}
+
+async function resolveThumbnailPath(filePath) {
   if (!filePath) return null;
   let decoded = String(filePath);
   try {
@@ -3059,25 +3099,31 @@ function resolveThumbnailPath(filePath) {
     const allowed = allowedRoots.some((root) => candidate === root || candidate.startsWith(root + path.sep));
     if (allowed && fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
   }
-  return null;
+
+  return resolveSourceVirtualThumbnailPath(decoded);
 }
 
 const thumbnailApp = express();
 thumbnailApp.use(cors());
-function sendThumbnail(filePath, res) {
-  const resolved = resolveThumbnailPath(filePath);
-  if (!resolved) {
-    res.status(404).json({ status: 'error', message: `Thumbnail not found: ${filePath}` });
-    return;
+async function sendThumbnail(filePath, res) {
+  try {
+    const resolved = await resolveThumbnailPath(filePath);
+    if (!resolved) {
+      res.status(404).json({ status: 'error', message: `Thumbnail not found: ${filePath}` });
+      return;
+    }
+    res.sendFile(resolved);
+  } catch (err) {
+    console.warn('[thumbnail] failed to resolve source thumbnail:', filePath, err && err.message);
+    res.status(500).json({ status: 'error', message: `Thumbnail resolution failed: ${filePath}` });
   }
-  res.sendFile(resolved);
 }
 
-thumbnailApp.get('/', (req, res) => {
-  sendThumbnail(req.query.filePath || req.query.path || '', res);
+thumbnailApp.get('/', async (req, res) => {
+  await sendThumbnail(req.query.filePath || req.query.path || '', res);
 });
-thumbnailApp.get('/file/:encoded', (req, res) => {
-  sendThumbnail(req.params.encoded || '', res);
+thumbnailApp.get('/file/:encoded', async (req, res) => {
+  await sendThumbnail(req.params.encoded || '', res);
 });
 
 const extensionApp = express();

@@ -24,6 +24,14 @@ const api = {
     openDirectory: (options) => ipcRenderer.invoke('dialog:openDirectory', options),
     save: (options) => ipcRenderer.invoke('dialog:show-save', options),
   },
+  sourceMode: {
+    pickAndAdd: () => ipcRenderer.invoke('source-mode:pick-and-add'),
+    addPath: (filePath) => ipcRenderer.invoke('source-mode:add-path', filePath),
+    list: () => ipcRenderer.invoke('source-mode:list'),
+    remove: (id) => ipcRenderer.invoke('source-mode:remove', id),
+    rescan: (id, relativePath) => ipcRenderer.invoke('source-mode:rescan', id, relativePath),
+    openFolderPicker: (options) => ipcRenderer.invoke('source-mode:open-folder-picker', options),
+  },
   getCollectWindowData: () => ipcRenderer.invoke('get-collect-window-data'),
   openViewer: (payload) => ipcRenderer.invoke('viewer:open', payload),
   preview: {

@@ -3124,6 +3124,603 @@
     }, 550);
   }
 
+  const sourceModeState = {
+    active: false,
+    savedLibrary: null,
+    savedCache: [],
+    savedLibraryPath: '',
+    currentRootId: '',
+    currentRelativePath: '.',
+    panel: null,
+    roots: [],
+    view: 'tree',
+    expanded: {},
+    originalContainerDisplay: '',
+  };
+
+  function sourceModeApiBase() {
+    return (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+  }
+
+  async function sourceModeApi(route, options = {}) {
+    const apiBase = sourceModeApiBase();
+    const response = await fetch(`${apiBase}${route}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
+    const text = await response.text();
+    let payload;
+    try {
+      payload = JSON.parse(text);
+    } catch (err) {
+      payload = { status: 'error', message: text || `HTTP ${response.status}` };
+    }
+    if (!response.ok || !payload || payload.status !== 'success') {
+      throw new Error(payload && payload.message ? payload.message : `API request failed: HTTP ${response.status}`);
+    }
+    return payload.data;
+  }
+
+  function findSourceFolder(nodes, relativePath) {
+    const list = Array.isArray(nodes) ? nodes : [];
+    for (const node of list) {
+      if (node.relativePath === relativePath) return node;
+      const found = findSourceFolder(node.children || [], relativePath);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function applyVirtualLibrary(virtual) {
+    const lib = window.__mockLibrary || {};
+    window.__mockLibrary = {
+      ...lib,
+      mode: 'source',
+      rootDir: virtual.rootDir,
+      imagesDir: virtual.imagesDir,
+      libraryName: lib.libraryName || virtual.libraryName || '来源文件夹模式',
+      folders: Array.isArray(virtual.folders) ? virtual.folders : [],
+      smartFolders: Array.isArray(virtual.smartFolders) ? virtual.smartFolders : [],
+      quickAccess: Array.isArray(virtual.quickAccess) ? virtual.quickAccess : [],
+      tagsGroups: Array.isArray(virtual.tagsGroups) ? virtual.tagsGroups : [],
+      cachePath: virtual.cachePath,
+      imagesStringPath: virtual.imagesStringPath || virtual.cachePath,
+    };
+    window.__mockLibraryCache = Array.isArray(virtual.items) ? virtual.items.slice() : [];
+    sourceModeState.currentRootId = virtual.sourceRootId || '';
+    sourceModeState.currentRelativePath = virtual.relativePath || '.';
+  }
+
+  function ensureSourceModeStyles() {
+    if (document.getElementById('eagle-source-mode-style')) return;
+    const style = document.createElement('style');
+    style.id = 'eagle-source-mode-style';
+    style.textContent = `
+      #eagle-source-mode-sidebar {
+        position: absolute;
+        top: 86px;
+        left: 0;
+        right: 0;
+        bottom: 44px;
+        display: flex;
+        flex-direction: column;
+        background: var(--sidebar-background-color, #1b1d22);
+        color: var(--sidebar-text, #e8e9ed);
+        z-index: 10000;
+        font-size: 12px;
+        overflow: hidden;
+      }
+      #eagle-source-mode-sidebar .source-mode-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        flex-shrink: 0;
+        font-weight: 600;
+      }
+      #eagle-source-mode-sidebar .source-mode-tabs {
+        display: flex;
+        gap: 4px;
+        padding: 6px 10px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        flex-shrink: 0;
+      }
+      #eagle-source-mode-sidebar .source-mode-tab {
+        flex: 1;
+        border: 1px solid transparent;
+        background: transparent;
+        color: #9aa0ab;
+        padding: 6px 0;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      #eagle-source-mode-sidebar .source-mode-tab.active {
+        background: rgba(255,255,255,0.07);
+        border-color: rgba(255,255,255,0.1);
+        color: #fff;
+      }
+      #eagle-source-mode-sidebar .source-mode-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+      #eagle-source-mode-sidebar .source-mode-footer {
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding: 10px;
+        flex-shrink: 0;
+      }
+      #eagle-source-mode-sidebar .source-root-card {
+        margin-bottom: 8px;
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        overflow: hidden;
+      }
+      #eagle-source-mode-sidebar .source-root-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 8px 10px;
+        cursor: pointer;
+        text-align: left;
+      }
+      #eagle-source-mode-sidebar .source-root-header:hover {
+        background: rgba(255,255,255,0.06);
+      }
+      #eagle-source-mode-sidebar .source-root-name {
+        min-width: 0;
+        flex: 1;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #eagle-source-mode-sidebar .source-root-path {
+        display: block;
+        color: #9aa0ab;
+        font-size: 11px;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      #eagle-source-mode-sidebar .source-directory-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        border: none;
+        background: transparent;
+        color: inherit;
+        padding: 5px 8px 5px 22px;
+        cursor: pointer;
+        text-align: left;
+      }
+      #eagle-source-mode-sidebar .source-directory-row:hover {
+        background: rgba(255,255,255,0.06);
+      }
+      #eagle-source-mode-sidebar .source-directory-row.selected {
+        background: rgba(91,140,255,0.18);
+        color: #fff;
+      }
+      #eagle-source-mode-sidebar .source-mode-count {
+        color: #9aa0ab;
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+      #eagle-source-mode-sidebar .source-mode-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: transparent;
+        color: inherit;
+        border-radius: 8px;
+        padding: 5px 9px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      #eagle-source-mode-sidebar .source-mode-button:hover {
+        background: rgba(255,255,255,0.06);
+      }
+      #eagle-source-mode-sidebar .source-mode-button.primary {
+        background: #5b8cff;
+        border-color: transparent;
+        color: #fff;
+      }
+      #eagle-source-mode-sidebar .source-mode-button.danger {
+        color: #ff6b6b;
+        border-color: rgba(255,107,107,0.35);
+      }
+      #eagle-source-mode-sidebar .source-mode-add-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        padding: 8px 0;
+        border-radius: 10px;
+        border: 1px solid rgba(91,140,255,0.35);
+        background: rgba(91,140,255,0.12);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #eagle-source-mode-sidebar .source-mode-empty {
+        padding: 24px 12px;
+        text-align: center;
+        color: #9aa0ab;
+      }
+      #eagle-source-mode-sidebar .source-manage-card {
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      #eagle-source-mode-sidebar .source-manage-card-title {
+        font-weight: 600;
+        margin-bottom: 2px;
+      }
+      #eagle-source-mode-sidebar .source-manage-card-path {
+        color: #9aa0ab;
+        font-size: 11px;
+        word-break: break-all;
+        margin-bottom: 6px;
+      }
+      #eagle-source-mode-sidebar .source-manage-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function createSourceModeSidebar() {
+    if (sourceModeState.panel) return sourceModeState.panel;
+    ensureSourceModeStyles();
+    const sidebar = document.querySelector('#sidebar');
+    if (!sidebar) return null;
+    // #sidebar 本身是 position: fixed；不要改写它的 position，否则会破坏原布局。
+    // 保留原 .sidebar-header（新增/切换文件夹/显示隐藏栏那一行）不变，只替换下方列表区。
+    const container = document.querySelector('.sidebar-container');
+    if (container) {
+      sourceModeState.originalContainerDisplay = container.style.display;
+      container.style.display = 'none';
+    }
+    const panel = document.createElement('div');
+    panel.id = 'eagle-source-mode-sidebar';
+    panel.innerHTML = `
+      <div class="source-mode-tabs">
+        <button type="button" class="source-mode-tab active" data-source-view="tree">来源目录</button>
+        <button type="button" class="source-mode-tab" data-source-view="manage">管理来源</button>
+      </div>
+      <div class="source-mode-body" data-source-body></div>
+      <div class="source-mode-footer">
+        <button type="button" id="source-mode-add-folder" class="source-mode-add-button">＋ 添加来源文件夹</button>
+      </div>
+    `;
+    panel.addEventListener('click', (event) => {
+      const target = event.target.closest('button, [data-source-action], [data-source-view], [data-source-folder], [data-source-root], [data-source-rescan], [data-source-remove]');
+      if (!target) return;
+      const action = target.getAttribute('data-source-action');
+      if (action === 'close') {
+        closeSourceMode();
+        return;
+      }
+      if (target.id === 'source-mode-add-folder') {
+        void handleSourceAdd();
+        return;
+      }
+      const view = target.getAttribute('data-source-view');
+      if (view) {
+        sourceModeState.view = view;
+        renderSourceModeSidebar();
+        return;
+      }
+      const rootId = target.getAttribute('data-source-root') || '';
+      const relativePath = target.getAttribute('data-source-relative-path') || '.';
+      if (target.hasAttribute('data-source-folder')) {
+        void handleSourceSelectFolder(rootId, relativePath);
+        return;
+      }
+      if (target.hasAttribute('data-source-root')) {
+        const actionName = target.getAttribute('data-source-action');
+        if (actionName === 'toggle-root') {
+          sourceModeState.expanded[rootId] = !sourceModeState.expanded[rootId];
+          renderSourceModeSidebar();
+        } else if (actionName === 'rescan') {
+          void handleRescanRoot(rootId);
+        } else if (actionName === 'remove') {
+          void handleRemoveRoot(rootId);
+        }
+        return;
+      }
+      if (target.hasAttribute('data-source-rescan')) {
+        void handleRescanRoot(target.getAttribute('data-source-rescan'));
+        return;
+      }
+      if (target.hasAttribute('data-source-remove')) {
+        void handleRemoveRoot(target.getAttribute('data-source-remove'));
+      }
+    });
+    sidebar.appendChild(panel);
+    sourceModeState.panel = panel;
+    return panel;
+  }
+
+  function destroySourceModeSidebar() {
+    if (sourceModeState.panel) {
+      sourceModeState.panel.remove();
+      sourceModeState.panel = null;
+    }
+    const container = document.querySelector('.sidebar-container');
+    if (container) container.style.display = sourceModeState.originalContainerDisplay;
+    sourceModeState.originalContainerDisplay = '';
+  }
+
+  function renderDirectoryNode(node, rootId, selectedRootId, selectedRelativePath) {
+    const selected = selectedRootId === rootId && selectedRelativePath === node.relativePath;
+    let html = `<button type="button" class="source-directory-row${selected ? ' selected' : ''}" data-source-folder="${rootId}" data-source-root="${rootId}" data-source-relative-path="${node.relativePath}">📁 ${node.name}<span class="source-mode-count">${node.assetCount}</span></button>`;
+    for (const child of node.children || []) {
+      html += renderDirectoryNode(child, rootId, selectedRootId, selectedRelativePath);
+    }
+    return html;
+  }
+
+  function renderSourceModeSidebar() {
+    if (!sourceModeState.panel) return;
+    const body = sourceModeState.panel.querySelector('[data-source-body]');
+    if (!body) return;
+    const tabs = sourceModeState.panel.querySelectorAll('.source-mode-tab');
+    tabs.forEach((tab) => tab.classList.toggle('active', tab.getAttribute('data-source-view') === sourceModeState.view));
+    const roots = sourceModeState.roots || [];
+    if (sourceModeState.view === 'tree') {
+      if (roots.length === 0) {
+        body.innerHTML = '<div class="source-mode-empty">还没有连接任何来源文件夹</div>';
+        return;
+      }
+      body.innerHTML = roots.map((root) => {
+        const expanded = sourceModeState.expanded[root.id] || roots.length === 1;
+        const selected = sourceModeState.currentRootId === root.id && sourceModeState.currentRelativePath === '.';
+        let html = `<div class="source-root-card">
+          <button type="button" class="source-root-header" data-source-root="${root.id}" data-source-action="toggle-root">
+            <span>${expanded ? '▾' : '▸'}</span>
+            <span class="source-root-name">${root.name}<span class="source-root-path">${root.path}</span></span>
+            <span class="source-mode-count">${root.assetCount}</span>
+          </button>`;
+        if (expanded) {
+          html += `<button type="button" class="source-directory-row${selected ? ' selected' : ''}" data-source-folder="${root.id}" data-source-root="${root.id}" data-source-relative-path=".">全部素材<span class="source-mode-count">${root.assetCount}</span></button>`;
+          for (const directory of root.directories || []) {
+            html += renderDirectoryNode(directory, root.id, sourceModeState.currentRootId, sourceModeState.currentRelativePath);
+          }
+        }
+        html += '</div>';
+        return html;
+      }).join('');
+    } else {
+      if (roots.length === 0) {
+        body.innerHTML = '<div class="source-mode-empty">还没有来源目录</div>';
+        return;
+      }
+      body.innerHTML = roots.map((root) => `
+        <div class="source-manage-card">
+          <div class="source-manage-card-title">${root.name}</div>
+          <div class="source-manage-card-path">${root.path}</div>
+          <div>${root.assetCount} 个素材 · ${root.missingCount} 个丢失 · ${root.watch ? '正在监控' : '未监控'}</div>
+          <div class="source-manage-actions">
+            <button type="button" class="source-mode-button" data-source-folder="${root.id}" data-source-root="${root.id}" data-source-relative-path=".">查看素材</button>
+            <button type="button" class="source-mode-button" data-source-rescan="${root.id}">重新扫描</button>
+            <button type="button" class="source-mode-button danger" data-source-remove="${root.id}">移除此来源</button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  async function refreshSourceModeVirtualLibrary(rootId) {
+    const roots = await sourceModeApi('/api/source-roots');
+    sourceModeState.roots = roots;
+    const nextRootId = rootId || sourceModeState.currentRootId || (roots.length ? roots[0].id : '');
+    const virtual = await sourceModeApi(`/api/source-mode/virtual-library?sourceRootId=${encodeURIComponent(nextRootId)}`);
+    applyVirtualLibrary(virtual);
+    emitMockLifecycle();
+    return virtual;
+  }
+
+  function openSourceFolderInAngular(folder) {
+    const tryOpen = () => {
+      try {
+        if (!window.angular) return;
+        const scope = angular.element(document.body).scope();
+        if (scope && typeof scope.openFolder === 'function') {
+          scope.openFolder(folder, true);
+          if (typeof scope.$evalAsync === 'function') scope.$evalAsync();
+        }
+      } catch (err) {
+        console.warn('[eagle-shim] source folder open failed', err);
+      }
+    };
+    setTimeout(tryOpen, 650);
+  }
+
+  async function openSourceMode() {
+    if (sourceModeState.active) return;
+    try {
+      sourceModeState.savedLibrary = window.__mockLibrary ? JSON.parse(JSON.stringify(window.__mockLibrary)) : null;
+      sourceModeState.savedCache = Array.isArray(window.__mockLibraryCache) ? JSON.parse(JSON.stringify(window.__mockLibraryCache)) : [];
+      sourceModeState.savedLibraryPath = (window.__mockLibrary && (window.__mockLibrary.rootDir || window.__mockLibrary.path)) || '';
+
+      await sourceModeApi('/api/source-mode/state', {
+        method: 'POST',
+        body: JSON.stringify({ mode: 'source' }),
+      });
+      const state = await sourceModeApi('/api/source-mode/state');
+      let rootId = state.selectedSourceRootId || '';
+      const roots = await sourceModeApi('/api/source-roots');
+      if (!rootId && roots.length > 0) rootId = roots[0].id;
+
+      const virtual = await sourceModeApi(`/api/source-mode/virtual-library?sourceRootId=${encodeURIComponent(rootId)}`);
+      applyVirtualLibrary(virtual);
+      sourceModeState.roots = roots;
+      createSourceModeSidebar();
+      renderSourceModeSidebar();
+      sourceModeState.active = true;
+      emitMockLifecycle();
+    } catch (err) {
+      console.warn('[eagle-shim] open source mode failed', err);
+    }
+  }
+
+  async function handleSourceSelectFolder(sourceRootId, relativePath) {
+    sourceRootId = String(sourceRootId || '');
+    relativePath = String(relativePath || '.');
+    const previousRootId = sourceModeState.currentRootId;
+    sourceModeState.currentRootId = sourceRootId;
+    sourceModeState.currentRelativePath = relativePath;
+    try {
+      await sourceModeApi('/api/source-mode/state', {
+        method: 'POST',
+        body: JSON.stringify({
+          mode: 'source',
+          selectedSourceRootId: sourceRootId,
+          selectedRelativePath: relativePath,
+        }),
+      });
+      if (sourceRootId && previousRootId !== sourceRootId) {
+        await refreshSourceModeVirtualLibrary(sourceRootId);
+      }
+      const folders = (window.__mockLibrary && window.__mockLibrary.folders) || [];
+      const folder = findSourceFolder(folders, relativePath);
+      if (folder) openSourceFolderInAngular(folder);
+      renderSourceModeSidebar();
+    } catch (err) {
+      console.warn('[eagle-shim] source select folder failed', err);
+    }
+  }
+
+  async function handleRescanRoot(rootId) {
+    try {
+      const d = desktopApi && desktopApi.sourceMode;
+      if (d && typeof d.rescan === 'function') {
+        await d.rescan(rootId, null);
+      } else {
+        await sourceModeApi('/api/source-roots/rescan', {
+          method: 'POST',
+          body: JSON.stringify({ id: rootId, relativePath: null }),
+        });
+      }
+      sourceModeState.roots = await sourceModeApi('/api/source-roots');
+      renderSourceModeSidebar();
+    } catch (err) {
+      console.warn('[eagle-shim] source rescan failed', err);
+    }
+  }
+
+  async function handleRemoveRoot(rootId) {
+    try {
+      const d = desktopApi && desktopApi.sourceMode;
+      if (d && typeof d.remove === 'function') {
+        await d.remove(rootId);
+      } else {
+        await sourceModeApi('/api/source-roots/remove', {
+          method: 'POST',
+          body: JSON.stringify({ id: rootId }),
+        });
+      }
+      const roots = await sourceModeApi('/api/source-roots');
+      sourceModeState.roots = roots;
+      if (sourceModeState.currentRootId === rootId) {
+        const nextRoot = roots[0] || null;
+        sourceModeState.currentRootId = nextRoot ? nextRoot.id : '';
+        sourceModeState.currentRelativePath = '.';
+        if (nextRoot) await refreshSourceModeVirtualLibrary(nextRoot.id);
+      }
+      renderSourceModeSidebar();
+    } catch (err) {
+      console.warn('[eagle-shim] source remove failed', err);
+    }
+  }
+
+  async function handleSourceAdd() {
+    try {
+      if (desktopApi && desktopApi.sourceMode && typeof desktopApi.sourceMode.pickAndAdd === 'function') {
+        await desktopApi.sourceMode.pickAndAdd();
+      } else if (window.__EAGLE_SOURCE_FOLDER_FIXTURE) {
+        await sourceModeApi('/api/source-roots/addPath', {
+          method: 'POST',
+          body: JSON.stringify({ path: window.__EAGLE_SOURCE_FOLDER_FIXTURE }),
+        });
+      } else {
+        window.alert('浏览器预览中请设置 EAGLE_SOURCE_FOLDER_FIXTURE 后使用来源模式。');
+        return;
+      }
+      const roots = await sourceModeApi('/api/source-roots');
+      sourceModeState.roots = roots;
+      if (!sourceModeState.currentRootId || !roots.some((root) => root.id === sourceModeState.currentRootId)) {
+        if (roots.length > 0) await refreshSourceModeVirtualLibrary(roots[0].id);
+      }
+      renderSourceModeSidebar();
+    } catch (err) {
+      console.warn('[eagle-shim] source add failed', err);
+    }
+  }
+
+  function closeSourceMode() {
+    if (!sourceModeState.active) return;
+    sourceModeState.active = false;
+    destroySourceModeSidebar();
+    if (sourceModeState.savedLibrary) window.__mockLibrary = sourceModeState.savedLibrary;
+    if (Array.isArray(sourceModeState.savedCache)) window.__mockLibraryCache = sourceModeState.savedCache;
+    sourceModeApi('/api/source-mode/state', {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'library' }),
+    }).catch((err) => {
+      console.warn('[eagle-shim] close source mode state save failed', err);
+    });
+    sourceModeState.savedLibrary = null;
+    sourceModeState.savedCache = [];
+    sourceModeState.currentRootId = '';
+    sourceModeState.currentRelativePath = '.';
+    sourceModeState.roots = [];
+    sourceModeState.view = 'tree';
+    sourceModeState.expanded = {};
+    emitMockLifecycle();
+  }
+
+  function installModeSwitch() {
+    if (!window.location.pathname.endsWith('/src/app/index.html')) return;
+    const findSwitchButton = () => Array.from(document.querySelectorAll('.sidebar-toolbar .icon-btn'))
+      .find((btn) => {
+        const img = btn.querySelector('img[src*="ic_switch.svg"]');
+        return img && btn.getAttribute('ng-click') && btn.getAttribute('ng-click').includes('openQuickSearch');
+      });
+    document.addEventListener('click', (event) => {
+      const btn = findSwitchButton();
+      if (!btn || !btn.contains(event.target)) return;
+      event.stopImmediatePropagation();
+      event.preventDefault();
+      if (sourceModeState.active) {
+        closeSourceMode();
+      } else {
+        void openSourceMode();
+      }
+    }, true);
+  }
+
   function startLifecycle() {
     if (desktopApi && desktopApi.library && typeof desktopApi.library.current === 'function') {
       desktopApi.library.current().then((library) => {
@@ -3156,12 +3753,14 @@
       installImportTransitionStyle();
       installBrowserDropImport();
       installNonMediaMetaPatcher();
+      installModeSwitch();
       startLifecycle();
     }, { once: true });
   } else {
     installImportTransitionStyle();
     installBrowserDropImport();
     installNonMediaMetaPatcher();
+    installModeSwitch();
     startLifecycle();
   }
 })();

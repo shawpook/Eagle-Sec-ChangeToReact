@@ -908,6 +908,73 @@ function registerIpc() {
     return dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), { properties: ['openDirectory'], ...options });
   });
 
+  ipcMain.handle('source-mode:open-folder-picker', async (event, options = {}) => {
+    const fixture = process.env.EAGLE_SOURCE_FOLDER_FIXTURE;
+    if (fixture) {
+      return { canceled: false, filePaths: [path.resolve(fixture)] };
+    }
+    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+      properties: ['openDirectory', 'multiSelections'],
+      ...options,
+    });
+    return { canceled: result.canceled, filePaths: result.filePaths || [] };
+  });
+
+  ipcMain.handle('source-mode:add-path', async (event, filePath) => {
+    const root = await apiRequest('/api/source-roots/addPath', {
+      method: 'POST',
+      body: { path: String(filePath || '') },
+    });
+    allowRoot(root.path || filePath);
+    return root;
+  });
+
+  ipcMain.handle('source-mode:pick-and-add', async (event, options = {}) => {
+    const fixture = process.env.EAGLE_SOURCE_FOLDER_FIXTURE;
+    let result;
+    if (fixture) {
+      result = { canceled: false, filePaths: [path.resolve(fixture)] };
+    } else {
+      result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender), {
+        properties: ['openDirectory', 'multiSelections'],
+        ...options,
+      });
+    }
+    if (result.canceled) return [];
+    const roots = [];
+    for (const filePath of result.filePaths || []) {
+      const root = await apiRequest('/api/source-roots/addPath', {
+        method: 'POST',
+        body: { path: filePath },
+      });
+      allowRoot(root.path || filePath);
+      roots.push(root);
+    }
+    return roots;
+  });
+
+  ipcMain.handle('source-mode:list', async () => {
+    const roots = await apiRequest('/api/source-roots');
+    for (const root of roots || []) {
+      if (root && root.path) allowRoot(root.path);
+    }
+    return roots || [];
+  });
+
+  ipcMain.handle('source-mode:remove', async (event, id) => {
+    return apiRequest('/api/source-roots/remove', {
+      method: 'POST',
+      body: { id: String(id || '') },
+    });
+  });
+
+  ipcMain.handle('source-mode:rescan', async (event, id, relativePath) => {
+    return apiRequest('/api/source-roots/rescan', {
+      method: 'POST',
+      body: { id: String(id || ''), relativePath: relativePath || null },
+    });
+  });
+
   ipcMain.handle('fs:list', (event, target = mockLibraryRoot) => {
     const resolved = safeResolve(target);
     if (!fs.existsSync(resolved)) return [];

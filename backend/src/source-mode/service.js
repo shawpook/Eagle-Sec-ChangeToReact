@@ -15,6 +15,7 @@ function mapSourceDirectoryNode(node, rootId, ancestors = []) {
   return {
     id,
     name: node.name,
+    relativePath: node.relativePath,
     children: (node.children || []).map((child) => mapSourceDirectoryNode(child, rootId, [...ancestors, id])),
     images: [],
   };
@@ -61,6 +62,7 @@ export function createSourceModeService(libraryRoot, options = {}) {
         ? [{
           id: rootFolderId,
           name: root.name,
+          relativePath: '.',
           children: (root.directories || []).map((directory) => mapSourceDirectoryNode(directory, rootId)),
           images: [],
         }]

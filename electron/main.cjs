@@ -325,21 +325,65 @@ async function copyItemImage(itemId) {
   return { ok: true, path: originalReal, width: image.getSize().width, height: image.getSize().height };
 }
 
-async function startItemDrag(event, itemId) {
-  const resolved = cachedCurrentLibrary
-    ? resolveItemFilesSync(itemId)
-    : null;
-  const { originalReal, thumbnailPath } = resolved || await resolveItemFiles(itemId);
-  recordShell('startDrag', originalReal);
+function normalizeDragIds(input) {
+  const collect = () => {
+    if (Array.isArray(input)) return input.map((id) => String(id || '')).filter(Boolean);
+    if (input && typeof input === 'object' && Array.isArray(input.ids)) {
+      return input.ids.map((id) => String(id || '')).filter(Boolean);
+    }
+    if (input && typeof input === 'object' && input.id) return [String(input.id)];
+    if (typeof input === 'string' && input) return [input];
+    return [];
+  };
+  return [...new Set(collect())];
+}
+
+function resolveItemFilesSyncList(ids) {
+  if (!cachedCurrentLibrary) return null;
+  const resolved = ids.map((id) => resolveItemFilesSync(id));
+  if (resolved.some((entry) => !entry)) return null;
+  return resolved;
+}
+
+async function resolveItemFilesList(ids) {
+  return Promise.all(ids.map((id) => resolveItemFiles(id)));
+}
+
+function dragIconFor(thumbnailPath) {
+  const maxSize = 80;
+  if (!fs.existsSync(thumbnailPath)) return nativeImage.createEmpty();
+  const image = nativeImage.createFromPath(thumbnailPath);
+  if (image.isEmpty()) return image;
+  const size = image.getSize();
+  if (!size || (!size.width && !size.height)) return image;
+  if (size.width <= maxSize && size.height <= maxSize) return image;
+  const scale = maxSize / Math.max(size.width || 1, size.height || 1);
+  return image.resize({
+    width: Math.max(1, Math.round((size.width || 1) * scale)),
+    height: Math.max(1, Math.round((size.height || 1) * scale)),
+  });
+}
+
+async function startItemDrag(event, input) {
+  const ids = normalizeDragIds(input);
+  if (ids.length === 0) throw new Error('Drag start requires at least one item ID');
+  const resolvedList = cachedCurrentLibrary ? resolveItemFilesSyncList(ids) : null;
+  const list = resolvedList || await resolveItemFilesList(ids);
+  const paths = list.map((entry) => entry.originalReal);
+  const icon = dragIconFor(list[0].thumbnailPath);
+  recordShell('startDrag', paths.join('|'));
   if (dragSmokeMode) {
-    dragStartCalls.push({ itemId: String(itemId || ''), path: originalReal, at: Date.now() });
-    return { ok: true, path: originalReal, sync: Boolean(resolved), recorded: true };
+    dragStartCalls.push({ ids, paths, at: Date.now() });
+    return { ok: true, path: paths[0], paths, fileCount: paths.length, sync: Boolean(resolvedList), recorded: true };
   }
   if (!previewDeliverySmokeMode) {
-    const icon = fs.existsSync(thumbnailPath) ? nativeImage.createFromPath(thumbnailPath) : nativeImage.createEmpty();
-    event.sender.startDrag({ file: originalReal, icon });
+    if (paths.length === 1) {
+      event.sender.startDrag({ file: paths[0], icon });
+    } else {
+      event.sender.startDrag({ files: paths, icon });
+    }
   }
-  return { ok: true, path: originalReal, sync: Boolean(resolved) };
+  return { ok: true, path: paths[0], paths, fileCount: paths.length, sync: Boolean(resolvedList) };
 }
 
 function mockLibraryDescription() {
@@ -877,7 +921,7 @@ function registerIpc() {
   ipcMain.handle('item:reveal', (event, payload = {}) => revealItem(payload.id));
   ipcMain.handle('item:copy-path', (event, payload = {}) => copyItemPath(payload.id));
   ipcMain.handle('item:copy-image', (event, payload = {}) => copyItemImage(payload.id));
-  ipcMain.handle('item:drag-start', (event, payload = {}) => startItemDrag(event, payload.id));
+  ipcMain.handle('item:drag-start', (event, payload = {}) => startItemDrag(event, payload));
   ipcMain.handle('export:reveal', (event, payload = {}) => revealExportResult(payload.jobId));
 
   ipcMain.handle('plugin:open', (event, payload = {}) => {
@@ -1265,10 +1309,22 @@ function registerIpc() {
   });
   ipcMain.on('ondragstart', async (event, params = {}) => {
     try {
-      const target = params.target || (Array.isArray(params.images) ? params.images[0] : null);
-      const id = target && (target.id || (typeof target === 'string' ? target : ''));
-      if (!id) throw new Error('Drag start requires an item ID');
-      await startItemDrag(event, id);
+      let images = params.images;
+      if (typeof images === 'string') {
+        try {
+          images = JSON.parse(images);
+        } catch (err) {
+          images = [];
+        }
+      }
+      const rawIds = Array.isArray(images)
+        ? images.map((entry) => (entry && entry.id) || (typeof entry === 'string' ? entry : ''))
+        : [];
+      const target = params.target;
+      if (target) rawIds.unshift((target && target.id) || (typeof target === 'string' ? target : ''));
+      const ids = [...new Set(rawIds.map((id) => String(id || '')).filter(Boolean))];
+      if (ids.length === 0) throw new Error('Drag start requires an item ID');
+      await startItemDrag(event, ids);
     } catch (err) {
       event.sender.send('preview:action-result', { ok: false, action: 'ondragstart', error: err.message });
     }
@@ -2840,9 +2896,10 @@ app.whenReady().then(async () => {
         try {
           const library = await apiRequest('/api/library/current?includeItems=true');
           updateCachedCurrentLibrary(library);
-          const first = (library.items || []).find((item) => item && !item.isDeleted);
-          if (!first) throw new Error('No draggable item in current library');
-          const result = await startItemDrag({ sender: win.webContents }, first.id);
+          const draggable = (library.items || []).filter((item) => item && !item.isDeleted).slice(0, 2);
+          if (draggable.length === 0) throw new Error('No draggable item in current library');
+          const ids = draggable.map((item) => item.id);
+          const result = await startItemDrag({ sender: win.webContents }, ids);
           console.log(`DRAG_SMOKE_OK ${JSON.stringify({ ...result, callCount: dragStartCalls.length })}`);
         } catch (err) {
           console.error(`DRAG_SMOKE_ERROR ${err.stack || err.message}`);

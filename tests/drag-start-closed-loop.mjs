@@ -90,18 +90,20 @@ try {
   }
 
   const fixture = path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png');
-  const source = path.join(tempRoot, 'Drag Start Smoke.png');
-  fs.copyFileSync(fixture, source);
+  const sourceOne = path.join(tempRoot, 'Drag Start One.png');
+  const sourceTwo = path.join(tempRoot, 'Drag Start Two.png');
+  fs.copyFileSync(fixture, sourceOne);
+  fs.copyFileSync(fixture, sourceTwo);
   const importResponse = await fetch(`http://127.0.0.1:${apiPort}/api/item/addFromPaths`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ images: [{ path: source, name: 'Drag Start Smoke' }] }),
+    body: JSON.stringify({ images: [{ path: sourceOne, name: 'Drag Start One' }, { path: sourceTwo, name: 'Drag Start Two' }] }),
   });
   const importBody = await importResponse.json();
   if (!importResponse.ok || importBody.status !== 'success') {
     throw new Error(`Fixture import failed: ${JSON.stringify(importBody)}`);
   }
-  const itemId = importBody.data[0].id;
+  const itemIds = importBody.data.map((item) => item.id);
 
   electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--smoke-drag'], {
     ...baseEnv,
@@ -125,10 +127,13 @@ try {
   if (!result.ok || !result.sync || !result.recorded || result.callCount !== 1) {
     throw new Error(`Drag start smoke assertions failed: ${JSON.stringify(result)}`);
   }
-  if (!result.path || !fs.existsSync(result.path)) {
-    throw new Error(`Drag start smoke resolved a missing file: ${JSON.stringify(result)}`);
+  if (result.fileCount !== 2 || !Array.isArray(result.paths) || result.paths.length !== 2) {
+    throw new Error(`Multi-select drag start did not resolve two files: ${JSON.stringify(result)}`);
   }
-  console.log(`DRAG_START_CLOSED_LOOP_OK ${JSON.stringify({ itemId, ...result })}`);
+  if (result.paths.some((filePath) => !fs.existsSync(filePath))) {
+    throw new Error(`Drag start smoke resolved missing files: ${JSON.stringify(result)}`);
+  }
+  console.log(`DRAG_START_CLOSED_LOOP_OK ${JSON.stringify({ itemIds, ...result })}`);
 } finally {
   await stop(electron);
   await stop(backend);

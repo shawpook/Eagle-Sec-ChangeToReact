@@ -47,7 +47,7 @@ const api = {
     reveal: (id) => ipcRenderer.invoke('item:reveal', { id }),
     copyPath: (id) => ipcRenderer.invoke('item:copy-path', { id }),
     copyImage: (id) => ipcRenderer.invoke('item:copy-image', { id }),
-    dragStart: (id) => ipcRenderer.invoke('item:drag-start', { id }),
+    dragStart: (ids) => ipcRenderer.invoke('item:drag-start', { ids: Array.isArray(ids) ? ids : [ids] }),
     onOperationResult: (callback) => ipcRenderer.on('item:operation-result', (_event, result) => callback(result)),
   },
   duplicates: {

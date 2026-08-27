@@ -1262,21 +1262,23 @@
     return scope && scope.current && scope.current.id ? scope.current.id : '';
   }
 
-  function dragStartItemId(params) {
+  function dragStartItemIds(params) {
     const value = params && typeof params === 'object' ? params : {};
-    let target = value.target || null;
-    if (!target && typeof value.images === 'string') {
+    let images = value.images;
+    if (typeof images === 'string') {
       try {
-        const images = JSON.parse(value.images);
-        target = Array.isArray(images) ? images[0] : images;
+        images = JSON.parse(images);
       } catch (err) {
-        target = null;
+        images = [];
       }
     }
-    if (!target && Array.isArray(value.images)) target = value.images[0] || null;
-    if (target && typeof target === 'object' && target.id) return target.id;
-    if (typeof target === 'string' && target) return target;
-    return '';
+    const imageIds = Array.isArray(images)
+      ? images.map((entry) => (entry && entry.id) || (typeof entry === 'string' ? entry : '')).filter(Boolean)
+      : [];
+    const target = value.target;
+    const targetId = (target && target.id) || (typeof target === 'string' ? target : '');
+    if (targetId) imageIds.unshift(targetId);
+    return [...new Set(imageIds.map((id) => String(id)).filter(Boolean))];
   }
 
   function runPreviewAction(action, promise) {
@@ -1487,9 +1489,13 @@
         return;
       }
       if (channel === 'ondragstart') {
-        const itemId = dragStartItemId(params) || previewCurrentItemId();
-        if (itemId) {
-          runPreviewAction('ondragstart', desktopApi.item.dragStart(itemId));
+        const ids = dragStartItemIds(params);
+        if (ids.length === 0) {
+          const currentId = previewCurrentItemId();
+          if (currentId) ids.push(currentId);
+        }
+        if (ids.length > 0) {
+          runPreviewAction('ondragstart', desktopApi.item.dragStart(ids.length === 1 ? ids[0] : ids));
           return;
         }
       }

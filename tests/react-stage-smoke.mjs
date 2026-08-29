@@ -48,6 +48,10 @@ try {
     ['global-settings', `typeof window.electronSettings !== 'undefined'`],
     ['react-store-exposed', `typeof window.__eagleReactStore !== 'undefined' && typeof window.__eagleReactStore.getState === 'function'`],
     ['react-store-theme', `(window.__eagleReactStore && (typeof window.__eagleReactStore.getState().theme === 'string'))`],
+    // 阶段1：React 全局状态层与真实数据面同步 —— 初始态 body@theme 与 store.theme 一致
+    ['stage1-theme-sync-initial', `window.__eagleReactStore.getState().theme === (document.body.getAttribute('theme') || 'gray')`],
+    ['stage1-preferences-key-shared', `window.__eagleReactStore.getState().preferences !== null && typeof window.__eagleReactStore.getState().preferences.general.language === 'string'`],
+    ['stage1-actions-exposed', `typeof window.__eagleReactStore.getState().applyThemePreference === 'function' && typeof window.__eagleReactStore.getState().openRegisterModal === 'function'`],
   ];
 
   const failures = [];
@@ -59,6 +63,50 @@ try {
     console.log(`${pass ? 'PASS' : 'FAIL'} ${name}`);
     if (!pass) failures.push(name);
   }
+
+  // 阶段1核心闭环：写同一个 electron-settings「preferences」键 → shims 广播 change.current.theme
+  // → Angular RootController 更新 body@theme；React store 监听同一事件同步 theme。
+  // 数据面零改动断言：写入用的是与 RootController 相同的键与事件通道。
+  const before = await page.send('Runtime.evaluate', {
+    expression: `document.body.getAttribute('theme')`,
+    returnByValue: true,
+  });
+  const beforeTheme = before.result.value || 'gray';
+  const nextTheme = beforeTheme === 'light' ? 'gray' : 'light';
+
+  await page.send('Runtime.evaluate', {
+    expression: `window.electronSettings.setSync('preferences', { theme: { name: ${JSON.stringify(nextTheme.toUpperCase())}, css: ${JSON.stringify(nextTheme)} } })`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(document.body.getAttribute('theme') === ${JSON.stringify(nextTheme)}) && (window.__eagleReactStore.getState().theme === ${JSON.stringify(nextTheme)})`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, `theme switch to ${nextTheme} reflected on both Angular body and React store`, 15000);
+
+  const appStyleHref = await page.send('Runtime.evaluate', {
+    expression: `document.getElementById('app-style').getAttribute('href') || document.getElementById('app-style').href`,
+    returnByValue: true,
+  });
+  const styleOk = String(appStyleHref.result.value).includes(`style_${nextTheme}.css`);
+  console.log(`${styleOk ? 'PASS' : 'FAIL'} stage1-app-style-follows-theme (${appStyleHref.result.value})`);
+  if (!styleOk) failures.push('stage1-app-style-follows-theme');
+
+  // 还原主题，避免污染其它断言
+  await page.send('Runtime.evaluate', {
+    expression: `window.electronSettings.setSync('preferences', { theme: { name: ${JSON.stringify(beforeTheme.toUpperCase())}, css: ${JSON.stringify(beforeTheme)} } })`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `window.__eagleReactStore.getState().theme === ${JSON.stringify(beforeTheme)}`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, `theme restored to ${beforeTheme}`, 15000);
+  console.log(`PASS stage1-theme-restore (${beforeTheme})`);
 
   const shot = await page.send('Page.captureScreenshot', { format: 'png' });
   const dir = path.join(process.cwd(), 'test-run');

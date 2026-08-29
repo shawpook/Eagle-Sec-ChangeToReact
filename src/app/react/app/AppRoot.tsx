@@ -15,6 +15,7 @@ import { useAppState } from '../store/appState';
 
 export function AppRoot() {
   const refreshFromGlobals = useAppState((s) => s.refreshFromGlobals);
+  const applyThemePreference = useAppState((s) => s.applyThemePreference);
 
   useEffect(() => {
     refreshFromGlobals();
@@ -23,16 +24,19 @@ export function AppRoot() {
     // Electron 真实环境偏好更新通过 IPC broadcast 推送。
     const ipc = (window as any).$$electronIpc || (window as any).__eagleIpc;
     const onUpdatePrefs = () => refreshFromGlobals();
+    // RootController（bundle:20072-20090）同款事件：主题偏好变化带完整 theme 对象。
+    const onThemeChange = (_e: unknown, themePref?: { name?: string; css?: string }) =>
+      applyThemePreference(themePref);
     ipc?.on?.('update-preferences', onUpdatePrefs);
-    ipc?.on?.('change.current.theme', onUpdatePrefs);
+    ipc?.on?.('change.current.theme', onThemeChange);
 
     window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('storage', onStorage);
       ipc?.removeListener?.('update-preferences', onUpdatePrefs);
-      ipc?.removeListener?.('change.current.theme', onUpdatePrefs);
+      ipc?.removeListener?.('change.current.theme', onThemeChange);
     };
-  }, [refreshFromGlobals]);
+  }, [refreshFromGlobals, applyThemePreference]);
 
   return null;
 }

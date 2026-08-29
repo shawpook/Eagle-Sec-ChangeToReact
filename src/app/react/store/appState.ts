@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { eagle, electronSettings, i18n, t } from '../global/eagleGlobals';
+import { eagle, electronSettings, i18n, ipcRenderer, t } from '../global/eagleGlobals';
 
 /**
  * 全局应用状态（阶段1：壳与全局状态）。
@@ -59,6 +59,14 @@ export interface AppState {
   setLanguage: (language: string) => void;
   setPreferences: (preferences: AppPreferences) => void;
   refreshFromGlobals: () => void;
+  /** RootController 的主题分支（bundle:20072-20090）：Auto 主题跟随系统深浅色。 */
+  applyThemePreference: (themePref: { name?: string; css?: string } | undefined) => void;
+  /** RootController.toggleAlwaysOnTop（bundle:20138-20151）。 */
+  toggleAlwaysOnTop: () => void;
+  /** RootController.openRegisterModal（bundle:20124-20126）。 */
+  openRegisterModal: () => void;
+  /** RootController.openTrialModal（bundle:20128-20133）。 */
+  openTrialModal: (trialRemain: number) => void;
 }
 
 const inITIAL = electronSettings()?.getPreferences?.() || null;
@@ -93,6 +101,37 @@ export const useAppState = create<AppState>((set, get) => ({
       inspector: eagle()?.inspector || null,
       filter: eagle()?.filter || null,
     });
+  },
+
+  // 与 bundle:20072-20090 的 RootController 主题分支逐字对齐：
+  // Auto → 跟随系统 nativeTheme；否则取 theme.css，缺省 gray。
+  applyThemePreference: (themePref) => {
+    let theme = themePref?.css || 'gray';
+    if (themePref && themePref.name === 'Auto') {
+      const nativeTheme = (window as any).require?.('electron')?.remote?.nativeTheme;
+      theme = nativeTheme?.shouldUseDarkColors ? 'gray' : 'light';
+    }
+    set({ theme });
+  },
+
+  toggleAlwaysOnTop: () => {
+    const state = get();
+    const isAlwaysOnTop = !(state as any).isAlwaysOnTop;
+    (state as any).isAlwaysOnTop = isAlwaysOnTop;
+    const currentWindow = (window as any).require?.('electron')?.remote?.getCurrentWindow?.();
+    if (isAlwaysOnTop) {
+      currentWindow?.setAlwaysOnTop?.(true, 'pop-up-menu');
+    } else {
+      currentWindow?.setAlwaysOnTop?.(false);
+    }
+  },
+
+  openRegisterModal: () => {
+    ipcRenderer()?.send?.('open-registration', 'REGISTER');
+  },
+
+  openTrialModal: (trialRemain: number) => {
+    if (trialRemain) ipcRenderer()?.send?.('open-trial-modal', trialRemain);
   },
 }));
 

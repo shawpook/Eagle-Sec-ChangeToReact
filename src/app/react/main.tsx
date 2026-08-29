@@ -1,8 +1,10 @@
 import { createRoot } from 'react-dom/client';
 import { AppRoot } from './app/AppRoot';
 import { Sidebar } from './components/sidebar/Sidebar';
+import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
+import { bindToolbarSync } from './store/toolbarState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -46,11 +48,14 @@ root.render(
   <>
     <AppRoot />
     <Sidebar />
+    <Toolbar />
+    <SearchSuggestions />
   </>
 );
 
-// 阶段2：侧栏 scope → React 快照同步（Angular digest 驱动）。
+// 阶段2/3a：scope → React 快照同步（Angular digest 驱动）。
 bindSidebarSync();
+bindToolbarSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

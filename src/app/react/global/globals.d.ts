@@ -36,6 +36,7 @@ declare module 'react' {
     'on-resize'?: string;
     'auto-focus'?: string;
     'ng-click'?: string;
+    selectall?: string;
   }
+  interface InputHTMLAttributes<T> extends HTMLAttributes<T> {}
 }
-

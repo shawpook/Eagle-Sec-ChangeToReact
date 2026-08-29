@@ -84,8 +84,23 @@
 
 ## 3. 工具栏与筛选（toolbar / filter-item-*）
 
+> 阶段3a（工具栏）：**已验证并接管**。index.html 141-273 行 .toolbar + 130-139 行 .search-suggestions
+> 旧引用已删（换为 #eagle-toolbar-host / #eagle-search-suggestions-host 壳），由
+> `react/components/toolbar/Toolbar.tsx` 接管：面包屑/前进后退/缩放滑条/右侧按钮组/搜索框/
+> 搜寻自动提示/cornerBtns 指令（bundle:63187）/置顶插件 ui-sortable。注意 portal 内容必须是
+> Fragment（不能包 wrapper div），否则破坏 .toolbar 的 48px flex 行布局。
+> 闭环：react-stage-smoke 42/42（筛选开关 active、搜索 keyword 回写+搜索结果面包屑、
+> 检查器隐藏时 corner-btns 双实例与原版 ng-if 行为一致）；source-mode-ui / main-ui-workflow /
+> library-switch-ui / drag-start / api-smoke 全绿。
+> 阶段3b（筛选面板）：进行中。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
+| .toolbar 区块（面包屑/滑条/右侧/搜索）| 区块 | index.html:141-273（旧） | 已验证 |
+| .search-suggestions | 区块 | index.html:130-139（旧） | 已验证 |
+| cornerBtns | directive | 63187-63239 + corner-btns.html | 已验证 |
+| selectAll（#search）| directive | 70600-70614 | 已验证 |
+| $("#search") focus→currentFocus | 行为 | 21830 | 已验证（onFocus 移植） |
 | filterItem | directive | 67305-67559 | 待办 |
 | filterItemImage | directive | 67559-68091 | 待办 |
 | filterItemSemantic | directive | 68091-68163 | 待办 |
@@ -106,8 +121,7 @@
 | filterItemAnnotation | directive | 69352-69400 | 待办 |
 | filterItemNote | directive | 69400-69448 | 待办 |
 | filterItemUrl | directive | 69448-69688 | 待办 |
-
-工具列对应 index.html 顶部 toolbar/`#filter-open` 区块。
+| 筛选面板容器（.filter/.filter-items/.filter-right + color-picker + ui-sortable 工具列）| 区块 | index.html 現 296-336 附近 | 待办 |
 
 ---
 

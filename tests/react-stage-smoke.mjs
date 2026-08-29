@@ -226,6 +226,152 @@ try {
   }, 'back to all', 15000);
   console.log('PASS stage2-click-all-restores');
 
+  // ---- 阶段3a：工具栏 React 接管闭环 ----
+  const stage3a = [
+    ['stage3a-toolbar-host-rendered', `document.querySelectorAll('#eagle-toolbar-host .breadcrumbs li').length > 0`],
+    ['stage3a-breadcrumb-all-active', `(() => { const li = Array.from(document.querySelectorAll('#eagle-toolbar-host .breadcrumbs li')).find(e => e.textContent.trim() === '全部'); return !!li && li.style.display !== 'none'; })()`],
+    ['stage3a-prev-next-btns', `!!document.querySelector('#eagle-toolbar-host .ic-btn.prev') && !!document.querySelector('#eagle-toolbar-host .ic-btn.next')`],
+    ['stage3a-zoom-slider', `(() => { const input = document.querySelector('#box-list-slider input.range'); return !!input && Number(input.min) === 75 && Number(input.value) > 75; })()`],
+    ['stage3a-zoom-progressbar-width', `(() => { const cur = document.querySelector('#box-list-slider .range-progressbar .current'); return !!cur && cur.style.width.includes('%'); })()`],
+    ['stage3a-search-input', `(() => { const input = document.querySelector('#search'); return !!input && input.placeholder.length > 0; })()`],
+    ['stage3a-filter-btn-with-badge-slot', `(() => { const btns = document.querySelectorAll('#eagle-toolbar-host .ic-btn.filter-btn'); return btns.length >= 2; })()`],
+    ['stage3a-corner-window-btns-hidden-by-default', `document.querySelectorAll('#eagle-toolbar-host .corner-btns .windows-btn').length === 0`],
+    ['stage3a-toolbar-visible', `getComputedStyle(document.getElementById('eagle-toolbar-host')).display !== 'none'`],
+  ];
+  for (const [name, expression] of stage3a) {
+    let pass = false;
+    try {
+      await waitFor(async () => {
+        const r = await page.send('Runtime.evaluate', { expression, returnByValue: true });
+        return r.result.value === true;
+      }, name, 15000);
+      pass = true;
+    } catch (err) { pass = false; }
+    console.log(`${pass ? 'PASS' : 'FAIL'} ${name}`);
+    if (!pass) failures.push(name);
+  }
+
+  // 交互闭环 A：点筛选按钮 → eagle.filter.isOpen 翻转 → React 按钮获得 .active
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const btns = Array.from(document.querySelectorAll('#eagle-toolbar-host .right .ic-btn.filter-btn'));
+      const filterBtn = btns.find((b) => b.querySelector('img[src*="ic-toolbar-filter.svg"]'));
+      filterBtn && filterBtn.click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const btns = Array.from(document.querySelectorAll('#eagle-toolbar-host .right .ic-btn.filter-btn'));
+        const filterBtn = btns.find((b) => b.querySelector('img[src*="ic-toolbar-filter.svg"]'));
+        return !!filterBtn && filterBtn.className.includes('active');
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'filter button toggles active', 15000);
+  console.log('PASS stage3a-filter-toggle-active');
+  // 还原：再点一次关掉筛选面板
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const btns = Array.from(document.querySelectorAll('#eagle-toolbar-host .right .ic-btn.filter-btn'));
+      const filterBtn = btns.find((b) => b.querySelector('img[src*="ic-toolbar-filter.svg"]'));
+      filterBtn && filterBtn.click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => { const s = angular.element(document.body).scope(); return !s.eagle.filter.isOpen; })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'filter closed restored', 15000);
+  console.log('PASS stage3a-filter-toggle-restored');
+
+  // 交互闭环 B'：隐藏检查器 → corner-btns（窗口按钮）出现 → 恢复检查器
+  try {
+    await page.send('Runtime.evaluate', {
+      expression: `(() => { const s = angular.element(document.body).scope(); s.inspector.toggle(); s.$evalAsync(); })()`,
+      returnByValue: true,
+    });
+    await waitFor(async () => {
+      const r = await page.send('Runtime.evaluate', {
+        expression: `(() => {
+          const close = document.querySelector('#eagle-toolbar-host #close-btn');
+          return !!close && (close.style.backgroundImage || '').includes('ic-windows-close')
+            && document.querySelectorAll('#eagle-toolbar-host .corner-btns').length === 2 && document.querySelectorAll('#eagle-toolbar-host .corner-btns .windows-btn').length === 8;
+        })()`,
+        returnByValue: true,
+      });
+      return r.result.value === true;
+    }, 'corner window buttons appear when inspector hidden', 15000);
+    console.log('PASS stage3a-corner-btns-when-inspector-hidden');
+  } catch (err) {
+    const diag = await page.send('Runtime.evaluate', {
+      expression: `(() => { const s = angular.element(document.body).scope(); return {
+        isHideInspector: s.inspector && s.inspector.isHideInspector,
+        snapshotInspectorHide: window.__eagleReactStore && document.querySelectorAll('#eagle-toolbar-host .corner-btns').length,
+        cornerInDom: document.querySelectorAll('#eagle-toolbar-host .corner-btns').length,
+        windowsBtns: document.querySelectorAll('#eagle-toolbar-host .windows-btn').length,
+        closeBtn: !!document.querySelector('#eagle-toolbar-host #close-btn'),
+      }; })()`,
+      returnByValue: true,
+    });
+    console.error('CORNER DIAG:', JSON.stringify(diag.result.value));
+    throw err;
+  }
+  await page.send('Runtime.evaluate', {
+    expression: `(() => { const s = angular.element(document.body).scope(); s.inspector.toggle(); s.$evalAsync(); })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `document.querySelectorAll('#eagle-toolbar-host .corner-btns').length === 0 && document.querySelectorAll('#eagle-toolbar-host .windows-btn').length === 0`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'corner window buttons restored', 15000);
+  console.log('PASS stage3a-corner-btns-restored');
+
+  // 交互闭环 B：搜索输入 → keyword 写回 scope → 面包屑出现「搜索结果」条目
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const input = document.querySelector('#search');
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(input, 'stage-a');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const s = angular.element(document.body).scope();
+        const hasBreadcrumb = Array.from(document.querySelectorAll('#eagle-toolbar-host .breadcrumbs li')).some((li) => li.textContent.includes('搜索结果'));
+        return s && s.keyword === 'stage-a' && hasBreadcrumb;
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'keyword roundtrip + search result breadcrumb', 20000);
+  console.log('PASS stage3a-search-keyword-roundtrip');
+  // 还原 keyword
+  await page.send('Runtime.evaluate', {
+    expression: `(() => { const s = angular.element(document.body).scope(); s.keyword = ''; s.filterContent && s.filterContent(); s.$evalAsync(); })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => { const s = angular.element(document.body).scope(); return !s.keyword; })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'keyword restored', 15000);
+  console.log('PASS stage3a-keyword-restored');
+
   const shot = await page.send('Page.captureScreenshot', { format: 'png' });
   const dir = path.join(process.cwd(), 'test-run');
   fs.mkdirSync(dir, { recursive: true });

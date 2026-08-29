@@ -1,0 +1,46 @@
+import { createRoot } from 'react-dom/client';
+import { AppRoot } from './app/AppRoot';
+import { useAppState } from './store/appState';
+
+/**
+ * React 入口（Eagle React 化改造）。
+ *
+ * 接线原则：
+ * - 入口仍是 src/app/index.html；本模块由 vite 以 `<script type="module">` 注入依赖。
+ * - 改造是「逐步替换」：Angular 壳在迁移完成前保留，React 层通过宿主容器逐块接管。
+ * - 尚未接管的区域仍由 Angular 渲染，避免同节点双渲染冲突。
+ * - window.i18n / window.eagle / window.eagleDesktop / window.electronSettings 等全局由
+ *   frontend/public/shims.js 或 preload.cjs 建好，React 层直接读取，不复制逻辑。
+ */
+
+// 全局共享状态的类型声明（数据面通过全局对象读取，零复制）。
+declare global {
+  interface Window {
+    i18n: any;
+    eagle: any;
+    eagleDesktop: any;
+    electronSettings: any;
+    $bodyScope?: any;
+    module?: any;
+    __mockLibrary?: any;
+  }
+}
+
+function pickMountHost(): HTMLElement {
+  // 优先使用专用宿主，若不存在则回退到 body 末尾追加（避免抢占 Angular 容器）。
+  let host = document.getElementById('eagle-react-host');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'eagle-react-host';
+    host.style.cssText = 'position: relative; z-index: 0;';
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+const host = pickMountHost();
+const root = createRoot(host);
+root.render(<AppRoot />);
+
+// 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
+(window as any).__eagleReactStore = useAppState;

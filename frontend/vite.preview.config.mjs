@@ -12,10 +12,29 @@ const thumbnailTarget = process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:416
 const apiTarget = process.env.EAGLE_API_URL || 'http://localhost:41695';
 const extensionTarget = process.env.EAGLE_EXTENSION_URL || 'http://localhost:41693';
 
+// @vitejs/plugin-react 的 refresh preamble 通常经 transformIndexHtml 注入；本仓的
+// /src/app/*.html 走自定义中间件直出、绕过该钩子，因此这里手动补同一段内联脚本，
+// 否则被转换的 .tsx 会在运行时抛 "can't detect preamble"，导致整条 React import 链失败。
+const REACT_REFRESH_PREAMBLE = `<script type="module">
+      import RefreshRuntime from "/@react-refresh"
+      RefreshRuntime.injectIntoGlobalHook(window)
+      window.$RefreshReg$ = () => {}
+      window.$RefreshSig$ = () => (type) => type
+      window.__vite_plugin_react_preamble_installed__ = true
+    </script>`;
+
 function injectPreviewScripts(html) {
   return html.replace(
     '<head>',
     `<head>\n    <script>window.__EAGLE_API_BASE_URL=${JSON.stringify(apiTarget)};window.__EAGLE_EXTENSION_BASE_URL=${JSON.stringify(extensionTarget)};</script>\n    <script src="/mock-data.js"></script>\n    <script src="/shims.js"></script>`
+  );
+}
+
+// React 化入口：仅注入主界面 index.html（随各子系统迁移逐步扩展到其它窗口）。
+function injectReactMount(html) {
+  return html.replace(
+    '</body>',
+    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/main.tsx"></script>\n</body>`
   );
 }
 
@@ -42,7 +61,7 @@ function allowSingleColorPalette(html) {
 
 function readPreviewIndex() {
   const file = path.join(workspaceRoot, 'src/app/index.html');
-  return injectPreviewScripts(fs.readFileSync(file, 'utf8'));
+  return injectReactMount(injectPreviewScripts(fs.readFileSync(file, 'utf8')));
 }
 
 function readReplacement(name) {

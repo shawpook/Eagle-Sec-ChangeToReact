@@ -92,7 +92,17 @@
 > 闭环：react-stage-smoke 42/42（筛选开关 active、搜索 keyword 回写+搜索结果面包屑、
 > 检查器隐藏时 corner-btns 双实例与原版 ng-if 行为一致）；source-mode-ui / main-ui-workflow /
 > library-switch-ui / drag-start / api-smoke 全绿。
-> 阶段3b（筛选面板）：进行中。
+> 阶段3b（筛选面板）：**下一个待办**，从「筛选面板容器」开始。入口状态：
+> - 容器区块在当前 index.html 约 296-336 行（`.filter` div：color-picker input + ui-sortable 工具列 +
+>   19 个 `<filter-item-*>` 空元素 + `.filter-right`（savedFilter/isLock/reset）+ `#filter-toolbar-overlay`）。
+> - 接管方式与 3a 相同：容器换壳 + React portal，**内容必须是 Fragment**（勿包 wrapper）。
+> - filterItem 基础指令（bundle:67305-67559，attribute 指令）需移植为 FilterItemShell：
+>   click 切换 .open（互斥）、right-menu 对齐、`#filter-toolbar-overlay` .show 同步、
+>   .check-item 键盘导航（up/down/enter/esc）与 hover active、clear-btn 关闭、focusInput 延时聚焦、
+>   `[close-filter-item]` 委托关闭、增强输入 500ms 清空高亮。
+> - 每个模板在 `js/directives/filter-item-*.html`，指令体在 bundle 对应行号（下表）。
+> - 验证断言建议：toggleFilter 后 .filter 面板展开、color/size 等 check-item 计数、
+>   键盘导航 active 迁移、reset 按钮清空 filterBadge、截图比对展开态。
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |

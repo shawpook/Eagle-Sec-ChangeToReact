@@ -194,6 +194,23 @@
 
 ## 5. 详情模式与查看器（bitmap-viewer / media-element / 详情布局）
 
+> **下一个待办**，入口状态（2026-08-29 勘察）：
+> - 区块：当前 index.html 387-928 行（`.content-panel.detail-mode`，542 行模板）。
+>   含：详情工具列（面包屑/缩放滑条/corner-btns 复用）→ `#detail-container`（bitmap-viewer +
+>   rect-comment 批注层）→ 各类型查看分支（视频 media-element/mpv-media-element、音频
+>   audio-media-element、txt/pdf/font/url 等）→ comments-container ×3（图片/视频/音频）。
+> - 接管缝：与侧栏/网格一致 —— 保留 `.content-panel.detail-mode` 壳（ng-show 左右边距由
+>   React 接管），内部按子区块逐步换壳；**portal 内容必须是 Fragment**。
+> - 指令行号：mediaElement 64843-65684、mpvMediaElement 65684-66094、audioMediaElement
+>   66094-66496、rectComment 72439-72564、commentsContainer 72353-72439、commentItem 72215-72353、
+>   commentVideo 70781-70817、rectSelect 72564-72799（编辑态批注框选）。
+> - 既有测试锚点：tests/video-detail-mode-closed-loop.mjs、preview-delivery-closed-loop.mjs、
+>   shims.js 的 detail-delivery 状态机（window.__eagleDetailDeliveryState，依赖 body.eagle-detail-
+>   awaiting-original 类与 #bitmap-viewer canvas 签名）——接管时必须保持这些 DOM 锚点不变。
+> - 建议闭环断言：双击条目进入详情（body.is-detail-mode）、Esc 退出、缩放滑条联动
+>   #bitmap-viewer、视频详情 video 元素出现、批注模式进出。
+
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
 | mediaElement | directive（独立模块 mediaElement）| 64843-65684 | 待办 |

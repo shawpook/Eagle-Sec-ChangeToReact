@@ -93,9 +93,25 @@
 > 检查器隐藏时 corner-btns 双实例与原版 ng-if 行为一致）；source-mode-ui / main-ui-workflow /
 > library-switch-ui / drag-start / api-smoke 全绿。
 > 阶段3b（筛选面板）：**下一个待办**，从「筛选面板容器」开始。入口状态：
-> - 容器区块在当前 index.html 约 296-336 行（`.filter` div：color-picker input + ui-sortable 工具列 +
->   19 个 `<filter-item-*>` 空元素 + `.filter-right`（savedFilter/isLock/reset）+ `#filter-toolbar-overlay`）。
+> - 容器区块在当前 index.html 约 157-203 行（`#filter-toolbar`：color-picker input + ui-sortable 工具列 +
+>   17 个 `<filter-item-*>`（ng-switch 按 `eagle.filter.toolbar[].type`）+ filter-add-btn +
+>   `.filter-right`（SavedFilter/isLock/reset）+ `#filter-toolbar-overlay`）。
+>   注意：filterItemImage/filterItemSemantic 两指令存在但不在默认 ng-switch 内。
 > - 接管方式与 3a 相同：容器换壳 + React portal，**内容必须是 Fragment**（勿包 wrapper）。
+> - **模板分族（已勘察 2026-08-29，模板在 js/directives/filter-item-*.html）**：
+>   - 【check 列表族】rating(68766)/fonts(68812)/camera(68853)/shape(68704)/import(68913)/mtime(69010)/
+>     types(68639)：`.check-item` 固定结构 `.check-icon>.checkbox + .name + .badge`，ng-click 序列
+>     `focusInput(); 改规则; page=1; filterContent(); changeDisplayName();`。
+>   - 【数值区间族】size(69220)/duration(69105)/bpm(69164)/resolution(69279)：min/max 输入
+>     （debounce 300）+ unit select；displayName 拼接逻辑见各自 changeDisplayName。
+>   - 【关键词族】annotation(69352)/note(69400)/url(69448)：has/no check-item + textarea（debounce 300，
+>     `input-disabled` 类跟随 has）。
+>   - 【复杂族】folders(68209)/tags(68364)：pinyin 搜索依赖全局 chineseConvert/pinyinlite/_/cartesianProduct；
+>     tags 有 toggleAll/isAllSelected/filterSelected/filterWithGroup/logic rule；folders 有 changeRule +
+>     `$body.calcuteContainFolders` 重算（监听 `open` 事件触发）。
+>   - 【color 特例】(68163)：`#colorpickerHolder` jQuery ColorPicker(flat) + 13 固定 palette + accuracy 滑条，
+>     onChange 33ms 防抖写 `$body.hexColor` 或 `filterWithColor`。
+>   - 各指令 clear/displayName 逐字转写；`$scope.$on("Reset_Filter")` 以 `$bodyScope.$on('Reset_Filter',...)` 等价移植。
 > - filterItem 基础指令（bundle:67305-67559，attribute 指令）需移植为 FilterItemShell：
 >   click 切换 .open（互斥）、right-menu 对齐、`#filter-toolbar-overlay` .show 同步、
 >   .check-item 键盘导航（up/down/enter/esc）与 hover active、clear-btn 关闭、focusInput 延时聚焦、

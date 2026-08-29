@@ -158,22 +158,37 @@
 
 ## 4. 内容网格（ng-grid-layout / vs-repeat / thumb）
 
+> 阶段状态：**已验证并接管**。index.html 舊 368-377 行 #box-list 的 ng-grid-layout/items/options/
+> ng-mousedown/ng-right-click 旧引用已删（元素保留），boxes 由 react/components/grid/boxGridEngine.ts
+> （ngGridLayout 指令 66496-67305 逐字移植）生成。三个全局契约保持：window.resetNgGridLayoutData
+> （bundle 4 个调用点零改动）、window.ig/NgGridStrings（scrollbar/框选消费方）、window.$bodyScope
+> （InfiniteGrid.getViewportSize 等读取，原由指令 link 设置、现由 React 接手）。
+> gl:reset/gl:scrollToTop/gl:removeItems 事件改挂 bodyScope 等价监听。
+> 闭环：react-stage-smoke 56/56（boxes 渲染/结构/缩略图/type-label/ig 全局/布局类与活 scope 一致/
+> 点击选中链路）；source-mode-ui/main-ui-workflow/library-switch-ui/drag-start/api-smoke 全绿。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| ngGridLayout | directive | 66496-67305 | 待办 |
-| vsGridRepeat | directive（独立模块 vsGridRepeat）| 14686-15113 | 待办 |
-| vsRepeat | directive（独立模块 vs-repeat）| 16865-17425 | 待办 |
-| lazyImgContainer | directive | 70461（被注释）| 待办 |
-| infiniteScroll | directive | 70505（被注释）| 待办 |
-| vsAutoScroll | directive | 69856-69904 | 待办 |
+| ngGridLayout | directive | 66496-67305 | 已验证（引擎逐字移植） |
+| resetNgGridLayoutData 全局契约 | 全局函数 | 66970（调用方 21893/21908/27452/30541）| 已验证 |
+| window.ig / NgGridStrings 全局 | 全局变量 | 66491-66494 | 已验证 |
+| window.$bodyScope 全局 | 全局变量 | 66507-66509 | 已验证（React 接手设置） |
+| #box-list 壳 | 区块 | index.html 舊 368-377 | 已验证 |
+| gl:* 事件 | scope 事件 | 67254-67280 | 已验证（挂 bodyScope） |
+| generateItem/getItem 盒模板 | 模板生成 | 66524-66963 | 已验证 |
+| onLayoutComplete / LazyLoadManager 注册 | 行为 | 67140-67225 | 已验证 |
+| scroll 百分比恢复 + smoothScrollTo | 行为 | 67045-67140 | 已验证 |
+| box 选择链路（委托 mousedown→select）| 行为 | 21918-21942 | 已验证（data-box-id 不依赖元素 scope） |
+| vsGridRepeat | directive（独立模块）| 14686-15113 | 待办（使用点待勘察） |
+| vsRepeat | directive（独立模块）| 16865-17425 | 已验证（侧栏/tags/folders 用法等效替代） |
+| vsAutoScroll | directive | 69856-69904 | 已验证（阶段2） |
+| lazyImgContainer / infiniteScroll | directive | 70461/70505（被注释）| 无需移植 |
 | imageonload | directive | 70763-70781 | 待办 |
 | retryWhenError | directive | 70198-70224 | 待办 |
 | retryWhenThumbError | directive | 70224-70250 | 待办 |
 | tgaImg | directive | 70250-70326 | 待办 |
 | extIcon | directive | 70817-70837 | 待办 |
-| boxContainerScrollbar | directive | 73114-74147 | 待办 |
-
-网格与缩略图容器对应 index.html `#box-container` / `.item-view` 区块。
+| boxContainerScrollbar | directive | 73114-74147 | 待办（与 ig 全局耦合） |
 
 ---
 

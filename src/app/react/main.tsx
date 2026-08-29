@@ -3,6 +3,7 @@ import { AppRoot } from './app/AppRoot';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
 import { FilterPanel } from './components/filter/FilterItems2';
+import { BoxList } from './components/grid/BoxList';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
 import { bindToolbarSync } from './store/toolbarState';
@@ -53,6 +54,7 @@ root.render(
     <Toolbar />
     <SearchSuggestions />
     <FilterPanel />
+    <BoxList />
   </>
 );
 

@@ -505,6 +505,50 @@ try {
   }, 'filter panel closed restored', 15000);
   console.log('PASS stage3b-panel-closed-restored');
 
+  // ---- 阶段4：内容网格 React 接管闭环 ----
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `document.querySelectorAll('#box-list .box').length > 0 && typeof window.ig !== 'undefined' && typeof window.resetNgGridLayoutData === 'function'`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'boxes rendered via react engine', 45000);
+  console.log('PASS stage4-boxes-rendered');
+
+  const stage4Static = [
+    ['stage4-box-structure', `(() => { const box = document.querySelector('#box-list .box'); return Boolean(box && box.querySelector('.thumbnail') && box.querySelector('.name') && box.getAttribute('data-box-id')); })()`],
+    ['stage4-box-thumbnail-img', `!!document.querySelector('#box-list .box .thumbnail img')`],
+    ['stage4-type-label', `(() => { const label = document.querySelector('#box-list .box .type-label'); return !!label; })()`],
+    ['stage4-global-ig-exposed', `typeof window.ig !== 'undefined' && typeof window.ig.getGroupKeys === 'function'`],
+    ['stage4-container-layout-class', `(() => { const s = angular.element(document.body).scope(); const cls = document.getElementById('box-container').className; const expected = (s.layout === 'GridLayout' || s.layout === 'SquareLayout') ? 'grid-layout' : s.layout === 'ListLayout' ? 'list-layout' : 'justified-layout'; return cls.includes(expected); })()`],
+  ];
+  for (const [name, expression] of stage4Static) {
+    const r = await page.send('Runtime.evaluate', { expression, returnByValue: true });
+    const pass = r.result.value === true;
+    console.log(`${pass ? 'PASS' : 'FAIL'} ${name}`);
+    if (!pass) failures.push(name);
+  }
+
+  // 交互闭环：点击第一个 box → .selected 类 + scope.selectedMappings 记录
+  await page.send('Runtime.evaluate', {
+    expression: `(() => { const thumb = document.querySelector('#box-list .box .thumbnail'); thumb.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); thumb.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })); })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const s = angular.element(document.body).scope();
+        const box = document.querySelector('#box-list .box.selected') || document.querySelector('#box-list .box');
+        const id = box && box.getAttribute('data-box-id');
+        return !!(id && s.selectedMappings && s.selectedMappings[id]) && box.className.includes('selected');
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'box selection loop', 20000);
+  console.log('PASS stage4-box-select');
+
+
 
   const shot = await page.send('Page.captureScreenshot', { format: 'png' });
   const dir = path.join(process.cwd(), 'test-run');

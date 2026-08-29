@@ -372,6 +372,140 @@ try {
   }, 'keyword restored', 15000);
   console.log('PASS stage3a-keyword-restored');
 
+  // ---- 阶段3b：筛选面板 React 接管闭环 ----
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `document.querySelectorAll('#eagle-filter-toolbar-host .filter-item').length >= 17`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'filter items rendered', 30000);
+  console.log('PASS stage3b-17-items-rendered');
+
+  const stage3bStatic = [
+    ['stage3b-filter-items-hidden-by-default', `(() => { const inner = document.querySelector('#eagle-filter-toolbar-host .filter-items > div'); return !!inner && getComputedStyle(inner).display === 'none'; })()`],
+    ['stage3b-overlay-persists', `!!document.getElementById('filter-toolbar-overlay')`],
+  ];
+  for (const [name, expression] of stage3bStatic) {
+    const r = await page.send('Runtime.evaluate', { expression, returnByValue: true });
+    const pass = r.result.value === true;
+    console.log(`${pass ? 'PASS' : 'FAIL'} ${name}`);
+    if (!pass) failures.push(name);
+  }
+
+  // 打开筛选面板（点工具栏筛选按钮）→ 17 个 .filter-item 可见 → 点「类型」筛选器展开菜单
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const btns = Array.from(document.querySelectorAll('#eagle-toolbar-host .right .ic-btn.filter-btn'));
+      const filterBtn = btns.find((b) => b.querySelector('img[src*="ic-toolbar-filter.svg"]'));
+      filterBtn && filterBtn.click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const host = document.getElementById('eagle-filter-toolbar-host');
+        const items = host.querySelectorAll('.filter-item');
+        const visible = Array.from(items).some((el) => el.offsetParent !== null);
+        return getComputedStyle(host).display !== 'none' && items.length >= 17 && visible;
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'filter panel open with items', 20000);
+  console.log('PASS stage3b-panel-opens');
+
+  // 点击「格式」(types) 筛选器 → .open 菜单展开 → check-item 列表渲染 → 互斥（只有一个 open）
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const item = document.getElementById('types-filter-item');
+      item && item.querySelector('.name').click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const item = document.getElementById('types-filter-item');
+        if (!item || !item.classList.contains('open')) return false;
+        const openCount = document.querySelectorAll('[filter-item].open').length;
+        const checks = item.querySelectorAll('.check-item').length;
+        return openCount === 1 && checks > 0;
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'types filter opens exclusively', 15000);
+  console.log('PASS stage3b-types-open-exclusive');
+
+  // 勾选第一个格式 → filterRules.type.includes 写入 → 面包屑出现「搜索结果」 + .active
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const item = document.getElementById('types-filter-item');
+      const check = item.querySelector('.check-item');
+      check && check.click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const s = angular.element(document.body).scope();
+        const rules = s.eagle.filter.filterRules.type.includes;
+        const activeCount = Object.values(rules).filter(Boolean).length;
+        const item = document.getElementById('types-filter-item');
+        const breadcrumb = Array.from(document.querySelectorAll('#eagle-toolbar-host .breadcrumbs li')).some((li) => li.textContent.includes('搜索结果'));
+        return activeCount > 0 && item.className.includes('active') && breadcrumb && s.eagle.filter.filterBadge > 0;
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'type check drives rules + badge + breadcrumb', 20000);
+  console.log('PASS stage3b-type-check-loop');
+
+  // 重置按钮 → filterRules 清空 + filterBadge 归零 + active 消失
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const host = document.getElementById('eagle-filter-toolbar-host');
+      const btns = Array.from(host.querySelectorAll('.filter-right .ic-btn'));
+      const reset = btns.find((b) => b.querySelector('img[src*="ic-filter-reset.svg"]'));
+      reset && reset.click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        const s = angular.element(document.body).scope();
+        const item = document.getElementById('types-filter-item');
+        return s.eagle.filter.filterBadge === 0 && !item.className.includes('active');
+      })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'reset clears badge + active', 20000);
+  console.log('PASS stage3b-reset-clears');
+
+  // 关闭筛选面板还原
+  await page.send('Runtime.evaluate', {
+    expression: `(() => {
+      const btns = Array.from(document.querySelectorAll('#eagle-toolbar-host .right .ic-btn.filter-btn'));
+      const filterBtn = btns.find((b) => b.querySelector('img[src*="ic-toolbar-filter.svg"]'));
+      filterBtn && filterBtn.click();
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', {
+      expression: `(() => { const s = angular.element(document.body).scope(); return !s.eagle.filter.isOpen; })()`,
+      returnByValue: true,
+    });
+    return r.result.value === true;
+  }, 'filter panel closed restored', 15000);
+  console.log('PASS stage3b-panel-closed-restored');
+
+
   const shot = await page.send('Page.captureScreenshot', { format: 'png' });
   const dir = path.join(process.cwd(), 'test-run');
   fs.mkdirSync(dir, { recursive: true });

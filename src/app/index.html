@@ -155,51 +155,7 @@
             </div>
 
             <!-- 篩選工具列 -->
-            <div 
-            id="filter-toolbar" 
-            class="filter-toolbar" 
-            ng-hide="viewMode == 'alltags'"
-            ng-class="{ 'hide-filter': isDetailMode }"
-            ng-mousedown="$event.stopPropagation();"
-            >
-                <div class="filter-items">
-                    <input style="height: 1px; width: 1px; position: absolute; visibility: hidden;" id="colors-picker" color-picker hex-color="$body.hexColor" tabindex="-1" type="color" name="favcolor" value="#ff0000" ng-change="filterWithColor(hexToRGB($body.hexColor));" ng-model="$body.hexColor" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 100, 'blur': 0 } }">
-                    <div ui-sortable="eagle.filter.toolbarSortableOptions" ng-model="eagle.filter.toolbar" ng-show="eagle.filter.isOpen">
-                        <div ng-repeat="item in eagle.filter.toolbar" ng-switch on="item.type" >
-                            <filter-item-color ng-switch-when="color"></filter-item-color>
-                            <filter-item-folders ng-switch-when="folders"></filter-item-folders>
-                            <filter-item-tags ng-switch-when="tags"></filter-item-tags>
-                            <filter-item-rating ng-switch-when="rating"></filter-item-rating>
-                            <filter-item-fonts ng-switch-when="fontActivated"></filter-item-fonts>
-                            <filter-item-camera ng-switch-when="camera"></filter-item-camera>
-                            <filter-item-shape ng-switch-when="shape"></filter-item-shape>
-                            <filter-item-types ng-switch-when="types"></filter-item-types>
-                            <filter-item-import ng-switch-when="import"></filter-item-import>
-                            <filter-item-mtime ng-switch-when="mtime"></filter-item-mtime>
-                            <filter-item-duration ng-switch-when="duration"></filter-item-duration>
-                            <filter-item-bpm ng-switch-when="bpm"></filter-item-bpm>
-                            <filter-item-size ng-switch-when="size"></filter-item-size>
-                            <filter-item-resolution ng-switch-when="resolution"></filter-item-resolution>
-                            <filter-item-annotation ng-switch-when="annotation"></filter-item-annotation>
-                            <filter-item-note ng-switch-when="note"></filter-item-note>
-                            <filter-item-url ng-switch-when="url"></filter-item-url>
-                        </div>    
-                        <!-- 新增篩選器按鈕 -->
-                        <div class="ic-btn filter-add-btn" ng-click="openFilterAddContextMenu()">
-                            <img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-add.svg">
-                        </div>
-                    </div>
-                    
-                </div>
-                <div class="filter-right" ng-show="eagle.filter.filterBadge > 0 || SavedFilter.filters.length > 0">
-                    <div class="separator"></div>
-                    <div class="ic-btns">
-                        <div class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'savedFilter.filterButton' | i18n}}" ng-show="eagle.filter.filterBadge > 0 || SavedFilter.filters.length > 0 || keyword.length > 0" ng-class="{'active': SavedFilter.isOpen}" ng-click="SavedFilter.toggle($event);"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-saved.svg"></div>
-                        <div ng-show="eagle.filter.filterBadge > 0 || keyword" class="ic-btn" tippy tippy-placement="bottom" tippy-content="{{'Filter.Lock' | i18n}}" ng-class="{'active': eagle.filter.isLock}" ng-click="eagle.filter.isLock = !eagle.filter.isLock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-lock.svg"></div>
-                        <div ng-show="eagle.filter.filterBadge > 0 || keyword" class="ic-btn" ng-show="eagle.filter.filterBadge > 0" tippy tippy-placement="bottom" tippy-content="{{'Filter.Reset' | i18n}}{{preferences.shortcuts.keybinds['find.filter.reset'] | shortcutsWrapper | shortcuts}}" ng-click="resetFilter(); filterContent();"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-filter-reset.svg"></div>
-                    </div>
-                </div>
-            </div>
+            <div id="eagle-filter-toolbar-host" class="filter-toolbar"></div>
             <div id="filter-toolbar-overlay" class="filter-toolbar-overlay"></div>
 
             <!-- 自定义滚轴 -->

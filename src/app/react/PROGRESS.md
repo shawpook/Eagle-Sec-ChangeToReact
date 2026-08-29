@@ -92,12 +92,17 @@
 > 闭环：react-stage-smoke 42/42（筛选开关 active、搜索 keyword 回写+搜索结果面包屑、
 > 检查器隐藏时 corner-btns 双实例与原版 ng-if 行为一致）；source-mode-ui / main-ui-workflow /
 > library-switch-ui / drag-start / api-smoke 全绿。
-> 阶段3b（筛选面板）：**下一个待办**，从「筛选面板容器」开始。入口状态：
-> - 容器区块在当前 index.html 约 157-203 行（`#filter-toolbar`：color-picker input + ui-sortable 工具列 +
->   17 个 `<filter-item-*>`（ng-switch 按 `eagle.filter.toolbar[].type`）+ filter-add-btn +
->   `.filter-right`（SavedFilter/isLock/reset）+ `#filter-toolbar-overlay`）。
->   注意：filterItemImage/filterItemSemantic 两指令存在但不在默认 ng-switch 内。
-> - 接管方式与 3a 相同：容器换壳 + React portal，**内容必须是 Fragment**（勿包 wrapper）。
+> 阶段3b（筛选面板）：**已验证并接管**。index.html 舊 157-203 行 #filter-toolbar 旧引用已删
+> （换壳 `#eagle-filter-toolbar-host`，`#filter-toolbar-overlay` 保留原元素使其 bootstrap 期
+> jQuery 绑定继续生效），由 `react/components/filter/`（FilterItemShell + FilterItems/FilterItems2）
+> 接管：17 个筛选器 + 容器 + filter-right（saved/lock/reset）。
+> 关键语义修复：menu-wrap 内点击 stopPropagation（勾选不影响开合，bundle:67345）；clear-btn
+> stopProp + clear + close（原 ng-click stopProp 语义）；快照 rules/counts 深拷贝（活对象引用
+> 会让 useMemo 派生值失效）。注册键必须用工具列类型名（fontActivated 而非 fonts）。
+> 闭环：react-stage-smoke 50/50（17 items 渲染、面板开合、types 互斥展开、勾选→规则/filterBadge/
+> 搜索结果面包屑/active 联动、reset 清空）；source-mode-ui / main-ui-workflow / library-switch-ui /
+> drag-start / api-smoke 全绿（main-ui-workflow 的 markdown 缩略图偶发竞态为环境既有问题，
+> 已在无 3b 改动的 HEAD 上复现，非本阶段回归）。
 > - **模板分族（已勘察 2026-08-29，模板在 js/directives/filter-item-*.html）**：
 >   - 【check 列表族】rating(68766)/fonts(68812)/camera(68853)/shape(68704)/import(68913)/mtime(69010)/
 >     types(68639)：`.check-item` 固定结构 `.check-icon>.checkbox + .name + .badge`，ng-click 序列
@@ -147,7 +152,7 @@
 | filterItemAnnotation | directive | 69352-69400 | 待办 |
 | filterItemNote | directive | 69400-69448 | 待办 |
 | filterItemUrl | directive | 69448-69688 | 待办 |
-| 筛选面板容器（.filter/.filter-items/.filter-right + color-picker + ui-sortable 工具列）| 区块 | index.html 現 296-336 附近 | 待办 |
+| 筛选面板容器（.filter/.filter-items/.filter-right + color-picker + ui-sortable 工具列）| 区块 | index.html 舊 157-203 | 已验证 |
 
 ---
 

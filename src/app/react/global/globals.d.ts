@@ -25,6 +25,12 @@ declare global {
 }
 
 declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      key: any;
+      s: any;
+    }
+  }
   interface HTMLAttributes<T> {
     tippy?: string;
     'tippy-content'?: string;

@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { AppRoot } from './app/AppRoot';
+import { Sidebar } from './components/sidebar/Sidebar';
 import { useAppState } from './store/appState';
+import { bindSidebarSync } from './store/sidebarState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -40,7 +42,15 @@ function pickMountHost(): HTMLElement {
 
 const host = pickMountHost();
 const root = createRoot(host);
-root.render(<AppRoot />);
+root.render(
+  <>
+    <AppRoot />
+    <Sidebar />
+  </>
+);
+
+// 阶段2：侧栏 scope → React 快照同步（Angular digest 驱动）。
+bindSidebarSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

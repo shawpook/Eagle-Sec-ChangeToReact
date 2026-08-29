@@ -45,9 +45,9 @@ export function ipcRenderer(): any {
 }
 
 export const t = (key: string, pairs?: Array<{ property: string; value: string }>): string => {
-  const fn = i18n() && i18n().__;
-  if (!fn) return key;
-  let out = fn(key);
+  const inst = i18n();
+  if (!inst || typeof inst.__ !== 'function') return key;
+  let out = inst.__(key);
   if (out == null || out === key) return key;
   if (pairs) {
     pairs.forEach((pair) => {

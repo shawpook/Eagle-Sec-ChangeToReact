@@ -45,26 +45,40 @@
 
 ## 2. 侧栏（sidebar / library-panel / folder 树）
 
+> 阶段状态：**已验证并接管**。index.html 78-496 行的 Angular 侧栏模板已整体移除（旧引用已删），
+> 由 `react/components/sidebar/Sidebar.tsx` 逐字接管渲染；scope 状态经 `global/scopeBridge.ts`
+> （$watch 深投影）同步，事件回调调回 EagleController 同名函数（clickNode/openAll/...）。
+> 闭环：tests/react-stage-smoke.mjs 28/28（含点击切换 active 交互、虚拟滚动 spacer、
+> 主题图标路径、宽度跟随、footer 拖放区、筛选输入）；source-mode-ui / main-ui-workflow /
+> library-switch-ui / drag-start 回归全绿。
+> 注意：迁移期事件仍走 scope 函数，逻辑本体随阶段11 与 angular 一起拆除。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| sidebarFolderItem | directive | 69704-69856 | 待办 |
-| sidebarSmartFolderItem | directive | 69904-70051 | 待办 |
-| sidebarQuickAccessItem | directive | 70051-70165 | 待办 |
-| libraryPanel | directive | 60409-60788 | 待办 |
-| libraryIcon | directive | 60358-60409 | 待办 |
-| folderDraggable | directive | 71140-71170 | 待办 |
-| folderDroppable | directive | 71170-71226 | 待办 |
-| sortTopDroppable | directive | 71226-71313 | 待办 |
-| sortBottomDroppable | directive | 71313-71397 | 待办 |
-| smartFolderDraggable | directive | 71397-71425 | 待办 |
-| smartSortTopDroppable | directive | 71425-71473 | 待办 |
-| smartSortBottomDroppable | directive | 71473-71520 | 待办 |
+| #sidebar 壳（宽度/resizable/ondragleave）| shell | index.html:78 | 已验证（React 接管宽度与 hover 行为） |
+| sidebar-header（library-info + toolbar）| 区块 | index.html:81-133 | 已验证 |
+| sidebarFolderItem（拖拽/放置区）| directive | 69704-69856 | 已验证（jQuery UI 移植进 React） |
+| sidebarSmartFolderItem | directive | 69904-70051 | 已验证 |
+| sidebarQuickAccessItem | directive | 70051-70165 | 已验证 |
+| libraryPanel | directive | 60409-60788 | 待办（库切换面板，尚未触发验证） |
+| libraryIcon | directive | 60358-60409 | 已验证（React effect 移植） |
+| folderDraggable | directive | 71140-71170 | 待办（侧栏未用；用于其它视图） |
+| folderDroppable | directive | 71170-71226 | 待办（同上） |
+| sortTopDroppable | directive | 71226-71313 | 待办（同上） |
+| sortBottomDroppable | directive | 71313-71397 | 待办（同上） |
+| smartFolderDraggable | directive | 71397-71425 | 待办（同上） |
+| smartSortTopDroppable | directive | 71425-71473 | 待办（同上） |
+| smartSortBottomDroppable | directive | 71473-71520 | 待办（同上） |
 | sidebarScrollToActive | directive | 70672-70697 | 待办 |
-| resizable | directive | 70423-70441 | 待办 |
-| tagGroupResizable | directive | 70441-70461 | 待办 |
-| scrollToTopSentinel | directive | 73018-73114 | 待办 |
-
-对应 index.html 内 `#sidebar` 区块（约 line 50-300）。
+| resizable | directive | 70423-70441 | 已验证（壳上原指令继续生效） |
+| tagGroupResizable | directive | 70441-70461 | 待办（标签管理视图） |
+| scrollToTopSentinel | directive | 73018-73114 | 行为已验证（React onScroll 移植） |
+| vs-repeat 窗口算法 | 机制 | 16865-17425（侧栏用法）| 已验证（React 版窗口化 + spacer） |
+| vsAutoScroll | directive | 69856-69904 | 已验证（sidebarIndex 滚动跟随） |
+| tippy | directive | 17365-17425 | 已验证（React 子树内 tippy 初始化） |
+| selectAll | directive | 70600-70614 | 已验证（folder-search Mousetrap 移植） |
+| autoFocus | directive | 73003-73018 | 已验证（rename-folder-* 事件监听移植） |
+| 拖入侧栏 hover 展开（委托）| 行为 | 69663 | 已验证（委托在 .sidebar 壳上仍生效） |
 
 ---
 

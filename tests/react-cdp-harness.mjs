@@ -108,6 +108,7 @@ export async function bootStack({
   librariesRoot,
   stateFile,
   userDataDir,
+  beforeElectron,
 } = {}) {
   const [apiPort, thumbnailPort, extensionPort, vitePort, debugPort] = await Promise.all([
     freePort(), freePort(), freePort(), freePort(), freePort(),
@@ -140,6 +141,7 @@ export async function bootStack({
   try {
     await waitFor(() => backend.output().includes(`localhost:${apiPort}`), 'backend startup');
     await waitFor(async () => (await fetch(`http://127.0.0.1:${vitePort}/src/app/index.html`)).ok, 'Vite main UI');
+    if (beforeElectron) await beforeElectron(apiPort, thumbnailPort, extensionPort, vitePort);
     const electron = spawnLogged(electronExecutable, ['electron/main.cjs', '--regression-host'], {
       ...backendEnv,
       EAGLE_API_URL: `http://localhost:${apiPort}`,

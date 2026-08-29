@@ -17,5 +17,25 @@ declare global {
     __EAGLE_API_BASE_URL?: string;
     __EAGLE_EXTENSION_BASE_URL?: string;
     __EAGLE_THUMBNAIL_URL?: string;
+    dragCheck?: boolean;
+    fuzzy_match?: (text: string, search: string) => string;
+  }
+
+  // 与旧版 DOM 属性逐字一致所需的自定义属性（Angular 指令名在 React 中以原生属性输出）。
+}
+
+declare module 'react' {
+  interface HTMLAttributes<T> {
+    tippy?: string;
+    'tippy-content'?: string;
+    'tippy-placement'?: string;
+    'library-icon'?: string;
+    'library-path'?: string;
+    parent?: string;
+    resizable?: string;
+    'on-resize'?: string;
+    'auto-focus'?: string;
+    'ng-click'?: string;
   }
 }
+

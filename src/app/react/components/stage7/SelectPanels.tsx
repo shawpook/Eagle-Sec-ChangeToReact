@@ -24,7 +24,7 @@ import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
 
 const iv = (v: any): any => (v === undefined || v === null ? '' : v);
 const ngShow = (show: boolean) => (show ? undefined : { display: 'none' } as React.CSSProperties);
-const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
+export const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 
 export function openGeneralTagSelectPanel(params: any) {
   // GeneralTagSelectPanel 类（58115-58120）：$rootScope（html scope）广播
@@ -47,7 +47,7 @@ interface VsGridPos {
   index?: number;
 }
 
-function useVsGridRepeat(
+export function useVsGridRepeat(
   containerRef: React.RefObject<HTMLElement | null>,
   groups: any[] | undefined,
   options: any,
@@ -533,7 +533,10 @@ export function GeneralTagSelectPanel() {
         <div className={`panel-container${hasSidebar ? ' has-sidebar' : ''}`}>
           <div className="panel-sidebar">
             {/* 全部標籤群組 */}
-            <div className="panel-sidebar-item" onClick={() => panel && (panel as any).selectGroup(undefined)} style={ngShow(!!panel)}>
+            <div
+              className={`panel-sidebar-item${!listData?.sidebarGroup ? ' active' : ''}`}
+              onClick={() => panel && (panel as any).selectGroup(undefined)}
+            >
               <div className="icon">
                 <div className="fake-svg png" style={{ WebkitMaskImage: 'url(assets/images/base/icons/ic-tag-all.png)', WebkitMaskSize: '10px' }}></div>
               </div>

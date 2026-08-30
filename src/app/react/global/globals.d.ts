@@ -38,6 +38,7 @@ declare module 'react' {
       'select-panel-list': any;
       'select-panel-overlay': any;
       'general-tag-select-panel': any;
+      'inspector-tag-select-panel': any;
       group: any;
       item: any;
       'inspector-plugin-view': any;

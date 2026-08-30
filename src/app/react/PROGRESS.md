@@ -633,6 +633,36 @@
 >   全量回归 17/17 全绿（…7d1c1/7d1c2/7d2 + main-ui-workflow + source-mode-ui +
 >   library-switch-ui + drag-start + preview-delivery）+ api-smoke 13/13；tsc 零错。
 
+> **7d-3a 已验证并接管**（2026-08-30）：inspectorTagSelectPanel。
+> - 接管方式：index.html `<inspector-tag-select-panel theme selected tag-manager>` 岛删除，
+>   替换为 `#eagle-inspector-tag-select-panel-host`；React 层
+>   components/stage7/InspectorTagSelectPanel.tsx（复用引擎 TagSelectPanel + useVsGridRepeat，
+>   两者已从 SelectPanels.tsx 导出）。
+> - 与 generalTagSelectPanel 的模板差异逐字：pinned class + 置頂/取消置頂按鈕
+>   （titlebar.alwayTop.on/off）、無選擇空狀態（inspector.noSelection，panel.isInit &&
+>   selected.length===0）+ panel-list hide、select-panel-list 的 list-mode class、
+>   setting-panel 無 right:6px、footer switch 快捷鍵 ng-hide（selected.length===0 ||
+>   !panel.isShowSidebar）、overlay ng-show=!panel.isPined。
+> - 逻辑逐字：INSPECTOR.TAG.SELECT.PANEL.OPEN（body scope $broadcast → body $on；init
+>   10ms + open 0ms 原时序）；onAdd/onRemove → TagManager.addTags/removeTag +
+>   calculateImageBinding({ignoreSort:true})；$watchCollection('selected')（body scope 上
+>   注册，isPined 时 updateSelected：getSuggestTags → 50ms 后 selectedTags ←
+>   eagle.inspector.newTags）；initWindowResize（333ms，isPined 分支）/draggable/resizable
+>   逐字；ipc 'app-status-loading' → isPined 时 unpin + close。
+> - **时序教训（冒烟抓到）**：eagle.inspector.newTags 由 inspector 控制器的选区 watcher
+>   （30ms $timeout 防抖）写入，getSuggestTags 本身不写它（只算 folder 名串 +
+>   TagManager.suggestions + jieba-extract ipc）——测试须在选区变更与广播之间留 digest
+>   时间，同 eval 内广播读到的是空 newTags。mock 环境 TagManager.tags 为空时面板渲染
+>   suggest 群组（SUGGEST group）的推荐标签，与原版一致。
+> - 顺带修正 7d-1c-1 遗留保真偏差：GeneralTagSelectPanel 侧栏「全部標籤群組」item 缺
+>   ng-class active（!listData.sidebarGroup）且多了 ng-show——两处已按模板逐字修正。
+> - 测试契约：window.__eagleInspectorTagSelectPanel（面板实例）。面板搜索输入与 general
+>   面板重复 id（原版即重复），测试须用元素级选择器
+>   inspector-tag-select-panel .panel-header input。
+> - 闭环：react-stage7d3a-smoke 10/10（壳/广播开合/预选渲染（suggest 链）/置顶 isPined +
+>   pinned class + overlay 隐藏/键盘翻转 onRemove 数据面/Esc 关闭；面板态截图怪癖 WARN）。
+>   全量回归 18/18 全绿 + tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

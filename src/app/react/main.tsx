@@ -14,6 +14,7 @@ import { ErrorModal, WebsitePanel } from './components/stage7/ControllerModals';
 import { GeneralTagSelectPanel, AutoTaggingModal } from './components/stage7/SelectPanels';
 import { FolderSelectPanelHost, NewSmartFolderModal } from './components/stage7/FolderSelectPanels';
 import { BatchRenameModal, ArtstationImportModal } from './components/stage7/BatchRenameArtstationModals';
+import { InspectorTagSelectPanel } from './components/stage7/InspectorTagSelectPanel';
 import { AddToFolderModal, MoveFolderModal } from './components/stage7/FolderModals';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
@@ -92,6 +93,7 @@ root.render(
     <NewSmartFolderModal />
     <BatchRenameModal />
     <ArtstationImportModal />
+    <InspectorTagSelectPanel />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

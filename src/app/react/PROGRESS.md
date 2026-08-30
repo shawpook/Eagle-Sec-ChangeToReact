@@ -338,6 +338,19 @@
 | tagManager | directive | 55447-55472 + tag-manager.html | 已验证（TagManagerPanel） |
 | tagSelect | directive | 72799-73003 | 已验证（useTagSelect） |
 
+> **7c-1 已验证并接管**（2026-08-30）：小弹窗族。
+> - 接管方式：index.html 七个岛（layout-panel / mousewheel-setting-modal / folder-password-modal /
+>   notification-modal / welcome-page / new-version-notification-modal / about-panel）全部替换为
+>   React 宿主（#eagle-*-host）；模板逐字转写（components/stage7/SmallPanels.tsx）。
+> - 触发通道零改动：OPEN_LAYOUT_PANEL / OPEN_MOUSEWHEEL_PREFERENCE_WINDOW / SET-FOLDER-PASSWORD /
+>   OPEN_NOTIFICATION / OPEN_ABOUT_PANEL 广播 + show-update-message / app-status-welcome /
+>   app-status-library-dirs-loaded / app-status-library-cache-loaded ipc。
+> - 数据面断言：mousewheel save 写 $root.preferences.habits（scrollBehavior/scrollBehaviorTour）；
+>   folder password 保存写 folder.password=btoa(新密码)（new/change/reset 三模式 + 抖动提示）。
+> - 教训：ng-class '{open: isOpen}' 转写时不能只转 display —— CSS 依赖 .open 类控制可见性。
+> - notificationBtn（54236-54273）无 index.html 消费点（无 attribute 使用），标记无运行时引用。
+
+
 > **重大环境发现（shims 竞态，已修复）**：frontend/public/shims.js 用固定 250/300/350ms 定时
 > 发射 initial / app-status-loading / preload-library，而 bundle 的 app-status-loading 监听器
 > 是在 initial 处理器内部（bundle:22664→22722）同步注册的——页面 bootstrap 慢于 ~300ms 时
@@ -356,14 +369,14 @@
 | duplicateScanPanel | directive | 59705-60104 | 待办（7b） |
 | mergeEditor | directive | 60104-60358 | 待办（7b） |
 | batchRenameModal | directive | 76783-77785 | 待办（7c） |
-| folderPasswordModal | directive | 62888-63049 | 待办（7c） |
-| mousewheelSettingModal | directive | 63049-63078 | 待办（7c） |
-| aboutPanel | directive | 63078-63102 | 待办（7c） |
-| notificationBtn | directive | 54236-54273 | 待办（7c） |
-| notificationModal | directive | 62777-62814 | 待办（7c） |
-| newVersionNotificationModal | directive | 62814-62888 | 待办（7c） |
-| welcomePage | directive | 63102-63187 | 待办（7c） |
-| layoutPanel | directive | 62723-62777 | 待办（7c） |
+| folderPasswordModal | directive | 62888-63049 | 已验证（FolderPasswordModal） |
+| mousewheelSettingModal | directive | 63049-63078 | 已验证（MousewheelModal） |
+| aboutPanel | directive | 63078-63102 | 已验证（AboutPanel） |
+| notificationBtn | directive | 54236-54273 | 无运行时引用（index.html 无消费点） |
+| notificationModal | directive | 62777-62814 | 已验证（NotificationModal） |
+| newVersionNotificationModal | directive | 62814-62888 | 已验证（NewVersionModal） |
+| welcomePage | directive | 63102-63187 | 已验证（WelcomePage） |
+| layoutPanel | directive | 62723-62777 | 已验证（LayoutPanel） |
 | selectAll | directive | 70600-70614 | 待办（7c 小指令族） |
 | noSpecialChar | directive | 70567-70600 | 待办（7c 小指令族） |
 | ngRightClick | directive | 70544-70559 | 待办（7c 小指令族） |

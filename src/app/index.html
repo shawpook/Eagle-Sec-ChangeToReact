@@ -1015,28 +1015,32 @@
 		<plugin-panel theme="theme"></plugin-panel>
 		<plugin-creator class="modal-flex-center"></plugin-creator>
 		<plugin-center class="modal-flex-center"></plugin-center>
-        <layout-panel theme="theme"></layout-panel>
+        <!-- 佈局面板（React 接管） -->
+        <div id="eagle-layout-panel-host"></div>
         <folder-select-panel theme="theme"></folder-select-panel>
         <general-tag-select-panel theme="theme"></general-tag-select-panel>
         <inspector-tag-select-panel theme="theme" selected="selected" tag-manager="TagManager"></inspector-tag-select-panel>
         <duplicate-scan-panel theme="theme" folder-mappings="folderMappings"></duplicate-scan-panel>
         <duplicate-modal theme="theme" class="modal-flex-center" folder-mappings="folderMappings" item-mappings="itemMappings"></duplicate-modal>
-        <mousewheel-setting-modal class="modal-flex-center" theme="theme"></mousewheel-setting-modal>
+        <!-- 滚轮引导（React 接管） -->
+        <div id="eagle-mousewheel-modal-host"></div>
         <!-- 右鍵選單（React 接管，舊 <context-menu> 元素已刪） -->
         <div id="eagle-context-menu-host"></div>
-        <folder-password-modal class="modal-flex-center" theme="theme"></folder-password-modal>
-        <notification-modal class="modal-flex-center" theme="theme"></notification-modal>
+        <!-- 文件夹密码（React 接管） -->
+        <div id="eagle-folder-password-host"></div>
+        <!-- 通知中心（React 接管） -->
+        <div id="eagle-notification-host"></div>
     </div>
-    
 
-    <!-- 歡迎頁面 -->
-    <welcome-page theme="theme"></welcome-page>
 
-    <!-- 新版提示 -->
-    <new-version-notification-modal class="modal-flex-center" theme="theme"></new-version-notification-modal>
+    <!-- 歡迎頁面（React 接管） -->
+    <div id="eagle-welcome-host"></div>
 
-    <!-- 關於 -->
-    <about-panel class="modal-flex-center" theme="theme"></about-panel>
+    <!-- 新版提示（React 接管） -->
+    <div id="eagle-newversion-host"></div>
+
+    <!-- 關於（React 接管） -->
+    <div id="eagle-about-host"></div>
 
     <library-panel theme="theme" library-history="libraryHistory"></library-panel>
 

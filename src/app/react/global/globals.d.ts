@@ -2,6 +2,7 @@
 export {};
 
 declare global {
+  const process: any;
   interface Window {
     i18n: any;
     eagle: any;

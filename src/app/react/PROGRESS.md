@@ -418,12 +418,41 @@
 | ngFlatpickr | directive | 见源码 | 待办（7c 小指令族） |
 | tagsInput | directive | 64443-64560 | 待办（7b，随智能文件夹规则编辑器） |
 | foldersInput | directive | 64399-64443 | 待办（7b，同上） |
-| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7c） |
-| AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 待办（7c） |
-| MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 待办（7c） |
-| ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 待办（7c） |
-| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7c） |
-| WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 待办（7c） |
+> **7d-1a 已验证并接管**（2026-08-30）：AddToFolderController + MoveFolderController。
+> - 接管方式：index.html 411-616 行两个 `ng-controller` 区块（模板内联）整体删除，替换为
+>   `#eagle-add-to-folder-host` / `#eagle-move-folder-host`（保留 modal-flex-center）；
+>   React 组件 components/stage7/FolderModals.tsx 逐字转写（AddToFolderModal 74733-75636 +
+>   MoveFolderModal 75637-76134）。
+> - 触发通道零改动：OPEN-ADD-FOLDER-MODAL（body scope addToFolders）/ OPEN-MOVE-FOLDER-MODAL
+>   （body scope moveFolders）广播；autoFocus 指令（事件→100ms click+focus+select）移植。
+> - 树数据 cloneTree（8207 逐字）与外界隔离；拼音/模糊筛选（filterFolders 打分版 +
+>   $filter('filter') 谓词版）逐字（含过滤时原地改 isExpand 的副作用）；guidelines/styles
+>   计算、↑↓←→/Esc/Enter(meta+save) 键盘链、最近使用文件夹（recentMoveFolders localStorage，
+>   cap 50）、createFolder 行、electron 原生 Menu 新建子/同级文件夹（@electron/remote）、
+>   swal 输入与确认（window.swal，bundle 内嵌 SweetAlert2 v6）全部保留。
+> - save() 数据面零改动：ig.remove（window.ig）、body scope updateFilterCounts/
+>   getSelection/smartZoom/leaveDetailMode、ayncsImagesChange（window.backgroundWindowID，
+>   bundle 顶层 var→window 属性）+ hiddenByCurrentFilter（filterData/contentFilter/
+>   gl:removeItems/smartFolderCount）均逐字移植；notify 恢复回调、CALCULATE_IMAGE_BINDING /
+>   REBIND_REFRESH / UPDATE_SELECTION 广播、analytics/electronLog 不变。
+> - MoveFolder 语义保留：源文件夹行 disabled（isVisible 抑制仅作用于子级——原版如此）、
+>   top/inner/bottom 三区点击 → swal 确认 → body scope moveFoldersAsSibling/moveFoldersToFolder。
+> - 教训：模板 `{{::folderList.length}}` 经原型链取 body scope folderList 且一次性绑定在
+>   bootstrap 期即定型（恒为 0），按原样保留 "(0)" 形态。
+> - 闭环：react-stage7d1a-smoke 23/23（壳/旧块删除/广播开合/树渲染/existsFolders 预勾选/勾选
+>   翻转/save 数据面+recentMoveFolders/最近使用行/过滤/createFolder 行/Esc/复选框持久化/
+>   MoveFolder disabled 行/swal 确认/moveFoldersAsSibling 数据面/截图留档）。
+>   全量回归全绿：react-stage-smoke/5/6/7a/7b/7c/7c2、main-ui-workflow、source-mode-ui、
+>   library-switch-ui、drag-start、preview-delivery、api-smoke 13/13；tsc 零错。
+> - 环境协议：串行跑多测试必须在每个测试之间 clear-ports + 杀 electron，否则上一个测试的
+>   vite 残留会让下一个 bootStack 静默挂起。
+
+| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7d-1c） |
+| AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
+| MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
+| ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 待办（7d-1b） |
+| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7d-1b） |
+| WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 待办（7d-1b） |
 | tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 无运行时引用（tag-popup.js 未加载、bundle 无注册、无模板消费点；7c-2 定性） |
 
 ---

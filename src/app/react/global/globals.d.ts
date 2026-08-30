@@ -36,6 +36,7 @@ declare module 'react' {
       'ext-icon': any;
       'select-panel': any;
       'select-panel-list': any;
+      'select-panel-overlay': any;
       'general-tag-select-panel': any;
       group: any;
       item: any;

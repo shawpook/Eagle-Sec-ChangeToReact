@@ -12,6 +12,7 @@ import { LayoutPanel, NotificationModal, NewVersionModal, FolderPasswordModal, M
 import { QuickSearchModal } from './components/stage7/QuickSearchModal';
 import { ErrorModal, WebsitePanel } from './components/stage7/ControllerModals';
 import { GeneralTagSelectPanel, AutoTaggingModal } from './components/stage7/SelectPanels';
+import { FolderSelectPanelHost, NewSmartFolderModal } from './components/stage7/FolderSelectPanels';
 import { AddToFolderModal, MoveFolderModal } from './components/stage7/FolderModals';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
@@ -86,6 +87,8 @@ root.render(
     <WebsitePanel />
     <GeneralTagSelectPanel />
     <AutoTaggingModal />
+    <FolderSelectPanelHost />
+    <NewSmartFolderModal />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

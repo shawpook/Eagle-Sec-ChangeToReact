@@ -1,5 +1,6 @@
 import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
+import { getBodyScope, getRootScope } from '../../global/scopeBridge';
 
 /**
  * 阶段7d-1c-1：SelectPanel 体系纯类逐字移植（React 组件层见 SelectPanels.tsx）。
@@ -9,6 +10,7 @@ import { t } from '../../global/eagleGlobals';
  * - SelectPanelSearchInput = bundle 55466-55572
  * - SelectPanel = bundle 55575-55800
  * - TagSelectPanel = bundle 56479-57910
+ * - FolderSelectPanel = bundle 55801-56356（7d-1c-2）
  *
  * 移植约定：
  * - 原 class 内的 this.scope.$evalAsync() 由 notify 回调替代（组件层传入 React 重渲染触发器）。
@@ -17,11 +19,18 @@ import { t } from '../../global/eagleGlobals';
  * - angular.copy → JSON 深拷贝；i18n.__ → t()；tinyPinyin/chineseConvert/pinyinlite/
  *   cartesianProduct/clipboard 等闭包绑定经 window 等价获取。
  * - levenshtein 在原版 sortByKeywordSimilarity 内为局部函数，随函数体逐字带入。
+ * - ContextMenu.open（15836 静态类，仅 rootScope 广播）→ openAppContextMenu 助手等价。
  */
 
 export const deepCopy = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const w = () => window as any;
+
+/** ContextMenu.open（bundle 15836-15843）：$rootScope.$broadcast('CONTEXTMENU.OPEN', options) */
+export function openAppContextMenu(options: any) {
+  const rootScope = getRootScope();
+  if (rootScope) rootScope.$broadcast('CONTEXTMENU.OPEN', options);
+}
 
 const loadPinyinModules = () => {
   try {
@@ -1834,4 +1843,606 @@ export class TagSelectPanel extends SelectPanel {
     this.vsGridRepeatOptions.listMode = listMode;
     localStorage['eagle.tagsPopup.listMode'] = listMode;
   }
+}
+
+/* ================= FolderSelectPanel（55801-56356 逐字） ================= */
+
+export class FolderSelectPanel extends SelectPanel {
+  originalParams: any;
+  rawData: any;
+  onChanged: any;
+  collapsedFolderIds: any = {};
+
+  static open(params: any) {
+    // 原：angular.element("html").scope().$broadcast('FOLDER.SELECT.PANEL.OPEN', params)
+    const rootScope = getRootScope();
+    if (rootScope) rootScope.$broadcast('FOLDER.SELECT.PANEL.OPEN', params);
+  }
+
+  constructor(params: any) {
+    super(params);
+    this.collapsedFolderIds = {};
+  }
+
+  // 基类方法名适配（引擎基类为避免 TS 递归歧义改为 *Base 命名）
+  selectUp(event?: any) {
+    void event;
+    this.selectUpBase();
+  }
+
+  selectDown(event?: any) {
+    void event;
+    this.selectDownBase();
+  }
+
+  hoverItem(index: any) {
+    this.hoverItemBase(index);
+  }
+
+  scrollTop() {
+    this.scrollTopBase();
+  }
+
+  init(params: any) {
+    this.originalParams = params;
+    super.init(params);
+    this.reset();
+    this.initRawData(params);
+    this.updateItemList();
+    this.onChanged = params.onChanged || (() => {});
+  }
+
+  reset() {
+    super.reset();
+    if (localStorage['eagle.folderSelectPanel.collapsedFolderIds']) {
+      try {
+        this.collapsedFolderIds = JSON.parse(localStorage['eagle.folderSelectPanel.collapsedFolderIds']);
+      } catch (e) {
+        this.collapsedFolderIds = {};
+      }
+    }
+    this.listData.selectedIds = {};
+    this.listData.currentTab = 'ALL'; // 'ALL' or 'RECENT' or 'SELECTED'
+    this.rawData = {
+      folders: [],
+      selectedIds: {},
+      recentFolderIds: {},
+      folderList: [],
+      foldersMap: {},
+      foldersDepthMap: {},
+    };
+  }
+
+  // 初始化資料
+  initRawData(params: any) {
+    const guidelinesMap: any = {};
+
+    // 計算資料夾的深度、建立資料夾的 Map、List、DepthMap
+    this.rawData = {
+      folders: params.folders || [],
+      selectedIds: params.selectedIds || {},
+      recentFolderIds: {},
+      folderList: [],
+      foldersMap: {},
+      folderItemsMap: {},
+      foldersDepthMap: {},
+    };
+
+    let recentFolderIdx = 0;
+    const recentFolderIds = getBodyScope()
+      .getRecentFolders()
+      .reduce((acc: any, cur: any) => {
+        acc[cur.id] = recentFolderIdx++;
+        return acc;
+      }, {});
+    this.rawData.recentFolderIds = recentFolderIds;
+
+    this.listData.maxDepth = 0;
+    w().eagle.utils.tree.walk(this.rawData.folders, 'children', (folder: any, parent: any, depth: any) => {
+      const { id, name, icon, iconColor, pinyin } = folder;
+
+      this.rawData.folderList.push(folder);
+      this.rawData.foldersMap[id] = folder;
+      this.rawData.foldersDepthMap[id] = depth;
+
+      // 計算 guidelines 顏色及數量
+      let guidelines: any[] = [];
+      if (parent && guidelinesMap[parent.id]) {
+        const parentGuidelines = guidelinesMap[parent.id];
+        guidelines = [...parentGuidelines, folder.iconColor || 'normal'];
+      } else {
+        guidelines = [folder.iconColor || 'normal'];
+      }
+
+      guidelinesMap[folder.id] = guidelines;
+
+      const hasChildren = folder.children && folder.children.length > 0;
+
+      const item = {
+        type: 'folder',
+        id: id,
+        name: name,
+        pinyin: pinyin,
+        path: this.getFolderParentPath(folder),
+        icon: icon,
+        iconColor: iconColor,
+        depth: this.rawData.foldersDepthMap[id],
+        size: 26,
+        parent: parent?.id,
+        parentItem: this.rawData.folderItemsMap[parent?.id],
+        guidelines: guidelines,
+        hasChildren: hasChildren,
+      };
+
+      this.rawData.folderItemsMap[id] = item;
+
+      if (this.listData.maxDepth < depth) {
+        this.listData.maxDepth = depth;
+      }
+    });
+
+    // 設定預設已選擇的資料夾
+    this.listData.selectedIds = { ...this.rawData.selectedIds };
+  }
+
+  // 建立 View Model 使用的資料，並更新畫面
+  updateItemList(keepIndex = false) {
+    if (!keepIndex) {
+      this.listData.currentIndex = -1;
+    }
+    this.listData.items = [];
+
+    const searchKeyword = this.listData.searchKeyword;
+    const folderList = this.rawData.folderList;
+    let showCreateFolderBtn = searchKeyword !== '';
+    let folders: any[] = []; // 全部資料夾
+    let recentFolders: any[] = []; // 最近使用的資料夾
+    let recentFoldersCount = 5;
+
+    folderList.forEach((folder: any) => {
+      const { id, name } = folder;
+      const item = this.rawData.folderItemsMap[id];
+      const newItem = { ...item };
+      const isSelected = this.listData.selectedIds[id];
+
+      if (isSelected) {
+        recentFoldersCount++;
+      }
+
+      if (this.rawData.recentFolderIds[id] >= 0 || isSelected) {
+        const recentItem = { ...item };
+        recentItem.depth = 0;
+        recentItem.isRecent = true;
+        recentFolders.push(recentItem);
+      }
+
+      if (searchKeyword) {
+        folders.push(newItem);
+      } else if (this.isVisible(newItem)) {
+        folders.push(newItem);
+      }
+
+      if (name === searchKeyword) {
+        showCreateFolderBtn = false;
+      }
+    });
+
+    // 排序最近使用的資料夾
+    recentFolders = recentFolders.sort((a: any, b: any) => {
+      const aIdx = this.rawData.recentFolderIds[a.id];
+      const bIdx = this.rawData.recentFolderIds[b.id];
+      if (aIdx < bIdx) return -1;
+      if (aIdx > bIdx) return 1;
+      return 0;
+    });
+
+    recentFolders = recentFolders.sort((a: any, b: any) => {
+      if (this.rawData.selectedIds[a.id] && !this.rawData.selectedIds[b.id]) return -1;
+      if (!this.rawData.selectedIds[a.id] && this.rawData.selectedIds[b.id]) return 1;
+      return 0;
+    });
+
+    // 已選的資料夾排在前面
+    recentFolders = recentFolders.sort((a: any, b: any) => {
+      if (this.listData.selectedIds[a.id] && !this.listData.selectedIds[b.id]) return -1;
+      if (!this.listData.selectedIds[a.id] && this.listData.selectedIds[b.id]) return 1;
+      return 0;
+    });
+
+    // 全部
+    if (this.listData.currentTab === 'ALL') {
+      let filteredRecentFolders = this.filterByKeyword(recentFolders);
+      filteredRecentFolders = filteredRecentFolders.slice(0, recentFoldersCount);
+      folders = this.filterByKeyword(folders);
+
+      // 如果是搜尋狀態，將資料夾中有出現在最近使用的資料夾隱藏不顯示
+      if (searchKeyword !== '') {
+        folders = folders.filter((folder: any) => {
+          return !filteredRecentFolders.find((recentFolder: any) => recentFolder.id === folder.id);
+        });
+      }
+
+      // 顯示最近使用的資料夾
+      if (filteredRecentFolders.length > 0) {
+        if (folders.length > 0) {
+          this.listData.items = [...filteredRecentFolders, { type: 'separator', size: 5 }, ...folders];
+        } else {
+          this.listData.items = [...filteredRecentFolders];
+        }
+      }
+      // 沒有最近使用資料夾，只顯示全部資料夾
+      // 如果總資料夾數量小於 10，就不顯示最近使用資料夾
+      else {
+        this.listData.items = [...folders];
+      }
+    }
+    // 最近使用
+    else if (this.listData.currentTab === 'RECENT') {
+      recentFolders = this.filterByKeyword(recentFolders);
+      this.listData.items = [...recentFolders.slice(0, 20)];
+    }
+    // 已選擇
+    else if (this.listData.currentTab === 'SELECTED') {
+      folders = folders.filter((folder: any) => {
+        return this.listData.selectedIds[folder.id];
+      });
+      this.listData.items = [...folders];
+    }
+
+    // 顯示建立資料夾按鈕
+    if (showCreateFolderBtn) {
+      if (this.listData.items.length > 0) {
+        this.listData.items = [...this.listData.items, { type: 'separator', size: 5 }, { type: 'create', size: 26, name: searchKeyword }];
+      } else {
+        this.listData.items = [{ type: 'create', size: 26, name: searchKeyword }];
+      }
+    }
+
+    // 更新 index
+    this.listData.items.forEach((item: any, index: any) => {
+      item.index = index;
+    });
+
+    if (!keepIndex) {
+      // 搜尋結果有內容時，自動選擇第一個項目
+      if (searchKeyword !== '' && this.listData.items.length > 0) {
+        this.listData.currentIndex = 0;
+      }
+      // 如果不是搜尋狀態，就不自動選擇第一個項目
+      else {
+        this.listData.currentIndex = -1;
+      }
+    }
+  }
+
+  isVisible(item: any): boolean {
+    // 判斷是否所有父層都是展開的
+    const parentId = item.parent;
+    if (parentId) {
+      const parentItem = this.rawData.folderItemsMap[parentId];
+      if (!parentItem) return false;
+      if (this.collapsedFolderIds[parentId]) return false;
+      return this.isVisible(parentItem);
+    }
+    return true;
+  }
+
+  filterByKeyword(list: any[]) {
+    if (this.listData.searchKeyword.length === 0) return list;
+
+    const { chineseConvert, pinyinlite, cartesianProduct } = loadPinyinModules();
+    const keyword_cn = chineseConvert
+      .tw2cn(this.listData.searchKeyword)
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\ /g, '')
+      .toLowerCase();
+    const temp = list.map((item: any) => {
+      const nameCN = chineseConvert
+        .tw2cn(item.name)
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+      if (item.name.length >= 30) {
+        return {
+          item: item,
+          name: nameCN,
+          search: [nameCN],
+        };
+      }
+      return {
+        item: item,
+        name: nameCN,
+        search: [
+          nameCN,
+          ...new Set(
+            cartesianProduct(pinyinlite(nameCN, { keepUnrecognized: true }).filter((p: any) => p.length > 0)).map((i: any) => i.join(' '))
+          ),
+        ],
+      };
+    });
+
+    let scores = temp.map((item: any) => {
+      const itemName = `${item.name ?? ''} ${item.keywords ?? ''}`;
+      return {
+        item: item,
+        name: itemName,
+        score: Math.max(...item.search.map((pinyin: any) => (pinyin as any).score(keyword_cn))),
+      };
+    });
+
+    list = scores
+      .filter((i: any) => i.score > 0)
+      .sort((a: any, b: any) => b.score - a.score)
+      .map(function (i: any) {
+        return i.item.item;
+      });
+
+    // sort start with keyword first
+    const result = list.reduce(
+      (acc: any, cur: any) => {
+        if (cur.name.toLowerCase().startsWith(this.listData.searchKeyword.toLowerCase())) {
+          acc.startWithKeyword.push(cur);
+        } else {
+          acc.notStartWithKeyword.push(cur);
+        }
+        return acc;
+      },
+      {
+        startWithKeyword: [],
+        notStartWithKeyword: [],
+      }
+    );
+
+    list = [...result.startWithKeyword, ...result.notStartWithKeyword];
+
+    return list;
+  }
+
+  // 取得回傳結果
+  getCallbackResult() {
+    const isEqual = (a: any, b: any) => {
+      const aEntries = Object.entries(a);
+      const bEntries = Object.entries(b);
+      return aEntries.length === bEntries.length && aEntries.every(([key, value]: any) => b[key] === value);
+    };
+
+    const isDirty = !isEqual(this.rawData.selectedIds, this.listData.selectedIds);
+    const selectedFolderIds = { ...this.listData.selectedIds };
+    const deselectedFolderIds = Object.entries(this.rawData.selectedIds).reduce((result: any, [folderId, isSelected]: any) => {
+      if (!this.listData.selectedIds[folderId]) {
+        result[folderId] = true;
+      }
+      return result;
+    }, {});
+
+    return { isDirty, selectedFolderIds, deselectedFolderIds };
+  }
+
+  getFolderParentPath(folder: any) {
+    const parentFolder = this.rawData.foldersMap[folder.parent];
+    const grandParentFolder = this.rawData.foldersMap[parentFolder?.parent];
+    const greatGrandParentFolder = this.rawData.foldersMap[grandParentFolder?.parent];
+    const parentFolderName = parentFolder?.name;
+    const grandParentFolderName = grandParentFolder?.name;
+    const greatGrandParentFolderName = greatGrandParentFolder?.name;
+    let result = '';
+    if (greatGrandParentFolderName && grandParentFolderName && parentFolderName) {
+      result = `../<span>${grandParentFolderName}</span>/<span>${parentFolderName}</span>`;
+    } else if (!greatGrandParentFolderName && grandParentFolderName && parentFolderName) {
+      result = `<span>${grandParentFolderName}</span>/<span>${parentFolderName}</span>`;
+    } else if (!greatGrandParentFolderName && !grandParentFolderName && parentFolderName) {
+      result = `${parentFolderName}`;
+    }
+    return result;
+  }
+
+  close() {
+    const result = this.getCallbackResult();
+    if (result.isDirty) this.onChanged(result);
+    super.close();
+    this.reset();
+  }
+
+  onTabKey() {
+    if (this.listData.currentTab === 'ALL') {
+      this.listData.currentTab = 'RECENT';
+    } else if (this.listData.currentTab === 'RECENT') {
+      this.listData.currentTab = 'SELECTED';
+    } else if (this.listData.currentTab === 'SELECTED') {
+      this.listData.currentTab = 'ALL';
+    }
+    this.updateItemList();
+  }
+
+  openItem(event: any, item: any) {
+    if (item.type === 'create') {
+      this.createFolder(this.listData.searchKeyword.trim(), (folderName: any) => {
+        getBodyScope().createFolder({
+          name: folderName.trim(),
+          position: 'top',
+          callback: (folder: any) => {
+            this.onCreatedFolder(folder);
+          },
+        });
+      });
+    } else {
+      const pressCtrlOrCmd = event?.ctrlKey || event?.metaKey;
+      const itemId = item.id;
+      const selectedIds = this.listData.selectedIds;
+      if (!selectedIds[itemId]) {
+        selectedIds[itemId] = true;
+      } else {
+        delete selectedIds[itemId];
+      }
+      if (this.listData.searchKeyword !== '' && !pressCtrlOrCmd) {
+        this.listData.searchKeyword = '';
+        this.clearSearchInput();
+        this.updateItemList();
+      }
+    }
+  }
+
+  openItemSubmenu(item: any) {
+    if (item.isRecent) {
+      openAppContextMenu({
+        items: [
+          {
+            label: t('selectFolderPanel.context.removeHistory'),
+            click: () => {
+              getBodyScope().removeRecentFolder(item.id, () => {
+                const selectedIds = { ...this.listData.selectedIds };
+                this.reset();
+                this.init(this.originalParams);
+                this.listData.selectedIds = selectedIds;
+                this.updateItemList();
+              });
+            },
+          },
+        ],
+        onClosed: () => {
+          this.focusSearchInput();
+        },
+      });
+    } else {
+      openAppContextMenu({
+        items: [
+          {
+            label: t('selectFolderPanel.context.addChilderFolder'),
+            icon: 'ic-folder-new-sub-folder.svg',
+            click: () => {
+              this.createFolder('', (folderName: any) => {
+                getBodyScope().createFolder({
+                  name: folderName,
+                  parentID: item.id,
+                  callback: (folder: any) => {
+                    this.onCreatedFolder(folder);
+                  },
+                });
+              });
+            },
+          },
+          {
+            label: t('selectFolderPanel.context.addSiblingFolder'),
+            icon: 'ic-expand-same.svg',
+            click: () => {
+              this.createFolder('', (folderName: any) => {
+                getBodyScope().createFolder({
+                  name: folderName,
+                  sibling: item,
+                  callback: (folder: any) => {
+                    this.onCreatedFolder(folder);
+                  },
+                });
+              });
+            },
+          },
+        ],
+        onClosed: () => {
+          this.focusSearchInput();
+        },
+      });
+    }
+  }
+
+  changeTab(tab: any) {
+    this.listData.currentTab = tab;
+    this.updateItemList();
+  }
+
+  keywordChanged() {
+    this.updateItemList();
+  }
+
+  isItemSelectable(item: any) {
+    const selectableTypes: any = { folder: true, create: true };
+    return selectableTypes[item.type];
+  }
+
+  createFolder(defaultName = '', callback: any) {
+    const wAny = w();
+    wAny.swal({
+      html: `
+				<div class="alert">
+					<div class="alert-icon create"></div>
+					<h4 class="alert-title">${t('selectFolderPanel.createFolder.title')}</h4>
+				</div>
+			`,
+      showCloseButton: false,
+      showCancelButton: true,
+      allowOutsideClick: false,
+      focusConfirm: true,
+      focusCancel: false,
+      padding: 24,
+      width: 400,
+      customClass: 'alert-box',
+      input: 'text',
+      inputPlaceholder: t('selectFolderPanel.createFolder.placeholder'),
+      inputValue: defaultName,
+      cancelButtonColor: '#777777',
+      confirmButtonText: t('selectFolderPanel.createFolder.button'),
+      cancelButtonText: t('general.cancel'),
+    }).then(
+      (result: any) => {
+        const name = result;
+        callback(name);
+        this.focusSearchInput();
+      },
+      () => {
+        this.focusSearchInput();
+      }
+    );
+    void wAny;
+  }
+
+  onCreatedFolder(folder: any) {
+    const selectedIds = { ...this.listData.selectedIds };
+    selectedIds[folder.id] = true;
+    this.reset();
+    this.init(this.originalParams);
+    this.listData.selectedIds = selectedIds;
+    this.updateItemList();
+  }
+
+  toggleExpand(item: any) {
+    if (this.collapsedFolderIds[item.id]) {
+      this.expand(item);
+    } else {
+      this.collapse(item);
+    }
+  }
+
+  expand(item: any) {
+    delete this.collapsedFolderIds[item.id];
+    this.updateItemList(true);
+    try {
+      localStorage['eagle.folderSelectPanel.collapsedFolderIds'] = JSON.stringify(this.collapsedFolderIds);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  collapse(item: any) {
+    this.collapsedFolderIds[item.id] = true;
+    this.updateItemList(true);
+    try {
+      localStorage['eagle.folderSelectPanel.collapsedFolderIds'] = JSON.stringify(this.collapsedFolderIds);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  onLeftKey = () => {
+    const currentItem = this.listData.items[this.listData.currentIndex];
+    if (currentItem && currentItem.type === 'folder') {
+      this.collapse(currentItem);
+    }
+  };
+
+  onRightKey = () => {
+    const currentItem = this.listData.items[this.listData.currentIndex];
+    if (currentItem && currentItem.type === 'folder') {
+      this.expand(currentItem);
+    }
+  };
 }

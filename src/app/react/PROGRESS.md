@@ -538,7 +538,57 @@
 >   （stage/5/6/7a/7b/7c/7c2/7d1a/7d1b/7d1c1 + main-ui-workflow 首跑即绿 + source-mode-ui +
 >   library-switch-ui + drag-start + preview-delivery）+ api-smoke 13/13；tsc 零错。
 
-| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7d-1c-2） |
+> **7d-1c-2 已验证并接管**（2026-08-30）：folderSelectPanel + foldersInput +
+> NewSmartFolderController。
+> - 接管方式：index.html 旧 NewSmartFolderController 区块（399-720）与
+>   `<folder-select-panel theme>` 岛删除，替换为 `#eagle-smart-folder-host`
+>   （保留 modal-flex-center）/ `#eagle-folder-select-panel-host`；React 层
+>   components/stage7/FolderSelectPanels.tsx（组件）+ selectPanelEngine.ts 追加
+>   FolderSelectPanel 类（55801-56356 逐字，extends 基类并适配 selectUp/selectDown/
+>   hoverItem/scrollTop → *Base 委托、onLeftKey/onRightKey 改字段形式以兼容基类属性声明）。
+> - **vs-repeat 垂直虚拟化移植**（bundle 16736-17394 → useVsRepeat）：Eagle 改版 sizes
+>   计算（`item.size || elementSize`）、sizesCumulative 前缀和、startIndex/endIndex 窗口
+>   （excess/2 收缩扩展）、slice(endIndex+5) preload、before/after 占位 div
+>   （min-height，插入为首/末子元素）；scroll 节流 33ms（leading+trailing）+
+>   window resize 防抖 200ms；digestRequired 分支省略（React 重渲染即最新值）。
+>   vs-auto-scroll（69856-69900）→ useVsAutoScroll：$watch(index) 语义（变化才滚动）、
+>   三分支滚动定位、jQuery scrollTop(undefined) 为 getter no-op 的守卫。
+> - **教训（ng-click digest 等价）**：面板实例方法经 DOM 事件（openItem/changeTab/
+>   toggleExpand/hoverItem/close 遮罩）调用后必须 bumpAll()——原版依赖 ng-click 后
+>   digest，React 不重渲染则 selected/active 类不更新（冒烟 fsp-click-toggled-off 抓到）；
+>   键盘路径已由 SelectPanelSearchInput 回调内 notify 覆盖，无需重复。
+> - foldersInput（64399-64442 + folders-input.html）：'=' 写回经 onFolderIdsReplace
+>   （rule.value 引用替换）、$evalAsync+$timeout → setTimeout 0；folderMappings 为 link 期
+>   一次性捕获的 body 引用（对象原地变更故实时）。
+> - ng-flatpickr（17416）→ FlatpickrInput：new window.FlatpickrInstance(input, fpOpts) +
+>   fpOnSetup({fpItem}) 等价 + 卸载 destroy；`angular.element(instance._input).scope().rule`
+>   → `instance._input.__eagleRule`（useLayoutEffect 每渲染刷新，conditions 重建后仍指向
+>   正确 rule）；data-enabletime 属性保留 DOM 对齐（flatpickr v3 dataset 合并为小写键，
+>   实际 enableTime 不生效——与原版一致）。
+> - NewSmartFolderController（74323-74733 + 模板逐字）：NEW.SMART.FOLDER / EDIT.SMART.FOLDER
+>   广播（body scope 上监听，rootScope 广播可达）；conditions/rules 原地变异 + ref 持有，
+>   recalculateResult 尾部 bumpAll 等价 digest；`$filter('filter')(raw, contentFilter)`
+>   （contentFilter 是函数谓词）→ `raw.filter(body.contentFilter)`；ng-model-options
+>   debounce（300/blur 0、色板 200/blur 0）→ 模型即时 + recalc 去抖 + blur 冲刷；
+>   save 保留两处原版怪癖：edit 分支 `analytics.event(..., smartFolder.name)` 引用函数级
+>   提升的未赋值 var → TypeError 被 try/catch 吞掉；`$scope.smartFolderCount` 经 scope
+>   原型链解析到 body.smartFolderCount（port 直调 body）。新建后
+>   body.createFolder/openSmartFolder/changeSidebarIndex(400ms)/saveFolder 数据面零改动。
+> - selectall 指令（70600）：name 输入在 nameKeydown 内联模拟（AutoTaggingModal 同款，
+>   Mousetrap 的 stopPropagation 会阻断 React 根委托 onKeyDown，不能用 useSelectAll）；
+>   规则文本/数字输入经 SelectAllInput 包装（无其他 keydown 冲突）。
+> - 测试契约：window.__eagleFolderSelectPanel / window.__eagleNewSmartFolder（save/cancel/
+>   recalculateResult/isOpen/conditions）。swal 建夹冒烟：搜索关键字 → create 项点击 →
+>   .swal2-input 设值 → .swal2-confirm 点击 → body.createFolder → onCreatedFolder 重置
+>   init 并选中。
+> - 闭环：react-stage7d1c2-smoke 29/29（壳/广播开合/预选渲染/点击翻转+Esc onChanged 数据面/
+>   搜索建夹 swal→createFolder→onCreatedFolder/NEW.SMART.FOLDER 弹窗/property→tags 面板
+>   回写+预览计数/property→folders 面板回写/create 保存 smartFolders 数据面/EDIT 回填改名
+>   保存/截图留档）。全量回归 16/16 全绿（stage/5/6/7a/7b/7c/7c2/7d1a/7d1b/7d1c1/7d1c2 +
+>   main-ui-workflow + source-mode-ui + library-switch-ui + drag-start + preview-delivery）
+>   + api-smoke 13/13；tsc 零错。
+
+| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
 | ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 已验证（7d-1b ErrorModal） |

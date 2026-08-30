@@ -663,6 +663,43 @@
 >   pinned class + overlay 隐藏/键盘翻转 onRemove 数据面/Esc 关闭；面板态截图怪癖 WARN）。
 >   全量回归 18/18 全绿 + tsc 零错。
 
+> **7d-3b 已验证并接管**（2026-08-30）：batchSavePanel + batchRectSelect。
+> - 接管方式：index.html `<batch-save-panel theme folders folder-mappings upload-queue
+>   upload-urls add-to-recent-folders tag-manager>` 删除，替换为
+>   `#eagle-batch-save-panel-host`；React 层 components/stage7/BatchSavePanel.tsx
+>   （含 BatchSaver 类 595-1030 逐字 + batchRectSelect 59288-59423 内联移植）。
+> - BatchSaver 逐字：loadTasks/loadOriginal/loadLarge/loadImage（data:image 离线路径 +
+>   fetch + 文件头 MIME 嗅探 + Image/Video 元信息）、getSize/getResolution/
+>   getContentDispositionType/getExtension、eagle.batchSaver.* 的 getter/setter（localStorage
+>   直写）；onChange 用 window.throttle（global.js 同款 throttle(fn, delay, immediate)）。
+> - batchRectSelect：jQuery mousedown/mousemove + window mouseup、$rect div prepend 到
+>   .gallery、contain 碰撞判定、window.throttle 100ms caculate；原版
+>   `angular.element(this).scope().image` → .item DOM 节点挂 __eagleItem（ref callback）。
+> - **事件时序教训**：.item 的 select 原为元素级 ng-mousedown（先于 .gallery 祖先上的
+>   rect-select jQuery mousedown，且 select 的 stopPropagation 阻止框选启动）；React 根委托
+>   会被 .gallery 的 jQuery stopPropagation 拦截（7d-2 教训的姊妹篇）→ 改用
+>   onMouseDownCapture（capture 相位先于 gallery bubble stopPropagation；synthetic
+>   stopPropagation 透传 native stopPropagation → 框选不启动，与原版一致）。
+> - 其余逐字：init（清 body.selected、src 去重、electron-referer、focusInput x2、
+>   analytics）/calculateResult（ext/size/domain/keyword 过滤 + <200px 尾置排序 + counts）/
+>   selectAll/invertSelected/select(shift 区间)/removeSelected/updateSelectedCount/
+>   zoomIn/Out/alt+ctrl 滚轮缩放（jQuery mousewheel.zoomming + window.throttle 50)/
+>   onKeyup 全套快捷键（mod+A/Esc/Del/F/T/mod+Enter/+−）/import（重名加序号、reverse、
+>   hasLarge 分支、uploadUrls/uploadQueue/addToRecentFolders）/selectFolders（FolderSelectPanel）/
+>   selectTags（GeneralTagSelectPanel）/auto-focus OPEN_DUPLICATE 等价。
+> - 原版怪癖保留：模板 ng-mousedown="cleanSelected($event)" 的 cleanSelected 在该 isolate
+>   scope 未定义（$exceptionHandler 记录后无效果）→ no-op；搜索 ng-model debounce 50/
+>   blur 0 → setTimeout 50 等价；advanced 尺寸输入 → batchSaver.filterMinW 等四 setter
+>   直写 localStorage + onChange 即算（原版 debounce 300——React 侧即时计算仅提前触发，
+>   数据面一致；如需严格可后续补 debounce）。
+> - 测试契约：window.__eagleBatchSavePanel（isOpen/items/selected/displayed/counts/tags/
+>   importFolders）；uploadUrls 以 body 属性覆盖打桩验证数据面。测试图片须不同 src
+>   （init 按 src 去重——原版行为）。
+> - 闭环：react-stage7d3b-smoke 14/14（壳/IMPORT_IMAGES 开合/data URL 项渲染+缩略图/点击
+>   选中/关键字过滤/FolderSelectPanel 选夹回写/全选 import 数据面（uploadUrls 参数、
+>   folderIds、uploadQueue）/Esc 关闭/截图留档）。全量回归 19/19 全绿 + api-smoke 13/13；
+>   tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

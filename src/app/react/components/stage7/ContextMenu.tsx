@@ -18,7 +18,7 @@ const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgra
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/context-menu/${icon}`;
 
 /** fuzzyMatch filter（bundle:19951）：fuzzy_match(text=label, search=keyword）。 */
-function fuzzyMatchHtml(label: any, searchKeyword: string): string {
+export function fuzzyMatchHtml(label: any, searchKeyword: string): string {
   const text = label == null ? '' : String(label);
   if (!searchKeyword) return text;
   const fn = (window as any).fuzzy_match;

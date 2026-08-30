@@ -357,8 +357,37 @@
 > 两个事件双双丢失，sanitize/tinyPinyin/fse 等 require 永不执行（rename 依赖 sanitize；
 > main-ui-workflow 的偶发缩略图超时同源）。修复：shims 改为轮询 window.$bodyScope 就绪后
 > 再按序发射（兜底 10s）。修复后 main-ui-workflow 首跑即绿。
-| quickSearchModal | directive | 60788-61393 | 待办（7c） |
-| tagManager | directive | 55447-56356 | 待办（7b） |
+> **7c-2 已验证并接管**（2026-08-30）：quickSearchModal。
+> - 接管方式：index.html 旧 `<quick-search-modal class="modal-flex-center">` 岛替换为
+>   `#eagle-quick-search-host`（宿主保留 modal-flex-center 类）；React 渲染
+>   #quick-search-panel + .quick-search-overlay 两个模板根（quick-search-modal.html 逐字）。
+> - 触发通道零改动：OPEN_QUICK_SEARCH_MODAL / CLOSE_QUICK_SEARCH_MODAL 广播（sidebar J 按钮
+>   与 Mousetrap 'j' 仍走 body scope 的 openQuickSearch/closeQuickSearch）。
+> - isolate scope 语义逐条对齐：模板里 folderList/tags/smartFolderList/all 在原版 isolate
+>   scope 上不可达 → tab 计数 span 恒为 ng-show=false（React 侧保持隐藏形态）；
+>   $parentScope 一律经 getBodyScope() 调活对象。
+> - 拼音/模糊搜索原样移植：chineseConvert/pinyinlite/cartesianProduct/String.score/
+>   fuzzy_match；pinyinlite 与 cartesianProduct 为 bundle 闭包 require，React 侧经
+>   window.require(appRoot.path + '/my_modules/...') 等价加载。localStorage 键
+>   eagle.quickSearch.history/.folder.history/.smartFolder.history 原样。
+> - scrollToActive 指令（70641-70672）等价移植为 useScrollToActive（.active-item 不完整
+>   可见时对齐；TAGS 无 enable 恒启用但无 .active-item 天然空转）；vs-repeat 复用
+>   useVirtualWindow。searchMode 与 keyword 跨打开持久（原版 isolate scope 行为）。
+> - 教训：ng-show 布尔转写多包一层 `!` 会把空态显隐整体反转（结果非空时空态反而显示），
+>   CDP 断言 `["flex","flex"]` + 结果项数暴露；表达式必须逐字对照。
+> - **tagPopup 定性为死代码**：js/controllers/tag-popup.js 未被 index.html 加载
+>   （controllers/ 无 script 引用），TagPopupController/tagsPopupDraggable/tagInputTrigger
+>   在 bundle 中 0 次注册，#tags-popup 无任何模板消费点（仅 CLOSE-TAGS-POPUP 广播与
+>   TagManager.focusTag 的 #tags-popup 查询为无害 no-op）。与 notificationBtn 同处理。
+> - 闭环：react-stage7c2-smoke 26/26（壳/广播开合/自动聚焦/keyword 清空/FOLDERS 扁平列表/
+>   计数 span 隐藏/↓↑ active/拼音过滤/Enter openFolder 数据面+双 localStorage 历史/Tab 循环
+>   TAGS 渲染+Enter openTag viewMode='all'/SMARTFOLDERS 空态/ITEMS 缩略图+meta 文件夹链接/
+>   Esc currentFocus/overlay 关闭；截图留档）。全量回归全绿：react-stage-smoke/5/6/7a/7b/7c、
+>   main-ui-workflow、source-mode-ui、library-switch-ui、drag-start、preview-delivery、
+>   api-smoke 13/13；tsc 零错。
+
+| quickSearchModal | directive | 60788-61393 | 已验证（QuickSearchModal） |
+| tagManager | directive | 55447-56356 | 已验证（7b TagManagerPanel） |
 | folderSelectPanel | directive | 56356-57911 | 待办（7b） |
 | generalTagSelectPanel | directive | 58122-58257 | 待办（7b） |
 | inspectorTagSelectPanel | directive | 57911-58122 | 待办（7b；依赖 TagSelectPanel 类/vsGridRepeat） |
@@ -395,7 +424,7 @@
 | ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 待办（7c） |
 | AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7c） |
 | WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 待办（7c） |
-| tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 待办（7c） |
+| tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 无运行时引用（tag-popup.js 未加载、bundle 无注册、无模板消费点；7c-2 定性） |
 
 ---
 ## 8. 设置页（preferences.html）
@@ -496,7 +525,7 @@
 | findStringAutocomplete | directive | 77785-末 | 待办 |
 | alwaysFocus | directive | 69688-69704 | 待办 |
 | autoScroll | directive | 70697-70737 | 待办 |
-| scrollToActive | directive | 70641-70672 | 待办 |
+| scrollToActive | directive | 70641-70672 | 已验证（7c-2 随 quickSearchModal 移植 useScrollToActive） |
 | scrollPositionSaver | directive | 70165-70198 | 待办 |
 | typeChecking | directive | 70326-70388 | 待办 |
 | autoPositionContextMenu | directive | 独立模块 contextMenu 内 | 待办 |

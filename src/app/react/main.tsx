@@ -9,6 +9,7 @@ import { InspectorPanel } from './components/inspector/Inspector';
 import { ContextMenuPanel } from './components/stage7/ContextMenu';
 import { TagManagerPanel } from './components/stage7/TagManager';
 import { LayoutPanel, NotificationModal, NewVersionModal, FolderPasswordModal, MousewheelModal, AboutPanel, WelcomePage } from './components/stage7/SmallPanels';
+import { QuickSearchModal } from './components/stage7/QuickSearchModal';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
 import { bindToolbarSync } from './store/toolbarState';
@@ -68,6 +69,7 @@ root.render(
     <InspectorPanel />
     <ContextMenuPanel />
     <TagManagerPanel />
+    <QuickSearchModal />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

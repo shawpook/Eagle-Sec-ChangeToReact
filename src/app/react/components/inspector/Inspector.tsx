@@ -84,7 +84,7 @@ const angDate = (value: any, format: string): string => {
 
 /* ---------------- ext-icon 指令（70817-70836） ---------------- */
 
-function ExtIcon({ itemId }: { itemId: string }) {
+export function ExtIcon({ itemId }: { itemId: string }) {
   const hostRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

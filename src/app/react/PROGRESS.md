@@ -588,6 +588,51 @@
 >   main-ui-workflow + source-mode-ui + library-switch-ui + drag-start + preview-delivery）
 >   + api-smoke 13/13；tsc 零错。
 
+> **7d-2 已验证并接管**（2026-08-30）：batchRenameModal + artstationImportModal。
+> - 接管方式：index.html `<batch-rename-modal>` / `<artstation-import-modal>` 删除，替换为
+>   `#eagle-batch-rename-host`（保留 modal-flex-center）/ `#eagle-artstation-import-host`；
+>   React 层 components/stage7/BatchRenameArtstationModals.tsx。规范：artstationImportModal
+>   = bundle 76464-76783 + 模板；batchRenameModal = 76783-77785 + 模板 + findStringAutocomplete
+>   指令（内联渲染）+ autoFocus 指令（73003-73014）等价。
+> - **$exceptionHandler 等价（ngSafe）——重大教训**：mock 环境 shims 的 moment 是 stub
+>   （`moment: (value) => new Date(...)`，无 .format），原版 format() 在 try 块外调
+>   moment(now).format → **mock 环境每次必抛**，异常经 Angular digest/ng-click 冒泡到
+>   $exceptionHandler（console.error 后应用继续，format 预览恒空、format 模式改名不可达）。
+>   React 未捕获异常会静默卸载整棵树（7a/7d1c1 教训复现）→ 必须在 $watch/$on/ng-click 等价
+>   边界（watch effects、OPEN_RENAME $on、全部 JSX handler）用 ngSafe（try/catch +
+>   console.error）包裹，两种环境下行为与原版一致。真实机器 moment 正常时 ngSafe 无感。
+> - batchRename：$watch("[newName, startAt]") / $watch("[findString, replaceString]") →
+>   useEffect 等价（startAt 经 window.is.number 钳制）；format() 77107-77246 逐字
+>   （numberFixedLen 过滤器复用 react/app/filters、moment 经 require、emojiRegex 字面量带入、
+>   sanitize/window.is/FileUrlHelper 经 window 等价）；insert* → openAppContextMenu
+>   （CONTEXTMENU.OPEN 广播，items/role/showSearch/onClosed 原样）；rename 确认 swal 阈值
+>   （IMAGE/FOLDER 10、TAGS 2）；renameImages/Folders/Tags 数据面逐字（deepCopy、
+>   ayncsImagesChange/hiddenByCurrentFilter 复用 FolderModals 导出、rootScope.notify 恢复、
+>   localStorage BATCH_RENAME_LAST_NAME / BATCH_RENAME_HISTORY_{TYPE}_FIND_STRING）；
+>   预览表 tbody vs-repeat（41/30）复用 useVsRepeat（已导出）；原版怪癖保留：isRenaing 拼写、
+>   artstation image 字面量 type 重复键（"image" 覆盖 getImageType，TS 侧直写生效值+注释）、
+>   aperture between 分支 width: 54\px 无效样式逐字。
+> - autoFocus 指令等价：OPEN_RENAME 广播 → $timeout(100) → newName/findString 两输入
+>   click+focus+select（DOM 顺序），随后指令自身 setTimeout(200) focus 第一个可见文本输入。
+> - artstationImport：IMPORT_ARTSTATION 广播 + ipc 'import-artstation'（getIpc().on）双通道
+>   open()（$timeout 300 + focus/select setTimeout 300）；selectFolders → FolderSelectPanel.open
+>   回写 importFolders（folder 对象数组）；importUrl/importUrlManual 逐字
+>   （electron-referer 经 req('@electron/remote')、Artstation 全局、IMPORT_IMAGES 广播、
+>   uploadUrls/uploadQueue/addToRecentFolders 数据面）；vaildateUrl 拼写保留。
+> - **测试契约**：window.__eagleBatchRename（isOpen/previews/items）、window.__eagleArtstation
+>   （vaildateUrl/urlError/pageUrl/isOpen）。
+> - **CDP 测试注意**：(1) 受控输入 setState 同任务异步冲刷——同一 eval 内 input 事件后立刻
+>   blur 读不到新值（Angular digest 同步无此差），测试须分 eval；组件侧 onChange 同步写 ref
+>   对齐 Angular 模型语义。(2) `el.blur()` 在此 CDP 环境不触发 React 的 focusout 委派
+>   （onBlur 绑定正常、手动 `new FocusEvent('focusout', {bubbles:true})` 可触发）——真实用户
+>   点击离开焦点时 focusout 自然触发，组件无恙；测试派发 focusout 即可。
+> - 闭环：react-stage7d2-smoke 22/22（壳/常驻 modal/IMAGE replace 改名数据面+LAST_NAME/
+>   FOLDER replace 改名 folderMappings+历史/空集合守卫/artstation 开合聚焦/url 校验显隐/
+>   FolderSelectPanel 选夹回写 option/Esc 关闭/截图留档）。format 模式预览/改名在 mock 环境
+>   因 moment stub 不可用（原版一致），冒烟走 replace 分支覆盖 renameImages/Folders 数据面。
+>   全量回归 17/17 全绿（…7d1c1/7d1c2/7d2 + main-ui-workflow + source-mode-ui +
+>   library-switch-ui + drag-start + preview-delivery）+ api-smoke 13/13；tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

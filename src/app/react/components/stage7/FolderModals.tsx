@@ -123,7 +123,7 @@ export function ayncsImagesChange(images: any[]) {
 }
 
 /* hiddenByCurrentFilter（bundle 49600-49665 逐字） */
-function hiddenByCurrentFilter(items: any[]) {
+export function hiddenByCurrentFilter(items: any[]) {
   if (!items || items.length === 0) return;
   let total = items.length;
   let once = 350;

@@ -52,7 +52,7 @@ interface VsRepeatResult {
   endIndex: number;
 }
 
-function useVsRepeat(
+export function useVsRepeat(
   containerRef: React.RefObject<HTMLElement | null>,
   items: any[] | undefined,
   options: { elementSize: number; excess: number },

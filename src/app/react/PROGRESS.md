@@ -473,6 +473,33 @@
 >   （markdown 缩略图计数偶发竞态复现，重跑即绿——既有问题）、source-mode-ui、
 >   library-switch-ui、drag-start、preview-delivery、api-smoke 13/13；tsc 零错。
 
+> **7d-1c 勘察（2026-08-30，未开工）**：NewSmartFolderController + tagsInput/foldersInput +
+> SelectPanel 面板族。依赖图谱与行号（当前 index.html 行号，已因 7d-1a/1b 删块偏移）：
+> - 模板：index.html 420-745（`ng-controller="NewSmartFolderController"`，smart-folder-modal，
+>   含 ng-flatpickr 日期规则 666-667、tags-input 717、folders-input 721）。
+> - 控制器：NewSmartFolderController = bundle 74323-74733（模板数据 smartFolderScope、
+>   规则编辑器 changeValue/save/cancel 等）。
+> - tagsInput 指令 = bundle 64443-64489（模板 js/directives/tags-input.html，replace:true，
+>   isolate scope {theme, tags, onChange}；点击 → GeneralTagSelectPanel.open({tagManager,
+>   selectedTags, onChanged})；remove → tags.splice + onChange）。
+> - foldersInput 指令 = bundle 64399-64442（folders-input.html；点击 → FolderSelectPanel.open
+>   ({folders, selectedIds, onChanged: result.isDirty → selectedFolderIds})）。
+> - SelectPanel 体系（OOP）：SelectPanelSearchInput = 55466-55575；SelectPanel = 55575-55801；
+>   FolderSelectPanel extends SelectPanel = 55801-56356；TagSelectPanelItem = 56438-56479；
+>   TagSelectPanel extends SelectPanel = 56479-56911 附近（其后到 generalTagSelectPanel 58122
+>   之前是 batch 相关类，具体边界待读）；generalTagSelectPanel 指令 = 58122-58257（isolate
+>   scope {TagManager, selected, theme}，new TagSelectPanel({showCreateTagBtn:false, fixedSize:true,
+>   panelSelector:'general-tag-select-panel .tag-select-panel', searchInputSelector:'general-tag-select-panel
+>   .panel-header input'})）+ 模板 js/directives/general-tag-select-panel.html。
+> - inspectorTagSelectPanel = 57911-58122（依赖 TagSelectPanel + vsGridRepeat 14686-15113）。
+> - 消费方：AutoTagging（74190-74323，FOLDER_SETTINGS 广播，模板 index.html 416-435 附近）
+>   依赖 tagsInput；batchSavePanel 58257-59288 依赖上述面板类。
+> - 建议子单元顺序：7d-1c-1（tagsInput + GeneralTagSelectPanel + TagSelectPanel/SelectPanel
+>   类，先让 AutoTagging 完整）→ 7d-1c-2（foldersInput + FolderSelectPanel + NewSmartFolder
+>   模板/控制器，含 ng-flatpickr 日期规则的 React 等价——flatpickr 库在 bundle 17395-17417 内联，
+>   window.Flatpickr 可用性待验证；可先用 window.Flatpickr 直接驱动）。
+> - ng-flatpickr 指令本体在 bundle ~17417-17425（angular-flatpickr 包装，读源码确认 API）。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7d-1c） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

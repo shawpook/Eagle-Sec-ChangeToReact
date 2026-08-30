@@ -393,28 +393,8 @@
         <div id="eagle-add-to-folder-host" class="modal-flex-center"></div>
         <div id="eagle-move-folder-host" class="modal-flex-center"></div>
 
-        <!-- TODO: 改 Directive 自动标签窗口 -->
-        <div class="modal-flex-center" ng-controller="AutoTaggingController">
-            <div class="modal auto-tagging-modal" ng-class="{'open': isOpen}">
-				<div class="modal-header">
-                    <div class="name">{{'context.folder.autoTagging' | i18n}}</div>
-                    <div class="close" ng-click="cancel()"></div>
-                </div>
-                <div class="section">
-                    <label for="">{{'general.folderName' | i18n}}</label>
-                    <input id="auto-tagging-name-input" maxlength="1024" type="text" selectall placeholder="" ng-model="folderName" ng-keydown="nameKeydown($event)" tabindex="-1">
-                </div>
-                <div class="section" ng-show="isOpen">
-                    <label for="">{{'modal.autoTagging.tagsLabel' | i18n}}</label>
-                    <tags-input style="min-height: 56px;" theme="theme" tags="folderTags"></tags-input>
-                </div>
-                <div class="section textAlign-right">
-                    <div class="button button-xs button-primary" ng-click="save()">{{'modal.autoTagging.saveBtn' | i18n}}</div>
-                    <div class="button button-xs button-grey" ng-click="cancel()">{{'general.cancel' | i18n}}</div>
-                </div>
-            </div>
-            <div class="modal-overlay"></div>
-        </div>
+        <!-- 自動標籤窗口（React 接管，舊 AutoTaggingController 區塊已刪） -->
+        <div id="eagle-auto-tagging-host" class="modal-flex-center"></div>
 
         <!-- TODO: 改 Directive 新增智能文件夾 -->
         <div class="modal-flex-center" ng-controller="NewSmartFolderController">
@@ -750,7 +730,8 @@
         <!-- 佈局面板（React 接管） -->
         <div id="eagle-layout-panel-host"></div>
         <folder-select-panel theme="theme"></folder-select-panel>
-        <general-tag-select-panel theme="theme"></general-tag-select-panel>
+        <!-- 標籤選擇面板（React 接管，舊 <general-tag-select-panel> 島已刪） -->
+        <div id="eagle-general-tag-select-panel-host"></div>
         <inspector-tag-select-panel theme="theme" selected="selected" tag-manager="TagManager"></inspector-tag-select-panel>
         <duplicate-scan-panel theme="theme" folder-mappings="folderMappings"></duplicate-scan-panel>
         <duplicate-modal theme="theme" class="modal-flex-center" folder-mappings="folderMappings" item-mappings="itemMappings"></duplicate-modal>

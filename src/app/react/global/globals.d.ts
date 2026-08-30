@@ -34,6 +34,11 @@ declare module 'react' {
       'web-view': any;
       'mpv-video': any;
       'ext-icon': any;
+      'select-panel': any;
+      'select-panel-list': any;
+      'general-tag-select-panel': any;
+      group: any;
+      item: any;
       'inspector-plugin-view': any;
     }
   }

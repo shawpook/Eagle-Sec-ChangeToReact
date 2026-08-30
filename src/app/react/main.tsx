@@ -11,6 +11,7 @@ import { TagManagerPanel } from './components/stage7/TagManager';
 import { LayoutPanel, NotificationModal, NewVersionModal, FolderPasswordModal, MousewheelModal, AboutPanel, WelcomePage } from './components/stage7/SmallPanels';
 import { QuickSearchModal } from './components/stage7/QuickSearchModal';
 import { ErrorModal, WebsitePanel } from './components/stage7/ControllerModals';
+import { GeneralTagSelectPanel, AutoTaggingModal } from './components/stage7/SelectPanels';
 import { AddToFolderModal, MoveFolderModal } from './components/stage7/FolderModals';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
@@ -58,7 +59,14 @@ function pickMountHost(): HTMLElement {
 }
 
 const host = pickMountHost();
-const root = createRoot(host);
+const root = createRoot(host, {
+  onUncaughtError: (error: any) => {
+    (window as any).__reactErr = 'UNCAUGHT: ' + String((error && error.stack) || error).slice(0, 800);
+  },
+  onCaughtError: (error: any) => {
+    (window as any).__reactErr = 'CAUGHT: ' + String((error && error.stack) || error).slice(0, 800);
+  },
+} as any);
 root.render(
   <>
     <AppRoot />
@@ -76,6 +84,8 @@ root.render(
     <MoveFolderModal />
     <ErrorModal />
     <WebsitePanel />
+    <GeneralTagSelectPanel />
+    <AutoTaggingModal />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

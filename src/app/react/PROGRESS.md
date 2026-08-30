@@ -473,7 +473,7 @@
 >   （markdown 缩略图计数偶发竞态复现，重跑即绿——既有问题）、source-mode-ui、
 >   library-switch-ui、drag-start、preview-delivery、api-smoke 13/13；tsc 零错。
 
-> **7d-1c 勘察（2026-08-30，未开工）**：NewSmartFolderController + tagsInput/foldersInput +
+> **7d-1c 勘察（2026-08-30；7d-1c-1 已完成，7d-1c-2 待做）**：NewSmartFolderController + tagsInput/foldersInput +
 > SelectPanel 面板族。依赖图谱与行号（当前 index.html 行号，已因 7d-1a/1b 删块偏移）：
 > - 模板：index.html 420-745（`ng-controller="NewSmartFolderController"`，smart-folder-modal，
 >   含 ng-flatpickr 日期规则 666-667、tags-input 717、folders-input 721）。
@@ -500,11 +500,49 @@
 >   window.Flatpickr 可用性待验证；可先用 window.Flatpickr 直接驱动）。
 > - ng-flatpickr 指令本体在 bundle ~17417-17425（angular-flatpickr 包装，读源码确认 API）。
 
-| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7d-1c） |
+> **7d-1c-1 已验证并接管**（2026-08-30）：tagsInput + generalTagSelectPanel（TagSelectPanel
+> 体系）+ AutoTaggingController。
+> - 接管方式：index.html 旧 AutoTaggingController 区块与 `<general-tag-select-panel theme>` 岛
+>   删除，替换为 `#eagle-auto-tagging-host` / `#eagle-general-tag-select-panel-host`；React 层
+>   components/stage7/selectPanelEngine.ts（纯类）+ SelectPanels.tsx（组件）。
+> - 引擎逐字移植：TagSelectPanelItem（56438-56477）、SelectPanelSearchInput（55466-55572，
+>   enter/esc keydown+keyup 状态机）、SelectPanel 基类（55575-55800，含 #moveToCursorPosition
+>   鼠标定位与 retry）、TagSelectPanel（56479-57910 全部方法：initRawData/updateTagsState/
+>   updateItemList 排序分组/filterByKeyword 拼音打分/sortByKeywordSimilarity Levenshtein/
+>   selectUp-Down-Left-Right 网格导航/onTabKey 侧栏群组循环/openItem 选中翻转+createdTags/
+>   onPaste 批量建标/设置面板开关与 localStorage 持久化）。scope.$evalAsync → notify 回调。
+> - vsGridRepeat 指令（14686-15106）移植为 useVsGridRepeat：calculateColumns/Positions、
+>   binarySearch 可见窗口（extraRange 500）、grid-placeholder 高度、scrolling class、
+>   ResizeObserver、render 事件（jQuery trigger）——可见项差分渲染交由 React。
+> - generalTagSelectPanel 指令（58122-58256）：GENERAL.TAG.SELECT.PANEL.OPEN 广播监听
+>   （init 10ms + open 0ms 原时序）、jQuery UI draggable/resizable（尺寸持久化
+>   eagle.tagsPopup.height/width）、窗口 resize 补位；GeneralTagSelectPanel 类（58115）
+>   → openGeneralTagSelectPanel 助手。模板 general-tag-select-panel.html 逐字（侧栏群组、
+>   网格项、footer 快捷键、设置面板）。
+> - tagsInput（64443-64489 + tags-input.html）：点击 → GeneralTagSelectPanel.open、onChanged
+>   经 '=' 双向绑定语义写回（onTagsReplace 替换父级数组引用）、remove splice + onChange。
+> - AutoTaggingController（74190-74316 + 模板）：FOLDER_SETTINGS 广播、nameKeydown
+>   (Esc/meta+Enter)、save（folder.name/tags 原地改 + isInFolder 子树加速 + raw 遍历
+>   image.tags 去重 + ipc 'image-change' + SAVE_FOLDER/CALCULATE_IMAGE_BINDING/
+>   UPDATE_SELECTION 广播）、input tabindex 101/-1 游戏。
+> - **重大教训（复现 7a）**：`$` 是返回 window.jQuery 的工厂——引擎里 `$(selector)` 直接
+>   `.off()` 抛 TypeError，React 19 静默卸载整棵树（onUncaughtError 默认只 console.error，
+>   不触发 window error 事件）→ boot 连锁断裂（$bodyScope 由 React BoxList 挂载设置，树死则
+>   shims 等不到 → boxes 永不渲染）。必须 `$()(selector)` 双调用。诊断手段：createRoot
+>   临时挂 onUncaughtError + addScriptToEvaluateOnNewDocument hook console.error。
+> - 测试契约：window.__eagleTagSelectPanel 暴露面板实例；冒烟需在面板 open 后等 init
+>   （setTimeout 10ms）再发键盘（delay 300）。
+> - 闭环：react-stage7d1c1-smoke 16/16（壳/广播开合/网格渲染+预选/键盘导航与翻转/
+>   Esc onChanged 数据面（isDirty+deselectedTags）/AutoTagging 弹窗/tags-input 回写/
+>   save 数据面 folder.name+tags；截图降级 WARN——面板态截图怪癖）。全量回归 15/15 全绿
+>   （stage/5/6/7a/7b/7c/7c2/7d1a/7d1b/7d1c1 + main-ui-workflow 首跑即绿 + source-mode-ui +
+>   library-switch-ui + drag-start + preview-delivery）+ api-smoke 13/13；tsc 零错。
+
+| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7d-1c-2） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
 | ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 已验证（7d-1b ErrorModal） |
-| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7d-1c；依赖 tagsInput→GeneralTagSelectPanel） |
+| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 已验证（7d-1c-1 AutoTaggingModal） |
 | WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 已验证（7d-1b WebsitePanel，含 websitePanelWebview 指令） |
 | tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 无运行时引用（tag-popup.js 未加载、bundle 无注册、无模板消费点；7c-2 定性） |
 

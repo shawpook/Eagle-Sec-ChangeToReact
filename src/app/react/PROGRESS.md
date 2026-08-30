@@ -700,6 +700,45 @@
 >   folderIds、uploadQueue）/Esc 关闭/截图留档）。全量回归 19/19 全绿 + api-smoke 13/13；
 >   tsc 零错。
 
+> **7d-4 已验证并接管**（2026-08-30）：duplicateScanPanel + mergeEditor + duplicateModal。
+> - 接管方式：index.html `<duplicate-scan-panel>`/`<duplicate-modal>` 删除，替换为
+>   `#eagle-duplicate-scan-panel-host`/`#eagle-duplicate-modal-host`；React 层
+>   components/stage7/DuplicateFamily.tsx（MergeEditor 子组件 + DuplicateScanPanel +
+>   DuplicateModal）。
+> - 逻辑逐字：扫描步骤机（INITIAL/SCAN/SCAN-RESULT/MERGE）、scanSame/scanSimilar
+>   （$timeout 600 + eagle.duplicateChecker shim + cancellation tokenSource + 进度回调 +
+>   timeLeftInSeconds）、initSimilarGroups（分辨率/格式 PNG>BMP>JPG>…/大小排序）、
+>   changeSimilarity（100ms 去重 + findSimilarFiles 重算）、toggleGroupSelection/removeGroup/
+>   selectChoice/openItemContextMenu（openAppContextMenu：open-with-default ipc、
+>   openInNewWindow、移除项/空组移除）、updateSelectedItems（SAME 尾项/SIMILAR choice 之外的
+>   reducedSize）、onMerged（swal 统计对话框 → 继续合并/退出）；结果列表 vs-repeat（275/10）
+>   复用 useVsRepeat。mergeEditor：init props 计算（names/urls/folders/tags/annotations 去重
+>   排序、star 取最大、mergedAnnotation 4096 截断）、toggleFolder/toggleTag/changeName/Url/
+>   Annotation/selectCustomAnnotation、merge()（checkOperationSafety swal → choice 写回 →
+>   非 choice isDeleted → ayncsImagesChange → calculateImageBinding 回调 → notify/
+>   rebindRefresh/updateSelection → onMerged）。duplicateModal：OPEN_DUPLICATE（$timeout 300
+>   开窗 + focus 200）、save/saveAll/cancel/cancelAll（usingExist 分支 → ipc
+>   images-change/empty-trash/palette-resume；keepBoth 分支 → addToDuplicateMapping + raw.push；
+>   cancel → selectedMappings 清理）、image.changed ipc → palettes 更新、
+>   CALCULATE_IMAGE_BINDING/REBIND_REFRESH/gl:reset 广播、body 委托点击聚焦 duplicate-input。
+> - **hooks 规则教训（全树卸载）**：DuplicateScanPanel 的 useVsRepeat 最初放在
+>   `if (!host) return null` 之后 → 二次渲染 hooks 数量增加 → React 抛 "Rendered more hooks
+>   than during the previous render" → onUncaughtError 整树卸载 → boxes 永不渲染。所有组件
+>   hooks 必须在早退之前调用。
+> - 原版怪癖保留（mock 环境行为与原版一致）：(1) shim 的 cancellation 无 cancel 方法 →
+>   scan 面板 back()/close() 抛 TypeError（$exceptionHandler 吞掉、面板无法关闭）——冒烟
+>   不对此断言；(2) duplicate-modal hasSelected() 未定义 → button-disabled 恒不生效；
+>   (3) close() 内 `applyAll == 'false'` 比较表达式 no-op；(4) 右侧对比 iframe
+>   getExifPath(left) 传 left；(5) `rootScope = angular.element("body").scope()` 隐式全局
+>   → 等价读 body scope。
+> - 契约：window.__eagleDuplicateScanPanel（step/groups/selectedItems/isOpen）、
+>   window.__eagleDuplicateModal（isOpen（ref 镜像）/duplicates/left/right）。测试 ipc 间谍
+>   须只安装一次（否则嵌套包装重复记录）。usingExist/applyAll 为 link 期字符串初始化
+>   （漏初始化会让 save 走 keepBoth 分支）。
+> - 闭环：react-stage7d4-smoke 13/13（壳/扫描步骤机+空结果/重开重置/弹窗开合/左右对比渲染/
+>   show spy/save 数据面（images-change+empty-trash+CALCULATE_IMAGE_BINDING）/cancel 路径
+>   （empty-trash+itemMappings）/截图留档）。全量回归 20/20 全绿 + api-smoke 13/13；tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

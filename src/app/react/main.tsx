@@ -16,6 +16,7 @@ import { FolderSelectPanelHost, NewSmartFolderModal } from './components/stage7/
 import { BatchRenameModal, ArtstationImportModal } from './components/stage7/BatchRenameArtstationModals';
 import { InspectorTagSelectPanel } from './components/stage7/InspectorTagSelectPanel';
 import { BatchSavePanel } from './components/stage7/BatchSavePanel';
+import { DuplicateScanPanel, DuplicateModal } from './components/stage7/DuplicateFamily';
 import { AddToFolderModal, MoveFolderModal } from './components/stage7/FolderModals';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
@@ -96,6 +97,8 @@ root.render(
     <ArtstationImportModal />
     <InspectorTagSelectPanel />
     <BatchSavePanel />
+    <DuplicateScanPanel />
+    <DuplicateModal />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

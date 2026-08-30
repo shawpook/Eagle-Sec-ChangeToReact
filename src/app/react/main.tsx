@@ -7,12 +7,14 @@ import { BoxList } from './components/grid/BoxList';
 import { DetailPanel } from './components/detail/DetailPanel';
 import { InspectorPanel } from './components/inspector/Inspector';
 import { ContextMenuPanel } from './components/stage7/ContextMenu';
+import { TagManagerPanel } from './components/stage7/TagManager';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
 import { bindToolbarSync } from './store/toolbarState';
 import { bindFilterSync } from './store/filterState';
 import { bindDetailSync, useDetailState } from './store/detailState';
 import { bindInspectorSync } from './store/inspectorState';
+import { bindTagManagerSync } from './store/tagManagerState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -63,6 +65,7 @@ root.render(
     <DetailPanel />
     <InspectorPanel />
     <ContextMenuPanel />
+    <TagManagerPanel />
   </>
 );
 
@@ -72,6 +75,7 @@ bindToolbarSync();
 bindFilterSync();
 bindDetailSync();
 bindInspectorSync();
+bindTagManagerSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

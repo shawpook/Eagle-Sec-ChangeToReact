@@ -3091,43 +3091,59 @@
       return;
     }
 
-    setTimeout(() => {
+    // 固定延时发射存在竞态：页面 bootstrap 慢于 300ms 时 'initial' / 'app-status-loading'
+    // 会在控制器注册监听器之前丢失（bundle 22664 的 'initial' 处理器内部才注册
+    // app-status-loading 监听），导致 sanitize/tinyPinyin 等运行时 require 缺失。
+    // 这里改为等待控制器就绪（window.$bodyScope 由 bootstrap 期间设置）后再按序发射。
+    const emitAfterControllerReady = () => {
       ipcRenderer.emit('initial', {
         trialRemain: 0,
         machineID: 'preview',
         Registration: registration,
         errorMsg: '',
       });
-    }, 250);
 
-    setTimeout(() => {
-      ipcRenderer.emit('app-status-loading');
-    }, 300);
+      setTimeout(() => {
+        ipcRenderer.emit('app-status-loading');
+      }, 50);
 
-    setTimeout(() => {
-      ipcRenderer.emit('preload-library', {
-        cachePath: `${lib.rootDir}/cache.json`,
-      });
-    }, 350);
+      setTimeout(() => {
+        ipcRenderer.emit('preload-library', {
+          cachePath: `${lib.rootDir}/cache.json`,
+        });
+      }, 100);
 
-    setTimeout(() => {
-      ipcRenderer.emit('app-status-library-loaded', {
-        machineID: 'preview',
-        backgroundWindowID: 1,
-        usingCache: false,
-        usingPreloadCache: true,
-        loadedTime: 0.01,
-        rootDir: lib.rootDir,
-        imagesDir: lib.imagesDir,
-        imagesStringPath: `${lib.rootDir}/cache.json`,
-        cachePath: `${lib.rootDir}/cache.json`,
-        folders: lib.folders || [],
-        smartFolders: lib.smartFolders || [],
-        quickAccess: lib.quickAccess || [],
-        tagsGroups: lib.tagsGroups || [],
-        modificationTime: Date.now(),
-      });
-    }, 550);
+      setTimeout(() => {
+        ipcRenderer.emit('app-status-library-loaded', {
+          machineID: 'preview',
+          backgroundWindowID: 1,
+          usingCache: false,
+          usingPreloadCache: true,
+          loadedTime: 0.01,
+          rootDir: lib.rootDir,
+          imagesDir: lib.imagesDir,
+          imagesStringPath: `${lib.rootDir}/cache.json`,
+          cachePath: `${lib.rootDir}/cache.json`,
+          folders: lib.folders || [],
+          smartFolders: lib.smartFolders || [],
+          quickAccess: lib.quickAccess || [],
+          tagsGroups: lib.tagsGroups || [],
+          modificationTime: Date.now(),
+        });
+      }, 150);
+    };
+
+    // 控制器就绪后才发射（window.$bodyScope 由 bootstrap 期间设置；兜底 10s 后照常发射）
+    let emitAttempts = 0;
+    const waitControllerReady = () => {
+      emitAttempts += 1;
+      if (window.$bodyScope || emitAttempts > 400) {
+        emitAfterControllerReady();
+        return;
+      }
+      setTimeout(waitControllerReady, 25);
+    };
+    waitControllerReady();
   }
 
   const sourceModeState = {

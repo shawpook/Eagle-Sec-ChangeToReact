@@ -51,7 +51,7 @@ const maskIcon = (name: string) => `assets/images/base/mask-icons/${name}`;
 
 /* ============ 虚拟滚动（vs-repeat 窗口算法移植，bundle:17080-17300） ============ */
 
-function useVirtualWindow(containerRef: React.RefObject<HTMLDivElement | null>, sizes: number[], resetKey: unknown) {
+export function useVirtualWindow(containerRef: React.RefObject<HTMLDivElement | null>, sizes: number[], resetKey: unknown) {
   const [win, setWin] = useState({ startIndex: 0, endIndex: Math.min(sizes.length, 40), beforeSize: 0, afterSize: 0 });
   const cumulative = useMemo(() => {
     const acc: number[] = [0];

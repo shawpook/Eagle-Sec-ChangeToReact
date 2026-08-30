@@ -322,6 +322,28 @@
 | autoPositionContextMenu | directive | 16350-16393 | 已验证（SubmenuPane effect） |
 | onErrorSrc | directive | 15869-15879 | 已验证（MenuImage） |
 | fuzzyMatch filter | filter | 19951-19960 | 已验证（随 7a；并修正 Toolbar 调用参数序） |
+
+> **7b 已验证并接管**（2026-08-30）：tagManager + tagSelect。
+> - 接管方式：index.html 旧 `<tag-manager>` 岛（sidebar 内）替换为 `#eagle-tag-manager-host`；
+>   React 渲染 #tag-manager 全树（tag-manager.html 逐字：侧栏 ALL/UNFILED/STARRED/群组 +
+>   vs-repeat 虚拟列表 + 三种空态）。
+> - tagSelect 指令（72799-73001，标签橡皮筋多选）逐字移植为 useTagSelect——tagItems 位置
+>   由 displayData 几何计算（非 DOM 测量），写 selectedTags/selectingTags 到 body scope。
+> - 虚拟滚动复用 useVirtualWindow（vs-repeat 26/excess 30/vs-size=size → 行 size 累计）；
+>   scroll-position-saver 以 sessionStorage 轻量移植；群组 ui-sortable（stop 内 saveFolder/
+>   calculateTags 侧效）与侧栏 resizable="e"（onTagSidebarResize）已移植。
+> - 闭环：react-stage7b-smoke 10/10（壳/视图切换/标签行渲染/名称一致/selectTag 数据面/
+>   UNFILED 切换/空态隐藏/建群组输入框；截图留档）。全量回归全绿（见下）。
+
+| tagManager | directive | 55447-55472 + tag-manager.html | 已验证（TagManagerPanel） |
+| tagSelect | directive | 72799-73003 | 已验证（useTagSelect） |
+
+> **重大环境发现（shims 竞态，已修复）**：frontend/public/shims.js 用固定 250/300/350ms 定时
+> 发射 initial / app-status-loading / preload-library，而 bundle 的 app-status-loading 监听器
+> 是在 initial 处理器内部（bundle:22664→22722）同步注册的——页面 bootstrap 慢于 ~300ms 时
+> 两个事件双双丢失，sanitize/tinyPinyin/fse 等 require 永不执行（rename 依赖 sanitize；
+> main-ui-workflow 的偶发缩略图超时同源）。修复：shims 改为轮询 window.$bodyScope 就绪后
+> 再按序发射（兜底 10s）。修复后 main-ui-workflow 首跑即绿。
 | quickSearchModal | directive | 60788-61393 | 待办（7c） |
 | tagManager | directive | 55447-56356 | 待办（7b） |
 | folderSelectPanel | directive | 56356-57911 | 待办（7b） |

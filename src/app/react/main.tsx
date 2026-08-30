@@ -6,6 +6,7 @@ import { FilterPanel } from './components/filter/FilterItems2';
 import { BoxList } from './components/grid/BoxList';
 import { DetailPanel } from './components/detail/DetailPanel';
 import { InspectorPanel } from './components/inspector/Inspector';
+import { ContextMenuPanel } from './components/stage7/ContextMenu';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
 import { bindToolbarSync } from './store/toolbarState';
@@ -61,6 +62,7 @@ root.render(
     <BoxList />
     <DetailPanel />
     <InspectorPanel />
+    <ContextMenuPanel />
   </>
 );
 

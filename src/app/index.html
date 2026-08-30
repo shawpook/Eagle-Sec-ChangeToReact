@@ -1022,7 +1022,8 @@
         <duplicate-scan-panel theme="theme" folder-mappings="folderMappings"></duplicate-scan-panel>
         <duplicate-modal theme="theme" class="modal-flex-center" folder-mappings="folderMappings" item-mappings="itemMappings"></duplicate-modal>
         <mousewheel-setting-modal class="modal-flex-center" theme="theme"></mousewheel-setting-modal>
-        <context-menu theme="theme"></context-menu>
+        <!-- 右鍵選單（React 接管，舊 <context-menu> 元素已刪） -->
+        <div id="eagle-context-menu-host"></div>
         <folder-password-modal class="modal-flex-center" theme="theme"></folder-password-modal>
         <notification-modal class="modal-flex-center" theme="theme"></notification-modal>
     </div>

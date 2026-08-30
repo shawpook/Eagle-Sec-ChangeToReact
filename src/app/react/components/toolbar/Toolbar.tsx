@@ -43,7 +43,8 @@ function fuzzyHighlight(keyword: string, word?: string): string {
   if (!word) return '';
   const fn = (window as any).fuzzy_match;
   if (!fn || !keyword) return word;
-  return fn(keyword, word) || word;
+  // fuzzy_match(text, search)：text=被高亮的词条（与 fuzzyMatch filter 的调用次序一致）
+  return fn(word, keyword) || word;
 }
 
 /* ---------------- corner-btns 指令（bundle:63187 + corner-btns.html 模板逐字） ---------------- */

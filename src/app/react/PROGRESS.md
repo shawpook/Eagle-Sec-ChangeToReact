@@ -297,58 +297,72 @@
 
 ## 7. 弹窗 / 右键 / 标签 / 面板
 
-| 名称 | 类型 | 规范来源行号 | 状态 |
-| --- | --- | --- | --- |
-| contextMenu | directive（独立模块 contextMenu）| 15847-16396 | 待办 |
-| contextMenuEmojiItems | directive | 16396-16580 | 待办 |
-| contextMenuItems | directive | 15847 模块内 | 待办 |
-| quickSearchModal | directive | 60788-61393 | 待办 |
-| tagManager | directive | 55447-56356 | 待办 |
-| folderSelectPanel | directive | 56356-57911 | 待办 |
-| generalTagSelectPanel | directive | 58122-58257 | 待办 |
-| tagSelect | directive | 72799-73003 | 待办 |
-| batchSavePanel | directive | 58257-59288 | 待办 |
-| batchRectSelect | directive | 59288-59423 | 待办 |
-| duplicateModal | directive | 59423-59705 | 待办 |
-| duplicateScanPanel | directive | 59705-60104 | 待办 |
-| mergeEditor | directive | 60104-60358 | 待办 |
-| batchRenameModal | directive | 76783-77785 | 待办 |
-| folderPasswordModal | directive | 62888-63049 | 待办 |
-| mousewheelSettingModal | directive | 63049-63078 | 待办 |
-| aboutPanel | directive | 63078-63102 | 待办 |
-| notificationBtn | directive | 54236-54273 | 待办 |
-| notificationModal | directive | 62777-62814 | 待办 |
-| newVersionNotificationModal | directive | 62814-62888 | 待办 |
-| welcomePage | directive | 63102-63187 | 待办 |
-| cornerBtns | directive | 63187-63239 | 待办 |
-| layoutPanel | directive | 62723-62777 | 待办 |
-| selectAll | directive | 70600-70614 | 待办 |
-| editableSelectall | directive | 70614-70641 | 待办 |
-| noSpecialChar | directive | 70567-70600 | 待办 |
-| contenteditable | directive（独立模块）| 15619-15847 | 待办 |
-| ngRightClick | directive | 70544-70559 | 待办 |
-| ngLongClick | directive | 70737-70750 | 待办 |
-| ngHoverIntent | directive | 70750-70763 | 待办 |
-| autoFocus | directive | 73003-73018 | 待办 |
-| repeatDone | directive | 70559-70567 | 待办 |
-| colorPicker | directive | 70388-70423 | 待办 |
-| tippy | directive（独立模块 tippy）| 17365-17425 | 待办 |
-| yaNoUiSlider | directive（独立模块）| 17425-17598 | 待办 |
-| ngFlatpickr / autoPositionContextMenu / mouseGesture 等 | directive | 见源码 | 待办 |
+> 本阶段体量大，按可验证子单元推进（同阶段3a/3b 先例）：**7a 右键菜单体系（已提交）→
+> 7b tagManager + 面板族 → 7c 弹窗族 + 内联控制器弹窗**。
 
-控制器（弹窗/面板逻辑）：
+> **7a 已验证并接管**（2026-08-30）。
+> - 接管方式：index.html 旧 `<context-menu theme="theme">` 岛替换为 `#eagle-context-menu-host`；
+>   React 渲染 .context-menu + .context-menu-overlay（context-menu.html / context-menu-items.html /
+>   context-menu-emoji-items.html 逐字转写，含递归子菜单、搜索拼音过滤、sortable、emoji/色板 role）。
+> - 开合通道零改动：ContextMenu.open/close → $rootScope 广播 CONTEXTMENU.OPEN/CLOSE；
+>   autoPositionContextMenu 指令（16350-16393）与 onErrorSrc（15869）同步移植；
+>   fuzzyMatch filter（19951）= fuzzy_match(label, keyword)——顺带修正 Toolbar 搜索提示的参数序。
+> - 教训：jQuery 包装调用必须走 $()(el) 双调用形式（$ 是返回 jQuery 的工厂），否则拿到的是
+>   构造函数本身（`.off is not a function` 且整棵 React 树因渲染异常卸载）。
+> - 闭环：react-stage7a-smoke 15/15（壳/真实右键链路 openItemContextMenu/自定义菜单点击回调/
+>   keepOpen+checked 翻转/子菜单 down→right 开合/搜索过滤/overlay 关闭；截图留档）。
+>   全量回归：react-stage-smoke、stage5、stage6、main-ui-workflow、source-mode-ui、drag-start、
+>   api-smoke 全绿；tsc 零错。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| NewSmartFolderController | controller | 74323-74733 | 待办 |
-| AddToFolderController | controller | 74733-75637 | 待办 |
-| MoveFolderController | controller | 75637-76136 | 待办 |
-| ErrorModalController | controller | 76136-76464 | 待办 |
-| AutoTaggingController | controller | 74190-74323 | 待办 |
-| WebsitePanelController | controller | 74094-74190 | 待办 |
-| tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 待办 |
+| contextMenu | directive（独立模块 contextMenu）| 15887-16348 + context-menu.html | 已验证（ContextMenuPanel） |
+| contextMenuItems | directive | 15848-15867 + context-menu-items.html | 已验证（MenuItems 递归组件） |
+| contextMenuEmojiItems | directive | 16396-16582 + emoji 模板 | 已验证（EmojiItems 静态组） |
+| autoPositionContextMenu | directive | 16350-16393 | 已验证（SubmenuPane effect） |
+| onErrorSrc | directive | 15869-15879 | 已验证（MenuImage） |
+| fuzzyMatch filter | filter | 19951-19960 | 已验证（随 7a；并修正 Toolbar 调用参数序） |
+| quickSearchModal | directive | 60788-61393 | 待办（7c） |
+| tagManager | directive | 55447-56356 | 待办（7b） |
+| folderSelectPanel | directive | 56356-57911 | 待办（7b） |
+| generalTagSelectPanel | directive | 58122-58257 | 待办（7b） |
+| inspectorTagSelectPanel | directive | 57911-58122 | 待办（7b；依赖 TagSelectPanel 类/vsGridRepeat） |
+| tagSelect | directive | 72799-73003 | 待办（7b） |
+| batchSavePanel | directive | 58257-59288 | 待办（7b） |
+| batchRectSelect | directive | 59288-59423 | 待办（7b） |
+| duplicateModal | directive | 59423-59705 | 待办（7b） |
+| duplicateScanPanel | directive | 59705-60104 | 待办（7b） |
+| mergeEditor | directive | 60104-60358 | 待办（7b） |
+| batchRenameModal | directive | 76783-77785 | 待办（7c） |
+| folderPasswordModal | directive | 62888-63049 | 待办（7c） |
+| mousewheelSettingModal | directive | 63049-63078 | 待办（7c） |
+| aboutPanel | directive | 63078-63102 | 待办（7c） |
+| notificationBtn | directive | 54236-54273 | 待办（7c） |
+| notificationModal | directive | 62777-62814 | 待办（7c） |
+| newVersionNotificationModal | directive | 62814-62888 | 待办（7c） |
+| welcomePage | directive | 63102-63187 | 待办（7c） |
+| layoutPanel | directive | 62723-62777 | 待办（7c） |
+| selectAll | directive | 70600-70614 | 待办（7c 小指令族） |
+| noSpecialChar | directive | 70567-70600 | 待办（7c 小指令族） |
+| ngRightClick | directive | 70544-70559 | 待办（7c 小指令族） |
+| ngLongClick | directive | 70737-70750 | 待办（7c 小指令族） |
+| ngHoverIntent | directive | 70750-70763 | 待办（7c 小指令族） |
+| autoFocus | directive | 73003-73018 | 待办（7c 小指令族） |
+| repeatDone | directive | 70559-70567 | 待办（7c 小指令族） |
+| colorPicker | directive | 70388-70423 | 待办（7c 小指令族） |
+| yaNoUiSlider | directive（独立模块）| 17425-17598 | 待办（7c 小指令族） |
+| ngFlatpickr | directive | 见源码 | 待办（7c 小指令族） |
+| tagsInput | directive | 64443-64560 | 待办（7b，随智能文件夹规则编辑器） |
+| foldersInput | directive | 64399-64443 | 待办（7b，同上） |
+| NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7c） |
+| AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 待办（7c） |
+| MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 待办（7c） |
+| ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 待办（7c） |
+| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7c） |
+| WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 待办（7c） |
+| tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 待办（7c） |
 
 ---
-
 ## 8. 设置页（preferences.html）
 
 | 名称 | 类型 | 规范来源行号 | 状态 |

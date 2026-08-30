@@ -324,4 +324,6 @@ try {
   }
 } finally {
   await stop(stack).catch(() => {});
+  // undici keep-alive socket 会拖住事件循环，测试结果已输出，直接强退
+  try { process.exit(process.exitCode || 0); } catch (err) {}
 }

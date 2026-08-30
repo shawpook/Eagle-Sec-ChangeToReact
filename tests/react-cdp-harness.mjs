@@ -50,8 +50,7 @@ export function spawnLogged(command, args, env) {
   return { child, output: () => output };
 }
 
-export async function stop(processInfo) {
-  const child = processInfo && processInfo.child;
+async function stopChild(child) {
   if (!child || child.exitCode !== null) return;
   const exited = new Promise((resolve) => child.once('exit', resolve));
   child.kill();
@@ -69,6 +68,22 @@ export async function stop(processInfo) {
     }
     await delay(200);
   }
+  // 释放 stdio 管道句柄（pipe 流在子进程被杀后仍可能挂着，导致测试进程不退出）
+  try { child.stdout && child.stdout.destroy(); } catch (err) {}
+  try { child.stderr && child.stderr.destroy(); } catch (err) {}
+}
+
+export async function stop(processInfo) {
+  if (!processInfo) return;
+  // bootStack 返回的栈对象：依次关闭 CDP websocket 与 electron/vite/backend
+  if (processInfo.electron) {
+    try { processInfo.page && processInfo.page.ws && processInfo.page.ws.close(); } catch (err) {}
+    await stopChild(processInfo.electron);
+    await stopChild(processInfo.vite);
+    await stopChild(processInfo.backend);
+    return;
+  }
+  await stopChild(processInfo.child || processInfo);
 }
 
 export async function connect(wsUrl) {

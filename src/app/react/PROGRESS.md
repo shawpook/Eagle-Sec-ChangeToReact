@@ -447,12 +447,38 @@
 > - 环境协议：串行跑多测试必须在每个测试之间 clear-ports + 杀 electron，否则上一个测试的
 >   vite 残留会让下一个 bootStack 静默挂起。
 
+> **7d-1b 已验证并接管**（2026-08-30）：ErrorModalController + WebsitePanelController（含
+> websitePanelWebview 指令）。
+> - 接管方式：index.html 旧 `#website-panel` 块（81-101）与 `ErrorModalController` 区块
+>   （762-810）删除，替换为 `#eagle-website-panel-host` / `#eagle-error-modal-host`；
+>   React 组件 components/stage7/ControllerModals.tsx 逐字转写。
+> - ErrorModal：OPEN_ERROR / CLEAN_ALL_ERROR 广播通道不变；错误列表保留生产方数组引用
+>   （remove/retry 直接 splice，开启期 500ms 轮询同步——原版由 digest 驱动）；retryAll 三分支
+>   （DOWNLOAD_ERROR → ipc 'upload-urls'、ADD_ERROR → body uploadFiles、EDIT_ERROR →
+>   itemMappings 原地 extend + updateItemView/ayncsImagesChange）逐字；copyAll →
+>   sendTo(backgroundWindowID,'copy-paths-to-clipboard')；cleanAll swal 确认。
+> - 教训：原版 ErrorModalController 的 `rootScope` 变量实为 body scope
+>   （angular.element("body").scope()），EDIT_ERROR 分支必须取 body scope 而非 $rootScope。
+> - WebsitePanel：显示条件 viewMode=='community' + isUILoaded 经 sidebarState 快照；
+>   left=containerSize.sidebar+1（快照 sidebarWidth 即该值）；webview 指令行为
+>   （dom-ready 主题注入 / page-title-updated 标题+前进后退禁用态）逐字；
+>   OPEN_URL_IN_PANEL → src 设置（community- 守卫）+ isOpenWebpagePanel。
+> - **测试基建修复（harness）**：stop(stack) 原来只认 `.child` → 对 bootStack 返回对象是
+>   no-op，electron/backend/vite 全部成为孤儿且 stdio 管道拖住测试进程不退出；现改为依次
+>   关闭 CDP ws + 杀三子进程 + 销毁管道。7c2/7d1a/7d1b 测试 finally 补 process.exit
+>   （undici keep-alive socket 拖事件循环）。
+> - 闭环：react-stage7d1b-smoke 19/19（壳/广播开合/两错误行结构/remove/EDIT retryAll 数据面/
+>   CLEAN swal 确认/面板显隐/left 偏移/webview src + isOpenWebpagePanel/截图留档）。
+>   全量回归全绿：react-stage-smoke/5/6/7a/7b/7c/7c2/7d1a/7d1b、main-ui-workflow
+>   （markdown 缩略图计数偶发竞态复现，重跑即绿——既有问题）、source-mode-ui、
+>   library-switch-ui、drag-start、preview-delivery、api-smoke 13/13；tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 待办（7d-1c） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
-| ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 待办（7d-1b） |
-| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7d-1b） |
-| WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 待办（7d-1b） |
+| ErrorModalController | controller | 76136-76464（模板 index.html 965-1013）| 已验证（7d-1b ErrorModal） |
+| AutoTaggingController | controller | 74190-74323（模板 index.html 618-640）| 待办（7d-1c；依赖 tagsInput→GeneralTagSelectPanel） |
+| WebsitePanelController | controller | 74094-74190（模板 index.html 82-96）| 已验证（7d-1b WebsitePanel，含 websitePanelWebview 指令） |
 | tagPopup（源码镜像 js/controllers/tag-popup.js）| controller | 源码 | 无运行时引用（tag-popup.js 未加载、bundle 无注册、无模板消费点；7c-2 定性） |
 
 ---

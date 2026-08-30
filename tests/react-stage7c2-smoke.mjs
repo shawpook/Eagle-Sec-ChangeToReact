@@ -332,6 +332,14 @@ try {
   } else {
     console.log('\nSTAGE7C2 SMOKE OK');
   }
+  const handleNames = process._getActiveHandles().map((h) => {
+    const name = (h.constructor && h.constructor.name) || typeof h;
+    const extra = h.spawnfile || (typeof h.remoteAddress === 'string' ? `${h.remoteAddress}:${h.remotePort}` : '');
+    return name + (extra ? `(${extra})` : '');
+  });
+  console.log('ACTIVE HANDLES:', JSON.stringify(handleNames));
 } finally {
   await stop(stack).catch(() => {});
+  // undici keep-alive socket 会拖住事件循环，测试结果已输出，直接强退
+  try { process.exit(process.exitCode || 0); } catch (err) {}
 }

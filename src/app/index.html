@@ -78,27 +78,8 @@
         <div id="sidebar" class="sidebar" resizable="e" on-resize="onSidebarResize(event, ui)" ondragleave="onDragLeaveSidebar(event)">
 </div>
 
-        <!-- 網頁瀏覽器 -->
-        <div id="website-panel" class="website-panel" ng-controller="WebsitePanelController" ng-show="viewMode == 'community'" style="left: {{:refreshContainSize:containerSize.sidebar + 1}}px;">
-            <div ng-show="viewMode == 'community'" ng-if="isUILoaded">
-                <div class="drag-area"></div>
-                <div class="loader">
-                    <svg class="spinner" width="32px" height="32px" viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
-                        <circle class="path" fill="none" stroke-width="3" stroke-linecap="round" cx="33" cy="33" r="30"></circle>
-                    </svg>
-                </div>
-                <webview id="website-panel-webview" website-panel-webview frameborder="0" allowpopups></webview>
-                <div class="website-panel-webview-control">
-                    <div id="toggle-all-btn" class="icon-btn" ng-right-click="openSidebarMenu($event)" ng-click="toggleAll($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic_toggle-sidebar.svg"></div>
-                    <div id="website-panel-webview-go-back" class="disabled icon-btn no-padding" ng-click="goBack()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-prev.svg"></div>
-                    <div id="website-panel-webview-go-forward" class="disabled icon-btn no-padding" ng-click="goForward()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-next.svg"></div>
-                    <div class="icon-btn" ng-click="refresh()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic_refresh.svg"></div>
-                    <div class="website-panel-webview-control-btn icon-btn" ng-click="openInBrowser()"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-toolbar-open-default.svg"></div>
-                    <div id="website-panel-webview-title" class="title"></div>
-                    <corner-btns theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
-                </div>
-            </div>
-        </div>
+        <!-- 網頁瀏覽器（React 接管，舊 WebsitePanelController 區塊已刪） -->
+        <div id="eagle-website-panel-host"></div>
 
         <!-- 圖片列表 -->
         <div id="list-content-panel" class="content-panel" ng-class="{'hide': viewMode == 'community', 'filter-open' : eagle.filter.isOpen, 'small-list': imageSize.height <= 100, 'expand-right': viewMode == 'alltags'}" style="left: {{containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;">
@@ -759,55 +740,8 @@
         </div>
 
 
-        <!-- TODO: 改 Directive 錯誤提示彈窗 -->
-        <div class="modal-flex-center" ng-controller="ErrorModalController">
-            <div class="modal error-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
-                <table>
-                    <tbody>
-                        <tr class="header">
-                            <td class="name">{{'modal.importError.thead.name' | i18n}}</td>
-                            <td class="origin">{{'modal.importError.thead.origin' | i18n}}</td>
-                            <td class="reason">{{'modal.importError.thead.reason' | i18n}}</td>
-                            <td class="icon"></td>
-                            <td width="10px" ng-show="errorList.length > 10"></td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div class="error-list">
-                    <div class="table" vs-repeat="60" vs-excess="30">
-                        <div class="tr" ng-repeat="error in errorList"> 
-                            <div ng-if="error.type==='DOWNLOAD_ERROR'" class="td name"><a ng-href="{{error.object.website}}" target="_blank">{{error.object.name}}</a></div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR'" class="td origin"><a ng-if="error.object.url" ng-href="{{error.object.url}}" target="_blank" title="{{error.object.url}}">{{error.object.url}}</a><a ng-if="!error.object.url">-</a></div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='BASE64_ERROR'" class="td reason">{{'modal.importError.reason.base64' | i18n}}</div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='NETWORK_TIMEOUT'" class="td reason">{{'modal.importError.reason.timeout' | i18n}}</div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='NO_FILE'" class="td reason" ng-bind-html="'modal.importError.reason.noFile' | i18n"></div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='UNRECOGNIZED'" class="td reason">{{'modal.importError.reason.unrecognized' | i18n}}</div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='HTTP_ERROR'" class="td reason">{{'modal.importError.reason.httpError' | i18n}}<span ng-if="error.detail">，{{error.detail}}</span></div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR' && error.reason=='CONTENT_TYPE_BLOCKED'" class="td reason">{{'modal.importError.reason.contentTypeBlocked' | i18n}}<span ng-if="error.detail"> ({{error.detail}})</span></div>
-                            <div ng-if="error.type==='DOWNLOAD_ERROR'" class="td icon remove" ng-click="remove(error)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-remove.svg"></div>
-                            <!-- TODO: 本地无法添加时，处理方式 -->
-                            <div ng-if="error.type==='ADD_ERROR'" class="td name" title="{{error.object.name}}">{{error.object.name}}</div>
-                            <div ng-if="error.type==='ADD_ERROR'" class="td origin" ng-click="openPath(error.object.path)"><a title="{{error.object.path}}">{{error.object.path}}</a></div>
-                            <div ng-if="error.type==='ADD_ERROR'" class="td reason" ng-bind-html="error.reason"></div>
-                            <div ng-if="error.type==='ADD_ERROR'" class="td icon remove" ng-click="remove(error)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-remove.svg"></div>
-                            <!-- 编辑错误 -->
-                            <div ng-if="error.type==='EDIT_ERROR'" class="td name" title="{{error.object.name}}">{{error.object.name}}</div>
-                            <div ng-if="error.type==='EDIT_ERROR'" class="td origin" ng-click="openPath(error.object.path)"><a title="{{error.object.path}}">{{error.object.path}}</a></div>
-                            <div ng-if="error.type==='EDIT_ERROR'" class="td reason" title="{{::error.reason}}" ng-bind-html="error.reason"></div>
-                            <div ng-if="error.type==='EDIT_ERROR'" class="td icon remove" ng-click="remove(error)"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-remove.svg"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="section darken textAlign-right">
-                    <div class="button button-xs button-grey" style="float: left;"  ng-click="cleanAll()">{{'modal.importError.button.removeAll' | i18n}}</div>
-                    <div class="button button-xs button-grey" style="float: left;"  ng-click="copyAll()">{{'modal.importError.button.copyAll' | i18n}}</div>
-                    <div class="button button-xs button-primary" ng-click="retryAll()"><img ng-src="assets/images/dark/icons/ic-refresh.svg"> {{'modal.importError.button.retryAll' | i18n}}</div>
-                    <div class="button button-xs button-grey" ng-click="close()">{{'modal.importError.button.cancel' | i18n}}</div>
-                </div>
-            </div>
-            <div class="modal-overlay">
-            </div>
-        </div>
+        <!-- 錯誤提示彈窗（React 接管，舊 ErrorModalController 區塊已刪） -->
+        <div id="eagle-error-modal-host" class="modal-flex-center"></div>
 
         <batch-save-panel class="modal-flex-center" theme="theme" tag-manager="TagManager" folders="folders" folder-mappings="folderMappings" upload-queue="uploadQueue" upload-urls="uploadUrls" add-to-recent-folders="addToRecentFolders"></batch-save-panel>
 		<plugin-panel theme="theme"></plugin-panel>

@@ -80,7 +80,7 @@ function loadPinyinModules() {
 }
 
 /* ayncsImagesChange（bundle 49667-49710 逐字；backgroundWindowID 为 bundle 顶层 var → window 属性） */
-function ayncsImagesChange(images: any[]) {
+export function ayncsImagesChange(images: any[]) {
   if (!images || images.length === 0) return;
   setTimeout(() => {
     let total = images.length;

@@ -17,6 +17,7 @@ import { BatchRenameModal, ArtstationImportModal } from './components/stage7/Bat
 import { InspectorTagSelectPanel } from './components/stage7/InspectorTagSelectPanel';
 import { BatchSavePanel } from './components/stage7/BatchSavePanel';
 import { DuplicateScanPanel, DuplicateModal } from './components/stage7/DuplicateFamily';
+import { PluginPanel, PluginCreator } from './components/stage7/PluginFamily';
 import { AddToFolderModal, MoveFolderModal } from './components/stage7/FolderModals';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
@@ -99,6 +100,8 @@ root.render(
     <BatchSavePanel />
     <DuplicateScanPanel />
     <DuplicateModal />
+    <PluginPanel />
+    <PluginCreator />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

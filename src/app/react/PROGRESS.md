@@ -739,6 +739,31 @@
 >   show spy/save 数据面（images-change+empty-trash+CALCULATE_IMAGE_BINDING）/cancel 路径
 >   （empty-trash+itemMappings）/截图留档）。全量回归 20/20 全绿 + api-smoke 13/13；tsc 零错。
 
+> **7d-5a 已验证并接管**（2026-08-30）：pluginPanel + pluginCreator（pluginCenter 拆至 7d-5b）。
+> - 接管方式：index.html `<plugin-panel>`/`<plugin-creator>` 删除，替换为
+>   `#eagle-plugin-panel-host`/`#eagle-plugin-creator-host`（保留 modal-flex-center）；
+>   React 层 components/stage7/PluginFamily.tsx。
+> - pluginPanel 逐字：OPEN_PLUGIN_PANEL（$timeout 30 → moveToCursorPosition（鼠标定位，
+>   maxHeight -160）→ open → focus 50）+ UPDATE_PLUGIN_PANEL；calculateList（插件清单组装
+>   URL_MODULE.pathToFileURL 图标、类型筛选、启用/停用分组、最近使用 3 项 + label/separator、
+>   currentIndex=1、filterPluginItem 拼音打分（与引擎同款 pinyin 等价化）+ keyword indexOf 排序、
+>   .unique() 原型扩展直接可用）；键盘 keyup（Enter/mod+Enter/Esc/↑↓/Tab）为输入元素级原生
+>   监听（等价 jqLite）；右键 openSubmenu（ContextMenu 完整菜单：reload/pack/publish/更新/
+>   查看中心/快捷键/启停/卸载）、openDevMenu（create/import/docs）、pin/unpin、removePlugin
+>   swal、onItemClick（ngSafe 包裹——原版 preview[keys] 数组键恒 undefined 提前 return +
+>   Object.keys(undefined) 抛错怪癖）。typeFilter 持久化 localStorage eagle.pluginPanel.type。
+> - pluginCreator 逐字：OPEN_PLUGIN_CREATOR + auto-focus 等价、chooseType 四类型卡、
+>   create()（dialog.showOpenDialog → 模板复制 → manifest 写入 → swal → localPlugin.load）；
+>   原版怪癖保留：模板 ng-keydown="onKeydown($event)" 但控制器未定义（$exceptionHandler no-op）。
+> - mock 环境 pluginModule 为 shim 空实现（plugins: []）→ 面板渲染空状态；URL_MODULE 为
+>   global.js 顶层 const（全局词法绑定）→ w().eval 守卫获取。
+> - 闭环：react-stage7d5a-smoke 12/12（壳/OPEN_PLUGIN_PANEL 开合/空状态/功能列表/tab 切换 +
+>   localStorage 持久化/Esc 关闭/creator 开合/名称聚焦/类型选择/关闭/截图留档）。
+>   全量回归 21/21（7a 与 main-ui-workflow 各一次既有偶发竞态，重跑即绿）+ api-smoke 13/13；
+>   tsc 零错。
+> - 待办 7d-5b：pluginCenter（bundle 62140-62723 附近 + 模板 221 行；远程 API 依赖，
+>   mock 环境加载失败 → 空列表；含 PluginCenterFactory/getBestURL/排序/详情页/安装流）。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

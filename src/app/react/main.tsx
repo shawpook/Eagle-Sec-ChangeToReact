@@ -4,10 +4,12 @@ import { Sidebar } from './components/sidebar/Sidebar';
 import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
 import { FilterPanel } from './components/filter/FilterItems2';
 import { BoxList } from './components/grid/BoxList';
+import { DetailPanel } from './components/detail/DetailPanel';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
 import { bindToolbarSync } from './store/toolbarState';
 import { bindFilterSync } from './store/filterState';
+import { bindDetailSync, useDetailState } from './store/detailState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -55,6 +57,7 @@ root.render(
     <SearchSuggestions />
     <FilterPanel />
     <BoxList />
+    <DetailPanel />
   </>
 );
 
@@ -62,6 +65,8 @@ root.render(
 bindSidebarSync();
 bindToolbarSync();
 bindFilterSync();
+bindDetailSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;
+(window as any).__eagleDetailState = useDetailState;

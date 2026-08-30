@@ -184,9 +184,9 @@
 | vsAutoScroll | directive | 69856-69904 | 已验证（阶段2） |
 | lazyImgContainer / infiniteScroll | directive | 70461/70505（被注释）| 无需移植 |
 | imageonload | directive | 70763-70781 | 待办 |
-| retryWhenError | directive | 70198-70224 | 待办 |
-| retryWhenThumbError | directive | 70224-70250 | 待办 |
-| tgaImg | directive | 70250-70326 | 待办 |
+| retryWhenError | directive | 70198-70224 | 已验证（阶段5 随详情模板移植） |
+| retryWhenThumbError | directive | 70224-70250 | 已验证（阶段5 随详情模板移植） |
+| tgaImg | directive | 70250-70326 | 已验证（阶段5 随详情模板移植） |
 | extIcon | directive | 70817-70837 | 待办 |
 | boxContainerScrollbar | directive | 73114-74147 | 待办（与 ig 全局耦合） |
 
@@ -194,36 +194,55 @@
 
 ## 5. 详情模式与查看器（bitmap-viewer / media-element / 详情布局）
 
-> **下一个待办**，入口状态（2026-08-29 勘察）：
-> - 区块：当前 index.html 387-928 行（`.content-panel.detail-mode`，542 行模板）。
->   含：详情工具列（面包屑/缩放滑条/corner-btns 复用）→ `#detail-container`（bitmap-viewer +
->   rect-comment 批注层）→ 各类型查看分支（视频 media-element/mpv-media-element、音频
->   audio-media-element、txt/pdf/font/url 等）→ comments-container ×3（图片/视频/音频）。
-> - 接管缝：与侧栏/网格一致 —— 保留 `.content-panel.detail-mode` 壳（ng-show 左右边距由
->   React 接管），内部按子区块逐步换壳；**portal 内容必须是 Fragment**。
-> - 指令行号：mediaElement 64843-65684、mpvMediaElement 65684-66094、audioMediaElement
->   66094-66496、rectComment 72439-72564、commentsContainer 72353-72439、commentItem 72215-72353、
->   commentVideo 70781-70817、rectSelect 72564-72799（编辑态批注框选）。
-> - 既有测试锚点：tests/video-detail-mode-closed-loop.mjs、preview-delivery-closed-loop.mjs、
->   shims.js 的 detail-delivery 状态机（window.__eagleDetailDeliveryState，依赖 body.eagle-detail-
->   awaiting-original 类与 #bitmap-viewer canvas 签名）——接管时必须保持这些 DOM 锚点不变。
-> - 建议闭环断言：双击条目进入详情（body.is-detail-mode）、Esc 退出、缩放滑条联动
->   #bitmap-viewer、视频详情 video 元素出现、批注模式进出。
+> **已验证并接管**（2026-08-30）。
+> - 接管方式：index.html 387-928 行旧模板整块删除（index.html 由 1671 行减至 1148 行），
+>   `.content-panel.detail-mode` 壳保留（ng-show / 左右边距插值 / 壳级 ng-dblclick /
+>   ng-mousedown 仍由 Angular 驱动）。壳内新增三个静态宿主：
+>   `#eagle-detail-host`（工具列/gif footbar/tips/too-big/not-support/inline）、
+>   `#detail-container`（**元素身份永不重建** —— smoothZoom 初始化时会把该元素 wrap 进
+>   `.smooth_zoom_preloader`（container/image_url 均为空默认值 → `$image` 即容器本身，
+>   bundle:10814 + 11804），若 React 重建将破坏包裹关系与 `#bitmap-viewer canvas` 签名）、
+>   `#eagle-detail-cropsize-host`（#crop-size）。
+> - portal 内容全部是 Fragment；`#detail-container` 的 ng-class → `applyNgClassSet`
+>   差量应用（不碰 smoothZoom/controller 加的 zooming 等类）；ng-click=onDetailClick 由
+>   effect 绑回；ng-show 全部转 style.display 等价（不摘节点）。
+> - 关键架构事实（勘察 2026-08-29）：`window.$bodyScope` = body scope = EagleController scope
+>   （bundle:66508-66510）；`useMpvPlayer` 的唯一消费方是 React 快照，事件回调直接写 body scope；
+>   commentVideo 指令仅供 inspector-annotations.html（阶段6）使用，不在本阶段范围；
+>   rectSelect 实为内容网格框选（绑 #box-container），已按 PROGRESS 归属移植。
+> - 全局契约保持：window.debounce/throttle/guid/AnnotationPreview/videoHelper/FileUrlHelper/
+>   preferences/analytics/electronLog 为 bundle/global.js 的 var（window 属性，直接消费）；
+>   `currentWindow`/`URL_MODULE`/`pjson` 为 bundle const/let（非 window 属性），React 侧经
+>   `window.require` 等价获取；pluginView 的 `let pluginWebView` 单例不可达，React 侧建等价单例。
+> - 闭环：react-stage5-smoke 19/19（静态壳/进详情/工具列/image 分支/smoothZoom 包裹保持/
+>   detail-delivery 释放/滑条快照联动/退出复位；截图留档 react-stage5-list.png）；旧全量
+>   （react-stage-smoke 全绿 + video-detail-mode-closed-loop + preview-delivery-closed-loop +
+>   source-mode-ui + library-switch-ui + drag-start + main-ui-workflow（detailDelivery=canvas
+>   交付）+ api-smoke 13/13）。tsc 零错。
+> - 环境既有怪癖（非回归）：详情模式下 Page.captureScreenshot 会长时间挂起 —— 旧版 Angular
+>   模板同样复现（stash 后复验），测试中详情截图限时降级 WARN，列表模式截图正常留存。
 
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| mediaElement | directive（独立模块 mediaElement）| 64843-65684 | 待办 |
-| mpvMediaElement | directive（独立模块 mpvMediaElement）| 65684-66094 | 待办 |
-| audioMediaElement | directive | 66094-66496 | 待办 |
-| commentVideo | directive | 70781-70817 | 待办 |
-| commentItem | directive | 72215-72353 | 待办 |
-| commentsContainer | directive | 72353-72439 | 待办 |
-| rectComment | directive | 72439-72564 | 待办 |
-| rectSelect | directive | 72564-72799 | 待办 |
-| drawboard | directive（源码镜像）| app.bundle 未注册（见 js/directives/drawboard.js）| 待办 |
-| cropImage | directive | 71520-72215 | 待办 |
-| mouseGesture | directive | 70837-71140 | 待办 |
+| mediaElement | directive（独立模块 mediaElement）| 64843-65684 | 已验证（useMediaElement） |
+| mpvMediaElement | directive（独立模块 mpvMediaElement）| 65684-66094 | 已验证（useMpvMediaElement） |
+| audioMediaElement | directive | 66094-66496 | 已验证（useAudioMediaElement） |
+| commentVideo | directive | 70781-70817 | 待办（归属阶段6：仅 inspector-annotations.html 消费） |
+| commentItem | directive | 72215-72353 | 已验证（useCommentItem） |
+| commentsContainer | directive | 72353-72439 | 已验证（useCommentsContainer + removeComment） |
+| rectComment | directive | 72439-72564 | 已验证（useRectComment） |
+| rectSelect | directive | 72564-72799 | 已验证（useRectSelect；实为网格框选，绑 #box-container） |
+| drawboard | directive（源码镜像）| app.bundle 未注册（见 js/directives/drawboard.js）| 无运行时引用（bundle 未注册，无旧引用可删） |
+| cropImage | directive | 71520-72215 | 已验证（useCropImage） |
+| mouseGesture | directive | 70837-71140 | 已验证（useMouseGesture；详情模板 2 处使用点） |
+| notSupportPreview | directive | 61393-61419 + 模板 | 已验证（NotSupportPreview；详情模板唯一消费点） |
+| webviewToolbar | directive | 64319-64398 + 模板 | 已验证（WebviewToolbar；详情工具列唯一消费点） |
+| pluginView | directive（独立模块 pluginView）| 17598-17719 | 已验证（PluginView + React 侧 webview 单例） |
+| webView | directive | 64240-64318 | 已验证（WebViewBranch；URL 分支） |
+| tifImg | directive（阶段4 遗留）| 16580-16668 | 已验证（useTifImage） |
+| 详情工具列/footbar/tips/too-big/inline | index.html 模板 | 387-634 | 已验证（DetailToolbar/GifFootbar/DetailFloatingBits） |
+| 查看分支 ×13 + comments ×变体 | index.html 模板 | 646-924 | 已验证（DetailViewer/DetailContainerInterior） |
 
 详情模式对应 index.html `#detail-container` / `#bitmap-viewer` 区块。
 
@@ -388,13 +407,13 @@
 | webpConvertProgress | directive | 64120-64221 | 待办 |
 | fixutilProgress | directive | 64221-64230 | 待办 |
 | fixutilCleanEmptyFolderProgress | directive | 64230-64240 | 待办 |
-| notSupportPreview | directive | 61393-61420 | 待办 |
+| notSupportPreview | directive | 61393-61420 | 已验证（阶段5 随详情接管，详情模板唯一消费点） |
 | pluginPanel | directive | 61420-62039 | 待办 |
 | pluginCreator | directive | 62039-62179 | 待办 |
 | pluginCenter | directive | 62179-62723 | 待办 |
-| pluginView | directive（独立模块）| 17598-17720 | 待办 |
-| webView | directive | 64240-64319 | 待办 |
-| webviewToolbar | directive | 64319-64399 | 待办 |
+| pluginView | directive（独立模块）| 17598-17720 | 已验证（阶段5 随详情接管；inspectorPluginView 另算） |
+| webView | directive | 64240-64319 | 已验证（阶段5 随详情接管，URL 分支唯一消费点） |
+| webviewToolbar | directive | 64319-64399 | 已验证（阶段5 随详情接管，详情工具列唯一消费点） |
 | websitePanelWebview | directive | 74147-76464 | 待办 |
 | artstationImportModal | directive | 76464-76783 | 待办 |
 | findStringAutocomplete | directive | 77785-末 | 待办 |
@@ -414,7 +433,7 @@
 | ui.sortable | 排序 | 15113 | 待办 |
 | contenteditable | 可编辑 | 15619 | 待办 |
 | contextMenu | 右键菜单 | 15847 | 待办 |
-| tifImg | tif 图 | 16580 | 待办 |
+| tifImg | tif 图 | 16580 | 已验证（阶段5 随详情接管） |
 | mgo-mousetrap | 快捷键 | 16683 | 待办 |
 | angular.bind.notifier | notifier | 16723 | 待办 |
 | cgNotify | notify | 16724 | 待办 |

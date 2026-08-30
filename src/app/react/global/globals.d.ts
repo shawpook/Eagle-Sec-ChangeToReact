@@ -29,6 +29,9 @@ declare module 'react' {
     interface IntrinsicElements {
       key: any;
       s: any;
+      'plugin-view': any;
+      'web-view': any;
+      'mpv-video': any;
     }
   }
   interface HTMLAttributes<T> {
@@ -43,6 +46,12 @@ declare module 'react' {
     'auto-focus'?: string;
     'ng-click'?: string;
     selectall?: string;
+    'comment-item'?: string;
+    'comments-container'?: string;
+    'crop-image'?: string;
+    'tif-img'?: string;
+    'tga-img'?: string;
+    'controls-mode'?: string;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {}
 }

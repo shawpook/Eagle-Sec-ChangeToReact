@@ -32,6 +32,8 @@ declare module 'react' {
       'plugin-view': any;
       'web-view': any;
       'mpv-video': any;
+      'ext-icon': any;
+      'inspector-plugin-view': any;
     }
   }
   interface HTMLAttributes<T> {
@@ -52,6 +54,9 @@ declare module 'react' {
     'tif-img'?: string;
     'tga-img'?: string;
     'controls-mode'?: string;
+    'comment-video'?: string;
+    duration?: any;
+    'no-line-breaks'?: string;
   }
   interface InputHTMLAttributes<T> extends HTMLAttributes<T> {}
 }

@@ -250,20 +250,48 @@
 
 ## 6. 检查器（inspector / inspector-*）
 
+> **已验证并接管**（2026-08-30）。
+> - 接管方式：index.html 中旧 `<inspector ...>` 元素整块替换为静态宿主 `#eagle-inspector-host`。
+>   React 渲染完整 `.inspector` 树（规范 = js/directives/inspector.html + inspector-tags/
+>   folders/annotations/information/plugin.html 逐字转写）。
+> - 派生逻辑转写（components/inspector/inspectorActions.ts）：updateSelection（30ms debounce，
+>   UPDATE_INSPECTOR/选中变化触发）、imagesChange、urlChange（200ms debounce）、annotationChange、
+>   分类名/描述 1s debounce、tagsInputMouseDown 右键菜单、openHelpContextMenu、批注 7 函数、
+>   onInspectorResize（resizable="w" = jQuery resizable handles 'w'/min 200/max 600）。
+> - contenteditable 指令（15619-15834）移植为共享组件 ContentEditable（$render/blur 清洗/
+>   linkify/keydown 特例 + editable-selectall 的 Mousetrap mod+a/esc）；后续阶段复用。
+> - 数据面：eagle.inspector 全局对象仍是唯一可写缓冲（快照只读投影）；TagManager/folderMappings
+>   事件回调取活对象；`is`/`ContextMenu`/`emojiRegex`/`remainingFilenameLength` 等 bundle 闭包内
+>   绑定以等价方式替代（window.is 探测/同通道广播/同正则/req 加载），通道与语义零改动。
+> - 闭环：react-stage6-smoke 13/13（壳/旧元素删除/宽度快照/corner-btns/SIDEBAR 分类名/ITEM 页签
+>   #inspector-name/star 数据面/重命名持久化闭环/多选 selected-count；截图留档）。
+> - electron/main.cjs --smoke-main-workflow 的 inspector 驱动段由 isolate-scope 改写为
+>   body-scope + window.__eagleInspectorActions（测试健康规则：只改写不删除）；改写后
+>   MAIN_WORKFLOW_SMOKE_OK（detailDelivery=canvas 全链路绿）。
+> - 归属调整：inspectorTagSelectPanel（依赖 TagSelectPanel 类 + vsGridRepeat）、foldersInput、
+>   tagsInput 的消费点均不在 #inspector 区块（智能文件夹规则编辑器/文件夹弹窗/独立面板岛），
+>   移入阶段7 表。
+> - 全量回归：react-stage-smoke、react-stage5-smoke、main-ui-workflow、source-mode-ui、
+>   library-switch-ui、drag-start、preview-delivery、api-smoke 13/13 全绿；tsc 零错。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| inspector | directive | 54273-55301 | 待办 |
-| inspectorTags | directive | 55301-55309 | 待办 |
-| inspectorFolders | directive | 55309-55317 | 待办 |
-| inspectorAnnotations | directive | 55317-55325 | 待办 |
-| inspectorInformation | directive | 55325-55439 | 待办 |
-| inspectorPlugin | directive | 55439-55447 | 待办 |
-| inspectorPluginView | directive（独立模块 inspectorPluginView）| 17720-17598 | 待办 |
-| inspectorTagSelectPanel | directive | 57911-58122 | 待办 |
-| foldersInput | directive | 64399-64443 | 待办 |
-| tagsInput | directive | 64443-66094（tags-input 模板在 index.html）| 待办 |
-
-对应 index.html `#inspector` 区块。
+| inspector | directive | 54273-55301 | 已验证（Inspector + inspectorActions） |
+| inspectorTags | directive | 55301-55309 | 已验证（InspectorTags） |
+| inspectorFolders | directive | 55309-55317 | 已验证（InspectorFolders） |
+| inspectorAnnotations | directive | 55317-55325 | 已验证（InspectorAnnotations + 批注排序） |
+| inspectorInformation | directive | 55325-55439 | 已验证（InspectorInformation） |
+| inspectorPlugin | directive | 55439-55447 | 已验证（InspectorPlugin + hidePluginMap） |
+| inspectorPluginView | directive（独立模块 inspectorPluginView）| 17720-17873 | 已验证（InspectorPluginView） |
+| commentVideo | directive | 70781-70817 | 已验证（useCommentVideo） |
+| extIcon | directive | 70817-70837 | 已验证（ExtIcon；预览 noPreview 分支） |
+| contenteditable | directive（独立模块）| 15619-15847 | 已验证（ContentEditable 共享组件） |
+| editableSelectall | directive | 70614-70641 | 已验证（并入 ContentEditable） |
+| resizable | directive | 70423-70440 | 已验证（.inspector 宽度拖拽） |
+| retryWhenThumbError | directive | 70224-70250 | 已验证（预览缩图重试） |
+| inspectorTagSelectPanel | directive | 57911-58122 | 移入阶段7（消费点为独立面板岛，依赖 TagSelectPanel/vsGridRepeat） |
+| foldersInput | directive | 64399-64443 | 移入阶段7（消费点=智能文件夹规则编辑器） |
+| tagsInput | directive | 64443-64560（模板 index.html 943-956 区）| 移入阶段7（同上） |
 
 ---
 

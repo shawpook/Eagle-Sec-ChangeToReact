@@ -399,21 +399,8 @@
 
         </div>
         
-        <!-- 檢查器 -->
-        <inspector 
-            platform="platform"
-            view-mode="viewMode"
-            theme="theme"
-            is-always-on-top="isAlwaysOnTop"
-            current="current"
-            selected="selected"
-            current-folder="currentFolder"
-            current-smart-folder="currentSmartFolder"
-            folder-mappings="folderMappings"
-            selected-folder-mappings="selectedFolderMappings"
-            tag-manager="TagManager"
-            trial-remain="trialRemain"
-        ></inspector>
+        <!-- 檢查器（React 接管，舊 <inspector> 元素與模板已刪） -->
+        <div id="eagle-inspector-host"></div>
         
         
         <quick-search-modal class="modal-flex-center"></quick-search-modal>

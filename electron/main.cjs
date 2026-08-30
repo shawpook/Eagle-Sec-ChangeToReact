@@ -1714,21 +1714,22 @@ app.whenReady().then(async () => {
               assertUniqueItems('clipboard image import');
 
               const inspector = await waitFor(() => {
-                const element = document.querySelector('inspector');
-                return element && angular.element(element).isolateScope();
+                const element = document.querySelector('#eagle-inspector-host .inspector');
+                return element ? element : null;
               }, 'original inspector');
+              const inspectorActions = window.__eagleInspectorActions;
               const selectInspectorItems = async (ids) => {
                 await selectItems(ids);
-                inspector.selected = ids.map((id) => currentItem(id));
-                inspector.current = inspector.selected[0] || null;
-                inspector.updateSelection();
-                inspector.$evalAsync();
-                await waitFor(() => inspector.selected.length === ids.length && inspector.selected.every((item, index) => item && item.id === ids[index]), 'inspector selection');
+                scope.selected = ids.map((id) => currentItem(id));
+                scope.current = scope.selected[0] || null;
+                inspectorActions.updateSelection();
+                scope.$evalAsync();
+                await waitFor(() => scope.selected.length === ids.length && scope.selected.every((item, index) => item && item.id === ids[index]), 'inspector selection');
                 await new Promise((resolve) => setTimeout(resolve, 100));
               };
               await selectInspectorItems([droppedId]);
-              inspector.inspector.newName = 'Inspector Renamed';
-              inspector.inspector.newUrl = 'https://example.test/original-main';
+              scope.inspector.newName = 'Inspector Renamed';
+              scope.inspector.newUrl = 'https://example.test/original-main';
               const firstInspectorResult = new Promise((resolve, reject) => {
                 const ipc = require('electron').ipcRenderer;
                 const timer = setTimeout(() => {
@@ -1744,7 +1745,7 @@ app.whenReady().then(async () => {
                 };
                 ipc.on('item:operation-result', onResult);
               });
-              inspector.imagesChange();
+              inspectorActions.imagesChange();
               const firstInspectorOperation = await firstInspectorResult;
               if (!firstInspectorOperation || !firstInspectorOperation.ok) throw new Error('inspector update failed: ' + JSON.stringify(firstInspectorOperation));
               const firstUpdatedItem = Array.isArray(firstInspectorOperation.items) ? firstInspectorOperation.items.find((item) => item.id === droppedId) : null;
@@ -1757,8 +1758,8 @@ app.whenReady().then(async () => {
                 return item && item.name === 'Inspector Renamed' && item.url === 'https://example.test/original-main';
               }, 'inspector name and URL persistence');
 
-              inspector.inspector.newAnnotation = '原版检查器真实持久化';
-              inspector.annotationChange();
+              scope.inspector.newAnnotation = '原版检查器真实持久化';
+              inspectorActions.annotationChange();
               await waitFor(async () => {
                 const current = await window.eagleDesktop.library.current();
                 const item = current.items.find((entry) => entry.id === droppedId);
@@ -1777,8 +1778,8 @@ app.whenReady().then(async () => {
               }, 'inspector tags folder and star persistence');
 
               await selectInspectorItems([droppedId, clipboardItem.id]);
-              inspector.inspector.newAnnotation = '多选备注持久化';
-              inspector.annotationChange();
+              scope.inspector.newAnnotation = '多选备注持久化';
+              inspectorActions.annotationChange();
               scope.TagManager.addTag('batch-ui');
               scope.changeStar(3, false, true);
               await new Promise((resolve, reject) => {
@@ -1870,7 +1871,7 @@ app.whenReady().then(async () => {
               return {
                 originalPage: location.pathname.endsWith('/src/app/index.html'),
                 originalScope: typeof scope.enterDetailMode === 'function' && typeof scope.removeSelected === 'function',
-                originalInspector: typeof inspector.imagesChange === 'function' && typeof inspector.annotationChange === 'function',
+                originalInspector: Boolean(inspector) && typeof inspectorActions.imagesChange === 'function' && typeof inspectorActions.annotationChange === 'function',
                 before,
                 after: scope.raw.length,
                 fileDrop: Boolean(dropped),

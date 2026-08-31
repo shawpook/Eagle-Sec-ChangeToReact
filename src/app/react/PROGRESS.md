@@ -1096,9 +1096,56 @@
 >   chnage-preferences 分支不弹窗）；React onChange/onClick 的触发序与原版一致，断言必须按
 >   该时序写。(2) 开面板后首个动作必须是轮询断言（bare evalOn click 会在 React 渲染前落空）。
 >   (3) CSS 属性选择器数字值必须加引号（[value=80] 非法）。
-> **下一步 = 8e-2（移除偏好页 Angular 壳：sidebar/header/footer/panel-empty/密码弹窗接管 +
->   ng-app/ng-controller/w-mousetrap 移除 + initAutoLaunch/initPreference/initPlugins/
->   updateKeybinds 数据面搬移 + shims 就绪序列改 React 版 + save/apply/cancel/escHandler 等价）**。
+> **8e-2 已验证并接管（2026-09-01）**：偏好窗口 Angular 壳移除——窗口整体 React 化完成（阶段8 主体完成）。
+> - 新文件：react/preferences/controller.ts（无 React 依赖的控制器本体）+ react/preferences/shell.tsx
+>   （壳 JSX + 订阅）。controllerScope 为普通对象，字段/方法与原 $scope 同名同形
+>   （preferences/currentPanel/keyword/themes/currentTheme/launchAtLogin/keybindGroups（win32 10 组
+>   全量逐字）/installPlugins/sidebarPanels/changes/showSearchEmpty/canUseTouchID/password 区 + 
+>   switchPanel/onKeywordChange/changeTheme/changeZoom/save/apply/cancel/escHandler/
+>   openPasswordModal/lockNow/toggleTouchID(Check)/openAutoImport/chooseAutoImportPath/
+>   revealAutoImportPath/copyApiToken/regenerateApiToken/restoreDefaultShortcuts/performShortcutsReset/
+>   onPluginShortcutChange/pwd* 全套），面板层仅换接 applyController（fn + notify = $apply 等价），
+>   调用点零改动。
+> - init 序列接管（preferences.js 802-841 逐字）：ipc 'init' → Registration/panel/keyword（+
+>   onKeywordChange + focusSearch 100ms）→ initAutoLaunch（AutoLaunch isEnabled，失败写
+>   eagleAutoLauncher 字段的怪癖逐字）→ initPreference（getPreferences + default-preferences
+>   深拷贝 + keybinds 迁移/formatShortcut + **angular.extend 浅拷贝 Object.assign 逐字** +
+>   ShortcutManager.init）→ await initPlugins（Promise.race 5s）→ currentWindow.show() →
+>   focusSearch 200ms。
+> - 壳 JSX 逐字：sidebar（title/sidebar-search/sidebar-items + active/separator）、header
+>   （panel-title 译文 + close=cancel）、shortcut-search 容器（ng-if shortcuts）、panel-empty
+>   （showSearchEmpty watcher 逐字：keyword $watch → 100ms 后 $('.content .panel-content :visible')
+>   计数）、footer（save=apply+hide+300ms close / apply=chnage-preferences 前的全套日志）、
+>   密码弹窗（PasswordController 全移植：SET-APP-PASSWORD→isOpen/mode、new/change/reset 三态、
+>   auto-focus 100ms click+focus+select、select-all、setNewPassword/chnagePassword（atob 校验 +
+>   btoa 写入 + 抖动提示）、cancel（new 模式回写 enable='false'）、close 200ms 清字段）、
+>   body 属性（platform 静态 + theme 随 notify + vibrancy/class 一次性绑定——**themeName 为大写
+>   'DARK' 等 getThemeName 原值**，body class 即 theme-DARK）、w-mousetrap（mod+f/mod+enter
+>   throttle50 + esc escHandler）。原版 lastPanel 在 sidebarPanels 定义前赋值（=undefined）怪癖逐字。
+> - preferences.html 缩为静态根（138→22 行）：ng-app/ng-controller/w-mousetrap/ng-* 全删；
+>   angular.min.js/preferences.js/wMousetrap/tippy模块/shortcut-input 脚本删；保留 jQuery
+>   （search-active 标记）/tippy 厂家库/lodash/shortcut-manager（window 单例，ShortcutInput 消费）。
+>   body 只剩 #eagle-preferences-react-host。
+> - shims：两个偏好页分支合并为「等 __eaglePreferencesEntryReady 标记后发射 init」。**关键时序
+>   修复**：标记必须在 React 提交后设置（entry 的 effect 内，子组件 shell 的监听器先于父 effect
+>   注册）——放模块尾会在 React commit 前盲发丢失（探针定位：ready 标记真、init 未达）。
+> - 测试迁移（测试健康规则）：8a-8e 冒烟的 window.angular...scope() 全部机械换写为
+>   window.__eagleControllerScope（字段同形）；8e 的 $apply 直写改 __eagleApplyController 钩子；
+>   8b/8c/8d 的键入改原生 value setter（React 受控输入的 value tracker 会吞「JS 改值 + 派发
+>   input」——真实键盘不受影响）。8a 的 angular-shell 断言改 controller-shell 等价。
+> - 闭环：react-stage8e2-smoke 18/18（无 Angular/shell 渲染（10 项+3 分隔）/init 透传/body 属性
+>   （theme dark + class theme-DARK + win32）/React sidebar 切换 + localStorage/窗内搜索过滤 +
+>   showSearchEmpty 空态 + 清空回 lastPanel/主题点击→body theme 联动/重开 init focusSearch/
+>   privacy 时序 + React 密码弹窗 auto-focus/apply ipc spy（chnage-preferences + electron-info）/
+>   Esc→cancel→窗口关闭（target 消失）/截图）。全量回归 31 项：全部单项绿；suite 三轮各轮转
+>   一个既有偶发（main-ui-workflow markdown 缩略图计数 / react-stage-smoke），**stash 交替验证
+>   证明 main-ui-workflow 竞态为既有（两态各出现失败）**，与本单元无关；api-smoke 13/13；tsc 零错。
+> - 教训：(1) React commit 异步——「就绪标记」必须在 effect（提交后）设置，模块尾标记会早于
+>   监听器注册；(2) React 受控输入的测试必须用原型原生 setter 设值（value tracker 去重会吞
+>   合成 input 事件）；(3) 对既有偶发做回归归因时，用 git stash 交替跑两态最省事且可证伪。
+> **下一步 = 阶段9（其余窗口：preview-window.js 102KB / collect-window / progress.html /
+>   thumbnail.html）**；偏好窗口仅剩收尾项（8e-3，可选）：8a 遗留测试契约 __eaglePreferencesState
+>   与 PreferencesRoot 旧监听的清理、body class 去重、与 index.html 一致的 ng-* 残留清扫。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
@@ -1132,7 +1179,14 @@
 | privacy 面板（.panel-content）| 模板块 | preferences.html 339-388（旧） | 已验证（8e-1 PrivacyPanelContent，跨系统密码弹窗） |
 | autoImport 面板（.panel-content）| 模板块 | preferences.html 391-425（旧） | 已验证（8e-1 AutoImportPanelContent，tippy path） |
 | developer 面板（.panel-content）| 模板块 | preferences.html 428-451（旧） | 已验证（8e-1 DeveloperPanelContent，嵌套 copy 双触发） |
-| openPasswordModal/lockNow/copyApiToken 等控制函数 | scope 函数 | preferences.js 894-936 | 已验证（8e-1 scopeApply 直调，Angular 流程不变） |
+| openPasswordModal/lockNow/copyApiToken 等控制函数 | scope 函数 | preferences.js 894-936 | 已验证（8e-1 scopeApply 直调 → 8e-2 起由 controller.ts 承载） |
+| PreferencesController（壳+init 序列+save/apply/cancel）| controller | preferences.js 289-1332 | 已验证（8e-2 controller.ts 全量移植，无 Angular） |
+| PasswordController | controller | preferences.js 171-287 | 已验证（8e-2 shell.tsx PasswordModal + controller.ts password 区） |
+| sidebar/header/footer/panel-empty 壳层 | index 模板 | preferences.html 34-88（旧） | 已验证（8e-2 shell.tsx 逐字） |
+| wMousetrap（mod+f/mod+enter/esc）| directive | js/modules/wMousetrap.js | 已验证（8e-2 window keydown + throttle50 等价） |
+| selectAll/auto-focus（密码弹窗）| directive | preferences.js 130-142 / bundle | 已验证（8e-2 shell.tsx 等价） |
+| showSearchEmpty watcher | scope $watch | preferences.js 326-336 | 已验证（8e-2 shell.tsx effect 逐字） |
+| 偏好页 Angular 脚本区 | 脚本 | preferences.html head（旧） | 已删旧实现（8e-2：仅剩 jQuery/tippy 厂家库/lodash/shortcut-manager） |
 | preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办（壳/控制函数随 8c-8e 逐面板迁移） |
 | default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 待办 |
 

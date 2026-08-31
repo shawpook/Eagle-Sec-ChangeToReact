@@ -3032,17 +3032,6 @@
       }
     }
 
-    if (pagePath.includes('preferences.html')) {
-      const query = new URLSearchParams(window.location.search);
-      setTimeout(() => {
-        ipcRenderer.emit('init', {
-          Registration: registration,
-          panel: query.get('panel') || '',
-          keyword: query.get('keyword') || '',
-        });
-      }, 500);
-      return;
-    }
 
     if (pagePath.includes('preview-window.html')) {
       if (desktopApi && desktopApi.preview) return;
@@ -3087,21 +3076,14 @@
       }, 250);
     }
 
-    // 阶段8：偏好窗口 init 序列（preferences.js 802 'init' 处理器需 Registration/panel/keyword；
-    // 等待 PreferencesController 就绪——sidebarPanels 由 controller link 期挂上 scope）
-    if (pagePath.endsWith('/src/app/preferences.html')) {
+    // 阶段8e-2：偏好窗口已无 Angular——等 React 入口挂载（entry.tsx 设置就绪标记、
+    // 'init' 监听器已注册）后发射 init（Registration/panel/keyword）。
+    if (pagePath.includes('preferences.html')) {
       const query = new URLSearchParams(window.location.search);
-      const waitPreferencesReady = () => {
-        let ready = false;
-        try {
-          if (window.angular) {
-            const scope = window.angular.element(document.body).scope();
-            ready = !!(scope && Array.isArray(scope.sidebarPanels));
-          }
-        } catch (err) {
-          ready = false;
-        }
-        if (ready || waitPreferencesReady.attempts > 400) {
+      const waitPreferencesEntry = () => {
+        // 只在 React 入口就绪后发射（盲发会丢失：无监听器时 emit 即消失）；
+        // 冷启动 vite transform 可能超过 10s，不设盲发兜底
+        if (window.__eaglePreferencesEntryReady) {
           ipcRenderer.emit('init', {
             Registration: registration,
             trialRemain: 0,
@@ -3111,10 +3093,10 @@
           });
           return;
         }
-        waitPreferencesReady.attempts = (waitPreferencesReady.attempts || 0) + 1;
-        setTimeout(waitPreferencesReady, 25);
+        waitPreferencesEntry.attempts = (waitPreferencesEntry.attempts || 0) + 1;
+        setTimeout(waitPreferencesEntry, 25);
       };
-      waitPreferencesReady();
+      waitPreferencesEntry();
       return;
     }
 

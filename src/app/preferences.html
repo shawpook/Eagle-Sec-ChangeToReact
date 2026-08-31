@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html ng-cloak ng-app="PreferenceApp" ng-controller="PreferencesController">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
@@ -9,129 +9,16 @@
     <script src="js/vendors/jquery-1.8.0.min.js"></script>
     <script src="js/vendors/tippy.js"></script>
     <script src="js/vendors/lodash.js"></script>
-    <script src="js/vendors/angular.min.js"></script>
     <script src="js/services/shortcut-manager.js"></script>
-    <script src="js/directives/shortcut-input.js"></script>
-    <script src="js/vendors/mousetrap.min.js"></script>
-    <script src="js/modules/wMousetrap.js"></script>
-    <script src="js/modules/tippy.js"></script>
-    <script src="js/preferences.js"></script>
 </head>
 
-<body 
-    ng-show="preferences" 
-    theme="{{themeAttr()}}"
-    platform="{{::platform}}"
-    vibrancy="{{::vibrancyEnabled}}"
-    class="{{::platform}} {{language}} theme-{{themeName}}" 
-    w-mousetrap="{
-        'mod+f': focusSearch,
-        'mod+enter': save, 
-        'esc': escHandler
-    }"
->
-
-    <div class="preferences-layout">
-    <!-- 侧边栏 -->
-    <div class="sidebar">
-        <div class="title" style="-webkit-app-region: drag;">{{'preferencesWindow.title' | i18n}}</div>
-        <!-- 阶段8b：搜索框由 React 接管（react/preferences/panels.tsx 绑 keydown/input + scope 桥） -->
-        <input id="sidebar-search" type="search" placeholder="{{'general.search' | i18n}}">
-        <div class="sidebar-items">
-            <div ng-repeat="panel in sidebarPanels" ng-switch on="panel.type">
-                <!-- 項目 -->
-                <div ng-switch-when="panel" class="sidebar-item" ng-class="{'active': panel.name === currentPanel.name}" ng-click="switchPanel(panel)">
-                    <div class="icon" style="-webkit-mask-image: url(assets/images/base/preferences/{{panel.iconPath}});"></div>
-                    <div class="name">{{panel.i18n}}</div>
-                    <img ng-if="panel.ai" ng-src="assets/images/{{themeAttr() | themePath}}/icons/context-menu/ic-ai.svg">
-                </div>
-                <!-- 分隔 -->
-                <div ng-switch-when="separator" class="separator"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="header" style="-webkit-app-region: drag;">
-            <div class="panel-title">{{currentPanel.i18n}}</div>
-            <div class="close" ng-click="cancel()"></div>
-        </div>
-
-        <!-- 快捷鍵搜索框 -->
-        <div ng-if="currentPanel.name === 'shortcuts'" class="shortcut-search-container">
-        <!-- 阶段8d：快捷键搜索框由 React 接管（react/preferences/panels.tsx 绑 keydown/input + updateKeybinds 等价） -->
-            <input id="shortcut-input" type="search" placeholder="{{'general.search' | i18n}}">
-        </div>
-        
-        <div class="content" ng-switch on="currentPanel.name">
-
-            <div ng-if="showSearchEmpty" class="panel-empty">
-                <div class="icon"><img style="width: 400px; height: 144px;" ng-src="assets/images/{{themeAttr() | themePath}}/illustrations/preferences-search-empty.png"></div>
-                <div class="title">{{ 'preferencesWindow.searchEmpty.title' | i18n }}</div>
-                <p>{{ 'preferencesWindow.searchEmpty.desc' | i18n }}</p>
-            </div>
-
-            <!-- 阶段8b：常用/左栏面板已由 React 接管（react/preferences/panels.tsx，portal 渲染于 .content 顶部锚点） -->
-            <!-- 阶段8c：操控/习惯设定面板已由 React 接管（react/preferences/panels.tsx，portal 渲染于 .content 顶部锚点） -->
-            <!-- 阶段8d：快捷键面板已由 React 接管（react/preferences/panels.tsx，portal 渲染于 .content 顶部锚点） -->
-            <!-- 阶段8e：通知/截图/密码保护/自动导入/开发者面板已由 React 接管（react/preferences/panels8e.tsx） -->
-        <div class="footer">
-            <div class="right">
-                <div class="button button-primary" ng-click="save()">{{'preferencesWindow.saveBtn' | i18n}}</div>
-                <div class="button button-grey" ng-click="apply()">{{'preferencesWindow.apply' | i18n}}</div>
-            </div>
-        </div>
-
-        <!-- 階段8：偏好窗口 React 接管宿主（.content 容器内末尾；随 8b-8e 逐面板接管；入口由 vite 注入） -->
-        <div id="eagle-preferences-react-host"></div>
-    </div>
-    </div>
-
-    <!-- 密码设置 -->
-    <div ng-controller="PasswordController">
-        <div class="modal folder-password-modal" ng-class="{'open': isOpen}" ng-if="isOpen">
-            <div class="modal-header">
-                <div class="name">{{'context.folder.password' | i18n}}</div>
-                <div class="close" ng-click="folderPwdScope.cancel()"></div>
-            </div>
-            <div class="section">
-                <div ng-show="folderPwdScope.mode == 'new'">
-                    <label for="">{{'modal.folderPassword.password' | i18n}}</label>
-                    <input id="new-folder-password-input" type="password" select-all placeholder="" ng-model="folderPwdScope.newPassword" auto-focus="SET-FOLDER-PASSWORD">
-                    <div class="margin-bottom-12"></div>
-                    <label for="">{{'modal.folderPassword.rePassword' | i18n}}</label>
-                    <input type="password" select-all placeholder="" ng-model="folderPwdScope.newRePassword">
-                    <div class="margin-bottom-12"></div>
-                    <label for="">{{'modal.folderPassword.passwordTips' | i18n}}</label>
-                    <textarea name="" id="" cols="30" rows="2" placeholder="" ng-model="folderPwdScope.passwordTips" select-all></textarea>
-                </div>
-        
-                <div ng-show="folderPwdScope.mode == 'change'">
-                    <label for="">{{'modal.folderPassword.oldPassword' | i18n}}</label>
-                    <input id="change-folder-password-input" type="password" select-all placeholder="" ng-model="folderPwdScope.oldPassword" auto-focus="SET-FOLDER-PASSWORD">
-                    <div class="margin-bottom-12"></div>
-                    <label for="">{{'modal.folderPassword.newPassword' | i18n}}</label>
-                    <input type="password" select-all placeholder="" ng-model="folderPwdScope.newPassword">
-                    <div class="margin-bottom-12"></div>
-                    <label for="">{{'modal.folderPassword.rePassword' | i18n}}</label>
-                    <input type="password" select-all placeholder="" ng-model="folderPwdScope.newRePassword">
-                    <div class="margin-bottom-12"></div>
-                    <label for="">{{'modal.folderPassword.passwordTips' | i18n}}</label>
-                    <textarea name="" id="" cols="30" rows="2" placeholder="" ng-model="folderPwdScope.passwordTips" select-all></textarea>
-                </div>
-        
-                <div ng-show="folderPwdScope.mode == 'reset'">
-                    <label for="">{{'modal.folderPassword.currentPassword' | i18n}}</label>
-                    <input id="reset-folder-password-input" type="password" select-all ng-model="folderPwdScope.oldPassword" auto-focus="SET-FOLDER-PASSWORD">
-                </div>
-            </div>
-            <div class="section darken textAlign-right">
-                <div ng-show="folderPwdScope.mode == 'new'" class="button button-s button-block button-primary" ng-click="folderPwdScope.save()" ng-class="{'button-disabled': false}">{{'modal.folderPassword.saveNew' | i18n}}</div>
-                <div ng-show="folderPwdScope.mode == 'change'" class="button button-s button-block button-primary" ng-click="folderPwdScope.save()" ng-class="{'button-disabled': false}">{{'modal.folderPassword.saveChange' | i18n}}</div>
-                <div ng-show="folderPwdScope.mode == 'reset'" class="button button-s button-block button-primary" ng-click="folderPwdScope.save()" ng-class="{'button-disabled': false}">{{'modal.folderPassword.saveReset' | i18n}}</div>
-            </div>
-        </div>
-        <div class="modal-overlay"></div>
-    </div>
+<body>
+    <!-- 阶段8e-2：Angular 壳已移除（ng-app/ng-controller/w-mousetrap/ng-* 与
+         angular.min.js/preferences.js/wMousetrap/tippy模块/shortcut-input 脚本删除）。
+         窗口整体由 React 承载：react/preferences/shell.tsx（sidebar/header/content/footer/
+         密码弹窗 + controller.ts 控制器数据面），入口由 vite 注入。
+         保留脚本：jQuery（search-active 标记）/tippy 厂家库（window.tippy）/lodash/
+         shortcut-manager（window.ShortcutManager 单例，ShortcutInput 消费）。 -->
+    <div id="eagle-preferences-react-host"></div>
 </body>
 </html>

@@ -123,7 +123,7 @@ try {
   // ── notification ──
   let prefPage = await openPreferences({ panel: 'notification' });
   await assertExprOn(prefPage, 'pf8e-notification-rendered', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const blocks = anchor.querySelectorAll(':scope > .panel-content > .panel-block');
     const toggles = anchor.querySelectorAll('label.toggle input[type=checkbox]');
@@ -146,7 +146,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8e-notification-toggle-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const firstBlock = anchor.querySelector('.block-content');
     const toggle = firstBlock.querySelector('label.toggle input');
@@ -158,7 +158,7 @@ try {
   // ── screencapture ──
   prefPage = await openPreferences({ panel: 'screencapture' });
   await assertExprOn(prefPage, 'pf8e-screencapture-rendered', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const blocks = anchor.querySelectorAll(':scope > .panel-content > .panel-block');
     const qualityRow = anchor.querySelector('input[name=radio-quality]').closest('.label-item');
@@ -174,7 +174,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8e-format-quality-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const qualityRow = anchor.querySelector('input[name=radio-quality]').closest('.label-item');
     return scope.preferences.screencapture.format === 'webp'
@@ -191,7 +191,7 @@ try {
     return 'ok';
   })()`);
   await assertExprOn(prefPage, 'pf8e-capture-window-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.preferences.shortcuts.keybinds['global.capture.window'] === 'Ctrl + Alt + W';
   })()`);
 
@@ -200,7 +200,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8e-capture-disable', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const table = anchor.querySelector('.shortcut-table');
     const disabledInputs = [...anchor.querySelectorAll('input.shortcut-input')].filter((el) => el.disabled);
@@ -211,7 +211,7 @@ try {
   // ── privacy（含跨系统密码弹窗） ──
   prefPage = await openPreferences({ panel: 'privacy' });
   await assertExprOn(prefPage, 'pf8e-privacy-initial', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const blockContent = anchor.querySelector('.block-content');
     return !!scope && scope.currentPanel.name === 'privacy'
@@ -225,7 +225,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8e-privacy-toggle-no-modal', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const blockContent = anchor.querySelector('.block-content');
     const modal = document.querySelector('.folder-password-modal');
@@ -255,7 +255,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8e-privacy-modal-close', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const modal = document.querySelector('.folder-password-modal');
     // change 模式 cancel 不回写 enable
     return scope.preferences.privacy.enable === 'true' && !modal;
@@ -264,7 +264,7 @@ try {
   // ── autoImport（数据面直写驱动渲染） ──
   prefPage = await openPreferences({ panel: 'autoImport' });
   await assertExprOn(prefPage, 'pf8e-autoimport-initial', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const blockContent = anchor.querySelector('.block-content');
     return !!scope && scope.currentPanel.name === 'autoImport'
@@ -273,8 +273,7 @@ try {
   })()`);
 
   await evalOn(prefPage, `(() => {
-    const s = window.angular.element(document.body).scope();
-    s.$apply(() => {
+    window.__eagleApplyController((s) => {
       s.preferences.autoImport.enable = 'true';
       s.preferences.autoImport.path = 'C:/watch-folder';
     });
@@ -300,7 +299,7 @@ try {
       window.__regenClicked = true;
       btn.click();
     }
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const token = scope.preferences.developer.apiToken;
     const link = document.querySelector('${PANELS} .api-token-url a');
     return typeof token === 'string' && token.length > 0
@@ -311,7 +310,7 @@ try {
   await assertExprOn(prefPage, 'pf8e-developer-copy-wiring', `(() => {
     const btn = document.querySelector('${PANELS} .api-token-block .copy-btn');
     if (!btn) return false;
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     if (!window.__copySpyInstalled) {
       window.__copySpyInstalled = true;
       window.__copySpy = 0;
@@ -328,7 +327,7 @@ try {
   // ── 搜索过滤 + 截图 ──
   prefPage = await openPreferences({ keyword: 'screenshot' });
   await assertExprOn(prefPage, 'pf8e-search-filter', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const byKw = (pfx) => document.querySelector('${PANELS} .panel-block[search-keywords^="' + pfx + '"]');
     return !!scope && scope.currentPanel.name === 'search' && scope.keyword === 'screenshot'
       && byKw('screencapture screenshot').style.display === 'block'

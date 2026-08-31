@@ -126,8 +126,8 @@ try {
     const s = window.__eaglePreferencesState;
     return !!s && s.ready === true && !!s.registration;
   })()`);
-  await assertExprOn(prefPage, 'pf8b-angular-general-panel', `(() => {
-    const scope = window.angular.element(document.body).scope();
+  await assertExprOn(prefPage, 'pf8b-controller-general-panel', `(() => {
+    const scope = window.__eagleControllerScope;
     return !!scope && !!scope.preferences && scope.currentPanel && scope.currentPanel.name === 'general';
   })()`);
 
@@ -165,7 +165,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-theme-click-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const active = document.querySelector('[data-eagle-react-panels="panels"] .theme.blue.active');
     return !!scope && scope.currentTheme && scope.currentTheme.name === 'BLUE'
       && scope.preferences.theme && scope.preferences.theme.name === 'BLUE' && !!active;
@@ -177,7 +177,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-checkbox-toggle-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.preferences.general.enableVibrancy === 'false';
   })()`);
 
@@ -187,7 +187,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-launchatlogin-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.launchAtLogin === 'true';
   })()`);
 
@@ -198,7 +198,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-language-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.preferences.general.language === 'zh_TW'
       && scope.changes.language === 'preferences.general.language';
   })()`);
@@ -210,7 +210,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-zoom-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.preferences.general.zoom === '150';
   })()`);
 
@@ -231,12 +231,12 @@ try {
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('sidebar-search');
     input.focus();
-    input.value = 'theme';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'theme');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-search-switch', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.currentPanel.name === 'search' && scope.keyword === 'theme';
   })()`);
   await assertExprOn(prefPage, 'pf8b-search-show-filter', `(() => {
@@ -251,7 +251,7 @@ try {
 
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('sidebar-search');
-    input.value = 'zzzqqq-no-match';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'zzzqqq-no-match');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
@@ -265,12 +265,12 @@ try {
 
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('sidebar-search');
-    input.value = '';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, '');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-search-exit-to-general', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const blocks = document.querySelectorAll('[data-eagle-react-panels="panels"] .panel-block');
     const noInline = [...blocks].every((el) => el.style.display === '');
     const empty = document.querySelector('.content .panel-empty');
@@ -284,7 +284,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-sidebar-panel-switch', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.currentPanel.name === 'sidebar';
   })()`);
   await assertExprOn(prefPage, 'pf8b-sidebar-react-rendered', `(() => {
@@ -301,7 +301,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-sidebar-radio-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const rename = document.querySelector('[data-eagle-react-panels="panels"] input[type=radio][value=rename]');
     return scope.preferences.habits.dblclickSidebarItem === 'rename' && rename.checked;
   })()`);
@@ -313,14 +313,14 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-sidebar-unfiled-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.preferences.sidebar.unfiled === 'false';
   })()`);
 
   // ── 带keyword重开（loadURL 重载）→ search 过滤 + 输入框 value 同步 ──
   prefPage = await openPreferences({ keyword: 'theme' });
   await assertExprOn(prefPage, 'pf8b-reopen-search-init', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const s = window.__eaglePreferencesState;
     return !!scope && scope.currentPanel.name === 'search' && scope.keyword === 'theme'
       && !!s && s.ready === true && s.keyword === 'theme';

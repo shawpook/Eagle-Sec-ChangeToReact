@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { scopeApply } from '../global/scopeBridge';
+import { applyController, controllerScope, subscribeController } from './controller';
 import {
   NotificationPanelContent,
   ScreencapturePanelContent,
@@ -44,42 +44,22 @@ const ngSafe = (fn: () => void) => {
   }
 };
 
+export { pfT } from './controller';
+import { pfT } from './controller';
+
 const req = (name: string): any => (window as any).require?.(name);
 
-let i18nInst: any = null;
-export const pfT = (key: string): string => {
-  try {
-    if (!i18nInst) {
-      const appRoot = req('app-root-path');
-      const I18nClass = req(String(appRoot) + '/i18n');
-      i18nInst = new I18nClass();
-    }
-    const out = i18nInst.__(key);
-    return out == null ? key : out;
-  } catch (err) {
-    return key;
-  }
-};
-
-/** 偏好页 body scope（= PreferencesController scope）。不走 scopeBridge.getBodyScope——
- * 那个优先读 window.$bodyScope（主窗口语义），偏好页必须直接取本页 body scope。 */
-export function getPreferencesScope(): any {
-  const angular = (window as any).angular;
-  if (angular && angular.element) {
-    try {
-      return angular.element(document.body).scope();
-    } catch (err) {
-      return null;
-    }
-  }
-  return null;
-}
+/** 8e-2 起：数据面为 controller.ts 的 controllerScope（无 Angular）。
+ * 保留 getPreferencesScope/scopeApply 两个符号使面板调用点零改动（面板内部使用）。 */
+const getPreferencesScope = (): any => controllerScope;
+const scopeApply = (_scope: any, fn: (s: any) => void) => applyController(fn);
 
 /* ================= scope 桥（签名 watcher：digest 变化 → 快照） ================= */
 
 export interface PanelSnap {
   panel: string;
   keyword: string;
+  shortcutKeyword: string;
   preferences: any;
   themes: any[];
   currentTheme: any;
@@ -94,6 +74,7 @@ export interface PanelSnap {
 const EMPTY_SNAP: PanelSnap = {
   panel: '',
   keyword: '',
+  shortcutKeyword: '',
   preferences: null,
   themes: [],
   currentTheme: null,
@@ -109,6 +90,7 @@ function buildSnapshot(scope: any): PanelSnap {
   return {
     panel: (scope.currentPanel && scope.currentPanel.name) || '',
     keyword: scope.keyword || '',
+    shortcutKeyword: scope.shortcutKeyword || '',
     preferences: scope.preferences || null,
     themes: Array.isArray(scope.themes) ? scope.themes : [],
     currentTheme: scope.currentTheme || null,
@@ -127,6 +109,7 @@ function snapshotSignature(scope: any): string {
   return JSON.stringify([
     scope.currentPanel && scope.currentPanel.name,
     scope.keyword,
+    scope.shortcutKeyword,
     scope.currentTheme && scope.currentTheme.name,
     scope.launchAtLogin,
     scope.platform,
@@ -152,35 +135,17 @@ function snapshotSignature(scope: any): string {
 function usePreferencesPanelSnap(): PanelSnap {
   const [snap, setSnap] = useState<PanelSnap>(EMPTY_SNAP);
   useEffect(() => {
-    let stopped = false;
-    let attached = false;
-    const attach = (): boolean => {
-      if (stopped || attached) return true;
-      const scope = getPreferencesScope();
-      if (!scope || typeof scope.$watch !== 'function') return false;
-      scope.$watch(
-        () => snapshotSignature(scope),
-        () => {
-          ngSafe(() => setSnap(buildSnapshot(scope)));
-        }
-      );
-      // 首帧快照（initPreference 完成前以守卫空形态渲染）
+    const scope = getPreferencesScope();
+    let lastSig: string | null = null;
+    const push = () => {
+      const sig = snapshotSignature(scope);
+      if (sig === lastSig) return;
+      lastSig = sig;
       ngSafe(() => setSnap(buildSnapshot(scope)));
-      attached = true;
-      return true;
     };
-    if (!attach()) {
-      const timer = setInterval(() => {
-        if (attach()) clearInterval(timer);
-      }, 100);
-      return () => {
-        stopped = true;
-        clearInterval(timer);
-      };
-    }
-    return () => {
-      stopped = true;
-    };
+    // 首帧快照（initPreference 完成前以守卫空形态渲染）
+    push();
+    return subscribeController(push);
   }, []);
   return snap;
 }
@@ -1478,9 +1443,6 @@ function ShortcutsPanelContent(props: { snap: PanelSnap; shortcutKeyword: string
 export function PreferencesPanels() {
   const snap = usePreferencesPanelSnap();
   const [container, setContainer] = useState<HTMLElement | null>(null);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const [shortcutKeyword, setShortcutKeyword] = useState('');
-  const shortcutInputRef = useRef<HTMLInputElement | null>(null);
 
   // portal 锚点：.content 顶部（原版 .panel-content 位于 footer 之前；host 在 footer 之后
   // 不能直接承载面板块。showSearchEmpty 统计 .content 内 .panel-content :visible，
@@ -1504,7 +1466,7 @@ export function PreferencesPanels() {
   useEffect(() => {
     const root = container;
     if (!root) return;
-    const results = computeShortcutResults(shortcutKeyword, snap);
+    const results = computeShortcutResults(snap.shortcutKeyword, snap);
     root.querySelectorAll<HTMLElement>('[search-show]').forEach((el) => {
       if (snap.panel !== 'search') {
         // 原版切回普通面板由 ng-switch 重建元素复位 display；渲染驱动等价
@@ -1523,7 +1485,7 @@ export function PreferencesPanels() {
       const keyword = (snap.keyword || '').toLowerCase();
       el.style.display = text.indexOf(keyword) > -1 ? 'block' : 'none';
     });
-  }, [container, snap, shortcutKeyword]);
+  }, [container, snap]);
 
   // tippy 等价（js/modules/tippy.js：animation scale / arrow false / allowHTML / placement）
   useEffect(() => {
@@ -1547,107 +1509,16 @@ export function PreferencesPanels() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [container, snap.preferences && snap.preferences.autoImport && snap.preferences.autoImport.path]);
 
-  // sidebar-search 接管（selectAll 指令 + ng-model/ng-change 等价；原位元素事件绑定）
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const el = event.currentTarget as HTMLInputElement;
-      if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
-        event.preventDefault();
-        event.stopPropagation();
-        el.select();
-      } else if (event.key === 'Escape') {
-        event.stopPropagation();
-        el.blur();
-      }
-    };
-    const onInput = (event: Event) => {
-      const el = event.target as HTMLInputElement;
-      const scope = getPreferencesScope();
-      if (!el || !scope) return;
-      scopeApply(scope, (s: any) => {
-        s.keyword = el.value;
-        s.onKeywordChange();
-      });
-    };
-    const attach = (): boolean => {
-      const input = document.getElementById('sidebar-search') as HTMLInputElement | null;
-      if (!input) return false;
-      const marker = input as any;
-      if (marker.__eagleReactSearch) return true;
-      marker.__eagleReactSearch = true;
-      input.addEventListener('keydown', onKeyDown);
-      input.addEventListener('input', onInput);
-      searchInputRef.current = input;
-      return true;
-    };
-    if (!attach()) {
-      const timer = setInterval(() => {
-        if (attach()) clearInterval(timer);
-      }, 200);
-      return () => clearInterval(timer);
-    }
-    return () => {};
-  }, []);
-
-  // value 同步（等价 ng-model 的视图渲染：init keyword / switchPanel 清空等外部写入同步进输入框）
-  useEffect(() => {
-    const input = searchInputRef.current || (document.getElementById('sidebar-search') as HTMLInputElement | null);
-    if (input && input.value !== snap.keyword) {
-      input.value = snap.keyword;
-    }
-  }, [snap.keyword]);
-
-  // #shortcut-input 接管（原版 select-all + ng-model shortcutKeyword + ng-change updateKeybinds）。
-  // 元素在 ng-if 下随面板切换销毁重建 → 常驻轮询挂事件（marker 防重复）。
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const el = event.currentTarget as HTMLInputElement;
-      if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
-        event.preventDefault();
-        event.stopPropagation();
-        el.select();
-      } else if (event.key === 'Escape') {
-        event.stopPropagation();
-        el.blur();
-      }
-    };
-    const onInput = (event: Event) => {
-      const el = event.target as HTMLInputElement;
-      if (el) setShortcutKeyword(el.value);
-    };
-    const attach = () => {
-      const input = document.getElementById('shortcut-input') as HTMLInputElement | null;
-      if (!input) {
-        shortcutInputRef.current = null;
-        return;
-      }
-      const marker = input as any;
-      if (!marker.__eagleReactSearch) {
-        marker.__eagleReactSearch = true;
-        input.addEventListener('keydown', onKeyDown);
-        input.addEventListener('input', onInput);
-      }
-      shortcutInputRef.current = input;
-      if (input.value !== shortcutKeyword) {
-        input.value = shortcutKeyword;
-      }
-    };
-    const timer = setInterval(attach, 200);
-    attach();
-    return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // updateKeybinds 的 $('.shortcut-input').data('search-active', isSearching) 等价（原样写 jQuery data）
   useEffect(() => {
     const $ = (window as any).jQuery;
     if (!$) return;
     ngSafe(() => {
       $('.shortcut-input').each(function (this: HTMLElement) {
-        $(this).data('search-active', !!shortcutKeyword);
+        $(this).data('search-active', !!snap.shortcutKeyword);
       });
     });
-  }, [shortcutKeyword, snap.panel]);
+  }, [snap.shortcutKeyword, snap.panel]);
 
   if (!container) return null;
   if (
@@ -1673,7 +1544,7 @@ export function PreferencesPanels() {
       {(snap.panel === 'control' || snap.panel === 'search') && <ControlPanelContent snap={snap} />}
       {(snap.panel === 'habits' || snap.panel === 'search') && <HabitsPanelContent snap={snap} />}
       {(snap.panel === 'shortcuts' || snap.panel === 'search') && (
-        <ShortcutsPanelContent snap={snap} shortcutKeyword={shortcutKeyword} />
+        <ShortcutsPanelContent snap={snap} shortcutKeyword={snap.shortcutKeyword} />
       )}
       {(snap.panel === 'notification' || snap.panel === 'search') && <NotificationPanelContent snap={snap} />}
       {(snap.panel === 'screencapture' || snap.panel === 'search') && <ScreencapturePanelContent snap={snap} />}

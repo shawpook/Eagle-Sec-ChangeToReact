@@ -123,7 +123,7 @@ try {
   // ── 开窗（panel=shortcuts 直达） ──
   let prefPage = await openPreferences({ panel: 'shortcuts' });
   await assertExprOn(prefPage, 'pf8d-shortcuts-panel-init', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return !!scope && !!scope.preferences && scope.currentPanel.name === 'shortcuts'
       && !!window.ShortcutManager && Array.isArray(scope.keybindGroups);
   })()`);
@@ -164,7 +164,7 @@ try {
     return 'ok';
   })()`);
   await assertExprOn(prefPage, 'pf8d-key-capture-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const input = [...anchor.querySelectorAll('input.shortcut-input')]
       .find((el) => el.value === 'Ctrl + Shift + A');
@@ -183,7 +183,7 @@ try {
     return 'ok';
   })()`);
   await assertExprOn(prefPage, 'pf8d-conflict-keeps-model', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const anchor = document.querySelector('${PANELS}');
     const input = [...anchor.querySelectorAll('input.shortcut-input')]
       .find((el) => el.value === 'Ctrl + Shift + A');
@@ -202,7 +202,7 @@ try {
 
   // ── restore 按钮接线（mock 确认框 response 0 → 不重置，仅验证 ng-click 等价） ──
   await evalOn(prefPage, `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     window.__restoreSpy = { called: 0 };
     const orig = scope.restoreDefaultShortcuts;
     scope.restoreDefaultShortcuts = function () {
@@ -217,7 +217,7 @@ try {
   // ── #shortcut-input 搜索过滤（updateKeybinds 等价） ──
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('shortcut-input');
-    input.value = 'capture';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'capture');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
@@ -231,7 +231,7 @@ try {
 
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('shortcut-input');
-    input.value = 'zzzzqqq';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'zzzzqqq');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
@@ -246,7 +246,7 @@ try {
 
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('shortcut-input');
-    input.value = '';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, '');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);

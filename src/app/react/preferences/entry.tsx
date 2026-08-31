@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState } from 'react';
-import { PreferencesPanels } from './panels';
+import PreferencesShell from './shell';
 
 /**
  * 阶段8：偏好窗口 React 入口（preferences.html / PreferenceApp 绞杀者）。
@@ -57,9 +57,8 @@ function PreferencesRoot() {
     const ipc = req('electron')?.ipcRenderer;
     if (!ipc || !ipc.on) return;
 
-    // ipcRenderer.on('init')（preferences.js 802-843 的数据面等价：参数入库 + ready 标记；
-    // Angular 版的 initAutoLaunch/initPreference/initPlugins/updateKeybinds 仍在旧控制器内
-    // 运行，8b 起逐面板搬移）
+    // ipcRenderer.on('init')：8a 的测试契约透传（ready 标记）；
+    // 8e-2 起真正的 init 序列在 shell.tsx（runInitSequence）。
     const onInit = (event: any, params: any) => {
       setState({
         registration: params && params.Registration ? params.Registration : null,
@@ -70,14 +69,19 @@ function PreferencesRoot() {
       initedRef.current = true;
     };
     ipc.on('init', onInit);
+
+    // shims 就绪标记：本 effect 提交后，本组件与 shell 的 'init' 监听器均已注册
+    // （子组件 effect 先于父 effect 执行），此刻发射 init 不会丢失。
+    (window as any).__eaglePreferencesEntryReady = true;
+
     return () => {
       if (ipc.off) ipc.off('init', onInit);
     };
   }, [host]);
 
-  // 8a：壳接线；8b/8c 起各面板经 panels.tsx portal 渲染（锚点在 .content 顶部）
+  // 8a：壳接线；8b-8e-1 面板经 panels portal；8e-2 起整个窗口由 PreferencesShell 承载
   void host;
-  return <PreferencesPanels />;
+  return <PreferencesShell />;
 }
 
 const host = document.getElementById('eagle-preferences-react-host');

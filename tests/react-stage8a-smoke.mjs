@@ -112,8 +112,8 @@ try {
     const s = window.__eaglePreferencesState;
     return !!s && s.ready === true && s.panel === 'shortcuts' && s.keyword === 'theme' && !!s.registration;
   })()`);
-  await assertExprOn(prefPage, 'pf8a-angular-shell-synced', `(() => {
-    const scope = window.angular.element(document.body).scope();
+  await assertExprOn(prefPage, 'pf8a-controller-shell-synced', `(() => {
+    const scope = window.__eagleControllerScope;
     // keyword 非空 → 原版 onKeywordChange 切到 search 搜索结果面板（preferences.js 1069）
     return !!scope
       && Array.isArray(scope.sidebarPanels) && scope.sidebarPanels.length > 0

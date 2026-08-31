@@ -1,13 +1,12 @@
 import React from 'react';
 import {
-  getPreferencesScope,
   pfT,
   themeAttrCss,
   themePathFor,
   ShortcutInput,
   PanelSnap,
 } from './panels';
-import { scopeApply } from '../global/scopeBridge';
+import { applyController } from './controller';
 
 /**
  * 阶段8e：偏好窗口最后五个面板——通知（notification）/截图（screencapture）/
@@ -15,8 +14,8 @@ import { scopeApply } from '../global/scopeBridge';
  *
  * 规范来源 = src/app/preferences.html 77-451（Angular 模板逐字转写，行号为 8d 删块后）。
  * 控制函数（openPasswordModal/lockNow/toggleTouchIDClick/openAutoImport/chooseAutoImportPath/
- * revealAutoImportPath/copyApiToken/regenerateApiToken/toggleTouchID）留在 Angular scope，
- * React 经 scopeApply 直调（数据面零改动）。
+ * revealAutoImportPath/copyApiToken/regenerateApiToken/toggleTouchID）由 controller.ts 承载
+ * （8e-2），React 经 applyController 直调（数据面零改动）。
  *
  * 逐字怪癖：
  * - 弹窗区块 ng-if 是 `enable !== 'false'`（反式条件，undefined 时显示），逐字保留。
@@ -48,7 +47,7 @@ function themeDir(snap: PanelSnap): string {
 }
 
 function callScope(fn: string, ...args: any[]) {
-  scopeApply(getPreferencesScope(), (s: any) => s[fn] && s[fn](...args));
+  applyController((s: any) => s[fn] && s[fn](...args));
 }
 
 /** notification 面板（preferences.html 78-169 逐字）。 */
@@ -61,7 +60,7 @@ export function NotificationPanelContent(props: { snap: PanelSnap }) {
   const popupWhen = popup.when || {};
 
   const set = (path: string[], value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       let obj = s.preferences.notification;
       for (let i = 0; i < path.length - 1; i++) obj = obj[path[i]];
       obj[path[path.length - 1]] = value;
@@ -207,23 +206,23 @@ export function ScreencapturePanelContent(props: { snap: PanelSnap }) {
   const captureDisabled = sc.shortcutsEnable === 'false';
 
   const setSc = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       s.preferences.screencapture[key] = value;
     });
   const setGeneral = (key: string, checked: boolean) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       s.preferences.general[key] = checked ? 'true' : 'false';
     });
   const setPopupWhen = (key: string, checked: boolean) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       s.preferences.notification.notification.when[key] = checked ? 'true' : 'false';
     });
   const setAutoTagging = (checked: boolean) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       s.preferences.screencapture.autoTagging.enable = checked ? 'true' : 'false';
     });
   const commitKeybind = (key: string, result: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       s.preferences.shortcuts.keybinds[key] = result;
     });
 
@@ -455,7 +454,7 @@ export function PrivacyPanelContent(props: { snap: PanelSnap }) {
   const touchIdVisible = snap.platform === 'darwin' && !!snap.canUseTouchID;
 
   const setPrivacy = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    applyController((s: any) => {
       s.preferences.privacy[key] = value;
     });
 
@@ -506,7 +505,7 @@ export function PrivacyPanelContent(props: { snap: PanelSnap }) {
                           checked={privacy.enableTouchID === 'true'}
                           onChange={(e) => {
                             const v = e.currentTarget.checked ? 'true' : 'false';
-                            scopeApply(getPreferencesScope(), (s: any) => {
+                            applyController((s: any) => {
                               s.preferences.privacy.enableTouchID = v;
                               s.toggleTouchID && s.toggleTouchID();
                             });
@@ -543,7 +542,7 @@ export function AutoImportPanelContent(props: { snap: PanelSnap }) {
             <NgToggle
               value={autoImport.enable}
               onChange={(v) =>
-                scopeApply(getPreferencesScope(), (s: any) => {
+                applyController((s: any) => {
                   s.preferences.autoImport.enable = v;
                 })
               }

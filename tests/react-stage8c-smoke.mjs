@@ -125,8 +125,8 @@ try {
 
   // ── 开窗 → 切 control 面板 ──
   let prefPage = await openPreferences();
-  await assertExprOn(prefPage, 'pf8c-angular-ready', `(() => {
-    const scope = window.angular.element(document.body).scope();
+  await assertExprOn(prefPage, 'pf8c-controller-ready', `(() => {
+    const scope = window.__eagleControllerScope;
     return !!scope && !!scope.preferences && scope.currentPanel.name === 'general';
   })()`);
   await assertExprOn(prefPage, 'pf8c-old-blocks-removed', `(() => {
@@ -139,7 +139,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8c-control-panel-switch', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.currentPanel.name === 'control';
   })()`);
   await assertExprOn(prefPage, 'pf8c-control-react-rendered', `(() => {
@@ -169,7 +169,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8c-control-radio-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const h = scope.preferences.habits;
     return h.scrollBehavior === 'paging' && h.middleBtn === 'openPluginPanel' && h.keyspace === 'scroll';
   })()`);
@@ -180,7 +180,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8c-habits-panel-switch', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     return scope.currentPanel.name === 'habits';
   })()`);
   await assertExprOn(prefPage, 'pf8c-habits-react-rendered', `(() => {
@@ -223,7 +223,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8c-habits-dataplane', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const p = scope.preferences;
     return p.habits.renderBehavior === 'pixelated'
       && p.habits.gifViewer === 'on'
@@ -247,12 +247,12 @@ try {
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('sidebar-search');
     input.focus();
-    input.value = 'video';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'video');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8c-search-video-filter', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const byKw = (pfx) => document.querySelector('${PANELS} .panel-block[search-keywords^="' + pfx + '"]');
     return scope.currentPanel.name === 'search'
       && byKw('video movie').style.display === 'block'
@@ -263,7 +263,7 @@ try {
 
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('sidebar-search');
-    input.value = 'gif';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, 'gif');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
@@ -276,12 +276,12 @@ try {
 
   await evalOn(prefPage, `(() => {
     const input = document.getElementById('sidebar-search');
-    input.value = '';
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set.call(input, '');
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8c-search-exit-to-habits', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const blocks = document.querySelectorAll('${PANELS} .panel-block');
     const noInline = [...blocks].every((el) => el.style.display === '');
     return scope.currentPanel.name === 'habits' && noInline;
@@ -290,7 +290,7 @@ try {
   // ── 带 keyword 重开（loadURL 重载）→ search 过滤 ──
   prefPage = await openPreferences({ keyword: 'gif' });
   await assertExprOn(prefPage, 'pf8c-reopen-search-gif', `(() => {
-    const scope = window.angular.element(document.body).scope();
+    const scope = window.__eagleControllerScope;
     const byKw = (pfx) => document.querySelector('${PANELS} .panel-block[search-keywords^="' + pfx + '"]');
     const input = document.getElementById('sidebar-search');
     return !!scope && scope.currentPanel.name === 'search' && scope.keyword === 'gif'

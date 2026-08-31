@@ -920,7 +920,36 @@
 >   addClass/text 直控）、upload-queue-progress（30500/30791/34539 .percentage/.current 直写
 >   + 33641 removeClass open）。以上块接管必须与 bundle 上传/标注/锁屏逻辑重写同步进行。
 > - index.html 残留 ng-*（ng-right-click 4 处等）属未删除旧模板，阶段11 ng-* 清理时处理。
-> **下一步 = 阶段8 设置页**（preferences.js 48KB + preferences.html 85KB + preferences.scss）。
+> **阶段8 勘察（2026-08-31；未转写）**：设置页 = 独立窗口页，**已走 vite 管道**。
+> - 窗口机制：main.cjs `openPreferencesWindow`（628-660）——`preferencesUrl() = previewUrl +
+>   /src/app/preferences.html`，query 传 `panel`/`keyword`；BrowserWindow frame:false 980×720；
+>   重复打开 focus/重载。shims 'open.preferences' → native ipc（1346-1350）。
+> - 规模：preferences.html **1229 行**（ng-app="PreferenceApp"，12 个 ng-switch-when 面板：
+>   general/sidebar/control/habits/screencapture/shortcuts/notification/privacy/autoImport/
+>   developer + panel/separator 侧栏项；全部 panel-block 带 search-show="{{keyword}}" +
+>   search-keywords 搜索关键词）；preferences.js **1350 行**（PreferencesController +
+>   searchShow 指令 + throttle 局部实现）。
+> - 自带依赖：angular.min.js + shortcut-manager.js + shortcut-input.js（shortcutInput 独立
+>   模块，键位录入 UI）+ wMousetrap（mod+f focusSearch / mod+enter save / esc escHandler）+
+>   tippy + @electron/remote（currentWindow）+ auto-launch + pluginModule（initPlugins）。
+> - 数据面通道（零改动）：ipc 'init'（Registration/panel/keyword → currentPanel/keyword/
+>   initAutoLaunch/initPreference/initPlugins/updateKeybinds/currentWindow.show/focusSearch
+>   200ms）；save = apply()（electron-info 日志 + auto-launch enable/disable + autoImport 日志
+>   + send 'chnage-preferences'——**原版拼写，逐字保留**）→ currentWindow.hide() → 300ms
+>   close()；'open-with-default'（autoImportPath）、'lock-now'、'change-theme'（lastTheme）。
+> - 接线方案（与主窗口绞杀者同构）：preferences.html 内加 `#eagle-preferences-react-host`
+>   + `<script type="module" src="…/react/preferences-entry.tsx">`；新代码
+>   src/app/react/preferences/（独立 entry + store 同步桥读 electronSettings/全局
+>   preferences，回调仍调 scope/全局函数）。
+> - mock 测试待办：shims 目前对 preferences.html 路径**无 init 发射序列**（emitAfterControllerReady
+>   只认 index.html）——8a 需先补 shim 的偏好页 init 序列（Registration + preferences 对象），
+>   冒烟用 CDP /json/list 连第二 target。
+> - 分单元：**8a** 入口接线+壳（sidebarPanels/currentPanel/switchPanel/keyword/onKeywordChange/
+>   searchShow 等价/主题 attr/class/save/esc/init）；**8b** general+sidebar 面板（73-355）；
+>   **8c** control+habits（356-734）；**8d** shortcuts（735-796，shortcutInput 等价 +
+>   updateKeybinds/shortcut-manager）；**8e** notification+screencapture+privacy+autoImport+
+>   developer（797-1229）。每单元 tsc+冒烟+全量回归+PROGRESS+commit。
+> **下一步 = 8a（入口接线 + 壳）**。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |

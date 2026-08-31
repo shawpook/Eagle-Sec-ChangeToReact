@@ -806,6 +806,13 @@
 >   7d-6b（file-thumbnail/file-export/file-add-library/debug-report）、
 >   7d-6c（webp-convert + fixutil×2）。每个子单元 tsc+冒烟（广播开合+进度渲染+关闭）
 >   +全量回归+PROGRESS+commit。
+> - 7d-6a 已勘读（未转写）：empty-trash-progress 为**空 link**（无 isolate scope），模板绑定
+>   isCleaningTrash/removeProgress/cancelEmptyTrash 全部解析到 **body scope** 属性——React 侧
+>   需 body.$watch('isCleaningTrash'/'removeProgress') 桥接 digest 变化 + 点击直调
+>   body.cancelEmptyTrash（number:1 过滤 → ngNumber 局部等价，PluginCenter.tsx 已有同款）。
+>   library-merge-progress 自包含：ipc 'show-import-library-task'/'finish-import-library-task'/
+>   'close-import-library'（close 时 swal mergeLibraryDone → ipc 'reload-app'）、cancel → ipc
+>   'cancel.all'、calcuteTimeLeft + 1s setInterval、second2time 过滤器（react filters 已有）。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |

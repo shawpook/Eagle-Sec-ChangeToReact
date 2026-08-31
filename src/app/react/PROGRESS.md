@@ -764,6 +764,28 @@
 > - 待办 7d-5b：pluginCenter（bundle 62140-62723 附近 + 模板 221 行；远程 API 依赖，
 >   mock 环境加载失败 → 空列表；含 PluginCenterFactory/getBestURL/排序/详情页/安装流）。
 
+> **7d-5b 已验证并接管**（2026-08-31）：pluginCenter。7d-5（插件族）全部完成。
+> - 接管方式：index.html `<plugin-center>` 删除，替换为 `#eagle-plugin-center-host`
+>   （保留 modal-flex-center）；React 层 components/stage7/PluginCenter.tsx
+>   （含 PluginCenterFactory.data 模块级单例 + factoryInit 远程加载等价）。
+> - 逻辑逐字：link 期 2s 预加载 init（远程 API，mock 环境 fetch 失败 → electronLog.error +
+>   空数据——与原版一致）；OPEN_PLUGIN_CENTER / OPEN_PLUGIN_CENTER_DETAIL /
+>   REFRESH_PLUGIN_CENTER 广播 + ipc 'install-plugin'（swal notAvailable 兜底）/
+>   'open-plugin-center-and-search'；open()（空数据 → isLoading + init，30ms 后
+>   `.category-{id}` click）；calculateList（关键词多词匹配 + 分类过滤 + update 分类走
+>   needUpdatePluginMaps）/applySorting（downloads/developer/updatedAt）；buildOfficialPluginCache/
+>   isPluginCompatible/calculateNeedUpdate（compare-versions require shim）；install/update/
+>   uninstall swal（fileSize 全局函数）；onInstalledClick ContextMenu；switchTab 分段指示器
+>   （offsetWidth/offsetLeft）；document click 关闭排序下拉（click.pluginCenterSort jQuery
+>   命名空间）；detail 区链接 jQuery 委托 shell.openExternal；auto-focus OPEN_PLUGIN_CENTER 等价。
+> - **保真教训**：sort 下拉与 loader 的 ng-show 一度写反（ngShow(!x)）——因初始可见掩盖了
+>   sort-button 点击未生效的时序，冒烟「开合两断言」才暴露；ng-show 表达式必须逐字对照
+>   （7c-2 同款教训第三次出现）。div 上的 disabled 无效属性 → data-disabled 等价。
+> - Angular number/date 过滤器局部等价：ngNumber（千分位+小数位）/ngDate（yyyy-MM-dd）。
+> - 闭环：react-stage7d5b-smoke 10/10（壳/开合/空数据分类（all+update）/reload 空状态/
+>   排序下拉开合/REFRESH 不崩/关闭/截图留档）。全量回归 22/22（main-ui-workflow 既有
+>   偶发竞态一次，重跑即绿）+ api-smoke 13/13；tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

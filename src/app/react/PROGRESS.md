@@ -1158,9 +1158,15 @@
 ---
 ## 8. 设置页（preferences.html）
 
+> 阶段状态：**已验证并接管（8a-8e-2，2026-09-01）**。窗口整体 React 化：偏好页无 Angular
+> （ng-app/ng-controller/ng-*/Angular 脚本全删，preferences.html 22 行静态根），控制器数据面 =
+> react/preferences/controller.ts（controllerScope），壳 = shell.tsx，面板 = panels.tsx/panels8e.tsx。
+> 数据面通道零改动（chnage-preferences/change-theme/change-zoom/electron-settings/localStorage/
+> window.ShortcutManager/auto-launch）。唯一权威测试 = react-stage8a…8e2 六个冒烟 + suite。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| preferences 入口接线（vite 分支 + shims init + entry.tsx 壳）| 接线 | vite.preview.config / shims.js / react/preferences/entry.tsx | 已验证（8a） |
+| preferences 入口接线（vite 分支 + shims init + entry.tsx 壳）| 接线 | vite.preview.config / shims.js / react/preferences/entry.tsx | 已验证（8a；8e-2 改 React 就绪序列） |
 | general 面板（.panel-content）| 模板块 | preferences.html 73-229（旧） | 已验证（8b GeneralPanelContent，portal .content 顶部锚点） |
 | sidebar 面板（.panel-content）| 模板块 | preferences.html 232-353（旧） | 已验证（8b SidebarPanelContent，同上） |
 | searchShow | directive | preferences.js 54-81 | 已验证（8b search-show effect 等价） |
@@ -1187,8 +1193,8 @@
 | selectAll/auto-focus（密码弹窗）| directive | preferences.js 130-142 / bundle | 已验证（8e-2 shell.tsx 等价） |
 | showSearchEmpty watcher | scope $watch | preferences.js 326-336 | 已验证（8e-2 shell.tsx effect 逐字） |
 | 偏好页 Angular 脚本区 | 脚本 | preferences.html head（旧） | 已删旧实现（8e-2：仅剩 jQuery/tippy 厂家库/lodash/shortcut-manager） |
-| preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办（壳/控制函数随 8c-8e 逐面板迁移） |
-| default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 待办 |
+| preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 已验证（8e-2 controller.ts + shell.tsx 全量移植；原文件随窗口接管不再加载） |
+| default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 已验证（8e-2 controller.ts 消费，数据源保留） |
 
 对应 `src/app/preferences.html`（85KB）与 `src/app/style/preferences.scss`。
 

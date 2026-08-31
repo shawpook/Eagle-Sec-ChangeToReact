@@ -969,7 +969,48 @@
 >   截图。harness 复用 connect(wsUrl) + debugPort /json/list 连多窗口。
 > - 全量回归 26 项（runner 增 8a；main-ui-workflow 偶发一次重跑即绿）+ api-smoke 13/13；
 >   tsc 零错。
-> **下一步 = 8b（general + sidebar 面板，preferences.html 73-355）**。
+> **8b 已验证并接管（2026-08-31）**：偏好窗口 general + sidebar 面板。
+> - 接管方式：preferences.html 旧 general `.panel-content`（73-229）+ sidebar `.panel-content`
+>   （232-353）两块删除，替换为注释锚；React 层 react/preferences/panels.tsx（entry.tsx 渲染
+>   PreferencesGeneralSidebarPanels）。**渲染位置修正**：8a host 在 .content 末尾（footer 之后），
+>   而原版 .panel-content 在 footer 之前（footer 在 .content 内随内容滚动，1d85065 起的既有
+>   DOM；8a 截图证实）——面板经 portal 渲染进 **.content 顶部动态锚点**（insertBefore
+>   firstChild，data-eagle-react-panels="general-sidebar"），host 本体位置不动；锚点必须在
+>   .content 内的另一半原因：Angular showSearchEmpty（preferences.js 332）统计
+>   `.content .panel-content :visible`，React 块必须被数到（冒烟跨系统断言覆盖）。
+> - 数据桥：签名 watcher（scope.$watch 函数型，JSON 签名引用比较）→ 快照 setState；
+>   偏好页 scope 取本页 body scope（不走 scopeBridge.getBodyScope——其优先读主窗口语义的
+>   window.$bodyScope）；preferences/themes/currentTheme/platform/isAppleSilicon/launchAtLogin
+>   活引用守卫读。pfT 自建 i18n 通道：require('app-root-path')+'/i18n'（mock → MockI18n，
+>   真实 → i18n 类），偏好页无 window.i18n。
+> - 交互逐字：changeTheme/changeZoom/changeAutoLaunch/onKeywordChange 经 scopeApply（ng-click
+>   $apply 等价）；language select 原版怪癖保留（ng-change 传参字面量 'preferences.general.language'，
+>   $scope.changes.language 死存储无观察面差异）；checkbox ng-true/false-value="'true'/'false'"
+>   字符串语义；sidebar 静态 disable 项（all/allTags/trash）无 ng-model 恒 checked 逐字；
+>   platform=='darwin' / !isAppleSilicon 条件块。tippy 等价（js/modules/tippy.js 参数逐字，
+>   Sidebar useTippy 同款）。
+> - search-show 等价（preferences.js 54-81 逐字）：search 模式按 (textContent +
+>   search-keywords).includes(keyword) 设 display:block/none；非 search 模式复位 inline display
+>   （原版由 ng-switch 重建元素复位，渲染驱动等价）。
+> - sidebar-search 接管（3.5 原位元素方案）：preferences.html 输入框去掉 select-all/ng-model/
+>   ng-change 三属性，React 绑 keydown（mod+a preventDefault+select / Esc blur，selectAll
+>   指令等价）+ input（写 scope.keyword + onKeywordChange()）；value 由快照同步（等价
+>   ng-model 视图渲染，init keyword / switchPanel 清空均覆盖）。
+> - **mock 数据面事实（后续 8c-8e 复用）**：shim ipcRenderer.send 的 change-theme/change-zoom/
+>   chnage-preferences 会 savePreferences + applyPreferencesToCurrentDocument——后者整体替换
+>   scope.preferences（saved 对象）+ $evalAsync；initPreference 的 angular.extend(preferences,
+>   data) 是浅拷贝（preferences.general 等别名到 settings 存储对象，页面内写入即持久化）。
+> - 闭环：react-stage8b-smoke 24/24（旧块删除/.content 顶部锚点在 footer 前/7 主题 + DARK
+>   active/译文非 key/theme 点击 BLUE 数据面 + active class/enableVibrancy + launchAtLogin
+>   翻转/language zh_TW + changes.language 字面量怪癖/zoom 150/窗内搜索 switch→search-show
+>   过滤（5 块 1 显 4 隐）/无结果态 Angular panel-empty（跨系统统计）/清空回 general 复位/
+>   sidebar switchPanel→radio rename 数据面/unfiled 翻转/{keyword:'theme'} 重开 loadURL 重载
+>   → init 透传 + 过滤 + 输入框 value 同步/双截图）。全量回归 27 项（runner 增 8b）+
+>   api-smoke 13/13；tsc 零错。
+> - 教训：CDP 断言布尔化——compareDocumentPosition(...) & DocumentPosition 常量返回数字，
+>   `=== true` 断言恒 false（位运算结果必须 Boolean() 包装）；首跑冷启动偶发（vite 首次
+>   transform + init 500ms 定时）会吃掉前 1-2 个断言窗口，重跑即绿（既有偶发家族新成员）。
+> **下一步 = 8c（control + habits 面板，preferences.html 356-734 区域行号已因 8b 删块前移）**。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
@@ -984,7 +1025,13 @@
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办 |
+| preferences 入口接线（vite 分支 + shims init + entry.tsx 壳）| 接线 | vite.preview.config / shims.js / react/preferences/entry.tsx | 已验证（8a） |
+| general 面板（.panel-content）| 模板块 | preferences.html 73-229（旧） | 已验证（8b GeneralPanelContent，portal .content 顶部锚点） |
+| sidebar 面板（.panel-content）| 模板块 | preferences.html 232-353（旧） | 已验证（8b SidebarPanelContent，同上） |
+| searchShow | directive | preferences.js 54-81 | 已验证（8b search-show effect 等价） |
+| selectAll（#sidebar-search）| directive | preferences.js 130-142 | 已验证（8b keydown 等价，原位元素） |
+| #sidebar-search ng-model/ng-change | 绑定 | preferences.html:38（旧） | 已验证（8b React input + scope 桥接管） |
+| preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办（壳/控制函数随 8c-8e 逐面板迁移） |
 | default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 待办 |
 
 对应 `src/app/preferences.html`（85KB）与 `src/app/style/preferences.scss`。

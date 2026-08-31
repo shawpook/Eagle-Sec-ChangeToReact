@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState } from 'react';
+import { PreferencesGeneralSidebarPanels } from './panels';
 
 /**
  * 阶段8：偏好窗口 React 入口（preferences.html / PreferenceApp 绞杀者）。
@@ -74,9 +75,9 @@ function PreferencesRoot() {
     };
   }, [host]);
 
-  // 8a：壳接线，不渲染 DOM（8b 起面板逐个迁入 portal）
+  // 8a：壳接线；8b 起 general/sidebar 面板经 panels.tsx portal 渲染（锚点在 .content 顶部）
   void host;
-  return null;
+  return <PreferencesGeneralSidebarPanels />;
 }
 
 const host = document.getElementById('eagle-preferences-react-host');

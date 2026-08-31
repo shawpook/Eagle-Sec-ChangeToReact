@@ -786,6 +786,27 @@
 >   排序下拉开合/REFRESH 不崩/关闭/截图留档）。全量回归 22/22（main-ui-workflow 既有
 >   偶发竞态一次，重跑即绿）+ api-smoke 13/13；tsc 零错。
 
+> **7d-6 勘察（2026-08-31；未开工）**：进度对话框族 12 个（bundle 63239-64240 附近）。
+> - bundle 指令顺序：emptyTrashProgress(63239 起)、libraryLoadProgress、libraryMergeProgress、
+>   eaglepackImportProgress、eaglepackExportProgress、fileThumbnailProgress、
+>   fileExportProgress、fileAddLibraryProgress、debugReportProgress、webpConvertProgress、
+>   fixutilCleanEmptyFolderProgress、fixutilProgress（其后为 webView 指令）。
+> - 源码镜像：js/directives/{empty-trash,library-load,library-merge,eaglepack-import,
+>   eaglepack-export,file-thumbnail,file-export,file-add-library,debug-report,
+>   webp-convert,fixutil-clean-empty-folder,fixutil}-progress.{js,html}（js+html 合计 1131 行，
+>   平均每个 ~47 行，均为小型对话框）。
+> - index.html：450-461 为 12 个元素连续块（<empty-trash-progress> … <fixutil-progress>），
+>   可一次性整块换壳为 12 个 host div（#eagle-{kebab}-progress-host 式命名）或合并单文件
+>   多组件 portal（建议 components/stage7/ProgressDialogs.tsx，逐组件 export）。
+> - 88-102 行的 saving-progress-bar/upload-queue-progress 属 body 模板（非本族，后续处理）。
+> - 共性模式（由 7d-4/7d-5 经验可直接套用）：广播驱动开合 + refs/bump + $evalAsync→bumpAll、
+>   ipc 进度事件监听（getIpc().on/off）、$exceptionHandler 等价 ngSafe 包 JSX 边界、
+>   hooks 必须在 if (!host) return null 之前。
+> - 建议子单元：7d-6a（empty-trash + library-load + library-merge + eaglepack×2）、
+>   7d-6b（file-thumbnail/file-export/file-add-library/debug-report）、
+>   7d-6c（webp-convert + fixutil×2）。每个子单元 tsc+冒烟（广播开合+进度渲染+关闭）
+>   +全量回归+PROGRESS+commit。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

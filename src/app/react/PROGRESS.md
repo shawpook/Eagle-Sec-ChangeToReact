@@ -949,7 +949,27 @@
 >   **8c** control+habits（356-734）；**8d** shortcuts（735-796，shortcutInput 等价 +
 >   updateKeybinds/shortcut-manager）；**8e** notification+screencapture+privacy+autoImport+
 >   developer（797-1229）。每单元 tsc+冒烟+全量回归+PROGRESS+commit。
-> **下一步 = 8a（入口接线 + 壳）**。
+> **8a 已验证并接管（2026-08-31）**：偏好窗口入口接线 + 壳。
+> - vite（frontend/vite.preview.config.mjs）：`readPreviewPreferences()`——/src/app/preferences.html
+>   走独立 middleware 分支（injectPreviewScripts 的 shims + REACT_REFRESH_PREAMBLE +
+>   `<script type="module" src="/src/app/react/preferences/entry.tsx">`）。注意：该页无
+>   `<title>`，transformIndexHtml 钩子本就不生效（middleware 直出），此前无 shims 也无 React。
+> - preferences.html：body 尾加 `#eagle-preferences-react-host`。
+> - src/app/react/preferences/entry.tsx：PreferencesWindowState 外部 store（registration/
+>   panel/keyword/ready）+ ipc 'init' 监听（数据面等价）；8a 不渲染 DOM（8b 起面板迁入）；
+>   测试契约 window.__eaglePreferencesState。
+> - shims.js：preferences.html 页面分支——等 PreferencesController 就绪（scope.sidebarPanels
+>   数组，轮询 25ms×400 兜底）后 emit 'init' {Registration/trialRemain/machineID/panel/
+>   keyword（URL query）}。与主窗口 emitAfterControllerReady 同款模式。
+> - 冒烟（react-stage8a-smoke，5/5）：主窗口 send 'open.preferences' {panel:'shortcuts',
+>   keyword:'theme'} → main.cjs openPreferencesWindow → CDP /json/list 连第二 target →
+>   host/React 挂载/__eaglePreferencesState（panel/keyword/registration 透传）/Angular 壳同步
+>   （sidebarPanels 13 项 + **keyword 非空 → 原版 onKeywordChange 切 currentPanel='search'
+>   搜索结果面板**（preferences.js 1069，不是字面 panel 名）+ preferences 就绪）+ 第二窗口
+>   截图。harness 复用 connect(wsUrl) + debugPort /json/list 连多窗口。
+> - 全量回归 26 项（runner 增 8a；main-ui-workflow 偶发一次重跑即绿）+ api-smoke 13/13；
+>   tsc 零错。
+> **下一步 = 8b（general + sidebar 面板，preferences.html 73-355）**。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |

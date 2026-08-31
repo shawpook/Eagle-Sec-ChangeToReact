@@ -38,6 +38,16 @@ function injectReactMount(html) {
   );
 }
 
+// 阶段8：偏好窗口（独立页面）React 化入口——保留 shims 注入，另挂 preferences entry。
+function readPreviewPreferences() {
+  const file = path.join(workspaceRoot, 'src/app/preferences.html');
+  const html = injectPreviewScripts(fs.readFileSync(file, 'utf8'));
+  return html.replace(
+    '</body>',
+    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/preferences/entry.tsx"></script>\n</body>`
+  );
+}
+
 function injectViewerConfig(html) {
   return html.replace(
     '<head>',
@@ -88,6 +98,11 @@ export default defineConfig({
           if (url === '/src/app/index.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.end(readPreviewIndex());
+            return;
+          }
+          if (url === '/src/app/preferences.html') {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(readPreviewPreferences());
             return;
           }
           if (url === '/src/app/registration.html') {

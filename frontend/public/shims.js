@@ -3087,6 +3087,37 @@
       }, 250);
     }
 
+    // 阶段8：偏好窗口 init 序列（preferences.js 802 'init' 处理器需 Registration/panel/keyword；
+    // 等待 PreferencesController 就绪——sidebarPanels 由 controller link 期挂上 scope）
+    if (pagePath.endsWith('/src/app/preferences.html')) {
+      const query = new URLSearchParams(window.location.search);
+      const waitPreferencesReady = () => {
+        let ready = false;
+        try {
+          if (window.angular) {
+            const scope = window.angular.element(document.body).scope();
+            ready = !!(scope && Array.isArray(scope.sidebarPanels));
+          }
+        } catch (err) {
+          ready = false;
+        }
+        if (ready || waitPreferencesReady.attempts > 400) {
+          ipcRenderer.emit('init', {
+            Registration: registration,
+            trialRemain: 0,
+            machineID: 'preview',
+            panel: query.get('panel') || '',
+            keyword: query.get('keyword') || '',
+          });
+          return;
+        }
+        waitPreferencesReady.attempts = (waitPreferencesReady.attempts || 0) + 1;
+        setTimeout(waitPreferencesReady, 25);
+      };
+      waitPreferencesReady();
+      return;
+    }
+
     if (!pagePath.endsWith('/index.html') && !pagePath.endsWith('/src/app/index.html')) {
       return;
     }

@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { scopeApply } from '../global/scopeBridge';
+import {
+  NotificationPanelContent,
+  ScreencapturePanelContent,
+  PrivacyPanelContent,
+  AutoImportPanelContent,
+  DeveloperPanelContent,
+} from './panels8e';
 
 /**
  * 阶段8b/8c：偏好窗口面板接管——「常用（general）」「左栏（sidebar）」（8b）+
@@ -56,7 +63,7 @@ export const pfT = (key: string): string => {
 
 /** 偏好页 body scope（= PreferencesController scope）。不走 scopeBridge.getBodyScope——
  * 那个优先读 window.$bodyScope（主窗口语义），偏好页必须直接取本页 body scope。 */
-function getPreferencesScope(): any {
+export function getPreferencesScope(): any {
   const angular = (window as any).angular;
   if (angular && angular.element) {
     try {
@@ -70,7 +77,7 @@ function getPreferencesScope(): any {
 
 /* ================= scope 桥（签名 watcher：digest 变化 → 快照） ================= */
 
-interface PanelSnap {
+export interface PanelSnap {
   panel: string;
   keyword: string;
   preferences: any;
@@ -81,6 +88,7 @@ interface PanelSnap {
   isAppleSilicon: any;
   keybindGroups: any[];
   installPlugins: any[];
+  canUseTouchID: any;
 }
 
 const EMPTY_SNAP: PanelSnap = {
@@ -94,6 +102,7 @@ const EMPTY_SNAP: PanelSnap = {
   isAppleSilicon: undefined,
   keybindGroups: [],
   installPlugins: [],
+  canUseTouchID: undefined,
 };
 
 function buildSnapshot(scope: any): PanelSnap {
@@ -108,6 +117,7 @@ function buildSnapshot(scope: any): PanelSnap {
     isAppleSilicon: scope.isAppleSilicon,
     keybindGroups: Array.isArray(scope.keybindGroups) ? scope.keybindGroups : [],
     installPlugins: Array.isArray(scope.installPlugins) ? scope.installPlugins : [],
+    canUseTouchID: scope.canUseTouchID,
   };
 }
 
@@ -130,8 +140,12 @@ function snapshotSignature(scope: any): string {
     p && p.shortcuts,
     scope.keybindGroups,
     scope.installPlugins,
-    p && p.notification && p.notification.notification,
-    p && p.screencapture && p.screencapture.useRetina,
+    p && p.notification,
+    p && p.screencapture,
+    p && p.privacy,
+    p && p.autoImport,
+    p && p.developer,
+    scope.canUseTouchID,
   ]);
 }
 
@@ -243,7 +257,7 @@ function NgRadio(props: {
 /* ================= 8c：control/habits 共用件 ================= */
 
 /** themeAttr() 等价（preferences.js 1097-1109）+ themePath 过滤器（144-153）。 */
-function themeAttrCss(snap: PanelSnap): string {
+export function themeAttrCss(snap: PanelSnap): string {
   const theme = snap.preferences && snap.preferences.theme;
   try {
     if (theme && theme.name === 'Auto') {
@@ -255,7 +269,7 @@ function themeAttrCss(snap: PanelSnap): string {
   }
   return (theme && theme.css) || 'gray';
 }
-function themePathFor(css: string): string {
+export function themePathFor(css: string): string {
   return css === 'light' || css === 'lightgray' ? 'light' : 'dark';
 }
 
@@ -287,18 +301,19 @@ function RadioRow(props: {
   labelNode: React.ReactNode;
   name: string;
   model: any;
-  options: Array<{ value: string; label: string; id?: string; hidden?: boolean }>;
+  rowHidden?: boolean;
+  options: Array<{ value: string; label: string; id?: string; hidden?: boolean; itemStyle?: React.CSSProperties }>;
   onSelect: (value: string) => void;
 }) {
   return (
-    <div className="label-item">
+    <div className="label-item" style={props.rowHidden ? { display: 'none' } : undefined}>
       <label htmlFor="" style={{ width: '240px' }}>
         {props.labelNode}
       </label>
       <div className="right">
         <div className="checkbox-items">
           {props.options.map((o, i) => (
-            <div className="checkbox-item" key={o.value + '-' + i}>
+            <div className="checkbox-item" style={o.itemStyle} key={o.value + '-' + i}>
               <label className="control radio inline" style={o.hidden ? { display: 'none' } : undefined}>
                 <input
                   id={o.id}
@@ -1065,10 +1080,11 @@ function computeShortcutResults(keyword: string, snap: PanelSnap) {
  * keydown 捕获（preventDefault + 修饰键前缀 + 键值映射）、冲突检测不写模型（1.5s 提示）、
  * updateStatus（valid/invalid/conflict class + 提示元素）、focus 显原值 / blur 格式化。
  * ShortcutManager 消费 window 全局单例（数据面零改动）。 */
-function ShortcutInput(props: {
+export function ShortcutInput(props: {
   name: string;
   value: any;
   placeholder: string;
+  disabled?: boolean;
   onCommit: (result: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -1344,7 +1360,7 @@ function ShortcutInput(props: {
   return (
     <div className="shortcut-input-container">
       <div className="shortcut-conflict-tip color-warning" style={{ display: 'none' }} ref={conflictRef}></div>
-      <input type="text" className="shortcut-input" placeholder={props.placeholder} ref={inputRef} />
+      <input type="text" className="shortcut-input" placeholder={props.placeholder} disabled={props.disabled} ref={inputRef} />
       <div className="shortcut-error" style={{ display: 'none' }} ref={errorRef}></div>
     </div>
   );
@@ -1528,7 +1544,8 @@ export function PreferencesPanels() {
       );
     });
     return () => instances.forEach((instance) => instance.destroy());
-  }, [container]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [container, snap.preferences && snap.preferences.autoImport && snap.preferences.autoImport.path]);
 
   // sidebar-search 接管（selectAll 指令 + ng-model/ng-change 等价；原位元素事件绑定）
   useEffect(() => {
@@ -1639,6 +1656,11 @@ export function PreferencesPanels() {
     snap.panel !== 'control' &&
     snap.panel !== 'habits' &&
     snap.panel !== 'shortcuts' &&
+    snap.panel !== 'notification' &&
+    snap.panel !== 'screencapture' &&
+    snap.panel !== 'privacy' &&
+    snap.panel !== 'autoImport' &&
+    snap.panel !== 'developer' &&
     snap.panel !== 'search'
   ) {
     return null;
@@ -1653,6 +1675,11 @@ export function PreferencesPanels() {
       {(snap.panel === 'shortcuts' || snap.panel === 'search') && (
         <ShortcutsPanelContent snap={snap} shortcutKeyword={shortcutKeyword} />
       )}
+      {(snap.panel === 'notification' || snap.panel === 'search') && <NotificationPanelContent snap={snap} />}
+      {(snap.panel === 'screencapture' || snap.panel === 'search') && <ScreencapturePanelContent snap={snap} />}
+      {(snap.panel === 'privacy' || snap.panel === 'search') && <PrivacyPanelContent snap={snap} />}
+      {(snap.panel === 'autoImport' || snap.panel === 'search') && <AutoImportPanelContent snap={snap} />}
+      {(snap.panel === 'developer' || snap.panel === 'search') && <DeveloperPanelContent snap={snap} />}
     </>,
     container
   );

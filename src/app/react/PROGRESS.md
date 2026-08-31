@@ -1066,8 +1066,39 @@
 >   写模型/ctrl+alt+E 冲突保留模型 + usedBy 提示 + 1.5s 自动复位/restore 接线 spy/搜索过滤
 >   （capture）/空态隐藏 restore/清空恢复/截图）。全量回归 29 项（runner 增 8d，全绿无偶发）
 >   + api-smoke 13/13；tsc 零错。
-> **下一步 = 8e（notification + screencapture + privacy + autoImport + developer 五面板，
->   preferences.html 残余 ng-switch 块；完成后移除 ng-app/ng-controller + Angular 脚本区）**。
+> **8e-1 已验证并接管（2026-08-31）**：偏好窗口最后五面板（notification/screencapture/privacy/
+>   autoImport/developer）。
+> - 接管方式：preferences.html 五块 `.panel-content`（376 行）删除（删后仅剩 Angular 壳层：
+>   sidebar/header/footer/panel-empty/密码弹窗 + ng-app/ng-controller/脚本区，归 **8e-2**）；
+>   React 层新文件 react/preferences/panels8e.tsx（共享助手 pfT/getPreferencesScope/themeAttrCss/
+>   themePathFor/ShortcutInput/PanelSnap 自 panels.tsx 导出），根组件接五个渲染分支。
+> - 组件逐字：NgToggle（label.toggle > input + span.slider.round）；notification 两块
+>   （**弹窗区块反式 ng-if `enable !== 'false'` 逐字保留**；音效区块 === 'true'）；screencapture
+>   三块（format radios 逐字含重复 id radio-scroll/radio-page + width:32% 内联样式、品质行/分隔线
+>   ng-show format!=='png'、shortcutsEnable == 'true' 宽松比较控表显隐 + ng-disabled 三捕获输入
+>   （ShortcutInput 加 disabled prop，复用 8d 键入等价）、进阶 5 checkbox）；privacy/autoImport
+>   （ng-class disable 块 + toggle 的 ng-model/ng-click 双绑定 + ng-if 区块 list-item 行 +
+>   tippy content=path 随路径重初始化）；developer（api-token + 嵌套 ng-click 双绑 copyApiToken
+>   逐字冒泡双触发 + regenerate + 链接 href token 同步）。
+> - 数据面：控制函数（openPasswordModal/lockNow/toggleTouchIDClick/openAutoImport/
+>   chooseAutoImportPath/revealAutoImportPath/copyApiToken/regenerateApiToken/toggleTouchID）
+>   留 Angular scope，React scopeApply 直调；签名扩全 notification/screencapture/privacy/
+>   autoImport/developer + canUseTouchID（win32 恒 false → Touch ID 行不渲染）。
+> - 闭环：react-stage8e-smoke 17/17（notification 渲染 + toggle ng-if 显隐 + 子 checkbox 数据面/
+>   screencapture webp→品质行出现 + quality 80 + capture.window 键入 Ctrl+Alt+W + disable 三输入/
+>   privacy disable class + toggle→enable true + **跨系统密码弹窗**（change 行 → SET-APP-PASSWORD
+>   广播 → Angular PasswordController open/close）/autoImport 数据面直写→行渲染 + tippy 属性/
+>   developer regenerate token + href/textContent 同步 + copy 嵌套双触发 spy/search 'screenshot'
+>   过滤/截图）。全量回归 30 项（runner 增 8e；main-ui-workflow 偶发一次，单测重跑即绿，二次
+>   全量 ALL GREEN）+ api-smoke 13/13；tsc 零错。
+> - 教训：(1) **原版 ng-click 先于 ng-model 的 change 触发**（浏览器 click 处理器先于激活行为
+>   的 change）——privacy 开关首次切换时 openPasswordModal 读到的 enable 仍是旧值（走
+>   chnage-preferences 分支不弹窗）；React onChange/onClick 的触发序与原版一致，断言必须按
+>   该时序写。(2) 开面板后首个动作必须是轮询断言（bare evalOn click 会在 React 渲染前落空）。
+>   (3) CSS 属性选择器数字值必须加引号（[value=80] 非法）。
+> **下一步 = 8e-2（移除偏好页 Angular 壳：sidebar/header/footer/panel-empty/密码弹窗接管 +
+>   ng-app/ng-controller/w-mousetrap 移除 + initAutoLaunch/initPreference/initPlugins/
+>   updateKeybinds 数据面搬移 + shims 就绪序列改 React 版 + save/apply/cancel/escHandler 等价）**。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
@@ -1096,6 +1127,12 @@
 | updateKeybinds | scope 函数 | preferences.js 601-656 | 已验证（8d computeShortcutResults 等价） |
 | #shortcut-input ng-model/ng-change | 绑定 | preferences.html:62（旧） | 已验证（8d React 接管，ng-if 常驻轮询） |
 | restoreDefaultShortcuts | scope 函数 | preferences.js 1250-1322 | 已验证（8d scopeApply 直调，Angular 流程不变） |
+| notification 面板（.panel-content）| 模板块 | preferences.html 78-169（旧） | 已验证（8e-1 NotificationPanelContent，反式 ng-if 逐字） |
+| screencapture 面板（.panel-content）| 模板块 | preferences.html 172-336（旧） | 已验证（8e-1 ScreencapturePanelContent，ng-show/disabled） |
+| privacy 面板（.panel-content）| 模板块 | preferences.html 339-388（旧） | 已验证（8e-1 PrivacyPanelContent，跨系统密码弹窗） |
+| autoImport 面板（.panel-content）| 模板块 | preferences.html 391-425（旧） | 已验证（8e-1 AutoImportPanelContent，tippy path） |
+| developer 面板（.panel-content）| 模板块 | preferences.html 428-451（旧） | 已验证（8e-1 DeveloperPanelContent，嵌套 copy 双触发） |
+| openPasswordModal/lockNow/copyApiToken 等控制函数 | scope 函数 | preferences.js 894-936 | 已验证（8e-1 scopeApply 直调，Angular 流程不变） |
 | preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办（壳/控制函数随 8c-8e 逐面板迁移） |
 | default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 待办 |
 

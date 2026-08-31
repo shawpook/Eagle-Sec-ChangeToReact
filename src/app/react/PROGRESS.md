@@ -902,6 +902,26 @@
 >   main-ui-workflow multi-inspector-persistence 偶发竞态一次，单测重跑即绿——既有问题新
 >   变体，PROGRESS 先例同款）+ api-smoke 13/13；tsc 零错。
 
+> **7d-7 勘察结论（2026-08-31；无独立可交付单元，拆并归属）**：原拟小指令族
+> （noSpecialChar/ngRightClick/ngLongClick/ngHoverIntent/repeatDone/colorPicker/yaNoUiSlider/
+> ngFlatpickr/autoScroll/scrollPositionSaver/typeChecking/alwaysFocus/imageonload 等）逐一
+> 核查消费点后，全部归入以下三类，**不再单列阶段**：
+> - **已被先前单元等价覆盖**：yaNoUiSlider/ngFlatpickr（7d-1c-2 NewSmartFolderModal 的
+>   FlatpickrInput 等）、scrollPositionSaver（唯一消费点 tag-manager.html:62，TagManager 已
+>   React 接管，旧模板不再编译消费）、colorPicker 属性指令本体（70388 仅 $destroy 清理，
+>   主体是 ngModel 绑定）。
+> - **消费点在阶段8 设置页**：shortcutInput（64490-64843）、typeChecking、preferences.html
+>   内的各属性指令——随设置页转写一并实现。
+> - **消费点被 bundle jQuery 直控（阶段11 与 bundle 一并重写，过渡期禁止接管）**：
+>   index.html 剩余 Angular UI 块全部命中双轨风险——lock-screen（29026 起密码框 focus/val
+>   直控）、colors-picker（32509 程序化 click + 68199 val）、annotation-preview-container
+>   （52089 起 AnnotationPreview 类完整 jQuery 管理）、hover-preview-container（51696）、
+>   tag-manager-drag-badge（53707）、saving-progress-bar（23349 background-state 处理器
+>   addClass/text 直控）、upload-queue-progress（30500/30791/34539 .percentage/.current 直写
+>   + 33641 removeClass open）。以上块接管必须与 bundle 上传/标注/锁屏逻辑重写同步进行。
+> - index.html 残留 ng-*（ng-right-click 4 处等）属未删除旧模板，阶段11 ng-* 清理时处理。
+> **下一步 = 阶段8 设置页**（preferences.js 48KB + preferences.html 85KB + preferences.scss）。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |

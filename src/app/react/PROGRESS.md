@@ -814,6 +814,45 @@
 >   'close-import-library'（close 时 swal mergeLibraryDone → ipc 'reload-app'）、cancel → ipc
 >   'cancel.all'、calcuteTimeLeft + 1s setInterval、second2time 过滤器（react filters 已有）。
 
+> **7d-6a 已验证并接管（2026-08-31）**：ProgressDialogs.tsx——emptyTrashProgress +
+> libraryLoadProgress + libraryMergeProgress + eaglepackImportProgress + eaglepackExportProgress
+> （components/stage7/ProgressDialogs.tsx，index.html 450-454 五元素换壳为
+> #eagle-empty-trash-progress-host / #eagle-library-load-progress-host /
+> #eagle-library-merge-progress-host / #eagle-eaglepack-import-progress-host /
+> #eagle-eaglepack-export-progress-host）。
+> - empty-trash：body.$watch('isCleaningTrash'/'removeProgress') 桥接 + 取消按钮
+>   scopeApply(body.cancelEmptyTrash)（ng-click $apply 等价——直接调用不触发 digest，$watch
+>   桥不会更新）；number:1 → ngNumber(v,1) 局部等价；模板含 .progress-dialog-overlay 兄弟
+>   （library-load 无 overlay，其余四个有——逐模板保真）。
+> - library-load：LoadProgress 状态机（13 条 ipc 通道）逐字；close() 50ms setTimeout 等价；
+>   'app-status-loading' 有重型 body-controller 监听器（清 allData/stopAPIServer），冒烟禁
+>   emit → 组件暴露 window.__eagleLibraryLoad handler 钩子直调（测试契约，同
+>   __eagleDuplicateScanPanel 模式）。
+> - **mock ipc 语义（重要）**：shims EventEmitter.emit 自动前置空 event 对象
+>   （`callback({}, ...args)`）——组件 handler 签名 (e, payload) 与真实 Electron 一致；冒烟
+>   emit 只传 payload（emit('show-import-library-task', 5)），再传合成 event 会把 payload
+>   顶成第二参。
+> - library-merge：三条 ipc + swal mergeLibraryDone → ipc 'reload-app'（mock send 落
+>   console.debug，无副作用）；eaglepack-import/export 状态机（curr/total/percent/progress、
+>   calculateProgress a+b 截断、calcuteTimeLeft 三种口径）逐字。
+> - **同任务 setState 异步冲刷（复现教训）**：同一 eval 内 emit('show-archive-task') 后立即
+>   click 取消按钮 → 按钮尚未渲染 → click 落空；冒烟须拆两次 eval。
+> - 闭环：react-stage7d6a-smoke 30/30（五壳/旧元素删除/empty-trash body 桥接开合+37.5%
+>   counter/取消 palette-resume spy/library-load 状态机 41%→95%→关闭/merge 0/5→2/5→cancel
+>   'cancel.all'→close-import-library swal→confirm 'reload-app'/import startMsg→doningMsg→
+>   finish 关闭/export percent 40%→abort→cancel）。全量回归 23/23（新增 react-suite runner
+>   tests/run-react-suite.mjs：22 既有 + 7d6a）+ api-smoke 13/13（隔离栈
+>   tests/run-api-smoke-isolated.mjs）；tsc 零错。
+> - **环境事件（非本次改动引入）**：npm test 链（full-regression-isolated，React 门外的
+>   后端套件）在 library-migration 的 fs.cpSync 复制 mock 库时进程 fail-fast（0xC0000409），
+>   连续两次复现；React 各阶段回归门为 React 套件 + api-smoke，不含该链。已清理 mock 库内
+>   僵尸后端残渣 backup/recovery-v1（git 不跟踪的空目录）并击杀 6 个孤儿 node/vite/smoke
+>   进程；cpSync 崩溃根因未深究（毒源仍在 images/ 侧，不影响 React 门）。
+> - **7d-6b 约束（shims 依赖）**：shims.js close-export-task 处理器 query
+>   `file-export-progress` 元素并直接 poke isolate scope（isExporting/total/curr/
+>   timeLeftInSeconds + $evalAsync）——7d-6b 换壳后该 query 落空静默跳过（guard 安全），但
+>   fileExportProgress React 版需自行处理 close-export-task 通道的等价重置。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
@@ -897,11 +936,11 @@
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| emptyTrashProgress | directive | 63239-63422 | 待办 |
-| libraryLoadProgress | directive | 63422-63437 | 待办 |
-| libraryMergeProgress | directive | 63437-63528 | 待办 |
-| eaglepackImportProgress | directive | 63528-63601 | 待办 |
-| eaglepackExportProgress | directive | 63601-63698 | 待办 |
+| emptyTrashProgress | directive | 63239-63422 | 已验证（7d-6a EmptyTrashProgress） |
+| libraryLoadProgress | directive | 63422-63437 | 已验证（7d-6a LibraryLoadProgress） |
+| libraryMergeProgress | directive | 63437-63528 | 已验证（7d-6a LibraryMergeProgress） |
+| eaglepackImportProgress | directive | 63528-63601 | 已验证（7d-6a EaglepackImportProgress） |
+| eaglepackExportProgress | directive | 63601-63698 | 已验证（7d-6a EaglepackExportProgress） |
 | fileThumbnailProgress | directive | 63698-63707 | 待办 |
 | fileExportProgress | directive | 63707-63779 | 待办 |
 | fileAddLibraryProgress | directive | 63779-64111 | 待办 |
@@ -910,14 +949,14 @@
 | fixutilProgress | directive | 64221-64230 | 待办 |
 | fixutilCleanEmptyFolderProgress | directive | 64230-64240 | 待办 |
 | notSupportPreview | directive | 61393-61420 | 已验证（阶段5 随详情接管，详情模板唯一消费点） |
-| pluginPanel | directive | 61420-62039 | 待办 |
-| pluginCreator | directive | 62039-62179 | 待办 |
-| pluginCenter | directive | 62179-62723 | 待办 |
+| pluginPanel | directive | 61420-62039 | 已验证（7d-5a PluginPanel） |
+| pluginCreator | directive | 62039-62179 | 已验证（7d-5a PluginCreator） |
+| pluginCenter | directive | 62179-62723 | 已验证（7d-5b PluginCenter） |
 | pluginView | directive（独立模块）| 17598-17720 | 已验证（阶段5 随详情接管；inspectorPluginView 另算） |
 | webView | directive | 64240-64319 | 已验证（阶段5 随详情接管，URL 分支唯一消费点） |
 | webviewToolbar | directive | 64319-64399 | 已验证（阶段5 随详情接管，详情工具列唯一消费点） |
-| websitePanelWebview | directive | 74147-76464 | 待办 |
-| artstationImportModal | directive | 76464-76783 | 待办 |
+| websitePanelWebview | directive | 74147-74189 | 已验证（7d-1b WebsitePanel） |
+| artstationImportModal | directive | 76464-76783 | 已验证（7d-2 ArtstationImportModal） |
 | findStringAutocomplete | directive | 77785-末 | 待办 |
 | alwaysFocus | directive | 69688-69704 | 待办 |
 | autoScroll | directive | 70697-70737 | 待办 |

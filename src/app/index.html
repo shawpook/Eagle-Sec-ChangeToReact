@@ -446,12 +446,12 @@
 
     <library-panel theme="theme" library-history="libraryHistory"></library-panel>
 
-    <!-- 進度條 -->
-    <empty-trash-progress></empty-trash-progress>
-    <library-load-progress></library-load-progress>
-    <library-merge-progress></library-merge-progress>
-    <eaglepack-import-progress></eaglepack-import-progress>
-    <eaglepack-export-progress></eaglepack-export-progress>
+    <!-- 進度條（React 接管，舊 <empty-trash-progress> 等已刪） -->
+    <div id="eagle-empty-trash-progress-host"></div>
+    <div id="eagle-library-load-progress-host"></div>
+    <div id="eagle-library-merge-progress-host"></div>
+    <div id="eagle-eaglepack-import-progress-host"></div>
+    <div id="eagle-eaglepack-export-progress-host"></div>
     <file-thumbnail-progress></file-thumbnail-progress>
     <file-export-progress></file-export-progress>
     <file-add-library-progress></file-add-library-progress>

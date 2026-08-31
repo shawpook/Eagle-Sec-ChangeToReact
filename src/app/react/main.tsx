@@ -19,6 +19,7 @@ import { BatchSavePanel } from './components/stage7/BatchSavePanel';
 import { DuplicateScanPanel, DuplicateModal } from './components/stage7/DuplicateFamily';
 import { PluginPanel, PluginCreator } from './components/stage7/PluginFamily';
 import { PluginCenter } from './components/stage7/PluginCenter';
+import { EmptyTrashProgress, LibraryLoadProgress, LibraryMergeProgress, EaglepackImportProgress, EaglepackExportProgress } from './components/stage7/ProgressDialogs';
 import { AddToFolderModal, MoveFolderModal } from './components/stage7/FolderModals';
 import { useAppState } from './store/appState';
 import { bindSidebarSync } from './store/sidebarState';
@@ -104,6 +105,11 @@ root.render(
     <PluginPanel />
     <PluginCreator />
     <PluginCenter />
+    <EmptyTrashProgress />
+    <LibraryLoadProgress />
+    <LibraryMergeProgress />
+    <EaglepackImportProgress />
+    <EaglepackExportProgress />
     <LayoutPanel />
     <NotificationModal />
     <NewVersionModal />

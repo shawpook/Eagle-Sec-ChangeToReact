@@ -3,11 +3,12 @@ import { createPortal } from 'react-dom';
 import { scopeApply } from '../global/scopeBridge';
 
 /**
- * 阶段8b：偏好窗口「常用（general）」+「左栏（sidebar）」面板接管。
+ * 阶段8b/8c：偏好窗口面板接管——「常用（general）」「左栏（sidebar）」（8b）+
+ * 「操控（control）」「习惯设定（habits）」（8c）。
  *
- * 规范来源 = src/app/preferences.html 73-353（Angular 模板逐字转写）+ js/preferences.js
- * （changeTheme/languageChange/changeZoom/changeAutoLaunch/onKeywordChange + searchShow
- * 指令 54-81 + selectAll 指令 130-142）。
+ * 规范来源 = src/app/preferences.html 各 .panel-content 块（Angular 模板逐字转写）+
+ * js/preferences.js（changeTheme/languageChange/changeZoom/changeAutoLaunch/onKeywordChange +
+ * searchShow 指令 54-81 + selectAll 指令 130-142 + themeAttr 1097-1109）。
  *
  * 渲染位置：宿主 #eagle-preferences-react-host 在 .content 末尾（footer 之后，8a 契约不动）；
  * 而 .panel-content 块在原版 DOM 里位于 footer 之前（footer 在 .content 内随内容滚动），
@@ -117,7 +118,9 @@ function snapshotSignature(scope: any): string {
     scope.themes,
     p && p.general,
     p && p.sidebar,
-    p && p.habits && p.habits.dblclickSidebarItem,
+    p && p.habits,
+    p && p.video,
+    p && p.font,
     p && p.notification && p.notification.notification,
     p && p.screencapture && p.screencapture.useRetina,
   ]);
@@ -161,22 +164,29 @@ function usePreferencesPanelSnap(): PanelSnap {
 
 /* ================= 小组件（DOM 逐字） ================= */
 
-/** checkbox-item + control checkbox（ng-model + ng-true/false-value="'true'/'false'" 等价）。 */
+/** checkbox-item + control checkbox（ng-model + ng-true/false-value 等价；GIF 组用 'on'/'off'）。
+ * onToggle 收到解析后的模型值字符串（trueValue/falseValue），与 ng-model 写入语义一致。 */
 function NgStringCheckbox(props: {
   label: string;
   value: any;
-  onToggle: (checked: boolean) => void;
+  trueValue?: string;
+  falseValue?: string;
+  tip?: React.ReactNode;
+  onToggle: (value: string) => void;
 }) {
+  const trueValue = props.trueValue ?? 'true';
+  const falseValue = props.falseValue ?? 'false';
   return (
     <div className="checkbox-item">
       <label className="control checkbox">
         <input
           type="checkbox"
-          checked={props.value === 'true'}
-          onChange={(e) => props.onToggle(e.currentTarget.checked)}
+          checked={props.value === trueValue}
+          onChange={(e) => props.onToggle(e.currentTarget.checked ? trueValue : falseValue)}
         />
         <span className="control-indicator"></span>
         {props.label}
+        {props.tip}
       </label>
     </div>
   );
@@ -217,6 +227,84 @@ function NgRadio(props: {
         />
         <span className="control-indicator"></span> {props.label}
       </label>
+    </div>
+  );
+}
+
+/* ================= 8c：control/habits 共用件 ================= */
+
+/** themeAttr() 等价（preferences.js 1097-1109）+ themePath 过滤器（144-153）。 */
+function themeAttrCss(snap: PanelSnap): string {
+  const theme = snap.preferences && snap.preferences.theme;
+  try {
+    if (theme && theme.name === 'Auto') {
+      const nativeTheme = req('@electron/remote')?.nativeTheme;
+      return nativeTheme && nativeTheme.shouldUseDarkColors ? 'gray' : 'light';
+    }
+  } catch (err) {
+    // 原版在 Auto 且无 nativeTheme 时抛错（interpolation 记录后空串）；此处守卫回退
+  }
+  return (theme && theme.css) || 'gray';
+}
+function themePathFor(css: string): string {
+  return css === 'light' || css === 'lightgray' ? 'light' : 'dark';
+}
+
+/** hover-tip 悬浮提示（preferences.html habits 面板三处，DOM 逐字）。 */
+function HoverTip(props: {
+  snap: PanelSnap;
+  image: string;
+  titleKey: string;
+  descKey: string;
+  contentStyle?: React.CSSProperties;
+}) {
+  const dir = themePathFor(themeAttrCss(props.snap));
+  return (
+    <div className="hover-tip">
+      <img src={`assets/images/${dir}/icons/preferences/ic-hover-tip.svg`} />
+      <div className="hover-tip-content" style={props.contentStyle}>
+        <div className="thumb">
+          <img src={`assets/images/${dir}/illustrations/preferences/${props.image}`} width={320} height={180} />
+        </div>
+        <div className="title">{pfT(props.titleKey)}</div>
+        <div className="desc">{pfT(props.descKey)}</div>
+      </div>
+    </div>
+  );
+}
+
+/** label-item 单选行（control/habits 面板的重复结构；hidden = ng-show 等价 display:none）。 */
+function RadioRow(props: {
+  labelNode: React.ReactNode;
+  name: string;
+  model: any;
+  options: Array<{ value: string; label: string; id?: string; hidden?: boolean }>;
+  onSelect: (value: string) => void;
+}) {
+  return (
+    <div className="label-item">
+      <label htmlFor="" style={{ width: '240px' }}>
+        {props.labelNode}
+      </label>
+      <div className="right">
+        <div className="checkbox-items">
+          {props.options.map((o, i) => (
+            <div className="checkbox-item" key={o.value + '-' + i}>
+              <label className="control radio inline" style={o.hidden ? { display: 'none' } : undefined}>
+                <input
+                  id={o.id}
+                  name={props.name}
+                  type="radio"
+                  value={o.value}
+                  checked={props.model === o.value}
+                  onChange={() => props.onSelect(o.value)}
+                />
+                <span className="control-indicator"></span> {o.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -510,9 +598,9 @@ function SidebarPanelContent(props: { snap: PanelSnap }) {
   const sidebar = p && p.sidebar ? p.sidebar : {};
   const dblclickSidebarItem = p && p.habits ? p.habits.dblclickSidebarItem : undefined;
 
-  const setSidebar = (key: string, checked: boolean) =>
+  const setSidebar = (key: string, value: string) =>
     scopeApply(getPreferencesScope(), (s: any) => {
-      s.preferences.sidebar[key] = checked ? 'true' : 'false';
+      s.preferences.sidebar[key] = value;
     });
   const setDblclick = (value: string) =>
     scopeApply(getPreferencesScope(), (s: any) => {
@@ -614,9 +702,313 @@ function SidebarPanelContent(props: { snap: PanelSnap }) {
   );
 }
 
+/* ================= control 面板（preferences.html 75-207 逐字） ================= */
+
+function ControlPanelContent(props: { snap: PanelSnap }) {
+  const { snap } = props;
+  const habits = snap.preferences && snap.preferences.habits ? snap.preferences.habits : {};
+  const platform = snap.platform;
+
+  const setHabits = (key: string, value: string) =>
+    scopeApply(getPreferencesScope(), (s: any) => {
+      s.preferences.habits[key] = value;
+    });
+
+  return (
+    <div className="panel-content">
+      <div
+        className="panel-block"
+        search-show={snap.keyword}
+        search-keywords="control mouse scroll hover double click middle button"
+      >
+        <div className="block-content">
+          <div className="block-title">{pfT('preferencesWindow.controls.mouse')}</div>
+          {/* 滾輪 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.scrollBehavior')}
+            name="radio-scroll"
+            model={habits.scrollBehavior}
+            onSelect={(v) => setHabits('scrollBehavior', v)}
+            options={[
+              { value: 'scroll', label: pfT('preferencesWindow.habits.scrollBehavior>scroll'), id: 'radio-scroll' },
+              { value: 'paging', label: pfT('preferencesWindow.habits.scrollBehavior>paging'), id: 'radio-page' },
+              { value: 'zoom', label: pfT('preferencesWindow.habits.scrollBehavior>zoom'), id: 'radio-zoom' },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 懸停 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.hoverZoom')}
+            name="radio-hoverZoom"
+            model={habits.hoverZoom}
+            onSelect={(v) => setHabits('hoverZoom', v)}
+            options={[
+              { value: 'on', label: pfT('preferencesWindow.habits.hoverZoom>on') },
+              { value: 'off', label: pfT('preferencesWindow.habits.hoverZoom>off') },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 雙擊 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.doubleclick')}
+            name="radio-doubleclick"
+            model={habits.doubleclick}
+            onSelect={(v) => setHabits('doubleclick', v)}
+            options={[
+              { value: 'internal', label: pfT('preferencesWindow.habits.doubleclick>internal') },
+              { value: 'external', label: pfT('preferencesWindow.habits.doubleclick>external') },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 滾輪按鈕 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.middleBtnBehavior')}
+            name="radio-middleBtn"
+            model={habits.middleBtn}
+            onSelect={(v) => setHabits('middleBtn', v)}
+            options={[
+              { value: 'openNewWindow', label: pfT('preferencesWindow.habits.middleBtnBehavior>openNewWindow') },
+              { value: 'none', label: pfT('preferencesWindow.habits.middleBtnBehavior>none') },
+              { value: 'openPluginPanel', label: pfT('preferencesWindow.habits.middleBtnBehavior>plugin') },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="panel-block" search-show={snap.keyword} search-keywords="control keyboard space scroll">
+        <div className="block-content">
+          <div className="block-title">{pfT('preferencesWindow.controls.keyboard')}</div>
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.spaceBehavior')}
+            name="radio-keyspace"
+            model={habits.keyspace}
+            onSelect={(v) => setHabits('keyspace', v)}
+            options={[
+              { value: 'preview', label: pfT('preferencesWindow.habits.spaceBehavior>preview') },
+              { value: 'preview-native', label: pfT('preferencesWindow.habits.spaceBehavior>previewNative'), hidden: platform !== 'darwin' },
+              { value: 'scroll', label: pfT('preferencesWindow.habits.spaceBehavior>scroll') },
+            ]}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================= habits 面板（preferences.html 210-451 逐字） ================= */
+
+function HabitsPanelContent(props: { snap: PanelSnap }) {
+  const { snap } = props;
+  const p = snap.preferences;
+  const habits = p && p.habits ? p.habits : {};
+  const video = p && p.video ? p.video : {};
+  const font = p && p.font ? p.font : {};
+
+  const setHabits = (key: string, value: string) =>
+    scopeApply(getPreferencesScope(), (s: any) => {
+      s.preferences.habits[key] = value;
+    });
+  const setVideo = (key: string, value: string) =>
+    scopeApply(getPreferencesScope(), (s: any) => {
+      s.preferences.video[key] = value;
+    });
+  const setFont = (key: string, value: string) =>
+    scopeApply(getPreferencesScope(), (s: any) => {
+      s.preferences.font[key] = value;
+    });
+
+  return (
+    <div className="panel-content">
+      {/* 通用 */}
+      <div
+        className="panel-block"
+        search-show={snap.keyword}
+        search-keywords="view viewer detail hover zoom pixel last ratio transparency grid 懸停 放大 縮放 像素 最後 比例 透明 網格 格 悬停 放大 缩放 像素 最后 比例 透明 网格"
+      >
+        <div className="block-content">
+          <div className="block-title">{pfT('preferencesWindow.habits.image')}</div>
+          {/* 放大細節 */}
+          <RadioRow
+            labelNode={
+              <>
+                {pfT('preferencesWindow.habits.renderBehavior')}{' '}
+                <HoverTip
+                  snap={snap}
+                  image="illustration-pixelate.png"
+                  titleKey="preferencesWindow.hoverTip.pixelate.title"
+                  descKey="preferencesWindow.hoverTip.pixelate.desc"
+                />
+              </>
+            }
+            name="radio-zoom"
+            model={habits.renderBehavior}
+            onSelect={(v) => setHabits('renderBehavior', v)}
+            options={[
+              { value: 'pixelated', label: pfT('preferencesWindow.habits.renderBehavior>pixelated'), id: 'radio-scroll' },
+              { value: 'non-pixelated', label: pfT('preferencesWindow.habits.renderBehavior>nonpixelated'), id: 'radio-page' },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 記住上次位置 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.rememberLastZoom')}
+            name="radio-rememberLastZoom"
+            model={habits.rememberLastZoom}
+            onSelect={(v) => setHabits('rememberLastZoom', v)}
+            options={[
+              { value: 'on', label: pfT('preferencesWindow.habits.rememberLastZoom>on') },
+              { value: 'off', label: pfT('preferencesWindow.habits.rememberLastZoom>off') },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 默認比例 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.defaultRatio')}
+            name="radio-ratio"
+            model={habits.defaultRatio}
+            onSelect={(v) => setHabits('defaultRatio', v)}
+            options={[
+              { value: 'auto', label: pfT('preferencesWindow.habits.defaultRatio>auto') },
+              { value: '100%', label: pfT('preferencesWindow.habits.defaultRatio>100') },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 圖片變換操作 */}
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.imageRotateMode')}
+            name="radio-imageRotateMode"
+            model={habits.imageRotateMode}
+            onSelect={(v) => setHabits('imageRotateMode', v)}
+            options={[
+              { value: 'preview', label: pfT('preferencesWindow.habits.imageRotateMode>preview') },
+              { value: 'write', label: pfT('preferencesWindow.habits.imageRotateMode>write') },
+            ]}
+          />
+          <div className="separator"></div>
+          {/* 透明背景 */}
+          <RadioRow
+            labelNode={
+              <>
+                {pfT('preferencesWindow.habits.transparency')}{' '}
+                <HoverTip
+                  snap={snap}
+                  image="illustration-transparent-grid.png"
+                  titleKey="preferencesWindow.hoverTip.transparentGrid.title"
+                  descKey="preferencesWindow.hoverTip.transparentGrid.desc"
+                />
+              </>
+            }
+            name="radio-transparency"
+            model={habits.transparency}
+            onSelect={(v) => setHabits('transparency', v)}
+            options={[
+              { value: 'show', label: pfT('preferencesWindow.habits.transparency>show') },
+              { value: 'hide', label: pfT('preferencesWindow.habits.transparency>hide') },
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* 視頻 */}
+      <div
+        className="panel-block"
+        search-show={snap.keyword}
+        search-keywords="video movie 视频 影片 loop hover 懸停 悬停 scroll 滚动 滾動"
+      >
+        <div className="block-content">
+          <div className="block-title">{pfT('preferencesWindow.habits.video')}</div>
+          <RadioRow
+            labelNode={pfT('preferencesWindow.habits.videoScrollBehavior')}
+            name="radio-scroll"
+            model={habits.videoScrollBehavior}
+            onSelect={(v) => setHabits('videoScrollBehavior', v)}
+            options={[
+              { value: 'progress', label: pfT('preferencesWindow.habits.videoScrollBehavior>progress'), id: 'radio-scroll' },
+              { value: 'volume', label: pfT('preferencesWindow.habits.videoScrollBehavior>volume'), id: 'radio-page' },
+            ]}
+          />
+          <div className="separator"></div>
+
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.video.hoverPlay')}
+            value={video.hoverPlay}
+            onToggle={(v) => setVideo('hoverPlay', v)}
+            tip={
+              <HoverTip
+                snap={snap}
+                image="illustration-hover-preview.png"
+                titleKey="preferencesWindow.hoverTip.hoverPreview.title"
+                descKey="preferencesWindow.hoverTip.hoverPreview.desc"
+                contentStyle={{ marginTop: '-60px' }}
+              />
+            }
+          />
+
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.video.zoomFill')}
+            value={video.zoomFill}
+            onToggle={(v) => setVideo('zoomFill', v)}
+          />
+
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.video.autoPlay')}
+            value={video.autoPlay}
+            onToggle={(v) => setVideo('autoPlay', v)}
+          />
+
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.video.rememberPosition')}
+            value={video.rememberPosition}
+            onToggle={(v) => setVideo('rememberPosition', v)}
+          />
+
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.video.loopShortVideo')}
+            value={video.loopShortVideo}
+            onToggle={(v) => setVideo('loopShortVideo', v)}
+          />
+        </div>
+      </div>
+
+      {/* GIF/動圖 */}
+      <div className="panel-block" search-show={snap.keyword} search-keywords="gif webp 動畫 动画 动图 動圖">
+        <div className="block-content">
+          <div className="block-title">{pfT('preferencesWindow.habits.gif')}</div>
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.habits.alwaysPlayGIF')}
+            value={habits.alwaysPlayGIF}
+            trueValue="on"
+            falseValue="off"
+            onToggle={(v) => setHabits('alwaysPlayGIF', v)}
+          />
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.habits.gifViewer')}
+            value={habits.gifViewer}
+            trueValue="on"
+            falseValue="off"
+            onToggle={(v) => setHabits('gifViewer', v)}
+          />
+        </div>
+      </div>
+
+      {/* 字型 */}
+      <div className="panel-block" search-show={snap.keyword} search-keywords="font 字體 字体 字型 字形">
+        <div className="block-content">
+          <div className="block-title">{pfT('preferencesWindow.habits.font')}</div>
+          <NgStringCheckbox
+            label={pfT('preferencesWindow.font.autoTag')}
+            value={font.autoTag}
+            onToggle={(v) => setFont('autoTag', v)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ================= 根组件（portal + search-show + tippy + sidebar-search 接管） ================= */
 
-export function PreferencesGeneralSidebarPanels() {
+export function PreferencesPanels() {
   const snap = usePreferencesPanelSnap();
   const [container, setContainer] = useState<HTMLElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -628,7 +1020,7 @@ export function PreferencesGeneralSidebarPanels() {
     const content = document.querySelector('.content');
     if (!content) return;
     const el = document.createElement('div');
-    el.setAttribute('data-eagle-react-panels', 'general-sidebar');
+    el.setAttribute('data-eagle-react-panels', 'panels');
     content.insertBefore(el, content.firstChild);
     setContainer(el);
     return () => {
@@ -725,12 +1117,22 @@ export function PreferencesGeneralSidebarPanels() {
   }, [snap.keyword]);
 
   if (!container) return null;
-  if (snap.panel !== 'general' && snap.panel !== 'sidebar' && snap.panel !== 'search') return null;
+  if (
+    snap.panel !== 'general' &&
+    snap.panel !== 'sidebar' &&
+    snap.panel !== 'control' &&
+    snap.panel !== 'habits' &&
+    snap.panel !== 'search'
+  ) {
+    return null;
+  }
 
   return createPortal(
     <>
       {(snap.panel === 'general' || snap.panel === 'search') && <GeneralPanelContent snap={snap} />}
       {(snap.panel === 'sidebar' || snap.panel === 'search') && <SidebarPanelContent snap={snap} />}
+      {(snap.panel === 'control' || snap.panel === 'search') && <ControlPanelContent snap={snap} />}
+      {(snap.panel === 'habits' || snap.panel === 'search') && <HabitsPanelContent snap={snap} />}
     </>,
     container
   );

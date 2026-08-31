@@ -1010,7 +1010,32 @@
 > - 教训：CDP 断言布尔化——compareDocumentPosition(...) & DocumentPosition 常量返回数字，
 >   `=== true` 断言恒 false（位运算结果必须 Boolean() 包装）；首跑冷启动偶发（vite 首次
 >   transform + init 500ms 定时）会吃掉前 1-2 个断言窗口，重跑即绿（既有偶发家族新成员）。
-> **下一步 = 8c（control + habits 面板，preferences.html 356-734 区域行号已因 8b 删块前移）**。
+> **8c 已验证并接管（2026-08-31）**：偏好窗口 control + habits 面板。
+> - 接管方式：preferences.html 旧 control `.panel-content`（原 75-207）+ habits `.panel-content`
+>   （原 210-451）两块删除（378 行），替换为注释锚；React 层 panels.tsx 追加
+>   ControlPanelContent + HabitsPanelContent，根组件更名 PreferencesPanels（entry.tsx 同步），
+>   锚点标记改 data-eagle-react-panels="panels"（8b 冒烟同步更新）。
+> - 组件逐字：RadioRow（label-item + label 240px + .right > .checkbox-items > radio inline；
+>   hidden 选项 = ng-show darwin 的 display:none 等价——keyspace preview-native 行保留 DOM）；
+>   HoverTip（hover-tip 三处逐字：icon/illustration 的 ng-src themeAttr()+themePath 等价——
+>   themeAttr 1097-1109 + themePath 过滤器 144-153 转写为 themeAttrCss/themePathFor，
+>   Auto 分支守卫 remote.nativeTheme）；视频 hoverPlay 的 hover-tip 带 style margin-top:-60px。
+> - NgStringCheckbox 泛化：trueValue/falseValue 可参（GIF 组 'on'/'off' 逐字）+ tip 插槽；
+>   **onToggle 语义改为传解析后的模型值字符串**（ng-model 写入语义一致，8b setSidebar 同步适配）。
+> - 数据面：control/habits 全部为无 ng-change 的 ng-model 直写（scopeApply 包裹）；
+>   video.*（5 checkbox）与 font.autoTag 归 habits 面板；签名 watcher 扩为整个
+>   habits/video/font 对象。
+> - 闭环：react-stage8c-smoke 16/16（control 13 radio + 5 组默认选中 + keyspace darwin 行
+>   display:none/radio 数据面 paging+openPluginPanel+scroll/habits 4 块 + hover-tip×3
+>   （src 走 /dark/）/gif 'on' 语义/zoomFill 翻转/video 'video'+'gif' 关键词过滤/清空回 habits/
+>   {keyword:'gif'} 重开重载过滤/双截图）。全量回归 28 项（runner 增 8c，首次全绿无偶发）+
+>   api-smoke 13/13；tsc 零错。
+> - 教训：**测试选择器禁用 nth-child/nth-of-type 定位 checkbox**——block-content 子级含
+>   block-title/separator/label-item（全 div），伪类序号失准且 RadioRow 的 radio 也藏在
+>   .checkbox-item 里；统一用块内 querySelectorAll(...input[type=checkbox]) 索引。
+>   Runtime.evaluate 表达式 throw 不 reject（落 exceptionDetails）——evalOn 必须检查
+>   exceptionDetails 否则点击 eval 静默失败（本次 video[1] 点到 volume radio 即由此掩盖）。
+> **下一步 = 8d（shortcuts 面板：shortcutInput 等价 + updateKeybinds/shortcut-manager.js）**。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
@@ -1031,6 +1056,9 @@
 | searchShow | directive | preferences.js 54-81 | 已验证（8b search-show effect 等价） |
 | selectAll（#sidebar-search）| directive | preferences.js 130-142 | 已验证（8b keydown 等价，原位元素） |
 | #sidebar-search ng-model/ng-change | 绑定 | preferences.html:38（旧） | 已验证（8b React input + scope 桥接管） |
+| control 面板（.panel-content）| 模板块 | preferences.html 75-207（旧） | 已验证（8c ControlPanelContent，RadioRow 等） |
+| habits 面板（.panel-content）| 模板块 | preferences.html 210-451（旧） | 已验证（8c HabitsPanelContent，HoverTip/GIF on-off 语义） |
+| themeAttr + themePath（preferences 版）| 函数/过滤器 | preferences.js 1097-1109 / 144-153 | 已验证（8c themeAttrCss/themePathFor，HoverTip src） |
 | preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办（壳/控制函数随 8c-8e 逐面板迁移） |
 | default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 待办 |
 

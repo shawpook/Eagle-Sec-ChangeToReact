@@ -139,7 +139,7 @@ try {
   // React 面板渲染于 .content 顶部锚点（DOM 顺序：锚点面板在 footer 之前）
   await assertExprOn(prefPage, 'pf8b-react-panels-rendered', `(() => {
     const content = document.querySelector('.content');
-    const anchor = content && content.querySelector('[data-eagle-react-panels="general-sidebar"]');
+    const anchor = content && content.querySelector('[data-eagle-react-panels="panels"]');
     if (!anchor) return false;
     const panels = anchor.querySelectorAll(':scope > .panel-content');
     const footer = content.querySelector('.footer');
@@ -148,31 +148,31 @@ try {
     return !!(anchor.compareDocumentPosition(footer) & Node.DOCUMENT_POSITION_FOLLOWING);
   })()`);
   await assertExprOn(prefPage, 'pf8b-themes-picker', `(() => {
-    const anchor = document.querySelector('[data-eagle-react-panels="general-sidebar"]');
+    const anchor = document.querySelector('[data-eagle-react-panels="panels"]');
     const picker = anchor && anchor.querySelector('.themes-picker');
     const active = anchor && anchor.querySelector('.theme.dark.active');
     return !!picker && picker.querySelectorAll('.theme').length === 7 && !!active;
   })()`);
   await assertExprOn(prefPage, 'pf8b-i18n-translated', `(() => {
-    const title = document.querySelector('[data-eagle-react-panels="general-sidebar"] .block-title');
+    const title = document.querySelector('[data-eagle-react-panels="panels"] .block-title');
     const text = title && title.textContent;
     return !!text && text.length > 0 && text !== 'preferencesWindow.general.appearance';
   })()`);
 
   // ── general 交互闭环（React setState 同任务异步冲刷 → 拆 eval） ──
   await evalOn(prefPage, `(() => {
-    document.querySelector('[data-eagle-react-panels] .theme.blue').click();
+    document.querySelector('[data-eagle-react-panels="panels"] .theme.blue').click();
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-theme-click-dataplane', `(() => {
     const scope = window.angular.element(document.body).scope();
-    const active = document.querySelector('[data-eagle-react-panels] .theme.blue.active');
+    const active = document.querySelector('[data-eagle-react-panels="panels"] .theme.blue.active');
     return !!scope && scope.currentTheme && scope.currentTheme.name === 'BLUE'
       && scope.preferences.theme && scope.preferences.theme.name === 'BLUE' && !!active;
   })()`);
 
   await evalOn(prefPage, `(() => {
-    const blocks = document.querySelectorAll('[data-eagle-react-panels] .panel-block');
+    const blocks = document.querySelectorAll('[data-eagle-react-panels="panels"] .panel-block');
     blocks[0].querySelector('.checkbox-item input[type=checkbox]').click();
     return true;
   })()`);
@@ -182,7 +182,7 @@ try {
   })()`);
 
   await evalOn(prefPage, `(() => {
-    const blocks = document.querySelectorAll('[data-eagle-react-panels] .panel-block');
+    const blocks = document.querySelectorAll('[data-eagle-react-panels="panels"] .panel-block');
     blocks[1].querySelector('.checkbox-item input[type=checkbox]').click();
     return true;
   })()`);
@@ -192,7 +192,7 @@ try {
   })()`);
 
   await evalOn(prefPage, `(() => {
-    const selects = document.querySelectorAll('[data-eagle-react-panels] select');
+    const selects = document.querySelectorAll('[data-eagle-react-panels="panels"] select');
     selects[0].value = 'zh_TW';
     selects[0].dispatchEvent(new Event('change', { bubbles: true }));
     return true;
@@ -204,7 +204,7 @@ try {
   })()`);
 
   await evalOn(prefPage, `(() => {
-    const selects = document.querySelectorAll('[data-eagle-react-panels] select');
+    const selects = document.querySelectorAll('[data-eagle-react-panels="panels"] select');
     selects[1].value = '150';
     selects[1].dispatchEvent(new Event('change', { bubbles: true }));
     return true;
@@ -240,12 +240,13 @@ try {
     return scope.currentPanel.name === 'search' && scope.keyword === 'theme';
   })()`);
   await assertExprOn(prefPage, 'pf8b-search-show-filter', `(() => {
-    const blocks = document.querySelectorAll('[data-eagle-react-panels] .panel-block');
-    if (blocks.length !== 5) return false;
-    const display = (el) => el.style.display;
+    const byKw = (pfx) => document.querySelector('[data-eagle-react-panels="panels"] .panel-block[search-keywords^="' + pfx + '"]');
+    const display = (el) => (el ? el.style.display : null);
     // appearance（keywords 含 theme）显示；launch/collect/sidebar×2 隐藏
-    return display(blocks[0]) === 'block' && display(blocks[1]) === 'none'
-      && display(blocks[2]) === 'none' && display(blocks[3]) === 'none' && display(blocks[4]) === 'none';
+    // （按 search-keywords 定位：后续阶段会向搜索模式追加更多面板块，不锁总数）
+    return display(byKw('general badge')) === 'block' && display(byKw('general launch')) === 'none'
+      && display(byKw('general auto')) === 'none' && display(byKw('sidebar rename')) === 'none'
+      && display(byKw('sidebar smart')) === 'none';
   })()`);
 
   await evalOn(prefPage, `(() => {
@@ -255,7 +256,7 @@ try {
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-search-empty-state', `(() => {
-    const blocks = document.querySelectorAll('[data-eagle-react-panels] .panel-block');
+    const blocks = document.querySelectorAll('[data-eagle-react-panels="panels"] .panel-block');
     const allHidden = [...blocks].every((el) => el.style.display === 'none');
     // 跨系统数据面：Angular showSearchEmpty 统计 .content .panel-content :visible（含 React 块）
     const empty = document.querySelector('.content .panel-empty');
@@ -270,7 +271,7 @@ try {
   })()`);
   await assertExprOn(prefPage, 'pf8b-search-exit-to-general', `(() => {
     const scope = window.angular.element(document.body).scope();
-    const blocks = document.querySelectorAll('[data-eagle-react-panels] .panel-block');
+    const blocks = document.querySelectorAll('[data-eagle-react-panels="panels"] .panel-block');
     const noInline = [...blocks].every((el) => el.style.display === '');
     const empty = document.querySelector('.content .panel-empty');
     return scope.currentPanel.name === 'general' && noInline && !empty;
@@ -287,7 +288,7 @@ try {
     return scope.currentPanel.name === 'sidebar';
   })()`);
   await assertExprOn(prefPage, 'pf8b-sidebar-react-rendered', `(() => {
-    const anchor = document.querySelector('[data-eagle-react-panels="general-sidebar"]');
+    const anchor = document.querySelector('[data-eagle-react-panels="panels"]');
     const panels = anchor.querySelectorAll(':scope > .panel-content');
     const radios = anchor.querySelectorAll('input[type=radio]');
     const collapse = anchor.querySelector('input[type=radio][value=collapse]');
@@ -296,17 +297,17 @@ try {
   })()`);
 
   await evalOn(prefPage, `(() => {
-    document.querySelector('[data-eagle-react-panels] input[type=radio][value=rename]').click();
+    document.querySelector('[data-eagle-react-panels="panels"] input[type=radio][value=rename]').click();
     return true;
   })()`);
   await assertExprOn(prefPage, 'pf8b-sidebar-radio-dataplane', `(() => {
     const scope = window.angular.element(document.body).scope();
-    const rename = document.querySelector('[data-eagle-react-panels] input[type=radio][value=rename]');
+    const rename = document.querySelector('[data-eagle-react-panels="panels"] input[type=radio][value=rename]');
     return scope.preferences.habits.dblclickSidebarItem === 'rename' && rename.checked;
   })()`);
 
   await evalOn(prefPage, `(() => {
-    const checkboxes = document.querySelectorAll('[data-eagle-react-panels] .checkbox-item input[type=checkbox]');
+    const checkboxes = document.querySelectorAll('[data-eagle-react-panels="panels"] .checkbox-item input[type=checkbox]');
     // 第 0/6/7 为静态 disable 项；第 1 个为 unfiled
     checkboxes[1].click();
     return true;
@@ -326,8 +327,8 @@ try {
   })()`);
   await assertExprOn(prefPage, 'pf8b-reopen-filter-and-input-sync', `(() => {
     const input = document.getElementById('sidebar-search');
-    const blocks = document.querySelectorAll('[data-eagle-react-panels] .panel-block');
-    return input.value === 'theme' && blocks.length === 5 && blocks[0].style.display === 'block';
+    const appearance = document.querySelector('[data-eagle-react-panels="panels"] .panel-block[search-keywords^="general badge"]');
+    return input.value === 'theme' && !!appearance && appearance.style.display === 'block';
   })()`);
 
   await delay(500);

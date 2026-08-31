@@ -23,6 +23,7 @@ const tests = [
   'tests/react-stage7d5b-smoke.mjs',
   'tests/react-stage7d6a-smoke.mjs',
   'tests/react-stage7d6b-smoke.mjs',
+  'tests/react-stage7d6c-smoke.mjs',
   'tests/main-ui-workflow-closed-loop.mjs',
   'tests/source-mode-ui-closed-loop.mjs',
   'tests/library-switch-ui-closed-loop.mjs',

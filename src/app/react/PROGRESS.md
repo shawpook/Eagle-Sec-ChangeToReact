@@ -882,6 +882,26 @@
 > - **冒烟 spy 教训**：ipc.send 包装的 rest 参数已含去 channel 的 payload，记录应为
 >   `[...args]` 而非 `args[1]`（7d-6a spy 不记 args 未暴露）。
 
+> **7d-6c 已验证并接管（2026-08-31；进度对话框族 12/12 全部完成）**：ProgressDialogs.tsx 追加
+> WebpConvertProgress + FixutilCleanEmptyFolderProgress + FixutilProgress（index.html 459-461
+> 三元素换壳为 #eagle-webp-convert-progress-host / #eagle-fixutil-clean-empty-folder-progress-host
+> / #eagle-fixutil-progress-host；12 个 progress host 齐）。
+> - webp：WEBP_CONVERT_START 广播（ext==='webp' 过滤 + swal webpConvert 确认）→ queue push +
+>   ayncsWebpConvert（20 一批 rAF 循环、backgroundWindowID undefined 判定 send/sendTo）逐字；
+>   ipc 'webp.converted' → finishQueue.push，finish==queue → 双清空关闭；cancel →
+>   **IPCHelper 是 bundle 顶层 const（3471），window 上不可见** → 等价直接 ipcRenderer.send
+>   ('cancel.webp.convert')（首次写 w.IPCHelper 落空被冒烟 wc-cancel-ipc 断言抓住）。
+> - fixutil×2：空 link 绑 body.fixUtils（20513 初始化为 {}，流程动态加字段）→ 函数型 watcher
+>   读字段串桥接（useFixUtilsBridge）；**外壳模板带 ng-if**（关闭时整个 .progress-dialog 不在
+>   DOM，仅 overlay 恒在）→ 条件渲染；counter number:0 → ngNumber(v,0)；**ng-click="cancel()"
+>   解析到 body scope 的 cancel——不存在**（$exceptionHandler 吞，原版死按钮怪癖）→
+>   scopeApply + 存在性守卫 no-op，冒烟断言点击后保持 open。
+> - 闭环：react-stage7d6c-smoke 16/16（三壳/12 host 齐/webp swal→(0/2)→50%→双清空关闭→
+>   re-broadcast cancel 'cancel.webp.convert'/fixutil (3/10) 30% + cancel no-op 保持 open →
+>   关闭 DOM 消失/clean-empty-folder (2/4) 50% 开合）。全量回归 25 项（runner 增 7d6c；
+>   main-ui-workflow multi-inspector-persistence 偶发竞态一次，单测重跑即绿——既有问题新
+>   变体，PROGRESS 先例同款）+ api-smoke 13/13；tsc 零错。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
@@ -974,9 +994,9 @@
 | fileExportProgress | directive | 63707-63779 | 已验证（7d-6b FileExportProgress） |
 | fileAddLibraryProgress | directive | 63779-64111 | 已验证（7d-6b FileAddLibraryProgress） |
 | debugReportProgress | directive | 64111-64120 | 已验证（7d-6b DebugReportProgress） |
-| webpConvertProgress | directive | 64120-64221 | 待办 |
-| fixutilProgress | directive | 64221-64230 | 待办 |
-| fixutilCleanEmptyFolderProgress | directive | 64230-64240 | 待办 |
+| webpConvertProgress | directive | 64120-64221 | 已验证（7d-6c WebpConvertProgress） |
+| fixutilProgress | directive | 64221-64230 | 已验证（7d-6c FixutilProgress） |
+| fixutilCleanEmptyFolderProgress | directive | 64230-64240 | 已验证（7d-6c FixutilCleanEmptyFolderProgress） |
 | notSupportPreview | directive | 61393-61420 | 已验证（阶段5 随详情接管，详情模板唯一消费点） |
 | pluginPanel | directive | 61420-62039 | 已验证（7d-5a PluginPanel） |
 | pluginCreator | directive | 62039-62179 | 已验证（7d-5a PluginCreator） |

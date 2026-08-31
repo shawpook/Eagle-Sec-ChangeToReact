@@ -1256,3 +1256,271 @@ export function FileAddLibraryProgress() {
     host
   );
 }
+
+/* ================= webp-convert-progress（WEBP_CONVERT_START 广播 + webp.converted ipc） ================= */
+
+export function WebpConvertProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  const bumpAll = () => bump((v: number) => v + 1);
+  const rootRef = useRef<any>({ queue: [], finishQueue: [] });
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-webp-convert-progress-host'));
+  }, []);
+
+  useEffect(() => {
+    const body = getBodyScope();
+    if (!body) return;
+    const ipc = getIpc();
+    const w = window as any;
+
+    // ayncsWebpConvert（镜像 69-98 逐字：20 一批 rAF 循环，backgroundWindowID 判定 send/sendTo）
+    const ayncsWebpConvert = (tasks: any[]) => {
+      if (!tasks || tasks.length === 0) return;
+      setTimeout(() => {
+        const total = tasks.length;
+        const once = 20;
+        const loopCount = total / once;
+        let countOfSend = 0;
+
+        const send = () => {
+          const start = countOfSend * once;
+          const willSendImages = tasks.slice(start, start + once);
+          countOfSend += 1;
+          console.log('第 %d 批傳送，目前進度 %d / %d', countOfSend, willSendImages.length + (countOfSend - 1) * once, total);
+          if (w.backgroundWindowID === undefined) {
+            ipc && ipc.send && ipc.send('webp-convert', willSendImages);
+          } else {
+            ipc && ipc.sendTo && ipc.sendTo(w.backgroundWindowID, 'webp-convert', willSendImages);
+          }
+          loop();
+        };
+
+        const loop = () => {
+          if (countOfSend < loopCount) {
+            w.requestAnimationFrame(send);
+          }
+        };
+        loop();
+      }, 0);
+    };
+
+    const cancelWebpConvert = () => {
+      // 原版经 IPCHelper.send（bundle 顶层 const，window 上不可见）→ 等价直接 ipcRenderer.send
+      ipc && ipc.send && ipc.send('cancel.webp.convert');
+      rootRef.current.queue = [];
+      rootRef.current.finishQueue = [];
+      bumpAll();
+    };
+    rootRef.current.cancel = cancelWebpConvert;
+
+    const onStart = (e: any, params: any) => {
+      ngSafe(() => {
+        const images = params && params.images;
+        const format = params && params.format;
+        if (!images || images.length === 0 || !format) return;
+        const webpConvertTasks: any[] = [];
+        images.forEach((image: any) => {
+          if (image && image.ext === 'webp') {
+            webpConvertTasks.push({
+              image: image,
+              format: format,
+            });
+          }
+        });
+        const message = t('dialog.webpConvert.desc', [
+          { property: 'count', value: String(webpConvertTasks.length) },
+          { property: 'format', value: String(format).toUpperCase() },
+        ]);
+        w.swal({
+          html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${t('dialog.webpConvert.title')}</h4>
+                            <p class="alert-desc">${message}</p>
+                        </div>
+                    `,
+          showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+          width: 400,
+          customClass: 'alert-box',
+          cancelButtonColor: '#777777',
+          confirmButtonText: t('dialog.webpConvert.button'),
+          cancelButtonText: t('general.cancel'),
+        }).then(() => {
+          webpConvertTasks.forEach((task: any) => {
+            rootRef.current.queue.push(task.image);
+          });
+          if (webpConvertTasks.length > 0) {
+            ayncsWebpConvert(webpConvertTasks);
+          }
+          bumpAll();
+        });
+      });
+    };
+
+    const onConverted = (e: any, converted: any) => {
+      rootRef.current.finishQueue.push(converted);
+      if (rootRef.current.finishQueue.length === rootRef.current.queue.length) {
+        rootRef.current.finishQueue = [];
+        rootRef.current.queue = [];
+      }
+      bumpAll();
+    };
+
+    const offStart = body.$on('WEBP_CONVERT_START', onStart);
+    ngSafe(() => {
+      ipc && ipc.on && ipc.on('webp.converted', onConverted);
+    });
+
+    return () => {
+      offStart();
+      ngSafe(() => {
+        ipc && ipc.off && ipc.off('webp.converted', onConverted);
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host]);
+
+  if (!host) return null;
+
+  const { queue, finishQueue } = rootRef.current;
+  const isOpen = queue.length > 0;
+  const width = (() => {
+    const v = (finishQueue.length / queue.length * 100);
+    return (Number.isFinite(v) ? v : 0) + '%';
+  })();
+
+  return createPortal(
+    <>
+      <div className={`progress-dialog${isOpen ? ' open' : ''}`}>
+        {isOpen && (
+          <div className="progress-dialog-content">
+            <div className="message">
+              {t('progress.webpConvert.msg')}... <span className="counter">({finishQueue.length}/{queue.length})</span>
+            </div>
+            <div className="progressbar" style={ngShow(isOpen)}>
+              <div className="current" style={{ width }} />
+            </div>
+            <div className="button button-xs button-grey cancel-button" onClick={() => rootRef.current.cancel()}>
+              {t('general.cancel')}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}
+
+/* ================= fixutil-clean-empty-folder / fixutil（空 link；body.fixUtils 桥接） ================= */
+
+// hooks 规则：bumpAllRef 必须在组件早退前稳定存在（useFixUtilsBridge 内部使用）
+const bumpAllRef = { current: () => {} };
+
+/** fixUtils 字段函数型 watcher 桥接（等价模板逐 digest 重读；对象字段原地赋值） */
+function useFixUtilsBridge(fields: string[]) {
+  const [values, setValues] = useState<any>(() => fields.map(() => 0));
+  useEffect(() => {
+    const body = getBodyScope();
+    if (!body) return;
+    const read = () => {
+      const b = getBodyScope();
+      const fu = b && b.fixUtils ? b.fixUtils : {};
+      return fields.map((f) => String(fu[f])).join('|');
+    };
+    const sync = () => {
+      const b = getBodyScope();
+      const fu = b && b.fixUtils ? b.fixUtils : {};
+      setValues(fields.map((f) => (fu[f] === undefined ? 0 : fu[f])));
+      bumpAllRef.current();
+    };
+    const off = body.$watch(read, sync);
+    sync();
+    return () => off();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return values;
+}
+
+export function FixutilCleanEmptyFolderProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  bumpAllRef.current = () => bump((v: number) => v + 1);
+  const [isCleaning, current, total] = useFixUtilsBridge(['isCleaningEmptyFolders', 'currentEmptyfolderRemoved', 'emptyFolderRemoved']);
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-fixutil-clean-empty-folder-progress-host'));
+  }, []);
+
+  if (!host) return null;
+
+  // 原版外壳带 ng-if（isCleaning=false 时整个 .progress-dialog 不在 DOM，overlay 恒在）
+  return createPortal(
+    <>
+      {!!isCleaning && (
+        <div className="progress-dialog open">
+          <div className="progress-dialog-content">
+            <div className="message">
+              {t('progress.fixUtils.removeEmptyFolder.msg')}
+              <span className="counter"> ({ngNumber(current, 0)}/{ngNumber(total, 0)})</span>
+            </div>
+            <div className="progressbar">
+              <div className="current" style={{ width: (Number.isFinite(current / total * 100) ? current / total * 100 : 0) + '%' }} />
+            </div>
+            {/* 原版 ng-click="cancel()" 解析到 body scope 的 cancel——不存在（$exceptionHandler 吞），
+                用户可见行为为无操作；scopeApply + 守卫等价 */}
+            <div
+              className="button button-xs button-grey cancel-button"
+              onClick={() => scopeApply(getBodyScope(), (s: any) => s.cancel && s.cancel())}
+            >
+              {t('general.cancel')}
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}
+
+export function FixutilProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  bumpAllRef.current = () => bump((v: number) => v + 1);
+  const [isFixing, curr, total] = useFixUtilsBridge(['isFixing', 'fixingCurr', 'fixingTotal']);
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-fixutil-progress-host'));
+  }, []);
+
+  if (!host) return null;
+
+  return createPortal(
+    <>
+      {!!isFixing && (
+        <div className="progress-dialog open">
+          <div className="progress-dialog-content">
+            <div className="message">
+              Scaning... <span className="counter">({ngNumber(curr, 0)}/{ngNumber(total, 0)})</span>
+            </div>
+            <div className="progressbar">
+              <div className="current" style={{ width: (Number.isFinite(curr / total * 100) ? curr / total * 100 : 0) + '%' }} />
+            </div>
+            {/* 同上：body.cancel 不存在（原版怪癖） */}
+            <div
+              className="button button-xs button-grey cancel-button"
+              onClick={() => scopeApply(getBodyScope(), (s: any) => s.cancel && s.cancel())}
+            >
+              {t('general.cancel')}
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}

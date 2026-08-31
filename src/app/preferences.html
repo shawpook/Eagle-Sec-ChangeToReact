@@ -59,7 +59,8 @@
 
         <!-- 快捷鍵搜索框 -->
         <div ng-if="currentPanel.name === 'shortcuts'" class="shortcut-search-container">
-            <input id="shortcut-input" type="search" placeholder="{{'general.search' | i18n}}" select-all ng-model="shortcutKeyword" ng-change="updateKeybinds()">
+        <!-- 阶段8d：快捷键搜索框由 React 接管（react/preferences/panels.tsx 绑 keydown/input + updateKeybinds 等价） -->
+            <input id="shortcut-input" type="search" placeholder="{{'general.search' | i18n}}">
         </div>
         
         <div class="content" ng-switch on="currentPanel.name">
@@ -72,68 +73,7 @@
 
             <!-- 阶段8b：常用/左栏面板已由 React 接管（react/preferences/panels.tsx，portal 渲染于 .content 顶部锚点） -->
             <!-- 阶段8c：操控/习惯设定面板已由 React 接管（react/preferences/panels.tsx，portal 渲染于 .content 顶部锚点） -->
-            <!-- 快捷建设定 -->
-            <div class="panel-content" ng-switch-when="shortcuts|search" ng-switch-when-separator="|">                
-                <div ng-repeat="group in keybindGroupResult" class="panel-block" search-show="{{keyword}}" search-keywords="shortcuts {{group.name}}">
-                    <div class="block-content shortcut-block">
-                        <div class="block-title">{{'shortcuts.group.' + group.name | i18n}} ({{group.items.length}})</div>
-                        <div class="shortcut-table enhanced-shortcut-table">
-                            <div class="tbody">
-                                <div class="table-row" ng-repeat="keybind in group.items">
-                                    <div class="table-col function-name">
-                                        <div class="function-name-text">{{'shortcuts.' + keybind.key | i18n}}</div>
-                                        <div class="function-description" ng-if="keybind.description">{{keybind.description}}</div>
-                                    </div>
-                                    <div class="table-col function-shortcut">
-                                        <div class="shortcut-input-container">
-                                            <input type="text"
-                                                   shortcut-input
-                                                   shortcut-name="{{keybind.key}}"
-                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
-                                                   ng-model="preferences.shortcuts.keybinds[keybind.key]">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div ng-show="filteredInstallPlugins.length > 0" class="panel-block" search-show="{{keyword}}" search-keywords="shortcuts plugin">
-                    <div class="block-content shortcut-block">
-                        <div class="block-title">{{'preferencesWindow.shortcuts.plugin' | i18n}} ({{filteredInstallPlugins.length}})</div>
-                        <div class="shortcut-table enhanced-shortcut-table">
-                            <div class="tbody">
-                                <div class="table-row" ng-repeat="installPlugin in filteredInstallPlugins track by $index">
-                                    <div class="table-col function-name">
-                                        <div class="function-name-text">{{installPlugin.name}}</div>
-                                    </div>
-                                    <div class="table-col function-shortcut">
-                                        <div class="shortcut-input-container">
-                                            <input type="text"
-                                                   shortcut-input
-                                                   shortcut-name="{{installPlugin.id}}"
-                                                   placeholder="{{'preferencesWindow.shortcutInputPlaceholder' | i18n}}"
-                                                   ng-change="onPluginShortcutChange(installPlugin)"
-                                                   ng-model="installPlugin.formatShortcut">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Restore Defaults Section -->
-                <div class="restore-defaults-section" ng-show="keybindGroupResult.length > 0" search-show="{{keyword}}" search-keywords="shortcuts 快捷鍵 快捷键 恢復默認 恢复默认">
-                    <div class="separator"></div>
-                    <div class="restore-defaults-container">
-                        <div class="button button-grey" ng-click="restoreDefaultShortcuts()">
-                            {{'preferencesWindow.shortcuts.restoreDefaults' | i18n}}
-                        </div>
-                    </div>
-                </div>
-            </div>
-    
+            <!-- 阶段8d：快捷键面板已由 React 接管（react/preferences/panels.tsx，portal 渲染于 .content 顶部锚点） -->
             <!-- 通知设定 -->
             <div class="panel-content" ng-switch-when="notification|search" ng-switch-when-separator="|">
     

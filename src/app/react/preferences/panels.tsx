@@ -79,6 +79,8 @@ interface PanelSnap {
   launchAtLogin: any;
   platform: any;
   isAppleSilicon: any;
+  keybindGroups: any[];
+  installPlugins: any[];
 }
 
 const EMPTY_SNAP: PanelSnap = {
@@ -90,6 +92,8 @@ const EMPTY_SNAP: PanelSnap = {
   launchAtLogin: undefined,
   platform: undefined,
   isAppleSilicon: undefined,
+  keybindGroups: [],
+  installPlugins: [],
 };
 
 function buildSnapshot(scope: any): PanelSnap {
@@ -102,6 +106,8 @@ function buildSnapshot(scope: any): PanelSnap {
     launchAtLogin: scope.launchAtLogin,
     platform: scope.platform,
     isAppleSilicon: scope.isAppleSilicon,
+    keybindGroups: Array.isArray(scope.keybindGroups) ? scope.keybindGroups : [],
+    installPlugins: Array.isArray(scope.installPlugins) ? scope.installPlugins : [],
   };
 }
 
@@ -121,6 +127,9 @@ function snapshotSignature(scope: any): string {
     p && p.habits,
     p && p.video,
     p && p.font,
+    p && p.shortcuts,
+    scope.keybindGroups,
+    scope.installPlugins,
     p && p.notification && p.notification.notification,
     p && p.screencapture && p.screencapture.useRetina,
   ]);
@@ -1006,12 +1015,456 @@ function HabitsPanelContent(props: { snap: PanelSnap }) {
   );
 }
 
+/* ================= shortcuts 面板（preferences.html 76-135 逐字 + shortcutInput 指令等价） ================= */
+
+/** updateKeybinds 逐字移植（preferences.js 601-656）：keyword 过滤 keybindGroups 分组与插件清单。
+ * i18n.__ → pfT 等价；$('#shortcut-input').val() 读取点由 React state 顶替。 */
+function computeShortcutResults(keyword: string, snap: PanelSnap) {
+  const lowerKeyword = (keyword || '').toLowerCase();
+  const keybindGroups = snap.keybindGroups;
+  const installPlugins = snap.installPlugins;
+  const keybinds = snap.preferences && snap.preferences.shortcuts ? snap.preferences.shortcuts.keybinds : {};
+
+  if (!lowerKeyword) {
+    return {
+      groups: keybindGroups.map((group: any) => ({ ...group, items: [...group.items] })),
+      plugins: installPlugins || [],
+    };
+  }
+
+  const groups = keybindGroups
+    .map((group: any) => {
+      const filteredItems = (group.items || []).filter((item: any) => {
+        const shortcutName = pfT('shortcuts.' + item.key) || '';
+        const lowerName = shortcutName.toLowerCase();
+        const shortcut = keybinds[item.key];
+        const lowerShortcut =
+          shortcut != null ? String(shortcut).toLowerCase().replaceAll(' ', '') : '';
+        const lowerKey = String(item.key).toLowerCase();
+        const groupName = (pfT('shortcuts.group.' + group.name) || '').toLowerCase();
+        const str = `${lowerName} ${lowerShortcut} ${lowerKey} ${groupName}`;
+        return str.indexOf(lowerKeyword) > -1;
+      });
+      return { ...group, items: filteredItems };
+    })
+    .filter((group: any) => group.items.length > 0);
+
+  const plugins = (installPlugins || []).filter((plugin: any) => {
+    const pluginName = (plugin && plugin.name ? String(plugin.name) : '').toLowerCase();
+    const pluginId = (plugin && plugin.id ? String(plugin.id) : '').toLowerCase();
+    const shortcut = (plugin && plugin.formatShortcut ? String(plugin.formatShortcut) : '').replaceAll(' ', '');
+    const pluginKeyword = (pfT('preferencesWindow.shortcuts.plugin') || 'plugin').toLowerCase();
+    const str = `${pluginName} ${pluginId} ${shortcut} ${pluginKeyword}`;
+    return str.indexOf(lowerKeyword) > -1;
+  });
+
+  return { groups, plugins };
+}
+
+/** shortcutInput 指令等价（js/directives/shortcut-input.js 逐字）：
+ * keydown 捕获（preventDefault + 修饰键前缀 + 键值映射）、冲突检测不写模型（1.5s 提示）、
+ * updateStatus（valid/invalid/conflict class + 提示元素）、focus 显原值 / blur 格式化。
+ * ShortcutManager 消费 window 全局单例（数据面零改动）。 */
+function ShortcutInput(props: {
+  name: string;
+  value: any;
+  placeholder: string;
+  onCommit: (result: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const errorRef = useRef<HTMLDivElement | null>(null);
+  const conflictRef = useRef<HTMLDivElement | null>(null);
+  const propsRef = useRef(props);
+  propsRef.current = props;
+  const valueRef = useRef(props.value);
+  valueRef.current = props.value;
+
+  const getManager = (): any => (window as any).ShortcutManager;
+
+  const conflictNames = (conflicts: string[]): string[] =>
+    conflicts.map((conflictKey: string) => {
+      const i18nKey = 'shortcuts.' + conflictKey;
+      const displayName = pfT(i18nKey);
+      return displayName !== i18nKey ? displayName : conflictKey;
+    });
+
+  const updateStatus = (shortcutValue: string) => {
+    const el = inputRef.current;
+    const errorElement = errorRef.current;
+    const conflictElement = conflictRef.current;
+    if (!el || !errorElement || !conflictElement) return;
+
+    el.classList.remove('shortcut-valid', 'shortcut-invalid', 'shortcut-conflict');
+    errorElement.style.display = 'none';
+    errorElement.textContent = '';
+    conflictElement.style.display = 'none';
+    conflictElement.textContent = '';
+
+    if (!shortcutValue) {
+      el.classList.add('shortcut-valid');
+      return;
+    }
+
+    const manager = getManager();
+    if (!manager) return;
+
+    const validation = manager.validateShortcut(shortcutValue);
+    if (!validation.valid) {
+      el.classList.add('shortcut-invalid');
+      errorElement.textContent = validation.error;
+      errorElement.style.display = '';
+      return;
+    }
+
+    const conflicts = manager.getConflicts(shortcutValue, propsRef.current.name);
+    if (conflicts.length > 0) {
+      el.classList.add('shortcut-conflict');
+      const names = conflictNames(conflicts);
+      const conflictText = (pfT('shortcuts.conflict.usedBy') || '').replace('{0}', names[0]);
+      conflictElement.textContent = conflictText;
+      conflictElement.style.display = '';
+      return;
+    }
+
+    el.classList.add('shortcut-valid');
+  };
+
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    const errorElement = errorRef.current;
+    const conflictElement = conflictRef.current;
+    let conflictTimer: any = null;
+    let refocusTimer: any = null;
+    let clearTimer: any = null;
+
+    const showConflictFlow = (result: string) => {
+      const manager = getManager();
+      const current = propsRef.current;
+      const originalValue = valueRef.current == null ? '' : String(valueRef.current);
+      if (!el || !errorElement || !conflictElement || !manager) return;
+
+      const conflicts = manager.getConflicts(result, current.name);
+      if (conflicts.length > 0) {
+        el.classList.remove('shortcut-valid', 'shortcut-invalid');
+        el.classList.add('shortcut-conflict');
+        const names = conflictNames(conflicts);
+        const conflictText = (pfT('shortcuts.conflict.usedBy') || '').replace('{0}', names[0]);
+        conflictElement.textContent = conflictText;
+        conflictElement.style.display = '';
+        // 保持原始值
+        el.value = manager.formatForDisplay(originalValue);
+        (el as any).__showingConflict = true;
+        clearTimeout(conflictTimer);
+        conflictTimer = setTimeout(() => {
+          (el as any).__showingConflict = false;
+          conflictElement.style.display = 'none';
+          updateStatus(originalValue);
+        }, 1500);
+        clearTimeout(refocusTimer);
+        refocusTimer = setTimeout(() => {
+          el.blur();
+          el.focus();
+        }, 100);
+      } else {
+        current.onCommit(result);
+        el.value = manager.formatForDisplay(result);
+        updateStatus(result);
+        el.blur();
+        el.focus();
+      }
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      const keyCode = e.which;
+      let char: string | undefined;
+      if (e.code) {
+        char = e.code.replace('Key', '').replace('Digit', '');
+        switch (char) {
+          case 'BracketLeft': char = '['; break;
+          case 'BracketRight': char = ']'; break;
+          case 'Minus': char = '-'; break;
+          case 'Equal': char = '='; break;
+          case 'Backslash': char = '\\'; break;
+          case 'Semicolon': char = ';'; break;
+          case 'Quote': char = "'"; break;
+          case 'Backquote': char = '`'; break;
+          case 'Slash': char = '/'; break;
+          case 'Period': char = '.'; break;
+          case 'Comma': char = ','; break;
+        }
+      }
+
+      const shiftKey = e.shiftKey;
+      const metaKey = e.metaKey;
+      const ctrlKey = e.ctrlKey;
+      const altKey = e.altKey;
+      let needCombindKey = false;
+      let result = '';
+
+      if (ctrlKey) {
+        result += 'Ctrl + ';
+        needCombindKey = true;
+      }
+      if (metaKey && process.platform === 'darwin') {
+        if (!ctrlKey) {
+          result += 'Command + ';
+        }
+        needCombindKey = true;
+      }
+      if (shiftKey) { result += 'Shift + '; needCombindKey = true; }
+      if (altKey) {
+        result += 'Alt + ';
+        needCombindKey = true;
+      }
+
+      switch (keyCode) {
+        case 8:
+          // Backspace 鍵處理：無修飾鍵時清空快捷鍵
+          if (result.length === 0) {
+            result = '';
+            propsRef.current.onCommit('');
+            updateStatus('');
+            return;
+          } else {
+            result += 'Backspace';
+            needCombindKey = false;
+          }
+          break;
+        case 46: result += 'Delete'; needCombindKey = false; break;
+        case 36: result += 'Home'; needCombindKey = false; break;
+        case 35: result += 'End'; needCombindKey = false; break;
+        case 33: result += 'PageUp'; needCombindKey = false; break;
+        case 34: result += 'PageDown'; needCombindKey = false; break;
+        case 112: result += 'F1'; needCombindKey = false; break;
+        case 113: result += 'F2'; needCombindKey = false; break;
+        case 114: result += 'F3'; needCombindKey = false; break;
+        case 115: result += 'F4'; needCombindKey = false; break;
+        case 116: result += 'F5'; needCombindKey = false; break;
+        case 117: result += 'F6'; needCombindKey = false; break;
+        case 118: result += 'F7'; needCombindKey = false; break;
+        case 119: result += 'F8'; needCombindKey = false; break;
+        case 120: result += 'F9'; needCombindKey = false; break;
+        case 121: result += 'F10'; needCombindKey = false; break;
+        case 122: result += 'F11'; needCombindKey = false; break;
+        case 123: result += 'F12'; needCombindKey = false; break;
+        case 219: result += '['; needCombindKey = false; break;
+        case 221: result += ']'; needCombindKey = false; break;
+        case 13: result += 'Enter'; needCombindKey = false; break;
+        case 32: result += 'Space'; needCombindKey = false; break;
+        case 38: result += 'Up'; needCombindKey = false; break;
+        case 40: result += 'Down'; needCombindKey = false; break;
+        case 39: result += 'Right'; needCombindKey = false; break;
+        case 37: result += 'Left'; needCombindKey = false; break;
+        default:
+          // 英文数字按键必须要有搭配按键才算数
+          if (needCombindKey) {
+            if (ctrlKey || metaKey || altKey || shiftKey) {
+              if (keyCode === 107) {
+                result += 'Plus';
+                needCombindKey = false;
+              } else if (keyCode === 189 || keyCode === 109) {
+                result += '-';
+                needCombindKey = false;
+              } else if (keyCode === 187) {
+                result += '=';
+                needCombindKey = false;
+              } else if (char && char.length === 1 && /^[A-Za-z0-9\[\]\\;',./`~\-=]$/.test(char)) {
+                result += char.toUpperCase();
+                needCombindKey = false;
+              }
+            }
+          }
+      }
+
+      if (result && !needCombindKey) {
+        // $timeout 等价
+        clearTimeout(clearTimer);
+        clearTimer = setTimeout(() => showConflictFlow(result), 0);
+      } else {
+        propsRef.current.onCommit(valueRef.current == null ? '' : String(valueRef.current));
+      }
+    };
+
+    const onFocus = () => {
+      const currentValue = valueRef.current;
+      if (currentValue) {
+        el.value = String(currentValue);
+      }
+    };
+
+    const onBlur = () => {
+      if ((el as any).__showingConflict) {
+        return;
+      }
+      const currentValue = valueRef.current == null ? '' : String(valueRef.current);
+      updateStatus(currentValue);
+      const manager = getManager();
+      if (currentValue && manager) {
+        el.value = manager.formatForDisplay(currentValue);
+      }
+    };
+
+    el.addEventListener('keydown', onKeyDown);
+    el.addEventListener('focus', onFocus);
+    el.addEventListener('blur', onBlur);
+
+    // 初始化時更新狀態和顯示格式（$timeout(100) 等价）
+    const initTimer = setTimeout(() => {
+      const currentValue = valueRef.current == null ? '' : String(valueRef.current);
+      updateStatus(currentValue);
+      const manager = getManager();
+      if (currentValue && manager) {
+        el.value = manager.formatForDisplay(currentValue);
+      }
+    }, 100);
+
+    return () => {
+      el.removeEventListener('keydown', onKeyDown);
+      el.removeEventListener('focus', onFocus);
+      el.removeEventListener('blur', onBlur);
+      clearTimeout(initTimer);
+      clearTimeout(conflictTimer);
+      clearTimeout(refocusTimer);
+      clearTimeout(clearTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 外部模型变化（restoreDefaults 等）→ 显示值跟随（ng-model $render 等价）
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    if ((el as any).__showingConflict) return;
+    const manager = getManager();
+    el.value = props.value == null ? '' : manager ? manager.formatForDisplay(String(props.value)) : String(props.value);
+  }, [props.value]);
+
+  return (
+    <div className="shortcut-input-container">
+      <div className="shortcut-conflict-tip color-warning" style={{ display: 'none' }} ref={conflictRef}></div>
+      <input type="text" className="shortcut-input" placeholder={props.placeholder} ref={inputRef} />
+      <div className="shortcut-error" style={{ display: 'none' }} ref={errorRef}></div>
+    </div>
+  );
+}
+
+function ShortcutsPanelContent(props: { snap: PanelSnap; shortcutKeyword: string }) {
+  const { snap, shortcutKeyword } = props;
+  const results = computeShortcutResults(shortcutKeyword, snap);
+
+  const commitKeybind = (key: string, result: string) =>
+    scopeApply(getPreferencesScope(), (s: any) => {
+      s.preferences.shortcuts.keybinds[key] = result;
+    });
+  const commitPlugin = (plugin: any, result: string) =>
+    scopeApply(getPreferencesScope(), (s: any) => {
+      // 原版 ng-model 写 installPlugin.formatShortcut + ng-change onPluginShortcutChange
+      plugin.formatShortcut = result;
+      s.onPluginShortcutChange && s.onPluginShortcutChange(plugin);
+    });
+  const restoreDefaults = () =>
+    scopeApply(getPreferencesScope(), (s: any) => s.restoreDefaultShortcuts && s.restoreDefaultShortcuts());
+
+  const placeholder = pfT('preferencesWindow.shortcutInputPlaceholder');
+
+  return (
+    <div className="panel-content">
+      {results.groups.map((group: any) => (
+        <div
+          key={group.name}
+          className="panel-block"
+          search-show={snap.keyword}
+          search-keywords={'shortcuts ' + group.name}
+        >
+          <div className="block-content shortcut-block">
+            <div className="block-title">
+              {pfT('shortcuts.group.' + group.name)} ({group.items.length})
+            </div>
+            <div className="shortcut-table enhanced-shortcut-table">
+              <div className="tbody">
+                {group.items.map((keybind: any) => (
+                  <div className="table-row" key={keybind.key}>
+                    <div className="table-col function-name">
+                      <div className="function-name-text">{pfT('shortcuts.' + keybind.key)}</div>
+                      {keybind.description ? (
+                        <div className="function-description">{keybind.description}</div>
+                      ) : null}
+                    </div>
+                    <div className="table-col function-shortcut">
+                      <ShortcutInput
+                        name={keybind.key}
+                        value={
+                          snap.preferences && snap.preferences.shortcuts
+                            ? snap.preferences.shortcuts.keybinds[keybind.key]
+                            : undefined
+                        }
+                        placeholder={placeholder}
+                        onCommit={(result) => commitKeybind(keybind.key, result)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* ng-show="filteredInstallPlugins.length > 0"——常驻 DOM，display 由 search-show 效果统一驱动 */}
+      <div className="panel-block" search-show={snap.keyword} search-keywords="shortcuts plugin">
+        <div className="block-content shortcut-block">
+          <div className="block-title">
+            {pfT('preferencesWindow.shortcuts.plugin')} ({results.plugins.length})
+          </div>
+          <div className="shortcut-table enhanced-shortcut-table">
+            <div className="tbody">
+              {results.plugins.map((installPlugin: any, index: number) => (
+                <div className="table-row" key={installPlugin.id || index}>
+                  <div className="table-col function-name">
+                    <div className="function-name-text">{installPlugin.name}</div>
+                  </div>
+                  <div className="table-col function-shortcut">
+                    <ShortcutInput
+                      name={installPlugin.id}
+                      value={installPlugin.formatShortcut}
+                      placeholder={placeholder}
+                      onCommit={(result) => commitPlugin(installPlugin, result)}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Restore Defaults Section（ng-show="keybindGroupResult.length > 0" 同上） */}
+      <div
+        className="restore-defaults-section"
+        search-show={snap.keyword}
+        search-keywords="shortcuts 快捷鍵 快捷键 恢復默認 恢复默认"
+      >
+        <div className="separator"></div>
+        <div className="restore-defaults-container">
+          <div className="button button-grey" onClick={restoreDefaults}>
+            {pfT('preferencesWindow.shortcuts.restoreDefaults')}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ================= 根组件（portal + search-show + tippy + sidebar-search 接管） ================= */
 
 export function PreferencesPanels() {
   const snap = usePreferencesPanelSnap();
   const [container, setContainer] = useState<HTMLElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [shortcutKeyword, setShortcutKeyword] = useState('');
+  const shortcutInputRef = useRef<HTMLInputElement | null>(null);
 
   // portal 锚点：.content 顶部（原版 .panel-content 位于 footer 之前；host 在 footer 之后
   // 不能直接承载面板块。showSearchEmpty 统计 .content 内 .panel-content :visible，
@@ -1028,14 +1481,25 @@ export function PreferencesPanels() {
     };
   }, []);
 
-  // search-show 等价（preferences.js 54-81 逐字：textContent + search-keywords 包含 keyword）
+  // search-show 等价（preferences.js 54-81 逐字：textContent + search-keywords 包含 keyword；
+  // 指令挂在一切 [search-show] 元素上，含 shortcuts 面板的 .restore-defaults-section）。
+  // 非搜索态的 display 复位在此统一负责，兼顾 shortcuts 面板两处 ng-show：
+  // 插件块（filteredInstallPlugins.length）与 restore 区（keybindGroupResult.length）。
   useEffect(() => {
     const root = container;
     if (!root) return;
-    root.querySelectorAll<HTMLElement>('.panel-block').forEach((el) => {
+    const results = computeShortcutResults(shortcutKeyword, snap);
+    root.querySelectorAll<HTMLElement>('[search-show]').forEach((el) => {
       if (snap.panel !== 'search') {
         // 原版切回普通面板由 ng-switch 重建元素复位 display；渲染驱动等价
-        el.style.display = '';
+        const keywords = el.getAttribute('search-keywords');
+        if (keywords === 'shortcuts plugin' && !(snap.installPlugins && snap.installPlugins.length > 0)) {
+          el.style.display = 'none';
+        } else if (el.classList.contains('restore-defaults-section') && results.groups.length === 0) {
+          el.style.display = 'none';
+        } else {
+          el.style.display = '';
+        }
         return;
       }
       const keywords = (el.getAttribute('search-keywords') || '').toLowerCase();
@@ -1043,7 +1507,7 @@ export function PreferencesPanels() {
       const keyword = (snap.keyword || '').toLowerCase();
       el.style.display = text.indexOf(keyword) > -1 ? 'block' : 'none';
     });
-  }, [container, snap.panel, snap.keyword]);
+  }, [container, snap, shortcutKeyword]);
 
   // tippy 等价（js/modules/tippy.js：animation scale / arrow false / allowHTML / placement）
   useEffect(() => {
@@ -1116,12 +1580,65 @@ export function PreferencesPanels() {
     }
   }, [snap.keyword]);
 
+  // #shortcut-input 接管（原版 select-all + ng-model shortcutKeyword + ng-change updateKeybinds）。
+  // 元素在 ng-if 下随面板切换销毁重建 → 常驻轮询挂事件（marker 防重复）。
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const el = event.currentTarget as HTMLInputElement;
+      if ((event.metaKey || event.ctrlKey) && event.key === 'a') {
+        event.preventDefault();
+        event.stopPropagation();
+        el.select();
+      } else if (event.key === 'Escape') {
+        event.stopPropagation();
+        el.blur();
+      }
+    };
+    const onInput = (event: Event) => {
+      const el = event.target as HTMLInputElement;
+      if (el) setShortcutKeyword(el.value);
+    };
+    const attach = () => {
+      const input = document.getElementById('shortcut-input') as HTMLInputElement | null;
+      if (!input) {
+        shortcutInputRef.current = null;
+        return;
+      }
+      const marker = input as any;
+      if (!marker.__eagleReactSearch) {
+        marker.__eagleReactSearch = true;
+        input.addEventListener('keydown', onKeyDown);
+        input.addEventListener('input', onInput);
+      }
+      shortcutInputRef.current = input;
+      if (input.value !== shortcutKeyword) {
+        input.value = shortcutKeyword;
+      }
+    };
+    const timer = setInterval(attach, 200);
+    attach();
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // updateKeybinds 的 $('.shortcut-input').data('search-active', isSearching) 等价（原样写 jQuery data）
+  useEffect(() => {
+    const $ = (window as any).jQuery;
+    if (!$) return;
+    ngSafe(() => {
+      $('.shortcut-input').each(function (this: HTMLElement) {
+        $(this).data('search-active', !!shortcutKeyword);
+      });
+    });
+  }, [shortcutKeyword, snap.panel]);
+
   if (!container) return null;
   if (
     snap.panel !== 'general' &&
     snap.panel !== 'sidebar' &&
     snap.panel !== 'control' &&
     snap.panel !== 'habits' &&
+    snap.panel !== 'shortcuts' &&
     snap.panel !== 'search'
   ) {
     return null;
@@ -1133,6 +1650,9 @@ export function PreferencesPanels() {
       {(snap.panel === 'sidebar' || snap.panel === 'search') && <SidebarPanelContent snap={snap} />}
       {(snap.panel === 'control' || snap.panel === 'search') && <ControlPanelContent snap={snap} />}
       {(snap.panel === 'habits' || snap.panel === 'search') && <HabitsPanelContent snap={snap} />}
+      {(snap.panel === 'shortcuts' || snap.panel === 'search') && (
+        <ShortcutsPanelContent snap={snap} shortcutKeyword={shortcutKeyword} />
+      )}
     </>,
     container
   );

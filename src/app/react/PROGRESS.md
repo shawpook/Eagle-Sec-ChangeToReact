@@ -1035,7 +1035,39 @@
 >   .checkbox-item 里；统一用块内 querySelectorAll(...input[type=checkbox]) 索引。
 >   Runtime.evaluate 表达式 throw 不 reject（落 exceptionDetails）——evalOn 必须检查
 >   exceptionDetails 否则点击 eval 静默失败（本次 video[1] 点到 volume radio 即由此掩盖）。
-> **下一步 = 8d（shortcuts 面板：shortcutInput 等价 + updateKeybinds/shortcut-manager.js）**。
+> **8d 已验证并接管（2026-08-31）**：偏好窗口 shortcuts 面板。
+> - 接管方式：preferences.html 旧 shortcuts `.panel-content`（61 行）删除 + `#shortcut-input`
+>   搜索框去 select-all/ng-model/ng-change 三属性（React 原位接管：常驻轮询挂事件——元素在
+>   ng-if 下随面板切换销毁重建；keydown mod+a/Esc 等价 selectAll + input → shortcutKeyword
+>   React state）。React 层 panels.tsx 追加 ShortcutsPanelContent + ShortcutInput。
+> - updateKeybinds 逐字移植为 computeShortcutResults（601-656）：空 keyword 全量分组；
+>   搜索按 shortcuts.{key} i18n 名 + 键值（去空格）+ key + 组名 indexOf 过滤分组与插件清单；
+>   i18n.__ → pfT 等价。keybindGroups/installPlugins 进快照与签名（分组为平台过滤后的静态
+>   数组——win32 实际 10 组 143 键，含 find/reverse/organize 三个未在勘察记录里的组）。
+> - shortcutInput 指令（js/directives/shortcut-input.js 353 行）逐字等价为 ShortcutInput：
+>   keydown preventDefault + 修饰键前缀（Ctrl/Command/Shift/Alt 平台语义）+ 特殊键映射
+>   （Backspace 清空模型/F 键/方向键/符号）/字母数字须带修饰键；冲突时**不写模型**（1.5s
+>   提示 + 原值回显 + 100ms 后 blur/focus），无冲突 setViewValue + blur/focus；兄弟元素
+>   shortcut-error（input 后）/shortcut-conflict-tip color-warning（input 前）+ valid/invalid/
+>   conflict class；focus 显原值/blur 格式化；挂载 100ms 初始化等价。**ShortcutManager 消费
+>   window 全局单例（数据面零改动）**——manager 由原版 initPreference init（Angular 侧持续运行）。
+> - restore 按钮经 scopeApply 直调 scope.restoreDefaultShortcuts（Angular 流程不变；mock
+>   remote.dialog.showMessageBox 固定 response 0 → 确认流不重置，冒烟用 spy 断言接线）。
+>   search-active 死标记（仅写无读）照抄为 jQuery .data() 写入。
+> - **ng-show 语义修正（冒烟抓到）**：插件块与 restore 区原版是 ng-show（display:none 常驻
+>   DOM）+ search-show 双驱动——React 初版误用条件渲染（ng-if 语义），已改为常驻渲染 +
+>   search-show 效果统一驱动（非搜索态按计数 display:none，搜索态按关键词 block/none——
+>   原版 searchShow 的 css() 会覆盖 ng-show 的内联 display，逐字保留该怪癖）。
+> - 教训：**键入捕获测试的组合键必须先对 default-preferences 键表做冲突扫描**——Ctrl+Shift+R
+>   本身就是 edit.folder.setting 的默认键（'all' 冲突组），原样触发冲突路径（模型保留），
+>   与捕获路径混淆；无冲突组合用 Ctrl+Shift+A。keybindGroups 组数以 scope 实际为准（10 非 7）。
+> - 闭环：react-stage8d-smoke 12/12（10 组 143 键渲染 + 插件块 ng-show 隐藏/初始值格式化
+>   （CmdOrCtrl→Ctrl 由原版 formatShortcut）+ valid class + 兄弟提示元素/ctrl+shift+A 捕获
+>   写模型/ctrl+alt+E 冲突保留模型 + usedBy 提示 + 1.5s 自动复位/restore 接线 spy/搜索过滤
+>   （capture）/空态隐藏 restore/清空恢复/截图）。全量回归 29 项（runner 增 8d，全绿无偶发）
+>   + api-smoke 13/13；tsc 零错。
+> **下一步 = 8e（notification + screencapture + privacy + autoImport + developer 五面板，
+>   preferences.html 残余 ng-switch 块；完成后移除 ng-app/ng-controller + Angular 脚本区）**。
 
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
@@ -1059,6 +1091,11 @@
 | control 面板（.panel-content）| 模板块 | preferences.html 75-207（旧） | 已验证（8c ControlPanelContent，RadioRow 等） |
 | habits 面板（.panel-content）| 模板块 | preferences.html 210-451（旧） | 已验证（8c HabitsPanelContent，HoverTip/GIF on-off 语义） |
 | themeAttr + themePath（preferences 版）| 函数/过滤器 | preferences.js 1097-1109 / 144-153 | 已验证（8c themeAttrCss/themePathFor，HoverTip src） |
+| shortcuts 面板（.panel-content）| 模板块 | preferences.html 76-135（旧） | 已验证（8d ShortcutsPanelContent + computeShortcutResults） |
+| shortcutInput | directive | js/directives/shortcut-input.js（353 行）| 已验证（8d ShortcutInput；ShortcutManager 走 window 单例零改动） |
+| updateKeybinds | scope 函数 | preferences.js 601-656 | 已验证（8d computeShortcutResults 等价） |
+| #shortcut-input ng-model/ng-change | 绑定 | preferences.html:62（旧） | 已验证（8d React 接管，ng-if 常驻轮询） |
+| restoreDefaultShortcuts | scope 函数 | preferences.js 1250-1322 | 已验证（8d scopeApply 直调，Angular 流程不变） |
 | preferences.js（原文件，非 bundle）| 独立页面 | `src/app/js/preferences.js` | 待办（壳/控制函数随 8c-8e 逐面板迁移） |
 | default-preferences.js | 数据 | `src/app/js/default-preferences.js` | 待办 |
 

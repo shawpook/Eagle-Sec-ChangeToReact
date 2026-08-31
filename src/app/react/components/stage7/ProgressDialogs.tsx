@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
+import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { second2time } from '../../app/filters';
-import { getIpc } from '../detail/detailHooks';
+import { getIpc, req } from '../detail/detailHooks';
 
 /**
  * 阶段7d-6a：进度对话框族（第一部分）接管。
@@ -39,6 +39,7 @@ const ngSafe = (fn: () => void) => {
   }
 };
 const ngShow = (show: boolean) => (show ? undefined : { display: 'none' } as React.CSSProperties);
+const iv = (v: any): any => (v === undefined || v === null ? '' : v);
 const ngNumber = (v: any, frac: number) => {
   const n = Number(v);
   if (!Number.isFinite(n)) return '';
@@ -676,6 +677,573 @@ export function EaglepackExportProgress() {
             </div>
             <div className="progressbar" style={ngShow(!!isArchiving)}>
               <div className="current" style={{ width: (percent || 0) + '%' }} />
+            </div>
+            <div className="button button-xs button-grey cancel-button" onClick={() => rootRef.current.cancel()}>
+              {t('general.cancel')}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}
+
+/* ================= file-thumbnail-progress（空 link；body scope 桥接） ================= */
+
+export function FileThumbnailProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  const bumpAll = () => bump((v: number) => v + 1);
+  const [lengths, setLengths] = useState<{ total: number; finish: number }>({ total: 0, finish: 0 });
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-file-thumbnail-progress-host'));
+  }, []);
+
+  useEffect(() => {
+    const body = getBodyScope();
+    if (!body) return;
+    // 模板绑定 regenerateThumbnailQueue/finishGenerateQueue 解析到 body scope（原版空 link）；
+    // 队列原地 push/splice 引用不变 → 函数型 watcher 读 length 串（等价模板逐 digest 重读插值）
+    const read = () => {
+      const b = getBodyScope();
+      return `${b && b.finishGenerateQueue ? b.finishGenerateQueue.length : 0}|${b && b.regenerateThumbnailQueue ? b.regenerateThumbnailQueue.length : 0}`;
+    };
+    const sync = () => {
+      const b = getBodyScope();
+      setLengths({
+        finish: b && b.finishGenerateQueue ? b.finishGenerateQueue.length : 0,
+        total: b && b.regenerateThumbnailQueue ? b.regenerateThumbnailQueue.length : 0,
+      });
+      bumpAll();
+    };
+    const off = body.$watch(read, sync);
+    sync();
+    return () => off();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host]);
+
+  if (!host) return null;
+
+  const isOpen = lengths.total > 0;
+  const cancelRegenerateThumbnail = () => {
+    scopeApply(getBodyScope(), (s: any) => s.cancelRegenerateThumbnail && s.cancelRegenerateThumbnail());
+  };
+
+  return createPortal(
+    <>
+      <div className={`progress-dialog${isOpen ? ' open' : ''}`}>
+        {isOpen && (
+          <div className="progress-dialog-content">
+            <div className="message">
+              {t('progress.regenerateThumbanil.msg')}...<span className="counter">({lengths.finish}/{lengths.total})</span>
+            </div>
+            <div className="progressbar" style={ngShow(isOpen)}>
+              <div className="current" style={{ width: (lengths.total > 0 ? lengths.finish / lengths.total * 100 : 0) + '%' }} />
+            </div>
+            <div className="button button-xs button-grey cancel-button" onClick={cancelRegenerateThumbnail}>
+              {t('general.cancel')}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}
+
+/* ================= file-export-progress（ipc 三通道） ================= */
+
+export function FileExportProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  const bumpAll = () => bump((v: number) => v + 1);
+  const intervalRef = useRef<any>(null);
+  const rootRef = useRef<any>({ isExporting: false, curr: 0, total: 0, timeLeftInSeconds: 0, updateStartTime: 0 });
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-file-export-progress-host'));
+  }, []);
+
+  useEffect(() => {
+    const calcuteTimeLeft = () => {
+      const elapsedTime = (new Date().getTime()) - rootRef.current.updateStartTime;
+      const chunksPerTime = rootRef.current.curr / elapsedTime;
+      const estimatedTotalTime = rootRef.current.total / chunksPerTime;
+      rootRef.current.timeLeftInSeconds = parseInt((estimatedTotalTime - elapsedTime) / 1000 as any);
+    };
+    const close = () => {
+      rootRef.current.curr = 0;
+      rootRef.current.total = 0;
+      rootRef.current.isExporting = false;
+      rootRef.current.timeLeftInSeconds = 0;
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+    const ipc = getIpc();
+
+    const onShow = (e: any, total: number) => {
+      if (total > 0) {
+        rootRef.current.total += total;
+        rootRef.current.isExporting = true;
+        rootRef.current.updateStartTime = Date.now();
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        intervalRef.current = setInterval(() => ngSafe(() => { calcuteTimeLeft(); bumpAll(); }), 1000);
+        bumpAll();
+      }
+    };
+    const onFinish = (e: any, finishDir: string) => {
+      rootRef.current.curr++;
+      if (rootRef.current.curr >= rootRef.current.total) {
+        if (rootRef.current.isExporting && finishDir) {
+          ipc && ipc.send && ipc.send('show-item-in-folder', finishDir);
+        }
+        close();
+      } else {
+        calcuteTimeLeft();
+      }
+      bumpAll();
+    };
+    const onClose = () => {
+      // 原版仅 $evalAsync + clearInterval；mock shims 另以 DOM poke 重置 isolate scope
+      // （query file-export-progress 元素，换壳后落空）——合并两者语义：重置 + 清 interval，
+      // 保证主进程错误路径（close-export-task）弹窗关闭，与旧版 mock 观感一致。
+      close();
+      bumpAll();
+    };
+    const cancel = () => {
+      close();
+      ipc && ipc.send && ipc.send('cancel.all');
+      bumpAll();
+    };
+
+    ngSafe(() => {
+      ipc && ipc.on && ipc.on('show-export-task', onShow);
+      ipc && ipc.on && ipc.on('finish-export-task', onFinish);
+      ipc && ipc.on && ipc.on('close-export-task', onClose);
+    });
+    rootRef.current.cancel = cancel;
+
+    return () => {
+      ngSafe(() => {
+        ipc && ipc.off && ipc.off('show-export-task', onShow);
+        ipc && ipc.off && ipc.off('finish-export-task', onFinish);
+        ipc && ipc.off && ipc.off('close-export-task', onClose);
+      });
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host]);
+
+  if (!host) return null;
+
+  const { isExporting, curr, total, timeLeftInSeconds } = rootRef.current;
+  const width = (() => {
+    const v = (curr / total * 100);
+    return (Number.isFinite(v) ? v : 0) + '%';
+  })();
+
+  return createPortal(
+    <>
+      <div className={`progress-dialog${isExporting ? ' open' : ''}`}>
+        {isExporting && (
+          <div className="progress-dialog-content">
+            <div className="message">
+              {t('progress.exporting.msg')}...<span className="counter" style={ngShow(!!timeLeftInSeconds)}> ({second2time(timeLeftInSeconds)})</span>
+            </div>
+            <div className="progressbar" style={ngShow(!!isExporting)}>
+              <div className="current" style={{ width }} />
+            </div>
+            <div className="button button-xs button-grey cancel-button" onClick={() => rootRef.current.cancel()}>
+              {t('general.cancel')}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}
+
+/* ================= debug-report-progress（空 link；body scope 桥接） ================= */
+
+export function DebugReportProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  const bumpAll = () => bump((v: number) => v + 1);
+  const [st, setSt] = useState<{ isExporting: boolean; progress: number }>({ isExporting: false, progress: 0 });
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-debug-report-progress-host'));
+  }, []);
+
+  useEffect(() => {
+    const body = getBodyScope();
+    if (!body) return;
+    // debugReportStatus 由 debug-reporter 写在 body scope（106539）；两个原始值 watch 即可
+    const read = () => {
+      const b = getBodyScope();
+      const s = b && b.debugReportStatus ? b.debugReportStatus : {};
+      return `${s.isExporting ? 1 : 0}|${s.progress}`;
+    };
+    const sync = () => {
+      const b = getBodyScope();
+      const s = b && b.debugReportStatus ? b.debugReportStatus : {};
+      setSt({ isExporting: !!s.isExporting, progress: Number(s.progress) || 0 });
+      bumpAll();
+    };
+    const off = body.$watch(read, sync);
+    sync();
+    return () => off();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host]);
+
+  if (!host) return null;
+
+  return createPortal(
+    <>
+      <div id="export-debug-report-dialog" className={`progress-dialog${st.isExporting ? ' open' : ''}`}>
+        {st.isExporting && (
+          <div className="progress-dialog-content">
+            <div className="message">{t('dialog.debugReport.exporting')}</div>
+            <div className="progressbar" style={ngShow(!!st.isExporting)}>
+              <div className="current" style={{ width: st.progress + '%' }} />
+            </div>
+            {/* 原版此按钮无 ng-click（纯装饰），逐字保留 */}
+            <div className="button button-xs button-grey cancel-button cancel">{t('general.cancel')}</div>
+          </div>
+        )}
+      </div>
+      <div className="progress-dialog-overlay" />
+    </>,
+    host
+  );
+}
+
+/* ================= file-add-library-progress（ADD_TO_LIBRARY 广播 + 复制流程逐字） ================= */
+
+export function FileAddLibraryProgress() {
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const [, bump] = useState(0);
+  const bumpAll = () => bump((v: number) => v + 1);
+  const rootRef = useRef<any>({ isAdding: false, curr: 0, total: 0, libraryName: '', forceQuit: false });
+
+  useEffect(() => {
+    setHost(document.getElementById('eagle-file-add-library-progress-host'));
+  }, []);
+
+  useEffect(() => {
+    const body = getBodyScope();
+    if (!body) return;
+    const ipc = getIpc();
+    const w = window as any;
+    const fsMod = req('fs');
+    const fse = req('fs-extra');
+    const pathMod = req('path');
+
+    const updateLibraryMetadata = (targetMetadataPath: string, newMetadataJSON: string) => {
+      const tempDir = targetMetadataPath.replace('metadata.json', '~$metadata.json.tmp');
+      fsMod.writeFileSync(tempDir, newMetadataJSON);
+      const outstream = fsMod.createWriteStream(targetMetadataPath, { flags: 'w' });
+      outstream.write(newMetadataJSON);
+      outstream.on('finish', function () {
+        const jsonBytes = (window as any).Buffer.byteLength(newMetadataJSON, 'utf8');
+        const jsonSizeStr = jsonBytes >= 1048576 ? (jsonBytes / 1048576).toFixed(2) + ' MB' : (jsonBytes / 1024).toFixed(2) + ' KB';
+        ipc && ipc.send && ipc.send('electron-info', `[bg] metadata.json updated successfully: ${targetMetadataPath} (${jsonSizeStr})`);
+        console.log('除存成功');
+        fse.remove(tempDir);
+      });
+      outstream.on('error', function (err: any) {
+        ipc && ipc.send && ipc.send('electron-log', '' + err.stack || err);
+        try {
+          fsMod.renameSync(tempDir, targetMetadataPath);
+        } catch (err2: any) {
+          ipc && ipc.send && ipc.send('electron-log', '' + err2.stack || err2);
+        }
+      });
+      outstream.end();
+    };
+
+    const copyToLibrary = (item: any, libraryPath: string, folder: any, index: number, callback: any) => {
+      try {
+        const itemDir = `${pathMod.dirname(w.FileUrlHelper.getRawPath(item))}/`;
+        const outDir = pathMod.normalize(`${libraryPath}/images/${item.id}.info/`);
+        const newMetadataFile = pathMod.normalize(`${outDir}/metadata.json`);
+        fsMod.exists(outDir, function (isExists: boolean) {
+          if (isExists) {
+            return callback();
+          } else {
+            fse.copy(itemDir, outDir, function (err: any) {
+              if (err) {
+                ipc && ipc.send && ipc.send('electron-log', '' + err.stack || err);
+                return callback(err);
+              }
+              fsMod.readFile(newMetadataFile, 'utf8', function (err2: any, result: string) {
+                try {
+                  const newItem = JSON.parse(result);
+                  // 框选搬移文件，需移除原来的 folders 属性
+                  if (!folder) {
+                    newItem.folders = [];
+                  }
+                  // 自动排序的文件夹，不更新修改时间
+                  if (folder?.orderBy === 'MANUAL') {
+                  } else {
+                    newItem.modificationTime = Date.now() + index;
+                  }
+                  const json = JSON.stringify(newItem);
+                  fsMod.writeFile(newMetadataFile, json, function (err3: any) {
+                    callback(err3);
+                  });
+                } catch (err4: any) {
+                  ipc && ipc.send && ipc.send('electron-log', '' + err4.stack || err4);
+                  return callback(err4);
+                }
+              });
+            });
+          }
+        });
+      } catch (err) {
+        callback(err);
+      }
+    };
+
+    const addToLibrary = (params: any) => {
+      rootRef.current.isAdding = true;
+      rootRef.current.total = params.items.length;
+      rootRef.current.libraryName = params.library.name;
+      rootRef.current.msg = t('progress.copyingToLibrary.msg', [{ property: 'path', value: rootRef.current.libraryName }]);
+
+      const libraryPath = params.library.path;
+      const items = params.items;
+      let folder = params.folder ? w.angular.copy(params.folder) : undefined;
+      const smartFolder = params.smartFolder ? w.angular.copy(params.smartFolder) : undefined;
+      const tagGroup = params.tagGroup ? w.angular.copy(params.tagGroup) : undefined;
+      const success: any[] = [];
+      const fail: any[] = [];
+
+      // 資源庫不存在
+      if (!fsMod.existsSync(libraryPath)) {
+        ipc && ipc.send && ipc.send('show-error-box', {
+          title: t('dialog.libraryMissed.title'),
+          message: t('dialog.libraryMissed.desc'),
+        });
+        bumpAll();
+        return;
+      }
+
+      if (tagGroup) {
+        ipc && ipc.send && ipc.send('electron-info', `[app] Add tagGroup(${tagGroup.name}) to other library: ${libraryPath}`);
+        const targetMetadataPath = pathMod.normalize(`${libraryPath}/metadata.json`);
+        fsMod.readFile(targetMetadataPath, 'utf8', function (err: any, metadataJSON: string) {
+          if (err) {
+            ipc && ipc.send && ipc.send('electron-log', '' + err.stack || err);
+          } else {
+            const lib = JSON.parse(metadataJSON);
+            const targetTagsGroups = lib.tagsGroups;
+            tagGroup.id = w.guid();
+            targetTagsGroups.unshift(tagGroup);
+            lib.modificationTime = Date.now();
+            const newMetadataJSON = JSON.stringify(lib);
+            updateLibraryMetadata(targetMetadataPath, newMetadataJSON);
+            getRootScope().notify({ message: t('general.taskFinished'), duration: 800 });
+          }
+        });
+        rootRef.current.isAdding = false;
+        bumpAll();
+        return;
+      }
+
+      if (smartFolder) {
+        ipc && ipc.send && ipc.send('electron-info', `[app] Add smartFolder(${smartFolder.name}) to other library: ${libraryPath}`);
+        const targetMetadataPath = pathMod.normalize(`${libraryPath}/metadata.json`);
+        fsMod.readFile(targetMetadataPath, 'utf8', function (err: any, metadataJSON: string) {
+          if (err) {
+            ipc && ipc.send && ipc.send('electron-log', '' + err.stack || err);
+          } else {
+            const lib = JSON.parse(metadataJSON);
+            const targetSmartFolders = lib.smartFolders;
+            // 更换所有智能文件夹 ID
+            smartFolder.id = w.guid();
+            w.eagle.utils.tree.walk(smartFolder.children, 'children', function (child: any, parent: any) {
+              child.id = w.guid();
+            });
+            targetSmartFolders.unshift(smartFolder);
+            lib.modificationTime = Date.now();
+            const newMetadataJSON = JSON.stringify(lib);
+            updateLibraryMetadata(targetMetadataPath, newMetadataJSON);
+            getRootScope().notify({ message: t('general.taskFinished'), duration: 800 });
+          }
+        });
+        rootRef.current.isAdding = false;
+        bumpAll();
+        return;
+      }
+
+      if (folder) {
+        const clones: any[] = [];
+        w.cloneTree(clones, [folder]);
+        folder = clones[0];
+        ipc && ipc.send && ipc.send('electron-info', `[app] Add folder(${folder.name}) contains ${items.length} files to other library: ${libraryPath}`);
+        const targetMetadataPath = pathMod.normalize(`${libraryPath}/metadata.json`);
+        fsMod.readFile(targetMetadataPath, 'utf8', function (err: any, metadataJSON: string) {
+          if (err) {
+            ipc && ipc.send && ipc.send('electron-log', '' + err.stack || err);
+          } else {
+            const lib = JSON.parse(metadataJSON);
+            const targetFolders = lib.folders;
+            const existsFolders: any = {};
+            targetFolders.forEach(function (targetFolder: any) {
+              existsFolders[targetFolder.id] = true;
+            });
+            w.eagle.utils.tree.walk(targetFolders, 'children', function (child: any, parent: any) {
+              existsFolders[child.id] = true;
+            });
+            // 避免重复文件夹
+            const removeFolders: any[] = [];
+            w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+              if (parent && existsFolders[child.id]) {
+                const idx = parent.children.indexOf(child);
+                if (idx > -1) {
+                  removeFolders.push({ folder: child, parent });
+                }
+              }
+            });
+            removeFolders.forEach(function (f: any) {
+              const parent = f.parent;
+              const folderItem = f.folder;
+              const idx = parent.children.indexOf(folderItem);
+              if (idx > -1) {
+                parent.children.splice(idx, 1);
+              }
+            });
+            if (!existsFolders[folder.id]) {
+              targetFolders.unshift(folder);
+              lib.modificationTime = Date.now();
+              const newMetadataJSON = JSON.stringify(lib);
+              updateLibraryMetadata(targetMetadataPath, newMetadataJSON);
+            }
+          }
+        });
+      } else {
+        ipc && ipc.send && ipc.send('electron-info', `[app] Add ${items.length} files to other library: ${libraryPath}`);
+      }
+
+      const cbs = items.map(function (item: any, index: number) {
+        return function (callback: any) {
+          if (rootRef.current.forceQuit) {
+            fail.push(item);
+            callback();
+            return;
+          }
+          copyToLibrary(item, libraryPath, folder, index, function (err: any) {
+            if (err) {
+              fail.push(item);
+              ipc && ipc.send && ipc.send('electron-log', `[app] Add ${item.name} fail`);
+              ipc && ipc.send && ipc.send('electron-log', '' + err.stack || err);
+            } else {
+              success.push(item);
+            }
+            rootRef.current.curr++;
+            bumpAll();
+            callback();
+          });
+        };
+      });
+
+      const asyncMod = req('async');
+      asyncMod.parallelLimit(cbs, 5, function () {
+        rootRef.current.isAdding = false;
+        rootRef.current.curr = 0;
+        rootRef.current.total = 0;
+        rootRef.current.forceQuit = false;
+        ipc && ipc.send && ipc.send('electron-info', `[app] Add to library finished, total: ${items.length}, success: ${success.length}, fail: ${fail.length}`);
+        getRootScope().notify({ message: t('general.taskFinished'), duration: 800 });
+
+        const targetMtimePath = pathMod.normalize(`${libraryPath}/mtime.json`);
+        fsMod.readFile(targetMtimePath, 'utf8', function (err: any, data: string) {
+          if (!err) {
+            const mtimeMappings = JSON.parse(data);
+            items.forEach(function (item: any) {
+              mtimeMappings[item.id] = item.lastModified;
+            });
+            const updatedMtimeJSON = JSON.stringify(mtimeMappings);
+            fsMod.writeFile(targetMtimePath, updatedMtimeJSON, function () { });
+          }
+        });
+        bumpAll();
+      });
+    };
+
+    const cancel = () => {
+      rootRef.current.isAdding = false;
+      rootRef.current.forceQuit = true;
+      ipc && ipc.send && ipc.send('electron-info', `[app] User interrupt the add library task.`);
+      bumpAll();
+    };
+    rootRef.current.cancel = cancel;
+
+    const onAddToLibrary = (e: any, params: any) => {
+      ngSafe(() => {
+        if (!params.library || !params.items) return;
+        if (params.smartFolder || params.tagGroup) {
+          addToLibrary(params);
+          return;
+        }
+
+        if (params.items.length === 1) {
+          addToLibrary(params);
+          bumpAll();
+        } else {
+          const html = t('Dialog.BulkAction.Descript', [{ property: 'count', value: params.items.length }]);
+          w.swal({
+            html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${t('Dialog.BulkAction.Title')}</h4>
+                        <p class="alert-desc">${html}</p>
+                    </div>
+                `,
+            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+            width: 400,
+            customClass: 'alert-box',
+            cancelButtonColor: '#777777',
+            confirmButtonText: t('Dialog.BulkAction.Button'),
+            cancelButtonText: t('general.cancel'),
+          }).then(function () {
+            addToLibrary(params);
+            bumpAll();
+          }, function () { });
+        }
+      });
+    };
+
+    const off = body.$on('ADD_TO_LIBRARY', onAddToLibrary);
+
+    return () => {
+      off();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [host]);
+
+  if (!host) return null;
+
+  const { isAdding, curr, total, msg } = rootRef.current;
+  const width = (() => {
+    const v = (curr / total * 100);
+    return (Number.isFinite(v) ? v : 0) + '%';
+  })();
+
+  return createPortal(
+    <>
+      <div id="add-to-library-progress" className={`progress-dialog${isAdding ? ' open' : ''}`}>
+        {isAdding && (
+          <div className="progress-dialog-content">
+            <div className="message">{iv(msg)} <span className="counter">({curr}/{total})</span></div>
+            <div className="progressbar" style={ngShow(!!isAdding)}>
+              <div className="current" style={{ width }} />
             </div>
             <div className="button button-xs button-grey cancel-button" onClick={() => rootRef.current.cancel()}>
               {t('general.cancel')}

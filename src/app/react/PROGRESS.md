@@ -853,6 +853,35 @@
 >   timeLeftInSeconds + $evalAsync）——7d-6b 换壳后该 query 落空静默跳过（guard 安全），但
 >   fileExportProgress React 版需自行处理 close-export-task 通道的等价重置。
 
+> **7d-6b 已验证并接管（2026-08-31）**：ProgressDialogs.tsx 追加 FileThumbnailProgress +
+> FileExportProgress + FileAddLibraryProgress + DebugReportProgress（index.html 455-458 四元素
+> 换壳为 #eagle-file-thumbnail-progress-host / #eagle-file-export-progress-host /
+> #eagle-file-add-library-progress-host / #eagle-debug-report-progress-host）。
+> - file-thumbnail：空 link → body scope 函数型 watcher 桥接（队列原地 push/splice 引用不变，
+>   watcher 读两队列 length 串等价模板逐 digest 重读）；cancel → scopeApply(
+>   body.cancelRegenerateThumbnail)。i18n 键 progress.regenerateThumbanil.msg（原版拼写错误，
+>   逐字保留）。
+> - debug-report：debugReportStatus **初始不存在**（bundle 106539 仅在导出调试报告 swal 确认
+>   回调里创建）→ watcher 宽容读 + 冒烟先等价初始化再置值；取消按钮原版无 ng-click（纯装饰），
+>   逐字保留。
+> - file-export：ipc show/finish/close-export-task；show 的 total 累加（`total += total`）、
+>   finish 完成且 finishDir → send 'show-item-in-folder'；close-export-task 合并原指令
+>   （仅 clearInterval）与 shim DOM poke（重置）语义——主进程错误路径必须关弹窗（真实流：
+>   main.cjs runExport 出错即 send close-export-task）。
+> - add-library：ADD_TO_LIBRARY 广播（单项直加/多项 swal BulkAction 确认）+ addToLibrary
+>   逐字（existsSync 不存在 → show-error-box 早退且 isAdding 保持 true 的怪癖；tagGroup/
+>   smartFolder/folder 三分支 metadata 写入 + updateLibraryMetadata 原子写 + copyToLibrary
+>   async.parallelLimit(5)）；依赖 window 全局 cloneTree/guid/angular.copy/eagle.utils.tree.walk/
+>   FileUrlHelper + req('fs'|'fs-extra'|'path'|'async')（shim async 无 parallelLimit，mock
+>   existsSync 早退走不到）；window.Buffer 替代裸 Buffer（tsc 无 node types）。
+> - 闭环：react-stage7d6b-smoke 21/21（四壳/旧元素删除/thumbnail 队列 (0/2)→50%→cancel/
+>   debugReport 40% 开合/export 0%→50%→finish 关闭→finish(dir) show-item-in-folder→
+>   close-export-task 关闭→cancel 'cancel.all'/add-library 单项 (0/1)+msg 库名→cancel
+>   'electron-info'、多项 swal 确认→(0/2)→cancel）。全量回归 24/24（runner 增 7d6b）+
+>   api-smoke 13/13；tsc 零错。
+> - **冒烟 spy 教训**：ipc.send 包装的 rest 参数已含去 channel 的 payload，记录应为
+>   `[...args]` 而非 `args[1]`（7d-6a spy 不记 args 未暴露）。
+
 | NewSmartFolderController | controller | 74323-74733（模板 index.html 641-964）| 已验证（7d-1c-2 NewSmartFolderModal） |
 | AddToFolderController | controller | 74733-75637（模板 index.html 411-544）| 已验证（7d-1a AddToFolderModal） |
 | MoveFolderController | controller | 75637-76136（模板 index.html 545-617）| 已验证（7d-1a MoveFolderModal） |
@@ -941,10 +970,10 @@
 | libraryMergeProgress | directive | 63437-63528 | 已验证（7d-6a LibraryMergeProgress） |
 | eaglepackImportProgress | directive | 63528-63601 | 已验证（7d-6a EaglepackImportProgress） |
 | eaglepackExportProgress | directive | 63601-63698 | 已验证（7d-6a EaglepackExportProgress） |
-| fileThumbnailProgress | directive | 63698-63707 | 待办 |
-| fileExportProgress | directive | 63707-63779 | 待办 |
-| fileAddLibraryProgress | directive | 63779-64111 | 待办 |
-| debugReportProgress | directive | 64111-64120 | 待办 |
+| fileThumbnailProgress | directive | 63698-63707 | 已验证（7d-6b FileThumbnailProgress） |
+| fileExportProgress | directive | 63707-63779 | 已验证（7d-6b FileExportProgress） |
+| fileAddLibraryProgress | directive | 63779-64111 | 已验证（7d-6b FileAddLibraryProgress） |
+| debugReportProgress | directive | 64111-64120 | 已验证（7d-6b DebugReportProgress） |
 | webpConvertProgress | directive | 64120-64221 | 待办 |
 | fixutilProgress | directive | 64221-64230 | 待办 |
 | fixutilCleanEmptyFolderProgress | directive | 64230-64240 | 待办 |

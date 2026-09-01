@@ -1420,6 +1420,33 @@
 >   tsc 零错。
 > - 9b-2 待办：TagSelectPanel（1555 行分叉）+ ContextMenu（462）+ library-switcher +
 >   vs-repeat 虚拟化 + tag select 面板真实开合。
+
+> **9b-2 勘察（2026-09-01；未转写，下一片按此执行）**：
+> - **TagSelectPanel（tag-select-panel.js 1555 + 模板 205）**：全局类（非 isolate scope），
+>   与 stage7 已移植引擎（react/components/stage7/selectPanelEngine.ts）方法面几乎同族
+>   （updateTagsState/updateItemList/filterByGroup/filterByKeyword/sortByKeywordSimilarity/
+>   select* 网格导航/scrollToGroup/toggle 系/getCallbackResult/parseTags/decideLayoutMode/
+>   createdTags/openSettings/closeSettings/setColumnSize/setListMode 全同名）；**collect 分叉
+>   多出 initDraggable/initResizable/reset/render（自管 DOM 渲染！非 React 快照式）**，少
+>   changeTab/toggleExpand/openItemSubmenu/openAppContextMenu（主窗口专属）。转写策略建议：
+>   以 collect 源逐字为准新建 collect 窗专属引擎类（不可直接复用 stage7 类——分叉差异未逐行
+>   核对，render 自管 DOM 与 React 快照冲突）；面板宿主组件 + collect 模板 205 行逐字；
+>   openTagSelect 的 tagManager 入参（allTags/groups/recent/suggestions/starred）已由
+>   controller.getTagAll() 备好。jQuery UI draggable/resizable（initDraggable/initResizable）
+>   可参照 stage7 同款等价。swal 建标路径（onPaste 批量）保留 window.swal。
+> - **ContextMenu（context-menu.js 462 + context-menu.html 30 + items 147）**：同为 contextMenu
+>   模块分叉（DOM 菜单非 native），ContextMenu.open 全局静态 + CONTEXTMENU.OPEN 广播等价；
+>   与 stage7a ContextMenuPanel 的差异需逐行核对后决定复用或 fork；消费点 = folder 行右键
+>   （openItemSubmenu 现为守卫 no-op）+ library-switcher 菜单。注意 9a-3 结论：native Menu
+>   popup 不可自动化——collect 的 context-menu 是 DOM 菜单，可冒烟。
+> - **library-switcher（83 行 + library-switcher.html）**：click → ContextMenu.open（showSearch、
+>   library history 项含 icon=`/api/library/icon?libraryPath=` + fallbackImage + disabled/checked）
+>   → eagle.library.switchPromise → onLibrarySwitching/Switched/SwitchedClosed 回调链（controller
+>   已实现三回调）；updateLibrary 读 eagle.library.info()。转写需 ContextMenu 先行。
+> - **vs-repeat 虚拟化**：folder 面板列表当前全量渲染；接 stage7 useVsRepeat（vs-excess 30/
+>   vs-repeat 26/vs-size=size）+ vs-auto-scroll（index 跟随）；mock 数据量小，冒烟断言建议
+>   断 before/after spacer 存在 + 滚动窗口切片。
+> - shims collect 分支已就绪（React marker 轮询），无需再改；数据面契约同 9b-1。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。

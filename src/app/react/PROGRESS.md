@@ -1826,6 +1826,26 @@
 >   grep 关键词要含驼峰变体）；(3) 冒烟探针证明「监听已挂但行为不显」时，先查双绑/
 >   多实例，再查事件对象差异。
 
+> **b1 前置勘察结论（2026-09-01；方向决策点，b1 暂缓）**：b1（移除 angular.min.js +
+> app.bundle.js）被**数据面依赖**阻塞——阶段11 清理清单的 b1 假设「UI 全 React 后 bundle
+> 可移除」不成立：
+> - React 全线 **43 个文件**仍以 `$bodyScope`/`getBodyScope`/bundle 全局为运行时数据面
+>   （scope sync 各 store 的数据源、eagle.filter/inspector/action、FileUrlHelper/
+>   IPCHelper/resetNgGridLayoutData/ayncsImagesChange/Registration/swal 等）。
+> - app.bundle.js = src/app/js 源码树（9MB：services/controllers/directives/utils）+ 
+>   eagle 对象族（Inspector 1-249 / ItemFilter 250-606 / DuplicateChecker / AIAction 2048 /
+>   ReverseImageSearch 1012 / AISearch 1844 等类）的 webpack 产物 + EagleController
+>   34,043 行（页面内后端：导航/筛选/选择/上传/库状态）。
+> - index.html 尾部脚本清点：保留 = vendors（tippy/jQuery 族/lodash/mousetrap/colorpicker）
+>   + eagle-api.js/url-enlarger.js + lazy-load-manager + shortcut-manager + 内联
+>   （window.i18n/window.EagleConfig/appRoot/eagle.urlEnlargerRemote.load()——后两行依赖
+>   bundle 全局）；删除对象 = angular*.js + app.bundle.js（及内联的 bundle 依赖行）。
+> - core.jsc 仅 registration.html（bytenode）使用，不在主窗口数据面——无阻塞。
+> - **结论：b1 的真前置 = 阶段1 收尾（数据面接管）**——eagle 对象族 + EagleController
+>   数据函数 + 工具全局的 React 化 + scope sync 数据源切换。规模为数个大会话级，
+>   与 UI 片段的「模板逐字转写」性质不同（无模板可逐字，是行为/状态机移植）。
+>   待用户确认方向后立切片方案。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

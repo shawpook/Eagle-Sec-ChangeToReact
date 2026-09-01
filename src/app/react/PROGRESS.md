@@ -1916,6 +1916,33 @@
 >   全局兜底必须按「最贫瘠窗口」设计（main 有 EagleConfig ≠ collect 有）；(3) 9b1 的 24
 >   断言全挂是"入口崩"特征信号，与偶发的"个别断言超时"截然不同，先查共享模块加载链。
 
+
+> **c3 已验证并接管（2026-09-01；batch1+batch2 = 42 函数）**：EagleController 函数域移植
+> 机制落成 + callScope 全量路由切换。
+> - **机制**：core/controllerFns.ts（提取脚本生成）——函数体逐字 + 包装层
+>   `fns[name] = function(...args) { try { initLinkVars(); } catch {} const s = getScope();
+>   if (!s) return; return (function(原参){...}).apply(null, args); }`（s 走闭包不占实参位；
+>   link 级共享 var 声明提升至闭包顶层、初始化惰性首调执行；link 级辅助函数
+>   （updateCurrentOrderAndIncrease/isInFolder/parseKeywordsWithOR/updateSuggestions）逐字
+>   导出）。hooks.ts callScope 优先命中本表——**所有 callScope 消费方自动走 React 代码**，
+>   bundle 同名函数退为后备（cZ 消亡）。
+> - **提取器（brace 精确扫描器）迭代中修掉的四个坑**：(1) 模板 ${} 需独立深度计数（混用
+>   外层 depth 必炸）；(2) 正则字面量需前导字符启发式（否则吞 brace）；(3) rename 必须
+>   代码上下文感知（`/%/g` 的旗标 g、字符串内容不能改）且跳过 `.` 前导成员访问
+>   （s.orderBy 被改成 s.__lv_orderBy 曾致写穿错字段）；(4) link var 收集限定 8 空格缩进
+>   （嵌套函数局部 var 误提升曾致 25→72 泛滥）+ 多行初始化语句需深度扫描完整截取。
+> - **真回归一例**：batch2 首轮 collect 窗口 24 断言全挂 = controllerFns 模块级
+>   `EagleConfig.VIDEO_FORMATS` 在无 window.EagleConfig 的 collect 壳上 TypeError →
+>   hooks 导入链死亡 → React 全灭。修复 `|| {}` 兜底。「24/全部断言挂」= 入口崩特征，
+>   与偶发单断言超时截然不同。
+> - 冒烟 react-stage1c3-smoke：契约 42 函数在位/路由证明（哨兵替换 scope.cancelAllTasks
+>   → core 命中不触哨兵 + 队列清空 + 'cancel.all' spy）/bundle 后备仍通（clickNode）/
+>   changeOrderBy('NAME') 写 orderBy/switchGridLayout 写 layout/cleanSelected 无错执行
+>   （$timeout 100ms 延迟清空 + updateSelection 重算——断言按真实语义）。tsc 零错；
+>   suite 42 项 ALL GREEN（main-ui-workflow 一次既有偶发单跑复绿）；api-smoke 13/13。
+> - 下一批（c3 续）：sidebar(30)/detail(25)/misc(54) 域同管线追加；cZ = 状态大爆炸迁移。
+
+- [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

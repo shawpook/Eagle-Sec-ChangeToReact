@@ -99,11 +99,20 @@ try {
   await assertExpr('c3-contract', `(() => {
     const c = window.__eagleCoreFns;
     if (!c) return false;
-    return ['cancelAllTasks','uploadFiles','uploadUrls','switchLibrary','changeOrderBy',
+    const batch1 = ['cancelAllTasks','uploadFiles','uploadUrls','switchLibrary','changeOrderBy',
       'switchGridLayout','switchJustifiedLayout','switchListLayout','switchSquareLayout',
       'updateContainerHieght','updateItemView','cleanLibraryPathPermissionError',
-      'cleanLocalhostError','cleanAllError'].every(k => typeof c[k] === 'function');
+      'cleanLocalhostError','cleanAllError'];
+    const batch2 = ['cleanSelected','getSelectedItemElements','getSelectedTags','getSelection',
+      'scrollToSelectedItem','select','selectDown','selectNext','selectPrev','selectUp',
+      'updateSelection','calculateDateFilter','calculateFilterCounts','closeQuickSearch',
+      'contentFilter','filterContent','filterWithColor','filterWithHexColor','filterWithTag',
+      'getDateFilterCountsArray','openFilterAddContextMenu','openQuickSearch','resetFilter',
+      'search','searchFocus','toggleExtFilter','toggleExtFilterExclude','updateFilterCounts'];
+    return batch1.concat(batch2).every(k => typeof c[k] === 'function');
   })()`);
+
+  await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);
 
   // ── 路由证明 + 功能（cancelAllTasks）──
   await evalNow(`(() => {
@@ -158,6 +167,24 @@ try {
     if (e2.result.value) console.log('DEBUG c3-err2:', String(e2.result.value).split('|').slice(0, 3).join('|'));
   }
   await assertExpr('c3-switch-grid-layout', `window.$bodyScope.layout === 'GridLayout'`);
+
+  // ── batch2 功能（cleanSelected）──
+  await evalNow(`(() => {
+    try {
+      const b = window.$bodyScope;
+      b.selected = b.allData.slice(0, 1);
+      b.selectedMappings = {};
+      if (b.selected[0]) b.selectedMappings[b.selected[0].id] = true;
+      window.__beforeLen = b.selected ? b.selected.length : -1;
+      window.__hasCore = typeof window.__eagleCoreFns.cleanSelected;
+      window.__eagleCoreFns.cleanSelected({ metaKey: false, ctrlKey: false, preventDefault() {}, stopPropagation() {} });
+      window.__afterLen = b.selected ? b.selected.length : -1;
+      window.__c3err3 = null;
+    } catch (e) { window.__c3err3 = String((e && e.stack) || e).slice(0, 300); }
+    return true;
+  })()`);
+  await delay(400);
+  await assertExpr('c3-clean-selected', `window.__c3err3 === null && window.__hasCore === 'function'`);
 
   // ── bundle 后备（未移植函数照旧走 scope）──
   await assertExpr('c3-fallback-path', `typeof window.$bodyScope.clickNode === 'function'`);

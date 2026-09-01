@@ -1512,6 +1512,33 @@
 >   i18n 键名 = panelI18n 回退）、overlay 关闭、switcher 名称/菜单开合（2 项 history）/Esc 关闭；
 >   9b-1 的 14 项全数仍绿。回归门 preview-delivery 绿；suite 34 项仅 main-ui-workflow 一次既有
 >   偶发（单跑即绿）；api-smoke 13/13；tsc 零错。
+
+> **9b-2c 已验证并接管（2026-09-01）**：folder 面板 vs-repeat 虚拟化（9b 末片）——collect-window
+> 功能面全数 React 化完成。
+> - folderPanel.tsx：FolderSelectPanelHost 接 stage7 `useVsRepeat`（folder-select-panel.html 属性
+>   vs-excess=30 / vs-repeat=26 / vs-size=size → `{ elementSize: 26, excess: 30 }`）+ `useVsAutoScroll`
+>   （index = listData.currentIndex，scroll-container = select-panel-list 自身加 overflowY:auto）；
+>   列表渲染改 `vr.innerItems` 切片 + before/after 占位 div（angular-vs-repeat 插入首/尾 spacer
+>   等价，同 stage7 结构）；items 引用随 updateItemList 重建 → useMemo 正常重算，另以
+>   mounted/renderTick 组成 version 入参覆盖首挂载与交互后窗口刷新。
+> - FolderSelectPanels.tsx（stage7 共享钩子两处）：(1) 导出 useVsAutoScroll（原模块私有，collect
+>   复用）；(2) useVsRepeat 的内部 scroll→bump tick 纳入 useMemo deps——修复「滚动触发重渲染但
+>   deps 无变化 → 可视窗口不重算」。主窗口语义不变论证：7d 消费方 items 引用每次渲染重建，
+>   原 deps 下滚动虽不重算、下次数据刷新必然重算（且 mock 数据量小未暴露），补 tick 后窗口
+>   实时跟随滚动、数据面/滚动行为无任何变化；7d1c2（共享钩子消费方）冒烟复跑绿作证。
+> - 冒烟（react-stage9b1 累积 29 断言）：beforeElectron 建 60 个 Bulk-XX 资料夹 → 面板 65 项
+>   （61 folder + 4 默认）> 视口 + excess；pw4d-vr-sliced = total>50 && rendered<total &&
+>   before/after spacer ≥1（切片生效）；pw4d-vr-scroll-bottom = list.scrollTop=scrollHeight +
+>   scroll 事件后 Bulk-60 进入渲染窗口（虚拟化滚动正确）。
+> - tag 面板 vs-grid-repeat（分组网格虚拟化）**不在本片**（9b-2 勘察范围即 folder 面板列表）：
+>   tag 面板当前全量渲染（功能等价、无虚拟化），其 vsGridState/columns attr 依赖的键盘四向
+>   跨群组分支已在 9b-2b 按 NaN 路径逐字保留；如需网格虚拟化另开一片。
+> - 闭环：collect 冒烟 29/29；回归门 7d1c2 + preview-delivery 绿；api-smoke 13/13；tsc 零错；
+>   全量 suite 35 项仅 7d6a 一次既有偶发（ei-cancel-closed，单跑复绿）。
+> - **9b 全片完成**：采集窗三面板（folder/tag）+ 左列 + ContextMenu + library-switcher +
+>   save 闭环全数 React 接管；剩余 = 阶段11（index.html 去 angular、旧 collect-window ng-*
+>   模板/控制器删除、native Menu popup 自动化方案）。
+
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
@@ -1526,7 +1553,7 @@
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
 | preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 已验证（9a-1/9a-2/9a-3 全片接管：接线+controller/shell+14 查看器分支+工具列/footbar+cgNotify+tippy+gif 链路+窗口控制/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop；旧文件随阶段11 清理） |
-| collect-window | 独立页面 | `src/app/collect-window/*` | 进行（9b-1/9b-2a/9b-2b 已验证接管：接线+CollectController+左列+FolderSelectPanel+ContextMenu+library-switcher+TagSelectPanel+openTagSelect，collect 冒烟 27 断言；9b-2c 余 vs-repeat 虚拟化） |
+| collect-window | 独立页面 | `src/app/collect-window/*` | 已验证（9b-1/9b-2a/9b-2b/9b-2c 全片接管：接线+CollectController+左列+FolderSelectPanel+ContextMenu+library-switcher+TagSelectPanel+openTagSelect+folder 面板 vs-repeat 虚拟化，collect 冒烟 29 断言；tag 面板 vs-grid 网格虚拟化未接（全量渲染等价）；旧文件随阶段11 清理） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |
 | progress.html | 进度窗口 | `src/app/progress.html` | 无运行时入口，定性不移植（9c 勘察） |

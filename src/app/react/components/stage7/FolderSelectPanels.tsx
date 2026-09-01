@@ -58,7 +58,7 @@ export function useVsRepeat(
   options: { elementSize: number; excess: number },
   version: number
 ): VsRepeatResult {
-  const [, bump] = useState(0);
+  const [tick, bump] = useState(0);
 
   // $scrollParent.on('scroll', throttle(scrollHandler, 33, true))：leading + trailing 节流
   useEffect(() => {
@@ -158,11 +158,11 @@ export function useVsRepeat(
     void version;
     return { sizes, sizesCumulative, innerItems: innerCollection, beforeHeight, afterHeight, startIndex: __startIndex, endIndex: __endIndex };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, options, version, containerRef.current]);
+  }, [items, options, version, containerRef.current, tick]);
 }
 
 /** vs-auto-scroll（69856-69900 逐字）：$watch(index) 变化时滚动使当前项可见。 */
-function useVsAutoScroll(
+export function useVsAutoScroll(
   containerRef: React.RefObject<HTMLElement | null>,
   vr: VsRepeatResult,
   index: number | undefined

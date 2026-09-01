@@ -8,6 +8,10 @@ import { useEffect, useRef, useState } from 'react';
 import { controllerScope, applyController, registerFolderPanelOpener, ct, reloadData } from './controller';
 import { SelectPanel, panelI18n, cartesianProduct } from './selectPanelEngine';
 import { ContextMenu } from './contextMenu';
+import { useVsRepeat, useVsAutoScroll } from '../components/stage7/FolderSelectPanels';
+
+// folder-select-panel.html 的 vs-repeat 属性（vs-excess=30 vs-repeat=26 vs-size=size）
+const VS_REPEAT_OPTIONS = { elementSize: 26, excess: 30 };
 
 const $: any = (...args: any[]) => (window as any).jQuery(...args);
 
@@ -550,8 +554,14 @@ function escapeHtml(s: string): string {
 
 export function FolderSelectPanelHost() {
   const panelRef = useRef<any>(null);
-  const [, bump] = useState(0);
+  const [renderTick, bump] = useState(0);
   const [maxDepth, setMaxDepth] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const listRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const scopeShim = { $evalAsync: () => applyController() };
 
   useEffect(() => {
@@ -588,6 +598,12 @@ export function FolderSelectPanelHost() {
   const theme = controllerScope.theme || 'dark';
   const themePath = theme === 'light' || theme === 'lightgray' ? 'light' : 'dark';
   const isMac = controllerScope.isMac;
+
+  // vs-repeat（vs-excess=30 vs-repeat=26 vs-size=size）+ vs-auto-scroll（index=currentIndex，
+  // scroll-container = select-panel-list 自身）。items 引用随 updateItemList 重建 → useMemo 重算；
+  // mounted/version 供首挂载与交互后刷新窗口。
+  const vr = useVsRepeat(listRef, listData.items, VS_REPEAT_OPTIONS, renderTick * 2 + (mounted ? 1 : 0));
+  useVsAutoScroll(listRef, vr, listData.currentIndex);
 
   const clickItem = (item: any) => {
     if (controllerScope.isCmdOrCtrlPress) {
@@ -644,8 +660,10 @@ export function FolderSelectPanelHost() {
 
       {listData.items.length !== 0 && (
         <div className="panel-list">
-          <select-panel-list>
-            {listData.items.map((item: any) => (
+          <select-panel-list ref={listRef as any} style={{ overflowY: 'auto' }}>
+            {/* vs-repeat before 占位（angular-vs-repeat 插入为首子元素） */}
+            <div style={{ height: `${vr.beforeHeight}px` }} />
+            {vr.innerItems.map((item: any) => (
               <div
                 key={item.index}
                 className={`select-panel-item${item.index === listData.currentIndex || item.selected ? ' active' : ''}${
@@ -738,6 +756,8 @@ export function FolderSelectPanelHost() {
                 )}
               </div>
             ))}
+            {/* vs-repeat after 占位 */}
+            <div style={{ height: `${vr.afterHeight}px` }} />
           </select-panel-list>
         </div>
       )}

@@ -45,6 +45,10 @@ try {
       for (const name of ['Collected', 'Screenshots', 'References', 'Archive']) {
         await post('/api/folder/create', { name });
       }
+      // 9b-2c：60 个 Bulk 资料夹 → 面板 61 项 > 视口 + excess 30 → vs-repeat 切片生效
+      for (let i = 1; i <= 60; i++) {
+        await post('/api/folder/create', { name: `Bulk-${String(i).padStart(2, '0')}` });
+      }
     },
   });
   const { vitePort, debugPort } = stack;
@@ -327,6 +331,32 @@ try {
   await assertExprOn(pw, 'pw4c-tagpanel-created', `(() => {
     const tags = window.__eagleCollectController.collectItem.tags;
     return tags.indexOf('NewTag') > -1;
+  })()`);
+
+  // ── 9b-2c：vs-repeat 切片 ──
+  await assertExprOn(pw, 'pw4d-vr-sliced', `(() => {
+    const p = window.__eagleCollectTagPanel;
+    const fp = window.__eagleCollectFolderPanel;
+    if (!fp) return false;
+    const total = fp.listData.items.length;
+    const rendered = document.querySelectorAll('.select-panel-item').length;
+    const spacers = Array.from(document.querySelectorAll('select-panel-list > div'))
+      .map((el) => el.getBoundingClientRect().height)
+      .filter((h) => h > 0);
+    return total > 50 && rendered < total && spacers.length >= 1;
+  })()`);
+  // 滚到底 → 最后一项（Bulk-60）进入窗口
+  await evalOn(pw, `(() => {
+    const list = document.querySelector('select-panel-list');
+    if (!list) return false;
+    list.scrollTop = list.scrollHeight;
+    list.dispatchEvent(new Event('scroll'));
+    return true;
+  })()`);
+  await delay(400);
+  await assertExprOn(pw, 'pw4d-vr-scroll-bottom', `(() => {
+    const items = Array.from(document.querySelectorAll('.select-panel-item .name'));
+    return items.some((el) => el.textContent.indexOf('Bulk-60') > -1);
   })()`);
 
   await delay(600);

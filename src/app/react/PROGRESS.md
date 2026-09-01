@@ -1888,6 +1888,34 @@
 >   要查加载序（eagle 单例在 eagle-api.js 的 var，bundle 只是挂载者——grep bundle 找不到
 >   声明时先看 index.html 前置脚本）。
 
+
+> **c3 已验证并接管（2026-09-01）**：EagleController 函数域移植机制落成 + 第一批 14 函数
+> （upload/library/sort/view + 错误清理：cancelAllTasks/uploadFiles/uploadUrls/switchLibrary/
+> changeOrderBy/switchGridLayout/switchJustifiedLayout/switchListLayout/switchSquareLayout/
+> updateContainerHieght/updateItemView/cleanLibraryPathPermissionError/cleanLocalhostError/
+> cleanAllError）+ **callScope 路由切换**（hooks.ts：优先命中 react/core 移植表，bundle 同名
+> 函数退为后备——全部 callScope 消费方自动走 React 代码）。
+> - core/controllerFns.ts（提取脚本生成；**brace 精确扫描器**：字符串/模板 ${} 嵌套独立
+>   计数/注释/正则字面量（前导字符启发式）——首版"下个赋值前切"会把 $watch 等中间语句
+>   吞进函数体）。机械替换：$scope → s（makeControllerFns(getScope) 注入；包装层
+>   `const s = getScope(); return (function(原参...){...}).apply(null, args)`——s 走闭包不占
+>   实参位）、$rootScope → s.$root。
+> - 模块级 const shim（bundle 18982-19045 区域子集）：EagleConfig（**|| {} 兜底**——
+>   collect 窗口壳无此全局，首轮 suite 9b1 的 24 断言全挂即此因，真回归非偶发）/
+>   VIDEO|AUDIO|FONT_TYPES（EagleConfig 派生）/emojiRegex/fs/remainingFilenameLength/
+>   currentWindow/electronSettings/ipcRenderer/i18n/preferences/FixUtils/DATE_*。
+> - link 级辅助函数机制：非 $scope.fn 的 link 内函数（updateCurrentOrderAndIncrease）逐字
+>   提取为模块级导出（$scope → getBodyScope()），移植函数体内调用点零改动。
+> - 测试契约 window.__eagleCoreFns。冒烟 react-stage1c3-smoke：契约 14 函数在位/**路由
+>   证明**（哨兵替换 scope.cancelAllTasks → core 直调不触哨兵 + 队列清空 + 'cancel.all'
+>   spy）/bundle 后备仍通（未移植 clickNode 走 scope）/changeOrderBy('NAME') 写
+>   orderBy/switchGridLayout 写 layout。tsc 零错；suite 42 项（runner 增 c3）ALL GREEN；
+>   api-smoke 13/13。
+> - 教训：(1) brace 扫描器三坑——模板 ${} 需独立计数（混用外层 depth 必炸）、正则字面量
+>   需前导字符启发式、CRLF 归一要在读入时做（尾分号剥离才会命中）；(2) 跨窗口共享模块的
+>   全局兜底必须按「最贫瘠窗口」设计（main 有 EagleConfig ≠ collect 有）；(3) 9b1 的 24
+>   断言全挂是"入口崩"特征信号，与偶发的"个别断言超时"截然不同，先查共享模块加载链。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

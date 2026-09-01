@@ -52,8 +52,33 @@ export function useSelectAll(ref: React.RefObject<HTMLElement | null>) {
   }, []);
 }
 
-/** 在 Angular scope 上下文中调用函数（ng-click 语义）。 */
+// c3：React 侧已移植的 controller 函数表（逐字，操作同一 scope）——callScope 优先命中，
+// bundle 同名函数退为后备；cZ 状态迁入 AppCore 后 scope 后备随之消亡。
+import { makeControllerFns } from '../core/controllerFns';
+let coreFnsCache: Record<string, any> | null = null;
+function getCoreFns(): Record<string, any> {
+  if (coreFnsCache === null) {
+    try {
+      coreFnsCache = makeControllerFns(getBodyScope);
+    } catch (err) {
+      console.error('[core-fns] init failed', err);
+      coreFnsCache = {};
+    }
+  }
+  return coreFnsCache!;
+}
+// c3 测试契约：闭环测试经此直接访问已移植函数表（Routing 证明用）。
+try {
+  (window as any).__eagleCoreFns = getCoreFns();
+} catch (err) { /* scope 未就绪时由 callScope 内惰性初始化 */ }
+
+/** 在 Angular scope 上下文中调用函数（ng-click 语义；优先 React 移植版）。 */
 export const callScope = (fn: string, ...args: any[]) => (e: any) =>
   scopeApply(getBodyScope(), (scope) => {
+    const core = getCoreFns();
+    if (core && typeof core[fn] === 'function') {
+      core[fn](...(args.length ? args : [e]));
+      return;
+    }
     if (typeof scope[fn] === 'function') scope[fn](...(args.length ? args : [e]));
   });

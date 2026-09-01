@@ -1864,6 +1864,30 @@
 >   靠产物 grep 抓回）；(2) 对象字面量收口不能依赖"下一个顶层标记"（IPCHelper 后是内联
 >   vendor），首个顶格 '}；' 才是对象边界。
 
+
+> **c2 已验证并接管（2026-09-01）**：eagle 对象族九类移植——数据面接管第一块真实
+> 状态/逻辑移植。
+> - core/eagleApi.ts：eagle-api.js 源文件逐字（Eagle 骨架 + TreeUtil + urlEnlargerRemote；
+>   bundle 加载序中它先于 bundle 执行、var 上 window——eagle 单例的真正出处）。
+> - core/eagleClasses.ts（61KB）：bundle region（class Inspector → const junk 前）逐字提取
+>   ——Inspector/ItemFilter/DuplicateChecker/Phash/ReverseImageSearch/AISearch/CustomExport/
+>   CombineImages/AIAction 九类 + eagle.* 九处挂载语句。机械替换：$bodyScope →
+>   getBodyScope()、require('async'|'crypto'|'read-chunk') → _req() 安全包装（mock 无
+>   npm 模块返 undefined）、electronLog/swal/i18n/ipcRenderer → window 兜底 shim、
+>   FileUrlHelper → c1 移植版。
+> - 接线：main.tsx 副作用 import + 测试契约 window.__eagleCoreEagle。**实例暂不覆写
+>   window.eagle**（bundle 实例仍为权威态——避免 split-brain：scope 函数写 bundle 实例、
+>   React 读 React 实例会分叉）；随 c 域切片逐步切换消费方，cZ 时 bindEagle() 覆写挂载。
+> - 闭环：新冒烟 react-stage1c2-smoke 7/7（九实例装配/ItemFilter 方法与数值字段/
+>   Inspector width + isHideInspector 读写往返/**与 bundle window.eagle 并存且互不覆写**/
+>   TreeUtil.walk 遍历序/urlEnlargerRemote）。tsc 零错；suite 41 项（runner 增 c2）两失败
+>   （7a/main-ui-workflow）均既有偶发家族单跑复绿（main-ui-workflow 含 restart 检查）；
+>   api-smoke 13/13。
+> - 教训：(1) 提取脚本盲区——region 内嵌「类之间的其他类」（Phash/CustomExport/
+>   CombineImages 不在预设名单但被 region 完整带走，逐字提取天然包容）；(2) 单例出处
+>   要查加载序（eagle 单例在 eagle-api.js 的 var，bundle 只是挂载者——grep bundle 找不到
+>   声明时先看 index.html 前置脚本）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

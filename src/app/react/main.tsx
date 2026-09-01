@@ -38,6 +38,8 @@ import { bindPanelSync } from './store/panelState';
 import { bindUploadSync } from './store/uploadState';
 import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
+import { eagle as coreEagle } from './core/eagleApi';
+import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
 
@@ -173,4 +175,6 @@ bindBodySync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;
+// c2：React 侧 eagle 对象族（bundle 实例仍为权威态，随 c 域切片逐步切换消费方）。
+(window as any).__eagleCoreEagle = coreEagle;
 (window as any).__eagleDetailState = useDetailState;

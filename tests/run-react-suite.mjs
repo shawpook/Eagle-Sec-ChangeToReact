@@ -38,6 +38,7 @@ const tests = [
   'tests/react-stage11a3-smoke.mjs',
   'tests/react-stage11a49-smoke.mjs',
   'tests/react-stage11b0-smoke.mjs',
+  'tests/react-stage1c2-smoke.mjs',
   'tests/main-ui-workflow-closed-loop.mjs',
   'tests/source-mode-ui-closed-loop.mjs',
   'tests/library-switch-ui-closed-loop.mjs',

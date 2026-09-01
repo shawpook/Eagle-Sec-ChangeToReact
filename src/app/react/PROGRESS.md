@@ -1796,6 +1796,36 @@
 >   (2) 组件渲染位置必须与断言选择器同源（AppMenuButton 漏 portal 到 host 使断言落空）；
 >   (3) 一次性批次的冒烟按断言名分节，失败可直读定位，无需拆文件。
 
+> **11-pre b0 已验证并接管（2026-09-01）**：网格容器 Angular 指令清理 + 剩余指令移植——
+> **b1 删除前置清零**。
+> - **gridDirectives.ts（提取脚本生成，非手抄）**：autoScroll / scrollToTopSentinel /
+>   boxContainerScrollbar 三指令 link 体从 app.bundle.js 逐字提取（含 CRLF 归一 + 闭合
+>   尾巴剥离），机械替换仅三处：angular.element("body").scope() → getBodyScope()、
+>   scope.$on('$destroy') → destroy 收集器（返回 cleanup）、$timeout → setTimeout shim；
+>   文件 @ts-nocheck（逐字 JS 移植不做 TS 改写）。运行期依赖的 bundle 全局（window.ig /
+>   resetNgGridLayoutData / HoverPreview / isElementInViewport / jQuery.scrollTo 插件）
+>   在 b1 前继续存在，其去留随 b3 bundle 分解。
+> - **boxContainerScrollbar（~1030 行）逐字过门**：UPDATE_BOX_SCROLLBAR thumb 高度/
+>   switchNormal/PageMode、动态节流 scroll（性能自适应 performanceMetrics）、原生拖拽
+>   （transform3d + 精准页内定位 + 相邻页直滚 + 跨页 resetNgGridLayoutData）、mousedown
+>   跳页、$destroy 清理。
+> - **rectSelect 免移植发现**：`useRectSelect`（detailHooks.ts，bundle 72564-72799 逐字）
+>   早在阶段5 已移植并经 DetailPanel 挂载——b0 前 Angular 指令 + React 移植**双绑并存**
+>   （历史遗留：box-container 的 mousedown 双 handler），移除 Angular 属性后归一
+>   （.rect 恒 1，冒烟断言）。gridDirectives 不含 initRectSelect（避免三绑）。
+> - index.html：#box-container 的 auto-scroll/rect-select 属性、#box-container-scrollbar
+>   的 box-container-scrollbar 属性、sentinel div 的 scroll-to-top-sentinel 属性（改挂
+>   id="scroll-to-top-sentinel" 供移植代码选择器）全部移除——**主窗口 Angular 编译面仅剩
+>   html/body 的 ng-app/ng-cloak/ng-controller**。
+> - 闭环：新冒烟 tests/react-stage11b0-smoke.mjs 8/8（init 零错误/rect mousedown 显隐/
+>   AutoScroll 广播/thumb 样式/单项库 switchNormalMode/sentinel 初始化样式/属性移除核验/
+>   截图）。tsc 零错；全量 suite 40 项（runner 增 b0）**ALL GREEN 零偶发**；api-smoke
+>   13/13。
+> - 教训：(1) bundle 提取脚本优于手抄（58KB 逐字零誊写错误；CRLF 归一 + 指令闭合尾巴
+>   剥离是仅有的两个坑）；(2) 移植前先 grep 既有 React 移植（useRectSelect 先例——
+>   grep 关键词要含驼峰变体）；(3) 冒烟探针证明「监听已挂但行为不显」时，先查双绑/
+>   多实例，再查事件对象差异。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

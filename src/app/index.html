@@ -66,7 +66,7 @@
             <div id="filter-toolbar-overlay" class="filter-toolbar-overlay"></div>
 
             <!-- 自定义滚轴 -->
-            <div id="box-container-scrollbar" class="box-container-scrollbar" box-container-scrollbar>
+            <div id="box-container-scrollbar" class="box-container-scrollbar">
                 <div class="box-container-scrollbar-thumb"></div>
             </div>
 
@@ -77,14 +77,10 @@
             <div id="eagle-scroll-top-host"></div>
 
             <!-- 图片列表页面 -->
-            <div
-                auto-scroll
-                rect-select
-                id="box-container" class="box-container grid-layout"
-            >
+            <div id="box-container" class="box-container grid-layout">
                 <!-- Scroll to top sentinel for main content -->
-                <div scroll-to-top-sentinel 
-                     target="#scroll-to-top" 
+                <div id="scroll-to-top-sentinel"
+                     target="#scroll-to-top"
                      threshold="200"
                      scroll-container="#box-container"></div>
                 

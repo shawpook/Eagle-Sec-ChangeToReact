@@ -4,7 +4,7 @@ import { SavingProgressBar, UploadQueueProgressBar } from './components/shell/Pr
 import { ToastAlerts } from './components/shell/ToastAlerts';
 import { FolderLockScreen, AppLockScreen } from './components/shell/LockScreens';
 import { BodyBindings, BoxContainerBindings, AppMenuButton, HoverShowSidebar, DetailWrapper } from './components/shell/BodyBindings';
-import { DropAreas, ScrollToTop, SubFolderSection, ListLayoutHeader, PanelDropArea, BoxContainerListeners } from './components/shell/ListRegion';
+import { DropAreas, ScrollToTop, SubFolderSection, ListLayoutHeader, PanelDropArea, BoxContainerListeners, GridDirectivesBinding } from './components/shell/ListRegion';
 import { ColorsPicker, AnnotationPreviewContainer } from './components/shell/MiscContainers';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
@@ -92,6 +92,7 @@ root.render(
     <BodyBindings />
     <BoxContainerBindings />
     <BoxContainerListeners />
+    <GridDirectivesBinding />
     <AppMenuButton />
     <HoverShowSidebar />
     <DetailWrapper />

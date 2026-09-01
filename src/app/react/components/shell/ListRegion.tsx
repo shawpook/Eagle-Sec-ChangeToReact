@@ -4,6 +4,7 @@ import { useListState } from '../../store/listState';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
 import { getBodyScope } from '../../global/scopeBridge';
+import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } from '../grid/gridDirectives';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。
@@ -359,6 +360,30 @@ export function BoxContainerListeners() {
       box.removeEventListener('drop', drop);
       box.removeEventListener('mousemove', move);
     };
+  }, []);
+  return null;
+}
+
+/** b0：网格容器剩余指令 React 挂载（autoScroll/scrollToTopSentinel/boxContainerScrollbar；
+ *  rectSelect 已由 detailHooks.useRectSelect 移植并经 DetailPanel 挂载——本处不重复绑定）。 */
+export function GridDirectivesBinding() {
+  useEffect(() => {
+    const cleanups: Array<() => void> = [];
+    const inits: Array<[string, () => any]> = [
+      ['autoScroll', initAutoScroll],
+      ['scrollToTopSentinel', initScrollToTopSentinel],
+      ['boxContainerScrollbar', initBoxContainerScrollbar],
+    ];
+    inits.forEach(([name, init]) => {
+      try {
+        cleanups.push(init());
+      } catch (err) {
+        console.error(`[grid-directives] ${name} init failed`, err);
+        (window as any).__eagleGridDirectiveErrors = (window as any).__eagleGridDirectiveErrors || [];
+        (window as any).__eagleGridDirectiveErrors.push(name);
+      }
+    });
+    return () => cleanups.forEach((fn) => { try { fn(); } catch { /* noop */ } });
   }, []);
   return null;
 }

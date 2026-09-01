@@ -93,26 +93,8 @@
             <!-- 列表模式工具列 -->
             <div id="eagle-toolbar-host" class="toolbar"></div>
 
-            <!-- 失败重试提示 -->
-            <div class="toast-alert" ng-click="openErrorModal()" ng-show="errorList.length > 0">
-                <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-toast-error.svg"></div>
-                <div class="message">{{errorList.length}} <span ng-show="errorList.length==1">{{'notify.errorToast.errorMsg1' | i18n}}</span><span ng-show="errorList.length > 1">{{'notify.errorToast.errorMsg2' | i18n}}</span></div>
-                <div class="ic-btn clean-btn" ng-click="cleanAllError($event);"><img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg"></div>
-            </div>
-
-            <!-- 本地服务器无法访问题是窗口 -->
-            <div class="toast-alert warning bottom" ng-if="localhostError">
-                <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-toast-error.svg"></div>
-                <div class="message" ng-bind-html="'notify.localhostError.msg' | i18n"></div>
-                <div class="ic-btn clean-btn" ng-click="cleanLocalhostError();"><img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg"></div>
-            </div>
-
-            <!-- 資源庫沒有寫入權限提示 -->
-            <div class="toast-alert warning bottom" ng-if="libraryPathPermissionError">
-                <div class="icon"><img src="assets/images/{{theme|themePath}}/icons/ic-toast-error.svg"></div>
-                <div class="message" ng-bind-html="'notify.libraryPermissionError.msg' | i18n"></div>
-                <div class="ic-btn clean-btn" ng-click="cleanLibraryPathPermissionError()"><img src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg"></div>
-            </div>
+            <!-- 失败重试提示 / 本地服务器警告 / 資源庫寫入權限提示（React 接管，舊區塊已刪；11-pre a2） -->
+            <div id="eagle-toast-alerts-host"></div>
 
             <!-- 篩選工具列 -->
             <div id="eagle-filter-toolbar-host" class="filter-toolbar"></div>

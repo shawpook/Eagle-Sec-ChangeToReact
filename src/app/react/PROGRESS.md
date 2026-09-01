@@ -1698,6 +1698,29 @@
 >   监听前必须全 bundle grep 该通道的清理点（22734 即此例）；(2) 探针法再立功：监听表
 >   公开（this.listeners Map）+ 逐个 dump 函数源，直接定位「注册了但不在表里」。
 
+> **11-pre a2 已验证并接管（2026-09-01）**：toast-alert 三块（index.html 96-121——失败重试
+> 提示 / 本地服务器无法访问警告 / 資源庫寫入權限提示），旧模板位删除。
+> - store/toastState.ts：errorCount/localhostError/libraryPathPermissionError 全走
+>   startScopeSync scope 快照（bundle 写入点：30414 'image-processing-error' push、22659
+>   'extension-server-init-failed'、23451 $.ajax localhost:41593 探测、23461
+>   ACCESS.checkALCs——均 scope 写入 + $evalAsync，digest 驱动同步，无 jQuery 直控）。
+> - components/shell/ToastAlerts.tsx：三块逐字（ng-show → style display 切换、ng-if → 条件
+>   渲染；两条警告 message 原版 ng-bind-html（i18n 文案含 <a> 链接）→ dangerouslySetInnerHTML；
+>   openErrorModal/cleanAllError/cleanLocalhostError/cleanLibraryPathPermissionError 均
+>   callScope——cleanAllError 的 stopPropagation 经 React 合成事件保持不冒泡开弹窗语义）。
+>   位置等价：原位 portal 进 #eagle-toast-alerts-host（.toast-alert absolute 定位继承
+>   #list-content-panel）。OPEN_ERROR/CLEAN_ALL_ERROR 广播由既有 React ErrorModal（7c）
+>   消费，通道零改动。
+> - 闭环：新冒烟 tests/react-stage11a2-smoke.mjs 11/11——宿主在面板内/初始空/error toast
+>   1→2 项文案分支/点击主体开 React ErrorModal/clean-btn → CLEAN_ALL_ERROR → **swal 确认框
+>   （.swal2-container .swal2-confirm——本仓 swal2 构建无 .swal2-popup 类，选择器随 7d1a
+>   惯例）→ 确认后清空引用数组（then 内 body.$evalAsync 驱动 digest）→ toast 隐藏 + 弹窗
+>   关闭**/localhost 与 library-permission 两警告显示（message 含 <a>）+ clean 隐藏/截图
+>   （timeout WARN 既有）。tsc 零错；suite 37 项（runner 增 11a2）36 绿 + 7d5b 一次既有
+>   偶发（单跑复绿）。
+> - 教训：冒烟断言前先核对既有闭环的真实交互流——cleanAll 是 swal 二次确认而非立即清空
+>   （首版断言按「即时清空」写，探针（spy=1/listLen=2）定位后改为跟随 swal 流程）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

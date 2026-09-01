@@ -258,8 +258,7 @@ export class SelectPanel {
   onClosed: any;
   scope: any;
   panelHeight: any;
-  selectLeft: any;
-  selectRight: any;
+
 
   constructor(params: any) {
     this.scope = params.scope;
@@ -296,13 +295,11 @@ export class SelectPanel {
         this.scope.$evalAsync();
       },
       onLeftKey: (event: any) => {
-        this.selectLeft && this.selectLeft(event);
-        this.onLeftKey(event);
+        this.selectLeft(event);
         this.scope.$evalAsync();
       },
       onRightKey: (event: any) => {
-        this.selectRight && this.selectRight(event);
-        this.onRightKey(event);
+        this.selectRight(event);
         this.scope.$evalAsync();
       },
       onPaste: (event: any) => {
@@ -397,12 +394,19 @@ export class SelectPanel {
 
   onPaste(_event?: any) {}
 
+  selectLeft(_event?: any) {}
+
+  selectRight(_event?: any) {}
+
   onLeftKey(_event?: any) {}
 
   onRightKey(_event?: any) {}
 
-  hoverItem(index: number) {
-    this.listData.currentIndex = index;
+  hoverItem(indexOrEvent: any, menu?: any) {
+    // TagSelectPanel 覆写为 (event, item)；基类（select-panel.js）为 (index, menu)
+    if (typeof indexOrEvent === 'number') {
+      this.listData.currentIndex = indexOrEvent;
+    }
   }
 
   focusSearchInput() {

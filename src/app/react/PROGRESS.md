@@ -1421,6 +1421,44 @@
 > - 9b-2 待办：TagSelectPanel（1555 行分叉）+ ContextMenu（462）+ library-switcher +
 >   vs-repeat 虚拟化 + tag select 面板真实开合。
 
+> **9b-2b 已验证并接管（2026-09-01）**：TagSelectPanel（1555 行分叉引擎 + 205 行模板逐字）+
+> openTagSelect 接通——采集窗三面板全数 React 化。
+> - tagPanelEngine.ts：TagSelectPanelItem + CollectTagSelectPanel extends SelectPanel（1469 行
+>   逐字：initRawData 补 selectedTags 缺失项/updateTagsState（suggestions 注释块 = collect 版
+>   無此功能）/updateItemList 星标→最近→推荐→群组排序 + 群组计数 + 群组分类/filterByKeyword
+>   拼音 + groupName 包含 + Set 去重/sortByKeywordSimilarity Levenshtein/网格四向 select*（跨
+>   折叠群组）/onTabKey 侧栏群组循环/openItem CREATE 建标 + TAG 翻转 + 搜索清空（ctrl 豁免）/
+>   createdTags 去重反转 200 上限 + recent 序/parseTags 中文分隔符/toggle 系 + localStorage/
+>   setColumnSize/setListMode/openSettings/closeSettings）。分叉点逐字保留：suggestions 注释块
+>   不启用、render/scrollTop 的 trigger("render")（vs-grid 事件，无监听 no-op）、hoverItem 签名
+>   (event,item) + mousemove 距离阈值、onPaste 裸 `clipboard`（未定义怪癖）、selectUp/Down 的
+>   columns attr 在无 vs-grid 时 NaN → 跨群组分支（9b-2c 接 vs-grid 后走同列分支）。
+> - 原版 updateItemList 内 angular.injector $filter('i18n') → ct()（locales 词表，已由
+>   controller 加载）。angular.copy → deepCopy（JSON 法）。
+> - tagPanel.tsx 宿主：模板 205 行逐字（panel-header 搜索/隐藏侧栏/设置、panel-sidebar
+>   ALL/群组/UNFILED + 计数、panel-list 群组标签 + create 行 + fuzzyMatch 高亮 + 计数、footer
+>   快捷键（**ng-hide 的 `selected.length` 未定义怪癖 = 抛错后元素保持可见，逐字**）、setting-panel
+>   布局/列宽/三开关）；initDraggable/initResizable（jQuery UI，stop 存
+>   eagle.tagsPopup.height/width）；opener 时序 init(10ms)/open(0ms)——**open 的
+>   preventCollision 参数被原 TagSelectPanel.open() 无参覆写静默丢弃（怪癖逐字）**。
+> - controller.openTagSelect 真实现（collect.js 169-201 逐字）：preventCollisionWithElement 查
+>   div.fake-thumbnail 恒 null（模板类名实为 .thumbnail，原版怪癖）；tagManager 入参
+>   allTags/groups/recent/suggestions/starred 由 scope.tags + getTagAll() 备好；onChanged 回写
+>   collectItem.tags + tagsMap；onClosed → focusFolderInput。
+> - 教训：(1) **根容器 ref 漏挂二次复发**（9b-2a 的 contextMenu、9b-2b 的 tagPanel 同款——
+>   JSX 根元素不挂 ref 引擎就瞎，已列入转写检查单）；(2) **容器元素缺失使 $panel 选择器空集**
+>   （模板根 select-panel 必须包在 `<tag-select-panel>` 容器内，panelSelector 才能匹配——
+>   与原 directive 的 templateUrl replace:false 结构对齐）；(3) open(0ms)/init(10ms) 时序 +
+>   SelectPanel esc 的 escKeydown 完整 keydown+keyup 对——冒烟两处时序修正；(4) 断言阈值必须
+>   按页面实际数据流校准（removeTag 后 selectedTags 2 项）。
+> - 闭环：collect 冒烟 27 断言全绿（新增：面板开合（open class + 搜索框）/群组渲染
+>   （group-label + items ≥2）/checked 选中态/某项 toggle 后 close→onChanged→collectItem.tags
+>   同步/reopen/搜索 NewTag → create 行/enter 建标（引擎 selectedTags 含 NewTag）/esc→onChanged
+>   →collectItem.tags 含 NewTag）。回归门 preview-delivery 绿；suite 34 项 ALL GREEN（零偶发）；
+>   api-smoke 13/13；tsc 零错。
+> - 9b-2c 待办：folder 面板 vs-repeat 虚拟化（useVsRepeat，columns attr 由 vs-grid 设置后
+>   tag 面板键盘四向走同列分支）+ vs-auto-scroll。
+
 > **9b-2 勘察（2026-09-01；未转写，下一片按此执行）**：
 > - **TagSelectPanel（tag-select-panel.js 1555 + 模板 205）**：全局类（非 isolate scope），
 >   与 stage7 已移植引擎（react/components/stage7/selectPanelEngine.ts）方法面几乎同族
@@ -1488,7 +1526,7 @@
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
 | preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 已验证（9a-1/9a-2/9a-3 全片接管：接线+controller/shell+14 查看器分支+工具列/footbar+cgNotify+tippy+gif 链路+窗口控制/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop；旧文件随阶段11 清理） |
-| collect-window | 独立页面 | `src/app/collect-window/*` | 进行（9b-1/9b-2a 已验证接管：接线+CollectController+左列+FolderSelectPanel+ContextMenu+library-switcher+右键菜单，collect 冒烟 20 断言；9b-2b 余 TagSelectPanel/9b-2c vs-repeat 虚拟化） |
+| collect-window | 独立页面 | `src/app/collect-window/*` | 进行（9b-1/9b-2a/9b-2b 已验证接管：接线+CollectController+左列+FolderSelectPanel+ContextMenu+library-switcher+TagSelectPanel+openTagSelect，collect 冒烟 27 断言；9b-2c 余 vs-repeat 虚拟化） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |
 | progress.html | 进度窗口 | `src/app/progress.html` | 无运行时入口，定性不移植（9c 勘察） |

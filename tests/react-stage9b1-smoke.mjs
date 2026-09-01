@@ -247,6 +247,88 @@ try {
     return !!menu && !menu.classList.contains('open');
   })()`);
 
+  // ── 9b-2b：TagSelectPanel ──
+  await evalOn(pw, `(() => {
+    const btn = document.querySelector('.label-container .create-label-btn:not(.full-width)');
+    if (!btn) return 'no-btn';
+    btn.click();
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4c-tagpanel-open', `(() => {
+    const panel = document.querySelector('.tag-select-panel');
+    return !!panel && panel.classList.contains('open')
+      && !!document.getElementById('tag-select-panel-search-input');
+  })()`);
+  await assertExprOn(pw, 'pw4c-tagpanel-groups', `(() => {
+    const labels = document.querySelectorAll('.tag-select-panel .group-label');
+    const items = document.querySelectorAll('.tag-select-panel .select-panel-item');
+    return labels.length >= 1 && items.length >= 2;
+  })()`);
+  await assertExprOn(pw, 'pw4c-tagpanel-checked', `document.querySelectorAll('.tag-select-panel .select-panel-item.checked').length >= 2`);
+  // toggle 第一个 checked 项 → selectedTags 移除
+  await evalOn(pw, `(() => {
+    const item = document.querySelector('.tag-select-panel .select-panel-item.checked .list-item');
+    if (!item) return false;
+    item.click();
+    return true;
+  })()`);
+  // Esc 关闭 → onChanged → collectItem.tags 更新
+  await evalOn(pw, `(() => {
+    const input = document.getElementById('tag-select-panel-search-input');
+    input.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 27, bubbles: true }));
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4c-tagpanel-close-sync', `window.__eagleCollectController.collectItem.tags.length === 2`);
+  // 再开 → 搜索 NewTag → create 行 → enter 建立 → close 后 tags 含 NewTag
+  await evalOn(pw, `(() => {
+    document.querySelector('.label-container .create-label-btn:not(.full-width)').click();
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4c-tagpanel-reopen', `document.querySelector('.tag-select-panel').classList.contains('open')`);
+  // open(0ms) 先于 init(10ms)：等 init 的 reset 完成再输入，否则输入被清
+  await delay(150);
+  await evalOn(pw, `(() => {
+    const input = document.getElementById('tag-select-panel-search-input');
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(input, 'NewTag');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  })()`);
+  await delay(150);
+  await assertExprOn(pw, 'pw4c-tagpanel-create-row', `(() => {
+    const rows = Array.from(document.querySelectorAll('.tag-select-panel .list-item.create .name'));
+    return rows.some((el) => el.textContent.indexOf('NewTag') > -1);
+  })()`);
+  console.log('INFO pre-enter ' + JSON.stringify(await evalOn(pw, `(() => {
+    const p = window.__eagleCollectTagPanel;
+    return { cur: p.listData.currentItem && p.listData.currentItem.name, idx: p.listData.currentIndex, kw: p.listData.searchKeyword, groups: p.listData.groups.map(g => g.id + ':' + g.items.length).join(',') };
+  })()`)));
+  await evalOn(pw, `(() => {
+    const input = document.getElementById('tag-select-panel-search-input');
+    input.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 13, bubbles: true, cancelable: true }));
+    input.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 13, bubbles: true }));
+    return true;
+  })()`);
+  await evalOn(pw, `(() => {
+    const input = document.getElementById('tag-select-panel-search-input');
+    input.dispatchEvent(new KeyboardEvent('keydown', { keyCode: 27, bubbles: true, cancelable: true }));
+    input.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 27, bubbles: true }));
+    return true;
+  })()`);
+  console.log('INFO created-dump ' + JSON.stringify(await evalOn(pw, `(() => {
+    const p = window.__eagleCollectTagPanel;
+    return {
+      tags: window.__eagleCollectController.collectItem.tags,
+      selected: p ? Object.keys(p.listData.selectedTags || {}) : null,
+      search: p ? p.listData.searchKeyword : null,
+      kw: p ? p.listData.currentItem && p.listData.currentItem.name : null,
+    };
+  })()`)));
+  await assertExprOn(pw, 'pw4c-tagpanel-created', `(() => {
+    const tags = window.__eagleCollectController.collectItem.tags;
+    return tags.indexOf('NewTag') > -1;
+  })()`);
+
   await delay(600);
   try {
     const screenshot = await Promise.race([

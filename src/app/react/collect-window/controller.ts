@@ -75,6 +75,14 @@ export const ct = (key: string): string => {
 /* ================= 鼠标追踪（collect.js 5-20 逐字；面板定位依赖） ================= */
 
 export const mouseState = { windowMouseX: 0, windowMouseY: 0 };
+
+// TagSelectPanel 宿主注册（tagPanel.tsx 挂载期写入；避免模块环）
+let openCollectTagSelect: (params: any) => void = () => {
+  console.warn('[eagle-collect] tag panel host not mounted');
+};
+export function registerTagPanelOpenerHost(fn: (params: any) => void): void {
+  openCollectTagSelect = fn;
+}
 let isMouseMoving = false;
 let mousemoveTimeout: any;
 
@@ -178,9 +186,40 @@ scope.removeTag = (tag: string) => {
   scope.collectItem.tags.splice(index, 1);
 };
 
-// 9b-2：TagSelectPanel（collect 自有 1555 行分叉）尚未移植——守卫 no-op，点击不崩
 scope.openTagSelect = () => {
-  console.warn('[eagle-collect] TagSelectPanel pending in 9b-2');
+  // collect.js 169-201 逐字（preventCollisionWithElement 查 div.fake-thumbnail —— 模板实际类名
+  // 是 .thumbnail，原版此查询恒 null → 无碰撞定位，怪癖逐字保留）
+  openCollectTagSelect({
+    preventCollisionWithElement: document.querySelector('div.fake-thumbnail'),
+    tagManager: {
+      allTags: scope.tags,
+      groups: tagAll?.groups || [],
+      recentTags: tagAll?.recent?.map((tag: any) => tag.name) || [],
+      suggestions: [],
+      starredTags: tagAll?.starred?.map((tag: any) => tag.name) || [],
+    },
+    selectedTags: scope.collectItem.tags.reduce((result: any, tag: string) => {
+      result[tag] = true;
+      return result;
+    }, {}),
+    onChanged: (result: any) => {
+      const { selectedTags } = result;
+      const tags = Object.keys(selectedTags);
+      tags.forEach((tag) => {
+        scope.tagsMap[tag] = scope.tagsMap[tag] || {
+          name: tag,
+          color: '',
+          groups: [],
+        };
+      });
+      scope.collectItem.tags = tags;
+
+      notifyController();
+    },
+    onClosed: () => {
+      scope.focusFolderInput();
+    },
+  });
 };
 
 scope.focusFolderInput = () => {

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { controllerScope, applyController, subscribeController, getControllerVersion, ct } from './controller';
 import { FolderSelectPanelHost } from './folderPanel';
 import { CollectContextMenu } from './contextMenu';
+import { TagSelectPanelHost } from './tagPanel';
 
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 
@@ -196,8 +197,8 @@ function CollectShell() {
 
       {/* context-menu：9b-2a React 版（ContextMenu.open/close 静态入口） */}
       <CollectContextMenu />
-      {/* tag-select-panel（9b-2b）：元素占位 */}
-      <tag-select-panel theme={theme} />
+      {/* tag-select-panel：9b-2b React 版 */}
+      <TagSelectPanelHost />
     </>
   );
 }

@@ -58,6 +58,17 @@ function readPreviewWindow() {
   );
 }
 
+// 阶段9b-1：采集窗（独立页面）React 化入口——保留 shims 注入与 collect 模板清洗，另挂 collect entry。
+function readCollectWindow() {
+  const file = path.join(workspaceRoot, 'src/app/collect-window/index.html');
+  let html = injectPreviewScripts(fs.readFileSync(file, 'utf8'));
+  html = sanitizeCollectTemplates(allowSingleColorPalette(html));
+  return html.replace(
+    '</body>',
+    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/collect-window/entry.tsx"></script>\n</body>`
+  );
+}
+
 function injectViewerConfig(html) {
   return html.replace(
     '<head>',
@@ -118,6 +129,11 @@ export default defineConfig({
           if (url === '/src/app/preview-window.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.end(readPreviewWindow());
+            return;
+          }
+          if (url === '/src/app/collect-window/index.html') {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(readCollectWindow());
             return;
           }
           if (url === '/src/app/registration.html') {

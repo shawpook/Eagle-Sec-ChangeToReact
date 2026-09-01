@@ -3072,16 +3072,18 @@
     }
 
     if (pagePath.includes('collect-window')) {
+      // 阶段9b-1：collect-window 已 React 化——等 entry 就绪标记 + controller folders 就绪后
+      // 调 initFolderSelect()（原 Angular 分支轮询 isolateScope.listData 行为等价）。
       setTimeout(() => {
         const retry = setInterval(() => {
           try {
-            if (!window.angular) return;
+            if (!window.__eagleCollectEntryReady) return;
+            const root = window.__eagleCollectController;
+            if (!root) return;
             const panel = document.querySelector('folder-select-panel');
             if (!panel) return;
-            const iso = angular.element(panel).isolateScope();
-            const root = angular.element(document.querySelector('[ng-controller]')).scope();
-            if (!iso || !root) return;
-            if (iso.listData && Array.isArray(iso.listData.items) && iso.listData.items.length > 0) {
+            const listData = (window.__eagleCollectFolderPanel || {}).listData;
+            if (listData && Array.isArray(listData.items) && listData.items.length > 0) {
               clearInterval(retry);
               return;
             }

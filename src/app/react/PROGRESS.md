@@ -1372,6 +1372,54 @@
 >   react/preview-window/* 承接；旧 js/preview-window.js 与 html ng-* 残留按「只改写不删除」
 >   待阶段11 清理；剩余已知简化：右键菜单 native popup 无自动化、cgNotify undo 链路（restore
 >   callback）仅激活字体路径可触发。
+
+> **9b-1 已验证并接管（2026-09-01）**：采集窗第一片——接线 + CollectController + 左列 +
+> FolderSelectPanel（引擎/模板逐字）。
+> - 勘察结论（9b 深勘察）：collect-window 是自包含 Angular app（CollectApp，自有 select-panel
+>   1555+695+531 分叉、462 context-menu、83 library-switcher），**UI 级唯一回归门 =
+>   screenshot-regression 的 collect 段**（.select-panel-item ≥5；且该工具在当前 Electron 的
+>   浏览器级 CDP 上因 `Target.getTargets` "Not supported" 整体不可跑——stash 交替已证伪为
+>   既有环境问题，与本片无关；collect 门槛由 react-stage9b1 冒烟同款断言覆盖）。数据面 =
+>   页面自带 js/lib/api/*（window.eagle，fetch 硬编码 41595 → shims 重写至测试后端）——
+>   静态壳原样保留 api lib + jquery/swal/chinese_convert/pinyinlite/tiny-pinyin +
+>   models/collect-item.js（plain JS 全局类，补 window.CollectItem 挂载）；main.cjs 仅
+>   get-collect-window-data handle（窗口由外部打开，本仓无 opener）。
+> - 落盘：vite `readCollectWindow()`（injectPreviewScripts + sanitizeCollectTemplates +
+>   allowSingleColorPalette + entry 注入）；静态壳 = eagle api lib/vendors/CollectItem +
+>   `#eagle-collect-react-host`（Angular/四指令/modules 全移除）；react/collect-window/
+>   {controller,selectPanelEngine,folderPanel,shell,entry}。
+> - controller：CollectController 逐字（getTheme/getThemeName/changeStar/removeTag/
+>   openTagSelect(9b-2 stub)/focusFolderInput/initFolderSelect/save/filterCollectItem/loadData/
+>   init 序列含 locales/{locale}.json + ipc invoke get-collect-window-data + getURLDimensions）；
+>   订阅模型同 preview；测试契约 window.__eagleCollectController + __eagleCollectEntryReady；
+>   registerFolderPanelOpener 取代 $rootScope 广播。
+> - selectPanelEngine：String.prototype.score + cartesianProduct + SelectPanelSearchInput +
+>   SelectPanel 基类逐字（定位用 controller.mouseState 的 mousemove 追踪；**$ 需直通 jQuery
+>   工厂——collect 引擎是 `$(selector)` 单调用风格，写成 `() => window.jQuery` 拿到的是构造器
+>   （7a 教训第三次）**；tab 停用/close() 空实现怪癖保留；panelI18n 守卫（原版裸 `i18n.__`
+>   在采集窗未定义）。
+> - FolderSelectPanel 类+模板逐字（guidelines/fuzzyMatch <b> 高亮/create 行/recent 排序三连/
+>   collapse localStorage/isMultipleSelectMode footer）；vs-repeat 虚拟化 9b-2 接 useVsRepeat
+>   （当前全量渲染，mock 数据量小）；openItemSubmenu/ContextMenu 守卫（原版 $bodyScope 在
+>   采集窗未定义 = ReferenceError 怪癖）。
+> - shims collect 分支改 React 版轮询（__eagleCollectEntryReady + folders 就绪 →
+>   initFolderSelect()，行为等价原 isolateScope.listData 轮询）。
+> - **全局词法绑定坑第三次命中**：inline script 的 `const preferences` 与 collect-item.js 的
+>   `class CollectItem` 都是 classic 顶层词法绑定、模块作用域不可见 → 静态壳显式
+>   window.preferences/window.CollectItem 挂载（同 9a 的 path/EagleConfig）。
+> - 教训：(1) `panel.listData` 在 open() 前未初始化 → React 重渲染踩空（守卫空模型）；
+>   (2) 诊断探针经 addScriptToEvaluateOnNewDocument + consoleAPICalled 事件捕获才拿到真栈
+>   （三层异常：isMac 调用形态 / $ 工厂 / Electron window.onerror 在 mock process 上的
+>   listenerCount 二次报错）；(3) CDP /json/new 与 browser-ws Target.* 在本 Electron 均不可用
+>   → 单页冒烟直接导航主窗口 target。
+> - 闭环：react-stage9b1-smoke 14/14（init/folders 就绪/shell open/缩略图（shims pathToFileURL
+>   → /file/<encoded>）/**面板 ≥5 items（beforeElectron 建 4 资料夹满足门槛）**/星等置与删/
+>   标签渲染与移除/标题 contenteditable 回写/save 数据面（base64 src + 字段透传 + window.close）/
+>   搜索过滤 + create 行/清空恢复/截图）。回归门 preview-delivery 复跑绿；全量 suite 34 项
+>   （runner 增 9b1）仅 7a/main-ui-workflow 各一次既有偶发（单跑即绿）+ api-smoke 13/13；
+>   tsc 零错。
+> - 9b-2 待办：TagSelectPanel（1555 行分叉）+ ContextMenu（462）+ library-switcher +
+>   vs-repeat 虚拟化 + tag select 面板真实开合。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
@@ -1386,7 +1434,7 @@
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
 | preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 已验证（9a-1/9a-2/9a-3 全片接管：接线+controller/shell+14 查看器分支+工具列/footbar+cgNotify+tippy+gif 链路+窗口控制/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop；旧文件随阶段11 清理） |
-| collect-window | 独立页面 | `src/app/collect-window/*` | 待办（9b） |
+| collect-window | 独立页面 | `src/app/collect-window/*` | 进行（9b-1 已验证接管：接线+CollectController+左列+FolderSelectPanel 引擎/模板，冒烟 14/14；9b-2 余 TagSelectPanel/ContextMenu/library-switcher/vs-repeat 虚拟化） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |
 | progress.html | 进度窗口 | `src/app/progress.html` | 无运行时入口，定性不移植（9c 勘察） |

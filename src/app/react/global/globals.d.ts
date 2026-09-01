@@ -42,6 +42,9 @@ declare module 'react' {
       group: any;
       item: any;
       'inspector-plugin-view': any;
+      'tag-select-panel': any;
+      'context-menu': any;
+      'library-switcher': any;
     }
   }
   interface HTMLAttributes<T> {

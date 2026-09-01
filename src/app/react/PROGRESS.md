@@ -1610,6 +1610,61 @@
 
 ## 11. 清理双轨 CSS + 移除 angular.min.js
 
+> **11 勘察 + 清理清单（2026-09-01；清单先行，动手前过目）**：
+> 前提修正：主窗口 index.html（541 行）仍是**完整 Angular 应用**（ng-app="EagleApp" +
+> RootController + EagleController 34,043 行 = bundle 20197-54236），React 为 portal 注入
+> 共存。阶段11 的「移除 angular」被主窗口残留 Angular 块门控——7d-7 勘察已定性这些块被
+> bundle jQuery 直控（双轨风险，过渡期禁止单独接管），必须随 bundle 逻辑重写同步进行。
+> 清单如下：
+>
+> **A. 主窗口残留 Angular UI 块（11-pre 移植系列 = b1 删除前置）**：
+> - a1 upload-queue-progress + saving-progress-bar（index.html 88-110；bundle
+>   30500/30791/34539 .percentage/.current 直写 + 23349 background-state 处理器）——
+>   随上传队列/后台保存状态逻辑重写（React 侧 uploadQueue 状态源待落点）
+> - a2 toast-alert 三块（errorList 计数 + localhostError + libraryPathPermissionError，
+>   index.html 118-136）——纯展示 + openErrorModal/clean 类动作
+> - a3 lock-screen 双块（folder 密码 196-213 + app 锁屏 466-486；bundle 29026 起
+>   focus/val 直控 + TouchID + unlockPassword/Keyup/Keydown）
+> - a4 空状态 drop-areas 六种（all/random/folder/unfiled/untagged/trash/search，
+>   index.html 171-267）+ list-panel scroll-to-top（150；**sidebar 版已有 React 等价
+>   Sidebar.tsx:821，勿重复**）+ body 级 application-menu-btn（70；sidebar/SmallPanels
+>   已有两处等价渲染，先核消 再删模板位）+ hover-show-sidebar（77，ng-hover-intent）
+> - a5 sub-folder-list（index.html 273-316：ng-repeat + ui-sortable 拖拽 + 选择/双开/
+>   右键/改名 editable/锁定/显示子夹内容开关——stage7 FolderSelectPanels 与 7c 系列
+>   有可参照等价）
+> - a6 list-layout-header（318-347：ListLayout 八列列头 + 排序点击/方向图标）
+> - a7 bundle jQuery 直控容器四块：annotation-preview-container（52089 起
+>   AnnotationPreview 类）/ hover-preview-container（51696）/ tag-manager-drag-badge
+>   （53707）/ colors-picker（32509 + 68199）——类整体重写为 React 等价
+> - a8 body 绑定层（= 阶段1 收尾项）：body ng-class 40+ 状态类 / ng-href app-style 主题
+>   css / theme/platform attrs / detail-mode wrapper（368，ng-show isDetailMode + 左右
+>   定位 style + dblclick/mousedown）/ RootController isLoading 菜单按钮语义 → React
+>   body-state hook + 静态壳 body class 等价
+> - a9 ng-right-click 4 处等零散残留（openFileListContextMenu/openSubFolderContextMenu/
+>   openListPropContextMenu 随 a5/a6 归属）
+>
+> **B. 删除序列（A 全部完成 + 全量回归绿后执行，删除前逐项过目）**：
+> - b1 index.html → 静态壳：ng-app/ng-controller/ng-cloak/114 处 ng-* 全清 +
+>   angular*.js + app.bundle.js 引用移除 + angular-notify.css 移除；body class 改由
+>   a8 React hook 维护
+> - b2 独立窗口旧文件删除（仅已验证面）：js/preview-window.js（102KB）、
+>   collect-window/js/*（~15k 行）+ collect-window/index.html 残余、js/preferences.js
+>   等——各自静态壳已不引用（preview/preferences 已净；collect 待核）
+> - b3 主窗口 js/ 源码树清算：bundle 失去引用后，controllers/services/directives/
+>   filters 源码按消费方清点删除；**保留 vendors 与共享脚本**（jquery 系/mousetrap/
+>   tippy/lodash/shortcut-manager/lazy-load-manager/colorpicker/eagle-api 等——以 b1 后
+>   index.html 实际 script 清单 + React import 面为准逐一核对）
+> - b4 双轨 CSS 清点（angular-notify.css、flatpickr/nouislider/videojs/colorpicker 等
+>   仅旧 UI 消费的样式随消费方判定）
+>
+> **C. 非删除事项（并行另定）**：native Menu.popup 自动化方案（9a-3 遗留，CDP 不可及）；
+>   8 个 iframe viewer 窗口接管（font/text-editor 含 wMousetrap 唯一存活消费方）——
+>   阶段11 后独立阶段。
+>
+> 执行序：**11-pre a1→a9 逐片**（每片固定节奏：转写→tsc 零错→冒烟→回归门→PROGRESS→
+> commit）→ b1 → 全量回归 → b2/b3/b4 → 阶段11 收尾（阶段0 的「index.html 移除 angular
+> 引用」待办同销）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

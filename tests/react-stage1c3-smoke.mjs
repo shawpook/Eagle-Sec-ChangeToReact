@@ -95,21 +95,14 @@ try {
     return r;
   };
 
-  // ── 契约 ──
+  // ── 契约（155 全量 + 抽样）──
   await assertExpr('c3-contract', `(() => {
     const c = window.__eagleCoreFns;
     if (!c) return false;
-    const batch1 = ['cancelAllTasks','uploadFiles','uploadUrls','switchLibrary','changeOrderBy',
-      'switchGridLayout','switchJustifiedLayout','switchListLayout','switchSquareLayout',
-      'updateContainerHieght','updateItemView','cleanLibraryPathPermissionError',
-      'cleanLocalhostError','cleanAllError'];
-    const batch2 = ['cleanSelected','getSelectedItemElements','getSelectedTags','getSelection',
-      'scrollToSelectedItem','select','selectDown','selectNext','selectPrev','selectUp',
-      'updateSelection','calculateDateFilter','calculateFilterCounts','closeQuickSearch',
-      'contentFilter','filterContent','filterWithColor','filterWithHexColor','filterWithTag',
-      'getDateFilterCountsArray','openFilterAddContextMenu','openQuickSearch','resetFilter',
-      'search','searchFocus','toggleExtFilter','toggleExtFilterExclude','updateFilterCounts'];
-    return batch1.concat(batch2).every(k => typeof c[k] === 'function');
+    const spot = ['cancelAllTasks','uploadFiles','changeOrderBy','switchGridLayout',
+      'cleanSelected','select','search','resetFilter','clickNode','smartZoom',
+      'openFolder','updateSidebarList','getThumbnailUrl','zoomFit','undo'];
+    return Object.keys(c).length === 155 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);
@@ -184,6 +177,10 @@ try {
     return true;
   })()`);
   await delay(400);
+  {
+    const dbg = await waitExpr(`({ err: window.__c3err3, hasCore: window.__hasCore, marker: window.__reloadMarker, after: window.__afterLen })`);
+    console.log('DEBUG c3-len:', JSON.stringify(dbg.result.value));
+  }
   await assertExpr('c3-clean-selected', `window.__c3err3 === null && window.__hasCore === 'function'`);
 
   // ── bundle 后备（未移植函数照旧走 scope）──

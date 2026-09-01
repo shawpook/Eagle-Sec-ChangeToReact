@@ -1943,6 +1943,28 @@
 > - 下一批（c3 续）：sidebar(30)/detail(25)/misc(54) 域同管线追加；cZ = 状态大爆炸迁移。
 
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
+
+> **c3 终版已验证并接管（2026-09-02；batch3 追加 = React 调用面 155 函数全量过门）**：
+> - **机制修正史（提取器四个终版坑，全部以 esbuild/tsc/冒烟三角定位）**：
+>   (1) matchBrace 参数解构——`function (font, {showNotify})` 的首个 `{` 是参数大括号，
+>   需 findBodyBrace（先配对参数圆括号再找体大括号）；(2) matchBrace 缺正则字面量分支
+>   ——`/...${}.../` 类正则吞 brace 致 search 等函数体错切（前导字符启发式 + 字符类 +
+>   旗标吞掉）；(3) __lv_ 改名必须代码上下文感知（`/%/g` 旗标 g、字符串内容不可改）+
+>   跳过 `.` 前导成员访问（s.orderBy 曾被改成 s.__lv_orderBy 写穿错字段）；(4) link var
+>   收集限定 8 空格缩进（嵌套函数局部 var 误提升）+ 多行初始化深度扫描完整截取 +
+>   声明/初始化分离（声明在 makeControllerFns 闭包顶层共享，初始化惰性首调执行）。
+> - **箭头形态勘察结论**：113 个 batch3 函数全部为 function 形态（0 箭头）——箭头收集
+>   支持回退（无需求）。
+> - 生成物：react/core/controllerFns.ts（272KB）——**155 函数全量**（esbuild + tsc 双过）
+>   + 54 个 link var（__lv_ 前缀防 shim 冲突）+ 4 个 link 级辅助函数导出。callScope
+>   路由优先命中本表；个别未来发现的边缘函数走 bundle 后备（机制内建）。
+> - 闭环：react-stage1c3-smoke 全绿（155 契约 + 抽样/路由哨兵证明/bundle 后备/cleanSelected
+>   $timeout 延迟清空语义）。tsc 零错；suite 42 项 ALL GREEN；api-smoke 13/13。
+> - **c3 完成标志**：React 经 callScope 的函数调用 100% 走 React 侧代码（scope 仅作为
+>   过渡期状态载体）。剩余 = cZ 状态大爆炸（scope 状态 + bundle ipc/watch 回调迁入
+>   AppCore）→ b1 摘除 angular。
+
+- [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

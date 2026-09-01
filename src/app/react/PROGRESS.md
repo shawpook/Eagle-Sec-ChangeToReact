@@ -1965,6 +1965,42 @@
 >   AppCore）→ b1 摘除 angular。
 
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
+
+> **cZ-0 勘察 + 状态大爆炸设计（2026-09-02；清单已落盘 test-run/cz-inventory.json）**：
+> - **规模实测**：EagleController scope 字面 **776 个赋值字段**；bundle 内 ipcRenderer.on
+>   通道 **117 个**；scope $watch/$watchCollection **22 个**（含 eagle.filter.filterRules.*
+>   深度 watch 族 13 个 = 筛选重算引擎 + selected/finishQueue/finishGenerateQueue/
+>   listMetaType 4 个业务 watch）；scope $on 事件 6 个（CALCULATE_IMAGE_BINDING/
+>   REBIND_REFRESH/UPDATE_SELECTION/SAVE_FOLDER/$locationChange*）；React sync 层消费
+>   **~125 个根字段**（12 个 store 文件）。
+> - **核心机制（两段式接管，避免 split-brain）**：
+>   1. **存储桥**：`Object.defineProperty($bodyScope, field, { get/set → AppCore })`——scope
+>      字段转访问器、后端为 AppCore。bundle 内全部读写（ipc 处理器/watch/函数体）经属性
+>      访问透明落到 AppCore，**行为零改动、双世界共享同一存储**；React sync（startScopeSync
+>      读 scope）零改动自动生效。
+>   2. **通道截肢**：逐通道 `ipcRenderer.removeAllListeners(ch)` + 注册 React 逐字移植的
+>      处理器（bundle 原处理器随移除消亡）。每截肢一个通道 = 该域业务逻辑归 React 所有。
+>      注意 background-state 教训：removeAllListeners 后 React 监听必须自愈重挂。
+>   3. **watch 迁移**：bundle watch 在 digest 期驱动业务（如 finishQueue watchCollection 的
+>      上传完成流）——对应域截肢时把 watch 体逐字移植为 AppCore 反应函数；bundle watch
+>      保留至 b1（digest 存续期间它照常驱动，因存储已桥接，双驱动幂等）。
+> - **cZ 域切片（按 117 通道聚类）**：
+>   - cZ-1 桥基建制：appCore.ts + bridgeScopeFields + amputateChannel + 首域验证
+>     （preferences/theme 域——AppRoot 已半接管，风险最低）。
+>   - cZ-2 主题/偏好域：change.current.theme/update-preferences/preferences-updated/
+>     show-sidebar-badge 族。
+>   - cZ-3 库加载域：initial/app-status-*/preload-library/library.changed（启动管线，最大）。
+>   - cZ-4 条目数据域：image.added/removed/changed(.mute)/palette.updated/thumbnail-generated/
+>     update-item-view-by-id/update-txt-item/file-uploaded + finishQueue watchCollection。
+>   - cZ-5 筛选/搜索域：show-and-search/filter-folder/keyword-suggestion + eagle.filter
+>     watch 族 13 个 + REBIND_REFRESH/CALCULATE_IMAGE_BINDING。
+>   - cZ-6 选择/视图域：watchCollection selected/UPDATE_SELECTION/listMetaType + 布局类。
+>   - cZ-7 杂项域：字体/演示/窗口/分析/插件/导入导出任务通道。
+>   - cZ-final：117 通道全数截肢核验（对照 cz-inventory.json）→ b1。
+> - 数据面铁律不变：每域截肢后 suite 全量 + api-smoke + 既有冒烟全绿；bundle 字段经桥
+>   读写 = 行为零改动。
+
+- [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

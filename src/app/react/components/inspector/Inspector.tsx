@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../../core/fileUrlHelper';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useInspectorState, InspectorSnapshot, SelectedItemSnapshot } from '../../store/inspectorState';
@@ -92,7 +93,7 @@ export function ExtIcon({ itemId }: { itemId: string }) {
     if (!el || !itemId) return;
     const item = getBodyScope()?.itemMappings?.[itemId];
     if (!item) return;
-    const rawPath = (window as any).FileUrlHelper.getRawPath(item);
+    const rawPath = FileUrlHelper.getRawPath(item);
     el.innerHTML = `<div class="ext-icon"><img></div>`;
     const FILE_ICON = req((window as any).appRoot.path + '/my_modules/file-icon');
     FILE_ICON.getFileThumbnail(item, rawPath, (base64: string) => {
@@ -228,7 +229,7 @@ function ThumbImg({ image }: { image: SelectedItemSnapshot }) {
         if (retryCount === 0) return;
         const item = getBodyScope()?.selected?.find?.((s: any) => s?.id === image.id);
         if (!item) return;
-        const helper = (window as any).FileUrlHelper;
+        const helper = FileUrlHelper;
         const newPath = helper.getThumbnailUrl(item);
         img.setAttribute('src', newPath);
         retryCount--;

@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../../core/fileUrlHelper';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
@@ -722,7 +723,7 @@ export function QuickSearchModal() {
 
   const getThumbnailUrl = (image: any) => {
     if (!body?.imagesDir || !image) return '';
-    return (window as any).FileUrlHelper.getThumbnailUrl(image) || '';
+    return FileUrlHelper.getThumbnailUrl(image) || '';
   };
 
   const rowSize = ROW_SIZES[view.mode] || 28;

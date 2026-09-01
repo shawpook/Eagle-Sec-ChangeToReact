@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../core/fileUrlHelper';
 import { create } from 'zustand';
 import { startScopeSync } from '../global/scopeBridge';
 
@@ -147,7 +148,7 @@ export const useInspectorState = create<{ snapshot: InspectorSnapshot }>(() => (
 const setSnapshot = (snapshot: InspectorSnapshot) => useInspectorState.setState({ snapshot });
 
 function snapshotItem(item: any): SelectedItemSnapshot {
-  const helper = (window as any).FileUrlHelper;
+  const helper = FileUrlHelper;
   let lastThumbnailUrl = '';
   let thumbnailUrl = '';
   try { lastThumbnailUrl = helper?.getLastestThumbnailUrl?.(item) || ''; } catch (err) {}

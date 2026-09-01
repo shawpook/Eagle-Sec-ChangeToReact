@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { getBodyScope } from '../../global/scopeBridge';
 
 /**
@@ -195,7 +196,6 @@ function generateItem(item: any, index: number): string | undefined {
         `;
     }
 
-    const FileUrlHelper = (window as any).FileUrlHelper;
     const lastThumbnailPath = FileUrlHelper ? FileUrlHelper.getLastestThumbnailUrl(item) : '';
 
     if (item.noPreview) {

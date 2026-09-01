@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { useEffect } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { ipcRenderer } from '../../global/eagleGlobals';
@@ -229,7 +230,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           console.log('[mediaElement] Video playback error:', event.target.error);
           const oldPath = element[0].currentSrc;
           const current = getBodyScope()?.current;
-          const newPath = current ? (window as any).FileUrlHelper.getRawUrl(current) : '';
+          const newPath = current ? FileUrlHelper.getRawUrl(current) : '';
           if (oldPath !== newPath) {
             setTimeout(function () {
               element.attr('src', newPath);
@@ -452,7 +453,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         const fs = req('fs');
         const pathMod = req('path');
         const URL_MODULE = req((window as any).appRoot.path + '/my_modules/url');
-        const videoPath = (window as any).FileUrlHelper.getRawPath(current);
+        const videoPath = FileUrlHelper.getRawPath(current);
         const vttTrackPath = videoPath.replace(`.${current.ext}`, '.vtt');
         const vttTrackName = pathMod.basename(vttTrackPath);
         fs.exists(vttTrackPath, function (isExists: boolean) {
@@ -1355,7 +1356,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
       (window as any)._?.debounce(function () {
         try {
           const current = getBodyScope()?.current;
-          const newPath = current ? (window as any).FileUrlHelper.getRawUrl(current) : '';
+          const newPath = current ? FileUrlHelper.getRawUrl(current) : '';
           element.attr('src', newPath);
           console.log('视频名称更新，重新定位新图片位置: ' + newPath);
         } catch (err) {}

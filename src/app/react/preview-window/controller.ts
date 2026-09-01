@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../core/fileUrlHelper';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -459,12 +460,12 @@ scope.getExifRawPath = function () {
 
 scope.getRawUrl = function (image: any) {
   if (!scope.imagesDir || !image) return;
-  return (window as any).FileUrlHelper.getRawUrl(image);
+  return FileUrlHelper.getRawUrl(image);
 };
 
 scope.getThumbnailUrl = function (image: any) {
   if (!scope.imagesDir || !image) return;
-  return (window as any).FileUrlHelper.getThumbnailUrl(image);
+  return FileUrlHelper.getThumbnailUrl(image);
 };
 
 scope.getThumbnailPath = function (image: any) {
@@ -489,7 +490,7 @@ scope.getRatioNonExp = function (ratio: number) {
 
 scope.getModelPath = function () {
   if (scope.current) {
-    let rawUrl = (window as any).FileUrlHelper.getRawUrl(scope.current);
+    let rawUrl = FileUrlHelper.getRawUrl(scope.current);
     rawUrl = rawUrl.replaceAll(',', '%2C');
     const type = scope.current.ext;
     return `model-viewer/website/index.html#model=${rawUrl}`;
@@ -498,7 +499,7 @@ scope.getModelPath = function () {
 
 scope.getPDFPath = function () {
   if (scope.current) {
-    const pdfPath = (window as any).FileUrlHelper.getRawUrl(scope.current);
+    const pdfPath = FileUrlHelper.getRawUrl(scope.current);
     const locale = (scope.preferences?.general?.language || 'en').replace('_', '-');
     return `pdf-viewer/web/viewer.html?path=${encodeURIComponent(pdfPath)}&locale=${locale}&theme=${scope.theme}`;
   }
@@ -506,8 +507,8 @@ scope.getPDFPath = function () {
 
 scope.getGIFPath = function () {
   if (scope.current) {
-    const gifPath = (window as any).FileUrlHelper.getRawPath(scope.current);
-    const gifUrl = (window as any).FileUrlHelper.getRawUrl(scope.current);
+    const gifPath = FileUrlHelper.getRawPath(scope.current);
+    const gifUrl = FileUrlHelper.getRawUrl(scope.current);
     const renderBehavior = scope.preferences?.habits?.renderBehavior;
     return (
       'gif-viewer/index.html?path=' +
@@ -587,7 +588,7 @@ scope.getURLSrc = function () {
     }
     return embed;
   } else {
-    return (window as any).FileUrlHelper.getRawUrl(scope.current);
+    return FileUrlHelper.getRawUrl(scope.current);
   }
 };
 
@@ -892,7 +893,7 @@ scope.rotateImage = function (event: any, image: any, writeToFile = false) {
 
   const shouldWriteToFile = writeToFile && scope.preferences?.habits?.imageRotateMode === 'write';
   if (shouldWriteToFile && rotatedImage) {
-    const rawPath = (window as any).FileUrlHelper.getRawPath(rotatedImage);
+    const rawPath = FileUrlHelper.getRawPath(rotatedImage);
     if (!rawPath) {
       console.warn('Cannot get raw path for image:', rotatedImage);
       return;
@@ -952,7 +953,7 @@ scope.flipImage = function (event: any, image: any, writeToFile = false) {
       flipType = 'vertical';
     }
 
-    const rawPath = (window as any).FileUrlHelper.getRawPath(rotatedImage);
+    const rawPath = FileUrlHelper.getRawPath(rotatedImage);
     if (!rawPath) {
       console.warn('Cannot get raw path for image:', rotatedImage);
       return;
@@ -1280,7 +1281,7 @@ scope.openWithDefault = function (event?: any) {
     event.stopPropagation();
     event.preventDefault();
   }
-  const rawPath = (window as any).FileUrlHelper.getRawPath(scope.current);
+  const rawPath = FileUrlHelper.getRawPath(scope.current);
   ipcRenderer.send('open-with-default', rawPath);
 };
 
@@ -1289,7 +1290,7 @@ scope.openWithFinder = function (event?: any) {
     event.stopPropagation();
     event.preventDefault();
   }
-  const rawPath = (window as any).FileUrlHelper.getRawPath(scope.current);
+  const rawPath = FileUrlHelper.getRawPath(scope.current);
   ipcRenderer.send('show-item-in-folder', rawPath);
 };
 
@@ -1298,7 +1299,7 @@ scope.copyAsPath = function (event?: any) {
     event.stopPropagation();
     event.preventDefault();
   }
-  const rawPath = (window as any).FileUrlHelper.getRawPath(scope.current);
+  const rawPath = FileUrlHelper.getRawPath(scope.current);
   req('electron').clipboard.writeText(rawPath);
   scope.showCopyToast = true;
   clearTimeout(copyImageTimeout);
@@ -1980,7 +1981,7 @@ function runInitSequence(params: any) {
         return item.ext;
       };
       pluginModule.previewExtension.getViewerPluginURL = (item: any) => {
-        const filePath = (window as any).FileUrlHelper.getRawPath(item);
+        const filePath = FileUrlHelper.getRawPath(item);
         const locale = scope.preferences.general.language.replace('_', '-');
         const theme = scope.theme;
         const id = item.id;

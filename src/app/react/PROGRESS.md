@@ -1846,6 +1846,24 @@
 >   与 UI 片段的「模板逐字转写」性质不同（无模板可逐字，是行为/状态机移植）。
 >   待用户确认方向后立切片方案。
 
+
+> **c1 已验证并接管（2026-09-01）**：工具全局层移植——react/core/ 数据核心目录落成。
+> - core/fileUrlHelper.ts：bundle 2287 起对象字面量提取脚本逐字生成（3.9KB），机械替换
+>   $bodyScope → getBodyScope()（6 处 libraryImagesPath 读取）+ path → window.require('path')
+>   （mock 经 shims bareModules / Electron 经 nodeIntegration）。
+> - core/ipcHelper.ts：bundle 3471 起提取（实为 2 方法 24 行小对象——send/sendTo；
+>   初次提取误吞后续内联 vendor，改为首个顶格 '};' 收口）。bundle 顶层 const 不上
+>   window——React 此前无法直用，本模块补齐（ipcRenderer shim 经 eagleGlobals）。
+> - 消费方切换：8 文件 (window as any).FileUrlHelper → 直接 import（commentHooks/
+>   detailHooks/boxGridEngine/Inspector/QuickSearchModal/preview-window controller+detailHooks/
+>   inspectorState）；boxGridEngine 原本地别名行（const FileUrlHelper = window…）删除防自引用。
+>   IPCHelper 无代码消费方（仅注释提及），ProgressDialogs 既有直用 ipcRenderer 保持。
+> - 闭环：tsc 零错；全量 suite 40 项 ALL GREEN；api-smoke 13/13（main-ui-workflow/
+>   preview-delivery 等覆盖 FileUrlHelper 路径流）。
+> - 教训：提取脚本的两个新坑——(1) 替换规则要写进脚本本体再跑（首轮漏 $bodyScope 替换
+>   靠产物 grep 抓回）；(2) 对象字面量收口不能依赖"下一个顶层标记"（IPCHelper 后是内联
+>   vendor），首个顶格 '}；' 才是对象边界。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

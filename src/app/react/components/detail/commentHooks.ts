@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { useEffect, useRef } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
@@ -1164,7 +1165,7 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
       }
 
       try {
-        const filePath = (window as any).FileUrlHelper.getRawUrl(image);
+        const filePath = FileUrlHelper.getRawUrl(image);
         const { rgba, width, height } = await loadURLFromWorker(filePath);
 
         if (rgba) {
@@ -1235,7 +1236,7 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
       const filePath = getBodyScope()?.getRawPath
         ? String(getBodyScope().getRawPath(s.current) || '').replace('file://', '')
         : '';
-      const filePath2 = (window as any).FileUrlHelper.getRawPath(s.current);
+      const filePath2 = FileUrlHelper.getRawPath(s.current);
       try {
         const TgaLoader = req((window as any).appRoot.path + '/app/js/vendors/tga.js');
         const tga = new TgaLoader();
@@ -1301,7 +1302,7 @@ export function useRetryWhenError(
         }
         const item = getBodyScope()?.current;
         if (!item) return;
-        const helper = (window as any).FileUrlHelper;
+        const helper = FileUrlHelper;
         const newPath = mode === 'raw' ? helper.getRawUrl(item) : helper.getThumbnailUrl(item);
         img.setAttribute('src', newPath);
         console.log('图片名称更新，重新定位新图片位置: ' + newPath);

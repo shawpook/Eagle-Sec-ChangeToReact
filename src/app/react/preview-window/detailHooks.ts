@@ -1,3 +1,4 @@
+import { FileUrlHelper } from '../core/fileUrlHelper';
 import { useEffect } from 'react';
 import { getBodyScope } from '../global/scopeBridge';
 import { controllerScope, applyController } from './controller';
@@ -309,7 +310,7 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
       }
       console.time('tga');
       const filePath = newValue;
-      const filePath2 = (window as any).FileUrlHelper.getRawPath(controllerScope.current);
+      const filePath2 = FileUrlHelper.getRawPath(controllerScope.current);
       try {
         const TgaLoader = req(String(req('app-root-path')) + '/app/js/vendors/tga.js');
         const tga = new TgaLoader();

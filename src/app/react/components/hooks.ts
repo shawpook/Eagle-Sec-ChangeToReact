@@ -10,16 +10,21 @@ export function useTippy(ref: React.RefObject<HTMLElement | null>, dep: unknown)
     if (!tippy) return;
     const instances: Array<any> = [];
     root.querySelectorAll<HTMLElement>('[tippy][tippy-content]').forEach((el) => {
-      const content = el.getAttribute('tippy-content') || '';
-      const instance = tippy(el, {
-        animation: 'scale',
-        arrow: false,
-        content,
-        placement: (el.getAttribute('tippy-placement') as any) || 'right',
-        allowHTML: true,
-      });
-      (instance as any)._eagleContent = content;
-      instances.push(instance);
+      // 原 Angular 指令逐元素初始化：一颗失败（如隐藏元素的 tippy() 抛错）不得中断兄弟按钮
+      try {
+        const content = el.getAttribute('tippy-content') || '';
+        const instance = tippy(el, {
+          animation: 'scale',
+          arrow: false,
+          content,
+          placement: (el.getAttribute('tippy-placement') as any) || 'right',
+          allowHTML: true,
+        });
+        (instance as any)._eagleContent = content;
+        instances.push(instance);
+      } catch (err) {
+        console.warn('[eagle-use-tippy] mount failed for element', err);
+      }
     });
     return () => instances.forEach((instance) => instance.destroy());
   }, [dep]);

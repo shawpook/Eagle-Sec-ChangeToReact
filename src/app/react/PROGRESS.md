@@ -1345,6 +1345,33 @@
 >   9a2；对比 9a-1 期两轮轮转偶发本轮零偶发）+ api-smoke 13/13；tsc 零错。
 > - 9a-3 待办：工具列 tippy 实际挂载、右键菜单细节实测、拖拽模式 overlay 实测、grayscale、
 >   窗口控制按钮实测。
+
+> **9a-3 已验证并接管（2026-09-01；阶段9a 预览窗 React 化完成）**：工具列 tippy 实际挂载 +
+> 拖拽 overlay/grayscale/窗口控制实测 + close 真实关窗。
+> - tippy：ToolbarSwitch/GifFootbar 挂 useTippy（bundle 17365 移植、stage5 同款钩子），依赖串 =
+>   [theme, currentIndex, images.length, isAlwaysOnTop, isMaximize, lastZoomMode, usingGifPlayer,
+>   platform] / [theme, isGifReady, playing, speed]——变化即销毁重建（原指令 attrs $observe 语义）；
+>   共享 useTippy 加**逐元素 try/catch**（原 Angular 指令逐元素初始化语义：一颗失败不中断兄弟——
+>   重建批次里当前隐藏元素的 tippy() 一旦抛错，其后的按钮全部无 tooltip）。
+> - 实测（react-stage9a3-smoke 16 断言全绿）：grayscale toggle → body is-grayscale-mode 翻转；
+>   Shift 拖拽 overlay（window keydown/keyup keyCode 16 + document mousemove shiftKey →
+>   #drag-mode-overlay .show，initShellBehaviors 的 jQuery 委托）；pin/unpin 双渲染显隐 + 翻转后
+>   tippy 实例仍在（**shims mock remote 无 isAlwaysOnTop，断言以 scope 标志 + DOM 判定**）；
+>   maximize/restore（isMaximize + restore/fullscreen 按钮 swap + remote.isMaximized）；scope.close()
+>   → preview CDP target 消失（真实关窗）。**右键菜单族为 Electron native Menu——popup() 在自动
+>   化环境阻塞/抢输入（首跑实证整条冒烟卡死），CDP 无法断言原生菜单 UI；构造路径不依赖 DOM，
+>   自动化方案留待阶段11 与 bundle 一并处理**。
+> - 教训：(1) 断言层级笔误（tippy 实例挂在按钮 div，断言查成 `img._tippy` 恒 undefined）制造
+>   了"重建丢失"假象——逐轮采样版断言 1ms 即过才暴露；(2) 诊断探针会污染被测状态（手工
+>   tippy 探针 attach/destroy 会孤儿化 React 挂的实例）——探针与断言必须隔离或用后清理；
+>   (3) shims mock remote 的 window 方法面不全（无 isAlwaysOnTop、有 isMaximized）。
+> - 闭环：react-stage9a3-smoke 全绿；回归门 preview-delivery 复跑绿；stage5 冒烟绿（useTippy
+>   共享面无回归）；全量 suite 33 项（runner 增 9a3）仅 main-ui-workflow 一次既有偶发（单跑
+>   即绿）+ api-smoke 13/13；tsc 零错。
+> - 阶段9a 小结：预览大窗数据面/壳/全部 14 查看器分支/工具列/footbar/notify/tippy 已由
+>   react/preview-window/* 承接；旧 js/preview-window.js 与 html ng-* 残留按「只改写不删除」
+>   待阶段11 清理；剩余已知简化：右键菜单 native popup 无自动化、cgNotify undo 链路（restore
+>   callback）仅激活字体路径可触发。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
@@ -1358,7 +1385,7 @@
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 进行（9a-1/9a-2 已验证接管：接线+controller/shell 骨架+image/svg/gif/pdf/video/custom/plugin/web-view 分支+cgNotify 等价层+gif 链路，回归门绿；9a-3 余工具列细节/右键/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop） |
+| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 已验证（9a-1/9a-2/9a-3 全片接管：接线+controller/shell+14 查看器分支+工具列/footbar+cgNotify+tippy+gif 链路+窗口控制/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop；旧文件随阶段11 清理） |
 | collect-window | 独立页面 | `src/app/collect-window/*` | 待办（9b） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |

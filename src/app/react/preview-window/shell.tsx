@@ -5,6 +5,7 @@ import { usePreviewMouseGesture, usePreviewTgaImage, usePreviewMousetrap } from 
 import { applyNgClassSet, useMediaElement, useMpvMediaElement } from '../components/detail/detailHooks';
 import { useRetryWhenError, useCommentsContainer, useCommentItem } from '../components/detail/commentHooks';
 import { WebviewToolbar } from '../components/detail/DetailToolbar';
+import { useTippy } from '../components/hooks';
 import { shortcuts } from '../app/filters';
 
 const req = (name: string): any => (window as any).require?.(name);
@@ -219,6 +220,21 @@ function ToolbarSwitch() {
     : undefined;
   const themeAttr = { theme };
   const showNav = (scope.images || []).length > 1;
+  const toolbarRootRef = useRef<HTMLDivElement>(null);
+  // 原 tippy 指令（bundle 17365，stage5 useTippy 逐字）：属性变化（$observe 语义）→ 销毁重建
+  useTippy(
+    toolbarRootRef,
+    JSON.stringify([
+      theme,
+      scope.currentIndex(),
+      (scope.images || []).length,
+      scope.isAlwaysOnTop,
+      scope.isMaximize,
+      scope.lastZoomMode,
+      scope.usingGifPlayer,
+      scope.platform,
+    ])
+  );
   const titleName = (
     <div id="tilte-name" className="title-name" onContextMenu={call('startDrag')}>
       {scope.getMetas(current)}
@@ -282,9 +298,7 @@ function ToolbarSwitch() {
   }
 
   return (
-    <div
-      ng-switch=""
-      onDoubleClick={(e) => e.stopPropagation()}
+    <div ref={toolbarRootRef} ng-switch="" onDoubleClick={(e) => e.stopPropagation()}
       onMouseUp={(e) => {
         const event = e.nativeEvent;
         if ((event as any).button === 1) {
@@ -831,8 +845,11 @@ function GifFootbar() {
   const theme = scope.theme || 'gray';
   const isGifReady = scope.isGifReady;
   const playing = scope.gifViewer?.playing;
+  const footbarRef = useRef<HTMLDivElement>(null);
+  useTippy(footbarRef, JSON.stringify([theme, isGifReady, playing, scope.gifViewer?.speed]));
   return (
     <div
+      ref={footbarRef}
       className="footbar"
       style={ngShowStyle(scope.current?.ext === 'gif')}
       onDoubleClick={(e) => e.stopPropagation()}

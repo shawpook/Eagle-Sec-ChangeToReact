@@ -1846,6 +1846,30 @@
 >   与 UI 片段的「模板逐字转写」性质不同（无模板可逐字，是行为/状态机移植）。
 >   待用户确认方向后立切片方案。
 
+> **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
+> - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
+>   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），
+>   其余 ~325 个 = 数据核心内部函数 + 已死 UI 函数。另有 eagle 对象族
+>   （Inspector 1-249 / ItemFilter 250-606 / DuplicateChecker 957 / AIAction 2048 /
+>   ReverseImageSearch 1012 / AISearch 1844）与工具全局（FileUrlHelper / IPCHelper /
+>   resetNgGridLayoutData / ayncsImagesChange / hiddenByCurrentFilter 等）。
+> - **架构**：新建 react/core/ 数据核心（AppCore）——zustand 拥有现挂 scope 上的状态机，
+>   ipc/REST 同源喂数；155 个 React 调用面函数逐字移植为 AppCore 方法；各 bind*Sync 的
+>   startScopeSync 逐域切换为 AppCore store 订阅（Angular 层每切一域死一块）。
+> - **切片序（c 系列）**：
+>   - c1 工具全局层：FileUrlHelper / IPCHelper 等无状态工具 → react/core/*.ts（React
+>     直 import；bundle 内同名全局在过渡期共存）。
+>   - c2 eagle 对象族：Inspector/ItemFilter/DuplicateChecker/AIAction/ReverseImageSearch/
+>     AISearch 逐字 → react/core/ + window.eagle 装配等价（消费者零改动）。
+>   - c3..cN EagleController 函数域（按 155 调用面聚类分域，每域 = 移植 + sync 切换 +
+>     冒烟）：候选域 = 库加载/文件夹树导航/筛选引擎/选择/上传队列/搜索/排序/详情/检查器/
+>     通知/右键菜单数据/快捷键路由。
+>   - cZ sync 全切换后 → b1（angular.min.js + app.bundle.js 引用移除）→ b2/b3 旧文件
+>     删除（清单届时再列再确认）。
+> - 铁律不变：行为零改变、数据面通道逐字（ipc/localStorage/electron-settings）、旧实现
+>   验证前不删。每片固定节奏：转写 → tsc 零错 → 冒烟 → suite → api-smoke → PROGRESS →
+>   commit。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

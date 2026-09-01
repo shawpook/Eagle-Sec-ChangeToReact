@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { AppRoot } from './app/AppRoot';
 import { SavingProgressBar, UploadQueueProgressBar } from './components/shell/ProgressBars';
 import { ToastAlerts } from './components/shell/ToastAlerts';
+import { FolderLockScreen, AppLockScreen } from './components/shell/LockScreens';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
 import { FilterPanel } from './components/filter/FilterItems2';
@@ -33,6 +34,7 @@ import { bindTagManagerSync } from './store/tagManagerState';
 import { bindPanelSync } from './store/panelState';
 import { bindUploadSync } from './store/uploadState';
 import { bindToastSync } from './store/toastState';
+import { bindLockSync } from './store/lockState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -85,6 +87,8 @@ root.render(
     <SavingProgressBar />
     <UploadQueueProgressBar />
     <ToastAlerts />
+    <FolderLockScreen />
+    <AppLockScreen />
     <Sidebar />
     <Toolbar />
     <SearchSuggestions />
@@ -144,6 +148,7 @@ bindTagManagerSync();
 bindPanelSync();
 bindUploadSync();
 bindToastSync();
+bindLockSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

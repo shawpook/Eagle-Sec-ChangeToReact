@@ -1721,6 +1721,34 @@
 > - 教训：冒烟断言前先核对既有闭环的真实交互流——cleanAll 是 swal 二次确认而非立即清空
 >   （首版断言按「即时清空」写，探针（spy=1/listLen=2）定位后改为跟随 swal 流程）。
 
+> **11-pre a3 已验证并接管（2026-09-01）**：lock-screen 双块（index.html 156-170 文件夹
+> 密码锁 + 424-444 应用锁屏），旧模板位删除。
+> - **C 模式首次规模化应用（同 background-state-spinner 先例）**：React 渲染 DOM 保留原 id
+>   （#lock-password-input / #app-lock-password-input），bundle 的校验/解锁数据流原样保留——
+>   unlockPasswordKeyup / unlockAppPasswordKeyup（$timeout 校验 + atob + license code 分支 +
+>   calculateImageBinding/reload 解锁流 + initMenu）/ focusUnlockPassword /
+>   focusAppUnlockPassword（blur 重聚焦循环）/ unlockFolderWithTouchID / unlockWithTouchID
+>   / unlockAppPasswordKeydown 全部经 callScope 调用；其内部 jQuery（shake addClass、
+>   focus、blur loop、val 读写、off）继续作用于 React 节点。unlockPassword ng-model 等价 =
+>   input onInput 直写 scope.unlockPassword；select-all → onFocus select()。
+> - store/lockState.ts：isAppLocked（$root）/folderLocked/folderPasswordTips 走 scope 快照；
+>   canUseTouchID = bundle 29001-29009 逐字自算（darwin + systemPreferences.canPromptTouchID，
+>   win32 恒 false）+ 'preferences-updated' 重算。测试契约 window.__eagleLockState。
+> - React 侧补齐两件 Angular 指令等价：always-focus（bundle 69688，100ms 轮询聚焦，补
+>   unmount 清理）+ 应用锁屏挂载时兜底聚焦（bundle lockApp 的 100ms focus 可能早于 React
+>   挂载）；corner-btns → 既有 React CornerBtns（Toolbar 快照复用）。
+> - 闭环：新冒烟 tests/react-stage11a3-smoke.mjs 14/14——宿主/初始隐藏/文件夹锁显示（标题 +
+>   提示）/TouchID 缺位（win32）/onInput 同步 scope.unlockPassword/错误密码 shake（同步读
+>   classList）/正确密码解锁（isUnLock + 隐藏）/应用锁显示（apptitle + 提示 +
+>   corner-btns）/自动聚焦/错误密码 shake（$timeout 异步，60ms 后读标志）/正确密码解锁
+>   （isAppLocked=false + 隐藏）。tsc 零错；suite 38 项（runner 增 11a3）**ALL GREEN 零
+>   偶发**；api-smoke 13/13。
+> - 教训：(1) shims electronSettings 公开 API 是 electron-settings v4 风格
+>   （setSync(key,value) 全量写 + getPreferences(true) 强制重载缓存）——内部
+>   savePreferences 不在 window 上；(2) 断言 DOM class 先核组件实际渲染类名（CornerBtns
+>   是 .ic-btn/.corner-btns，非 .icon-btn）；(3) C 模式让「bundle jQuery 重逻辑」零转写
+>   直接过门——shake/blur-loop/val 这类 DOM 缠绕逻辑不必搬进 React。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

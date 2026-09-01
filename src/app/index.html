@@ -153,24 +153,8 @@
                     </div>
                 </div>
 
-                <!-- 文件夹密码输入 -->
-                <div class="lock-screen" ng-show="currentFolder && currentFolder.password && !currentFolder.isUnLock" ng-click="focusUnlockPassword()">
-                    <div class="info">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/lock-screen.png" width="400" height="144">
-                        <h4>{{'pages.unlock.title' | i18n}}</h4>
-                        <p ng-show="currentFolder.passwordTips">{{'pages.unlock.passwordTips' | i18n}}{{currentFolder.passwordTips}}</p>
-                        <div class="password-input-wrapper">
-                            <input id="lock-password-input" type="password" placeholder="{{'pages.unlock.placeholder' | i18n}}" select-all ng-model="unlockPassword" ng-keyup="unlockPasswordKeyup($event)">
-                            <!-- Touch ID 按鈕 - 整合在輸入框內 -->
-                            <button class="ic-btn touchid-btn-inline" 
-                                    ng-if="canUseTouchID"
-                                    ng-click="unlockFolderWithTouchID($event)"
-                            >
-                                <img src="assets/images/{{theme|themePath}}/icons/ic-touchid.svg" width="20" height="20">
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <!-- 文件夹密码输入（React 接管，舊區塊已刪；11-pre a3） -->
+                <div id="eagle-folder-lock-host"></div>
 
                 <!-- 空状态；搜索 -->
                 <div class="drop-area" ng-if="currentSmartFolder && filtereds.length==0 && !keyword">
@@ -422,25 +406,8 @@
     <div id="eagle-fixutil-progress-host"></div>
 
 
-    <!-- TODO:重構，應移動到 directive，应用锁密码输入 -->
-    <div class="lock-screen app-lock-screen" ng-if="$root.preferences.privacy.enable !=='false' && $root.isAppLocked && isUILoaded" ng-show="$root.isAppLocked" ng-click="focusAppUnlockPassword()">
-        <corner-btns theme="theme" is-always-on-top="isAlwaysOnTop"></corner-btns>
-        <div class="info">
-            <img ng-src="assets/images/{{theme|themePath}}/illustrations/lock-screen.png" width="400" height="144">
-            <h4>{{'pages.unlock.apptitle' | i18n}}</h4>
-            <p ng-show="$root.preferences.privacy.passwordTips">{{'pages.unlock.passwordTips' | i18n}}{{$root.preferences.privacy.passwordTips}}</p>
-            <div class="password-input-wrapper">
-                <input id="app-lock-password-input" type="password" always-focus placeholder="{{'pages.unlock.placeholder' | i18n}}" select-all ng-keyup="unlockAppPasswordKeyup($event)" ng-keydown="unlockAppPasswordKeydown($event)">
-                <!-- Touch ID 按鈕 - 整合在輸入框內 -->
-                <button class="ic-btn touchid-btn-inline" 
-                        ng-if="canUseTouchID && $root.preferences.privacy.enableTouchID === 'true'"
-                        ng-click="unlockWithTouchID($event)"
-                >
-                    <img src="assets/images/{{theme|themePath}}/icons/ic-touchid.svg" width="20" height="20">
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- 应用锁密码输入（React 接管，舊區塊已刪；11-pre a3） -->
+    <div id="eagle-app-lock-host"></div>
 
     <div id="multiple-drag-placeholder"></div>
 

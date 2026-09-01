@@ -1564,12 +1564,47 @@
 
 ## 10. 快捷键（shortcut-manager）
 
+> **10 勘察 + 核对（2026-09-01；四项全部已由前序阶段事实接管，本片为核对定性，无新转写）**：
+> - **shortcut-manager.js（296 行）**：非 Angular 服务——`window.ShortcutManager` 单例（
+>   init/electronToMousetrap/registerShortcut/getConflicts/validateShortcut/formatForDisplay/
+>   migrateToPlatformSpecific），与 mousetrap.min.js 同属共享脚本层。React 直用已验证：
+>   preferences controller（react/preferences/controller.ts:980 init(preferences,
+>   keybindGroups)，阶段8）+ preview-window controller（2359-2367 electronToMousetrap +
+>   player.*/edit.*/view.* 全表，9a-3 实测 alwaysOnTop/grayscale 等键）。文件被
+>   index.html / preferences.html / preview-window.html 三壳包含，main window 旧
+>   media-element 系指令（media/mpv/audio）仍消费 → **保留**，阶段11 随双轨清点定去留。
+> - **shortcutInput directive（js/directives/shortcut-input.js 352 行）**：React 等价
+>   `ShortcutInput`（react/preferences/panels.tsx:1048 逐字，阶段8 移植——keydown 捕获
+>   修饰键前缀 + 键值映射、冲突不写模型 + 1.5s 提示、updateStatus 三态 class、focus 显
+>   原值/blur 格式化），panels8e 快捷键面板 + panels.tsx 1377/1410 消费；**8e 冒烟行为
+>   验证**（捕获 → `keybinds['global.capture.window'] === 'Ctrl + Alt + W'` +
+>   shortcutsEnable 关 → disabled）。preferences.html 旧脚本已随 8e-2 删除；主窗口
+>   app.bundle 内副本无模板消费（主窗口 FilterItems 的 `.shortcut-input` 只是 CSS 类名，
+>   非 directive）。
+> - **filters shortcuts / shortcutsWrapper（bundle 69574/69585）**：react/app/filters.ts
+>   逐字（122/143，唯一差异 `process.platform` → `window.process?.platform`——React 上下文
+>   等价）+ 活跃消费 15+ 处（FilterItems2 各筛选器 tippy-content、Toolbar 置顶提示等）。
+> - **wMousetrap（mgo-mousetrap，bundle 16683-16723 = js/modules/wMousetrap.js 同源）**：
+>   $watch 属性对象 → Mousetrap.bind + throttle(50)/$evalAsync + $destroy 解绑。全仓
+>   模板消费方仅 font-viewer.html / text-editor.html（preferences.html 的已随 8e-2 删除）；
+>   **主窗口/预览/采集零消费方**——React 面板的快捷键均经自有 Mousetrap 直绑 hooks
+>   （hooks.ts/Sidebar/QuickSearchModal/detailHooks 等）。directive 本体随主窗口 bundle
+>   与 modules/wMousetrap.js 文件存活，阶段11 清理时随消费方一并处理。
+> - **附赠清点（阶段9 窗口清单遗漏）**：preview-window 以 iframe 内嵌的独立查看器窗口
+>   共 8 个——exif/gif/model/native/pdf/raw-viewer + font-viewer/text-editor
+>   （react/preview-window/shell.tsx 447/774/780/786 + controller previewURL 分支），
+>   均为旧实现原样服务中（shims.js 2986+ 有 mock 分支），PROGRESS 此前仅有
+>   preview/collect/registration/manage-device/progress/thumbnail 六项；另有
+>   texture-viewer = texture2png.js 的隐藏离屏转换 iframe（非 UI 窗口，同 thumbnail
+>   性质）。**列为阶段11 后窗口接管待办**（font/text-editor 同时是 wMousetrap 唯一
+>   存活消费方）。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| shortcut-manager.js | 服务 | `src/app/js/services/shortcut-manager.js` (296 行) | 待办 |
-| shortcutInput | directive（独立模块）| 64490-64843 | 待办 |
-| filters shortcuts / shortcutsWrapper | filter | 69574 / 69585 | 待办 |
-| wMousetrap | directive（独立模块 mgo-mousetrap）| 16683-16723 | 待办 |
+| shortcut-manager.js | 服务（window 单例，非 Angular） | `src/app/js/services/shortcut-manager.js` (296 行) | 已验证保留（React preferences/preview 直用 + 8e/9a3 冒烟；main window 旧指令仍消费，阶段11 定去留） |
+| shortcutInput | directive（独立模块）| 64490-64843 | 已由阶段8 接管（panels.tsx ShortcutInput 逐字 + 8e 冒烟行为验证；preferences.html 旧脚本已删） |
+| filters shortcuts / shortcutsWrapper | filter | 69574 / 69585 | 已接管（react/app/filters.ts 逐字 + 15+ 活跃消费点） |
+| wMousetrap | directive（独立模块 mgo-mousetrap）| 16683-16723 | 迁移面零消费方（React 经自有 Mousetrap hooks）；存活消费方 = font-viewer/text-editor 窗口（旧实现，随窗口待办处理） |
 
 ---
 

@@ -3,6 +3,9 @@ import { AppRoot } from './app/AppRoot';
 import { SavingProgressBar, UploadQueueProgressBar } from './components/shell/ProgressBars';
 import { ToastAlerts } from './components/shell/ToastAlerts';
 import { FolderLockScreen, AppLockScreen } from './components/shell/LockScreens';
+import { BodyBindings, BoxContainerBindings, AppMenuButton, HoverShowSidebar, DetailWrapper } from './components/shell/BodyBindings';
+import { DropAreas, ScrollToTop, SubFolderSection, ListLayoutHeader, PanelDropArea, BoxContainerListeners } from './components/shell/ListRegion';
+import { ColorsPicker, AnnotationPreviewContainer } from './components/shell/MiscContainers';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
 import { FilterPanel } from './components/filter/FilterItems2';
@@ -35,6 +38,8 @@ import { bindPanelSync } from './store/panelState';
 import { bindUploadSync } from './store/uploadState';
 import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
+import { bindListSync } from './store/listState';
+import { bindBodySync } from './store/bodyState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -84,11 +89,24 @@ const root = createRoot(host, {
 root.render(
   <>
     <AppRoot />
+    <BodyBindings />
+    <BoxContainerBindings />
+    <BoxContainerListeners />
+    <AppMenuButton />
+    <HoverShowSidebar />
+    <DetailWrapper />
     <SavingProgressBar />
     <UploadQueueProgressBar />
     <ToastAlerts />
     <FolderLockScreen />
     <AppLockScreen />
+    <DropAreas />
+    <ScrollToTop />
+    <SubFolderSection />
+    <ListLayoutHeader />
+    <PanelDropArea />
+    <ColorsPicker />
+    <AnnotationPreviewContainer />
     <Sidebar />
     <Toolbar />
     <SearchSuggestions />
@@ -149,6 +167,8 @@ bindPanelSync();
 bindUploadSync();
 bindToastSync();
 bindLockSync();
+bindListSync();
+bindBodySync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

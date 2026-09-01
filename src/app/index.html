@@ -19,7 +19,7 @@
     </style>
     <link rel="stylesheet" href="css/jquery-ui.min.css">
     <link rel="stylesheet" href="css/icons.css">
-    <link id="app-style" rel="stylesheet" ng-href="css/style_{{theme}}.css">
+    <link id="app-style" rel="stylesheet" href="css/style_dark.css">
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/app.css">
     <link rel="stylesheet" href="css/modules/flatpicker/flatpickr.min.css">
@@ -28,53 +28,18 @@
     <link href="css/vendors/videojs/video-js.css" rel="stylesheet">
     <link href="js/vendors/colorpicker/css/colorpicker.css" rel="stylesheet">
 </head>
-<body 
+<body
     tabindex="-1"
     ng-controller="EagleController"
-    theme="{{theme}}"
-    platform="{{::platform}}"
-    vibrancy="{{vibrancyEnabled}}"
-    class="{{::platform}} {{language}} current-focus-{{currentFocus}} {{viewMode}}-view" 
-    ng-class="
-    {
-        'layout-fill': layoutOptions === 'Fill',
-        'is-windows-11': isWin11,
-        'is-detail-mode': isDetailMode,
-        'is-inline-mode': isInlineMode,
-        'is-comment-mode': isCommentMode,
-        'is-grayscale-mode': isGrayscaleMode,
-        'hide-navigator': isHideNavigator || !smoothZoomDone,
-        'is-small-box': imageSize.height < 150,
-        'is-middle-box': imageSize.height <= 250 && imageSize.height >= 150,
-        'is-square-layout': layout === 'SquareLayout',
-        'show-list-resolution': listLayoutSettings.props.resolution,
-        'show-list-dateImported': listLayoutSettings.props.dateImported,
-        'show-list-tags': listLayoutSettings.props.tags,
-        'show-list-rating': listLayoutSettings.props.rating,
-        'show-list-extension': listLayoutSettings.props.extension,
-        'show-list-fileSize': listLayoutSettings.props.fileSize,
-        'box-sortable': currentFolder && ((currentFolder.orderBy === 'MANUAL' || currentFolder.orderBy === 'IMPORT') || (!currentFolder.orderBy && orderBy === 'IMPORT')) && !eagle.filter.filterBadge && !keyword,
-        'cropping': isCropMode,
-        'is-maximize': isMaximize,
-        'hide-sidebar': isHideSidebar,
-        'hide-inspector': inspector.isHideInspector,
-        'hide-all': inspector.isHideInspector && isHideSidebar,
-        'is-filter-open' : eagle.filter.isOpen,
-        'slideshow': isSlideshowMode,
-        'hide-badge': $root.preferences.general.showSidebarBadge == 'false',
-        'hide-zoom-btn': $root.preferences.habits.hoverZoom == 'off',
-        'show-transparent-grid': $root.preferences.habits.transparency == 'show',
-    }" 
 >
 
-    <div class="icon-btn application-menu-btn fixed" ng-show="isLoading" style="position: absolute;left: 12px;top: 12px;" ng-click="openApplicationContextMenu($event);">
-        <img ng-src="assets/images/{{theme|themePath}}/icons/ic-app-menu.svg">
-    </div>
+    <!-- 应用菜单按钮（React 接管，舊區塊已刪；11-pre a8） -->
+    <div id="eagle-app-menu-host"></div>
 
-    <div id="main-app" ng-class="{'ui-ready': !isUILoaded || isLoading}">
+    <div id="main-app">
 
         <!-- 側邊欄 -->
-        <div class="hover-show-sidebar" ng-hover-intent="hoverShowSidebar($event)"></div>
+        <div class="hover-show-sidebar"></div>
         <div id="sidebar" class="sidebar" resizable="e" on-resize="onSidebarResize(event, ui)" ondragleave="onDragLeaveSidebar(event)">
 </div>
 
@@ -82,7 +47,7 @@
         <div id="eagle-website-panel-host"></div>
 
         <!-- 圖片列表 -->
-        <div id="list-content-panel" class="content-panel" ng-class="{'hide': viewMode == 'community', 'filter-open' : eagle.filter.isOpen, 'small-list': imageSize.height <= 100, 'expand-right': viewMode == 'alltags'}" style="left: {{containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;">
+        <div id="list-content-panel" class="content-panel">
 
             <!-- 文件写入进度条 + 檔案添加進度條（React 接管，舊區塊已刪；11-pre a1） -->
             <div id="eagle-progress-bars-host"></div>
@@ -108,222 +73,42 @@
             <!-- 標籤管理（React 接管，舊 <tag-manager> 島已刪） -->
             <div id="eagle-tag-manager-host"></div>
 
-            <div ng-hide="isDetailMode || viewMode=='alltags'" id="scroll-to-top" class="scroll-to-top"><img src="assets/images/{{theme|themePath}}/icons/ic-scroll-top.svg"></div>
+            <!-- scroll-to-top（React 接管，舊區塊已刪；11-pre a4） -->
+            <div id="eagle-scroll-top-host"></div>
 
             <!-- 图片列表页面 -->
             <div
                 auto-scroll
                 rect-select
                 id="box-container" class="box-container grid-layout"
-                ng-show="viewMode!='alltags'"
-                ng-class="{'empty': !isLoading && filtereds.length <= 0, 'pixelated': $root.preferences.habits.renderBehavior == 'pixelated'}"
-                ondragenter="onDragEnterContainer(event)"
-                ondrop="onDropContainer(event)"
-                ondragover="onDragOverContainer(event)"
-                ng-right-click="openFileListContextMenu($event)"
-            >   
+            >
                 <!-- Scroll to top sentinel for main content -->
                 <div scroll-to-top-sentinel 
                      target="#scroll-to-top" 
                      threshold="200"
                      scroll-container="#box-container"></div>
                 
-                <!-- 空状态；全部图片 -->
-                <div id="image-drop-area" class="drop-area" ng-hide="isLoading || viewMode=='trash' || viewMode=='unfiled' || viewMode=='untagged' || allData.length > 0 || keyword || currentSmartFolder || eagle.filter.filterBadge > 0 || currentFolder.children.length > 0">
-                    <div class="dash-line"></div>
-                    <!-- 全部 -->
-                    <div class="message" ng-show="viewMode=='all' || viewMode=='random'">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-library.png" width="352" height="144">
-                        <h2>{{'empty.all.title' | i18n}}</h2>
-                        <p>{{'empty.all.desc' | i18n}}</p>
-                        <div class="buttons">
-                            <div class="button button-xs button-grey" ng-click="importFolders()">{{'dialog.importLocalFolder.title' | i18n}}</div>
-                            <a class="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank">{{'appmenu.help>installExtension' | i18n}}</a>
-                        </div>
-                    </div>
-                    <!-- 資料夾 -->
-                    <div class="message" ng-show="(viewMode!='all' && viewMode!='random') && !(currentFolder.password && !currentFolder.isUnLock)">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-folder.png" width="352" height="144">
-                        <h2>{{'empty.folder.title' | i18n}}</h2>
-                        <p>{{'empty.all.desc' | i18n}}</p>
-                        <div class="buttons">
-                            <div class="button button-xs button-grey" ng-click="importFolders(currentFolder)">{{'dialog.importLocalFolder.title' | i18n}}</div>
-                            <a class="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank">{{'appmenu.help>installExtension' | i18n}}</a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 文件夹密码输入（React 接管，舊區塊已刪；11-pre a3） -->
+                <!-- 空状态六种（React 接管，舊區塊已刪；11-pre a4） -->
+                <div id="eagle-drop-areas-host"></div>
                 <div id="eagle-folder-lock-host"></div>
 
-                <!-- 空状态；搜索 -->
-                <div class="drop-area" ng-if="currentSmartFolder && filtereds.length==0 && !keyword">
-                    <div class="message">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-search.png" width="256" height="144">
-                        <h2>{{'empty.search.title' | i18n}}</h2>
-                        <p>{{'empty.search.desc' | i18n}}</p>
-                    </div>
-                </div>
-
-                <!-- 空状态；未归类 -->
-                <div class="drop-area fill" ng-if="viewMode=='unfiled' && unfiledCount==0 && !keyword && allData.length == 0">
-                    <div class="message" ng-show="raw.length > 0">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-unfiled-done.png" width="400" height="144">
-                        <h2>{{'empty.unfiled.done.title' | i18n}}</h2>
-                        <p>{{'empty.unfiled.done.desc' | i18n}}</p>
-                    </div>
-                    <div class="message" ng-show="raw.length === 0">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-unfiled-intro.png" width="400" height="144">
-                        <h2>{{'empty.unfiled.intro.title' | i18n}}</h2>
-                        <p>{{'empty.unfiled.intro.desc' | i18n}}</p>
-                    </div>
-                </div>
-
-                <!-- 空状态；未标签 -->
-                <div class="drop-area fill" ng-if="viewMode=='untagged' && untaggedCount==0 && !keyword">
-                    <div class="message" ng-show="raw.length > 0">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-untagged-done.png" width="400" height="144">
-                        <h2>{{'empty.untagged.done.title' | i18n}}</h2>
-                        <p>{{'empty.untagged.done.desc' | i18n}}</p>
-                    </div>
-                    <div class="message" ng-show="raw.length === 0">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-untagged-intro.png" width="400" height="144">
-                        <h2>{{'empty.untagged.intro.title' | i18n}}</h2>
-                        <p>{{'empty.untagged.intro.desc' | i18n}}</p>
-                    </div>
-                </div>
-
-                <!-- 空状态；垃圾桶 -->
-                <div class="drop-area" ng-if="viewMode=='trash' && trash.length==0 && !(keyword || eagle.filter.filterBadge)">
-                    <div class="message">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-trash.png" width="124" height="144">
-                        <h2>{{'empty.trash.title' | i18n}}</h2>
-                        <p>{{'empty.trash.desc' | i18n}}</p>
-                    </div>
-                </div>
-
-                <div class="drop-area" ng-if="filtereds.length==0 && (keyword || eagle.filter.filterBadge)" style="pointer-events: none;">
-                <!-- <div class="drop-area" ng-show="viewMode!='trash' && viewMode!='unfiled' && viewMode!='untagged' && filtereds.length==0 && (keyword || eagle.filter.filterBadge)"> -->
-                    <div class="message" ng-show="subFolders && subFolders.length === 0">
-                        <img ng-src="assets/images/{{theme|themePath}}/illustrations/empty-search.png" width="256" height="144">
-                        <h2>{{'empty.search.title' | i18n}}</h2>
-                        <p>{{'empty.search.desc' | i18n}}</p>
-                    </div>
-                </div>
                 <!-- 內容列表 -->
-                <!-- <div class="wrap" infinite-scroll-disalbe='loadMore()' infinite-scroll-distance='0' infinite-scroll-container="'#box-container'" infinite-scroll-parent> -->
-
-                    <!-- 文件夹列表 -->
-                    <div 
-                        id="sub-folder-container" 
-                        ng-if="$root.selectedFolders.length === 0 && currentFolder && currentFolder.children.length > 0 && subFolders.length > 0" 
-                        ng-show="listDone && eagle.filter.filterBadge == 0 && !(currentFolder && currentFolder.password && !currentFolder.isUnLock)" 
-                        style="width: 100%"
-                    >
-                        <!-- <div ng-if="isHideSubFolder" class="marginBottom-m"></div> -->
-                        <div class="list-label" ng-show="subFolders.length > 0">
-                            <div ng-click="toggleSubFolderList()" style="display: inline-flex;">
-                                {{'subFolderList.sectionLabel' | i18n}} ({{currentFolder.children.length}})
-                                <div class="expand-icon" ng-class="{'expand': !isHideSubFolder}"><img src="assets/images/{{theme|themePath}}/icons/ic-arrow-right.svg"></div>
-                            </div>
-                            <div class="toggle-subfolder-content-btn" ng-click="showListSubfolderContent()">
-                                <div class="checkbox" ng-class="{'checked' : showSubfolderContent}"></div>
-                                {{'subFolderList.showSubFolderContentLabel' | i18n}}
-                            </div>
-                        </div>
-                        <div ng-if="isHideSubFolder" class="sub-folder-list" ui-sortable="subFolderSortableOptions" ng-model="currentFolder.children" ng-mousedown="$event.stopPropagation();" ng-click="cleanSelected($event);">
-                            <div
-                                class="sub-folder"
-                                ondrop="onDropFolder(event)"
-                                ondragover="onDragOverSubFolder(event)"
-                                ondragleave="onDragEndSubFolder(event)"
-                                ng-repeat="folder in subFolders"
-                                ng-click="$event.stopPropagation() ;selectFolder($event, folder)"
-                                ng-dblclick="openFolder(folder, undefined, undefined, undefined, 'content');"
-                                ng-right-click="openSubFolderContextMenu($event, folder)"
-                                ng-class="{'selected': selectedFolderMappings[folder.id], 'locked': folder.password && !folder.isUnLock}">
-                                <div
-                                    class="thumbnail"
-                                    ng-click="$event.stopPropagation() ;selectFolder($event, folder)"
-                                    ng-right-click="openSubFolderContextMenu($event, folder)"
-                                >
-                                    <div class="pic" ng-bind-html="folder.covers[0]"></div>
-                                    <div class="pic"></div>
-                                    <div class="pic"></div>
-                                    <div class="lock-icon lock"><img ng-src="assets/images/{{theme|themePath}}/icons/ic-list-sub-folder-lock.svg"></div>
-                                </div>
-                                <div class="name" ng-dblclick="$event.stopPropagation(); enableSubFolderNameEditable($event, folder)">{{folder.name}}</div>
-                                <div class="metas"><span>{{folder.imageCount}} {{'subFolderList.itemsLabel' | i18n}}</span><span ng-if="folder.children.length > 0">．{{folder.children.length}} {{'subFolderList.subFolderLabel' | i18n}}</span></div>
-                                <div class="metas mtime" style="display: none;"><span>{{folder.modificationTime | date:"yyyy/MM/dd hh:mm"}}</span></div>
-                            </div>
-                        </div>
-                        <div ng-if="isHideSubFolder" class="marginBottom-m"></div>
-                        <div ng-if="isHideSubFolder" class="list-label" ng-show="filtereds.length>0 && listDone && subFolders.length > 0">{{'subFolderList.contentLabel' | i18n}} ({{allData.length}})</div>
-                    </div>
-                    <div id="list-layout-header" ng-show="filtereds.length > 0" ng-if="layout === 'ListLayout'" ng-right-click="openListPropContextMenu($event)">
-                        <div class="prop thumbnail"></div>
-                        <div class="prop name" ng-class="{'active' : currentOrderBy === 'NAME'}" ng-click="changeListOrderBy('NAME')">
-                            <div class="name">{{'context.order.displayItems>name' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                        <div class="prop tags" ng-class="{'active' : currentOrderBy === 'TAGS'}" ng-click="changeListOrderBy('TAGS')">
-                            <div class="name">{{'context.order.metaItems>tags' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                        <div class="prop resolution" ng-class="{'active' : currentOrderBy === 'RESOLUTION'}" ng-click="changeListOrderBy('RESOLUTION')">
-                            <div class="name">{{'context.order.orderBy>resolution' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                        <div class="prop rating" ng-class="{'active' : currentOrderBy === 'RATING'}" ng-click="changeListOrderBy('RATING')">
-                            <div class="name">{{'context.order.orderBy>rating' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                        <div class="prop ext" ng-class="{'active' : currentOrderBy === 'EXT'}" ng-click="changeListOrderBy('EXT')">
-                            <div class="name">{{'context.order.displayItems>ext' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                        <div class="prop size" ng-class="{'active' : currentOrderBy === 'FILESIZE'}" ng-click="changeListOrderBy('FILESIZE')">
-                            <div class="name">{{'context.order.orderBy>filesize' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                        <div class="prop mtime" ng-class="{'active' : currentOrderBy === 'IMPORT'}" ng-click="changeListOrderBy('IMPORT')">
-                            <div class="name">{{'context.order.orderBy>import' | i18n}}</div>
-                            <div class="icon"><img ng-class="{'up': !currentSortIncrease}" ng-src="assets/images/{{theme|themePath}}/icons/ic-list-arrow-down.svg"></div>
-                        </div>
-                    </div> 
+                <!-- 文件夹列表（React 接管，舊區塊已刪；11-pre a5） -->
+                <div id="eagle-sub-folder-host"></div>
+                <!-- 列表列头（React 接管，舊區塊已刪；11-pre a6） -->
+                <div id="eagle-list-header-host"></div>
                     <div
 						id="box-list"
                         class="box-list"
                     >
                     </div>
             </div>
-            <div
-                class="box-container-droparea"
-                ondragenter="onDragEnterContainer(event)"
-                ondragleave="onDragLeaveContainer(event)"
-                ondrop="onDropContainer(event)"
-                ondragover="onDragOverContainer(event)"
-                onmousemove="onMouseMoveContainer(event)"
-            >
-                <div class="tips">{{'pages.droparea.container' | i18n}}</div>
-            </div>
+            <!-- 面板拖放浮层（React 接管，舊區塊已刪；11-pre a9） -->
+            <div id="eagle-panel-droparea-host"></div>
         </div>
 
-        <!-- 詳情模式 -->
-        <div class="content-panel detail-mode" ng-show="isDetailMode" style="left: {{:refreshContainSize:containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;" ng-dblclick="dblclickContentPanel()" ng-mousedown="contentFocus($event)">
-
-            <!-- 詳情模式工具列/懸浮層（React 接管，portal 內容為 Fragment） -->
-            <div id="eagle-detail-host"></div>
-
-            <!-- 詳情查看器：#detail-container 壳保留（smoothZoom 初始化會將本元素包裹進
-                 .smooth_zoom_preloader，元素身份不可重建），內部由 React portal 接管 -->
-            <div id="detail-container" class="detail-container"></div>
-
-            <!-- 裁切尺寸提示（React 接管） -->
-            <div id="eagle-detail-cropsize-host"></div>
-            <!-- <bitmap-viewer url="{{getRawUrl(current)}}"></bitmap-viewer> -->
-
-        </div>
+        <!-- 詳情模式（React 接管，舊區塊已刪；11-pre a8） -->
+        <div id="eagle-detail-wrapper-host"></div>
         
         <!-- 檢查器（React 接管，舊 <inspector> 元素與模板已刪） -->
         <div id="eagle-inspector-host"></div>
@@ -411,25 +196,11 @@
 
     <div id="multiple-drag-placeholder"></div>
 
-    <input style="display: none;" id="colors-picker" color-picker hex-color="$body.hexColor" tabindex="-1" type="color" name="favcolor" value="#ff0000" ng-change="filterWithColor(hexToRGB($body.hexColor));" ng-model="$body.hexColor" ng-model-options="{ debounce: { updateOn: 'default blur', 'default': 200, 'blur': 0 } }">
+    <!-- 取色器（React 接管，舊區塊已刪；11-pre a7） -->
+    <div id="eagle-colors-picker-host"></div>
 
-    <!-- 圖片標注 -->
-    <div id="annotation-preview-container" ng-if="isDetailMode">
-        <div 
-            ng-show="currentComment"
-            class="annotation-box" 
-            ng-mousedown="$event.stopPropagation()"
-            ng-dblclick="$event.stopPropagation()"
-            placeholder="{{'annotation.newAnnotationPlaceholder' | i18n}}"
-            contenteditable="plaintext-only"
-            strip-br="false"
-            allow-link="true"
-            editable-selectall
-        >
-        </div>
-        <div class="annotation-arrow"></div>
-        <input id="annotation-preview-container-input" type="text" style="width: 1px; height: 1px; pointer-events: none; opacity: 0;">
-    </div>
+    <!-- 圖片標注（React 接管，舊區塊已刪；11-pre a7） -->
+    <div id="eagle-annotation-preview-host"></div>
 
     <!-- 懸停預覽 -->
     <div id="hover-preview-container">

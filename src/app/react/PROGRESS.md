@@ -1749,6 +1749,53 @@
 >   是 .ic-btn/.corner-btns，非 .icon-btn）；(3) C 模式让「bundle jQuery 重逻辑」零转写
 >   直接过门——shake/blur-loop/val 这类 DOM 缠绕逻辑不必搬进 React。
 
+> **11-pre a4-a9 已验证并接管（2026-09-01；一次性批次 + 统一测试）**：主窗口残留
+> Angular UI 块全数清空——index.html 的 ng-* 只剩 html/body 的 ng-app/ng-cloak/
+> ng-controller（b1 移除项）。
+> - **a8 body 绑定层**：store/bodyState.ts（37 个 watch 表达式快照）+ BodyBindings
+>   （C 模式直写：body className = class 插值 + ng-class 28 项逐一对应 /
+>   theme/platform/vibrancy attrs / link#app-style href（改静态 href=style_dark.css）/
+>   #main-app ui-ready / #list-content-panel 四类 + left/right 定位）+ BoxContainerBindings
+>   （#box-container display + empty/pixelated）+ DetailWrapper（详情包裹层 React 渲染——
+>   **ng-show → display 而非条件渲染**，#detail-container 身份不可重建（smoothZoom 包裹）；
+>   dblclick/mousedown → scope 调用）；index.html 的 body ng-class/class 插值/attrs/
+>   list-panel/box-container/main-app 的 ng-* 全删。
+> - **a4 空状态族**：DropAreas（六种空状态逐字：all/folder 双 message 的 image-drop-area、
+>   智能夹搜索、unfiled/untagged 双态、trash、keyword/filterBadge 无结果）+ ScrollToTop
+>   （ng-hide → display；#scroll-to-top id 保留——show class 由 scroll-to-top-sentinel
+>   指令与 bundle click 处理器继续管理）+ AppMenuButton（ng-show isLoading；断言经
+>   store.setState 驱动避免与 app 自身 isLoading 复位竞态）+ HoverShowSidebar
+>   （ng-hover-intent → jQuery hoverIntent 插件 C 模式挂载调 scope.hoverShowSidebar）。
+> - **a5 sub-folder 列表**：SubFolderSection 逐字（ng-if/ng-show 双条件、list-label +
+>   toggleSubFolderList/showListSubfolderContent、ui-sortable 以 scope.subFolderSortableOptions
+>   **原对象**初始化（update 回调走 bundle 原逻辑）、items：covers[0] bind-html →
+>   dangerouslySetInnerHTML + selectFolder/openFolder/openSubFolderContextMenu/
+>   enableSubFolderNameEditable + selected/locked class + 拖放 on* 三件）。
+> - **a6 列表列头**：ListLayoutHeader 逐字（8 列 active + up 方向 class +
+>   changeListOrderBy + openListPropContextMenu 右键）。
+> - **a7 容器**：ColorsPicker（隐藏 color input，id 保留——bundle 程序化 click 继续生效；
+>   ng-change filterWithColor(hexToRGB) → onChange 200ms debounce 等价）+
+>   AnnotationPreviewContainer（ng-if isDetailMode → 条件渲染；annotation-box ng-show
+>   currentComment → display；**AnnotationPreview 对象留在 bundle（window 全局，React
+>   commentHooks 直用），其 body 级委托处理器对 React 渲染 DOM 继续生效**；strip-br/
+>   allow-link/editable-selectall 指令随模板删除——plaintext-only + 委托处理器已覆盖，
+>   差异记录在案）。hover-preview-container/tag-manager-drag-badge 为静态容器
+>   （无 ng-*，bundle jQuery 填充）——保持原样，随 b3 与 HoverPreview 类一同移植。
+> - **a9 零散**：box-container 的 ng-show/ng-class/ng-right-click/on* 拖放五件 →
+>   BoxContainerListeners 原生监听调同名 scope 函数；**auto-scroll/rect-select/
+>   scrollToTopSentinel/boxContainerScrollbar 四指令保持 Angular 编译**（元素属性未动），
+>   其移植列为 **b1 前置（b 系列首片）**——rect-select 455 行无 Angular 依赖可近逐字
+>   移植，boxContainerScrollbar ~1000 行为最大单体。
+> - store/listState.ts：22 个 watch 表达式（含 subFolders/selectedFolderMappings 浅拷贝
+>   快照——深 watch 触发 + 新引用驱动渲染）。测试契约 window.__eagleListState/
+>   __eagleBodyState。
+> - 统一测试：新冒烟 tests/react-stage11a49-smoke.mjs 29/29（hosts/空状态族/排序/列头/
+>   body 绑定/详情包裹层/取色器/标注容器/ng-* 清除断言）；tsc 零错；全量 suite 39 项
+>   （runner 增 a49）**ALL GREEN 零偶发**；api-smoke 13/13。
+> - 教训：(1) zustand 无自定义 set 时用内置 setState（冒烟探针弃 getState().set）；
+>   (2) 组件渲染位置必须与断言选择器同源（AppMenuButton 漏 portal 到 host 使断言落空）；
+>   (3) 一次性批次的冒烟按断言名分节，失败可直读定位，无需拆文件。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

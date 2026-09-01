@@ -1447,6 +1447,33 @@
 >   vs-repeat 26/vs-size=size）+ vs-auto-scroll（index 跟随）；mock 数据量小，冒烟断言建议
 >   断 before/after spacer 存在 + 滚动窗口切片。
 > - shims collect 分支已就绪（React marker 轮询），无需再改；数据面契约同 9b-1。
+
+> **9b-2a 已验证并接管（2026-09-01）**：ContextMenu（462+30+147 逐字）+ library-switcher（83+模板）
+> + folder 行右键 openItemSubmenu 接通。
+> - contextMenu.tsx：ContextMenu.open/close 全局静态（模块级信号 + listeners 取代 $rootScope
+>   广播）；引擎（link 体逐字：init visible 过滤/treeUtil.walk 子菜单过滤/selectUp·Down 可选跳过/
+>   hoverItem 开子菜单/openItem keepOpen·checked 翻转/toggleItem pinned/openMore/搜索
+>   getSearchResultMenu 两层过滤 + separator/label 注入/无搜索菜单的字母 keyBuffer 定位/空格开启/
+>   enterKeydown IMU 模式/moveToCursorPosition 重试定位 + .context-menu-items maxHeight）；
+>   模板逐字（sortable/非 sortable 双分支、separator/label/color 色板/toggle pinned 双按钮/
+>   drag-helper/accelerator/more/递归 submenu + autoPositionContextMenu 定位指令等价 +
+>   resize.submenu）；ui-sortable 分支经 jQuery UI sortable（update → onSorted）。
+> - 测试契约：window.__eagleCollectContextMenu（bindElement 后）/ __eagleCollectContextMenuEngine
+>   （创建期）——**探针定位「菜单不弹」全靠引擎句柄**：根因是 root div 漏挂 ref={rootRef} →
+>   bindElement 早退 → $contextMenuElement 永远 null（jQuery addClass('open') 全部静默 no-op，
+>   而 items 渲染与 overlay 正常——「部分活着」假象）；次因 = init 改引擎状态后未触发渲染
+>   （原版靠 digest）→ init 尾补 forceUpdate。
+> - openItemSubmenu 真实现（folder-select-panel.js 423-482 逐字）：recent 行 = removeHistory 菜单、
+>   普通行 = addChilder/addSibling 双项（panelI18n 键回退 = 原版裸 `i18n.__` 未定义行为等价；
+>   `$bodyScope.createFolder/removeRecentFolder` 在采集窗本就未定义（原版 ReferenceError 怪癖
+>   逐字保留，React 事件Handler抛错仅记录不卸载）。
+> - library-switcher：updateLibrary（eagle.library.info）+ click → ContextMenu.open（showSearch、
+>   history 项 icon=/api/library/icon + fallbackImage + disabled/checked）→ switchPromise →
+>   onLibrarySwitching/reloadData/SwitchedClosed 回调链（controller 新导出 reloadData）。
+> - 闭环：collect 冒烟（react-stage9b1 文件，累积 20 断言）全绿——新增右键菜单开合（2 项标签为
+>   i18n 键名 = panelI18n 回退）、overlay 关闭、switcher 名称/菜单开合（2 项 history）/Esc 关闭；
+>   9b-1 的 14 项全数仍绿。回归门 preview-delivery 绿；suite 34 项仅 main-ui-workflow 一次既有
+>   偶发（单跑即绿）；api-smoke 13/13；tsc 零错。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
@@ -1461,7 +1488,7 @@
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
 | preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 已验证（9a-1/9a-2/9a-3 全片接管：接线+controller/shell+14 查看器分支+工具列/footbar+cgNotify+tippy+gif 链路+窗口控制/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop；旧文件随阶段11 清理） |
-| collect-window | 独立页面 | `src/app/collect-window/*` | 进行（9b-1 已验证接管：接线+CollectController+左列+FolderSelectPanel 引擎/模板，冒烟 14/14；9b-2 余 TagSelectPanel/ContextMenu/library-switcher/vs-repeat 虚拟化） |
+| collect-window | 独立页面 | `src/app/collect-window/*` | 进行（9b-1/9b-2a 已验证接管：接线+CollectController+左列+FolderSelectPanel+ContextMenu+library-switcher+右键菜单，collect 冒烟 20 断言；9b-2b 余 TagSelectPanel/9b-2c vs-repeat 虚拟化） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |
 | progress.html | 进度窗口 | `src/app/progress.html` | 无运行时入口，定性不移植（9c 勘察） |

@@ -5,8 +5,9 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
-import { controllerScope, applyController, registerFolderPanelOpener, ct } from './controller';
+import { controllerScope, applyController, registerFolderPanelOpener, ct, reloadData } from './controller';
 import { SelectPanel, panelI18n, cartesianProduct } from './selectPanelEngine';
+import { ContextMenu } from './contextMenu';
 
 const $: any = (...args: any[]) => (window as any).jQuery(...args);
 
@@ -355,9 +356,68 @@ class FolderSelectPanel extends SelectPanel {
   }
 
   openItemSubmenu(item: any) {
-    // 原版走 ContextMenu.open + $bodyScope.createFolder——$bodyScope 在采集窗本就未定义
-    // （原版 ReferenceError 怪癖）→ 9b-1 守卫 no-op，9b-2 接 ContextMenu
-    console.warn('[eagle-collect] openItemSubmenu pending (ContextMenu 9b-2)', item && item.id);
+    const i18n = (window as any).i18n;
+    const bodyScope: any = (window as any).$bodyScope; // 原版裸 $bodyScope 在采集窗未定义（ReferenceError 怪癖逐字保留）
+    if (item.isRecent) {
+      ContextMenu.open({
+        items: [
+          {
+            label: panelI18n('selectFolderPanel.context.removeHistory'),
+            click: () => {
+              bodyScope.removeRecentFolder(item.id, () => {
+                const selectedIds = { ...this.listData.selectedIds };
+                this.reset();
+                this.init(this.originalParams);
+                this.listData.selectedIds = selectedIds;
+                this.updateItemList();
+              });
+            },
+          },
+        ],
+        onClosed: () => {
+          this.focusSearchInput();
+        },
+      });
+    } else {
+      ContextMenu.open({
+        items: [
+          {
+            label: panelI18n('selectFolderPanel.context.addChilderFolder'),
+            icon: 'ic-folder-new-sub-folder.svg',
+            click: () => {
+              this.createFolder('', (folderName: string) => {
+                bodyScope.createFolder({
+                  name: folderName,
+                  parentID: item.id,
+                  callback: (folder: any) => {
+                    this.onCreatedFolder(folder);
+                  },
+                });
+              });
+            },
+          },
+          {
+            label: panelI18n('selectFolderPanel.context.addSiblingFolder'),
+            icon: 'ic-expand-same.svg',
+            click: () => {
+              this.createFolder('', (folderName: string) => {
+                bodyScope.createFolder({
+                  name: folderName,
+                  sibling: item,
+                  callback: (folder: any) => {
+                    this.onCreatedFolder(folder);
+                  },
+                });
+              });
+            },
+          },
+        ],
+        onClosed: () => {
+          this.focusSearchInput();
+        },
+      });
+    }
+    void i18n;
   }
 
   changeTab(tab: string) {
@@ -559,8 +619,20 @@ export function FolderSelectPanelHost() {
             <img src={`assets/images/${themePath}/icons/ic-folder-select-recent.svg`} />
           </div>
         </div>
-        {/* library-switcher（9b-2）：元素占位保持 DOM 对齐 */}
-        <library-switcher theme={theme} />
+        <LibrarySwitcher
+          theme={theme}
+          onLibrarySwitching={() => {
+            controllerScope.isLoadingData = true;
+            applyController();
+          }}
+          onLibrarySwitched={() => {
+            // 原回调 = initFolderSelect 参数 onLibrarySwitched: () => loadData()
+            reloadData();
+          }}
+          onLibrarySwitchClosed={() => {
+            panel && panel.focusSearchInput();
+          }}
+        />
         <div className="close" onClick={() => panel.close()} />
       </div>
 
@@ -704,5 +776,79 @@ export function FolderSelectPanelHost() {
         )}
       </div>
     </select-panel>
+  );
+}
+
+
+/* ---- library-switcher（library-switcher.js 83 行 + 模板逐字） ---- */
+
+export function LibrarySwitcher({ theme, onLibrarySwitching, onLibrarySwitched, onLibrarySwitchClosed }: any) {
+  const [currentLibrary, setCurrentLibrary] = useState<any>(null);
+  const elRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const eagle = (window as any).eagle;
+    eagle.library
+      .info()
+      .then((info: any) => {
+        setCurrentLibrary(info.library || { name: '', path: '' });
+      })
+      .catch(() => setCurrentLibrary({ name: '', path: '' }));
+  }, []);
+
+  const extractLibraryName = (libPath: string) => {
+    const match = libPath.match(/([^\/]+)\.library$/);
+    return match ? match[1] : libPath.split('/').pop();
+  };
+
+  const onClick = async () => {
+    const eagle = (window as any).eagle;
+    const current = await eagle.library.info();
+    const currentPath = current.library.path;
+    const libraryPatches = await eagle.library.history();
+
+    ContextMenu.open({
+      showSearch: true,
+      items: libraryPatches.map((libraryPath: string) => {
+        const libraryName = extractLibraryName(libraryPath);
+        const parentFolderPath = libraryPath.replace(/[^/]+\.library$/, '');
+        void parentFolderPath;
+        const libraryImage = 'http://localhost:41595/api/library/icon?libraryPath=' + encodeURIComponent(libraryPath);
+        const fallbackImage = 'assets/images/base/icons/default-library-icon.png';
+        return {
+          label: libraryName,
+          disabled: libraryPath === currentPath,
+          checked: libraryPath === currentPath,
+          image: libraryImage,
+          fallbackImage,
+          click: async () => {
+            onLibrarySwitching();
+            let targetLibraryPath = libraryPath;
+            await eagle.library
+              .switchPromise(libraryPath)
+              .catch(() => {
+                targetLibraryPath = currentPath;
+              })
+              .finally(() => {
+                eagle.library
+                  .info()
+                  .then((info: any) => setCurrentLibrary(info.library || { name: '', path: '' }))
+                  .catch(() => {});
+                onLibrarySwitched(targetLibraryPath);
+              });
+          },
+        };
+      }),
+      onClosed: () => {
+        onLibrarySwitchClosed();
+      },
+    });
+  };
+
+  return (
+    <div className="library-switcher" ref={elRef} onClick={onClick}>
+      <div className="switcher-name">{(currentLibrary && currentLibrary.name) || ''}</div>
+      <div className="switcher-icon" />
+    </div>
   );
 }

@@ -309,6 +309,11 @@ export function getTagAll(): any {
   return tagAll;
 }
 
+/** library-switcher 切换后的重载（原 initFolderSelect 参数 onLibrarySwitched: () => loadData()）。 */
+export async function reloadData(): Promise<void> {
+  await loadData();
+}
+
 /* ================= 初始化序列（collect.js 322-355 逐字） ================= */
 
 (async () => {

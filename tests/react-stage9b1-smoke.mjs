@@ -190,6 +190,63 @@ try {
   })()`);
   await assertExprOn(pw, 'pw4a-search-cleared', `document.querySelectorAll('.select-panel-item').length >= 5`);
 
+  // ── 9b-2a：folder 行右键 → DOM 右键菜单 ──
+  await evalOn(pw, `(() => {
+    const rows = Array.from(document.querySelectorAll('.select-panel-item .list-item.has-icon'));
+    const target = rows.find((r) => !r.closest('.select-panel-item').querySelector('.history-badge'));
+    if (!target) return false;
+    const ev = new MouseEvent('contextmenu', { bubbles: true, cancelable: true });
+    target.dispatchEvent(ev);
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4b-contextmenu-open', `(() => {
+    const menu = document.querySelector('.context-menu');
+    return !!menu && menu.classList.contains('open')
+      && document.querySelectorAll('.context-menu .context-menu-item').length >= 2
+      && !!document.querySelector('.context-menu-overlay');
+  })()`);
+  // 右键 openMore → more 分支不存在（无 more）→ 菜单保持
+  const cmState = await evalOn(pw, `(() => {
+    const labels = Array.from(document.querySelectorAll('.context-menu .context-menu-item .label')).map((el) => el.textContent.trim());
+    return labels;
+  })()`);
+  console.log(`INFO menu labels: ${JSON.stringify(cmState)}`);
+  // overlay 点击关闭
+  await evalOn(pw, `(() => {
+    document.querySelector('.context-menu-overlay').click();
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4b-contextmenu-overlay-close', `(() => {
+    const menu = document.querySelector('.context-menu');
+    return !!menu && !menu.classList.contains('open');
+  })()`);
+
+  // ── 9b-2a：library-switcher ──
+  await assertExprOn(pw, 'pw4b-switcher-name', `(() => {
+    const name = document.querySelector('.library-switcher .switcher-name');
+    return !!name && name.textContent.trim().length > 0;
+  })()`);
+  await evalOn(pw, `(() => {
+    document.querySelector('.library-switcher').click();
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4b-switcher-menu-open', `(() => {
+    const menu = document.querySelector('.context-menu');
+    return !!menu && menu.classList.contains('open') && !!menu.querySelector('input[type=search]');
+  })()`);
+  const swItems = await evalOn(pw, `document.querySelectorAll('.context-menu .context-menu-item').length`);
+  console.log(`INFO switcher menu items: ${swItems}`);
+  // 关闭（Esc → search keyup 27）
+  await evalOn(pw, `(() => {
+    const input = document.querySelector('.context-menu input[type=search]');
+    input.dispatchEvent(new KeyboardEvent('keyup', { keyCode: 27, bubbles: true }));
+    return true;
+  })()`);
+  await assertExprOn(pw, 'pw4b-switcher-menu-esc-close', `(() => {
+    const menu = document.querySelector('.context-menu');
+    return !!menu && !menu.classList.contains('open');
+  })()`);
+
   await delay(600);
   try {
     const screenshot = await Promise.race([

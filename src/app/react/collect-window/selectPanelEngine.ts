@@ -426,7 +426,7 @@ export class SelectPanel {
   }
 
   #moveToCursorPositionAndPreventCollisionWithElement(callback: () => void, element: any, retry: number) {
-    const $w = $()(window);
+    const $w = $(window);
     const windowWidth = $w.width();
     const windowHeight = $w.height();
     const containerWidth = this.$panel.width();
@@ -477,7 +477,7 @@ export class SelectPanel {
   }
 
   #moveToCursorPosition(callback: () => void, retry: number) {
-    const $w = $()(window);
+    const $w = $(window);
     const windowWidth = $w.width();
     const windowHeight = $w.height();
     const containerWidth = this.$panel.width();

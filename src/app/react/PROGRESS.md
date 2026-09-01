@@ -1209,8 +1209,42 @@
 >   preview-window init 分支（images/imagesDir/rootDir/machineID/Registration/pluginModule，页内
 >   有无 Angular 的双路径）。依赖大多已移植可复用：mediaElement/mpvMediaElement/pluginView（阶段5）、
 >   filters、smoothZoom、videojs、wMousetrap、tippy。**回归门 = 既有 preview-delivery-closed-loop**
->   （suite 成员，当前 Angular 态全绿——迁移期间该测试持续作门）。分 9a-1（布局/查看器/媒体分支）、
->   9a-2（工具列/缩放/导航/交互）推进。
+>   （suite 成员，当前 Angular 态全绿——迁移期间该测试持续作门）。
+> - **9a 深勘察（2026-09-01，未转写；下一会话按此执行）**：
+>   - **冒烟驱动契约（main.cjs --smoke-preview-delivery，2474-2880）**：驱动全程走
+>     `window.$bodyScope`（scope.current/images/selectNext()/selectPrev()/$evalAsync()）+ DOM 查询
+>     （#detail-image/.gif-viewer/.pdf-viewer iframe 等）。迁移时按「只改写不删除」先例：
+>     controllerScope 上加 `$evalAsync(fn?)` 门面（fn 执行 + notify），driver 内
+>     `window.$bodyScope` 机械替换为 `window.__eaglePreviewController`，其余 driver 代码零改动。
+>   - **init 序列**（preview-window.js 581-658）：'init' → images/pluginModule（含
+>     previewExtension.allowZoom/getViewerPluginExt（IMAGE_TYPES 表 + customThumbnail 分支）/
+>     getViewerPluginURL（FileUrlHelper.getRawPath + locale + **$bodyScope.theme**——改 controllerScope）/
+>     getViewerPlugin）→ imagesDir（darwin/win32 encodeURI 分支）→ current=images[0] → metas →
+>     initContainer()。另有 `get.viewer.image` send（URL 直开 fallback，shims 需带 id 处理或守卫）。
+>   - **initContainer（821-851）**：`$('#detail-container').smoothZoom({...})` —— 同阶段5 详情模式
+>     的元素身份保持问题（zoom 实例 wrap 容器），React 侧容器必须永不重建；
+>     smoothZoom('updateNavigator'/'focusTo'/'rotate'/'flip') 多处调用。
+>   - **指令清单**（preview-window.js 128-2565）：mouseGesture(128，阶段5 已有 useMouseGesture)、
+>     tgaImg(2367，阶段5 已有)、ngRightClick(2449)、toolbarBtn Pin/Unpin/Close/ZoomFit/
+>     FrameByFrame/ZoomActual(2464-2550，模板极简)、navigator(2551，prev/next + disabled)。
+>     comments-container/comment-item 阶段5 已有；webview/webview-toolbar 阶段5 已有。
+>   - **控制器函数族**：窗口控制（minimize/maximize/restore/close/toggleFullScreen/isMaximize）、
+>     缩放体系（updateZoomRatio/zoomActual/zoomFit/zoomFitEdge/toggleZoom/zoomIn/Out/
+>     openRatioContextMenu/lastZoomMode localStorage eagle.viewer.lastZoomMode）、旋转翻转
+>     （rotateImage/flipImage/rotateVideo/flipVideo，含 writeToFile 与 ipc）、视频
+>     （videoScreenShot/saveVideoFrame/copeVideoFrame/nextFrameHandler/prevFrameHandler/
+>     toggleVideoPlay）、GIF（gifViewer 对象 + toggleGifPlay/nextGifFrame/prevGifFrame/
+>     toggleGifPlayerMode/openGifContextMenu）、字体（isFontActivate/activateFont/deactivateFont）、
+>     拖拽模式（Shift 拖拽 overlay，keydown/keyup/mousemove/mouseup 全套）、右键
+>     （openContextMenu 912-1022 大菜单 + isHideNavigator）、复制 toast（copyAsPath/Link/Image）、
+>     selectNext/selectPrev（1762/1779）、getMetas/getRawUrl/getThumbnailUrl/get*Path 各查看器路径。
+>   - **html 分区**：工具列 ng-switch（url|video|font|3d|gif|txt|通用 7 分支，navigator +
+>     ic-btn-group）、容器（toast/not-support-preview/#detail-container + 12 种 ng-switch 查看器
+>     分支：plugin/gif/raw/pdf/txt/font/url/video/tga/model/特殊格式/custom/svg/image + 隐形占位
+>     img）、gif footbar（play/pause/帧/进度条/速度菜单/isGifReady 两态）。
+>   - **分片**：9a-1 = 接线 + controller/shell 骨架 + image 分支 + preview-delivery driver 改写
+>     （scope 门面 + $bodyScope 替换）→ 回归门绿；9a-2 = 视频/gif/pdf/txt/font/url/model/raw 分支
+>     补全 + 交互全套；9a-3 = 工具列细节/右键/拖拽模式/grayscale。每片按固定节奏（tsc+冒烟+回归+PROGRESS+commit）。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。

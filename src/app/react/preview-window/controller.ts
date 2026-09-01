@@ -304,14 +304,142 @@ scope.$apply = (fn?: (s: any) => void) => {
   notify();
 };
 
-/* ---- $rootScope 等价（undo/closeAll/notify；font 通知 9a-2 接 cgNotify 等价层） ---- */
+/* ---- cgNotify 等价层（angular-notify.min.js 逐字语义，无 Angular 版；9a-2） ----
+ * 模板：.cg-notify-message[.cg-notify-message-center] > (隐藏的 message div) +
+ * .cg-notify-message-template（messageTemplate 编译目标）+ .cg-notify-close 按钮。
+ * 堆叠：startTop=10 / verticalSpacing=15 / 关闭中 +20px；center 在 append 后按
+ * offsetWidth/2 取负 margin-left；opacity transitionend 即移除并重排。
+ * CSS 由 preview-window.html 保留的 angular-notify.min.css 提供。
+ */
+
+const NOTIFY_START_TOP = 10;
+const NOTIFY_VERTICAL_SPACING = 15;
+const notifyMessages: HTMLElement[] = [];
+
+function notifyRestack(): void {
+  let nextTop = NOTIFY_START_TOP;
+  for (let i = notifyMessages.length - 1; i >= 0; i--) {
+    const el = notifyMessages[i];
+    const h = el.offsetHeight;
+    let top = nextTop + h + 10;
+    if (el.getAttribute('data-closing')) {
+      top += 20;
+    } else {
+      nextTop += h + NOTIFY_VERTICAL_SPACING;
+    }
+    el.style.top = `${top}px`;
+    el.style.marginTop = `-${h + 10}px`;
+    el.style.visibility = 'visible';
+  }
+}
+
+function notifyRemove(el: HTMLElement): void {
+  const i = notifyMessages.indexOf(el);
+  if (i > -1) notifyMessages.splice(i, 1);
+  el.remove();
+  notifyRestack();
+}
+
+function notifyClose(el: HTMLElement): void {
+  el.style.opacity = '0';
+  el.setAttribute('data-closing', 'true');
+  notifyRestack();
+}
+
+export function notifyCloseAll(): void {
+  for (const el of notifyMessages) {
+    el.style.opacity = '0';
+  }
+}
+
+function notifyShow(options: { duration?: number; messageTemplate: string; position?: string }): void {
+  const duration = options.duration || 10000;
+  const position = options.position || 'center';
+
+  const el = document.createElement('div');
+  el.className = `cg-notify-message${position === 'center' ? ' cg-notify-message-center' : ''}`;
+
+  const messageDiv = document.createElement('div');
+  messageDiv.style.display = 'none';
+  el.appendChild(messageDiv);
+
+  const templateDiv = document.createElement('div');
+  templateDiv.className = 'cg-notify-message-template';
+  templateDiv.innerHTML = options.messageTemplate;
+  el.appendChild(templateDiv);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'cg-notify-close';
+  closeBtn.innerHTML = '<span aria-hidden="true">×</span><span class="cg-notify-sr-only">Close</span>';
+  closeBtn.addEventListener('click', () => notifyClose(el));
+  el.appendChild(closeBtn);
+
+  // 原 messageTemplate 的 undo 链接 <a ng-click="closeAll();undo();">（$compile 于 $rootScope 子 scope）
+  const undoLink = templateDiv.querySelector('a');
+  if (undoLink) {
+    undoLink.addEventListener('click', function () {
+      scope.closeAll();
+      scope.undo();
+    });
+  }
+
+  // 原 webkitTransitionEnd 判定：opacity 属性过渡结束即移除
+  el.addEventListener('transitionend', (a: any) => {
+    if (a.propertyName === 'opacity' || el.style.opacity === '0') {
+      notifyRemove(el);
+    }
+  });
+
+  document.body.appendChild(el);
+  notifyMessages.push(el);
+
+  setTimeout(function () {
+    if (position === 'center') {
+      el.style.marginLeft = `-${el.offsetWidth / 2}px`;
+    }
+  }, 0);
+  setTimeout(function () {
+    notifyRestack();
+  }, 0);
+  if (duration > 0) {
+    setTimeout(function () {
+      notifyClose(el);
+    }, duration);
+  }
+}
+
+/* ---- $rootScope 等价（undo/closeAll/notify——preview-window.js 449-484 逐字） ---- */
 
 scope.undo = function () {};
-scope.closeAll = function () {};
-scope.notify = function (_params: any, _restoreCallbackk: any) {
-  // 旧实现走 cgNotify（angular-notify）；仅被 activateFont/deactivateFont 调用，
-  // 9a-2 补 cgNotify 等价 DOM 提示层。函数签名保留以便调用点零改动。
-  scope.undo = function () {};
+scope.closeAll = function () {
+  notifyCloseAll();
+};
+scope.notify = function (params: any, restoreCallbackk?: any) {
+  if (!params || !params.message) return;
+
+  let messageTemplate = '<span>' + params.message;
+
+  if (restoreCallbackk) {
+    messageTemplate = messageTemplate + ' <a>' + pvT('notify.button.undo') + '</a></span>';
+  } else {
+    messageTemplate = messageTemplate + '</span>';
+  }
+
+  notifyCloseAll();
+
+  setTimeout(function () {
+    notifyShow({
+      duration: params.duration || 4000,
+      messageTemplate: messageTemplate,
+      position: 'center',
+    });
+    if (restoreCallbackk) {
+      scope.undo = restoreCallbackk;
+    } else {
+      scope.undo = function () {};
+    }
+  }, 100);
 };
 
 /* ---- 路径/URL 工具（487-553 逐字） ---- */

@@ -17,7 +17,17 @@
          angular.element("body").scope() 兜底 + $bodyScope.startDrag 引用；
          window.$bodyScope 由 React controller 模块（src/app/react/preview-window/controller.ts）置。 -->
     <script>
-    window.angular = { element: function () { return { scope: function () { return window.$bodyScope; } }; } };
+    // smoothZoom 的完整消费面：angular.element(...).scope()（5 处兜底）+
+    // angular.element("html").injector().get('$rootScope')（navigator 位图分支——仅用于
+    // supportCrop/supportRotate 属性写入与 $evalAsync，$bodyScope 即等价 $rootScope）。
+    window.angular = {
+      element: function () {
+        return {
+          scope: function () { return window.$bodyScope; },
+          injector: function () { return { get: function () { return window.$bodyScope; } }; },
+        };
+      },
+    };
     </script>
     <!-- 阶段9a：preview-window.js（classic script）顶层 const 原本形成全局词法绑定，供页面级
          代码解析裸标识符（global.js FileUrlHelper 的裸 path、getClipboardImage 的裸 clipboard 等）。
@@ -26,6 +36,9 @@
     <script>
     window.path = require('path');
     window.fs = require('fs');
+    // EagleConfig 同为 global.js 顶层 const（全局词法绑定，非 window 属性）——controller 的
+    // VIDEO/AUDIO/MODEL/FONT/URL_TYPES 表与 web-view 的 USER_AGENT 依赖它
+    window.EagleConfig = require(appRoot + '/config.js');
     try { window.fse = require('fs-extra'); } catch (err) {}
     window.electron = require('electron');
     window.shell = window.electron.shell;
@@ -48,7 +61,6 @@
     <script src="js/devices.js"></script>
     <script src="js/vendors/jquery.smoothZoom.min.js"></script>
     <script src="js/vendors/mousetrap.min.js"></script>
-    <script src="js/modules/tif-img.js"></script>
     <link rel="stylesheet" href="css/jquery-ui.min.css">
     <link href="js/vendors/videojs/video-js.css" rel="stylesheet">
     <script src="js/vendors/videojs/video.js"></script>

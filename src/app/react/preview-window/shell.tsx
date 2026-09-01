@@ -659,6 +659,70 @@ function PreviewPluginView({ item, url }: { item: any; url?: string }) {
   return <plugin-view id="plugin-viewer" ref={hostRef as any} />;
 }
 
+/* ---------------- web-view 指令移植（js/directives/webview.js 预览窗版，port 阶段5 WebViewBranch） ---------------- */
+
+function PreviewWebViewBranch({ item, urlSrc }: { item: any; urlSrc?: string }) {
+  const hostRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const element = hostRef.current;
+    if (!element || !item || !urlSrc) return;
+
+    function init() {
+      const isVideo = item.medium !== undefined;
+      const tagName = 'webview';
+      let className = '';
+      let referrer = '';
+      if (isVideo) className = 'is-video';
+      if (urlSrc!.indexOf('youtube-nocookie.com') > -1) referrer = 'http://localhost/';
+      const userAgent = (window as any).EagleConfig.USER_AGENT;
+
+      element!.innerHTML = `<${tagName} id="url-viewer" class="${className}" allowpopups useragent="${userAgent}" httpreferrer="${referrer}"></${tagName}>`;
+
+      const webview = element!.querySelector('webview') as any;
+      if (!webview) return;
+
+      const remote = req('@electron/remote');
+      const win = remote?.getCurrentWindow?.();
+      win?.on('leave-full-screen', function () {
+        webview.executeJavaScript(`document.exitFullscreen();`);
+      });
+
+      webview.addEventListener('enter-html-full-screen', () => {
+        if (process.platform === 'darwin') {
+          webview.executeJavaScript(`document.exitFullscreen();`);
+        }
+        applyController((s) => {
+          // 原版 $bodyScope.toggleSlideshow() 在预览窗控制器上不存在（主窗口函数）→ 守卫等价
+          if (typeof s.toggleSlideshow === 'function') s.toggleSlideshow();
+        });
+      });
+      webview.addEventListener('did-fail-load', (e: any) => {
+        console.log(e);
+      });
+      webview.addEventListener('console-message', (e: any) => {
+        console.log(e.message);
+      });
+      webview.addEventListener('crash', (e: any) => {
+        console.log(e);
+      });
+      webview.addEventListener('will-navigate', (e: any) => {
+        console.log(e.url);
+      });
+      webview.addEventListener('page-favicon-updated', (e: any) => {
+        console.log(e.favicons);
+        webview.favicon = e.favicons[0];
+      });
+
+      webview.src = urlSrc;
+    }
+
+    init();
+  }, [item?.id, urlSrc]);
+
+  return <web-view id={`webview-${item?.id}`} src={urlSrc} ref={hostRef as any} />;
+}
+
 function DetailContainerInterior() {
   const scope = controllerScope;
   const current = scope.current;
@@ -711,7 +775,7 @@ function DetailContainerInterior() {
   } else if (URL_EXTS.includes(ext)) {
     branch = (
       <div className={`detail-wrap full ${ext}`}>
-        <web-view id={`webview-${current?.id}`} src={scope.getURLSrc()} />
+        <PreviewWebViewBranch item={current} urlSrc={scope.getURLSrc()} />
       </div>
     );
   } else if (VIDEO_EXTS.includes(ext)) {

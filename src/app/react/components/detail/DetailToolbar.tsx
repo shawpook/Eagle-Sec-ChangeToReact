@@ -38,6 +38,9 @@ export function WebviewToolbar({ snapshot, webviewId }: { snapshot: DetailSnapsh
       if (cancelled) return;
       const webview = document.querySelector(`#${webviewId} webview`) as any;
       if (!webview) return;
+      // webviewTag 未启用的窗口（如预览大窗）里 <webview> 是普通元素、无 canGoBack 等 API——
+      // 保持 control=null（按钮 onClick 走 controlRef.current?. 可选链，无操作不崩树）。
+      if (typeof webview.canGoBack !== 'function') return;
 
       const wc: any = {
         getTitle: () => webview.getTitle(),

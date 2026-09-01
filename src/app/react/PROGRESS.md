@@ -1302,6 +1302,49 @@
 > - 9a-2 待办：txt/font/url/model/raw/tga/特殊格式分支交互补全 + gif iframe 播放器链路
 >   （gif-viewer 读 window.parent.$bodyScope 已通）+ cgNotify 等价层（controller.notify 占位）+
 >   web-view 宿主（url 分支 9a-2 补全）+ 工具列 tippy 挂载。
+
+> **9a-2 已验证并接管（2026-09-01）**：预览大窗第二片——web-view 宿主 + cgNotify 等价层 +
+> gif iframe 链路 + 两个全局环境修复（EagleConfig / angular stub 扩充）。
+> - web-view 宿主（js/directives/webview.js 预览窗版逐字）：shell.tsx PreviewWebViewBranch——
+>   内建 `<webview id="url-viewer" class allowpopups useragent httpreferrer>`（youtube-nocookie →
+>   httpreferrer localhost/、medium → is-video class）、leave-full-screen exitFullscreen、
+>   enter-html-full-screen darwin exitFullscreen + toggleSlideshow（预览窗控制器无此函数 → 守卫
+>   no-op，原版此处本就抛 TypeError 的怪癖等价）、did-fail-load/console-message/crash/
+>   will-navigate（原版 else 分支全注释 → 仅 log）/page-favicon-updated；外层恢复模板的
+>   `.detail-wrap full {ext}` 包裹 div。WebviewToolbar（stage5 DetailToolbar）加守卫：
+>   webviewTag 未启用的窗口里 `<webview>` 是普通元素（无 canGoBack 等 API）→ 不 setControl
+>   （按钮经 controlRef.current?. 可选链保持可点无操作），修复 setControl 后渲染期
+>   `canGoBack is not a function` 崩树卸载。
+> - cgNotify 等价层（controller.ts）：angular-notify.min.js 逐字语义无 Angular 版——模板
+>   `.cg-notify-message[.cg-notify-message-center]`（隐藏 message div + .cg-notify-message-template +
+>   .cg-notify-close）；堆叠 startTop=10/verticalSpacing=15/关闭中 +20px；center append 后按
+>   offsetWidth/2 负 margin-left；opacity transitionend 移除并重排；duration 默认 10000。
+>   scope.notify/closeAll/undo = preview-window.js 449-484 逐字（messageTemplate 拼
+>   `<span>message [<a>undo</a>]`、notify.closeAll 先行、100ms setTimeout、undo 链接点击
+>   closeAll()+undo()、restoreCallbackk 写 scope.undo）；CSS 复用保留的 angular-notify.min.css。
+> - gif iframe 链路验证：habits.gifViewer='on' → #gif-viewer iframe（src
+>   gif-viewer/index.html?path=…&render=…）+ body gifviewer class + footbar init/in 双态渲染。
+> - **修复（全局环境，回归门二次受益）**：(1) window.EagleConfig——global.js 顶层 const（全局
+>   词法绑定非 window 属性），controller 的 VIDEO/AUDIO/MODEL/FONT/URL_TYPES 表此前全为空表
+>   （`?.` 静默吞）、web-view 的 USER_AGENT 直接崩树——静态壳 inline stub 补
+>   `window.EagleConfig = require(appRoot + '/config.js')`，ng-class 的 is-video/is-url/
+>   is-model/hidden-footer/alway-show-toolbar 从此生效；(2) angular stub 扩充 injector——
+>   smoothZoom navigator 位图分支 `angular.element("html").injector().get('$rootScope')`
+>   （仅 supportCrop/supportRotate 属性写入 + $evalAsync）→ stub injector.get 恒返
+>   window.$bodyScope；(3) tif-img.js 从静态壳 head 移除——其首行 `angular.module("tifImg",[])`
+>   在无 Angular 页面必抛 uncaught（tga/tif 已由 usePreviewTgaImage/useRetryWhenError 承接）。
+> - 诊断手段沉淀（React 树「静默空渲染」定位法）：reactRoot 存活 + portal 容器查到 + 无
+>   console error ≠ 无崩溃——真凶是 200ms 后 setControl 的重渲染抛错被 React 吞掉；最终用
+>   页面内 error/unhandledrejection/console.error 三钩子（`window.__eagleErrLog`）抓到。
+>   8c 教训（Runtime.evaluate 不查 exceptionDetails 静默失败）再次命中。
+> - 闭环：react-stage9a2-smoke 12/12（接线契约/init 到达（real-path 缓冲桥）/entry 标记/
+>   初始渲染/webview 宿主（id/useragent/allowpopups/src + .detail-wrap full url 包裹）/
+>   webview-toolbar/无未捕获错误/notify 显示（译文含字体名 + close 按钮）/1.8s 自动消失/
+>   gif iframe + gifviewer class/footbar 双态/截图留档 test-run/react-stage9a2-preview.png）。
+>   回归门 preview-delivery-closed-loop 复跑绿；全量回归 suite 32 项 ALL GREEN（runner 增
+>   9a2；对比 9a-1 期两轮轮转偶发本轮零偶发）+ api-smoke 13/13；tsc 零错。
+> - 9a-3 待办：工具列 tippy 实际挂载、右键菜单细节实测、拖拽模式 overlay 实测、grayscale、
+>   窗口控制按钮实测。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
@@ -1315,7 +1358,7 @@
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 进行（9a-1 已验证接管：接线+controller/shell 骨架+image/svg/gif(image)/pdf/video/custom/plugin+driver 改写，回归门绿；9a-2 余分支交互/gif 链路/cgNotify/web-view 宿主；回归门 preview-delivery-closed-loop） |
+| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 进行（9a-1/9a-2 已验证接管：接线+controller/shell 骨架+image/svg/gif/pdf/video/custom/plugin/web-view 分支+cgNotify 等价层+gif 链路，回归门绿；9a-3 余工具列细节/右键/拖拽 overlay/grayscale 实测；回归门 preview-delivery-closed-loop） |
 | collect-window | 独立页面 | `src/app/collect-window/*` | 待办（9b） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |

@@ -84,29 +84,8 @@
         <!-- 圖片列表 -->
         <div id="list-content-panel" class="content-panel" ng-class="{'hide': viewMode == 'community', 'filter-open' : eagle.filter.isOpen, 'small-list': imageSize.height <= 100, 'expand-right': viewMode == 'alltags'}" style="left: {{containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;">
 
-            <!-- 文件写入进度条 -->
-            <div id="saving-progress-bar" class="saving-progress-bar">
-                <div class="message"></div>
-                <div class="progressbar">
-                    <div class="current" style="width: 100%;"></div>
-                </div>
-            </div>
-
-            <!-- 檔案添加進度條 -->
-            <div id="upload-queue-progress" ng-hide="isDetailMode" class="upload-progress-bar" style="left: {{containerSize.sidebar + 1}}px; right: {{inspector.width + 1}}px;" ng-class="{'open': uploadQueue.length > 0}">
-                <div class="progressbar" ng-show="uploadQueue.length > 0">
-                    <div class="current" ng-show="uploadQueue.length > 1" style="width: {{finishQueue.length/uploadQueue.length*100}}%;"></div>
-                    <div class="current" ng-show="uploadQueue.length == 1" style="width: {{progress*100}}%;"></div>
-                </div>
-                <div class="message" ng-show="uploadQueue.length > 0">
-                    <span>{{'progress.uppload.addingImages' | i18n}} </span>
-                    <span class="counter percentage">{{finishQueue.length}}/{{uploadQueue.length}}</span>
-                    <span ng-show="addImageTimeLeftInSeconds" class="counter remain"> ({{addImageTimeLeftInSeconds | second2time}})</span>
-                </div>
-                <div ng-show="uploadQueue.length > 0" class="ic-btn cancel" ng-click="cancelAllTasks()">
-                    <img ng-src="assets/images/{{theme|themePath}}/icons/ic-modal-close.svg">
-                </div>
-            </div>
+            <!-- 文件写入进度条 + 檔案添加進度條（React 接管，舊區塊已刪；11-pre a1） -->
+            <div id="eagle-progress-bars-host"></div>
 
             <!-- 搜寻自动提示 -->
             <div id="eagle-search-suggestions-host" class="search-suggestions"></div>

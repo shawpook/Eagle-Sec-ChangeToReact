@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { AppRoot } from './app/AppRoot';
+import { SavingProgressBar, UploadQueueProgressBar } from './components/shell/ProgressBars';
 import { Sidebar } from './components/sidebar/Sidebar';
 import { Toolbar, SearchSuggestions } from './components/toolbar/Toolbar';
 import { FilterPanel } from './components/filter/FilterItems2';
@@ -29,6 +30,7 @@ import { bindDetailSync, useDetailState } from './store/detailState';
 import { bindInspectorSync } from './store/inspectorState';
 import { bindTagManagerSync } from './store/tagManagerState';
 import { bindPanelSync } from './store/panelState';
+import { bindUploadSync } from './store/uploadState';
 
 /**
  * React 入口（Eagle React 化改造）。
@@ -78,6 +80,8 @@ const root = createRoot(host, {
 root.render(
   <>
     <AppRoot />
+    <SavingProgressBar />
+    <UploadQueueProgressBar />
     <Sidebar />
     <Toolbar />
     <SearchSuggestions />
@@ -135,6 +139,7 @@ bindDetailSync();
 bindInspectorSync();
 bindTagManagerSync();
 bindPanelSync();
+bindUploadSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

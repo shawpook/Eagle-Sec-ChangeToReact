@@ -1665,6 +1665,39 @@
 > commit）→ b1 → 全量回归 → b2/b3/b4 → 阶段11 收尾（阶段0 的「index.html 移除 angular
 > 引用」待办同销）。
 
+> **11-pre a1 已验证并接管（2026-09-01）**：upload-queue-progress + saving-progress-bar
+> （index.html 88-110 两块，7d-7 定性的 bundle jQuery 直控块）React 接管，旧模板位删除。
+> - store/uploadState.ts：queueLength/finishCount/progress/timeLeft 走 startScopeSync
+>   scope 快照（bundle 的 uploadFiles/'file-uploaded'/cancelAllTasks/watchCollection 完成路径
+>   继续维护数据，digest 驱动同步——与原模板 ng-show/ng-class 绑定同源同语义）；
+>   savingOpen/savingMessage 走 'background-state' ipc（bundle 23386-23396 的
+>   metadataQueueLength>3 分支等价转写，i18n progress.savingFiles.msg + number0 千分位；
+>   palette/download 计数与 heartbeat 留在 bundle）。**关键坑：bundle 22734 在
+>   'app-status-loading'（库加载）处理器里 removeAllListeners('background-state') 清场——
+>   React 监听必须自愈（监听 app-status-loading + setTimeout(0) 重挂，重挂前
+>   removeListener/off 防累积），否则首库加载后保存条永久失聪**（冒烟首跑抓到：探针证明
+>   处理器已注册但 emit 不达，监听表里只剩 bundle 自己的）。
+> - components/shell/ProgressBars.tsx：SavingProgressBar（88-94 逐字）+
+>   UploadQueueProgressBar（96-110 逐字：progressbar 双 .current 分支（多文件
+>   finish/queue%、单文件 progress%）、message i18n（progress.uppload.addingImages typo
+>   逐字）+ counter percentage + remain second2time、cancel → callScope('cancelAllTasks')）。
+>   位置等价：saving 条原位 portal 进 #list-content-panel 内新宿主
+>   #eagle-progress-bars-host（absolute left:50% 定位继承面板，viewMode=community 隐藏面板
+>   时同隐——原版同行为）；upload 条 position:fixed + left/right 内联 =
+>   sidebarState.sidebarWidth+1 / inspectorState.width+1（复用既有镜像）+
+>   isDetailMode display:none（ng-hide 等价）。**组件不带原 id**——bundle 的
+>   $("#upload-queue-progress"/"#saving-progress-bar") 直控空集 no-op，UI 单一归属。
+> - 测试契约：window.__eagleUploadState（bindUploadSync 内，同 __eagleReactStore 先例）。
+> - 闭环：新冒烟 tests/react-stage11a1-smoke.mjs 13/13——宿主在面板内/旧 id 消失 + React
+>   渲染/saving 开关与文案计数/upload 开闭 + percentage + left/right 内联（运行时读
+>   containerSize/inspector 对账）/finish 半程 50%/单文件 42%/ETA 1:02:05/ng-hide 复位/
+>   cancel 清队列关条/截图。回归门：tsc 零错；suite 36 项（runner 增 11a1）35 绿 +
+>   main-ui-workflow 一次既有偶发（multi inspector persistence timeout，单跑复跑全绿，
+>   含 restart 检查）；api-smoke 13/13。
+> - 教训：(1) bundle 对共享 ipc 通道的 removeAllListeners 是隐藏杀手——React 新增通道
+>   监听前必须全 bundle grep 该通道的清理点（22734 即此例）；(2) 探针法再立功：监听表
+>   公开（this.listeners Map）+ 逐个 dump 函数源，直接定位「注册了但不在表里」。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

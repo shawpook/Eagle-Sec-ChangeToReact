@@ -1202,14 +1202,34 @@
 
 ## 9. 其余窗口（preview-window / collect-window / registration / manage-device / progress / thumbnail）
 
+> **阶段9 勘察（2026-09-01；未转写）**：
+> - **9a preview-window（预览大窗，活跃）**：preview-window.html（383 行，PreviewWindowController）
+>   + js/preview-window.js（2565 行）。入口 = main.cjs `preview:open-original` handle →
+>   openOriginalPreview（/src/app/preview-window.html + `preview:init` webContents.send）；shims 已有
+>   preview-window init 分支（images/imagesDir/rootDir/machineID/Registration/pluginModule，页内
+>   有无 Angular 的双路径）。依赖大多已移植可复用：mediaElement/mpvMediaElement/pluginView（阶段5）、
+>   filters、smoothZoom、videojs、wMousetrap、tippy。**回归门 = 既有 preview-delivery-closed-loop**
+>   （suite 成员，当前 Angular 态全绿——迁移期间该测试持续作门）。分 9a-1（布局/查看器/媒体分支）、
+>   9a-2（工具列/缩放/导航/交互）推进。
+> - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
+>   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
+>   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
+> - **9c 定性（无运行时 UI，记录不移植，同 tagPopup/死代码先例）**：
+>   - progress.html（510 行，通知/进度悬浮窗 + jieba/搜索关键词/web metas worker）：全仓唯一引用是
+>     frontend/public/pages.html 的人工链接——本仓 main.cjs/shims/bundle 均未创建该窗口（原版主进程
+>     功能未接入；库加载/导出进度已由 7d-6 窗口内对话框承载）。文件原样保留。
+>   - thumbnail.html（9 行空白页）：bundle executeJavaScriptInIsolatedWorld 的隐藏离屏插件执行宿主
+>     （缩略图 worker），页面刻意无 UI，无界面可移植，原样保留。
+> - registration / manage-device：安全替代页，已删旧实现（早前完成）。
+
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 待办 |
-| collect-window | 独立页面 | `src/app/collect-window/*` | 待办 |
+| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 待办（9a，回归门 preview-delivery-closed-loop） |
+| collect-window | 独立页面 | `src/app/collect-window/*` | 待办（9b） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |
-| progress.html | 进度窗口 | `src/app/progress.html` | 待办 |
-| thumbnail.html | 缩略图窗口 | `src/app/thumbnail.html` | 待办 |
+| progress.html | 进度窗口 | `src/app/progress.html` | 无运行时入口，定性不移植（9c 勘察） |
+| thumbnail.html | 缩略图窗口 | `src/app/thumbnail.html` | 空白离屏插件宿主，无 UI 可移植（9c 勘察） |
 | manage-device.js / registration.js（原版）| 源码镜像 | `src/app/js/manage-device.js` / `src/app/js/registration.js` | 待办 |
 
 ---

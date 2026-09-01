@@ -48,6 +48,16 @@ function readPreviewPreferences() {
   );
 }
 
+// 阶段9a-1：预览大窗（独立页面）React 化入口——保留 shims 注入，另挂 preview-window entry。
+function readPreviewWindow() {
+  const file = path.join(workspaceRoot, 'src/app/preview-window.html');
+  const html = injectPreviewScripts(fs.readFileSync(file, 'utf8'));
+  return html.replace(
+    '</body>',
+    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/preview-window/entry.tsx"></script>\n</body>`
+  );
+}
+
 function injectViewerConfig(html) {
   return html.replace(
     '<head>',
@@ -103,6 +113,11 @@ export default defineConfig({
           if (url === '/src/app/preferences.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
             res.end(readPreviewPreferences());
+            return;
+          }
+          if (url === '/src/app/preview-window.html') {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(readPreviewWindow());
             return;
           }
           if (url === '/src/app/registration.html') {

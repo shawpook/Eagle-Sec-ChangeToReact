@@ -2511,7 +2511,7 @@ app.whenReady().then(async () => {
         };
         await waitForPreview(
           `(async () => {
-            const scope = window.$bodyScope;
+            const scope = window.__eaglePreviewController;
             return scope && scope.current ? { id: scope.current.id, count: (scope.images || []).length } : null;
           })()`,
           'preview scope'
@@ -2530,7 +2530,7 @@ app.whenReady().then(async () => {
               };
               poll();
             });
-            const scope = await waitFor(() => window.$bodyScope && window.$bodyScope.current ? window.$bodyScope : null, 'preview scope');
+            const scope = await waitFor(() => window.__eaglePreviewController && window.__eaglePreviewController.current ? window.__eaglePreviewController : null, 'preview scope');
             const initialId = scope.current.id;
             const firstItem = scope.images[0];
             const imageLoaded = await waitFor(() => {
@@ -2799,7 +2799,7 @@ app.whenReady().then(async () => {
         };
         await waitForReopened(
           `(async () => {
-            const scope = window.$bodyScope;
+            const scope = window.__eaglePreviewController;
             return scope && scope.current ? { id: scope.current.id, count: (scope.images || []).length } : null;
           })()`,
           'reopened preview scope'
@@ -2818,7 +2818,7 @@ app.whenReady().then(async () => {
               };
               poll();
             });
-            const scope = await waitFor(() => window.$bodyScope && window.$bodyScope.current ? window.$bodyScope : null, 'renamed scope');
+            const scope = await waitFor(() => window.__eaglePreviewController && window.__eaglePreviewController.current ? window.__eaglePreviewController : null, 'renamed scope');
             const first = scope.images[0];
             const image = await waitFor(() => {
               const element = document.querySelector('#detail-image');

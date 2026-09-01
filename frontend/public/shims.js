@@ -1732,7 +1732,21 @@
     desktopApi.item.onOperationResult((result) => mockEmit('item:operation-result', result));
   }
   if (desktopApi && desktopApi.preview && typeof desktopApi.preview.onInit === 'function') {
-    desktopApi.preview.onInit((payload) => mockEmit('init', payload));
+    // 阶段9a：init 桥改缓冲——React 入口冷启动 vite transform 可能慢于本桥（8e-2 同款竞态）。
+    // 未就绪时暂存 __eaglePendingPreviewInit 并 25ms 轮询就绪标记后补发（兜底 10s）。
+    desktopApi.preview.onInit((payload) => {
+      window.__eaglePendingPreviewInit = payload;
+      if (window.__eaglePreviewEntryReady) {
+        mockEmit('init', payload);
+        return;
+      }
+      const retry = setInterval(() => {
+        if (!window.__eaglePreviewEntryReady) return;
+        clearInterval(retry);
+        mockEmit('init', payload);
+      }, 25);
+      setTimeout(() => clearInterval(retry), 10000);
+    });
   }
 
   const windowApi = () => (window.eagleDesktop && window.eagleDesktop.window) || null;
@@ -3038,16 +3052,22 @@
       const query = new URLSearchParams(window.location.search);
       const id = query.get('id');
       const image = items.find((item) => item.id === id) || items[0];
-      setTimeout(() => {
-        ipcRenderer.emit('init', {
-          images: image ? [image] : [],
-          imagesDir: lib.imagesDir,
-          rootDir: lib.rootDir,
-          machineID: 'preview',
-          Registration: registration,
-          pluginModule,
-        });
-      }, 500);
+      // 阶段9a：等 React entry 就绪标记（8e-2 同款 25ms 轮询，兜底 10s）；优先发 real-electron
+      // 路径缓冲的载荷（__eaglePendingPreviewInit），否则 mock 载荷。
+      const payload = {
+        images: image ? [image] : [],
+        imagesDir: lib.imagesDir,
+        rootDir: lib.rootDir,
+        machineID: 'preview',
+        Registration: registration,
+        pluginModule,
+      };
+      const retry = setInterval(() => {
+        if (!window.__eaglePreviewEntryReady) return;
+        clearInterval(retry);
+        ipcRenderer.emit('init', window.__eaglePendingPreviewInit || payload);
+      }, 25);
+      setTimeout(() => clearInterval(retry), 10000);
       return;
     }
 

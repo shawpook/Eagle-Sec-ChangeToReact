@@ -1,17 +1,45 @@
 <!DOCTYPE html>
-<html ng-app="EagleApp" ng-controller="PreviewWindowController" ng-cloak>
+<html>
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <link rel="stylesheet" href="css/modules/angular-notify/angular-notify.min.css">
-    <link rel="stylesheet" ng-href="css/base.css">
-    <link rel="stylesheet" ng-href="css/preview-window-new.css">
-    <link rel="stylesheet" ng-href="css/preview-window.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/preview-window-new.css">
+    <link rel="stylesheet" href="css/preview-window.css">
 
     <script>
     var appRoot = require('app-root-path');
     window.i18n = new(require(appRoot + '/i18n'));
+    </script>
+    <!-- 阶段9a：预览窗移除 Angular 后的微型 stub——smoothZoom 插件 5 处
+         angular.element("body").scope() 兜底 + $bodyScope.startDrag 引用；
+         window.$bodyScope 由 React controller 模块（src/app/react/preview-window/controller.ts）置。 -->
+    <script>
+    window.angular = { element: function () { return { scope: function () { return window.$bodyScope; } }; } };
+    </script>
+    <!-- 阶段9a：preview-window.js（classic script）顶层 const 原本形成全局词法绑定，供页面级
+         代码解析裸标识符（global.js FileUrlHelper 的裸 path、getClipboardImage 的裸 clipboard 等）。
+         React 化后该文件不再加载，由本脚本以 window 属性等价提供（裸标识符解析兜底到全局对象，
+         classic/module 消费方皆可见）。 -->
+    <script>
+    window.path = require('path');
+    window.fs = require('fs');
+    try { window.fse = require('fs-extra'); } catch (err) {}
+    window.electron = require('electron');
+    window.shell = window.electron.shell;
+    window.clipboard = window.electron.clipboard;
+    window.ipcRenderer = window.electron.ipcRenderer;
+    try {
+        window.remote = require('@electron/remote');
+        window.Menu = window.remote.Menu;
+        window.MenuItem = window.remote.MenuItem;
+        window.currentWindow = window.remote.getCurrentWindow();
+        window.USER_DATA_PATH = (window.remote.app && window.remote.app.getPath('userData')) || '';
+    } catch (err) {}
+    window.EAGLE_THUMBNAIL_TEMP_PATH = window.path.normalize((window.USER_DATA_PATH || '') + '/eagle-temp');
+    try { window.electronSettings = require(appRoot + '/my_modules/electron-settings'); } catch (err) {}
     </script>
     <script src="js/vendors/tippy.js"></script>
     <script src="js/vendors/jquery-1.8.0.min.js"></script>
@@ -19,11 +47,7 @@
     <script src="js/global.js"></script>
     <script src="js/devices.js"></script>
     <script src="js/vendors/jquery.smoothZoom.min.js"></script>
-    <script src="js/vendors/angular.min.js"></script>
     <script src="js/vendors/mousetrap.min.js"></script>
-    <script src="js/modules/angular-notify/angular-notify.min.js"></script>
-    <script src="js/modules/tippy.js"></script>
-    <script src="js/modules/wMousetrap.js"></script>
     <script src="js/modules/tif-img.js"></script>
     <link rel="stylesheet" href="css/jquery-ui.min.css">
     <link href="js/vendors/videojs/video-js.css" rel="stylesheet">
@@ -33,351 +57,29 @@
     <script src="js/vendors/videojs/lang/zh_CN.js"></script>
     <script src="js/vendors/videojs/lang/ko_KR.js"></script>
     <script src="js/vendors/videojs/lang/ja_JP.js"></script>
-    <script src="js/directives/media-element.js"></script>
-    <script src="js/directives/mpv-media-element.js"></script>
-	<script src="js/directives/plugin-view.js"></script>
     <script src="js/services/shortcut-manager.js"></script>
-    <script src="js/preview-window.js"></script>
-    <script src="js/directives/webview.js"></script>
-    <script src="js/directives/webview-toolbar.js"></script>
-    <script src="js/directives/filters.js"></script>
 </head>
 
-<body 
-    id="preview-window" 
-    theme="{{theme}}"
-    platform="{{::platform}}"
-    class=" {{::theme}} {{::platform}} type-{{current.ext}} hide-toolbar" 
-    w-mousetrap="mousetrap" 
-    ng-class="{
-        'show-transparent-grid': $root.preferences.habits.transparency == 'show', 
-        'gifviewer': $root.preferences.habits.gifViewer === 'on' || usingGifPlayer,
-        'non-perspective': current.width * current.height >= 6553600 || imageSize.zoomRatio < 100,
-        'is-grayscale-mode': isGrayscaleMode,
-        'hide-navigator': isHideNavigator,
-        'alway-show-toolbar': FONT_TYPES[current.ext] || URL_TYPES[current.ext] || current.ext === 'txt' || current.ext === 'pdf'|| MODEL_TYPES[current.ext] || pluginModule.previewExtension.viewerPluginMap[current.ext]
-    }">
-
-    <!-- Shift 拖拽模式 -->
+<body id="preview-window" class=" hide-toolbar">
+    <!-- Shift 拖拽模式（静态壳：controller initShellBehaviors 的 jQuery 委托目标，元素身份永不重建） -->
     <div id="drag-mode-overlay"></div>
     <div class="drag-area"></div>
 
-    <!-- 工具列 -->
-    <div ng-switch on="pluginModule.previewExtension.getViewerPluginExt(current)" ng-dblclick="$event.stopPropagation();" ng-mouseup="onMiddleClick($event)">
+    <!-- 工具列（React portal：#eagle-preview-toolbar-anchor） -->
+    <div id="eagle-preview-toolbar-anchor"></div>
 
-        <!-- 書籤工具列 -->
-        <div ng-switch-when="url|mhtml|html" ng-switch-when-separator="|" class="toolbar">
-            <div class="left">
-                <webview-toolbar item="current" theme="theme" webview-id="webview-{{current.id}}"></webview-toolbar>
-            </div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-
-        <!-- 視頻工具列 -->
-        <div ng-switch-when="ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v" ng-switch-when-separator="|" class="toolbar">
-            <div class="left">
-                <div id="tilte-name" class="title-name" ng-right-click="startDrag(event)">{{getMetas(current)}}</div>
-            </div>
-            <div class="separator"></div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-
-        <!-- 字體工具列 -->
-        <div ng-switch-when="ttf|otf|ttc|woff|woff2" ng-switch-when-separator="|" class="toolbar">
-            <div class="left">
-                <div id="tilte-name" class="title-name" ng-right-click="startDrag(event)">{{getMetas(current)}}</div>
-            </div>
-            <div class="separator"></div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-
-        <!-- 3D工具列 -->
-        <div ng-switch-when="fbx|obj|3ds|3mf|dae|ifc|ply|stl|glb" ng-switch-when-separator="|" class="toolbar">
-            <div class="left">
-                <div id="tilte-name" class="title-name" ng-right-click="startDrag(event)">{{getMetas(current)}}</div>
-            </div>
-            <div class="separator"></div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-
-        <!-- GIF 工具列 -->
-        <div ng-switch-when="gif" class="toolbar">
-            <div class="left">
-                <div id="tilte-name" class="title-name" ng-right-click="startDrag(event)">{{getMetas(current)}}</div>
-            </div>
-            <div class="separator"></div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <div style="-webkit-app-region: no-drag; padding: 0 6px;" class="ic-btn"ng-click="openRatioContextMenu()">
-                        {{imageSize.zoomRatio | number:0}}%
-                    </div>
-                    <toolbar-btn-frame-by-frame></toolbar-btn-frame-by-frame>
-                    <toolbar-btn-zoom-actual></toolbar-btn-zoom-actual>
-                    <toolbar-btn-zoom-fit></toolbar-btn-zoom-fit>
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-
-        <!-- TXT 工具列 -->
-        <div ng-switch-when="txt" class="toolbar">
-            <div class="left">
-                <div id="tilte-name" class="title-name" ng-right-click="startDrag(event)">{{getMetas(current)}}</div>
-            </div>
-            <div class="separator"></div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-
-        <!-- 通用工具列 -->
-        <div ng-switch-default class="toolbar">
-            <div class="left">
-                <div id="tilte-name" class="title-name" ng-right-click="startDrag(event)">{{getMetas(current)}}</div>
-            </div>
-            <div class="separator"></div>
-            <div class="right">
-                <navigator ng-if="images.length > 1"></navigator>
-                <div class="ic-btn-group">
-                    <div style="-webkit-app-region: no-drag; padding: 0 6px;" class="ic-btn"ng-click="openRatioContextMenu()">
-                        {{imageSize.zoomRatio | number:0}}%
-                    </div>
-                    <toolbar-btn-zoom-actual></toolbar-btn-zoom-actual>
-                    <toolbar-btn-zoom-fit></toolbar-btn-zoom-fit>
-                    <toolbar-btn-pin></toolbar-btn-pin>
-                    <toolbar-btn-unpin></toolbar-btn-unpin>
-                    <toolbar-btn-close></toolbar-btn-close>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-
-    <!-- 內容容器 -->
+    <!-- 內容容器（静态壳；#detail-container 身份永不重建——smoothZoom wrap 关系，同阶段5 详情模式） -->
     <div class="container" style="position: fixed; z-index: 9999;">
-
-        <!-- Toast 提示 -->
-        <div class="toast" ng-class="{'show' : showCopyToast}" style="display: none;">{{'previewWindow.copied' | i18n}}</div>
-
-        <!-- 无法支持预览的文件 -->
-        <div class="not-support-preview" mouse-gesture ng-if="current.width * current.height > MAX_DIMENSION && (current.ext === 'tif' || current.ext === 'tiff' || current.ext === 'heic' || current.ext === 'heif' || current.ext === 'tga')">
-            <div class="not-support-preview-content">
-                <div class="thumbnail">
-                    <img ng-src="{{getThumbnailUrl(current)}}">
-                </div>
-                <div class="title">{{'pages.tooBigPreview.title' | i18n}}</div>
-                <p>{{'pages.tooBigPreview.desc1' | i18n}} {{MAX_DIMENSION | number:0}} {{'pages.tooBigPreview.desc2' | i18n}}</p>
-            </div>
-        </div>
-
-        <!--  -->
-        <div id="detail-container" mouse-gesture class="box-container" image="current" rect="commentRect" ng-class="{
-			'comment-mode': isCommentMode, 'hidden-footer': MODEL_TYPES[current.ext] || URL_TYPES[current.ext] || current.ext=='woff' || current.ext=='woff2' || current.ext=='txt' || current.ext=='ttc' || current.ext=='ttf' || current.ext=='otf' || current.ext=='pdf' || VIDEO_TYPES[current.ext], 'is-model': MODEL_TYPES[current.ext], 'is-pdf': current.ext == 'pdf', 'is-font': current.ext == 'ttf' || current.ext == 'otf' || current.ext == 'ttc' || current.ext == 'woff' || current.ext == 'woff2' || current.ext == 'txt', 
-			'is-plugin': pluginModule.previewExtension.viewerPluginMap[current.ext],
-			'is-url': URL_TYPES[current.ext],
-			'is-video': VIDEO_TYPES[current.ext]}" 
-			ng-switch on="pluginModule.previewExtension.getViewerPluginExt(current)">
-
-			<!-- Plugin -->
-			<div ng-switch-when="plugin" class="detail-wrap fixed">
-				<!-- will show in plugin.... -->
-				<plugin-view id="plugin-viewer" item="current" ng-src="{{pluginModule.previewExtension.getViewerPluginURL(current)}}"></plugin-view>
-			</div>
-
-            <!-- GIF Viewer -->
-            <div ng-switch-when="gif" class="detail-wrap {{current.ext}}" ng-mousedown="gifViewer.mousedown($event);" ng-mouseup="gifViewer.mouseup($event);">
-                <iframe ng-if="$root.preferences.habits.gifViewer === 'on' || usingGifPlayer" id="gif-viewer" ng-src="{{getGIFPath()}}" width="{{current.width}}" height="{{current.height}}"></iframe>
-                <div ng-if="$root.preferences.habits.gifViewer !== 'on' && !usingGifPlayer" class="image-wrap">
-                    <img
-                        id="detail-image"
-                        ng-class="{'zoom-in': imageSize.zoomRatioExp >= 200, 'pixelated': imageSize.zoomRatio > 100 && $root.preferences.habits.renderBehavior == 'pixelated'}"
-                        ng-src="{{getRawUrl(current)}}"
-                        retry-when-error="current"
-                    >
-                </div>
-            </div>
-
-            <!-- Raw Viewer -->
-            <div ng-switch-when="3fr|arw|cr2|cr3|crw|dng|erf|pef|raf|rw2|sr2|srw|x3f|orf|mrw|nef|nrw|raw" ng-switch-when-separator="|" class="detail-wrap {{current.ext}}">
-                <iframe class="raw-viewer" ng-src="{{getRawViewerPath()}}" width="{{current.width}}" height="{{current.height}}"></iframe>
-            </div>
-
-            <!-- PDF Viewer -->
-            <div ng-switch-when="pdf" class="detail-wrap fixed {{current.ext}}">
-                <iframe id="pdf-viewer" ng-src="{{getPDFPath()}}"></iframe>
-            </div>
-
-            <!-- Txt Editor -->
-            <div ng-switch-when="txt" ng-switch-when-separator="|" class="detail-wrap full {{current.ext}}">
-                <iframe id="text-editor" ng-src="{{getTxtPath()}}"></iframe>
-            </div>
-
-            <!-- Font Viewer -->
-            <div ng-switch-when="ttf|otf|ttc|woff|woff2" ng-switch-when-separator="|" class="detail-wrap full {{current.ext}}">
-                <iframe id="font-viewer" ng-src="{{getFontPath()}}"></iframe>
-            </div>
-
-            <!-- URL Viewer -->
-            <div ng-switch-when="url|html|mhtml" ng-switch-when-separator="|" class="detail-wrap full {{current.ext}}">
-                <web-view id="webview-{{current.id}}" src="{{getURLSrc()}}"></web-view>
-            </div>
-
-            <!-- Video Viewer (Native + MPV Fallback) -->
-            <div ng-switch-when="ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v" ng-switch-when-separator="|" class="detail-wrap {{current.ext}}" ng-class="useMpvPlayer ? 'full' : 'fixed'" ng-dblclick="$event.stopPropagation()">
-                <div id="video-player-tips" class="video-player-tips">
-                    <div class="tip volume"><div class="icon vol-0"></div><div class="value">90</div></div>
-                </div>
-                <!-- Native Video Player (default) -->
-                <video class="video-js vjs-default-skin" media-element controls ng-if="!useMpvPlayer" ng-src="{{getRawUrl(current)}}">
-                    <source ng-src="{{getRawUrl(current)}}" type='video/mp4' />
-                </video>
-                <!-- MPV Fallback Player -->
-                <mpv-video mpv-media-element controls controls-mode="always" autoplay ng-if="useMpvPlayer" ng-src="{{getRawUrl(current)}}"></mpv-video>
-            </div>
-
-            <!-- TGA -->
-            <div ng-if="current.width * current.height <= MAX_DIMENSION" ng-switch-when="tga" ng-switch-when-separator="|" class="detail-wrap" ng-class="{'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
-                <div class="image-wrap" ng-class="{'hide' : !showDetailImage }">
-                    <img tga-img="getRawUrl(current)" id="detail-image" ng-class="{'zoom-in': imageSize.zoomRatioExp >= 200, 'pixelated': imageSize.zoomRatio > 100 && $root.preferences.habits.renderBehavior == 'pixelated'}" width="{{current.width}}" height="{{current.height}}" ng-src="{{getThumbnailUrl(current)}}">
-                </div>
-            </div>
-
-            <!-- Model Viewer -->
-            <div ng-switch-when="fbx|obj|3ds|3mf|dae|ifc|ply|stl|glb" ng-switch-when-separator="|" class="detail-wrap fixed {{current.ext}}">
-                <iframe id="model-viewer" ng-src="{{getModelPath()}}"></iframe>
-            </div>
-
-            <!-- 特殊格式 -->
-            <div ng-switch-when="hdr|exr|ico|psd|psb|indd|idml|indt|xd|skp|dwg|cdr|blend|c4d|clip|dds|prd|pxd|sketch|fig|af|afdesign|afpub|afphoto|ai|sketchraw|icns|skt|eps|key|potx|pptx|ppt|docx|doc|pages|xlsx|xls|eddx|emmx|numbers|graffle|xmind|mindnode" ng-switch-when-separator="|" class="detail-wrap" ng-class="{'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
-                <div class="image-wrap" ng-class="{'hide' : !showDetailImage }">
-                    <iframe style="z-index: 10; position: absolute; pointer-events: none;" ng-src="{{getNativeViewerPath()}}" width="{{current.width}}" height="{{current.height}}"></iframe>
-                    <img id="detail-image" width="{{current.width}}" height="{{current.height}}" ng-src="{{getThumbnailUrl(current)}}">
-                </div>
-            </div>
-
-            <!-- 自訂縮圖 -->
-            <div ng-if="isDetailMode" ng-switch-when="custom" ng-switch-when-separator="|" class="detail-wrap" ng-class="{'large': current.width * current.height >= 25000000, 'long': current.width == 1242 && current.height == 2208 || ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
-                <div class="image-wrap" ng-class="{'hide' : !showDetailImage }" ng-if="!current.noPreview">
-                    <img id="detail-image" width="{{current.width}}" height="{{current.height}}" ng-src="{{getThumbnailUrl(current)}}">
-                </div>
-            </div>
-
-            <!-- SVG -->
-            <div ng-switch-when="svg" class="detail-wrap {{current.ext}} movable bg-{{current.background}}">
-                <div class="image-wrap">
-                    <div class="rect" ng-show="commentRect.w && commentRect.h" style="width: {{commentRect.w}}px; height: {{commentRect.h}}px; top: {{commentRect.startY}}px; left: {{commentRect.startX}}px;"></div>
-                    <div class="comments" comments-container image="current" ratio="ratio">
-                        <div id="comment-{{comment.id}}" comment-item class="comment" ng-repeat="comment in current.comments track by $index" style="width: {{comment.width * 1/ratio}}px; height: {{comment.height * 1/ratio}}px; top: {{comment.y * 1/ratio}}px; left: {{comment.x * 1/ratio}}px;">
-                            <div class="badge" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;">{{$index+1}}</div>
-                            <div class="remove" style="zoom: {{100/imageSize.zoomRatioExp*100}}%;" ng-click="$root.removeComment($index, comment)">×</div>
-                        </div>
-                    </div>
-                    <img
-                        id="detail-image"
-                        width="{{current.width}}"
-                        height="{{current.height}}"
-                        src="{{getRawUrl(current)}}"
-                    >
-                </div>
-            </div>
-
-            <!-- 一般图片 -->
-            <div ng-switch-when="image" ng-switch-when-separator="|" class="detail-wrap {{current.ext}} movable" ng-class="{'movable': imageSize.zoomRatio > 100, 'long': ((current.width * 2.7 <= current.height) && current.width >= 320) || ((current.width * 1.8 < current.height) && current.width >= 960) || (current.width >= 1080 && current.height >= 1080)}">
-                <div class="image-wrap" ng-class="{'hide' : !showDetailImage }">
-                    <img
-                        id="detail-image"
-                        width="{{current.width}}"
-                        height="{{current.height}}"
-                        ng-src="{{getThumbnailUrl(current) || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdj+Hfu+X8ACTQDswCYXvgAAAAASUVORK5CYII='}}"
-                        style="margin-left: -2px;"
-                    >
-                </div>
-            </div>
-            <!-- NOTE: 避免 zoomer 沒有任何圖片初始化會造成 zoomming 功能異常，因此這裡強制給一張圖 -->
-            <img style="opacity: 0; pointer-events: none;" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdj+Hfu+X8ACTQDswCYXvgAAAAASUVORK5CYII=">
-        </div>
+        <!-- Toast 提示 + 无法支持预览的文件（React portal：#eagle-preview-content-anchor） -->
+        <div id="eagle-preview-content-anchor"></div>
+        <div id="detail-container" mouse-gesture="" image="current" rect="commentRect" class="box-container"></div>
     </div>
-    <!-- Gif 播放器工具列 -->
-    <div class="footbar" ng-show="current.ext == 'gif'" ng-dblclick="$event.stopPropagation();" ng-if="$root.preferences.habits.gifViewer === 'on' || usingGifPlayer">
-        <div class="gif-toolbar in" ng-show="isGifReady">
-            <div class="gif-toolbar-btn play-btn" tippy tippy-placement="top" tippy-content="<key>Space</key>" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); toggleGifPlay();" ng-show="!gifViewer.playing"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-play.svg"></div>
-            <div class="gif-toolbar-btn pause-btn" tippy tippy-placement="top" tippy-content="<key>Space</key>" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); toggleGifPlay();" ng-show="gifViewer.playing"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-pause.svg"></div>
-            <div class="gif-toolbar-btn" tippy tippy-placement="top" tippy-content="{{'appmenu.view>prevFrame' | i18n}}<key>[</key>" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); prevGifFrame();"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-backward.svg"></div>
-            <div class="gif-toolbar-btn" tippy tippy-placement="top" tippy-content="{{'appmenu.view>nextFrame' | i18n}}<key>]</key>" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); nextGifFrame();"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-forward.svg"></div>
-            <div class="current-frame"></div>
-            <div class="total-frame"></div>
-            <div class="progress-bar">
-                <div id="gif-progress-indicator"></div>
-                <div id="thumbnail-preview" class="thumbnail-preview">
-                    <img src="">
-                    <div class="current-index"></div>
-                </div>
-                <div class="bar"></div>
-                <!-- <div class="current" style="width: 0%"></div> -->
-                <div class="resize-bar">
-                    <div class="bar"></div>
-                </div>
-            </div>
-            <div class="gif-toolbar-btn speed"><span>1x</span>
-                <div class="speed-menu">
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 4}" ng-click="gifViewer.setSpeed(4)">4x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 3}" ng-click="gifViewer.setSpeed(3)">3x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 2}" ng-click="gifViewer.setSpeed(2)">2x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1.75}" ng-click="gifViewer.setSpeed(1.75)">1.75x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1.5}" ng-click="gifViewer.setSpeed(1.5)">1.5x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1.25}" ng-click="gifViewer.setSpeed(1.25)">1.25x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 1}" ng-click="gifViewer.setSpeed(1)">1x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 0.75}" ng-click="gifViewer.setSpeed(0.75)">0.75x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 0.5}" ng-click="gifViewer.setSpeed(0.5)">0.5x</div>
-                    <div class="speed-menu-itme" ng-class="{'active': gifViewer.speed === 0.25}" ng-click="gifViewer.setSpeed(0.25)">0.25x</div>
-                </div>
-            </div>
-            <div class="gif-toolbar-btn more" ng-mousedown="$event.stopPropagation();" ng-click="$event.stopPropagation(); openGifContextMenu($event)"><img ng-src="assets/images/{{theme|themePath}}/icons/player/ic-toolbar-more.svg"></div>
-        </div>
-        <div class="gif-toolbar init" ng-show="!isGifReady">
-            <div class="progress-bar">
-                <div class="bar"></div>
-                <div class="current" style="width: 0%"></div>
-            </div>
-            <div class="message">{{'progress.loadGifViewer.msg' | i18n}}(<span class="percent"></span>)</div>
-        </div>
-    </div>
+
+    <!-- Gif 播放器工具列（React portal：#eagle-preview-footbar-anchor） -->
+    <div id="eagle-preview-footbar-anchor"></div>
+
+    <!-- React 入口宿主（entry.tsx 挂载点；渲染内容全部经 portal 进上方四锚点） -->
+    <div id="eagle-preview-react-host"></div>
 </body>
 
 </html>

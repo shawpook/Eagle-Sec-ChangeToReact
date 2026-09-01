@@ -1245,6 +1245,63 @@
 >   - **分片**：9a-1 = 接线 + controller/shell 骨架 + image 分支 + preview-delivery driver 改写
 >     （scope 门面 + $bodyScope 替换）→ 回归门绿；9a-2 = 视频/gif/pdf/txt/font/url/model/raw 分支
 >     补全 + 交互全套；9a-3 = 工具列细节/右键/拖拽模式/grayscale。每片按固定节奏（tsc+冒烟+回归+PROGRESS+commit）。
+
+> **9a-1 已验证并接管（2026-09-01）**：预览大窗第一片——接线 + controller/shell 骨架 +
+> image/svg/gif(image 态)/pdf/video(含 bad→mpv 回退)/custom/plugin 分支 + driver 改写。
+> - 新文件：react/preview-window/controller.ts（PreviewWindowController 无 Angular 全量移植：
+>   模块级依赖/videojs SeekBar 覆写/拖放阻断/controllerScope 全字段方法（缩放体系/导航/窗口控制/
+>   拖拽/动作/右键/GIF 播放器对象/字体/initContainer/init 序列/壳级行为/Mousetrap 绑定）；
+>   门面 $root/$$phase/$watch('theme'|'current.id')/$on/$evalAsync/$apply；订阅
+>   applyController/notifyController/subscribeController（notify 重入折叠）；契约
+>   window.__eaglePreviewController + window.$bodyScope（gif iframe 与 detailHooks 既有通道））+
+>   detailHooks.ts（usePreviewMouseGesture 128-411 逐字——linear-800 缩放公式/333ms 换页阈值/
+>   右键 openContextMenu、usePreviewTgaImage 2367-2440 逐字、usePreviewMousetrap wMousetrap 语义）+
+>   shell.tsx（静态壳 + 4 锚点 portal：工具列 7 分支/查看器 14 分支/gif footbar/toast/not-support）+
+>   entry.tsx（'init' → applyController(runInitSequence)；就绪标记 __eaglePreviewEntryReady 在
+>   effect 内设置——8e-2 教训：模块尾标记早于 commit 盲发丢失）。
+> - 接线：preview-window.html 缩为静态壳（head 删 angular 系 11 脚本，保留 jquery/smoothZoom/
+>   mousetrap/tif-img/videojs+4 语言包/shortcut-manager/global/devices/tippy vendor + i18n 内联；
+>   **两段关键 inline stub**：(1) window.angular 微型 stub——smoothZoom 5 处
+>   `angular.element("body").scope()` 兜底；(2) window.path/fs/fse/electron/shell/clipboard/
+>   ipcRenderer/remote/Menu/MenuItem/currentWindow/USER_DATA_PATH/electronSettings——见下教训）；
+>   body 四锚点（toolbar/content/footbar/react-host）+ #detail-container 身份永不重建
+>   （smoothZoom wrap，同阶段5）。vite readPreviewWindow() + middleware 分支；shims preview:init
+>   桥改缓冲（__eaglePendingPreviewInit + entry-ready 判断，未就绪 25ms 轮询补发兜底 10s）+
+>   preview-window mock 分支改 marker 等待（优先发缓冲载荷否则 mock 载荷，`?id=` 选图）；main.cjs
+>   --smoke-preview-delivery 驱动 4 行 `window.$bodyScope` → `window.__eaglePreviewController`
+>   机械替换（其余 driver 零改动）。
+> - **重大教训（FileUrlHelper 全局词法绑定）**：回归门首跑 copy-path action timeout——
+>   clipboard.writeText 收到 undefined。根因：原版 preview-window.js（classic script）顶层
+>   `const path` 形成全局词法绑定，global.js FileUrlHelper.getRawPath 解析裸 `path`；React 化后
+>   该文件不再加载，controller.ts 的 const 是模块作用域不可见 → path.normalize ReferenceError
+>   被 try/catch 吞 → 返回 undefined。reveal 之所以「通过」是 ipc params=undefined 时 shims
+>   跳过路径校验直接走 itemId 分支（掩盖断点）。修复 = 静态壳 inline script 以 window 属性提供
+>   全套等价绑定（裸标识符解析兜底到全局对象，classic/module 消费方皆可见）。诊断手段：
+>   ELECTRON_ENABLE_LOGGING=1 转发 renderer console + shims 拦截器探针（JSON.stringify 丢弃
+>   undefined 字段正是线索）。
+> - shell 逐字要点：Pin/Unpin 双渲染（ng-show 语义，两 ic-btn 常驻 DOM）；gif footbar ng-if
+>   （gifViewer on 或 usingGifPlayer）外层条件渲染 + ng-show（ext=='gif'）内层 style；play/pause
+>   双渲染；速度 span 静态 "1x"（显示由 setSpeed 的 jQuery .text() 直写拥有，React 静态节点
+>   diff 不回写——与原版一致）；速度菜单 gifViewer.setSpeed 经 applyController 直调（call()
+>   只解析顶层方法）；zoomActual tippy-content 用 filters 的 shortcuts 求值；批注层用真实
+>   useCommentsContainer/useCommentItem（svg 分支 remove 点击 = $root.removeComment 在预览窗
+>   $rootScope 不存在 → 原版 no-op，守卫等价保留）；not-support-preview 抽独立组件（内部 ref +
+>   usePreviewMouseGesture，ng-if 挂载时序）；body class 中 theme/platform 按 {{::}} 一次性绑定
+>   冻结初值、仅 type-{{ext}} 活绑；#detail-container 的 ng-class（hidden-footer/is-model/
+>   is-pdf/is-font/is-plugin/is-url/is-video）由 effect 差量应用（原模板 210-215 逐字表）；
+>   alway-show-toolbar 用 scope.FONT_TYPES/URL_TYPES/MODEL_TYPES 表。
+> - controller 修正：'init' 监听单一注册点在 entry（controller 构造期不重复注册，防双 init
+>   二次 initContainer/smoothZoom 包裹）；scope.runInitSequence 暴露给 entry 经 applyController
+>   调用；ctx/flipType 等 TS 空值标注补齐。
+> - 闭环：preview-delivery-closed-loop 三跑全绿（imageLoaded/svg.width/gif mode=image/pdf.page/
+>   jpg.width/video readyState=4/badVideo.unsupported（useMpvPlayer 回退）/videoInteraction
+>   （volume 0.5, t>0.05）/renamed name+rawPath/trashRejected/missingRejected/open-default/
+>   reveal/copy-path/copy-image/drag 全 ok，两轮 negative 拒绝）。全量回归：suite 两轮失败轮转
+>   （第一轮 7a/7d1a/7d6a/main-ui-workflow、第二轮 7d3a/main-ui-workflow——既有偶发家族
+>   轮转模式同 8e-2，六项单项重跑全部即绿）+ run-api-smoke-isolated 13/13；tsc 零错。
+> - 9a-2 待办：txt/font/url/model/raw/tga/特殊格式分支交互补全 + gif iframe 播放器链路
+>   （gif-viewer 读 window.parent.$bodyScope 已通）+ cgNotify 等价层（controller.notify 占位）+
+>   web-view 宿主（url 分支 9a-2 补全）+ 工具列 tippy 挂载。
 > - **9b collect-window（采集窗，独立 Angular app）**：src/app/collect-window/*（自有
 >   controllers/directives/lib/vendors，约 15k 行含 vendors；index.html 145 行）。入口 = 浏览器扩展
 >   采集流（main.cjs `get-collect-window-data` handle + shims collect-window 分支）。自包含度高。
@@ -1258,7 +1315,7 @@
 
 | 名称 | 类型 | 规范来源行号 | 状态 |
 | --- | --- | --- | --- |
-| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 待办（9a，回归门 preview-delivery-closed-loop） |
+| preview-window.js | 独立页面 | `src/app/js/preview-window.js` (102KB) | 进行（9a-1 已验证接管：接线+controller/shell 骨架+image/svg/gif(image)/pdf/video/custom/plugin+driver 改写，回归门绿；9a-2 余分支交互/gif 链路/cgNotify/web-view 宿主；回归门 preview-delivery-closed-loop） |
 | collect-window | 独立页面 | `src/app/collect-window/*` | 待办（9b） |
 | registration | 安全替代页 | `frontend/public/replaced/registration.html` | 已删旧实现 |
 | manage-device | 安全替代页 | `frontend/public/replaced/manage-device.html` | 已删旧实现 |

@@ -3254,6 +3254,93 @@ export function machineryLeaveDetailMode(s: any): void {
   }
 }
 
+/* ── c16c：saveFolder ────────────────────────────────────────────────── */
+
+/* saveFolder（bundle 42399-42467 逐字；cloneTree 经 window（c10a-2）、IPCHelper 经
+   window（shims 顶层词法上 window，libraryDomain 同一消费模式）、appRoot.path = app-root-path
+   模块的 path 属性、TagManager 经 scope） */
+export function machinerySaveFolder(s: any): void {
+  const w = window as any;
+  console.time("$scope.saveFolder");
+
+  // 保存時進行日文濁音正規化
+  const unrom = w.require(w.appRoot.path + '/app/js/utils/unorm.js');
+  const nfc = (text: any) => {
+    try {
+      return unrom.nfc(text);
+    }
+    catch (err) {
+      return text;
+    }
+  };
+
+  var folders: any[] = [];
+  w.cloneTree(folders, s.folders);
+
+  w.eagle.utils.tree.walk(folders, 'children', function (folder: any, parent: any, depth: any) {
+    folder.name = nfc(folder.name);
+  });
+
+  const smartFolders = s.smartFolders.map(function (smartFolder: any) {
+    var clone: any = {
+      id: smartFolder.id,
+      icon: smartFolder.icon,
+      iconColor: smartFolder.iconColor,
+      name: smartFolder.name,
+      description: smartFolder.description || "",
+      modificationTime: smartFolder.modificationTime,
+      conditions: smartFolder.conditions,
+    };
+    if (smartFolder.children) {
+      clone.children = smartFolder.children;
+    }
+    if (smartFolder.orderBy) {
+      clone.orderBy = smartFolder.orderBy;
+      clone.sortIncrease = smartFolder.sortIncrease;
+    }
+    return clone;
+  });
+
+  w.eagle.utils.tree.walk(smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+    smartFolder.name = nfc(smartFolder.name);
+  });
+
+  const groups = s.TagManager.groups.map(function (group: any) {
+    var g: any = {
+      id: group.id,
+      name: nfc(group.name),
+      tags: group.tags
+    };
+    if (group.color) {
+      g.color = group.color;
+    }
+    if (group.description !== undefined) {
+      g.description = group.description;
+    }
+    return g;
+  });
+
+  const quickAccess = s.quickAccess.map(function (item: any) {
+    return {
+      type: item.type,
+      id: item.id
+    };
+  });
+
+  const libraryPath = s.libraryPath;
+
+  w.IPCHelper.send('folders-change', {
+    // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
+    libraryDir: libraryPath,
+    folders: folders,
+    smartFolders: smartFolders,
+    quickAccess: quickAccess,
+    tagsGroups: groups,
+  });
+
+  console.timeEnd("$scope.saveFolder");
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -3318,9 +3405,11 @@ export function applyDataMachineryScope(): void {
   // c16a：enterDetailMode/leaveDetailMode
   s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode(s, $event, image);
   s.leaveDetailMode = () => machineryLeaveDetailMode(s);
+  // c16c：saveFolder
+  s.saveFolder = () => machinerySaveFolder(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 15,
+    version: 16,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -3367,5 +3456,6 @@ export function applyDataMachineryScope(): void {
     setViewMode: 'machinery',
     enterDetailMode: 'machinery',
     leaveDetailMode: 'machinery',
+    saveFolder: 'machinery',
   };
 }

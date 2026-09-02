@@ -2628,6 +2628,13 @@
 >   （33712-33719 逐字 50ms）。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c16c saveFolder（2026-09-03；version 16）**：
+> - machinerySaveFolder（42399-42467 逐字）：unrom.nfc 日文濁音正規化（require(appRoot.path
+>   + '/app/js/utils/unorm.js')）+ cloneTree 文件树克隆（c10a-2 供给）+ smartFolders 字段级
+>   克隆（children/orderBy 守卫）+ TagManager.groups 标签组映射 + quickAccess 精简 +
+>   IPCHelper.send('folders-change', {libraryDir 写死守卫})。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。notify（$rootScope.notify 20157）留 c16d。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

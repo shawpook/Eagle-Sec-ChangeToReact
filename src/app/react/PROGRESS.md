@@ -2122,6 +2122,42 @@
 >   Manager/binding 完成 isLoading=false）/bg-state 落地+域内心跳/loading 清理（isUILoaded
 >   =false+allData 清空+心跳停+bg 监听零）/恢复重载。
 
+> **cZ-4 实现落盘（2026-09-02；M1 统一验证待执行）**：条目数据域——12 通道截肢 + 逐字重挂
+> （core/itemDomain.ts takeoverItemDomain()，main.tsx 接线；tsc 零错；冒烟并入 M1 统一测试）。
+> - 通道：image.added(23579)/image.removed(23602)/image.palette.updated(23627)/
+>   image.changed.mute(23651)/image.changed(23673)/update-item-view-by-id(23992)/
+>   file-uploaded(30427)/thumbnail-generated×2(31147 详情图刷新 + 34281 封面更新)/
+>   update-txt-item(31141)/webp.converted(34267)/calculateImageBinding(30549)/
+>   new-folders(30560)。
+> - **image.changed 精确保留两路旁听**：bundle 第二处理器（DuplicateModal 59465，写自身
+>   modal scope.duplicates 调色板同步）与 React DuplicateFamily 自给监听——签名
+>   'hiddenByCurrentFilter([item])' 只摘主处理器；webp.converted 同理保留 React
+>   ProgressDialogs（签名 'updateItemListView(converted)' 小写敏感不误伤域内
+>   domainUpdateItemListView）。
+> - **闭合函数域内移植**：muteRebind（throttle 全局 → w.throttle(rebindRefresh(true),
+>   3000, true)）/muteCalcuteImageBinding（+timeout 双局部，console 标记逐字）/
+>   updateItemListView（34300-34475 全量：modifiedMappings 计数、updateFilterCounts ±1、
+>   ext/text/mtime/btime/animated/orientation/resolution/双 noThumbnail 对削、宽高比变更
+>   才 updateItemView+relayout+offsetScrollbar、封面缩略图 &v= 刷新、txt-content HTML、
+>   finishGenerateQueue 入队、详情 smoothZoom updateNavigator）。
+> - **finishQueue watchCollection 接管（34506）**：scope watch 不随通道截肢——先按
+>   exp==='finishQueue' 从 scope.$$watchers 摘除 bundle watcher，再域内重挂同表达式
+>   （隐藏空队列清空 / addImageStartTime+倒数计时清理 / 新条目 autoSelect（上限 1000、
+>   random 例外、detail 不扰）/ duplicateQueue → OPEN_DUPLICATE 广播 + duplicateSound 或
+>   直接入列 / calculateImageBinding 回调按 currentFolder/currentSmartFolder/viewMode 三路
+>   reload(true)/darwin bounce+flashFrame / palette-resume / 添加图片完成计时）。原码
+>   `$scope.finishQueue.length > 2`（此时已清空恒 false）逐字保留；$watchCollection 第三参
+>   true 保留（Angular 忽略多余参）。addImageTimeLeftInterval 域内自管。
+> - 闭合变量落点：getHashID/hiddenByCurrentFilter/FileUrlHelper/updateWindowProgressBar/
+>   throttle/installedFonts → window.*；VIDEO/AUDIO/FONT_TYPES → s.VIDEO_TYPES 等
+>   （controller 已挂 scope）；readChunk → w.require('read-chunk')；IPCHelper/remote →
+>   declare const；isInFolder（controller 版）→ controllerFns import；w.ig 全局。
+> - file-uploaded 逐字面：lastestAddItem/itemMappings 落点、md5 双缓冲去重（existsBuff
+>   .equals）、duplicateQueue 分流、filterExtensions 类型表（video/audio/font/powerpoint/
+>   word/excel/default）、upload-queue-progress DOM、updateWindowProgressBar(±1)、
+>   finishQueue 全齐才全量 binding 否则 muteCalcuteImageBinding。
+> - 诊断契约：window.__eagleItemDomain（takenOver/removed 12 通道计数/watchRemoved）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

@@ -42,6 +42,7 @@ import { eagle as coreEagle } from './core/eagleApi';
 import { bridgeScopeFields, coreState } from './core/appCore';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { takeoverLibraryDomain } from './core/libraryDomain';
+import { takeoverItemDomain } from './core/itemDomain';
 import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
@@ -192,6 +193,7 @@ function bridgeWhenReady(attempt = 0): void {
     (window as any).__eagleCoreState = coreState;
     takeoverPreferencesDomain();
     takeoverLibraryDomain();
+    takeoverItemDomain();
     return;
   }
   if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);

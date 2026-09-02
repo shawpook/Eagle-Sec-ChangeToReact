@@ -2589,6 +2589,17 @@
 >   域内自管）。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c16b hover-preview 子系统字节提取（2026-09-03）**：
+> - bundle 五顶层单元逐字节提取（17.3KB）→ frontend/public/vendor/eagle-hover-preview.js：
+>   cleanupBoxHoverPreview（50414-50458）/ startHoverPreviewWatch（伴随单元）/ removePlayingAudios
+>   （51042-51046）/ removeBoxAudioPlayer（51048-51088）/ HoverPreview（51689-52047 大对象：
+>   positionMapping/getDelay/show/hide 等）。**依赖核查：无 bare 全局调用**——文件内互引同
+>   script 解析，$bodyScope/FileUrlHelper/$ 经 window 调用时解析。
+> - bundleGlobals if-absent script 注入（!w.HoverPreview 单条件；bundle 在世沿用其绑定，
+>   egLoaded 同前例）——c16a 的 w.removePlayingAudios/w.HoverPreview.hide 与 machineryRebindRefresh
+>   的 HoverPreview 消费面 b1 后有供给。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 > **c16a enterDetailMode/leaveDetailMode（2026-09-03；version 15）**：
 > - machineryEnterDetailMode（31587-31664 逐字）：opacity 清零 + inline 50ms/默认 100ms
 >   分流、initDetailMode 首次 smoothZoom 装配（on_IMAGE_LOAD 内 orientationchange/lastZoom

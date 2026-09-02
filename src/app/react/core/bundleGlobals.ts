@@ -703,6 +703,28 @@ export function installBundleGlobals(): void {
     } catch (err) { /* noop */ }
   }
 
+  // c16b：hover-preview 子系统（bundle 50414-52048 顶层单元逐字节提取：cleanupBoxHoverPreview/
+  // startHoverPreviewWatch/removePlayingAudios/removeBoxAudioPlayer/HoverPreview——文件内
+  // 互引同 script 解析，$bodyScope/FileUrlHelper/$ 经 window 调用时解析）
+  if (!w.HoverPreview) {
+    try {
+      fetch('/vendor/eagle-hover-preview.js')
+        .then((r) => r.text())
+        .then((txt) => {
+          try {
+            const script = document.createElement('script');
+            script.textContent = txt;
+            document.head.appendChild(script);
+            script.remove();
+            if (w.__eagleBundleGlobals) w.__eagleBundleGlobals.hoverPreviewLoaded = true;
+          } catch (err) {
+            console.error('[bundleGlobals] hover-preview exec failed', err);
+          }
+        })
+        .catch((err) => console.error('[bundleGlobals] hover-preview fetch failed', err));
+    } catch (err) { /* noop */ }
+  }
+
   // ── c10a-2 Tier 2：小函数批（全部逐字移植，if-absent）──
   // electron/ipcRenderer 链（bundle 19018-19028：var electron = require('electron')/
   // var ipcRenderer = electron.ipcRenderer；electron 为 node 内建模块可复现）

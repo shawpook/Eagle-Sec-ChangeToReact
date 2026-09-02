@@ -186,10 +186,23 @@ bindBodySync();
 // c2：React 侧 eagle 对象族（bundle 实例仍为权威态，随 c 域切片逐步切换消费方）。
 (window as any).__eagleCoreEagle = coreEagle;
 
-// cZ-1：scope 字段存储桥（Angular boot 后执行；字段现值收编进 AppCore）
+// cZ-1 + c8：scope 字段存储桥（Angular boot 后执行；字段现值收编进 AppCore）。
+// c8 起核心数据机字段全面并入——AppCore 成为读写后端，scope 经访问器降为透明视图；
+// bundle 机器（calculateImageBinding 等）的赋值/读取经访问器透明进 AppCore（c9 逐步内化）。
 const CZ_BRIDGE_FIELDS = ['theme', 'platform', 'language', 'isLoading', 'isUILoaded',
   'viewMode', 'keyword', 'layout', 'orderBy', 'trialRemain', 'currentFocus',
-  'preferences', 'vibrancyEnabled', 'canUseTouchID'];
+  'preferences', 'vibrancyEnabled', 'canUseTouchID',
+  // ── c8 核心数据机 ──
+  'raw', 'allData', 'images', 'all', 'shuffle', 'trash',
+  'itemMappings', 'folderMappings', 'smartFolderMappings', 'selectedMappings', 'selectedFolderMappings',
+  'duplicateMappings', 'modifiedMappings', 'lockedImages',
+  'selected', 'current', 'currentFolder', 'currentSmartFolder', 'lastSelectedIndex',
+  'folders', 'smartFolders', 'folderList', 'tags',
+  'uploadQueue', 'finishQueue', 'duplicateQueue',
+  'untaggedCount', 'unfiledCount', 'startCursor', 'lastItemStates',
+  'navigationHistory', 'navigationHistoryIndex',
+  'isDetailMode', 'isGrayscaleMode', 'isSlideshowMode', 'showDetailImage',
+  'currentTagGroup', 'tagViewMode'];
 function bridgeWhenReady(attempt = 0): void {
   // 强就绪门：scope.mousetrap 由 EagleController 体内 initMousetrap()（bundle 49328）设置，
   // 晚于全部 ipc 通道注册（≤24130+）与 watch/$on 注册（34180-42390）——保证各域截肢时

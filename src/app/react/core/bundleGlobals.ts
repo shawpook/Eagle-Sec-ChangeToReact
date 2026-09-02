@@ -17,10 +17,38 @@
  */
 
 import { FileUrlHelper } from './fileUrlHelper';
+import { eagle as coreEagle } from './eagleApi';
 
 declare const Buffer: any;
 
 let installed = false;
+
+/* c12：eagle 成员反转挂载（if-absent）——window.eagle 基座来自 js/lib/eagle-api.js（独立
+   script 标签，b1 存活：utils.tree/urlEnlargerRemote），bundle 只挂载类实例成员（249 inspector/
+   606 filter/957 duplicateChecker/1012 reverseImageSearch/1844 aiSearch/1882 customExport/
+   1915 combineImages/2048 action + runtime plugin/isDev）。b1 后这些成员消失 → 由 React
+   c2 全家桶（eagleClasses.ts，2071 行逐字移植）if-absent 补齐。bundle 在世时成员已存在，
+   零改动；React 消费方 19 处 s.eagle.* 走 $scope.eagle（= bundle 实例），无分叉。 */
+function installEagleMembers(): void {
+  const w = window as any;
+  if (!w.eagle) {
+    w.eagle = coreEagle;
+  }
+  const eagle = w.eagle;
+  const m = coreEagle as any;
+  if (!eagle.inspector) eagle.inspector = m.inspector;
+  if (!eagle.filter) eagle.filter = m.filter;
+  if (!eagle.duplicateChecker) eagle.duplicateChecker = m.duplicateChecker;
+  if (!eagle.reverseImageSearch) eagle.reverseImageSearch = m.reverseImageSearch;
+  if (!eagle.aiSearch) eagle.aiSearch = m.aiSearch;
+  if (!eagle.customExport) eagle.customExport = m.customExport;
+  if (!eagle.combineImages) eagle.combineImages = m.combineImages;
+  if (!eagle.action) eagle.action = m.action;
+  // runtime 占位成员（bundle 17670/17804 extension server init 置 {}；collect modal 脚本写 app.*）
+  if (!eagle.plugin) eagle.plugin = {};
+  if (!eagle.app) eagle.app = {};
+  if (!eagle.containerSize) eagle.containerSize = {};
+}
 
 /* guid（bundle 2396-2398 逐字） */
 function _guid(): string {
@@ -630,6 +658,9 @@ export function installBundleGlobals(): void {
   //    getLastestThumbnailUrl/getRawUrl）──
   if (!w.FileUrlHelper) w.FileUrlHelper = FileUrlHelper;
 
+  // c12：eagle 成员反转挂载
+  installEagleMembers();
+
   // ── c10a-2 Tier 2：小函数批（全部逐字移植，if-absent）──
   // electron/ipcRenderer 链（bundle 19018-19028：var electron = require('electron')/
   // var ipcRenderer = electron.ipcRenderer；electron 为 node 内建模块可复现）
@@ -681,5 +712,8 @@ export function installBundleGlobals(): void {
       'hiddenByCurrentFilter', 'ayncsImagesChange', 'startAPIServer', 'stopAPIServer',
       'checkBackgroundHeartbeat', 'ipcRenderer', 'currentWindow', 'app', 'VIDEO_TYPES_GLOBAL',
       'pluginModule'].filter((n) => w[n] !== undefined),
+    eagleMembers: ['inspector', 'filter', 'duplicateChecker', 'reverseImageSearch', 'aiSearch',
+      'customExport', 'combineImages', 'action', 'plugin', 'app', 'containerSize', 'utils']
+      .filter((n) => w.eagle && w.eagle[n] !== undefined),
   };
 }

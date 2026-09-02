@@ -2476,6 +2476,21 @@
 > - 验证：tsc 零错；m1 20/20（DIAG-CONSOLE 空）。suite 47/47（stage8e2 偶发失败单独复跑
 >   通过）；api-smoke 裸跑失败为已知跑法问题（外联式跑法见 M1 验证条目）。
 
+> **c12 eagle 成员反转挂载（2026-09-02；bundleGlobals installEagleMembers）**：
+> - **表面勘察定论**：window.eagle 基座 = js/lib/eagle-api.js（独立 script 标签 b1 存活：
+>   Eagle 基类 + utils.tree（TreeUtil.walk）+ urlEnlargerRemote）；bundle 挂载的成员 = 八个
+>   类实例（inspector 249/filter 606/duplicateChecker 957/reverseImageSearch 1012/aiSearch
+>   1844/customExport 1882/combineImages 1915/action 2048）+ runtime 占位（plugin {}/
+>   app.*/containerSize/isDev）。**eagle.list/eagle.cool 高计数为 localStorage 键串误命中**
+>   （"eagle.list.orderBy" 等），非对象成员——从接管面剔除。
+> - **分叉排除**：bundle 20536 `$scope.eagle = eagle`——React 消费方 19 处 s.eagle.* 走
+>   $scope.eagle（= bundle 实例），coreEagle 仅诊断契约（__eagleCoreEagle），今日零分叉。
+> - **实现**：installEagleMembers if-absent——bundle 在世时成员已存在零改动；b1 后由 React
+>   c2 全家桶（eagleClasses.ts 2071 行逐字移植）补齐八实例 + 三占位。诊断契约扩
+>   eagleMembers 名单。
+> - 验证：tsc 零错；m1 21/21（A7 eagleMembers 12 名齐备 + utils.tree.walk + filterRules
+>   形状断言；DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

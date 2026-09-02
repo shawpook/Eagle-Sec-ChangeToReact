@@ -236,6 +236,18 @@ try {
   })()`);
   await assertExpr('m1-A6-scope-shim', `window.__a6 === 'ok'`);
 
+  // ═══ A7. c12 eagle 成员反转挂载（if-absent 共存：bundle 在世成员齐备）═══
+  await assertExpr('m1-A7-eagle-members', `(() => {
+    const g = window.__eagleBundleGlobals;
+    const e = window.eagle;
+    if (!g || !g.eagleMembers || !e) return false;
+    return ['inspector', 'filter', 'duplicateChecker', 'reverseImageSearch', 'aiSearch',
+      'customExport', 'combineImages', 'action', 'plugin', 'app', 'containerSize', 'utils']
+      .every((n) => g.eagleMembers.includes(n) && e[n] !== undefined)
+      && typeof e.utils.tree.walk === 'function'
+      && typeof e.filter.filterRules === 'object';
+  })()`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

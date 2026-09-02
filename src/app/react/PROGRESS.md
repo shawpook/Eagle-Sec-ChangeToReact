@@ -2368,6 +2368,30 @@
 > - **定性**：unlockPassword 为 scope 字段（非函数）——React 侧 5 处读写经字段桥解析，无需移植。
 > - m1 A3 断言扩至十五函数 machinery 标记（version 4）。验证：tsc 零错；m1 16/16。
 
+> **c9e 单条目视图机（2026-09-02；updateItemView/checkTouchIDSupport scope 替换生效，c9 阶段收口）**：
+> - machineryUpdateItemView（34847-35063 逐字；updateItemsView 循环体）：metas 十分支
+>   （RESOLUTION 内 VIDEO/AUDIO/FONT/noPreview/SPECIAL/url/txt 子判 + FILESIZE/TYPE/MTIME/
+>   BTIME/TAGS/RATING）+ modifiedMappings 计数 + lazysrc/lsrc/raw 缩略图刷新 + has-annotation/
+>   bg-*/selected/tagged/旋转 r2-r8 类 + 字体激活状态（installedFonts + sanitize + i18n 双语
+>   title）。依赖全部 window.*（fileSize/fontFolder/sanitize/installedFonts/i18n/VIDEO_TYPES/
+>   AUDIO_TYPES/FONT_TYPES/SPECIAL_TYPES）+ $filter 经 injector + fs 经 window.require('fs')。
+> - machineryCheckTouchIDSupport（29002-29010 逐字；非 darwin 不写 canUseTouchID 的原码
+>   quirk 保留）——bundle 29014/29109 调用点与 React lockState 流共用。
+> - **c9 阶段收口审计**：scope 函数替换共 **24 个函数**（version 6 契约：calculateImageBinding/
+>   sortRawData/getAncestorFolders/getExtendTags/rebindRefresh/rebindRefreshLazy/updateSidebarList/
+>   calcuteFilterBadge/filterSidebarItem/updateItemsView/updateItemView/switchLayout/prependImages/
+>   reload/resetImageData/autoResizeTagFilter/getRatioExp/getRatioNonExp/updateZoomRatio/
+>   toggleSlideshow/smartFolderCount/getRecentFolders/checkTouchIDSupport）。React 域高调用面
+>   （getRatioNonExp 16/updateZoomRatio 14/updateSidebarList 14/rebindRefresh 14/calculateImageBinding
+>   11/updateItemView 11+6/getRatioExp 8/switchLayout 7/reload 6/prependImages 1/smartFolderCount 1/
+>   getRecentFolders 1）全部改走移植实现；unlockPassword 定性为 scope 字段无需移植。其余
+>   bundle 承载函数（relayout/filterContent/zoom/enterDetailMode/calculateFilterCounts/
+>   updateSelection/saveFolder/notify/forceFitImageSize/existInSmartFilter/adjustLayoutWidth/
+>   openAll/getFolderList 族等）经 scope 解析可达，归属 c 系列后续域（b1 前按调用面逐域清零）。
+> - 验证：tsc 零错；m1 16/16（DIAG-CONSOLE 空）；suite 四项偶发失败（7d4/7d5b/9a2/
+>   main-ui-workflow）均单独复跑通过——失败成因为 suite 运行中途 c9e 源码落盘（vite 冷启动
+>   读到中间态）叠加连跑资源竞争，非回归。**教训：suite 全量跑期间不得修改 src 源码**。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

@@ -31,6 +31,12 @@
  *   经 scope 解析）、getRecentFolders（31969；localStorage recentMoveFolders 逐字键）。
  *   注：unlockPassword 为 scope 字段（非函数），React 侧 5 处读写经桥接/字段解析，无需移植。
  *
+ * - **c9e 单条目视图机**：updateItemView（34847-35063 逐字；updateItemsView 循环体）——
+ *   metas 十分支（RESOLUTION/FILESIZE/TYPE/MTIME/BTIME/TAGS/RATING）+ 选中/标记/旋转类/
+ *   字体激活状态 DOM 更新；依赖 window.* 全局（fileSize/fontFolder/sanitize/installedFonts/
+ *   i18n/VIDEO_TYPES 等）+ $filter 经 injector + fs 经 window.require('fs')。checkTouchIDSupport
+ *   （29002-29010 逐字）一并替换（React lockState 与 bundle 29014/29109 调用点共用）。
+ *
  * - **calculateImageBinding（bundle 28684-28965 逐字）**：核心重建机——duration 1/50 退避逻辑
  *   （重入时退避 50ms）、TagManager.azGroups → $timeout.cancel、$timeout(work,duration)、
  *   work = raw 检查 + sortRawData + 全部 resets + 三次 tree.walk（folderMappings/folderList/pinyin/
@@ -1126,6 +1132,250 @@ export function machineryGetRecentFolders(s: any, length: any): any[] {
   return recentFolders;
 }
 
+/* updateItemView（bundle 34847-35063 逐字；单条目 DOM 更新机——updateItemsView 循环体。
+   依赖：window.* 全局（$/FileUrlHelper/fileSize/fontFolder/sanitize/installedFonts/i18n/
+   VIDEO_TYPES/AUDIO_TYPES/FONT_TYPES/SPECIAL_TYPES）、$filter 经 injector（duration/domainName/
+   date）、fs 经 window.require('fs')、TagManager/listMetaType 经 scope 字段） */
+export function machineryUpdateItemView(s: any, item: any): void {
+  const w = window as any;
+  const fs = w.require && w.require('fs');
+
+  if (!item) return;
+  try {
+    var id = item.id;
+    var $element = w.$("#box-" + id);
+    if ($element.length === 0) return;
+    var $name = $element.find(".name span");
+    var $iconName = $element.find(".ext-icon-name");
+    var $metas = $element.find(".metas");
+    var thumbnail = $element.find(".thumbnail");
+    var $propTags = $element.find(".prop.tags");
+    var $propResolution = $element.find(".prop.resolution");
+    var $propRating = $element.find(".prop.rating");
+    var $propSize = $element.find(".prop.size");
+    var isSelected = s.selectedMappings[id];
+    var tags = item.tags || [];
+    var isTagged = tags.length > 0;
+    var $annotationCount = $element.find(".annotation-count");
+    var ratingStrings: any = {
+      "undefined": "★★★★★",
+      "0": "★★★★★",
+      "1": "<y>★</y>★★★★",
+      "2": "<y>★★</y>★★★",
+      "3": "<y>★★★</y>★★",
+      "4": "<y>★★★★</y>★",
+      "5": "<y>★★★★★</y>",
+    };
+    var tagsFormated = "-";
+    if (item.tags && item.tags.length) {
+      var tags2 = item.tags.map(function (tag: any) {
+        try {
+          return `<div class="tag color-${s.TagManager.tagMappings[tag].color}">${tag}</div>`;
+        } catch (err) { /* noop */ }
+      });
+      tagsFormated = tags2.join("");
+    }
+
+    $element.attr("data-height", item.height);
+    $element.attr("data-width", item.width);
+
+    if ($name.text() !== item.name) {
+      if (!s.modifiedMappings[item.id]) s.modifiedMappings[item.id] = 0;
+      s.modifiedMappings[item.id]++;
+      let src = w.FileUrlHelper.getLastestThumbnailUrl(item);
+      var $img = $element.find(".thumbnail img");
+      $img.attr("lazysrc", "");
+      $img.attr("lsrc", src);
+      $img.attr("raw", src);
+      // 確保不是在編輯模式
+      if (!$name.parent().hasClass('editable')) {
+        $name.text(item.name);
+        $iconName.text(item.name);
+      }
+    }
+
+    if (item.comments && item.comments.length > 0) {
+      $element.addClass("has-annotation");
+      $annotationCount.text(item.comments.length);
+    }
+    else {
+      $element.removeClass("has-annotation");
+    }
+
+    $element.removeClass("bg-light bg-dark bg-gray bg-grid");
+    if (item.background) {
+      $element.addClass(`bg-${item.background}`);
+    }
+
+    var metas = '';
+    const $filter = getFilter();
+    switch (s.listMetaType) {
+      case 'RESOLUTION':
+        if (item.duration && w.VIDEO_TYPES[item.ext]) {
+          metas = $filter('duration')(item.duration);
+        }
+        else if (item.duration && w.AUDIO_TYPES[item.ext]) {
+          metas = $filter('duration')(item.duration);
+        }
+        else if (item.fontMetas && w.FONT_TYPES[item.ext]) {
+          metas = item.fontMetas.weight;
+        }
+        else if (item.noPreview) {
+          metas = `${w.fileSize(item.size, 1)}`;
+        }
+        else if (w.SPECIAL_TYPES[item.ext]) {
+          metas = `${w.fileSize(item.size, 1)}`;
+        }
+        else if (item.ext === "url") {
+          if (item.duration) {
+            metas = $filter('duration')(item.duration);
+          }
+          else {
+            metas = $filter('domainName')(item.url);
+          }
+        }
+        else {
+          metas = item.width + " x " + item.height;
+        }
+        if (item.ext === "txt") {
+          var paragraphs = item.text.split("\n");
+          var paragraphsHTML = "";
+          paragraphsHTML += `<h4>${item.name.trim()}</h4>`;
+          paragraphs.forEach(function (paragraph: any) {
+            paragraphsHTML += `<p>${paragraph.trim()}</p>`;
+          });
+          w.$("#box-" + item.id + " .txt-content div").html(paragraphsHTML);
+        }
+        break;
+      case 'FILESIZE':
+        metas = `${w.fileSize(item.size, 1)}`;
+        break;
+      case 'TYPE':
+        metas = item.ext && item.ext.toUpperCase();
+        break;
+      case 'MTIME':
+        var mtime = item.mtime || item.modificationTime;
+        metas = $filter("date")(item.mtime || item.modificationTime, "yyyy/MM/dd HH:mm");
+        break;
+      case 'BTIME':
+        var btime = item.btime || item.modificationTime;
+        metas = $filter("date")(item.btime || item.modificationTime, "yyyy/MM/dd HH:mm");
+        break;
+      case 'TAGS':
+        metas = tagsFormated;
+        break;
+      case 'RATING':
+        metas = `<span class="small star">${ratingStrings[item.star]}</span>`;
+        break;
+    }
+    $metas.html(metas);
+
+    $propTags.html(tagsFormated);
+    if (item.width) {
+      $propResolution.html(`${item.width} x ${item.height}`);
+    }
+    else {
+      $propResolution.html(`-`);
+    }
+    $propRating.html(`<span class="small star">${ratingStrings[item.star]}</span>`);
+    $propSize.html(`${w.fileSize(item.size, 1)}`);
+
+    if (isSelected) {
+      $element.addClass("selected");
+    }
+    else {
+      $element.removeClass("selected");
+    }
+
+    if (isTagged) {
+      $element.addClass("tagged");
+    }
+    else {
+      $element.removeClass("tagged");
+    }
+
+    $element.find("img").removeClass("r2 r3 r4 r5 r6 r7 r8");
+    if (item.orientation && !item.noThumbnail) {
+      if (item.orientation === 8) {
+        $element.find("img").addClass(" r8 ");
+      }
+      else if (item.orientation === 7) {
+        $element.find("img").addClass(" r7 ");
+      }
+      else if (item.orientation === 6) {
+        $element.find("img").addClass(" r6 ");
+      }
+      else if (item.orientation === 5) {
+        $element.find("img").addClass(" r5 ");
+      }
+      else if (item.orientation === 4) {
+        $element.find("img").addClass(" r4 ");
+      }
+      else if (item.orientation === 3) {
+        $element.find("img").addClass(" r3 ");
+      }
+      else if (item.orientation === 2) {
+        $element.find("img").addClass(" r2 ");
+      }
+
+      if (item.orientation > 4) {
+        if (item.width < item.height) {
+          $element.find("img").css("min-width", `${item.height / item.width * 100}%`);
+        }
+        else {
+          $element.find("img").css("width", `${item.height / item.width * 100}%`);
+        }
+      }
+    }
+
+    if (item.fontMetas && item.fontMetas.postScriptName) {
+      var key = Object.keys(item.fontMetas.postScriptName)[0];
+      var postScriptName = item.fontMetas.postScriptName && item.fontMetas.postScriptName[key];
+      var fontPath = `${w.fontFolder}/${w.sanitize(postScriptName)}.${item.ext}`;
+      var activatedLabel = w.i18n.__("Context.Image.Font.Activate");
+      var deactivatedLabel = w.i18n.__("Context.Image.Font.Deactivate");
+      // 添加正在启用、正在停用状态
+      if (item.activating || item.deactivating) {
+        $element.addClass("activating");
+      }
+      else if (fs && fs.existsSync(fontPath)) {
+        w.installedFonts[`${postScriptName}_.${item.ext}`] = true;
+        $element.removeClass("activating");
+        $element.addClass("activated");
+        $element.find(".activate-btn").attr("title", deactivatedLabel);
+      }
+      else {
+        w.installedFonts[`${postScriptName}_.${item.ext}`] = false;
+        $element.removeClass("activating");
+        $element.removeClass("activated");
+        $element.find(".activate-btn").attr("title", activatedLabel);
+      }
+    }
+  }
+  catch (err) {
+    console.error(err);
+  }
+}
+
+/* checkTouchIDSupport（bundle 29002-29010 逐字；systemPreferences 经 @electron/remote。
+   原码 quirk 逐字保留：非 darwin 平台不写 canUseTouchID（无 else 分支）。bundle 29014/29109
+   调用点与 React lockState 流共用本实现） */
+export function machineryCheckTouchIDSupport(s: any): void {
+  const w = window as any;
+  let systemPreferences: any = null;
+  try {
+    systemPreferences = w.require && w.require('@electron/remote').systemPreferences;
+  } catch (err) { /* noop */ }
+  if (w.process && w.process.platform === 'darwin' && systemPreferences && systemPreferences.canPromptTouchID) {
+    try {
+      s.canUseTouchID = systemPreferences.canPromptTouchID();
+    } catch (err) {
+      console.error('檢查 Touch ID 支援時發生錯誤:', err);
+      s.canUseTouchID = false;
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -1156,9 +1406,13 @@ export function applyDataMachineryScope(): void {
   s.toggleSlideshow = () => machineryToggleSlideshow(s);
   s.smartFolderCount = (smartFolder: any) => machinerySmartFolderCount(s, smartFolder);
   s.getRecentFolders = (length: any) => machineryGetRecentFolders(s, length);
+  // c9e：updateItemView（updateItemsView 循环体；bundle 侧 $bodyScope.updateItemView 19688-19751
+  // 与 ipc 路径 21234/23632+ 全部改走移植版）
+  s.updateItemView = (item: any) => machineryUpdateItemView(s, item);
+  s.checkTouchIDSupport = () => machineryCheckTouchIDSupport(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 4,
+    version: 6,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -1181,5 +1435,7 @@ export function applyDataMachineryScope(): void {
     toggleSlideshow: 'machinery',
     smartFolderCount: 'machinery',
     getRecentFolders: 'machinery',
+    updateItemView: 'machinery',
+    checkTouchIDSupport: 'machinery',
   };
 }

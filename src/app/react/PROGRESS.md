@@ -2327,6 +2327,22 @@
 >   calculateImageBinding 全链路走移植实现）；suite 47 项 46 绿——main-ui-workflow-closed-loop
 >   偶发失败单独复跑通过（连跑 30+ electron 循环的资源竞争型 flake，非回归）。
 
+> **c9b rebindRefresh 域（2026-09-02；rebindRefresh/rebindRefreshLazy/updateSidebarList scope 替换生效）**：
+> - machineryRebindRefresh（27366-27454 逐字；async）：calcuteFilterResult（scope 解析，仍由
+>   bundle 承载）→ tagFilterLogic 分支 calcuteContainTags → 置顶排序（comparator 隐式 undefined
+>   怪癖逐字保留）→ allData/filtereds/itemMappings 重建 → refreshSubfolderList → keywordDebounce
+>   梯度（200/50000/100000）→ updateItemsView + #box-container-scrollbar trigger + HoverPreview
+>   隐藏 + $evalAsync。resetNgGridLayoutData = ngGridLayout 指令 66970 隐式全局赋值（window.*）。
+> - machineryCalcuteFilterBadge（27522-27633 逐字；controller 闭包函数）：纯 eagle.filter.filterBadge
+>   计数移植。machineryFilterSidebarItem（37967-38001 逐字）：chineseConvert/cartesianProduct/
+>   pinyinlite（re-require 十行成员 window.*）+ _.uniq/_.max + String.prototype.score（bundle 2621
+>   原型扩展）。machineryRebindRefreshLazy（1000ms 防抖）/machineryUpdateSidebarList（42545-42617
+>   逐字；20ms 防抖）——两个 timeout 闭包变量域内自管。
+> - m1 统一冒烟扩至 16 项（新增 m1-A3-c9-machinery：__eagleDataMachinery 契约 version≥2 +
+>   五函数 machinery 标记 + scope 函数在位）；D 组 rebind-broadcast 即移植版全链路验证。
+> - 验证：tsc 零错；m1 16/16；suite 一项 stage7a cm-overlay-close 偶发失败单独复跑通过
+>   （同类资源竞争 flake）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

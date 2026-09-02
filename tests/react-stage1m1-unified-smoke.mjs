@@ -165,6 +165,18 @@ try {
   })()`);
   await assertExpr('m1-A2-c8-write-through', `window.__c8w === true && window.__c8r === true`);
 
+  // ═══ A3. c9 数据机器域（scope 函数替换生效 + 契约）═══
+  await assertExpr('m1-A3-c9-machinery', `(() => {
+    const m = window.__eagleDataMachinery;
+    const s = window.$bodyScope;
+    if (!m || !m.applied || m.version < 2) return false;
+    return ['calculateImageBinding', 'sortRawData', 'rebindRefresh', 'rebindRefreshLazy',
+      'updateSidebarList'].every((k) => m[k] === 'machinery')
+      && typeof s.calculateImageBinding === 'function'
+      && typeof s.rebindRefresh === 'function'
+      && typeof s.updateSidebarList === 'function';
+  })()`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

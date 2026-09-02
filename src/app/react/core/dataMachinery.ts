@@ -6,6 +6,19 @@
  *   初值 "en"（19053）。
  * - **getAncestorFolders（bundle 42508 逐字）/ getExtendTags（32028 逐字）**：controller 闭包函数 → 域内移植。
  *
+ * - **c9b rebindRefresh 域**：
+ *   - rebindRefresh（27366-27454 逐字；async）：calcuteFilterResult 置顶排序 allData/filtereds
+ *     重建 + refreshSubfolderList + keywordDebounce 梯度 + updateItemsView + 网格重置 +
+ *     HoverPreview 隐藏。calcuteFilterResult/calcuteContainTags/refreshSubfolderList/
+ *     updateItemsView 仍由 bundle 承载（经 scope 解析，后续片接管）；resetNgGridLayoutData
+ *     为 ngGridLayout 指令 66970 隐式全局（window.*）；calcuteFilterBadge 为域内移植版。
+ *   - calcuteFilterBadge（27522-27633 逐字；controller 闭包函数）：纯 eagle.filter.filterBadge
+ *     计数（标签/颜色/类型/相机/星等/字体/时间/BPM/标注/网址/以图找图/语义）。
+ *   - filterSidebarItem（37967-38001 逐字；controller 闭包函数）：chineseConvert/cartesianProduct/
+ *     pinyinlite（re-require 十行成员）+ _.uniq/_.max + String.prototype.score（bundle 2621）。
+ *   - rebindRefreshLazy（27007-27013 逐字；1000ms 防抖）/ updateSidebarList（42545-42617 逐字；
+ *     20ms 防抖）——rebindRefreshLazyTimeout/updateSidebarListTimeout 域内自管。
+ *
  * - **calculateImageBinding（bundle 28684-28965 逐字）**：核心重建机——duration 1/50 退避逻辑
  *   （重入时退避 50ms）、TagManager.azGroups → $timeout.cancel、$timeout(work,duration)、
  *   work = raw 检查 + sortRawData + 全部 resets + 三次 tree.walk（folderMappings/folderList/pinyin/
@@ -29,6 +42,10 @@ import { updateCurrentOrderAndIncrease } from './controllerFns';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
+// ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
+//    rebindRefreshLazyTimeout）──
+let updateSidebarListTimeout: any = null;
+let rebindRefreshLazyTimeout: any = null;
 
 let filterCache: any = null;
 function getFilter(): any {
@@ -473,6 +490,366 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
   }, duration);
 }
 
+/* ── c9b：rebindRefresh 域 ───────────────────────────────────────────── */
+
+/* calcuteFilterBadge（bundle 27522-27633 逐字；controller 闭包函数 → 域内移植。
+   纯 eagle.filter.* 读写，无 scope 依赖） */
+export function machineryCalcuteFilterBadge(): void {
+  const w = window as any;
+  const filter = w.eagle.filter;
+  filter.filterBadge = 0;
+  // 标签
+  if (filter.filterRules.tag.includes) {
+    filter.filterBadge += filter.filterRules.tag.includes.length;
+  }
+  if (filter.filterRules.tag.excludes) {
+    filter.filterBadge += filter.filterRules.tag.excludes.length;
+  }
+  var filterFolderCount = Object.keys(filter.filterRules.folder.includes).length;
+  if (filterFolderCount) {
+    filter.filterBadge += filterFolderCount;
+  }
+  var excludeFolderCount = Object.keys(filter.filterRules.folder.excludes).length;
+  if (excludeFolderCount) {
+    filter.filterBadge += excludeFolderCount;
+  }
+
+  if (filter.filterRules.tag.no) { filter.filterBadge++; }
+  // 颜色
+  if (filter.filterRules.color.value) filter.filterBadge++;
+  if (filter.filterRules.color.gray) filter.filterBadge++;
+  // 类型
+  if (filter.filterRules.shape.landscape) filter.filterBadge++;
+  if (filter.filterRules.shape.portrait) filter.filterBadge++;
+  if (filter.filterRules.shape.square) filter.filterBadge++;
+  if (filter.filterRules.shape.panoramicLandscape) filter.filterBadge++;
+  if (filter.filterRules.shape.panoramicPortrait) filter.filterBadge++;
+  if (filter.filterRules.shape.custom) filter.filterBadge++;
+  if (filter.filterRules.shape['43']) filter.filterBadge++;
+  if (filter.filterRules.shape['34']) filter.filterBadge++;
+  if (filter.filterRules.shape['169']) filter.filterBadge++;
+  if (filter.filterRules.shape['916']) filter.filterBadge++;
+
+
+  // 相机
+  if (Object.keys(filter.filterRules.camera).length > 0) {
+    filter.filterBadge += Object.keys(filter.filterRules.camera).length;
+  }
+  // 星等
+  if (filter.filterRules.rating['5']) filter.filterBadge++;
+  if (filter.filterRules.rating['4']) filter.filterBadge++;
+  if (filter.filterRules.rating['3']) filter.filterBadge++;
+  if (filter.filterRules.rating['2']) filter.filterBadge++;
+  if (filter.filterRules.rating['1']) filter.filterBadge++;
+  if (filter.filterRules.rating['0']) filter.filterBadge++;
+  // 字体
+  if (filter.filterRules.font.activated) filter.filterBadge++;
+  if (filter.filterRules.font.deactivated) filter.filterBadge++;
+
+  // 类型
+  filter.filterBadge += Object.keys(filter.filterRules.type.includes).length;
+  filter.filterBadge += Object.keys(filter.filterRules.type.excludes).length;
+
+  // 时间过滤
+  if (filter.filterRules.import.today) filter.filterBadge++;
+  if (filter.filterRules.import.yesterday) filter.filterBadge++;
+  if (filter.filterRules.import.last7day) filter.filterBadge++;
+  if (filter.filterRules.import.last30day) filter.filterBadge++;
+  if (filter.filterRules.import.last90day) filter.filterBadge++;
+  if (filter.filterRules.import.last365day) filter.filterBadge++;
+  if (filter.filterRules.import.usingRange) filter.filterBadge++;
+  if (Object.keys(filter.filterRules.import.selectedMonths).length > 0) {
+    filter.filterBadge += Object.keys(filter.filterRules.import.selectedMonths).length;
+  }
+
+  // 修改时间过滤
+  if (filter.filterRules.mtime.today) filter.filterBadge++;
+  if (filter.filterRules.mtime.yesterday) filter.filterBadge++;
+  if (filter.filterRules.mtime.last7day) filter.filterBadge++;
+  if (filter.filterRules.mtime.last30day) filter.filterBadge++;
+  if (filter.filterRules.mtime.last90day) filter.filterBadge++;
+  if (filter.filterRules.mtime.last365day) filter.filterBadge++;
+  if (filter.filterRules.mtime.usingRange) filter.filterBadge++;
+  if (Object.keys(filter.filterRules.mtime.selectedMonths).length > 0) {
+    filter.filterBadge += Object.keys(filter.filterRules.mtime.selectedMonths).length;
+  }
+
+  // 解析度
+  if (filter.filterRules.resolution.minW) filter.filterBadge++;
+  if (filter.filterRules.resolution.maxW) filter.filterBadge++;
+  if (filter.filterRules.resolution.minH) filter.filterBadge++;
+  if (filter.filterRules.resolution.maxH) filter.filterBadge++;
+  // 档案大小
+  if (filter.filterRules.file.min) filter.filterBadge++;
+  if (filter.filterRules.file.max) filter.filterBadge++;
+  // 长度
+  if (filter.filterRules.duration.min) filter.filterBadge++;
+  if (filter.filterRules.duration.max) filter.filterBadge++;
+  // BPM
+  if (filter.filterRules.bpm.min) filter.filterBadge++;
+  if (filter.filterRules.bpm.max) filter.filterBadge++;
+  // 标注
+  if (filter.filterRules.annotation.has) filter.filterBadge++;
+  if (filter.filterRules.annotation.no) filter.filterBadge++;
+  // 标注
+  if (filter.filterRules.note.has) filter.filterBadge++;
+  if (filter.filterRules.note.no) filter.filterBadge++;
+  // 网址
+  if (filter.filterRules.url.has) filter.filterBadge++;
+  if (filter.filterRules.url.no) filter.filterBadge++;
+  // 以图找图
+  if (filter.filterRules.image.base64) filter.filterBadge++;
+  if (filter.filterRules.image.itemId) filter.filterBadge++;
+  // 自然语言
+  if (filter.filterRules.semantic.value) filter.filterBadge++;
+}
+
+/* filterSidebarItem（bundle 37967-38001 逐字；controller 闭包函数 → 域内移植。
+   依赖 chineseConvert/cartesianProduct/pinyinlite（re-require 十行成员，window.* live binding）、
+   _.uniq/_.max（vendor 全局）、String.prototype.score（bundle 2621 原型扩展）） */
+export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] {
+  const w = window as any;
+  if (!keyword) return folders;
+  var keyword_cn = w.chineseConvert.tw2cn(keyword).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\ /g, '').toLowerCase();
+
+  var folderSearchItems = folders.map((folder: any) => {
+    var folderNameCN = w.chineseConvert.tw2cn(folder.name).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (keyword.length >= 30 || folder.name.length >= 30) {
+      return {
+        folder: folder,
+        name: folderNameCN,
+        search: [folderNameCN]
+      };
+    }
+    return {
+      folder: folder,
+      name: folderNameCN,
+      search: [folderNameCN, ...w._.uniq(
+        w.cartesianProduct(w.pinyinlite(folderNameCN, { keepUnrecognized: true }).filter((p: any) => p.length > 0))
+          .map((item: any) => item.join(' '))
+      )],
+    };
+  });
+
+  var scores = folderSearchItems.map((item: any) => {
+    return {
+      item: item,
+      name: item.name,
+      score: w._.max(item.search.map((pinyin: any) => pinyin.score(keyword_cn))),
+    };
+  });
+
+  var result = scores.filter((i: any) => i.score > 0).map(function (i: any) {
+    return i.item.folder;
+  });
+
+  return result;
+}
+
+/* rebindRefresh（bundle 27366-27454 逐字；async。calcuteFilterResult/calcuteContainTags/
+   refreshSubfolderList/updateItemsView/getFolderList 等仍由 bundle 承载，经 scope 解析；
+   resetNgGridLayoutData = ngGridLayout 指令 66970 隐式全局赋值（window.*）；HoverPreview
+   顶层 var（51689）→ window.*；calcuteFilterBadge 为域内移植版） */
+export async function machineryRebindRefresh(s: any, muteMode: any, contentFilterCache: any, startCursor: any): Promise<void> {
+  const w = window as any;
+
+  if (!s.isItemBindCalculated) return;
+  if (!s.raw) return;
+  console.time("rebindRefresh");
+  var data: any[] = [];
+
+  console.time("calcuteFilterResult");
+  data = await s.calcuteFilterResult(data, contentFilterCache);
+  console.timeEnd("calcuteFilterResult");
+
+
+  // 计算这批图片里面出现的标签
+  if (w.eagle.filter.tagFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "EQUAL") {
+    s.calcuteContainTags(s.preelaborations);
+  }
+  else if (w.eagle.filter.tagFilterLogic === "AND") {
+    s.calcuteContainTags(data);
+  }
+
+  // 计算 Filter Badge 数量
+  machineryCalcuteFilterBadge();
+
+  // 置顶排序
+  console.time("sort:置顶");
+  if (s.currentFolder && s.currentFolder.orderBy !== "RANDOM") {
+    let currentFolderId = s.currentFolder.id;
+    // 原码 comparator 在 ta/tb 皆空时隐式返回 undefined（quirk 逐字保留），故 return 标注 any
+    data = data.sort(function (a: any, b: any): any {
+      var ta = a.pinned ? a.pinned[currentFolderId] : undefined;
+      var tb = b.pinned ? b.pinned[currentFolderId] : undefined;
+      if (ta || tb) {
+        try {
+          if (ta && !tb) return -1;
+          if (!ta && tb) return 1;
+          if (ta > tb) return -1;
+          if (ta < tb) return 1;
+          return 0;
+        } catch (err) {
+          return 0;
+        }
+      }
+    });
+  }
+  console.timeEnd("sort:置顶");
+
+  s.allData = data;
+
+  // Note: 2019/08/05 避免拖拽順序使用 $scope.itemMappings 獲取的內容跟真實內容不一致，造成拖拽無法使用
+  // 這段代碼主要用來刷新頁面上出現元件的有效性
+  if (s.currentFolder) {
+    try {
+      for (let i = 0; i < s.allData.length; i++) {
+        s.itemMappings[s.allData[i].id] = s.allData[i];
+      }
+    } catch (err) { /* noop */ }
+  }
+
+  s.filtereds = s.allData.slice(0, s.len * s.page);
+
+  s.refreshSubfolderList();
+
+  // 減少重複計算，將原先計算智能文件夾數量功能，放在這裡
+  if (s.$root.selectedSmartFolders.length === 0 && s.currentSmartFolder) {
+    if (s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length > 0) {
+      s.currentSmartFolder.imageCount = s.allData.length;
+    }
+  }
+
+  let currentViewDataLength = s.allData.length;
+  if (currentViewDataLength < 200) {
+    s.keywordDebounce = 50;
+  }
+  else if (currentViewDataLength < 50000) {
+    s.keywordDebounce = 200;
+  }
+  else if (currentViewDataLength < 100000) {
+    s.keywordDebounce = 250;
+  }
+  else {
+    s.keywordDebounce = 300;
+  }
+
+  console.timeEnd("rebindRefresh");
+
+  if (!muteMode) {
+    if (w.eagle.filter.filterBadge > 0) s.startCursor = 0;
+    w.resetNgGridLayoutData(s.allData, startCursor || s.startCursor);
+  }
+  s.updateItemsView(s.selected);
+  w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
+  if (w.HoverPreview.isShow) {
+    w.HoverPreview.hide();
+  }
+  s.$evalAsync();
+}
+
+/* rebindRefreshLazy（bundle 27007-27013 逐字；1000ms 防抖，rebindRefreshLazyTimeout 域内自管） */
+export function machineryRebindRefreshLazy(s: any): void {
+  const $timeout = getTimeout();
+  $timeout.cancel(rebindRefreshLazyTimeout);
+  rebindRefreshLazyTimeout = $timeout(function () {
+    s.rebindRefresh();
+  }, 1000);
+}
+
+/* updateSidebarList（bundle 42545-42617 逐字；20ms 防抖，updateSidebarListTimeout 域内自管。
+   getFolderList/getSmartFolderList/getQuickAccessList 仍由 bundle 承载经 scope 解析；
+   filterSidebarItem 为域内移植版） */
+export function machineryUpdateSidebarList(s: any): void {
+  const $timeout = getTimeout();
+  $timeout.cancel(updateSidebarListTimeout);
+  updateSidebarListTimeout = $timeout(function () {
+    // console.time("$scope.updateSidebarList");
+    var list: any[] = [];
+    var allItem = { vstype: 'all', size: 27 };
+    var unfiledItem = { vstype: 'unfiled', size: 27 };
+    var untaggedItem = { vstype: 'untagged', size: 27 };
+    var randomItem = { vstype: 'random', size: 27 };
+    var recentItem = { vstype: 'recent', size: 27 };
+    var communityItem = { vstype: 'community', size: 27 };
+    var allTagsItem = { vstype: 'allTags', size: 27 };
+    var trashItem = { vstype: 'trash', size: 27 };
+    var folders = s.getFolderList();
+    var smartFolders = s.getSmartFolderList();
+    var quickAccess = s.getQuickAccessList();
+    var quickAccessLabel = { vstype: 'label-qucik-access', size: 25 };
+    var smartFolderLabel = { vstype: 'label-smart-folder', size: 25 };
+    var folderLabel = { vstype: 'label-folder', size: 25 };
+
+    folders = machineryFilterSidebarItem(folders, s.folderKeyword);
+    smartFolders = machineryFilterSidebarItem(smartFolders, s.folderKeyword);
+
+    list.push(allItem);
+    if (s.$root.preferences.sidebar.unfiled != 'false') {
+      list.push(unfiledItem);
+    }
+    if (s.$root.preferences.sidebar.untagged != 'false') {
+      list.push(untaggedItem);
+    }
+    if (s.$root.preferences.sidebar.recent != 'false') {
+      list.push(recentItem);
+    }
+    if (s.$root.preferences.sidebar.random != 'false') {
+      list.push(randomItem);
+    }
+    if (s.$root.preferences.sidebar.community2 != 'false') {
+      list.push(communityItem);
+    }
+    list.push(allTagsItem);
+    list.push(trashItem);
+
+    if (s.quickAccess.length > 0 && s.$root.preferences.sidebar.quickAccess != 'false') {
+      list.push({ vstype: 'separator', size: 14 });
+      list.push(quickAccessLabel);
+      if (s.isExpandQuickAccess && s.quickAccess.length > 0) {
+        list = list.concat(quickAccess);
+        list.push({ vstype: 'separator', size: 14 });
+      }
+    }
+    else {
+      list.push({ vstype: 'separator', size: 14 });
+    }
+
+    if (s.$root.preferences.sidebar.smartFolder != 'false') {
+      if (!s.folderKeyword) {
+        list.push(smartFolderLabel);
+      }
+      else if (smartFolders.length > 0) {
+        list.push(smartFolderLabel);
+      }
+      if (smartFolders.length > 0) {
+        if (s.isExpandSmartFolder) {
+          list = list.concat(smartFolders);
+          list.push({ vstype: 'separator', size: 14 });
+        }
+      }
+    }
+
+    if (s.$root.preferences.sidebar.folder != 'false') {
+      if (!s.folderKeyword) {
+        list.push(folderLabel);
+      }
+      else if (folders.length > 0) {
+        list.push(folderLabel);
+      }
+      if (s.isExpandFolder) {
+        list = list.concat(folders);
+      }
+    }
+
+    list.forEach(function (node: any, index: number) {
+      node.index = index;
+    });
+
+    s.sidebarList = list;
+  }, 20);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -481,17 +858,26 @@ export function applyDataMachineryScope(): void {
   if (!s) return;
 
   // scope 函数替换：此后 bundle 侧全部 $scope.calculateImageBinding 调用面（muteCalcuteImageBinding/
-  // library.changed 等）即走移植实现（绞杀内部机器）。
+  // library.changed 等）即走移植实现（绞杀内部机器）。c9b：rebindRefresh/rebindRefreshLazy/
+  // updateSidebarList 一并替换（React 域 10+ 处调用面 + bundle 18203/18438/$broadcast 路径）。
   s.calculateImageBinding = (params: any, callback: any) => machineryCalculateImageBinding(s, params, callback);
   s.sortRawData = (orderBy: any) => machinerySortRawData(s, orderBy);
   s.getAncestorFolders = (folder: any, folders: any[]) => machineryGetAncestorFolders(s, folder, folders);
+  s.rebindRefresh = (muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRefresh(s, muteMode, contentFilterCache, startCursor);
+  s.rebindRefreshLazy = () => machineryRebindRefreshLazy(s);
+  s.updateSidebarList = () => machineryUpdateSidebarList(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 1,
+    version: 2,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
     getAncestorFolders: 'machinery',
     getExtendTags: 'machinery',
+    rebindRefresh: 'machinery',
+    rebindRefreshLazy: 'machinery',
+    updateSidebarList: 'machinery',
+    calcuteFilterBadge: 'machinery',
+    filterSidebarItem: 'machinery',
   };
 }

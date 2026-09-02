@@ -2535,6 +2535,20 @@
 >   （allDataIds 正确、DIAG-CONSOLE 空）。parseInt(number) 原码怪癖以 as any 保留。
 > - m1 扩至 25 项（A10 筛选引擎契约 version≥9）。验证：tsc 零错；m1 25/25。
 
+> **c14c contentFilter/calcuteContainTags/RecentFileManager（2026-09-02）**：
+> - machineryContentFilter（31804-31896 逐字）：selectedSmartFolders/currentSmartFolder
+>   （children+conditions 三分支）→ viewMode 七分支 switch（unfiled/untagged/recent/trash/
+>   文件夹多选 isInFolder/单选/currentTag）；isInFolder 复用 controllerFns 移植版，
+>   RecentFileManager 经 window 解析。
+> - machineryCalcuteContainTags（$scope 包装 27155-27194 + 闭包 27196-27292 逐字）：
+>   排除标签计数初始化、>200 字符截断守卫、AND 逻辑 index 修正、pinyin 经 TagManager、
+>   imageCount 排序 + noTags 置零（eagle.filter.isLock 守卫）+ NoTags unshift（Filter.NoTags）。
+> - buildRecentFileManager（52307-52390 逐字）：init/calOrders/isExists/addFile/addFiles
+>   （≥20 截断）/clean/save（**w.throttle(1000, immediate)**——c10a-2 供给）；if-absent 接装
+>   window.RecentFileManager（bundle 在世沿用其绑定）。
+> - scope 替换生效（version 10：contentFilter/calcuteContainTags）。m1 25/25（DIAG-CONSOLE
+>   空）。suite 两项已知竞争 flake 单独复跑通过（cm-overlay-close/main-ui-workflow）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

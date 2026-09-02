@@ -55,7 +55,7 @@
  */
 
 import { getBodyScope } from '../global/scopeBridge';
-import { updateCurrentOrderAndIncrease } from './controllerFns';
+import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -2424,6 +2424,290 @@ export async function machineryCalcuteFilterResult(s: any, data: any[], contentF
   });
 }
 
+/* ── c14c：contentFilter / calcuteContainTags / RecentFileManager ───────── */
+
+/* RecentFileManager（bundle 52307-52390 逐字；save = w.throttle(1000, immediate)） */
+function buildRecentFileManager(): any {
+  const w = window as any;
+  const RecentFileManager: any = {
+    libraryName: "",
+    recentFiles: [],
+    recentFilesOrder: {},
+    maxHistory: 5000,
+    init: function (libraryName: any) {
+      RecentFileManager.libraryName = libraryName;
+      let json = (window as any).localStorage[`eagle.recentFiles.${RecentFileManager.libraryName}`];
+      if (json) {
+        try {
+          RecentFileManager.recentFiles = JSON.parse(json);
+          RecentFileManager.calOrders();
+        }
+        catch (err) {
+          RecentFileManager.recentFiles = [];
+        }
+      }
+    },
+    calOrders: function () {
+      try {
+        for (var i = 0; i < RecentFileManager.recentFiles.length; i++) {
+          let itemId = RecentFileManager.recentFiles[i];
+          RecentFileManager.recentFilesOrder[itemId] = i + 1;
+        }
+      }
+      catch (err) { /* noop */ }
+    },
+    isExists: function (item: any) {
+      if (!item || !item.id) return false;
+      return RecentFileManager.recentFilesOrder[item.id];
+    },
+    addFile: function (item: any) {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        if (!item || !item.id) return;
+        RecentFileManager.recentFiles.unshift(item.id);
+        RecentFileManager.calOrders();
+        RecentFileManager.save();
+      }
+      catch (err) { /* noop */ }
+    },
+    addFiles: function (items: any) {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        if (!items) return;
+        if (items.length >= 20) return;
+        items.reverse().forEach(function (item: any) {
+          if (!item || !item.id) return;
+          RecentFileManager.recentFiles.unshift(item.id);
+          RecentFileManager.calOrders();
+        });
+        RecentFileManager.save();
+      }
+      catch (err) { /* noop */ }
+    },
+    clean: function () {
+      RecentFileManager.recentFiles = [];
+      RecentFileManager.recentFilesOrder = {};
+      RecentFileManager.save();
+    },
+    save: w.throttle(function () {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        // 最多保存 5000 個
+        RecentFileManager.recentFiles = [...new Set(RecentFileManager.recentFiles)];
+        if (RecentFileManager.recentFiles.length > RecentFileManager.maxHistory) {
+          RecentFileManager.recentFiles.length = RecentFileManager.maxHistory;
+        }
+        let json = JSON.stringify(RecentFileManager.recentFiles);
+        (window as any).localStorage[`eagle.recentFiles.${RecentFileManager.libraryName}`] = json;
+      }
+      catch (err) { /* noop */ }
+    }, 1000, true),
+  };
+  return RecentFileManager;
+}
+
+/* contentFilter（bundle 31804-31896 逐字；isInFolder 复用 controllerFns 移植版，
+   RecentFileManager 经 window 解析） */
+export function machineryContentFilter(s: any, image: any): boolean {
+  const w = window as any;
+  try {
+    if (s.$root.selectedSmartFolders.length > 0) {
+      if (image.isDeleted) return false;
+      for (let i = 0; i < s.$root.selectedSmartFolders.length; i++) {
+        let smartFolder = s.$root.selectedSmartFolders[i];
+        if (machineryExistInSmartFilter(s, smartFolder, image)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    else if (s.currentSmartFolder) {
+      if (image.isDeleted) return false;
+      if (s.currentSmartFolder.children && s.currentSmartFolder.children.length === 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
+        return false;
+      }
+      else if (s.currentSmartFolder.children && s.currentSmartFolder.children.length > 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
+        for (let i = 0; i < s.currentSmartFolder.children.length; i++) {
+          let smartFolder = s.currentSmartFolder.children[i];
+          if (machineryExistInSmartFilter(s, smartFolder, image)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      else {
+        return machineryExistInSmartFilter(s, s.currentSmartFolder, image);
+      }
+    }
+    switch (s.viewMode) {
+      case "all":
+        if (!image.isDeleted) return true;
+        break;
+      case "unfiled":
+        if (image.isDeleted) return false;
+        if (!image.folders || image.folders.length === 0 || (image.folders.length === 1 && image.folders[0] && !s.folderMappings[image.folders[0]])) {
+          return true;
+        }
+        break;
+      case "untagged":
+        if (image.isDeleted) return false;
+        if (!image.tags || image.tags.length === 0) {
+          return true;
+        }
+        break;
+      case "random":
+        if (!image.isDeleted) return true;
+        break;
+      case "recent":
+        return (w.RecentFileManager.isExists(image));
+      case "trash":
+        if (image.isDeleted) return true;
+        break;
+      default:
+        // 文件夹多选
+        if (s.$root.selectedFolders.length > 0) {
+          if (image.isDeleted) return false;
+          for (var i = 0; i < s.$root.selectedFolders.length; i++) {
+            var folder = s.$root.selectedFolders[i];
+            if (isInFolder(image, folder)) {
+              return true;
+            }
+          }
+        }
+        // 文件夹单选
+        else if (s.currentFolder) {
+          if (image.isDeleted) return false;
+          if (isInFolder(image, s.currentFolder)) {
+            return true;
+          }
+          return false;
+        } else if (s.currentTag) {
+          if (image.isDeleted) return false;
+          return image.tags.indexOf(s.currentTag) > -1;
+        }
+        return false;
+    }
+    return false;
+  }
+  catch (err) {
+    return false;
+  }
+}
+
+/* calcuteContainTags 闭包版（bundle 27196-27292 逐字） */
+function machineryCalcuteContainTagsInner(s: any, data: any[]): any {
+  const w = window as any;
+  var tagsCount: any = {};
+  var tagsMappings: any = {};
+  var noTagsCount = 0;
+
+  w.eagle.filter.filterRules.tag.excludes.forEach(function (tag: any) {
+    tagsCount[tag] = 0;
+  });
+
+  for (var i = data.length - 1; i >= 0; i--) {
+    var image = data[i];
+    if (image.tags && image.tags.length > 0) {
+      image.tags.forEach(function (tag: any) {
+        if (tag && tag.length > 200) return;
+        if (!tagsCount[tag]) { tagsCount[tag] = 0; }
+        tagsCount[tag]++;
+      });
+    }
+    else {
+      noTagsCount++;
+    }
+  }
+
+  var tags = Object.keys(tagsCount).map(function (key: any) {
+    var idx = w.eagle.filter.filterRules.tag.includes.indexOf(key);
+    var eidx = w.eagle.filter.filterRules.tag.excludes.indexOf(key);
+    var index;
+    if (idx > -1 && (w.eagle.filter.tagFilterLogic === "AND")) {
+      index = tagsCount[key] - idx;
+    }
+    else if (eidx > -1 && (w.eagle.filter.tagFilterLogic === "AND")) {
+      index = tagsCount[key] - 100;
+    }
+    else {
+      index = tagsCount[key] - 100;
+    }
+    tagsMappings[key] = {
+      isSelected: idx > -1,
+      isExcluded: eidx > -1,
+      name: key,
+      pinyin: s.TagManager.tagMappings[key] && s.TagManager.tagMappings[key].pinyin,
+      imageCount: tagsCount[key],
+      index: index
+    };
+    return tagsMappings[key];
+  });
+
+  tags.sort(function (tag1: any, tag2: any) {
+    return tag2.imageCount - tag1.imageCount;
+  });
+
+  if (noTagsCount === 0 && !w.eagle.filter.isLock) {
+    w.eagle.filter.filterRules.tag.no = false;
+  }
+
+  return {
+    containTagsMappings: tagsMappings,
+    containTags: tags,
+    noTagsCount: noTagsCount
+  };
+}
+
+/* $scope.calcuteContainTags（bundle 27155-27194 逐字） */
+export function machineryCalcuteContainTags(s: any, data: any[]): void {
+  const w = window as any;
+  var result = machineryCalcuteContainTagsInner(s, data);
+
+  // 建立群组列表
+  var tagsMappings = result.containTagsMappings;
+  s.TagManager.groups.forEach(function (group: any) {
+    var groupObject = [];
+    group.tags.forEach(function (tag: any) {
+      if (tagsMappings[tag]) {
+        groupObject.push(tagsMappings[tag]);
+        tagsMappings[tag].type = "group-item";
+        tagsMappings[tag].group = group;
+      }
+    });
+  });
+
+  s.containTags = [];
+
+  var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+  result.containTags = result.containTags.sort(function (a: any, b: any) {
+    return collator.compare(a.name, b.name);
+  });
+
+  result.containTags.forEach(function (tag: any) {
+    s.containTags.push(tag);
+  });
+
+  // 显示未标签功能
+  if (result.noTagsCount > 0) {
+    s.containTags.unshift({
+      isSelected: w.eagle.filter.filterRules.tag.no,
+      name: w.i18n.__("Filter.NoTags"),
+      imageCount: result.noTagsCount,
+      index: 100000000,
+      isNoTags: true
+    });
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -2466,9 +2750,14 @@ export function applyDataMachineryScope(): void {
   // await s.calcuteFilterResult 即走移植实现）
   s.filterData = (data: any[]) => machineryFilterData(s, data);
   s.calcuteFilterResult = (data: any[], contentFilterCache: any) => machineryCalcuteFilterResult(s, data, contentFilterCache);
+  // c14c：contentFilter/calcuteContainTags + RecentFileManager（if-absent）
+  s.contentFilter = (image: any) => machineryContentFilter(s, image);
+  s.calcuteContainTags = (data: any[]) => machineryCalcuteContainTags(s, data);
+  const w2 = window as any;
+  if (!w2.RecentFileManager) w2.RecentFileManager = buildRecentFileManager();
 
   (window as any).__eagleDataMachinery = {
-    version: 9,
+    version: 10,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -2498,5 +2787,7 @@ export function applyDataMachineryScope(): void {
     isMatchCondition: 'machinery',
     filterData: 'machinery',
     calcuteFilterResult: 'machinery',
+    contentFilter: 'machinery',
+    calcuteContainTags: 'machinery',
   };
 }

@@ -945,6 +945,9 @@ export function takeoverMiscDomain(): void {
 
   // ── jieba-extract-done（48725 逐字；标签推荐域收编——languageBCP 闭包变量经
   //    $rootScope.language 等价重算，stopword 经 require）──
+  diag.removed['jieba-extract-done'] = removeChannelListenersBySource(ipc, 'jieba-extract-done', [
+    '取得推荐标签',
+  ]);
   ipc.on('jieba-extract-done', function (_e: any, result: any) {
     const s = sNow();
     if (!s) return;

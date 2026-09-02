@@ -40,6 +40,7 @@ import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
 import { bridgeScopeFields, coreState } from './core/appCore';
+import { getBodyScope } from './global/scopeBridge';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { takeoverLibraryDomain } from './core/libraryDomain';
 import { takeoverItemDomain } from './core/itemDomain';
@@ -190,8 +191,20 @@ const CZ_BRIDGE_FIELDS = ['theme', 'platform', 'language', 'isLoading', 'isUILoa
   'viewMode', 'keyword', 'layout', 'orderBy', 'trialRemain', 'currentFocus',
   'preferences', 'vibrancyEnabled', 'canUseTouchID'];
 function bridgeWhenReady(attempt = 0): void {
-  const scope = (window as any).$bodyScope || null;
+  // 强就绪门：scope.mousetrap 由 EagleController 体内 initMousetrap()（bundle 49328）设置，
+  // 晚于全部 ipc 通道注册（≤24130+）与 watch/$on 注册（34180-42390）——保证各域截肢时
+  // bundle 侧监听已全部就位（window.$bodyScope 的赋值时机是任意指令触发的，不能作准）。
+  let scope = getBodyScope();
   if (scope) {
+    // 归一 window.$bodyScope：某些指令会把全局 $bodyScope 赋成子 scope（body 元素自身的
+    // scope 才是 EagleController scope），域接管/冒烟一律以真身为准
+    try {
+      const ang = (window as any).angular;
+      const trueBody = ang && ang.element ? ang.element(document.body).scope() : null;
+      if (trueBody) { (window as any).$bodyScope = trueBody; scope = trueBody; }
+    } catch (err) { /* noop */ }
+  }
+  if (scope && scope.mousetrap) {
     bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
     (window as any).__eagleCoreState = coreState;
     takeoverPreferencesDomain();

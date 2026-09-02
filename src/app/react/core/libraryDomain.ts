@@ -422,9 +422,23 @@ export function takeoverLibraryDomain(): void {
     if (w.eagle && w.eagle.action && w.eagle.action.destroy) w.eagle.action.destroy();
     if (typeof w.stopAPIServer === 'function') w.stopAPIServer();
     console.log("移除 " + "background-state 监听");
-    // （bundle 原码此处重 require fse/tinyPinyin/readChunk/writeFileAtomic/cartesianProduct/
-    //   sanitize/unicodeNormalize/chineseConvert/colorConvert/DeltaE —— 同路径 require 命中
-    //   缓存返回同一实例，无新状态可刷，略去不改变行为）
+    // bundle 22776-22787 逐字：这十个顶层 var 的【首次赋值点】——window.sanitize/tinyPinyin
+    // 等是 React 侧 saver（inspectorActions）/ayncsUpdateSmartFoldersCount 的运行时依赖；
+    // 截肢后此处若略去，window.sanitize 永远 undefined（shims 3131 注释预警过）。同路径
+    // require 命中缓存返回同一实例，重复执行无副作用。
+    try {
+      w.fse = w.require('fs-extra');
+      w.tinyPinyin = w.require(w.appRoot + '/my_modules/tiny-pinyin');
+      w.pinyinlite = w.require(w.appRoot + '/my_modules/pinyinlite');
+      w.readChunk = w.require('read-chunk');
+      w.writeFileAtomic = w.require('write-file-atomic');
+      w.cartesianProduct = w.require(w.appRoot + '/my_modules/cartesian-product');
+      w.sanitize = w.require(w.appRoot + '/my_modules/sanitize-filename');
+      w.unicodeNormalize = w.require('normalize-strings');
+      w.chineseConvert = w.require(w.appRoot + '/my_modules/chinese_convert');
+      w.colorConvert = w.require('color-convert');
+      w.DeltaE = w.require('delta-e');
+    } catch (err) { /* noop */ }
   });
 
   // ── app-status-library-loaded（22857 逐字；落点：module var → window.* live binding、
@@ -1064,5 +1078,8 @@ export function takeoverLibraryDomain(): void {
     s.showTutorial();
 
     electronLog.info(`[app] Library loaded`);
+    // 保险 digest 排程：bundle 原处理器依赖后续应用活动触发 $timeout 派工；React 域在
+    // 事件驱动的测试/静默场景下补一次 $evalAsync，保证 binding 派工即时可flush
+    s.$evalAsync();
   });
 }

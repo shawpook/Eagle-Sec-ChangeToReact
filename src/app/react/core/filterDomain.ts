@@ -13,7 +13,7 @@
  *   bundle 处理器后重挂。UPDATE_SELECTION/SAVE_FOLDER 留 cZ-6。
  */
 
-import { removeChannelListenersBySource } from './appCore';
+import { removeChannelListenersBySource, sweepForeignWatchers, persistSweep } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 
@@ -25,16 +25,6 @@ function domainTimeout(s: any, fn: any, ms?: number): any {
   }, ms || 0);
 }
 
-/* 按 watch 表达式摘除 scope watcher（幂等） */
-function removeScopeWatcher(s: any, exp: string): boolean {
-  try {
-    const watchers = s.$$watchers;
-    if (!Array.isArray(watchers)) return false;
-    const idx = watchers.findIndex((wch: any) => wch && (wch.exp === exp));
-    if (idx >= 0) { watchers.splice(idx, 1); return true; }
-  } catch (err) { /* noop */ }
-  return false;
-}
 
 /* 按事件名摘除 scope $$listener（幂等；返回摘除数） */
 function removeScopeListener(s: any, evt: string): number {
@@ -55,8 +45,14 @@ export function takeoverFilterDomain(): void {
   const w = window as any;
   const ipc: any = ipcRenderer();
   if (!ipc || typeof ipc.on !== 'function') return;
+  const s0probe = (): any => getBodyScope();
 
   const diag: any = { takenOver: true, removed: {} as Record<string, number>, watchesRemoved: 0, listenersRemoved: {} as Record<string, number> };
+  try {
+    const ws0 = (s0probe() as any).$watchers || [];
+    diag.watchersAtTakeover = ws0.length;
+    diag.filterWatchersAtTakeover = ws0.filter((x: any) => typeof x.exp === 'string' && String(x.exp).indexOf('eagle.filter') === 0).length;
+  } catch (err) { diag.watchersAtTakeover = 'err:' + String(err).slice(0, 80); }
   w.__eagleFilterDomain = diag;
 
   // ── 通道截肢 ──
@@ -106,17 +102,21 @@ export function takeoverFilterDomain(): void {
   // ── eagle.filter watch 族 12 个（摘 bundle watcher → 域内重挂同表达式）──
   const s0: any = getBodyScope();
   if (s0 && typeof s0.$watch === 'function') {
+    // 注册本域 watcher 句柄 → sweep 清扫 bundle 同 exp watcher（含竞态晚注册的 2s/8s 复扫）
+    const claim = (exp: string, fn: any) => {
+      s0.$watch(exp, fn);
+      diag.watchesRemoved += sweepForeignWatchers(s0, exp, [fn]);
+      persistSweep(s0, exp, [fn], undefined, undefined, diag);
+    };
     const filterContentWatch = (exp: string) => {
-      diag.watchesRemoved += removeScopeWatcher(s0, exp) ? 1 : 0;
-      s0.$watch(exp, function () {
+      claim(exp, function () {
         const s: any = getBodyScope();
         if (!s) return;
         s.filterContent();
       });
     };
     const shapeWatch = (exp: string) => {
-      diag.watchesRemoved += removeScopeWatcher(s0, exp) ? 1 : 0;
-      s0.$watch(exp, function () {
+      claim(exp, function () {
         const s: any = getBodyScope();
         if (!s) return;
         if (w.eagle.filter.filterRules.shape.width && w.eagle.filter.filterRules.shape.height) {

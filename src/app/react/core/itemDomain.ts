@@ -15,7 +15,7 @@
  * - **有意略去/等价**：无（本片全部行为域内复刻；$timeout 语义 = setTimeout + $apply）。
  */
 
-import { removeChannelListenersBySource } from './appCore';
+import { removeChannelListenersBySource, sweepForeignWatchers, persistSweep } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
@@ -234,16 +234,6 @@ function domainUpdateItemListView(s: any, generated: any): void {
   }
 }
 
-/* 按 watch 表达式从 scope.$$watchers 摘除 bundle watcher（Angular 内部结构，幂等） */
-function removeScopeWatcher(s: any, exp: string): boolean {
-  try {
-    const watchers = s.$$watchers;
-    if (!Array.isArray(watchers)) return false;
-    const idx = watchers.findIndex((wch: any) => wch && (wch.exp === exp));
-    if (idx >= 0) { watchers.splice(idx, 1); return true; }
-  } catch (err) { /* noop */ }
-  return false;
-}
 
 export function takeoverItemDomain(): void {
   if (done) return;
@@ -642,161 +632,6 @@ export function takeoverItemDomain(): void {
     electronLog && electronLog.info(`[app] New ${folders.length} folders`);
   });
 
-  // ── finishQueue watchCollection（34506 逐字；bundle watcher 先摘除再重挂）──
-  const s0 = sNow();
-  if (s0 && typeof s0.$watchCollection === 'function') {
-    diag.watchRemoved = removeScopeWatcher(s0, 'finishQueue');
-    s0.$watchCollection("finishQueue", function (newValue: any, oldValue: any) {
-      const s = sNow();
-      if (!s) return;
-      if (newValue === oldValue) return;
-
-      if (!s.raw || s.raw.length === 0) {
-        if (s.finishQueue.length > 0 && s.finishQueue.length === s.uploadQueue.length) {
-          s.finishQueue = [];
-          s.uploadQueue = [];
-          s.hideUploadQueue();
-        }
-        return;
-      }
-
-      if (s.finishQueue.length > 0 && s.finishQueue.length >= s.uploadQueue.length) {
-
-        // 清除倒数计时工具
-        s.addImageStartTime = undefined;
-        clearInterval(domainAddImageTimeLeftInterval);
-
-        const total = s.uploadQueue.length;
-        // 以队列最后一张图判断，是否要刷新使用者当前查看的列表
-        const lastImage = s.finishQueue[s.finishQueue.length - 1];
-
-        // 自动选择新增的图片
-        const newItems: any[] = [];
-        s.finishQueue.forEach(function (image: any) {
-          if (image && image.id) {
-            newItems.push(image);
-          }
-        });
-
-        s.finishQueue = [];
-        s.uploadQueue = [];
-        $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
-        $("#upload-queue-progress").find(".current").width(s.finishQueue.length / s.uploadQueue.length * 100 + "%");
-        s.hideUploadQueue();
-
-        // 判斷是否有重複的圖片
-        if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
-          if (s.duplicateQueue.length > 0) {
-            s.$root.$broadcast("OPEN_DUPLICATE", {
-              currentFolder: s.currentFolder,
-              mappings: s.duplicateMappings,
-              duplicates: s.duplicateQueue
-            });
-            if (s.$root.preferences.notification.soundEffect.enable != 'false') {
-              s.duplicateSound.play();
-            }
-            s.duplicateQueue = [];
-          }
-        }
-        // 如果沒有啟動重複通知，一律圖片直接添加上來
-        else {
-          s.duplicateQueue.forEach(function (img: any) {
-            s.addToDuplicateMapping(img);
-            if (s.raw) { s.raw.unshift(img); }
-          });
-          s.duplicateQueue = [];
-        }
-
-        function autoSelectUploadedItems(): void {
-          if (s.isDetailMode) return;
-
-          if (s.$root.preferences.general.autoSelect !== 'true') {
-            if (newItems.length === 1) {
-              domainTimeout(s, function () {
-                s.scrollToSelectedItem();
-              }, 120);
-            }
-            return;
-          }
-
-          // 避免几百几千个？
-          if (s.viewMode !== 'random') {
-            const MAX_AUTO_SELECT = 1000;
-            if (newItems && newItems.length <= MAX_AUTO_SELECT) {
-              s.selected = newItems;
-              const targetSelectedIndex = s.allData.indexOf(s.selected[0]);
-              s.lastSelectedIndex = targetSelectedIndex;
-              s.$root.currentFocus = "content";
-              if (newItems.length === 1) {
-                domainTimeout(s, function () {
-                  s.scrollToSelectedItem();
-                }, 120);
-              }
-            }
-          }
-        }
-
-        s.calculateImageBinding({}, function () {
-
-          // NOTE: 图片添加完成后，如果添加的图片不是使用者正在查看的文件夹，不需要刷新画面
-          // 哪些情况下不该自动选择：1. 大量文件 2. 用户正在观赏查看图片，不想被打扰
-          if (s.currentFolder) {
-            try {
-              // var lastImage = $scope.raw[0];
-              if (!lastImage || !lastImage.folders) {
-                s.reload(true);
-                autoSelectUploadedItems();
-                return;
-              }
-              const needReload = isInFolder(lastImage, s.currentFolder);
-              if (needReload) {
-                s.startCursor = 0;
-                s.reload(true);
-                autoSelectUploadedItems();
-              }
-            }
-            catch (err) {
-              s.reload(true);
-              autoSelectUploadedItems();
-              electronLog && electronLog.error((err as any).stack || err);
-            }
-          }
-          else if (s.currentSmartFolder) {
-            s.reload(true);
-          }
-          // 如果来自全部图片、未归类、未分类，一律进行刷新
-          else if (s.viewMode == "all" || s.viewMode == "unfiled" || s.viewMode == "untagged") {
-            s.startCursor = 0;
-            s.reload(true);
-            autoSelectUploadedItems();
-          }
-          else {
-            // electronLog && electronLog.error("特殊状况，列表没有正常刷新");
-          }
-        });
-
-        try {
-          if (s.finishQueue.length > 2) {
-            if (w.process.platform == 'darwin') {
-              window.setTimeout(function () { remote.app.dock.bounce("critical"); }, 1000);
-            } else {
-              window.setTimeout(function () {
-                if (!document.hasFocus()) {
-                  try { w.currentWindow.flashFrame(true); } catch (err) { /* noop */ }
-                }
-              }, 1000);
-            }
-          }
-        }
-        catch (err) {
-          electronLog && electronLog.error((err as any).stack || err);
-        }
-
-        // 讓 Palette Queue 繼續
-        IPCHelper.send('palette-resume', undefined, true);
-        console.log("添加 %s 張圖片完成", total);
-        console.timeEnd("添加圖片耗費時間");
-      }
-    }, true);
-  }
+  // finishQueue watchCollection：$watchCollection 的 exp/fn 均被 Angular 包装为不透明对象，
+  // 无法识别/摘除——bundle watcher 保持独占至 b1（行为与原状一致，无双处理：域不再重复注册）。
 }

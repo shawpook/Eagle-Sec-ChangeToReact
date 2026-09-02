@@ -54,6 +54,77 @@ export function bridgeScopeFields(scope: any, fields: string[]): void {
   }
 }
 
+
+/* ── scope watcher 接管工具（cZ-5/6/4 共用）──
+   $watch(string) 的 watcher.exp 是字符串；$watchCollection 的 exp 是 $parse 实例
+   （可能带 expensiveChecks interceptor）——依次按 字符串/实例/生成源码串 匹配 */
+
+/* 注意：不做生成源码串等价——$parse 的 expensiveChecks 包装器对一切表达式共享同一源码 */
+export function matchWatchExp(wch: any, exp: string, parsedList: any[]): boolean {
+  if (!wch) return false;
+  if (wch.exp === exp) return true;
+  if (typeof wch.exp === 'function') {
+    for (const p of parsedList) {
+      if (p && wch.exp === p) return true;
+    }
+  }
+  return false;
+}
+
+function getParseVariants(exp: string): any[] {
+  const out: any[] = [];
+  try {
+    const ang = (window as any).angular;
+    if (ang && ang.element && ang.element(document).injector) {
+      const $parse = ang.element(document).injector().get('$parse');
+      out.push($parse(exp));
+      try { out.push($parse(exp, { expensiveChecks: true })); } catch (err) { /* noop */ }
+    }
+  } catch (err) { /* noop */ }
+  return out;
+}
+
+/** 持续清扫：100ms × 150 次（15s）幂等复扫，覆盖 bundle watcher 晚注册的竞态窗口 */
+export function persistSweep(s: any, exp: string, mine: any[], fnSignature?: string, mineSrcMarkers?: string[], diag?: any): void {
+  let ticks = 0;
+  const iv = setInterval(() => {
+    ticks++;
+    if (diag) { diag.sweepTicks = (diag.sweepTicks || 0) + 1; }
+    try {
+      const n = sweepForeignWatchers(s, exp, mine, fnSignature, mineSrcMarkers);
+      if (diag && n) { diag.sweepRemoved = (diag.sweepRemoved || 0) + n; }
+    } catch (err) { /* noop */ }
+    if (ticks >= 150) clearInterval(iv);
+  }, 100);
+}
+
+/** 注册后清扫：移除 scope 上匹配 exp/fnSignature 且不属于 mine（本域句柄或监听函数）的
+ *  watcher，返回移除数。fnSignature = bundle 监听函数源码特征串（$watchCollection 的
+ *  exp 是 $parse 包装器实例，无法按表达式识别，只能按监听函数源码识别）。 */
+export function sweepForeignWatchers(s: any, exp: string, mine: any[], fnSignature?: string, mineSrcMarkers?: string[]): number {
+  let removed = 0;
+  try {
+    const watchers = s.$$watchers;
+    if (!Array.isArray(watchers)) return 0;
+    const parsedList = getParseVariants(exp);
+    // $watch 返回的是注销函数而非 watcher 对象——mine 可含两种形态；
+    // $watchCollection 会包装 listener（fn !== 原函数），故另按 mineSrcMarkers 源码标记排除己方
+    const mineSet = new Set(mine);
+    for (let i = watchers.length - 1; i >= 0; i--) {
+      const wch = watchers[i];
+      if (!wch || mineSet.has(wch) || (wch.fn && mineSet.has(wch.fn))) continue;
+      const wfnSrc = wch.fn && typeof wch.fn.toString === 'function' ? String(wch.fn) : '';
+      if (mineSrcMarkers && mineSrcMarkers.some((m) => wfnSrc.indexOf(m) !== -1)) continue;
+      if (matchWatchExp(wch, exp, parsedList)
+        || (fnSignature && wfnSrc.indexOf(fnSignature) !== -1)) {
+        watchers.splice(i, 1);
+        removed++;
+      }
+    }
+  } catch (err) { /* noop */ }
+  return removed;
+}
+
 export function isBridged(name: string): boolean {
   return bridged.has(name);
 }

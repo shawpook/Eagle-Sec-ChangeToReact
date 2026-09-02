@@ -2248,6 +2248,41 @@
 > - **M1 数据面通道接管完成度：97/97 全定性（81 接管 + 16 有据保留）**。bundle 剩余
 >   "活"的监听仅 = 插件域 4 + 键盘/菜单域 2（均有明确后续域归属，无双处理风险）。
 
+> **M1 统一验证完成（2026-09-02；数据面接管里程碑收口）**：
+> - **统一冒烟 tests/react-stage1m1-unified-smoke.mjs 15/15 全绿**（A 五域 diag+截肢计数 /
+>   B cZ-3b 启动重管线全链路 / C cZ-4 条目三态 / D cZ-5 筛选 watch+广播 / E cZ-6 selected
+>   watch+广播 / F cZ-7a 杂项五连发）；**suite 全量 ALL GREEN**（46 项）；**api-smoke 13/13**
+>   （外联式——需活实例：用 bootStack 起 mock 库栈 + 注入 EAGLE_API_URL/EAGLE_THUMBNAIL_URL/
+>   EAGLE_EXTENSION_URL 三端口跑法，41693=栈的 extensionPort 非 renderer APIServer 的
+>   41595；此前的裸跑失败为跑法问题非回归）。
+> - **重大根因：bundle re-require 段是十全局 var 的【首次赋值点】**。cZ-3b 曾把 app-status-
+>   loading 末尾的 fse/tinyPinyin/readChunk/writeFileAtomic/cartesianProduct/sanitize/
+>   unicodeNormalize/chineseConvert/colorConvert/DeltaE 十行重 require 判为「缓存同实例、
+>   略去无害」——实际其中 sanitize 等的**唯一赋值点就在这段**（顶层 var 19041-19051 声明
+>   后仅在此赋值），截肢后 window.sanitize 永远 undefined → inspectorActions 的 saver
+>   `sanitize is not a function` → 重命名全链路静默失效（stage6/7d3b/7d5b/main-ui-
+>   workflow/preview-delivery 五项 suite 失败同根因）。已在 libraryDomain 的 loading
+>   处理器补回十行（window.* live binding 逐字 + 注释标注【首次赋值点】）。**教训：逐字
+>   铁律下「看似无害的重复初始化」不可省——赋值点分析必须查证每个被略语句的全部副作用**。
+> - **$watchCollection 接管决策改向**：其 watcher.exp = $parse 包装器实例（expensiveChecks
+>   变体对一切表达式共享同一生成源码，源码串判据产生幻影匹配）、watcher.fn = Angular 内部
+>   wrapper（原 listener 闭包不可见）——**exp/fn 双不透明，无法识别/摘除**。决策：selected/
+>   finishQueue/finishGenerateQueue 三个 collection watcher **保持 bundle 独占至 b1**（域
+>   不重复注册 = 无双处理；bundle watcher 对域推送数据的反应与原状一致），plain $watch
+>   （filter 族 12 + imageSize×2 + listMetaType）正常接管。appCore 新增
+>   sweepForeignWatchers/persistSweep（注册后按 exp 实例/监听函数源码特征清扫外来 watcher，
+>   100ms×150 幂等复扫覆盖晚注册竞态；mine 以句柄/监听函数引用 + 源码标记三重排除；教训：
+>   **$watch 返回注销函数而非 watcher 对象**、s.$watchers 拼写错误曾使整条 sweep 成死码
+>   ——两个 bug 均被「filterMin 唯一性」结果断言逼出）。
+> - **buildWhenReady 强就绪门**：window.$bodyScope 由任意指令随机时机赋值，不能作准；改为
+>   getBodyScope() + 归一化（ang.element(document.body).scope() 强制回填）+ scope.mousetrap
+>   （EagleController 体内 49328 设置，晚于全部 ipc/watch/$on 注册点）三重门。
+> - **cz3b 片级冒烟删除**（与 m1 统一冒烟 B 组重复，按「一个统一冒烟」方针并入；suite 登记同步移除）。
+> - 另修：allData 由 openAll/filterContent 按后端真实库重建（合成缓存项不注册进后端），
+>   binding 闭环基准改用 itemMappings 全量建齐；loading 处理器尾部补 $evalAsync（事件驱动
+>   场景下 $timeout 派工需要 digest flush）。
+> - 临时探针（probe-m1-api/probe-rename）验证后即删，不入库。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

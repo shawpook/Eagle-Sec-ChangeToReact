@@ -75,3 +75,8 @@ export function bindLockSync(): void {
     });
   }
 }
+
+/** cZ-2：preferences-updated 截肢后的重挂入口（preferencesDomain 调用）。 */
+export function refreshTouchID(): void {
+  useLockState.setState({ canUseTouchID: checkCanUseTouchID() });
+}

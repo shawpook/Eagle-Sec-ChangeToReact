@@ -2020,6 +2020,29 @@
 >   通道截肢 + 字段桥扩容）。
 
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
+
+> **cZ-2 已验证并接管（2026-09-02）**：主题/偏好域——首个通道截肢 + owner 溯源修复。
+> - **cZ-1 隐藏 bug 修复（owner 溯源）**：theme 的写入方在 RootController scope（body 的
+>   原型链上层），cZ-1 在 body scope 上桥接 theme 会创建影子属性、与根的写入分叉（偏好
+>   面板切主题将不再生效——潜伏 bug，suite 未覆盖）。bridgeScopeFields 修复为
+>   **owner 溯源**：沿 $parent 链找到字段拥有 scope 再落访问器（hops≤8 防失控）。
+> - 字段桥扩容：preferences（$rootScope）/vibrancyEnabled/canUseTouchID 三字段收编。
+> - **preferences-updated 通道截肢（首个）**：bundle 处理器 = checkTouchIDSupport + $evalAsync
+>   ——React lockState 本就自算 canUseTouchID 且自行监听本通道（双处理并存）。截肢后由
+>   core/preferencesDomain.ts 重挂统一处理器：写 scope.canUseTouchID（bundle TouchID 流
+>   仍可读）+ refreshTouchID()（lockState 新导出）。change.current.theme / update-preferences
+>   **暂不截肢**：bundle 处理器仍承担 RootController 主题落点（owner 桥接后写入透明进
+>   AppCore ✓）与 plugin 快捷键/菜单重初始化（未移植，随菜单/插件域截肢）。
+> - 闭环：react-stage1cz2-smoke 5/5（字段桥扩容收编/**owner 写读双向穿透**（RootController
+>   scope 写 → AppCore 读一致）/preferences-updated 截肢后 scope+AppCore canUseTouchID
+>   一致/主题流不回归（change.current.theme DARK → scope+AppCore+body[theme] 三处一致））。
+>   tsc 零错；suite 43 项 ALL GREEN（一次性 10 失败 = 与前一 suite 并发执行的资源争抢，
+>   10/10 单跑复绿定性）；api-smoke 13/13。
+> - 教训：(1) 桥接必须 owner 溯源——原型链分层写入（RootController 写、EagleController 读）
+>   的字段在子 scope 桥接 = 影子分叉；(2) 全量 suite 不可并发执行（两次 suite 重叠 = 大面积
+>   资源争抢假阳性，单跑定性是唯一标准）；(3) 截肢前先核「React 是否已自给」——
+>   preferences-updated 因 lockState 自算而零移植成本，channel 审计先行。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

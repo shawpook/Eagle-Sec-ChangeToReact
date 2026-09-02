@@ -40,6 +40,7 @@ import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
 import { bridgeScopeFields, coreState } from './core/appCore';
+import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
@@ -181,12 +182,14 @@ bindBodySync();
 
 // cZ-1：scope 字段存储桥（Angular boot 后执行；字段现值收编进 AppCore）
 const CZ_BRIDGE_FIELDS = ['theme', 'platform', 'language', 'isLoading', 'isUILoaded',
-  'viewMode', 'keyword', 'layout', 'orderBy', 'trialRemain', 'currentFocus'];
+  'viewMode', 'keyword', 'layout', 'orderBy', 'trialRemain', 'currentFocus',
+  'preferences', 'vibrancyEnabled', 'canUseTouchID'];
 function bridgeWhenReady(attempt = 0): void {
   const scope = (window as any).$bodyScope || null;
   if (scope) {
     bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
     (window as any).__eagleCoreState = coreState;
+    takeoverPreferencesDomain();
     return;
   }
   if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);

@@ -21,14 +21,27 @@ const bridged = new Set<string>();
  * 把 scope 上的字段转为访问器（现值收编进 coreState）。
  * 已桥接的字段跳过（幂等）。字段不存在时同样桥接（bundle 后续赋值会进 AppCore）。
  */
+function findOwner(scope: any, name: string): any {
+  // 沿原型链找到字段的拥有 scope（RootController/EagleController 分层写入的正确落点）
+  let cur = scope;
+  let hops = 0;
+  while (cur && hops < 8) {
+    if (Object.prototype.hasOwnProperty.call(cur, name)) return cur;
+    cur = cur.$parent || null;
+    hops++;
+  }
+  return scope;
+}
+
 export function bridgeScopeFields(scope: any, fields: string[]): void {
   if (!scope) return;
   for (const name of fields) {
     if (bridged.has(name)) continue;
     try {
-      const current = scope[name];
+      const owner = findOwner(scope, name);
+      const current = owner[name];
       coreState[name] = current;
-      Object.defineProperty(scope, name, {
+      Object.defineProperty(owner, name, {
         get() { return coreState[name]; },
         set(v: any) { coreState[name] = v; },
         configurable: true,

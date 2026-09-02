@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（27+1 项，顺序隔离执行）。
+ * React 全量回归套件（43+3 项，顺序隔离执行）。
  */
 import { spawnSync } from 'node:child_process';
 
@@ -40,6 +40,9 @@ const tests = [
   'tests/react-stage11b0-smoke.mjs',
   'tests/react-stage1c2-smoke.mjs',
   'tests/react-stage1c3-smoke.mjs',
+  'tests/react-stage1cz1-smoke.mjs',
+  'tests/react-stage1cz2-smoke.mjs',
+  'tests/react-stage1cz3-smoke.mjs',
   'tests/main-ui-workflow-closed-loop.mjs',
   'tests/source-mode-ui-closed-loop.mjs',
   'tests/library-switch-ui-closed-loop.mjs',

@@ -129,11 +129,19 @@ try {
     return ok;
   })()`);
 
-  // ── 幂等 ──
+  // ── 幂等（cZ-2 owner 溯源后，访问器落在字段 owner scope——theme 在 RootController
+  //    scope，body 经原型链读写；沿 $parent 链找 getter 即验证访问器仍在且路由不变）──
   await evalNow(`(() => {
-    const d1 = Object.getOwnPropertyDescriptor(window.$bodyScope, 'theme');
-    const hasGet = !!(d1 && d1.get);
-    window.__idem = hasGet;
+    let s = window.$bodyScope;
+    let hops = 0;
+    let found = false;
+    while (s && hops < 8) {
+      const d = Object.getOwnPropertyDescriptor(s, 'theme');
+      if (d && d.get) { found = true; break; }
+      s = s.$parent;
+      hops++;
+    }
+    window.__idem = found;
     return true;
   })()`);
   await assertExpr('cz1-accessor-persists', `window.__idem === true`);

@@ -2043,6 +2043,47 @@
 >   资源争抢假阳性，单跑定性是唯一标准）；(3) 截肢前先核「React 是否已自给」——
 >   preferences-updated 因 lockState 自算而零移植成本，channel 审计先行。
 
+> **cZ-3a 已验证并接管（2026-09-02）**：库加载域轻量五通道——源码签名选择性截肢首用。
+> - **切分定性**：cZ-3 库加载域按咬合度拆两片。**3a = initial（22664）/app-status-welcome
+>   （22631）/app-status-library-dirs-loaded（22753）/app-status-library-cache-loaded（22758）/
+>   library.changed（23535）**——纯 scope 写 + scope 函数调用，全可移植；**3b = app-status-
+>   loading（22734）/app-status-library-loaded（22857）/preload-library（22789）+ background-
+>   state 生命周期**——三者互相咬合（library-loaded 注册 bg 处理器→heartbeat 启动→loading
+>   负责清理 heartbeatInterval 闭包变量），单独截肢会留下不可清理的 bundle heartbeat，
+>   必须一并接管（APIServer/ig/UrlStateService 等闭合面已核实：顶层 var/function 全局可达，
+>   仅 libraryCache/lazyLoadManager/fse 再 require 等 controller 闭包内需域内自管）。
+> - **截肢方式升级 = removeChannelListenersBySource（appCore 新增）**：这五个通道上 React
+>   组件已有自给监听（SmallPanels WelcomePage / ProgressDialogs LibraryLoadProgress），
+>   removeAllListeners 会误杀，改为按 bundle 处理器**函数源码签名**精准移除（逐通道枚举
+>   listener.toString() 匹配；签名 = 原文特征行，React 源码零冲突已核）。initial/library.
+>   changed 无 React 既有监听，同路径统一。兼容两种 EventEmitter 存储（node `_events`
+>   对象 + shims `listeners` Map——**本仓 ipc 总线是 shims 自建 EventEmitter**，此前 cZ-2
+>   的 removeAllListeners 截肢在 shims 形态下同样成立）。
+> - **重挂处理器逐字**（core/libraryDomain.ts takeoverLibraryDomain()，main.tsx
+>   bridgeWhenReady 接线）：initial = trialRemain/Registration/machineID（module var 经
+>   window.* live binding 回写，bundle 侧读取点不变）+ 试用弹窗 localStorage 流（lastOpen-
+>   TrialModalTime 半日去重）+ ga4track（全局词法 const，declare const 引用）+ openTrialModal
+>   经原型链可达 + body 反透明化 + initMenu；welcome = libraryPath=""/isLoading=false/initMenu；
+>   dirs/cache-loaded = isLoading=true；library.changed = folders/smartFolders 树走查 +
+>   mappings 重建 + updateSidebarList + calculateImageBinding→rebindRefresh——**原码 `folder
+>   && parent` 的 parent 即 window.parent（顶层窗 === window，folder.parent 落 undefined）
+>   逐字保留该行为**。
+> - 次要挂点定性（免截肢）：welcomePage/libraryLoadProgress/tagSelectPanel/ngGridLayout
+>   指令岛的 DOM 已在 7d/11-pre 换 React host，link 不再执行 → 63148+/58105/66512 监听
+>   均为休眠死码，不参与双处理。
+> - React 对 trialRemain/Registration 零消费 → 本片**零字段桥扩容**（domain 直写 scope
+>   字段，与 bundle 落点一致）。
+> - 闭环：react-stage1cz3-smoke 9/9（五通道各精准移除 1 个 bundle 处理器/**initial 单监听
+>   路由**（trialRemain/Registration/window.machineID 落地）/welcome→libraryPath=''+isLoading
+>   =false 且组件监听存活（≥2）/dirs+cache→isLoading=true/**library.changed 全落点含逐字
+>   parent 行为（folder.parent===undefined）**；suite 登记补齐 cz1/cz2/cz3 三项（此前
+>   cz1/cz2 漏登记））。tsc 零错；api-smoke 13/13；**suite 46 项 ALL GREEN**（首跑 45/46，
+>   唯一失败 cz1-accessor-persists = 断言过时非回归——cZ-2 owner 溯源把 theme 访问器从
+>   body scope 移到 RootController scope，而 cz1 此前漏登记 suite 未随 cZ-2 复核；断言
+>   更新为沿 $parent 链找 getter（hops≤8，与 findOwner 语义一致）后复绿）。
+> - 下一片 cZ-3b：启动重管线（app-status-loading/library-loaded/preload-library +
+>   background-state 生命周期 + APIServer/startAPIServer 全局复用）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

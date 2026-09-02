@@ -69,3 +69,37 @@ export function amputateChannel(ipc: any, channel: string): ((handler: any) => v
     if (typeof ipc.on === 'function') ipc.on(channel, handler);
   };
 }
+
+/**
+ * 源码签名选择性截肢：只移除通道上函数源码命中任一签名的监听（bundle 原处理器），
+ * 保留 React 组件自给监听（SmallPanels/ProgressDialogs/uploadState 等与 bundle 共用通道）。
+ * 与 removeAllListeners 的差别：多消费方通道不能整体截肢，只能精准摘除 bundle 处理器。
+ */
+export function removeChannelListenersBySource(ipc: any, channel: string, signatures: string[]): number {
+  if (!ipc) return 0;
+  let removed = 0;
+  try {
+    let list: any[] = [];
+    // node EventEmitter 形态（_events 对象）
+    const raw = (ipc as any)._events ? (ipc as any)._events[channel] : undefined;
+    if (Array.isArray(raw)) list = raw.slice();
+    else if (raw) list = [raw];
+    // shims EventEmitter 形态（listeners Map）
+    if (!list.length && (ipc as any).listeners instanceof Map) {
+      const mapped = (ipc as any).listeners.get(channel);
+      if (Array.isArray(mapped)) list = mapped.slice();
+    }
+    const removeFn = typeof ipc.removeListener === 'function' ? ipc.removeListener.bind(ipc)
+      : typeof ipc.off === 'function' ? ipc.off.bind(ipc) : null;
+    if (!removeFn) return 0;
+    for (const fn of list) {
+      if (typeof fn !== 'function') continue;
+      let src = '';
+      try { src = fn.toString(); } catch (err) { continue; }
+      if (signatures.some((sig) => src.indexOf(sig) !== -1)) {
+        try { removeFn(channel, fn); removed++; } catch (err) { /* noop */ }
+      }
+    }
+  } catch (err) { /* noop */ }
+  return removed;
+}

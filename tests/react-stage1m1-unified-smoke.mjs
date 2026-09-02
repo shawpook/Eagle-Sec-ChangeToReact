@@ -248,6 +248,18 @@ try {
       && typeof e.filter.filterRules === 'object';
   })()`);
 
+  // ═══ A8. c13 eg/InfiniteGrid 供给 + relayout machinery 标记（bundle 在世 = bundle 版；
+  //     b1 后 = public/vendor UMD 懒执行，egLoaded 标志区分来源）═══
+  await assertExpr('m1-A8-eg-infinitegrid', `(() => {
+    const w = window;
+    return !!(w.eg && w.eg.InfiniteGrid && w.eg.InfiniteGrid.JustifiedLayout && w.eg.InfiniteGrid.GridLayout);
+  })()`);
+  await assertExpr('m1-A8-relayout-machinery', `(() => {
+    const m = window.__eagleDataMachinery;
+    return m && m.version >= 7 && m.relayout === 'machinery'
+      && typeof window.$bodyScope.relayout === 'function';
+  })()`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

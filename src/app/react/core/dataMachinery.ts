@@ -1376,6 +1376,48 @@ export function machineryCheckTouchIDSupport(s: any): void {
   }
 }
 
+/* relayout（bundle 27329-27364 逐字；ig = window.eg.InfiniteGrid 实例（libraryDomain
+   loaded 处理器创建），eg = window.eg（c13 UMD 提取 if-absent 供给）） */
+export function machineryRelayout(s: any, margin: any): void {
+  const w = window as any;
+  if (!s.isItemBindCalculated) return;
+  var $container = w.$("#box-container");
+  var currentImageSize = s.imageSize.height;
+  w.$("#box-container").attr("box-size", Math.floor(currentImageSize / 5) * 5);
+  const ig = w.ig;
+  if (!ig) return;
+  if (s.layout === "JustifiedLayout") {
+    var cw = $container.width();
+    ig.setLayout(w.eg.InfiniteGrid.JustifiedLayout, {
+      minSize: currentImageSize * 1 - 10,
+      maxSize: currentImageSize * 1 + 10,
+      margin: 8,
+    });
+    ig._renderer.updateSize(ig.getItems(false));
+    ig.layout(true);
+    ig._watcher._onCheck();
+  }
+  else if (s.layout === "ListLayout") {
+    ig.setLayout(w.eg.InfiniteGrid.GridLayout, {
+      margin: 0,
+      align: "left",
+    });
+    ig._renderer.updateSize(ig.getItems(false));
+    ig.layout(true);
+    ig._watcher._onCheck();
+  }
+  else {
+    ig.setLayout(w.eg.InfiniteGrid.GridLayout, {
+      margin: Math.max(margin, 8) || 8,
+      align: "left",
+    });
+    ig._renderer.updateSize(ig.getItems(false));
+    ig.layout(true);
+    ig._watcher._onCheck();
+  }
+  ig._updateContainerHeight();
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -1410,9 +1452,11 @@ export function applyDataMachineryScope(): void {
   // 与 ipc 路径 21234/23632+ 全部改走移植版）
   s.updateItemView = (item: any) => machineryUpdateItemView(s, item);
   s.checkTouchIDSupport = () => machineryCheckTouchIDSupport(s);
+  // c13：relayout（ig/eg 经 window 解析）
+  s.relayout = (margin: any) => machineryRelayout(s, margin);
 
   (window as any).__eagleDataMachinery = {
-    version: 6,
+    version: 7,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -1437,5 +1481,6 @@ export function applyDataMachineryScope(): void {
     getRecentFolders: 'machinery',
     updateItemView: 'machinery',
     checkTouchIDSupport: 'machinery',
+    relayout: 'machinery',
   };
 }

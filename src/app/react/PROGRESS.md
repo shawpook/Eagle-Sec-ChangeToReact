@@ -2491,6 +2491,19 @@
 > - 验证：tsc 零错；m1 21/21（A7 eagleMembers 12 名齐备 + utils.tree.walk + filterRules
 >   形状断言；DIAG-CONSOLE 空）。
 
+> **c13 eg/InfiniteGrid 供给 + relayout（2026-09-02；bundleGlobals 懒执行 + dataMachinery）**：
+> - **eg 基建勘察定论**：@egjs 全家（InfiniteGrid pkgd UMD + 内部 eg.Component webpack 模块）
+>   = bundle 3497-8094 内联（无独立 vendor script），b1 死亡。**逐字节提取 142KB 副本** →
+>   frontend/public/vendor/egjs-infinitegrid.umd.js；bundleGlobals if-absent 懒执行（fetch +
+>   new Function sloppy 模式 this=globalThis，root=self 语义不变；bundle 在世时 w.eg 已存在
+>   分支跳过——egLoaded 标志区分供给来源，b1 后才为 true）。
+> - machineryRelayout（27329-27364 逐字）：JustifiedLayout/ListLayout/默认三分支 setLayout +
+>   _renderer.updateSize + layout(true) + _watcher._onCheck + _updateContainerHeight；ig 经
+>   window 解析（libraryDomain loaded 处理器创建）、box-size attr 逐字。scope 替换生效
+>   （__eagleDataMachinery version 7）。
+> - 验证：tsc 零错；m1 23/23（A8：eg.InfiniteGrid.JustifiedLayout/Gridlayout 在位 + relayout
+>   machinery 标记；DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

@@ -661,6 +661,25 @@ export function installBundleGlobals(): void {
   // c12：eagle 成员反转挂载
   installEagleMembers();
 
+  // c13：eg/InfiniteGrid（bundle 3497-8094 内联 pkgd UMD，b1 死亡）——if-absent 懒执行
+  // public/vendor 的逐字节提取副本（new Function sloppy 模式 this=globalThis，root=self
+  // 语义不变）。libraryDomain 的 new w.eg.InfiniteGrid 与 machineryRelayout 消费。
+  if (!w.eg || !w.eg.InfiniteGrid) {
+    try {
+      fetch('/vendor/egjs-infinitegrid.umd.js')
+        .then((r) => r.text())
+        .then((txt) => {
+          try {
+            new Function(txt)();
+            if (w.__eagleBundleGlobals) w.__eagleBundleGlobals.egLoaded = true;
+          } catch (err) {
+            console.error('[bundleGlobals] egjs UMD exec failed', err);
+          }
+        })
+        .catch((err) => console.error('[bundleGlobals] egjs UMD fetch failed', err));
+    } catch (err) { /* noop */ }
+  }
+
   // ── c10a-2 Tier 2：小函数批（全部逐字移植，if-absent）──
   // electron/ipcRenderer 链（bundle 19018-19028：var electron = require('electron')/
   // var ipcRenderer = electron.ipcRenderer；electron 为 node 内建模块可复现）

@@ -45,6 +45,7 @@ import { takeoverLibraryDomain } from './core/libraryDomain';
 import { takeoverItemDomain } from './core/itemDomain';
 import { takeoverFilterDomain } from './core/filterDomain';
 import { takeoverSelectionViewDomain } from './core/selectionViewDomain';
+import { takeoverMiscDomain } from './core/miscDomain';
 import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
@@ -198,6 +199,7 @@ function bridgeWhenReady(attempt = 0): void {
     takeoverItemDomain();
     takeoverFilterDomain();
     takeoverSelectionViewDomain();
+    takeoverMiscDomain();
     return;
   }
   if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);

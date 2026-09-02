@@ -2195,6 +2195,34 @@
 > - 类型适配（语义不变）：jQuery data('degree','0')（.data 原码传 0，jQuery 内部同存）、
 >   localStorage String(Date.now())（浏览器 setItem 本就数字转串）。
 
+> **cZ-7a 实现落盘（2026-09-02；M1 统一验证待执行）**：杂项域主块簇——56 通道截肢 + 逐字
+> 重挂（core/miscDomain.ts takeoverMiscDomain()，main.tsx 接线；tsc 零错；冒烟并入 M1
+> 统一测试）。
+> - 覆盖：show-swal/show-minor-update-message/open-relaunch-confirm/get-duplicate-map/
+>   lock-now/window.maximize/unmaximize/analytics.event/performance/custom/exception/log/
+>   confirm-import-eaglepack/reload/show-intel-compatibility-issue/before-quit/
+>   update-progress/add-download-task(s)/extension-server-init-failed/load-open-with/
+>   move-to-folders/rebind-refresh/open-item/go-folder/go-smart-folder/add-history-tag(s)/
+>   clear-history-tag/prepend-folder/new-folder/new-smart-folder/hide-upload-queue/
+>   open-and-reveal-image/power-suspend/power-resume/window-close/open-preferences/
+>   toggle-slideshow/leave-slideshow/show-sidebar-badge/hide-sidebar-badge/import-folders/
+>   activate-font/deactivate-font/reveal-in-eagle/open-unregister/get-current-folder/
+>   get-recent-folders/add-recent-folders/image-processing-error/remove-trash-item/
+>   ondragend/app-expired/change.current.theme/change.zoom。
+> - **change.current.theme 终截肢**（cZ-2 缓释条件成熟）：落点 RootController scope（r.theme
+>   ——owner 桥后写入透明进 AppCore，React BodyBindings 经原型链读一致）；remote.nativeTheme
+>   declare 引用；preview-window 控制器为独立窗口上下文不影响。app-expired（body 反活化）；
+>   change.zoom（webFrame.setZoomFactor）。
+> - **重挂适配（语义等价）**：swal 全局（未定义时静默降级原样流程）；dialog →
+>   @electron/remote.dialog；app.relaunch/exit → window.app（同 bundle 解析路径）；
+>   open-unregister 的 $http Promise 流用 $.ajax jqXHR.then 等价复刻（Angular response
+>   {data:...} 包装经适配还原）；update-menu/update-preferences 暂留（initMousetrap 闭包
+>   重绑定 + pluginModule——插件/菜单域再收）；jieba-extract-done → 标签域；plugin-*
+>   @1089/54292 → 插件域；@62437 PluginCenter 指令岛已删休眠；@18672 插件管理器模块级
+>   responseCallback 保留；@63309+ LoadProgress 休眠已知。
+> - 头注释陷阱教训：`app-status-module-*/checking...` 中 `*/` 提前终结块注释（两处），
+>   已改造 `* /`。诊断契约：window.__eagleMiscDomain（removed 56 通道计数）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

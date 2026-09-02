@@ -2158,6 +2158,21 @@
 >   finishQueue 全齐才全量 binding 否则 muteCalcuteImageBinding。
 > - 诊断契约：window.__eagleItemDomain（takenOver/removed 12 通道计数/watchRemoved）。
 
+> **cZ-5 实现落盘（2026-09-02；M1 统一验证待执行）**：筛选/搜索域——3 通道 + eagle.filter
+> watch 族 12 个 + $on 广播 2 个（core/filterDomain.ts takeoverFilterDomain()，main.tsx
+> 接线；tsc 零错；冒烟并入 M1 统一测试）。
+> - 通道：keyword-suggestion（23520 → globalKeywords）/ show-and-search（23705 →
+>   show+focus+searchInAll）/ filter-folder（23712 → #folder-search 聚焦）。
+> - watch 族（34180-34199）：file/duration/bpm min/max ×6、shape width/height ×2（双条件
+>   体逐字）、resolution minW/maxW/minH/maxH ×4 → 摘 bundle watcher（$$watchers 按 exp
+>   匹配 splice）后域内重挂同表达式 → filterContent()。imageSize.height/zoomRatio watch
+>   属视图域留 cZ-6。
+> - $on 广播（42371/42375）：CALCULATE_IMAGE_BINDING → calculateImageBinding(params)；
+>   REBIND_REFRESH → $timeout(500) 语义（setTimeout + $apply）rebindRefresh(mute)。发送方
+>   仍在 bundle 未移植路径（43433/55168/59582 等），接收端按 $$listeners 摘除后本域独占。
+>   UPDATE_SELECTION/SAVE_FOLDER 留 cZ-6。
+> - 诊断契约：window.__eagleFilterDomain（removed/watchRemoved/listenersRemoved）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

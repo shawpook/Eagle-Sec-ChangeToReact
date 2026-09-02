@@ -43,6 +43,7 @@ import { bridgeScopeFields, coreState } from './core/appCore';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { takeoverLibraryDomain } from './core/libraryDomain';
 import { takeoverItemDomain } from './core/itemDomain';
+import { takeoverFilterDomain } from './core/filterDomain';
 import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
@@ -194,6 +195,7 @@ function bridgeWhenReady(attempt = 0): void {
     takeoverPreferencesDomain();
     takeoverLibraryDomain();
     takeoverItemDomain();
+    takeoverFilterDomain();
     return;
   }
   if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);

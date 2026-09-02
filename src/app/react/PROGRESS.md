@@ -2579,6 +2579,17 @@
 >   lastZoomMode 键逐字）+ zoomRatio 100 + smartZoom(undefined, true)。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c15c getSelection/changeSidebarIndex/resetPage/calculateFilterCounts（2026-09-02；version 13）**：
+> - machineryGetSelection（36632-36649 逐字：selected→allData 索引区间 + invert 判定）、
+>   machineryChangeSidebarIndex（36656-36665 逐字：sidebarIndex -1→idx 1ms 双拍刷新）、
+>   machineryResetPage（36668-36700 逐字：RESET_PAGE 广播 + ig.clear 40ms + mappings/选择
+>   集清空 + layout localStorage 三级回退（eagle.list.layout.{rootDir} 键逐字）+ resetFilter/
+>   findDupclipate 经 scope 解析 + duplicateTarget 守卫）、machineryCalculateFilterCounts
+>   （42929-42944 逐字：500ms 防抖 + resetFilterCounts + updateFilterCounts 全量累计，timeout
+>   域内自管）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。openAll（连带 ScrollbarSaver/UrlStateService/
+>   setLastFolder 链）留 c15d。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

@@ -2853,6 +2853,97 @@ export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
   }
 }
 
+/* ── c15c：选择定位/侧栏索引/页面重置/筛选计数 ───────────────────────── */
+
+/* getSelection（bundle 36632-36649 逐字） */
+export function machineryGetSelection(s: any): any {
+  var arr: any[] = [];
+  s.selected.forEach(function (image: any) {
+    var idx = s.allData.indexOf(image);
+    if (idx != -1) {
+      arr.push(idx);
+    }
+  });
+  var invert = arr[0] > arr[1];
+  arr = arr.sort(function (a: any, b: any) {
+    return a - b;
+  });
+  return {
+    start: arr[0],
+    end: arr[arr.length - 1],
+    invert: invert
+  };
+}
+
+/* changeSidebarIndex（bundle 36656-36665 逐字） */
+export function machineryChangeSidebarIndex(s: any, node: any): void {
+  const $timeout = getTimeout();
+  const folder = s.folderMappings[node?.id];
+  const idx = s.sidebarList.indexOf(folder);
+  if (idx !== -1) {
+    s.sidebarIndex = -1;
+    $timeout(function () {
+      s.sidebarIndex = idx;
+    }, 1);
+  }
+}
+
+/* resetPage（bundle 36668-36700 逐字；resetFilter/findDupclipate 经 scope 解析，
+   eagle.inspector.reset 经 c12 挂载面，ig.clear 经 window） */
+export function machineryResetPage(s: any): void {
+  const w = window as any;
+
+  // Note: 切换文件夹时，强制触发 inspector 输入框先进行 change
+  (document.activeElement as any)?.blur?.();
+  s.$root.$broadcast("RESET_PAGE");
+  s.listDone = false;
+  setTimeout(() => { w.ig.clear(); }, 40);
+  s.isOpenWebpagePanel = false;
+  s.currentTag = undefined;
+  s.startCursor = 0;
+  s.currentFolder = undefined;
+  w.eagle.inspector.reset();
+  s.currentFolderChildren = undefined;
+  s.currentSmartFolder = undefined;
+  s.$root.selectedFoldersMappings = {};
+  s.$root.selectedFolders = [];
+  s.selectedFolderMappings = {};
+  s.$root.selectedSmartFoldersMappings = {};
+  s.$root.selectedSmartFolders = [];
+  s.currentId = undefined;
+  s.layout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
+
+  if (!w.eagle.filter.isLock) {
+    s.resetFilter();
+    s.keyword = undefined;
+  }
+  w.$("#image-drop-area").hide();
+
+  if (s.duplicateTarget) {
+    s.duplicateTarget = undefined;
+    s.findDupclipate(undefined);
+  }
+}
+
+/* calculateFilterCounts（bundle 42929-42944 逐字；calculateFilterCountsTimeout 域内自管，
+   updateFilterCounts 经 scope 解析） */
+let calculateFilterCountsTimeout: any = null;
+export function machineryCalculateFilterCounts(s: any): void {
+  const w = window as any;
+  clearTimeout(calculateFilterCountsTimeout);
+  calculateFilterCountsTimeout = setTimeout(function () {
+    console.time("calculateFilterCounts");
+    w.eagle.filter.resetFilterCounts();
+    let now = Date.now();
+    for (let i = 0; i < s.allData.length; i++) {
+      const image = s.allData[i];
+      s.updateFilterCounts(image, 1, now);
+    }
+    console.timeEnd("calculateFilterCounts");
+    s.$evalAsync();
+  }, 500);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -2906,9 +2997,14 @@ export function applyDataMachineryScope(): void {
   // c15b：adjustLayoutWidth/zoomFit
   s.adjustLayoutWidth = (increases: any) => machineryAdjustLayoutWidth(s, increases);
   s.zoomFit = (event: any, noAnimation: any) => machineryZoomFit(s, event, noAnimation);
+  // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
+  s.getSelection = () => machineryGetSelection(s);
+  s.changeSidebarIndex = (node: any) => machineryChangeSidebarIndex(s, node);
+  s.resetPage = () => machineryResetPage(s);
+  s.calculateFilterCounts = () => machineryCalculateFilterCounts(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 12,
+    version: 13,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -2945,5 +3041,9 @@ export function applyDataMachineryScope(): void {
     adjustLayoutWidth: 'machinery',
     zoomFit: 'machinery',
     saveListHeight: 'machinery',
+    getSelection: 'machinery',
+    changeSidebarIndex: 'machinery',
+    resetPage: 'machinery',
+    calculateFilterCounts: 'machinery',
   };
 }

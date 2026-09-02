@@ -2411,6 +2411,24 @@
 > - m1 统一冒烟扩至 17 项（新增 m1-A4-bundle-globals：21 关键全局全部在位断言）。
 >   验证：tsc 零错；m1 17/17（DIAG-CONSOLE 空）。
 
+> **c10a-2 Tier 2 全局函数批（2026-09-02；13 名接装）**：
+> - 逐字移植 if-absent 接装：guid（2396）/ throttle（2400-2438，原码乱码注释逐字保留）/
+>   debounce（2440-2458，**bundle 自有实现非 lodash**——itemDomain domainMuteRebind 等
+>   w.throttle/w.debounce 调用面的 b1 后供给）/ fuzzy_match（2516-2547）/ decodeBase64Image
+>   （2949-2963，Buffer 为 node 全局 b1 存活）/ cloneTree（8207-8242）/ getHashID（2127-2273
+>   全分支：url/音频/pdf/ttf-otf-ttc-woff 字体 uniqueID/default 调色板三分支 + canGeneratePalette
+>   长图守卫）/ hiddenByCurrentFilter（49600-49663，filterData/contentFilter 经 $bodyScope 解析、
+>   smartFolderCount 已是 c9d 移植版）/ ayncsImagesChange（49667-49704，ipcRenderer 统一表达式）/
+>   startAPIServer（18945-18968）/ stopAPIServer（18970-18975）/ checkBackgroundHeartbeat
+>   （19147-19190，heartbeatStopCount/heartbeatInterval 经 window live binding——libraryDomain
+>   域管赋值点）/ **fuzzy_score 不存在**（bundle 无此定义，win_access 误命中，从清单剔除）。
+> - 支撑链接装：electron/ipcRenderer（19018-19028 复现）、currentWindow/app（19020-19029 经
+>   @electron/remote）、VIDEO_TYPES_GLOBAL（2052，getHashID 依赖）、pluginModule（19040，
+>   getHashID 依赖）。
+> - **initAPIServer（17875-18945，~1070 行 JSON REST 全路由注册）独立成片**（c10b）——其
+>   内部路由与后端 APIServer 面（api-smoke 13 项覆盖）必须整体移植 + 对照验证。
+> - 验证：tsc 零错；m1 17/17（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

@@ -3114,6 +3114,146 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
   }, 50);
 }
 
+/* ── c16a：详情模式进出 ──────────────────────────────────────────────── */
+
+// ── c16a 域内自管（原 controller 闭包 var：zoomInitTimeout，31586）──
+let zoomInitTimeout: any = null;
+
+/* enterDetailMode（bundle 31587-31664 逐字；smoothZoom = vendor jQuery 插件；
+   lastZoom/preloadImage/addToRecentFile 经 scope 解析；removePlayingAudios/HoverPreview
+   经 window（bundle 顶层——b1 后随 hover-preview 字节提取片供给）；initDetailMode/
+   smoothZoomDone 为 scope 字段） */
+export function machineryEnterDetailMode(s: any, $event: any, image: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  w.$("#detail-container").css("opacity", 0);
+
+  var duration = 100;
+  if (s.isInlineMode) {
+    duration = 50;
+  }
+
+  if (s.selected.length <= 0) return;
+  image = image || s.selected[s.selected.length - 1];
+  s.isDetailMode = true;
+  s.current = image;
+  s.selected = [image];
+  s.showDetailImage = true;
+  // 移除 $scope.zoom(image) — 此時 Angular 尚未跑 digest，
+  // body 還沒有 is-detail-mode class，$(".content-panel").width() 讀到的是列表模式尺寸，
+  // 算出的 zoom 一定是錯的。正確的 zoom 會在下方 $timeout 回調中執行。
+  w.eagle.inspector.activeTab = "ITEM";
+  s.smoothZoomDone = false;
+
+  $timeout.cancel(zoomInitTimeout);
+  zoomInitTimeout = $timeout(function () {
+    if (!s.initDetailMode) {
+      s.initDetailMode = true;
+      w.$("#detail-container").smoothZoom({
+        width: '100%',
+        height: '100%',
+        responsive: true,
+        mouse_WHEEL: true,
+        mouse_DOUBLE_CLICK: false,
+        zoom_BUTTONS_SHOW: false,
+        pan_BUTTONS_SHOW: false,
+        background_COLOR: 'transparent',
+        border_SIZE: 0,
+        animation_SMOOTHNESS: 0,
+        animation_SPEED_ZOOM: 0,
+        animation_SPEED_PAN: 0,
+        zoom_MAX: 800,
+        zoom_MIN: 5,
+        on_IMAGE_LOAD: function () {
+          $timeout(function () {
+            w.$(window).trigger("orientationchange");
+            s.showDetailImage = true;
+            s.smoothZoomDone = true;
+            if (!s.lastZoom()) {
+              s.zoom(image);
+            }
+            w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+
+            w.$("#detail-container").css("opacity", 1);
+            w.$(".smooth_zoom_preloader").show();
+
+            // 如果用户没有设置过 mousewheel 偏好
+            if (!s.$root.preferences.habits.scrollBehaviorTour) {
+              w.$(".smooth_zoom_preloader").one("mousewheel.tour", function () {
+                s.$root.$broadcast("OPEN_MOUSEWHEEL_PREFERENCE_WINDOW");
+              });
+            }
+          }, 100);
+        }
+      });
+    } else {
+      s.smoothZoomDone = true;
+      w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+      w.$(window).trigger("orientationchange");
+      if (!s.lastZoom()) {
+        s.zoom(image);
+      }
+      w.$("#detail-container").css("opacity", 1);
+      setTimeout(function () {
+        s.preloadImage("next");
+      }, 200);
+    }
+    s.addToRecentFile(s.current);
+    w.removePlayingAudios();
+    w.HoverPreview.hide();
+  }, duration);
+}
+
+/* leaveDetailMode（bundle 31680-31726 逐字；rememberScrollTops/rememberVideoCurrentTime/
+   fadeOutDetailMode/initMousetrap 经 window/scope 解析——initMousetrap 归键盘域后续片；
+   gifUpadteInterval 原码 typo 逐字保留） */
+export function machineryLeaveDetailMode(s: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  s.isCropMode = false;
+  s.usingGifPlayer = false;
+
+  if (s.isDetailMode) {
+
+    s.rememberScrollTops(s.current);
+
+    s.isDetailMode = false;
+    s.showDetailImage = false;
+    s.smoothZoomDone = false;
+    s.commentRect = undefined;
+
+    // 記住上次播放位置
+    s.rememberVideoCurrentTime(s.current); s.current = undefined;
+    $timeout.cancel(zoomInitTimeout);
+
+    setTimeout(function () {
+      if (s.isDetailMode) return;
+      w.$(".content-panel.detail-mode").removeClass("inline-mode open");
+      w.$(".smooth_zoom_preloader").scrollLeft(0);
+    }, 50);
+
+    s.isInlineMode = false;
+    s.fadeOutDetailMode();
+    w.$("#detail-container").smoothZoom('cleanBitmapViewer');
+    w.$("#detail-container").smoothZoom('clearPreloadData');
+
+    if (s.isGifReady === true) {
+      s.isGifReady = false;
+      delete s.gifViewer.frames;
+      s.gifViewer.frames = [];
+      s.gifViewer.mousedownTime = 0;
+      s.gifViewer.mousedownX = 0;
+      s.gifViewer.mousedownY = 0;
+      s.gifViewer.range = undefined;
+      s.gifPlayer = undefined;
+    }
+
+    w.initMousetrap();
+    clearInterval(s.gifUpadteInterval);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -3175,9 +3315,12 @@ export function applyDataMachineryScope(): void {
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
   s.openAll = (ignoreHistory: any, callback: any) => machineryOpenAll(s, ignoreHistory, callback);
   if (!w2.ScrollbarSaver) w2.ScrollbarSaver = buildScrollbarSaver();
+  // c16a：enterDetailMode/leaveDetailMode
+  s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode(s, $event, image);
+  s.leaveDetailMode = () => machineryLeaveDetailMode(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 14,
+    version: 15,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -3222,5 +3365,7 @@ export function applyDataMachineryScope(): void {
     updateListHeight: 'machinery',
     setLastFolder: 'machinery',
     setViewMode: 'machinery',
+    enterDetailMode: 'machinery',
+    leaveDetailMode: 'machinery',
   };
 }

@@ -2587,8 +2587,21 @@
 >   findDupclipate 经 scope 解析 + duplicateTarget 守卫）、machineryCalculateFilterCounts
 >   （42929-42944 逐字：500ms 防抖 + resetFilterCounts + updateFilterCounts 全量累计，timeout
 >   域内自管）。
-> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。openAll（连带 ScrollbarSaver/UrlStateService/
->   setLastFolder 链）留 c15d。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
+> **c16a enterDetailMode/leaveDetailMode（2026-09-03；version 15）**：
+> - machineryEnterDetailMode（31587-31664 逐字）：opacity 清零 + inline 50ms/默认 100ms
+>   分流、initDetailMode 首次 smoothZoom 装配（on_IMAGE_LOAD 内 orientationchange/lastZoom
+>   守卫/zoom 调用/scrollBehaviorTour 首轮引导广播）vs 复用分支（updateNavigator + preload
+>   next 200ms）、addToRecentFile + removePlayingAudios + HoverPreview.hide。zoomInitTimeout
+>   域内自管。注释「移除 $scope.zoom(image) 原因」逐字保留。
+> - machineryLeaveDetailMode（31680-31726 逐字）：rememberScrollTops/rememberVideoCurrentTime、
+>   smoothZoom cleanBitmapViewer/clearPreloadData、gifViewer 五字段复位（gifUpadteInterval
+>   原码 typo 逐字）、initMousetrap 重挂（**经 window 解析——initMousetrap 归键盘域后续片**，
+>   b1 前须键盘域接管或提取）。
+> - **post-b1 缺口登记**：removePlayingAudios/HoverPreview（51689 大对象）为 bundle 顶层——
+>   归入「顶层对象字节提取批」后续片（同 match-rules 模式）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
 > **c15d openAll 及支撑链（2026-09-02；version 14）**：
 > - machineryOpenAll（36702-36733 逐字）：all 视图短路、ScrollbarSaver.saveScrollPosition、

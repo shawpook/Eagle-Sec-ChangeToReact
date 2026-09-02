@@ -2223,6 +2223,31 @@
 > - 头注释陷阱教训：`app-status-module-*/checking...` 中 `*/` 提前终结块注释（两处），
 >   已改造 `* /`。诊断契约：window.__eagleMiscDomain（removed 56 通道计数）。
 
+> **cZ-7b + cZ-final 实现与核验（2026-09-02；M1 统一验证待执行）**：
+> - **cZ-7b**：jieba-extract-done（48725，标签推荐域）追加截肢重挂——TagManager.suggestions
+>   入队/capitalize/localeLength 页面原型扩展、stopword 三语去停用词（require('stopword')）、
+>   tagMappings 优先排序；languageBCP 闭包变量经 $rootScope.language 等价重算（bundle 在
+>   RootController init 一次性赋值，语言变更经 update-preferences 刷新——等价）。tsc 零错。
+> - **cZ-final 通道全核验**（脚本枚举 bundle ipcRenderer.on 全量 vs 已截肢清单，落盘
+>   test-run/cz-final-channels.json）：**实测 bundle 注册通道 97 个，已截肢 81，保留 16**
+>   （cz-inventory 曾估 117 系把 sendTo/invoke/子页面计入；以实测为准）。保留 16 全定性：
+>   - 插件域后续（4）：plugin-installed/uninstalled/reloaded（pluginManager 模块 + AI 类
+>     实例级监听，实例状态闭包绑定）+ install-plugin/open-plugin-center-and-search……
+>     其中 install-plugin/open-plugin-center-and-search @62437 在 PluginCenter 指令 link
+>     （岛已删，index.html:139-140 React host 替代）= **休眠死码**，b1 时随 bundle 消亡。
+>   - 键盘/菜单域后续（2）：update-menu/update-preferences——依赖 buildMousetrap/
+>     destoryMousetrap（49177/49316 controller 闭包，快捷键构建大函数）与 pluginModule
+>     initShortcuts/initMenu；无双处理（React 无监听），b1 前随键盘域接管。
+>   - background-state（1）：bundle 注册点已在 library-loaded 截肢中消亡（仅首次启动
+>     竞态窗口可能残留一次注册，由 loading 处理器 removeAllListeners 清理）；通道归属
+>     React uploadState（自愈重挂）+ domain 注册，无需再截肢。
+>   - 休眠死码（10）：app-status-module-loading/loaded、checking-library-cache(+increase)、
+>     app-status-library-dirs-loading、app-status-library-metadata-loading/loaded、
+>     app-status-library-cache-loading/……均位于 LoadProgress 类（libraryLoadProgress 岛
+>     已删 @7d-6a）→ 不 link 不注册，b1 时随 bundle 消亡。
+> - **M1 数据面通道接管完成度：97/97 全定性（81 接管 + 16 有据保留）**。bundle 剩余
+>   "活"的监听仅 = 插件域 4 + 键盘/菜单域 2（均有明确后续域归属，无双处理风险）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

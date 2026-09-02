@@ -942,4 +942,53 @@ export function takeoverMiscDomain(): void {
       if (webFrame && webFrame.setZoomFactor) webFrame.setZoomFactor(parseInt(zoom, 10) / 100);
     } catch (err) { /* noop */ }
   });
+
+  // ── jieba-extract-done（48725 逐字；标签推荐域收编——languageBCP 闭包变量经
+  //    $rootScope.language 等价重算，stopword 经 require）──
+  ipc.on('jieba-extract-done', function (_e: any, result: any) {
+    const s = sNow();
+    if (!s) return;
+
+    // console.timeEnd("======== 取得推荐标签 ========");
+
+    const selectedTags = w.eagle.inspector.calculateTags(s.selected);
+
+    result.forEach(function (term: any) {
+      const idx = s.TagManager.suggestions.indexOf(term.word);
+      // var existIdx = selectedTags.indexOf(term.word);
+
+      if (idx == -1 && term.word.split(/d/).length < 3 && term.word.localeLength() >= 2) {
+        s.TagManager.suggestions.push(term.word.capitalize());
+      }
+    });
+
+    s.TagManager.suggestions = s.TagManager.excludeExistTags(selectedTags, s.TagManager.suggestions);
+    // TagManager.suggestions = TagManager.suggestions.unique();
+    s.TagManager.suggestions = [...new Set(s.TagManager.suggestions)];
+
+    // 移除 Stopword
+    const sw = w.require('stopword');
+    s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions);
+    s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions, sw.zh);
+    s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions, sw.ja);
+
+    // Note: 优先将已经有标签放在最前方，剩下的标签使用标题排序放在后面
+    s.TagManager.suggestions = s.TagManager.suggestions.sort(function (a: any, b: any) {
+      if (s.TagManager.tagMappings[a])
+        return -1;
+      if (s.TagManager.tagMappings[b])
+        return 1;
+      try {
+        const na = a.toLowerCase();
+        const nb = b.toLowerCase();
+        const languageBCP = (rNow().language || 'en').replace("_", "-");
+        if (na && na) {
+          return na.localeCompare(nb, languageBCP, { numeric: true });
+        }
+      }
+      catch (err) { /* noop */ }
+      return 0;
+    });
+    s.$evalAsync();
+  });
 }

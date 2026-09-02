@@ -2944,6 +2944,176 @@ export function machineryCalculateFilterCounts(s: any): void {
   }, 500);
 }
 
+/* ── c15d：openAll 及支撑链 ──────────────────────────────────────────── */
+
+// ── c15d 域内自管（原 controller 闭包 var）──
+let openAllTimeout: any = null;
+let updateListHeightTimeout: any = null;
+
+/* setViewMode（bundle 38475-38479 逐字；_.debounce 500——防抖实例为模块级单例，与 bundle
+   controller init 同语义） */
+let setViewModeDebounced: any = null;
+function machinerySetViewMode(s: any, viewMode: any): void {
+  const w = window as any;
+  if (!viewMode) return;
+  if (!setViewModeDebounced) {
+    setViewModeDebounced = w._.debounce(function (vm: any) {
+      localStorage.setItem(`eagle.viewMode.${s.rootDir}`, vm);
+    }, 500);
+  }
+  setViewModeDebounced(viewMode);
+}
+
+/* setLastFolder（bundle 38480-38488 逐字；_.debounce 500 单实例语义同上） */
+let setLastFolderDebounced: any = null;
+function machinerySetLastFolder(s: any, folderId: any): void {
+  const w = window as any;
+  if (!setLastFolderDebounced) {
+    setLastFolderDebounced = w._.debounce(function (fid: any) {
+      if (!fid) {
+        localStorage.removeItem(`eagle.lastFolder.${s.rootDir}`);
+      }
+      else {
+        machinerySetViewMode(s, "all");
+        localStorage.setItem(`eagle.lastFolder.${s.rootDir}`, fid);
+      }
+    }, 500);
+  }
+  setLastFolderDebounced(folderId);
+}
+
+/* updateListHeight（bundle 33712-33719 逐字；50ms 防抖） */
+export function machineryUpdateListHeight(s: any, height: any): void {
+  const w = window as any;
+  clearTimeout(updateListHeightTimeout);
+  updateListHeightTimeout = setTimeout(function () {
+    w.$("#box-container").attr("box-size", height);
+  }, 50);
+}
+
+/* ScrollbarSaver（bundle 46754-46812 逐字；隐式全局赋值 → if-absent 接装 window） */
+export function buildScrollbarSaver(): any {
+  const w = window as any;
+  const ScrollbarSaver: any = {
+    positionMapping: {},
+    getId: function () {
+      const s: any = getBodyScope();
+      var id;
+      if (s.currentFolder) { id = s.currentFolder.id; }
+      else if (s.currentSmartFolder) { id = s.currentSmartFolder.id; }
+      else if (s.viewMode == "all") { id = "all"; }
+      else if (s.viewMode == "unfiled") { id = "unfiled"; }
+      else if (s.viewMode == "untagged") { id = "untagged"; }
+      else if (s.viewMode == "trash") { id = "trash"; }
+      else if (s.viewMode == "random") { id = "random"; }
+      else if (s.viewMode == "recent") { id = "recent"; }
+      return id;
+    },
+    saveScrollPosition: function () {
+      const s: any = getBodyScope();
+      if (w.eagle.filter.filterBadge > 0) return;
+      if (s.keyword) return;
+      if (w.$(".box").length + w.$(".sub-folder").length === 0) return;
+      var scrollTop = w.$("#box-container").scrollTop();
+      var obj: any = {};
+      var id = ScrollbarSaver.getId();
+
+      if (scrollTop === 0) {
+        delete ScrollbarSaver.positionMapping[id];
+        return;
+      }
+
+      var startCursor = 0;
+      var offsetTop = (w.$(".box-list")[0] && w.$(".box-list")[0].offsetTop) || 0;
+      var scrollOffset;
+      if (w.$(".sub-folder").length > 0 && s.startCursor === 0) {
+        scrollOffset = w.$("#box-container").scrollTop();
+      }
+      else {
+        if (w.$(".box").length === 0) return;
+        scrollOffset = Math.abs(w.$(".box").eq(0).offset().top - 44) + offsetTop;
+      }
+      var its = w.ig.getItems();
+      if (its[0]) { startCursor = its[0].groupKey - 1000000; }
+
+      if (!id) return;
+
+      if (startCursor) { obj.cursor = startCursor; }
+      obj.offset = scrollOffset;
+      ScrollbarSaver.positionMapping[id] = obj;
+    },
+    restoreScrollPosition: function () {
+      const s: any = getBodyScope();
+      if (s.viewMode === 'random') return;
+      if (w.eagle.filter.filterBadge > 0) return;
+      var id = ScrollbarSaver.getId();
+
+      if (!id) return;
+
+      var obj = ScrollbarSaver.positionMapping[id];
+      var $boxContainer = w.$("#box-container");
+      if (obj) {
+        s.startCursor = obj.cursor || 0;
+        var offset = obj.offset || 0;
+        var times = [20, 300];
+        for (var i = times[0]; i < times[1]; i += 20) {
+          setTimeout(function () {
+            if (ScrollbarSaver.getId() !== id || $boxContainer.scrollTop() !== offset) {
+              $boxContainer.scrollTop(offset);
+            }
+          }, i);
+        }
+      }
+      else {
+        s.startCursor = 0;
+      }
+    }
+  };
+  return ScrollbarSaver;
+}
+
+/* openAll（bundle 36702-36733 逐字；openAllTimeout 域内自管；UrlStateService 经 scope
+   解析（bundle 20208 $scope 赋值）——post-b1 Angular $location 缺席为诚实缺口，该服务
+   移植随 c16 详情族定 $location shim 方案） */
+export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'all' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (callback) {
+      callback();
+    }
+    if (s.isDetailMode) {
+      s.leaveDetailMode();
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+
+  s.viewMode = 'all';
+  s.$root.currentFocus = "sidebar";
+  s.resetPage();
+
+  $timeout.cancel(openAllTimeout);
+  openAllTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      s.UrlStateService.setState({ view: 'all', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.all") || 150;
+    s.imageSize.height = parseInt(s.imageSize.height);
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    w.$("#sidebar-item-container").scrollTop(0);
+    s.reload();
+    if (callback) {
+      callback();
+    }
+    w.analytics.screenView('All');
+  }, 50);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -3002,9 +3172,12 @@ export function applyDataMachineryScope(): void {
   s.changeSidebarIndex = (node: any) => machineryChangeSidebarIndex(s, node);
   s.resetPage = () => machineryResetPage(s);
   s.calculateFilterCounts = () => machineryCalculateFilterCounts(s);
+  // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
+  s.openAll = (ignoreHistory: any, callback: any) => machineryOpenAll(s, ignoreHistory, callback);
+  if (!w2.ScrollbarSaver) w2.ScrollbarSaver = buildScrollbarSaver();
 
   (window as any).__eagleDataMachinery = {
-    version: 13,
+    version: 14,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -3045,5 +3218,9 @@ export function applyDataMachineryScope(): void {
     changeSidebarIndex: 'machinery',
     resetPage: 'machinery',
     calculateFilterCounts: 'machinery',
+    openAll: 'machinery',
+    updateListHeight: 'machinery',
+    setLastFolder: 'machinery',
+    setViewMode: 'machinery',
   };
 }

@@ -2590,6 +2590,20 @@
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。openAll（连带 ScrollbarSaver/UrlStateService/
 >   setLastFolder 链）留 c15d。
 
+> **c15d openAll 及支撑链（2026-09-02；version 14）**：
+> - machineryOpenAll（36702-36733 逐字）：all 视图短路、ScrollbarSaver.saveScrollPosition、
+>   resetPage + 50ms 防抖重载（UrlStateService.setState（scope 解析——post-b1 Angular
+>   $location 缺席为诚实缺口，随 c16 定 URL shim 方案）/ thumbSize.all 回读 / setLastFolder /
+>   updateListHeight / restoreScrollPosition / reload / analytics.screenView）。openAllTimeout
+>   域内自管。
+> - buildScrollbarSaver（46754-46812 逐字；隐式全局 → if-absent 接装 window；positionMapping
+>   状态 + getId 八分支 + save/restore（20-300ms 重试滚动窗逐字），$scope → getBodyScope()
+>   调用时解析）。
+> - setViewMode/setLastFolder（38475-38488 逐字；**_.debounce 实例模块级单例**——bundle
+>   controller init 同语义，每次调用新建防抖为错误实现，评审修正）+ updateListHeight
+>   （33712-33719 逐字 50ms）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

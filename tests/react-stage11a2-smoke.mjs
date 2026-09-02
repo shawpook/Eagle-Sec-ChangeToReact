@@ -103,6 +103,15 @@ try {
     const host = document.getElementById('eagle-toast-alerts-host');
     return !!(panel && host && panel.contains(host));
   })()`);
+  // 测试环境（bootStack 端口映射）无 41593 监听 → initial 健康检查置 localhostError=true
+  // （toast 为正确应用行为，c9-c15 启动时序变化使其稳定渲染）。显式清除该环境源，使后续
+  // 断言测量组件对各错误源的响应性；localhost 场景在其后独立触发（a2-localhost-toast）。
+  await evalNow(`(() => {
+    const b = window.$bodyScope;
+    b.localhostError = false;
+    b.$evalAsync();
+    return true;
+  })()`);
   await assertExpr('a2-initial-empty', `document.querySelectorAll('.toast-alert').length === 0`);
 
   // ── 失败重试提示 ──

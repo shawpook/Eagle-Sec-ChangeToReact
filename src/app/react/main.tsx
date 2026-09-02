@@ -41,6 +41,7 @@ import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
 import { bridgeScopeFields, coreState } from './core/appCore';
 import { getBodyScope } from './global/scopeBridge';
+import { exposeScopeShimDiagnostics } from './global/scopeShim';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { applyDataMachineryScope } from './core/dataMachinery';
 import { installBundleGlobals } from './core/bundleGlobals';
@@ -221,7 +222,10 @@ function bridgeWhenReady(attempt = 0): void {
     } catch (err) { /* noop */ }
   }
   if (scope && scope.mousetrap) {
-    bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
+    // c11：shim 已是 coreState 后端（属性面直接代理），无需重复桥接
+    if (!scope.__eagleShim) {
+      bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
+    }
     (window as any).__eagleCoreState = coreState;
     applyDataMachineryScope();
     takeoverPreferencesDomain();
@@ -237,5 +241,6 @@ function bridgeWhenReady(attempt = 0): void {
 installBundleGlobals();
 installApiServerGlobals();
 installInitAPIServer();
+exposeScopeShimDiagnostics();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

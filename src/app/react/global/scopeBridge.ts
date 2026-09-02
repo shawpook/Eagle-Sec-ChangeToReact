@@ -6,6 +6,8 @@
  * 对应的旧实现将在「阶段11 清理」时随 angular 一起移除，逻辑届时已由 React 侧接管。
  */
 
+import { createBodyScopeShim } from './scopeShim';
+
 export function getBodyScope(): any {
   const w = window as any;
   if (w.$bodyScope) return w.$bodyScope;
@@ -13,6 +15,15 @@ export function getBodyScope(): any {
   if (angular && angular.element) {
     const scope = angular.element(document.body).scope();
     if (scope) return scope;
+  }
+  // c11：b1 后 Angular 缺席（angular 由 app.bundle.js 内联定义，无独立 script 标签）→
+  // scope shim（coreState 后端）。bundle 在世时此分支不可达——classic script 先于 React
+  // module 执行，w.angular 必然已定义。
+  if (!angular) {
+    const shim = createBodyScopeShim();
+    w.$bodyScope = shim;
+    if (w.__eagleScopeShim) w.__eagleScopeShim.active = true;
+    return shim;
   }
   return null;
 }

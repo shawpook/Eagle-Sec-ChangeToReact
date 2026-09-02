@@ -2457,6 +2457,25 @@
 >   Edit ≤200 行 + 哨兵锚点 APPEND:c10b-N）+ 依赖核查预算（每片一轮批量 grep）+ 「继续」
 >   精确续传（首工具调用 = 既定写入）。c10b 九分片全程零循环回退。
 
+> **c11 scope shim（2026-09-02；global/scopeShim.ts + getBodyScope 回退接线）**：
+> - **激活判据核验**：angular.min.js **内联在 app.bundle.js 内**（14685 sourceMappingURL
+>   佐证，无独立 script 标签）——`!window.angular` 即「bundle 已移除」的可靠判据。bundle
+>   在世时 classic script 先于 React module 执行，w.angular 必然已定义，shim 分支不可达
+>   （无启动窗口期误激活）；b1 移除 bundle 后自动激活并回填 window.$bodyScope。
+> - **行为面**：属性 get/set 全量代理 coreState（c8 桥语义的直接化；machinery scope 替换
+>   函数经 Proxy set 落 coreState 天然解析）；$evalAsync/$apply 直调 + watcher flush；
+>   $watch/$watchCollection 函数型轮询（200ms + 深比较，startScopeSync 兼容语义，注销函数
+>   返回）；$on/$broadcast/$emit shim 内事件总线（域处理器 $on 注册/misc $broadcast 路径）；
+>   mousetrap 桩（强就绪门 b1 后放行）；$watchers=[]（sweep 幂等 no-op）；$root/$parent 自引用。
+> - **教训**：Proxy 自引用必须指向 proxy 本体（raw 对象 $root 使 `scope.$root === scope`
+>   恒等比较失败——A6 断言逼出）。bridgeWhenReady 对 shim 跳过 bridgeScopeFields（shim 已是
+>   coreState 后端，重复桥接无意义）。
+> - **b1 前置清单更新**：scope 函数面诚实缺口 = bundle 独占函数（relayout/filterContent/
+>   zoom/enterDetailMode 等经 shim 调用将 TypeError）——b1 前必须完成各自 c 域移植（剩余
+>   调用面见 c9 收口审计）。诊断契约：__eagleScopeShim.factory（A6 工厂直调验证）。
+> - 验证：tsc 零错；m1 20/20（DIAG-CONSOLE 空）。suite 47/47（stage8e2 偶发失败单独复跑
+>   通过）；api-smoke 裸跑失败为已知跑法问题（外联式跑法见 M1 验证条目）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

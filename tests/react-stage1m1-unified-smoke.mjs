@@ -209,6 +209,33 @@ try {
   })()`);
   await assertExpr('m1-A5-api-server-fns', `window.__a5 === 'ok'`);
 
+  // ═══ A6. c11 scope shim（工厂直调行为面验证；激活判据 = bundle 移除后 w.angular 缺席）═══
+  await evalNow(`(() => {
+    const d = window.__eagleScopeShim;
+    if (!d || typeof d.factory !== 'function') { window.__a6 = 'missing'; return true; }
+    try {
+      const shim = d.factory();
+      shim.testField = 42;
+      const writeOk = window.__eagleCoreState.testField === 42 && shim.testField === 42;
+      let got = null;
+      const off = shim.$on('test:event', (e, v) => { got = v; });
+      shim.$broadcast('test:event', 7);
+      const busOk = got === 7;
+      off();
+      let watched = null;
+      const stop = shim.$watch(() => shim.testField, (v) => { watched = v; });
+      shim.testField = 43;
+      shim.$evalAsync();
+      const watchOk = watched === 43;
+      stop();
+      const rootOk = shim.$root === shim && !!shim.mousetrap && Array.isArray(shim.$watchers);
+      delete window.__eagleCoreState.testField;
+      window.__a6 = (writeOk && busOk && watchOk && rootOk && shim.__eagleShim === true) ? 'ok' : 'fail:' + [writeOk, busOk, watchOk, rootOk].join(',');
+    } catch (err) { window.__a6 = 'err:' + err.message; }
+    return true;
+  })()`);
+  await assertExpr('m1-A6-scope-shim', `window.__a6 === 'ok'`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

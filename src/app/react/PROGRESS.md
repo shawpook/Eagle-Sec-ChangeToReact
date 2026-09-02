@@ -2307,6 +2307,26 @@
 >   验证前不删。每片固定节奏：转写 → tsc 零错 → 冒烟 → suite → api-smoke → PROGRESS →
 >   commit。
 
+> **c9a 内部机器移植第一片（2026-09-02；calculateImageBinding/sortRawData/getAncestorFolders/getExtendTags scope 替换生效）**：
+> - core/dataMachinery.ts 新建：machinerySortRawData（bundle 21621-21708 逐字：NAME/EXT/RESOLUTION/
+>   FILESIZE/RATING/DURATION/BTIME/MTIME/TAGS/default 十分支 + updateCurrentOrderAndIncrease）、
+>   machineryGetAncestorFolders（42508 逐字）、machineryGetExtendTags（32028 逐字，tags.unique()
+>   为 bundle Array 原型扩展保留原调用）、machineryCalculateImageBinding（28684-28965 逐字：
+>   duration 1/50 退避 + TagManager.azGroups→$timeout.cancel + $timeout(work,duration) + 全部
+>   resets + 三次 tree.walk + raw 全循环（itemMappings/trash/all/exts/untaggedCount/unfiledCount/
+>   folders 修复/lockedImages/tags 计数/封面 default map）+ extList→eagle.filter.filterTypes +
+>   covers 补全 walk + TagManager.rawdata/pinyinCache/calculateTags + callback + catch）。
+> - **接管方式 = scope 函数替换**（applyDataMachineryScope：s.calculateImageBinding/sortRawData/
+>   getAncestorFolders = 移植版）——bundle 侧 muteCalcuteImageBinding 等全部 $scope.* 调用面
+>   即时走移植实现，无需截肢（函数调用不占 ipc 通道/watch）。main.tsx bridgeWhenReady 在
+>   字段桥后调用。
+> - 域内自管：pinyinCache/calculateImageBindingTimeout（原 controller 闭包变量）；$filter/$timeout
+>   经 injector 注入（Angular digest 语义不变）；languageBCP 由 scope.language 重算（bundle 20053
+>   等价）；有意略去 `var path = require('path')`（原文未使用，无副作用，注释标注）。
+> - 验证：tsc 零错；m1 统一冒烟 15/15（B 组 cbRan=1/cbErr=null = library-loaded→
+>   calculateImageBinding 全链路走移植实现）；suite 47 项 46 绿——main-ui-workflow-closed-loop
+>   偶发失败单独复跑通过（连跑 30+ electron 循环的资源竞争型 flake，非回归）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

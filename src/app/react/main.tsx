@@ -42,6 +42,7 @@ import { eagle as coreEagle } from './core/eagleApi';
 import { bridgeScopeFields, coreState } from './core/appCore';
 import { getBodyScope } from './global/scopeBridge';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
+import { applyDataMachineryScope } from './core/dataMachinery';
 import { takeoverLibraryDomain } from './core/libraryDomain';
 import { takeoverItemDomain } from './core/itemDomain';
 import { takeoverFilterDomain } from './core/filterDomain';
@@ -220,6 +221,7 @@ function bridgeWhenReady(attempt = 0): void {
   if (scope && scope.mousetrap) {
     bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
     (window as any).__eagleCoreState = coreState;
+    applyDataMachineryScope();
     takeoverPreferencesDomain();
     takeoverLibraryDomain();
     takeoverItemDomain();

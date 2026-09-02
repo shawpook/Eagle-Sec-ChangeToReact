@@ -2708,6 +2708,30 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
   }
 }
 
+/* ── c15：选择广播 + 缩放分发 ────────────────────────────────────────── */
+
+/* updateSelection（bundle 34662-34665 逐字） */
+export function machineryUpdateSelection(s: any): void {
+  s.$broadcast("UPDATE_INSPECTOR");
+}
+
+/* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
+export function machineryZoom(s: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) return;
+  if (s.lastZoomMode === "edge") {
+    if (s.current && !w.VIDEO_TYPES[s.current.ext]) {
+      s.zoomFitEdge();
+    }
+    else {
+      s.zoomFit();
+    }
+  }
+  else {
+    s.smartZoom();
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -2755,9 +2779,12 @@ export function applyDataMachineryScope(): void {
   s.calcuteContainTags = (data: any[]) => machineryCalcuteContainTags(s, data);
   const w2 = window as any;
   if (!w2.RecentFileManager) w2.RecentFileManager = buildRecentFileManager();
+  // c15：updateSelection/zoom
+  s.updateSelection = () => machineryUpdateSelection(s);
+  s.zoom = () => machineryZoom(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 10,
+    version: 11,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -2789,5 +2816,7 @@ export function applyDataMachineryScope(): void {
     calcuteFilterResult: 'machinery',
     contentFilter: 'machinery',
     calcuteContainTags: 'machinery',
+    updateSelection: 'machinery',
+    zoom: 'machinery',
   };
 }

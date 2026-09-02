@@ -2549,6 +2549,13 @@
 > - scope 替换生效（version 10：contentFilter/calcuteContainTags）。m1 25/25（DIAG-CONSOLE
 >   空）。suite 两项已知竞争 flake 单独复跑通过（cm-overlay-close/main-ui-workflow）。
 
+> **c15a updateSelection/zoom（2026-09-02；version 11）**：
+> - machineryUpdateSelection（34662-34665 逐字：$broadcast("UPDATE_INSPECTOR")——React 域
+>   9 处调用面 + bundle selectFolder/select 等改走本实现）、machineryZoom（31191-31204 逐字：
+>   lastZoomMode edge→VIDEO_TYPES 分流 zoomFitEdge/zoomFit，默认 smartZoom——三目标经 scope
+>   解析仍由 bundle 承载）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

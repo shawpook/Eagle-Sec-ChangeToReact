@@ -2173,6 +2173,28 @@
 >   UPDATE_SELECTION/SAVE_FOLDER 留 cZ-6。
 > - 诊断契约：window.__eagleFilterDomain（removed/watchRemoved/listenersRemoved）。
 
+> **cZ-6 实现落盘（2026-09-02；M1 统一验证待执行）**：选择/视图域——scope watch/$on 接管，
+> 无 ipc 通道（core/selectionViewDomain.ts takeoverSelectionViewDomain()，main.tsx 接线；
+> tsc 零错；冒烟并入 M1 统一测试）。
+> - **watchCollection "selected"（34214 主 watcher 全量逐字）**：body scope 有两个 'selected'
+>   watcher（主 + darwin quicklook 34265），removeScopeWatchersAll 按 exp 全量摘除后域内
+>   重挂两个；54323（inspector scope）/58048（指令 scope）不属 body scope 不动（随检查器域
+>   后续处理）。主 watcher：selectedMappings 重建/zoomFitSize=0/updateSelection/详情模式
+>   切图分支（rememberVideoCurrentTime+AnnotationPreview.hide+300ms smoothZoom update-
+>   Navigator）/lastSelectedIndex/全选 addClass vs selectItemsView/setLastItem（38490 逐字，
+>   _.debounce 333ms → window._，localStorage lastViewItem/lastViewItemTime）。
+> - darwin quicklook watch 平台守卫内注册（debounce 300, true → window.debounce；ipc.send
+>   quicklook）。
+> - **imageSize.height watch（34200）**：enlarge/shrinkThumbnails controller 闭包（20324/
+>   20345）域内移植（.box.show/enlarge-thumbnail 选择器 + raw/lsrc src 互换 + 600ms 防抖，
+>   timeout 局部域内自管）；imageSize.zoomRatio watch（34211 → sliderZoomRatio）。
+> - **listMetaType watch（37269）** → changeMetaItems（scope 函数，含 localStorage
+>   eagle.list.meta.type 落点）；finishGenerateQueue watchCollection（34496，cZ-4 遗留同族
+>   ——满队 $timeout(200) 清空 + findDupclipate）。
+> - **$on UPDATE_SELECTION（42379）/ SAVE_FOLDER（42383）**：$$listeners 摘除后域内重挂。
+> - 类型适配（语义不变）：jQuery data('degree','0')（.data 原码传 0，jQuery 内部同存）、
+>   localStorage String(Date.now())（浏览器 setItem 本就数字转串）。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

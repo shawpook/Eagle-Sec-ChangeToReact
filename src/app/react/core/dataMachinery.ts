@@ -1515,6 +1515,915 @@ export function machineryExistInSmartFilter(s: any, smartFolder: any, image: any
   }
 }
 
+/* ── c14b：筛选引擎（filterData 27654-28504 逐字分片）────────────────── */
+
+// ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
+let imageSearchController: any = null;
+let semanticSearchController: any = null;
+
+/* filterData 分片 1：import 月份/时间、mtime、类型含排、档案大小、长度、BPM、解析度、
+   标注、注释（27654-27960 逐字） */
+function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
+
+  if (Object.keys(w.eagle.filter.filterRules.import.selectedMonths).length > 0) {
+    data = data.filter(function (image: any) {
+      let importDate = new Date(image.modificationTime);
+      let importYear = importDate.getFullYear();
+      let importMonth = ("" + (importDate.getMonth() + 1)).padStart(2, "0");
+      return w.eagle.filter.filterRules.import.selectedMonths[`${importYear}/${importMonth}`];
+    });
+  }
+
+  // 时间筛选
+  if (w.eagle.filter.filterRules.import.today || w.eagle.filter.filterRules.import.yesterday || w.eagle.filter.filterRules.import.last7day || w.eagle.filter.filterRules.import.last30day || w.eagle.filter.filterRules.import.last90day || w.eagle.filter.filterRules.import.last365day || w.eagle.filter.filterRules.import.usingRange) {
+
+    var ONE_DAY = 1000 * 60 * 60 * 24;
+    let today = new Date();
+    today.setHours(0, 0, 0);
+    let todayTime = today.getTime();
+    let yesterdayTime = todayTime - ONE_DAY;
+
+    data = data.filter(function (image: any) {
+
+      var result = false;
+      if (w.eagle.filter.filterRules.import.today) {
+        if (image.modificationTime > todayTime) result = true;
+      }
+      if (w.eagle.filter.filterRules.import.yesterday) {
+        if (image.modificationTime < todayTime && image.modificationTime > yesterdayTime) result = true;
+      }
+      if (w.eagle.filter.filterRules.import.last7day) {
+        if (Date.now() - image.modificationTime < ONE_DAY * 7) result = true;
+      }
+      if (w.eagle.filter.filterRules.import.last30day) {
+        if (Date.now() - image.modificationTime < ONE_DAY * 30) result = true;
+      }
+      if (w.eagle.filter.filterRules.import.last90day) {
+        if (Date.now() - image.modificationTime < ONE_DAY * 90) result = true;
+      }
+      if (w.eagle.filter.filterRules.import.last365day) {
+        if (Date.now() - image.modificationTime < ONE_DAY * 365) result = true;
+      }
+      if (w.eagle.filter.filterRules.import.usingRange) {
+        if (w.eagle.filter.filterRules.import.range && w.eagle.filter.filterRules.import.range[0] && w.eagle.filter.filterRules.import.range[1]) {
+          if (w.eagle.filter.filterRules.import.range[0] <= image.modificationTime && image.modificationTime <= w.eagle.filter.filterRules.import.range[1] + ONE_DAY) result = true;
+        }
+      }
+      return result;
+    });
+  }
+
+  // 修改时间筛选
+  if (Object.keys(w.eagle.filter.filterRules.mtime.selectedMonths).length > 0) {
+    data = data.filter(function (image: any) {
+      let mtime = image.mtime || image.modificationTime;
+      let modifyDate = new Date(mtime);
+      let modifyYear = modifyDate.getFullYear();
+      let modifyMonth = ("" + (modifyDate.getMonth() + 1)).padStart(2, "0");
+      return w.eagle.filter.filterRules.mtime.selectedMonths[`${modifyYear}/${modifyMonth}`];
+    });
+  }
+
+  if (w.eagle.filter.filterRules.mtime.today || w.eagle.filter.filterRules.mtime.yesterday || w.eagle.filter.filterRules.mtime.last7day || w.eagle.filter.filterRules.mtime.last30day || w.eagle.filter.filterRules.mtime.last90day || w.eagle.filter.filterRules.mtime.last365day || w.eagle.filter.filterRules.mtime.usingRange) {
+
+    var ONE_DAY2 = 1000 * 60 * 60 * 24;
+    let today2 = new Date();
+    today2.setHours(0, 0, 0);
+    let todayTime2 = today2.getTime();
+    let yesterdayTime2 = todayTime2 - ONE_DAY2;
+
+    data = data.filter(function (image: any) {
+
+      var result = false;
+      var mtime = image.mtime || image.modificationTime;
+
+      if (w.eagle.filter.filterRules.mtime.today) {
+        if (mtime > todayTime2) result = true;
+      }
+      if (w.eagle.filter.filterRules.mtime.yesterday) {
+        if (mtime < todayTime2 && mtime > yesterdayTime2) result = true;
+      }
+      if (w.eagle.filter.filterRules.mtime.last7day) {
+        if (Date.now() - mtime < ONE_DAY2 * 7) result = true;
+      }
+      if (w.eagle.filter.filterRules.mtime.last30day) {
+        if (Date.now() - mtime < ONE_DAY2 * 30) result = true;
+      }
+      if (w.eagle.filter.filterRules.mtime.last90day) {
+        if (Date.now() - mtime < ONE_DAY2 * 90) result = true;
+      }
+      if (w.eagle.filter.filterRules.mtime.last365day) {
+        if (Date.now() - mtime < ONE_DAY2 * 365) result = true;
+      }
+      if (w.eagle.filter.filterRules.mtime.usingRange) {
+        if (w.eagle.filter.filterRules.import.range && w.eagle.filter.filterRules.import.range[0] && w.eagle.filter.filterRules.import.range[1]) {
+          if (w.eagle.filter.filterRules.import.range[0] <= mtime && mtime <= w.eagle.filter.filterRules.import.range[1] + ONE_DAY2) result = true;
+        }
+      }
+      return result;
+    });
+  }
+
+  // 类型筛选
+  if (Object.keys(w.eagle.filter.filterRules.type.includes).length > 0) {
+    data = data.filter(function (image: any) {
+      if (w.eagle.filter.filterRules.type.includes[image.ext]) return true;
+      if (w.eagle.filter.filterRules.type.includes['video']) {
+        return w.VIDEO_TYPES[image.ext];
+      }
+      if (w.eagle.filter.filterRules.type.includes['url']) {
+        if (image.ext == 'url' && !image.medium) return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['youtube']) {
+        if (image.ext == 'url' && image.medium == 'youtube') return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['vimeo']) {
+        if (image.ext == 'url' && image.medium == 'vimeo') return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['bilibili']) {
+        if (image.ext == 'url' && image.medium == 'bilibili') return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['audio']) {
+        return w.AUDIO_TYPES[image.ext];
+      }
+      if (w.eagle.filter.filterRules.type.includes['powerpoint']) {
+        if (image.ext == 'ppt' || image.ext == 'pptx' || image.ext == 'potx') return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['word']) {
+        if (image.ext == 'doc' || image.ext == 'docx') return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['excel']) {
+        if (image.ext == 'xls' || image.ext == 'xlsx') return true;
+      }
+      if (w.eagle.filter.filterRules.type.includes['font']) {
+        return w.FONT_TYPES[image.ext];
+      }
+      return false;
+    });
+  }
+
+  // 類型排除
+  if (Object.keys(w.eagle.filter.filterRules.type.excludes).length > 0) {
+    data = data.filter(function (image: any) {
+      if (w.eagle.filter.filterRules.type.excludes[image.ext]) return false;
+      if (w.eagle.filter.filterRules.type.excludes['video']) {
+        if (w.VIDEO_TYPES[image.ext]) return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['url']) {
+        if (image.ext == 'url' && !image.medium) return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['youtube']) {
+        if (image.ext == 'url' && image.medium == 'youtube') return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['vimeo']) {
+        if (image.ext == 'url' && image.medium == 'vimeo') return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['bilibili']) {
+        if (image.ext == 'url' && image.medium == 'bilibili') return false;
+      }
+
+      if (w.eagle.filter.filterRules.type.excludes['audio']) {
+        if (w.AUDIO_TYPES[image.ext]) return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['powerpoint']) {
+        if (image.ext == 'ppt' || image.ext == 'pptx' || image.ext == 'potx') return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['word']) {
+        if (image.ext == 'doc' || image.ext == 'docx') return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['excel']) {
+        if (image.ext == 'xls' || image.ext == 'xlsx') return false;
+      }
+      if (w.eagle.filter.filterRules.type.excludes['font']) {
+        if (w.FONT_TYPES[image.ext]) return false;
+      }
+      return true;
+    });
+  }
+
+  // 档案大小筛选
+  // 最小值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.file.min)) {
+    var unit = 1024;
+    if (w.eagle.filter.filterRules.file.unit == 'mb') {
+      unit = 1024 * 1024;
+    }
+    data = data.filter(function (image: any) {
+      return image.size >= parseInt((w.eagle.filter.filterRules.file.min * unit) as any);
+    });
+  }
+  // 最大值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.file.max)) {
+    var unit2 = 1024;
+    if (w.eagle.filter.filterRules.file.unit == 'mb') {
+      unit2 = 1024 * 1024;
+    }
+    data = data.filter(function (image: any) {
+      return image.size <= parseInt((w.eagle.filter.filterRules.file.max * unit2) as any);
+    });
+  }
+
+  // 视频、音频长度筛选
+  // 最小值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.duration.min)) {
+    var unit3 = 1;
+    if (w.eagle.filter.filterRules.duration.unit == 'h') {
+      unit3 = 60 * 60;
+    }
+    else if (w.eagle.filter.filterRules.duration.unit == 'm') {
+      unit3 = 60;
+    }
+    data = data.filter(function (image: any) {
+      return image.duration >= parseInt((w.eagle.filter.filterRules.duration.min * unit3) as any);
+    });
+  }
+  // 最大值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.duration.max)) {
+    var unit4 = 1;
+    if (w.eagle.filter.filterRules.duration.unit == 'h') {
+      unit4 = 60 * 60;
+    }
+    else if (w.eagle.filter.filterRules.duration.unit == 'm') {
+      unit4 = 60;
+    }
+    data = data.filter(function (image: any) {
+      return image.duration <= parseInt((w.eagle.filter.filterRules.duration.max * unit4) as any);
+    });
+  }
+
+  // BPM 最小值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.bpm.min)) {
+    data = data.filter(function (image: any) {
+      if (!image.bpm) return false;
+      return image.bpm >= parseInt(w.eagle.filter.filterRules.bpm.min);
+    });
+  }
+  // BPM 最大值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.bpm.max)) {
+    data = data.filter(function (image: any) {
+      if (!image.bpm) return false;
+      return image.bpm <= parseInt(w.eagle.filter.filterRules.bpm.max);
+    });
+  }
+
+  // 图片大小筛选
+  // 宽度最小值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.minW)) {
+    data = data.filter(function (image: any) {
+      return image.width >= parseInt(w.eagle.filter.filterRules.resolution.minW);
+    });
+  }
+  // 宽度最大值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.maxW)) {
+    data = data.filter(function (image: any) {
+      return image.width <= parseInt(w.eagle.filter.filterRules.resolution.maxW);
+    });
+  }
+  // 高度最小值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.minH)) {
+    data = data.filter(function (image: any) {
+      return image.height >= parseInt(w.eagle.filter.filterRules.resolution.minH);
+    });
+  }
+  // 高度最大值
+  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.maxH)) {
+    data = data.filter(function (image: any) {
+      return image.height <= parseInt(w.eagle.filter.filterRules.resolution.maxH);
+    });
+  }
+
+  // 图片标注筛选
+  // 有标注
+  if (w.eagle.filter.filterRules.annotation.has) {
+    // 不需要关键字
+    if (!w.eagle.filter.filterRules.annotation.keywords) {
+      data = data.filter(function (image: any) {
+        return image.comments && image.comments.length > 0;
+      });
+    }
+    // 需要关键字
+    else {
+      var keywords = w.eagle.filter.filterRules.annotation.keywords.split(",");
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < keywords.length; i++) {
+          var keyword = keywords[i].toLowerCase();
+          if (image.comments && image.comments.length > 0) {
+            for (var j = 0; j < image.comments.length; j++) {
+              var comment = image.comments[j];
+              if (comment.annotation.toLowerCase().indexOf(keyword) > -1) {
+                matchCount++;
+                break;
+              }
+            }
+          }
+        }
+        return (matchCount == keywords.length);
+      });
+    }
+  }
+  // 没标注
+  else if (w.eagle.filter.filterRules.annotation.no) {
+    data = data.filter(function (image: any) {
+      return !image.comments || image.comments.length == 0;
+    });
+  }
+
+  return data;
+}
+
+// ── APPEND:c14b-2 ──
+
+/* filterData 分片 2：注释/网址/方向/星等/字体/相机/颜色/关键字/已删排序/random 预筛
+   （27960-28170 逐字） */
+function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
+
+  // 图片注释筛选
+  // 有注释
+  if (w.eagle.filter.filterRules.note.has) {
+    // 不需要关键字
+    if (!w.eagle.filter.filterRules.note.keywords) {
+      data = data.filter(function (image: any) {
+        return image.annotation && image.annotation.length > 0;
+      });
+    }
+    // 需要关键字
+    else {
+      var keywords = w.eagle.filter.filterRules.note.keywords.split(",");
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < keywords.length; i++) {
+          var keyword = keywords[i].toLowerCase();
+          if (image.annotation && image.annotation.toLowerCase().indexOf(keyword) > -1) {
+            matchCount++;
+          }
+        }
+        return (matchCount == keywords.length);
+      });
+    }
+  }
+  // 没注释
+  else if (w.eagle.filter.filterRules.note.no) {
+    data = data.filter(function (image: any) {
+      return !image.annotation || image.annotation.length == 0;
+    });
+  }
+
+  // 来源网址筛选
+  // 有網址
+  if (w.eagle.filter.filterRules.url.has) {
+    // 不需要关键字
+    if (!w.eagle.filter.filterRules.url.keywords) {
+      data = data.filter(function (image: any) {
+        return image.url && image.url.length > 0;
+      });
+    }
+    // 需要关键字
+    else {
+      var keywords2 = w.eagle.filter.filterRules.url.keywords.split(",");
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < keywords2.length; i++) {
+          var keyword = keywords2[i].toLowerCase();
+          if (image.url && image.url.toLowerCase().indexOf(keyword) > -1) {
+            matchCount++;
+          }
+        }
+        return (matchCount == keywords2.length);
+      });
+    }
+  }
+  // 沒網址
+  else if (w.eagle.filter.filterRules.url.no) {
+    data = data.filter(function (image: any) {
+      return !image.url || image.url.length == 0;
+    });
+  }
+
+  // 方向筛选
+  if (w.eagle.filter.filterRules.shape.landscape || w.eagle.filter.filterRules.shape.portrait || w.eagle.filter.filterRules.shape.square || w.eagle.filter.filterRules.shape.panoramicLandscape || w.eagle.filter.filterRules.shape.panoramicPortrait || w.eagle.filter.filterRules.shape.custom || w.eagle.filter.filterRules.shape['43'] || w.eagle.filter.filterRules.shape['34'] || w.eagle.filter.filterRules.shape['169'] || w.eagle.filter.filterRules.shape['916']) {
+    data = data.filter(function (image: any) {
+      var result = false;
+      if (w.eagle.filter.filterRules.shape.landscape) {
+        if (image.width > image.height) result = true;
+      }
+      if (!result && w.eagle.filter.filterRules.shape.portrait) {
+        if (image.height > image.width) result = true;
+      }
+      if (!result && w.eagle.filter.filterRules.shape.square) {
+        if (image.width == image.height) result = true;
+      }
+      if (!result && w.eagle.filter.filterRules.shape.panoramicLandscape) {
+        if (image.width > image.height && image.width / image.height >= 2.5) result = true;
+      }
+      if (!result && w.eagle.filter.filterRules.shape.panoramicPortrait) {
+        if (image.width < image.height && image.height / image.width >= 2.5) result = true;
+      }
+      if (!result && w.eagle.filter.filterRules.shape['43']) {
+        if (image.width / image.height === 4 / 3) {
+          result = true;
+        }
+      }
+      if (!result && w.eagle.filter.filterRules.shape['34']) {
+        if (image.width / image.height === 3 / 4) {
+          result = true;
+        }
+      }
+      if (!result && w.eagle.filter.filterRules.shape['169']) {
+        if (image.width / image.height === 16 / 9) {
+          result = true;
+        }
+      }
+      if (!result && w.eagle.filter.filterRules.shape['916']) {
+        if (image.width / image.height === 9 / 16) {
+          result = true;
+        }
+      }
+      if (!result && w.eagle.filter.filterRules.shape.custom) {
+        if (w.eagle.filter.filterRules.shape.width && w.eagle.filter.filterRules.shape.height) {
+          if (image.width / image.height === w.eagle.filter.filterRules.shape.width / w.eagle.filter.filterRules.shape.height) {
+            result = true;
+          }
+        }
+        else {
+          result = true;
+        }
+      }
+      return result;
+    });
+  }
+
+  // 星等筛选
+  if (w.eagle.filter.filterRules.rating['5'] || w.eagle.filter.filterRules.rating['4'] || w.eagle.filter.filterRules.rating['3'] || w.eagle.filter.filterRules.rating['2'] || w.eagle.filter.filterRules.rating['1'] || w.eagle.filter.filterRules.rating['0']) {
+    let starMap: any = {
+      "5": w.eagle.filter.filterRules.rating['5'],
+      "4": w.eagle.filter.filterRules.rating['4'],
+      "3": w.eagle.filter.filterRules.rating['3'],
+      "2": w.eagle.filter.filterRules.rating['2'],
+      "1": w.eagle.filter.filterRules.rating['1'],
+    };
+    data = data.filter(function (image: any) {
+      if (w.eagle.filter.filterRules.rating['0'] && !image.star) return true;
+      return starMap[image.star];
+    });
+  }
+
+  // 字体筛选
+  if (w.eagle.filter.filterRules.font.activated) {
+    data = data.filter(function (image: any) {
+      if (!image.fontMetas) return false;
+      try {
+        var key = Object.keys(image.fontMetas.postScriptName)[0];
+        var postScriptName = image.fontMetas.postScriptName && image.fontMetas.postScriptName[key];
+        return w.installedFonts[`${postScriptName}_.${image.ext}`];
+      }
+      catch (err) { /* noop */ }
+    });
+  }
+  else if (w.eagle.filter.filterRules.font.deactivated) {
+    data = data.filter(function (image: any) {
+      if (!image.fontMetas) return false;
+      try {
+        var key = Object.keys(image.fontMetas.postScriptName)[0];
+        var postScriptName = image.fontMetas.postScriptName && image.fontMetas.postScriptName[key];
+        return !w.installedFonts[`${postScriptName}_.${image.ext}`];
+      }
+      catch (err) { /* noop */ }
+    });
+  }
+
+  var selectedCameras = Object.keys(w.eagle.filter.filterRules.camera);
+  if (selectedCameras.length > 0) {
+    data = data.filter(function (image: any) {
+      if (image && image.rawMetas && image.rawMetas.camera) {
+        return w.eagle.filter.filterRules.camera[image.rawMetas.camera];
+      }
+      return false;
+    });
+  }
+
+  // 颜色筛选
+  if (w.eagle.filter.filterRules.color.value) {
+    data = data.filter(s.colorFilter);
+  }
+
+  // 黑白图片过滤
+  if (w.eagle.filter.filterRules.color.gray) {
+    console.time("grayColorFilter");
+    data = data.filter(s.grayColorFilter);
+    console.timeEnd("grayColorFilter");
+  }
+
+  if (w.eagle.filter.filterRules.color.value && s.viewMode !== "random") {
+    data = data.sort(function (a: any, b: any) {
+      var da = s.colorDistancesMap[a.id] || 100;
+      var db = s.colorDistancesMap[b.id] || 100;
+      if (da > db) return 1;
+      if (da < db) return -1;
+      return 0;
+    });
+  }
+
+  // 关键字筛选
+  if (s.keyword) {
+    console.time("$scope.searchFilter");
+    data = data.filter(s.searchFilter);
+    console.timeEnd("$scope.searchFilter");
+  }
+
+  // 已刪除時間排序
+  if (s.viewMode === 'trash') {
+    data = getFilter()('orderBy')(data, function (image: any) {
+      if (image.deletedTime) {
+        return -image.deletedTime;
+      }
+      return -image.modificationTime;
+    });
+  }
+  else if (s.viewMode === 'random') {
+    console.time("shuffle");
+    if (s.shuffle.length > 0) {
+      data = s.shuffle.filter(function (item: any) {
+        return s.itemMappings[item.id] && !s.itemMappings[item.id].isDeleted;
+      });
+    }
+    else {
+      (data as any).shuffle();
+      s.shuffle = data;
+    }
+    console.timeEnd("shuffle");
+  }
+
+  s.preelaborations = [];
+  if (w.eagle.filter.filterBadge > 0) {
+    if (w.eagle.filter.folderFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "OR") {
+      data.forEach(function (image: any) {
+        s.preelaborations.push(image);
+      });
+    }
+    else {
+      s.preelaborations = data;
+    }
+  }
+  else {
+    s.preelaborations = data;
+  }
+
+  return data;
+}
+
+// ── APPEND:c14b-3 ──
+
+/* filterData 分片 3：标签 OR/AND/EQUAL、文件夹 OR/AND/EQUAL、lockedImages、排序、
+   以图找图/语义搜索、recent 排序（28170-28504 逐字） */
+async function machineryFilterDataPart3(s: any, w: any, data: any[]): Promise<any[]> {
+
+  // 如果是 OR 逻辑需要保留所有 tags filter 的结果，为了计算 containTags
+  if (w.eagle.filter.tagFilterLogic === "OR") {
+
+    if ((w.eagle.filter.filterRules.tag.includes && w.eagle.filter.filterRules.tag.includes.length > 0) || (w.eagle.filter.filterRules.tag.excludes && w.eagle.filter.filterRules.tag.excludes.length > 0)) {
+      data = data.filter(function (image: any) {
+
+        // 包含標籤
+        if (w.eagle.filter.filterRules.tag.includes.length > 0) {
+          for (var i = 0; i < w.eagle.filter.filterRules.tag.includes.length; i++) {
+            var tag = w.eagle.filter.filterRules.tag.includes[i];
+            if (image.tags && image.tags.length > 0) {
+              for (var j = 0; j < image.tags.length; j++) {
+                if (image.tags[j] == tag) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+
+        // 排除標籤
+        if (w.eagle.filter.filterRules.tag.excludes.length > 0) {
+          var matchCount = 0;
+          for (var i = 0; i < w.eagle.filter.filterRules.tag.excludes.length; i++) {
+            var tag = w.eagle.filter.filterRules.tag.excludes[i];
+            if (image.tags && image.tags.length > 0) {
+              if (image.tags.indexOf(tag) !== -1) {
+                matchCount++;
+              }
+            }
+          }
+          if (matchCount === 0) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      if (w.eagle.filter.filterRules.tag.no) {
+        s.preelaborations.forEach(function (image: any) {
+          if (!image.tags || image.tags.length === 0) {
+            data.push(image);
+          }
+        });
+      }
+    }
+    else {
+      if (w.eagle.filter.filterRules.tag.no) {
+        data = data.filter(function (image: any) {
+          return !image.tags || image.tags.length === 0;
+        });
+      }
+    }
+  }
+  // 标签筛选（and 逻辑）
+  else if (w.eagle.filter.tagFilterLogic === "AND" || w.eagle.filter.tagFilterLogic === "EQUAL") {
+
+    // 包含標籤
+    if (w.eagle.filter.filterRules.tag.includes && w.eagle.filter.filterRules.tag.includes.length > 0) {
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < w.eagle.filter.filterRules.tag.includes.length; i++) {
+          var tag = w.eagle.filter.filterRules.tag.includes[i];
+          if (image.tags && image.tags.length > 0) {
+            for (var j = 0; j < image.tags.length; j++) {
+              if (image.tags[j] == tag) {
+                if (w.eagle.filter.tagFilterLogic === "EQUAL") {
+                  if (image.tags.length === w.eagle.filter.filterRules.tag.includes.length) {
+                    matchCount++;
+                  }
+                }
+                else {
+                  matchCount++;
+                }
+                break;
+              }
+            }
+          }
+        }
+        return (matchCount == w.eagle.filter.filterRules.tag.includes.length);
+      });
+    }
+
+    // 排除標籤
+    if (w.eagle.filter.filterRules.tag.excludes && w.eagle.filter.filterRules.tag.excludes.length > 0) {
+      data = data.filter(function (image: any) {
+        for (var i = 0; i < w.eagle.filter.filterRules.tag.excludes.length; i++) {
+          var tag = w.eagle.filter.filterRules.tag.excludes[i];
+          if (image.tags && image.tags.length > 0) {
+            if (image.tags.indexOf(tag) !== -1) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+    }
+
+    // 没标签筛选
+    if (w.eagle.filter.filterRules.tag.no) {
+      data = data.filter(function (image: any) {
+        return !image.tags || image.tags.length === 0;
+      });
+    }
+  }
+
+  // 筛选器文件夹
+  // OR
+  if (w.eagle.filter.folderFilterLogic === "OR") {
+
+    var filterFolders = Object.values(w.eagle.filter.filterRules.folder.includes).map(function (folder: any) { return folder; });
+    var excludeFolders = Object.values(w.eagle.filter.filterRules.folder.excludes).map(function (folder: any) { return folder; });
+
+    if (filterFolders.length > 0 || excludeFolders.length > 0) {
+
+      data = data.filter(function (image: any) {
+
+        // 包含文件夹
+        if (filterFolders.length > 0) {
+          for (var i = 0; i < filterFolders.length; i++) {
+            var folderId = filterFolders[i].id;
+            if (folderId === "NoFolders" && image.folders.length === 0) {
+              return true;
+            }
+            if (folderId && image.folders && image.folders.length > 0) {
+              for (var j = 0; j < image.folders.length; j++) {
+                if (image.folders[j] == folderId) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+
+        // 排除文件夹
+        if (excludeFolders.length > 0) {
+          var matchCount = 0;
+          for (var i = 0; i < excludeFolders.length; i++) {
+            var folderId = excludeFolders[i].id;
+            if (folderId === "NoFolders" && image.folders.length === 0) {
+              matchCount++;
+            }
+            if (image.folders && image.folders.length > 0) {
+              if (image.folders.indexOf(folderId) !== -1) {
+                matchCount++;
+              }
+            }
+          }
+          if (matchCount === 0) {
+            return true;
+          }
+        }
+
+        return false;
+      });
+    }
+  }
+  // AND
+  else if (w.eagle.filter.folderFilterLogic === "AND" || w.eagle.filter.folderFilterLogic === "EQUAL") {
+
+    var filterFolders2 = Object.values(w.eagle.filter.filterRules.folder.includes).map(function (folder: any) { return folder; });
+    var excludeFolders2 = Object.values(w.eagle.filter.filterRules.folder.excludes).map(function (folder: any) { return folder; });
+
+    // 包含文件夹
+    if (filterFolders2.length > 0) {
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < filterFolders2.length; i++) {
+          var folder = filterFolders2[i];
+          var folderId = folder.id;
+          if (folderId === "NoFolders" && image.folders.length === 0) {
+            matchCount++;
+          }
+          if (folder && image.folders && image.folders.length > 0) {
+            for (var j = 0; j < image.folders.length; j++) {
+              if (image.folders[j] == folder.id) {
+                if (w.eagle.filter.folderFilterLogic === "EQUAL") {
+                  if (image.folders.length === filterFolders2.length) {
+                    matchCount++;
+                  }
+                }
+                else {
+                  matchCount++;
+                }
+                break;
+              }
+            }
+          }
+        }
+        return (matchCount === filterFolders2.length);
+      });
+    }
+
+    // 排除文件夹
+    if (excludeFolders2.length > 0) {
+      data = data.filter(function (image: any) {
+        for (var i = 0; i < excludeFolders2.length; i++) {
+          var folderId = excludeFolders2[i].id;
+          if (folderId === "NoFolders" && image.folders.length === 0) {
+            return false;
+          }
+          if (image.folders && image.folders.length > 0) {
+            if (image.folders.indexOf(folderId) !== -1) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+    }
+  }
+
+  // 如果沒有使用加密文件夾，就不需要判斷這件事情
+  if (Object.keys(s.lockedImages).length > 0) {
+    data = data.filter(s.lockImageFilter);
+  }
+
+  // 文件夹有自己的排序方式
+  if (!s.$root.selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
+    if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
+      data = s.sortData(data, s.currentFolder.orderBy);
+    }
+    if (!s.currentFolder.sortIncrease) {
+      data = data.reverse();
+    }
+  }
+
+  // 智能文件夹有自己的排序方式
+  else if (s.currentSmartFolder && s.currentSmartFolder.orderBy) {
+    if (s.currentSmartFolder.orderBy !== s.orderBy || s.currentSmartFolder.orderBy === "RANDOM") {
+      data = s.sortData(data, s.currentSmartFolder.orderBy);
+    }
+    if (!s.currentSmartFolder.sortIncrease) {
+      data = data.reverse();
+    }
+  }
+  else if (!s.sortIncrease && !w.eagle.filter.filterRules.color.value) {
+    data = data.reverse();
+  }
+
+  // 內部以圖找圖 by id
+  if (w.eagle.filter.filterRules.image.itemId || w.eagle.filter.filterRules.image.base64) {
+    if (imageSearchController) {
+      imageSearchController.abort();
+    }
+    imageSearchController = new AbortController();
+    const imageSignal = imageSearchController.signal;
+
+    try {
+      const handle = (w.eagle.filter.filterRules.image.itemId)
+        ? w.eagle.aiSearch.searchByItemId(w.eagle.filter.filterRules.image.itemId, { signal: imageSignal })
+        : w.eagle.aiSearch.searchByBase64(w.eagle.filter.filterRules.image.base64, { signal: imageSignal });
+      const result = await handle;
+      const ids: any = {};
+      ids[result.eagleId] = {
+        score: 1,
+        id: result.eagleId
+      };
+      result.results.forEach((item: any) => {
+        if (item.score > 0.1) {
+          ids[item.id] = item;
+        }
+      });
+
+      data = data.filter((item: any) => {
+        return ids[item.id];
+      }).sort((a: any, b: any) => {
+        return ids[b.id].score - ids[a.id].score;
+      });
+    }
+    catch (err: any) {
+      if (err.name === 'AbortError') return data;
+    }
+  }
+
+  // 语义
+  if (w.eagle.filter.filterRules.semantic.value) {
+    if (semanticSearchController) {
+      semanticSearchController.abort();
+    }
+    semanticSearchController = new AbortController();
+
+    try {
+      const result = await w.eagle.aiSearch.searchByText(
+        w.eagle.filter.filterRules.semantic.value,
+        { signal: semanticSearchController.signal }
+      );
+      const ids: any = {};
+      ids[result.eagleId] = {
+        score: 1,
+        id: result.eagleId
+      };
+      result.results.forEach((item: any) => {
+        ids[item.id] = item;
+      });
+
+      data = data.filter((item: any) => {
+        return ids[item.id];
+      }).sort((a: any, b: any) => {
+        return ids[b.id].score - ids[a.id].score;
+      });
+    }
+    catch (err: any) {
+      if (err.name === 'AbortError') return data;
+    }
+  }
+
+  if (s.viewMode === 'recent') {
+    data = data.sort(function (a: any, b: any) {
+      return w.RecentFileManager.recentFilesOrder[a.id] - w.RecentFileManager.recentFilesOrder[b.id];
+    });
+  }
+
+  return data;
+}
+
+/* filterData（bundle 27654-28504 装配；三分片顺序执行） */
+export async function machineryFilterData(s: any, data: any[]): Promise<any[]> {
+  const w = window as any;
+  data = machineryFilterDataPart1(s, w, data);
+  data = machineryFilterDataPart2(s, w, data);
+  data = await machineryFilterDataPart3(s, w, data);
+  return data;
+}
+
+/* calcuteFilterResult（bundle 27634-27653 逐字） */
+export async function machineryCalcuteFilterResult(s: any, data: any[], contentFilterCache: any): Promise<any[]> {
+  s.colorDistancesMap = {};
+  return new Promise<any[]>(async (resolve, reject) => {
+    try {
+      let result: any[];
+      if (contentFilterCache) {
+        result = contentFilterCache.slice(0);
+      }
+      else {
+        result = s.raw.filter(s.contentFilter);
+        s.contentFilterCache = result.slice(0);
+      }
+      const filtered = await machineryFilterData(s, result);
+      resolve(filtered);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -1553,9 +2462,13 @@ export function applyDataMachineryScope(): void {
   s.relayout = (margin: any) => machineryRelayout(s, margin);
   // c14：existInSmartFilter（26 规则函数经 window + MATCH_FUNCTION 表）
   s.existInSmartFilter = (smartFolder: any, image: any) => machineryExistInSmartFilter(s, smartFolder, image);
+  // c14b：筛选引擎（filterData/calcuteFilterResult scope 替换——rebindRefresh 的
+  // await s.calcuteFilterResult 即走移植实现）
+  s.filterData = (data: any[]) => machineryFilterData(s, data);
+  s.calcuteFilterResult = (data: any[], contentFilterCache: any) => machineryCalcuteFilterResult(s, data, contentFilterCache);
 
   (window as any).__eagleDataMachinery = {
-    version: 8,
+    version: 9,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -1583,5 +2496,7 @@ export function applyDataMachineryScope(): void {
     relayout: 'machinery',
     existInSmartFilter: 'machinery',
     isMatchCondition: 'machinery',
+    filterData: 'machinery',
+    calcuteFilterResult: 'machinery',
   };
 }

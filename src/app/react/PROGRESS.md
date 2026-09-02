@@ -2519,6 +2519,22 @@
 >   type equal 真）。验证：tsc 零错；m1 24/24（DIAG-CONSOLE 空）。suite ALL GREEN（c11/
 >   c12/c13 收口验证，含 main-ui-workflow）。
 
+> **c14b 筛选引擎（2026-09-02；filterData 850 行 + calcuteFilterResult scope 替换生效）**：
+> - machineryFilterData（bundle 27654-28504 逐字三分片）：import 月份/时间梯度、mtime、
+>   类型含排（video/url/youtube/vimeo/bilibili/audio/office/font 子判）、档案大小/长度单位、
+>   BPM、解析度四向、标注/注释/网址有无+关键字、方向十分支（43/34/169/916/panoramic/custom）、
+>   星等六档、字体激活态（installedFonts）、相机、colorFilter/grayColorFilter（scope 解析）+
+>   colorDistancesMap 排序、searchFilter 关键字、trash orderBy/random shuffle（Array.prototype.
+>   shuffle bundle 原型扩展保留）、preelaborations 预筛（OR/AND 分支）、tag 三逻辑（OR 补
+>   tag.no 回填/AND/EQUAL 计数）、folder 三逻辑（NoFolders 特判）、lockedImages 过滤、
+>   currentFolder/currentSmartFolder 排序覆盖 + reverse、以图找图 itemId/base64（AbortController
+>   域内自管 imageSearchController/semanticSearchController）、语义搜索、recent 排序。
+> - machineryCalcuteFilterResult（27634-27653 逐字）：contentFilterCache 分支 + raw.filter
+>   (contentFilter)（contentFilter 仍由 bundle 承载经 scope 解析，c14c 移植）。**rebindRefresh
+>   的 await s.calcuteFilterResult 即走移植实现**——m1 D 组 rebind-broadcast 全链路验证
+>   （allDataIds 正确、DIAG-CONSOLE 空）。parseInt(number) 原码怪癖以 as any 保留。
+> - m1 扩至 25 项（A10 筛选引擎契约 version≥9）。验证：tsc 零错；m1 25/25。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

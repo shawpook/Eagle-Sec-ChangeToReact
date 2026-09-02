@@ -282,6 +282,15 @@ try {
   })()`);
   await assertExpr('m1-A9-smart-filter', `window.__a9 === 'ok'`);
 
+  // ═══ A10. c14b 筛选引擎契约（filterData/calcuteFilterResult machinery 标记）═══
+  await assertExpr('m1-A10-filter-engine', `(() => {
+    const m = window.__eagleDataMachinery;
+    return m && m.version >= 9 && m.filterData === 'machinery'
+      && m.calcuteFilterResult === 'machinery'
+      && typeof window.$bodyScope.filterData === 'function'
+      && typeof window.$bodyScope.calcuteFilterResult === 'function';
+  })()`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

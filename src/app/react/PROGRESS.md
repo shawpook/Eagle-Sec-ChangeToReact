@@ -2429,6 +2429,34 @@
 >   内部路由与后端 APIServer 面（api-smoke 13 项覆盖）必须整体移植 + 对照验证。
 > - 验证：tsc 零错；m1 17/17（DIAG-CONSOLE 空）。
 
+> **c10b initAPIServer 域（2026-09-02；core/apiServerDomain.ts 全量移植 + if-absent 接装）**：
+> - **50 内嵌处理器全数移植**（bundle 17881-18845 逐字）：getAPIFolders（含 cloneFolderList
+>   密码树剪枝）/ unlockFolder（window.btoa 逐字）/ getAPIMetadataInfo / getLibraryHistory /
+>   switchLibrary / getLibraryIcon（streaming）/ getAPIApplicationInfo / setAPIPreferenceCollect
+>   On/Off（**"chnage-preferences" 原码 typo 逐字**）/ runAPIScript / getAllTags·getTags·
+>   getRecentTags·getRecentTagsResult·getStarredTags·getTagGroups / getRecentFolders /
+>   createFolder·renameFolder·updateFolder / addPath·addURLs / addItemFromPath·addItemFromPaths
+>   （旧版 paths 分支 + v2 items 分支）/ moveItemsToTrash（ayncsImagesChange + hiddenByCurrentFilter
+>   + calculateImageBinding→rebindRefresh(true)→updateSelection 闭环）/ addBookmarkItem /
+>   addItemFromURL·addItemFromURLs / batchSave / updateItem / setCustomThumbnail（thumbnail-
+>   generated 等待 10s 超时语义逐字）/ getItemInfo·getItemThumb / refreshItemPalette·
+>   refreshItemThumbnail / listImages（SmartFolder 筛选复用 + 200 条上限 + IMPORT 排序）。
+> - **路由注册逐字**：`APIServer.addAPI('/', 'GET', ...)` + 30 条路由 + 3 个 eagle:// 重定向
+>   handler（/item、/folder、/smart-folder）+ V2 外挂 `require(appRoot + '/app/js/api-server-v2')
+>   .initAPIServerV2(APIServer)`（磁盘文件 b1 存活，原样 require）。**/api/check 混淆段（18852，
+>   3924 字节）由脚本从 bundle 逐字节提取拼接**（仅 require→w.require / appRoot→w.appRoot 机械
+>   替换 + @ts-ignore 抑制 strict——反篡改遥测注入路由，业务语义不动）。
+> - **接装语义**：installApiServerGlobals（electronSettings/junk/IS_DIRECTORY/getRawPath/
+>   getThumbnailPath/walk/getExt 支撑链 if-absent）+ installInitAPIServer（window.initAPIServer
+>   if-absent——bundle 在世时其 23354 调用点走 bundle 版，b1 后走移植版；两世界共用
+>   window.APIServer 赋值面）。**诊断契约 v2**：__eagleApiServerDomain.fns = 22 处理器直调面。
+> - **m1 统一冒烟扩至 19 项**（A5 契约 + getAPIApplicationInfo 实调对照：version/platform/
+>   preferences/showCollectModal 形状断言——移植版对活 scope 全链路验证）。验证：tsc 零错；
+>   m1 19/19（DIAG-CONSOLE 空）。
+> - **方法论修正（用户三次指出循环思考后定型）**：分片写入协议（骨架 Write ≤80 行 + 每片
+>   Edit ≤200 行 + 哨兵锚点 APPEND:c10b-N）+ 依赖核查预算（每片一轮批量 grep）+ 「继续」
+>   精确续传（首工具调用 = 既定写入）。c10b 九分片全程零循环回退。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

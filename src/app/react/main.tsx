@@ -44,6 +44,7 @@ import { getBodyScope } from './global/scopeBridge';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { applyDataMachineryScope } from './core/dataMachinery';
 import { installBundleGlobals } from './core/bundleGlobals';
+import { installApiServerGlobals, installInitAPIServer } from './core/apiServerDomain';
 import { takeoverLibraryDomain } from './core/libraryDomain';
 import { takeoverItemDomain } from './core/itemDomain';
 import { takeoverFilterDomain } from './core/filterDomain';
@@ -234,5 +235,7 @@ function bridgeWhenReady(attempt = 0): void {
   if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);
 }
 installBundleGlobals();
+installApiServerGlobals();
+installInitAPIServer();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

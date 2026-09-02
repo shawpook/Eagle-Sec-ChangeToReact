@@ -191,6 +191,24 @@ try {
     return required.every((n) => g.present.includes(n) && window[n] !== undefined);
   })()`);
 
+  // ═══ A5. c10b initAPIServer 域（契约 + 处理器实调对照）═══
+  await assertExpr('m1-A5-api-server-contract', `(() => {
+    const d = window.__eagleApiServerDomain;
+    return !!d && d.installed && d.version >= 2 && d.port === 41595
+      && typeof d.fns.getAPIApplicationInfo === 'function'
+      && typeof d.fns.listImages === 'function'
+      && typeof d.fns.createFolder === 'function';
+  })()`);
+  await evalNow(`(() => {
+    const d = window.__eagleApiServerDomain;
+    d.fns.getAPIApplicationInfo().then((info) => {
+      window.__a5 = (info && typeof info.version === 'string' && typeof info.platform === 'string'
+        && info.preferences && info.showCollectModal !== undefined) ? 'ok' : 'shape';
+    }).catch((err) => { window.__a5 = 'err:' + ((err && err.message) || err); });
+    return true;
+  })()`);
+  await assertExpr('m1-A5-api-server-fns', `window.__a5 === 'ok'`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

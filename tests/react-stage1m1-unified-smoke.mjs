@@ -260,6 +260,28 @@ try {
       && typeof window.$bodyScope.relayout === 'function';
   })()`);
 
+  // ═══ A9. c14 智能文件夹规则匹配（26 规则函数在位 + existInSmartFilter 实调）═══
+  await evalNow(`(() => {
+    const w = window;
+    const s = w.$bodyScope;
+    const ruleFnsOk = typeof w.isMatchNameRule === 'function' && typeof w.isMatchTypeRule === 'function'
+      && typeof w.isMatchColorRule === 'function' && typeof w.isMatchFontActivatedRule === 'function';
+    // 实调：name contains 规则 + type equal 规则
+    const folder = { conditions: [{ match: 'AND', rules: [
+      { property: 'name', method: 'contain', value: 'Alpha' },
+    ] }] };
+    const img = { name: 'Alpha One', ext: 'png', tags: [], folders: [], width: 100, height: 50, size: 1, modificationTime: Date.now() };
+    let r1 = null, r2 = null, r3 = null;
+    try { r1 = s.existInSmartFilter(folder, img); } catch (err) { r1 = 'err:' + err.message; }
+    folder.conditions[0].rules[0].value = 'Zeta';
+    try { r2 = s.existInSmartFilter(folder, img); } catch (err) { r2 = 'err:' + err.message; }
+    folder.conditions[0].rules[0] = { property: 'type', method: 'equal', value: 'png' };
+    try { r3 = s.existInSmartFilter(folder, img); } catch (err) { r3 = 'err:' + err.message; }
+    window.__a9 = (ruleFnsOk && r1 === true && r2 === false && r3 === true) ? 'ok' : 'fail:' + [ruleFnsOk, r1, r2, r3].join(',');
+    return true;
+  })()`);
+  await assertExpr('m1-A9-smart-filter', `window.__a9 === 'ok'`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

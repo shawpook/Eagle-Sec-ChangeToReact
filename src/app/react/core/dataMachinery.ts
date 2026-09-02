@@ -1418,6 +1418,103 @@ export function machineryRelayout(s: any, margin: any): void {
   ig._updateContainerHeight();
 }
 
+/* ── c14：智能文件夹规则匹配域 ───────────────────────────────────────── */
+
+/* MATCH_FUNCTION 表（bundle 32117-32143 逐字；26 规则函数经 window 解析——bundle 8369-9418
+   顶层函数（b1 后由 public/vendor/eagle-match-rules.js script 注入供给）） */
+let matchFunctionTable: any = null;
+function getMatchFunctionTable(): any {
+  const w = window as any;
+  if (!matchFunctionTable) {
+    matchFunctionTable = {
+      "name": w.isMatchNameRule,
+      "folderName": w.isMatchFolderNameRule,
+      "url": w.isMatchUrlRule,
+      "annotation": w.isMatchAnnotationRule,
+      "comments": w.isMatchCommentsRule,
+      "width": w.isMatchWidthRule,
+      "height": w.isMatchHeightRule,
+      "fileSize": w.isMatchFileSizeRule,
+      "createTime": w.isMatchTimeRule,
+      "mtime": w.isMatchMTimeRule,
+      "btime": w.isMatchBTimeRule,
+      "tags": w.isMatchTagsRule,
+      "rating": w.isMatchRatingRule,
+      "folders": w.isMatchFoldersRule,
+      "type": w.isMatchTypeRule,
+      "shape": w.isMatchShapeRule,
+      "color": w.isMatchColorRule,
+      "duration": w.isMatchDurationRule,
+      "bpm": w.isMatchBPMRule,
+      "camera": w.isMatchCameraRule,
+      "iso": w.isMatchISORule,
+      "aperture": w.isMatchApertureRule,
+      'focalLength': w.isMatchFocalLengthRule,
+      'shutter': w.isMatchShutterRule,
+      "timestamp": w.isMatchTimestampRule,
+      "fontActivated": w.isMatchFontActivatedRule
+    };
+  }
+  return matchFunctionTable;
+}
+
+/* isMatchCondition（bundle 32145-32175 逐字） */
+function machineryIsMatchCondition(condition: any, image: any): boolean {
+  const MATCH_FUNCTION = getMatchFunctionTable();
+  var allMatch = true; // 全部符合
+
+  for (let i = 0; i < condition.rules.length; i++) {
+    var isMatch = false;
+    isMatch = MATCH_FUNCTION[condition.rules[i].property](condition.rules[i], image);
+
+    // 如果有任何一調規則沒有 match，交集狀態必為 false
+    if (!isMatch) {
+      allMatch = false;
+    }
+    // 交集判斷不需要等待所有條件計算完畢
+    if (condition.match === "AND" && !isMatch) {
+      return false;
+    }
+    // 假如是聯集且有任何一條規則已經 match
+    else if (condition.match === "OR" && isMatch) {
+      return true;
+    }
+  }
+
+  // 如果全不符合
+  if (allMatch) {
+    return true;
+  }
+
+  return false;
+}
+
+/* existInSmartFilter（bundle 32091-32116 逐字；递归 parent 链） */
+export function machineryExistInSmartFilter(s: any, smartFolder: any, image: any): boolean {
+  try {
+    var conditions = smartFolder.conditions;
+
+    for (var i = 0; i < smartFolder.conditions.length; i++) {
+      var boolean = smartFolder.conditions[i].boolean || "TRUE";
+      var isMatch = machineryIsMatchCondition(smartFolder.conditions[i], image);
+      if (boolean === "FALSE") {
+        isMatch = !isMatch;
+      }
+      if (!isMatch) return false;
+    }
+    let parent = s.smartFolderMappings[smartFolder.parent];
+    if (parent) {
+      return machineryExistInSmartFilter(s, parent, image);
+    }
+    else {
+      return true;
+    }
+  }
+  catch (err) {
+    return false;
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -1454,9 +1551,11 @@ export function applyDataMachineryScope(): void {
   s.checkTouchIDSupport = () => machineryCheckTouchIDSupport(s);
   // c13：relayout（ig/eg 经 window 解析）
   s.relayout = (margin: any) => machineryRelayout(s, margin);
+  // c14：existInSmartFilter（26 规则函数经 window + MATCH_FUNCTION 表）
+  s.existInSmartFilter = (smartFolder: any, image: any) => machineryExistInSmartFilter(s, smartFolder, image);
 
   (window as any).__eagleDataMachinery = {
-    version: 7,
+    version: 8,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -1482,5 +1581,7 @@ export function applyDataMachineryScope(): void {
     updateItemView: 'machinery',
     checkTouchIDSupport: 'machinery',
     relayout: 'machinery',
+    existInSmartFilter: 'machinery',
+    isMatchCondition: 'machinery',
   };
 }

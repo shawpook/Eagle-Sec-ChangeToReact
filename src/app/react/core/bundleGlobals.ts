@@ -680,6 +680,29 @@ export function installBundleGlobals(): void {
     } catch (err) { /* noop */ }
   }
 
+  // c14：智能文件夹规则匹配族（bundle 8369-9418 顶层函数逐字节提取副本；区域内 require
+  // → w.require 机械替换）。26 个 isMatch*Rule + intersect/hexToRGB/rgbToHex/
+  // colorSimilarityDistance + cacheColorMappings 状态。classic script 注入（顶层函数声明
+  // 落 window 的语义与 bundle 一致——new Function 内声明不落 window，故不可用）。
+  if (!w.isMatchNameRule) {
+    try {
+      fetch('/vendor/eagle-match-rules.js')
+        .then((r) => r.text())
+        .then((txt) => {
+          try {
+            const script = document.createElement('script');
+            script.textContent = txt;
+            document.head.appendChild(script);
+            script.remove();
+            if (w.__eagleBundleGlobals) w.__eagleBundleGlobals.matchRulesLoaded = true;
+          } catch (err) {
+            console.error('[bundleGlobals] match-rules exec failed', err);
+          }
+        })
+        .catch((err) => console.error('[bundleGlobals] match-rules fetch failed', err));
+    } catch (err) { /* noop */ }
+  }
+
   // ── c10a-2 Tier 2：小函数批（全部逐字移植，if-absent）──
   // electron/ipcRenderer 链（bundle 19018-19028：var electron = require('electron')/
   // var ipcRenderer = electron.ipcRenderer；electron 为 node 内建模块可复现）

@@ -2504,6 +2504,21 @@
 > - 验证：tsc 零错；m1 23/23（A8：eg.InfiniteGrid.JustifiedLayout/Gridlayout 在位 + relayout
 >   machinery 标记；DIAG-CONSOLE 空）。
 
+> **c14a 智能文件夹规则匹配域（2026-09-02；26 规则函数提取 + existInSmartFilter scope 替换）**：
+> - **26 个 isMatch*Rule 函数 = bundle 8369-9418 顶层函数**（EagleController 外，window.*
+>   live binding，b1 死亡）——**逐字节提取 56KB 副本** → frontend/public/vendor/eagle-match-
+>   rules.js（区域内 require→w.require 两处机械替换）；if-absent **classic script 注入**（顶层
+>   函数声明落 window 的语义与 bundle 一致；new Function 内声明不落 window，故不可用）。
+>   含 intersect/cacheColorMappings 状态/colorSimilarityDistance/hexToRGB/rgbToHex 助手
+>   （后两者为 React w.* 消费面，同批供给）。
+> - machineryExistInSmartFilter（32091-32116 逐字：条件循环 + boolean FALSE 取反 + parent
+>   递归链）+ machineryIsMatchCondition（32145-32175 逐字：AND 短路/OR 命中返回）+
+>   MATCH_FUNCTION 表（32117-32143 逐字 26 属性映射，规则函数经 window 解析惰性建表）。
+>   scope 替换生效（__eagleDataMachinery version 8）。
+> - m1 A9 断言：规则函数在位 + **existInSmartFilter 实调**（name contain 真→假翻转 +
+>   type equal 真）。验证：tsc 零错；m1 24/24（DIAG-CONSOLE 空）。suite ALL GREEN（c11/
+>   c12/c13 收口验证，含 main-ui-workflow）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

@@ -2568,6 +2568,17 @@
 >   **教训：环境型 toast（网络健康检查）与测试的「初始干净」假设存在内在竞态——修测试
 >   假设而非抑制应用行为。**
 
+> **c15b adjustLayoutWidth/zoomFit/saveListHeight（2026-09-02；version 12）**：
+> - machinerySaveListHeight（33720-33742 逐字；150ms 防抖 + per-folder/tag/viewMode 九键
+>   localStorage 逐字，saveListHeightTimeout 域内自管）。
+> - machineryAdjustLayoutWidth（33839-33947 逐字）：GridLayout/SquareLayout 走 ig._layout.
+>   _columnLength 列宽重算、其余按 imageSize 梯度步进（500/200 阈值）、MAX_LIST_WIDTH/75
+>   夹取、margin===Infinity→10 怪癖逐字、relayout(margin) + scrollToCurrentItem（scope 解析）。
+> - machineryZoomFit（33949-33985 逐字）：非详情模式 = 高度 150 + changeListHeight + 布局
+>   分支回存；详情模式 mpv scaleMode=fit 分流 + lastZoomMode=fit 持久化（eagle.viewer.
+>   lastZoomMode 键逐字）+ zoomRatio 100 + smartZoom(undefined, true)。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

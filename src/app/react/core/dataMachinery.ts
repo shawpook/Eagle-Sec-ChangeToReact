@@ -25,6 +25,12 @@
  *   逐字；_.debounce(fn,100,true) leading-edge，实例一次性创建）+ autoResizeTagFilter（43119-43128
  *   闭包函数）。
  *
+ * - **c9d 缩放/放映/计数/最近文件夹**：getRatioExp（31336）/ getRatioNonExp（31343）纯函数、
+ *   updateZoomRatio（31391-31418 逐字；smoothZoom vendor 插件、updateZoomRatioTimeout 域内
+ *   自管）、toggleSlideshow（23816）、smartFolderCount（46646；existInSmartFilter/lockImageFilter
+ *   经 scope 解析）、getRecentFolders（31969；localStorage recentMoveFolders 逐字键）。
+ *   注：unlockPassword 为 scope 字段（非函数），React 侧 5 处读写经桥接/字段解析，无需移植。
+ *
  * - **calculateImageBinding（bundle 28684-28965 逐字）**：核心重建机——duration 1/50 退避逻辑
  *   （重入时退避 50ms）、TagManager.azGroups → $timeout.cancel、$timeout(work,duration)、
  *   work = raw 检查 + sortRawData + 全部 resets + 三次 tree.walk（folderMappings/folderList/pinyin/
@@ -54,6 +60,8 @@ let updateSidebarListTimeout: any = null;
 let rebindRefreshLazyTimeout: any = null;
 // ── c9c 域内自管（原 controller 闭包 var：prependImagesTimeout，30519 邻域）──
 let prependImagesTimeout: any = null;
+// ── c9d 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）──
+let updateZoomRatioTimeout: any = null;
 
 let filterCache: any = null;
 function getFilter(): any {
@@ -1013,6 +1021,111 @@ export function machineryReload(s: any): any {
   }, 100, true);
 }
 
+/* ── c9d：缩放/放映/计数/最近文件夹 ──────────────────────────────────── */
+
+/* getRatioExp（bundle 31336-31341 逐字） */
+export function machineryGetRatioExp(ratio: any): number {
+  if (ratio > 100) {
+    ratio = 100 + (ratio - 100) * 7;
+  }
+  return parseInt(ratio);
+}
+
+/* getRatioNonExp（bundle 31343-31348 逐字） */
+export function machineryGetRatioNonExp(ratio: any): number {
+  if (ratio > 100) {
+    ratio = (ratio - 100) / 7 + 100;
+  }
+  return ratio;
+}
+
+/* updateZoomRatio（bundle 31391-31418 逐字；smoothZoom = vendor jQuery 插件；
+   updateZoomRatioTimeout 域内自管） */
+export function machineryUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTransition: any): void {
+  const w = window as any;
+  var pageX: any, pageY: any;
+
+  if (ratio) {
+    s.imageSize.zoomRatio = ratio;
+    s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
+  }
+
+  if (w.$.isNumeric(x) && w.$.isNumeric(y)) {
+    pageX = x;
+    pageY = y;
+  } else {
+    pageX = w.$(window).width() / 2;
+    pageY = w.$(window).height() / 2;
+  }
+
+  if (hasTransition) {
+    clearTimeout(updateZoomRatioTimeout);
+    w.$("#detail-container").addClass("zooming");
+    updateZoomRatioTimeout = setTimeout(function () {
+      w.$("#detail-container").removeClass("zooming");
+    }, 300);
+  }
+
+  w.$("#detail-container").smoothZoom('focusTo', {
+    zoom: s.imageSize.zoomRatioExp,
+    pageX: pageX,
+    pageY: pageY,
+    speed: 0
+  });
+}
+
+/* toggleSlideshow（bundle 23816-23823 逐字；enter/leaveSlideshowMode 经 scope 解析） */
+export function machineryToggleSlideshow(s: any): void {
+  if (!s.isSlideshowMode) {
+    s.enterSlideshowMode();
+  } else {
+    s.leaveSlideshowMode();
+  }
+}
+
+/* smartFolderCount（bundle 46646-46661 逐字；existInSmartFilter/lockImageFilter 经 scope 解析） */
+export function machinerySmartFolderCount(s: any, smartFolder: any): any {
+  if (smartFolder) {
+    if (smartFolder.conditions.length === 0) return 0;
+    // console.time("计算智能文件夹图片数量");
+    var images: any[] = [];
+    images = s.raw.filter(function (image: any) {
+      if (image.isDeleted) return false;
+      return s.existInSmartFilter(smartFolder, image);
+    });
+    if (Object.keys(s.lockedImages).length > 0) {
+      images = images.filter(s.lockImageFilter);
+    }
+    // console.timeEnd("计算智能文件夹图片数量");
+    return images.length;
+  }
+}
+
+/* getRecentFolders（bundle 31969-31988 逐字） */
+export function machineryGetRecentFolders(s: any, length: any): any[] {
+  var len = length;
+  if (!length) len = 8;
+  var recentMoveFolders: any = localStorage.getItem("recentMoveFolders");
+  if (recentMoveFolders) {
+    recentMoveFolders = JSON.parse(recentMoveFolders);
+    recentMoveFolders = recentMoveFolders.slice(0, len);
+  }
+  else {
+    return [];
+  }
+
+  recentMoveFolders = recentMoveFolders.filter(function (folderId: any) {
+    return !!s.folderMappings[folderId];
+  });
+
+  var recentFolders = recentMoveFolders.map(function (folderId: any) {
+    return s.folderMappings[folderId];
+  });
+
+  recentFolders = [...new Set(recentFolders)];
+  return recentFolders;
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -1035,9 +1148,17 @@ export function applyDataMachineryScope(): void {
   s.switchLayout = (layout: any, forceLayout: any) => machinerySwitchLayout(s, layout, forceLayout);
   s.prependImages = (images: any[], updateView: any) => machineryPrependImages(s, images, updateView);
   s.reload = machineryReload(s);
+  // c9d：缩放/放映/计数/最近文件夹（getRatioExp/getRatioNonExp 纯函数被 updateZoomRatio
+  // 与 React 域 24 处调用面共用）
+  s.getRatioExp = (ratio: any) => machineryGetRatioExp(ratio);
+  s.getRatioNonExp = (ratio: any) => machineryGetRatioNonExp(ratio);
+  s.updateZoomRatio = (ratio: any, x: any, y: any, hasTransition: any) => machineryUpdateZoomRatio(s, ratio, x, y, hasTransition);
+  s.toggleSlideshow = () => machineryToggleSlideshow(s);
+  s.smartFolderCount = (smartFolder: any) => machinerySmartFolderCount(s, smartFolder);
+  s.getRecentFolders = (length: any) => machineryGetRecentFolders(s, length);
 
   (window as any).__eagleDataMachinery = {
-    version: 3,
+    version: 4,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -1054,5 +1175,11 @@ export function applyDataMachineryScope(): void {
     reload: 'machinery',
     autoResizeTagFilter: 'machinery',
     resetImageData: 'machinery',
+    getRatioExp: 'machinery',
+    getRatioNonExp: 'machinery',
+    updateZoomRatio: 'machinery',
+    toggleSlideshow: 'machinery',
+    smartFolderCount: 'machinery',
+    getRecentFolders: 'machinery',
   };
 }

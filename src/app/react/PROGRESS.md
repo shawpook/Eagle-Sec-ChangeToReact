@@ -2358,6 +2358,16 @@
 >   （43119-43128 闭包函数）同片移植。
 > - m1 A3 断言扩至九函数 machinery 标记。验证：tsc 零错；m1 16/16（DIAG-CONSOLE 空）。
 
+> **c9d 缩放/放映/计数/最近文件夹（2026-09-02；六函数 scope 替换生效）**：
+> - machineryGetRatioExp（31336 逐字）/ machineryGetRatioNonExp（31343 逐字）——纯函数，
+>   React 域 24 处调用面共用；machineryUpdateZoomRatio（31391-31418 逐字）——smoothZoom
+>   vendor jQuery 插件 + updateZoomRatioTimeout 域内自管。
+> - machineryToggleSlideshow（23816 逐字；enter/leaveSlideshowMode 经 scope 解析）、
+>   machinerySmartFolderCount（46646 逐字；existInSmartFilter/lockImageFilter 经 scope 解析）、
+>   machineryGetRecentFolders（31969 逐字；localStorage recentMoveFolders 键逐字）。
+> - **定性**：unlockPassword 为 scope 字段（非函数）——React 侧 5 处读写经字段桥解析，无需移植。
+> - m1 A3 断言扩至十五函数 machinery 标记（version 4）。验证：tsc 零错；m1 16/16。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

@@ -171,7 +171,9 @@ try {
     const s = window.$bodyScope;
     if (!m || !m.applied || m.version < 2) return false;
     return ['calculateImageBinding', 'sortRawData', 'rebindRefresh', 'rebindRefreshLazy',
-      'updateSidebarList', 'updateItemsView', 'switchLayout', 'prependImages', 'reload']
+      'updateSidebarList', 'updateItemsView', 'switchLayout', 'prependImages', 'reload',
+      'getRatioExp', 'getRatioNonExp', 'updateZoomRatio', 'toggleSlideshow',
+      'smartFolderCount', 'getRecentFolders']
       .every((k) => m[k] === 'machinery')
       && typeof s.calculateImageBinding === 'function'
       && typeof s.rebindRefresh === 'function'

@@ -2001,6 +2001,25 @@
 >   读写 = 行为零改动。
 
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
+
+> **cZ-1 已验证并接管（2026-09-02）**：存储桥基建制落成——数据面接管的核心机制第一次
+> 实装并验证。
+> - core/appCore.ts：coreState 状态容器（普通对象——桥接访问器需要同步属性读写）+
+>   `bridgeScopeFields(scope, fields)`（scope 字段 → getter/setter 访问器，后端 AppCore；
+>   **现值收编**——桥接时把 scope 现值作为 AppCore 初值，绝不丢状态；幂等可重入）+
+>   `amputateChannel(ipc, ch)`（通道截肢：removeAllListeners 后返回重挂函数——bundle
+>   原处理器消亡、React 逐字处理器注册；各 cZ 域切片调用）。
+> - 接线：main.tsx bridgeWhenReady()（scope 就绪后桥接首批 11 字段：theme/platform/
+>   language/isLoading/isUILoaded/viewMode/keyword/layout/orderBy/trialRemain/currentFocus）；
+>   测试契约 window.__eagleCoreState。
+> - 关键验证：**digest 兼容**——bundle 的 viewMode $watch 经桥写仍触发（访问器读写对
+>   Angular 脏检查透明）；双向透明（scope 写 → AppCore 读、AppCore 写 → scope 读）；
+>   访问器幂等。-suite 43 项（runner 增 cz1）ALL GREEN（main-ui-workflow 一次既有偶发
+>   单跑复绿）；api-smoke 13/13；tsc 零错。
+> - 下一片 cZ-2：主题/偏好域（change.current.theme/update-preferences/preferences-updated
+>   通道截肢 + 字段桥扩容）。
+
+- [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

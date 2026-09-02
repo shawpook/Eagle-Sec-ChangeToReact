@@ -39,6 +39,7 @@ import { bindUploadSync } from './store/uploadState';
 import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
+import { bridgeScopeFields, coreState } from './core/appCore';
 import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
@@ -177,4 +178,18 @@ bindBodySync();
 (window as any).__eagleReactStore = useAppState;
 // c2：React 侧 eagle 对象族（bundle 实例仍为权威态，随 c 域切片逐步切换消费方）。
 (window as any).__eagleCoreEagle = coreEagle;
+
+// cZ-1：scope 字段存储桥（Angular boot 后执行；字段现值收编进 AppCore）
+const CZ_BRIDGE_FIELDS = ['theme', 'platform', 'language', 'isLoading', 'isUILoaded',
+  'viewMode', 'keyword', 'layout', 'orderBy', 'trialRemain', 'currentFocus'];
+function bridgeWhenReady(attempt = 0): void {
+  const scope = (window as any).$bodyScope || null;
+  if (scope) {
+    bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
+    (window as any).__eagleCoreState = coreState;
+    return;
+  }
+  if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);
+}
+bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

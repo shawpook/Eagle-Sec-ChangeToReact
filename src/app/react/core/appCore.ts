@@ -1,0 +1,58 @@
+/**
+ * cZ-1：数据面存储桥——AppCore 单例 + scope 字段访问器化。
+ *
+ * 机制：`bridgeScopeFields(scope, fields)` 把 $bodyScope 上的指定字段转为
+ * getter/setter 访问器，后端为本模块的 coreState 对象。bundle 内一切读写
+ * （ipc 处理器/watch/函数体）经属性访问透明落到 AppCore——**行为零改动、
+ * Angular 世界与 React 世界共享同一存储**；React 的 startScopeSync 监听
+ * （读 scope 字段）零改动自动生效。
+ *
+ * 桥接时机：Angular boot 完成后（scope 字段已有初值——桥接时把现值收编为
+ * AppCore 初值，绝不丢状态）。通道截肢（amputateChannel）随各 cZ 域切片逐个
+ * 执行；本模块仅提供基建。
+ */
+
+// AppCore 状态容器（普通对象——桥接访问器需要同步属性读写）
+export const coreState: Record<string, any> = {};
+
+const bridged = new Set<string>();
+
+/**
+ * 把 scope 上的字段转为访问器（现值收编进 coreState）。
+ * 已桥接的字段跳过（幂等）。字段不存在时同样桥接（bundle 后续赋值会进 AppCore）。
+ */
+export function bridgeScopeFields(scope: any, fields: string[]): void {
+  if (!scope) return;
+  for (const name of fields) {
+    if (bridged.has(name)) continue;
+    try {
+      const current = scope[name];
+      coreState[name] = current;
+      Object.defineProperty(scope, name, {
+        get() { return coreState[name]; },
+        set(v: any) { coreState[name] = v; },
+        configurable: true,
+        enumerable: true,
+      });
+      bridged.add(name);
+    } catch (err) {
+      console.error('[app-core] bridge failed for ' + name, err);
+    }
+  }
+}
+
+export function isBridged(name: string): boolean {
+  return bridged.has(name);
+}
+
+/**
+ * 通道截肢：移除某通道上的全部监听（bundle 原处理器消亡），返回重挂函数供
+ * React 处理器注册（含自愈场景重挂）。
+ */
+export function amputateChannel(ipc: any, channel: string): ((handler: any) => void) | null {
+  if (!ipc || typeof ipc.removeAllListeners !== 'function') return null;
+  ipc.removeAllListeners(channel);
+  return (handler: any) => {
+    if (typeof ipc.on === 'function') ipc.on(channel, handler);
+  };
+}

@@ -2392,6 +2392,25 @@
 >   main-ui-workflow）均单独复跑通过——失败成因为 suite 运行中途 c9e 源码落盘（vite 冷启动
 >   读到中间态）叠加连跑资源竞争，非回归。**教训：suite 全量跑期间不得修改 src 源码**。
 
+> **c10a-1 bundle 全局接管（2026-09-02；core/bundleGlobals.ts if-absent 机制落地）**：
+> - **b1 关键面勘察定论**：index.html 独立 script 标签（jquery/lodash/mousetrap/tippy/
+>   lazy-load-manager/shortcut-manager/colorpicker/eagle-api）b1 后存活；**其余 bundle 顶层
+>   var/function/const 的 window live binding 全部随 app.bundle.js 死亡**。React 窗口全局
+>   访问 161 名 × bundle 顶层声明 804 名交集 = 80 名（剔除 DOM 内建与 __eagle* 诊断后为接管面）。
+> - **接管机制 = if-absent 安装**：window.X 无值才装——bundle 在世时（classic script 先于
+>   React module 执行）沿用其绑定，行为零改变；b1 后 bundle 缺席，由本模块供给。幂等可重入。
+>   main.tsx 在 bridgeWhenReady() 之前调用 installBundleGlobals()。
+> - **Tier 1 已接装**（21 名，m1-A4 断言全部在位）：appRoot（19002）/ EagleConfig（2051）/
+>   VIDEO·AUDIO·FONT_TYPES（18988-18991）/ SPECIAL_TYPES（18994，原码 afpub 重复键去重注释）/
+>   fileSize（2548-2572 逐字）/ re-require 十行（22776-22787 同路径）/ installedFonts（19243）/
+>   fontFolder（19192-19198）/ FileUrlHelper（React c1 移植版 fileUrlHelper.ts）。
+> - **Tier 2 待接装**（b1 前随各自 c 域移植）：getHashID/guid/fuzzy_match/fuzzy_score/
+>   cloneTree/decodeBase64Image/hiddenByCurrentFilter/ayncsImagesChange/APIServer 族/
+>   Registration/SlowNotify/RecentFileManager/analytics/eg(InfiniteGrid)/NgGridStrings/
+>   AnnotationPreview/ScrollbarSaver/ShortcutManager(bundle 版)/PluginCenterFactory 等。
+> - m1 统一冒烟扩至 17 项（新增 m1-A4-bundle-globals：21 关键全局全部在位断言）。
+>   验证：tsc 零错；m1 17/17（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

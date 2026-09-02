@@ -180,6 +180,17 @@ try {
       && typeof s.updateSidebarList === 'function';
   })()`);
 
+  // ═══ A4. c10 bundle 全局接管（if-absent 共存 + 关键全局在位）═══
+  await assertExpr('m1-A4-bundle-globals', `(() => {
+    const g = window.__eagleBundleGlobals;
+    if (!g || !g.installed) return false;
+    const required = ['appRoot', 'EagleConfig', 'SPECIAL_TYPES', 'fileSize', 'fse', 'tinyPinyin',
+      'pinyinlite', 'readChunk', 'writeFileAtomic', 'cartesianProduct', 'sanitize',
+      'unicodeNormalize', 'chineseConvert', 'colorConvert', 'DeltaE', 'installedFonts',
+      'fontFolder', 'FileUrlHelper'];
+    return required.every((n) => g.present.includes(n) && window[n] !== undefined);
+  })()`);
+
   // ═══ B. cZ-3b 启动重管线 ═══
   const cacheFile = path.join(tempRoot, 'm1-cache.jsonl');
   fs.writeFileSync(cacheFile, [

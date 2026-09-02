@@ -2556,6 +2556,18 @@
 >   解析仍由 bundle 承载）。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c14/c15 阶段收口（2026-09-02；suite ALL GREEN 47/47）**：
+> - c14b（7719d38 filterData 850 行三分片 + calcuteFilterResult）、c14c（502ae89 contentFilter/
+>   calcuteContainTags/RecentFileManager）、c15a（a8bd4b8 updateSelection/zoom）全量验证。
+> - **11a2 回归甄别记录**：suite 三项失败（7d5b/7d6a/11a2）——前两项单独复跑通过（竞争
+>   flake）；11a2 单独复跑稳定失败，经**整树级二分**（c13 全树亦失败）确认非代码回归：
+>   bootStack 端口映射下无 41593 监听 → initial 健康检查置 localhostError=true → 侦测到
+>   网路异常 toast（**正确应用行为**），c9-c15 启动时序变化使其由偶发渲染变为稳定渲染、
+>   暴露 a2-initial-empty 的时序假设。探针实测 localhostError=true/errorList=0/toast 文本
+>   佐证。修正 = 测试 boot 后显式清 localhost 环境源再断言组件响应性（376e8d3）。
+>   **教训：环境型 toast（网络健康检查）与测试的「初始干净」假设存在内在竞态——修测试
+>   假设而非抑制应用行为。**
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

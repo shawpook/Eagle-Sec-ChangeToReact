@@ -2084,6 +2084,44 @@
 > - 下一片 cZ-3b：启动重管线（app-status-loading/library-loaded/preload-library +
 >   background-state 生命周期 + APIServer/startAPIServer 全局复用）。
 
+> **cZ-3b 实现落盘（2026-09-02；新节奏：M1 大批次统一验证）**：启动重管线三通道 + bg
+> 生命周期接管，代码与冒烟已写就，**测试延后至 M1 统一验证波执行**（用户指令：避免
+> 每小片全量测试的耗时，多处修改后统一冒烟；片内以 tsc 零错 + commit 保持 bisect 能力）。
+> - 截肢面：app-status-loading（签名 '移除 background-state 监听'）/ app-status-library-
+>   loaded（签名 'findDupclipate'，typo 唯一）/ preload-library（签名 'concatDakuten'）。
+>   bg-state 通道不截肢——bundle 处理器由 library-loaded 注册（接管后不再注册），过渡期
+>   残留注册由 loading 处理器 removeAllListeners 清理（uploadState 自愈重挂时序：其重挂
+>   为 setTimeout(0) 异步，排在 domain 同步 removeAllListeners 之后，无互踩）。
+> - **闭合面落点三分类**：module var → window.* live binding（ig/machineID/
+>   backgroundWindowID/heartbeatStopCount/hardDiskSpeed/dragging/SlowNotify/analytics/
+>   RecentFileManager/appRoot/fontFolder/Registration）；顶层 function → window.*
+>   （stopAPIServer/initAPIServer/startAPIServer/checkBackgroundHeartbeat/ayncsImagesChange/
+>   isInFolder——注意 isInFolder 有 controller 内（32052，c3 已移植版）与顶层（74283，
+>   带 ignore 参）两个同名定义，library-loaded 用的是前者，从 controllerFns import）；
+>   全局词法 const/let → declare const（IPCHelper/ACCESS/PERFORMANCE_MONITOR/isVentura/
+>   remote/ga4track）。controller 闭包变量 → 域内自管：libraryCache/lazyLoadManager/
+>   updateTimer/heartbeatInterval（domainLibraryCache 等 4 个域内镜像）。
+> - **有意略去（行为等价，逐项注释）**：loading 末尾十模块同路径重 require（缓存同实例）；
+>   lastProcessedUrlState 清零（URL 去重 guard，watcher 写入方仍在）；allTags = {}（全
+>   bundle 零消费点死变量）；$http.post 遥测 → $.ajax JSON POST（原码第三参为误传回调，
+>   Angular 按默认配置发送，等价复刻）。
+> - **浊音表逐字节注入**：preload-library 的 concatDakuten table1/table2 是**分解浊音
+>   码点**（U+3099/U+309A combining），手打会合成变形损坏日文检索——用脚本从 bundle
+>   22805/22806 行原样提取注入（table1 len=256/table2 len=205）。
+> - library-loaded 逐字面：状态重置 40+ 字段 / folders+smartFolders 树走查（此处 parent
+>   是 walk 回调第二参，与 library.changed 的 window.parent 陷阱不同）/ TagManager.groups
+>   \r 清洗 / 图片载入双路径（preload 域内缓存 / imagesStringPath 文件流 + 坏 JSON 自愈
+>   → ayncsImagesChange）/ calculateImageBinding 回调（viewMode 恢复 + lastFolder/lastItem
+>   7 天回归 + UrlStateService URL 态 12 分支 + OPEN_IMAGE_FILTER 广播）/ 1s 后
+>   findDupclipate + smartFolder 计数（ayncsUpdateSmartFoldersCount 域内移植）/ APIServer
+>   启动 + bg 处理器注册（palette/metadata/download 队列落 scope + saving-progress-bar
+>   DOM，$filter 经 injector 获取）/ 6h updateTimer（域内）/ localhost:41593 探活 /
+>   ACCESS.checkALCs 写权限 / darwin NTFS 检测 / showTutorial。
+> - 闭环：tests/react-stage1cz3b-smoke.mjs（已登记 suite，M1 统一波执行）——三通道摘除
+>   计数/preload 域内缓存 2 条目/library-loaded 全链路（raw/isUILoaded/APIServer/LazyLoad-
+>   Manager/binding 完成 isLoading=false）/bg-state 落地+域内心跳/loading 清理（isUILoaded
+>   =false+allData 清空+心跳停+bg 监听零）/恢复重载。
+
 > **阶段1 收尾（数据面接管）切片方案（2026-09-01 立项；方向 = 全量迁移路径）**：
 > - **规模实测**（提取脚本盘点）：EagleController（bundle 20197-54236）$scope 函数
 >   **480 个**；React 直接调用 **155 个**（test-run/ec-called-by-react.txt 全名单），

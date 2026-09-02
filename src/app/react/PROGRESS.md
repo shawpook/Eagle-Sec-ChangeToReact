@@ -2343,6 +2343,21 @@
 > - 验证：tsc 零错；m1 16/16；suite 一项 stage7a cm-overlay-close 偶发失败单独复跑通过
 >   （同类资源竞争 flake）。
 
+> **c9c 视图/加载域（2026-09-02；updateItemsView/switchLayout/prependImages/reload scope 替换生效）**：
+> - machineryUpdateItemsView（35065-35072 逐字）——updateItemView 经 scope 解析仍由 bundle
+>   承载；machinerySwitchLayout（33790-33846 逐字）——四布局分支 + body class + $container
+>   class + relayout + offsetScrollbar(30) + $root.initMenu()（均经 scope 解析）；jQuery
+>   全经 window.$。
+> - machineryPrependImages（30524-30538 逐字）+ machineryResetImageData（30540-30548 闭包
+>   函数；viewMode/currentFolder 判定 + resetNgGridLayoutData + $evalAsync）——prependImagesTimeout
+>   域内自管（500ms 重置防抖）。
+> - machineryReload（42867-42918 逐字）：**_.debounce(fn, 100, true) leading-edge 防抖实例在
+>   applyDataMachineryScope 时一次性创建**（与 bundle controller init 同语义；替换语句本身
+>   不可重复执行防抖工厂）——leaveDetailMode/relayout/updateSelection/calculateFilterCounts/
+>   updateSubFolderWidth/adjustLayoutWidth 经 scope 解析；machineryAutoResizeTagFilter
+>   （43119-43128 闭包函数）同片移植。
+> - m1 A3 断言扩至九函数 machinery 标记。验证：tsc 零错；m1 16/16（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

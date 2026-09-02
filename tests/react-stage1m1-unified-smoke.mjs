@@ -171,7 +171,8 @@ try {
     const s = window.$bodyScope;
     if (!m || !m.applied || m.version < 2) return false;
     return ['calculateImageBinding', 'sortRawData', 'rebindRefresh', 'rebindRefreshLazy',
-      'updateSidebarList'].every((k) => m[k] === 'machinery')
+      'updateSidebarList', 'updateItemsView', 'switchLayout', 'prependImages', 'reload']
+      .every((k) => m[k] === 'machinery')
       && typeof s.calculateImageBinding === 'function'
       && typeof s.rebindRefresh === 'function'
       && typeof s.updateSidebarList === 'function';

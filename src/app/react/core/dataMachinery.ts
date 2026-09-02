@@ -19,6 +19,12 @@
  *   - rebindRefreshLazy（27007-27013 逐字；1000ms 防抖）/ updateSidebarList（42545-42617 逐字；
  *     20ms 防抖）——rebindRefreshLazyTimeout/updateSidebarListTimeout 域内自管。
  *
+ * - **c9c 视图/加载域**：updateItemsView（35065-35072 逐字）、switchLayout（33790-33846 逐字；
+ *   relayout/offsetScrollbar/initMenu 经 scope 解析）、prependImages（30524-30538 逐字）+
+ *   resetImageData（30540-30548 闭包函数；prependImagesTimeout 域内自管）、reload（42867-42918
+ *   逐字；_.debounce(fn,100,true) leading-edge，实例一次性创建）+ autoResizeTagFilter（43119-43128
+ *   闭包函数）。
+ *
  * - **calculateImageBinding（bundle 28684-28965 逐字）**：核心重建机——duration 1/50 退避逻辑
  *   （重入时退避 50ms）、TagManager.azGroups → $timeout.cancel、$timeout(work,duration)、
  *   work = raw 检查 + sortRawData + 全部 resets + 三次 tree.walk（folderMappings/folderList/pinyin/
@@ -46,6 +52,8 @@ let calculateImageBindingTimeout: any = null;
 //    rebindRefreshLazyTimeout）──
 let updateSidebarListTimeout: any = null;
 let rebindRefreshLazyTimeout: any = null;
+// ── c9c 域内自管（原 controller 闭包 var：prependImagesTimeout，30519 邻域）──
+let prependImagesTimeout: any = null;
 
 let filterCache: any = null;
 function getFilter(): any {
@@ -850,6 +858,161 @@ export function machineryUpdateSidebarList(s: any): void {
   }, 20);
 }
 
+/* ── c9c：视图/加载域 ───────────────────────────────────────────────── */
+
+/* updateItemsView（bundle 35065-35072 逐字；updateItemView 仍由 bundle 承载经 scope 解析） */
+export function machineryUpdateItemsView(s: any, items: any[]): void {
+  const w = window as any;
+  w.$(".box.selected").removeClass("selected");
+  for (var i = items.length - 1; i >= 0; i--) {
+    var item = items[i];
+    s.updateItemView(item);
+  }
+}
+
+/* switchLayout（bundle 33790-33846 逐字；relayout/offsetScrollbar/initMenu 仍由 bundle
+   承载经 scope 解析） */
+export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): void {
+  const w = window as any;
+  var $container = w.$("#box-container");
+  var allLayout = "grid-layout justified-layout list-layout";
+  switch (layout) {
+    case "GridLayout":
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+      });
+      s.layout = "GridLayout";
+      $container.removeClass(allLayout).addClass("grid-layout");
+      s.relayout();
+      // $scope.adjustLayoutWidth(0);
+      w.electronLog && w.electronLog.info("[app] Layout: Waterfall");
+      break;
+    case "SquareLayout":
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+        w.$("body").addClass("is-square-layout");
+      });
+      s.layout = "SquareLayout";
+      $container.removeClass(allLayout).addClass("grid-layout");
+      s.relayout();
+      // $scope.adjustLayoutWidth(0);
+      w.electronLog && w.electronLog.info("[app] Layout: Grid");
+      break;
+    case "ListLayout":
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+        w.$("body").addClass("is-list-layout");
+      });
+      s.layout = "ListLayout";
+      $container.removeClass(allLayout).addClass("list-layout");
+      s.relayout();
+      w.electronLog && w.electronLog.info("[app] Layout: List");
+      break;
+    default:
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+      });
+      s.layout = "JustifiedLayout";
+      $container.removeClass(allLayout).addClass("justified-layout");
+      s.relayout();
+      w.electronLog && w.electronLog.info("[app] Layout: Justified");
+  }
+
+  s.offsetScrollbar(30);
+  s.$root.initMenu();
+}
+
+/* resetImageData（bundle 30540-30548 逐字；controller 闭包函数 → 域内移植） */
+function machineryResetImageData(s: any, images: any[]): void {
+  const w = window as any;
+  if (s.viewMode == "all" || (s.currentFolder && images[0].folders[0] && images[0].folders.indexOf(s.currentFolder.id) > -1) || (images[0].folders && images[0].folders.length === 0 && s.viewMode == "unfiled")) {
+    w.resetNgGridLayoutData(s.allData, 0);
+    s.$evalAsync();
+  }
+}
+
+/* prependImages（bundle 30524-30538 逐字；prependImagesTimeout 域内自管。
+   原码 updateView 参数未使用，逐字保留签名） */
+export function machineryPrependImages(s: any, images: any[], updateView: any): void {
+  for (var i = 0; i < images.length; i++) {
+    s.itemMappings[images[i].id] = images[i];
+  }
+
+  if (images[0].id) {
+    s.allData.unshift(images[0]);
+    clearTimeout(prependImagesTimeout);
+    prependImagesTimeout = setTimeout(function () {
+      machineryResetImageData(s, images);
+    }, 500);
+  }
+}
+
+/* autoResizeTagFilter（bundle 43119-43128 逐字；controller 闭包函数 → 域内移植） */
+function machineryAutoResizeTagFilter(s: any): void {
+  const w = window as any;
+  var tagsLength = s.containTags.length;
+  var height = tagsLength * 24 + 54;
+  if (s.containerSize && s.containerSize.tagFilter) {
+    if (s.containerSize.tagFilter > height) {
+      w.$(".tags-filter").height(height);
+    }
+    else {
+      w.$(".tags-filter").height(s.containerSize.tagFilter);
+    }
+  }
+}
+
+/* reload（bundle 42867-42918 逐字；_.debounce(fn, 100, true) leading-edge 防抖原样复刻，
+   防抖实例在 applyDataMachineryScope 时一次性创建（与 bundle controller init 同语义）。
+   leaveDetailMode/relayout/updateSelection/calculateFilterCounts/updateSubFolderWidth/
+   adjustLayoutWidth 仍由 bundle 承载经 scope 解析；rebindRefresh 已是移植版（scope 解析即达）） */
+export function machineryReload(s: any): any {
+  const w = window as any;
+  return w._.debounce(function reload(keepDetailMode: any) {
+    s.hexColor = undefined;
+    s.unlockPassword = "";
+
+    if (!keepDetailMode) {
+      if (s.isDetailMode) {
+        s.leaveDetailMode();
+      }
+
+      if (s.selected.length > 0) {
+        s.selected = [];
+      }
+    }
+
+    s.loadMoreDisable = false;
+    s.lastImageHeight = s.imageSize.height;
+    s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
+    s.rebindRefresh();
+    s.relayout();
+    s.updateSelection();
+    s.calculateFilterCounts();
+    s.updateSubFolderWidth();
+    w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
+
+    machineryAutoResizeTagFilter(s);
+    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+      s.adjustLayoutWidth(0);
+    }
+    s.listDone = true;
+
+    if (w.$("#box-container").scrollTop() !== 0) {
+      w.$("#box-container").scrollTop(0);
+    }
+    w.$(".box.processed").removeClass("processed");
+    setTimeout(function () {
+      w.$("#image-drop-area").show();
+      w.$("#box-container").trigger("scroll");
+    }, 100);
+    setTimeout(function () {
+      w.$("#box-container").trigger("scroll");
+    }, 500);
+
+  }, 100, true);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -866,9 +1029,15 @@ export function applyDataMachineryScope(): void {
   s.rebindRefresh = (muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRefresh(s, muteMode, contentFilterCache, startCursor);
   s.rebindRefreshLazy = () => machineryRebindRefreshLazy(s);
   s.updateSidebarList = () => machineryUpdateSidebarList(s);
+  // c9c：updateItemsView/switchLayout/prependImages/reload（reload = 一次性创建的 leading-edge
+  // 防抖实例，与 bundle controller init 同语义）
+  s.updateItemsView = (items: any[]) => machineryUpdateItemsView(s, items);
+  s.switchLayout = (layout: any, forceLayout: any) => machinerySwitchLayout(s, layout, forceLayout);
+  s.prependImages = (images: any[], updateView: any) => machineryPrependImages(s, images, updateView);
+  s.reload = machineryReload(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 2,
+    version: 3,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -879,5 +1048,11 @@ export function applyDataMachineryScope(): void {
     updateSidebarList: 'machinery',
     calcuteFilterBadge: 'machinery',
     filterSidebarItem: 'machinery',
+    updateItemsView: 'machinery',
+    switchLayout: 'machinery',
+    prependImages: 'machinery',
+    reload: 'machinery',
+    autoResizeTagFilter: 'machinery',
+    resetImageData: 'machinery',
   };
 }

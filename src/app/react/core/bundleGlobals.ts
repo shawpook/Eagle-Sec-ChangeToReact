@@ -18,6 +18,7 @@
 
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
+import { getBodyScope } from '../global/scopeBridge';
 
 declare const Buffer: any;
 
@@ -712,6 +713,530 @@ function _installMouseTracker(): void {
   _mouseTrackerInstalled = true;
 }
 
+/* ── b1-9b：管理器批（bundle 顶层对象逐字提取；$scope 类引用经 getBodyScope 同双轨解析）── */
+
+/* QuickAccessManager 方法面（bundle 46666-46753 逐字——bundle 19061 `var QuickAccessManager = {}`
+   顶体 + controller init 挂方法；b1 后由本模块同序重建） */
+function _attachQuickAccessManager(qam: any): void {
+  const w = window as any;
+  const s = (): any => getBodyScope();
+
+  qam.add = function (type: any, object: any) {
+    s().quickAccess.push({
+      type: type,
+      id: object.id
+    });
+    s().updateSidebarList();
+    qam.save();
+    w.electronLog.info(`[app] Add ${type}(${object.id}) to quick access`);
+    w.analytics.event('QuickAccess', 'Add', type);
+  };
+
+  qam.addMultiple = function (type: any, objects: any) {
+    if (!objects) return;
+    objects.forEach(function (object: any) {
+      if (qam.indexOf(object) === -1) {
+        s().quickAccess.push({
+          type: type,
+          id: object.id
+        });
+        w.electronLog.info(`[app] Add ${type}(${object.id}) to quick access`);
+        w.analytics.event('QuickAccess', 'Add', type);
+      }
+    });
+    s().updateSidebarList();
+    qam.save();
+  };
+
+  qam.remove = function (type: any, object: any) {
+    var idx = qam.indexOf(object);
+    if (idx > -1) {
+      s().quickAccess.splice(idx, 1);
+      s().updateSidebarList();
+      qam.save();
+      w.electronLog.info(`[app] Remove ${type}(${object.id}) from quick access`);
+      w.analytics.event('QuickAccess', 'Remove', type);
+    }
+  };
+
+  qam.removeMultiple = function (type: any, objects: any) {
+    if (!objects) return;
+    objects.forEach(function (object: any) {
+      var idx = qam.indexOf(object);
+      if (idx > -1) {
+        s().quickAccess.splice(idx, 1);
+        w.electronLog.info(`[app] Remove ${type}(${object.id}) from quick access`);
+        w.analytics.event('QuickAccess', 'Remove', type);
+      }
+    });
+    s().updateSidebarList();
+    qam.save();
+  };
+
+  qam.removeIndex = function (idx: any) {
+    if (idx > -1) {
+      var object = s().quickAccess[idx];
+      s().quickAccess.splice(idx, 1);
+      s().updateSidebarList();
+      qam.save();
+      w.electronLog.info(`[app] Remove ${object.type}(${object.id}) from quick access`);
+      w.analytics.event('QuickAccess', 'Remove', object.type);
+    }
+  };
+
+  qam.save = function () {
+    s().saveFolder();
+  };
+
+  qam.indexOf = function (object: any) {
+    var arr = s().quickAccess;
+    for (var i = 0; i < arr.length; i++) {
+      if (object.id === arr[i].id) {
+        return i;
+      }
+    }
+    return -1;
+  };
+
+  qam.getItem = function (type: any, id: any) {
+    switch (type) {
+      case "folder":
+        return s().folderMappings[id];
+      case "smartFolder":
+        return s().smartFolderMappings[id];
+    }
+  };
+}
+
+/* RecentFileManager（bundle 52307-52422 逐字；save = w.throttle(fn, 1000, true)——bundle 顶层
+   throttle 同源；localStorage 键 eagle.recentFiles.* 逐字） */
+function _buildRecentFileManager(): any {
+  const w = window as any;
+  const RecentFileManager: any = {
+    libraryName: "",
+    recentFiles: [],
+    recentFilesOrder: {},
+    maxHistory: 5000,
+    init: function (libraryName: any) {
+      RecentFileManager.libraryName = libraryName;
+      let json = localStorage[`eagle.recentFiles.${RecentFileManager.libraryName}`];
+      if (json) {
+        try {
+          RecentFileManager.recentFiles = JSON.parse(json);
+          RecentFileManager.calOrders();
+        }
+        catch (err) {
+          RecentFileManager.recentFiles = [];
+        }
+      }
+    },
+    calOrders: function () {
+      try {
+        for (var i = 0; i < RecentFileManager.recentFiles.length; i++) {
+          let itemId = RecentFileManager.recentFiles[i];
+          RecentFileManager.recentFilesOrder[itemId] = i + 1;
+        }
+      }
+      catch (err) { }
+    },
+    isExists: function (item: any) {
+      if (!item || !item.id) return false;
+      return RecentFileManager.recentFilesOrder[item.id];
+    },
+    addFile: function (item: any) {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        if (!item || !item.id) return;
+        RecentFileManager.recentFiles.unshift(item.id);
+        RecentFileManager.calOrders();
+        RecentFileManager.save();
+      }
+      catch (err) { }
+    },
+    addFiles: function (items: any) {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        if (!items) return;
+        if (items.length >= 20) return;
+        items.reverse().forEach(function (item: any) {
+          if (!item || !item.id) return;
+          RecentFileManager.recentFiles.unshift(item.id);
+          RecentFileManager.calOrders();
+        });
+        RecentFileManager.save();
+      }
+      catch (err) { }
+    },
+    clean: function () {
+      RecentFileManager.recentFiles = [];
+      RecentFileManager.recentFilesOrder = {};
+      RecentFileManager.save();
+    },
+    save: w.throttle(function () {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        // 最多保存 5000 個
+        RecentFileManager.recentFiles = [...new Set(RecentFileManager.recentFiles)];
+        if (RecentFileManager.recentFiles.length > RecentFileManager.maxHistory) {
+          RecentFileManager.recentFiles.length = RecentFileManager.maxHistory;
+        }
+        let json = JSON.stringify(RecentFileManager.recentFiles);
+        localStorage[`eagle.recentFiles.${RecentFileManager.libraryName}`] = json;
+      }
+      catch (err) { }
+    }, 1000, true)
+  };
+  return RecentFileManager;
+}
+
+/* SlowNotify（bundle 19073-19133 逐字；show 内 $bodyScope → getBodyScope） */
+function _buildSlowNotify(): any {
+  const w = window as any;
+  return {
+    hasShow: false,
+    triggerCount: 24,
+    resetCount: 4,
+    slowCount: 0,
+    fastCount: 0,
+    calculate: function (loadSpeed: any) {
+      if (!loadSpeed || w.SlowNotify.hasShow) return;
+      if (loadSpeed > 5000) {
+        w.SlowNotify.slowCount += 4;
+      }
+      else if (loadSpeed > 2500) {
+        w.SlowNotify.slowCount += 2.5;
+      }
+      else if (loadSpeed > 2000) {
+        w.SlowNotify.slowCount += 1.5;
+      }
+      else if (loadSpeed >= 1500) {
+        w.SlowNotify.slowCount += 1;
+      }
+
+      if (loadSpeed <= 300) {
+        w.SlowNotify.fastCount += 2;
+      }
+      else if (loadSpeed <= 500) {
+        w.SlowNotify.fastCount += 1;
+      }
+      else if (loadSpeed <= 700) {
+        w.SlowNotify.fastCount += 0.5;
+      }
+      else {
+        w.SlowNotify.fastCount = 0;
+      }
+      // console.log(`SlowNotify.slowCount: ${SlowNotify.slowCount}, SlowNotify.fastCount: ${SlowNotify.fastCount}`)
+      w.SlowNotify.detect();
+    },
+    detect: function () {
+      if (w.SlowNotify.fastCount >= w.SlowNotify.resetCount) {
+        w.SlowNotify.fastCount = 0;
+        w.SlowNotify.slowCount = 0;
+        // console.log("重置")
+      }
+      if (w.SlowNotify.slowCount >= w.SlowNotify.triggerCount) {
+        w.SlowNotify.show();
+      }
+    },
+    show: function () {
+      const bodyScope = getBodyScope();
+      bodyScope.showSlowNotify = true;
+      bodyScope.$evalAsync(function () {
+        setTimeout(function () {
+          w.$("#library-warning").addClass("show active");
+          setTimeout(function () {
+            w.$("#library-warning").removeClass("active");
+          }, 10000);
+        }, 300);
+      });
+      w.SlowNotify.hasShow = true;
+      console.log("跳出提示");
+      w.electronLog && w.electronLog.error(`[app] Warning: hard drive performance too slow`);
+    }
+  };
+}
+
+/* analytics（bundle 105501-105706 逐字；deps：pjson/locale/customDimesion1 为 bundle 顶层
+   var（105480-105484）→ 挂载时同径计算；ga4track（105491）经 vendor eagle-ga4mp.js 注入
+   后惰性解析（bare 引用 → w.ga4track + 存在性守卫——telemetry 容忍早期调用丢失，登记）） */
+function _buildAnalytics(): any {
+  const w = window as any;
+  const pjson = w.require((w.appRoot && (w.appRoot.path || w.appRoot)) + '/package.json');
+  const clientId = w.localStorage["gaClientId"];
+  const locale = (w.preferences && w.preferences.language) || "en";
+  if (w.customDimesion1 === undefined) w.customDimesion1 = "未激活"; // 105484
+  const analyticsObj: any = {
+    apiVersion: '1',
+    trackID: 'UA-88989101-2',
+    clientID: clientId,
+    userID: clientId,
+    appName: 'Eagle App',
+    appVersion: `${pjson.version} (${pjson.buildVersion})`,
+    debug: false,
+    performanceTracking: true,
+    errorTracking: true,
+    userLanguage: locale.replace("_", "-").toLowerCase(),
+    currency: "USD",
+    lastScreenName: '',
+
+    sendRequest: function (data: any, callback: any) {
+
+      // 工程模式不需要記錄
+      if (pjson.buildVersion === "dev") return;
+
+      var postData = "v=" + this.apiVersion
+        + "&tid=" + this.trackID
+        + "&cid=" + this.clientID
+        + "&uid=" + this.userID
+        + "&an=" + this.appName
+        + "&av=" + this.appVersion
+        + "&sr=" + this.getScreenResolution()
+        + "&vp=" + this.getViewportSize()
+        + "&sd=" + this.getColorDept()
+        + "&ul=" + this.userLanguage
+        + "&ua=" + this.getUserAgent()
+        + "&cd1=" + w.customDimesion1  // 自定维度1
+        + "&ds=app";
+
+      Object.keys(data).forEach(function (key: any) {
+        var val = data[key];
+        if (typeof val != "undefined")
+          postData += "&" + key + "=" + val;
+      });
+
+      var http = new XMLHttpRequest();
+      var url = "https://www.google-analytics.com";
+      if (!this.debug)
+        url += "/collect";
+      else
+        url += "/debug/collect";
+
+      http.open("POST", url, true);
+
+      http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+
+      http.onreadystatechange = function () {
+        if (w.analytics.debug)
+          console.log(http.response);
+
+        if (http.readyState == 4 && http.status == 200) {
+          if (callback)
+            callback(true);
+        }
+        else {
+          if (callback)
+            callback(false);
+        }
+      };
+      http.send(postData);
+    },
+    generateClientID: function () {
+      var id = "";
+      var possibilities = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      for (var i = 0; i < 5; i++)
+        id += possibilities.charAt(Math.floor(Math.random() * possibilities.length));
+      return id;
+    },
+    getScreenResolution: function () {
+      return screen.width + "x" + screen.height;
+    },
+    getColorDept: function () {
+      return screen.colorDepth + "-bits";
+    },
+    getUserAgent: function () {
+      return navigator.userAgent;
+    },
+    getViewportSize: function () {
+      return window.screen.availWidth + "x" + window.screen.availHeight;
+    },
+
+    /*
+     * Measurement Protocol
+     * [https://developers.google.com/analytics/devguides/collection/protocol/v1/devguide]
+     * https://developers.google.com/analytics/devguides/collection/protocol/v1/parameters#t
+     */
+
+    screenView: w.throttle(function (this: any, screename: any) {
+      var data = {
+        't': 'screenview',
+        'cd': screename
+      }
+      this.sendRequest(data);
+      this.lastScreenName = screename;
+      w.ga4track && w.ga4track.trackEvent('page_view', {
+        page_location: `/${screename}`,
+        page_title: screename,
+      });
+    }, 10000),
+    event: function (this: any, category: any, action: any, label: any, value: any) {
+      var data = {
+        't': 'event',
+        'ec': category,
+        'ea': action,
+        'el': label,
+        'ev': value,
+        'cd': this.lastScreenName,
+      }
+      this.sendRequest(data);
+
+      let params: any = {};
+      if (action) {
+        params[action] = label || "true";
+      }
+      w.ga4track && w.ga4track.trackEvent(category, params);
+    },
+    exception: function (this: any, msg: any, fatal: any) {
+      var data = {
+        't': 'exception',
+        'exd': msg,
+        'exf': fatal || 0
+      }
+      this.sendRequest(data);
+    },
+    timing: function (this: any, category: any, variable: any, time: any, label: any) {
+      var data = {
+        't': 'timing',
+        'utc': category,
+        'utv': variable,
+        'utt': time,
+        'utl': label,
+      }
+      this.sendRequest(data);
+    },
+    ecommerce: {
+      transactionID: false,
+      generateTransactionID: function () {
+        var id = "";
+        var possibilities = "0123456789";
+        for (var i = 0; i < 5; i++)
+          id += possibilities.charAt(Math.floor(Math.random() * possibilities.length));
+        return id;
+      },
+      transaction: function (this: any, total: any, items: any) {
+        var t_id = "";
+        if (!this.ecommerce.transactionID)
+          t_id = this.ecommerce.generateTransactionID();
+        else
+          t_id = this.ecommerce.transactionID;
+
+        var data = {
+          't': 'transaction',
+          'ti': t_id,
+          'tr': total,
+          'cu': this.currency,
+        }
+        this.sendRequest(data);
+
+        items.forEach(function (this: any, item: any) {
+          var data = {
+            't': 'item',
+            'ti': t_id,
+            'in': item.name,
+            'ip': item.price,
+            'iq': item.qty,
+            'ic': item.id,
+            'cu': this.currency
+          }
+          this.sendRequest(data);
+        })
+      }
+    },
+    custom: function (this: any, data: any) {
+      this.sendRequest(data);
+    }
+  };
+  return analyticsObj;
+}
+
+/* ScrollbarSaver（bundle 46754-46828 逐字——controller init 赋值；$scope → getBodyScope；
+   ig → w.ig（网格实例，b1-9c 归口）） */
+function _buildScrollbarSaver(): any {
+  const w = window as any;
+  const s = (): any => getBodyScope();
+  return {
+    positionMapping: {},
+    getId: function (this: any) {
+      var id;
+      if (s().currentFolder) { id = s().currentFolder.id; }
+      else if (s().currentSmartFolder) { id = s().currentSmartFolder.id; }
+      else if (s().viewMode == "all") { id = "all"; }
+      else if (s().viewMode == "unfiled") { id = "unfiled"; }
+      else if (s().viewMode == "untagged") { id = "untagged"; }
+      else if (s().viewMode == "trash") { id = "trash"; }
+      else if (s().viewMode == "random") { id = "random"; }
+      else if (s().viewMode == "recent") { id = "recent"; }
+      return id;
+    },
+    saveScrollPosition: function (this: any) {
+      if (w.eagle.filter.filterBadge > 0) return;
+      if (s().keyword) return;
+      if (w.$(".box").length + w.$(".sub-folder").length === 0) return;
+      var scrollTop = w.$("#box-container").scrollTop();
+      var obj: any = {};
+      var id = w.ScrollbarSaver.getId();
+
+      if (scrollTop === 0) {
+        delete w.ScrollbarSaver.positionMapping[id];
+        return;
+      }
+
+      var startCursor = 0;
+      var offsetTop = (w.$(".box-list")[0] && w.$(".box-list")[0].offsetTop) || 0;
+      var scrollOffset;
+      if (w.$(".sub-folder").length > 0 && s().startCursor === 0) {
+        scrollOffset = w.$("#box-container").scrollTop();
+      }
+      else {
+        if (w.$(".box").length === 0) return;
+        scrollOffset = Math.abs(w.$(".box").eq(0).offset().top - 44) + offsetTop;
+      }
+      var its = w.ig.getItems();
+      if (its[0]) { startCursor = its[0].groupKey - 1000000; }
+
+      if (!id) return;
+
+      if (startCursor) { obj.cursor = startCursor; }
+      obj.offset = scrollOffset;
+      w.ScrollbarSaver.positionMapping[id] = obj;
+    },
+    restoreScrollPosition: function (this: any) {
+
+      if (s().viewMode === 'random') return;
+      if (w.eagle.filter.filterBadge > 0) return;
+      var id = w.ScrollbarSaver.getId();
+
+      if (!id) return;
+
+      var obj = w.ScrollbarSaver.positionMapping[id];
+      var $boxContainer = w.$("#box-container");
+      if (obj) {
+        s().startCursor = obj.cursor || 0;
+        var offset = obj.offset || 0;
+        var times = [20, 300];
+        for (var i = times[0]; i < times[1]; i += 20) {
+          setTimeout(function () {
+            if (w.ScrollbarSaver.getId() !== id || $boxContainer.scrollTop() !== offset) {
+              $boxContainer.scrollTop(offset);
+            }
+          }, i);
+        }
+      }
+      else {
+        s().startCursor = 0;
+      }
+    }
+  };
+}
+
 export function installBundleGlobals(): void {
   if (installed) return;
   installed = true;
@@ -1113,6 +1638,60 @@ export function installBundleGlobals(): void {
   if (w.heartbeatStopCount === undefined) w.heartbeatStopCount = 0; // 19071
   _installMouseTracker();
 
+  // ── b1-9b：管理器批挂载 ──
+  // preferences（bundle 105476：preferences = preferences || require(electron-settings).getPreferences() || {}）
+  if (!w.preferences) {
+    try {
+      w.preferences = req((w.appRoot && (w.appRoot.path || w.appRoot)) + '/my_modules/electron-settings').getPreferences() || {};
+    } catch (err) { w.preferences = {}; }
+  }
+  // QuickAccessManager（bundle 19061 {} + 46666-46753 controller init 挂方法——bundle 在世
+  // 时沿用其绑定；b1 后本模块同序重建）
+  if (!w.QuickAccessManager) {
+    w.QuickAccessManager = {};
+    _attachQuickAccessManager(w.QuickAccessManager);
+  }
+  if (!w.RecentFileManager) w.RecentFileManager = _buildRecentFileManager();
+  if (!w.SlowNotify) w.SlowNotify = _buildSlowNotify();
+  // ScrollbarSaver（bundle 19062 undefined var + controller init 46754 赋值）
+  if (!w.ScrollbarSaver) w.ScrollbarSaver = _buildScrollbarSaver();
+  // Registration（bundle 19208 逐字；activated 运行时更新走 bundle 22666 ipc 路径——post-b1
+  // 由 libraryDomain 注册域接管时接线，登记）
+  if (!w.Registration) w.Registration = { activated: false };
+  // ga4track（bundle 105491-105496；vendor eagle-ga4mp.js 注入后初始化——注入失败时
+  // telemetry 丢失（analytics 方法侧 w.ga4track 守卫），登记）
+  if (!w.ga4track) {
+    try {
+      fetch('/vendor/eagle-ga4mp.js')
+        .then((r) => r.text())
+        .then((txt) => {
+          try {
+            const script = document.createElement('script');
+            script.textContent = txt;
+            document.head.appendChild(script);
+            script.remove();
+            if (w.ga4mp) {
+              if (!w.localStorage["gaClientId"] || w.localStorage["gaClientId"] == 'undefined') {
+                w.localStorage.setItem("gaClientId", w.guid());
+              }
+              const clientId = w.localStorage["gaClientId"];
+              w.ga4track = w.ga4mp(["G-LZFKF8K4LB"], {
+                user_id: clientId,
+                non_personalized_ads: true,
+                debug: false
+              });
+              w.ga4track.setUserProperty('language', w.preferences.general.language.replace("_", "-").toLowerCase());
+              w.ga4track.setEventsParameter('app_version', `${w.analytics.appVersion}`);
+              w.ga4track.setEventsParameter('app_name', `Eagle App`);
+            }
+          } catch (err) { console.error('[bundleGlobals] ga4mp exec failed', err); }
+        })
+        .catch((err) => console.error('[bundleGlobals] ga4mp fetch failed', err));
+    } catch (err) { /* noop */ }
+  }
+  // analytics（bundle 105501 顶层对象——bundle 在世时沿用其绑定）
+  if (!w.analytics) w.analytics = _buildAnalytics();
+
   // 诊断契约：冒烟断言全部关键全局在位（bundle 在世 = 沿用其绑定；b1 后 = 本模块供给）
   (window as any).__eagleBundleGlobals = {
     installed: true,
@@ -1126,7 +1705,9 @@ export function installBundleGlobals(): void {
       'pluginModule',
       'electronLog', 'getRawPath', 'getThumbnailPath', 'getExt', 'ayncsImagesRemove',
       'updateWindowProgressBar', 'junk', 'IS_DIRECTORY', 'EAGLE_THUMBNAIL_TEMP_PATH',
-      'resourcesPath', 'rectSelection', 'windowMouseX'].filter((n) => w[n] !== undefined),
+      'resourcesPath', 'rectSelection', 'windowMouseX',
+      'preferences', 'QuickAccessManager', 'RecentFileManager', 'SlowNotify', 'Registration',
+      'analytics', 'ScrollbarSaver'].filter((n) => w[n] !== undefined),
     eagleMembers: ['inspector', 'filter', 'duplicateChecker', 'reverseImageSearch', 'aiSearch',
       'customExport', 'combineImages', 'action', 'plugin', 'app', 'containerSize', 'utils']
       .filter((n) => w.eagle && w.eagle[n] !== undefined),

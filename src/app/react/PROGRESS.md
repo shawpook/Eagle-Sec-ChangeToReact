@@ -3180,6 +3180,34 @@ version 31）**：
 >   （ig 实例/resetNgGridLayoutData——归 grid 域切片）+ machineID 运行时赋值路径。
 > - 验证：tsc 零错；m1 25/25。
 
+> **b1-9b 管理器批挂载（2026-09-03；bundleGlobals.ts + vendor/eagle-ga4mp.js）**：
+> - **APIServer 闭环确认**：machineryInitAPIServer（apiServerDomain 1249 起，17875-18945
+>   逐字）1258 行已写 window.APIServer——initAPIServer/APIServer/startAPIServer/stopAPIServer
+>   三件齐全，无缺口。
+> - **QuickAccessManager**：bundle 19061 `{}` + 46666-46753 controller init 方法面（add/
+>   addMultiple/remove/removeMultiple/removeIndex/save/indexOf/getItem）逐字移植，
+>   $scope → getBodyScope 同双轨。
+> - **RecentFileManager**：52307-52422 逐字（save = throttle(1000, leading)——bundle 顶层
+>   throttle 同源 w.throttle；localStorage eagle.recentFiles.* 键逐字）。
+> - **SlowNotify**：19073-19133 逐字（show 内 $bodyScope → getBodyScope；#library-warning
+>   DOM 门逐字）。
+> - **ScrollbarSaver**：46754-46828 逐字（getId 八路视图取向 + save/restore 位置映射；
+>   ig.getItems → w.ig——网格实例 b1-9c 归口）。
+> - **Registration**：19208 `{activated: false}` 逐字；22666 ipc 运行时更新接线 post-b1 由
+>   libraryDomain 注册域接管时接线（登记）。
+> - **preferences**：105476 等价（electron-settings getPreferences()，shims electronSettings
+>   同源）。
+> - **analytics**：105501-105706 逐字 + deps 同径（clientId=localStorage.gaClientId/locale/
+>   customDimesion1="未激活"/pjson=require(package.json)）+ **ga4track → vendor
+>   eagle-ga4mp.js**（bundle 104962-105460 UMD 逐字节提取 499 行，node require 装载验证
+>   factory→object ✓；fetch 注入后 ga4track 初始化（105487-105496 逐字，gaClientId 缺失
+>   时 guid() 回填）；注入失败/早期调用 telemetry 丢失——analytics 方法侧 w.ga4track 存在性
+>   守卫，登记）。
+> - **this 注解组**：对象字面量方法 this-typing 以 `function (this: any, ...)` 显式化
+>   （screenView/event/exception/timing/custom/ecommerce.transaction + **forEach 内层
+>   function（bundle 原 bug：非箭头 forEach 回调内 this 为 undefined——逐字保留）**）。
+> - 验证：tsc 零错；m1 25/25（markdown-thumbnail flake 两现一过，同 2550 登记形态）。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

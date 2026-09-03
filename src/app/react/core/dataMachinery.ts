@@ -7565,6 +7565,143 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   });
 }
 
+/* ── b1-7a：小件批（注释模式/详情淡出/插件面板/存库防抖/标签群组四向/删群组）── */
+
+/* toggleCommentMode（bundle 21166-21169 逐字） */
+export function machineryToggleCommentMode(s: any, event: any): void {
+  event.preventDefault();
+  s.isCommentMode = !s.isCommentMode;
+}
+
+/* fadeOutDetailMode（bundle 31672-31678 逐字：selected 首盒 popdown 100ms） */
+export function machineryFadeOutDetailMode(s: any): void {
+  const w = window as any;
+  var $box = w.$(".box.selected").eq(0);
+  $box.addClass("popdown");
+  setTimeout(function () {
+    $box.removeClass("popdown");
+  }, 100);
+}
+
+/* openPluginPanel（bundle 37324 逐字：OPEN_PLUGIN_PANEL 广播，含 // return 注释逐字） */
+export function machineryOpenPluginPanel(s: any, event: any): void {
+  // return;
+  s.$root.$broadcast("OPEN_PLUGIN_PANEL");
+}
+
+/* saveFolderDebounce（bundle 42390-42396 逐字：isLibrarySaving 指示 + saveFolder 防抖 1s；
+   timeout 存 scope 字段（bundle 原样 $scope.saveFolderDebounceTimeout）） */
+export function machinerySaveFolderDebounce(s: any): void {
+  const w = window as any;
+  s.isLibrarySaving = true;
+  clearTimeout(s.saveFolderDebounceTimeout);
+  s.saveFolderDebounceTimeout = setTimeout(() => {
+    s.saveFolder();
+    s.isLibrarySaving = false;
+  }, 1000);
+}
+
+// ── b1-7a 域内自管（原 controller 闭包 var：tagRectSelecting，标签框选态）──
+let tagRectSelecting: any = false;
+
+/* 标签群组四向（bundle 48363-48416 逐字：ALL/UNFILED/STARRED 三向同构（同视图早退 +
+   tagRectSelecting 复位 + keyword 清空 + tagViewMode(Name) + 焦点 tags + 清 currentTagGroup/
+   selectedTags + TagManager.renderTagsResult）+ GROUP 向（blur 焦点输入 + currentTagGroup ===
+   group 早退在清空之后——bundle 原样）） */
+export function machineryOpenTagAllGroup(s: any): void {
+  if (s.tagViewMode === "ALL") return;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "ALL";
+  s.tagViewModeName = "ALL";
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = undefined;
+  s.selectedTags = {};
+  s.TagManager.renderTagsResult();
+}
+
+export function machineryOpenUnfiledGroup(s: any): void {
+  if (s.tagViewMode === "UNFILED") return;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "UNFILED";
+  s.tagViewModeName = "UNFILED";
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = undefined;
+  s.selectedTags = {};
+  s.TagManager.renderTagsResult();
+}
+
+export function machineryOpenStarredGroup(s: any): void {
+  if (s.tagViewMode === "STARRED") return;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "STARRED";
+  s.tagViewModeName = "STARRED";
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = undefined;
+  s.selectedTags = {};
+  s.TagManager.renderTagsResult();
+}
+
+export function machineryOpenTagGroup(s: any, group: any): void {
+  const w = window as any;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "GROUP";
+  s.tagViewModeName = `GROUP-${group.id}`;
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = group;
+  s.TagManager.renderTagsResult();
+  w.$("input:focus").blur();
+  if (s.currentTagGroup === group) return;
+  s.selectedTags = {};
+}
+
+/* removeTagGroup（bundle 48620-48661 逐字：有标签确认框 → remove 内嵌闭包（TagManager
+   removeGroup + 兄弟/前项续开，皆亡 openTagAllGroup）） */
+export function machineryRemoveTagGroup(s: any, group: any): void {
+  const w = window as any;
+
+  const remove = function (group: any) {
+    var idx = s.TagManager.removeGroup(group.id);
+    if (s.TagManager.groups[idx]) {
+      s.currentTagGroup = s.TagManager.groups[idx];
+    }
+    else if (s.TagManager.groups[idx - 1]) {
+      s.currentTagGroup = s.TagManager.groups[idx - 1];
+    }
+    else {
+      machineryOpenTagAllGroup(s);
+    }
+  };
+
+  if (group.tags.length > 0) {
+    w.swal({
+      html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${w.i18n.__("dialog.removeTagGroup.title")}</h4>
+                            <p class="alert-desc">${w.i18n.__("dialog.removeTagGroup.desc")}</p>
+                        </div>
+                    `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: "alert-box",
+      cancelButtonColor: "#777777",
+      confirmButtonText: w.i18n.__('dialog.removeTagGroup.button'),
+      cancelButtonText: w.i18n.__("general.cancel"),
+    }).then(function () {
+      remove(group);
+      s.$evalAsync();
+    });
+  }
+  else {
+    remove(group);
+    s.$evalAsync();
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -7762,9 +7899,19 @@ export function applyDataMachineryScope(): void {
   s.removeSelectedSmartFolders = () => machineryRemoveSelectedSmartFolders(s);
   // b1-6c：removeFolderContents
   s.removeFolderContents = (params: any) => machineryRemoveFolderContents(s, params);
+  // b1-7a：小件批
+  s.toggleCommentMode = (event: any) => machineryToggleCommentMode(s, event);
+  s.fadeOutDetailMode = () => machineryFadeOutDetailMode(s);
+  s.openPluginPanel = (event: any) => machineryOpenPluginPanel(s, event);
+  s.saveFolderDebounce = () => machinerySaveFolderDebounce(s);
+  s.openTagAllGroup = () => machineryOpenTagAllGroup(s);
+  s.openUnfiledGroup = () => machineryOpenUnfiledGroup(s);
+  s.openStarredGroup = () => machineryOpenStarredGroup(s);
+  s.openTagGroup = (group: any) => machineryOpenTagGroup(s, group);
+  s.removeTagGroup = (group: any) => machineryRemoveTagGroup(s, group);
 
   (window as any).__eagleDataMachinery = {
-    version: 42,
+    version: 43,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -7916,6 +8063,15 @@ export function applyDataMachineryScope(): void {
     removeSelectedFolders: 'machinery',
     removeSelectedSmartFolders: 'machinery',
     removeFolderContents: 'machinery',
+    toggleCommentMode: 'machinery',
+    fadeOutDetailMode: 'machinery',
+    openPluginPanel: 'machinery',
+    saveFolderDebounce: 'machinery',
+    openTagAllGroup: 'machinery',
+    openUnfiledGroup: 'machinery',
+    openStarredGroup: 'machinery',
+    openTagGroup: 'machinery',
+    removeTagGroup: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

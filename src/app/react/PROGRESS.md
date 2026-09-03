@@ -2984,6 +2984,17 @@ version 31）**：
 >   trash 永久删除链闭环**。缺口 59 → 55。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7a 小件批（2026-09-03；version 43）**：
+> - machineryToggleCommentMode（21166 逐字）、machineryFadeOutDetailMode（31672 逐字
+>   popdown）、machineryOpenPluginPanel（37324 逐字广播）、machinerySaveFolderDebounce
+>   （42390 逐字 isLibrarySaving + 1s 防抖，timeout 存 scope 字段）、标签群组四向
+>   （48363-48416 逐字：ALL/UNFILED/STARRED 同构 + GROUP 向 blur/早退序——bundle 原样；
+>   tagRectSelecting 域内自管）、machineryRemoveTagGroup（48620 逐字：确认框 + removeGroup
+>   兄弟/前项续开）。
+> - **审计误报修正：toggleVideoPlay 仅存在于注释**（bundle 本就无定义）——审计脚本需剥
+>   注释后再匹配。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

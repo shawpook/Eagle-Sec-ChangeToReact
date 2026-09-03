@@ -8549,6 +8549,252 @@ export function machineryGetFolderList(s: any): any[] {
   return list;
 }
 
+/* ── b1-7d-3：列表滑条/元信息/移入文件夹/上传队列/链接导入 ───────────── */
+
+/* updateListSlider（bundle 31350-31352：**函数体为空——no-op 原样**） */
+export function machineryUpdateListSlider(s: any, size: any): void {
+
+}
+
+/* changeMetaItems（bundle 37273-37278 逐字） */
+export function machineryChangeMetaItems(s: any, type: any): void {
+  const w = window as any;
+  s.listMetaType = type;
+  w.localStorage.setItem("eagle.list.meta.type", s.listMetaType);
+  s.updateItemsView(s.allData);
+  w.electronLog && w.electronLog.info(`[app] Change list display info: ${s.listMetaType}`);
+}
+
+/* moveToFolders（bundle 43242-43251 逐字：MOVE_TO_FOLDER 广播（folderList 活对象）） */
+export function machineryMoveToFolders(s: any, e: any): void {
+  if (s.selected.length > 0) {
+    s.$root.$broadcast("MOVE_TO_FOLDER", {
+      current: s.currentFolder,
+      folders: s.folderList,
+      images: s.selected
+    });
+  }
+}
+
+// ── b1-7d-3 域内自管（原 controller 闭包 var：addImageTimeLeftInterval 45319 邻域）──
+let addImageTimeLeftInterval: any = null;
+
+/* calcuteAddImageTimeLeft（bundle 45326-45338 逐字闭包：**is.number——is.min.js 为孤儿
+   文件（index.html 未加载），bundle 同引用同样潜在崩——w.is 镜像同语义**） */
+function machineryCalcuteAddImageTimeLeft(s: any): void {
+  const w = window as any;
+  if (s.uploadQueue.length > 0) {
+    if (!s.addImageStartTime) {
+      s.addImageStartTime = Date.now();
+    }
+    var elapsedTime = (new Date().getTime()) - s.addImageStartTime;
+    var chunksPerTime = s.finishQueue.length / elapsedTime;
+    var estimatedTotalTime = s.uploadQueue.length / chunksPerTime;
+    var remain = parseInt((estimatedTotalTime - elapsedTime) / 1000 as any);
+    if (w.is.number(remain)) {
+      s.addImageTimeLeftInSeconds = remain;
+    }
+  }
+}
+
+/* showUploadQueue（bundle 45313-45324 逐字：addImageStartTime 立时 + 上传队列面板 +
+   1s 剩余时间轮询）+ hideUploadQueue（45343-45351 逐字：空队列收面板 +
+   updateWindowProgressBar（闭包，经 scope 解析）） */
+export function machineryShowUploadQueue(s: any): void {
+  const w = window as any;
+  if (!s.addImageStartTime) {
+    s.addImageStartTime = Date.now();
+  }
+  w.$("body").addClass("is-uploading");
+  w.$("#upload-queue-progress").addClass("open");
+  w.$("#upload-queue-progress .progressbar").removeClass("ng-hide");
+  w.$("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
+  addImageTimeLeftInterval = setInterval(function () {
+    machineryCalcuteAddImageTimeLeft(s);
+    s.$evalAsync();
+  }, 1000);
+}
+
+export function machineryHideUploadQueue(s: any): void {
+  const w = window as any;
+  if (s.uploadQueue.length === 0) {
+    w.$("#upload-queue-progress").removeClass("open");
+    w.$("body").removeClass("is-uploading");
+    s.updateWindowProgressBar(-1);
+  }
+}
+
+/* importLinks（bundle 26906-26994 逐字：剪贴板 http 预读（**clipboard 裸引 →
+   w.electron.clipboard**；is.url → w.is 镜像）+ textarea 校验 swal → 逐链 HEAD 探测分流
+   （image → upload-url 通道 / 其他 → 书签 url-from-extension）+ uploadQueue 占位） */
+export function machineryImportLinks(s: any): void {
+  const w = window as any;
+
+  var inputValue = '';
+
+  // 從剪貼版預先讀取用戶的資料，如果發現是 http 開頭
+  const clipboardText = w.electron.clipboard.readText();
+  if (clipboardText.startsWith('http')) {
+    const links = clipboardText.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0 && w.is.url(line));
+    if (links.length > 0) {
+      inputValue = links.join('\n');
+    }
+  }
+
+  w.swal({
+    html: `
+                    <div class="alert">
+                        <div class="alert-icon links"></div>
+                        <h4 class="alert-title">${w.i18n.__('Dialog.ImportLinks.title')}</h4>
+                        <p class="alert-desc">${w.i18n.__('Dialog.ImportLinks.desc')}</p>
+                    </div>
+                `,
+    showCloseButton: false,
+    showCancelButton: true,
+    allowOutsideClick: false,
+    focusConfirm: true,
+    focusCancel: false,
+    padding: 24,
+    width: 480,
+    maxWidth: 480,
+    input: 'textarea',
+    inputValue: inputValue ?? '',
+    inputValidator: function (value: any) {
+      return new Promise(function (resolve: any, reject: any) {
+        if (!value || value.trim() === "") {
+          reject(w.i18n.__('Dialog.ImportLinks.LinkFormatError'));
+          return;
+        }
+        // 支援多行，每行一個鏈接
+        const lines = value.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
+        // 簡單的 URL 格式驗證
+        const urlPattern = /^(https?:\/\/)[^\s\/$.?#].[^\s]*$/i;
+        const invalidLinks = lines.filter((line: any) => !urlPattern.test(line));
+        if (invalidLinks.length > 0) {
+          reject(w.i18n.__('Dialog.ImportLinks.LinkFormatError') + "\n" + invalidLinks.join('\n'));
+        } else {
+          resolve();
+        }
+      });
+    },
+    customClass: "alert-box",
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__("Dialog.ImportLinks.Button"),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (result: any) {
+    // 批量處理鏈接
+    const links = result.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
+    const currentFolderId = s.currentFolder?.id;
+    const folderIds = currentFolderId ? [currentFolderId] : [];
+
+    links.forEach((link: any) => {
+      w.$.ajax({
+        type: "HEAD",
+        url: link,
+        timeout: 10000,
+        complete: function (xhr: any) {
+          let contentType = (xhr.getResponseHeader('Content-Type') || "").toLowerCase();
+          if (contentType.indexOf("image") > -1) {
+            // 圖片類型：直接下載圖片
+            w.IPCHelper.send('upload-url', {
+              url: link,
+              folders: folderIds,
+              tags: [],
+            });
+          }
+          else {
+            // 其他所有情況（html、未知類型、HEAD 請求失敗等）：
+            // 一律當作書籤匯入，截圖能不能成功由後端決定
+            const data = {
+              id: w.guid(),
+              url: link,
+              tags: [],
+              modificationTime: Date.now(),
+              folders: folderIds,
+            };
+            const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+            ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
+          }
+          s.uploadQueue.push({});
+        }
+      });
+    });
+  }, function () { });
+}
+
+/* videoScreenShot（bundle 33233-33288 逐字 async：mpv screenshot API / native drawImage
+   双路 → copyMode 剪贴板（electron.nativeImage）或 screencapture-from-extension 上送
+   （guid + currentTime.toFixed(2) 命名）） */
+export async function machineryVideoScreenShot(s: any, copyMode: any): Promise<void> {
+  const w = window as any;
+  if (s.current && w.VIDEO_TYPES[s.current.ext]) {
+
+    var player = machineryGetVideoPlayer(s);
+    if (!player) return;
+
+    var currentTime = player.el.currentTime;
+    var width = s.current.width;
+    var height = s.current.height;
+    var base64;
+
+    if (player.type === 'mpv') {
+      // mpv-video: 使用 screenshot API 取得 ImageData 再轉 base64
+      try {
+        var imageData = await player.el.screenshot(currentTime);
+        if (!imageData) return;
+        var canvas = document.createElement('canvas');
+        canvas.width = imageData.width;
+        canvas.height = imageData.height;
+        canvas.getContext('2d')!.putImageData(imageData, 0, 0);
+        base64 = canvas.toDataURL("image/jpeg", 0.95);
+      } catch (err: any) {
+        w.electronLog && w.electronLog.error(err.stack || err);
+        return;
+      }
+    }
+    else {
+      // native video: 使用 canvas drawImage
+      var video = player.el;
+      var canvas = document.createElement('canvas');
+      var ctx = canvas.getContext('2d')!;
+      canvas.width = width;
+      canvas.height = height;
+      video.setAttribute("crossOrigin", 'Anonymous');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      base64 = canvas.toDataURL("image/jpeg", 0.95);
+    }
+
+    if (copyMode) {
+      try {
+        var nativeImage = w.electron.nativeImage;
+        var newImage = nativeImage.createFromDataURL(base64);
+
+        w.electron.clipboard.writeImage(newImage);
+        s.notify({
+          message: w.i18n.__("previewWindow.copied"),
+          duration: 750
+        });
+      }
+      catch (err: any) {
+        w.electronLog && w.electronLog.error(err.stack || err);
+      }
+    }
+    else {
+      var data = {
+        id: w.guid(),
+        name: `${s.current.name} - ${currentTime.toFixed(2)}`,
+        url: s.current.url || "",
+        tags: [],
+        modificationTime: s.current.modificationTime + 1 || Date.now(),
+        folders: s.current.folders || [],
+        base64data: base64,
+      };
+      const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+      ipc.sendTo(w.backgroundWindowID, 'screencapture-from-extension', data);
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -8797,9 +9043,17 @@ export function applyDataMachineryScope(): void {
   // b1-7d-2：侧栏树渲染核心
   s.getSmartFolderList = () => machineryGetSmartFolderList(s);
   s.getFolderList = () => machineryGetFolderList(s);
+  // b1-7d-3：列表滑条/元信息/移入文件夹/上传队列/链接导入/截屏
+  s.updateListSlider = (size: any) => machineryUpdateListSlider(s, size);
+  s.changeMetaItems = (type: any) => machineryChangeMetaItems(s, type);
+  s.moveToFolders = (e: any) => machineryMoveToFolders(s, e);
+  s.showUploadQueue = () => machineryShowUploadQueue(s);
+  s.hideUploadQueue = () => machineryHideUploadQueue(s);
+  s.importLinks = () => machineryImportLinks(s);
+  s.videoScreenShot = (copyMode: any) => machineryVideoScreenShot(s, copyMode);
 
   (window as any).__eagleDataMachinery = {
-    version: 47,
+    version: 48,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -8997,6 +9251,13 @@ export function applyDataMachineryScope(): void {
     unlockFolderWithTouchID: 'machinery',
     getSmartFolderList: 'machinery',
     getFolderList: 'machinery',
+    updateListSlider: 'machinery',
+    changeMetaItems: 'machinery',
+    moveToFolders: 'machinery',
+    showUploadQueue: 'machinery',
+    hideUploadQueue: 'machinery',
+    importLinks: 'machinery',
+    videoScreenShot: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

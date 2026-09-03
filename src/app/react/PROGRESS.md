@@ -3043,6 +3043,21 @@ version 31）**：
 >   版）的两大依赖就此闭环。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7d-3 列表滑条/元信息/移入文件夹/上传队列/链接导入/截屏（2026-09-03；version 48）**：
+> - machineryUpdateListSlider（31350 **空函数体 no-op 原样**）、machineryChangeMetaItems
+>   （37273 逐字）、machineryMoveToFolders（43242 逐字广播）、calcuteAddImageTimeLeft 域内
+>   闭包 + machineryShowUploadQueue/hideUploadQueue（45313/45343 逐字 1s 轮询）、
+>   machineryImportLinks（26906-26994 逐字：剪贴板预读 + textarea 校验 swal + 逐链 HEAD
+>   探测分流 upload-url/url-from-extension + guid）、machineryVideoScreenShot（33233-33288
+>   逐字 async：mpv screenshot API / native drawImage 双路 + copyMode 剪贴板或扩展上送）。
+> - **is.min.js 为孤儿文件**（index.html 14 个 script 均无它）——bundle 自身 is.url/is.number
+>   同样潜在 ReferenceError；移植版以 w.is 镜像同语义并登记 b1 清理轮处置。
+> - 转义教训累积：**heredoc 内 
+ 经多层转义必坏——凡字符串含 
+ 的一律事后 chr(92) 补丁或
+>   Edit 工具直改**（本轮 split/join/reject 三处均如此修复）；getContext 严格空值用 `!`。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

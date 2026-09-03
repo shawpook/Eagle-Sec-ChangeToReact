@@ -2714,6 +2714,13 @@
 >   分支的 padding-bottom/height/margin-top 三联 css）。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c18c undo/nextHistory/prevHistory/back（2026-09-03；version 21）**：
+> - machineryUndo（26999-27002 逐字：$rootScope.undo 桩调用 + closeAll——root 无 closeAll
+>   时走 cg 栈清屏等价）、machineryNextHistory/machineryPrevHistory（38566-38577 逐字：
+>   UrlStateService.canGo* 方法存在性判定 + currentWindow webContents goForward/goBack）、
+>   machineryBack（30889-30896 逐字：isDetailMode 分流 leaveDetailMode/prevHistory）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 > **c17c UrlStateService hash shim（2026-09-03；bundleGlobals if-absent）**：
 > - 原实现 = Angular factory（js/services/url-state-service.js；$location.search 读写 +
 >   $locationChangeStart preventDefault + $locationChangeSuccess 分发 + currentWindow 历史

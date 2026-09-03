@@ -3963,6 +3963,42 @@ export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay:
   }, delay);
 }
 
+/* ── c18c：历史导航/撤销 ─────────────────────────────────────────────── */
+
+/* undo（bundle 26999-27002 逐字；$rootScope.undo 桩 + closeAll——root 上无 closeAll 时
+   走 cg 栈清屏等价） */
+export function machineryUndo(s: any): void {
+  if (typeof s.$root.undo === 'function') s.$root.undo();
+  if (typeof s.$root.closeAll === 'function') s.$root.closeAll();
+  else cgNotifyServiceCloseAll();
+}
+
+/* nextHistory/prevHistory（bundle 38566-38577 逐字；UrlStateService.canGo* 方法存在性
+   判定原样保留，goForward/goBack 经 currentWindow） */
+export function machineryNextHistory(s: any): void {
+  const w = window as any;
+  if (s.UrlStateService.canGoForward) {
+    w.currentWindow.webContents.goForward();
+  }
+}
+
+export function machineryPrevHistory(s: any): void {
+  const w = window as any;
+  if (s.UrlStateService.canGoBack) {
+    w.currentWindow.webContents.goBack();
+  }
+}
+
+/* back（bundle 30889-30896 逐字） */
+export function machineryBack(s: any): void {
+  if (!s.isDetailMode) {
+    s.prevHistory();
+  }
+  else {
+    s.leaveDetailMode();
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4042,9 +4078,14 @@ export function applyDataMachineryScope(): void {
   s.toggleZoom = (event: any) => machineryToggleZoom(s, event);
   s.zoomFitEdge = (event: any, hasTransition: any) => machineryZoomFitEdge(s, event, hasTransition);
   s.updateContainerHieght = (hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimation, delay);
+  // c18c：undo/nextHistory/prevHistory/back
+  s.undo = () => machineryUndo(s);
+  s.nextHistory = () => machineryNextHistory(s);
+  s.prevHistory = () => machineryPrevHistory(s);
+  s.back = () => machineryBack(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 20,
+    version: 21,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -4102,5 +4143,9 @@ export function applyDataMachineryScope(): void {
     toggleZoom: 'machinery',
     zoomFitEdge: 'machinery',
     updateContainerHieght: 'machinery',
+    undo: 'machinery',
+    nextHistory: 'machinery',
+    prevHistory: 'machinery',
+    back: 'machinery',
   };
 }

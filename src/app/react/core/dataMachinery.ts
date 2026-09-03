@@ -3641,6 +3641,157 @@ function cgNotifyServiceCloseAll(): void {
   }
 }
 
+/* ── c18a：smartZoom/lastZoom（详情智能缩放）──────────────────────────── */
+
+/* lastZoom（bundle 31288-31305 逐字；lastItemStates 经 scope 解析） */
+export function machineryLastZoom(s: any): boolean {
+  const w = window as any;
+  if (s.lastZoomMode === "edge") return false;
+  if (s.$root.preferences.habits.rememberLastZoom === "off") return false;
+  if (!s.current) return false;
+  if (s.isInlineMode) return false;
+  var state = s.lastItemStates[s.current.id];
+  if (state && state.data && state.data.tX !== undefined) {
+    w.$("#detail-container").smoothZoom('goTo', state.data.tX, state.data.tY, state.data.rA);
+    var ratio = parseInt(state.data.rA * 100 as any);
+    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    s.imageSize.zoomRatioExp = ratio;
+    return true;
+  }
+  return false;
+}
+
+/* smartZoom（bundle 31209-31334 逐字；devicesMetrics/isMobileResolution/getImagePixelDensity/
+   isMobileWidth 经 window（c18a 供给），zoomRatio 换算走 machinery 版） */
+export function machinerySmartZoom(s: any, target: any, forceMode: any): void {
+  const w = window as any;
+  var current = target || s.current;
+  var ratio = s.imageSize.zoomRatio || 100;
+  var lastRatio = ratio;
+  var $container = w.$(".content-panel");
+  var toolbarHeight = 0;
+  var containerWidth;
+  var containerHeight;
+  var offsetY = 0;
+
+  if (s.isSlideshowMode) {
+    toolbarHeight = 0;
+    containerWidth = w.$(window).width();
+    containerHeight = w.$(window).height() - toolbarHeight;
+  }
+  else if (s.isInlineMode) {
+    toolbarHeight = 96;
+    containerWidth = w.$(window).width();
+    containerHeight = $container.height() - toolbarHeight;
+  }
+  else {
+    toolbarHeight = 48;
+    containerWidth = $container.width();
+    containerHeight = $container.height() - toolbarHeight;
+  }
+
+  if (!current) return;
+
+  w.$("#detail-image").css({
+    "transform": `rotate(0deg)`,
+    "transition": "none"
+  });
+
+  // 不使用智能縮放
+  if (s.$root.preferences.habits.defaultRatio != "auto" && !forceMode) {
+    ratio = 100;
+    offsetY = toolbarHeight / 2 * 100 / ratio;
+  }
+  // 使用智能縮放
+  else {
+    if (
+      (current.width >= 960 && current.width * 1.8 < current.height) ||
+      (current.width >= 320 && current.width * 2.7 < current.height)
+    ) {
+      ratio = parseInt((containerWidth - 0) / current.width * 100 as any);
+      if (ratio > 100) {
+        ratio = 100;
+      }
+      if (current.height > $container.height()) {
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+        offsetY += (current.height - containerHeight * 100 / ratio) / -2;
+      }
+      else {
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+      }
+    }
+    else {
+      if (current.height + toolbarHeight / 2 > containerHeight || current.width + toolbarHeight / 2 > containerWidth) {
+        var a = parseInt((containerHeight) / current.height * 100 as any);
+        var b = parseInt((containerWidth) / current.width * 100 as any);
+        ratio = Math.min(a, b);
+      }
+      else {
+        ratio = 100;
+      }
+      offsetY = toolbarHeight / 2 * 100 / ratio;
+    }
+
+    // 如果是手机尺寸并且尺寸符合画面大小
+    if (w.getImagePixelDensity(current) !== 100) {
+      var mr = w.getImagePixelDensity(current);
+      var largeThanCotainer = current.width * mr / 100 > containerWidth || current.height * mr / 100 > containerHeight;
+      if (!largeThanCotainer) {
+        ratio = mr;
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+      }
+      else {
+        var wr = mr / ((current.width * mr / 100) / containerWidth);
+        var hr = mr / ((current.height * mr / 100) / containerHeight);
+        ratio = Math.min(wr, hr);
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+      }
+    }
+    else if (w.isMobileResolution(current.width, current.height)) {
+      var mr2 = 100 * w.isMobileResolution(current.width, current.height) / current.height;
+      var largeThanCotainer2 = current.width * mr2 / 100 > containerWidth || current.height * mr2 / 100 > containerHeight;
+      if (!largeThanCotainer2) {
+        ratio = mr2;
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+      }
+      else {
+        var wr2 = mr2 / ((current.width * mr2 / 100) / containerWidth);
+        var hr2 = mr2 / ((current.height * mr2 / 100) / containerHeight);
+        ratio = Math.min(wr2, hr2);
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+      }
+    }
+    else if (w.isMobileWidth(current.width) && current.width * 2.4 < current.height) {
+      ratio = w.isMobileWidth(current.width) / current.width * 100;
+      if (ratio > 100) {
+        ratio = 100;
+      }
+      if (current.height > $container.height()) {
+        offsetY = (current.height - $container.height() * 100 / ratio) / -2;
+        offsetY = toolbarHeight / 2 * 100 / ratio;
+      }
+    }
+  }
+
+  var $detailContainer = w.$("#detail-container");
+  var width = $detailContainer.width();
+  var height = current && current.height || $detailContainer.height();
+
+  offsetY = offsetY || 0;
+
+  if (ratio) {
+    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
+  }
+  s.showLargeImage = true;
+  $detailContainer.smoothZoom('focusTo', {
+    x: width / 2,
+    y: height / 2 + offsetY,
+    zoom: s.imageSize.zoomRatio,
+    speed: 0
+  });
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -3712,9 +3863,12 @@ export function applyDataMachineryScope(): void {
   const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(s, params, restoreCallbackk);
   s.$root.notify = notifyFn;
   s.notify = notifyFn;
+  // c18a：smartZoom/lastZoom
+  s.smartZoom = (target: any, forceMode: any) => machinerySmartZoom(s, target, forceMode);
+  s.lastZoom = () => machineryLastZoom(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 18,
+    version: 19,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -3766,5 +3920,7 @@ export function applyDataMachineryScope(): void {
     destoryMousetrap: 'machinery',
     initMousetrap: 'machinery',
     notify: 'machinery',
+    smartZoom: 'machinery',
+    lastZoom: 'machinery',
   };
 }

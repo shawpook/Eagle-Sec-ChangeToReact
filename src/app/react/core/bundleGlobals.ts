@@ -851,6 +851,28 @@ export function installBundleGlobals(): void {
     } catch (err) { /* noop */ }
   }
 
+  // c18a：缩放辅助（devicesMetrics 数据表 8245-8339 逐字节提取 + isMobileResolution/
+  // getImagePixelDensity/isMobileWidth 移植（controller 闭包函数，非顶层）——machinerySmartZoom
+  // 消费）
+  if (!w.devicesMetrics) {
+    try {
+      fetch('/vendor/eagle-zoom-helpers.js')
+        .then((r) => r.text())
+        .then((txt) => {
+          try {
+            const script = document.createElement('script');
+            script.textContent = txt;
+            document.head.appendChild(script);
+            script.remove();
+            if (w.__eagleBundleGlobals) w.__eagleBundleGlobals.zoomHelpersLoaded = true;
+          } catch (err) {
+            console.error('[bundleGlobals] zoom-helpers exec failed', err);
+          }
+        })
+        .catch((err) => console.error('[bundleGlobals] zoom-helpers fetch failed', err));
+    } catch (err) { /* noop */ }
+  }
+
   // ── c10a-2 Tier 2：小函数批（全部逐字移植，if-absent）──
   // electron/ipcRenderer 链（bundle 19018-19028：var electron = require('electron')/
   // var ipcRenderer = electron.ipcRenderer；electron 为 node 内建模块可复现）

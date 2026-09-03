@@ -2693,6 +2693,17 @@
 >   直调与 s.notify 原型链解析均走移植版。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c18a smartZoom/lastZoom（2026-09-03；version 19）**：
+> - devicesMetrics 数据表（8245-8339，91 机型）**逐字节提取** + isMobileResolution/
+>   getImagePixelDensity/isMobileWidth 移植（三者为 controller 闭包函数非顶层）→ frontend/
+>   public/vendor/eagle-zoom-helpers.js（script 注入 if-absent，machinery 经 window 消费）。
+> - machinerySmartZoom（31209-31334 逐字）：slideshow/inline/普通三容器尺寸分支、defaultRatio
+>   auto 判定、竖长图（960×1.8/320×2.7）/常规 min(w,h)/@2x@3x@1.5x@0.5x 密度/机型分辨率/
+>   375 宽长图五级智能缩放梯度、offsetY 修正、showLargeImage + smoothZoom focusTo。
+>   machineryLastZoom（31288-31305 逐字：lastZoomMode edge 守卫 + rememberLastZoom=off 守卫
+>   + lastItemStates goTo 恢复）。ratio 换算走 machinery 版 getRatioExp/NonExp。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 > **c17c UrlStateService hash shim（2026-09-03；bundleGlobals if-absent）**：
 > - 原实现 = Angular factory（js/services/url-state-service.js；$location.search 读写 +
 >   $locationChangeStart preventDefault + $locationChangeSuccess 分发 + currentWindow 历史

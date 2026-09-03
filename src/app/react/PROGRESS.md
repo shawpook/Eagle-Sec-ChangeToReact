@@ -2765,6 +2765,19 @@
 > - 验证：tsc 零错；探针 helpers function×3 + zoomHelpersLoaded=true + mode:"canvas"
 >   releasedAt 置位；stage5 / main-ui-workflow 单独复跑 OK；m1 25/25；全量 suite ALL GREEN。
 
+> **c18e-2 multipleSelect 四件套 + removeSelected（2026-09-03；version 25）**：
+> - machineryMultipleSelectUp/Down（35898/35964 逐字：isCropMode→MOVE-CROP-TOOL 垂直广播 +
+>   ListLayout 委派 Prev/Next）、machineryMultipleSelectNext/Prev（36559/36586 逐字：sidebar
+>   焦点守卫 + 详情模式跳过 + lastSelectedIndex 收缩/扩展选区 + autoScroll 经 scope）。
+>   machineryRemoveSelected（46119-46343 逐字：sidebar/tags/alltags/文件夹选择/列表五路分流，
+>   trash swal 永久删除确认（removePermanently）、checkOperationSafety(callback,200) 包装、
+>   多分类文件夹 swal radio（lastMoveToTrashCheckbox 域内自管 46118）、currentFolder 分支
+>   resetFolderCover+removeFolderContents、其余视图分支 isDeleted/notify undo/自动选下一张/
+>   gl:removeItems 广播/updateSelection/electronLog 双分支）。TagManager 经 scope 字段（48351）、
+>   getFilter() 复刻 $filter('i18n')、swal/i18n/ScrollbarSaver/ayncsImagesChange/
+>   hiddenByCurrentFilter/electronLog 经 window。
+> - 验证：tsc 零错；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

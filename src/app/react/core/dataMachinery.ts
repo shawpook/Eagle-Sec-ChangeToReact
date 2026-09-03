@@ -4182,6 +4182,326 @@ export function machinerySelectPrev(s: any, event: any): void {
   }
 }
 
+/* ── c18e-2：多选系（multipleSelect 四件套）──────────────────────────── */
+
+/* multipleSelectUp（bundle 35898-35906 逐字：ListLayout 委派 multipleSelectPrev） */
+export function machineryMultipleSelectUp(s: any, event: any): void {
+  if (s.isCropMode) {
+    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: -10 });
+    return;
+  }
+  if (s.layout === "ListLayout") {
+    s.multipleSelectPrev(event);
+  }
+}
+
+/* multipleSelectDown（bundle 35964-35972 逐字：ListLayout 委派 multipleSelectNext） */
+export function machineryMultipleSelectDown(s: any, event: any): void {
+  if (s.isCropMode) {
+    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: 10 });
+    return;
+  }
+  if (s.layout === "ListLayout") {
+    s.multipleSelectNext(event);
+  }
+}
+
+/* multipleSelectNext（bundle 36559-36585 逐字：sidebar 焦点守卫 + 详情模式跳过 +
+   start < lastSelectedIndex 时收缩选区否则扩展 + autoScroll 经 scope） */
+export function machineryMultipleSelectNext(s: any, event: any): void {
+  if (s.$root.currentFocus == 'sidebar') return;
+  if (s.isCropMode) {
+    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 10, vertical: 0 });
+    return;
+  }
+  if (s.isDetailMode) return;
+  var selection = s.getSelection();
+  var start = selection.start;
+  var end = selection.end + 1;
+
+  if (start < s.lastSelectedIndex) {
+    let startItem = s.allData[start];
+    let idx = s.selected.indexOf(startItem);
+    if (idx !== -1) {
+      s.selected.splice(idx, 1);
+      s.autoScroll(s.lastSelectedIndex);
+    }
+  }
+  else {
+    if (s.allData[end]) {
+      s.selected.push(s.allData[end]);
+      s.autoScroll(end);
+    }
+  }
+}
+
+/* multipleSelectPrev（bundle 36586-36613 逐字：end > lastSelectedIndex 时收缩否则
+   向 start-1 扩展） */
+export function machineryMultipleSelectPrev(s: any, event: any): void {
+  if (s.$root.currentFocus == 'sidebar') return;
+  if (s.isCropMode) {
+    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: -10, vertical: 0 });
+    return;
+  }
+  if (s.isDetailMode) return;
+  var selection = s.getSelection();
+  var start = selection.start;
+  var end = selection.end;
+
+  if (end > s.lastSelectedIndex) {
+    let endItem = s.allData[end];
+    let idx = s.selected.indexOf(endItem);
+    if (idx !== -1) {
+      s.selected.splice(idx, 1);
+      s.autoScroll(s.lastSelectedIndex);
+    }
+  }
+  else {
+    if (s.allData[start - 1]) {
+      s.selected.push(s.allData[start - 1]);
+      s.autoScroll(start - 1);
+    }
+  }
+}
+
+/* ── c18e-2b：removeSelected（46118-46343）───────────────────────────── */
+
+// ── c18e-2b 域内自管（原 controller 闭包 var：lastMoveToTrashCheckbox 46118）──
+let lastMoveToTrashCheckbox: any = 1;
+
+/* removeSelected（bundle 46119-46343 逐字；removeSelectedFolders/removeFolder/
+   removeFolderContents/checkOperationSafety/removePermanently/resetFolderCover/
+   updateFilterCounts/getSelectedItemElements/updateSelection 等 bundle scope 函数经
+   scope 解析；TagManager 经 scope 字段（48351）；$filter('i18n') 走 getFilter()；
+   swal/i18n/ScrollbarSaver/ayncsImagesChange/hiddenByCurrentFilter/electronLog 经 window） */
+export function machineryRemoveSelected(s: any, event: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  event?.preventDefault();
+  event?.stopPropagation();
+
+  if (s.$root.currentFocus == 'sidebar') {
+    if (s.$root.selectedFolders.length > 0) {
+      s.removeSelectedFolders();
+    }
+    else if (s.$root.selectedSmartFolders.length > 0) {
+      s.removeSelectedSmartFolders();
+    }
+    else if (s.currentFolder) {
+      s.removeFolder(s.currentFolder);
+    } else if (s.currentSmartFolder) {
+      s.removeSmartFolder(s.currentSmartFolder);
+    }
+  }
+  else if (s.$root.currentFocus == 'tags') {
+    if (s.currentTagGroup) {
+      s.removeTagGroup(s.currentTagGroup);
+    }
+  }
+  else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
+    var selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key: any) {
+      return key;
+    });
+    var folderId = selectedFolders[0];
+    if (folderId && s.folderMappings[folderId]) {
+      s.removeFolder(s.folderMappings[folderId], {
+        ignoreSelectNext: true
+      });
+    }
+  }
+  else if (s.viewMode === 'alltags' && s.currentTagGroup) {
+    var selectedTags = s.getSelectedTags();
+    if (selectedTags && selectedTags.length > 0) {
+      s.TagManager.removeTagsFromGroup(s.currentTagGroup.id, selectedTags);
+    }
+  }
+  else {
+
+    if (s.selected.length <= 0) return;
+
+    if (s.viewMode == "trash") {
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${w.i18n.__('dialog.permanentlyDelay.title')}</h4>
+                                <p class="alert-desc">${w.i18n.__("dialog.permanentlyDelay.desc")}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+        allowEnterKey: false,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__('dialog.permanentlyDelay.button'),
+        cancelButtonText: w.i18n.__("general.cancel"),
+      }).then(function () {
+        s.$evalAsync(function () {
+          s.removePermanently();
+        });
+      });
+    }
+    else {
+      s.checkOperationSafety(function () {
+        s.lastIndex = s.getSelection().start;
+
+        if (s.currentFolder) {
+
+          // 强制重置该文件夹及祖先封面
+          s.resetFolderCover(s.currentFolder);
+
+          var containsMultipleFolder = false;
+          for (var i = 0; i < s.selected.length; i++) {
+            var img = s.selected[i];
+            if (img && img.folders && img.folders.length > 1) {
+              containsMultipleFolder = true;
+              break;
+            }
+          }
+          if (containsMultipleFolder) {
+            w.swal({
+              html: `
+                                        <div class="alert">
+                                            <div class="alert-icon warning"></div>
+                                            <h4 class="alert-title">${w.i18n.__("dialog.moveTrashWhenMultiCategory.title")}</h4>
+                                            <p class="alert-desc">${w.i18n.__("dialog.moveTrashWhenMultiCategory.descript")}</p>
+                                        </div>
+                                    `,
+              customClass: "alert-box check-multiple-categories-dialog",
+              showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+              width: 400,
+              cancelButtonColor: "#777777",
+              input: 'radio',
+              inputOptions: {
+                '1': w.i18n.__("dialog.moveTrashWhenMultiCategory.checkbox"),
+                '2': w.i18n.__("dialog.moveTrashWhenMultiCategory.button2"),
+              },
+              inputValue: lastMoveToTrashCheckbox,
+              inputValidator: function (result: any) {
+                return new Promise(function (resolve: any, reject: any) {
+                  resolve(result);
+                })
+              },
+              confirmButtonText: w.i18n.__("dialog.moveTrashWhenMultiCategory.button"),
+              cancelButtonText: w.i18n.__("general.cancel"),
+            }).then(function (result: any) {
+              var isForceToTrash = (result === '2');
+              lastMoveToTrashCheckbox = result;
+              s.removeFolderContents({ isForceToTrash: isForceToTrash });
+              s.$evalAsync();
+            }, function () { });
+          }
+          else {
+            s.removeFolderContents({ isForceToTrash: true });
+          }
+        } else if (s.currentTag || s.currentSmartFolder || s.viewMode === 'all' || s.viewMode === 'unfiled' || s.viewMode === 'untagged' || s.viewMode === 'recent' || s.viewMode === 'random') {
+
+          var origin: any[] = [];
+          let now = Date.now();
+          s.selected.forEach(function (image: any) {
+            image.isDeleted = true;
+            image.deletedTime = Date.now();
+            origin.push(image);
+            s.updateFilterCounts(image, -1, now);
+          });
+
+          var message = getFilter()('i18n')("notify.image.remove", [
+            { "property": "count", "value": s.selected.length },
+          ]);
+          if (s.selected.length === 1) { message = message.replace("images", "image"); }
+
+          s.$root.notify({
+            message: message,
+            duration: 4000,
+          }, function () {
+            let now = Date.now();
+            origin.forEach(function (image: any) {
+              image.isDeleted = false;
+              delete image.deletedTime;
+              s.updateFilterCounts(image, 1, now);
+            });
+            s.selected = origin;
+            if (s.isDetailMode) {
+              s.current = origin[0];
+            }
+            s.calculateImageBinding({ ignoreSort: true }, function () {
+              if (
+                s.viewMode !== 'random'
+              ) {
+                s.rebindRefresh();
+              }
+              w.ScrollbarSaver.restoreScrollPosition();
+            });
+            w.ayncsImagesChange(origin);
+            w.hiddenByCurrentFilter(origin);
+          });
+
+          if (s.isDetailMode) {
+            $timeout(function () {
+              s.zoom();
+            }, 100)
+          }
+
+          if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+            s.removeSound.play();
+          }
+          w.ayncsImagesChange(s.selected);
+          w.hiddenByCurrentFilter(s.selected);
+
+          // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
+          s.lastIndex = s.getSelection().start;
+          var next = s.allData[s.lastIndex + s.selected.length];
+          var prev = s.allData[s.lastIndex - 1];
+
+          if (next) {
+            s.selected = [next];
+            if (s.isDetailMode) {
+              s.current = next;
+            }
+          } else if (prev) {
+            s.selected = [prev];
+            if (s.isDetailMode) {
+              s.current = prev;
+            }
+          } else {
+            s.selected = [];
+            if (s.isDetailMode) {
+              s.leaveDetailMode();
+            }
+          }
+
+          $timeout(function () {
+            s.forceFitImageSize(s.current);
+            s.zoom();
+          }, 100);
+
+          w.ScrollbarSaver.saveScrollPosition();
+
+          var itemElements = s.getSelectedItemElements();
+          s.$root.$broadcast("gl:removeItems", itemElements);
+
+          s.lastSelectedIndex = s.currentIndex() - 1;
+          s.autoScroll();
+
+          s.calculateImageBinding({ ignoreSort: true }, function () {
+            if (
+              s.viewMode !== 'random' ||
+              (s.currentFolder && s.currentFolder.orderBy !== "RANDOM")
+            ) {
+              s.rebindRefresh(true);
+            }
+            s.updateSelection();
+            if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+            else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+          });
+        } else {
+          return;
+        }
+      }, 200);
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4272,9 +4592,16 @@ export function applyDataMachineryScope(): void {
   // c18e-1：selectNext/selectPrev
   s.selectNext = (event: any) => machinerySelectNext(s, event);
   s.selectPrev = (event: any) => machinerySelectPrev(s, event);
+  // c18e-2：multipleSelect 四件套
+  s.multipleSelectUp = (event: any) => machineryMultipleSelectUp(s, event);
+  s.multipleSelectDown = (event: any) => machineryMultipleSelectDown(s, event);
+  s.multipleSelectNext = (event: any) => machineryMultipleSelectNext(s, event);
+  s.multipleSelectPrev = (event: any) => machineryMultipleSelectPrev(s, event);
+  // c18e-2b：removeSelected
+  s.removeSelected = (event: any) => machineryRemoveSelected(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 23,
+    version: 25,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -4338,6 +4665,11 @@ export function applyDataMachineryScope(): void {
     back: 'machinery',
     selectAll: 'machinery',
     toggleDetailMode: 'machinery',
+    multipleSelectUp: 'machinery',
+    multipleSelectDown: 'machinery',
+    multipleSelectNext: 'machinery',
+    multipleSelectPrev: 'machinery',
+    removeSelected: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

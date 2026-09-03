@@ -3249,7 +3249,7 @@ export function machineryLeaveDetailMode(s: any): void {
       s.gifPlayer = undefined;
     }
 
-    w.initMousetrap();
+    w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s);
     clearInterval(s.gifUpadteInterval);
   }
 }
@@ -3347,6 +3347,169 @@ export function machinerySaveFolder(s: any): void {
   }
 
   console.timeEnd("$scope.saveFolder");
+}
+
+/* ── c16d：键盘域（buildMousetrap/destoryMousetrap/initMousetrap）──────── */
+
+/* buildMousetrap（bundle 49177-49314 逐字；handlers 全部 $scope.* → s.*；preferences 经
+   window（var live binding）、ShortcutManager/Mousetrap 为 vendor script（b1 存活）。
+   返回 bindings 映射——由 mgo-mousetrap 指令消费绑定，与 bundle 同语义） */
+export function machineryBuildMousetrap(s: any): any {
+  const w = window as any;
+  const bindings: any = {};
+
+  // 建立快捷鍵名稱到處理函數的映射
+  const shortcutHandlerMap: any = {
+    'player.playAndPause': () => {
+      s.quicklook();
+    },
+    'player.prev1frame': () => {
+      s.prevGifFrame(1);
+    },
+    'player.next1frame': () => {
+      s.nextGifFrame(1);
+    },
+    'player.prev10frame': () => {
+      s.prevGifFrame(10);
+    },
+    'player.next10frame': () => {
+      s.nextGifFrame(10);
+    },
+    'player.speed.up': () => {
+      let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
+      if (s.current.ext == 'gif') {
+        let currnt = s.gifViewer.speed;
+        let idx = playbackRates.indexOf(currnt);
+        if (idx !== -1 && playbackRates[idx + 1]) {
+          s.gifViewer.setSpeed(playbackRates[idx + 1]);
+        }
+      }
+    },
+    'player.speed.down': () => {
+      let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
+      if (s.isDetailMode) {
+        if (s.current.ext == 'gif') {
+          let currnt = s.gifViewer.speed;
+          let idx = playbackRates.indexOf(currnt);
+          if (idx !== -1 && playbackRates[idx - 1]) {
+            s.gifViewer.setSpeed(playbackRates[idx - 1]);
+          }
+        }
+      }
+    },
+    'player.thumbnail.set': () => { }, // 不做任何事情，但需要把這個快速鍵還給其它有綁定的人
+    'player.thumbnail.copy': () => { }, // 不做任何事情，但需要把這個快速鍵還給其它有綁定的人
+    'player.thumbnail.save': () => { }, // 不做任何事情，但需要把這個快速鍵還給其它有綁定的人
+  };
+
+  // 從 preferences 載入快捷鍵
+  if (w.preferences && w.preferences.shortcuts && w.preferences.shortcuts.keybinds && w.ShortcutManager) {
+    for (const [keyName, electronKey] of Object.entries(w.preferences.shortcuts.keybinds)) {
+      if (shortcutHandlerMap[keyName] && electronKey) {
+        const mousetrapKey = w.ShortcutManager.electronToMousetrap(electronKey);
+        if (mousetrapKey) {
+          bindings[mousetrapKey] = shortcutHandlerMap[keyName];
+          // console.log(`[Preview] Mapped ${keyName}: ${electronKey} -> ${mousetrapKey}`);
+        }
+      }
+    }
+  }
+
+  // 添加硬編碼的快捷鍵（未在 preferences 中定義或沒有對應設定的）
+  const hardcodedShortcuts: any = {
+    '*': s.toggleAllFolders,
+    '/': s.toggleAllFolders,
+    '-': s.zoomOut,
+    '+': s.zoomIn,
+    '=': s.zoomIn,
+    '0': s.removeStar,
+    '1': s.changeTo1Star,
+    '2': s.changeTo2Star,
+    '3': s.changeTo3Star,
+    '4': s.changeTo4Star,
+    '5': s.changeTo5Star,
+    'r': s.refreshRandom,
+    't': s.openInspectorTagSelectPanel,
+    'g': s.openActionsPanel,
+    'f': s.openInspectorFolderSelectPanel,
+    'j': s.openQuickSearch,
+    'n': s.nHandler,
+    'm': s.mHandler,
+    'mod+z': s.undo,
+    'mod+a': s.selectAll,
+    'mod+c': s.copyImages,
+    'mod+w': s.closeWindowHandler,
+    'space': s.quicklook,
+    'shift+space': s.pageUpHandler,
+    'c': s.keyCHandler,
+    'p': s.keyPHandler,
+    'a': s.keyLeftHandler,
+    'd': s.keyRightHandler,
+    'w': s.keyUpHandler,
+    's': s.keyDownHandler,
+    'left': s.keyLeftHandler,
+    'right': s.keyRightHandler,
+    'up': s.keyUpHandler,
+    'shift+up': s.multipleSelectUp,
+    'down': s.keyDownHandler,
+    'shift+down': s.multipleSelectDown,
+    'shift+right': s.multipleSelectNext,
+    'shift+left': s.multipleSelectPrev,
+    'mod+up': s.modUpHandler,
+    'mod+down': s.modDownHandler,
+    'mod+left': s.modLeftHandler,
+    'mod+right': s.modRightHandler,
+    'mod+shift+up': s.modShiftUpHandler,
+    'mod+shift+down': s.modShiftDownHandler,
+    'mod+shift+left': s.modShiftLeftHandler,
+    'mod+shift+right': s.modShiftRightHandler,
+    'backspace': s.back,
+    'alt+right': s.nextHistory,
+    'alt+left': s.prevHistory,
+    'mod+s': s.saveHandler,
+    '`': s.toggleZoom,
+    'mod++': s.zoomIn,
+    'mod+-': s.zoomOut,
+    'tab': s.toggleAll,
+    'alt+up': s.openParentFolder,
+    'alt+shift+n': s.createTxtFileFromTemplate,
+    'alt+shift+c': s.setFolderCover,
+    'enter': s.toggleDetailMode,
+    'del': s.removeSelected,
+  };
+
+  // 合併硬編碼快捷鍵（如果沒有被 preferences 覆蓋）
+  for (const [key, handler] of Object.entries(hardcodedShortcuts)) {
+    if (!bindings[key]) {
+      bindings[key] = handler;
+    }
+  }
+
+  // 處理 'mod+plus' 的特殊情況（確保 + 號的快捷鍵都能正常工作）
+  if (bindings['mod+='] && !bindings['mod+plus']) {
+    bindings['mod+plus'] = bindings['mod+='];
+  }
+
+  console.log('[App] Total mousetrap bindings:', Object.keys(bindings).length);
+  return bindings;
+}
+
+/* destoryMousetrap（bundle 49316-49325 逐字；destory 原码 typo 逐字保留） */
+export function machineryDestoryMousetrap(s: any): void {
+  const w = window as any;
+  if (!s.mousetrap) return;
+
+  for (var key in s.mousetrap) {
+    if (s.mousetrap.hasOwnProperty(key)) {
+      w.Mousetrap.unbind(key);
+    }
+  }
+}
+
+/* initMousetrap（bundle 49326-49330 逐字） */
+export function machineryInitMousetrap(s: any): void {
+  machineryDestoryMousetrap(s);
+  s.mousetrap = machineryBuildMousetrap(s);
 }
 
 let applied = false;
@@ -3465,5 +3628,8 @@ export function applyDataMachineryScope(): void {
     enterDetailMode: 'machinery',
     leaveDetailMode: 'machinery',
     saveFolder: 'machinery',
+    buildMousetrap: 'machinery',
+    destoryMousetrap: 'machinery',
+    initMousetrap: 'machinery',
   };
 }

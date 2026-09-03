@@ -2648,6 +2648,21 @@
 >   isVentura 等 declare const 消费面需逐个审计（libraryDomain 988 裸 IPCHelper 引用在其
 >   try/catch 内静默失败风险，登记 c17 审计项）。
 
+> **c16d 键盘域 buildMousetrap/destoryMousetrap/initMousetrap（2026-09-03；version 17）**：
+> - **触发**：main-ui-workflow 稳定失败 `w.initMousetrap is not a function`——initMousetrap
+>   （49326）为 **controller 闭包函数**（非顶层），c16a 的 leaveDetailMode w.* 访问不可达。
+>   键盘域因此从 c17 提前到 c16d。
+> - machineryBuildMousetrap（49177-49314 逐字）：player 九快捷键 handler 映射（gif speed
+>   梯度/quicklook/prevGifFrame 等）+ preferences.shortcuts.keybinds 经 ShortcutManager.
+>   electronToMousetrap 转换（vendor script b1 存活）+ 硬编码 55 键（toggleAllFolders/星级/
+>   mod 系/方向系/enter=toggleDetailMode/del=removeSelected）+ mod+plus 特判。返回 bindings
+>   映射由 mgo-mousetrap 指令消费（与 bundle 同语义）。
+> - machineryDestoryMousetrap（49316-49325 逐字；destory typo 逐字）/ machineryInitMousetrap
+>   （49326-49330 逐字：destory + s.mousetrap 重挂）。leaveDetailMode 改走
+>   `w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s)`（bundle 在世走 bundle
+>   闭包版，b1 后走移植版——initMousetrap 非 window 可达，永远走移植版，条件仅防御）。
+> - 验证：tsc 零错；m1 25/25；**main-ui-workflow 修复确认**（MAIN_WORKFLOW_SMOKE_OK）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

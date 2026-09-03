@@ -2778,6 +2778,19 @@
 >   hiddenByCurrentFilter/electronLog 经 window。
 > - 验证：tsc 零错；m1 25/25。
 
+> **c18e-3 quicklook/copyImages（2026-09-03；version 26）**：
+> - machineryQuicklook（33542-33580 逐字：swal 容器守卫 + isCropMode 守卫 + gif 详情分支
+>   toggleGifPlay + keyspace 三设定分流（preview→inline-mode/open 类 + toggleDetailMode(event,
+>   true) + analytics.event / preview-native→darwin isPreviewing + IPCHelper.send('quicklook')
+>   / 默认→pageDownHandler）。toggleGifPlay/toggleDetailMode/pageDownHandler 经 scope 解析；
+>   IPCHelper 脚本级词法绑定（c17a 接装）经 window；analytics 顶层 var（105501）/process 经 window。
+>   machineryCopyImages（31747-31795 逐字：alltags 标签复制 + sidebar 文件夹/smart 文件夹复制
+>   + 选中项 sendTo(backgroundWindowID,'copy-images') + RecentFileManager.addFiles + notify）。
+>   clipboard 为 bundle 19019 `const { clipboard } = electron` 脚本级词法绑定 →
+>   **w.electron.clipboard**（同对象；controllerFns 裸引靠 @ts-nocheck，machinery 无此豁免）。
+> - 教训登记：**tsc 退出码曾被 tail 管道吃掉（tail 恒 0），以重定向后 echo $? 为准**。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

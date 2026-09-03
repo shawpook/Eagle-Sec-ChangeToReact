@@ -4502,6 +4502,112 @@ export function machineryRemoveSelected(s: any, event: any): void {
   }
 }
 
+/* ── c18e-3：quicklook/copyImages ───────────────────────────────────── */
+
+/* quicklook（bundle 33542-33580 逐字；toggleGifPlay/toggleDetailMode/pageDownHandler 经
+   scope 解析；IPCHelper 为脚本级词法绑定（c17a if-absent 接装）经 window；analytics 顶层
+   var（105501）/process/swal 容器经 window） */
+export function machineryQuicklook(s: any, event: any): void {
+  const w = window as any;
+  if (w.$(".swal2-container").length > 0) {
+    return;
+  }
+  if (s.isCropMode) return;
+  event && event.preventDefault();
+  // if ($scope.isDetailMode && !$scope.isInlineMode && VIDEO_TYPES[$scope.current.ext]) {
+  //     $scope.toggleVideoPlay();
+  // }
+  // else if ($scope.isDetailMode && !$scope.isInlineMode && AUDIO_TYPES[$scope.current.ext]) {
+  //     $scope.toggleVideoPlay();
+  // }
+  // else
+  if (s.isDetailMode && !s.isInlineMode && (s.current.ext == 'gif')) {
+    s.toggleGifPlay();
+  }
+  else {
+    // 如果用户设定是预览
+    if (s.$root.preferences.habits.keyspace === "preview") {
+      if (s.selected.length > 0) {
+        w.$(".content-panel.detail-mode").addClass("inline-mode");
+        setTimeout(function () {
+          w.$(".content-panel.detail-mode").addClass("open");
+        }, 30);
+        s.toggleDetailMode(event, true);
+        w.analytics.event('QuickLook', 'Open');
+      }
+    }
+    else if (s.$root.preferences.habits.keyspace === "preview-native") {
+      if (s.selected.length > 0) {
+        if (w.process.platform == 'darwin' && !s.isDetailMode) {
+          s.isPreviewing = !s.isPreviewing;
+          w.IPCHelper.send('quicklook', s.selected[0]);
+        }
+      }
+    }
+    // 如果用户设定是滚动页面
+    else {
+      s.pageDownHandler(event);
+    }
+  }
+}
+
+/* copyImages（bundle 31747-31795 逐字；clipboard 为 renderer 全局（controllerFns 同款裸引）；
+   ipcRenderer 统一表达式；RecentFileManager if-absent 接装经 window；notify 走 machinery 版） */
+export function machineryCopyImages(s: any, event: any): void {
+  const w = window as any;
+  if (s.viewMode === 'alltags') {
+    var selectedTags = s.getSelectedTags();
+    if (selectedTags && selectedTags.length > 0) {
+      w.electron.clipboard.writeText(selectedTags.join(","));
+      s.notify({
+        message: getFilter()('i18n')("Context.Tag.Copy.Success"),
+        duration: 1000
+      });
+    }
+  }
+  else {
+    if (s.$root.currentFocus == "sidebar") {
+      if (s.$root.selectedFolders.length > 0) {
+        let copyText = "";
+        s.$root.selectedFolders.forEach(function (folder: any, index: any) {
+          copyText += folder.name;
+          if (index < s.$root.selectedFolders.length - 1) {
+            copyText += "\n";
+          }
+        });
+        w.electron.clipboard.writeText(copyText);
+      }
+      else if (s.$root.selectedSmartFolders.length > 0) {
+        let copyText = "";
+        s.$root.selectedSmartFolders.forEach(function (folder: any, index: any) {
+          copyText += folder.name;
+          if (index < s.$root.selectedSmartFolders.length - 1) {
+            copyText += "\n";
+          }
+        });
+        w.electron.clipboard.writeText(copyText);
+      }
+      else if (s.currentSmartFolder) {
+        w.electron.clipboard.writeText(s.currentSmartFolder.name);
+      }
+      else if (s.currentFolder) {
+        w.electron.clipboard.writeText(s.currentFolder.name);
+      }
+    }
+    else if (s.selected.length > 0) {
+      const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+      ipc.sendTo(w.backgroundWindowID, 'copy-images', s.selected);
+      w.RecentFileManager.addFiles(s.selected);
+      setTimeout(function () {
+        s.notify({
+          message: getFilter()('i18n')("previewWindow.copied"),
+          duration: 1000
+        });
+      }, 150);
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4599,9 +4705,12 @@ export function applyDataMachineryScope(): void {
   s.multipleSelectPrev = (event: any) => machineryMultipleSelectPrev(s, event);
   // c18e-2b：removeSelected
   s.removeSelected = (event: any) => machineryRemoveSelected(s, event);
+  // c18e-3：quicklook/copyImages
+  s.quicklook = (event: any) => machineryQuicklook(s, event);
+  s.copyImages = (event: any) => machineryCopyImages(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 25,
+    version: 26,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -4670,6 +4779,8 @@ export function applyDataMachineryScope(): void {
     multipleSelectNext: 'machinery',
     multipleSelectPrev: 'machinery',
     removeSelected: 'machinery',
+    quicklook: 'machinery',
+    copyImages: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

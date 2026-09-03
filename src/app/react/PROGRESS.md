@@ -3012,6 +3012,17 @@ version 31）**：
 >   React boxGridEngine——归 grid 域切片。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7c 展开族/重复图/排序/搜索全览（2026-09-03；version 45）**：
+> - machineryExpandFolder/expandSmartFolder（38054/38061 逐字）、machinerySearchInAll
+>   （29201 逐字，focusSeach typo 原样）、machineryIsDuplicateImage/addToDuplicateMapping/
+>   removeFromDuplicateMapping（30572/30585/30591 逐字：svg/tif/tiff 排除 + getHashID +
+>   垃圾桶排除）、machineryOpenDuplicate（36944 逐字三档广播）、toggle 三件套（38786/38793/
+>   38803 逐字）+ 两个内嵌闭包域内移植（toggleCurrentLevelSmartFoldersInner/toggleAllSmartFolders
+>   Inner——localStorage 键逐字）、machinerySetFolderOrder/setSmartFolderOrder（41360/41404
+>   逐字）、machineryUpdateTxtItem（34478 逐字：**selected.length === 0 && selected[0] ===
+>   item 矛盾守卫原样——实际恒 false**）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

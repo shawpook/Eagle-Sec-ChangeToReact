@@ -7919,6 +7919,208 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
   s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
 }
 
+/* ── b1-7c：展开族/重复图/排序/搜索全览 ──────────────────────────────── */
+
+/* expandFolder/expandSmartFolder（bundle 38054/38061 逐字：isExpand + updateSidebarList +
+   localStorage 键逐字） */
+export function machineryExpandFolder(s: any, folder: any): void {
+  const w = window as any;
+  if (!folder) return;
+  folder.isExpand = true;
+  s.updateSidebarList();
+  w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, true);
+}
+
+export function machineryExpandSmartFolder(s: any, smartFolder: any): void {
+  const w = window as any;
+  if (!smartFolder) return;
+  smartFolder.isExpand = true;
+  s.updateSidebarList();
+  w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + smartFolder.id, true);
+}
+
+/* searchInAll（bundle 29201-29205 逐字：openAll(true) + focusSeach **typo 逐字**） */
+export function machinerySearchInAll(s: any): void {
+  s.openAll(true, function () {
+    s.focusSeach();
+  });
+}
+
+/* isDuplicateImage/addToDuplicateMapping/removeFromDuplicateMapping（bundle 30572/30585/
+   30591 逐字：svg/tif/tiff 排除 + getHashID（Tier-2）+ 垃圾桶排除） */
+export function machineryIsDuplicateImage(s: any, image: any): any {
+  const w = window as any;
+  if (!s.duplicateMappings) return false;
+  if (image.ext === 'svg') return false;
+  if (image.ext === 'tif') return false;
+  if (image.ext === 'tiff') return false;
+
+  var hashID = w.getHashID(image);
+  if (!hashID) return false;
+  // 垃圾桶文件不纳入考量
+  if (s.duplicateMappings[hashID] && s.duplicateMappings[hashID].isDeleted) return false;
+  return s.duplicateMappings[hashID];
+}
+
+export function machineryAddToDuplicateMapping(s: any, image: any): void {
+  const w = window as any;
+  var hashID = w.getHashID(image);
+  if (!s.duplicateMappings) s.duplicateMappings = {};
+  s.duplicateMappings[hashID] = image;
+}
+
+export function machineryRemoveFromDuplicateMapping(s: any, image: any): void {
+  const w = window as any;
+  var hashID = w.getHashID(image);
+  delete s.duplicateMappings[hashID];
+}
+
+/* openDuplicate（bundle 36944-36974 逐字：selected/currentPage/all 三档
+   OPEN_DUPLICATE_SCAN_PANEL 广播，selected 档含合并回调过滤 isDeleted） */
+export function machineryOpenDuplicate(s: any, options: any = {}): void {
+  if (options?.selected) {
+    s.$root.$broadcast("OPEN_DUPLICATE_SCAN_PANEL", {
+      items: [...s.selected],
+      onMergedCallback: () => {
+        s.selected = s.selected.filter((item: any) => {
+          return !item.isDeleted;
+        });
+        s.$evalAsync();
+      },
+    });
+  }
+  else if (options?.currentPage) {
+    s.$root.$broadcast("OPEN_DUPLICATE_SCAN_PANEL", {
+      items: [...s.allData],
+    });
+  }
+  else {
+    s.$root.$broadcast("OPEN_DUPLICATE_SCAN_PANEL", {
+      items: [...s.all],
+    });
+  }
+}
+
+/* toggleCurrentLevelSmartFolders 内嵌闭包（38841 逐字）+ toggleAllSmartFolders 内嵌闭包
+   （38831 逐字：tree.walk 全展开/收起）——localStorage 键逐字 */
+function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+  const w = window as any;
+  smartFolders.forEach(function (f: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+    }
+  });
+  s.updateSidebarList();
+}
+
+function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+  const w = window as any;
+  w.eagle.utils.tree.walk(smartFolders, 'children', function (f: any, parent: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+    }
+  });
+  s.updateSidebarList();
+}
+
+/* toggleSelectSmartFolder/toggleCurrentLevelSmartFolders/toggleAllSmartFolderExpand
+   （bundle 38786/38793/38803 逐字：smartFolder ±1 展开反转 / 当前层级反转 /
+   全体反转（含 selectedSmartFolder 父级取向 + sidebarIndex=0）） */
+export function machineryToggleSelectSmartFolder(s: any, event: any, smartFolder: any): void {
+  var expand = !smartFolder.isExpand;
+  var smartFolders = smartFolder.children;
+  smartFolder.isExpand = expand;
+  machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+}
+
+export function machineryToggleCurrentLevelSmartFolders(s: any, event: any, smartFolder: any): void {
+  var expand = !smartFolder.isExpand;
+  var parent = s.smartFolderMappings[smartFolder.parent];
+  var smartFolders = s.smartFolders;
+  if (parent && parent.children) {
+    smartFolders = parent.children;
+  }
+  machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+}
+
+export function machineryToggleAllSmartFolderExpand(s: any, event: any, selectedSmartFolder: any): void {
+  const w = window as any;
+  var smartFolder = selectedSmartFolder || s.currentSmartFolder;
+  if (s.smartFolders && s.smartFolders.length > 0) {
+    var expand = !s.smartFolders[0].isExpand;
+    if (smartFolder) {
+      setTimeout(function () { s.changeSidebarIndex(smartFolder); s.$evalAsync(); }, 100);
+      if (smartFolder.parent) {
+        var parent = s.smartFolderMappings[smartFolder.parent];
+        if (parent) {
+          expand = !parent.isExpand;
+        }
+      }
+    }
+    if (!expand) s.sidebarIndex = 0;
+    machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
+    s.updateSidebarList();
+  }
+}
+
+/* setFolderOrder/setSmartFolderOrder（bundle 41360/41404 逐字：orderBy 清除/设置 +
+   sortIncrease 默认 true + reload（当前匹配时）+ saveFolder（machinery 版经 scope）） */
+export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignoreReload: any): void {
+  var folder = folder;
+  if (!folder) return;
+  if (!orderBy) {
+    delete folder.orderBy;
+    delete folder.sortIncrease;
+  }
+  else {
+    folder.orderBy = orderBy;
+    if (folder.sortIncrease === undefined) {
+      folder.sortIncrease = true;
+    }
+  }
+  if (s.currentFolder === folder && !ignoreReload) {
+    s.reload();
+  }
+  s.saveFolder();
+}
+
+export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any): void {
+  var folder = folder;
+  if (!folder) return;
+  if (!orderBy) {
+    delete folder.orderBy;
+    delete folder.sortIncrease;
+  }
+  else {
+    folder.orderBy = orderBy;
+    if (folder.sortIncrease === undefined) {
+      folder.sortIncrease = true;
+    }
+  }
+  if (s.currentSmartFolder === folder) {
+    s.reload();
+  }
+  s.saveFolder();
+}
+
+/* updateTxtItem（bundle 34478-34489 逐字：txt 盒内容 HTML 重绘 + **selected.length === 0
+   且 selected[0] === item 的矛盾守卫——bundle 原样（实际恒 false 不生效）**） */
+export function machineryUpdateTxtItem(s: any, item: any): void {
+  const w = window as any;
+  var paragraphs = item.text.split("\n");
+  var paragraphsHTML = "";
+  paragraphsHTML += `<h4>${item.name.trim()}</h4>`;
+  paragraphs.forEach(function (paragraph: any) {
+    paragraphsHTML += `<p>${paragraph.trim()}</p>`;
+  });
+  w.$("#box-" + item.id + " .txt-content div").html(paragraphsHTML);
+  if (s.selected.length === 0 && s.selected[0] === item) {
+    w.$(".inspector .txt-content div").html(paragraphsHTML);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -8139,9 +8341,23 @@ export function applyDataMachineryScope(): void {
   s.openFilter = () => machineryOpenFilter(s);
   s.toggleFilterByType = machineryToggleFilterByType(s);
   s.multipleOpenFolder = (folder: any, needReload: any) => machineryMultipleOpenFolder(s, folder, needReload);
+  // b1-7c：展开族/重复图/排序/搜索全览
+  s.expandFolder = (folder: any) => machineryExpandFolder(s, folder);
+  s.expandSmartFolder = (smartFolder: any) => machineryExpandSmartFolder(s, smartFolder);
+  s.searchInAll = () => machinerySearchInAll(s);
+  s.isDuplicateImage = (image: any) => machineryIsDuplicateImage(s, image);
+  s.addToDuplicateMapping = (image: any) => machineryAddToDuplicateMapping(s, image);
+  s.removeFromDuplicateMapping = (image: any) => machineryRemoveFromDuplicateMapping(s, image);
+  s.openDuplicate = (options: any) => machineryOpenDuplicate(s, options);
+  s.toggleSelectSmartFolder = (event: any, smartFolder: any) => machineryToggleSelectSmartFolder(s, event, smartFolder);
+  s.toggleCurrentLevelSmartFolders = (event: any, smartFolder: any) => machineryToggleCurrentLevelSmartFolders(s, event, smartFolder);
+  s.toggleAllSmartFolderExpand = (event: any, selectedSmartFolder: any) => machineryToggleAllSmartFolderExpand(s, event, selectedSmartFolder);
+  s.setFolderOrder = (folder: any, orderBy: any, ignoreReload: any) => machinerySetFolderOrder(s, folder, orderBy, ignoreReload);
+  s.setSmartFolderOrder = (folder: any, orderBy: any) => machinerySetSmartFolderOrder(s, folder, orderBy);
+  s.updateTxtItem = (item: any) => machineryUpdateTxtItem(s, item);
 
   (window as any).__eagleDataMachinery = {
-    version: 44,
+    version: 45,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -8314,6 +8530,19 @@ export function applyDataMachineryScope(): void {
     openFilter: 'machinery',
     toggleFilterByType: 'machinery',
     multipleOpenFolder: 'machinery',
+    expandFolder: 'machinery',
+    expandSmartFolder: 'machinery',
+    searchInAll: 'machinery',
+    isDuplicateImage: 'machinery',
+    addToDuplicateMapping: 'machinery',
+    removeFromDuplicateMapping: 'machinery',
+    openDuplicate: 'machinery',
+    toggleSelectSmartFolder: 'machinery',
+    toggleCurrentLevelSmartFolders: 'machinery',
+    toggleAllSmartFolderExpand: 'machinery',
+    setFolderOrder: 'machinery',
+    setSmartFolderOrder: 'machinery',
+    updateTxtItem: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

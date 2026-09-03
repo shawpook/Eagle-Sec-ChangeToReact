@@ -4816,6 +4816,363 @@ export function machineryModShiftRightHandler(s: any, event: any): void {
   }
 }
 
+/* ── c18e-5：keyUp/keyDown handler 族（含侧栏导航闭包）───────────────── */
+
+/* 域内闭包移植（原 controller 内 function 声明，非 scope 成员）：
+   openPrevQuickAccess（35287-35302）/ openNextQuickAccess（35304-35341）/
+   openPrevGroup（35704-35725）/ openNextGroup（35730-35752） */
+function machineryOpenPrevQuickAccess(s: any): void {
+  const w = window as any;
+  var $quickAccessItems = w.$(".sidebar-quick-access-item:visible");
+  var $current = w.$(".sidebar-quick-access-item.active");
+  var currentIndex = $quickAccessItems.index($current);
+
+  if (currentIndex - 1 >= 0) {
+    $quickAccessItems.eq(currentIndex - 1).click();
+  }
+  else {
+    s.openTrash();
+  }
+}
+
+function machineryOpenNextQuickAccess(s: any): void {
+  const w = window as any;
+  var $quickAccessItems = w.$(".sidebar-quick-access-item:visible");
+  var $current = w.$(".sidebar-quick-access-item.active");
+  var currentIndex = $quickAccessItems.index($current);
+
+  if (currentIndex + 1 < $quickAccessItems.length) {
+    $quickAccessItems.eq(currentIndex + 1).click();
+  }
+  else {
+    var listItems = s.sidebarList;
+    var folders = listItems.filter(function (item: any) {
+      return item.vstype === 'folder';
+    });
+    var smartFolders = listItems.filter(function (item: any) {
+      return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+    });
+    if (smartFolders.length > 0 && smartFolders[0]) {
+      s.openSmartFolder(smartFolders[0]);
+    }
+    else if (folders.length > 0 && folders[0]) {
+      s.openFolder(folders[0]);
+    }
+  }
+}
+
+function machineryOpenPrevGroup(s: any): void {
+  const w = window as any;
+  if (s.tagViewMode === "ALL") {
+    return;
+  }
+  else if (s.tagViewMode === "UNFILED") {
+    s.openTagAllGroup();
+  }
+  else if (s.tagViewMode === "STARRED") {
+    s.openUnfiledGroup();
+  }
+  else {
+    var $visibleGroups = w.$(".tag-manager-sidebar .group-item:visible");
+    var $currentGroup = w.$(".tag-manager-sidebar .group-item.active");
+    var currentIndex = $visibleGroups.index($currentGroup);
+    if (currentIndex === 0) {
+      s.openStarredGroup();
+    }
+    else if (currentIndex > 0) {
+      var prev = s.TagManager.groups[currentIndex - 1];
+      if (prev) {
+        s.openTagGroup(prev);
+      }
+    }
+  }
+}
+
+function machineryOpenNextGroup(s: any): void {
+  const w = window as any;
+  if (s.tagViewMode === "ALL") {
+    s.openUnfiledGroup();
+  }
+  else if (s.tagViewMode === "UNFILED") {
+    s.openStarredGroup();
+  }
+  else if (s.tagViewMode === "STARRED") {
+    if (s.TagManager.groups[0]) {
+      s.openTagGroup(s.TagManager.groups[0]);
+    }
+  }
+  else if (s.TagManager.groups.length > 0) {
+    var $visibleGroups = w.$(".tag-manager-sidebar .group-item:visible");
+    var $currentGroup = w.$(".tag-manager-sidebar .group-item.active");
+    var currentIndex = $visibleGroups.index($currentGroup);
+    var next = s.TagManager.groups[currentIndex + 1];
+    if (next) {
+      s.openTagGroup(next);
+    }
+  }
+}
+
+/* keyUpHandler（bundle 35191-35285 逐字：content→crop 广播/moveY -150/selectUp +
+   sidebar 清空选择后按 viewMode 七级回落（all 分支为空体、unfiled→openAll、untagged→
+   unfiled/all、recent→untagged/unfiled/all、random→recent/untagged/unfiled/all、
+   community→random/recent/untagged/unfiled/all、alltags→community/random/recent/untagged/
+   unfiled/all 偏好门控、trash→openAllTags）+ currentId 三分（smart-folder/quick/folder，
+   注意含 currentId 真值守卫）+ tags→openPrevGroup） */
+export function machineryKeyUpHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (w.$(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    if (s.isDetailMode && !s.isInlineMode) {
+      if (s.isCropMode) {
+        s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: -1 });
+        return;
+      }
+      else {
+        w.$("#detail-container").smoothZoom('moveY', -150);
+      }
+    } else {
+      s.selectUp(event);
+    }
+  }
+  else if (s.$root.currentFocus == "sidebar") {
+    s.$root.selectedFolders = [];
+    s.$root.selectedFoldersMappings = {};
+    s.$root.selectedSmartFoldersMappings = {};
+    s.$root.selectedSmartFolders = [];
+    if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { s.openAll() }
+      else if (s.viewMode == "untagged") {
+        if (s.$root.preferences.sidebar.unfiled != 'false') {
+          s.openUnfiled();
+        }
+        else {
+          s.openAll();
+        }
+      }
+      else if (s.viewMode == "recent") {
+        if (s.$root.preferences.sidebar.untagged != 'false') {
+          s.openUntagged();
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          s.openUnfiled();
+        }
+        else {
+          s.openAll();
+        }
+      }
+      else if (s.viewMode == "random") {
+        if (s.$root.preferences.sidebar.recent != 'false') {
+          s.openRecent();
+        }
+        else if (s.$root.preferences.sidebar.untagged != 'false') {
+          s.openUntagged();
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          s.openUnfiled();
+        }
+        else {
+          s.openAll();
+        }
+      }
+      else if (s.viewMode == "community") {
+        if (s.$root.preferences.sidebar.random != 'false') {
+          s.openRandom();
+        }
+        else if (s.$root.preferences.sidebar.recent != 'false') {
+          s.openRecent();
+        }
+        else if (s.$root.preferences.sidebar.untagged != 'false') {
+          s.openUntagged();
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          s.openUnfiled();
+        }
+        else {
+          s.openAll();
+        }
+      }
+      else if (s.viewMode == "alltags") {
+        if (s.$root.preferences.sidebar.community2 != 'false') {
+          s.openCommunity();
+        }
+        else if (s.$root.preferences.sidebar.random != 'false') {
+          s.openRandom();
+        }
+        else if (s.$root.preferences.sidebar.recent != 'false') {
+          s.openRecent();
+        }
+        else if (s.$root.preferences.sidebar.untagged != 'false') {
+          s.openUntagged();
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          s.openUnfiled();
+        }
+        else {
+          s.openAll();
+        }
+      }
+      else if (s.viewMode == "trash") {
+        s.openAllTags()
+      }
+      else {
+        if (s.currentId) {
+          if (s.currentId.indexOf("smart-folder") > -1) {
+            s.openPrevSmartFolder();
+          }
+          else if (s.currentId.indexOf("quick") > -1) {
+            machineryOpenPrevQuickAccess(s);
+          }
+          else if (s.currentId.indexOf("folder") > -1) {
+            s.openPrevFolder();
+          }
+        }
+      }
+  }
+  else if (s.$root.currentFocus == "tags") {
+    machineryOpenPrevGroup(s);
+  }
+}
+
+/* keyDownHandler（bundle 35440-35610 逐字：content→crop 广播/moveY 150/selectDown +
+   sidebar 清空选择后按 viewMode 七级回落（all→unfiled/untagged/recent/random/community/
+   allTags、unfiled→untagged/recent/random/community/allTags、untagged→recent/random/
+   community/allTags、recent→random/community/allTags、random→community/allTags、
+   community→allTags 偏好门控、alltags→openTrash、trash→quickAccess→smartFolders→folders）
+   + currentId 三分（**无 currentId 真值守卫，bundle 原样**）+ tags→openNextGroup） */
+export function machineryKeyDownHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (w.$(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    if (s.isDetailMode && !s.isInlineMode) {
+      if (s.isCropMode) {
+        s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: 1 });
+        return;
+      }
+      else {
+        w.$("#detail-container").smoothZoom('moveY', 150);
+      }
+    } else {
+      s.selectDown(event);
+    }
+  }
+  else if (s.$root.currentFocus == "sidebar") {
+    s.$root.selectedFolders = [];
+    s.$root.selectedFoldersMappings = {};
+    s.$root.selectedSmartFoldersMappings = {};
+    s.$root.selectedSmartFolders = [];
+    if (s.viewMode == "all") {
+      if (s.$root.preferences.sidebar.unfiled != 'false') {
+        s.openUnfiled();
+      }
+      else if (s.$root.preferences.sidebar.untagged != 'false') {
+        s.openUntagged();
+      }
+      else if (s.$root.preferences.sidebar.recent != 'false') {
+        s.openRecent();
+      }
+      else if (s.$root.preferences.sidebar.random != 'false') {
+        s.openRandom();
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        s.openCommunity();
+      }
+      else {
+        s.openAllTags();
+      }
+    }
+    else if (s.viewMode == "unfiled") {
+      if (s.$root.preferences.sidebar.untagged != 'false') {
+        s.openUntagged();
+      }
+      else if (s.$root.preferences.sidebar.recent != 'false') {
+        s.openRecent();
+      }
+      else if (s.$root.preferences.sidebar.random != 'false') {
+        s.openRandom();
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        s.openCommunity();
+      }
+      else {
+        s.openAllTags();
+      }
+    }
+    else if (s.viewMode == "untagged") {
+      if (s.$root.preferences.sidebar.recent != 'false') {
+        s.openRecent();
+      }
+      else if (s.$root.preferences.sidebar.random != 'false') {
+        s.openRandom();
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        s.openCommunity();
+      }
+      else {
+        s.openAllTags();
+      }
+    }
+    else if (s.viewMode == "recent") {
+      if (s.$root.preferences.sidebar.random != 'false') {
+        s.openRandom();
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        s.openCommunity();
+      }
+      else {
+        s.openAllTags();
+      }
+    }
+    else if (s.viewMode == "random") {
+      if (s.$root.preferences.sidebar.community2 != 'false') {
+        s.openCommunity();
+      }
+      else {
+        s.openAllTags();
+      }
+    }
+    else if (s.viewMode == "community") {
+      s.openAllTags();
+    }
+    else if (s.viewMode == "alltags") { s.openTrash() } else if (s.viewMode == "trash") {
+
+      var listItems = s.sidebarList;
+      var folders = listItems.filter(function (item: any) {
+        return item.vstype === 'folder';
+      });
+      var smartFolders = listItems.filter(function (item: any) {
+        return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+      });
+      var quickAccessItems = listItems.filter(function (item: any) {
+        return item.vstype === 'quickAccess';
+      });
+      if (quickAccessItems.length > 0) {
+        w.$("#quick-access-" + quickAccessItems[0].id).click();
+      }
+      else if (smartFolders.length > 0 && smartFolders[0]) {
+        s.openSmartFolder(smartFolders[0]);
+      }
+      else if (folders.length > 0 && folders[0]) {
+        s.openFolder(folders[0]);
+      }
+    }
+    else {
+      if (s.currentId.indexOf("smart-folder") > -1) {
+        s.openNextSmartFolder();
+      }
+      else if (s.currentId.indexOf("quick") > -1) {
+        machineryOpenNextQuickAccess(s);
+      }
+      else if (s.currentId.indexOf("folder") > -1) {
+        s.openNextFolder();
+      }
+    }
+  }
+  else if (s.$root.currentFocus == "tags") {
+    machineryOpenNextGroup(s);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4929,9 +5286,12 @@ export function applyDataMachineryScope(): void {
   s.modShiftDownHandler = (event: any) => machineryModShiftDownHandler(s, event);
   s.modShiftLeftHandler = (event: any) => machineryModShiftLeftHandler(s, event);
   s.modShiftRightHandler = (event: any) => machineryModShiftRightHandler(s, event);
+  // c18e-5：keyUp/keyDown（侧栏导航级联 + QuickAccess/Group 闭包域内移植）
+  s.keyUpHandler = (event: any) => machineryKeyUpHandler(s, event);
+  s.keyDownHandler = (event: any) => machineryKeyDownHandler(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 27,
+    version: 28,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -5014,6 +5374,8 @@ export function applyDataMachineryScope(): void {
     modShiftDownHandler: 'machinery',
     modShiftLeftHandler: 'machinery',
     modShiftRightHandler: 'machinery',
+    keyUpHandler: 'machinery',
+    keyDownHandler: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

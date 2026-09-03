@@ -2804,6 +2804,16 @@
 >   nextHistory/homeHandler/endHandler/updateSidebarList。零闭包依赖。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **c18e-5 keyUp/keyDown handler 族（2026-09-03；version 28）**：
+> - machineryKeyUpHandler（35191-35285 逐字）/ machineryKeyDownHandler（35440-35610 逐字）：
+>   content→crop 广播/moveY ±150/selectUp/Down（scope 解析）；sidebar 清空选择后按 viewMode
+>   七级回落（Up 向 unfiled/untagged 方向回落且 all 分支为空体、Down 向 random/community 方向
+>   回落且 alltags→openTrash、trash→quickAccess→smartFolders→folders——两侧顺序不同，逐字
+>   保留）+ currentId 三分（Up 含 currentId 真值守卫、Down 无——bundle 原样）+ tags→Group 导航。
+> - 闭包域内移植（非 scope 成员）：openPrevQuickAccess（35287）/openNextQuickAccess（35304）/
+>   openPrevGroup（35704）/openNextGroup（35730）——machinery 内部函数，不上 scope/契约。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

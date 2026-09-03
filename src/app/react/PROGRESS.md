@@ -2919,6 +2919,20 @@ version 31）**：
 >   → getRawUrl 否则 thumbnail）。缺口 79 → 68。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-4b sortData/offsetScrollbar/updateFilterCounts（2026-09-03；version 37）**：
+> - **Array.prototype.shuffle（bundle 2594 逐字）machinery 同体幂等补丁**——global.js 不在
+>   index.html，b1 后原型扩展随 bundle 死亡，RANDOM 排序依赖它。
+>   machinerySortData（21710-21833 逐字：NAME/EXT/RESOLUTION/FILESIZE/RATING/DURATION/
+>   MANUAL/BTIME/MTIME/RANDOM/TAGS/default 十一路；collator 三处 var 撞名预防性改名
+>   collator2/3——c18a mr/mr2 先例；languageBCP 经 window）、machineryOffsetScrollbarImm +
+>   machineryOffsetScrollbar（34140/34168 逐字：_.debounce(100,leading) apply 时一次性
+>   创建；Imm 内 selected 居中/无选中防越界双分支 + updateContainerHieght scope 解析）、
+>   machineryUpdateFilterCounts（42946-43040 逐字：type/camera/fontActivated/star/shape
+>   五面计数，try 静默）。
+> - 教训重申：b1-4a 曾漏 updateFilterCounts 接线（契约有赋值无）——**wire 与 contract 必须
+>   同批核对**。缺口 68 → 65。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

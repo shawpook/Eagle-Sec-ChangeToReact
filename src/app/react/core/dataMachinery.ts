@@ -6519,6 +6519,298 @@ export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: a
   }
 }
 
+/* ── b1-4b：sortData/offsetScrollbar/updateFilterCounts ──────────────── */
+
+/* Array.prototype.shuffle（bundle 2594-2605 逐字；global.js 不在 index.html，b1 后原型
+   扩展随 bundle 死亡——machinery 同体幂等补丁接装，bundle 在世时为惰性重定义） */
+if (!(Array.prototype as any).shuffle) {
+  (Array.prototype as any).shuffle = function () {
+    var tmp, current, top = this.length;
+
+    if (top) while (--top) {
+      current = Math.floor(Math.random() * (top + 1));
+      tmp = this[current];
+      this[current] = this[top];
+      this[top] = tmp;
+    }
+
+    return this;
+  };
+}
+
+/* sortData（bundle 21710-21833 逐字：NAME/EXT（Intl.Collator 20x 优化注释）/RESOLUTION/
+   FILESIZE/RATING/DURATION/MANUAL（orderMappings 预登记 20x 优化 + folderId 取
+   currentFolder.id）/BTIME/MTIME（降序无相等分支）/RANDOM（shuffle 原型扩展）/TAGS
+   （首标签 collator）/default modificationTime 降序；languageBCP 经 window） */
+export function machinerySortData(s: any, data: any, orderBy: any): any {
+  const w = window as any;
+  let clone = data.slice();
+  console.time("sortRawData");
+  switch (orderBy) {
+    case 'NAME':
+      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
+      var collator = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
+      clone.sort(function (a: any, b: any) {
+        return collator.compare(a.name, b.name);
+      });
+      break;
+    case 'EXT':
+      var collator2 = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
+      clone.sort(function (a: any, b: any) {
+        return collator2.compare(a.ext, b.ext);
+      });
+      break;
+    case 'RESOLUTION':
+      clone.sort(function (a: any, b: any) {
+        var ra = a.width * a.height;
+        var rb = b.width * b.height;
+        if (ra > rb) return 1;
+        if (ra < rb) return -1;
+        return 0;
+      });
+      break;
+    case 'FILESIZE':
+      clone.sort(function (a: any, b: any) {
+        var sizeA = parseInt(a.size);
+        var sizeB = parseInt(b.size);
+        if (sizeA > sizeB) return 1;
+        if (sizeA < sizeB) return -1;
+        return 0;
+      });
+      break;
+    case 'RATING':
+      clone.sort(function (a: any, b: any) {
+        var starA = parseInt(a.star) || 0;
+        var starB = parseInt(b.star) || 0;
+        if (starA > starB) return 1;
+        if (starA < starB) return -1;
+        return 0;
+      });
+      break;
+    case 'DURATION':
+      clone.sort(function (a: any, b: any) {
+        var durationA = parseInt(a.duration) || 0;
+        var durationB = parseInt(b.duration) || 0;
+        if (durationA > durationB) return 1;
+        if (durationA < durationB) return -1;
+        return 0;
+      });
+      break;
+    case 'MANUAL':
+      console.time("MANUAL");
+      // Note: 使用 mapping 先记录 order 数据，在 sort 函式就不需要使用 _.get 来获取，这样能提升 20x 性能
+      var orderMappings: any = {};
+      var folderId = s.currentFolder.id;
+      for (var i = 0; i < data.length; i++) {
+        var item = data[i];
+        if (item.order && item.order[folderId]) { orderMappings[item.id] = item.order[folderId] }
+        else { orderMappings[item.id] = item.modificationTime + ''; }
+      }
+
+      clone.sort(function (a: any, b: any) {
+        var aTime = orderMappings[a.id];
+        var bTime = orderMappings[b.id];
+        if (aTime > bTime) return -1;
+        else if (aTime < bTime) return 1;
+        else { return 0; }
+      });
+
+      console.timeEnd("MANUAL");
+      break;
+    case 'BTIME':
+      clone.sort(function (a: any, b: any) {
+        var btimeA = a.btime || a.modificationTime;
+        var btimeB = b.btime || b.modificationTime;
+        if (btimeA > btimeB) return -1;
+        if (btimeA < btimeB) return 1;
+      });
+      break;
+    case 'MTIME':
+      clone.sort(function (a: any, b: any) {
+        var mtimeA = a.mtime || a.modificationTime;
+        var mtimeB = b.mtime || b.modificationTime;
+        if (mtimeA > mtimeB) return -1;
+        if (mtimeA < mtimeB) return 1;
+      });
+      break;
+    case 'RANDOM':
+      clone.shuffle();
+      break;
+    case 'TAGS':
+      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
+      var collator3 = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
+      clone.sort(function (a: any, b: any) {
+        const aTag1 = a?.tags?.[0] ?? '';
+        const bTag1 = b?.tags?.[0] ?? '';
+        return collator3.compare(aTag1, bTag1);
+      });
+      break;
+    default:
+      clone.sort(function (a: any, b: any) {
+        if (a.modificationTime > b.modificationTime) return -1;
+        else if (a.modificationTime < b.modificationTime) return 1;
+        return 0;
+      });
+  }
+  console.timeEnd("sortRawData");
+  return clone;
+}
+
+/* offsetScrollbarImm（bundle 34140-34166 逐字：delay||1 后 selected 末盒居中 scrollTo；
+   无选中时防越界（末盒 transform Y 与 scrollTop 比较）+ updateContainerHieght（machinery
+   版经 scope）） */
+export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any): void {
+  const w = window as any;
+  var $container = w.$("#box-container");
+  setTimeout(function () {
+    if (s.selected.length > 0) {
+      var $current = w.$(".box.selected").last();
+      var offsetTop = $container.height() / 2 - $current.height() / 2;
+      $container.scrollTo($current, 20, {
+        axis: 'y',
+        duration: 0,
+        offset: {
+          top: -offsetTop,
+        }
+      });
+    }
+    else {
+      // Note: 這段程式馬主要用來避免因為列表縮放，
+      // Container 的 scrollTop 超過最後一個 box 的位置，造成畫面變成空白的
+      // 判斷方式：找到最後一個 box 並與 container 進行高度比較
+      var $lastBox = w.$(".box:last");
+      if ($lastBox[0]) {
+        var lastBoxY = $lastBox[0].style.transform.split(',')[1];
+        lastBoxY = parseInt(lastBoxY);
+        if ($container.scrollTop() > lastBoxY) {
+          $container.scrollTo($lastBox, 20, {
+            axis: 'y',
+            duration: 30,
+            offset: {
+              top: -$container.height(),
+            }
+          });
+        }
+      }
+    }
+  }, delay || 1);
+  s.updateContainerHieght();
+}
+
+/* offsetScrollbar（bundle 34168-34170 逐字）——_.debounce(100, leading) 实例 apply 时
+   一次性创建（与 bundle controller init 同语义） */
+export function machineryOffsetScrollbar(s: any): any {
+  const w = window as any;
+  return w._.debounce(function offsetScrollbar(delay: any, forceScroll: any) {
+    machineryOffsetScrollbarImm(s, delay, forceScroll);
+  }, 100, true);
+}
+
+/* updateFilterCounts（bundle 42946-43040 逐字：type/camera（filterCamerasMapping 联动）/
+   fontActivated（installedFonts 键）/star（0 归档）/shape（横竖比 2.5 与 4:3、3:4、16:9、
+   9:16 五档）——AUDIO_TYPES/FONT_TYPES/installedFonts 经 window，全程 try 静默） */
+export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: any): void {
+  const w = window as any;
+
+  if (!image) return;
+
+  try {
+
+    var type = image.medium || image.ext;
+    var shape;
+
+    if (w.eagle.filter.filterCounts['type'][type] === undefined) {
+      w.eagle.filter.filterCounts['type'][type] = 1;
+    }
+    else {
+      w.eagle.filter.filterCounts['type'][type] += inc;
+    }
+
+    if (image.rawMetas) {
+
+      var camera = image.rawMetas.camera;
+      if (w.eagle.filter.filterCounts['camera'][camera] === undefined) {
+        w.eagle.filter.filterCounts['camera'][camera] = 1;
+        if (!w.eagle.filter.filterCamerasMapping[camera]) {
+          w.eagle.filter.filterCamerasMapping[camera] = true;
+          w.eagle.filter.filterCameras = Object.keys(w.eagle.filter.filterCamerasMapping);
+        }
+      }
+      else {
+        w.eagle.filter.filterCounts['camera'][camera] += inc;
+      }
+    }
+
+    if (image.fontMetas) {
+      try {
+        var key = Object.keys(image.fontMetas.postScriptName)[0];
+        var postScriptName = image.fontMetas.postScriptName && image.fontMetas.postScriptName[key];
+        if (w.installedFonts[`${postScriptName}_.${image.ext}`]) {
+          w.eagle.filter.filterCounts['fontActivated']['activated'] += inc;
+        }
+        else {
+          w.eagle.filter.filterCounts['fontActivated']['deactivated'] += inc;
+        }
+      }
+      catch (err) {
+
+      }
+    }
+
+    if (image.star) {
+      w.eagle.filter.filterCounts['rating'][image.star] += inc;
+    }
+    else {
+      w.eagle.filter.filterCounts['rating']['0'] += inc;
+    }
+
+    // 形状筛选，只需要针对图片格式进行
+    if (image.width && !w.AUDIO_TYPES[image.ext] && !w.FONT_TYPES[image.ext]) {
+      if (image.width > image.height) {
+        if (image.width / image.height >= 2.5) {
+          shape = "panoramic-landscape";
+        }
+        else {
+          shape = "landscape";
+        }
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+      else if (image.width < image.height) {
+        if (image.height / image.width >= 2.5) {
+          shape = "panoramic-portrait";
+        }
+        else {
+          shape = "portrait";
+        }
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+      else if (image.width === image.height) {
+        shape = "square";
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+      if (image.width / image.height === 4 / 3) {
+        shape = "4:3";
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+      else if (image.width / image.height === 3 / 4) {
+        shape = "3:4";
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+      else if (image.width / image.height === 16 / 9) {
+        shape = "16:9";
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+      else if (image.width / image.height === 9 / 16) {
+        shape = "9:16";
+        w.eagle.filter.filterCounts['shape'][shape] += inc;
+      }
+    }
+
+  }
+  catch (err) {
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -6692,9 +6984,13 @@ export function applyDataMachineryScope(): void {
   s.changeListHeight = (height: any) => machineryChangeListHeight(s, height);
   s.scrollToCurrentItem = () => machineryScrollToCurrentItem(s);
   s.forceFitImageSize = (image: any, usingThumbnail: any) => machineryForceFitImageSize(s, image, usingThumbnail);
+  // b1-4b：sortData/offsetScrollbar/updateFilterCounts
+  s.sortData = (data: any, orderBy: any) => machinerySortData(s, data, orderBy);
+  s.offsetScrollbar = machineryOffsetScrollbar(s);
+  s.updateFilterCounts = (image: any, inc: any, now: any) => machineryUpdateFilterCounts(s, image, inc, now);
 
   (window as any).__eagleDataMachinery = {
-    version: 36,
+    version: 37,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -6828,6 +7124,9 @@ export function applyDataMachineryScope(): void {
     changeListHeight: 'machinery',
     scrollToCurrentItem: 'machinery',
     forceFitImageSize: 'machinery',
+    sortData: 'machinery',
+    offsetScrollbar: 'machinery',
+    updateFilterCounts: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

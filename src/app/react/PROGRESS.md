@@ -2765,6 +2765,18 @@
 > - 验证：tsc 零错；探针 helpers function×3 + zoomHelpersLoaded=true + mode:"canvas"
 >   releasedAt 置位；stage5 / main-ui-workflow 单独复跑 OK；m1 25/25；全量 suite ALL GREEN。
 
+> **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
+> - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
+>   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/
+>   current/isGifReady + autoScroll + updateNavigator/lastZoom/zoom + nextTimeout 域内自管
+>   100ms 重算缩放与 preloadImage("next") + addToRecentFile）、machinerySelectPrev（36502-36552
+>   逐字：首项 is-first-item 提示 + allData 空守卫 + 详情模式 cleanBitmapViewer +
+>   start-1 越界回落 allData[0] + prevTimeout 域内自管 preloadImage("prev")）。
+> - 依赖经 scope 解析：getSelection/lastZoom（machinery 版）、autoScroll/forceFitImageSize/
+>   preloadImage/addToRecentFile（bundle scope 函数，后续片独立移植）、zoom（bundle 闭包→
+>   smartZoom 已 machinery 版）。
+> - 验证：tsc 零错；m1 25/25。
+
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。
 

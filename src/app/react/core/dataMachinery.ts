@@ -4060,6 +4060,128 @@ export function machineryToggleDetailMode(s: any, $event: any, isInline: any): v
   }
 }
 
+/* ── c18e-1：选择导航（selectNext/selectPrev）────────────────────────── */
+
+// ── c18e-1 域内自管（原 controller 闭包 var：nextTimeout 36419 邻域 / prevTimeout 36536 邻域）──
+let nextTimeout: any = null;
+let prevTimeout: any = null;
+
+/* selectNext（bundle 36382-36444 逐字；getSelection/lastZoom 已 machinery 版经 scope 解析，
+   autoScroll/forceFitImageSize/preloadImage/addToRecentFile 为 bundle scope 函数经 scope 解析） */
+export function machinerySelectNext(s: any, event: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.isCropMode) {
+    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 1, vertical: 0 });
+    return;
+  }
+
+  var selection = s.getSelection();
+  var start = selection.start;
+  var end = selection.end + 1;
+
+  if (s.isDetailMode) {
+    s.rememberScrollTops(s.current);
+  }
+
+  if (!s.allData[end]) {
+    w.$("#is-last-item").show();
+    setTimeout(() => { w.$("#is-last-item").hide(); }, 500);
+    return;
+  }
+  else {
+    w.$("#detail-container").smoothZoom('cleanBitmapViewer');
+  }
+
+  s.selected = [s.allData[end]];
+  s.selectedFolderMappings = {};
+  s.$root.currentFocus = "content";
+
+  if (s.isDetailMode) {
+    $timeout.cancel(nextTimeout);
+    s.forceFitImageSize(s.selected[0], true);
+    s.current = s.selected[0];
+    s.isGifReady = false;
+  }
+
+  s.autoScroll(end);
+
+  if (s.current) {
+    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    if (!s.lastZoom()) {
+      s.zoom();
+    }
+    nextTimeout = $timeout(function () {
+      if (!s.lastZoom()) {
+        s.zoom();
+      }
+      var nextImage = s.allData[end + 1];
+      s.preloadImage("next");
+    }, 100);
+    s.addToRecentFile(s.current);
+  }
+}
+
+/* selectPrev（bundle 36502-36552 逐字；首项 is-first-item 提示 + allData 空守卫 +
+   详情模式 cleanBitmapViewer + start-1 越界回落 allData[0]） */
+export function machinerySelectPrev(s: any, event: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.isCropMode) {
+    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: -1, vertical: 0 });
+    return;
+  }
+
+  var selection = s.getSelection();
+  var start = selection.start;
+  var end = selection.end + 1;
+
+  if (start === 0) {
+    w.$("#is-first-item").show();
+    setTimeout(() => { w.$("#is-first-item").hide(); }, 500);
+    return;
+  }
+  if (s.allData.length == 0) { return; }
+
+  if (s.isDetailMode) {
+    w.$("#detail-container").smoothZoom('cleanBitmapViewer');
+    s.rememberScrollTops(s.current);
+    s.isGifReady = false;
+  }
+
+  if (s.allData[start - 1]) {
+    s.selected = [];
+    s.selected.push(s.allData[start - 1]);
+    if (s.isDetailMode) {
+      s.forceFitImageSize(s.selected[0], true);
+      s.current = s.selected[0];
+    }
+    s.autoScroll(start - 1);
+  } else {
+    s.selected = [];
+    s.selected.push(s.allData[0]);
+    s.forceFitImageSize(s.selected[0], true);
+    s.current = s.selected[0];
+    s.autoScroll(0);
+  }
+  s.selectedFolderMappings = {};
+  s.$root.currentFocus = "content";
+  if (s.current) {
+    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    if (!s.lastZoom()) {
+      s.zoom();
+    }
+    $timeout.cancel(prevTimeout);
+    prevTimeout = $timeout(function () {
+      if (!s.lastZoom()) {
+        s.zoom();
+      }
+      s.preloadImage("prev");
+    }, 100);
+    s.addToRecentFile(s.current);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4147,9 +4269,12 @@ export function applyDataMachineryScope(): void {
   // c18d：selectAll/toggleDetailMode
   s.selectAll = (event: any) => machinerySelectAll(s, event);
   s.toggleDetailMode = ($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline);
+  // c18e-1：selectNext/selectPrev
+  s.selectNext = (event: any) => machinerySelectNext(s, event);
+  s.selectPrev = (event: any) => machinerySelectPrev(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 22,
+    version: 23,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -4213,5 +4338,7 @@ export function applyDataMachineryScope(): void {
     back: 'machinery',
     selectAll: 'machinery',
     toggleDetailMode: 'machinery',
+    selectNext: 'machinery',
+    selectPrev: 'machinery',
   };
 }

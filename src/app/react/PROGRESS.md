@@ -1942,7 +1942,7 @@
 >   suite 42 项 ALL GREEN（main-ui-workflow 一次既有偶发单跑复绿）；api-smoke 13/13。
 > - 下一批（c3 续）：sidebar(30)/detail(25)/misc(54) 域同管线追加；cZ = 状态大爆炸迁移。
 
-- [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
+
 
 > **c3 终版已验证并接管（2026-09-02；batch3 追加 = React 调用面 155 函数全量过门）**：
 > - **机制修正史（提取器四个终版坑，全部以 esbuild/tsc/冒烟三角定位）**：
@@ -2737,6 +2737,14 @@
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
+> **c18d selectAll/toggleDetailMode（2026-09-03；version 22）**：
+> - machinerySelectAll（46628-46645 逐字：alltags 视图 selectedTags 全置 vs allData 全选
+    + selectedMappings 清空 + cleanSelectedTimeout 域内自管 + currentFocus=content）、
+    machineryToggleDetailMode（31005-31029 逐字：swal 守卫 + isCropMode→saveCrop + 
+    isInline/isCommentMode 联动 + currentFocus sidebar/tags→renameCurrentFolder + 文件夹
+    选择→openFolder + 详情↔列表切换）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。
 

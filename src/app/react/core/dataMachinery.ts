@@ -3999,6 +3999,67 @@ export function machineryBack(s: any): void {
   }
 }
 
+/* ── c18d：全选/详情切换 ─────────────────────────────────────────────── */
+
+// ── c18d 域内自管（原 controller 闭包 var：cleanSelectedTimeout，46644 邻域）──
+let cleanSelectedTimeout: any = null;
+
+/* selectAll（bundle 46628-46645 逐字） */
+export function machinerySelectAll(s: any, event: any): void {
+  const $timeout = getTimeout();
+  event && event.stopPropagation();
+  if (s.viewMode == 'alltags') {
+    s.selectedTags = {};
+    s.TagManager.tagsResult.tags.forEach((tagName: any) => {
+      s.selectedTags[tagName] = true;
+    });
+  }
+  else {
+    var selected: any[] = [];
+    Array.prototype.push.apply(selected, s.allData);
+    s.selected = selected;
+    s.selectedMappings = {};
+    $timeout.cancel(cleanSelectedTimeout);
+    s.$root.currentFocus = "content";
+  }
+}
+
+/* toggleDetailMode（bundle 31005-31029 逐字；saveCrop/renameCurrentFolder/openFolder
+   经 scope 解析） */
+export function machineryToggleDetailMode(s: any, $event: any, isInline: any): void {
+  const w = window as any;
+  if (w.$(".swal2-container").length > 0) return;
+  if (s.isCropMode) {
+    s.saveCrop();
+    return;
+  }
+  if (isInline !== undefined) {
+    s.isInlineMode = !!isInline;
+    if (s.isInlineMode) {
+      s.isCommentMode = false;
+    }
+  }
+  if (s.$root.currentFocus == "sidebar" || s.$root.currentFocus == "tags") {
+    s.renameCurrentFolder($event);
+  }
+  else {
+    if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
+      var folderId = Object.keys(s.selectedFolderMappings)[0];
+      if (s.folderMappings[folderId]) {
+        s.openFolder(s.folderMappings[folderId]);
+      }
+    }
+    else {
+      if (s.isDetailMode) {
+        s.leaveDetailMode($event);
+      }
+      else {
+        s.enterDetailMode($event, null);
+      }
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4083,9 +4144,12 @@ export function applyDataMachineryScope(): void {
   s.nextHistory = () => machineryNextHistory(s);
   s.prevHistory = () => machineryPrevHistory(s);
   s.back = () => machineryBack(s);
+  // c18d：selectAll/toggleDetailMode
+  s.selectAll = (event: any) => machinerySelectAll(s, event);
+  s.toggleDetailMode = ($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline);
 
   (window as any).__eagleDataMachinery = {
-    version: 21,
+    version: 22,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -4147,5 +4211,7 @@ export function applyDataMachineryScope(): void {
     nextHistory: 'machinery',
     prevHistory: 'machinery',
     back: 'machinery',
+    selectAll: 'machinery',
+    toggleDetailMode: 'machinery',
   };
 }

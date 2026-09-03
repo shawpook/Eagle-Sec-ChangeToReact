@@ -3792,6 +3792,177 @@ export function machinerySmartZoom(s: any, target: any, forceMode: any): void {
   });
 }
 
+/* ── c18b：详情缩放余部（zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght）── */
+
+/* zoomActual（bundle 33915-33937 逐字） */
+export function machineryZoomActual(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault && event.preventDefault();
+  if (!s.isDetailMode) {
+    s.imageSize.height = 150;
+    s.changeListHeight();
+    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+      s.adjustLayoutWidth(0);
+      machinerySaveListHeight(s, s.imageSize.height);
+    }
+  } else {
+    s.imageSize.zoomRatio = 100;
+    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+    s.updateZoomRatio(100, undefined, undefined, true);
+
+    // 如果是視頻格式，尽可能使用视频原来尺寸
+    var mpvPlayer = w.$(".detail-wrap mpv-video")[0];
+    if (mpvPlayer) {
+      mpvPlayer.scaleMode = 'original';
+    }
+    else {
+      var $video = w.$(".detail-wrap video");
+      if ($video.length > 0) {
+        var vW = $video[0].videoWidth;
+        var vH = $video[0].videoHeight;
+        $video.css({
+          'max-width': `${vW}px !important`,
+          'max-height': `${vH}px !important`,
+        });
+        $video.addClass("fit");
+      }
+    }
+  }
+}
+
+/* toggleZoom（bundle 33990-34012 逐字） */
+export function machineryToggleZoom(s: any, event: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) return;
+  if (s.VIDEO_TYPES[s.current.ext]) {
+    if (s.lastZoomMode !== "edge") {
+      s.zoomFit(event);
+      s.lastZoomMode = "edge";
+      s.zoomFitSize = s.imageSize.zoomRatioExp;
+    }
+    else {
+      s.zoomActual(event);
+      s.lastZoomMode = "fit";
+      s.zoomFitSize = 0;
+    }
+  }
+  else {
+    if (s.lastZoomMode !== "edge") {
+      s.zoomFitEdge(event, true);
+      s.lastZoomMode = "edge";
+    }
+    else {
+      s.zoomFit(event);
+      s.lastZoomMode = "fit";
+    }
+  }
+  localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
+}
+
+/* zoomFitEdge（bundle 34015-34077 逐字） */
+export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): void {
+  const w = window as any;
+  event && event.preventDefault && event.preventDefault();
+
+  if (hasTransition) {
+    w.$("#detail-container").addClass("zooming");
+    setTimeout(function () {
+      w.$("#detail-container").removeClass("zooming");
+    }, 300);
+  }
+
+  var current = s.current;
+  var ratio = s.imageSize.zoomRatio || 100;
+  var lastRatio = ratio;
+  var $container = w.$(".content-panel");
+  var toolbarHeight = 40;
+  var containerWidth;
+  var containerHeight;
+  var offsetY = 0;
+
+  if (s.isSlideshowMode) {
+    toolbarHeight = 0;
+    containerWidth = w.$(window).width();
+    containerHeight = w.$(window).height() - toolbarHeight;
+  }
+  else if (s.isInlineMode) {
+    toolbarHeight = 96;
+    containerWidth = w.$(window).width();
+    containerHeight = $container.height() - toolbarHeight;
+  }
+  else {
+    toolbarHeight = 48;
+    containerWidth = $container.width();
+    containerHeight = $container.height() - toolbarHeight;
+  }
+
+  var a = parseInt((containerHeight) / current.height * 100 as any);
+  var b = parseInt((containerWidth) / current.width * 100 as any);
+  ratio = Math.min(a, b);
+  offsetY = toolbarHeight / 2 * 100 / ratio;
+
+  if (!current) return;
+
+  w.$("#detail-image").css({
+    "transform": `rotate(0deg)`,
+    "transition": "none"
+  });
+
+  var $detailContainer = w.$("#detail-container");
+  var width = $detailContainer.width();
+  var height = current && current.height || $detailContainer.height();
+
+  offsetY = offsetY || 0;
+
+  if (ratio) {
+    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    s.imageSize.zoomRatioExp = ratio;
+    s.zoomFitSize = ratio;
+  }
+  s.showLargeImage = true;
+  $detailContainer.smoothZoom('focusTo', {
+    x: width / 2,
+    y: height / 2 + offsetY,
+    zoom: parseInt(ratio),
+    speed: 0
+  });
+}
+
+/* updateContainerHieght（bundle 34078-34119 逐字；typo 逐字保留） */
+export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay: any = 1): void {
+  const w = window as any;
+  let duration = 170;
+  if (!hasAnimation) duration = 1;
+  setTimeout(() => {
+    if (w.eagle.filter.isOpen) {
+      var $filterBar = w.$("#filter-toolbar");
+      var height = $filterBar.outerHeight();
+      w.$("#box-container").css({
+        "padding-bottom": height,
+        "height": `calc(100% - ${48 + height}px)`
+      });
+      w.$("#box-container-scrollbar").css({
+        "top": 48 + height,
+      });
+      w.$("#box-container").css({
+        "margin-top": height,
+      });
+    }
+    else {
+      w.$("#box-container").css({
+        "padding-bottom": 0,
+        "height": `calc(100% - 48px)`
+      });
+      w.$("#box-container-scrollbar").css({
+        "top": 48,
+      });
+      w.$("#box-container").css({
+        "margin-top": 0,
+      });
+    }
+  }, delay);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -3866,9 +4037,14 @@ export function applyDataMachineryScope(): void {
   // c18a：smartZoom/lastZoom
   s.smartZoom = (target: any, forceMode: any) => machinerySmartZoom(s, target, forceMode);
   s.lastZoom = () => machineryLastZoom(s);
+  // c18b：zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght
+  s.zoomActual = (event: any) => machineryZoomActual(s, event);
+  s.toggleZoom = (event: any) => machineryToggleZoom(s, event);
+  s.zoomFitEdge = (event: any, hasTransition: any) => machineryZoomFitEdge(s, event, hasTransition);
+  s.updateContainerHieght = (hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimation, delay);
 
   (window as any).__eagleDataMachinery = {
-    version: 19,
+    version: 20,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -3922,5 +4098,9 @@ export function applyDataMachineryScope(): void {
     notify: 'machinery',
     smartZoom: 'machinery',
     lastZoom: 'machinery',
+    zoomActual: 'machinery',
+    toggleZoom: 'machinery',
+    zoomFitEdge: 'machinery',
+    updateContainerHieght: 'machinery',
   };
 }

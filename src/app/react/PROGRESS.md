@@ -2704,6 +2704,16 @@
 >   + lastItemStates goTo 恢复）。ratio 换算走 machinery 版 getRatioExp/NonExp。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c18b zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght（2026-09-03；version 20）**：
+> - machineryZoomActual（33915-33937 逐字）：非详情=高度 150 回列表；详情=zoomRatio 100 +
+>   updateZoomRatio(100,undefined,undefined,true) + mpv scaleMode=original/video 原尺寸
+>   max-width/max-height !important + fit 类。machineryToggleZoom（33990-34012 逐字：视频/
+>   图片双分支 edge↔fit 切换 + eagle.viewer.lastZoomMode 持久化）。machineryZoomFitEdge
+>   （34015-34077 逐字：min(w,h) 撑满 + zoomFitSize=ratio + smoothZoom focusTo parseInt(ratio)）。
+>   machineryUpdateContainerHieght（34078-34119 逐字；**typo 逐字保留**：eagle.filter.isOpen
+>   分支的 padding-bottom/height/margin-top 三联 css）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 > **c17c UrlStateService hash shim（2026-09-03；bundleGlobals if-absent）**：
 > - 原实现 = Angular factory（js/services/url-state-service.js；$location.search 读写 +
 >   $locationChangeStart preventDefault + $locationChangeSuccess 分发 + currentWindow 历史

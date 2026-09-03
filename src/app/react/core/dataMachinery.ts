@@ -3329,14 +3329,22 @@ export function machinerySaveFolder(s: any): void {
 
   const libraryPath = s.libraryPath;
 
-  w.IPCHelper.send('folders-change', {
-    // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
-    libraryDir: libraryPath,
-    folders: folders,
-    smartFolders: smartFolders,
-    quickAccess: quickAccess,
-    tagsGroups: groups,
-  });
+    // IPCHelper（bundle 3471 const = 脚本级词法绑定，window/ESM 均不可达）——send 语义等价
+  // 复刻（bundle 3473-3482：ipcRenderer.send + electronLog + try/catch 静默）
+  try {
+    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    ipc.send('folders-change', {
+      // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
+      libraryDir: libraryPath,
+      folders: folders,
+      smartFolders: smartFolders,
+      quickAccess: quickAccess,
+      tagsGroups: groups,
+    });
+    w.electronLog && w.electronLog.info('[ipc] folders-change');
+  }
+  catch (err) {
+  }
 
   console.timeEnd("$scope.saveFolder");
 }

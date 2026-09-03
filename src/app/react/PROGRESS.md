@@ -2635,6 +2635,19 @@
 >   IPCHelper.send('folders-change', {libraryDir 写死守卫})。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。notify（$rootScope.notify 20157）留 c16d。
 
+> **c16c 修正：IPCHelper 词法绑定不可达（2026-09-03；suite 三项失败根因）**：
+> - **症状**：7b/7c/7d1c2（tm-create-group-input/fp-closed/fsp-created-selected+nsm-closed）
+>   稳定失败——三者均经 saveFolder 传递（标签组建组/筛选面板/文件夹选择面板的保存路径）。
+> - **根因**：`const IPCHelper`（bundle 3471）= **脚本级词法绑定**——既不上 window，ESM
+>   模块裸引也不可达（与顶层 var/function 的 window.* live binding 不同类）；c16c 初版
+>   `w.IPCHelper.send` → undefined → TypeError → saveFolder 抛出。二分定位（c16a 版
+>   dataMachinery 复跑通过）。
+> - **修正**：IPCHelper.send 语义等价复刻（bundle 3473-3482：ipc 统一表达式 + electronLog
+>   + try/catch 静默），三测复跑全过。**教训：w.* 访问模式必须核对该标识符是 var/function
+>   （window.*）还是 const/let（脚本词法，不可达）**——IPCHelper/ACCESS/PERFORMANCE_MONITOR/
+>   isVentura 等 declare const 消费面需逐个审计（libraryDomain 988 裸 IPCHelper 引用在其
+>   try/catch 内静默失败风险，登记 c17 审计项）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

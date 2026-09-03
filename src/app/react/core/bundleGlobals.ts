@@ -552,6 +552,166 @@ function _checkBackgroundHeartbeat(): void {
   catch (err) { /* noop */ }
 }
 
+/* ── b1-9a：基础设施 + 纯函数批（bundle 顶层逐字/等价提取）── */
+
+/* getRawPath（bundle 2348-2361 逐字；force 形参 bundle 体内未使用——保留签名） */
+function _getRawPath(imagesDir: any, image: any, force?: any): any {
+  if (!image || !image.name) return;
+  var imageDir = imagesDir + image.id + ".info/";
+  var rawPath = "";
+  var encodeName = encodeURIComponent(image.name);
+
+  if (image.ext === 'svg') {
+    rawPath = imageDir + encodeName + ".svg";
+  } else {
+    rawPath = imageDir + encodeName + "." + image.ext;
+  }
+
+  return rawPath.replace(/#/g, '%23');
+}
+
+/* getThumbnailPath（bundle 2363-2388 逐字） */
+function _getThumbnailPath(imagesDir: any, image: any): any {
+  if (!image || !image.name) return;
+  if (image.noThumbnail) {
+    return _getRawPath(imagesDir, image);
+  }
+  else {
+
+    var imageDir = imagesDir + image.id + ".info/";
+    var thumbnailPath = "";
+    var encodeName = encodeURIComponent(image.name);
+
+    if (image.ext === 'svg') {
+      if (image.forceThumbnail) {
+        thumbnailPath = `${imageDir}${encodeName}_thumbnail.png`;
+      }
+      else {
+        thumbnailPath = `${imageDir}${encodeName}.svg`;
+      }
+    }
+    else {
+      thumbnailPath = `${imageDir}${encodeName}_thumbnail.png`;
+      // thumbnailPath = "http://localhost:41592/?filePath=" + imageDir + encodeName + "_thumbnail.png";
+    }
+
+    return thumbnailPath.replace(/#/g, '%23');
+  }
+}
+
+/* getExt（bundle 53678-53703 逐字；fs/path 经 require——bundle 顶层同源） */
+function _getExt(file: any): any {
+  const w = window as any;
+  var pathMod = w.require('path');
+  var fsMod = w.require('fs');
+
+  var extname = pathMod.extname(file.path).toLowerCase();
+  var ext = extname.replace(".", "");
+
+  if (w.EagleConfig.SUPPORT_FORMATS[ext] === true) {
+    return ext;
+  }
+  else if (extname === '.dmg') {
+    return "dmg";
+  }
+  else if (extname === '.crdownload') {
+    return undefined;
+  }
+  // 下载暂存文件 firefox
+  else if (extname === '.part') {
+    return undefined;
+  }
+  // 下载暂存文件 safari
+  else if (extname === '.download') {
+    return undefined;
+  }
+  else if (fsMod.statSync(file.path).isDirectory()) {
+    return undefined;
+  }
+  return ext;
+}
+
+/* ayncsImagesRemove（bundle 49709-49745 逐字：50/批 empty-trash 分批（backgroundWindowID
+   undefined → ipcRenderer.send / 否则 sendTo——与 _ayncsImagesChange 同双轨）） */
+function _ayncsImagesRemove(images: any[]): void {
+  const w = window as any;
+  if (!images || images.length === 0) return;
+  w.electronLog.info(`[app] Delete ${images.length} files permanently`);
+  setTimeout(() => {
+    let total = images.length;
+    let once = 50;
+    let loopCount = total / once;
+    let countOfSend = 0;
+
+    function send() {
+      var start = countOfSend * once;
+      var willSendImages = images.slice(start, start + once);
+      countOfSend += 1;
+      var imageIdString = "";
+      willSendImages.forEach(function (r: any) {
+        if (r.id) {
+          imageIdString += r.id + ",";
+        }
+      });
+      const ipc = w.__eagleIpc || w.ipcRenderer;
+      if (w.backgroundWindowID === undefined) {
+        ipc.send('empty-trash', imageIdString);
+      }
+      else {
+        ipc.sendTo(w.backgroundWindowID, 'empty-trash', imageIdString);
+      }
+      loop();
+    }
+
+    function loop() {
+      if (countOfSend < loopCount) {
+        window.requestAnimationFrame(send);
+      }
+    }
+    loop();
+  }, 0);
+}
+
+/* updateWindowProgressBar（bundle 49810 逐字：throttle 333ms leading——节流实例一次性
+   创建（w.throttle = bundle 2400 helper 同源 _throttle）；currentWindow 经 bundleGlobals
+   @electron/remote 供给） */
+let _updateWindowProgressBarInst: any = null;
+function _getUpdateWindowProgressBar(): any {
+  const w = window as any;
+  if (!_updateWindowProgressBarInst) {
+    _updateWindowProgressBarInst = w.throttle((progress: any) => {
+      try {
+        if (w.currentWindow && !w.currentWindow.isDestroyed()) {
+          w.currentWindow.setProgressBar(progress);
+        }
+      }
+      catch (err) { }
+    }, 333, true);
+  }
+  return _updateWindowProgressBarInst;
+}
+
+/* 鼠标追踪（bundle 20366-20378 逐字：document mousemove → windowMouseX/Y = pageX/pageY +
+   isMouseMoving 100ms 复位——windowMouseX/Y/isMouseMoving 为 bundle 顶层 var） */
+let _mouseTrackerInstalled = false;
+function _installMouseTracker(): void {
+  if (_mouseTrackerInstalled) return;
+  const w = window as any;
+  var mousemoveTimeout: any;
+  var isMouseMoving = false;
+  document.addEventListener('mousemove', function (e: any) {
+    w.windowMouseX = e.pageX;
+    w.windowMouseY = e.pageY;
+    if (isMouseMoving) return;
+    isMouseMoving = true;
+    clearTimeout(mousemoveTimeout);
+    mousemoveTimeout = setTimeout(function () {
+      isMouseMoving = false;
+    }, 100);
+  }, false);
+  _mouseTrackerInstalled = true;
+}
+
 export function installBundleGlobals(): void {
   if (installed) return;
   installed = true;
@@ -915,6 +1075,44 @@ export function installBundleGlobals(): void {
   if (!w.stopAPIServer) w.stopAPIServer = _stopAPIServer;
   if (!w.checkBackgroundHeartbeat) w.checkBackgroundHeartbeat = _checkBackgroundHeartbeat;
 
+  // b1-9a：基础设施 + 纯函数批挂载
+  // electronLog（bundle 19035 remote.require('electron-log')——渲染层 require 同模块）
+  if (!w.electronLog) { try { w.electronLog = req('electron-log'); } catch (err) { /* noop */ } }
+  if (!w.getRawPath) w.getRawPath = _getRawPath;
+  if (!w.getThumbnailPath) w.getThumbnailPath = _getThumbnailPath;
+  if (!w.getExt) w.getExt = _getExt;
+  if (!w.ayncsImagesRemove) w.ayncsImagesRemove = _ayncsImagesRemove;
+  if (!w.updateWindowProgressBar) w.updateWindowProgressBar = _getUpdateWindowProgressBar();
+  // junk（bundle 8155 junk.is——node 模块）
+  if (!w.junk) { try { w.junk = req('junk'); } catch (err) { /* noop */ } }
+  // IS_DIRECTORY（bundle 19025 require(appRoot + '/my_modules/is-directory')）
+  if (!w.IS_DIRECTORY && w.appRoot) { try { w.IS_DIRECTORY = req(w.appRoot + '/my_modules/is-directory'); } catch (err) { /* noop */ } }
+  // EAGLE_THUMBNAIL_TEMP_PATH（bundle 19030-31：path.normalize(app.getPath('userData') + '/eagle-temp')）
+  if (!w.EAGLE_THUMBNAIL_TEMP_PATH && w.app) {
+    try {
+      const pathMod = req('path');
+      w.EAGLE_THUMBNAIL_TEMP_PATH = pathMod.normalize(w.app.getPath('userData') + '/eagle-temp');
+    } catch (err) { /* noop */ }
+  }
+  // resourcesPath（bundle 19038-39：isDev → appRoot.path/build_files/；否则 process.resourcesPath）
+  if (w.resourcesPath === undefined) {
+    try {
+      const pathMod = req('path');
+      const isDev = !!(w.app && !w.app.isPackaged);
+      w.resourcesPath = isDev
+        ? pathMod.join((w.appRoot && w.appRoot.path) || '', '/build_files/')
+        : pathMod.join((w.process && w.process.resourcesPath) || '');
+    } catch (err) { /* noop */ }
+  }
+  // 状态初值（bundle 顶层 var 初值——undefined 类天然等价不挂；初值非 undefined 类补齐）
+  if (!w.rectSelection) w.rectSelection = {};                    // 72561
+  if (w.rectSelecting === undefined) w.rectSelecting = false;    // 72562
+  if (w.dragging === undefined) w.dragging = false;              // 52406
+  if (w.windowMouseX === undefined) w.windowMouseX = 0;          // 19068
+  if (w.windowMouseY === undefined) w.windowMouseY = 0;
+  if (w.heartbeatStopCount === undefined) w.heartbeatStopCount = 0; // 19071
+  _installMouseTracker();
+
   // 诊断契约：冒烟断言全部关键全局在位（bundle 在世 = 沿用其绑定；b1 后 = 本模块供给）
   (window as any).__eagleBundleGlobals = {
     installed: true,
@@ -925,7 +1123,10 @@ export function installBundleGlobals(): void {
       'guid', 'throttle', 'debounce', 'fuzzy_match', 'decodeBase64Image', 'cloneTree', 'getHashID',
       'hiddenByCurrentFilter', 'ayncsImagesChange', 'startAPIServer', 'stopAPIServer',
       'checkBackgroundHeartbeat', 'ipcRenderer', 'currentWindow', 'app', 'VIDEO_TYPES_GLOBAL',
-      'pluginModule'].filter((n) => w[n] !== undefined),
+      'pluginModule',
+      'electronLog', 'getRawPath', 'getThumbnailPath', 'getExt', 'ayncsImagesRemove',
+      'updateWindowProgressBar', 'junk', 'IS_DIRECTORY', 'EAGLE_THUMBNAIL_TEMP_PATH',
+      'resourcesPath', 'rectSelection', 'windowMouseX'].filter((n) => w[n] !== undefined),
     eagleMembers: ['inspector', 'filter', 'duplicateChecker', 'reverseImageSearch', 'aiSearch',
       'customExport', 'combineImages', 'action', 'plugin', 'app', 'containerSize', 'utils']
       .filter((n) => w.eagle && w.eagle[n] !== undefined),

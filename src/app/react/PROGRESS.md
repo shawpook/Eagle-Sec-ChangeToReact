@@ -3157,6 +3157,29 @@ version 31）**：
 > - 附件：tests-tmp/vendor-extract-inventory.py（盘点脚本）、tests-tmp/fns-bare-audit.py
 >   （裸引用审计）、tests-tmp/vendor-inventory-out.txt（原始清单）——均不提交。
 
+> **b1-9a 基础设施 + 纯函数批挂载（2026-09-03；bundleGlobals.ts）**：
+> - 盘点修正：install 三连（main.tsx 245-247 无条件执行）下 bundleGlobals 已供远超预期——
+>   Tier-1（appRoot/EagleConfig/TYPE 表/fileSize/re-require 十行/installedFonts/fontFolder/
+>   FileUrlHelper/IPCHelper/PERFORMANCE_MONITOR/ACCESS/isVentura/UrlStateService/eg vendor/
+>   match-rules vendor/hover-preview vendor）+ Tier-2 草稿十二件（guid/throttle/debounce/
+>   fuzzy_match/decodeBase64Image/cloneTree/getHashID/hiddenByCurrentFilter/ayncsImagesChange/
+>   startAPIServer/stopAPIServer/checkBackgroundHeartbeat）**均已挂载**——60 名清单实际剩
+>   ~28 名待供给。
+> - 本片新增挂载：**electronLog**（19035 remote.require 等价 require）、**getRawPath/
+>   getThumbnailPath/getExt**（2348/2363/53678 逐字；getExt fs/path 经 require）、
+>   **ayncsImagesRemove**（49709-49745 逐字 50/批 empty-trash 双轨）、**updateWindowProgressBar**
+>   （49810 逐字 throttle 333 leading，实例一次性创建）、**junk**（8155 require('junk')）、
+>   **IS_DIRECTORY**（19025 appRoot require）、**EAGLE_THUMBNAIL_TEMP_PATH**（19030-31
+>   userData 派生）、**resourcesPath**（19038-39 isDev 分支等价）、鼠标追踪器（20366-20378
+>   逐字 mousemove → windowMouseX/Y + isMouseMoving 100ms 复位）、状态初值补齐
+>   （rectSelection={}/rectSelecting=false/dragging=false/windowMouseX,Y=0/heartbeatStopCount=0
+>   ——undefined 类 var（preferences/backgroundWindowID/heartbeatInterval/machineID）天然
+>   等价不挂）。诊断契约 present 清单同步扩充。
+> - 剩余待办（b1-9b/c）：管理器批（APIServer 对象/initAPIServer/Registration/
+>   QuickAccessManager/RecentFileManager/SlowNotify/analytics/ScrollbarSaver）+ 网格耦合
+>   （ig 实例/resetNgGridLayoutData——归 grid 域切片）+ machineID 运行时赋值路径。
+> - 验证：tsc 零错；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

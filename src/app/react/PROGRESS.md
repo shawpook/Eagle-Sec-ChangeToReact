@@ -2745,6 +2745,26 @@
     选择→openFolder + 详情↔列表切换）。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c18a-fix zoom 助手注入守卫修正（2026-09-03；bundleGlobals，无 version 变更）**：
+> - 症状：全量 suite 两项失败——stage5 `detail-delivery-released` 与 main-ui-workflow
+>   （detail original delivery timeout）；探针证实详情已开但 #bitmap-viewer 无 canvas、
+>   tileCount=0、releasedAt 恒 0（释放走 canvas 路径：bitmapWorker 瓦片 → 3 帧稳定签名）。
+> - 定位：全提交状态回放二分（c17c 通过 / c18a 起失败）锁定 c18a；探针对比 c17c
+>   （canvas 798×752 含真实像素、tileCount=2）与失败态（NO-CANVAS）。
+> - 根因：bundleGlobals 的 zoom-helpers 注入守卫写成 `if (!w.devicesMetrics)`——
+>   devicesMetrics 是 bundle **顶层 var**（天然上 window），守卫永真短路注入；而 vendor
+>   文件真正载荷是三个 controller 闭包助手（isMobileResolution/getImagePixelDensity/
+>   isMobileWidth，不上 window）→ machinerySmartZoom 在 defaultRatio=auto 分支
+>   `w.getImagePixelDensity` 处 TypeError（被 $exceptionHandler 吞掉，window.onerror 不触发）
+>   → on_IMAGE_LOAD 链 updateNavigator → bitmapViewer.loadURL 不再执行 → worker 不启动
+>   → 无瓦片无 canvas → 释放门超时。**教训：if-absent 守卫必须查真正消费的载荷标识符，
+>   不能查相关联的全局名。**
+> - 修正：守卫改为 `if (!w.getImagePixelDensity || !w.isMobileResolution || !w.isMobileWidth)`。
+>   vendor 文件重声明 `var devicesMetrics` 与 bundle 顶层 var 数据逐字节等同（仅行尾差异），
+>   bundle 在世时注入为惰性覆盖；b1 后由 vendor 独立供给。
+> - 验证：tsc 零错；探针 helpers function×3 + zoomHelpersLoaded=true + mode:"canvas"
+>   releasedAt 置位；stage5 / main-ui-workflow 单独复跑 OK；m1 25/25；全量 suite ALL GREEN。
+
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。
 

@@ -853,8 +853,10 @@ export function installBundleGlobals(): void {
 
   // c18a：缩放辅助（devicesMetrics 数据表 8245-8339 逐字节提取 + isMobileResolution/
   // getImagePixelDensity/isMobileWidth 移植（controller 闭包函数，非顶层）——machinerySmartZoom
-  // 消费）
-  if (!w.devicesMetrics) {
+  // 消费）。守卫必须查助手本身：devicesMetrics 是 bundle 顶层 var（天然上 window），
+  // 拿它做守卫会永久短路注入，machinerySmartZoom 在 w.getImagePixelDensity 处 TypeError，
+  // zoomer 的 updateNavigator/loadURL 链断裂 → 详情原图管线死（c18a-c18d 回归根因）。
+  if (!w.getImagePixelDensity || !w.isMobileResolution || !w.isMobileWidth) {
     try {
       fetch('/vendor/eagle-zoom-helpers.js')
         .then((r) => r.text())

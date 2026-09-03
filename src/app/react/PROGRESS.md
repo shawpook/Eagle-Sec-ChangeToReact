@@ -2693,6 +2693,21 @@
 >   直调与 s.notify 原型链解析均走移植版。
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
+> **c17c UrlStateService hash shim（2026-09-03；bundleGlobals if-absent）**：
+> - 原实现 = Angular factory（js/services/url-state-service.js；$location.search 读写 +
+>   $locationChangeStart preventDefault + $locationChangeSuccess 分发 + currentWindow 历史
+>   探针）。b1 后 $location 死亡 → window.location.hash 直读写复刻（hash = '#!path?query'，
+>   Angular 默认 hash 模式约定；getState 六字段含 page parseInt 与 folder/smartfolder 字符串
+>   保留注释逐字；setState 合并 + null/undefined/'' 清除 + replace 用 history.replaceState；
+>   isDetailMode 阻止变更 = preventDefault 语义；onChange = $locationChangeSuccess 分发）。
+> - **b1 前置清单状态**：scope shim（c11）/ eagle 反转（c12）/ 全局供给（c10/c13/c14a/
+>   c16b）/ 词法绑定（c17a）/ notify（c17b）/ UrlStateService（c17c）——machinery 41 函数
+>   scope 替换（version 18）。**剩余已知 b1 缺口（登记，b1 执行前按本清单逐项核销）**：
+>   bundle 独占 scope 函数残余调用面（smartZoom/zoomFitEdge/zoomActual/toggleZoom/
+>   quicklook/selectAll/copyImages/undo/back/nextHistory/prevHistory/removeSelected 等
+>   m1 收口审计清单成员——各为独立切片）。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

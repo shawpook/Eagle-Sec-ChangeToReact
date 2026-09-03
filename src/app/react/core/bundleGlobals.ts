@@ -710,6 +710,83 @@ export function installBundleGlobals(): void {
     } catch (err) { w.isVentura = false; }
   }
 
+  // c17c：UrlStateService（js/services/url-state-service.js 逐字语义；原实现为 Angular
+  // factory（$location 搜索参数管理），b1 后以 window.location.hash 直读写复刻：
+  // hash = '#!path?query'（Angular 默认 hash 模式约定）；isDetailMode 时阻止变更 =
+  // $locationChangeStart preventDefault 语义；onChange = $locationChangeSuccess 分发）
+  if (!w.UrlStateService) {
+    const usListeners: Function[] = [];
+    const usParseHash = () => {
+      const hash = window.location.hash || '';
+      const qi = hash.indexOf('?');
+      const search = qi >= 0 ? hash.slice(qi + 1) : '';
+      const params: any = {};
+      search.split('&').forEach((kv) => {
+        if (!kv) return;
+        const eq = kv.indexOf('=');
+        const k = decodeURIComponent(eq >= 0 ? kv.slice(0, eq) : kv);
+        const v = eq >= 0 ? decodeURIComponent(kv.slice(eq + 1)) : '';
+        if (k) params[k] = v;
+      });
+      return params;
+    };
+    const usComposeHash = (params: any) => {
+      const qs = Object.keys(params).map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
+      const hash = window.location.hash || '#!/';
+      const pi = hash.indexOf('?');
+      const path = pi >= 0 ? hash.slice(0, pi) : hash;
+      return path + (qs ? '?' + qs : '');
+    };
+    const usStateOf = (search: any) => ({
+      view: search.view || 'all',
+      folder: search.folder || null,  // Keep as string, don't parseInt
+      smartfolder: search.smartfolder || null,  // Keep as string, don't parseInt
+      color: search.color || null,
+      page: search.page ? parseInt(search.page) : 1,
+      imageFilter: search.imageFilter || null
+    });
+    w.UrlStateService = {
+      canGoBack: function () { return w.currentWindow && w.currentWindow.webContents && w.currentWindow.webContents.canGoBack(); },
+      canGoForward: function () { return w.currentWindow && w.currentWindow.webContents && w.currentWindow.webContents.canGoForward(); },
+      getState: function () { return usStateOf(usParseHash()); },
+      setState: function (params: any, replace: any) {
+        const s: any = w.$bodyScope;
+        if (s && s.isDetailMode) return; // $locationChangeStart preventDefault 语义
+        const current = usParseHash();
+        const merged: any = Object.assign({}, current, params);
+        Object.keys(merged).forEach((key) => {
+          if (merged[key] === null || merged[key] === undefined || merged[key] === '') {
+            delete merged[key];
+          }
+        });
+        const next = usComposeHash(merged);
+        const prev = window.location.hash;
+        if (next === prev) return;
+        if (replace) {
+          try { history.replaceState(null, '', next); } catch (err) { window.location.hash = next; }
+        } else {
+          window.location.hash = next;
+        }
+        const state = usStateOf(merged);
+        usListeners.slice().forEach((fn) => { try { fn(state); } catch (err) { /* noop */ } });
+      },
+      clearState: function () {
+        const s: any = w.$bodyScope;
+        if (s && s.isDetailMode) return;
+        window.location.hash = usComposeHash({});
+      },
+      onChange: function (fn: any) {
+        usListeners.push(fn);
+        return function () {
+          const index = usListeners.indexOf(fn);
+          if (index > -1) {
+            usListeners.splice(index, 1);
+          }
+        };
+      }
+    };
+  }
+
   // c13：eg/InfiniteGrid（bundle 3497-8094 内联 pkgd UMD，b1 死亡）——if-absent 懒执行
   // public/vendor 的逐字节提取副本（new Function sloppy 模式 this=globalThis，root=self
   // 语义不变）。libraryDomain 的 new w.eg.InfiniteGrid 与 machineryRelayout 消费。

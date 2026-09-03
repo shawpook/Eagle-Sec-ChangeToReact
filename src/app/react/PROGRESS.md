@@ -2678,6 +2678,21 @@
 >   change/upload-local-files）。
 > - 验证：tsc 零错；m1 25/25；**suite ALL GREEN 47/47**。
 
+> **c17b notify（cgNotify 等价移植；2026-09-03；version 18）**：
+> - **cgNotify 服务解码**（bundle 16724 压缩全文）：模板 angular-notify.html（.cg-notify-message
+>   + center/left/right 定位类 + $message 区 + .cg-notify-message-template 注入区 + .cg-notify-close
+>   按钮）；restack i()（startTop 10/spacing 15/closing +20/top+margin-top 物化）；closeAll
+>   （全栈 opacity 0）；duration 默认 10000；transitionend(opacity) → remove + 出栈 + restack；
+>   center 时 $centerMargin = -offsetWidth/2。
+> - machineryNotify：$rootScope.notify（20157 逐字：messageTemplate 拼接 `<span><icon class=
+>   "{status}"></icon>` + undo 锚点 `notify.button.undo`）+ 服务核心等价复刻。**ng-* 以物化
+>   DOM + 委托 click 复刻**（undo 锚点 data-cg-undo → closeAll + $rootScope.undo()；close
+>   按钮 → $close 语义）。undoTimeout 域内自管（duration+5000 置空守卫逐字）。cgStack/cgScopes
+>   域内自管（原闭包 m/n）。
+> - 接装：root/body 双写（s.$root.notify = s.notify = notifyFn）——bundle $rootScope.notify
+>   直调与 s.notify 原型链解析均走移植版。
+> - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

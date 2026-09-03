@@ -3512,6 +3512,135 @@ export function machineryInitMousetrap(s: any): void {
   s.mousetrap = machineryBuildMousetrap(s);
 }
 
+/* ── c17b：notify（cgNotify 服务等价移植）────────────────────────────── */
+
+// ── c17b 域内自管（cgNotify 闭包状态 f/g/h/l/m/n + undoTimeout 20255 邻域）──
+const cgStack: any[] = [];        // m：已附加的消息元素栈
+const cgScopes: any[] = [];       // n：scope 桩栈
+const CG_START_TOP = 10;          // f
+const CG_SPACING = 15;            // g
+let undoTimeout: any = null;
+
+/* angular-notify.html 模板（bundle 16724 templateCache 逐字；ng-class/ng-style/ng-show/
+   ng-click 以具体值物化） */
+function cgBuildTemplate(position: string, classes: string, centerMargin: string | null, message: string, messageTemplate: string | undefined, onClose: () => void): string {
+  const posClass = position === 'center' ? 'cg-notify-message-center' : (position === 'left' ? 'cg-notify-message-left' : (position === 'right' ? 'cg-notify-message-right' : ''));
+  const ngClass = `[${classes ? `'${classes}', ` : ''}'${posClass}']`.replace(/'/g, '"');
+  const styleAttr = centerMargin !== null ? ` style="margin-left: ${centerMargin};"` : '';
+  const messageDiv = messageTemplate !== undefined
+    ? `    <div style="display: none;">\n    </div>\n\n    <div class="cg-notify-message-template">\n    </div>`
+    : `    <div>\n        ${message}\n    </div>\n\n    <div style="display: none;" class="cg-notify-message-template">\n        \n    </div>`;
+  return `<div class="${[classes, posClass].filter(Boolean).join(' ')}"${styleAttr}>` +
+    messageDiv +
+    `    <button type="button" class="cg-notify-close">` +
+    `        <span aria-hidden="true">&times;</span>` +
+    `        <span class="cg-notify-sr-only">Close</span>` +
+    `    </button>` +
+    `</div>`;
+}
+
+/* cgNotify restack（bundle 16724 内 i() 逐字：startTop 10 / spacing 15 / closing +20） */
+function cgRestack(): void {
+  let b = CG_START_TOP;
+  for (let c = cgStack.length - 1; c >= 0; c--) {
+    const d = 10;
+    const e = cgStack[c];
+    const h = e[0].offsetHeight;
+    let i = b + h + d;
+    if (e.attr('data-closing')) i += 20; else b += h + CG_SPACING;
+    e.css('top', i + 'px').css('margin-top', '-' + (h + d) + 'px').css('visibility', 'visible');
+  }
+}
+
+/* notify（$rootScope.notify 20157-20191 + cgNotify 服务核心 16724 等价移植。
+   ng-click="closeAll();undo();" 以委托 click 复刻（undo = $rootScope.undo 桩，duration+5000
+   后置空，undoTimeout 域内自管）；templateUrl '' → bundle 走 $http 缓存缺省模板，本移植直接
+   物化同一模板 DOM） */
+export function machineryNotify(s: any, params: any, restoreCallbackk: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (!params.message) return;
+
+  const i18nUndo = getFilter()('i18n')("notify.button.undo");
+  let messageTemplate = `<span><icon class="${params.status || ''}"></icon>` + params.message;
+  if (restoreCallbackk) {
+    messageTemplate = messageTemplate + ' <a style="margin-left: 10px;" data-cg-undo="true">' + i18nUndo + '</a></span>';
+  } else {
+    messageTemplate = messageTemplate + '</span>';
+  }
+
+  cgNotifyServiceCloseAll();
+
+  $timeout(function () {
+    var duration = params.duration || 4000;
+
+    // ── cgNotify 服务核心（16724 逐字语义）──
+    const message = params.message;
+    const classes = params.classes || '';
+    const position = params.position || 'center';
+    const useTemplate = true; // $rootScope.notify 恒传 messageTemplate
+
+    const element = w.$(cgBuildTemplate(position, classes, null, message, messageTemplate, () => { }));
+    // undo 锚点：ng-click="closeAll();undo();" 等价委托
+    element.on('click', '[data-cg-undo]', function () {
+      cgNotifyServiceCloseAll();
+      const undo = s.$root.undo;
+      if (typeof undo === 'function') undo();
+    });
+    // 关闭按钮：ng-click="$close()" 等价委托
+    element.on('click', '.cg-notify-close', function () {
+      element.css('opacity', 0).attr('data-closing', 'true');
+      cgRestack();
+    });
+    // transitionend（opacity）→ remove + 出栈 + restack（bundle 16724 同语义）
+    element.bind('webkitTransitionEnd oTransitionEnd otransitionend transitionend msTransitionEnd', function (a: any) {
+      if (('opacity' === a.propertyName || 0 === a.currentTarget.style.opacity || (a.originalEvent && 'opacity' === a.originalEvent.propertyName))) {
+        element.remove();
+        const mi = cgStack.indexOf(element);
+        if (mi > -1) cgStack.splice(mi, 1);
+        cgRestack();
+      }
+    });
+    // messageTemplate 注入 .cg-notify-message-template
+    element.find('.cg-notify-message-template').append(w.$('<span>').html(messageTemplate).contents());
+    w.$(document.body).append(element);
+    cgStack.push(element);
+    if (position === 'center') {
+      $timeout(function () {
+        element.css('margin-left', '-' + element[0].offsetWidth / 2 + 'px');
+      });
+    }
+    const closeSelf = function () {
+      element.css('opacity', 0).attr('data-closing', 'true');
+      cgRestack();
+    };
+    $timeout(function () { cgRestack(); });
+    if (params.duration !== 0 && (params.duration || 10000) > 0) {
+      $timeout(closeSelf, params.duration || 10000);
+    }
+
+    if (restoreCallbackk) {
+      s.$root.undo = restoreCallbackk;
+    } else {
+      s.$root.undo = function () { };
+    }
+    // 如果使用者超過時間沒有點擊反悔，就把 callback 移除，避免發生錯亂
+    clearTimeout(undoTimeout);
+    undoTimeout = setTimeout(function () {
+      s.$root.undo = function () { };
+    }, duration + 5000);
+
+  }, 10);
+}
+
+/* cgNotify closeAll（bundle 16724 o.closeAll 逐字：全栈 opacity 0） */
+function cgNotifyServiceCloseAll(): void {
+  for (let a = cgStack.length - 1; a >= 0; a--) {
+    cgStack[a].css('opacity', 0);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -3578,9 +3707,14 @@ export function applyDataMachineryScope(): void {
   s.leaveDetailMode = () => machineryLeaveDetailMode(s);
   // c16c：saveFolder
   s.saveFolder = () => machinerySaveFolder(s);
+  // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
+  // 双写保证 $rootScope.notify 直调与 s.notify 原型链解析都走移植版）
+  const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(s, params, restoreCallbackk);
+  s.$root.notify = notifyFn;
+  s.notify = notifyFn;
 
   (window as any).__eagleDataMachinery = {
-    version: 16,
+    version: 18,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -3631,5 +3765,6 @@ export function applyDataMachineryScope(): void {
     buildMousetrap: 'machinery',
     destoryMousetrap: 'machinery',
     initMousetrap: 'machinery',
+    notify: 'machinery',
   };
 }

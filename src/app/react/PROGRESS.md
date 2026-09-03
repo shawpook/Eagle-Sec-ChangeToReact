@@ -2886,6 +2886,41 @@ version 31）**：
 >   顶层 var 经 window、fs/path 经 window.require、uploadFiles/showUploadQueue scope 解析）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
+> - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
+>   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比
+>   machinery 契约（v33，111 成员）与 controllerFns c3 fns 表（155 成员）。组件层
+>   （components/**）调用面待各域切片 triage；preview-window/preferences 为独立 scope 不计入。
+> - **shim get 代理对未知属性返回 coreState[prop]=undefined——b1 后任何未供给函数调用即崩**，
+>   逐项核销路线确证（scopeShim.ts get handler）。
+> - **b1-1 案（本次落地）**：main.tsx bridgeWhenReady shim 分支调用 attachCoreFnsToShim(scope)
+>   （core/shimFnsBridge.ts）——c3 fns 表 if-absent 上 shim，覆盖 36 个缺口名（getRawUrl/
+>   openFolder/openSmartFolder/openUnfiled/filterContent/filterWithColor/select/gotoTop/
+>   gotoBottom/hexToRGB/rotateImage/rotateVideo/uploadFiles/toggleGifPlay/saveCrop/
+>   getSelectedItemElements/getSelectedTags/currentIndex/homeHandler/endHandler…）；
+>   machinery apply 同轮随后覆盖自身成员，顺序语义正确；bundle 在世时分支不可达，零迁移期
+>   行为变化。
+> - **剩余硬缺口 90 项**（七域引用、fns 表与契约均无）：addToDuplicateMapping addToRecentFile
+>   autoScroll cancelCrop changeListHeight changeMetaItems checkListItemsLessThanContainer
+>   enterSlideshowMode expandFolder expandSmartFolder fadeOutDetailMode findDupclipate
+>   forceFitImageSize getFolderList getQuickAccessList getSelectedItems getSmartFolderList
+>   hideUploadQueue importLinks isDuplicateImage leaveSlideshowMode lockApp moveToFolders
+>   multipleOpenFolder multipleOpenSmartFolder newSmartFolder offsetScrollbar openAllTags
+>   openArtstation openCommunity openDuplicate openFilter openHuaban openNextFolder
+>   openNextSmartFolder openPinterest openPluginPanel openPrevFolder openPrevSmartFolder
+>   openRandom openRecent openStarredGroup openTagAllGroup openTagGroup openTrash openTrialModal
+>   openUnfiledGroup openUntagged pausePalette preloadImage prependFolder quickOpenFolder
+>   refreshSubfolderList rememberScrollTops rememberVideoCurrentTime removeFolder
+>   removeFolderContents removePermanently removeSelectedFolders removeSelectedSmartFolders
+>   removeSmartFolder removeTagGroup renameCurrentFolder renameFolder renameSmartFolder
+>   resetFolderCover resumePalette rgbToHex saveLayout scrollToCurrentItem searchInAll
+>   setFolderOrder setSmartFolderOrder showTutorial showUploadQueue sortData
+>   toggleAllSmartFolderExpand toggleCommentMode toggleCurrentLevelSmartFolders
+>   toggleFilterByType toggleSelectSmartFolder toggleVideoPlay unlockFolderWithTouchID
+>   updateListSlider updateSliderPosition updateSubFolderWidth updateTxtItem videoScreenShot
+>   —— b1 执行前按此清单逐片核销（openFolder/上传/删除/侧栏展开族为大头）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25（bundle 在世，桥分支未触发）。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

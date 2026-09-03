@@ -44,6 +44,7 @@ import { getBodyScope } from './global/scopeBridge';
 import { exposeScopeShimDiagnostics } from './global/scopeShim';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { applyDataMachineryScope } from './core/dataMachinery';
+import { attachCoreFnsToShim } from './core/shimFnsBridge';
 import { installBundleGlobals } from './core/bundleGlobals';
 import { installApiServerGlobals, installInitAPIServer } from './core/apiServerDomain';
 import { takeoverLibraryDomain } from './core/libraryDomain';
@@ -225,6 +226,10 @@ function bridgeWhenReady(attempt = 0): void {
     // c11：shim 已是 coreState 后端（属性面直接代理），无需重复桥接
     if (!scope.__eagleShim) {
       bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
+    } else {
+      // b1 桥：c3 fns 表 if-absent 上 shim（bundle 缺席时的函数面供给第一层，
+      // machinery apply 随后照旧覆盖自己的成员）
+      attachCoreFnsToShim(scope);
     }
     (window as any).__eagleCoreState = coreState;
     applyDataMachineryScope();

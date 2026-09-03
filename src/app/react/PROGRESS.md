@@ -2905,6 +2905,20 @@ version 31）**：
 >   openFolder/openSmartFolder 经 scope 解析（fns 桥覆盖）。缺口 83 → 79。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-4a 滚动/列表辅助族第一批（2026-09-03；version 36）**：
+> - machineryAutoScroll（35086 逐字 AutoScroll 广播——**54389 系 $bodyScope 委派壳属子
+>   scope controller（changeStar 委派若在 body 会自递归可证），body 生效版即本闭包**）、
+>   machineryCurrentIndex/getSelectedItems/getSelectedItemElements/getSelectedTags/
+>   getQuickAccessList（21852/21864/28993/38865/42634 逐字，旧注释保留）、
+>   machineryCheckListItemsLessThanContainer（33658 逐字：<180 时 500ms ig.append 双页）、
+>   machineryUpdateSubFolderWidth（33676 逐字：列宽 5 取整 90 下限 MAX_LIST_WIDTH 封顶）、
+>   machineryUpdateSliderPosition（33689 函数体全注释 no-op 原样）、machineryChangeListHeight
+>   （33746 逐字：lastImageHeight + 500ms thumbSize 九分支键 + relayout +
+>   scrollToCurrentItem）、machineryScrollToCurrentItem（34118 逐字 posy 居中）、
+>   machineryForceFitImageSize（36481 逐字：detail-image 尺寸直设 + animated/orientation
+>   → getRawUrl 否则 thumbnail）。缺口 79 → 68。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

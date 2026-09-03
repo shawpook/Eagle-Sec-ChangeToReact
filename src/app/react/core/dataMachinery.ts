@@ -6312,6 +6312,213 @@ export function machineryOpenPrevSmartFolder(s: any): void {
   }
 }
 
+/* ── b1-4a：滚动/列表辅助族（第一批）─────────────────────────────────── */
+
+/* autoScroll（bundle 35086-35091 逐字：AutoScroll 广播 50ms 延迟；**注意 54389 系
+   $bodyScope 委派壳属子 scope controller，body scope 生效版即本闭包**） */
+export function machineryAutoScroll(s: any, index: any): void {
+  const $timeout = getTimeout();
+  $timeout(function () {
+    s.$broadcast("AutoScroll", index);
+  }, 50);
+}
+
+/* currentIndex（bundle 28993-28997 逐字：selected[0] 在 allData 的位次 +1） */
+export function machineryCurrentIndex(s: any): any {
+  if (!s.allData) return undefined;
+  return s.allData.indexOf(s.selected[0]) + 1;
+}
+
+/* getSelectedItems（bundle 21852-21862 逐字：ig.getItems(true) × selectedMappings 过滤，
+   含旧实现注释逐字保留） */
+export function machineryGetSelectedItems(s: any): any[] {
+  const w = window as any;
+  var items = w.ig.getItems(true);
+  items = items.filter(function (item: any) {
+    return s.selectedMappings[item.id];
+    // if (item && item.el && item.el.id) {
+    //     var id = item.el.id.replace("box-", "");
+    //     return $scope.selectedMappings[id] !== undefined;
+    // }
+  });
+  return items;
+}
+
+/* getSelectedItemElements（bundle 21864-21876 逐字） */
+export function machineryGetSelectedItemElements(s: any): any[] {
+  var items = machineryGetSelectedItems(s);
+  items = items.map(function (item: any) {
+    // if (!item.el) {
+    //     item.el = $(item.content)[0];
+    //     console.log(item.el);
+    // }
+    return item.el;
+  });
+  return items;
+}
+
+/* getSelectedTags（bundle 38865-38869 逐字） */
+export function machineryGetSelectedTags(s: any): string[] {
+  if (!s.selectedTags) return [];
+  return Object.keys(s.selectedTags);
+}
+
+/* getQuickAccessList（bundle 42634-42643 逐字：quickAccess 逐项 size=27 + vstype 标记） */
+export function machineryGetQuickAccessList(s: any): any[] {
+  var list: any[] = [];
+  s.quickAccess.forEach(function (item: any) {
+    item.size = 27;
+    item.vstype = 'quickAccess';
+    list.push(item);
+  });
+  return list;
+}
+
+// ── b1-4a 域内自管（原 controller 闭包 var：checkListItemsLessThanContainerTimeout 33661
+//    邻域 / changeListHeightTimeout 33745 邻域）──
+let checkListItemsLessThanContainerTimeout: any = null;
+let changeListHeightTimeout: any = null;
+
+/* checkListItemsLessThanContainer（bundle 33658-33674 逐字：<180 项时 500ms 后量
+   box-list 高度不足一屏则 ig.trigger("append") 一次載入兩頁） */
+export function machineryCheckListItemsLessThanContainer(s: any): void {
+  const w = window as any;
+  if (!w.ig) return;
+  if (w.ig.getItems().length < 180) {
+    clearTimeout(checkListItemsLessThanContainerTimeout);
+    checkListItemsLessThanContainerTimeout = setTimeout(function () {
+      console.log("checkListItemsLessThanContainer");
+      // 如果列表尺寸很小，一次載入兩頁
+      var boxList = w.$("#box-container .box-list")[0];
+      if (boxList && boxList.style) {
+        var boxListHeight = parseInt(boxList.style.height);
+        if (boxListHeight < w.$("#box-container").height()) {
+          w.ig.trigger("append");
+        }
+      }
+    }, 500);
+  }
+}
+
+/* updateSubFolderWidth（bundle 33676-33688 逐字：容器宽 → 列数 → 38+10col 修正 →
+   5 取整 → 下限 90 → MAX_LIST_WIDTH 封顶 → imageSize.subfolderWidth） */
+export function machineryUpdateSubFolderWidth(s: any): void {
+  const w = window as any;
+  if (!w.$("#box-container")[0]) return;
+  var containerWidth = w.$("#box-container")[0].clientWidth;
+  var column = parseInt(containerWidth / s.imageSize.height as any);
+  if (!column) column = 1;
+  var result = parseInt((containerWidth - 38 - (column * 10)) / column as any);
+  result = parseInt(result / 5 as any) * 5;
+  if (result < 90) result = 90;
+  if (result >= s.MAX_LIST_WIDTH) {
+    result = s.MAX_LIST_WIDTH;
+  }
+  s.imageSize.subfolderWidth = result;
+}
+
+/* updateSliderPosition（bundle 33689-33705：函数体全被注释——no-op 原样保留注释） */
+export function machineryUpdateSliderPosition(s: any): void {
+  // var $breadcrumbs = $(".content-panel .toolbar .breadcrumbs ul");
+  // var $right = $(".content-panel .toolbar .right:visible");
+  // var $slider = $(".sliders-bar:visible");
+
+  // if ($slider.length === 0 || $right.length === 0 || $breadcrumbs.length === 0) return;
+
+  // var x1 = $slider.offset().left + $slider.width();
+  // var x2 = $right.offset().left;
+
+  // var x3 = $slider.offset().left;
+  // var x4 = $breadcrumbs.offset().left + $breadcrumbs.width();
+
+  // if ( x1 + 5 > x2 || x4 + 5 > x3 ) {
+  //     $slider.addClass("response");
+  // }
+  // else {
+  //     $slider.removeClass("response");
+  // }
+}
+
+/* changeListHeight（bundle 33746-33785 逐字：5 取整 + lastImageHeight 留档 + 500ms 后
+   thumbSize 键持久化（currentFolder/smartFolder/tag/viewMode 九分支键逐字）+ 即时
+   box-size 属性 + relayout + scrollToCurrentItem（machinery 版）） */
+export function machineryChangeListHeight(s: any, height: any): void {
+  const w = window as any;
+  if (!height) height = s.imageSize.height;
+  if (w.angular.isNumber(height) && height > 0) {
+
+    height = parseInt(height / 5 as any) * 5;
+
+    s.lastImageHeight = s.imageSize.height;
+
+    clearTimeout(changeListHeightTimeout);
+    changeListHeightTimeout = setTimeout(function () {
+      if (s.currentFolder) {
+        w.localStorage.setItem("eagle.list.thumbSize." + s.currentFolder.id, height as any);
+      } else if (s.currentSmartFolder) {
+        w.localStorage.setItem("eagle.list.thumbSize." + s.currentSmartFolder.id, height as any);
+      } else if (s.currentTag) {
+        w.localStorage.setItem("eagle.list.thumbSize." + s.currentTag, height as any);
+      } else if (s.viewMode === 'all') {
+        w.localStorage.setItem("eagle.list.thumbSize.all", height as any);
+      } else if (s.viewMode === 'unfiled') {
+        w.localStorage.setItem("eagle.list.thumbSize.unfiled", height as any);
+      } else if (s.viewMode === 'untagged') {
+        w.localStorage.setItem("eagle.list.thumbSize.untagged", height as any);
+      } else if (s.viewMode === 'trash') {
+        w.localStorage.setItem("eagle.list.thumbSize.trash", height as any);
+      } else if (s.viewMode === 'random') {
+        w.localStorage.setItem("eagle.list.thumbSize.random", height as any);
+      } else if (s.viewMode === 'recent') {
+        w.localStorage.setItem("eagle.list.thumbSize.recent", height as any);
+      }
+    }, 500);
+
+    w.$("#box-container").attr("box-size", height as any);
+    s.relayout();
+
+    machineryScrollToCurrentItem(s);
+  }
+}
+
+/* scrollToCurrentItem（bundle 34118-34130 逐字：selected 末盒 posy 属性 → 容器居中定位） */
+export function machineryScrollToCurrentItem(s: any): void {
+  const w = window as any;
+  if (s.selected.length > 0) {
+    var $lastItem = w.$(".box.selected").last();
+    if ($lastItem.length > 0) {
+      let y = $lastItem.attr("posy");
+      if (y !== undefined) {
+        let offsetTop = w.$("#box-container").height() / 2 - $lastItem.height() / 2;
+        w.$("#box-container").scrollTop(parseInt(y as any) - offsetTop);
+      }
+    }
+  }
+}
+
+/* forceFitImageSize（bundle 36481-36497 逐字：详情模式限定 + detail-image 尺寸直设 +
+   usingThumbnail 分支（animated/orientation → getRawUrl，否则 thumbnail URL）） */
+export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: any): void {
+  const w = window as any;
+  if (!image) return;
+  if (!s.isDetailMode) return;
+  if (w.$("#detail-image").length === 0) return;
+  w.$("#detail-image")
+    .css({
+      width: image.width,
+      height: image.height,
+      transition: 'none'
+    });
+  if (usingThumbnail) {
+    if (image.animated || (image.orientation && image.orientation !== 1)) {
+      w.$("img#detail-image").attr("src", w.$bodyScope.getRawUrl(image));
+    }
+    else {
+      w.$("img#detail-image").attr("src", w.FileUrlHelper.getThumbnailUrl(image));
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -6472,9 +6679,22 @@ export function applyDataMachineryScope(): void {
   s.openPrevFolder = () => machineryOpenPrevFolder(s);
   s.openNextSmartFolder = () => machineryOpenNextSmartFolder(s);
   s.openPrevSmartFolder = () => machineryOpenPrevSmartFolder(s);
+  // b1-4a：滚动/列表辅助族第一批
+  s.autoScroll = (index: any) => machineryAutoScroll(s, index);
+  s.currentIndex = () => machineryCurrentIndex(s);
+  s.getSelectedItems = () => machineryGetSelectedItems(s);
+  s.getSelectedItemElements = () => machineryGetSelectedItemElements(s);
+  s.getSelectedTags = () => machineryGetSelectedTags(s);
+  s.getQuickAccessList = () => machineryGetQuickAccessList(s);
+  s.checkListItemsLessThanContainer = () => machineryCheckListItemsLessThanContainer(s);
+  s.updateSubFolderWidth = () => machineryUpdateSubFolderWidth(s);
+  s.updateSliderPosition = () => machineryUpdateSliderPosition(s);
+  s.changeListHeight = (height: any) => machineryChangeListHeight(s, height);
+  s.scrollToCurrentItem = () => machineryScrollToCurrentItem(s);
+  s.forceFitImageSize = (image: any, usingThumbnail: any) => machineryForceFitImageSize(s, image, usingThumbnail);
 
   (window as any).__eagleDataMachinery = {
-    version: 35,
+    version: 36,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -6596,6 +6816,18 @@ export function applyDataMachineryScope(): void {
     openPrevFolder: 'machinery',
     openNextSmartFolder: 'machinery',
     openPrevSmartFolder: 'machinery',
+    autoScroll: 'machinery',
+    currentIndex: 'machinery',
+    getSelectedItems: 'machinery',
+    getSelectedItemElements: 'machinery',
+    getSelectedTags: 'machinery',
+    getQuickAccessList: 'machinery',
+    checkListItemsLessThanContainer: 'machinery',
+    updateSubFolderWidth: 'machinery',
+    updateSliderPosition: 'machinery',
+    changeListHeight: 'machinery',
+    scrollToCurrentItem: 'machinery',
+    forceFitImageSize: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

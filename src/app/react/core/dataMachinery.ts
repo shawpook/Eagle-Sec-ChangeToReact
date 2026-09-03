@@ -6941,6 +6941,119 @@ export function machineryEndHandler(s: any, event: any): void {
   }
 }
 
+/* ── b1-6a：删除族第一批（checkOperationSafety 双件/resetFolderCover/removePermanently）── */
+
+/* checkOperationSafety（bundle 26789-26817 逐字：selected ≥ amount 时 BulkAction 确认框
+   （swal + i18n），否则/catch 直通 callback） */
+export function machineryCheckOperationSafety(s: any, callback: any, amount: any = 100): void {
+  const w = window as any;
+  try {
+    if (s.selected && s.selected.length >= amount) {
+      var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
+        { "property": "count", "value": s.selected.length },
+      ]);
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${w.i18n.__("Dialog.BulkAction.Title")}</h4>
+                                <p class="alert-desc">${html}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__("Dialog.BulkAction.Button"),
+        cancelButtonText: w.i18n.__("general.cancel"),
+        allowEnterKey: false,
+      }).then(function (result: any) {
+        callback && callback();
+        s.$evalAsync();
+      });
+    }
+    else {
+      callback && callback();
+    }
+  }
+  catch (err) {
+    callback && callback();
+  }
+}
+
+/* checkOperationSafety2（bundle 26823-26855 逐字：count 参数版） */
+export function machineryCheckOperationSafety2(s: any, count: any, callback: any, amount: any = 100): void {
+  const w = window as any;
+  try {
+    if (count >= amount) {
+      var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
+        { "property": "count", "value": count },
+      ]);
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${w.i18n.__("Dialog.BulkAction.Title")}</h4>
+                                <p class="alert-desc">${html}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+        allowEnterKey: false,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__("Dialog.BulkAction.Button"),
+        cancelButtonText: w.i18n.__("general.cancel"),
+      }).then(function (result: any) {
+        callback && callback();
+        s.$evalAsync();
+      });
+    }
+    else {
+      callback && callback();
+    }
+  }
+  catch (err) {
+    callback && callback();
+  }
+}
+
+/* resetFolderCover（bundle 41454-41461 逐字：getAncestorFolders（c9b machinery 版）+
+   covers 清空） */
+export function machineryResetFolderCover(s: any, folder: any): void {
+  if (!folder) return;
+  var ancestors = machineryGetAncestorFolders(s, folder, [folder]);
+  ancestors.push(folder);
+  ancestors.forEach(function (f: any) {
+    f.covers = [];
+  });
+}
+
+/* removePermanently（bundle 37074-37094 逐字：trash 视图限定 + raw splice 移除 +
+   ayncsImagesRemove（49709 顶层 function 经 window）+ gl:removeItems + 清选 + 重建绑定） */
+export function machineryRemovePermanently(s: any): void {
+  const w = window as any;
+  if (s.viewMode !== "trash") { return; }
+  var images = s.selected;
+
+  images.forEach(function (r: any) {
+    var idx = s.raw.indexOf(r);
+    if (idx != -1) {
+      s.raw.splice(idx, 1);
+    }
+  });
+
+  w.ayncsImagesRemove(images);
+
+  var itemElements = machineryGetSelectedItemElements(s);
+  s.$root.$broadcast("gl:removeItems", itemElements);
+  s.selected = [];
+  s.calculateImageBinding({ ignoreSort: true }, function () {
+    s.rebindRefresh(true);
+    s.updateSelection();
+  });
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -7126,9 +7239,14 @@ export function applyDataMachineryScope(): void {
   // b1-5b：homeHandler/endHandler
   s.homeHandler = (event: any) => machineryHomeHandler(s, event);
   s.endHandler = (event: any) => machineryEndHandler(s, event);
+  // b1-6a：删除族第一批
+  s.checkOperationSafety = (callback: any, amount: any) => machineryCheckOperationSafety(s, callback, amount);
+  s.checkOperationSafety2 = (count: any, callback: any, amount: any) => machineryCheckOperationSafety2(s, count, callback, amount);
+  s.resetFolderCover = (folder: any) => machineryResetFolderCover(s, folder);
+  s.removePermanently = () => machineryRemovePermanently(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 39,
+    version: 40,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -7271,6 +7389,10 @@ export function applyDataMachineryScope(): void {
     preloadImage: 'machinery',
     homeHandler: 'machinery',
     endHandler: 'machinery',
+    checkOperationSafety: 'machinery',
+    checkOperationSafety2: 'machinery',
+    resetFolderCover: 'machinery',
+    removePermanently: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

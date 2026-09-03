@@ -2949,6 +2949,17 @@ version 31）**：
 >   （fns 桥覆盖经 scope 解析））。缺口 61 → 59。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-6a 删除族第一批（2026-09-03；version 40）**：
+> - machineryCheckOperationSafety/2（26789/26823 逐字：selected/count ≥ amount 时
+>   Dialog.BulkAction 确认框，否则/catch 直通 callback——removeSelected/removeFolder 系
+>   的公共安全门）、machineryResetFolderCover（41454 逐字：getAncestorFolders c9b 直调）、
+>   machineryRemovePermanently（37074 逐字：trash 限定 + raw splice + ayncsImagesRemove
+>   （49709 顶层 function 经 window）+ gl:removeItems）。
+> - **rename 域（renameCurrentFolder/renameImages/enableImageNameEditable 及其级联闭包
+>   exitEditable/remainingFilenameLength/sanitize/emojiRegex）另切 b1-8**——链式依赖太深
+>   不宜混入删除族。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

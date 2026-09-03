@@ -5365,6 +5365,162 @@ export function machinerySelectDown(s: any, event: any): void {
   }
 }
 
+/* ── c18f-1：小 handler 批（评分/视频键/侧栏开关/缩放步进/保存/随机刷新）── */
+
+/* changeTo5Star（bundle 30316-30319 逐字；changeStar 为 bundle scope 函数经 scope 解析） */
+export function machineryChangeTo5Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  s.changeStar(5, true, true);
+}
+
+/* closeWindowHandler（bundle 30802-30812 逐字；**bundle 原版怪癖：参数名为 $event 但体内
+   引用全局 event——ESM 经 w.event 复刻同语义**（mousetrap 派发期内 window.event 即键盘事件）；
+   IPCHelper 脚本级词法绑定（c17a 接装）经 window） */
+export function machineryCloseWindowHandler(s: any, $event: any): void {
+  const w = window as any;
+  if (s.isPreviewing) {
+    if (w.process.platform == 'darwin') {
+      w.event && w.event.stopPropagation();
+      w.event && w.event.preventDefault();
+      w.IPCHelper.send('quicklook', s.selected[0]);
+      s.isPreviewing = false;
+    }
+  }
+}
+
+/* nHandler（bundle 30813-30824 逐字：详情内视频/音频添加视频评论；VIDEO_TYPES/AUDIO_TYPES
+   经 window（Tier-1 TYPES 契约），addVideoComment 经 scope 解析） */
+export function machineryNHandler(s: any, $event: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) {
+    return;
+  }
+  if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
+    var video = w.$(".detail-wrap video")[0] || w.$(".detail-wrap mpv-video")[0];
+    if (video) {
+      s.addVideoComment(s.current, video);
+    }
+  }
+}
+
+/* mHandler（bundle 30825-30834 逐字：详情内视频/音频静音切换） */
+export function machineryMHandler(s: any, $event: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) {
+    return;
+  }
+  if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
+    w.$(".vjs-mute-control").click();
+  }
+}
+
+/* toggleAll（bundle 30968-31003 逐字：侧栏+检查器联动开合（eagle.inspector.isHideInspector
+   双写）+ lastItemStates 清空 + orientationchange + boxContianerWidth/Height 快照 + relayout/
+   offsetScrollbar + 详情 edge 模式 zoomFitEdge（**裸 event 怪癖：$timeout 回调期 window.event
+   为 null，以 w.event 复刻**）+ isHideSidebar localStorage 键逐字 + electronLog 双分支） */
+export function machineryToggleAll(s: any, $event: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if ($event) {
+    $event.preventDefault();
+    $event.stopPropagation();
+  }
+  if (s.isHideSidebar) {
+    w.eagle.inspector.isHideInspector = s.isHideSidebar = false;
+  } else {
+    w.eagle.inspector.isHideInspector = s.isHideSidebar = true;
+  }
+  $timeout(function () {
+    s.lastItemStates = {};
+    w.$(window).trigger("orientationchange");
+    s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
+    s.boxContianerHeight = w.$("#box-container").height() || s.boxContianerHeight;
+    s.relayout();
+    s.offsetScrollbar(30);
+    if (s.isDetailMode) {
+      s.$root.currentFocus = "content";
+    }
+    if (s.isDetailMode && s.lastZoomMode === "edge") {
+      s.zoomFitEdge(w.event);
+    }
+    // if ($scope.layout === "GridLayout" || $scope.layout === "SquareLayout") {
+    //     var currentColumn = ig._layout._columnLength;
+    //     var currentWidth = $scope.imageSize.height;
+    //     var targetColumn = Math.floor($scope.boxContianerWidth / currentWidth);
+    //     $scope.adjustLayoutWidth(targetColumn - currentColumn);
+    // }
+  }, 100);
+  w.localStorage.setItem("isHideSidebar", s.isHideSidebar);
+  if (s.isHideSidebar) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
+  else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
+  if (w.eagle.inspector.isHideInspector) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
+  else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
+}
+
+/* zoomIn（bundle 33883-33898 逐字：非详情 adjustLayoutWidth(-1)+saveListHeight（c15b
+   machinery 版直调）+ 详情 5 步进 ratioExp 梯度（400/200/100/50/25/10/5 封顶 800）+
+   updateZoomRatio machinery 版）；zoomOut（33899-33914 逐字：对称梯度 + 非详情多一步
+   checkListItemsLessThanContainer（scope 解析）） */
+export function machineryZoomIn(s: any, event: any): void {
+  event && event.preventDefault && event.preventDefault();
+  if (!s.isDetailMode) {
+    s.adjustLayoutWidth(-1);
+    machinerySaveListHeight(s, s.imageSize.height);
+  } else {
+    var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
+    var ratioExp = s.getRatioExp(ratio);
+    if (ratioExp >= 400) { ratioExp = 800; } else if (ratioExp >= 200) { ratioExp = 400; } else if (ratioExp >= 100) { ratioExp = 200; } else if (ratioExp >= 50) { ratioExp = 100; } else if (ratioExp >= 25) { ratioExp = 50; } else if (ratioExp >= 10) { ratioExp = 25; } else if (ratioExp >= 5) { ratioExp = 10; } else { ratioExp = 5; }
+    if (ratioExp > 800) ratioExp = 800;
+    s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
+    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+    s.updateZoomRatio(undefined, undefined, undefined, true);
+  }
+}
+
+export function machineryZoomOut(s: any, event: any): void {
+  event && event.preventDefault && event.preventDefault();
+  if (!s.isDetailMode) {
+    s.adjustLayoutWidth(1);
+    machinerySaveListHeight(s, s.imageSize.height);
+    s.checkListItemsLessThanContainer();
+  } else {
+    var ratio = Math.floor(s.imageSize.zoomRatio / 5) * 5;
+    var ratioExp = s.getRatioExp(ratio);
+    if (ratioExp <= 10) { ratioExp = 5; } else if (ratioExp <= 25) { ratioExp = 10; } else if (ratioExp <= 50) { ratioExp = 25; } else if (ratioExp <= 100) { ratioExp = 50; } else if (ratioExp <= 200) { ratioExp = 100; } else if (ratioExp <= 400) { ratioExp = 200; } else if (ratioExp <= 800) { ratioExp = 400; }
+    s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
+    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+    s.updateZoomRatio(undefined, undefined, undefined, true);
+  }
+}
+
+/* saveHandler（bundle 35985-35991 逐字：crop 模式 saveCrop；saveCrop 经 scope 解析） */
+export function machinerySaveHandler(s: any): void {
+  if (s.isRotating) return;
+  if (s.isCropMode) {
+    s.saveCrop();
+  }
+}
+
+/* refreshRandom（bundle 42824-42837 逐字：random 视图/RANDOM 排序守卫 + shuffle 清空 +
+   refresh-random active 闪烁 50ms + reload（machinery 版经 scope）） */
+export function machineryRefreshRandom(s: any): void {
+  const w = window as any;
+  if (s.isDetailMode) return;
+
+  if (
+    s.viewMode === 'random' ||
+    (s.currentFolder && s.currentFolder.orderBy === "RANDOM") ||
+    (s.currentSmartFolder && s.currentSmartFolder.orderBy === "RANDOM")
+  ) {
+    s.shuffle = [];
+    w.$("#refresh-random").addClass("active");
+    setTimeout(function () {
+      w.$("#refresh-random").removeClass("active");
+    }, 50);
+    s.reload();
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -5486,9 +5642,19 @@ export function applyDataMachineryScope(): void {
   s.selectDown = (event: any) => machinerySelectDown(s, event);
   s.pageDownHandler = machineryPageDownHandler(s);
   s.pageUpHandler = machineryPageUpHandler(s);
+  // c18f-1：小 handler 批
+  s.changeTo5Star = (event: any) => machineryChangeTo5Star(s, event);
+  s.closeWindowHandler = ($event: any) => machineryCloseWindowHandler(s, $event);
+  s.nHandler = ($event: any) => machineryNHandler(s, $event);
+  s.mHandler = ($event: any) => machineryMHandler(s, $event);
+  s.toggleAll = ($event: any) => machineryToggleAll(s, $event);
+  s.zoomIn = (event: any) => machineryZoomIn(s, event);
+  s.zoomOut = (event: any) => machineryZoomOut(s, event);
+  s.saveHandler = () => machinerySaveHandler(s);
+  s.refreshRandom = () => machineryRefreshRandom(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 29,
+    version: 30,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -5577,6 +5743,15 @@ export function applyDataMachineryScope(): void {
     selectDown: 'machinery',
     pageDownHandler: 'machinery',
     pageUpHandler: 'machinery',
+    changeTo5Star: 'machinery',
+    closeWindowHandler: 'machinery',
+    nHandler: 'machinery',
+    mHandler: 'machinery',
+    toggleAll: 'machinery',
+    zoomIn: 'machinery',
+    zoomOut: 'machinery',
+    saveHandler: 'machinery',
+    refreshRandom: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

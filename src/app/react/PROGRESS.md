@@ -2827,6 +2827,22 @@
 > - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **c18f-1 小 handler 批（2026-09-03；version 30）**：
+> - machineryChangeTo5Star（30316 逐字：alt/meta/ctrl 守卫 + changeStar(5,true,true) 经
+>   scope）、machineryCloseWindowHandler（30802 逐字：**bundle 原版怪癖——参数 $event 但体内
+>   引用全局 event，ESM 以 w.event 复刻**；darwin isPreviewing → IPCHelper quicklook 反发）、
+>   machineryNHandler/mHandler（30813/30825 逐字：详情内视频评论/静音，VIDEO_TYPES/AUDIO_TYPES
+>   经 window TYPES 契约）、machineryToggleAll（30968 逐字：eagle.inspector.isHideInspector
+>   双写 + lastItemStates 清空 + orientationchange + boxContianerWidth/Height 快照 + relayout/
+>   offsetScrollbar + **zoomFitEdge(w.event) 复刻裸 event 怪癖**（$timeout 期 window.event 为
+>   null）+ isHideSidebar localStorage 键逐字 + electronLog 双分支）、machineryZoomIn/Out
+>   （33883/33899 逐字：非详情 adjustLayoutWidth ±1 + machinerySaveListHeight 直调 + 详情
+>   5 步进 ratioExp 梯度封顶 800 + updateZoomRatio machinery 版；Out 多一步
+>   checkListItemsLessThanContainer scope 解析）、machinerySaveHandler（35985 逐字）、
+>   machineryRefreshRandom（42824 逐字：random/RANDOM 守卫 + shuffle 清空 + active 闪烁 +
+>   reload machinery 版）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

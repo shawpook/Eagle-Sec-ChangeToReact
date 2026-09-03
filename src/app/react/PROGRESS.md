@@ -2852,6 +2852,28 @@ version 31）**：
 >   setAsCover + notify/saveFolder machinery 版）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **c18f-3 inspector 面板/快捷搜索打开器（2026-09-03；version 32）**：
+> - machineryOpenQuickSearch（32512 逐字：OPEN_QUICK_SEARCH_MODAL 广播）、
+>   machineryOpenActionsPanel（43279 逐字：eagle.action.open(selected) 经 window）、
+>   machineryOpenInspectorTagSelectPanel（43283 逐字：selected 守卫 +
+>   INSPECTOR.TAG.SELECT.PANEL.OPEN 广播；54887 系同名函数为其他 controller 的 $bodyScope
+>   委派壳，非 body scope 生效版）、machineryOpenInspectorFolderSelectPanel（43288-43448 逐字：
+>   eagle.inspector.calculateFolders 初选集 → FolderSelectPanel.open（folders/selectedIds/
+>   onChanged）→ onChanged 内 checkOperationSafety 包装：selected/deselected 分拣 +
+>   addToRecentFolders + origin 四联快照（angular.copy）+ eagle.utils.tree.walk 添加/删除双
+>   分支（extendTags 传染、当前文件夹 ig.remove + imagesMappings、updateFilterCounts）+
+>   ayncsImagesChange/hiddenByCurrentFilter + unfiled 分支 gl:removeItems +
+>   calculateImageBinding/rebindRefresh/updateSelection（$bodyScope.* 逐字）+ i18n 单复数两
+>   形态（复数 getFilter()、单数逐字 angular.element.injector 链）+ notify undo 四字段回滚 +
+>   analytics 'File','Categorize','QuickCategorize'）。
+> - **FolderSelectPanel 为 bundle 顶层 class（55801，词法绑定不上 window）→ 直连 React 移植版
+>   selectPanelEngine 的 static open**（同 rootScope $broadcast('FOLDER.SELECT.PANEL.OPEN')
+>   语义，bundle 在世/缺席双期兼容；无循环导入）。
+> - 至此 buildMousetrap 硬编码绑定面 41 键全部 machinery 供给（preferences 绑定面经
+>   shortcutHandlerMap 全覆盖：quicklook machinery 版、gif 帧函数经 scope 解析归媒体域切片）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25；**全量 suite ALL GREEN（45/45，machinery v32
+>   键盘面里程碑）**。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

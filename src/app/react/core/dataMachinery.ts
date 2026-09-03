@@ -55,6 +55,7 @@
  */
 
 import { getBodyScope } from '../global/scopeBridge';
+import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
@@ -5556,6 +5557,198 @@ export function machinerySetFolderCover(s: any): void {
   s.saveFolder();
 }
 
+/* ── c18f-3：inspector 面板/快捷搜索打开器 ───────────────────────────── */
+
+/* openQuickSearch（bundle 32512-32514 逐字） */
+export function machineryOpenQuickSearch(s: any, event: any): void {
+  s.$root.$broadcast('OPEN_QUICK_SEARCH_MODAL');
+}
+
+/* openActionsPanel（bundle 43279-43282 逐字；eagle.action 经 window） */
+export function machineryOpenActionsPanel(s: any, event: any): void {
+  (window as any).eagle.action.open(s.selected);
+}
+
+/* openInspectorTagSelectPanel（bundle 43283-43287 逐字；body scope 生效版——54887 系为
+   其他 controller 的 $bodyScope 委派壳） */
+export function machineryOpenInspectorTagSelectPanel(s: any): void {
+  if (s.selected.length === 0) return;
+  s.$broadcast('INSPECTOR.TAG.SELECT.PANEL.OPEN');
+}
+
+/* openInspectorFolderSelectPanel（bundle 43288-43448 逐字：FolderSelectPanel.open 参数组
+   （ folders/selectedIds/onChanged：checkOperationSafety 包装 → selectedFolderIds/deselected
+   FolderIds 分拣 → addToRecentFolders → origin 四联快照 → eagle.utils.tree.walk 添加/删除
+   双分支（extendTags 传染、ig.remove + imagesMappings、updateFilterCounts）→ ayncsImagesChange/
+   hiddenByCurrentFilter → unfiled 分支 gl:removeItems → calculateImageBinding/rebindRefresh/
+   updateSelection → i18n 单复数两形态（复数走 getFilter()，单数逐字 angular.injector 链）→
+   notify undo 四字段回滚 → electronLog + analytics 'File','Categorize','QuickCategorize'）。
+   FolderSelectPanel 为 bundle 顶层 class（55801，词法绑定不上 window）→ 直连 React 移植版
+   selectPanelEngine 的 static open（同 rootScope $broadcast 语义，bundle 在世/缺席双期兼容）；
+   体内 $bodyScope.* 引用逐字保留（= 真身 body scope，w.$bodyScope）。 */
+export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): void {
+  const w = window as any;
+  event && event.stopPropagation();
+
+  if (s.selected.length === 0) return;
+
+  const folders = s.folders;
+  const originalSelectedIds = w.eagle.inspector.calculateFolders(s.selected).reduce((acc: any, cur: any) => {
+    acc[cur] = true;
+    return acc;
+  }, {});
+
+  FolderSelectPanel.open({
+    folders: folders,
+    selectedIds: originalSelectedIds,
+    onChanged: (result: any) => {
+
+      if (!result?.isDirty) return;
+
+      const { selectedFolderIds, deselectedFolderIds } = result;
+      s.checkOperationSafety(() => {
+        try {
+          let selectedFolders: any[] = [];
+          let folderIds: any[] = [];
+          let selectedItems: any[] = [];
+
+          s.selected.forEach((item: any) => {
+            selectedItems.push(item);
+          });
+
+          Object.keys(selectedFolderIds).forEach((folderId) => {
+            if (s.folderMappings[folderId] && !originalSelectedIds[folderId]) {
+              selectedFolders.push(s.folderMappings[folderId]);
+              folderIds.push(folderId);
+            }
+          });
+
+          s.addToRecentFolders(folderIds);
+
+          let origin: any[] = [];
+          let originFolders: any[] = [];
+          let originTags: any[] = [];
+          let originDeleted: any[] = [];
+
+          selectedItems.forEach((item: any) => {
+            origin.push(item);
+            originFolders.push(w.angular.copy(item.folders));
+            originTags.push(w.angular.copy(item.tags));
+            originDeleted.push(item.isDeleted);
+          });
+
+          let removedFolderIds: any[] = [];
+          Object.keys(deselectedFolderIds).forEach((folderId) => {
+            removedFolderIds.push(folderId);
+          });
+
+          let hasChanged = false;
+          let changedItems: any[] = [];
+          let changedMaps: any = {};
+
+          w.eagle.utils.tree.walk(s.folders, 'children', (folder: any, parent: any) => {
+            // 添加新分类
+            if (selectedFolderIds[folder.id] && !deselectedFolderIds[folder.id]) {
+              selectedItems.forEach((item: any) => {
+                if (item.folders.indexOf(folder.id) === -1) {
+                  item.folders.push(folder.id);
+                  if (folder.extendTags) {
+                    folder.extendTags.forEach(function (tag: any) {
+                      if (item.tags.indexOf(tag) === -1) {
+                        item.tags.push(tag);
+                      }
+                    });
+                  }
+                  item.isDeleted = false;
+                  hasChanged = true;
+                  changedItems.push(item);
+                  changedMaps[item.id] = true;
+                }
+              });
+            }
+
+
+            // 删除已有
+            else if (deselectedFolderIds[folder.id]) {
+              selectedItems.forEach((item: any) => {
+                var idx2 = item.folders.indexOf(folder.id);
+                if (idx2 !== -1) {
+                  if (s.currentFolder && s.currentFolder.id === folder.id) {
+                    w.ig.remove(w.$("#box-" + item.id)[0]);
+                    s.currentFolder.imagesMappings[item.id] = false;
+                  }
+                  item.folders.splice(idx2, 1);
+                  s.updateFilterCounts(item, -1);
+                  item.isDeleted = false;
+                  hasChanged = true;
+                  changedItems.push(item);
+                  changedMaps[item.id] = true;
+                }
+              });
+            }
+          });
+
+          changedItems = [...new Set(changedItems)];
+
+          if (hasChanged) {
+            w.ayncsImagesChange(changedItems);
+            w.hiddenByCurrentFilter(changedItems);
+            if (w.$bodyScope.viewMode === 'unfiled') {
+              s.$root.$broadcast("gl:removeItems", w.$bodyScope.getSelectedItemElements());
+            }
+
+            w.$bodyScope.calculateImageBinding({ ignoreSort: true }, () => {
+              w.$bodyScope.rebindRefresh(true);
+              w.$bodyScope.updateSelection();
+            });
+
+            var message = getFilter()('i18n')("notify.image.moveToFolders", [
+              { "property": "imageCount", "value": selectedItems.length },
+              { "property": "folderCount", "value": selectedFolders.length }
+            ]);
+
+            if (s.selected.length === 1) {
+              message = message.replace("images", "image");
+            }
+            if (selectedFolders.length === 1) {
+              message = w.angular.element(document.body).injector().get('$filter')('i18n')("notify.image.moveToFolder", [
+                { "property": "folderId", "value": selectedFolders[0].id },
+                { "property": "imageCount", "value": selectedItems.length },
+                { "property": "folderName", "value": selectedFolders[0].name }
+              ]);
+            }
+
+            // 復原操作
+            s.$root.notify({
+              message: message,
+              duration: 4000,
+            }, function () {
+              origin.forEach((item: any, index: any) => {
+                if (changedMaps[item.id]) {
+                  item.folders = originFolders[index];
+                  item.tags = originTags[index];
+                  item.isDeleted = originDeleted[index];
+                }
+              });
+              s.selected = origin;
+              s.current = origin[0];
+              s.$root.$broadcast("CALCULATE_IMAGE_BINDING");
+              s.$root.$broadcast("REBIND_REFRESH", true);
+              s.$root.$broadcast("UPDATE_SELECTION");
+            });
+
+            w.electronLog && w.electronLog.info(`[app] Categorize ${selectedItems.length} files to ${selectedFolders.length} folders`);
+            w.analytics.event('File', 'Categorize', 'QuickCategorize');
+          }
+        }
+        catch (err: any) {
+          w.electronLog && w.electronLog.error(err.stack || err);
+        }
+      });
+    }
+  });
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -5691,9 +5884,14 @@ export function applyDataMachineryScope(): void {
   s.openParentFolder = () => machineryOpenParentFolder(s);
   s.createTxtFileFromTemplate = (event: any) => machineryCreateTxtFileFromTemplate(s, event);
   s.setFolderCover = () => machinerySetFolderCover(s);
+  // c18f-3：inspector 面板/快捷搜索打开器
+  s.openQuickSearch = (event: any) => machineryOpenQuickSearch(s, event);
+  s.openActionsPanel = (event: any) => machineryOpenActionsPanel(s, event);
+  s.openInspectorTagSelectPanel = () => machineryOpenInspectorTagSelectPanel(s);
+  s.openInspectorFolderSelectPanel = (event: any) => machineryOpenInspectorFolderSelectPanel(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 31,
+    version: 32,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -5794,6 +5992,10 @@ export function applyDataMachineryScope(): void {
     openParentFolder: 'machinery',
     createTxtFileFromTemplate: 'machinery',
     setFolderCover: 'machinery',
+    openQuickSearch: 'machinery',
+    openActionsPanel: 'machinery',
+    openInspectorTagSelectPanel: 'machinery',
+    openInspectorFolderSelectPanel: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

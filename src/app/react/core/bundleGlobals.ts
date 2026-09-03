@@ -1237,6 +1237,75 @@ function _buildScrollbarSaver(): any {
   };
 }
 
+/* ── b1-9c：网格耦合收口 + 目录枚举批 ── */
+
+/* walk（bundle 52664-52697 逐字：递归目录枚举——getExt/junk.is/IS_DIRECTORY.check 过滤 +
+   .pxd 特判；注释原样保留） */
+function _walk(dir: any): any[] {
+  const w = window as any;
+  var fsMod = w.require('fs');
+  var results: any[] = [];
+  var list = fsMod.readdirSync(dir);
+  for (let i = 0; i < list.length; i++) {
+    let file = dir + '/' + list[i];
+    let ext = w.getExt({ path: file });
+    if (ext) {
+      if (!w.junk.is(list[i])) {
+        results.push(file);
+      }
+    }
+    else {
+      // var stat = fs.statSync(file)
+      if (file.endsWith(".pxd")) {
+        results.push(file);
+      }
+      else if (w.IS_DIRECTORY.check(file)) {
+        results = results.concat(w.walk(file));
+      }
+      else {
+        if (!w.junk.is(list[i])) {
+          results.push(file);
+        }
+      }
+    }
+  // }
+  // list.forEach(function(file) {
+    // file = dir + '/' + file
+    // var stat = fs.statSync(file)
+    // Note: 特殊格式档案会被误判成文件夹
+    // if (file.endsWith(".pxd")) results.push(file);
+    // else if (stat && stat.isDirectory()) results = results.concat(walk(file))
+    // else results.push(file)
+  // })
+  }
+  return results;
+}
+
+/* installedFonts 初扫（bundle 19243-19258 逐字：fontFolder readdir → `${name}_${extname}`
+   键表；React machinery 运行时增删复用同表） */
+function _scanInstalledFonts(): void {
+  const w = window as any;
+  const fsMod = w.require('fs');
+  const pathMod = w.require('path');
+  fsMod.access(w.fontFolder, function (err: any) {
+    if (!err) {
+      fsMod.readdir(w.fontFolder, function (err2: any, files: any) {
+        if (err2) return;
+        try {
+          files.forEach(function (file: any) {
+            var extname = pathMod.extname(file).toLowerCase();
+            var name = pathMod.basename(file, extname);
+            var key = `${name}_${extname}`;
+            w.installedFonts[key] = true;
+          });
+        }
+        catch (err3) { }
+        // console.log(installedFonts);
+      });
+    }
+  });
+}
+
 export function installBundleGlobals(): void {
   if (installed) return;
   installed = true;
@@ -1321,8 +1390,8 @@ export function installBundleGlobals(): void {
     if (!w.DeltaE) w.DeltaE = req('delta-e');
   } catch (err) { /* noop */ }
 
-  // ── installedFonts（bundle 19243：var installedFonts = {}）──
-  if (!w.installedFonts) w.installedFonts = {};
+  // ── installedFonts（bundle 19243：var installedFonts = {}——b1-9c 起在文件尾统一
+  // 挂载并执行 fontFolder 初扫）──
 
   // ── fontFolder（bundle 19192-19198 逐字）──
   if (!w.fontFolder) {
@@ -1691,6 +1760,14 @@ export function installBundleGlobals(): void {
   }
   // analytics（bundle 105501 顶层对象——bundle 在世时沿用其绑定）
   if (!w.analytics) w.analytics = _buildAnalytics();
+
+  // ── b1-9c：目录枚举批 + 字体初扫 ──
+  if (!w.walk) w.walk = _walk;
+  // installedFonts 初扫（bundle 19243 fs.access/readdir——getExt/junk 等已在前序挂载）
+  if (!w.installedFonts) {
+    w.installedFonts = {};
+    _scanInstalledFonts();
+  }
 
   // 诊断契约：冒烟断言全部关键全局在位（bundle 在世 = 沿用其绑定；b1 后 = 本模块供给）
   (window as any).__eagleBundleGlobals = {

@@ -3208,6 +3208,18 @@ version 31）**：
 >   function（bundle 原 bug：非箭头 forEach 回调内 this 为 undefined——逐字保留）**）。
 > - 验证：tsc 零错；m1 25/25（markdown-thumbnail flake 两现一过，同 2550 登记形态）。
 
+> **b1-9c 网格耦合收口 + 目录枚举批（2026-09-03；bundleGlobals.ts）**：
+> - **盘点修正（零新增工作确认）**：网格耦合已由 boxGridEngine 闭环——`window.ig = ig`
+>   （533）+ `w.resetNgGridLayoutData`（665）+ NgGridStrings 同名全局（535）；machineID/
+>   Registration/trialRemain 已由 libraryDomain 'initial' 监听（174-190）接线——22664 ipc
+>   链 post-b1 由 React 侧等价承接，无缺口。
+> - **walk**（bundle 52664-52697 逐字：递归目录枚举，getExt/junk.is/IS_DIRECTORY.check
+>   过滤 + .pxd 特判 + 注释原样）→ w.walk（apiServerDomain 623 消费）。
+> - **installedFonts 初扫**（bundle 19243 fs.access/readdir → `${name}_${extname}` 键表）
+>   ——旧 if-absent 挂载点移除（避免短路），统一在文件尾挂载 + 触发初扫；React machinery
+>   运行时增删复用同表。
+> - 验证：tsc 零错；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

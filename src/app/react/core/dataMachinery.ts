@@ -4608,6 +4608,214 @@ export function machineryCopyImages(s: any, event: any): void {
   }
 }
 
+/* ── c18e-4：方向键/修饰键 handler 族（第一批）───────────────────────── */
+
+/* keyCHandler（bundle 35099-35103 逐字）、keyPHandler（35104-35106 逐字） */
+export function machineryKeyCHandler(s: any, event: any): void {
+  if (s.isInlineMode) return;
+  if (s.isDetailMode) {
+    s.toggleCommentMode(event);
+  }
+}
+
+export function machineryKeyPHandler(s: any, event: any): void {
+  s.openPluginPanel(event);
+}
+
+/* keyLeftHandler（bundle 35107-35146 逐字：swal 容器守卫 + content→selectPrev(machinery 版) +
+   tags→焦点回落 sidebar + sidebar 文件夹/smart 文件夹折叠（多选折叠与单选展开-折叠分叉），
+   localStorage 键逐字） */
+export function machineryKeyLeftHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (w.$(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    s.selectPrev(event);
+  }
+  else if (s.$root.currentFocus == "tags") {
+    s.$root.currentFocus = "sidebar";
+  }
+  else {
+    if (s.$root.selectedFolders.length > 1) {
+      s.$root.selectedFolders.forEach(function (folder: any) {
+        if (folder.children && folder.children.length > 0) {
+          if (folder.isExpand !== false) {
+            folder.isExpand = false;
+            w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, false);
+          }
+        }
+      });
+      s.updateSidebarList();
+    }
+    else if (s.currentFolder) {
+      if (!s.currentFolder.children || s.currentFolder.children.length == 0) {
+        s.currentFolder.isExpand = true;
+        s.updateSidebarList();
+      }
+      else {
+        s.currentFolder.isExpand = false;
+        s.updateSidebarList();
+      }
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, false);
+    }
+    else if (s.currentSmartFolder) {
+      if (!s.currentSmartFolder.children || s.currentSmartFolder.children.length == 0) {
+        s.currentSmartFolder.isExpand = true;
+        s.updateSidebarList();
+      }
+      else {
+        s.currentSmartFolder.isExpand = false;
+        s.updateSidebarList();
+      }
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, false);
+    }
+  }
+}
+
+/* keyRightHandler（bundle 35148-35189 逐字：content→selectNext + sidebar 多选展开/单选展开 +
+   alltags→焦点 tags，localStorage 键逐字） */
+export function machineryKeyRightHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (w.$(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    s.selectNext(event);
+  }
+  else {
+    if (s.$root.selectedFolders.length > 1) {
+      s.$root.selectedFolders.forEach(function (folder: any) {
+        if (folder.children && folder.children.length > 0) {
+          if (folder.isExpand !== true) {
+            folder.isExpand = true;
+            w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, true);
+          }
+        }
+      });
+      s.updateSidebarList();
+    }
+    else if (s.currentFolder) {
+      s.currentFolder.isExpand = true;
+      s.updateSidebarList();
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, true);
+    }
+    else if (s.currentSmartFolder) {
+      s.currentSmartFolder.isExpand = true;
+      s.updateSidebarList();
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, true);
+    }
+    else if (s.viewMode == "alltags") {
+      s.$root.currentFocus = "tags";
+    }
+  }
+}
+
+/* mod 八件套（bundle 35343-35438 逐字：crop 模式→RESIZE-CROP-TOOL 广播（mod 上下 1/
+   shift 上下左右 10），否则 mod 上/下委派 homeHandler/endHandler（scope 函数 35636/35650）、
+   mod 左/右详情外委派 prevHistory/nextHistory（machinery 版）、modShift 纯 crop 广播） */
+export function machineryModUpHandler(s: any, event: any): void {
+  if (s.isCropMode) {
+    event && event.preventDefault();
+    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      horizontal: 0,
+      vertical: -1
+    });
+    return;
+  }
+  else {
+    s.homeHandler(event);
+  }
+}
+
+export function machineryModDownHandler(s: any, event: any): void {
+  if (s.isCropMode) {
+    event && event.preventDefault();
+    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      horizontal: 0,
+      vertical: 1
+    });
+    return;
+  }
+  else {
+    s.endHandler(event);
+  }
+}
+
+export function machineryModLeftHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isDetailMode) {
+    if (s.isCropMode) {
+      s.$root.$broadcast("RESIZE-CROP-TOOL", {
+        horizontal: -1,
+        vertical: 0
+      });
+      return;
+    }
+  }
+  else {
+    s.prevHistory(event);
+  }
+}
+
+export function machineryModRightHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isDetailMode) {
+    if (s.isCropMode) {
+      s.$root.$broadcast("RESIZE-CROP-TOOL", {
+        horizontal: 1,
+        vertical: 0
+      });
+      return;
+    }
+  }
+  else {
+    s.nextHistory(event);
+  }
+}
+
+export function machineryModShiftUpHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isCropMode) {
+    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      horizontal: 0,
+      vertical: -10
+    });
+    return;
+  }
+}
+
+export function machineryModShiftDownHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isCropMode) {
+    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      horizontal: 0,
+      vertical: 10
+    });
+    return;
+  }
+}
+
+export function machineryModShiftLeftHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isCropMode) {
+    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      horizontal: -10,
+      vertical: 0
+    });
+    return;
+  }
+}
+
+export function machineryModShiftRightHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isCropMode) {
+    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      horizontal: 10,
+      vertical: 0
+    });
+    return;
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -4708,9 +4916,22 @@ export function applyDataMachineryScope(): void {
   // c18e-3：quicklook/copyImages
   s.quicklook = (event: any) => machineryQuicklook(s, event);
   s.copyImages = (event: any) => machineryCopyImages(s, event);
+  // c18e-4：方向键/修饰键 handler 族（第一批）
+  s.keyCHandler = (event: any) => machineryKeyCHandler(s, event);
+  s.keyPHandler = (event: any) => machineryKeyPHandler(s, event);
+  s.keyLeftHandler = (event: any) => machineryKeyLeftHandler(s, event);
+  s.keyRightHandler = (event: any) => machineryKeyRightHandler(s, event);
+  s.modUpHandler = (event: any) => machineryModUpHandler(s, event);
+  s.modDownHandler = (event: any) => machineryModDownHandler(s, event);
+  s.modLeftHandler = (event: any) => machineryModLeftHandler(s, event);
+  s.modRightHandler = (event: any) => machineryModRightHandler(s, event);
+  s.modShiftUpHandler = (event: any) => machineryModShiftUpHandler(s, event);
+  s.modShiftDownHandler = (event: any) => machineryModShiftDownHandler(s, event);
+  s.modShiftLeftHandler = (event: any) => machineryModShiftLeftHandler(s, event);
+  s.modShiftRightHandler = (event: any) => machineryModShiftRightHandler(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 26,
+    version: 27,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -4781,6 +5002,18 @@ export function applyDataMachineryScope(): void {
     removeSelected: 'machinery',
     quicklook: 'machinery',
     copyImages: 'machinery',
+    keyCHandler: 'machinery',
+    keyPHandler: 'machinery',
+    keyLeftHandler: 'machinery',
+    keyRightHandler: 'machinery',
+    modUpHandler: 'machinery',
+    modDownHandler: 'machinery',
+    modLeftHandler: 'machinery',
+    modRightHandler: 'machinery',
+    modShiftUpHandler: 'machinery',
+    modShiftDownHandler: 'machinery',
+    modShiftLeftHandler: 'machinery',
+    modShiftRightHandler: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

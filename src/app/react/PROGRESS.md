@@ -2791,6 +2791,19 @@
 > - 教训登记：**tsc 退出码曾被 tail 管道吃掉（tail 恒 0），以重定向后 echo $? 为准**。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **c18e-4 方向键/修饰键 handler 族·第一批（2026-09-03；version 27）**：
+> - machineryKeyCHandler/keyPHandler（35099-35106 逐字：详情内 toggleCommentMode /
+>   openPluginPanel）、machineryKeyLeftHandler/keyRightHandler（35107-35189 逐字：swal 容器
+>   守卫 + content→selectPrev/Next（machinery 版）+ tags↔sidebar 焦点迁移 + sidebar 多选
+>   折叠/展开与单选展开-折叠分叉 + alltags→tags，localStorage 键逐字）。
+>   machineryModUp/Down/Left/RightHandler + modShiftUp/Down/Left/RightHandler（35343-35438
+>   逐字：crop 模式 RESIZE-CROP-TOOL 广播（mod=1/shift=10 梯度），mod 上/下非详情委派
+>   homeHandler/endHandler（scope 函数 35636/35650）、mod 左/右非详情委派 prevHistory/
+>   nextHistory（machinery 版））。
+> - 依赖经 scope 解析：toggleCommentMode/openPluginPanel/selectPrev/Next/prevHistory/
+>   nextHistory/homeHandler/endHandler/updateSidebarList。零闭包依赖。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

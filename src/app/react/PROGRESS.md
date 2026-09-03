@@ -2886,6 +2886,17 @@ version 31）**：
 >   顶层 var 经 window、fs/path 经 window.require、uploadFiles/showUploadQueue scope 解析）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-2 视图开启器族（2026-09-03；version 34）**：
+> - machineryOpenRandom/openUnfiled/openUntagged/openRecent/openTrash（36740-36996 逐字：
+>   同视图+有色规则早退、ScrollbarSaver 存取（**random 无存取面、openRandom callback 参数与
+>   leaveDetailMode 早退分支——bundle 原样**）、五 timeout 域内自管、50ms timeout 内
+>   UrlStateService.setState + 专用 thumbSize localStorage 键 + setLastFolder/updateListHeight
+>   直调 machinery 版 + reload + analytics.screenView）、machineryOpenCommunity（36866 逐字：
+>   images 清空 + lng2locale 三语映射 + OPEN_URL_IN_PANEL 广播 + $bodyScope.leaveDetailMode
+>   逐字）、machineryOpenAllTags（36889 逐字：无 imageSize/reload 面 + TagManager.renderTagsResult
+>   50ms 延迟）。缺口 90 → 83。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

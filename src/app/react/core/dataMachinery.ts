@@ -5960,6 +5960,244 @@ export function machineryNewFileFromTemplate(s: any, ext: any): void {
   }
 }
 
+/* ── c18g-2：视图开启器族（random/unfiled/untagged/recent/community/allTags/trash）── */
+
+// ── c18g-2 域内自管（原 controller 闭包 var：openRandomTimeout 36758 邻域 /
+//    openUnfiledTimeout 36773 / openUntaggedTimeout 36804 / openRecentTimeout 36835 /
+//    openTrashTimeout 36968）──
+let openRandomTimeout: any = null;
+let openUnfiledTimeout: any = null;
+let openUntaggedTimeout: any = null;
+let openRecentTimeout: any = null;
+let openTrashTimeout: any = null;
+
+/* openRandom（bundle 36740-36770 逐字：同视图+有色规则外早退（callback/leaveDetailMode）+
+   resetPage + image-drop-area 隐藏 + 50ms timeout（UrlStateService setState + random 专用
+   thumbSize 键 + setLastFolder/updateListHeight **不调** + scrollTop 0 + reload + callback +
+   screenView）——**本开启器无 ScrollbarSaver 存取，bundle 原样**） */
+export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.viewMode === 'random' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (callback) {
+      callback();
+    }
+    if (s.isDetailMode) {
+      s.leaveDetailMode();
+    }
+    return;
+  }
+
+  s.viewMode = 'random';
+  s.resetPage();
+  s.$root.currentFocus = "sidebar";
+
+  w.$("#image-drop-area").hide();
+  $timeout.cancel(openRandomTimeout);
+  openRandomTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'random', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.random") || 150;
+    s.imageSize.height = parseInt(s.imageSize.height);
+    machinerySetLastFolder(s, undefined);
+    w.$("#sidebar-item-container").scrollTop(0);
+    s.reload();
+    if (callback) {
+      callback();
+    }
+    w.analytics.screenView('Random');
+  }, 50);
+}
+
+/* openUnfiled（bundle 36774-36802 逐字：早退 + ScrollbarSaver 存取 + unfiled thumbSize 键 +
+   updateListHeight + restoreScrollPosition + screenView） */
+export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'unfiled' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      s.leaveDetailMode();
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'unfiled';
+  s.$root.currentFocus = "sidebar";
+  s.resetPage();
+
+  $timeout.cancel(openUnfiledTimeout);
+  openUnfiledTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'unfiled', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.unfiled") || 150;
+    s.imageSize.height = parseInt(s.imageSize.height);
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    w.$("#sidebar-item-container").scrollTop(0);
+    s.reload();
+    w.analytics.screenView('Unfiled');
+  }, 50);
+}
+
+/* openUntagged（bundle 36805-36833 逐字：同 openUnfiled 模板，untagged 键） */
+export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'untagged' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      s.leaveDetailMode();
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'untagged';
+  s.$root.currentFocus = "sidebar";
+  s.resetPage();
+
+  $timeout.cancel(openUntaggedTimeout);
+  openUntaggedTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'untagged', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.untagged") || 150;
+    s.imageSize.height = parseInt(s.imageSize.height);
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    w.$("#sidebar-item-container").scrollTop(0);
+    s.reload();
+    w.analytics.screenView('Untagged');
+  }, 50);
+}
+
+/* openRecent（bundle 36836-36864 逐字：同 openUnfiled 模板，recent 键） */
+export function machineryOpenRecent(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'recent' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      s.leaveDetailMode();
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'recent';
+  s.$root.currentFocus = "sidebar";
+  s.resetPage();
+
+  $timeout.cancel(openRecentTimeout);
+  openRecentTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'recent', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.recent") || 150;
+    s.imageSize.height = parseInt(s.imageSize.height);
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    w.$("#sidebar-item-container").scrollTop(0);
+    s.reload();
+    w.analytics.screenView('Recent');
+  }, 50);
+}
+
+/* openCommunity（bundle 36866-36888 逐字：community 面板 iframe 化——images 清空 + 详情退出 +
+   lng2locale 三语映射 + OPEN_URL_IN_PANEL 广播 + leaveDetailMode（经 $bodyScope 逐字）） */
+export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'community';
+  s.$root.currentFocus = "sidebar";
+  s.resetPage();
+  s.images = [];
+  s.isDetailMode = false;
+  s.selected = [];
+
+  if (!ignoreHistory) {
+    w.UrlStateService.setState({ view: 'community', folder: null, smartfolder: null, tag: null, color: null });
+  }
+
+  let lng2locale: any = {
+    "zh_CN": "cn",
+    "zh_TW": "tw",
+    "ja_JP": "jp"
+  };
+  let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
+  s.$root.$broadcast("OPEN_URL_IN_PANEL", `${baseUrl}`);
+  w.$bodyScope.leaveDetailMode();
+}
+
+/* openAllTags（bundle 36889-36911 逐字：同视图有色早退 + ScrollbarSaver 存 + rebindRefresh +
+   TagManager.renderTagsResult（scope 字段 TagManager，48351）50ms 延迟——**无 imageSize/
+   reload 面，bundle 原样**） */
+export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.viewMode === 'alltags' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) return;
+
+  w.ScrollbarSaver.saveScrollPosition();
+
+  s.viewMode = 'alltags';
+  s.$root.currentFocus = "sidebar";
+  s.resetPage();
+  s.images = [];
+  s.isDetailMode = false;
+  s.selected = [];
+
+  if (!ignoreHistory) {
+    w.UrlStateService.setState({ view: 'alltags', folder: null, smartfolder: null, tag: null, color: null });
+  }
+
+  s.rebindRefresh();
+  w.analytics.screenView('AllTags');
+  $timeout(() => {
+    s.TagManager.renderTagsResult();
+  }, 50);
+}
+
+/* openTrash（bundle 36969-36996 逐字：早退 + ScrollbarSaver 存取 + trash thumbSize 键 +
+   updateListHeight + screenView） */
+export function machineryOpenTrash(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.viewMode === 'trash' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      s.leaveDetailMode();
+    }
+    return;
+  }
+  w.ScrollbarSaver.saveScrollPosition();
+
+  s.viewMode = 'trash';
+  s.resetPage();
+  s.$root.currentFocus = "sidebar";
+
+  w.$("#image-drop-area").hide();
+  $timeout.cancel(openTrashTimeout);
+  openTrashTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'trash', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.trash") || 150;
+    s.imageSize.height = parseInt(s.imageSize.height);
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    w.$("#sidebar-item-container").scrollTop(0);
+    s.reload();
+    w.analytics.screenView('Trash');
+  }, 50);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -6107,9 +6345,17 @@ export function applyDataMachineryScope(): void {
   s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);
   s.addVideoComment = (video: any, videoElem: any) => machineryAddVideoComment(s, video, videoElem);
   s.newFileFromTemplate = (ext: any) => machineryNewFileFromTemplate(s, ext);
+  // c18g-2：视图开启器族
+  s.openRandom = (ignoreHistory: any, callback: any) => machineryOpenRandom(s, ignoreHistory, callback);
+  s.openUnfiled = (ignoreHistory: any) => machineryOpenUnfiled(s, ignoreHistory);
+  s.openUntagged = (ignoreHistory: any) => machineryOpenUntagged(s, ignoreHistory);
+  s.openRecent = (ignoreHistory: any) => machineryOpenRecent(s, ignoreHistory);
+  s.openCommunity = (ignoreHistory: any) => machineryOpenCommunity(s, ignoreHistory);
+  s.openAllTags = (ignoreHistory: any) => machineryOpenAllTags(s, ignoreHistory);
+  s.openTrash = (ignoreHistory: any) => machineryOpenTrash(s, ignoreHistory);
 
   (window as any).__eagleDataMachinery = {
-    version: 33,
+    version: 34,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -6220,6 +6466,13 @@ export function applyDataMachineryScope(): void {
     prevGifFrame: 'machinery',
     addVideoComment: 'machinery',
     newFileFromTemplate: 'machinery',
+    openRandom: 'machinery',
+    openUnfiled: 'machinery',
+    openUntagged: 'machinery',
+    openRecent: 'machinery',
+    openCommunity: 'machinery',
+    openAllTags: 'machinery',
+    openTrash: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

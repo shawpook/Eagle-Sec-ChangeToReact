@@ -3023,6 +3023,18 @@ version 31）**：
 >   item 矛盾守卫原样——实际恒 false**）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7d-1 外部站点/教程/试用/多开/重命名入口/TouchID（2026-09-03；version 46）**：
+> - machineryOpenPinterest（26859 三语逐字）/openHuaban/openArtstation（shell 经
+>   w.electron.shell——与 bundle 19019 解构同源）、machineryQuickOpenFolder（44900 逐字：
+>   ignoreReload 分流 + 60/页倒序定位 + 藏容器 reload 500ms select/autoScroll/显容器）、
+>   machineryMultipleOpenSmartFolder（与 Folder 版对称）、machineryRenameFolder/
+>   renameSmartFolder（editable + 双 100/200ms focus——bundle 原样双写）、
+>   machineryShowTutorial（themePath filter + 四语文档跳转）、machineryOpenTrialModal
+>   （ipc 统一表达式）、machineryUnlockFolderWithTouchID（async；**remote 为 bundle 19020
+>   词法绑定 → window.require('@electron/remote') 惰性取**——nodeIntegration 两期可达；
+>   shake 动画/焦点回框逐字）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

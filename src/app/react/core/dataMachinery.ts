@@ -8121,6 +8121,245 @@ export function machineryUpdateTxtItem(s: any, item: any): void {
   }
 }
 
+/* ── b1-7d-1：外部站点 opener 族/教程/试用/多开/重命名入口/TouchID ────── */
+
+/* openPinterest（bundle 26859-26871 逐字三语）+ openHuaban（26873）+ openArtstation
+   （26877 广播）；shell 经 w.electron.shell（19019 解构同源） */
+export function machineryOpenPinterest(s: any): void {
+  const w = window as any;
+  switch (s.$root.preferences.general.language) {
+    case 'zh_CN':
+      w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/828-import-from-pinterest");
+      break;
+    case 'zh_TW':
+      w.electron.shell.openExternal("https://docs-tw.eagle.cool/article/950-import-from-pinterest");
+      break;
+    default:
+      w.electron.shell.openExternal("https://docs-en.eagle.cool/article/517-import-from-pinterest");
+      break;
+  }
+}
+
+export function machineryOpenHuaban(s: any): void {
+  const w = window as any;
+  w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/402-import-from-huaban");
+}
+
+export function machineryOpenArtstation(s: any): void {
+  s.$root.$broadcast("IMPORT_ARTSTATION");
+}
+
+/* quickOpenFolder（bundle 44900-44936 逐字：openFolder(ignoreReload=true)/openAll 分流 +
+   changeSidebarIndex 200ms + 自动定位（60/页倒序扫 allData → startCursor + 藏容器 reload +
+   500ms select(undefined,target)+autoScroll+显容器）） */
+export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  var target = t || s.selected[0];
+  if (folder) {
+    s.openFolder(folder, undefined, undefined, true);
+  }
+  else {
+    s.openAll();
+  }
+  setTimeout(function () {
+    s.changeSidebarIndex(folder);
+    s.$evalAsync();
+  }, 200);
+  // 自动定位
+  if (target) {
+    setTimeout(function () {
+      for (var i = s.allData.length - 1; i >= 0; i--) {
+        var image = s.allData[i];
+        if (target === image) {
+          var startPage = parseInt(i / 60 as any);
+          console.log(`目标在第 ${startPage} 页`);
+          s.startCursor = startPage;
+          w.$("#box-container").css("visibility", "hidden");
+          s.reload();
+          s.selected = [];
+          $timeout(function () {
+            s.select(undefined, target);
+            machineryAutoScroll(s, undefined);
+            setTimeout(function () {
+              w.$("#box-container").css("visibility", "initial");
+            }, 100);
+          }, 500);
+          s.$evalAsync();
+        }
+      }
+    }, 200);
+  }
+}
+
+/* multipleOpenSmartFolder（bundle 38172-38197 逐字：与 multipleOpenFolder 对称
+   （smartFolder 多选态切换，currentFolder 清空）） */
+export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needReload: any): void {
+  s.resetFilter();
+  s.keyword = "";
+  s.$root.currentFocus = "sidebar";
+  s.viewMode = undefined;
+  s.currentTag = undefined;
+  s.startCursor = 0;
+  s.currentFolder = undefined;
+  s.$root.selectedFolders = [];
+  s.$root.selectedFoldersMappings = {};
+  var idx = s.$root.selectedSmartFolders.indexOf(smartFolder);
+  if (idx === -1) {
+    s.$root.selectedSmartFolders.push(smartFolder);
+    s.$root.selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
+    if (needReload) {
+      s.startCursor = 0;
+      s.reload();
+    }
+    s.currentId = 'smart-folder-' + smartFolder.id;
+  }
+  else {
+    if (s.$root.selectedSmartFolders.length > 1) {
+      s.$root.selectedSmartFolders.splice(idx, 1);
+      delete s.$root.selectedSmartFoldersMappings[smartFolder.id];
+      if (needReload) {
+        s.startCursor = 0;
+        s.reload();
+      }
+    }
+    else {
+      return;
+    }
+  }
+}
+
+/* renameFolder/renameSmartFolder（bundle 38163 邻域/38168 邻域逐字：editable + newFolderName
+   + 双 100/200ms focus select——bundle 原样双写） */
+export function machineryRenameFolder(s: any, event: any, folder: any): void {
+  const w = window as any;
+  // if (folder.password && !folder.isUnLock) return;
+  s.viewMode = undefined;
+  s.currentFolder = folder;
+  folder.editable = true;
+  folder.newFolderName = folder.name;
+  setTimeout(function () {
+    w.$("#folder-input-" + folder.id).focus().select();
+  }, 100);
+  setTimeout(function () {
+    w.$("#folder-input-" + folder.id).focus().select();
+  }, 200);
+}
+
+export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any): void {
+  const w = window as any;
+  s.viewMode = undefined;
+  s.currentSmartFolder = smartFolder;
+  smartFolder.editable = true;
+  smartFolder.newFolderName = smartFolder.name;
+  setTimeout(function () {
+    w.$("#folder-input-" + smartFolder.id).focus().select();
+  }, 100);
+  setTimeout(function () {
+    w.$("#folder-input-" + smartFolder.id).focus().select();
+  }, 200);
+}
+
+/* showTutorial（bundle 37xxx 逐字：空库+单历史+无文件夹 && 教程未看过守卫 + themePath
+   filter（getFilter()）+ swal 四语 open 文档跳转） */
+export function machineryShowTutorial(s: any): void {
+  const w = window as any;
+  if (s.all.length === 0 && s.libraryHistory.length === 1 && s.folders.length === 0) {
+    if (w.localStorage["eagle.show.tutorial"] !== "true") {
+      const theme = getFilter()('themePath')(s.theme);
+
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-image">
+                                    <img width="384" height="216" src="assets/images/${theme}/illustrations/illustration-tutorial-${s.platform}.png" style="width: calc(100% + 32px);margin-bottom: 12px;aspect-ratio: 768/432;margin-left: -16px;margin-right: -16px;margin-top: -16px;">
+                                </div>
+                                <h4 class="alert-title">${w.i18n.__('dialog.tutorial.title')}</h4>
+                                <p class="alert-desc">${w.i18n.__('dialog.tutorial.desc')}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "tutorial-modal",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__('dialog.tutorial.open'),
+        cancelButtonText: w.i18n.__('dialog.tutorial.later'),
+      }).then(function (result: any) {
+        w.localStorage.setItem("eagle.show.tutorial", "true");
+        switch (w.preferences.general.language) {
+          case 'zh_CN':
+            w.electron.shell.openExternal('https://docs-cn.eagle.cool/article/167-tutorial-1-overview-of-library-and-interface')
+            break;
+          case 'zh_TW':
+            w.electron.shell.openExternal('https://docs-tw.eagle.cool/article/288-tutorial-1-overview-of-library-and-interface')
+            break;
+          case 'ja_JP':
+            w.electron.shell.openExternal('https://docs-jp.eagle.cool/article/1043-tutorial-1-overview-of-library-and-interface')
+            break;
+          default:
+            w.electron.shell.openExternal('https://docs-en.eagle.cool/article/266-tutorial-1-overview-of-library-and-interface')
+        }
+      });
+
+    }
+  }
+}
+
+/* openTrialModal（bundle 37xxx 逐字：ipcRenderer 统一表达式 send('open-trial-modal')） */
+export function machineryOpenTrialModal(s: any, trialRemain: any): void {
+  const w = window as any;
+  if (trialRemain) {
+    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    ipc.send('open-trial-modal', trialRemain);
+  }
+}
+
+/* unlockFolderWithTouchID（bundle 37xxx 逐字 async：canUseTouchID 守卫 + remote
+   systemPreferences promptTouchID（@electron/remote 为 bundle 19020 词法绑定 →
+   window.require('@electron/remote') 惰性取——nodeIntegration 两期可达）+ 解锁链 +
+   失败 shake 动画 500ms + 焦点回密碼框） */
+export async function machineryUnlockFolderWithTouchID(s: any, event: any): Promise<void> {
+  const w = window as any;
+  // 防止事件冒泡
+  if (event) {
+    event.stopPropagation();
+  }
+
+  // 檢查設備支援
+  if (!s.canUseTouchID) {
+    return;
+  }
+
+  try {
+    await w.require('@electron/remote').systemPreferences.promptTouchID(w.i18n.__('unlock.folder.touchid.prompt') || '驗證以解鎖文件夾');
+    // 驗證成功，解鎖文件夾
+    s.currentFolder.isUnLock = true;
+    s.isLoading = true;
+    s.updateSidebarList();
+    s.calculateImageBinding({ ignoreSort: true }, function () {
+      s.reload();
+      s.updateSelection();
+      s.isLoading = false;
+      s.unlockPassword = "";
+      s.$evalAsync();
+    });
+  } catch (err) {
+    // 驗證失敗或用戶取消
+    console.log('Touch ID 驗證失敗:', err);
+
+    // 顯示錯誤動畫
+    w.$(".touchid-btn-inline").addClass("animation--shake-horizontal");
+    setTimeout(() => {
+      w.$(".touchid-btn-inline").removeClass("animation--shake-horizontal");
+    }, 500);
+
+    // 焦點回到密碼輸入框
+    setTimeout(() => {
+      w.$("#lock-password-input").focus();
+    }, 100);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -8355,9 +8594,20 @@ export function applyDataMachineryScope(): void {
   s.setFolderOrder = (folder: any, orderBy: any, ignoreReload: any) => machinerySetFolderOrder(s, folder, orderBy, ignoreReload);
   s.setSmartFolderOrder = (folder: any, orderBy: any) => machinerySetSmartFolderOrder(s, folder, orderBy);
   s.updateTxtItem = (item: any) => machineryUpdateTxtItem(s, item);
+  // b1-7d-1：外部站点/教程/试用/多开/重命名入口/TouchID
+  s.openPinterest = () => machineryOpenPinterest(s);
+  s.openHuaban = () => machineryOpenHuaban(s);
+  s.openArtstation = () => machineryOpenArtstation(s);
+  s.quickOpenFolder = (folder: any, t: any) => machineryQuickOpenFolder(s, folder, t);
+  s.multipleOpenSmartFolder = (smartFolder: any, needReload: any) => machineryMultipleOpenSmartFolder(s, smartFolder, needReload);
+  s.renameFolder = (event: any, folder: any) => machineryRenameFolder(s, event, folder);
+  s.renameSmartFolder = (event: any, smartFolder: any) => machineryRenameSmartFolder(s, event, smartFolder);
+  s.showTutorial = () => machineryShowTutorial(s);
+  s.openTrialModal = (trialRemain: any) => machineryOpenTrialModal(s, trialRemain);
+  s.unlockFolderWithTouchID = (event: any) => machineryUnlockFolderWithTouchID(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 45,
+    version: 46,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -8543,6 +8793,16 @@ export function applyDataMachineryScope(): void {
     setFolderOrder: 'machinery',
     setSmartFolderOrder: 'machinery',
     updateTxtItem: 'machinery',
+    openPinterest: 'machinery',
+    openHuaban: 'machinery',
+    openArtstation: 'machinery',
+    quickOpenFolder: 'machinery',
+    multipleOpenSmartFolder: 'machinery',
+    renameFolder: 'machinery',
+    renameSmartFolder: 'machinery',
+    showTutorial: 'machinery',
+    openTrialModal: 'machinery',
+    unlockFolderWithTouchID: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

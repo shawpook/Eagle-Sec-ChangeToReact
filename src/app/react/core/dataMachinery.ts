@@ -7702,6 +7702,223 @@ export function machineryRemoveTagGroup(s: any, group: any): void {
   }
 }
 
+/* ── b1-7b：幻灯片对/锁屏/调色板/布局/过滤入口/多开 ──────────────────── */
+
+/* enterSlideshowMode（bundle 23824-23839 逐字：**!selected.length === 0 双重否定怪癖
+   逐字保留**（实际效果为空选才能进入）+ 全屏 + enterDetailMode + 700/300ms 双层延迟缩放） */
+export function machineryEnterSlideshowMode(s: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.isSlideshowMode) return;
+  const duration = (w.process.platform === 'darwin') ? 300 : 100;
+  if ((!s.selected.length as any) === 0) return;
+  w.currentWindow.setFullScreen(true);
+  s.enterDetailMode(null, s.selected[0]);
+  s.isSlideshowMode = true;
+  $timeout(function () {
+    w.$(window).trigger("orientationchange");
+    w.$(window).trigger("resize");
+    $timeout(function () {
+      s.zoom(undefined);
+    }, duration);
+  }, 700);
+  w.electronLog && w.electronLog.info(`[app] Enter slideshow mode.`);
+}
+
+/* leaveSlideshowMode（bundle 23841-23856 逐字：**setFullScreen(false) 双写——bundle 原样**） */
+export function machineryLeaveSlideshowMode(s: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  const duration = (w.process.platform === 'darwin') ? 300 : 100;
+  w.currentWindow.setFullScreen(false);
+  s.isSlideshowMode = false;
+  w.currentWindow.setFullScreen(false);
+  $timeout(function () {
+    w.$(window).trigger("orientationchange");
+    w.$(window).trigger("resize");
+    $timeout(function () {
+      s.zoom(undefined);
+    }, duration);
+  }, 700);
+  w.electronLog && w.electronLog.info(`[app] Leave slideshow mode.`);
+}
+
+/* rgbToHex（bundle 28976-28981 逐字） */
+export function machineryRgbToHex(s: any, r: any, g: any, b: any): any {
+  if (r === undefined) {
+    return false;
+  }
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+}
+
+/* lockApp（bundle 29016-29023 逐字）+ focusAppUnlockPassword（29025-29034 逐字） */
+export function machineryLockApp(s: any): void {
+  const w = window as any;
+  s.$root.isAppLocked = true;
+  s.$root.initMenu();
+  setTimeout(function () {
+    machineryFocusAppUnlockPassword(s);
+  }, 100);
+}
+
+export function machineryFocusAppUnlockPassword(s: any): void {
+  const w = window as any;
+  setTimeout(() => {
+    w.$("#app-lock-password-input").focus();
+  }, 24);
+  w.$("#app-lock-password-input").on("blur", () => {
+    setTimeout(() => {
+      w.$("#app-lock-password-input").focus();
+    }, 24);
+  });
+}
+
+/* pausePalette/resumePalette（bundle 37201/37207 逐字；change-palette-pause 通道 typo
+   原样；IPCHelper c17a 接装经 window） */
+export function machineryPausePalette(s: any): void {
+  const w = window as any;
+  s.paletteQueuePaused = true;
+  w.$("#background-state-spinner .sm-spiner").removeClass("has-animation");
+  w.IPCHelper.send('change-palette-pause');
+}
+
+export function machineryResumePalette(s: any): void {
+  const w = window as any;
+  s.paletteQueuePaused = false;
+  w.$("#background-state-spinner .sm-spiner").addClass("has-animation");
+  w.IPCHelper.send('change-palette-resume');
+}
+
+/* saveLayout（bundle 37280-37286 逐字：localStorage bracket 赋值原样） */
+export function machinerySaveLayout(s: any, folder: any, layout: any): void {
+  const w = window as any;
+  if (folder) {
+    w.localStorage[`eagle.list.layout.${folder.id}`] = layout;
+  }
+  else {
+    w.localStorage[`eagle.list.layout.${s.rootDir}`] = layout;
+  }
+}
+
+/* cancelCrop（bundle 36091-36093 逐字） */
+export function machineryCancelCrop(s: any): void {
+  s.isCropMode = false;
+}
+
+/* openFilter（bundle 30173-30178 逐字）+ FILTER_ID_MAP（30204 前注释映射表逐字）+
+   toggleFilterByType（30204-30216 逐字：_.throttle(300) 实例 apply 时一次性创建 +
+   eagle.aiSearch 守卫） */
+const FILTER_ID_MAP: any = {
+  'tag': 'tags-filter-item',
+  'folder': 'folders-filter-item',
+  'color': 'color-filter-item',
+  'rating': 'rating-filter-item',
+  'shape': 'shape-filter-item',
+  'date': 'import-filter-item',  // date 實際對應 import
+  'type': 'types-filter-item',
+  'image': 'image-filter-item',
+  'size': 'size-filter-item',
+  'resolution': 'resolution-filter-item',
+  'duration': 'duration-filter-item',
+  'annotation': 'annotation-filter-item',
+  'note': 'note-filter-item',
+  'url': 'url-filter-item',
+  'semantic': 'semantic-filter-item',
+  'bpm': 'bpm-filter-item',
+  'camera': 'camera-filter-item',
+  'fonts': 'fontActivated-filter-item',  // fonts 對應 fontActivated
+  'import': 'mtime-filter-item'  // import 對應 mtime (修改時間)
+};
+
+export function machineryOpenFilter(s: any): void {
+  const w = window as any;
+  if (!w.eagle.filter.isOpen) {
+    w.eagle.filter.isOpen = true;
+    s.updateContainerHieght(true);
+  }
+}
+
+export function machineryToggleFilterByType(s: any): any {
+  const w = window as any;
+  return w._.throttle(function (filterType: any, event: any) {
+    event && event.preventDefault();
+
+    // 特殊處理：image 篩選器需要檢查 AI 搜尋
+    if (filterType === 'image' && !w.eagle.aiSearch.isInstalled) {
+      w.eagle.aiSearch.open();
+      return;
+    }
+
+    machineryOpenFilter(s);
+    const filterId = FILTER_ID_MAP[filterType];
+    if (filterId) {
+      w.$("#" + filterId).click();
+    }
+  }, 300);
+}
+
+/* getChildFoldersMaps/Map（bundle 31890/31901 逐字，controller 闭包——供 multipleOpenFolder
+   与 fns 表裸引用后备） */
+function machineryGetChildFoldersMaps(s: any, folders: any): any {
+  const w = window as any;
+  var childs: any = {};
+  for (var i = 0; i < folders.length; i++) {
+    var folder = folders[i];
+    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+      childs[child.id] = true;
+    });
+  }
+  return childs;
+}
+
+function machineryGetChildFoldersMap(s: any, folder: any): any {
+  const w = window as any;
+  var childs: any = {};
+  w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+    childs[child.id] = true;
+  });
+  return childs;
+}
+
+/* multipleOpenFolder（bundle 38128-38162 逐字：resetFilter + 多选态切换（indexOf 增删 +
+   needReload reload）+ currentFolderChildren getChildFoldersMaps） */
+export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any): void {
+  const w = window as any;
+  s.resetFilter();
+  s.keyword = "";
+  s.$root.currentFocus = "sidebar";
+  s.viewMode = undefined;
+  s.currentTag = undefined;
+  s.startCursor = 0;
+  s.currentSmartFolder = undefined;
+  s.$root.selectedSmartFolders = [];
+  s.$root.selectedSmartFoldersMappings = {};
+  var idx = s.$root.selectedFolders.indexOf(folder);
+  if (idx === -1) {
+    s.$root.selectedFolders.push(folder);
+    s.$root.selectedFoldersMappings[folder.id] = folder;
+    if (needReload) {
+      s.startCursor = 0;
+      s.reload();
+    }
+    s.currentId = 'folder-' + folder.id;
+  }
+  else {
+    if (s.$root.selectedFolders.length > 1) {
+      s.$root.selectedFolders.splice(idx, 1);
+      delete s.$root.selectedFoldersMappings[folder.id];
+      if (needReload) {
+        s.startCursor = 0;
+        s.reload();
+      }
+    }
+    else {
+      return;
+    }
+  }
+  s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -7909,9 +8126,22 @@ export function applyDataMachineryScope(): void {
   s.openStarredGroup = () => machineryOpenStarredGroup(s);
   s.openTagGroup = (group: any) => machineryOpenTagGroup(s, group);
   s.removeTagGroup = (group: any) => machineryRemoveTagGroup(s, group);
+  // b1-7b：幻灯片/锁屏/调色板/布局/过滤入口/多开
+  s.enterSlideshowMode = () => machineryEnterSlideshowMode(s);
+  s.leaveSlideshowMode = () => machineryLeaveSlideshowMode(s);
+  s.rgbToHex = (r: any, g: any, b: any) => machineryRgbToHex(s, r, g, b);
+  s.lockApp = () => machineryLockApp(s);
+  s.focusAppUnlockPassword = () => machineryFocusAppUnlockPassword(s);
+  s.pausePalette = () => machineryPausePalette(s);
+  s.resumePalette = () => machineryResumePalette(s);
+  s.saveLayout = (folder: any, layout: any) => machinerySaveLayout(s, folder, layout);
+  s.cancelCrop = () => machineryCancelCrop(s);
+  s.openFilter = () => machineryOpenFilter(s);
+  s.toggleFilterByType = machineryToggleFilterByType(s);
+  s.multipleOpenFolder = (folder: any, needReload: any) => machineryMultipleOpenFolder(s, folder, needReload);
 
   (window as any).__eagleDataMachinery = {
-    version: 43,
+    version: 44,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -8072,6 +8302,18 @@ export function applyDataMachineryScope(): void {
     openStarredGroup: 'machinery',
     openTagGroup: 'machinery',
     removeTagGroup: 'machinery',
+    enterSlideshowMode: 'machinery',
+    leaveSlideshowMode: 'machinery',
+    rgbToHex: 'machinery',
+    lockApp: 'machinery',
+    focusAppUnlockPassword: 'machinery',
+    pausePalette: 'machinery',
+    resumePalette: 'machinery',
+    saveLayout: 'machinery',
+    cancelCrop: 'machinery',
+    openFilter: 'machinery',
+    toggleFilterByType: 'machinery',
+    multipleOpenFolder: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

@@ -2995,6 +2995,23 @@ version 31）**：
 >   注释后再匹配。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7b 幻灯片/锁屏/调色板/布局/过滤入口/多开（2026-09-03；version 44）**：
+> - machineryEnterSlideshowMode/leaveSlideshowMode（23824/23841 逐字：**!selected.length === 0
+>   双重否定怪癖**（实际空选才能进入）+ setFullScreen(false) 双写——均 as any/原样保留）+
+>   machineryRgbToHex（28976）、machineryLockApp/focusAppUnlockPassword（29016/29025）、
+>   machineryPausePalette/resumePalette（37201/37207，change-palette-pause 通道 typo 原样）、
+>   machinerySaveLayout（37280 localStorage bracket 原样）、machineryCancelCrop（36091）、
+>   machineryOpenFilter（30173）+ FILTER_ID_MAP 模块常量（19 类型映射逐字）+
+>   machineryToggleFilterByType（_.throttle(300) apply 时创建 + eagle.aiSearch 守卫）、
+>   machineryGetChildFoldersMaps/Map（31890/31901 闭包域内移植）+
+>   machineryMultipleOpenFolder（38128 逐字多选态切换）。
+> - **发现 fns 表裸引用隐患**：controllerFns.ts 944/3099 裸引 getChildFoldersMaps/Map
+>   （bundle 闭包，ESM 不可达）——@ts-nocheck 掩盖，运行时若走该路径即崩。**fns 表裸引用
+>   审计列入 b1 终审清单**（machineryGetChildFoldersMaps/Map 已可作为后备）。
+> - gotoTop/gotoBottom 与 resetNgGridLayoutData（ngGridLayout 指令隐式全局 66970）耦合
+>   React boxGridEngine——归 grid 域切片。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

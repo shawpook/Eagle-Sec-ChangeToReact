@@ -2843,6 +2843,15 @@
 >   reload machinery 版）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **c18f-2 openParentFolder/createTxtFileFromTemplate/setFolderCover（2026-09-03；
+version 31）**：
+> - machineryOpenParentFolder（38384-38388 逐字：parent 解析 + openFolder scope 解析）、
+>   machineryCreateTxtFileFromTemplate（37329-37334 逐字：newFileFromTemplate("txt") scope
+>   解析——文件创建域后续独立切片）、machinerySetFolderCover（41438-41454 逐字：coverId +
+>   covers[0] sub-folder-cover 模板（aspect-ratio 内联）+ getFilter() 复刻 notify.folder.
+>   setAsCover + notify/saveFolder machinery 版）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

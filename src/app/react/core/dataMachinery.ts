@@ -5521,6 +5521,41 @@ export function machineryRefreshRandom(s: any): void {
   }
 }
 
+/* ── c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover ── */
+
+/* openParentFolder（bundle 38384-38388 逐字；openFolder 经 scope 解析） */
+export function machineryOpenParentFolder(s: any): void {
+  if (s.currentFolder && s.currentFolder.parent) {
+    s.openFolder(s.folderMappings[s.currentFolder.parent]);
+  }
+}
+
+/* createTxtFileFromTemplate（bundle 37329-37334 逐字；newFileFromTemplate 为 bundle scope
+   函数经 scope 解析——文件创建域后续独立切片） */
+export function machineryCreateTxtFileFromTemplate(s: any, event: any): void {
+  event && event.preventDefault();
+  s.newFileFromTemplate("txt");
+  s.$evalAsync();
+}
+
+/* setFolderCover（bundle 41438-41454 逐字；FileUrlHelper 经 window、getFilter() 复刻
+   $filter('i18n')、notify/saveFolder 走 machinery 版） */
+export function machinerySetFolderCover(s: any): void {
+  const item = s.selected[0];
+  if (!s.currentFolder || !item) return;
+  s.currentFolder.coverId = item.id;
+  var thumbnailUrl = (window as any).FileUrlHelper.getThumbnailUrl(item);
+  s.currentFolder.covers[0] = `<img class="sub-folder-cover" src="${thumbnailUrl}" style="aspect-ratio: ${s.selected[0].width / s.selected[0].height};">`;
+  var message = getFilter()('i18n')("notify.folder.setAsCover", [
+    { "property": "folderName", "value": s.currentFolder.name }
+  ]);
+  s.notify({
+    message: message,
+    duration: 750
+  });
+  s.saveFolder();
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -5652,9 +5687,13 @@ export function applyDataMachineryScope(): void {
   s.zoomOut = (event: any) => machineryZoomOut(s, event);
   s.saveHandler = () => machinerySaveHandler(s);
   s.refreshRandom = () => machineryRefreshRandom(s);
+  // c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover
+  s.openParentFolder = () => machineryOpenParentFolder(s);
+  s.createTxtFileFromTemplate = (event: any) => machineryCreateTxtFileFromTemplate(s, event);
+  s.setFolderCover = () => machinerySetFolderCover(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 30,
+    version: 31,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -5752,6 +5791,9 @@ export function applyDataMachineryScope(): void {
     zoomOut: 'machinery',
     saveHandler: 'machinery',
     refreshRandom: 'machinery',
+    openParentFolder: 'machinery',
+    createTxtFileFromTemplate: 'machinery',
+    setFolderCover: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

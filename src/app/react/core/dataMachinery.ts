@@ -7443,6 +7443,128 @@ export function machineryRemoveSelectedSmartFolders(s: any): void {
   }, function () { });
 }
 
+/* ── b1-6c：removeFolderContents（bundle 46345-46457 逐字）────────────── */
+
+/* removeFolderContents（清空当前文件夹内容：isForceToTrash 分流（多夹图仅摘索引 vs
+   isDeleted）+ 父夹/子夹 imagesMappings 同步 + 音效 + notify undo（isDeleted/folders 回滚）
+   + 自动选下一张 + gl:removeItems + RANDOM 视图跳过 rebindRefresh 分支 + electronLog 双
+   分支；autoScroll/updateFilterCounts/forceFitImageSize/ScrollbarSaver 均 machinery 版） */
+export function machineryRemoveFolderContents(s: any, params: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  var origin: any[] = [];
+  var originFolders: any[] = [];
+  var isForceToTrash = params.isForceToTrash;
+  let now = Date.now();
+  s.selected.forEach(function (image: any) {
+    origin.push(image);
+    originFolders.push(w.angular.copy(image.folders));
+    s.currentFolder.imagesMappings[image.id] = false;
+    if (s.currentFolder.parent) {
+      if (s.folderMappings[s.currentFolder.parent].imagesMappings) {
+        s.folderMappings[s.currentFolder.parent].imagesMappings[image.id] = false;
+      }
+    }
+
+    // 遍歷所有子資料夾，移除子資料夾也出現這張圖的索引
+    if (s.currentFolder.children) {
+      s.currentFolder.children.forEach(function (child: any) {
+        child.imagesMappings[image.id] = false;
+      });
+    }
+
+    // 如果图片包含多个文件夹
+    if (!isForceToTrash && image.folders && image.folders.length > 1) {
+      var idx = image.folders.indexOf(s.currentFolder.id);
+      if (idx > -1) {
+        image.folders.splice(idx, 1);
+      }
+    }
+    else {
+      image.isDeleted = true;
+      image.deletedTime = now;
+    }
+    machineryUpdateFilterCounts(s, image, -1, now);
+  });
+
+  machineryAutoScroll(s, undefined);
+
+  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+    s.removeSound.play();
+  }
+
+  var message = getFilter()('i18n')("notify.image.remove", [
+    { "property": "count", "value": s.selected.length },
+  ]);
+  if (s.selected.length === 1) { message = message.replace("images", "image"); }
+
+  s.$root.notify({
+    message: message,
+    duration: 4000,
+  }, function () {
+    let now = Date.now();
+    origin.forEach(function (image: any, index: any) {
+      image.isDeleted = false;
+      image.folders = originFolders[index];
+      delete image.deletedTime;
+      machineryUpdateFilterCounts(s, image, 1, now);
+    });
+    s.selected = origin;
+    if (s.isDetailMode) {
+      s.current = origin[0];
+    }
+    s.calculateImageBinding({ ignoreSort: true }, function () {
+      s.rebindRefresh();
+      w.ScrollbarSaver.restoreScrollPosition();
+    });
+    s.zoom();
+    w.ayncsImagesChange(origin);
+  });
+
+  w.ayncsImagesChange(s.selected);
+  w.hiddenByCurrentFilter(s.selected);
+
+  // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
+  s.lastIndex = s.getSelection().start;
+  var next = s.allData[s.lastIndex + s.selected.length];
+  var prev = s.allData[s.lastIndex - 1];
+  if (next) {
+    s.selected = [next];
+    if (s.isDetailMode) {
+      s.current = next;
+    }
+  } else if (prev) {
+    s.selected = [prev];
+    if (s.isDetailMode) {
+      s.current = prev;
+    }
+  } else {
+    s.selected = [];
+    s.leaveDetailMode();
+  }
+  $timeout(function () {
+    machineryForceFitImageSize(s, s.current, undefined);
+    s.zoom();
+  }, 100);
+  w.ScrollbarSaver.saveScrollPosition();
+
+  var itemElements = machineryGetSelectedItemElements(s);
+  s.$root.$broadcast("gl:removeItems", itemElements);
+
+  machineryAutoScroll(s, undefined);
+
+  s.calculateImageBinding({ ignoreSort: true }, function () {
+    if (s.currentFolder && s.currentFolder.orderBy === "RANDOM") { }
+    else {
+      s.rebindRefresh(true);
+    }
+    s.updateSelection();
+    if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+    else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+  });
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -7638,9 +7760,11 @@ export function applyDataMachineryScope(): void {
   s.removeFolder = (folder: any, params: any) => machineryRemoveFolder(s, folder, params);
   s.removeSelectedFolders = () => machineryRemoveSelectedFolders(s);
   s.removeSelectedSmartFolders = () => machineryRemoveSelectedSmartFolders(s);
+  // b1-6c：removeFolderContents
+  s.removeFolderContents = (params: any) => machineryRemoveFolderContents(s, params);
 
   (window as any).__eagleDataMachinery = {
-    version: 41,
+    version: 42,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -7791,6 +7915,7 @@ export function applyDataMachineryScope(): void {
     removeFolder: 'machinery',
     removeSelectedFolders: 'machinery',
     removeSelectedSmartFolders: 'machinery',
+    removeFolderContents: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

@@ -2973,6 +2973,17 @@ version 31）**：
 > - 教训：**单条 heredoc 体积超限会被 bash 截断**（第二片首写失败）——大函数必须哨兵分片。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-6c removeFolderContents（2026-09-03；version 42）**：
+> - machineryRemoveFolderContents（46345-46457 逐字：isForceToTrash 分流（多夹图仅摘索引
+>   vs isDeleted+deletedTime）+ 父夹/子夹 imagesMappings 同步 + 音效 + notify undo
+>   （isDeleted/folders 回滚 + calculateImageBinding/ScrollbarSaver）+ 自动选下一张（next/
+>   prev/空三档）+ gl:removeItems + RANDOM 视图跳过 rebindRefresh 空体分支 + electronLog
+>   双分支；updateFilterCounts/autoScroll/forceFitImageSize/ScrollbarSaver 全 machinery 直调）。
+> - **删除族 b1-6a/b/c 三片收口：machineryRemoveSelected 的全部下游（checkOperationSafety
+>   双件/removeFolder 双层/removeSmartFolder 双层/多选删除/Contents 清空）全部 machinery 供给，
+>   trash 永久删除链闭环**。缺口 59 → 55。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

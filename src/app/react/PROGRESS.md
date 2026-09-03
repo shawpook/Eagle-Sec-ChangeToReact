@@ -3123,6 +3123,40 @@ version 31）**：
 >   非回归；复跑通过。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-8 后全量 suite 绿 + 环境缺陷定性 + b1-9 终审清单（2026-09-03）**：
+> - **全量 suite：FULL_REGRESSION_ISOLATED_OK（EXIT:0，32 OK 全链）**——但需临时
+>   workaround 才能达成：**宿主级缺陷**——本机（H: 盘事件后）对 node 原生
+>   `fs.cpSync(recursive)` 触发静默进程击杀（exit 127，无栈无输出；最小复现：任意目录对
+>   含空目录对均死；手写 readdir+copyFileSync 循环存活；沙箱内外一致——非 ZCode 沙箱所
+>   致，疑似 AV/过滤驱动）。受击测试链：library-migration（migrate 端点 cpSync）→
+>   isolated 两度 ECONNRESET 于同一关。**临时补丁（未提交，终审验证后回退）**：
+>   backend/src/{library-migration,importer,library-backup-service}.js +
+>   tests/roadmap-panels.mjs 的 cpSync → copyRecursiveManual 循环（带 TEMP-SANDBOX-
+>   WORKAROUND 标记）。m1 markdown-thumbnail 超时为 2550 行既有竞争 flake（本轮含/不含
+>   改动两态均现，stash 二分排除回归）。
+> - **b1-9 终审清单（去 Angular 前置提取面）**：React w.* 消费名 148，shims 已供
+>   （$bodyScope/electron/electronSettings/chineseConvert/languageBCP/pinyinlite/
+>   pluginModule/tinyPinyin/…）+ vendor 已供（match-rules 全 isMatch*/DeltaE/colorConvert、
+>   hover-preview、infinitegrid/$）后，**真缺口 60 名**，分层：
+>   - 基础设施（require/remote 可直取）：appRoot/fse/ipcRenderer/currentWindow/resourcesPath/
+>     backgroundWindowID/EAGLE_THUMBNAIL_TEMP_PATH/IS_DIRECTORY/machineID/isVentura/
+>     EagleConfig(+VIDEO/AUDIO/FONT/SPECIAL_TYPES/VIDEO_TYPES_GLOBAL)/electronLog/preferences；
+>   - 纯函数批（eagle-utils vendor 候选）：guid/getHashID/getRawPath/getThumbnailPath/getExt/
+>     fuzzy_match/cloneTree/cartesianProduct/unicodeNormalize/decodeBase64Image/readChunk/
+>     writeFileAtomic/fileSize/sanitize/walk/junk/debounce/throttle/installedFonts/fontFolder；
+>   - 异步批量 fns：ayncsImagesChange/ayncsImagesRemove/hiddenByCurrentFilter/
+>     updateWindowProgressBar/checkBackgroundHeartbeat/heartbeat*；
+>   - 有状态管理器（大件，bundle 顶层模块逐字提取）：APIServer/initAPIServer/startAPIServer/
+>     stopAPIServer/Registration/QuickAccessManager/RecentFileManager/ScrollbarSaver/
+>     SlowNotify/PERFORMANCE_MONITOR/ACCESS/analytics/FileUrlHelper；
+>   - 网格/可变状态（React boxGridEngine 协同）：ig/resetNgGridLayoutData/rectSelecting/
+>     rectSelection/tagRectSelecting/windowMouseX/dragging/customDimesion1。
+> - 终审工序（b1-9 批次）：a) 基础设施+纯函数批 vendor 化 → b) 异步批/管理器批逐文件
+>   bundle 顶层逐字提取（c18a 先例）→ c) index.html 摘除 app.bundle.js + ng-* 属性 →
+>   d) m1+isolated 全量验证（此后 isolated 需 workaround 在树）。
+> - 附件：tests-tmp/vendor-extract-inventory.py（盘点脚本）、tests-tmp/fns-bare-audit.py
+>   （裸引用审计）、tests-tmp/vendor-inventory-out.txt（原始清单）——均不提交。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

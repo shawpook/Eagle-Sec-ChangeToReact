@@ -8360,6 +8360,195 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
   }
 }
 
+/* ── b1-7d-2：getSmartFolderList/getFolderList（侧栏树渲染核心）───────── */
+
+/* getSmartFolderList（bundle 42644-42737 逐字：tree.walk 全树 → guidelines 色谱继承 +
+   parent 指针维护（;;双分号原样）+ smartFolderList/mappings 双登记 + depth/size/vstype/
+   styles 首尾位标注 + isVisible 三态 + 根层/过滤期/父可见三档入列） */
+export function machineryGetSmartFolderList(s: any): any[] {
+  const w = window as any;
+  let list: any[] = [];
+  let isFiltering = !!s.folderKeyword;
+  let guidelinesMap: any = {};
+
+  s.smartFolderList = [];
+
+  w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+
+    // 計算 guidelines 顏色及數量
+    let guidelines: any[] = [];
+    if (parent && guidelinesMap[parent.id]) {
+      const parentGuidelines = guidelinesMap[parent.id];
+      guidelines = [...parentGuidelines, smartFolder.iconColor || 'normal'];
+    }
+    else {
+      guidelines = [smartFolder.iconColor || 'normal'];
+    }
+    guidelinesMap[smartFolder.id] = guidelines;
+
+    var idx;
+    var isVisible = false;
+
+    if (parent) {
+      smartFolder.parent = parent.id;;
+    }
+    else {
+      delete smartFolder.parent;
+    }
+
+    // 列表版本 SmartFolders
+    s.smartFolderList.push(smartFolder);
+
+    s.smartFolderMappings[smartFolder.id] = smartFolder;
+
+    smartFolder.depth = depth;
+    smartFolder.size = 27;
+    smartFolder.vstype = 'smartFolder';
+    smartFolder.guidelines = guidelines.slice(0, guidelines.length - 1);
+    smartFolder.styles = {
+      depth: depth,
+      first: false,
+      last: false
+    };
+
+    if (parent) {
+      smartFolder.isVisible = smartFolder.isExpand && parent.isVisible;
+    }
+    else {
+      smartFolder.isVisible = smartFolder.isExpand;
+    }
+
+    if (depth !== 0 && parent && parent.children) {
+      idx = parent.children.indexOf(smartFolder);
+      if (idx === 0 && parent.children.length > 1) {
+        smartFolder.styles.first = true;
+        smartFolder.styles.last = false;
+      }
+      else if (idx === 0 && parent.children.length === 1) {
+        smartFolder.styles.first = false;
+        smartFolder.styles.last = true;
+      }
+      else if (idx === parent.children.length - 1) {
+        smartFolder.styles.first = false;
+        smartFolder.styles.last = true;
+      }
+      else {
+        smartFolder.styles.first = false;
+        smartFolder.styles.last = false;
+      }
+    }
+    if (smartFolder && smartFolder.isExpand && smartFolder.children && smartFolder.children.length > 0) {
+      smartFolder.styles.last = true;
+    }
+
+    // 决定是否要在画面上显示
+    if (!parent) {
+      list.push(smartFolder);
+    }
+    else if (isFiltering) {
+      list.push(smartFolder);
+    }
+    else {
+      if (smartFolder && parent.isVisible) {
+        list.push(smartFolder);
+      }
+    }
+
+  });
+
+  return list;
+}
+
+/* getFolderList（bundle 42738-42823 逐字：与 Smart 版同构 + 密码夹可见性三态
+   （parent.password → isExpand && parent.isVisible && !!parent.isUnLock）+ 无
+   smartFolderList/mappings 登记面——bundle 原样） */
+export function machineryGetFolderList(s: any): any[] {
+  const w = window as any;
+  let list: any[] = [];
+  let isFiltering = !!s.folderKeyword;
+  let guidelinesMap: any = {};
+
+  w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any, depth: any) {
+
+    // 計算 guidelines 顏色及數量
+    let guidelines: any[] = [];
+    if (parent && guidelinesMap[parent.id]) {
+      const parentGuidelines = guidelinesMap[parent.id];
+      guidelines = [...parentGuidelines, folder.iconColor || 'normal'];
+    }
+    else {
+      guidelines = [folder.iconColor || 'normal'];
+    }
+    guidelinesMap[folder.id] = guidelines;
+
+    var idx;
+    folder.size = 27;
+    folder.vstype = 'folder';
+    folder.guidelines = guidelines.slice(0, guidelines.length - 1);
+    folder.styles = {
+      depth: depth,
+      first: false,
+      last: false
+    };
+
+    if (parent) {
+      if (parent.password) {
+        folder.isVisible = folder.isExpand && parent.isVisible && !!parent.isUnLock;
+      }
+      else {
+        folder.isVisible = folder.isExpand && parent.isVisible;
+      }
+    }
+    else {
+      folder.isVisible = folder.isExpand;
+    }
+
+    if (depth !== 0 && parent && parent.children) {
+      idx = parent.children.indexOf(folder);
+      if (idx === 0 && parent.children.length > 1) {
+        folder.styles.first = true;
+        folder.styles.last = false;
+      }
+      else if (idx === 0 && parent.children.length === 1) {
+        folder.styles.first = false;
+        folder.styles.last = true;
+      }
+      else if (idx === parent.children.length - 1) {
+        folder.styles.first = false;
+        folder.styles.last = true;
+      }
+      else {
+        folder.styles.first = false;
+        folder.styles.last = false;
+      }
+    }
+    if (folder && folder.isExpand && folder.children.length > 0) {
+      folder.styles.last = true;
+    }
+
+    // 决定是否要在画面上显示
+    if (!parent) {
+      list.push(folder);
+    }
+    else if (isFiltering) {
+      list.push(folder);
+    }
+    else {
+      if (parent.password) {
+        if (folder && parent.isVisible && !!parent.isUnLock) {
+          list.push(folder);
+        }
+      }
+      else {
+        if (folder && parent.isVisible) {
+          list.push(folder);
+        }
+      }
+    }
+  });
+  return list;
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -8605,9 +8794,12 @@ export function applyDataMachineryScope(): void {
   s.showTutorial = () => machineryShowTutorial(s);
   s.openTrialModal = (trialRemain: any) => machineryOpenTrialModal(s, trialRemain);
   s.unlockFolderWithTouchID = (event: any) => machineryUnlockFolderWithTouchID(s, event);
+  // b1-7d-2：侧栏树渲染核心
+  s.getSmartFolderList = () => machineryGetSmartFolderList(s);
+  s.getFolderList = () => machineryGetFolderList(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 46,
+    version: 47,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -8803,6 +8995,8 @@ export function applyDataMachineryScope(): void {
     showTutorial: 'machinery',
     openTrialModal: 'machinery',
     unlockFolderWithTouchID: 'machinery',
+    getSmartFolderList: 'machinery',
+    getFolderList: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

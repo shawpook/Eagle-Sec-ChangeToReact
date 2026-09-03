@@ -3035,6 +3035,14 @@ version 31）**：
 >   shake 动画/焦点回框逐字）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7d-2 侧栏树渲染核心（2026-09-03；version 47）**：
+> - machineryGetSmartFolderList/getFolderList（42644-42823 逐字：tree.walk 全树 guidelines
+>   色谱继承 + 首尾位标注 + isVisible 三态（folder 版密码夹 isUnLock 门控）+ 根层/过滤期/
+>   父可见三档入列；Smart 版额外维护 smartFolderList/smartFolderMappings 登记与 parent
+>   指针（;;双分号原样）；Folder 版无登记面——bundle 原样）。updateSidebarList（machinery
+>   版）的两大依赖就此闭环。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

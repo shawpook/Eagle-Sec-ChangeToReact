@@ -6198,6 +6198,120 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
   }, 50);
 }
 
+/* ── b1-3：侧栏 prev/next 导航（folder/smartFolder 四向）──────────────── */
+
+/* openNextFolder（bundle 35689-35701 逐字：sidebarList folder 过滤 → 当前索引 +1 →
+   openFolder + changeSidebarIndex（machinery 版）） */
+export function machineryOpenNextFolder(s: any): void {
+  var nextFolder;
+  var listItems = s.sidebarList;
+  var folders = listItems.filter(function (item: any) {
+    return item.vstype === 'folder';
+  });
+  var idx = folders.indexOf(s.currentFolder);
+  nextFolder = folders[idx + 1];
+
+  if (nextFolder) {
+    s.openFolder(nextFolder);
+    s.changeSidebarIndex(nextFolder);
+  }
+}
+
+/* openPrevFolder（bundle 35806-35835 逐字：folder -1；越界回落 smartFolders 末项 →
+   quickAccess 末项（#quick-access-{id} click）→ openTrash） */
+export function machineryOpenPrevFolder(s: any): void {
+  const w = window as any;
+
+  var prevFolder;
+  var listItems = s.sidebarList;
+  var folders = listItems.filter(function (item: any) {
+    return item.vstype === 'folder';
+  });
+  var idx = folders.indexOf(s.currentFolder);
+  prevFolder = folders[idx - 1];
+
+  if (prevFolder) {
+    s.openFolder(prevFolder);
+    s.changeSidebarIndex(prevFolder);
+  }
+  else {
+    var quickAccessItems = listItems.filter(function (item: any) {
+      return item.vstype === 'quickAccess';
+    });
+    var smartFolders = listItems.filter(function (item: any) {
+      return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+    });
+    if (smartFolders.length > 0 && smartFolders[smartFolders.length - 1]) {
+      s.openSmartFolder(smartFolders[smartFolders.length - 1]);
+      s.changeSidebarIndex(smartFolders[smartFolders.length - 1]);
+    }
+    else if (quickAccessItems.length > 0 && quickAccessItems[quickAccessItems.length - 1]) {
+      w.$("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id).click();
+    }
+    else {
+      s.openTrash();
+    }
+  }
+}
+
+/* openNextSmartFolder（bundle 35755-35774 逐字：smartFolder(smartFolderGroup 含) 当前 +1 →
+   越界回落 folders 首项） */
+export function machineryOpenNextSmartFolder(s: any): void {
+  var nextSmartFolder;
+  var listItems = s.sidebarList;
+  var smartFolders = listItems.filter(function (item: any) {
+    return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+  });
+  var idx = smartFolders.indexOf(s.currentSmartFolder);
+  nextSmartFolder = smartFolders[idx + 1];
+  if (nextSmartFolder) {
+    s.openSmartFolder(nextSmartFolder);
+    s.changeSidebarIndex(nextSmartFolder);
+  }
+  else {
+    var folders = listItems.filter(function (item: any) {
+      return item.vstype === 'folder';
+    });
+    if (folders.length > 0) {
+      s.openFolder(folders[0]);
+      s.changeSidebarIndex(folders[0]);
+    }
+  }
+}
+
+/* openPrevSmartFolder（bundle 35775-35804 逐字：smartFolder -1 → 越界按
+   preferences.sidebar.quickAccess 门控走 quickAccess 末项或 openTrash） */
+export function machineryOpenPrevSmartFolder(s: any): void {
+  const w = window as any;
+  var prevSmartFolder;
+  var listItems = s.sidebarList;
+  var smartFolders = listItems.filter(function (item: any) {
+    return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+  });
+  var idx = smartFolders.indexOf(s.currentSmartFolder);
+  prevSmartFolder = smartFolders[idx - 1];
+  if (prevSmartFolder) {
+    s.openSmartFolder(prevSmartFolder);
+    s.changeSidebarIndex(prevSmartFolder);
+  } else {
+    // 如果有 quick access 就进入 quick access 若无，进入 Trash
+    if (s.$root.preferences.sidebar.quickAccess != 'false') {
+      var quickAccessItems = listItems.filter(function (item: any) {
+        return item.vstype === 'quickAccess';
+      });
+      if (quickAccessItems.length > 0) {
+        w.$("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id).click();
+      }
+      else {
+        s.openTrash();
+      }
+    }
+    else {
+      s.openTrash();
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -6353,9 +6467,14 @@ export function applyDataMachineryScope(): void {
   s.openCommunity = (ignoreHistory: any) => machineryOpenCommunity(s, ignoreHistory);
   s.openAllTags = (ignoreHistory: any) => machineryOpenAllTags(s, ignoreHistory);
   s.openTrash = (ignoreHistory: any) => machineryOpenTrash(s, ignoreHistory);
+  // b1-3：侧栏 prev/next 导航四向
+  s.openNextFolder = () => machineryOpenNextFolder(s);
+  s.openPrevFolder = () => machineryOpenPrevFolder(s);
+  s.openNextSmartFolder = () => machineryOpenNextSmartFolder(s);
+  s.openPrevSmartFolder = () => machineryOpenPrevSmartFolder(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 34,
+    version: 35,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -6473,6 +6592,10 @@ export function applyDataMachineryScope(): void {
     openCommunity: 'machinery',
     openAllTags: 'machinery',
     openTrash: 'machinery',
+    openNextFolder: 'machinery',
+    openPrevFolder: 'machinery',
+    openNextSmartFolder: 'machinery',
+    openPrevSmartFolder: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

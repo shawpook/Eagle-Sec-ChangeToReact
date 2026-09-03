@@ -2897,6 +2897,14 @@ version 31）**：
 >   50ms 延迟）。缺口 90 → 83。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-3 侧栏 prev/next 导航四向（2026-09-03；version 35）**：
+> - machineryOpenNextFolder/openPrevFolder（35689/35806 逐字：folder ±1；Prev 越界回落
+>   smartFolders 末项 → quickAccess 末项 → openTrash（machinery 版））、
+>   machineryOpenNextSmartFolder/openPrevSmartFolder（35755/35775 逐字：smartFolderGroup
+>   含内 ±1；Next 越界回落 folders 首项、Prev 越界按 preferences.sidebar.quickAccess 门控）。
+>   openFolder/openSmartFolder 经 scope 解析（fns 桥覆盖）。缺口 83 → 79。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

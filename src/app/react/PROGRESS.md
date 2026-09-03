@@ -2942,6 +2942,13 @@ version 31）**：
 >   + smoothZoom preload 100ms）。缺口 65 → 61。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-5b homeHandler/endHandler（2026-09-03；version 39）**：
+> - machineryHomeHandler/machineryEndHandler（35636/35650 逐字：详情 goToY 40 /
+>   goToY -99999999 + moveY -outerHeight+60（zooming 类 300ms 护栏，**复用 c9d
+>   updateZoomRatioTimeout 域内变量**——bundle 同名闭包）+ 列表 gotoTop/gotoBottom
+>   （fns 桥覆盖经 scope 解析））。缺口 61 → 59。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

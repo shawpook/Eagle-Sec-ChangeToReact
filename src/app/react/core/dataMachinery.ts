@@ -6904,6 +6904,43 @@ export function machineryPreloadImage(s: any, mode: any): void {
   }, 100);
 }
 
+/* ── b1-5b：homeHandler/endHandler（mod 上下委派目标）─────────────────── */
+
+/* homeHandler（bundle 35636-35648 逐字：详情 goToY 40（zooming 类 300ms 护栏，复用 c9d
+   updateZoomRatioTimeout 域内变量）+ 列表 gotoTop（fns 桥覆盖经 scope）） */
+export function machineryHomeHandler(s: any, event: any): void {
+  const w = window as any;
+  if (s.isDetailMode) {
+    clearTimeout(updateZoomRatioTimeout);
+    w.$("#detail-container").addClass("zooming");
+    updateZoomRatioTimeout = setTimeout(function () {
+      w.$("#detail-container").removeClass("zooming");
+    }, 300);
+    w.$("#detail-container").smoothZoom('goToY', 40);
+  }
+  else {
+    s.gotoTop();
+  }
+}
+
+/* endHandler（bundle 35650-35664 逐字：详情 goToY -99999999 + moveY -outerHeight+60 +
+   列表 gotoBottom） */
+export function machineryEndHandler(s: any, event: any): void {
+  const w = window as any;
+  if (s.isDetailMode) {
+    clearTimeout(updateZoomRatioTimeout);
+    w.$("#detail-container").addClass("zooming");
+    updateZoomRatioTimeout = setTimeout(function () {
+      w.$("#detail-container").removeClass("zooming");
+    }, 300);
+    w.$("#detail-container").smoothZoom('goToY', -99999999);
+    w.$("#detail-container").smoothZoom('moveY', -window.outerHeight + 60);
+  }
+  else {
+    s.gotoBottom();
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -7086,9 +7123,12 @@ export function applyDataMachineryScope(): void {
   s.rememberVideoCurrentTime = (item: any) => machineryRememberVideoCurrentTime(s, item);
   s.addToRecentFile = (item: any) => machineryAddToRecentFile(s, item);
   s.preloadImage = (mode: any) => machineryPreloadImage(s, mode);
+  // b1-5b：homeHandler/endHandler
+  s.homeHandler = (event: any) => machineryHomeHandler(s, event);
+  s.endHandler = (event: any) => machineryEndHandler(s, event);
 
   (window as any).__eagleDataMachinery = {
-    version: 38,
+    version: 39,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -7229,6 +7269,8 @@ export function applyDataMachineryScope(): void {
     rememberVideoCurrentTime: 'machinery',
     addToRecentFile: 'machinery',
     preloadImage: 'machinery',
+    homeHandler: 'machinery',
+    endHandler: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

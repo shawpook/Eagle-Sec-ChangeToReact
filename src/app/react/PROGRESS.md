@@ -2933,6 +2933,15 @@ version 31）**：
 >   同批核对**。缺口 68 → 65。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-5 记忆/预载族（2026-09-03；version 38）**：
+> - machineryRememberScrollTops（31142 逐字：inline/edge 跳过 + smoothZoom getChangedData
+>   快照）、machineryRememberVideoCurrentTime（31726 逐字：getVideoPlayer 闭包域内移植
+>   36159 mpv 优先 + eagle.videoPlayer.currentTime.{id} 键）、machineryAddToRecentFile
+>   （36435 逐字：1s 换人守卫 + RecentFileManager window 版）、machineryPreloadImage
+>   （36449 逐字：**supportFoamts typo 逐字保留** + currentIndex 直调 + next/prev idx-2
+>   + smoothZoom preload 100ms）。缺口 65 → 61。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

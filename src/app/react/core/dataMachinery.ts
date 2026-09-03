@@ -6811,6 +6811,99 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
   }
 }
 
+/* ── b1-5：记忆/预载族（rememberScrollTops/rememberVideoCurrentTime/addToRecentFile/
+   preloadImage + getVideoPlayer 域内闭包）──────────────────────────────── */
+
+/* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
+function machineryGetVideoPlayer(s: any): any {
+  const w = window as any;
+  var mpv = w.$(".detail-wrap mpv-video")[0];
+  if (mpv) return { el: mpv, type: 'mpv' };
+  var native = w.$(".detail-wrap video")[0];
+  if (native) return { el: native, type: 'native' };
+  return null;
+}
+
+/* rememberScrollTops（bundle 31142-31150 逐字：inline/edge 模式跳过 + smoothZoom
+   getChangedData 快照入 lastItemStates） */
+export function machineryRememberScrollTops(s: any, item: any): void {
+  const w = window as any;
+  if (s.isInlineMode) return;
+  if (s.lastZoomMode === "edge") return;
+  if (item && item.id) {
+    s.lastItemStates[item.id] = {
+      data: w.$("#detail-container").smoothZoom('getChangedData')
+    }
+  }
+}
+
+/* rememberVideoCurrentTime（bundle 31726-31736 逐字：视频类 → getVideoPlayer().el.currentTime
+   → eagle.videoPlayer.currentTime.{id} 键） */
+export function machineryRememberVideoCurrentTime(s: any, item: any): void {
+  const w = window as any;
+  if (!item) return;
+  if (w.VIDEO_TYPES[item.ext]) {
+    var player = machineryGetVideoPlayer(s);
+    if (player) {
+      var currentTime = player.el.currentTime;
+      w.localStorage.setItem("eagle.videoPlayer.currentTime." + item.id, currentTime);
+    }
+  }
+}
+
+/* addToRecentFile（bundle 36435-36443 逐字：1s 后 current 换人则不记（已換人 console）→
+   RecentFileManager.addFile（c14c 版经 window if-absent）） */
+export function machineryAddToRecentFile(s: any, item: any): void {
+  const w = window as any;
+  // 記錄在最近使用
+  setTimeout(function () {
+    if (s.current !== item) {
+      console.log("已換人，無須記錄")
+    }
+    else {
+      console.log(`添加 ${item.id} 至最近使用`)
+      w.RecentFileManager.addFile(item);
+    }
+  }, 1000);
+}
+
+// ── b1-5 域内自管（原 controller 闭包 var：preloadImageTimeout 36447 邻域）──
+let preloadImageTimeout: any = null;
+
+/* preloadImage（bundle 36449-36481 逐字：supportFoamts **typo 逐字保留** + currentIndex()
+   + next 为 idx / prev 为 idx-2 + smoothZoom('preload') 100ms 防抖） */
+export function machineryPreloadImage(s: any, mode: any): void {
+  const w = window as any;
+  const supportFoamts: any = {
+    "jpg": true,
+    "jpeg": true,
+    "png": true,
+    "webp": true,
+    "avif": true,
+    "insp": true,
+    "jfif": true,
+    "jpe": true,
+    "jxl": true,
+    "bmp": true,
+  };
+  clearTimeout(preloadImageTimeout);
+  preloadImageTimeout = setTimeout(function () {
+    const idx = machineryCurrentIndex(s);
+    const nextImage = s.allData[idx];
+    const preImage = s.allData[idx - 2];
+    if (mode === "next") {
+      if (nextImage && supportFoamts[nextImage?.ext]) {
+        w.$("#detail-container").smoothZoom('preload', nextImage);
+      }
+    }
+    else {
+      if (preImage && supportFoamts[preImage?.ext]) {
+        w.$("#detail-container").smoothZoom('preload', preImage);
+      }
+    }
+  }, 100);
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -6988,9 +7081,14 @@ export function applyDataMachineryScope(): void {
   s.sortData = (data: any, orderBy: any) => machinerySortData(s, data, orderBy);
   s.offsetScrollbar = machineryOffsetScrollbar(s);
   s.updateFilterCounts = (image: any, inc: any, now: any) => machineryUpdateFilterCounts(s, image, inc, now);
+  // b1-5：记忆/预载族
+  s.rememberScrollTops = (item: any) => machineryRememberScrollTops(s, item);
+  s.rememberVideoCurrentTime = (item: any) => machineryRememberVideoCurrentTime(s, item);
+  s.addToRecentFile = (item: any) => machineryAddToRecentFile(s, item);
+  s.preloadImage = (mode: any) => machineryPreloadImage(s, mode);
 
   (window as any).__eagleDataMachinery = {
-    version: 37,
+    version: 38,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -7127,6 +7225,10 @@ export function applyDataMachineryScope(): void {
     sortData: 'machinery',
     offsetScrollbar: 'machinery',
     updateFilterCounts: 'machinery',
+    rememberScrollTops: 'machinery',
+    rememberVideoCurrentTime: 'machinery',
+    addToRecentFile: 'machinery',
+    preloadImage: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

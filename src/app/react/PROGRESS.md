@@ -2960,6 +2960,19 @@ version 31）**：
 >   不宜混入删除族。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-6b 删除族第二批（2026-09-03；version 41）**：
+> - machineryRemoveSmartFolder wrapper+Inner（41831/41851 逐字：100ms 确认框 → children
+>   定位/splice/mappings 删除/QuickAccessManager.remove（19061 顶层 var 经 window）→
+>   idx===0 双分支续开 → 音效/updateSidebarList/saveFolderDebounce 1s → notify undo
+>   origin 回填+树重索引）、machineryRemoveFolder wrapper+Inner（41935/42061 逐字：密码锁
+>   守卫 → checkbox 确认（isDeleteImages）→ checkOperationSafety2(descendantImageCount,50)
+>   → cloneTree 存档 → raw 逆序摘索引（仅存一夹才 isDeleted）→ 子树同摘 → 续开兄弟/父/All
+>   → QuickAccessManager 含子树 → notify undo（folders 回填+重索引+图像 folders 去重复原））、
+>   machineryRemoveSelectedFolders/SelectedSmartFolders（41981/42021 逐字：多选确认 +
+>   ignoreRestore 直调 Inner + 清多选）。
+> - 教训：**单条 heredoc 体积超限会被 bash 截断**（第二片首写失败）——大函数必须哨兵分片。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

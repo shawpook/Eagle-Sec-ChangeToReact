@@ -7054,6 +7054,395 @@ export function machineryRemovePermanently(s: any): void {
   });
 }
 
+/* ── b1-6b：删除族第二批（removeSmartFolder/removeFolder 双层 + 多选删除）── */
+
+/* removeSmartFolder wrapper（bundle 41831-41849 逐字：100ms 延迟确认框）+ 内部闭包
+   removeSmartFolder（41851-41933 逐字：parent/顶层 children 定位 + splice + mappings 删除
+   + QuickAccessManager.remove（19061 顶层 var 经 window）+ idx===0/else 双分支续开 +
+   音效 + updateSidebarList + saveFolderDebounce 1s + notify undo（origin 回填 + 树重索引
+   + openSmartFolder）） */
+export function machineryRemoveSmartFolder(s: any, smartFolder: any, _p: any = {}): void {
+  const w = window as any;
+  setTimeout(function () {
+    var removeConfirmMsg = getFilter()('i18n')("dialog.removeSmartFolder.desc", [
+      { "property": "folder", "value": smartFolder.name },
+    ]);
+    w.swal({
+      html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${w.i18n.__('dialog.removeSmartFolder.title')}</h4>
+                            <p class="alert-desc">${removeConfirmMsg}</p>
+                        </div>
+                    `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: "alert-box",
+      cancelButtonColor: "#777777",
+      confirmButtonText: w.i18n.__('dialog.removeSmartFolder.button'),
+      cancelButtonText: w.i18n.__("general.cancel"),
+    }).then(function () {
+      machineryRemoveSmartFolderInner(s, smartFolder, {});
+    });
+  }, 100);
+}
+
+function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelectNext, ignoreRestore }: any = {}): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  var message = getFilter()('i18n')("notify.folder.remove", [
+    { "property": "folder", "value": smartFolder.name },
+  ]);
+
+  var children = s.smartFolders;
+  if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
+    let parent = s.smartFolderMappings[smartFolder.parent];
+    children = parent.children;
+  }
+  var origin = w.angular.copy(children);
+  var idx = children.indexOf(smartFolder);
+
+  if (idx === -1) return;
+
+  children.splice(idx, 1);
+  delete s.smartFolderMappings[smartFolder.id];
+  w.QuickAccessManager.remove("smartFolder", smartFolder);
+
+  // 如果已經沒有資料夾
+  if (idx === 0) {
+    if (children[idx]) {
+      s.openSmartFolder(children[idx]);
+    } else {
+      s.currentSmartFolder = undefined;
+      s.openAll();
+    }
+  }
+  // 如果還有資料夾
+  else {
+    if (children[idx]) {
+      s.openSmartFolder(children[idx]);
+    } else {
+      if (children[idx - 1]) {
+        s.openSmartFolder(children[idx - 1]);
+      } else {
+        s.currentSmartFolder = undefined;
+        s.openAll();
+      }
+    }
+  }
+
+  // 如果声音效果是开启的
+  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+    s.removeSound.play();
+  }
+  s.updateSidebarList();
+
+  $timeout(function () {
+    s.saveFolderDebounce();
+  }, 1000);
+
+  w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
+
+  if (!ignoreRestore) {
+    s.$root.notify({
+      message: message,
+      duration: 5000,
+    }, function () {
+      if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
+        let parent = s.smartFolderMappings[smartFolder.parent];
+        parent.children = origin;
+      }
+      else {
+        s.smartFolders = origin;
+      }
+      s.smartFolderMappings[smartFolder.id] = smartFolder;
+      w.eagle.utils.tree.walk(s.smartFolders, 'children', function (sf: any, parent: any, depth: any) {
+        s.smartFolderMappings[sf.id] = sf;
+      });
+      s.updateSidebarList();
+      s.openSmartFolder(smartFolder);
+      s.saveFolderDebounce();
+      s.$evalAsync();
+    });
+  }
+}
+
+/* removeFolder wrapper（bundle 41935-41980 逐字：密码锁守卫 + 有图/有子夹时 100ms 后
+   checkbox 确认框（isDeleteImages=result==1）+ checkOperationSafety2(50)） */
+export function machineryRemoveFolder(s: any, folder: any, params: any = {}): void {
+  const w = window as any;
+  const _p: any = { isDeleteImages: params.isDeleteImages, ignoreSelectNext: params.ignoreSelectNext, ignoreRestore: params.ignoreRestore };
+
+  if (folder.password && !folder.isUnLock) return;
+
+  // 如果圖片或子文件夾超過數量，就需要顯示詢問視窗
+  if (folder.images && folder.imageCount > 0 || folder && folder.children.length > 0) {
+    setTimeout(function () {
+      var removeConfirmMsg = getFilter()('i18n')("dialog.removeFolder.desc", [
+        { "property": "folder", "value": folder.name },
+      ]);
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${getFilter()('i18n')('dialog.removeFolder.title')}</h4>
+                                <p class="alert-desc">${removeConfirmMsg}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        input: 'checkbox',
+        inputValue: 1,
+        inputValidator: function (result: any) {
+          return new Promise(function (resolve: any, reject: any) {
+            resolve(result);
+          })
+        },
+        inputPlaceholder: getFilter()('i18n')('dialog.removeFolder.checkbox'),
+        confirmButtonText: getFilter()('i18n')('dialog.removeFolder.button'),
+        cancelButtonText: getFilter()('i18n')("general.cancel"),
+      }).then(function (result: any) {
+        machineryCheckOperationSafety2(s, folder.descendantImageCount, function () {
+          _p.isDeleteImages = (result == 1);
+          machineryRemoveFolderInner(s, folder, _p);
+          s.$evalAsync();
+        }, 50);
+      }, function () { });
+    }, 100);
+  }
+  else {
+    machineryRemoveFolderInner(s, folder, _p);
+  }
+}
+
+function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignoreSelectNext, ignoreRestore }: any = {}): void {
+  const w = window as any;
+
+  // 支持復原文件夾
+  var originalFolders: any[] = [];
+  var originalImages: any[] = [];
+  var originalImageFolders: any[] = [];
+  var folderId = folder.id;
+  if (!ignoreRestore) {
+    w.cloneTree(originalFolders, s.folders, true);
+  }
+
+  // 找到包含 folder 的 list
+  var parent = s.folderMappings[folder.parent];
+  var children = (parent) ? parent.children : s.folders;
+  if (!Array.isArray(children)) return;
+
+  var index = children.indexOf(folder);
+  if (index === -1) return;
+
+  // 移除 folder
+  children.splice(index, 1);
+
+  // 删除包含 folder.id 的图片
+  if (s.raw && s.raw.length > 0) {
+    var changed: any[] = [];
+    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+      var image = s.raw[rindex];
+      if (image.folders) {
+        var idx = image.folders.indexOf(folder.id);
+        if (idx > -1) {
+          if (isDeleteImages) {
+            // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
+            if (image.folders && image.folders.length === 1) {
+              image.isDeleted = true;
+            }
+          }
+          originalImageFolders.push(w.angular.copy(image.folders));
+          image.folders.splice(idx, 1);
+          changed.push(image);
+          originalImages.push(image);
+        }
+      }
+    }
+    w.ayncsImagesChange(changed);
+    w.hiddenByCurrentFilter(changed);
+  }
+
+  // 同时删除子文件夹图片
+  if (folder.children) {
+    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+      if (s.raw && s.raw.length > 0) {
+        var changed: any[] = [];
+        for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+          var image = s.raw[rindex];
+          if (image.folders) {
+            var idx = image.folders.indexOf(child.id);
+            if (idx > -1) {
+              if (isDeleteImages) {
+                // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
+                if (image.folders && image.folders.length === 1) {
+                  image.isDeleted = true;
+                }
+              }
+              originalImageFolders.push(w.angular.copy(image.folders));
+              image.folders.splice(idx, 1);
+              changed.push(image);
+              originalImages.push(image);
+            }
+          }
+        }
+        w.ayncsImagesChange(changed);
+        w.hiddenByCurrentFilter(changed);
+      }
+    });
+  }
+
+  // 开启下一个文件夹
+  // 优先开启兄弟，若兄弟皆亡，找老爸，老爸亡，找 All
+  if (!ignoreSelectNext) {
+    if (children.length > 0) {
+      var next = children[index] || children[index - 1] || children[0];
+      s.openFolder(next);
+    } else if (parent) {
+      s.openFolder(parent);
+    } else {
+      s.openAll();
+    }
+  }
+  else {
+    s.rebindRefresh();
+  }
+
+  // 播放删除音效
+  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+    s.removeSound.play();
+  }
+
+  w.QuickAccessManager.remove("folder", folder);
+  if (folder.children && s.quickAccess.length > 0) {
+    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+      w.QuickAccessManager.remove("folder", child);
+    });
+  }
+  s.updateSidebarList();
+
+  // 移除记录
+  delete s.folderMappings[folder.id];
+  s.calculateImageBinding({ ignoreSort: true }, function () {
+    s.$evalAsync();
+    s.saveFolderDebounce();
+    if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
+    else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
+  });
+
+  if (!ignoreRestore) {
+    var message = getFilter()('i18n')("notify.folder.remove", [
+      { "property": "folder", "value": folder.name },
+    ]);
+    s.$root.notify({
+      message: message,
+      duration: 7000,
+    }, function () {
+      s.folders = originalFolders;
+
+      w.eagle.utils.tree.walk(s.folders, 'children', function (folder2: any, parent: any) {
+        if (!folder2.children) { folder2.children = []; }
+        if (folder2 && parent) { folder2.parent = parent.id; }
+        s.folderMappings[folder2.id] = folder2;
+      });
+
+      for (var i = originalImages.length - 1; i >= 0; i--) {
+        var img = originalImages[i];
+        if (!img) continue;
+        img.folders = originalImageFolders[i];
+        img.folders = [...new Set(img.folders)];
+        delete img.isDeleted;
+      }
+
+      s.calculateImageBinding({ ignoreSort: true }, function () {
+        s.openFolder(s.folderMappings[folder.id]);
+        w.electronLog && w.electronLog.info(`[app] Resotre deleted folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`);
+      });
+
+      s.$evalAsync();
+      s.updateSidebarList();
+      s.saveFolderDebounce();
+      w.ayncsImagesChange(originalImages);
+    });
+  }
+}
+
+/* removeSelectedFolders（bundle 41981-42019 逐字：多选文件夹 checkbox 确认 + 
+   checkOperationSafety2(count, 1) + 逐夹 removeFolder（ignoreRestore）） */
+export function machineryRemoveSelectedFolders(s: any): void {
+  const w = window as any;
+  if (s.$root.selectedFolders.length === 0) return;
+
+  var removeConfirmMsg = getFilter()('i18n')("dialog.removeFolder.descMultiple", [
+    { "property": "count", "value": s.$root.selectedFolders.length },
+  ]);
+  w.swal({
+    html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${getFilter()('i18n')('dialog.removeFolder.title')}</h4>
+                        <p class="alert-desc">${removeConfirmMsg}</p>
+                    </div>
+                `,
+    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+    width: 400,
+    customClass: "alert-box",
+    cancelButtonColor: "#777777",
+    input: 'checkbox',
+    inputValue: 1,
+    inputValidator: function (result: any) {
+      return new Promise(function (resolve: any, reject: any) {
+        resolve(result);
+      })
+    },
+    inputPlaceholder: getFilter()('i18n')('dialog.removeFolder.checkbox'),
+    confirmButtonText: getFilter()('i18n')('dialog.removeFolder.button'),
+    cancelButtonText: getFilter()('i18n')("general.cancel"),
+  }).then(function (result: any) {
+    machineryCheckOperationSafety2(s, s.$root.selectedFolders.length, function () {
+      var isDeleteImages = (result == 1);
+      s.$root.selectedFolders.forEach(function (folder: any) {
+        if (folder.password && !folder.isUnLock) return;
+        machineryRemoveFolderInner(s, folder, { isDeleteImages: isDeleteImages, ignoreRestore: true });
+      });
+    }, 1);
+  }, function () { });
+}
+
+/* removeSelectedSmartFolders（bundle 42021-42058 逐字：多选智能文件夹确认 + 逐个
+   removeSmartFolderInner（ignoreRestore）+ 清多选） */
+export function machineryRemoveSelectedSmartFolders(s: any): void {
+  const w = window as any;
+  if (s.$root.selectedSmartFolders.length === 0) return;
+
+  var removeConfirmMsg = getFilter()('i18n')("dialog.removeSmartFolder.descMultiple", [
+    { "property": "count", "value": s.$root.selectedSmartFolders.length },
+  ]);
+  w.swal({
+    html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${w.i18n.__('dialog.removeSmartFolder.title')}</h4>
+                        <p class="alert-desc">${removeConfirmMsg}</p>
+                    </div>
+                `,
+    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+    width: 400,
+    customClass: "alert-box",
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__('dialog.removeSmartFolder.button'),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (result: any) {
+    s.$root.selectedSmartFolders.forEach(function (smartFolder: any) {
+      machineryRemoveSmartFolderInner(s, smartFolder, { ignoreRestore: true });
+    });
+    s.$root.selectedSmartFolders = [];
+  }, function () { });
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -7244,9 +7633,14 @@ export function applyDataMachineryScope(): void {
   s.checkOperationSafety2 = (count: any, callback: any, amount: any) => machineryCheckOperationSafety2(s, count, callback, amount);
   s.resetFolderCover = (folder: any) => machineryResetFolderCover(s, folder);
   s.removePermanently = () => machineryRemovePermanently(s);
+  // b1-6b：删除族第二批
+  s.removeSmartFolder = (smartFolder: any) => machineryRemoveSmartFolder(s, smartFolder);
+  s.removeFolder = (folder: any, params: any) => machineryRemoveFolder(s, folder, params);
+  s.removeSelectedFolders = () => machineryRemoveSelectedFolders(s);
+  s.removeSelectedSmartFolders = () => machineryRemoveSelectedSmartFolders(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 40,
+    version: 41,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -7393,6 +7787,10 @@ export function applyDataMachineryScope(): void {
     checkOperationSafety2: 'machinery',
     resetFolderCover: 'machinery',
     removePermanently: 'machinery',
+    removeSmartFolder: 'machinery',
+    removeFolder: 'machinery',
+    removeSelectedFolders: 'machinery',
+    removeSelectedSmartFolders: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

@@ -5749,6 +5749,217 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
   });
 }
 
+/* ── c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate ── */
+
+/* getItemByElement（bundle 21834-21839 逐字：data-box-id 属性 → itemMappings；含
+   element.id.replace("box-") 旧实现注释逐字保留） */
+export function machineryGetItemByElement(s: any, element: any): any {
+  if (!element) return "";
+  // var id = element.id.replace("box-", "");
+  var id = element.getAttribute("data-box-id");
+  return s.itemMappings[id];
+}
+
+/* changeStar（bundle 30320-30381 逐字：空选守卫 + 零星单选无星守卫 + checkOperationSafety
+   包装两分支——刪除星星（filterCounts rating 0/原星数增减 + delete image.star）与设置星星
+   （原星数减/new 星数增/rating 0 减 + eagle.inspector.star 记录）+ i18n 通知 + analytics +
+   updateItemsView（machinery 版）+ ayncsImagesChange/hiddenByCurrentFilter） */
+export function machineryChangeStar(s: any, star: any, showNotify: any, force: any): void {
+  const w = window as any;
+  if (s.selected.length === 0) return;
+  if (!star && s.selected.length === 1 && !s.selected[0].star) {
+    return;
+  }
+
+  s.checkOperationSafety(function () {
+
+    let changedItems: any[] = [];
+
+    // 刪除星星
+    if (star === undefined || (w.eagle.inspector.star === star && !force)) {
+      for (var i = 0; i < s.selected.length; i++) {
+        let image = s.selected[i];
+        if (image.star) {
+          w.eagle.filter.filterCounts['rating']['0']++;
+          w.eagle.filter.filterCounts['rating']['' + image.star]--;
+          delete image.star;
+          changedItems.push(image);
+        }
+      }
+      delete w.eagle.inspector.star;
+      if (showNotify) {
+        s.notify({
+          message: getFilter()('i18n')('appmenu.tag>removeRating'),
+          duration: 750
+        });
+      }
+      w.electronLog && w.electronLog.info(`[app] Remove rating, total: ${changedItems.length} files`);
+      w.analytics.event('Rating', 'Remove');
+    }
+    else {
+      for (var i = 0; i < s.selected.length; i++) {
+        let image = s.selected[i];
+        if (image.star !== star) {
+          w.eagle.filter.filterCounts['rating']['' + image.star]--;
+          image.star = star;
+          w.eagle.filter.filterCounts['rating']['' + star]++;
+          w.eagle.filter.filterCounts['rating']['0']--;
+          changedItems.push(image);
+        }
+      }
+      w.eagle.inspector.star = star;
+      var message = getFilter()('i18n')("notify.setStar.msg", [
+        { "property": "star", "value": star }
+      ]);
+      if (showNotify) {
+        s.notify({
+          message: message,
+          duration: 750
+        });
+      }
+      w.electronLog && w.electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
+      w.analytics.event('Rating', 'Set', star);
+    }
+    s.updateItemsView(s.selected);
+    if (changedItems.length > 0) {
+      w.ayncsImagesChange(changedItems);
+      w.hiddenByCurrentFilter(changedItems);
+    }
+  });
+}
+
+/* nextGifFrame/prevGifFrame（bundle 32838-32863 逐字：gifPlayer/gifViewer 经 scope 解析；
+   **next 帧越界上界为 total-1、prev 下界 0——bundle 原样**） */
+export function machineryNextGifFrame(s: any, amount: any = 1): void {
+  if (s.gifPlayer && s.isGifReady) {
+    s.gifPlayer.pause();
+    s.gifViewer.playing = false;
+    var curr = s.gifPlayer.get_current_frame();
+    var total = s.gifViewer.frames.length;
+    var idx = curr + amount;
+    if (idx > total) idx = total - 1;
+    s.gifPlayer.move_to(idx);
+    s.$evalAsync();
+  }
+}
+
+export function machineryPrevGifFrame(s: any, amount: any = 1): void {
+  if (s.gifPlayer && s.isGifReady) {
+    s.gifPlayer.pause();
+    s.gifViewer.playing = false;
+    var curr = s.gifPlayer.get_current_frame();
+    var idx = curr - amount;
+    if (idx < 0) idx = 0;
+    s.gifPlayer.move_to(idx);
+    s.$evalAsync();
+  }
+}
+
+/* addVideoComment（bundle 21182-21237 逐字：swal textarea（i18n 经 window）→ guid（Tier-2）
+   构造 comment（duration/annotation）→ current.comments 插入 + duration 升序排序 →
+   REFRESH_VIDEO_COMMENTS 广播 + updateItemView（scope 解析）+ ipcRenderer 统一表达式
+   send('image-change')） */
+export function machineryAddVideoComment(s: any, video: any, videoElem: any): void {
+  const w = window as any;
+  if (!video || !videoElem) return;
+
+  videoElem.pause();
+
+  w.swal({
+    html: `
+                    <div class="alert">
+                        <div class="alert-icon create"></div>
+                        <h4 class="alert-title">${w.i18n.__('dialog.videoComment.title')}</h4>
+                    </div>
+                `,
+    input: 'textarea',
+    inputPlaceholder: w.i18n.__("dialog.videoComment.placeholder"),
+    allowEnterKey: false,
+    showCloseButton: false,
+    showCancelButton: true,
+    allowOutsideClick: false,
+    focusConfirm: false,
+    focusCancel: false,
+    padding: 10,
+    position: 'bottom',
+    width: 400,
+    customClass: "alert-box",
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__("dialog.videoComment.save"),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (result: any) {
+
+    if (!result) return;
+
+    var comment = {
+      id: w.guid(),
+      duration: videoElem.currentTime,
+      annotation: result,
+      lastModified: Date.now()
+    }
+
+    if (!s.current.comments) {
+      s.current.comments = [];
+    }
+
+    s.current.comments.push(comment);
+    s.current.comments = s.current.comments.sort(function (a: any, b: any) {
+      var da = a.duration;
+      var db = b.duration;
+      if (da > db) return 1;
+      if (da < db) return -1;
+      return 0;
+    })
+    s.$root.$broadcast("REFRESH_VIDEO_COMMENTS");
+    s.updateItemView(video);
+    s.$evalAsync();
+
+    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    ipc.send('image-change', s.current);
+  })
+}
+
+/* newFileFromTemplate（bundle 37336-37374 逐字：resourcesPath/EAGLE_THUMBNAIL_TEMP_PATH 为
+   bundle 顶层 var 经 window、fs/path 经 window.require、i18n/FileUrlHelper 经 window、
+   uploadFiles/showUploadQueue 经 scope 解析、electronLog 兜底 catch） */
+export function machineryNewFileFromTemplate(s: any, ext: any): void {
+  const w = window as any;
+  const fs = w.require('fs');
+  const path = w.require('path');
+
+  const templatePath = path.normalize(`${w.resourcesPath}/templates/Untitled.${ext}`);
+  if (!fs.existsSync(templatePath)) return;
+
+  const newFilePath = `${w.EAGLE_THUMBNAIL_TEMP_PATH}/Untitled.${ext}`;
+  const filePath = newFilePath;
+  try {
+    const templateContent = fs.readFileSync(templatePath);
+    fs.writeFileSync(newFilePath, templateContent);
+
+    const file: any = {
+      name: w.i18n.__("general.untitled.title"),
+      path: filePath,
+      lastModified: Date.now()
+    };
+
+    if (s.currentFolder && s.currentFolder.id) {
+      file.folders = [s.currentFolder.id];
+      if (s.currentFolder.extendTags) {
+        file.tags = s.currentFolder.extendTags;
+        file.tags = [...new Set(file.tags)];
+      }
+    }
+    s.uploadFiles([file]);
+    s.showUploadQueue();
+
+    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    ipc.send('electron-info', `[app] Create file from [Untitled.${ext}]`);
+  }
+  catch (err: any) {
+    w.electronLog && w.electronLog.error(err.stack || err);
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -5889,9 +6100,16 @@ export function applyDataMachineryScope(): void {
   s.openActionsPanel = (event: any) => machineryOpenActionsPanel(s, event);
   s.openInspectorTagSelectPanel = () => machineryOpenInspectorTagSelectPanel(s);
   s.openInspectorFolderSelectPanel = (event: any) => machineryOpenInspectorFolderSelectPanel(s, event);
+  // c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
+  s.getItemByElement = (element: any) => machineryGetItemByElement(s, element);
+  s.changeStar = (star: any, showNotify: any, force: any) => machineryChangeStar(s, star, showNotify, force);
+  s.nextGifFrame = (amount: any) => machineryNextGifFrame(s, amount);
+  s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);
+  s.addVideoComment = (video: any, videoElem: any) => machineryAddVideoComment(s, video, videoElem);
+  s.newFileFromTemplate = (ext: any) => machineryNewFileFromTemplate(s, ext);
 
   (window as any).__eagleDataMachinery = {
-    version: 32,
+    version: 33,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -5996,6 +6214,12 @@ export function applyDataMachineryScope(): void {
     openActionsPanel: 'machinery',
     openInspectorTagSelectPanel: 'machinery',
     openInspectorFolderSelectPanel: 'machinery',
+    getItemByElement: 'machinery',
+    changeStar: 'machinery',
+    nextGifFrame: 'machinery',
+    prevGifFrame: 'machinery',
+    addVideoComment: 'machinery',
+    newFileFromTemplate: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

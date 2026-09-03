@@ -2874,6 +2874,18 @@ version 31）**：
 > - 验证：tsc 零错（真实退出码）；m1 25/25；**全量 suite ALL GREEN（45/45，machinery v32
 >   键盘面里程碑）**。
 
+> **c18g-1 getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
+（2026-09-03；version 33）**：
+> - machineryGetItemByElement（21834 逐字：data-box-id → itemMappings，旧实现注释逐字保留）、
+>   machineryChangeStar（30320-30381 逐字：刪除/设置星星双分支 filterCounts rating 增减 +
+>   eagle.inspector.star + analytics + updateItemsView machinery版）、machineryNextGifFrame/
+>   PrevGifFrame（32838/32851 逐字：**next 上界 total-1、prev 下界 0——bundle 原样**；gifPlayer/
+>   gifViewer scope 解析）、machineryAddVideoComment（21182-21237 逐字：swal textarea → guid
+>   → duration 升序插入 → REFRESH_VIDEO_COMMENTS 广播 + ipc 统一表达式 image-change）、
+>   machineryNewFileFromTemplate（37336-37374 逐字：resourcesPath/EAGLE_THUMBNAIL_TEMP_PATH
+>   顶层 var 经 window、fs/path 经 window.require、uploadFiles/showUploadQueue scope 解析）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：
 > - machinerySelectNext（36382-36444 逐字：isCropMode→MOVE-CROP-TOOL 广播 + getSelection
 >   start/end+1 + 尾项 is-last-item 提示 + cleanBitmapViewer + 详情分支 forceFitImageSize/

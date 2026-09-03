@@ -8599,7 +8599,8 @@ function machineryCalcuteAddImageTimeLeft(s: any): void {
 
 /* showUploadQueue（bundle 45313-45324 逐字：addImageStartTime 立时 + 上传队列面板 +
    1s 剩余时间轮询）+ hideUploadQueue（45343-45351 逐字：空队列收面板 +
-   updateWindowProgressBar（闭包，经 scope 解析）） */
+   updateWindowProgressBar（bundle 49810 **顶层 var throttle 单例 → window 可达**，w.* 直连
+   保留原节流实例语义）） */
 export function machineryShowUploadQueue(s: any): void {
   const w = window as any;
   if (!s.addImageStartTime) {
@@ -8620,7 +8621,7 @@ export function machineryHideUploadQueue(s: any): void {
   if (s.uploadQueue.length === 0) {
     w.$("#upload-queue-progress").removeClass("open");
     w.$("body").removeClass("is-uploading");
-    s.updateWindowProgressBar(-1);
+    w.updateWindowProgressBar(-1);
   }
 }
 
@@ -8795,12 +8796,336 @@ export async function machineryVideoScreenShot(s: any, copyMode: any): Promise<v
   }
 }
 
+/* getFolderImages（bundle 42841-42865 逐字：倒序扫描 raw + folders 归属判定；
+   includeSubFolder 时 eagle.utils.tree.walk 子树命中即含（回调 return 原样）；
+   try/catch 吞错原样） */
+export function machineryGetFolderImages(s: any, folder: any, includeSubFolder: any): any[] {
+  const w = window as any;
+  var images: any[] = [];
+  for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+    try {
+      var image = s.raw[rindex];
+      if (image.isDeleted) continue;
+      var isContain = image.folders.indexOf(folder.id) > -1;
+      if (includeSubFolder) {
+        if (!isContain) {
+          w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+            if (image.folders.indexOf(child.id) > -1) {
+              isContain = true;
+              return;
+            }
+          });
+        }
+      }
+      if (isContain) {
+        images.push(image);
+      }
+    }
+    catch (err) { }
+  }
+  return images;
+}
+
+/* findDupclipate（bundle 28507-28868 逐字，typo 唯一：全局查重主表 + filterExtensions/
+   filterCameras 建表副产物（currentFolder 空分支）+ duplicateGroupings 主动扫描（hasColorInfo
+   才分组、>1 才成组）；getHashID 为 bundle 2127 顶层函数（w.* 直连，双参）；第二段循环
+   var rindex/image/hashID 与首段同名 → *2 后缀（TS 语义同 var 重声明）） */
+export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo: any): void {
+  const w = window as any;
+  var duplicates: any[] = [];
+  var pushedMapping: any = {};
+  var duplicateMappings: any = {};
+
+  s.duplicates = [];
+  s.duplicateGroupings = {};
+
+  if (!s.raw) return;
+
+  if (!hasColorInfo) {
+    duplicateMappings = s.duplicateMappings;
+  }
+  else {
+    duplicateMappings = {};
+  }
+
+  s.duplicateTarget = currentFolder;
+
+  // 全部圖片
+  if (!currentFolder) {
+    // 建立查詢表
+    w.eagle.filter.filterExtensions = {};
+    w.eagle.filter.filterCamerasMapping = {};
+    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+      var image = s.raw[rindex];
+
+      // Note: 这部分原来放在 rebindRefresh 中，因为不需要重复计算，故放在这里
+      if (w.VIDEO_TYPES[image.ext]) {
+        w.eagle.filter.filterExtensions['video'] = true;
+      } else if (w.AUDIO_TYPES[image.ext]) {
+        w.eagle.filter.filterExtensions[image.ext] = true;
+        w.eagle.filter.filterExtensions['audio'] = true;
+      } else if (w.FONT_TYPES[image.ext]) {
+        w.eagle.filter.filterExtensions['font'] = true;
+      } else {
+        switch (image.ext) {
+          case 'ppt':
+          case 'pptx':
+          case 'potx':
+            w.eagle.filter.filterExtensions['powerpoint'] = true;
+            break;
+          case 'doc':
+          case 'docx':
+            w.eagle.filter.filterExtensions['word'] = true;
+            break;
+          case 'xls':
+          case 'xlsx':
+            w.eagle.filter.filterExtensions['excel'] = true;
+            break;
+          case 'arw':
+          case 'cr2':
+          case 'cr3':
+          case 'crw':
+          case 'dng':
+          case 'erf':
+          case 'nef':
+          case 'nrw':
+          case 'mrw':
+          case 'orf':
+          case 'pef':
+          case 'raf':
+          case 'raw':
+          case 'rw2':
+          case 'sr2':
+          case 'srw':
+          case 'x3f':
+            w.eagle.filter.filterExtensions['raw'] = true;
+            w.eagle.filter.filterExtensions[image.ext] = true;
+            break;
+          default:
+            w.eagle.filter.filterExtensions[image.ext] = true;
+        }
+      }
+
+      if (image.rawMetas) {
+        w.eagle.filter.filterCamerasMapping[image.rawMetas.camera] = true;
+      }
+
+      var hashID = w.getHashID(image, hasColorInfo);
+      if (!hashID) continue;
+      if (image.ext === 'svg') continue;
+      if (image.ext === 'tif') continue;
+      if (image.ext === 'tiff') continue;
+      if (image.isDeleted) continue;
+
+      // NOTE: 如果是用户主动扫描，才计算图片去重复
+      if (hasColorInfo) {
+        if (!s.duplicateGroupings[hashID]) {
+          s.duplicateGroupings[hashID] = [];
+        }
+        s.duplicateGroupings[hashID].push(image);
+      }
+
+      // 如果有東西，裡面的東西跟自己都是那個重複者
+      if (!duplicateMappings[hashID]) {
+        duplicateMappings[hashID] = image;
+      } else {
+        // Note: 下面注解的代码严重影响效能
+        // 优化版
+        if (!pushedMapping[hashID]) {
+          duplicates.push(duplicateMappings[hashID]);
+        }
+        pushedMapping[hashID] = true;
+        duplicates.push(image);
+      }
+    }
+
+    if (Object.keys(w.eagle.filter.filterCamerasMapping).length > 0) {
+      w.eagle.filter.filterCameras = Object.keys(w.eagle.filter.filterCamerasMapping);
+      w.eagle.filter.filterCameras = w.eagle.filter.filterCameras.sort(function (a: any, b: any) {
+        if (a > b) return 1;
+        if (a < b) return -1;
+        return 0;
+      });
+    }
+  }
+  else {
+
+    var images = s.getFolderImages(currentFolder, s.showSubfolderContent);
+    for (var rindex2 = images.length - 1; rindex2 >= 0; rindex2--) {
+
+      var image2 = images[rindex2];
+      var hashID2 = w.getHashID(image2, hasColorInfo);
+      if (!hashID2) continue;
+      if (image2.ext === 'svg') continue;
+      if (image2.ext === 'tif') continue;
+      if (image2.ext === 'tiff') continue;
+      if (image2.isDeleted) continue;
+
+      if (hasColorInfo) {
+        if (!s.duplicateGroupings[hashID2]) {
+          s.duplicateGroupings[hashID2] = [];
+        }
+        s.duplicateGroupings[hashID2].push(image2);
+      }
+
+      // 如果有東西，裡面的東西跟自己都是那個重複者
+      if (!duplicateMappings[hashID2]) {
+        duplicateMappings[hashID2] = image2;
+      } else {
+        // 优化版
+        if (!pushedMapping[hashID2]) {
+          duplicates.push(duplicateMappings[hashID2]);
+        }
+        pushedMapping[hashID2] = true;
+        duplicates.push(image2);
+      }
+    }
+  }
+
+  s.duplicates = duplicates;
+
+  if (hasColorInfo) {
+    var duplicateGroupings = Object.keys(s.duplicateGroupings).map(function (key: any) { return s.duplicateGroupings[key]; });
+    duplicateGroupings = duplicateGroupings.filter(function (group: any) {
+      return group.length > 1;
+    });
+    s.duplicateGroupings = duplicateGroupings;
+  }
+}
+
+/* getAllChildFolder（bundle 42498-42505 逐字：tree.walk 全子树收集 + Set 去重） */
+export function machineryGetAllChildFolder(s: any, fd: any): any[] {
+  const w = window as any;
+  let folders: any[] = [];
+  w.eagle.utils.tree.walk(fd.children, 'children', function (folder: any, parent: any, depth: any) {
+    folders.push(folder);
+  });
+  folders = [...new Set(folders)];
+  return folders;
+}
+
+/* refreshSubfolderList（bundle 27462-27492 逐字：showSubfolderContent 分流 subFolders +
+   keyword 过滤（**filter 回调非命中路径无 return——undefined 隐式剔除怪癖原样**）；
+   subFolderSortableOptions.disabled 开关为 bundle 38947 controller init 种子对象
+   （applyDataMachineryScope if-absent 补种）） */
+export function machineryRefreshSubfolderList(s: any): void {
+  // 过滤子文件夹
+  if (s.currentFolder) {
+    if (s.showSubfolderContent) {
+      s.subFolders = machineryGetAllChildFolder(s, s.currentFolder);
+      s.subFolderSortableOptions.disabled = true;
+    }
+    else {
+      s.subFolders = s.currentFolder.children;
+      s.subFolderSortableOptions.disabled = false;
+    }
+    if (s.keyword) {
+      s.subFolders = s.subFolders.filter(function (folder: any) {
+        if (folder.name.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+          return true;
+        }
+        if (folder && folder.tags) {
+          var folderTags = folder.tags.join("");
+          if (folderTags.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+            return true;
+          }
+        }
+      });
+      s.subFolderSortableOptions.disabled = true;
+    }
+  }
+  else {
+    s.subFolders = [];
+  }
+}
+
+/* focusSeach（bundle 29192-29195 逐字，typo 原样） */
+export function machineryFocusSeach(s: any): void {
+  const w = window as any;
+  w.$("#search").focus().select();
+  s.showSuggestions = true;
+}
+
+/* newSmartFolder（bundle 39944-39946 逐字：$rootScope.$broadcast → s.$root（shim $root
+   同体语义）） */
+export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): void {
+  s.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: smartFolder, parent: undefined });
+}
+
+/* prependFolder（bundle 39968-39979 逐字：unshift + folderMappings 登记 + updateSidebarList
+   + 1s 后 calculateImageBinding→saveFolder） */
+export function machineryPrependFolder(s: any, folder: any): void {
+  s.folders.unshift(folder);
+  s.folderMappings[folder.id] = folder;
+  s.updateSidebarList();
+  setTimeout(function () {
+    s.calculateImageBinding({ ignoreSort: true }, function () {
+      s.saveFolder();
+    });
+  }, 1000);
+}
+
+/* gotoTop/gotoBottom（bundle 21886-21916 逐字：resetNgGridLayoutData 为 ngGridLayout 指令
+   66970 隐式全局赋值（window 可达，w.* 直连——同 764/944 先例；post-b1 由 grid 域供给）；
+   gotoBottomTimeout 存 scope 字段原样；gotoBottom else 分支 offset 死变量原样保留） */
+export function machineryGotoTop(s: any): void {
+  const w = window as any;
+  if (s.allData.length < s.options.page) {
+    var $boxContainer = w.$("#box-container");
+    $boxContainer.scrollTop(0);
+  }
+  else {
+    clearTimeout(s.gotoBottomTimeout);
+    w.resetNgGridLayoutData(s.allData, 0);
+    var $boxContainer = w.$("#box-container");
+    $boxContainer.scrollTop(0);
+  }
+}
+
+export function machineryGotoBottom(s: any): void {
+  const w = window as any;
+  if (s.allData.length < s.options.page) {
+    var $boxContainer = w.$("#box-container");
+    var offset = $boxContainer[0].scrollHeight;
+    $boxContainer.scrollTop(offset);
+  }
+  else {
+    var endCursor = Math.ceil(s.allData.length / s.options.page) - 1 || 0;
+    w.resetNgGridLayoutData(s.allData, endCursor);
+    var $boxContainer = w.$("#box-container");
+    var times = [100, 400];
+    var offset = $boxContainer[0].scrollHeight;
+    for (var i = times[0]; i < times[1]; i += 100) {
+      s.gotoBottomTimeout = setTimeout(function () { $boxContainer.scrollTop(1000000); }, i);
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
   applied = true;
   const s = getBodyScope();
   if (!s) return;
+
+  // b1-7e：subFolderSortableOptions（bundle 38947 controller init 种子逐字——React 侧写方
+  // machineryRefreshSubfolderList 开关 .disabled；ListRegion ui-sortable 消费原对象
+  // {...options}，update 回调 $timeout 经 injector（getTimeout，缺 Angular 时跳过））
+  if (!s.subFolderSortableOptions) {
+    s.subFolderSortableOptions = {
+      distance: 10,
+      disabled: false,
+      tolerance: "pointer",
+      helper: 'clone',
+      update: function (e: any, ui: any) {
+        s.updateSidebarList();
+        const $timeout = getTimeout();
+        $timeout && $timeout(function () {
+          s.saveFolder();
+        }, 500);
+      },
+    };
+  }
 
   // scope 函数替换：此后 bundle 侧全部 $scope.calculateImageBinding 调用面（muteCalcuteImageBinding/
   // library.changed 等）即走移植实现（绞杀内部机器）。c9b：rebindRefresh/rebindRefreshLazy/
@@ -9051,9 +9376,19 @@ export function applyDataMachineryScope(): void {
   s.hideUploadQueue = () => machineryHideUploadQueue(s);
   s.importLinks = () => machineryImportLinks(s);
   s.videoScreenShot = (copyMode: any) => machineryVideoScreenShot(s, copyMode);
+  // b1-7e：全局查重（getFolderImages/findDupclipate）+ 子文件夹列表 + 搜索聚焦 +
+  // 新建智能文件夹/前置插入 + 列表滚顶/滚底
+  s.getFolderImages = (folder: any, includeSubFolder: any) => machineryGetFolderImages(s, folder, includeSubFolder);
+  s.findDupclipate = (currentFolder: any, hasColorInfo: any) => machineryFindDupclipate(s, currentFolder, hasColorInfo);
+  s.refreshSubfolderList = () => machineryRefreshSubfolderList(s);
+  s.focusSeach = () => machineryFocusSeach(s);
+  s.newSmartFolder = (event: any, smartFolder: any) => machineryNewSmartFolder(s, event, smartFolder);
+  s.prependFolder = (folder: any) => machineryPrependFolder(s, folder);
+  s.gotoTop = () => machineryGotoTop(s);
+  s.gotoBottom = () => machineryGotoBottom(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 48,
+    version: 49,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -9260,5 +9595,13 @@ export function applyDataMachineryScope(): void {
     videoScreenShot: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
+    getFolderImages: 'machinery',
+    findDupclipate: 'machinery',
+    refreshSubfolderList: 'machinery',
+    focusSeach: 'machinery',
+    newSmartFolder: 'machinery',
+    prependFolder: 'machinery',
+    gotoTop: 'machinery',
+    gotoBottom: 'machinery',
   };
 }

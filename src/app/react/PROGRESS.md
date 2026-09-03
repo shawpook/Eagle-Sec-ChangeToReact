@@ -3058,6 +3058,32 @@ version 31）**：
 >   Edit 工具直改**（本轮 split/join/reject 三处均如此修复）；getContext 严格空值用 `!`。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-7e 全局查重/子文件夹列表/滚顶滚底/杂项小件（2026-09-03；version 49）**：
+> - machineryGetFolderImages（42841-42865 逐字：倒序 raw 扫描 + includeSubFolder tree.walk
+>   子树命中）、machineryFindDupclipate（28507-28868 逐字，typo 唯一：查重主表 +
+>   filterExtensions/filterCameras 建表副产物 + duplicateGroupings 主动扫描（hasColorInfo 才
+>   分组、>1 才成组）；getHashID 为 bundle 2127 **顶层函数** w.* 直连双参；二段循环 var 同名
+>   → *2 后缀）。
+> - machineryGetAllChildFolder（42498 闭包域内移植）+ machineryRefreshSubfolderList
+>   （27462 逐字：keyword 过滤**无 return 隐式剔除**怪癖原样）；**subFolderSortableOptions
+>   种子**（38947 controller init 逐字 if-absent 补种进 applyDataMachineryScope——写方
+>   refreshSubfolderList 开关 .disabled、ListRegion ui-sortable 消费原对象含 update 回调，
+>   $timeout 经 injector getTimeout（缺 Angular 时跳过——post-b1 sortable 保存侧效待 shim
+>   $timeout，登记））。
+> - machineryFocusSeach（29192 typo 原样）、machineryNewSmartFolder（39944 $rootScope.
+>   $broadcast → s.$root 同体）、machineryPrependFolder（39968 1s 后 binding→saveFolder）、
+>   machineryGotoTop/gotoBottom（21886/21900 逐字：resetNgGridLayoutData 隐式全局 w.* 直连
+>   同 764/944 先例，**post-b1 由 grid 域供给**；gotoBottom 死变量 offset 原样）。
+> - **updateWindowProgressBar 定性纠正**：bundle 49810 为**顶层 var throttle 单例**（非闭包
+>   ——旧注释误判）→ w.updateWindowProgressBar 直连保留原节流实例（hideUploadQueue 调用点
+>   s.→w.）。
+> - **gotoBottom 供给面澄清**：fns 表 2095 已有全量移植体（裸引 resetNgGridLayoutData 经
+>   window 解析可达）——本次仍补 machinery 版统一契约；b1-8 fns 裸引用审计将该处登记为
+>   "window 可达隐式全局"类（post-b1 依赖 grid 域）。
+> - 审计脚本七域自扫版：内部缺口 11 → 4（$apply/$broadcast/$evalAsync 为 shim API 误报、
+>   renameCurrentFolder 留 b1-8）。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

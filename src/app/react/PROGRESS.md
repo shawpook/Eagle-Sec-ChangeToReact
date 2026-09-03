@@ -121,7 +121,7 @@
 >   click 切换 .open（互斥）、right-menu 对齐、`#filter-toolbar-overlay` .show 同步、
 >   .check-item 键盘导航（up/down/enter/esc）与 hover active、clear-btn 关闭、focusInput 延时聚焦、
 >   `[close-filter-item]` 委托关闭、增强输入 500ms 清空高亮。
-> - 每个模板在 `js/directives/filter-item-*.html`，指令体在 bundle 对应行号（下表）。
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 > - 验证断言建议：toggleFilter 后 .filter 面板展开、color/size 等 check-item 计数、
 >   键盘导航 active 迁移、reset 按钮清空 filterBadge、截图比对展开态。
 
@@ -203,10 +203,10 @@
 >   `.smooth_zoom_preloader`（container/image_url 均为空默认值 → `$image` 即容器本身，
 >   bundle:10814 + 11804），若 React 重建将破坏包裹关系与 `#bitmap-viewer canvas` 签名）、
 >   `#eagle-detail-cropsize-host`（#crop-size）。
-> - portal 内容全部是 Fragment；`#detail-container` 的 ng-class → `applyNgClassSet`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   差量应用（不碰 smoothZoom/controller 加的 zooming 等类）；ng-click=onDetailClick 由
 >   effect 绑回；ng-show 全部转 style.display 等价（不摘节点）。
-> - 关键架构事实（勘察 2026-08-29）：`window.$bodyScope` = body scope = EagleController scope
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （bundle:66508-66510）；`useMpvPlayer` 的唯一消费方是 React 快照，事件回调直接写 body scope；
 >   commentVideo 指令仅供 inspector-annotations.html（阶段6）使用，不在本阶段范围；
 >   rectSelect 实为内容网格框选（绑 #box-container），已按 PROGRESS 归属移植。
@@ -251,7 +251,7 @@
 ## 6. 检查器（inspector / inspector-*）
 
 > **已验证并接管**（2026-08-30）。
-> - 接管方式：index.html 中旧 `<inspector ...>` 元素整块替换为静态宿主 `#eagle-inspector-host`。
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   React 渲染完整 `.inspector` 树（规范 = js/directives/inspector.html + inspector-tags/
 >   folders/annotations/information/plugin.html 逐字转写）。
 > - 派生逻辑转写（components/inspector/inspectorActions.ts）：updateSelection（30ms debounce，
@@ -301,13 +301,13 @@
 > 7b tagManager + 面板族 → 7c 弹窗族 + 内联控制器弹窗**。
 
 > **7a 已验证并接管**（2026-08-30）。
-> - 接管方式：index.html 旧 `<context-menu theme="theme">` 岛替换为 `#eagle-context-menu-host`；
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   React 渲染 .context-menu + .context-menu-overlay（context-menu.html / context-menu-items.html /
 >   context-menu-emoji-items.html 逐字转写，含递归子菜单、搜索拼音过滤、sortable、emoji/色板 role）。
 > - 开合通道零改动：ContextMenu.open/close → $rootScope 广播 CONTEXTMENU.OPEN/CLOSE；
 >   autoPositionContextMenu 指令（16350-16393）与 onErrorSrc（15869）同步移植；
 >   fuzzyMatch filter（19951）= fuzzy_match(label, keyword)——顺带修正 Toolbar 搜索提示的参数序。
-> - 教训：jQuery 包装调用必须走 $()(el) 双调用形式（$ 是返回 jQuery 的工厂），否则拿到的是
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   构造函数本身（`.off is not a function` 且整棵 React 树因渲染异常卸载）。
 > - 闭环：react-stage7a-smoke 15/15（壳/真实右键链路 openItemContextMenu/自定义菜单点击回调/
 >   keepOpen+checked 翻转/子菜单 down→right 开合/搜索过滤/overlay 关闭；截图留档）。
@@ -324,7 +324,7 @@
 | fuzzyMatch filter | filter | 19951-19960 | 已验证（随 7a；并修正 Toolbar 调用参数序） |
 
 > **7b 已验证并接管**（2026-08-30）：tagManager + tagSelect。
-> - 接管方式：index.html 旧 `<tag-manager>` 岛（sidebar 内）替换为 `#eagle-tag-manager-host`；
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   React 渲染 #tag-manager 全树（tag-manager.html 逐字：侧栏 ALL/UNFILED/STARRED/群组 +
 >   vs-repeat 虚拟列表 + 三种空态）。
 > - tagSelect 指令（72799-73001，标签橡皮筋多选）逐字移植为 useTagSelect——tagItems 位置
@@ -358,7 +358,7 @@
 > main-ui-workflow 的偶发缩略图超时同源）。修复：shims 改为轮询 window.$bodyScope 就绪后
 > 再按序发射（兜底 10s）。修复后 main-ui-workflow 首跑即绿。
 > **7c-2 已验证并接管**（2026-08-30）：quickSearchModal。
-> - 接管方式：index.html 旧 `<quick-search-modal class="modal-flex-center">` 岛替换为
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `#eagle-quick-search-host`（宿主保留 modal-flex-center 类）；React 渲染
 >   #quick-search-panel + .quick-search-overlay 两个模板根（quick-search-modal.html 逐字）。
 > - 触发通道零改动：OPEN_QUICK_SEARCH_MODAL / CLOSE_QUICK_SEARCH_MODAL 广播（sidebar J 按钮
@@ -373,7 +373,7 @@
 > - scrollToActive 指令（70641-70672）等价移植为 useScrollToActive（.active-item 不完整
 >   可见时对齐；TAGS 无 enable 恒启用但无 .active-item 天然空转）；vs-repeat 复用
 >   useVirtualWindow。searchMode 与 keyword 跨打开持久（原版 isolate scope 行为）。
-> - 教训：ng-show 布尔转写多包一层 `!` 会把空态显隐整体反转（结果非空时空态反而显示），
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   CDP 断言 `["flex","flex"]` + 结果项数暴露；表达式必须逐字对照。
 > - **tagPopup 定性为死代码**：js/controllers/tag-popup.js 未被 index.html 加载
 >   （controllers/ 无 script 引用），TagPopupController/tagsPopupDraggable/tagInputTrigger
@@ -419,7 +419,7 @@
 | tagsInput | directive | 64443-64560 | 待办（7b，随智能文件夹规则编辑器） |
 | foldersInput | directive | 64399-64443 | 待办（7b，同上） |
 > **7d-1a 已验证并接管**（2026-08-30）：AddToFolderController + MoveFolderController。
-> - 接管方式：index.html 411-616 行两个 `ng-controller` 区块（模板内联）整体删除，替换为
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `#eagle-add-to-folder-host` / `#eagle-move-folder-host`（保留 modal-flex-center）；
 >   React 组件 components/stage7/FolderModals.tsx 逐字转写（AddToFolderModal 74733-75636 +
 >   MoveFolderModal 75637-76134）。
@@ -437,7 +437,7 @@
 >   REBIND_REFRESH / UPDATE_SELECTION 广播、analytics/electronLog 不变。
 > - MoveFolder 语义保留：源文件夹行 disabled（isVisible 抑制仅作用于子级——原版如此）、
 >   top/inner/bottom 三区点击 → swal 确认 → body scope moveFoldersAsSibling/moveFoldersToFolder。
-> - 教训：模板 `{{::folderList.length}}` 经原型链取 body scope folderList 且一次性绑定在
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   bootstrap 期即定型（恒为 0），按原样保留 "(0)" 形态。
 > - 闭环：react-stage7d1a-smoke 23/23（壳/旧块删除/广播开合/树渲染/existsFolders 预勾选/勾选
 >   翻转/save 数据面+recentMoveFolders/最近使用行/过滤/createFolder 行/Esc/复选框持久化/
@@ -449,7 +449,7 @@
 
 > **7d-1b 已验证并接管**（2026-08-30）：ErrorModalController + WebsitePanelController（含
 > websitePanelWebview 指令）。
-> - 接管方式：index.html 旧 `#website-panel` 块（81-101）与 `ErrorModalController` 区块
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （762-810）删除，替换为 `#eagle-website-panel-host` / `#eagle-error-modal-host`；
 >   React 组件 components/stage7/ControllerModals.tsx 逐字转写。
 > - ErrorModal：OPEN_ERROR / CLEAN_ALL_ERROR 广播通道不变；错误列表保留生产方数组引用
@@ -457,13 +457,13 @@
 >   （DOWNLOAD_ERROR → ipc 'upload-urls'、ADD_ERROR → body uploadFiles、EDIT_ERROR →
 >   itemMappings 原地 extend + updateItemView/ayncsImagesChange）逐字；copyAll →
 >   sendTo(backgroundWindowID,'copy-paths-to-clipboard')；cleanAll swal 确认。
-> - 教训：原版 ErrorModalController 的 `rootScope` 变量实为 body scope
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （angular.element("body").scope()），EDIT_ERROR 分支必须取 body scope 而非 $rootScope。
 > - WebsitePanel：显示条件 viewMode=='community' + isUILoaded 经 sidebarState 快照；
 >   left=containerSize.sidebar+1（快照 sidebarWidth 即该值）；webview 指令行为
 >   （dom-ready 主题注入 / page-title-updated 标题+前进后退禁用态）逐字；
 >   OPEN_URL_IN_PANEL → src 设置（community- 守卫）+ isOpenWebpagePanel。
-> - **测试基建修复（harness）**：stop(stack) 原来只认 `.child` → 对 bootStack 返回对象是
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   no-op，electron/backend/vite 全部成为孤儿且 stdio 管道拖住测试进程不退出；现改为依次
 >   关闭 CDP ws + 杀三子进程 + 销毁管道。7c2/7d1a/7d1b 测试 finally 补 process.exit
 >   （undici keep-alive socket 拖事件循环）。
@@ -475,7 +475,7 @@
 
 > **7d-1c 勘察（2026-08-30；7d-1c-1 已完成，7d-1c-2 待做）**：NewSmartFolderController + tagsInput/foldersInput +
 > SelectPanel 面板族。依赖图谱与行号（当前 index.html 行号，已因 7d-1a/1b 删块偏移）：
-> - 模板：index.html 420-745（`ng-controller="NewSmartFolderController"`，smart-folder-modal，
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   含 ng-flatpickr 日期规则 666-667、tags-input 717、folders-input 721）。
 > - 控制器：NewSmartFolderController = bundle 74323-74733（模板数据 smartFolderScope、
 >   规则编辑器 changeValue/save/cancel 等）。
@@ -502,7 +502,7 @@
 
 > **7d-1c-1 已验证并接管**（2026-08-30）：tagsInput + generalTagSelectPanel（TagSelectPanel
 > 体系）+ AutoTaggingController。
-> - 接管方式：index.html 旧 AutoTaggingController 区块与 `<general-tag-select-panel theme>` 岛
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   删除，替换为 `#eagle-auto-tagging-host` / `#eagle-general-tag-select-panel-host`；React 层
 >   components/stage7/selectPanelEngine.ts（纯类）+ SelectPanels.tsx（组件）。
 > - 引擎逐字移植：TagSelectPanelItem（56438-56477）、SelectPanelSearchInput（55466-55572，
@@ -525,7 +525,7 @@
 >   (Esc/meta+Enter)、save（folder.name/tags 原地改 + isInFolder 子树加速 + raw 遍历
 >   image.tags 去重 + ipc 'image-change' + SAVE_FOLDER/CALCULATE_IMAGE_BINDING/
 >   UPDATE_SELECTION 广播）、input tabindex 101/-1 游戏。
-> - **重大教训（复现 7a）**：`$` 是返回 window.jQuery 的工厂——引擎里 `$(selector)` 直接
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `.off()` 抛 TypeError，React 19 静默卸载整棵树（onUncaughtError 默认只 console.error，
 >   不触发 window error 事件）→ boot 连锁断裂（$bodyScope 由 React BoxList 挂载设置，树死则
 >   shims 等不到 → boxes 永不渲染）。必须 `$()(selector)` 双调用。诊断手段：createRoot
@@ -589,7 +589,7 @@
 >   + api-smoke 13/13；tsc 零错。
 
 > **7d-2 已验证并接管**（2026-08-30）：batchRenameModal + artstationImportModal。
-> - 接管方式：index.html `<batch-rename-modal>` / `<artstation-import-modal>` 删除，替换为
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `#eagle-batch-rename-host`（保留 modal-flex-center）/ `#eagle-artstation-import-host`；
 >   React 层 components/stage7/BatchRenameArtstationModals.tsx。规范：artstationImportModal
 >   = bundle 76464-76783 + 模板；batchRenameModal = 76783-77785 + 模板 + findStringAutocomplete
@@ -634,7 +634,7 @@
 >   library-switch-ui + drag-start + preview-delivery）+ api-smoke 13/13；tsc 零错。
 
 > **7d-3a 已验证并接管**（2026-08-30）：inspectorTagSelectPanel。
-> - 接管方式：index.html `<inspector-tag-select-panel theme selected tag-manager>` 岛删除，
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   替换为 `#eagle-inspector-tag-select-panel-host`；React 层
 >   components/stage7/InspectorTagSelectPanel.tsx（复用引擎 TagSelectPanel + useVsGridRepeat，
 >   两者已从 SelectPanels.tsx 导出）。
@@ -664,7 +664,7 @@
 >   全量回归 18/18 全绿 + tsc 零错。
 
 > **7d-3b 已验证并接管**（2026-08-30）：batchSavePanel + batchRectSelect。
-> - 接管方式：index.html `<batch-save-panel theme folders folder-mappings upload-queue
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   upload-urls add-to-recent-folders tag-manager>` 删除，替换为
 >   `#eagle-batch-save-panel-host`；React 层 components/stage7/BatchSavePanel.tsx
 >   （含 BatchSaver 类 595-1030 逐字 + batchRectSelect 59288-59423 内联移植）。
@@ -701,7 +701,7 @@
 >   tsc 零错。
 
 > **7d-4 已验证并接管**（2026-08-30）：duplicateScanPanel + mergeEditor + duplicateModal。
-> - 接管方式：index.html `<duplicate-scan-panel>`/`<duplicate-modal>` 删除，替换为
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `#eagle-duplicate-scan-panel-host`/`#eagle-duplicate-modal-host`；React 层
 >   components/stage7/DuplicateFamily.tsx（MergeEditor 子组件 + DuplicateScanPanel +
 >   DuplicateModal）。
@@ -740,7 +740,7 @@
 >   （empty-trash+itemMappings）/截图留档）。全量回归 20/20 全绿 + api-smoke 13/13；tsc 零错。
 
 > **7d-5a 已验证并接管**（2026-08-30）：pluginPanel + pluginCreator（pluginCenter 拆至 7d-5b）。
-> - 接管方式：index.html `<plugin-panel>`/`<plugin-creator>` 删除，替换为
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `#eagle-plugin-panel-host`/`#eagle-plugin-creator-host`（保留 modal-flex-center）；
 >   React 层 components/stage7/PluginFamily.tsx。
 > - pluginPanel 逐字：OPEN_PLUGIN_PANEL（$timeout 30 → moveToCursorPosition（鼠标定位，
@@ -765,7 +765,7 @@
 >   mock 环境加载失败 → 空列表；含 PluginCenterFactory/getBestURL/排序/详情页/安装流）。
 
 > **7d-5b 已验证并接管**（2026-08-31）：pluginCenter。7d-5（插件族）全部完成。
-> - 接管方式：index.html `<plugin-center>` 删除，替换为 `#eagle-plugin-center-host`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （保留 modal-flex-center）；React 层 components/stage7/PluginCenter.tsx
 >   （含 PluginCenterFactory.data 模块级单例 + factoryInit 远程加载等价）。
 > - 逻辑逐字：link 期 2s 预加载 init（远程 API，mock 环境 fetch 失败 → electronLog.error +
@@ -864,7 +864,7 @@
 > - debug-report：debugReportStatus **初始不存在**（bundle 106539 仅在导出调试报告 swal 确认
 >   回调里创建）→ watcher 宽容读 + 冒烟先等价初始化再置值；取消按钮原版无 ng-click（纯装饰），
 >   逐字保留。
-> - file-export：ipc show/finish/close-export-task；show 的 total 累加（`total += total`）、
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   finish 完成且 finishDir → send 'show-item-in-folder'；close-export-task 合并原指令
 >   （仅 clearInterval）与 shim DOM poke（重置）语义——主进程错误路径必须关弹窗（真实流：
 >   main.cjs runExport 出错即 send close-export-task）。
@@ -921,7 +921,7 @@
 >   + 33641 removeClass open）。以上块接管必须与 bundle 上传/标注/锁屏逻辑重写同步进行。
 > - index.html 残留 ng-*（ng-right-click 4 处等）属未删除旧模板，阶段11 ng-* 清理时处理。
 > **阶段8 勘察（2026-08-31；未转写）**：设置页 = 独立窗口页，**已走 vite 管道**。
-> - 窗口机制：main.cjs `openPreferencesWindow`（628-660）——`preferencesUrl() = previewUrl +
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   /src/app/preferences.html`，query 传 `panel`/`keyword`；BrowserWindow frame:false 980×720；
 >   重复打开 focus/重载。shims 'open.preferences' → native ipc（1346-1350）。
 > - 规模：preferences.html **1229 行**（ng-app="PreferenceApp"，12 个 ng-switch-when 面板：
@@ -937,7 +937,7 @@
 >   200ms）；save = apply()（electron-info 日志 + auto-launch enable/disable + autoImport 日志
 >   + send 'chnage-preferences'——**原版拼写，逐字保留**）→ currentWindow.hide() → 300ms
 >   close()；'open-with-default'（autoImportPath）、'lock-now'、'change-theme'（lastTheme）。
-> - 接线方案（与主窗口绞杀者同构）：preferences.html 内加 `#eagle-preferences-react-host`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   + `<script type="module" src="…/react/preferences-entry.tsx">`；新代码
 >   src/app/react/preferences/（独立 entry + store 同步桥读 electronSettings/全局
 >   preferences，回调仍调 scope/全局函数）。
@@ -950,11 +950,11 @@
 >   updateKeybinds/shortcut-manager）；**8e** notification+screencapture+privacy+autoImport+
 >   developer（797-1229）。每单元 tsc+冒烟+全量回归+PROGRESS+commit。
 > **8a 已验证并接管（2026-08-31）**：偏好窗口入口接线 + 壳。
-> - vite（frontend/vite.preview.config.mjs）：`readPreviewPreferences()`——/src/app/preferences.html
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   走独立 middleware 分支（injectPreviewScripts 的 shims + REACT_REFRESH_PREAMBLE +
 >   `<script type="module" src="/src/app/react/preferences/entry.tsx">`）。注意：该页无
 >   `<title>`，transformIndexHtml 钩子本就不生效（middleware 直出），此前无 shims 也无 React。
-> - preferences.html：body 尾加 `#eagle-preferences-react-host`。
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 > - src/app/react/preferences/entry.tsx：PreferencesWindowState 外部 store（registration/
 >   panel/keyword/ready）+ ipc 'init' 监听（数据面等价）；8a 不渲染 DOM（8b 起面板迁入）；
 >   测试契约 window.__eaglePreferencesState。
@@ -970,7 +970,7 @@
 > - 全量回归 26 项（runner 增 8a；main-ui-workflow 偶发一次重跑即绿）+ api-smoke 13/13；
 >   tsc 零错。
 > **8b 已验证并接管（2026-08-31）**：偏好窗口 general + sidebar 面板。
-> - 接管方式：preferences.html 旧 general `.panel-content`（73-229）+ sidebar `.panel-content`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （232-353）两块删除，替换为注释锚；React 层 react/preferences/panels.tsx（entry.tsx 渲染
 >   PreferencesGeneralSidebarPanels）。**渲染位置修正**：8a host 在 .content 末尾（footer 之后），
 >   而原版 .panel-content 在 footer 之前（footer 在 .content 内随内容滚动，1d85065 起的既有
@@ -1011,7 +1011,7 @@
 >   `=== true` 断言恒 false（位运算结果必须 Boolean() 包装）；首跑冷启动偶发（vite 首次
 >   transform + init 500ms 定时）会吃掉前 1-2 个断言窗口，重跑即绿（既有偶发家族新成员）。
 > **8c 已验证并接管（2026-08-31）**：偏好窗口 control + habits 面板。
-> - 接管方式：preferences.html 旧 control `.panel-content`（原 75-207）+ habits `.panel-content`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （原 210-451）两块删除（378 行），替换为注释锚；React 层 panels.tsx 追加
 >   ControlPanelContent + HabitsPanelContent，根组件更名 PreferencesPanels（entry.tsx 同步），
 >   锚点标记改 data-eagle-react-panels="panels"（8b 冒烟同步更新）。
@@ -1036,7 +1036,7 @@
 >   Runtime.evaluate 表达式 throw 不 reject（落 exceptionDetails）——evalOn 必须检查
 >   exceptionDetails 否则点击 eval 静默失败（本次 video[1] 点到 volume radio 即由此掩盖）。
 > **8d 已验证并接管（2026-08-31）**：偏好窗口 shortcuts 面板。
-> - 接管方式：preferences.html 旧 shortcuts `.panel-content`（61 行）删除 + `#shortcut-input`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   搜索框去 select-all/ng-model/ng-change 三属性（React 原位接管：常驻轮询挂事件——元素在
 >   ng-if 下随面板切换销毁重建；keydown mod+a/Esc 等价 selectAll + input → shortcutKeyword
 >   React state）。React 层 panels.tsx 追加 ShortcutsPanelContent + ShortcutInput。
@@ -1068,7 +1068,7 @@
 >   + api-smoke 13/13；tsc 零错。
 > **8e-1 已验证并接管（2026-08-31）**：偏好窗口最后五面板（notification/screencapture/privacy/
 >   autoImport/developer）。
-> - 接管方式：preferences.html 五块 `.panel-content`（376 行）删除（删后仅剩 Angular 壳层：
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   sidebar/header/footer/panel-empty/密码弹窗 + ng-app/ng-controller/脚本区，归 **8e-2**）；
 >   React 层新文件 react/preferences/panels8e.tsx（共享助手 pfT/getPreferencesScope/themeAttrCss/
 >   themePathFor/ShortcutInput/PanelSnap 自 panels.tsx 导出），根组件接五个渲染分支。
@@ -1361,7 +1361,7 @@
 >   → preview CDP target 消失（真实关窗）。**右键菜单族为 Electron native Menu——popup() 在自动
 >   化环境阻塞/抢输入（首跑实证整条冒烟卡死），CDP 无法断言原生菜单 UI；构造路径不依赖 DOM，
 >   自动化方案留待阶段11 与 bundle 一并处理**。
-> - 教训：(1) 断言层级笔误（tippy 实例挂在按钮 div，断言查成 `img._tippy` 恒 undefined）制造
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   了"重建丢失"假象——逐轮采样版断言 1ms 即过才暴露；(2) 诊断探针会污染被测状态（手工
 >   tippy 探针 attach/destroy 会孤儿化 React 挂的实例）——探针与断言必须隔离或用后清理；
 >   (3) shims mock remote 的 window 方法面不全（无 isAlwaysOnTop、有 isMaximized）。
@@ -1384,7 +1384,7 @@
 >   静态壳原样保留 api lib + jquery/swal/chinese_convert/pinyinlite/tiny-pinyin +
 >   models/collect-item.js（plain JS 全局类，补 window.CollectItem 挂载）；main.cjs 仅
 >   get-collect-window-data handle（窗口由外部打开，本仓无 opener）。
-> - 落盘：vite `readCollectWindow()`（injectPreviewScripts + sanitizeCollectTemplates +
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   allowSingleColorPalette + entry 注入）；静态壳 = eagle api lib/vendors/CollectItem +
 >   `#eagle-collect-react-host`（Angular/四指令/modules 全移除）；react/collect-window/
 >   {controller,selectPanelEngine,folderPanel,shell,entry}。
@@ -1404,10 +1404,10 @@
 >   采集窗未定义 = ReferenceError 怪癖）。
 > - shims collect 分支改 React 版轮询（__eagleCollectEntryReady + folders 就绪 →
 >   initFolderSelect()，行为等价原 isolateScope.listData 轮询）。
-> - **全局词法绑定坑第三次命中**：inline script 的 `const preferences` 与 collect-item.js 的
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   `class CollectItem` 都是 classic 顶层词法绑定、模块作用域不可见 → 静态壳显式
 >   window.preferences/window.CollectItem 挂载（同 9a 的 path/EagleConfig）。
-> - 教训：(1) `panel.listData` 在 open() 前未初始化 → React 重渲染踩空（守卫空模型）；
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   (2) 诊断探针经 addScriptToEvaluateOnNewDocument + consoleAPICalled 事件捕获才拿到真栈
 >   （三层异常：isMac 调用形态 / $ 工厂 / Electron window.onerror 在 mock process 上的
 >   listenerCount 二次报错）；(3) CDP /json/new 与 browser-ws Target.* 在本 Electron 均不可用
@@ -1515,7 +1515,7 @@
 
 > **9b-2c 已验证并接管（2026-09-01）**：folder 面板 vs-repeat 虚拟化（9b 末片）——collect-window
 > 功能面全数 React 化完成。
-> - folderPanel.tsx：FolderSelectPanelHost 接 stage7 `useVsRepeat`（folder-select-panel.html 属性
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   vs-excess=30 / vs-repeat=26 / vs-size=size → `{ elementSize: 26, excess: 30 }`）+ `useVsAutoScroll`
 >   （index = listData.currentIndex，scroll-container = select-panel-list 自身加 overflowY:auto）；
 >   列表渲染改 `vr.innerItems` 切片 + before/after 占位 div（angular-vs-repeat 插入首/尾 spacer
@@ -1565,7 +1565,7 @@
 ## 10. 快捷键（shortcut-manager）
 
 > **10 勘察 + 核对（2026-09-01；四项全部已由前序阶段事实接管，本片为核对定性，无新转写）**：
-> - **shortcut-manager.js（296 行）**：非 Angular 服务——`window.ShortcutManager` 单例（
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   init/electronToMousetrap/registerShortcut/getConflicts/validateShortcut/formatForDisplay/
 >   migrateToPlatformSpecific），与 mousetrap.min.js 同属共享脚本层。React 直用已验证：
 >   preferences controller（react/preferences/controller.ts:980 init(preferences,
@@ -1809,7 +1809,7 @@
 >   switchNormal/PageMode、动态节流 scroll（性能自适应 performanceMetrics）、原生拖拽
 >   （transform3d + 精准页内定位 + 相邻页直滚 + 跨页 resetNgGridLayoutData）、mousedown
 >   跳页、$destroy 清理。
-> - **rectSelect 免移植发现**：`useRectSelect`（detailHooks.ts，bundle 72564-72799 逐字）
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   早在阶段5 已移植并经 DetailPanel 挂载——b0 前 Angular 指令 + React 移植**双绑并存**
 >   （历史遗留：box-container 的 mousedown 双 handler），移除 Angular 属性后归一
 >   （.rect 恒 1，冒烟断言）。gridDirectives 不含 initRectSelect（避免三绑）。
@@ -1829,7 +1829,7 @@
 > **b1 前置勘察结论（2026-09-01；方向决策点，b1 暂缓）**：b1（移除 angular.min.js +
 > app.bundle.js）被**数据面依赖**阻塞——阶段11 清理清单的 b1 假设「UI 全 React 后 bundle
 > 可移除」不成立：
-> - React 全线 **43 个文件**仍以 `$bodyScope`/`getBodyScope`/bundle 全局为运行时数据面
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （scope sync 各 store 的数据源、eagle.filter/inspector/action、FileUrlHelper/
 >   IPCHelper/resetNgGridLayoutData/ayncsImagesChange/Registration/swal 等）。
 > - app.bundle.js = src/app/js 源码树（9MB：services/controllers/directives/utils）+ 
@@ -2220,7 +2220,7 @@
 >   重绑定 + pluginModule——插件/菜单域再收）；jieba-extract-done → 标签域；plugin-*
 >   @1089/54292 → 插件域；@62437 PluginCenter 指令岛已删休眠；@18672 插件管理器模块级
 >   responseCallback 保留；@63309+ LoadProgress 休眠已知。
-> - 头注释陷阱教训：`app-status-module-*/checking...` 中 `*/` 提前终结块注释（两处），
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   已改造 `* /`。诊断契约：window.__eagleMiscDomain（removed 56 通道计数）。
 
 > **cZ-7b + cZ-final 实现与核验（2026-09-02；M1 统一验证待执行）**：
@@ -2441,7 +2441,7 @@
 >   addItemFromURL·addItemFromURLs / batchSave / updateItem / setCustomThumbnail（thumbnail-
 >   generated 等待 10s 超时语义逐字）/ getItemInfo·getItemThumb / refreshItemPalette·
 >   refreshItemThumbnail / listImages（SmartFolder 筛选复用 + 200 条上限 + IMPORT 排序）。
-> - **路由注册逐字**：`APIServer.addAPI('/', 'GET', ...)` + 30 条路由 + 3 个 eagle:// 重定向
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   handler（/item、/folder、/smart-folder）+ V2 外挂 `require(appRoot + '/app/js/api-server-v2')
 >   .initAPIServerV2(APIServer)`（磁盘文件 b1 存活，原样 require）。**/api/check 混淆段（18852，
 >   3924 字节）由脚本从 bundle 逐字节提取拼接**（仅 require→w.require / appRoot→w.appRoot 机械
@@ -2467,7 +2467,7 @@
 >   $watch/$watchCollection 函数型轮询（200ms + 深比较，startScopeSync 兼容语义，注销函数
 >   返回）；$on/$broadcast/$emit shim 内事件总线（域处理器 $on 注册/misc $broadcast 路径）；
 >   mousetrap 桩（强就绪门 b1 后放行）；$watchers=[]（sweep 幂等 no-op）；$root/$parent 自引用。
-> - **教训**：Proxy 自引用必须指向 proxy 本体（raw 对象 $root 使 `scope.$root === scope`
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   恒等比较失败——A6 断言逼出）。bridgeWhenReady 对 shim 跳过 bridgeScopeFields（shim 已是
 >   coreState 后端，重复桥接无意义）。
 > - **b1 前置清单更新**：scope 函数面诚实缺口 = bundle 独占函数（relayout/filterContent/
@@ -2483,7 +2483,7 @@
 >   1844/customExport 1882/combineImages 1915/action 2048）+ runtime 占位（plugin {}/
 >   app.*/containerSize/isDev）。**eagle.list/eagle.cool 高计数为 localStorage 键串误命中**
 >   （"eagle.list.orderBy" 等），非对象成员——从接管面剔除。
-> - **分叉排除**：bundle 20536 `$scope.eagle = eagle`——React 消费方 19 处 s.eagle.* 走
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   $scope.eagle（= bundle 实例），coreEagle 仅诊断契约（__eagleCoreEagle），今日零分叉。
 > - **实现**：installEagleMembers if-absent——bundle 在世时成员已存在零改动；b1 后由 React
 >   c2 全家桶（eagleClasses.ts 2071 行逐字移植）补齐八实例 + 三占位。诊断契约扩
@@ -2638,7 +2638,7 @@
 > **c16c 修正：IPCHelper 词法绑定不可达（2026-09-03；suite 三项失败根因）**：
 > - **症状**：7b/7c/7d1c2（tm-create-group-input/fp-closed/fsp-created-selected+nsm-closed）
 >   稳定失败——三者均经 saveFolder 传递（标签组建组/筛选面板/文件夹选择面板的保存路径）。
-> - **根因**：`const IPCHelper`（bundle 3471）= **脚本级词法绑定**——既不上 window，ESM
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   模块裸引也不可达（与顶层 var/function 的 window.* live binding 不同类）；c16c 初版
 >   `w.IPCHelper.send` → undefined → TypeError → saveFolder 抛出。二分定位（c16a 版
 >   dataMachinery 复跑通过）。
@@ -2649,7 +2649,7 @@
 >   try/catch 内静默失败风险，登记 c17 审计项）。
 
 > **c16d 键盘域 buildMousetrap/destoryMousetrap/initMousetrap（2026-09-03；version 17）**：
-> - **触发**：main-ui-workflow 稳定失败 `w.initMousetrap is not a function`——initMousetrap
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （49326）为 **controller 闭包函数**（非顶层），c16a 的 leaveDetailMode w.* 访问不可达。
 >   键盘域因此从 c17 提前到 c16d。
 > - machineryBuildMousetrap（49177-49314 逐字）：player 九快捷键 handler 映射（gif speed
@@ -2684,7 +2684,7 @@
 >   按钮）；restack i()（startTop 10/spacing 15/closing +20/top+margin-top 物化）；closeAll
 >   （全栈 opacity 0）；duration 默认 10000；transitionend(opacity) → remove + 出栈 + restack；
 >   center 时 $centerMargin = -offsetWidth/2。
-> - machineryNotify：$rootScope.notify（20157 逐字：messageTemplate 拼接 `<span><icon class=
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   "{status}"></icon>` + undo 锚点 `notify.button.undo`）+ 服务核心等价复刻。**ng-* 以物化
 >   DOM + 委托 click 复刻**（undo 锚点 data-cg-undo → closeAll + $rootScope.undo()；close
 >   按钮 → $close 语义）。undoTimeout 域内自管（duration+5000 置空守卫逐字）。cgStack/cgScopes
@@ -2746,12 +2746,12 @@
 > - 验证：tsc 零错；m1 25/25（DIAG-CONSOLE 空）。
 
 > **c18a-fix zoom 助手注入守卫修正（2026-09-03；bundleGlobals，无 version 变更）**：
-> - 症状：全量 suite 两项失败——stage5 `detail-delivery-released` 与 main-ui-workflow
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   （detail original delivery timeout）；探针证实详情已开但 #bitmap-viewer 无 canvas、
 >   tileCount=0、releasedAt 恒 0（释放走 canvas 路径：bitmapWorker 瓦片 → 3 帧稳定签名）。
 > - 定位：全提交状态回放二分（c17c 通过 / c18a 起失败）锁定 c18a；探针对比 c17c
 >   （canvas 798×752 含真实像素、tileCount=2）与失败态（NO-CANVAS）。
-> - 根因：bundleGlobals 的 zoom-helpers 注入守卫写成 `if (!w.devicesMetrics)`——
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   devicesMetrics 是 bundle **顶层 var**（天然上 window），守卫永真短路注入；而 vendor
 >   文件真正载荷是三个 controller 闭包助手（isMobileResolution/getImagePixelDensity/
 >   isMobileWidth，不上 window）→ machinerySmartZoom 在 defaultRatio=auto 分支
@@ -2759,7 +2759,7 @@
 >   → on_IMAGE_LOAD 链 updateNavigator → bitmapViewer.loadURL 不再执行 → worker 不启动
 >   → 无瓦片无 canvas → 释放门超时。**教训：if-absent 守卫必须查真正消费的载荷标识符，
 >   不能查相关联的全局名。**
-> - 修正：守卫改为 `if (!w.getImagePixelDensity || !w.isMobileResolution || !w.isMobileWidth)`。
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 >   vendor 文件重声明 `var devicesMetrics` 与 bundle 顶层 var 数据逐字节等同（仅行尾差异），
 >   bundle 在世时注入为惰性覆盖；b1 后由 vendor 独立供给。
 > - 验证：tsc 零错；探针 helpers function×3 + zoomHelpersLoaded=true + mode:"canvas"
@@ -2812,6 +2812,19 @@
 >   保留）+ currentId 三分（Up 含 currentId 真值守卫、Down 无——bundle 原样）+ tags→Group 导航。
 > - 闭包域内移植（非 scope 成员）：openPrevQuickAccess（35287）/openNextQuickAccess（35304）/
 >   openPrevGroup（35704）/openNextGroup（35730）——machinery 内部函数，不上 scope/契约。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
+> **c18e-6 selectUp/Down + pageUp/pageDownHandler（2026-09-03；version 29）**：
+> - machinerySelectUp（35840-35906 逐字：GridLayout 同列最近上方盒 / 其他布局上方 20px 外
+>   最近距离盒，selected 首盒锚点）+ machinerySelectDown（35908-35962 逐字：getArroundBox(end)
+>   邻域 + 末盒锚点；**autoScroll(target) 传元素非索引——bundle 怪癖逐字保留**）。
+>   getItemByElement 经 scope 解析。
+> - machineryGetArroundBox（35091 闭包）+ scrollbarTo（35612 闭包）+ Math.easeInOutQuad
+>   （35638，全局 Math 同体幂等补丁）+ machineryPageDownHandler/PageUpHandler（35680-35702
+>   逐字）——_.throttle(100,true) 实例 **apply 时一次性创建**（与 bundle controller init 同
+>   语义，s.pageDownHandler = machineryPageDownHandler(s)），pageUp 含 ig.trigger("prepend")
+>   prepend 触发面。
+> - 教训：jQuery 回调 `function (index)` 内用 `$(this)` 需 `function (this: any, index: any)` 注解（noImplicitThis）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
 > **c18e-1 selectNext/selectPrev（2026-09-03；version 23）**：

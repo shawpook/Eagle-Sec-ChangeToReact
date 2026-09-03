@@ -5173,6 +5173,198 @@ export function machineryKeyDownHandler(s: any, event: any): void {
   }
 }
 
+/* ── c18e-6：selectUp/Down + pageUp/pageDownHandler（滚动翻页面）──────── */
+
+/* getArroundBox（bundle 35091-35097 逐字，controller 闭包） */
+function machineryGetArroundBox(s: any, index: any): any {
+  const w = window as any;
+  var arroundStart = (index - 20 >= 0) ? index - 20 : 0;
+  var arroundEnd = (index + 20 > s.allData.length) ? s.allData.length : index + 20;
+  var $arround = w.$(".box").slice(arroundStart, arroundEnd);
+  return $arround;
+}
+
+/* scrollbarTo（bundle 35612-35635 逐字）+ Math.easeInOutQuad（35638-35643 逐字；bundle 于
+   controller init 补丁全局 Math，此处同体幂等补丁） */
+(Math as any).easeInOutQuad = function (t: any, b: any, c: any, d: any) {
+  t /= d / 2;
+  if (t < 1) return c / 2 * t * t + b;
+  t--;
+  return -c / 2 * (t * (t - 2) - 1) + b;
+};
+
+function machineryScrollbarTo(element: any, to: any, duration: any): void {
+  var start = element.scrollTop,
+    change = to - start,
+    currentTime = 0,
+    increment = 20;
+
+  var animateScroll = function () {
+    currentTime += increment;
+    var val = (Math as any).easeInOutQuad(currentTime, start, change, duration);
+    element.scrollTop = val;
+    if (currentTime < duration) {
+      setTimeout(animateScroll, increment);
+    }
+  };
+  animateScroll();
+}
+
+/* pageDownHandler（bundle 35680-35689 逐字）——_.throttle 实例 apply 时一次性创建
+   （与 bundle controller init 同语义），shift+space 绑定消费 */
+export function machineryPageDownHandler(s: any): any {
+  const w = window as any;
+  return w._.throttle(function (event: any) {
+    var offset = w.$(window).height() - 72;
+    if (s.isDetailMode) {
+      w.$("#detail-container").smoothZoom('moveY', offset);
+    }
+    else {
+      var scrollTop = w.$(".box-container").scrollTop();
+      machineryScrollbarTo(w.$(".box-container")[0], scrollTop + offset * 1, 100);
+    }
+  }, 100, true);
+}
+
+/* pageUpHandler（bundle 35691-35702 逐字：含 prepend 触发面 ig.trigger("prepend")） */
+export function machineryPageUpHandler(s: any): any {
+  const w = window as any;
+  return w._.throttle(function (event: any) {
+    var offset = w.$(window).height() - 72;
+    if (s.isDetailMode) {
+      w.$("#detail-container").smoothZoom('moveY', -offset);
+    }
+    else {
+      var scrollTop = w.$(".box-container").scrollTop();
+      machineryScrollbarTo(w.$(".box-container")[0], scrollTop - offset * 1, 100);
+      setTimeout(function () {
+        if (s.startCursor !== 0 && w.$("#box-container").scrollTop() === 0) {
+          w.ig.trigger("prepend");
+        }
+      }, 200);
+    }
+  }, 100, true);
+}
+
+/* selectUp（bundle 35840-35906 逐字：GridLayout 同列最近上方盒 / 其他布局上方 20px 外
+   最近距离盒，selected 首盒为锚点）+ selectDown（35908-35962 逐字：getArroundBox(end) 邻域 +
+   selected 末盒为锚点；**autoScroll(target) 传元素非索引，bundle 怪癖逐字保留**；
+   getItemByElement 经 scope 解析） */
+export function machinerySelectUp(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+
+  var selection = s.getSelection();
+  var start = selection.start;
+  var $box = w.$(".box.selected").eq(0);
+  var boxOffest = $box.offset();
+  if (!boxOffest) return;
+  var boxCenterX = boxOffest.left;
+  var boxCenterY = boxOffest.top;
+  var target;
+  var d = 100000;
+
+  w.$(".box").each(function (this: any, index: any) {
+    var $b = w.$(this);
+    var offset = $b.offset();
+    var bx = offset.left;
+    var by = offset.top;
+    if (s.layout === "GridLayout") {
+      var td = Math.abs(boxCenterY - by);
+      if (boxCenterX == bx && boxCenterY > by) {
+        if (td < d) {
+          d = td;
+          target = $b;
+        }
+      }
+    }
+    else {
+      var td2 = Math.sqrt((boxCenterY - by) * (boxCenterY - by) + (boxCenterX - bx) * (boxCenterX - bx));
+      if (boxOffest.top > offset.top && Math.abs(boxOffest.top - offset.top) > 20) {
+        if (td2 < d) {
+          d = td2;
+          target = $b;
+        }
+      }
+    }
+  });
+  if (target) {
+    var image = s.getItemByElement(target[0]);
+    s.selected = [image];
+    s.selectedFolderMappings = {};
+    if (s.isDetailMode) {
+      s.current = s.selected[0];
+    }
+    s.autoScroll(target);
+  }
+  if (s.isDetailMode) {
+    s.forceFitImageSize(s.selected[0], true);
+    s.current = s.selected[0];
+    s.isGifReady = false;
+    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    if (!s.lastZoom()) {
+      s.zoom();
+    }
+  }
+}
+
+export function machinerySelectDown(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  var selection = s.getSelection();
+  var end = selection.end || 0;
+  var $arround = machineryGetArroundBox(s, end);
+  var $box = w.$(".box.selected").last();
+  var boxOffest = $box.offset();
+  if (!boxOffest) return;
+  var boxCenterX = boxOffest.left;
+  var boxCenterY = boxOffest.top;
+  var target;
+  var d = 100000;
+  w.$(".box").each(function (this: any, index: any) {
+    var $b = w.$(this);
+    var offset = $b.offset();
+    var bx = offset.left;
+    var by = offset.top;
+    if (s.layout === "GridLayout") {
+      var td = Math.abs(by - boxCenterY);
+      if (boxCenterX == bx && by > boxCenterY) {
+        if (td < d) {
+          d = td;
+          target = $b;
+        }
+      }
+    }
+    else {
+      var td2 = Math.sqrt((boxCenterY - by) * (boxCenterY - by) + (boxCenterX - bx) * (boxCenterX - bx));
+      if (boxOffest.top < offset.top && Math.abs(boxOffest.top - offset.top) > 20) {
+        if (td2 < d) {
+          d = td2;
+          target = $b;
+        }
+      }
+    }
+  });
+  if (target) {
+    var image = s.getItemByElement(target[0]);
+    s.selected = [image];
+    s.selectedFolderMappings = {};
+    if (s.isDetailMode) {
+      s.current = s.selected[0];
+    }
+    s.autoScroll(target);
+  }
+  if (s.isDetailMode) {
+    s.forceFitImageSize(s.selected[0], true);
+    s.current = s.selected[0];
+    s.isGifReady = false;
+    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    if (!s.lastZoom()) {
+      s.zoom();
+    }
+  }
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -5289,9 +5481,14 @@ export function applyDataMachineryScope(): void {
   // c18e-5：keyUp/keyDown（侧栏导航级联 + QuickAccess/Group 闭包域内移植）
   s.keyUpHandler = (event: any) => machineryKeyUpHandler(s, event);
   s.keyDownHandler = (event: any) => machineryKeyDownHandler(s, event);
+  // c18e-6：selectUp/Down + pageUp/pageDown（throttle 实例 apply 时一次性创建）
+  s.selectUp = (event: any) => machinerySelectUp(s, event);
+  s.selectDown = (event: any) => machinerySelectDown(s, event);
+  s.pageDownHandler = machineryPageDownHandler(s);
+  s.pageUpHandler = machineryPageUpHandler(s);
 
   (window as any).__eagleDataMachinery = {
-    version: 28,
+    version: 29,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -5376,6 +5573,10 @@ export function applyDataMachineryScope(): void {
     modShiftRightHandler: 'machinery',
     keyUpHandler: 'machinery',
     keyDownHandler: 'machinery',
+    selectUp: 'machinery',
+    selectDown: 'machinery',
+    pageDownHandler: 'machinery',
+    pageUpHandler: 'machinery',
     selectNext: 'machinery',
     selectPrev: 'machinery',
   };

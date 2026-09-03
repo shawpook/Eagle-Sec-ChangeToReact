@@ -5177,7 +5177,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
 /* ── c18e-6：selectUp/Down + pageUp/pageDownHandler（滚动翻页面）──────── */
 
 /* getArroundBox（bundle 35091-35097 逐字，controller 闭包） */
-function machineryGetArroundBox(s: any, index: any): any {
+export function machineryGetArroundBox(s: any, index: any): any {
   const w = window as any;
   var arroundStart = (index - 20 >= 0) ? index - 20 : 0;
   var arroundEnd = (index + 20 > s.allData.length) ? s.allData.length : index + 20;
@@ -6815,7 +6815,7 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
    preloadImage + getVideoPlayer 域内闭包）──────────────────────────────── */
 
 /* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
-function machineryGetVideoPlayer(s: any): any {
+export function machineryGetVideoPlayer(s: any): any {
   const w = window as any;
   var mpv = w.$(".detail-wrap mpv-video")[0];
   if (mpv) return { el: mpv, type: 'mpv' };
@@ -8003,7 +8003,7 @@ export function machineryOpenDuplicate(s: any, options: any = {}): void {
 
 /* toggleCurrentLevelSmartFolders 内嵌闭包（38841 逐字）+ toggleAllSmartFolders 内嵌闭包
    （38831 逐字：tree.walk 全展开/收起）——localStorage 键逐字 */
-function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+export function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
   const w = window as any;
   smartFolders.forEach(function (f: any) {
     if (f.isExpand !== isExpand) {
@@ -8014,7 +8014,7 @@ function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolders: any,
   s.updateSidebarList();
 }
 
-function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+export function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
   const w = window as any;
   w.eagle.utils.tree.walk(smartFolders, 'children', function (f: any, parent: any) {
     if (f.isExpand !== isExpand) {
@@ -9101,6 +9101,695 @@ export function machineryGotoBottom(s: any): void {
   }
 }
 
+/* ── b1-8 rename 域 ──
+   emojiRegex（bundle 19014 顶层 const → 词法绑定不可达，域内同字面移植；**g 标志 lastIndex
+   状态跨调用共享与 bundle 顶层单例同语义**）、remainingFilenameLength（19018 require）与
+   sanitize（22746 函数内 require(appRoot + ...)——**无 .path 后缀，bundle 原样**）为惰性
+   require 缓存（bundle 为顶层即时，machinery 首用 —— 调用面语义同）。 */
+const emojiRegex = /\p{Emoji_Presentation}|\p{Extended_Pictographic}|([0-9]\u{FE0F}\u{20E3})|([\*#\u{1F51F}]\u{FE0F}\u{20E3})/gmu;
+let remainingFilenameLengthCache: any = null;
+function getRemainingFilenameLength(): any {
+  const w = window as any;
+  if (!remainingFilenameLengthCache) {
+    remainingFilenameLengthCache = w.require(w.appRoot.path + '/app/js/utils/remainingFilenameLength.js');
+  }
+  return remainingFilenameLengthCache;
+}
+let sanitizeCache: any = null;
+function getSanitize(): any {
+  const w = window as any;
+  if (!sanitizeCache) {
+    sanitizeCache = w.require(w.appRoot + '/my_modules/sanitize-filename');
+  }
+  return sanitizeCache;
+}
+
+/* selectFolder（bundle 34666-34676 逐字：文件夹单项选中重置面） */
+export function machinerySelectFolder(s: any, event: any, folder: any): void {
+  (document.activeElement as any).blur();
+  if (folder) {
+    s.selectedFolderMappings = {};
+    s.selectedMappings = {};
+    s.selectedFolderMappings[folder.id] = true;
+    s.$root.currentFocus = "content";
+    s.selected = [];
+    s.updateSelection();
+  }
+}
+
+/* enableImageNameEditable（bundle 21975-22075 逐字；controller 闭包函数）：contenteditable
+   行内重命名 + exitEditable 内嵌闭包 + blur debounce（bundle 80222 顶层 var debounce →
+   w.debounce 直连，200ms immediate）；blur 内 angular.element("body").scope() → getBodyScope()
+   （同双轨解析）；重命名数据面 ayncsImagesChange/hiddenByCurrentFilter 为 bundle 顶层函数
+   （49667/49600）→ w.* 直连（b1 终审 vendor 提取清单登记）。 */
+export function machineryEnableImageNameEditable(s: any, event: any, $name: any): void {
+  const w = window as any;
+  if (!$name) return;
+  if ($name.hasClass("editable")) return;
+  var originalName = $name.text().trim();
+  $name.attr("contenteditable", "true");
+  $name.addClass("editable");
+  $name.focus();
+  setTimeout(function () {
+    $name.focus();
+    $name.select();
+    document.execCommand('selectAll', false, null as any);
+  }, 50);
+
+  $name.off("mousedown").on("mousedown", function (event: any) {
+    event.stopPropagation();
+  });
+
+  $name.off("keydown").on("keydown", function (event: any) {
+    var keyCode = event.keyCode;
+    switch (keyCode) {
+      case 13:
+        event.preventDefault();
+        event.stopPropagation();
+        $name.trigger("blur");
+        break;
+      case 27:
+        event.preventDefault();
+        event.stopPropagation();
+        $name.html(`<span>${originalName}</span>`);
+        exitEditable();
+        break;
+      case 65:
+        if (event.metaKey || event.ctrlKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          document.execCommand('selectAll', false, null as any);
+        }
+        break;
+    }
+  });
+
+  $name.off("paste").on("paste", function (e: any) {
+    e.preventDefault();
+    var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    document.execCommand("insertHTML", false, text);
+  });
+
+  $name.off("blur").on("blur", w.debounce(function () {
+    exitEditable();
+    var $scope = getBodyScope();
+    var newName = $name.text();
+    if (!newName || !newName.trim()) {
+      $name.html(`<span>${originalName}</span>`);
+      return;
+    }
+    if (newName !== originalName && $scope && $scope.selected[0]) {
+
+      var name = newName;
+      var image = $scope.selected[0];
+
+      name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
+      name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
+      name = w._.unescape(name);
+      w.eagle.inspector.newName = name;
+
+      if (emojiRegex.test(name)) {
+        name = name.replace(emojiRegex, '');
+        w.eagle.inspector.newName = name;
+      }
+
+      if (name) {
+        image.oldName = originalName;
+        image.name = name;
+        image.newName = name;
+      }
+      $name.html(`<span>${name}</span>`);
+      console.log(`${originalName} > ${name}`);
+      w.ayncsImagesChange([image]);
+      w.hiddenByCurrentFilter([image]);
+      // TagManager.getSuggestTags([image]);
+      $scope.$evalAsync();
+      try { w.electronLog && w.electronLog.info(`[app] Change list item's name: ${originalName}(${image.id}) > ${newName}`); } catch (err) { }
+    }
+  }, 200, true));
+
+  function exitEditable() {
+    $name.css({
+      "white-space": "normal"
+    });
+    $name.attr("contenteditable", "false");
+    $name.removeClass("editable");
+    $name.off("keyup");
+    $name.off("keydown");
+    $name.off("mousedown");
+    setTimeout(function () {
+      $name.css({
+        "white-space": ""
+      });
+    }, 33);
+  }
+}
+
+/* enableSubFolderNameEditable（bundle 22077-22175 逐字）：子文件夹行内重命名——keydown 27
+   还原**无 span 包裹**（与图片版差异原样）+ blur debounce 500ms immediate + selectFolder
+   经 scope 解析（machinery 版）；exitEditable 内嵌闭包。 */
+export function machineryEnableSubFolderNameEditable(s: any, event: any, folder: any): void {
+  const w = window as any;
+  var $name = w.$(event.target);
+  if (!folder) return;
+  if ($name.hasClass("editable")) return;
+  if (!$name || $name.length === 0) return;
+
+  s.selectFolder(event, folder);
+
+  var originalName = $name.text().trim();
+  $name.attr("contenteditable", "true");
+  $name.addClass("editable");
+  $name.focus();
+  setTimeout(function () {
+    $name.select();
+    document.execCommand('selectAll', false, null as any);
+  }, 50);
+
+  $name.off("mousedown").on("mousedown", function (event: any) {
+    event.stopPropagation();
+  });
+
+  $name.off("keydown").on("keydown", function (event: any) {
+    var keyCode = event.keyCode;
+    switch (keyCode) {
+      case 13:
+        event.preventDefault();
+        event.stopPropagation();
+        $name.trigger("blur");
+        break;
+      case 27:
+        event.preventDefault();
+        event.stopPropagation();
+        $name.html(`${originalName}`);
+        exitEditable();
+        break;
+      case 65:
+        if (event.metaKey || event.ctrlKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          document.execCommand('selectAll', false, null as any);
+        }
+        break;
+    }
+  });
+
+  $name.off("paste").on("paste", function (e: any) {
+    e.preventDefault();
+    var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    document.execCommand("insertHTML", false, text);
+  });
+
+  $name.off("click").on("click", function (event: any) {
+    event.stopPropagation();
+  });
+
+  $name.off("blur").on("blur", w.debounce(function () {
+    exitEditable();
+    var $scope = getBodyScope();
+    var newName = $name.text();
+    if (!newName || !newName.trim()) {
+      $name.html(`${originalName}`);
+      return;
+    }
+    if (newName !== originalName && folder) {
+
+      var name = newName;
+      name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
+      name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
+      name = w._.unescape(name);
+
+      if (emojiRegex.test(name)) {
+        name = name.replace(emojiRegex, '');
+      }
+
+      $name.html(`${name}`);
+      folder.name = name;
+      $scope.saveFolder();
+      $scope.$evalAsync();
+      try { w.electronLog && w.electronLog.info(`[app] Change sub-folder name: ${originalName}(${folder.id}) > ${newName}`); } catch (err) { }
+    }
+  }, 500, true));
+
+  function exitEditable() {
+    $name.css({
+      "white-space": "normal"
+    });
+    $name.attr("contenteditable", "false");
+    $name.removeClass("editable");
+    $name.off("click");
+    $name.off("keyup");
+    $name.off("keydown");
+    $name.off("mousedown");
+    setTimeout(function () {
+      $name.css({
+        "white-space": ""
+      });
+    }, 33);
+  }
+}
+
+/* renameImages（bundle 41480-41496 逐字；controller 闭包函数）：多选 OPEN_RENAME 广播 /
+   单选 50ms 后 enableImageNameEditable——**bundle 裸 event 引用（41492）→ w.event**
+   （$timeout/setTimeout 回调期 window.event，同 bundle 语义） */
+export function machineryRenameImages(s: any): void {
+  const w = window as any;
+  if (s.selected.length > 1) {
+    s.$root.$broadcast("OPEN_RENAME", {
+      type: "IMAGE",
+      images: s.selected
+    });
+  }
+  else {
+    var imageId = s.selected[0].id;
+    var $box = w.$(`#box-${imageId}`);
+    if ($box.length > 0) {
+      setTimeout(() => {
+        machineryEnableImageNameEditable(s, w.event, $box.find(".name"));
+      }, 50);
+    }
+  }
+}
+
+/* batchRenameFolders（bundle 41631-41639）/ batchRenameSmartFolders（41654-41662）逐字 */
+export function machineryBatchRenameFolders(s: any): void {
+  var selectedFolders = s.$root.selectedFolders;
+  if (selectedFolders.length === 0) return;
+
+  s.$root.$broadcast("OPEN_RENAME", {
+    type: "FOLDER",
+    folders: selectedFolders
+  });
+}
+
+export function machineryBatchRenameSmartFolders(s: any): void {
+  var selectedSmartFolders = s.$root.selectedSmartFolders;
+  if (selectedSmartFolders.length === 0) return;
+
+  s.$root.$broadcast("OPEN_RENAME", {
+    type: "SMART_FOLDER",
+    folders: selectedSmartFolders
+  });
+}
+
+/* renameTagGroup（bundle 48582-48592 逐字：双 100/200ms focus 双写原样） */
+export function machineryRenameTagGroup(s: any, group: any): void {
+  const w = window as any;
+  s.currentTagGroup = group;
+  s.newGroupName = group.name;
+  group.editable = true;
+  setTimeout(function () {
+    w.$("#group-input-" + group.id).focus().select();
+  }, 100);
+  setTimeout(function () {
+    w.$("#group-input-" + group.id).focus().select();
+  }, 200);
+}
+
+/* editTag（bundle 45532-45700 逐字）：swal 单标签重命名 + raw 倒序 tags 替换（ayncsImagesChange/
+   hiddenByCurrentFilter w.* 直连）+ TagManager 群组/historyTags 更新（**45615
+   angular.copy(originHistoryTags) 自复制 undefined 怪癖原样**）+ folders/smartFolders.conditions
+   树替换 + tagsSuggestion 补录 + saveFolder + calculateImageBinding→rebindRefresh +
+   $filter('i18n') 经 injector（getFilter）+ $rootScope.notify → s.$root.notify */
+export function machineryEditTag(s: any, tag: any): void {
+  const w = window as any;
+  const TagManager = s.TagManager;
+  w.swal({
+    title: w.i18n.__("Context.Tag.Edit.Title"),
+    html: w.i18n.__("Context.Tag.Edit.Descript"),
+    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+    onOpen: function () {
+      setTimeout(function () {
+        var input = w.swal.getInput();
+        if (input) {
+          w.$(input).select().focus();
+        }
+      }, 100);
+    },
+    width: 400,
+    input: 'text',
+    inputPlaceholder: w.i18n.__('Context.Tag.Edit.Placeholder'),
+    inputValue: tag.name,
+    inputValidator: function (value: any) {
+      return new Promise(function (resolve: any, reject: any) {
+        // if (value && !/[$%^*<>'"\\|?*]+/.test(value)) {
+        resolve()
+        // } else {
+        // reject(i18n.__('Dialog.CreateLibrary.Error'))
+        // }
+      })
+    },
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__("Context.Tag.Edit.Title"),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (newName: any) {
+
+    if (newName === tag.name) return;
+
+    w.electronLog && w.electronLog.info(`[app] Rename tag: [${tag.name}] > [${newName}]`);
+    w.analytics.event('Tag', 'Rename', newName);
+
+    var originTag = w.angular.copy(tag);
+
+    // 更新所有出现该标签的图片
+    var originImages: any[] = [];
+    var originImagesTags: any[] = [];
+    var changed: any[] = [];
+
+    // $scope.raw.forEach(function(image) {
+    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+      var image = s.raw[rindex];
+      if (image && image.tags) {
+        var idx = image.tags.indexOf(tag.name);
+        if (idx !== -1 && newName) {
+          originImages.push(image);
+          originImagesTags.push(w.angular.copy(image.tags));
+          image.tags[idx] = newName;
+          image.tags = [...new Set(image.tags)];
+          changed.push(image);
+        }
+      }
+    }
+    w.ayncsImagesChange(changed);
+    w.hiddenByCurrentFilter(changed);
+
+    // 修改标签群组包含的标签
+    var originGroups: any[] = [];
+    var originGroupsTags: any[] = [];
+    if (TagManager.groups.length > 0) {
+      TagManager.groups.forEach(function (group: any) {
+        originGroups.push(group);
+        originGroupsTags.push(w.angular.copy(group.tags));
+        if (group.tags) {
+          var idx = group.tags.indexOf(tag.name);
+          if (idx !== -1 && newName) {
+            var nidx = group.tags.indexOf(newName);
+            if (nidx === -1) {
+              group.tags[idx] = newName;
+              group.tags = [...new Set(group.tags)];
+            }
+            else {
+              group.tags.splice(idx, 1);
+            }
+          }
+        }
+      });
+    }
+
+    var originHistoryTags: any = w.angular.copy(originHistoryTags);
+    try {
+      if (TagManager.historyTags && TagManager.historyTags.length > 0) {
+        var idx = TagManager.historyTags.indexOf(tag.name);
+        if (idx !== -1 && newName) {
+          var nidx = TagManager.historyTags.indexOf(newName);
+          if (nidx === -1) {
+            TagManager.historyTags[idx] = newName;
+            TagManager.historyTags = [...new Set(TagManager.historyTags)];
+          }
+          else {
+            TagManager.historyTags.splice(idx, 1);
+          }
+          TagManager.save();
+        }
+      }
+    } catch (err: any) {
+      w.electronLog && w.electronLog.error(err.stack || err);
+    }
+
+    // 更新所有文件夹智能标签
+    var originFolders: any[] = [];
+    var originFoldersTags: any[] = [];
+    w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any) {
+      if (folder && folder.tags) {
+        var idx = folder.tags.indexOf(tag.name);
+        if (idx !== -1 && newName) {
+          originFolders.push(folder);
+          originFoldersTags.push(w.angular.copy(folder.tags));
+          folder.tags[idx] = newName;
+          folder.tags = [...new Set(folder.tags)];
+        }
+      }
+    });
+
+    // 更新智能文件夹的标签属性
+    var originConditions: any[] = [];
+    var originSmartFolders: any[] = [];
+    w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+      if (!smartFolder.conditions) return;
+      originSmartFolders.push(smartFolder);
+      originConditions.push(w.angular.copy(smartFolder.conditions));
+
+      smartFolder.conditions.forEach(function (condition: any) {
+        if (!condition.rules) return;
+        condition.rules.forEach(function (rule: any) {
+          if (rule && rule.property === 'tags') {
+            var ruleTags = rule.value;
+            if (ruleTags && ruleTags.length > 0) {
+              var idx = ruleTags.indexOf(tag.name);
+              if (idx !== -1 && newName) {
+                rule.value[idx] = newName;
+                rule.value = [...new Set(rule.value)];
+              }
+            }
+          }
+        });
+      });
+    });
+
+    s.tagsSuggestion.push({
+      value: newName,
+      text: newName
+    });
+
+    s.saveFolder();
+
+    tag.name = newName;
+    tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
+    s.calculateImageBinding({ ignoreSort: true }, function () {
+      s.rebindRefresh();
+      s.updateSelection();
+    });
+
+    var message = getFilter()('i18n')("notify.tag.nameChange", [
+      { "property": "origin", "value": originTag.name },
+      { "property": "new", "value": tag.name }
+    ]);
+    // 復原
+    s.$root.notify({
+      message: message,
+      duration: 2000,
+    });
+
+  }, function () { });
+}
+
+/* renameCurrentFolder（bundle 41498-41569 逐字）：F2 重命名五路分流路由——图片
+   （多选 renameImages / 详情 inspector-name selectAll）→ 子文件夹（jQuery.Event 合成 +
+   enableSubFolderNameEditable）→ 侧栏文件夹（batch/renameFolder）→ 智能文件夹
+   （batch/renameSmartFolder）→ 标签（单 editTag / 多 OPEN_RENAME / 空 renameTagGroup
+   50ms $timeout） */
+export function machineryRenameCurrentFolder(s: any, event: any): void {
+  const w = window as any;
+  if (s.selected.length > 0 && s.$root.currentFocus !== "sidebar") {
+    if (!s.isDetailMode) {
+      machineryRenameImages(s);
+    }
+    else {
+      w.$('#inspector-name').focus();
+      setTimeout(() => {
+        document.execCommand('selectAll', false, null as any);
+      }, 100);
+    }
+  }
+  else if (s.$root.currentFocus !== "sidebar" && s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
+    var $name = w.$(".sub-folder.selected").find(".name");
+    if ($name.length === 0) return;
+    var e = w.jQuery.Event("click");
+    e.target = $name[0];
+    let folderId = Object.keys(s.selectedFolderMappings)[0];
+    let folder = s.folderMappings[folderId];
+    s.enableSubFolderNameEditable(e, folder);
+  }
+  else if (!s.isDetailMode && s.currentFolder && s.$root.currentFocus === 'sidebar') {
+    event && event.preventDefault();
+    if (s.$root.selectedFolders.length > 1) {
+      s.batchRenameFolders();
+    }
+    else {
+      s.renameFolder(event, s.currentFolder);
+    }
+  } else if (!s.isDetailMode && s.currentSmartFolder && s.$root.currentFocus === 'sidebar') {
+    event && event.preventDefault();
+    if (s.$root.selectedSmartFolders.length > 1) {
+      s.batchRenameSmartFolders();
+    }
+    else {
+      s.renameSmartFolder(event, s.currentSmartFolder);
+    }
+  } else if (!s.isDetailMode && s.currentTagGroup) {
+
+    // 先檢查是否有選中的標籤
+    var selectedTagKeys = s.getSelectedTags();
+    if (selectedTagKeys.length > 0) {
+      // 有選中標籤時，重命名標籤
+      if (selectedTagKeys.length === 1) {
+        // 單個標籤：直接編輯
+        var tagName = selectedTagKeys[0];
+        var tag = s.tags.find(function (t: any) { return t.name === tagName; });
+
+        if (tag) {
+          s.editTag(tag);
+        }
+
+      } else {
+        // 多個標籤：批次重命名
+        var selectedTags = s.tags.filter(function (tag: any) {
+          return !!s.selectedTags[tag.name];
+        });
+
+        s.$root.$broadcast("OPEN_RENAME", {
+          type: "TAGS",
+          tags: selectedTags.slice()
+        });
+      }
+    } else {
+      // 沒有選中標籤時，重命名標籤群組
+      const $timeout = getTimeout();
+      $timeout && $timeout(function () {
+        s.renameTagGroup(s.currentTagGroup);
+      }, 50);
+    }
+  }
+
+}
+
+/* ── b1-8 fns 表裸引用审计修复：controller 闭包裸调的 machinery 供给面（export 供
+   controllerFns fns 表直调——经 ESM 循环依赖，函数声明提升运行时安全；同时接装
+   非碰撞 scope 面）── */
+
+/* getAncestorSmartFolders（bundle 42527-42542 逐字：smartFolderMappings 祖先链 +
+   electronLog catch 原样） */
+export function machineryGetAncestorSmartFolders(s: any, folder: any, folders: any[]): any[] {
+  const w = window as any;
+  try {
+    if (folder.parent && s.smartFolderMappings[folder.parent]) {
+      var parent = s.smartFolderMappings[folder.parent];
+      if (parent.id != folder.id) {
+        folders.push(parent);
+        return machineryGetAncestorSmartFolders(s, parent, folders);
+      }
+    }
+    return folders;
+  }
+  catch (err: any) {
+    w.electronLog && w.electronLog.error(err.stack || err);
+    return folders;
+  }
+}
+
+/* calcuteContainFolders 闭包版（bundle 27283-27325 逐字：倒序 folders 计数 +
+   foldersMappings 建表（isSelected=filterRules.folder.includes）+ filter 剔 null +
+   {containFoldersMappings, containFolders, noFoldersCount} 返回——**与 $scope 版
+   （27259，含 containFolders 落 scope）不同体，scope 面不可接装（同名碰撞）**） */
+export function machineryCalcuteContainFolders(s: any, data: any): any {
+  const w = window as any;
+  var foldersCount: any = {};
+  var foldersMappings: any = {};
+  var noFoldersCount = 0;
+
+  for (var i = data.length - 1; i >= 0; i--) {
+    var image = data[i];
+    if (image.folders && image.folders.length > 0) {
+      image.folders.forEach(function (folder: any) {
+        if (!foldersCount[folder]) { foldersCount[folder] = 0 };
+        foldersCount[folder]++;
+      });
+    }
+    else {
+      noFoldersCount++;
+    }
+  }
+
+  var folders = Object.keys(foldersCount).map(function (key: any) {
+    var folder = s.folderMappings[key];
+    if (!folder) return;
+    var index = foldersCount[key];
+
+    foldersMappings[key] = {
+      id: key,
+      isSelected: !!w.eagle.filter.filterRules.folder.includes[key],
+      name: folder.name,
+      pinyin: folder.pinyin,
+      imageCount: foldersCount[key],
+      index: index
+    };
+    return foldersMappings[key];
+  });
+
+  folders = folders.filter(function (f: any) {
+    return !!f;
+  });
+
+  return {
+    containFoldersMappings: foldersMappings,
+    containFolders: folders,
+    noFoldersCount: noFoldersCount
+  }
+}
+
+/* getFolderParentChilder（bundle 40842-40848 逐字，typo 原样：父级 children / 根层回落） */
+export function machineryGetFolderParentChilder(s: any, folder: any): any {
+  if (folder.parent && s.folderMappings[folder.parent]) {
+    return s.folderMappings[folder.parent].children;
+  }
+  else {
+    return s.folders;
+  }
+}
+
+/* calcRotateDegree（bundle 36170-36180 逐字：click 分支 shift ±90 / 其余 -90 + 360 归一；
+   纯函数无 scope 依赖） */
+export function machineryCalcRotateDegree(currentDegree: any, event: any): any {
+  var degree = currentDegree;
+  if (event.type === "click") {
+    degree += event.shiftKey ? 90 : -90;
+  }
+  else {
+    degree -= 90;
+  }
+  degree = degree % 360;
+  if (degree < 0) degree += 360;
+  return degree;
+}
+
+/* getArroundBox（bundle 35094-35099 逐字：index ±20 窗口 .box 切片）——既有移植版
+   5180 行（bundle 35091-35097 锚）承担，此处不再重复 */
+
+/* toggleAllFolders / toggleCurrentLevelFolders（bundle 38730-38748 逐字：树全层 / 当前层
+   isExpand 反转 + localStorage eagle.sidebar.folder.expand.* 键逐字 + updateSidebarList；
+   与 smart Inners（8006/8017）同构镜像） */
+export function machineryToggleAllFolders(s: any, folders: any, isExpand: any): void {
+  const w = window as any;
+  w.eagle.utils.tree.walk(folders, 'children', function (f: any, parent: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
+    }
+  });
+  s.updateSidebarList();
+}
+
+export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpand: any): void {
+  const w = window as any;
+  folders.forEach(function (f: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
+    }
+  });
+  s.updateSidebarList();
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
@@ -9386,9 +10075,33 @@ export function applyDataMachineryScope(): void {
   s.prependFolder = (folder: any) => machineryPrependFolder(s, folder);
   s.gotoTop = () => machineryGotoTop(s);
   s.gotoBottom = () => machineryGotoBottom(s);
+  // b1-8：rename 域（路由 + 图片/子文件夹行内编辑 + 批量 + 标签/群组 + selectFolder）
+  s.selectFolder = (event: any, folder: any) => machinerySelectFolder(s, event, folder);
+  s.enableSubFolderNameEditable = (event: any, folder: any) => machineryEnableSubFolderNameEditable(s, event, folder);
+  s.batchRenameFolders = () => machineryBatchRenameFolders(s);
+  s.batchRenameSmartFolders = () => machineryBatchRenameSmartFolders(s);
+  s.renameTagGroup = (group: any) => machineryRenameTagGroup(s, group);
+  s.editTag = (tag: any) => machineryEditTag(s, tag);
+  s.renameCurrentFolder = (event: any) => machineryRenameCurrentFolder(s, event);
+  // b1-8 裸引用审计修复：controllerFns fns 表内闭包裸调改走 scope 解析——闭包三件
+  // （getExtendTags/getChildFoldersMaps/getChildFoldersMap）+ setViewMode 闭包 debounce
+  // 经 apply 接装后可解析（machinery 版本均已存在）
+  s.getExtendTags = (folder: any, tags: any[]) => machineryGetExtendTags(s, folder, tags);
+  s.getChildFoldersMaps = (folders: any) => machineryGetChildFoldersMaps(s, folders);
+  s.getChildFoldersMap = (folder: any) => machineryGetChildFoldersMap(s, folder);
+  s.setViewMode = (viewMode: any) => machinerySetViewMode(s, viewMode);
+  // b1-8 续：闭包供给面的非碰撞 scope 接装（calcuteContainFolders/toggleCurrentLevel{Folders,
+  // SmartFolders} 与 bundle $scope 同名——**不可接装**，controllerFns 经 import 直调）
+  s.getVideoPlayer = () => machineryGetVideoPlayer(s);
+  s.getFolderParentChilder = (folder: any) => machineryGetFolderParentChilder(s, folder);
+  s.calcRotateDegree = (currentDegree: any, event: any) => machineryCalcRotateDegree(currentDegree, event);
+  s.getArroundBox = (index: any) => machineryGetArroundBox(s, index);
+  s.getAncestorSmartFolders = (folder: any, folders: any[]) => machineryGetAncestorSmartFolders(s, folder, folders);
+  s.toggleAllFolders = (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand);
+  s.toggleAllSmartFolders = (smartFolders: any, isExpand: any) => machineryToggleAllSmartFoldersInner(s, smartFolders, isExpand);
 
   (window as any).__eagleDataMachinery = {
-    version: 49,
+    version: 50,
     applied: true,
     sortRawData: 'machinery',
     calculateImageBinding: 'machinery',
@@ -9603,5 +10316,21 @@ export function applyDataMachineryScope(): void {
     prependFolder: 'machinery',
     gotoTop: 'machinery',
     gotoBottom: 'machinery',
+    selectFolder: 'machinery',
+    enableSubFolderNameEditable: 'machinery',
+    batchRenameFolders: 'machinery',
+    batchRenameSmartFolders: 'machinery',
+    renameTagGroup: 'machinery',
+    editTag: 'machinery',
+    renameCurrentFolder: 'machinery',
+    getChildFoldersMaps: 'machinery',
+    getChildFoldersMap: 'machinery',
+    getVideoPlayer: 'machinery',
+    getFolderParentChilder: 'machinery',
+    calcRotateDegree: 'machinery',
+    getArroundBox: 'machinery',
+    getAncestorSmartFolders: 'machinery',
+    toggleAllFolders: 'machinery',
+    toggleAllSmartFolders: 'machinery',
   };
 }

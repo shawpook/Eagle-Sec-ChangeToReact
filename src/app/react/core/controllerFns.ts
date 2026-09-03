@@ -9,6 +9,13 @@
 // @ts-nocheck
 import { getBodyScope } from '../global/scopeBridge';
 import { IPCHelper } from './ipcHelper';
+// b1-8 裸引用审计修复：controller 闭包裸调改走 machinery 移植版直调（ESM 循环依赖——
+// 双侧均为函数声明提升，无顶层执行面，运行时安全；colliding 名（calcuteContainFolders/
+// toggleCurrentLevel{Folders,SmartFolders}）不经 scope 面，避免覆盖 bundle $scope 同名体）
+import { machineryGetVideoPlayer, machineryCalcRotateDegree, machineryGetFolderParentChilder,
+  machineryGetArroundBox, machineryGetAncestorSmartFolders, machineryCalcuteContainFolders,
+  machineryToggleAllFolders, machineryToggleCurrentLevelFolders, machineryToggleAllSmartFoldersInner,
+  machineryToggleCurrentLevelSmartFoldersInner, machineryFilterSidebarItem } from './dataMachinery';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -28,6 +35,12 @@ const fs: any = _req('fs');
 const remainingFilenameLength: any = (function () {
   const arp: any = _req('app-root-path');
   try { return arp && arp.path ? _req(arp.path + '/app/js/utils/remainingFilenameLength.js') : undefined; } catch (err) { return undefined; }
+})();
+// b1-8 裸引用审计修复：sanitize 为 bundle 22746 函数内 require(appRoot + ...) 隐式全局
+// ——controllerFns 4 处调用（244/245/5732/6010）经本模块 shim 解析（同 remainingFilenameLength 模式）
+const sanitize: any = (function () {
+  const arp: any = _req('app-root-path');
+  try { return arp ? _req(String(arp) + '/my_modules/sanitize-filename') : undefined; } catch (err) { return undefined; }
 })();
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 const electronSettings: any = (window as any).electronSettings;
@@ -152,7 +165,7 @@ export function makeControllerFns(getScope: () => any) {
                 localStorage.removeItem(`eagle.lastFolder.${getBodyScope().rootDir}`);
             }
             else {
-            	setViewMode("all");
+            	s.setViewMode("all");
                 localStorage.setItem(`eagle.lastFolder.${getBodyScope().rootDir}`, folderId);
             }
         }, 500);
@@ -458,13 +471,13 @@ export function makeControllerFns(getScope: () => any) {
                             });
                         }
 
-                        ancestorsCache[folder.id] = getAncestorFolders(folder, [folder]);
+                        ancestorsCache[folder.id] = s.getAncestorFolders(folder, [folder]);
 
                         s.folderMappings[folder.id] = folder;
                     });
 
                     eagle.utils.tree.walk(s.folders, 'children', function(folder, parent) {
-                        folder.extendTags = getExtendTags(folder, []);
+                        folder.extendTags = s.getExtendTags(folder, []);
 						folder.covers = [];
                     });
 
@@ -499,7 +512,7 @@ export function makeControllerFns(getScope: () => any) {
                                         }
 
                                         // 祖先们也都 + 1 , 记录在其他栏位上
-                                        var ancestors = ancestorsCache[folder.id] || getAncestorFolders(folder, [folder]);
+                                        var ancestors = ancestorsCache[folder.id] || s.getAncestorFolders(folder, [folder]);
                                         ancestors.forEach(function (ancestor) {
                                             // 避免重复加总
                                             if (increaseAncestors[ancestor.id]) {
@@ -673,7 +686,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function (data) {
 
-            var __lv_result = calcuteContainFolders(data);
+            var __lv_result = machineryCalcuteContainFolders(s, data);
             var foldersMappings = __lv_result.containFoldersMappings;
             
             s.containFolders = [];
@@ -941,7 +954,7 @@ export function makeControllerFns(getScope: () => any) {
                         }
                     }
                 }
-                s.currentFolderChildren = getChildFoldersMaps(s.$root.selectedFolders);
+                s.currentFolderChildren = s.getChildFoldersMaps(s.$root.selectedFolders);
                 s.reload();
             }
             else {
@@ -1637,7 +1650,7 @@ export function makeControllerFns(getScope: () => any) {
     const s = getScope();
     if (!s) return;
     return (function (event) {
-            var player = getVideoPlayer();
+            var player = machineryGetVideoPlayer(s);
             if (!player) return;
 
             if (player.type === 'mpv') {
@@ -1726,7 +1739,7 @@ export function makeControllerFns(getScope: () => any) {
             if (folder) {
                 if (folder.parent) {
                     try {
-                        var ancestors = getAncestorFolders(folder, []);
+                        var ancestors = s.getAncestorFolders(folder, []);
                         ancestors.unshift(folder);
                         var names = ancestors.reverse().map(function (folder) {
                             return folder.name || "";
@@ -2287,7 +2300,9 @@ export function makeControllerFns(getScope: () => any) {
                     s.gifPlayer = undefined;
                 }
 
-                initMousetrap();
+                // b1-8：initMousetrap 为 bundle 闭包链（destoryMousetrap/buildMousetrap）——
+                // strangling 期 bundle 自管重绑定 / post-b1 bridgeWhenReady 等价；此处跳过不阻塞清理
+                try { initMousetrap(); } catch (err) { /* b1-8b 接装前可达性缺失，忽略 */ }
                 clearInterval(s.gifUpadteInterval);
             }
         }).apply(null, args);
@@ -2341,7 +2356,7 @@ export function makeControllerFns(getScope: () => any) {
             if (folders.indexOf(folder) > -1) return;
             
             // 避免老爸拖拽到子孙
-            var ancestors = getAncestorFolders(folder, []);
+            var ancestors = s.getAncestorFolders(folder, []);
             for (let i = 0; i < folders.length; i++) {
                 const ancestor = folders[i];
                 if (ancestors.indexOf(ancestor) > -1) {
@@ -2350,7 +2365,7 @@ export function makeControllerFns(getScope: () => any) {
             }
 
             var moved = {};
-            var children = getFolderParentChilder(folder);
+            var children = machineryGetFolderParentChilder(s, folder);
             var __lv_idx = -1;
 
             if (!children) return;
@@ -2450,7 +2465,7 @@ export function makeControllerFns(getScope: () => any) {
             if (folders.indexOf(folder) > -1) return;
 
             // 避免老爸拖拽到子孙
-            var ancestors = getAncestorFolders(folder, []);
+            var ancestors = s.getAncestorFolders(folder, []);
             for (let i = 0; i < folders.length; i++) {
                 const ancestor = folders[i];
                 if (ancestors.indexOf(ancestor) > -1) {
@@ -3096,7 +3111,7 @@ export function makeControllerFns(getScope: () => any) {
 
             if (s.currentFolder != folder) {
                 s.currentFolder = folder;
-                s.currentFolderChildren = getChildFoldersMap(folder);
+                s.currentFolderChildren = s.getChildFoldersMap(folder);
             }
 
 			if (localStorage[`eagle.list.layout.$${s.currentFolder.id}`]) {
@@ -3106,7 +3121,7 @@ export function makeControllerFns(getScope: () => any) {
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
-	            var ancestors = getAncestorFolders(folder, []);
+	            var ancestors = s.getAncestorFolders(folder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
 	                    s.expandFolder(ancestors[i]);
@@ -3619,7 +3634,7 @@ export function makeControllerFns(getScope: () => any) {
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
-	            var ancestors = getAncestorSmartFolders(smartFolder, []);
+	            var ancestors = machineryGetAncestorSmartFolders(s, smartFolder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
 	                    s.expandSmartFolder(ancestors[i]);
@@ -3992,18 +4007,18 @@ export function makeControllerFns(getScope: () => any) {
     const s = getScope();
     if (!s) return;
     return (function (event) {
-            var player = getVideoPlayer();
+            var player = machineryGetVideoPlayer(s);
             if (!player) return;
 
             if (player.type === 'mpv') {
                 var mpv = player.el;
-                var degree = calcRotateDegree(mpv.previewRotation || 0, event);
+                var degree = machineryCalcRotateDegree(mpv.previewRotation || 0, event);
                 mpv.rotate(degree);
             }
             else {
                 var __lv_video = player.el;
                 var $__lv_video = $(__lv_video);
-                var degree = calcRotateDegree($__lv_video.data("degree") || 0, event);
+                var degree = machineryCalcRotateDegree($__lv_video.data("degree") || 0, event);
 
                 $__lv_video.data("degree", degree);
                 $__lv_video.removeClass("r90 r180 r270");
@@ -4259,7 +4274,7 @@ export function makeControllerFns(getScope: () => any) {
                             s.selected.forEach(function (item) {
                                 s.select(undefined, item);
                             })
-                            autoScroll();
+                            s.autoScroll();
                             setTimeout(function () {
                                 $("#box-container").css("visibility", "initial");
                             }, 50);
@@ -4532,7 +4547,7 @@ export function makeControllerFns(getScope: () => any) {
             event && event.preventDefault();
             var selection = s.getSelection();
             var end = selection.end || 0;
-            var $arround = getArroundBox(end);
+            var $arround = machineryGetArroundBox(s, end);
             var $box = $(".box.selected").last();
             var boxOffest = $box.offset();
             if (!boxOffest) return;
@@ -4571,7 +4586,7 @@ export function makeControllerFns(getScope: () => any) {
                 if (s.isDetailMode) {
                     s.current = s.selected[0];
                 }
-                autoScroll(__lv_target);
+                s.autoScroll(__lv_target);
             }
             if (s.isDetailMode) {
                 s.forceFitImageSize(s.selected[0], true);
@@ -4624,7 +4639,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.isGifReady = false;
             }
 
-            autoScroll(end);
+            s.autoScroll(end);
 
             if (s.current) {
                 $("#detail-container").smoothZoom('updateNavigator', $bodyScope.current);
@@ -4678,13 +4693,13 @@ export function makeControllerFns(getScope: () => any) {
                     s.forceFitImageSize(s.selected[0], true);
                     s.current = s.selected[0];
                 }
-                autoScroll(__lv_start - 1);
+                s.autoScroll(__lv_start - 1);
             } else {
                 s.selected = [];
                 s.selected.push(s.allData[0]);
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
-                autoScroll(0);
+                s.autoScroll(0);
             }
             s.selectedFolderMappings = {};
             s.$root.currentFocus = "content";
@@ -4754,7 +4769,7 @@ export function makeControllerFns(getScope: () => any) {
                 if (s.isDetailMode) {
                     s.current = s.selected[0];
                 }
-                autoScroll(__lv_target);
+                s.autoScroll(__lv_target);
             }
             if (s.isDetailMode) {
                 s.forceFitImageSize(s.selected[0], true);
@@ -5091,7 +5106,7 @@ export function makeControllerFns(getScope: () => any) {
             // 如果用户点击了 ⌘ + alt，展开/收起所有层级
             if (event.altKey && (event.metaKey || event.ctrlKey)) {
                 var expand = !folder.isExpand;
-                toggleAllFolders(s.folders, expand);
+                machineryToggleAllFolders(s, s.folders, expand);
             }
             // 如果用户点击 ⌘，展开/收起第一层
             else if (event.metaKey || event.ctrlKey) {
@@ -5101,13 +5116,13 @@ export function makeControllerFns(getScope: () => any) {
                 if (parent && parent.children) {
                     folders = parent.children;
                 }
-                toggleCurrentLevelFolders(folders, expand);
+                machineryToggleCurrentLevelFolders(s, folders, expand);
             }
             else if (event.altKey) {
                 var expand = !folder.isExpand;
                 var folders = folder.children;
                 folder.isExpand = expand;
-                toggleCurrentLevelFolders(folders, expand);
+                machineryToggleCurrentLevelFolders(s, folders, expand);
             }
             else {
                 folder.isExpand = !folder.isExpand;
@@ -5227,7 +5242,7 @@ export function makeControllerFns(getScope: () => any) {
             // 如果用户点击了 ⌘ + alt，展开/收起所有层级
             if (event.altKey && (event.metaKey || event.ctrlKey)) {
                 var expand = !smartFolder.isExpand;
-                toggleAllSmartFolders(s.smartFolders, expand);
+                machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
             }
             // 如果用户点击 ⌘，展开/收起第一层
             else if (event.metaKey || event.ctrlKey) {
@@ -5237,13 +5252,13 @@ export function makeControllerFns(getScope: () => any) {
                 if (parent && parent.children) {
                     smartFolders = parent.children;
                 }
-                toggleCurrentLevelSmartFolders(smartFolders, expand);
+                machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
             }
             else if (event.altKey) {
                 var expand = !smartFolder.isExpand;
                 var smartFolders = smartFolder.children;
                 smartFolder.isExpand = expand;
-                toggleCurrentLevelSmartFolders(smartFolders, expand);
+                machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
             }
             else {
 	            smartFolder.isExpand = !smartFolder.isExpand;
@@ -5789,8 +5804,8 @@ export function makeControllerFns(getScope: () => any) {
                 var smartFolderLabel = { vstype: 'label-smart-folder', size: 25 };
                 var folderLabel = { vstype: 'label-folder', size: 25 };
 
-                folders = filterSidebarItem(folders, s.folderKeyword);
-                smartFolders = filterSidebarItem(smartFolders, s.folderKeyword);
+                folders = machineryFilterSidebarItem(folders, s.folderKeyword);
+                smartFolders = machineryFilterSidebarItem(smartFolders, s.folderKeyword);
 
                 list.push(allItem);
                 if (s.$root.preferences.sidebar.unfiled != 'false') {

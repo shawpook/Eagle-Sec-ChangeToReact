@@ -3084,6 +3084,45 @@ version 31）**：
 >   renameCurrentFolder 留 b1-8）。
 > - 验证：tsc 零错（真实退出码）；m1 25/25。
 
+> **b1-8 rename 域 + fns 表裸引用审计·内部缺口清零（2026-09-03；version 50）**：
+> - **rename 域**：machineryRenameCurrentFolder（41498-41569 逐字：图片/详情 inspector-name/
+>   子文件夹（jQuery.Event 合成）/侧栏文件夹（batch/renameFolder）/智能文件夹/标签（单
+>   editTag/多 OPEN_RENAME/空 renameTagGroup 50ms $timeout 经 getTimeout）五路分流路由）+
+>   扇出六件——machineryRenameImages（41480 逐字：**裸 event → w.event**）、
+>   machineryEnableImageNameEditable（21975-22075 逐字：blur debounce **w.debounce**（bundle
+>   80222 顶层 var）200 immediate；blur 内 angular.element("body").scope() → getBodyScope()
+>   同双轨解析；ayncsImagesChange/hiddenByCurrentFilter（bundle 顶层函数 49667/49600）w.*
+>   直连；eagle.inspector.newName）、machineryEnableSubFolderNameEditable（22077-22175 逐字：
+>   ESC 还原**无 span 包裹**差异原样 + selectFolder 经 scope）、batchRename×2（41631/41654）、
+>   machineryRenameTagGroup（48582 双 100/200ms 双写）、machineryEditTag（45532-45700 逐字：
+>   swal + raw 倒序 tags 替换 + TagManager 群组/historyTags + **45615
+>   angular.copy(originHistoryTags) 自复制 undefined 怪癖原样** + folders/smartFolders.conditions
+>   树替换 + $filter('i18n') 经 getFilter + $rootScope.notify → s.$root.notify）+
+>   machinerySelectFolder（34666）。模块级 **emojiRegex（19014 字面，g 标志 lastIndex 跨调用
+>   共享与 bundle 顶层单例同语义）** + remainingFilenameLength/sanitize 惰性 require 缓存
+>   （19018 用 appRoot.path；**22746 sanitize 无 .path 后缀——bundle 原样差异保留**）。
+> - **内部审计清零**：七域 s.* 调用面 147→155 名，硬缺口 **0**（$apply/$broadcast/$evalAsync
+>   为 shim API 成员）。
+> - **fns 表裸引用审计**（调用位裸标识符全量清点，tests-tmp/fns-bare-audit.py）：controller
+>   闭包类修复——getAncestorFolders×6 → s.getAncestorFolders；getExtendTags/getChildFoldersMaps/
+>   getChildFoldersMap/setViewMode（machinery 版已有）+ getVideoPlayer/getFolderParentChilder/
+>   calcRotateDegree/getArroundBox/getAncestorSmartFolders/toggleAllFolders/toggleAllSmartFolders
+>   （machinery 版已有或本轮新增 42783/40842/36170/42527/38730 逐字）——**非碰撞面接装 +
+>   controllerFns 经 ESM 循环 import 直调（双侧函数声明提升、无顶层执行面，运行时安全）**；
+>   **calcuteContainFolders（27283 闭包版与 27259 $scope 版不同体）/toggleCurrentLevel{Folders,
+>   SmartFolders} 与 bundle $scope 同名——不可接装，仅直调**；sanitize → controllerFns 模块
+>   shim（4 处调用，同 remainingFilenameLength 模式）；initMousetrap（leaveDetailMode 清理
+>   站点）→ try/catch 跳过（strangling 期 bundle 自管重绑定 / post-b1 bridgeWhenReady 等价；
+>   b1-8b 待接装登记）；window 类保留登记（**b1 终审 vendor 提取清单**，c18a 先例）：
+>   getHashID/getRawPath/isElementVisible/fuzzy_match/cloneTree/openInNewWindow/
+>   uploadFolderToSidebar/fileSize/debounce/throttle/hiddenByCurrentFilter/ayncsImagesChange/
+>   updateWindowProgressBar/backgroundWindowID/resetNgGridLayoutData（隐式全局，post-b1 归
+>   grid 域）/getImagePixelDensity 三助手（eagle-zoom-helpers vendor 已含）。
+> - **已知 flake 再证**：m1 markdown-thumbnail 超时在含/不含本轮改动两态均出现（stash 二分
+>   取证），与 2550 行既有登记（cm-overlay-close/main-ui-workflow 资源竞争 flake）同源——
+>   非回归；复跑通过。
+> - 验证：tsc 零错（真实退出码）；m1 25/25。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

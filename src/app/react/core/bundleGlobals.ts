@@ -661,6 +661,55 @@ export function installBundleGlobals(): void {
   // c12：eagle 成员反转挂载
   installEagleMembers();
 
+  // c17a：bundle 顶层词法 const/let 接装（const/let 不上 window——bundle 在世时 React 裸引
+  // 可达依赖 vite IIFE 加载共享全局词法；b1 后 bundle 死亡，由本处 if-absent 供给）。
+  // IPCHelper（bundle 3471-3489 逐字；send/sendTo = ipc 统一表达式 + electronLog + try/catch 静默）
+  if (!w.IPCHelper) {
+    const ipcRef = () => w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    w.IPCHelper = {
+      send: function (channel: string, params: any, ignoreLogging: any) {
+        try {
+          ipcRef().send(channel, params);
+          if (!ignoreLogging) {
+            w.electronLog && w.electronLog.info(`[ipc] ${channel}`);
+          }
+        }
+        catch (err) {
+        }
+      },
+      sendTo: function (id: any, channel: string, params: any, ignoreLogging: any) {
+        try {
+          ipcRef().sendTo(id, channel, params);
+          if (!ignoreLogging) {
+            w.electronLog && w.electronLog.info(`[ipc] ${channel}`);
+          }
+        }
+        catch (err) {
+        }
+      }
+    };
+  }
+  // PERFORMANCE_MONITOR（bundle 18977-18980 逐字）
+  if (!w.PERFORMANCE_MONITOR) {
+    w.PERFORMANCE_MONITOR = {
+      watchDigest: false,
+      watchMemoryUsage: false,
+    };
+  }
+  // ACCESS（bundle 19026：require(appRoot + '/my_modules/access')）
+  if (!w.ACCESS && w.appRoot) {
+    const access = req(w.appRoot + '/my_modules/access');
+    if (access) w.ACCESS = access;
+  }
+  // isVentura（bundle 19058 逐字；osVersion = os.release()）
+  if (w.isVentura === undefined) {
+    try {
+      const osMod = req('os');
+      const osVersion = osMod ? (osMod.release() || "") : "";
+      w.isVentura = w.process && w.process.platform === 'darwin' && parseInt(osVersion) >= 22;
+    } catch (err) { w.isVentura = false; }
+  }
+
   // c13：eg/InfiniteGrid（bundle 3497-8094 内联 pkgd UMD，b1 死亡）——if-absent 懒执行
   // public/vendor 的逐字节提取副本（new Function sloppy 模式 this=globalThis，root=self
   // 语义不变）。libraryDomain 的 new w.eg.InfiniteGrid 与 machineryRelayout 消费。

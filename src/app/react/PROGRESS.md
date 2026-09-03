@@ -2663,6 +2663,21 @@
 >   闭包版，b1 后走移植版——initMousetrap 非 window 可达，永远走移植版，条件仅防御）。
 > - 验证：tsc 零错；m1 25/25；**main-ui-workflow 修复确认**（MAIN_WORKFLOW_SMOKE_OK）。
 
+> **c17a 顶层词法 const/let 审计与接装（2026-09-03；bundleGlobals）**：
+> - **审计定论**：IPCHelper（3471）/PERFORMANCE_MONITOR（18977 let）/ACCESS（19026）/isVentura
+>   （19058）/ga4track（105491）全为 **const/let 脚本级词法绑定**——不上 window；React 侧
+>   今日裸引可达**纯依赖 vite IIFE 形态共享全局词法**，b1 后 bundle 死亡即断（与顶层
+>   var/function 的 window.* live binding 不同类，c16c 教训的推广审计）。
+> - **bundleGlobals if-absent 接装**：IPCHelper {send,sendTo}（3471-3489 逐字语义：ipc 统一
+>   表达式 + electronLog + try/catch 静默）/ PERFORMANCE_MONITOR {watchDigest,watchMemoryUsage}
+>   （18977 逐字）/ ACCESS（19026 require my_modules/access）/ isVentura（19058 逐字：darwin
+>   + os.release() ≥ 22）。ga4track 不接装（仅 try/catch 内 analytics 用途，b1 后静默降级
+>   可接受，注释登记）。
+> - **裸引转 w.***：libraryDomain（IPCHelper×2/PERFORMANCE_MONITOR×2/ACCESS 守卫改 optional
+>   chaining/isVentura×1）、controllerFns（IPCHelper×4：cancel.all/palette-resume/folders-
+>   change/upload-local-files）。
+> - 验证：tsc 零错；m1 25/25；**suite ALL GREEN 47/47**。
+
 - [ ] 移除 `js/vendors/angular*.js` 与 `app.bundle.js` 引用（index.html 尾部脚本区）。
 - [ ] 双轨 CSS：确认 React 版使用同一套 `css/style_*.css` + `css/app.css`；删除为 React 额外引入的重复样式。
 - [ ] `ng-app` / `ng-controller` / 所有 `ng-*` 属性从 index.html / 各 *.html 模板中移除。

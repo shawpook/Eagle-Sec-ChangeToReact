@@ -704,10 +704,10 @@ export function makeControllerFns(getScope: () => any) {
             s.uploadQueue = [];
             s.finishQueue = [];
 
-            IPCHelper.send('cancel.all');
+            (window as any).IPCHelper.send('cancel.all');
             // 讓 Palette Queue 繼續
             setTimeout(function () {
-                IPCHelper.send('palette-resume');
+                (window as any).IPCHelper.send('palette-resume');
 
                 // 针对尚未分析颜色的图片，进行颜色分析
                 var images = [];
@@ -4196,7 +4196,7 @@ export function makeControllerFns(getScope: () => any) {
 
             const __lv_libraryPath = s.libraryPath;
 
-            IPCHelper.send('folders-change', {
+            (window as any).IPCHelper.send('folders-change', {
                 // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
                 libraryDir: __lv_libraryPath,
                 folders: folders,
@@ -5956,7 +5956,7 @@ export function makeControllerFns(getScope: () => any) {
             }
             console.timeEnd("s.uploadFiles.初始化");
             console.time("s.uploadFiles.ipcRenderer.send");
-            IPCHelper.send('upload-local-files', {
+            (window as any).IPCHelper.send('upload-local-files', {
                 __lv_files: images.reverse()
             });
 

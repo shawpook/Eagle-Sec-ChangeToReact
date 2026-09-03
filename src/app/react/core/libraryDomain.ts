@@ -492,11 +492,11 @@ export function takeoverLibraryDomain(): void {
     }
 
     console.timeEnd("load-library");
-    if (PERFORMANCE_MONITOR.watchDigest) {
+    if ((window as any).PERFORMANCE_MONITOR.watchDigest) {
       domainDigestDurationTest(s);
     }
 
-    if (PERFORMANCE_MONITOR.watchMemoryUsage) {
+    if ((window as any).PERFORMANCE_MONITOR.watchMemoryUsage) {
       setInterval(domainGetMemory, 2000);
     }
 
@@ -985,13 +985,13 @@ export function takeoverLibraryDomain(): void {
     });
 
     const SIX_HOUR = 1000 * 60 * 60 * 6;
-    IPCHelper.send("check-for-update", {
+    (window as any).IPCHelper.send("check-for-update", {
       machineID: w.machineID,
     });
 
     if (domainUpdateTimer) clearInterval(domainUpdateTimer);
     domainUpdateTimer = setInterval(function () {
-      IPCHelper.send("check-for-update", {
+      (window as any).IPCHelper.send("check-for-update", {
         machineID: w.machineID
       });
     }, SIX_HOUR);
@@ -1018,7 +1018,7 @@ export function takeoverLibraryDomain(): void {
       });
     }
 
-    if (typeof ACCESS.checkALCs === 'function') {
+    if (typeof (window as any).ACCESS?.checkALCs === 'function') {
       if (!ACCESS.checkALCs(s.libraryPath)) {
         ipc.send('electron-log', "[app] Detect library has no write permission, path: " + s.libraryPath);
         if (s.libraryPathPermissionError !== true) {
@@ -1058,7 +1058,7 @@ export function takeoverLibraryDomain(): void {
         const getDriveType = w.require(w.appRoot + '/my_modules/get-drive-type');
         const driveType = getDriveType(s.libraryPath).toLowerCase();
         if (driveType.indexOf("ntfs") > -1 || driveType.indexOf("lifs") > -1) {
-          if (isVentura) {
+          if ((window as any).isVentura) {
             s.showNTFSWarning = isNTFS(s.libraryPath);
           }
           else {

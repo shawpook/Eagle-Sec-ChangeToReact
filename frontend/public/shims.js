@@ -1493,6 +1493,13 @@
         .then(() => desktopApi.item.updateMany(snapshots))
         .then((updated) => {
           mergeCachedItems(updated);
+          // b1-9i：bundle 时代 images-change/image-change 由主进程（磁盘改名等）处理完后回发
+          // 'image.changed'，渲染层 itemDomain 处理器把最终条目合并回 itemMappings——内存面
+          // 唯一的改名回写路径（React 组件只把 name 写进克隆、live 对象靠此回声更新）。
+          // shim 世界本拦截段扮演主进程角色，updateMany 返回体即处理结果，回发等价回声。
+          (Array.isArray(updated) ? updated : [updated]).forEach((item) => {
+            if (item && item.id) mockEmit('image.changed', item);
+          });
           const keep = snapshots.find((item) => !item.isDeleted);
           const trash = snapshots.filter((item) => item.isDeleted);
           if (keep && trash.length > 0 && desktopApi.duplicates) {

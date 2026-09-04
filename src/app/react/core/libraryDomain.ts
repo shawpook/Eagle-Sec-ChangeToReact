@@ -922,18 +922,20 @@ export function takeoverLibraryDomain(): void {
         return;
       }
 
-      const ang = w.angular;
+      // b1-9i：bundle 在世时此处为 ang.isNumber（w.angular）数字守卫——shim 世界无
+      // window.angular（不得注入，见 b1-9e 雷区记录），typeof 判定语义等价
+      const isNumber = (value: any): boolean => typeof value === 'number';
       let number = 0;
       let savingNumber = 0;
-      if (state && ang && ang.isNumber(state.paletteQueueLength)) {
+      if (state && isNumber(state.paletteQueueLength)) {
         number += state.paletteQueueLength;
         s.paletteQueueLength = state.paletteQueueLength;
       }
-      if (state && ang && ang.isNumber(state.metadataQueueLength)) {
+      if (state && isNumber(state.metadataQueueLength)) {
         savingNumber += state.metadataQueueLength;
         s.metadataQueueLength = state.metadataQueueLength;
       }
-      if (state && ang && ang.isNumber(state.downloadQueueLength)) {
+      if (state && isNumber(state.downloadQueueLength)) {
         s.downloadQueueLength = state.downloadQueueLength;
       }
 

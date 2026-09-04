@@ -358,7 +358,9 @@ export function takeoverItemDomain(): void {
 
     const img = s.itemMappings[newImage.id];
     if (img) {
-      w.angular.extend(img, newImage);
+      // b1-9i：bundle 在世时此处为 w.angular.extend（浅合并自有可枚举属性）——shim 世界无
+      // window.angular（且不得注入，见 b1-9e 雷区记录），Object.assign 语义等价
+      Object.assign(img, newImage);
       delete img.processingPalette;
       ensureMuteRebind(s) && ensureMuteRebind(s)();
       return;
@@ -386,7 +388,9 @@ export function takeoverItemDomain(): void {
 
     const img = s.itemMappings[newImage.id];
     if (img && newImage && img.id === newImage.id) {
-      w.angular.extend(img, newImage);
+      // b1-9i：bundle 在世时此处为 w.angular.extend（浅合并自有可枚举属性）——shim 世界无
+      // window.angular（且不得注入，见 b1-9e 雷区记录），Object.assign 语义等价
+      Object.assign(img, newImage);
       img.star = newImage.star;
       delete img.processingPalette;
     }

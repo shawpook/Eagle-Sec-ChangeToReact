@@ -1574,40 +1574,38 @@ export function machineryRelayout(s: any, margin: any): void {
 
 /* MATCH_FUNCTION 表（bundle 32117-32143 逐字；26 规则函数经 window 解析——bundle 8369-9418
    顶层函数（b1 后由 public/vendor/eagle-match-rules.js script 注入供给）） */
-let matchFunctionTable: any = null;
 function getMatchFunctionTable(): any {
   const w = window as any;
-  if (!matchFunctionTable) {
-    matchFunctionTable = {
-      "name": w.isMatchNameRule,
-      "folderName": w.isMatchFolderNameRule,
-      "url": w.isMatchUrlRule,
-      "annotation": w.isMatchAnnotationRule,
-      "comments": w.isMatchCommentsRule,
-      "width": w.isMatchWidthRule,
-      "height": w.isMatchHeightRule,
-      "fileSize": w.isMatchFileSizeRule,
-      "createTime": w.isMatchTimeRule,
-      "mtime": w.isMatchMTimeRule,
-      "btime": w.isMatchBTimeRule,
-      "tags": w.isMatchTagsRule,
-      "rating": w.isMatchRatingRule,
-      "folders": w.isMatchFoldersRule,
-      "type": w.isMatchTypeRule,
-      "shape": w.isMatchShapeRule,
-      "color": w.isMatchColorRule,
-      "duration": w.isMatchDurationRule,
-      "bpm": w.isMatchBPMRule,
-      "camera": w.isMatchCameraRule,
-      "iso": w.isMatchISORule,
-      "aperture": w.isMatchApertureRule,
-      'focalLength': w.isMatchFocalLengthRule,
-      'shutter': w.isMatchShutterRule,
-      "timestamp": w.isMatchTimestampRule,
-      "fontActivated": w.isMatchFontActivatedRule
-    };
-  }
-  return matchFunctionTable;
+  // b1-9m：取消模块级缓存——vendor 注入晚于首次取表时，缓存内 isMatch*Rule 为 undefined
+  // 且永不自愈。每次重建（26 次属性读，开销可忽略）。
+  return {
+    "name": w.isMatchNameRule,
+    "folderName": w.isMatchFolderNameRule,
+    "url": w.isMatchUrlRule,
+    "annotation": w.isMatchAnnotationRule,
+    "comments": w.isMatchCommentsRule,
+    "width": w.isMatchWidthRule,
+    "height": w.isMatchHeightRule,
+    "fileSize": w.isMatchFileSizeRule,
+    "createTime": w.isMatchTimeRule,
+    "mtime": w.isMatchMTimeRule,
+    "btime": w.isMatchBTimeRule,
+    "tags": w.isMatchTagsRule,
+    "rating": w.isMatchRatingRule,
+    "folders": w.isMatchFoldersRule,
+    "type": w.isMatchTypeRule,
+    "shape": w.isMatchShapeRule,
+    "color": w.isMatchColorRule,
+    "duration": w.isMatchDurationRule,
+    "bpm": w.isMatchBPMRule,
+    "camera": w.isMatchCameraRule,
+    "iso": w.isMatchISORule,
+    "aperture": w.isMatchApertureRule,
+    'focalLength': w.isMatchFocalLengthRule,
+    'shutter': w.isMatchShutterRule,
+    "timestamp": w.isMatchTimestampRule,
+    "fontActivated": w.isMatchFontActivatedRule
+  };
 }
 
 /* isMatchCondition（bundle 32145-32175 逐字） */

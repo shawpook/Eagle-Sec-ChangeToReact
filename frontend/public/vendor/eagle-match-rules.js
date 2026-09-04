@@ -1,3 +1,35 @@
+// b1-9m：matchStringMethod（bundle 8340-8368 逐字）——本文件是 bundle 8369-9418 的提取副本，
+// 提取时把定义 matchStringMethod 的前导块切在了外面，26 个 isMatch*Rule 全部引用它
+// → 调用即 ReferenceError: matchStringMethod is not defined（1m1-A9-smart-filter 断言面）
+var matchStringMethod = {};
+matchStringMethod["equal"] = function (name, value) {
+	return name === value;
+};
+matchStringMethod["startWith"] = function (name, value) {
+	var isStartWith = new RegExp('^' + value, 'i').test(name);
+	return isStartWith;
+};
+matchStringMethod["endWith"] = function (name, value) {
+	var isEndWith = new RegExp(value + '$', 'i').test(name);
+	return isEndWith;
+};
+matchStringMethod["uncontain"] = function (name, value) {
+	return name.indexOf(value) === -1;
+};
+matchStringMethod["contain"] = function (name, value) {
+	return name.indexOf(value) !== -1;
+};
+matchStringMethod["empty"] = function (name, value) {
+	return name === "";
+};
+matchStringMethod["not-empty"] = function (name, value) {
+	return name !== "";
+};
+matchStringMethod["regex"] = function (name, value) {
+	try { return new RegExp(value, "g").test(name); }
+	catch (err) { return false; }
+};
+
 function isMatchNameRule (rule, image) {
 
 	var method = rule.method; 	// equal, startWith, endWith, unequal, contain

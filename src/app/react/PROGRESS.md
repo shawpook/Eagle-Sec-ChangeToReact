@@ -11,6 +11,36 @@
 
 ---
 
+## 当前测试基线（2026-09-04 · 含已知失败白名单）
+
+开工先对基线；**白名单内的失败属预期，可先忽略，不要当回归查**。
+
+| 套件 | 状态 | 说明 |
+| --- | --- | --- |
+| `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
+| `npm run test:main-ui-workflow` | ❌ **已知失败（白名单）** | 停在 `MAIN_WORKFLOW_SMOKE_ERROR Error: text file drop import timeout`。 |
+| `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
+
+**m1 已知失败的判定与放行规则**：
+
+- 根因：拖放导入域 `onDropContainer`（bundle 52717，约 210 行 + `dragging` / `IS_HIDDEN_FILE`
+  等依赖）未端口 → shim 世界该函数不存在 → smoke 的 `onDropContainer(...)` 抛 TypeError，
+  被 `waitFor` 的 try/catch 吞掉后反复重试直至超时。
+- **已过的阶段**：`original main scope` 等待段（即 `window.$bodyScope.raw` 数组 + `listDone`）
+  已通过——这是 b1-9d 的目标段，验收依据是探针而非 m1。
+- **放行条件**：失败信息**恰好**是 `text file drop import timeout`。若变成别的失败点，
+  尤其是回到 `original main scope timeout`，即为**新回归**，必须查。
+- 解除白名单的前置：`onDropContainer` 落地（拖放导入域切片）。届时 m1 后续阶段
+  （markdown / 文件夹 / 剪贴板路径 / 剪贴板图片 / 唯一条目断言）可能再暴露新缺口，
+  需逐段推进而非一次性假设绿。
+
+**另一处未端口（不阻塞任何套件，仅在缩略图加载失败时触发）**：缩略图修复链
+`listImageError` / `tryToFixThumbnailError` / `fixThumbnail`（bundle 19537+）整条缺失，
+而 `boxGridEngine.ts:96` 生成的 `onerror="listImageError(event)"` 仍裸引用 → 抛
+`ReferenceError: listImageError is not defined`。
+
+---
+
 ## 0. 构建接线
 
 - [x] 入口固定 `src/app/index.html`；main.cjs 窗口 URL 不动。

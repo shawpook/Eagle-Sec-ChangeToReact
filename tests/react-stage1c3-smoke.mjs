@@ -95,14 +95,14 @@ try {
     return r;
   };
 
-  // ── 契约（155 全量 + 抽样）──
+  // ── 契约（全量 + 抽样；b1-9e 补端口 addImagesToFolder（bundle 43132-43198），表 155→156）──
   await assertExpr('c3-contract', `(() => {
     const c = window.__eagleCoreFns;
     if (!c) return false;
     const spot = ['cancelAllTasks','uploadFiles','changeOrderBy','switchGridLayout',
       'cleanSelected','select','search','resetFilter','clickNode','smartZoom',
       'openFolder','updateSidebarList','getThumbnailUrl','zoomFit','undo'];
-    return Object.keys(c).length === 155 && spot.every(k => typeof c[k] === 'function');
+    return Object.keys(c).length === 156 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

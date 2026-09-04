@@ -32,15 +32,16 @@
 
 ---
 
-## 当前测试基线（2026-09-04 · 含已知失败白名单）
+## 当前测试基线（2026-09-05 · 含已知失败白名单）
 
 开工先对基线；**白名单内的失败属预期，可先忽略，不要当回归查**。
 
 | 套件 | 状态 | 说明 |
 | --- | --- | --- |
 | `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
-| `npm run test:main-ui-workflow` | ✅ **绿（b1-9e）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0（连续两轮）。`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇**：`multi inspector persistence` 约 1/6 轮失败（详见下方 b1-9e 记录），非阻塞但需继续查。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
+| `npm run test:main-ui-workflow` | ✅ **绿（b1-9f）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0。**b1-9f 轮累计 79 轮全绿**（身份取证探针在位 73 轮 + 移除探针后终验 6 轮），`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇已收口（b1-9f）**：`multi inspector persistence` 统计判定实质消除（见 b1-9e 遗留段更新与 b1-9f 记录）。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
 | `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
+| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ⚠️ **22/45 陈旧失败（b1-9f 首跑登记）** | b1-9f 轮首跑 23 失败，随后对全部失败项**逐项在 HEAD~1（b1-9d）单跑仲裁**：**22 项 b1-9d 同败** ⇒ bundle 摘除时代累积的陈旧冒烟（非 b1-9e 回归；多数项 b1-9d 失败更多，b1-9e 对它们是净改善），分「契约过期」与「真实功能缺口」两族（见 b1-9f 记录）；**1 项（1c3）为 b1-9e 真回归，已修**。22 项欠账的 triage（改断言 / 补端口）为下一轮候选战线，优先级待裁定。 |
 
 **m1 推进规则（原「text file drop import timeout」白名单已于 2026-09-04 解除）**：
 
@@ -86,18 +87,68 @@
 > `const/let` 随 bundle 摘除一并消失，且多被 try/catch 吞掉——症状是「静默空值」而非报错。
 >
 > **遗留（下一段）**：
-> - `multi inspector persistence` 间歇失败（约 1/6）：多选批量改 annotation/star/tags 后，
->   dropped 条目在**内存里被回滚到操作前快照**，随后 `ayncsImagesChange` 的延迟发送
->   （setTimeout+rAF）克隆到旧值持久化（sendTrace 实证：payload 里 dropped 项恒为旧值、
->   clipboard 项为新值；`item:operation-result` 无错误）。已修一处源头（shims
->   `refreshImportedThumbnails` 改为只发缩略图字段 + 先排空 `itemUpdateQueue`，
->   把失败率从 ~3/3 降到 ~1/6），真正的回滚者仍未定位——嫌疑是某个 `Object.assign(存量条目,
->   库快照)` 的异步事件处理器（itemDomain 的 thumbnail-generated #2 / webp.converted /
->   update-item-view-by-id 一类）。下一轮建议：在 mock 总线 emit 上挂钩记录「哪个 channel
->   前后条目字段发生变化」（注意：用 `Object.defineProperty` 监视条目属性会让冒烟脚本整体抛错）。
+> - ~~`multi inspector persistence` 间歇失败（约 1/6）~~ **已于 b1-9f 统计收口（2026-09-05）**：
+>   身份取证探针（`mapIsRaw`/`selIsMap` + raw/map/selected 三处 star/annotation/tags 快照，
+>   早照 + deadline 双照）在位连跑 **73 轮全绿 0 复现**——若 1/6 失败率仍在，概率 ≈ 8.6e-7。
+>   结论：本条所疑的「回滚载体」已被 b1-9e 的三处修复（thumbnail-generated 载荷收窄 +
+>   `itemUpdateQueue` 排空 + `trackLocalImport`）摘除。b45-3 完整 sendTrace 的重新解读：
+>   回滚发生在三步操作写入后 **~16ms 内、同一实例上**（selectionTrace 新值 → 延迟发送克隆到
+>   旧值 → deadline 时 selected 亦旧值），即「晚到的整条快照回写」——而彼时唯一能携带整条库
+>   快照的通道（thumbnail-generated 全量载荷）正是被 b1-9e 收窄封死的那个。
+>   `itemDomain.ts:435` 的无条件 `itemMappings` 覆写属 bundle 30427 逐字怪癖（bundle 在世时
+>   同样存在双实例分叉），按「数据面零改动」未动。探针收口时已移除，片段存档于 b1-9f 记录。
 > - React 侧 45 处 `w.angular.copy/isNumber/extend/equals` 与 `angular.element(...).injector()`
 >   仍是死调用（bundle 在世时靠真 angular）。若要供给，必须同时给
 >   `scopeBridge:14` / `itemDomain:654` 等「bundle 在世」探测点加 `!__eagleShim` 门。
+
+> **b1-9f：React 全量门首跑归因（23 失败 = 22 陈旧 + 1 已修）+ multi inspector 统计收口（2026-09-05）**
+>
+> 本轮无业务代码改动，主体是验证与登记：补跑 b1-9e 收口漏掉的 React 全量门 + multi inspector 取证。
+>
+> **1. React 全量门（`node tests/run-react-suite.mjs`，45 项）首跑**：22 OK / 23 FAIL。
+>   归因方法：对全部 23 个失败项**逐项**在 `HEAD~1`（b1-9d，bundle 已摘除、b1-9e 未动）单跑复验：
+>   - **22 项 b1-9d 同败 ⇒ bundle 摘除时代累积的陈旧冒烟，非 b1-9e 回归**。且多数项 b1-9d 失败更多
+>     （7d6b：19 断言 vs b1-9e 的 3；stage5：10 vs 3；stage6：10 vs 3；7a/11a1 同趋势）——
+>     **b1-9e 对它们是净改善**。两族形态：
+>     - **契约过期**（断言 bundle 在世工件，shim 世界结构上不可能通过）：
+>       `1c2-bundle-eagle-untouched`（断言 bundle eagle 未改动——bundle 已摘除）、
+>       `cz1-accessor-persists`（沿 `$parent` 原型链找 Angular 访问器 getter——shim 世界是
+>       Proxy+coreState 无原型链 scope）、cz2/cz3 同族部分断言；
+>     - **真实功能缺口**（对应 UI 面未接管；**这 22 项 = 未接管面的精确地图**）：
+>       7d 弹窗家族（7d1a/7d1b/7d1c2/7d2/7d3a/7d5a/7d6a/7d6b/7d6c 的 swal/对话框断言成片失败）、
+>       stage5（shell-detail-host / detail-container 等）、stage6（inspector 渲染/星标/改名）、
+>       stage7a（右键菜单）、7b（标签管理）、11a1/11a2/11a49、1m1-unified（域接管/watcher 六断言）、
+>       stage-smoke（filter button toggle）。
+>     按「不为陈旧断言改业务代码」原则，本轮一律未动。**逐项 triage（改断言到新世界契约 / 补端口）
+>     是下一轮候选战线**，与阶段 11 b2/b3/b4 的优先级待用户裁定。
+>   - **1 项是 b1-9e 真回归，已修**：`react-stage1c3-smoke` 的 `c3-contract` 硬编码
+>     `Object.keys(__eagleCoreFns).length === 155`，而 b1-9e 补端口 `addImagesToFolder`
+>     （bundle 43132-43198，m1 必需；`fns["` 计数实测 155→156）使精确计数契约破裂。
+>     修法：断言更新为 156（`tests/react-stage1c3-smoke.mjs`，带注释），复跑 EXIT:0。
+>     **教训：扩 fns 表必须同步全量门的计数型契约。**
+>
+> **2. `multi inspector persistence` 统计收口**：见上方 b1-9e 遗留段更新（73 连绿 + b45-3
+>   重新解读 ⇒ 判定实质消除）。取证探针已从 `electron/main.cjs` 移除，片段存档——若复发，
+>   贴回 m1 闸门 `scope.changeStar(3, false, true);` 之后，并在 reject 载荷里追加
+>   `earlyIdentity, identity: snapIdentity()`：
+>   ```js
+>   const snapIdentity = () => {
+>     const rawEntry = scope.raw && scope.raw.find((i) => i.id === droppedId);
+>     const mapEntry = scope.itemMappings && scope.itemMappings[droppedId];
+>     return {
+>       mapIsRaw: mapEntry === rawEntry,
+>       selIsMap: Array.isArray(scope.selected) && scope.selected[0] === mapEntry,
+>       rawVals: rawEntry && [rawEntry.star, rawEntry.annotation, (rawEntry.tags || []).join('/')],
+>       mapVals: mapEntry && [mapEntry.star, mapEntry.annotation, (mapEntry.tags || []).join('/')],
+>       selVals: scope.selected && scope.selected.map((it) => it && [String(it.id).slice(-4), it.star, it.annotation]),
+>     };
+>   };
+>   const earlyIdentity = snapIdentity();
+>   ```
+>
+> **3. 验证记录**：m1 累计 **79 轮全绿**（探针在位 73 + 移除后终验 6）；tsc EXIT:0；
+>   `test:isolated` → `FULL_REGRESSION_ISOLATED_OK`（cpSync 手工补丁用后即退，见基线表前置）。
+>   全量门未整跑复验（22 项已双态逐项实锤、1c3 已单项验绿；整跑重开待 triage 轮）。
 
 
 **另一处未端口（不阻塞任何套件，仅在缩略图加载失败时触发）**：缩略图修复链

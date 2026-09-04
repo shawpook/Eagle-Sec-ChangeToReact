@@ -215,6 +215,11 @@
     <!-- jquery-audio（$.playSound / $.stopSound）同属 app.bundle.js 内联件，b1-9d 摘除 bundle
          后消失；scope 的 removeSound/duplicateSound/errorSound.play() 直调该插件。 -->
     <script src="js/vendors/jquery-audio.js"></script>
+    <!-- sweetalert2（window.swal / window.sweetAlert）同属 app.bundle.js 内联 vendor，b1-9d
+         摘除 bundle 后消失；ProgressDialogs/ControllerModals/miscDomain 等的 w.swal(...) 确认
+         /输入弹窗全部被 ngSafe/try-catch 吞成静默 no-op，swal2 容器永不出现。vendor 文件尾部
+         自带 window.sweetAlert=window.swal=window.Sweetalert2 别名（CSS 已在 head:10）。 -->
+    <script src="js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
     <script>
         if (typeof module === 'object') { window.module = module; module = undefined; }
         if (window.module) module = window.module;

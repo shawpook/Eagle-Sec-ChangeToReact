@@ -2863,8 +2863,204 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
 /* ── c15：选择广播 + 缩放分发 ────────────────────────────────────────── */
 
 /* updateSelection（bundle 34662-34665 逐字） */
+// b1-9n：updateSelectionTimeout 为 bundle link var（updateSelection $timeout 防抖句柄）
+let updateSelectionTimeout: any = null;
+
 export function machineryUpdateSelection(s: any): void {
+  const w = window as any;
+  // shim 世界保留桥：React inspector 面板经 UPDATE_INSPECTOR 刷新（bundle 54678 版无此广播，
+  // 其 UI 直接双向绑定 scope.inspector.*——适配注明）
   s.$broadcast("UPDATE_INSPECTOR");
+
+  /* bundle 54678-54826 完整版逐字（双赋值怪癖：34662 简版被本版覆盖——此前只移植了被覆盖的
+     简版；inspector 字段派生（newTags/newName/newUrl/newAnnotation/folders/star/size/
+     activeTab/category）经 30ms $timeout 防抖写 scope.inspector.*，7d3a 三断言与
+     InspectorTagSelectPanel 的 eagle.inspector.newTags 数据源。适配：$scope→s /
+     $rootScope→s.$root / $timeout→getTimeout() / $filter→getFilter() / i18n→w.i18n /
+     eagle→w.eagle / $bodyScope→getBodyScope()。s.inspector 即 eagle.inspector（bundle
+     21615/54307 `$scope.inspector = eagle.inspector` 同引用） */
+  getTimeout().cancel(updateSelectionTimeout);
+  updateSelectionTimeout = getTimeout()(function () {
+
+    var selected = s.selected;
+    if (selected.length > 1) {
+      s.inspector.newNamePlaceholder = w.i18n.__("inspector.names.multipleTitles");
+      s.inspector.newUrlPlaceholder = w.i18n.__("inspector.names.multipleUrls");
+      s.inspector.newName = w.eagle.inspector.calculateName(selected);
+      s.inspector.newUrl = w.eagle.inspector.calculateUrl(selected);
+      s.inspector.newTags = w.eagle.inspector.calculateTags(selected);
+      s.inspector.newAnnotation = w.eagle.inspector.calculateAnnotation(selected);
+      s.inspector.folders = w.eagle.inspector.calculateFolders(selected);
+      s.inspector.star = w.eagle.inspector.calculateStar(selected);
+      s.inspector.size = w.eagle.inspector.calculateFileSize(selected);
+      s.inspector.activeTab = "ITEM";
+    } else if (selected.length == 1) {
+      if (selected[0]) {
+        s.inspector.newNamePlaceholder = getFilter()('i18n')("title");
+        s.inspector.newUrlPlaceholder = "http://";
+        s.inspector.newName = selected[0].name || "";
+        s.inspector.newUrl = selected[0].url || "";
+        s.inspector.newTags = selected[0].tags;
+        s.inspector.newAnnotation = selected[0].annotation || "";
+        s.inspector.folders = [];
+        s.inspector.star = selected[0].star || 0;
+        s.inspector.activeTab = "ITEM";
+      }
+    }
+    else {
+      s.inspector.activeTab = "SIDEBAR";
+      switch (s.viewMode) {
+        case "all":
+          s.inspector.category = {
+            newName: w.i18n.__('inspector.names.all'),
+            newDescription: "",
+            createDate: undefined,
+            imageCount: getBodyScope().all.length,
+            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().all),
+            exportable: false,
+            editable: false
+          };
+          break;
+        case "unfiled":
+          s.inspector.category = {
+            newName: w.i18n.__('inspector.names.unfiled'),
+            newDescription: "",
+            createDate: undefined,
+            imageCount: getBodyScope().unfiledCount,
+            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            exportable: false,
+            editable: false
+          };
+          break;
+        case "untagged":
+          s.inspector.category = {
+            newName: w.i18n.__('inspector.names.untagged'),
+            newDescription: "",
+            createDate: undefined,
+            imageCount: getBodyScope().untaggedCount,
+            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            exportable: false,
+            editable: false
+          };
+          break;
+        case "trash":
+          s.inspector.category = {
+            newName: w.i18n.__('inspector.names.trash'),
+            newDescription: "",
+            createDate: undefined,
+            imageCount: getBodyScope().allData.length,
+            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            exportable: false,
+            editable: false
+          };
+          break;
+        case "duplicate":
+          s.inspector.category = {
+            newName: getFilter()('i18n')('inspector.names.duplicate'),
+            newDescription: "",
+            createDate: undefined,
+            imageCount: getBodyScope().allData.length,
+            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            exportable: false,
+            editable: false
+          };
+          break;
+        default:
+          if (s.$root.selectedFolders.length > 0) {
+            s.inspector.category = {
+              newName: w.i18n.__('inspector.names.multipleTitles'),
+              newDescription: "",
+              createDate: undefined,
+              imageCount: getBodyScope().allData.length,
+              fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+              exportable: false,
+              editable: false
+            };
+          }
+          else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
+            var selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key) {
+              return key;
+            });
+            if (selectedFolders[0] && s.folderMappings[selectedFolders[0]]) {
+              w.eagle.inspector.inspectorFolder = s.folderMappings[selectedFolders[0]];
+              s.inspector.category = {
+                newName: w.eagle.inspector.inspectorFolder.name,
+                newDescription: w.eagle.inspector.inspectorFolder.description || "",
+                createDate: w.eagle.inspector.inspectorFolder.modificationTime,
+                imageCount: w.eagle.inspector.inspectorFolder.imageCount,
+                fileSize: undefined,
+                exportable: !(w.eagle.inspector.inspectorFolder.password && !w.eagle.inspector.inspectorFolder.isUnLock),
+                editable: !(w.eagle.inspector.inspectorFolder.password && !w.eagle.inspector.inspectorFolder.isUnLock)
+              };
+            }
+          }
+          else if (s.currentFolder) {
+            w.eagle.inspector.inspectorFolder = s.currentFolder;
+            s.inspector.category = {
+              newName: w.eagle.inspector.inspectorFolder.name,
+              newDescription: w.eagle.inspector.inspectorFolder.description || "",
+              createDate: w.eagle.inspector.inspectorFolder.modificationTime,
+              imageCount: getBodyScope().allData.length,
+              fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+              exportable: true,
+              editable: true
+            };
+          }
+          else if (s.currentSmartFolder) {
+            s.inspector.category = {
+              newName: s.currentSmartFolder.name,
+              newDescription: s.currentSmartFolder.description || "",
+              createDate: s.currentSmartFolder.modificationTime,
+              imageCount: getBodyScope().allData.length,
+              fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+              exportable: true,
+              editable: true
+            };
+          }
+      }
+    }
+
+    // 排序標籤，優先使用群組順序排，皆者使用字母順序排
+    if (s.inspector.newTags.length > 0) {
+      s.inspector.newTags = sortTagsForSelection(s, s.inspector.newTags);
+    }
+  }, 30);
+}
+
+/* sortTags（bundle 54828 逐字；$scope→s。try/catch 原码自带——tagMappings 缺项不炸派生） */
+function sortTagsForSelection(s: any, original: any): any {
+  try {
+    if (!original || original.length === 0) return;
+    let tags = [...original];
+
+    const tagGroupsIndexMap: any = {};
+    s.TagManager.groups.forEach((tagGroup: any, index: any) => {
+      tagGroupsIndexMap[tagGroup.id] = index;
+    });
+
+    tagGroupsIndexMap['none'] = s.TagManager.groups.length;
+
+    tags = tags.sort((tagA: any, tagB: any) => {
+      const a = s.TagManager.tagMappings[tagA];
+      const b = s.TagManager.tagMappings[tagB];
+      const aName = a.name;
+      const bName = b.name;
+      const aGroup = a?.groups?.[0] || 'none';
+      const bGroup = b?.groups?.[0] || 'none';
+
+      // sort by groups index, if same group, sort by name
+      if (tagGroupsIndexMap[aGroup] < tagGroupsIndexMap[bGroup]) return -1;
+      if (tagGroupsIndexMap[aGroup] > tagGroupsIndexMap[bGroup]) return 1;
+      if (aName < bName) return -1;
+      if (aName > bName) return 1;
+      return 0;
+    });
+
+    return tags;
+  } catch (err) {
+    console.error(err);
+    return original;
+  }
 }
 
 /* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
@@ -10206,6 +10402,25 @@ export function machinerySeedControllerState(s: any): void {
         // platform（bundle 20066 `$scope.platform = process.platform`——BodyBindings 的
         // data-platform 属性唯一数据源，shim 世界此前无人写入）
         s.platform = w.process && w.process.platform ? w.process.platform : undefined;
+        // containerSize（bundle 21095-21121 逐字；React 侧 bodyState:159 直接消费
+        // scope.containerSize.sidebar、BodyBindings 面板 left = sidebarWidth+1——bundle 默认
+        // 240 与 React 旧兜底 220 不一致，以 bundle 为准。$$rebind::refreshContainSize 广播
+        // 为 Angular rebind 系统工件，shim 世界由 bodyState 的 watch 自动跟随；
+        // #sidebar 的 resizable 指令（index.html:34）b1 后失效，拖拽写回链待办）
+        s.containerSize = { sidebar: 240 };
+        const sidebarSizeRaw = localStorage.getItem("eagle.containerSize.sidebar");
+        if (sidebarSizeRaw) {
+            s.containerSize.sidebar = parseInt(sidebarSizeRaw);
+            if (s.containerSize.sidebar < 200) s.containerSize.sidebar = 200;
+        }
+        const tagSidebarRaw = localStorage.getItem("eagle.containerSize.tagSidebar");
+        if (tagSidebarRaw) {
+            s.containerSize.tagSidebar = parseInt(tagSidebarRaw);
+        }
+        const tagFilterRaw = localStorage.getItem("eagle.containerSize.tagFilter");
+        if (tagFilterRaw) {
+            s.containerSize.tagFilter = parseInt(tagFilterRaw);
+        }
         // fixUtils（bundle 20513 `$scope.fixUtils = {}`——fixutil 进度对话框开合状态载体；
         // 缺席时 body.fixUtils.isFixing 赋值直接 TypeError、7d6c 的 fx/fc 对话框永不出现）
         s.fixUtils = {};

@@ -72,6 +72,7 @@ let prependImagesTimeout: any = null;
 let updateZoomRatioTimeout: any = null;
 
 let filterCache: any = null;
+let shimFilterInst: any = null;
 function getFilter(): any {
   if (filterCache) return filterCache;
   try {
@@ -80,6 +81,127 @@ function getFilter(): any {
       filterCache = ang.element(document).injector().get('$filter');
     }
   } catch (err) { /* noop */ }
+  // b1-9d：Angular 缺席（shim 世界）→ $filter 等价物（与下方 getTimeout() shim 同一手法）。
+  // 消费面共 6 个滤镜：unique/duration/domainName/i18n 为 EagleApp.filter 逐字移植
+  // （bundle 19849 / 19922 / 19942 / 19979，angular.* 判定换等价表达式），orderBy/date 为
+  // Angular 内建（仅复刻本工程实际用到的调用形态：函数谓词排序 / "yyyy/MM/dd HH:mm"）。
+  // 缺失时 calculateImageBinding 的 folder walk 首行即抛 "$filter is not a function"，
+  // 回调永不触发 → isItemBindCalculated/listDone 永不置位（任何含文件夹的库均命中）。
+  if (!filterCache) {
+    if (!shimFilterInst) {
+      // angular.equals 等价（本工程实际比较对象为 id 字符串/数字）
+      const shimEquals = function (a: any, b: any): boolean {
+        if (a === b) return true;
+        if (a === null || b === null || a === undefined || b === undefined) return false;
+        if (typeof a !== typeof b) return false;
+        if (Array.isArray(a) && Array.isArray(b)) {
+          if (a.length !== b.length) return false;
+          for (let i = 0; i < a.length; i++) { if (!shimEquals(a[i], b[i])) return false; }
+          return true;
+        }
+        if (typeof a === 'object') {
+          const ka = Object.keys(a);
+          const kb = Object.keys(b);
+          if (ka.length !== kb.length) return false;
+          for (const k of ka) { if (!shimEquals(a[k], b[k])) return false; }
+          return true;
+        }
+        return false;
+      };
+      // 注意 API 形状：Angular 的 EagleApp.filter(name, factory) 在注册期即展开工厂，
+      // $filter(name) 直接返回滤镜函数本体——故表内必须是滤镜函数，不能再包一层工厂
+      // （曾误包一层 → $filter('unique')(children,'id') 返回的是函数，folder.children 被
+      // 赋成函数，eagle.utils.tree.walk 由此无限递归爆栈）。
+      const shimFilters: any = {
+        // bundle 19849-19888 逐字
+        unique: function (items: any, filterOn: any) {
+          if (filterOn === false) return items;
+          if ((filterOn || typeof filterOn === 'undefined') && Array.isArray(items)) {
+            const newItems: any[] = [];
+            const extractValueToCompare = function (item: any) {
+              if (item && typeof item === 'object' && typeof filterOn === 'string') return item[filterOn];
+              return item;
+            };
+            items.forEach(function (item: any) {
+              let isDuplicate = false;
+              for (let i = 0; i < newItems.length; i++) {
+                if (shimEquals(extractValueToCompare(newItems[i]), extractValueToCompare(item))) {
+                  isDuplicate = true;
+                  break;
+                }
+              }
+              if (!isDuplicate) newItems.push(item);
+            });
+            items = newItems;
+          }
+          return items;
+        },
+        // bundle 19922-19940 逐字
+        duration: function (str: any) {
+          try {
+            if (str) {
+              const date = new Date(0); // 原文 new Date(null)；Date(null) === Date(0)（TS 重载不接受 null）
+              const seconds = Math.max(1, parseInt(str));
+              date.setSeconds(seconds);
+              if (seconds < 3600) return date.toISOString().substr(14, 5);
+              else return date.toISOString().substr(11, 8);
+            }
+          }
+          catch (err) { /* noop */ }
+          return "";
+        },
+        // bundle 19942-19949 逐字
+        domainName: function (url: any) {
+          if (!url) return "";
+          const a = document.createElement('a');
+          a.href = url;
+          return a.hostname.toLowerCase();
+        },
+        // bundle 19979-19989 逐字（顶层 i18n → w.i18n）
+        i18n: function (key: any, pairs: any) {
+          const w = window as any;
+          let i18nString = w.i18n.__(key);
+          if (pairs) {
+            pairs.forEach(function (pair: any) {
+              i18nString = i18nString.replace("{" + pair.property + "}", pair.value);
+            });
+          }
+          return i18nString;
+        },
+        // Angular 内建 date：本工程仅用 "yyyy/MM/dd HH:mm" 形态；非法日期返回入参（Angular 同）
+        date: function (value: any, format: any) {
+          const date = value instanceof Date ? value : new Date(value);
+          if (isNaN(date.getTime())) return value;
+          const p = (n: number) => String(n).length >= 2 ? String(n) : '0' + String(n);
+          return String(format)
+            .replace(/yyyy/g, String(date.getFullYear()))
+            .replace(/MM/g, p(date.getMonth() + 1))
+            .replace(/dd/g, p(date.getDate()))
+            .replace(/HH/g, p(date.getHours()))
+            .replace(/mm/g, p(date.getMinutes()))
+            .replace(/ss/g, p(date.getSeconds()));
+        },
+        // Angular 内建 orderBy：本工程仅用「函数谓词」形态，返回排序副本（Array.sort 稳定）
+        orderBy: function (collection: any, predicate: any) {
+          if (!Array.isArray(collection)) return collection;
+          const get = typeof predicate === 'function' ? predicate : function (item: any) { return item; };
+          return collection.slice().sort(function (a: any, b: any) {
+            const va = get(a);
+            const vb = get(b);
+            if (va === vb) return 0;
+            if (typeof va === 'number' && typeof vb === 'number') return va < vb ? -1 : 1;
+            const sa = String(va);
+            const sb = String(vb);
+            return sa < sb ? -1 : (sa > sb ? 1 : 0);
+          });
+        },
+      };
+      shimFilterInst = function (name: string) {
+        return shimFilters[name];
+      };
+    }
+    filterCache = shimFilterInst;
+  }
   return filterCache;
 }
 
@@ -10214,6 +10336,20 @@ export function applyDataMachineryScope(): void {
     const w = window as any;
     w.TagManager = machineryBuildTagManager(s);
     s.TagManager = w.TagManager;
+  }
+
+  // b1-9d：controller init 注入面补种（bundle 20055 `$rootScope.preferences = preferences` /
+  // 20208 `$scope.UrlStateService = UrlStateService`；种子区间 21242-21619 之外的同批 DI 本地）
+  // ——shim 世界无 Angular DI，同名本地改由窗口单例供给：
+  //   · s.UrlStateService：dataMachinery 逐字端口按 scope 解析（openAll/nextHistory/prevHistory、
+  //     toolbarState 消费），缺失时 openAll 的 $timeout 回调首行即抛，reload/listDone 永不置位；
+  //   · s.preferences：shim 的 $root 即 scope 自身，故 s.preferences 同时覆盖
+  //     s.$root.preferences（updateSidebarList 消费 .sidebar.*）。
+  // if-absent + shim-only：bundle 在世时两处均由 controller init 赋值，零调用零改变。
+  if (s.__eagleShim) {
+    const w = window as any;
+    if (!s.preferences && w.preferences) s.preferences = w.preferences;
+    if (!s.UrlStateService && w.UrlStateService) s.UrlStateService = w.UrlStateService;
   }
 
   // b1-7e：subFolderSortableOptions（bundle 38947 controller init 种子逐字——React 侧写方

@@ -1773,6 +1773,103 @@ export function installBundleGlobals(): void {
     _scanInstalledFonts();
   }
 
+  // ── 原型扩展（bundle 2607-2608 / 2621-2703）：bundle 顶层的 Array/String.prototype 扩展，
+  //    去 Angular 后随 bundle 死亡消失。React 消费面（dataMachinery getExtendTags 的
+  //    tags.unique()、ContextMenu/FolderModals/PluginFamily 的 pinyin.score()）逐字保留了
+  //    原调用，故此处 if-absent 补供给；bundle 在世时原型已存在，零调用零改变。
+  //    Array.prototype.move（bundle 2610）未被 React 侧消费，不供给（诚实缺口）。
+  if (typeof (Array.prototype as any).unique !== 'function') {
+    // bundle 2607-2608 逐字（原文为 IIFE 包裹的同体函数）
+    (Array.prototype as any).unique = function (this: any) { return [...new Set(this)]; };
+  }
+  if (typeof (String.prototype as any).score !== 'function') {
+    // bundle 2621-2703 逐字（模糊匹配打分；自包含，无外部依赖）
+(String.prototype as any).score = function (this: any, word: any, fuzziness: any) {
+    'use strict';
+
+    // If the string is equal to the word, perfect match.
+    if (this === word) { return 1; }
+
+    //if it's not a perfect match and is empty return 0
+    if (word === "") { return 0; }
+
+    var runningScore = 0,
+        charScore,
+        finalScore,
+        string = this,
+        lString = string.toLowerCase(),
+        strLength = string.length,
+        lWord = word.toLowerCase(),
+        wordLength = word.length,
+        idxOf,
+        startAt = 0,
+        fuzzies = 1,
+        fuzzyFactor = 0, // 原文 var fuzzyFactor;（TS 严格模式不接受 undefined 参与 += ；
+                         // 该分支仅在 fuzziness 真值时进入，运行时取值与原文一致）
+        i;
+
+    // Cache fuzzyFactor for speed increase
+    if (fuzziness) { fuzzyFactor = 1 - fuzziness; }
+
+    // Walk through word and add up scores.
+    // Code duplication occurs to prevent checking fuzziness inside for loop
+    if (fuzziness) {
+        for (i = 0; i < wordLength; i += 1) {
+
+            // Find next first case-insensitive match of a character.
+            idxOf = lString.indexOf(lWord[i], startAt);
+
+            if (idxOf === -1) {
+                fuzzies += fuzzyFactor;
+            } else {
+                if (startAt === idxOf) {
+                    // Consecutive letter & start-of-string Bonus
+                    charScore = 0.7;
+                } else {
+                    charScore = 0.1;
+
+                    // Acronym Bonus
+                    // Weighing Logic: Typing the first character of an acronym is as if you
+                    // preceded it with two perfect character matches.
+                    if (string[idxOf - 1] === ' ') { charScore += 0.8; }
+                }
+
+                // Same case bonus.
+                if (string[idxOf] === word[i]) { charScore += 0.1; }
+
+                // Update scores and startAt position for next round of indexOf
+                runningScore += charScore;
+                startAt = idxOf + 1;
+            }
+        }
+    } else {
+        for (i = 0; i < wordLength; i += 1) {
+            idxOf = lString.indexOf(lWord[i], startAt);
+            if (-1 === idxOf) { return 0; }
+
+            if (startAt === idxOf) {
+                charScore = 0.7;
+            } else {
+                charScore = 0.1;
+                if (string[idxOf - 1] === ' ') { charScore += 0.8; }
+            }
+            if (string[idxOf] === word[i]) { charScore += 0.1; }
+            runningScore += charScore;
+            startAt = idxOf + 1;
+        }
+    }
+
+    // Reduce penalty for longer strings.
+    finalScore = 0.5 * (runningScore / strLength + runningScore / wordLength) / fuzzies;
+
+    if ((lWord[0] === lString[0]) && (finalScore < 0.85)) {
+        finalScore += 0.15;
+    }
+
+    return finalScore;
+};
+  }
+
   // 诊断契约：冒烟断言全部关键全局在位（bundle 在世 = 沿用其绑定；b1 后 = 本模块供给）
   (window as any).__eagleBundleGlobals = {
     installed: true,

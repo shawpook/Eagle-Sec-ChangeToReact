@@ -363,7 +363,9 @@
                 }
                 
                 // 處理大尺寸圖片的特殊邏輯
-                const $bodyScope = angular.element('body').scope();
+                // b1-9d：去 Angular 後 window.angular 缺席；window.$bodyScope 由 main.tsx
+                // 在兩個世界歸一為同一物件（bundle 在世時語義零改變）。
+                const $bodyScope = window.$bodyScope || angular.element('body').scope();
                 if ($bodyScope && $bodyScope.imageSize && $bodyScope.imageSize.height > 440) {
                     const rawSrc = img.getAttribute('raw');
                     if (rawSrc) {
@@ -443,7 +445,8 @@
                 }
                 
                 const boxId = box.getAttribute('data-box-id');
-                const $bodyScope = angular.element('body').scope();
+                // b1-9d：同上——window.$bodyScope 優先，angular 缺席時不拋。
+                const $bodyScope = window.$bodyScope || angular.element('body').scope();
                 
                 if (!$bodyScope || !$bodyScope.itemMappings) {
                     reject(new Error('Scope not available'));

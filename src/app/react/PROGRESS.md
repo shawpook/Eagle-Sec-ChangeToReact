@@ -3220,6 +3220,51 @@ version 31）**：
 >   运行时增删复用同表。
 > - 验证：tsc 零错；m1 25/25。
 
+> **b1-9d 去 Angular 最后一段·自然装载链 listDone 打通（2026-09-04 终审）**：
+> - **交接 v3 的原假设被证伪**：v3 定性为「openAll early-return（allData 被提前填充）」。探针实测
+>   natSteps `call:openAll{allData=0,isIBC=true,raw=1}` —— early-return 条件（`allData.length>0`）
+>   压根不成立，走的是完整路径；真正断点是 openAll 内部 `$timeout(50)` **回调首行抛错后被吞**。
+>   吞错路径有两条且都不进 console：shim `$timeout` 的 catch（console.error）与
+>   `calculateImageBinding` 的 catch（`electronLog.error`）；而原探针的 `consoleErrors` 数组
+>   **从未被填充**（无 console 监听）→ `CONSOLE_ERRORS []` 是假阴性。探针补 `console.error`
+>   覆盖 + `electronLog.error` 钩后才可见。
+> - **四处去 Angular 供给缺口（全部修在分歧源头；未改 machineryOpenAll / machineryRebindRefresh
+>   本体（逐字 faithful），未强制置 listDone 绕过）**：
+>   1. `s.UrlStateService`（bundle 20208 `$scope.UrlStateService = UrlStateService`）与
+>      `s.preferences`（20055 `$rootScope.preferences`）是 controller-init 的 DI 本地，种子区间
+>      21242-21619 未覆盖 → shim 世界二者皆 undefined。openAll 的 timeout 回调首行
+>      `s.UrlStateService.setState(...)` 即抛 → `reload()`/listDone 永不置位。修：
+>      `applyDataMachineryScope` 内 shim-only if-absent 补种（shim 的 `$root` 即 scope 自身，
+>      故 `s.preferences` 同时覆盖 `s.$root.preferences`，updateSidebarList 消费 `.sidebar.*`）。
+>   2. `getFilter()` 无 Angular 回退（对照同批已落地的 `getTimeout()` shim）→ **任何含文件夹的库**
+>      都会在 calculateImageBinding 的 folder walk 首行抛 `$filter is not a function`。
+>      修：shim `$filter`，`unique`/`duration`/`domainName`/`i18n` 逐字移植（bundle 19849 / 19922 /
+>      19942 / 19979），`orderBy`/`date` 复刻本工程实际用到的调用形态。**API 形状坑（已栽一次）**：
+>      Angular 的 `EagleApp.filter(name, factory)` 在注册期即展开工厂，`$filter(name)` 直接返回滤镜
+>      函数；初版多包一层工厂 → `folder.children` 被赋成函数 → `eagle.utils.tree.walk` 无限递归
+>      （folderList 涨到 4835 项后爆栈，表层报 `convertToPinyin` RangeError）。
+>   3. `Array.prototype.unique`（bundle 2607-2608）/ `String.prototype.score`（2621-2703）随 bundle
+>      死亡消失，而 React 侧逐字保留了 `.unique()` / `.score()` 调用 → `machineryGetExtendTags`
+>      抛 `uniqueTags.unique is not a function`。修：`bundleGlobals` 内 if-absent 逐字补供给
+>      （score 为字节提取，仅 `var fuzzyFactor = 0` 一处 TS 严格模式适配）。
+>      `Array.prototype.move`（2610）React 侧零消费，留作诚实缺口不供给。
+>   4. 存活 classic script / vendor 内裸 `angular`：`egjs-infinitegrid.umd.js:4233`、
+>      `eagle-hover-preview.js:81`、`js/services/lazy-load-manager.js:366/446`（缩略图装载链）。
+>      统一改为 `$bodyScope || angular.element("body").scope()`（即 bundle 同文件 673 行 Eagle 自有
+>      写法），bundle 在世语义零改变。
+> - **验证**：tsc 零错（真实退出码 0）；探针 `B19D_LATE {"listDone":true,"isItemBindCalculated":true,
+>   "allDataLen":1,"rej":[]}`，natSteps 全链 `cibCall → natCbStart → call:openAll → natCbDone →
+>   call:reload → call:rebindRefresh → call:relayout → TICK{allData=1,listDone=true}`，
+>   `[shimTimeout] fn failed` 全部消失。新增空库探针（复现 m1 的 createLibrary-only 条件，
+>   含文件夹）同样 `listDone:true` —— 空库路径下 listDone 曾被同一条 folder-walk 链阻断。
+>   `npm run test:isolated` = `FULL_REGRESSION_ISOLATED_OK`（EXIT:0，backend 临时 cpSync 补丁在树）。
+> - **遗留（本轮不扩域，另开切片）**：① 缩略图修复链 `listImageError` / `tryToFixThumbnailError` /
+>   `fixThumbnail`（bundle 19537+）整条未端口，而 `boxGridEngine.ts:96` 生成的
+>   `onerror="listImageError(event)"` 仍裸引用 → 缩略图加载失败时必抛 ReferenceError；
+>   ② 拖放导入域 `onDropContainer`（bundle 52717，约 210 行 + `dragging`/`IS_HIDDEN_FILE`
+>   等依赖）未端口 → `npm run test:main-ui-workflow` 停在 `text file drop import timeout`
+>   （listDone 等待段已过，属后续阶段缺口）。
+
 > **b1 前置终审·缺口全量审计 + b1-1 fns 桥（2026-09-03；shimFnsBridge 新增）**：
 > - 审计方法：正则提取 React 七域文件（dataMachinery/controllerFns/libraryDomain/itemDomain/
 >   filterDomain/miscDomain/selectionViewDomain/apiServerDomain）内全部 s.X() 调用面，对比

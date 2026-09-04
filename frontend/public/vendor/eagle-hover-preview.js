@@ -78,7 +78,9 @@ function removeBoxAudioPlayer (event) {
         event.stopPropagation();
     }
 
-    var $scope = angular.element("body").scope();
+    // b1-9d：去 Angular 后 window.angular 缺席；$bodyScope 即 bundle 世界同对象
+    // （同 egjs-infinitegrid.umd.js 内 Eagle 自有写法），bundle 在世时语义零改变。
+    var $scope = $bodyScope || angular.element("body").scope();
     var $box = $(".box").has(event.target);
     disarmHoverSentinel($box);
     var image = $scope.getItemByElement($box[0]);

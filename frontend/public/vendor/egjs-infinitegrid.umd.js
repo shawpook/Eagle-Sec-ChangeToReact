@@ -4230,7 +4230,9 @@ var JustifiedLayout = function () {
 		var endPoint = startPoint;
 		var height = 0;
 
-		var $scope = angular.element("body").scope();
+		// b1-9d：去 Angular 后 window.angular 缺席；$bodyScope 即 bundle 世界同对象
+		// （与本文 673 行 Eagle 自有写法一致），bundle 在世时语义零改变。
+		var $scope = $bodyScope || angular.element("body").scope();
 		var isNameVisible = $scope.showName;
 		var isMetasVisible = $scope.showMetas;
 

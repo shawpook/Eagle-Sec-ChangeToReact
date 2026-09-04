@@ -18,6 +18,7 @@
 
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
+import { coreState } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
 
 declare const Buffer: any;
@@ -1655,6 +1656,12 @@ export function installBundleGlobals(): void {
   // pluginModule（bundle 19040：const pluginModule = require(`${appRoot}/app/js/plugin`)）
   if (!w.pluginModule && w.appRoot) {
     try { w.pluginModule = req(w.appRoot + '/app/js/plugin'); } catch (err) { /* noop */ }
+  }
+  // b1-9j：bundle 20207 的 $scope.pluginModule = pluginModule —— shim 世界数据面字段只经
+  // coreState/proxy 可达；插件面板（PluginFamily）与详情查看分支（detailState 的 pluginExt）
+  // 读 body.pluginModule 取不到 → 桥接同一实例
+  if (w.pluginModule && !coreState.pluginModule) {
+    coreState.pluginModule = w.pluginModule;
   }
   if (!w.guid) w.guid = _guid;
   if (!w.throttle) w.throttle = _throttle;

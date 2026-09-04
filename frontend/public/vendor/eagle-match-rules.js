@@ -782,8 +782,9 @@ function isMatchColorRule (rule, image) {
     return false;
 }
 
-var colorConvert = w.require('color-convert');
-var DeltaE = w.require('delta-e');
+// b1-9d：w 为 bundle 时代词法绑定，vendor 注入环境无此名——经 window.require 同源解析
+var colorConvert = window.require('color-convert');
+var DeltaE = window.require('delta-e');
 function colorSimilarityDistance (color1, color2) {
     var c1 = colorConvert.rgb.lab(color1[0], color1[1], color1[2]);
     var c2 = colorConvert.rgb.lab(color2[0], color2[1], color2[2]);

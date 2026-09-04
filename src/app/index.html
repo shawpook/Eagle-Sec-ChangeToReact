@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html ng-app="EagleApp" ng-cloak ng-controller="RootController">
+<html>
 
 <head>
     <meta charset="UTF-8">
@@ -9,14 +9,6 @@
     <link rel="stylesheet" href="css/modules/angular-notify/angular-notify.min.css">
     <link rel="stylesheet" href="css/vendors/sweetalert2/sweetalert2.min.css">
     <title>Eagle</title>
-    <style>
-        body {
-            display: none;
-        }
-        [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
-          display: none !important;
-        }
-    </style>
     <link rel="stylesheet" href="css/jquery-ui.min.css">
     <link rel="stylesheet" href="css/icons.css">
     <link id="app-style" rel="stylesheet" href="css/style_dark.css">
@@ -30,7 +22,6 @@
 </head>
 <body
     tabindex="-1"
-    ng-controller="EagleController"
 >
 
     <!-- 应用菜单按钮（React 接管，舊區塊已刪；11-pre a8） -->
@@ -224,7 +215,6 @@
         window.EagleConfig = require(appRoot + '/config.js');
     </script>
     <script src="js/services/lazy-load-manager.js"></script>
-    <script src="app.bundle.js"></script>
     <script src="js/services/shortcut-manager.js"></script>
     <script src="js/vendors/colorpicker/js/colorpicker.js"></script>
     <script src="js/vendors/colorpicker/js/eye.js"></script>

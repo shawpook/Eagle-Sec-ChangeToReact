@@ -55,6 +55,7 @@
  */
 
 import { getBodyScope } from '../global/scopeBridge';
+import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
 
@@ -83,6 +84,7 @@ function getFilter(): any {
 }
 
 let timeoutCache: any = null;
+let shimTimeoutInst: any = null;
 function getTimeout(): any {
   if (timeoutCache) return timeoutCache;
   try {
@@ -91,6 +93,31 @@ function getTimeout(): any {
       timeoutCache = ang.element(document).injector().get('$timeout');
     }
   } catch (err) { /* noop */ }
+  // b1-9d：Angular 缺席（shim 世界）→ $timeout 等价物（延时执行 + $evalAsync digest；
+  // cancel 句柄表——updateSidebarListTimeout/calculateImageBindingTimeout 等域内自管
+  // var 的 cancel 调用面语义不变）
+  if (!timeoutCache) {
+    if (!shimTimeoutInst) {
+      const timers: any = {};
+      let seq = 0;
+      shimTimeoutInst = function (fn: any, ms?: number) {
+        const id = ++seq;
+        timers[id] = setTimeout(function () {
+          delete timers[id];
+          try { if (typeof fn === 'function') fn(); } catch (err) { console.error('[shimTimeout] fn failed', err); }
+          try {
+            const s = getBodyScope();
+            if (s && typeof s.$evalAsync === 'function') s.$evalAsync();
+          } catch (err) { /* noop */ }
+        }, ms || 0);
+        return id;
+      };
+      shimTimeoutInst.cancel = function (id: any) {
+        if (id != null && timers[id]) { clearTimeout(timers[id]); delete timers[id]; }
+      };
+    }
+    timeoutCache = shimTimeoutInst;
+  }
   return timeoutCache;
 }
 
@@ -934,7 +961,8 @@ export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): vo
   }
 
   s.offsetScrollbar(30);
-  s.$root.initMenu();
+  // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
+  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
 }
 
 /* resetImageData（bundle 30540-30548 逐字；controller 闭包函数 → 域内移植） */
@@ -7755,7 +7783,7 @@ export function machineryRgbToHex(s: any, r: any, g: any, b: any): any {
 export function machineryLockApp(s: any): void {
   const w = window as any;
   s.$root.isAppLocked = true;
-  s.$root.initMenu();
+  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
   setTimeout(function () {
     machineryFocusAppUnlockPassword(s);
   }, 100);
@@ -9790,12 +9818,403 @@ export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpan
   s.updateSidebarList();
 }
 
+/* controller init 状态面（bundle 21242-21619 逐字——$scope→s / $rootScope→s.$root 机械替换；
+   initEvent/var allTags/var updateTimer 略去：React 组件自有事件面 + 闭包死变量；
+   仅 shim 世界调用（bundle 在世时状态由 controller init 填充，零调用零改变）） */
+export function machinerySeedControllerState(s: any): void {
+  const w = window as any;
+        s.libraryHistory = [];  // bundle 20535（seed 区间外的 controller init 字段——showTutorial 等消费）
+        s.MAX_LIST_WIDTH = 900;
+        s.MAX_DIMENSION = 120000000;
+        s.isHideMainNav = true;	// 3.0 侧栏
+        s.isHideSidebar = false;
+        s.isHideSubFolder = true;
+        s.isHideNavigator = false;
+        s.unlockPassword = "";
+        s.len = 100;
+        s.sidebarList = [];
+        s.sidebarIndex;
+        s.all = [];
+        s.trash = [];
+        s.untaggedCount = 0;
+        s.unfiledCount = 0;
+        s.images = [];
+        s.selected = [];
+        s.selectedMappings = {};
+        s.lockedImages = {};
+        s.filtereds = [];
+        s.allData = [];
+        s.shuffle = [];
+        s.$root.selectedFolders = [];
+        s.$root.selectedFoldersMappings = {};
+        s.$root.selectedSmartFolders = [];
+        s.$root.selectedSmartFoldersMappings = {};
+        s.folderMappings = {};
+        s.smartFolderMappings = {};
+        s.uploadQueue = [];
+        s.finishQueue = [];
+        s.finishGenerateQueue = [];
+        s.regenerateThumbnailQueue = [];
+        
+        s.duplicateQueue = [];
+        s.$root.currentFocus = "sidebar";
+        s.showSubfolderContent = false;
+        s.showOriginalImageWhenLarge = localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false'
+        s.showName = false;
+        s.showMetas = false;
+        s.showAnnotation = true;
+        s.showFileExtension = true;
+        s.showFileExtensionLabel = true;
+        s.orderBy = localStorage.getItem("eagle.list.orderBy") || "IMPORT";
+        s.orderByName = w.i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
+        s.isSearchScopeName = true;
+        s.isSearchScopeFolderName = true;
+        s.isSearchScopeFolderDesc = true;
+        s.isSearchScopeExt = true;
+        s.isSearchScopeTag = true;
+        s.isSearchScopeUrl = true;
+        s.isSearchScopeAnnotation = true;
+        s.isSearchScopeNote = true;
+        s.listMetaType = localStorage.getItem("eagle.list.meta.type") || "RESOLUTION";
+        s.sortIncrease = true;
+        s.layout = "";
+        s.layoutOptions = localStorage["eagle.list.layout.options"] || "Fit";
+        s.paletteQueuePaused = false;
+        s.paletteQueueDelay = 20;
+        
+        // Grid Layout 相关
+        s.itemMappings = {};
+        s.modifiedMappings = {};
+        s.options = {
+            page: 60,           // 每页数量
+            preload: 1,         // 预先载入页次，如果填写 3 表示载入 page x 3 个内容
+            align: "left"     // 瀑布流排版对其方式
+        };
+
+        s.folderIcons = [
+
+            // 集合、多媒体、工具
+            { type: 'icon' },
+            { type: 'icon', icon: 'library' },
+            { type: 'icon', icon: 'box' },
+            { type: 'icon', icon: 'grid' },
+            { type: 'icon', icon: 'layer' },
+            { type: 'icon', icon: 'briefcase' },
+            { type: 'icon', icon: 'photo' },
+            { type: 'icon', icon: 'photos' },
+            { type: 'icon', icon: 'video' },
+            { type: 'icon', icon: 'film' },
+            { type: 'icon', icon: 'film2' },
+            { type: 'icon', icon: 'film3' },
+            { type: 'icon', icon: 'music' },
+            { type: 'icon', icon: 'book' },
+            { type: 'icon', icon: 'book2' },
+            { type: 'icon', icon: 'bookshelf' },
+            { type: 'icon', icon: 'keynote' },
+            { type: 'icon', icon: 'camera' },
+            { type: 'icon', icon: 'aperture' },
+            { type: 'icon', icon: 'attachment' },
+            { type: 'icon', icon: 'scissors' },
+            { type: 'icon', icon: 'palette' },
+            { type: 'icon', icon: 'wrench' },
+            { type: 'icon', icon: 'helmet' },
+            { type: 'icon', icon: 'life-buoy' },
+            { type: 'icon', icon: 'graph' },
+            { type: 'icon', icon: 'graph2' },
+            { type: 'icon', icon: 'tableware' },
+            { type: 'icon', icon: 'cog' },
+            { type: 'icon', icon: 'bachelor-cap' },
+            { type: 'icon', icon: 'cones' },
+            { type: 'icon', icon: 'dribbble' },
+            { type: 'icon', icon: 'email' },
+            { type: 'icon', icon: 'business-card' },
+            { type: 'icon', icon: 'coffee' },
+            { type: 'icon', icon: 'cart' },
+            { type: 'icon', icon: 'lightbulb' },
+            { type: 'icon', icon: 'inspiration' },
+            
+            // { type: 'separator' },
+
+            // 评价、符号、钱、时间
+            { type: 'icon', icon: 'thumb-up' },
+            { type: 'icon', icon: 'thumb-down' },
+            { type: 'icon', icon: 'like' },
+            { type: 'icon', icon: 'unlike' },
+            { type: 'icon', icon: 'star' },
+            { type: 'icon', icon: 'hot' },
+            { type: 'icon', icon: 'upload' },
+            { type: 'icon', icon: 'download' },
+            { type: 'icon', icon: 'paid' },
+            { type: 'icon', icon: 'free' },
+            { type: 'icon', icon: 'medical' },
+            { type: 'icon', icon: 'shield' },
+            { type: 'icon', icon: 'search' },
+            { type: 'icon', icon: 'shortcuts' },
+            { type: 'icon', icon: 'recycle' },
+            { type: 'icon', icon: 'excalmation' },
+            { type: 'icon', icon: 'question' },
+            { type: 'icon', icon: 'coin1' },
+            { type: 'icon', icon: 'coin2' },
+            { type: 'icon', icon: 'coin3' },
+            { type: 'icon', icon: 'coin4' },
+            { type: 'icon', icon: 'wallet' },
+            { type: 'icon', icon: 'watch' },
+            { type: 'icon', icon: 'clock' },
+            { type: 'icon', icon: 'calendar-week' },
+            { type: 'icon', icon: 'calendar-month' },
+
+            { type: 'separator' },
+
+            // 设备、图表、设计类型、字体
+            { type: 'icon', icon: 'website' },
+            { type: 'icon', icon: 'phone' },
+            { type: 'icon', icon: 'tablet' },
+            { type: 'icon', icon: 'desktop' },
+            { type: 'icon', icon: 'tv' },
+            { type: 'icon', icon: 'cpu' },
+            { type: 'icon', icon: 'safari' },
+            { type: 'icon', icon: 'chrome' },
+            { type: 'icon', icon: 'pie' },
+            { type: 'icon', icon: 'bar-chart' },
+            { type: 'icon', icon: 'line-chart' },
+            { type: 'icon', icon: '2d' },
+            { type: 'icon', icon: '3d' },
+            { type: 'icon', icon: 'contrast' },
+            { type: 'icon', icon: 'texture' },
+            { type: 'icon', icon: 'transition' },
+            { type: 'icon', icon: 'animation' },
+            { type: 'icon', icon: 'spectrogram' },
+            { type: 'icon', icon: 'font-sans' },
+            { type: 'icon', icon: 'font-sans-serif' },
+            { type: 'icon', icon: 'font-handwritten' },
+
+            // { type: 'separator' },
+
+            { type: 'icon', icon: 'flag' },
+            { type: 'icon', icon: 'earth' },
+            { type: 'icon', icon: 'pin' },
+            { type: 'icon', icon: 'pin-check' },
+            { type: 'icon', icon: 'map' },
+            { type: 'icon', icon: 'road' },
+            { type: 'icon', icon: 'motor' },
+            { type: 'icon', icon: 'rocket' },
+            { type: 'icon', icon: 'airplan' },
+            { type: 'icon', icon: 'ship' },
+            { type: 'icon', icon: 'train' },
+            { type: 'icon', icon: 'car' },
+            { type: 'icon', icon: 'truck' },
+            { type: 'icon', icon: 'water-drop' },
+            { type: 'icon', icon: 'sun' },
+            { type: 'icon', icon: 'moon' },
+            { type: 'icon', icon: 'tree' },
+            { type: 'icon', icon: 'mountain' },
+            { type: 'icon', icon: 'cloud' },
+
+            // { type: 'separator' },
+
+            // 建筑、家俱、游戏、成就
+            { type: 'icon', icon: 'bathtub' },
+            { type: 'icon', icon: 'door' },
+            { type: 'icon', icon: 'bed' },
+            { type: 'icon', icon: 'cabinet' },
+            { type: 'icon', icon: 'sofa' },
+            { type: 'icon', icon: 'home' },
+            { type: 'icon', icon: 'store' },
+            { type: 'icon', icon: 'house' },
+            { type: 'icon', icon: 'game' },
+            { type: 'icon', icon: 'weapon' },
+            { type: 'icon', icon: 'armor' },
+            { type: 'icon', icon: 'award2' },
+            { type: 'icon', icon: 'award' },
+            { type: 'icon', icon: 'award3' },
+            { type: 'icon', icon: 'crown' },
+            { type: 'icon', icon: 'rophy' },
+            { type: 'icon', icon: 'gift' },
+            { type: 'icon', icon: 'facebook' },
+            { type: 'icon', icon: 'twitter' },
+            { type: 'icon', icon: 'instagram' },
+
+            { type: 'separator' },
+
+            // 人、動物、神、魔
+            { type: 'icon', icon: 'eye' },
+            { type: 'icon', icon: 'bear' },
+            { type: 'icon', icon: 'dog' },
+            { type: 'icon', icon: 'cat' },
+            { type: 'icon', icon: 'man' },
+            { type: 'icon', icon: 'woman' },
+            { type: 'icon', icon: 'group' },
+            { type: 'icon', icon: 'smile' },
+            { type: 'icon', icon: 'meh' },
+            { type: 'icon', icon: 'frown' },
+            { type: 'icon', icon: 'die' },
+            { type: 'icon', icon: 'baby' },
+            { type: 'icon', icon: 'kid' },
+            { type: 'icon', icon: 'angel' },
+            { type: 'icon', icon: 'demon' },
+            { type: 'icon', icon: 'hand' },
+            { type: 'icon', icon: 'brain' },
+
+            { type: 'separator' },
+
+            // 数字
+            { type: 'icon', icon: 'number0' },
+            { type: 'icon', icon: 'number1' },
+            { type: 'icon', icon: 'number2' },
+            { type: 'icon', icon: 'number3' },
+            { type: 'icon', icon: 'number4' },
+            { type: 'icon', icon: 'number5' },
+            { type: 'icon', icon: 'number6' },
+            { type: 'icon', icon: 'number7' },
+            { type: 'icon', icon: 'number8' },
+            { type: 'icon', icon: 'number9' },
+            { type: 'icon', icon: 'number10' },
+            { type: 'icon', icon: 'number11' },
+            { type: 'icon', icon: 'number12' },
+            { type: 'icon', icon: 'number13' },
+            { type: 'icon', icon: 'number14' },
+            { type: 'icon', icon: 'number15' },
+            { type: 'icon', icon: 'number16' },
+            { type: 'icon', icon: 'number17' },
+            { type: 'icon', icon: 'number18' },
+            { type: 'icon', icon: 'number19' },
+            { type: 'icon', icon: 'number20' },
+        ];
+
+        if (localStorage.getItem("isHideMainNav") == 'true') {
+            s.isHideMainNav = true;
+        }
+
+        if (localStorage.getItem("isHideSidebar") == 'true') {
+            s.isHideSidebar = true;
+        }
+
+        if (localStorage.getItem("isHideSubFolder") == 'false') {
+            s.isHideSubFolder = false;
+        }
+
+        if (localStorage.getItem("eagle.list.sortIncrease") == 'false') {
+            s.sortIncrease = false;
+        }
+
+        if (localStorage.getItem("isHideNavigator") == 'true') {
+            s.isHideNavigator = true;
+        }
+
+        if (localStorage.getItem("eagle.search.scope.name") === 'false') { s.isSearchScopeName = false; }
+        if (localStorage.getItem("eagle.search.scope.folderName") === 'false') { s.isSearchScopeFolderName = false; }
+        if (localStorage.getItem("eagle.search.scope.folderDesc") === 'false') { s.isSearchScopeFolderDesc = false; }
+        if (localStorage.getItem("eagle.search.scope.ext") === 'false') { s.isSearchScopeExt = false; }
+        if (localStorage.getItem("eagle.search.scope.tag") === 'false') { s.isSearchScopeTag = false; }
+        if (localStorage.getItem("eagle.search.scope.url") === 'false') { s.isSearchScopeUrl = false; }
+        if (localStorage.getItem("eagle.search.scope.annotation") === 'false') { s.isSearchScopeAnnotation = false; }
+        if (localStorage.getItem("eagle.search.scope.note") === 'false') { s.isSearchScopeNote = false; }
+
+        w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
+        s.showSubfolderContent = w.preferences.showSubfolderContent;
+
+        if (localStorage.getItem("eagle.list.show.name") == 'false') {
+            s.showName = false;
+            w.$("#box-container").addClass("hide-box-name");
+        }
+        else {
+            s.showName = true;
+            w.$("#box-container").removeClass("hide-box-name");
+        }
+
+        if (localStorage.getItem("eagle.list.show.meta") == 'false') {
+            s.showMetas = false;
+            w.$("#box-container").addClass("hide-box-metas");
+        }
+        else {
+            s.showMetas = true;
+            w.$("#box-container").removeClass("hide-box-metas");
+        }
+
+        if (localStorage.getItem("eagle.list.show.annotation") == 'false') {
+            s.showAnnotation = false;
+            w.$("#box-container").addClass("hide-box-annotation");
+        }
+
+        if (localStorage.getItem("eagle.list.show.extension") == 'false') {
+            s.showFileExtension = false;
+            w.$("#box-container").addClass("hide-box-extension");
+        }
+
+        if (localStorage.getItem("eagle.list.show.extension_LABEL") == 'false') {
+            s.showFileExtensionLabel = false;
+            w.$("#box-container").addClass("hide-box-extension-label");
+        }
+
+        let defaultListLayoutSettings = {
+            props: {
+                resolution: true,
+                fileSize: true,
+                dateImported: true,
+                tags: false,
+                extension: true,
+                rating: false
+            }
+        };
+        if (localStorage["eagle.list.layout.settings"]) {
+            try {
+                s.listLayoutSettings = JSON.parse(localStorage["eagle.list.layout.settings"]);
+            } catch (err) {
+                s.listLayoutSettings = defaultListLayoutSettings;
+            }
+        }
+        else {
+            s.listLayoutSettings = defaultListLayoutSettings;
+        }
+
+        s.imageSize = {
+            height: 150,
+            zoomRatio: 100,
+            subfolderWidth: 150
+        };
+        s.sliderZoomRatio = 100;
+        s.lastZoomMode = localStorage["eagle.viewer.lastZoomMode"] || "fit";
+        s.tagsSuggestion = [];
+        s.folders = [];
+        s.smartFolders = [];
+        s.quickAccess = [];
+        s.isExpandFolder = true;
+        s.isExpandSmartFolder = true;
+        s.isExpandQuickAccess = true;
+
+        if (localStorage.getItem("eagle.sidebar.folder.expand") == 'false') {
+            s.isExpandFolder = false;
+        }
+        if (localStorage.getItem("eagle.sidebar.smartFolder.expand") == 'false') {
+            s.isExpandSmartFolder = false;
+        }
+        if (localStorage.getItem("eagle.sidebar.quickAccess.expand") == 'false') {
+            s.isExpandQuickAccess = false;
+        }
+
+        s.inspector = w.eagle.inspector;
+}
+
 let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
   applied = true;
   const s = getBodyScope();
   if (!s) return;
+
+  // b1-9d：controller init 状态面种子（仅 shim 世界——bundle 在世时由 controller init
+  // 填充同名默认值，此处调用为恒等幂等）
+  if (s.__eagleShim) {
+    machinerySeedControllerState(s);
+  }
+
+  // b1-9d：TagManager 供给（bundle 48351 $scope.TagManager = TagManager 的 shim 等价；
+  // bundle 在世时 s.TagManager 已存在，零调用）
+  if (s.__eagleShim && !s.TagManager) {
+    const w = window as any;
+    w.TagManager = machineryBuildTagManager(s);
+    s.TagManager = w.TagManager;
+  }
 
   // b1-7e：subFolderSortableOptions（bundle 38947 controller init 种子逐字——React 侧写方
   // machineryRefreshSubfolderList 开关 .disabled；ListRegion ui-sortable 消费原对象

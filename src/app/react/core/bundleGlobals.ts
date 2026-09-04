@@ -1677,6 +1677,10 @@ export function installBundleGlobals(): void {
   if (!w.getExt) w.getExt = _getExt;
   if (!w.ayncsImagesRemove) w.ayncsImagesRemove = _ayncsImagesRemove;
   if (!w.updateWindowProgressBar) w.updateWindowProgressBar = _getUpdateWindowProgressBar();
+  // fs（bundle 19015 const fs = require('fs')——TagManager 等裸 fs 消费）
+  if (!w.fs) { try { w.fs = req('fs'); } catch (err) { /* noop */ } }
+  // path（bundle 19013 var path = require('path')——eagleClasses 等裸 path 消费）
+  if (!w.path) { try { w.path = req('path'); } catch (err) { /* noop */ } }
   // junk（bundle 8155 junk.is——node 模块）
   if (!w.junk) { try { w.junk = req('junk'); } catch (err) { /* noop */ } }
   // IS_DIRECTORY（bundle 19025 require(appRoot + '/my_modules/is-directory')）

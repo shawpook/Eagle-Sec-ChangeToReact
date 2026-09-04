@@ -1428,8 +1428,9 @@ app.whenReady().then(async () => {
                 poll();
               });
               const scope = await waitFor(() => {
-                if (!window.angular) return null;
-                const bodyScope = angular.element(document.body).scope();
+                // b1-9d：双轨 scope 等待——bundle 在世时 window.$bodyScope 已由 main.tsx 归一为
+                // 真实 scope；去 Angular 后为 shim 代理（machinery 填充 raw/listDone）。
+                const bodyScope = window.$bodyScope || null;
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'original main scope', 25000);
               const extensionBase = ${JSON.stringify(process.env.EAGLE_EXTENSION_URL || 'http://localhost:41593')};
@@ -1526,8 +1527,9 @@ app.whenReady().then(async () => {
                 poll();
               });
               const scope = await waitFor(() => {
-                if (!window.angular) return null;
-                const bodyScope = angular.element(document.body).scope();
+                // b1-9d：双轨 scope 等待——bundle 在世时 window.$bodyScope 已由 main.tsx 归一为
+                // 真实 scope；去 Angular 后为 shim 代理（machinery 填充 raw/listDone）。
+                const bodyScope = window.$bodyScope || null;
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'original main scope', 25000);
               const source = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FILE_SOURCE || '')};
@@ -1933,8 +1935,9 @@ app.whenReady().then(async () => {
               const itemId = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_ITEM_ID || '')};
               const expectedText = ${JSON.stringify(process.env.EAGLE_DOCVIEWER_EXPECTED_TEXT || '')};
               const scope = await waitFor(() => {
-                if (!window.angular) return null;
-                const bodyScope = angular.element(document.body).scope();
+                // b1-9d：双轨 scope 等待——bundle 在世时 window.$bodyScope 已由 main.tsx 归一为
+                // 真实 scope；去 Angular 后为 shim 代理（machinery 填充 raw/listDone）。
+                const bodyScope = window.$bodyScope || null;
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'original main scope', 25000);
               const item = await waitFor(() => scope.raw.find((entry) => entry && entry.id === itemId), 'document item', 10000);
@@ -2252,8 +2255,9 @@ app.whenReady().then(async () => {
                 poll();
               });
               const scope = await waitFor(() => {
-                if (!window.angular) return null;
-                const bodyScope = angular.element(document.body).scope();
+                // b1-9d：双轨 scope 等待——bundle 在世时 window.$bodyScope 已由 main.tsx 归一为
+                // 真实 scope；去 Angular 后为 shim 代理（machinery 填充 raw/listDone）。
+                const bodyScope = window.$bodyScope || null;
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'main scope', 25000);
               const fileElement = document.querySelector('file-export-progress');
@@ -2390,8 +2394,9 @@ app.whenReady().then(async () => {
                 poll();
               });
               const scope = await waitFor(() => {
-                if (!window.angular) return null;
-                const bodyScope = angular.element(document.body).scope();
+                // b1-9d：双轨 scope 等待——bundle 在世时 window.$bodyScope 已由 main.tsx 归一为
+                // 真实 scope；去 Angular 后为 shim 代理（machinery 填充 raw/listDone）。
+                const bodyScope = window.$bodyScope || null;
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'main scope');
               const videoItem = scope.raw.find((item) => item && !item.isDeleted && (item.ext === 'mp4' || item.ext === 'webm'));

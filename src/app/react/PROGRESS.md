@@ -41,7 +41,7 @@
 | `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
 | `npm run test:main-ui-workflow` | ✅ **绿（b1-9f）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0。**b1-9f 轮累计 79 轮全绿**（身份取证探针在位 73 轮 + 移除探针后终验 6 轮），`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇已收口（b1-9f）**：`multi inspector persistence` 统计判定实质消除（见 b1-9e 遗留段更新与 b1-9f 记录）。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
 | `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
-| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ⚠️ **22/45 陈旧失败（b1-9f 首跑登记）** | b1-9f 轮首跑 23 失败，随后对全部失败项**逐项在 HEAD~1（b1-9d）单跑仲裁**：**22 项 b1-9d 同败** ⇒ bundle 摘除时代累积的陈旧冒烟（非 b1-9e 回归；多数项 b1-9d 失败更多，b1-9e 对它们是净改善），分「契约过期」与「真实功能缺口」两族（见 b1-9f 记录）；**1 项（1c3）为 b1-9e 真回归，已修**。22 项欠账的 triage（改断言 / 补端口）为下一轮候选战线，优先级待裁定。 |
+| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ⚠️ **22/45 陈旧失败（b1-9f 首跑登记，b1-9g triage 完毕）** | b1-9f 轮首跑 23 失败，随后对全部失败项**逐项在 HEAD~1（b1-9d）单跑仲裁**：**22 项 b1-9d 同败** ⇒ bundle 摘除时代累积的陈旧冒烟（非 b1-9e 回归；多数项 b1-9d 失败更多，b1-9e 对它们是净改善）；**1 项（1c3）为 b1-9e 真回归，已修**。22 项已按 b1-9g 台账逐断言归因（A 类改断言 ~11 条 / B 类 9 个根因 ~49 条，多数 S 级），按台账修复后可全绿。 |
 
 **m1 推进规则（原「text file drop import timeout」白名单已于 2026-09-04 解除）**：
 
@@ -149,6 +149,87 @@
 > **3. 验证记录**：m1 累计 **79 轮全绿**（探针在位 73 + 移除后终验 6）；tsc EXIT:0；
 >   `test:isolated` → `FULL_REGRESSION_ISOLATED_OK`（cpSync 手工补丁用后即退，见基线表前置）。
 >   全量门未整跑复验（22 项已双态逐项实锤、1c3 已单项验绿；整跑重开待 triage 轮）。
+
+> **b1-9g：全量门 22 项陈旧失败的逐断言 triage 台账（2026-09-05，用户裁定先 triage）**
+>
+> 方法：4 路并行静态归因（逐冒烟读源码 + 对照 b1-9e/b1-9d 双态实跑日志 + 对照本文件「待办」清单），
+> 合计约 60 条失败断言（部分文件 fatal 中止后还有休眠断言）**全部逐条归因，零新回归**。
+> 结论：**A 类（契约过期，改断言）约 11 条 / B 类（真实功能缺口，补端口或接线）约 49 条**；
+> B 类收敛为 **9 个根因**，多数 S 级（小时）；仅 1 项 M 级（filterContent 管线）。
+> 22 个文件按此台账修复后**全部可转绿**。
+>
+> **B 类根因清单（按杠杆率排序；「救活」= 该根因修复后转绿的断言）**：
+> 1. **`window.swal` 全局供给缺失**（S，撬动面最大）：b1 摘除 bundle 时把内联的
+>    sweetalert2 一并带走，index.html:10 只留了 CSS，JS vendor
+>    `src/app/js/vendors/sweetalert2/sweetalert2.all.min.js` 在磁盘但无 script 标签。
+>    React 侧全部 `w.swal(...)` 消费点（ProgressDialogs 5 处 / ControllerModals / miscDomain
+>    的 `if (!swal) return` 静默降级 / dataMachinery / eagleClasses）全部吞错降级。
+>    修法：index.html 补一行 script（vendor 自带 `window.swal` 别名）。
+>    救活：7d6a lm-swal-shown/lm-reload-app-ipc、7d6b al-swal-shown/al-multi-open-0-2、
+>    7d6c wc-swal-shown/wc-open-0-2、11a2 a2-clean-swal/a2-clean-cleared（8 条），
+>    外加 7d1a mv-swal-shown/mv-closed、7d1c2 fsp-swal-open 的 swal 半边。
+> 2. **`w.angular.extend`/`ang.isNumber` 死调用**（S，⚠️ 必须逐点替换，**不得**注入
+>    `window.angular`——b1-9e 已记录的雷区：全局 angular 会翻转 scopeBridge:14 等
+>    「bundle 在世」探测点；最小垫片也须带 `!__eagleShim` 门）：
+>    `itemDomain.ts:389/:361` 的 `angular.extend` → Object.assign 浅合并；
+>    `libraryDomain.ts:925-937` 的 `ang.isNumber` → `typeof x === 'number'`。
+>    救活：7d2 br-image-dataplane、1m1 m1-C-image-changed/m1-B-bg-state、
+>    stage6 inspector-rename-applied（改名回写链）；兼扫 45 处死调用族的其它数据面。
+> 3. **`pluginModule` 未桥进 coreState**（S）：bundleGlobals.ts:1656 已供给 `w.pluginModule`，
+>    但无人写 `coreState.pluginModule`（bundle 20207 的 `$scope.pluginModule =`）。
+>    一行桥（bundleGlobals 供给处补 `coreState.pluginModule = w.pluginModule`）。
+>    救活：7d5a pp-open/pp-empty-state、stage5 detail-image-branch-rendered（3 条）。
+> 4. **EagleController 小函数缺口（5 个端口，各自 S）**：
+>    a. `cancelEmptyTrash`（bundle 33602-33608）→ 救活 7d6a et-cancel-closed/et-cancel-palette-resume；
+>    b. `cancelRegenerateThumbnail`（bundle 34491-34494）→ 救活 7d6b ft-cancel-closed；
+>    c. `toggleFilter`（bundle 30898-30908）→ 解除 stage-smoke 的 fatal 中止（其文件内还有
+>       13 处休眠的 angular.element 断言需同步改写为 window.$bodyScope 新契约）；
+>    d. `selectTag`（bundle 38870-38926）+ tagManagerDomain 补 `getFilter/getTimeout` 导入与
+>       `w.$` 焦点降级 → 救活 7b tm-select-tag/tm-create-group-input；
+>    e. `addToFolders`（bundle 43200-43212）+ body 级 `createFolder`（bundle 40538）→
+>       救活 7d1a 全组数据面 + 7d1c2 fsp-created-dataplane/selected
+>       （⚠️ 7d1a 的 atf-open 族 PASS 与「无广播方」静态推断矛盾，动手前补一份逐断言日志实跑证据）。
+> 5. **启动序列接线缺口（3 处，各 S）**：boot 时 `eagle.inspector.initPlugins()`
+>    （bundle 20028）→ 救活 stage6 inspector-sections-rendered/inspector-star-changed；
+>    `coreState.platform = process.platform` 播种（bundle 20066）→ 救活 11a49 a8-body-attrs；
+>    selectionViewDomain 补主 `$watchCollection('selected')` watcher（bundle 34214-34224，
+>    现只有 darwin 分支注册过）→ 救活 1m1 m1-E-selected-watch。
+> 6. **vendor 切片/加载缺口（2 处，各 S）**：`frontend/public/vendor/eagle-match-rules.js`
+>    少切了 bundle 8340-8368（`matchStringMethod` 定义）→ 救活 1m1 m1-A9-smart-filter
+>    （注意 dataMachinery 的 memoize 会永久缓存 undefined 表，需同步修）；
+>    `src/app/js/artstation-download.js` 未加载（`Artstation.isValidUrl`）→ 救活 7d2 art-url-error-shown。
+> 7. **inspector 选中派生缺 30ms 防抖 watch**（S-M）：bundle `$watchCollection('selected')+
+>    30ms 防抖 → eagle.inspector.newTags` 在 shim 世界无等价物（Inspector.tsx 仅 mount 时跑一次
+>    updateSelection）→ bindInspectorEvents 补挂 → 救活 7d3a 全组三条。
+> 8. **`containerSize.sidebar` 种子 + resize 写回**（S-M）：bundle 21110-21150 的初始化与
+>    resizable 回调未移植，`bodyState` watch 列表里有字段但源头无人写 → wp-left-offset 主修复 +
+>    面板右缘随侧栏联动的真实功能。
+> 9. **keyword → filterContent 管线未移植**（M，唯一 M 级）：filterContent 本体缺失
+>    （scopeShim.ts:13 自认）；shim 字符串 watcher 经 evalPath 从 coreState 解析，`eagle`
+>    无人写入 → `eagle.filter.filterRules...` watcher 全部抛 TypeError 永不触发。
+>    短期可把该族 watcher 改函数型闭包（shim 支持），完整修复需移植 filterContent（bundle 32583 起）。
+>    救活：11a49 a4-search-none-closed、1m1 m1-D-filter-watch-fires。
+>
+> **A 类断言改写清单（4 组，纯测试改动，约半天）**：
+> - **cz 族**（cz1-bridged / cz1-accessor-persists / cz2-bridged-expanded / cz3-taken-over）：
+>   「字段预收编」改为「写后物化」（roundtrip 已在且通过）；「$parent 原型链访问器」改为
+>   `shim.$parent === shim && shim.$root === shim` + 写穿透持久；「截肢计数 ≥1」改为
+>   `takenOver===true && 关键通道 ipc.listenerCount(ch)===1`（cz3 后 8 条已是此形态，可合并）。
+> - **1c2-bundle-eagle-untouched**：bundle 摘除后 `window.eagle` 就是 coreEagle，双实例并存按设计
+>   消失 → 改单一世界契约 `window.eagle === window.__eagleCoreEagle`。
+> - **m1-A-domains-taken**（1m1-unified）：七个子门全是 bundle 在世工件（截肢计数、
+>   `angular.element().injector()` 取 $parse、读 `$$watchers`）→ 改为五域 `takenOver===true` +
+>   `listenerCount===1` + shim `$watchers` 函数型 filter watcher 存在性。
+> - **a1-upload-position / a8-panel-position**（11a1/11a49）：测量基准 `b.containerSize.sidebar /
+>   b.inspector.width` 在 shim 世界未物化 → 改按 `__eagleBodyState` store 快照断言，或先播种
+>   `b.containerSize/eagle.inspector` 再按旧式断言（与 B-8 修法合流）。
+>
+> **修复顺序建议**：① swal 接盘（根因 1，一处修救 8-10 条）→ ② angular 死调用逐点替换
+> （根因 2）+ pluginModule 桥（根因 3）→ ③ 五个小函数端口 + 三处启动接线（根因 4/5）→
+> ④ 两个 vendor 修补（根因 6）+ inspector watch（根因 7）→ ⑤ A 类断言四组改写 →
+> ⑥ filterContent 管线（根因 9，M）+ containerSize（根因 8）收尾。每步后逐文件单跑，
+> 全部转绿后重开全量门整跑（预期 45/45）。
+> 总估：B 类 9 根因合计约 2-4 个工作日；A 类改写约半天。
 
 
 **另一处未端口（不阻塞任何套件，仅在缩略图加载失败时触发）**：缩略图修复链

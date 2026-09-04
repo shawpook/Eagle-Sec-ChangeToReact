@@ -93,12 +93,22 @@ try {
     return r;
   };
 
-  // ── 桥接完成 ──
+  // ── 桥接完成（b1-9o：启动即收编 `'k' in c` 全真是 bundle 在世契约——shim coreState 稀疏
+  //    写穿、字段首次写时物化（platform 例外：seed 补种）。改写后物化契约：逐字段写 → coreState
+  //    可读 → 还原）──
   await assertExpr('cz1-bridged', `(() => {
     const c = window.__eagleCoreState;
     if (!c) return false;
-    return ['theme','platform','language','isLoading','isUILoaded','viewMode','keyword','layout','orderBy','currentFocus']
-      .every(k => k in c);
+    const b = window.$bodyScope;
+    if (!b) return false;
+    if (typeof c.platform !== 'string') return false;
+    const keys = ['theme','language','isLoading','isUILoaded','viewMode','keyword','layout','orderBy','currentFocus'];
+    const saved = {};
+    keys.forEach((k) => { saved[k] = c[k]; });
+    let ok = true;
+    keys.forEach((k) => { b[k] = 'cz1-' + k; if (c[k] !== 'cz1-' + k) ok = false; });
+    keys.forEach((k) => { b[k] = saved[k]; });
+    return ok;
   })()`);
 
   // ── 双向透明 ──
@@ -129,19 +139,19 @@ try {
     return ok;
   })()`);
 
-  // ── 幂等（cZ-2 owner 溯源后，访问器落在字段 owner scope——theme 在 RootController
-  //    scope，body 经原型链读写；沿 $parent 链找 getter 即验证访问器仍在且路由不变）──
+  // ── 幂等 / 访问器拓扑（b1-9o：沿 $parent 链找 Angular 访问器 getter 是 bundle 在世工件——
+  //    shim 世界 $parent/$root 自指（Proxy 无原型链、无访问器）。改拓扑契约：自指成立 +
+  //    字段写穿透持久）──
   await evalNow(`(() => {
-    let s = window.$bodyScope;
-    let hops = 0;
-    let found = false;
-    while (s && hops < 8) {
-      const d = Object.getOwnPropertyDescriptor(s, 'theme');
-      if (d && d.get) { found = true; break; }
-      s = s.$parent;
-      hops++;
-    }
-    window.__idem = found;
+    const b = window.$bodyScope;
+    const c = window.__eagleCoreState;
+    const selfReferential = b.$parent === b && b.$root === b;
+    b.theme = 'cz1-persist-A';
+    const persisted = c.theme === 'cz1-persist-A';
+    b.theme = 'cz1-persist-B';
+    const persisted2 = c.theme === 'cz1-persist-B';
+    b.theme = 'dark';
+    window.__idem = selfReferential && persisted && persisted2;
     return true;
   })()`);
   await assertExpr('cz1-accessor-persists', `window.__idem === true`);

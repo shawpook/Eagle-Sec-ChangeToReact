@@ -280,6 +280,10 @@ export function takeoverItemDomain(): void {
       if (newImage.id && s.itemMappings[newImage.id]) { return; }
 
       if (s.raw) { s.raw.unshift(newImage); }
+      // b1-9o：raw 变更后失效内容过滤缓存（bundle 导入路径走无缓存 rebindRefresh 隐式重建，
+      // shim 世界导入路径不经过 rebindRefresh——缓存不失效则 filterContent 永远吃到旧快照，
+      // 11a49 的 a4 空态无法闭合即此）
+      s.contentFilterCache = null;
       // 判斷是否需要更新畫面，如果 groupkey 屬於前 3 頁面，就更新
       const key = w.ig.getGroupKeys(false)[0] - 1000000;
       const needUpdateView = key <= 1;
@@ -298,6 +302,8 @@ export function takeoverItemDomain(): void {
     const s = sNow();
     if (!s) return;
     if (!s.raw) return;
+    // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
+    s.contentFilterCache = null;
     for (let i = 0; i < s.raw.length; i++) {
       const img = s.raw[i];
       if (img.id === id) {
@@ -437,6 +443,8 @@ export function takeoverItemDomain(): void {
     if (image && image.id && image.ext) {
       s.lastestAddItem = image;
       s.itemMappings[image.id] = image;
+      // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
+      s.contentFilterCache = null;
       // 判斷是否重複，如果重復，就先紀錄在 $scope.duplicateQueue 裡面
       const existsImage = s.isDuplicateImage(image);
       const needCheckRepeat = s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage === 'true';

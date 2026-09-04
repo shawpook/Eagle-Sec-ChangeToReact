@@ -160,7 +160,7 @@ try {
     console.log('PASS stage2-library-loaded');
   } catch (err) {
     const diag = await page.send('Runtime.evaluate', {
-      expression: `(() => { const s = angular.element(document.body).scope(); return {
+      expression: `(() => { const s = window.$bodyScope; return {
         libraryName: s && s.libraryName, isUILoaded: s && s.isUILoaded,
         vstypes: s && Array.isArray(s.sidebarList) ? s.sidebarList.map(n => n.vstype).join(',') : '-',
         sidebarHtml: document.getElementById('sidebar') ? document.getElementById('sidebar').innerHTML.slice(0, 200) : 'NO-SIDEBAR',
@@ -283,7 +283,7 @@ try {
   });
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
-      expression: `(() => { const s = angular.element(document.body).scope(); return !s.eagle.filter.isOpen; })()`,
+      expression: `(() => { const s = window.$bodyScope; return !s.eagle.filter.isOpen; })()`,
       returnByValue: true,
     });
     return r.result.value === true;
@@ -293,7 +293,7 @@ try {
   // 交互闭环 B'：隐藏检查器 → corner-btns（窗口按钮）出现 → 恢复检查器
   try {
     await page.send('Runtime.evaluate', {
-      expression: `(() => { const s = angular.element(document.body).scope(); s.inspector.toggle(); s.$evalAsync(); })()`,
+      expression: `(() => { const s = window.$bodyScope; s.inspector.toggle(); s.$evalAsync(); })()`,
       returnByValue: true,
     });
     await waitFor(async () => {
@@ -310,7 +310,7 @@ try {
     console.log('PASS stage3a-corner-btns-when-inspector-hidden');
   } catch (err) {
     const diag = await page.send('Runtime.evaluate', {
-      expression: `(() => { const s = angular.element(document.body).scope(); return {
+      expression: `(() => { const s = window.$bodyScope; return {
         isHideInspector: s.inspector && s.inspector.isHideInspector,
         snapshotInspectorHide: window.__eagleReactStore && document.querySelectorAll('#eagle-toolbar-host .corner-btns').length,
         cornerInDom: document.querySelectorAll('#eagle-toolbar-host .corner-btns').length,
@@ -323,7 +323,7 @@ try {
     throw err;
   }
   await page.send('Runtime.evaluate', {
-    expression: `(() => { const s = angular.element(document.body).scope(); s.inspector.toggle(); s.$evalAsync(); })()`,
+    expression: `(() => { const s = window.$bodyScope; s.inspector.toggle(); s.$evalAsync(); })()`,
     returnByValue: true,
   });
   await waitFor(async () => {
@@ -349,7 +349,7 @@ try {
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
       expression: `(() => {
-        const s = angular.element(document.body).scope();
+        const s = window.$bodyScope;
         const hasBreadcrumb = Array.from(document.querySelectorAll('#eagle-toolbar-host .breadcrumbs li')).some((li) => li.textContent.includes('搜索结果'));
         return s && s.keyword === 'stage-a' && hasBreadcrumb;
       })()`,
@@ -360,12 +360,12 @@ try {
   console.log('PASS stage3a-search-keyword-roundtrip');
   // 还原 keyword
   await page.send('Runtime.evaluate', {
-    expression: `(() => { const s = angular.element(document.body).scope(); s.keyword = ''; s.filterContent && s.filterContent(); s.$evalAsync(); })()`,
+    expression: `(() => { const s = window.$bodyScope; s.keyword = ''; s.filterContent && s.filterContent(); s.$evalAsync(); })()`,
     returnByValue: true,
   });
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
-      expression: `(() => { const s = angular.element(document.body).scope(); return !s.keyword; })()`,
+      expression: `(() => { const s = window.$bodyScope; return !s.keyword; })()`,
       returnByValue: true,
     });
     return r.result.value === true;
@@ -451,7 +451,7 @@ try {
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
       expression: `(() => {
-        const s = angular.element(document.body).scope();
+        const s = window.$bodyScope;
         const rules = s.eagle.filter.filterRules.type.includes;
         const activeCount = Object.values(rules).filter(Boolean).length;
         const item = document.getElementById('types-filter-item');
@@ -477,7 +477,7 @@ try {
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
       expression: `(() => {
-        const s = angular.element(document.body).scope();
+        const s = window.$bodyScope;
         const item = document.getElementById('types-filter-item');
         return s.eagle.filter.filterBadge === 0 && !item.className.includes('active');
       })()`,
@@ -498,7 +498,7 @@ try {
   });
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
-      expression: `(() => { const s = angular.element(document.body).scope(); return !s.eagle.filter.isOpen; })()`,
+      expression: `(() => { const s = window.$bodyScope; return !s.eagle.filter.isOpen; })()`,
       returnByValue: true,
     });
     return r.result.value === true;
@@ -520,7 +520,7 @@ try {
     ['stage4-box-thumbnail-img', `!!document.querySelector('#box-list .box .thumbnail img')`],
     ['stage4-type-label', `(() => { const label = document.querySelector('#box-list .box .type-label'); return !!label; })()`],
     ['stage4-global-ig-exposed', `typeof window.ig !== 'undefined' && typeof window.ig.getGroupKeys === 'function'`],
-    ['stage4-container-layout-class', `(() => { const s = angular.element(document.body).scope(); const cls = document.getElementById('box-container').className; const expected = (s.layout === 'GridLayout' || s.layout === 'SquareLayout') ? 'grid-layout' : s.layout === 'ListLayout' ? 'list-layout' : 'justified-layout'; return cls.includes(expected); })()`],
+    ['stage4-container-layout-class', `(() => { const s = window.$bodyScope; const cls = document.getElementById('box-container').className; const expected = (s.layout === 'GridLayout' || s.layout === 'SquareLayout') ? 'grid-layout' : s.layout === 'ListLayout' ? 'list-layout' : 'justified-layout'; return cls.includes(expected); })()`],
   ];
   for (const [name, expression] of stage4Static) {
     const r = await page.send('Runtime.evaluate', { expression, returnByValue: true });
@@ -537,7 +537,7 @@ try {
   await waitFor(async () => {
     const r = await page.send('Runtime.evaluate', {
       expression: `(() => {
-        const s = angular.element(document.body).scope();
+        const s = window.$bodyScope;
         const box = document.querySelector('#box-list .box.selected') || document.querySelector('#box-list .box');
         const id = box && box.getAttribute('data-box-id');
         return !!(id && s.selectedMappings && s.selectedMappings[id]) && box.className.includes('selected');

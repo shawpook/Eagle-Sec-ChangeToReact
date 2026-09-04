@@ -18,8 +18,22 @@ export function BoxList() {
     const cleanups: Array<() => void> = [];
 
     if (host) {
-      // 原 ng-mousedown="cleanSelected($event)" / ng-right-click="openFileListContextMenu($event)"
-      const onMouseDown = (e: MouseEvent) => scopeApply(getBodyScope(), (s) => s.cleanSelected && s.cleanSelected(e));
+      // 原 ng-mousedown="cleanSelected($event)" / ng-right-click="openFileListContextMenu($event)"。
+      // b1-9o：box 内点击由 select 链处理——bundle 在世时 ng-grid item 处理器先截停并
+      // stopPropagation，容器级 cleanSelected 不会吞掉 box 点击；shim 世界等价实现为
+      // 「box 内 mousedown → s.select(e, item)，box 外才走 cleanSelected」。
+      const onMouseDown = (e: MouseEvent) => {
+        const boxEl = (e.target as HTMLElement | null)?.closest?.('.box') as HTMLElement | null;
+        if (boxEl) {
+          scopeApply(getBodyScope(), (s) => {
+            const id = boxEl.getAttribute('data-box-id');
+            const item = id && s.itemMappings ? s.itemMappings[id] : null;
+            if (item && typeof s.select === 'function') s.select(e, item);
+          });
+          return;
+        }
+        scopeApply(getBodyScope(), (s) => s.cleanSelected && s.cleanSelected(e));
+      };
       const onContextMenu = (e: MouseEvent) => scopeApply(getBodyScope(), (s) => s.openFileListContextMenu && s.openFileListContextMenu(e));
       host.addEventListener('mousedown', onMouseDown);
       host.addEventListener('contextmenu', onContextMenu);

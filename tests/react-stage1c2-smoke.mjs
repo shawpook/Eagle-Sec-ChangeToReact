@@ -127,11 +127,12 @@ try {
   })()`);
   await assertExpr('c2-inspector-hide-roundtrip', `window.__c2往返 === true`);
 
-  // ── 与 bundle window.eagle 并存 ──
+  // ── 单一世界契约（b1-9o：bundle 摘除后 window.eagle 即 React coreEagle（bundleGlobals
+  //    `w.eagle = coreEagle`），「bundle eagle 与 core 实例并存且独立」按设计消失）──
   await assertExpr('c2-bundle-eagle-untouched', `(() => {
     const be = window.eagle;
     const ce = window.__eagleCoreEagle;
-    return !!be && !!be.filter && be.filter !== ce.filter
+    return !!be && !!ce && be.filter === ce.filter
       && typeof be.filter.filterBadge === 'number'
       && typeof ce.filter.filterBadge === 'number';
   })()`);

@@ -709,6 +709,10 @@ export function takeoverLibraryDomain(): void {
       if (!item.folders) item.folders = [];
     });
 
+    // b1-9o：库装载整表重建 raw——内容过滤缓存必须失效（bundle 导入/装载路径的 rebind
+    // 均无缓存参数、隐式重建；shim 世界 filterContent 传 s.contentFilterCache，缓存若在
+    // raw 为空时建立会永久保留空快照，11a49 的 a4 空态无法闭合即此）
+    s.contentFilterCache = null;
     s.raw = images;
 
     s.calculateImageBinding({}, function () {

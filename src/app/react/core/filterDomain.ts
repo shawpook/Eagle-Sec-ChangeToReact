@@ -154,6 +154,15 @@ export function takeoverFilterDomain(): void {
     filterContentWatch('eagle.filter.filterRules.resolution.maxW');
     filterContentWatch('eagle.filter.filterRules.resolution.minH');
     filterContentWatch('eagle.filter.filterRules.resolution.maxH');
+
+    // keyword watcher（33653 逐字；b1-9p 补挂——keyword 变化 → search 重算（fns 移植版，
+    // 内置 keywordModelTimeout 防抖）。shim 字符串 watcher 经 evalPath('keyword') 解析
+    // coreState.keyword，可直接触发）
+    s0.$watch('keyword', function (newValue: any) {
+      const s: any = getBodyScope();
+      if (!s) return;
+      s.search(newValue);
+    });
   }
 
   // ── $on 广播处理器（摘 bundle → 域内重挂；发送方仍在 bundle 未移植路径）──

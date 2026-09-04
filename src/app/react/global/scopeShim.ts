@@ -83,7 +83,9 @@ export function createBodyScopeShim(): any {
     $$phase: undefined,
     // bridgeWhenReady 强就绪门桩（bundle initMousetrap 的 b1 后等价物；域接管只需存在性）
     mousetrap: {},
-    $watchers: [],
+    // b1-9o：$watchers 别名指向真实 watcher 数组（此前是永空的死数组——flushWatchers 走
+    // 闭包 watchers，诊断/清点方（1m1-A、filterDomain sweep diag）读 $watchers 恒 0）
+    $watchers: watchers,
 
     $evalAsync(fn?: any): any {
       try {
@@ -132,7 +134,9 @@ export function createBodyScopeShim(): any {
     $watch(watcher: any, listener?: any, _deep?: any): () => void {
       // Angular 支持字符串表达式型 watcher（域处理器有此用法）——归一成函数，经 proxy 取值
       const fn = typeof watcher === 'string' ? () => evalPath(watcher) : watcher;
-      const entry = { watcher: fn, listener, last: SHIM_UNSET as any };
+      // b1-9o：exp 为诊断元数据（字符串 watcher 保留原表达式，函数 watcher 为 undefined）——
+      // 供 1m1-A 域接管断言按表达式清点（bundle $$watchers.exp 的 shim 等价物），无行为作用
+      const entry = { watcher: fn, listener, last: SHIM_UNSET as any, exp: typeof watcher === 'string' ? watcher : undefined };
       watchers.push(entry);
       ensureFlushTimer();
       // Angular 语义：listener 立即以 (当前值, 当前值) 触发一次

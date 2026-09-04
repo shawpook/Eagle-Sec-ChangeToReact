@@ -41,7 +41,7 @@
 | `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
 | `npm run test:main-ui-workflow` | ✅ **绿（b1-9f）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0。**b1-9f 轮累计 79 轮全绿**（身份取证探针在位 73 轮 + 移除探针后终验 6 轮），`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇已收口（b1-9f）**：`multi inspector persistence` 统计判定实质消除（见 b1-9e 遗留段更新与 b1-9f 记录）。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
 | `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
-| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ⚠️ **22/45 陈旧失败（b1-9f 首跑登记，b1-9g triage 完毕）** | b1-9f 轮首跑 23 失败，随后对全部失败项**逐项在 HEAD~1（b1-9d）单跑仲裁**：**22 项 b1-9d 同败** ⇒ bundle 摘除时代累积的陈旧冒烟（非 b1-9e 回归；多数项 b1-9d 失败更多，b1-9e 对它们是净改善）；**1 项（1c3）为 b1-9e 真回归，已修**。22 项已按 b1-9g 台账逐断言归因（A 类改断言 ~11 条 / B 类 9 个根因 ~49 条，多数 S 级），按台账修复后可全绿。 |
+| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ✅ **44/45（b1-9p 修复后首绿）** | b1-9f 轮首跑 23 失败 → b1-9g 逐断言 triage → b1-9h…b1-9p 按台账修复：**21 个文件整文件转绿**；唯余 `react-stage7a` 的 3 条断言（`cm-real-open/cm-real-items/cm-real-search-focused`）——需 `openItemContextMenu` 大块移植（bundle 43451-44605，约 1150 行菜单构建器，台账标注「单独一个会话做」的 M 级项，**不在本轮范围**）。整跑记录 `tests-tmp/react-suite-b49-final.log`。 |
 
 **m1 推进规则（原「text file drop import timeout」白名单已于 2026-09-04 解除）**：
 
@@ -149,6 +149,37 @@
 > **3. 验证记录**：m1 累计 **79 轮全绿**（探针在位 73 + 移除后终验 6）；tsc EXIT:0；
 >   `test:isolated` → `FULL_REGRESSION_ISOLATED_OK`（cpSync 手工补丁用后即退，见基线表前置）。
 >   全量门未整跑复验（22 项已双态逐项实锤、1c3 已单项验绿；整跑重开待 triage 轮）。
+
+> **b1-9h…b1-9p：全量门 22 项陈旧失败全部修复（2026-09-05，自动推进系列）**
+>
+> 按 b1-9g 台账逐根因修复、逐项验证、逐轮提交。**22 个陈旧失败文件全部转绿**，
+> 每轮均带 m1 哨兵（多轮全绿、无回归）+ tsc EXIT:0。
+>
+> | 轮 | 内容 | 救活 |
+> | --- | --- | --- |
+> | b1-9h（12042aa） | `window.swal` 全局接盘（index.html 补 sweetalert2 vendor script，自带别名已核实） | 16 条（11a2 整绿；7d1a-mv/7d1b-em/7d6a-lm/7d6b-al 对、7d1c2-fsp、7d6c wc 节） |
+> | b1-9i（030618a） | `w.angular.extend`→Object.assign ×2、`ang.isNumber`→typeof ×3（逐点替换，**不注入 window.angular**）；shims images-change 拦截段补 `image.changed` 回声（bundle 时代主进程回发的内存面唯一改名回写路径，发射方为零——仅修 extend 不通） | 4 条（stage6 rename、7d2 br、1m1-C/1m1-B） |
+> | b1-9j（548bc93） | `coreState.pluginModule` 桥（bundle 20207 缺位） | 3 条（7d5a/stage5 整绿） |
+> | b1-9k（aa3f90a） | 五小函数端口：cancelEmptyTrash/cancelRegenerateThumbnail（controllerFns）、toggleFilter（filterDomain）、selectTag（tagManagerDomain）、addToFolders+createFolder（controllerFns）；tagManagerDomain 的 `$filter/getTimeout` 死标识符修复（dataMachinery getTimeout 补导出）；fns 表 156→160，1c3 计数契约同步 | 17 条（7b/7d1a 全 10 条/7d1c2/7d6a/7d6b 整绿） |
+> | b1-9l（93ee9bb） | seed 补种四件：platform（20066）/fixUtils（20513）/initPlugins 调用（20028）/selected 主 watcher（34214-34259 逐字 + setLastItem/selectItemsView，AnnotationPreview 按存在性守卫） | 6 条（stage6 整绿、7d6c 整绿、11a49 a8-body-attrs、1m1-E） |
+> | b1-9m（c81ee53） | match-rules 补 matchStringMethod 前导块（8340-8368 提取切口）+ 取表取消永久缓存；artstation-download 接盘 | 2 条（1m1-A9、7d2 art-url，7d2 整绿） |
+> | b1-9n（5cfab88） | machineryUpdateSelection 从被覆盖简版桩升级为 54678-54826 完整版逐字（30ms 防抖 inspector 字段派生 + sortTags；UPDATE_INSPECTOR 广播为 shim 保留桥）；seed 补 containerSize（21095，默认 240） | 4 条（7d3a 整绿、7d1b 整绿） |
+> | b1-9o/p（本提交） | seed 再补五件：eagle（$rootScope.eagle 等价——字符串 watcher/toolbar 快照数据源）、containTags（20533）、page（21062——缺席时 slice(0,NaN) filtereds 恒空）、historySearchKeywords（21097——updateSuggestions 首行断链）、inspector.width=300；filterContent（32583）+ keyword watcher（33653）补端口；itemDomain/libraryDomain 的 raw 变更点失效 contentFilterCache ×3（bundle 隐式重建的 shim 等价）；BoxList 补 box 点击→s.select 委托（bundle ng-grid item 截停的等价）；A 类断言改写到 shim 世界（cz 族写后物化/自指拓扑/listenerCount 结果导向、1c2 单一世界契约、1m1-A 去 $parse 与截肢计数、stage-smoke 13 处 angular.element→$bodyScope）；scopeShim 补 watcher exp 元数据 + `$watchers` 接通真实数组 | 剩余全部（cz 族/1c2/1m1-A/1m1-D/a4-search 族/stage-smoke 整文件/box 选择链） |
+>
+> **修复过程中的方法论收获**：台账 B 类根因在修复中不断揭示下一层——「调用计数探针」
+> （wrap search/filterContent/rebindRefresh 数调用次数）+ `window.onerror`/
+> `unhandledrejection` 钩子是定位静默断链（$timeout/setTimeout 体抛错不进 console）的
+> 高效组合；controller init seed 区间系统性缺种（platform/fixUtils/containTags/page/
+> historySearchKeywords/eagle/inspector.width 共 7 处）是本轮最大的一类结构性发现——
+> **任何「scope 字段读取抛 TypeError/静默 undefined」的新断链，先查 seed 区间**。
+> 探针脚本 `tests/probe-filter-toggle.mjs`（禁提交）保留在盘可复用。
+>
+> **待办（不阻塞任何套件）**：#sidebar 的 resizable 拖拽写回链（index.html:34 的 Angular
+> 指令 b1 后失效，containerSize.sidebar 种子已就位，缺 React 侧拖拽接线）。
+>
+> **验证**：全量门整跑 **44/45**（`tests-tmp/react-suite-b49-final.log`；唯余 7a 的
+> openItemContextMenu 大块移植三条，见基线表与下方待办）；m1 多轮全绿；tsc EXIT:0；
+> isolated 全绿（cpSync 补丁按规回退）。
 
 > **b1-9g：全量门 22 项陈旧失败的逐断言 triage 台账（2026-09-05，用户裁定先 triage）**
 >

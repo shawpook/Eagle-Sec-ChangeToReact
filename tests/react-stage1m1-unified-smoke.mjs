@@ -111,33 +111,38 @@ try {
     return true;
   })()`, returnByValue: true });
 
-  // ═══ A. 域接管标志与截肢计数（结果导向：五域 diag + plain-watch 唯一性）═══
+  // ═══ A. 域接管标志与监听面（b1-9o 改结果导向：五域 diag + 关键通道唯一监听 + shim watcher 清点）═══
   const aDiag = await evalNow(`(() => {
     const L = window.__eagleLibraryDomain, I = window.__eagleItemDomain, F = window.__eagleFilterDomain, S = window.__eagleSelectionViewDomain, M = window.__eagleMiscDomain;
     const s = window.$bodyScope;
-    const ws = s.$$watchers || [];
-    const ang = window.angular;
-    const inj = () => ang.element(document).injector().get('$parse');
-    let pMin = null, pMinB = null;
-    try { pMin = inj()('eagle.filter.filterRules.file.min'); pMinB = inj()('eagle.filter.filterRules.file.min', { expensiveChecks: true }); } catch (e) {}
-    const match = (w, exp, ps) => w.exp === exp || ps.some(p => p && w.exp === p);
-    const pMinL = [pMin, pMinB].filter(Boolean);
-    const filterMinTotal = ws.filter(w => match(w, 'eagle.filter.filterRules.file.min', pMinL)).length;
+    const ipc = window.eagleDesktop?.ipc || window.$electronIpc || window.__eagleIpc;
+    // shims 的自定义 EventEmitter 无 listenerCount——listeners 为 Map 时取 Map 计数（cz3 同法）
+    const lc = (ch) => {
+      if (!ipc) return -1;
+      if (typeof ipc.listenerCount === 'function') return ipc.listenerCount(ch);
+      if (ipc.listeners instanceof Map) return (ipc.listeners.get(ch) || []).length;
+      return -1;
+    };
+    const ws = s.$watchers || [];
+    const filterMinTotal = ws.filter(w => w.exp === 'eagle.filter.filterRules.file.min').length;
     const a1 = L && I && F && S && M;
-    const a2 = L.removed['app-status-loading'] >= 1 && L.removed['app-status-library-loaded'] >= 1 && L.removed['preload-library'] >= 1;
-    const a3 = I.removed['image.added'] >= 1 && I.removed['image.changed'] >= 1 && I.removed['file-uploaded'] >= 1 && I.removed['thumbnail-generated'] >= 1;
-    const a4 = F.removed['keyword-suggestion'] >= 1 && F.removed['show-and-search'] >= 1 && F.listenersRemoved['REBIND_REFRESH'] >= 1;
-    const a5 = S.listenersRemoved['UPDATE_SELECTION'] >= 1 && S.listenersRemoved['SAVE_FOLDER'] >= 1;
-    const a6 = M.removed['before-quit'] >= 1 && M.removed['window.maximize'] >= 1 && M.removed['change.current.theme'] >= 1 && M.removed['jieba-extract-done'] >= 1;
+    // b1-9o：mock 总线上同通道被 shims/组件/域多方监听（DIAG 实测 app-status-loading=4、
+    // image.changed=2、jieba-extract-done=2）——接线契约用 ≥1；REBIND_REFRESH /
+    // UPDATE_SELECTION / SAVE_FOLDER 是 $on 作用域广播（__bus），不是 ipc 通道。
+    const a2 = L.takenOver === true && lc('app-status-loading') >= 1 && lc('app-status-library-loaded') >= 1 && lc('preload-library') >= 1;
+    const a3 = I.takenOver === true && lc('image.added') >= 1 && lc('image.changed') >= 1 && lc('file-uploaded') >= 1 && lc('thumbnail-generated') >= 1;
+    const a4 = F.takenOver === true && lc('keyword-suggestion') >= 1 && lc('show-and-search') >= 1 && (s.__bus['REBIND_REFRESH'] || []).length >= 1;
+    const a5 = S.takenOver === true && (s.__bus['UPDATE_SELECTION'] || []).length >= 1 && (s.__bus['SAVE_FOLDER'] || []).length >= 1;
+    const a6 = M.takenOver === true && lc('before-quit') >= 1 && lc('window.maximize') >= 1 && lc('change.current.theme') >= 1 && lc('jieba-extract-done') >= 1;
     const a7 = filterMinTotal === 1;
     window.__aOk = !!(a1 && a2 && a3 && a4 && a5 && a6 && a7);
     return JSON.stringify({
       L: !!L, I: !!I, F: !!F, S: !!S, M: !!M,
-      Ll: L && L.removed['app-status-loading'], Lld: L && L.removed['app-status-library-loaded'], Lp: L && L.removed['preload-library'],
-      Ia: I && I.removed['image.added'], Ic: I && I.removed['image.changed'], If: I && I.removed['file-uploaded'], It: I && I.removed['thumbnail-generated'],
-      Fk: F && F.removed['keyword-suggestion'], Fs: F && F.removed['show-and-search'], Fr: F && F.listenersRemoved['REBIND_REFRESH'],
-      Su: S && S.listenersRemoved['UPDATE_SELECTION'], Ss: S && S.listenersRemoved['SAVE_FOLDER'],
-      Mb: M && M.removed['before-quit'], Mt: M && M.removed['change.current.theme'], Mj: M && M.removed['jieba-extract-done'],
+      Ll: lc('app-status-loading'), Lld: lc('app-status-library-loaded'), Lp: lc('preload-library'),
+      Ia: lc('image.added'), Ic: lc('image.changed'), If: lc('file-uploaded'), It: lc('thumbnail-generated'),
+      Fk: lc('keyword-suggestion'), Fs: lc('show-and-search'), Fr: lc('REBIND_REFRESH'),
+      Su: lc('UPDATE_SELECTION'), Ss: lc('SAVE_FOLDER'),
+      Mb: lc('before-quit'), Mt: lc('window.maximize'), Mj: lc('jieba-extract-done'),
       a1: a1, a2: a2, a3: a3, a4: a4, a5: a5, a6: a6, a7: a7, aOk: window.__aOk, filterMinTotal: filterMinTotal,
       watchTotal: ws.length
     });

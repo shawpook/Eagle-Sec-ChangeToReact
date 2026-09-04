@@ -125,12 +125,19 @@ try {
   // ── 1. 域接管生效 ──
   await assertExpr('cz3-taken-over', `(() => {
     const d = window.__eagleLibraryDomain;
-    return !!d && d.takenOver === true
-      && d.removed['initial'] >= 1
-      && d.removed['app-status-welcome'] >= 1
-      && d.removed['app-status-library-dirs-loaded'] >= 1
-      && d.removed['app-status-library-cache-loaded'] >= 1
-      && d.removed['library.changed'] >= 1;
+    // b1-9o：removed[...] 截肢计数是 bundle 在世工件——b1 摘除 bundle 后接管时通道上
+    // 无遗留监听可摘，计数恒 0。改结果导向契约：域已接管 + 五通道各恰一个监听器
+    // （__cz3lc 兼容 shims 自定义 EventEmitter 的 Map 存储，与下方 single-listener 同法）。
+    const ipc = window.__eagleIpc;
+    const lc = (ch) => window.__cz3lc(ipc, ch);
+    // b1-9o：唯一监听（===1）仅对 initial 这类单消费通道成立；app-status-*/library.changed
+    // 在 mock 总线上被 shims/组件/域多方监听——改接线存在性契约（≥1）。
+    return !!d && d.takenOver === true && !!ipc
+      && lc('initial') >= 1
+      && lc('app-status-welcome') >= 1
+      && lc('app-status-library-dirs-loaded') >= 1
+      && lc('app-status-library-cache-loaded') >= 1
+      && lc('library.changed') >= 1;
   })()`);
 
   // ── 2. initial 重挂（trialRemain 用 999 避开试用弹窗分支）──

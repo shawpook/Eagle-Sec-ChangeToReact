@@ -96,10 +96,19 @@ try {
     return r;
   };
 
-  // ── 字段桥扩容 ──
+  // ── 字段桥扩容（b1-9o：preferences 由 seed 补种（bundle 20055 $rootScope.preferences）可保
+  //    `'preferences' in c`；vibrancyEnabled/canUseTouchID/theme 为事件驱动物化——改写后
+  //    物化契约：写 → coreState 可读 → 还原）──
   await assertExpr('cz2-bridged-expanded', `(() => {
     const c = window.__eagleCoreState;
-    return !!c && ('preferences' in c) && ('vibrancyEnabled' in c) && ('canUseTouchID' in c) && ('theme' in c);
+    const b = window.$bodyScope;
+    if (!c || !b || !('preferences' in c)) return false;
+    b.vibrancyEnabled = 'cz2-V';
+    b.canUseTouchID = true;
+    const ok = c.vibrancyEnabled === 'cz2-V' && c.canUseTouchID === true;
+    delete c.vibrancyEnabled;
+    delete c.canUseTouchID;
+    return ok;
   })()`);
 
   // ── owner 溯源（theme：RootController scope 写 → AppCore 读一致）──

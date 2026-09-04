@@ -6180,6 +6180,20 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
   });
 }
 
+/* filterContent（bundle 32583-32589 逐字；$scope→s。b1-9p 补端口——重新计算画面图片
+   列表的统一入口：keyword watcher / eagle.filter 规则 watcher / 显示隐藏切换都汇聚到它，
+   本体只是「清 shuffle + rebindRefresh(contentFilterCache) + 滚动归零」的编排） */
+export function machineryFilterContent(s: any, type?: any): void {
+  const w = window as any;
+  if (!s.isItemBindCalculated) return;
+  // 重新计算画面图片列表
+  s.shuffle = [];
+  s.rebindRefresh(undefined, s.contentFilterCache);
+  s.$evalAsync();
+  w.$("#box-container").scrollTop(0);
+  void type;
+}
+
 /* nextGifFrame/prevGifFrame（bundle 32838-32863 逐字：gifPlayer/gifViewer 经 scope 解析；
    **next 帧越界上界为 total-1、prev 下界 0——bundle 原样**） */
 export function machineryNextGifFrame(s: any, amount: any = 1): void {
@@ -10422,11 +10436,43 @@ export function machinerySeedControllerState(s: any): void {
         // fixUtils（bundle 20513 `$scope.fixUtils = {}`——fixutil 进度对话框开合状态载体；
         // 缺席时 body.fixUtils.isFixing 赋值直接 TypeError、7d6c 的 fx/fc 对话框永不出现）
         s.fixUtils = {};
+        // containTags（bundle 20533 `$scope.containTags = []`——updateSuggestions/
+        // machineryCalcuteFilterBadge 读取；缺席时 search 链在 updateSuggestions 处
+        // TypeError 断链、filterContent 永不执行（b1-9o 探针实证））
+        s.containTags = [];
+        // page（bundle 21062 `$scope.page = 1`——rebindRefresh 的
+        // `s.filtereds = s.allData.slice(0, s.len * s.page)` 乘数；缺席时 NaN →
+        // filtereds 恒空数组（b1-9o 探针实证 a4 空态无法闭合））
+        s.page = 1;
+        // historySearchKeywords（bundle 21097-21103 逐字——updateSuggestions 首行读取，
+        // 缺席时 search 防抖体 TypeError 断链、filterContent 永不执行（b1-9o 计数探针实证））
+        var historySearchKeywords = localStorage.getItem("historySearchKeywords");
+        if (historySearchKeywords) {
+            try {
+                s.historySearchKeywords = JSON.parse(historySearchKeywords);
+            }
+            catch (err) {
+                s.historySearchKeywords = [];
+            }
+        }
+        else {
+            s.historySearchKeywords = [];
+        }
         // initPlugins（bundle 20028 RootController init 调用——scope.inspector.inspectorItems
         // 只由它填充，stage6 的 tags/folders/annotations/information 分区渲染数据源；
         // eagleClasses 在 main.tsx 侧副作用安装，先于域接管；pluginModule 经 b1-9j 桥接）
         if (w.eagle && w.eagle.inspector && typeof w.eagle.inspector.initPlugins === 'function') {
             w.eagle.inspector.initPlugins();
+        }
+        // eagle（b1-9p：bundle $rootScope.eagle 的 shim 等价——scope 链上 'eagle.filter...'
+        // 字符串 watcher（evalPath 经 coreState 解析）与 toolbarState 等快照的数据源；
+        // 缺席时 watcher 读取抛 TypeError 被 flushWatchers 吞掉、listener 永不触发）
+        s.eagle = w.eagle;
+        // inspector.width（b1-9o：bundle 由 inspector 面板 resize 维护——React ResizeObserver 前
+        // 对齐 inspectorState store 的兜底默认 300（ProgressBars/面板 right = width+1）；
+        // s.inspector 即 w.eagle.inspector（bundle 21615 同引用）
+        if (w.eagle && w.eagle.inspector && w.eagle.inspector.width === undefined) {
+            w.eagle.inspector.width = 300;
         }
         s.len = 100;
         s.sidebarList = [];
@@ -10854,6 +10900,9 @@ export function applyDataMachineryScope(): void {
   s.getAncestorFolders = (folder: any, folders: any[]) => machineryGetAncestorFolders(s, folder, folders);
   s.rebindRefresh = (muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRefresh(s, muteMode, contentFilterCache, startCursor);
   s.rebindRefreshLazy = () => machineryRebindRefreshLazy(s);
+  // filterContent（bundle 32583-32589 逐字；b1-9p 补端口——keyword/筛选规则 watcher 的
+  // 重算入口；rebindRefresh 已移植，此函数本体会随 eagle 种子（evalPath 可解析）一起激活）
+  s.filterContent = (type?: any) => machineryFilterContent(s, type);
   s.updateSidebarList = () => machineryUpdateSidebarList(s);
   // c9c：updateItemsView/switchLayout/prependImages/reload（reload = 一次性创建的 leading-edge
   // 防抖实例，与 bundle controller init 同语义）

@@ -68,6 +68,14 @@ export function createBodyScopeShim(): any {
 
   const SHIM_UNSET = Symbol('shim-unset');
 
+  // 数据面字段都在 coreState、只经 proxy 可达；$eval / 字符串型 $watch 必须走 proxy 解析，
+  // 否则对着裸 shim 取值恒为 undefined（startScopeSync 的 12 个域快照会永久停在初值——
+  // body 的 is-detail-mode 等类名因此不跟随 scope，详情面板无尺寸、原图闸门超时）。
+  let selfProxy: any = null;
+  const evalPath = (expr: string): any => expr
+    .split('.')
+    .reduce((o: any, k: string) => (o == null ? undefined : o[k]), (selfProxy || shim) as any);
+
   const shim: any = {
     __eagleShim: true,
     $root: null,
@@ -94,10 +102,8 @@ export function createBodyScopeShim(): any {
       flushWatchers();
     },
     $eval(expr: any): any {
-      if (typeof expr === 'function') return expr(shim);
-      if (typeof expr === 'string') {
-        return expr.split('.').reduce((o: any, k: string) => (o == null ? undefined : o[k]), shim as any);
-      }
+      if (typeof expr === 'function') return expr(selfProxy || shim);
+      if (typeof expr === 'string') return evalPath(expr);
       return undefined;
     },
     $on(name: string, fn: any): () => void {
@@ -124,12 +130,14 @@ export function createBodyScopeShim(): any {
       return shim.$broadcast(name, ...args);
     },
     $watch(watcher: any, listener?: any, _deep?: any): () => void {
-      const entry = { watcher, listener, last: SHIM_UNSET as any };
+      // Angular 支持字符串表达式型 watcher（域处理器有此用法）——归一成函数，经 proxy 取值
+      const fn = typeof watcher === 'string' ? () => evalPath(watcher) : watcher;
+      const entry = { watcher: fn, listener, last: SHIM_UNSET as any };
       watchers.push(entry);
       ensureFlushTimer();
       // Angular 语义：listener 立即以 (当前值, 当前值) 触发一次
       try {
-        const val = typeof watcher === 'function' ? watcher() : undefined;
+        const val = typeof fn === 'function' ? fn() : undefined;
         entry.last = val;
         listener && listener(val, val);
       } catch (err) {
@@ -167,6 +175,7 @@ export function createBodyScopeShim(): any {
   // 自引用必须指向 proxy（消费侧 `scope.$root === scope` 等恒等比较经由 proxy）
   shim.$root = proxy;
   shim.$parent = proxy;
+  selfProxy = proxy;
   return proxy;
 }
 

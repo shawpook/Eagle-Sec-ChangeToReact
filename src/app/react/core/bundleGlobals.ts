@@ -1681,10 +1681,42 @@ export function installBundleGlobals(): void {
   if (!w.fs) { try { w.fs = req('fs'); } catch (err) { /* noop */ } }
   // path（bundle 19013 var path = require('path')——eagleClasses 等裸 path 消费）
   if (!w.path) { try { w.path = req('path'); } catch (err) { /* noop */ } }
-  // junk（bundle 8155 junk.is——node 模块）
+  // junk（bundle 8155/52671 junk.is——node 模块）。本仓 node_modules 无 junk 包，
+  // req 结果非「.is 函数」形状时回落内联兼容 shim（语义取 junk 公开 ignore 列表，
+  // basename 大小写不敏感；覆盖 walk/onDropContainer 的垃圾文件过滤）。
   if (!w.junk) { try { w.junk = req('junk'); } catch (err) { /* noop */ } }
+  if (!w.junk || typeof w.junk.is !== 'function') {
+    const junkIs = function (filename: any): boolean {
+      const ignoreList = [
+        'thumbs.db', 'ehthumbs.db', 'ehthumbs_vista.db',
+        'desktop.ini', '$recycle.bin',
+        '.ds_store', '.appledouble', '.lsoverride', 'icon\r', '._*', '.spotlight-v100', '.trashes', '__macosx',
+        '.bash_history', '.bash_logout', '.bash_profile', '.bashrc', '.git', '.gitignore', '.gitattributes', '.svn', '.hg',
+      ];
+      const name = String(filename);
+      const base = (name.replace(/\\/g, '/').split('/').pop() || '').toLowerCase();
+      return ignoreList.some((n) => {
+        const t = n.toLowerCase();
+        if (t.endsWith('*')) return base.startsWith(t.slice(0, -1));
+        return base === t;
+      });
+    };
+    w.junk = { is: junkIs, not: function (filename: any) { return !junkIs(filename); } };
+  }
   // IS_DIRECTORY（bundle 19025 require(appRoot + '/my_modules/is-directory')）
   if (!w.IS_DIRECTORY && w.appRoot) { try { w.IS_DIRECTORY = req(w.appRoot + '/my_modules/is-directory'); } catch (err) { /* noop */ } }
+  // IS_HIDDEN_FILE（bundle 19023 同上；onDropContainer 的隐藏文件过滤消费）
+  if (!w.IS_HIDDEN_FILE && w.appRoot) { try { w.IS_HIDDEN_FILE = req(w.appRoot + '/my_modules/is-hidden-file'); } catch (err) { /* noop */ } }
+  // sortByAZ（bundle 2103-2108 逐字：win32 拖放排序；languageBCP 为 bundle 顶层 var，
+  // 未供给时 `|| "en"` 回落与 bundle 未赋值态同语义）
+  if (!w.sortByAZ) {
+    w.sortByAZ = function (arr: any) {
+      const collator = new Intl.Collator((window as any).languageBCP || "en", { numeric: true, sensitivity: 'base' });
+      arr = arr.sort(function (a: any, b: any) {
+        return collator.compare(a.name, b.name);
+      });
+    };
+  }
   // EAGLE_THUMBNAIL_TEMP_PATH（bundle 19030-31：path.normalize(app.getPath('userData') + '/eagle-temp')）
   if (!w.EAGLE_THUMBNAIL_TEMP_PATH && w.app) {
     try {
@@ -1882,7 +1914,8 @@ export function installBundleGlobals(): void {
       'checkBackgroundHeartbeat', 'ipcRenderer', 'currentWindow', 'app', 'VIDEO_TYPES_GLOBAL',
       'pluginModule',
       'electronLog', 'getRawPath', 'getThumbnailPath', 'getExt', 'ayncsImagesRemove',
-      'updateWindowProgressBar', 'junk', 'IS_DIRECTORY', 'EAGLE_THUMBNAIL_TEMP_PATH',
+      'updateWindowProgressBar', 'junk', 'IS_DIRECTORY', 'IS_HIDDEN_FILE', 'sortByAZ',
+      'EAGLE_THUMBNAIL_TEMP_PATH',
       'resourcesPath', 'rectSelection', 'windowMouseX',
       'preferences', 'QuickAccessManager', 'RecentFileManager', 'SlowNotify', 'Registration',
       'analytics', 'ScrollbarSaver'].filter((n) => w[n] !== undefined),

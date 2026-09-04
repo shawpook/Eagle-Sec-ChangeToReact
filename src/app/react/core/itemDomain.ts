@@ -632,6 +632,174 @@ export function takeoverItemDomain(): void {
     electronLog && electronLog.info(`[app] New ${folders.length} folders`);
   });
 
-  // finishQueue watchCollection：$watchCollection 的 exp/fn 均被 Angular 包装为不透明对象，
-  // 无法识别/摘除——bundle watcher 保持独占至 b1（行为与原状一致，无双处理：域不再重复注册）。
+  /* finishQueue watchCollection（bundle 34506-34666 逐字；机械替换 $scope → s /
+     $rootScope → s.$root / $timeout → domainTimeout / addImageTimeLeftInterval →
+     domainAddImageTimeLeftInterval / IPCHelper → w.IPCHelper / remote → w.remote /
+     currentWindow → w.currentWindow；isInFolder 复用 controllerFns 移植版）。
+     **b1-9 缺口补齐**：原注「$watchCollection 的 exp/fn 被 Angular 包装为不透明对象，无法
+     摘除——bundle watcher 保持独占」。bundle 在世时确实如此（故此处**仅在 shim 世界注册**，
+     避免 bundle 侧双处理）；bundle 死亡后该 watcher 随之消失，导入完成链路失去唯一的
+     `calculateImageBinding → reload(true) → 网格刷新` 触发点——表现为导入成功但
+     allData 恒为 0、DOM 零 box（m1 的 markdown meta 即停在此处）。
+     两点诚实适配（否则 shim 世界整段 watcher 首抛即失效）：
+       1. duplicateSound 在 React 侧无供给（bundle 顶层 var），bundle 原码直调 .play() →
+          改 `s.duplicateSound && …` 守卫；
+       2. `$scope.finishQueue.length > 2` 在上一行 finishQueue 已置 [] 后恒假（bundle 原
+          bug），逐字保留（remote/currentWindow 仅在该死分支内被读取）。 */
+  // 惰性挂载：bodyScope 就绪时机晚于本域接管，故重试至可注册为止（同 boxGridEngine attach 模式）
+  const attachFinishQueueWatch = () => {
+    const s: any = sNow();
+    const w: any = window as any;
+    if (!s || typeof s.$watchCollection !== 'function') return false;
+    if (w.angular) return true; // bundle 在世：其 finishQueue watcher 仍独占，避免双处理
+    s.$watchCollection(() => s.finishQueue, function (newValue: any, oldValue: any) {
+      if (newValue === oldValue) return;
+
+      if (!s.raw || s.raw.length === 0) {
+        if (s.finishQueue.length > 0 && s.finishQueue.length === s.uploadQueue.length) {
+          s.finishQueue = [];
+          s.uploadQueue = [];
+          s.hideUploadQueue();
+        }
+        return;
+      }
+
+      if (s.finishQueue.length > 0 && s.finishQueue.length >= s.uploadQueue.length) {
+        // 清除倒数计时工具
+        s.addImageStartTime = undefined;
+        clearInterval(domainAddImageTimeLeftInterval);
+
+        var total = s.uploadQueue.length;
+        // 以队列最后一张图判断，是否要刷新使用者当前查看的列表
+        var lastImage = s.finishQueue[s.finishQueue.length - 1];
+
+        // 自动选择新增的图片
+        var newItems: any[] = [];
+        s.finishQueue.forEach(function (image: any) {
+          if (image && image.id) {
+            newItems.push(image);
+          }
+        });
+
+        s.finishQueue = [];
+        s.uploadQueue = [];
+        $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
+        $("#upload-queue-progress").find(".current").width(s.finishQueue.length / s.uploadQueue.length * 100 + "%");
+        s.hideUploadQueue();
+
+        // 判斷是否有重複的圖片
+        if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
+          if (s.duplicateQueue.length > 0) {
+            s.$root.$broadcast("OPEN_DUPLICATE", {
+              currentFolder: s.currentFolder,
+              mappings: s.duplicateMappings,
+              duplicates: s.duplicateQueue
+            });
+            if (s.$root.preferences.notification.soundEffect.enable != 'false') {
+              s.duplicateSound && s.duplicateSound.play();
+            }
+            s.duplicateQueue = [];
+          }
+        }
+        // 如果沒有啟動重複通知，一律圖片直接添加上來
+        else {
+          s.duplicateQueue.forEach(function (img: any) {
+            s.addToDuplicateMapping(img);
+            if (s.raw) { s.raw.unshift(img); }
+          });
+          s.duplicateQueue = [];
+        }
+
+        function autoSelectUploadedItems() {
+          if (s.isDetailMode) return;
+
+          if (s.$root.preferences.general.autoSelect !== 'true') {
+            if (newItems.length === 1) {
+              domainTimeout(s, function () {
+                s.scrollToSelectedItem();
+              }, 120);
+            }
+            return;
+          }
+
+          // 避免几百几千个？
+          if (s.viewMode !== 'random') {
+            var MAX_AUTO_SELECT = 1000;
+            if (newItems && newItems.length <= MAX_AUTO_SELECT) {
+              s.selected = newItems;
+              var targetSelectedIndex = s.allData.indexOf(s.selected[0]);
+              s.lastSelectedIndex = targetSelectedIndex;
+              s.$root.currentFocus = "content";
+              if (newItems.length === 1) {
+                domainTimeout(s, function () {
+                  s.scrollToSelectedItem();
+                }, 120);
+              }
+            }
+          }
+        }
+
+        s.calculateImageBinding({}, function () {
+          // NOTE: 图片添加完成后，如果添加的图片不是使用者正在查看的文件夹，不需要刷新画面
+          if (s.currentFolder) {
+            try {
+              if (!lastImage || !lastImage.folders) {
+                s.reload(true);
+                autoSelectUploadedItems();
+                return;
+              }
+              const needReload = isInFolder(lastImage, s.currentFolder);
+              if (needReload) {
+                s.startCursor = 0;
+                s.reload(true);
+                autoSelectUploadedItems();
+              }
+            }
+            catch (err: any) {
+              s.reload(true);
+              autoSelectUploadedItems();
+              electronLog && electronLog.error(err.stack || err);
+            }
+          }
+          else if (s.currentSmartFolder) {
+            s.reload(true);
+          }
+          // 如果来自全部图片、未归类、未分类，一律进行刷新
+          else if (s.viewMode == "all" || s.viewMode == "unfiled" || s.viewMode == "untagged") {
+            s.startCursor = 0;
+            s.reload(true);
+            autoSelectUploadedItems();
+          }
+        });
+
+        try {
+          if (s.finishQueue.length > 2) {
+            if (w.process.platform == 'darwin') {
+              window.setTimeout(function () { w.remote.app.dock.bounce("critical"); }, 1000);
+            } else {
+              window.setTimeout(function () {
+                if (!document.hasFocus()) {
+                  w.currentWindow.flashFrame(true);
+                }
+              }, 1000);
+            }
+          }
+        }
+        catch (err: any) {
+          electronLog && electronLog.error(err.stack || err);
+        }
+
+        // 讓 Palette Queue 繼續
+        w.IPCHelper && w.IPCHelper.send('palette-resume', undefined, true);
+        console.log("添加 %s 張圖片完成", total);
+        console.timeEnd("添加圖片耗費時間");
+      }
+    });
+    return true;
+  };
+  if (!attachFinishQueueWatch()) {
+    const retryFinishQueueWatch = setInterval(() => {
+      if (attachFinishQueueWatch()) clearInterval(retryFinishQueueWatch);
+    }, 300);
+  }
 }

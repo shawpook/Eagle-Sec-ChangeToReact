@@ -15,7 +15,7 @@ import { IPCHelper } from './ipcHelper';
 import { machineryGetVideoPlayer, machineryCalcRotateDegree, machineryGetFolderParentChilder,
   machineryGetArroundBox, machineryGetAncestorSmartFolders, machineryCalcuteContainFolders,
   machineryToggleAllFolders, machineryToggleCurrentLevelFolders, machineryToggleAllSmartFoldersInner,
-  machineryToggleCurrentLevelSmartFoldersInner, machineryFilterSidebarItem } from './dataMachinery';
+  machineryToggleCurrentLevelSmartFoldersInner, machineryFilterSidebarItem, getFilter as machineryGetFilter } from './dataMachinery';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -55,9 +55,22 @@ const systemPreferences: any = _req('@electron/remote')?.systemPreferences;
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
   try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
 }, ms || 0);
+// b1-9 收口：`$timeout.cancel(promise)` 是 Angular 注入服务的第二形态，被 60+ 处移植代码
+// 消费（__lv_searchTimeout / __lv_nextTimeout / __lv_calculateImageBindingTimeout …）。
+// shim 世界此前只提供调用形态 → `$timeout.cancel is not a function` 在 select 等高频
+// 函数首行即抛。语义取「取消延时执行」（不涉 Angular 的 promise/$apply 未决异常）。
+$timeout.cancel = function (timer: any): boolean {
+  if (timer === null || timer === undefined) return false;
+  try { clearTimeout(timer); } catch (err) { /* noop */ }
+  return true;
+};
 const $filter: any = (name: string) => {
   const s: any = getBodyScope();
-  return s && s.$root && s.$root.$filter ? s.$root.$filter(name) : undefined;
+  if (s && s.$root && s.$root.$filter) return s.$root.$filter(name);
+  // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（Angular 在世走 injector，
+  // 缺席时为 EagleApp.filter 逐字移植的等价表），否则 `$filter('i18n')(…)` 首行即抛。
+  const inst: any = machineryGetFilter();
+  return inst ? inst(name) : undefined;
 };
 
 export function makeControllerFns(getScope: () => any) {
@@ -102,6 +115,7 @@ export function makeControllerFns(getScope: () => any) {
   var __lv_offsetY;
   var __lv_html;
   var __lv_path;
+  var __lv_TagManager;
   var __lv_transformsJSON;
   var __lv_file;
   var __lv_packPath;
@@ -119,22 +133,38 @@ export function makeControllerFns(getScope: () => any) {
   var __lv_idx;
   var __lv_target;
 
+  /* b1-9 收口修复：原 initLinkVars 赋值的是**无前缀**裸名（pinyinCache / updateListHeight /
+     saveListHeight / setLastFolder …），而机械改名后的函数体读的是 __lv_ 前缀名 —— ESM 严格模式
+     下「未声明标识符赋值」直接 ReferenceError，被各 fn 首行 try/catch 吞掉，于是 initLinkVars
+     恒为空操作，真正被读的 6 个 link 变量（path / TagManager / pinyinCache / updateListHeight /
+     setLastFolder / saveListHeight）始终 undefined（uploadFiles 的 __lv_path.extname 即此爆点）。
+     原 172-224 行裸名赋值（start / image / video / … / idx）引用的标识符（countOfSend / items /
+     $bodyScope / $image / HoverPreview / commentScope / event / node / currentTagGroup …）在本模块
+     并不存在；且这些名对应的 __lv_ 变量要么在函数内有局部绑定、要么是超时句柄（就地赋值，
+     undefined 语义无害），故整体删除。 */
   let linkVarsInited = false;
   const initLinkVars = () => {
+    // TagManager 挂载（bundle 48351 `$scope.TagManager = TagManager`）可能晚于首次 initLinkVars
+    const s0: any = getBodyScope();
+    if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
     if (linkVarsInited) return;
     linkVarsInited = true;
     // 初始化（原 link 期赋值，$scope 引用改为 getBodyScope()）
     try {
-      pinyinCache = {};
-      updateListHeight = function (height) {
+      // path（bundle 顶层 var path = require('path')；shim 世界经 window.require）
+      __lv_path = _req('path');
+      __lv_pinyinCache = {};
+
+      var updateListHeightTimeout: any;
+      __lv_updateListHeight = function (height: any) {
             clearTimeout(updateListHeightTimeout);
             updateListHeightTimeout = setTimeout(function () {
                 $("#box-container").attr("box-size", height);
             }, 50);
         }
 
-        var saveListHeightTimeout;
-      saveListHeight = function (height) {
+        var saveListHeightTimeout: any;
+      __lv_saveListHeight = function (height: any) {
             clearTimeout(saveListHeightTimeout);
             saveListHeightTimeout = setTimeout(function() {
                 if (getBodyScope().currentFolder) {
@@ -159,69 +189,15 @@ export function makeControllerFns(getScope: () => any) {
             }, 150);
         }
 
-        var changeListHeightTimeout;
-      setLastFolder = _.debounce(function setLastFolder (folderId) {
+      __lv_setLastFolder = _.debounce(function setLastFolder (folderId: any) {
             if (!folderId) {
                 localStorage.removeItem(`eagle.lastFolder.${getBodyScope().rootDir}`);
             }
             else {
-            	s.setViewMode("all");
+            	getBodyScope().setViewMode("all");
                 localStorage.setItem(`eagle.lastFolder.${getBodyScope().rootDir}`, folderId);
             }
         }, 500);
-      start = countOfSend * once;
-      image = items[i];
-      video = $('<video/>', {
-            id: 'video',
-            src: $bodyScope.getRawUrl(image),
-            type: 'video/mp4',
-            controls: false,
-            autoplay: true,
-            muted: muted,
-            draggable: true,
-            loop: true
-        });
-      autoplay = localStorage["listAudioAutoPlay"] != 'false';
-      src = $image.attr("src");
-      vq = "";
-      mute = (muted) ? "1" : "0";
-      thumbnailPath = FileUrlHelper.getLastestThumbnailUrl(image);
-      offset = $(HoverPreview.lastElem).offset();
-      x = offset.left;
-      y = offset.top;
-      width = Math.min(480, image.width);
-      height = Math.min(480, image.height);
-      delay = HoverPreview.getDelay(this);
-      comment = commentScope.comment;
-      offsetY = 0;
-      html = $(that).html();
-      path = event.dataTransfer.files[0].path;
-      transformsJSON = JSON.stringify(transforms);
-      file = files[0];
-      packPath = file.path;
-      libraryPath = file.path;
-      fds = [];
-      folderId = _.get($scope, 'currentFolder.id');
-      filePath = file.path;
-      ext = getExt({path: filePath});
-      files = node.files;
-      now = Date.now();
-      tags = Object.keys(getBodyScope().selectedTags).map(function(key) { return key; });
-      group = angular.element(event.target).scope().group;
-      result = currentTagGroup.tags.filter(function (tag, tidx) {
-            var idx = (selectedTags.indexOf(tag));
-            if (idx !== -1) {
-                if (index > tidx) {
-                    shift++;
-                }
-                return false;
-            }
-            else {
-                return true;
-            }
-        });
-      selected = getBodyScope().selected;
-      idx = getBodyScope().allData.indexOf(targetItem);
     } catch (err) { /* 初始化失败不阻塞（bundle 后备仍在） */ }
   };
 
@@ -238,11 +214,11 @@ export function makeControllerFns(getScope: () => any) {
             var fullName = font?.fontMetas?.fullName?.en || font?.fontMetas?.compatibleFullName?.en;
             var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + font.id + ".info/");
             var rawPath = __lv_path.normalize(folderPath + name);
-            var outPath = `$${fontFolder}/$${postScriptName}.$${font.ext}`;
+            var outPath = `${fontFolder}/${postScriptName}.${font.ext}`;
             if (process.platform === 'darwin') {
                 if (!fs.existsSync(outPath)) {
                     fse.copySync(rawPath, outPath);
-                    installedFonts[`$${postScriptName}_.$${font.ext}`] = true;
+                    installedFonts[`${postScriptName}_.${font.ext}`] = true;
                     eagle.filter.filterCounts['fontActivated']['activated']++;
                     eagle.filter.filterCounts['fontActivated']['deactivated']--;
                 }
@@ -263,7 +239,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.updateItemsView([font]);
             }
 
-            ipcRenderer.send('electron-info', `[app] Install font: $${rawPath}`);
+            ipcRenderer.send('electron-info', `[app] Install font: ${rawPath}`);
             analytics.event("Font", "Install");
 
             if (showNotify) {
@@ -274,6 +250,82 @@ export function makeControllerFns(getScope: () => any) {
                     duration: 1000
                 });
             }
+        }).apply(null, args);
+  };
+
+  /* addImagesToFolder（bundle 43132-43198 逐字；b1-9d 供给缺口补齐——155 fns 抽取时漏项，
+     m1 `scope.addImagesToFolder is not a function` 即此。两处适配：angular.copy → 数组切片
+     （shim 世界无 angular；folders/tags 皆字符串数组，非数组原样保留同 angular.copy 语义），
+     angular.element(document.body).injector().get('$filter') → 本模块 $filter shim。） */
+  fns["addImagesToFolder"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (images, folder) {
+
+            var origin = [];
+            var originFolders = [];
+            var originTags = [];
+
+            // 同一個資料夾，不需要移動
+            if (images.length === 1 && images[0].folders.indexOf(folder.id) !== -1) {
+                return;
+            }
+
+            // 移除當前文件夾，放到新的文件夾
+            images.forEach(function(image) {
+
+                origin.push(image);
+                originFolders.push(Array.isArray(image.folders) ? image.folders.slice() : image.folders);
+                originTags.push(Array.isArray(image.tags) ? image.tags.slice() : image.tags);
+
+                if (!image.folders) image.folders = [];
+                if (!image.tags) image.tags = [];
+                if (image.folders.indexOf(folder.id) === -1) {
+                    image.folders.push(folder.id);
+                    if (folder.extendTags) {
+                        folder.extendTags.forEach(function(tag) {
+                            if (image.tags.indexOf(tag) === -1) {
+                                image.tags.push(tag);
+                            }
+                        });
+                    }
+                }
+                image.isDeleted = false;
+
+            });
+            ayncsImagesChange(images);
+            hiddenByCurrentFilter(images);
+            s.calculateImageBinding({ ignoreSort: true }, function () {
+                s.rebindRefresh(true);
+                s.updateSelection();
+            });
+
+            var message = $filter('i18n')("notify.image.moveToFolder", [
+                { "property": "imageCount", "value": images.length },
+                { "property": "folderName", "value": folder.name }
+            ]);
+            if (images.length === 1) { message = message.replace("images", "image"); }
+
+            s.notify({
+                message: message,
+                duration: 4000,
+            }, function () {
+                origin.forEach(function (image, index) {
+                    image.folders = originFolders[index];
+                    image.tags = originTags[index];
+                });
+                s.images = origin;
+                s.current = origin[0];
+                s.calculateImageBinding({ ignoreSort: true }, function () {
+                    s.rebindRefresh();
+                    s.updateSelection();
+                });
+                ayncsImagesChange(origin);
+            });
+
+            electronLog && electronLog.info(`[app] Categorize ${images.length} files to ${folder.name}(${folder.id})`);
+            analytics.event('File', 'Categorize', 'Context');
         }).apply(null, args);
   };
 
@@ -345,7 +397,7 @@ export function makeControllerFns(getScope: () => any) {
                 let importYear = importDate.getFullYear();
                 let importMonth = ("" + (importDate.getMonth() + 1)).padStart(2, "0");
                 let dateObj = eagle.filter.filterCounts['import']['year/month'];
-                let dateKey = `$${importYear}/$${importMonth}`;
+                let dateKey = `${importYear}/${importMonth}`;
                 if (importYear) {
                     if (!dateObj[dateKey]) {
                          dateObj[dateKey] = 0;
@@ -367,10 +419,10 @@ export function makeControllerFns(getScope: () => any) {
                     let modifyYear = modifyDate.getFullYear();
                     let modifyMonth = ("" + (modifyDate.getMonth() + 1)).padStart(2, "0");
                     if (modifyYear) {
-                        if (!eagle.filter.filterCounts['mtime']['year/month'][`$${modifyYear}/$${modifyMonth}`]) {
-                             eagle.filter.filterCounts['mtime']['year/month'][`$${modifyYear}/$${modifyMonth}`] = 0;
+                        if (!eagle.filter.filterCounts['mtime']['year/month'][`${modifyYear}/${modifyMonth}`]) {
+                             eagle.filter.filterCounts['mtime']['year/month'][`${modifyYear}/${modifyMonth}`] = 0;
                         }
-                        eagle.filter.filterCounts['mtime']['year/month'][`$${modifyYear}/$${modifyMonth}`]++;
+                        eagle.filter.filterCounts['mtime']['year/month'][`${modifyYear}/${modifyMonth}`]++;
                     }
                 }
             }
@@ -556,7 +608,7 @@ export function makeControllerFns(getScope: () => any) {
 										if (__lv_image.folders.length === 0) {
 											s.unfiledCount++;
 											try {
-												electronLog && electronLog.error(`[app] $${__lv_image.id} 's folder properity is incorrect[2], move to Uncategorized`);
+												electronLog && electronLog.error(`[app] ${__lv_image.id} 's folder properity is incorrect[2], move to Uncategorized`);
 											} catch (err) {}
 										}
                                     }
@@ -632,9 +684,9 @@ export function makeControllerFns(getScope: () => any) {
                                 else if (AUDIO_TYPES[coverImage.ext]) {
                                     pos = `audio center;`;
                                 }
-                                folder.covers[0] = `<img class="sub-folder-cover $${pos}" src="$${__lv_thumbnailPath}" style="aspect-ratio: $${coverImage.width / coverImage.height};">`;
+                                folder.covers[0] = `<img class="sub-folder-cover ${pos}" src="${__lv_thumbnailPath}" style="aspect-ratio: ${coverImage.width / coverImage.height};">`;
                                 if (!parent?.covers?.length) {
-                                    parent.covers = [`<img class="sub-folder-cover $${pos}" src="$${__lv_thumbnailPath}" style="aspect-ratio: $${coverImage.width / coverImage.height};">`];
+                                    parent.covers = [`<img class="sub-folder-cover ${pos}" src="${__lv_thumbnailPath}" style="aspect-ratio: ${coverImage.width / coverImage.height};">`];
                                 }
                             }
                             if (folder.covers.length == 0) {
@@ -734,7 +786,7 @@ export function makeControllerFns(getScope: () => any) {
                         images.push(__lv_image);
                     }
                 }
-                console.log(`发现 $${images.length} 张图片需要刷新缩略图, 省略了 $${s.raw.length - rindex} 次判断`);
+                console.log(`发现 ${images.length} 张图片需要刷新缩略图, 省略了 ${s.raw.length - rindex} 次判断`);
                 if (images.length > 0) {
                     ipcRenderer.send('check.image.palette', images);
                 }
@@ -755,21 +807,21 @@ export function makeControllerFns(getScope: () => any) {
     return (function (orderBy) {
             if (s.currentFolder) {
                 s.setFolderOrder(s.currentFolder, orderBy);
-                try { electronLog && electronLog.info(`[app] Change folder order to “$${s.currentFolder.name}($${s.currentFolder.id})” order by: $${orderBy}`); } catch (err) {};
+                try { electronLog && electronLog.info(`[app] Change folder order to “${s.currentFolder.name}(${s.currentFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else if (s.currentSmartFolder) {
                 s.setSmartFolderOrder(s.currentSmartFolder, orderBy);
-                try { electronLog && electronLog.info(`[app] Change smart-folder order to “$${s.currentSmartFolder.name}($${s.currentSmartFolder.id})” order by: $${orderBy}`); } catch (err) {};
+                try { electronLog && electronLog.info(`[app] Change smart-folder order to “${s.currentSmartFolder.name}(${s.currentSmartFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else {
                 if (orderBy) {
                     s.orderBy = orderBy;
-                    s.orderByName = i18n.__(`context.order.orderBy>$${s.orderBy.toLowerCase()}`);
-                    localStorage.setItem(`eagle.list.orderBy.$${s.rootDir}`, s.orderBy);
+                    s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
+                    localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
                     s.sortRawData(s.orderBy);
                     s.rebindRefresh();
                     s.$evalAsync();
-                    try { electronLog && electronLog.info(`[app] Change global list order to: $${orderBy}`); } catch (err) {};
+                    try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
                 }
             }
             updateCurrentOrderAndIncrease();
@@ -824,7 +876,7 @@ export function makeControllerFns(getScope: () => any) {
                             duration: 750
                         });
                     }
-                    electronLog && electronLog.info(`[app] Remove rating, total: $${changedItems.length} files`);
+                    electronLog && electronLog.info(`[app] Remove rating, total: ${changedItems.length} files`);
                     analytics.event('Rating', 'Remove');
                 }
                 else {
@@ -848,7 +900,7 @@ export function makeControllerFns(getScope: () => any) {
                             duration: 750
                         });
                     }
-                    electronLog && electronLog.info(`[app] Add $${star} star, total: $${changedItems.length} files`);
+                    electronLog && electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
                     analytics.event('Rating', 'Set', star);
                 }
                 s.updateItemsView(s.selected);
@@ -1140,7 +1192,7 @@ export function makeControllerFns(getScope: () => any) {
             items.forEach(function (item, index) {
                 if (item && item.id) {
                     // http://localhost:41595/item?id=:item.id
-                    text += `http://localhost:41595/item?id=$${item.id}`;
+                    text += `http://localhost:41595/item?id=${item.id}`;
                     // text += `eagle://item/${item.id}`;
                     if (index !== items.length - 1) {
                         text += "\n";
@@ -1170,7 +1222,7 @@ export function makeControllerFns(getScope: () => any) {
                     copyText += rawPath;
                 }
                 else {
-                    copyText += `\n$${rawPath}`;
+                    copyText += `\n${rawPath}`;
                 }
             });
             clipboard.writeText(copyText);
@@ -1241,13 +1293,13 @@ export function makeControllerFns(getScope: () => any) {
             var name = font.name + "." + font.ext;
             var postScriptName = font.fontMetas.postScriptName?.[key];
             var fullName = font?.fontMetas?.fullName?.en || font?.fontMetas?.compatibleFullName?.en;
-            var outPath = `$${fontFolder}/$${postScriptName}.$${font.ext}`;
+            var outPath = `${fontFolder}/${postScriptName}.${font.ext}`;
             var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + font.id + ".info/");
             var rawPath = __lv_path.normalize(folderPath + name);
             if (process.platform === 'darwin') {
                 if (fs.existsSync(outPath)) {
-                    fse.removeSync(`$${fontFolder}/$${postScriptName}.$${font.ext}`);
-                    installedFonts[`$${postScriptName}_.$${font.ext}`] = false;
+                    fse.removeSync(`${fontFolder}/${postScriptName}.${font.ext}`);
+                    installedFonts[`${postScriptName}_.${font.ext}`] = false;
                     eagle.filter.filterCounts['fontActivated']['activated']--;
                     eagle.filter.filterCounts['fontActivated']['deactivated']++;
                 }
@@ -1268,7 +1320,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.updateItemsView([font]);
             }
 
-            ipcRenderer.send('electron-info', `[app] Unstall font: $${rawPath}`);
+            ipcRenderer.send('electron-info', `[app] Unstall font: ${rawPath}`);
             analytics.event("Font", "Uninstall");
 
             if (showNotify) {
@@ -1631,15 +1683,15 @@ export function makeControllerFns(getScope: () => any) {
                     const flipImageUtil = require(appRoot.path + '/app/js/utils/flipImage.js');
                     flipImageUtil(rawPath, flipType)
                         .then(() => {
-                            console.log(`Image flipped ($${flipType}) and saved: $${rawPath}`);
+                            console.log(`Image flipped (${flipType}) and saved: ${rawPath}`);
                             // 重新生成縮圖
                             ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
                         })
                         .catch(err => {
-                            console.error(`Failed to save flipped image: $${err.message}`);
+                            console.error(`Failed to save flipped image: ${err.message}`);
                         });
                 } catch (requireErr) {
-                    console.error(`Failed to load flipImage module: $${requireErr.message}`);
+                    console.error(`Failed to load flipImage module: ${requireErr.message}`);
                 }
             }
         }).apply(null, args);
@@ -1726,7 +1778,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function () {
             if (s.current) {
-                return `./exif-viewer/index.html?orientation=$${s.current.orientation}&path=$${encodeURIComponent(FileUrlHelper.getRawUrl(s.current))}&width=$${s.current.width}&height=$${s.current.height}&zoom=$${s.$root.preferences.habits.renderBehavior}`;
+                return `./exif-viewer/index.html?orientation=${s.current.orientation}&path=${encodeURIComponent(FileUrlHelper.getRawUrl(s.current))}&width=${s.current.width}&height=${s.current.height}&zoom=${s.$root.preferences.habits.renderBehavior}`;
             }
         }).apply(null, args);
   };
@@ -1765,7 +1817,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function() {
             if (s.current) {
-                return `./font-viewer/font-viewer.html?id=$${s.current.id}&theme=$${s.theme}&language=$${s.language}`;
+                return `./font-viewer/font-viewer.html?id=${s.current.id}&theme=${s.theme}&language=${s.language}`;
             }
         }).apply(null, args);
   };
@@ -1779,7 +1831,7 @@ export function makeControllerFns(getScope: () => any) {
                 var gifPath = FileUrlHelper.getRawPath(s.current);
                 var gifUrl = FileUrlHelper.getRawUrl(s.current);
                 var renderBehavior = s.$root.preferences.habits.renderBehavior;
-                return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(s.current.name + ".gif") + `&render=$${renderBehavior}`;
+                return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(s.current.name + ".gif") + `&render=${renderBehavior}`;
             }
         }).apply(null, args);
   };
@@ -1793,7 +1845,7 @@ export function makeControllerFns(getScope: () => any) {
                 var rawUrl = FileUrlHelper.getRawUrl(s.current);
 				rawUrl = rawUrl.replaceAll(',', '%2C');
                 var type = s.current.ext;
-				return `model-viewer/website/index.html#model=$${rawUrl}`;
+				return `model-viewer/website/index.html#model=${rawUrl}`;
             }
         }).apply(null, args);
   };
@@ -1831,12 +1883,12 @@ export function makeControllerFns(getScope: () => any) {
                 'first': node.styles && node.styles.first,
                 'last': node.styles && node.styles.last,
             }
-            __lv_result[`depth-$${node.styles.depth}`] = true;
-            __lv_result[`icon-$${node.icon}`] = true;
-            __lv_result[`color-$${node.iconColor}`] = true;
+            __lv_result[`depth-${node.styles.depth}`] = true;
+            __lv_result[`icon-${node.icon}`] = true;
+            __lv_result[`color-${node.iconColor}`] = true;
 			let parent = s.folderMappings[node.parent];
 			if (parent) {
-				__lv_result[`parent-color-$${parent?.iconColor}`] = true;
+				__lv_result[`parent-color-${parent?.iconColor}`] = true;
 			}
             return __lv_result;
         }).apply(null, args);
@@ -1850,7 +1902,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.current) {
             	var pdfPath = FileUrlHelper.getRawUrl(s.current);
                 var locale = preferences.general.language.replace("_", "-");
-                return `pdf-viewer/web/viewer.html?path=$${encodeURIComponent(pdfPath)}&locale=$${locale}&theme=$${s.theme}`;
+                return `pdf-viewer/web/viewer.html?path=${encodeURIComponent(pdfPath)}&locale=${locale}&theme=${s.theme}`;
             }
         }).apply(null, args);
   };
@@ -1946,7 +1998,7 @@ export function makeControllerFns(getScope: () => any) {
                 rawUrl = FileUrlHelper.getThumbnailUrl(__lv_image);
             }
             if ($bodyScope.modifiedMappings && $bodyScope.modifiedMappings[__lv_image.id]) {
-	            rawUrl = `$${rawUrl}?v=$${$bodyScope.modifiedMappings[__lv_image.id]}`;
+	            rawUrl = `${rawUrl}?v=${$bodyScope.modifiedMappings[__lv_image.id]}`;
 	        }
         	return rawUrl;
         }).apply(null, args);
@@ -1960,7 +2012,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.current) {
                 var __lv_image = s.current;
                 var rawPath = s.imagesDir + s.current.id + ".info/";
-                return `./raw-viewer/index.html?orientation=$${__lv_image.orientation}&path=$${encodeURIComponent(rawPath)}&name=$${encodeURIComponent(__lv_image.name)}&ext=$${__lv_image.ext}&width=$${__lv_image.width}&height=$${__lv_image.height}`;
+                return `./raw-viewer/index.html?orientation=${__lv_image.orientation}&path=${encodeURIComponent(rawPath)}&name=${encodeURIComponent(__lv_image.name)}&ext=${__lv_image.ext}&width=${__lv_image.width}&height=${__lv_image.height}`;
             }
         }).apply(null, args);
   };
@@ -2009,7 +2061,7 @@ export function makeControllerFns(getScope: () => any) {
                 return a - b;
             });
             return {
-                __lv_start: arr[0],
+                start: arr[0],
                 end: arr[arr.length - 1],
                 invert: invert
             }
@@ -2043,7 +2095,7 @@ export function makeControllerFns(getScope: () => any) {
             __lv_result['icon-' + smartFolder.icon] = true;
 			let parent = s.smartFolderMappings[smartFolder.parent];
 			if (parent) {
-				__lv_result[`parent-color-$${parent?.iconColor}`] = true;
+				__lv_result[`parent-color-${parent?.iconColor}`] = true;
 			}
             return __lv_result;
         }).apply(null, args);
@@ -2075,7 +2127,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function() {
             if (s.current) {
-                return `./text-editor/text-editor.html?id=$${s.current.id}&theme=$${s.theme}&name=$${s.current.name}&language=$${s.language}`;
+                return `./text-editor/text-editor.html?id=${s.current.id}&theme=${s.theme}&name=${s.current.name}&language=${s.language}`;
             }
         }).apply(null, args);
   };
@@ -2089,10 +2141,10 @@ export function makeControllerFns(getScope: () => any) {
         	if (item.ext === "url") {
         		var embed;
         		if (item.medium === "youtube") {
-        			embed = `https://www.youtube-nocookie.com/embed/$${item.videoID}?autoplay=1&vq=hq1080`;
+        			embed = `https://www.youtube-nocookie.com/embed/${item.videoID}?autoplay=1&vq=hq1080`;
         		}
         		else if (item.medium === "vimeo") {
-        			embed = `https://player.vimeo.com/video/$${item.videoID}?autoplay=1`;
+        			embed = `https://player.vimeo.com/video/${item.videoID}?autoplay=1`;
         		}
         		else {
         			embed = item.url;
@@ -2227,7 +2279,7 @@ export function makeControllerFns(getScope: () => any) {
             try {
                 var key = Object.keys(item.fontMetas.postScriptName)[0];
                 var postScriptName = item.fontMetas.postScriptName && item.fontMetas.postScriptName[key];
-                return installedFonts[`$${postScriptName}_.$${item.ext}`];
+                return installedFonts[`${postScriptName}_.${item.ext}`];
             }
             catch (err) {
                 return false;
@@ -2443,7 +2495,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.updateSidebarList();
                 s.saveFolder();
                 try {
-                    electronLog && electronLog.info(`[app] Drag $${folders.length} folders as $${folder.name}($${folder.id}) sibling`);
+                    electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) sibling`);
                 } catch (err) {};
             }
             catch (err) {
@@ -2540,7 +2592,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.updateSidebarList();
                 s.saveFolder();
                 try {
-                    electronLog && electronLog.info(`[app] Drag $${folders.length} folders as $${folder.name}($${folder.id}) children`);
+                    electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) children`);
                 } catch (err) {};
             }
             catch (err) {
@@ -2565,7 +2617,7 @@ export function makeControllerFns(getScope: () => any) {
                 modificationTime: Date.now(),
                 editable: true,
                 imagesMappings: {},
-                __lv_tags: [],
+                tags: [],
                 children: [],
                 isExpand: true,
             };
@@ -2671,10 +2723,10 @@ export function makeControllerFns(getScope: () => any) {
                     s.refreshSubfolderList();
                     s.saveFolder();
                     if (folder.parent) {
-                        electronLog && electronLog.info(`[app] New sub-folder: $${folder.id}, parent: $${folder.parent}`);
+                        electronLog && electronLog.info(`[app] New sub-folder: ${folder.id}, parent: ${folder.parent}`);
                     }
                     else {
-                        electronLog && electronLog.info(`[app] New folder: $${folder.id}`);
+                        electronLog && electronLog.info(`[app] New folder: ${folder.id}`);
                     }
                     analytics.event('Folder', 'Create');
                 });
@@ -2766,7 +2818,7 @@ export function makeControllerFns(getScope: () => any) {
             };
 
             const openFilter = (id) => {
-                $(`#$${id}-filter-item`).click();
+                $(`#${id}-filter-item`).click();
                 setTimeout(function () { s.updateContainerHieght(); }, 50);
             }
 
@@ -3114,9 +3166,9 @@ export function makeControllerFns(getScope: () => any) {
                 s.currentFolderChildren = s.getChildFoldersMap(folder);
             }
 
-			if (localStorage[`eagle.list.layout.$${s.currentFolder.id}`]) {
-                if (s.layout !== localStorage[`eagle.list.layout.$${s.currentFolder.id}`]) {
-                    s.switchLayout(localStorage[`eagle.list.layout.$${s.currentFolder.id}`]);
+			if (localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
+                if (s.layout !== localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
+                    s.switchLayout(localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
                 }
 			}
 
@@ -3247,7 +3299,7 @@ export function makeControllerFns(getScope: () => any) {
                                 if (!paths || paths.length === 0) return;
                                 var __lv_packPath = paths[0];
                                 ipcRenderer.send("open-eaglepack", {
-                                    __lv_path: __lv_packPath
+                                    path: __lv_packPath
                                 });
                             });
                         }
@@ -3259,7 +3311,7 @@ export function makeControllerFns(getScope: () => any) {
                             items: [
                                 {
                                     label: i18n.__("appmenu.file>autoImport>settings"),
-                                    keywords: `$${i18n.__("appmenu.file>autoImport")} 自動導入 設定 設置 settings auto import`,
+                                    keywords: `${i18n.__("appmenu.file>autoImport")} 自動導入 設定 設置 settings auto import`,
                                     click: function () {
                                         ipcRenderer.send('open.preferences', {
                                             panel: "autoImport"
@@ -3308,7 +3360,7 @@ export function makeControllerFns(getScope: () => any) {
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
                                         s.openDuplicate({
-                                            __lv_selected: true
+                                            selected: true
                                         });
                                         s.$evalAsync();
                                     }
@@ -3629,8 +3681,8 @@ export function makeControllerFns(getScope: () => any) {
                 s.currentSmartFolder = smartFolder;
             }
 
-			if (localStorage[`eagle.list.layout.$${s.currentSmartFolder.id}`]) {
-				s.switchLayout(localStorage[`eagle.list.layout.$${s.currentSmartFolder.id}`]); 
+			if (localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]) {
+				s.switchLayout(localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
@@ -3904,7 +3956,7 @@ export function makeControllerFns(getScope: () => any) {
 
             $("#detail-image").data("degree", degree);
             $("#detail-image").css({
-                "transform": `rotate($${degree}deg) scaleX(1) scaleY(1)`,
+                "transform": `rotate(${degree}deg) scaleX(1) scaleY(1)`,
                 "transition": "transform 100ms ease-in-out"
             });
 
@@ -3934,15 +3986,15 @@ export function makeControllerFns(getScope: () => any) {
                         });
 
                         swal({
-                            __lv_html: `
+                            html: `
                                 <div class="alert">
                                     <div class="alert-icon error"></div>
                                     <h4 class="alert-title">Error</h4>
-                                    <p class="alert-desc">$${err?.message}</p>
+                                    <p class="alert-desc">${err?.message}</p>
                                 </div>
                             `,
                             showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
-                            __lv_width: 400,
+                            width: 400,
                             customClass: "alert-box",
                             confirmButtonColor: "#1373FB", // 1373FB
                             cancelButtonColor: "#777777",
@@ -3975,7 +4027,7 @@ export function makeControllerFns(getScope: () => any) {
                         s.$evalAsync();
                         
                         try { 
-                            electronLog && electronLog.info(`[app] Rotate image: $${rotatedImage.name}($${rotatedImage.id})`); 
+                            electronLog && electronLog.info(`[app] Rotate image: ${rotatedImage.name}(${rotatedImage.id})`); 
                         } catch (err) {};
                         
                     } catch (err) {
@@ -4022,10 +4074,10 @@ export function makeControllerFns(getScope: () => any) {
 
                 $__lv_video.data("degree", degree);
                 $__lv_video.removeClass("r90 r180 r270");
-                if (degree) $__lv_video.addClass(`r$${degree}`);
+                if (degree) $__lv_video.addClass(`r${degree}`);
 
                 if (degree === 90 || degree === 270) {
-                    __lv_video.style.setProperty('max-height', `calc($${__lv_video.videoHeight / __lv_video.videoWidth * 100}% - 24px)`, 'important');
+                    __lv_video.style.setProperty('max-height', `calc(${__lv_video.videoHeight / __lv_video.videoWidth * 100}% - 24px)`, 'important');
                 }
                 else {
                     $__lv_video.css({ "max-height": "" });
@@ -4045,7 +4097,7 @@ export function makeControllerFns(getScope: () => any) {
             var croppedImage = s.current;
             var imagePath = FileUrlHelper.getRawPath(croppedImage);
 
-            electronLog.info(`[app] Crop image: $${imagePath}`);
+            electronLog.info(`[app] Crop image: ${imagePath}`);
 
             if (!fs.existsSync(imagePath)) {
                 s.cancelCrop();
@@ -4055,19 +4107,19 @@ export function makeControllerFns(getScope: () => any) {
             setTimeout(() => {
                 const imageCropper = require(appRoot + '/my_modules/image-cropper');
                 imageCropper(imagePath, croppedImage, top, left, __lv_width, __lv_height, function (err, { buffer, base64 }) {
-                    electronLog.info(`[app] Prepare to write to file: $${imagePath}`);
+                    electronLog.info(`[app] Prepare to write to file: ${imagePath}`);
 
                     if (buffer && buffer.length > 0) {
 
                         if (saveAsNewFile) {
                             let newId = guid();
-                            let newFilePath = `$${EAGLE_THUMBNAIL_TEMP_PATH}/$${newId}.$${croppedImage.ext}`;
+                            let newFilePath = `${EAGLE_THUMBNAIL_TEMP_PATH}/${newId}.${croppedImage.ext}`;
                             fs.writeFile(newFilePath, buffer, function (err) {
                                 let newFile = {
                                     name: croppedImage.name,
-                                    __lv_path: newFilePath,
+                                    path: newFilePath,
                                     lastModified: Date.now(),
-                                    __lv_tags: croppedImage.tags || [],
+                                    tags: croppedImage.tags || [],
                                     folders: croppedImage.folders || [],
                                     url: croppedImage.url || "",
                                     lastModified: croppedImage.modificationTime + 0.1,
@@ -4085,17 +4137,17 @@ export function makeControllerFns(getScope: () => any) {
 
                         setTimeout(function () {
                             swal({
-                                __lv_html: `
+                                html: `
                                     <div class="alert">
                                         <div class="alert-image" style="display: flex; justify-content: center;">
-                                            <img src="$${base64}" style="margin-bottom: 12px;object-fit: scale-down;width: 350px;height: 350px;border-radius: 6px;">
+                                            <img src="${base64}" style="margin-bottom: 12px;object-fit: scale-down;width: 350px;height: 350px;border-radius: 6px;">
                                         </div>
-                                        <h4 class="alert-title">$${i18n.__("dialog.cropConfirm.title")}</h4>
-                                        <p class="alert-desc">$${i18n.__("dialog.cropConfirm.desc")}</p>
+                                        <h4 class="alert-title">${i18n.__("dialog.cropConfirm.title")}</h4>
+                                        <p class="alert-desc">${i18n.__("dialog.cropConfirm.desc")}</p>
                                     </div>
                                 `,
                                 showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-                                __lv_width: 400,
+                                width: 400,
                                 customClass: "tutorial-modal",
                                 cancelButtonColor: "#777777",
                                 confirmButtonText: i18n.__("dialog.cropConfirm.saveButton"),
@@ -4191,7 +4243,7 @@ export function makeControllerFns(getScope: () => any) {
                 var g = {
                     id: __lv_group.id,
                     name: nfc(__lv_group.name),
-                    __lv_tags: __lv_group.tags
+                    tags: __lv_group.tags
                 };
                 if (__lv_group.color) {
                     g.color = __lv_group.color;
@@ -4243,7 +4295,7 @@ export function makeControllerFns(getScope: () => any) {
             if (__lv_target) {
 
                 if (__lv_target.id) {
-                    var $box =$(`#box-$${__lv_target.id}`);
+                    var $box =$(`#box-${__lv_target.id}`);
                     if ($box.length > 0 && isElementVisible($box[0]) ) {
                         console.log("无须滚动");
                         return;
@@ -4259,10 +4311,10 @@ export function makeControllerFns(getScope: () => any) {
                     var __lv_image = s.allData[i];
                     if (__lv_target && __lv_target === __lv_image) {
                         var startPage = parseInt(i / 60);
-                        console.log(`目标在第 $${startPage} 页`);
-                        console.log($(`#box-$${__lv_target.id}`).length);
+                        console.log(`目标在第 ${startPage} 页`);
+                        console.log($(`#box-${__lv_target.id}`).length);
                         // 東西不在畫面上，強制更新畫面然後定位
-                        if ($(`#box-$${__lv_target.id}`).length === 0 || startPage !== s.startCursor) {
+                        if ($(`#box-${__lv_target.id}`).length === 0 || startPage !== s.startCursor) {
                             s.rebindRefresh(undefined, undefined, startPage);
                             s.relayout();    
                         }
@@ -4323,13 +4375,13 @@ export function makeControllerFns(getScope: () => any) {
                                     let cleanK = k.replace(/"/g, '');
                                     let converted = chineseConvert.tw2cn(cleanK);
                                     // 如果原本有雙引號，加回去
-                                    return k.startsWith('"') ? `"$${converted}"` : converted;
+                                    return k.startsWith('"') ? `"${converted}"` : converted;
                                 });
                             } else {
                                 // 單一關鍵字
                                 let cleanK = kw.replace(/"/g, '');
                                 let converted = chineseConvert.tw2cn(cleanK);
-                                return kw.startsWith('"') ? `"$${converted}"` : converted;
+                                return kw.startsWith('"') ? `"${converted}"` : converted;
                             }
                         });
                         
@@ -4339,13 +4391,13 @@ export function makeControllerFns(getScope: () => any) {
                                 return kw.map(k => {
                                     let cleanK = k.replace(/"/g, '');
                                     let converted = chineseConvert.cn2tw(cleanK);
-                                    return k.startsWith('"') ? `"$${converted}"` : converted;
+                                    return k.startsWith('"') ? `"${converted}"` : converted;
                                 });
                             } else {
                                 // 單一關鍵字
                                 let cleanK = kw.replace(/"/g, '');
                                 let converted = chineseConvert.cn2tw(cleanK);
-                                return kw.startsWith('"') ? `"$${converted}"` : converted;
+                                return kw.startsWith('"') ? `"${converted}"` : converted;
                             }
                         });
                     }
@@ -4941,8 +4993,8 @@ export function makeControllerFns(getScope: () => any) {
             }
             s.showLargeImage = true;
             $detailContainer.smoothZoom('focusTo', {
-                __lv_x: __lv_width / 2,
-                __lv_y: __lv_height / 2 + __lv_offsetY,
+                x: __lv_width / 2,
+                y: __lv_height / 2 + __lv_offsetY,
                 zoom: s.imageSize.zoomRatio,
                 speed: 0
             });
@@ -4956,7 +5008,7 @@ export function makeControllerFns(getScope: () => any) {
     return (function (event) {
             if (s.current) {
                 var __lv_transformsJSON = JSON.stringify([s.current]);
-                ipcRenderer.send('ondragstart', { images: __lv_transformsJSON, __lv_target: s.current, resize: 120 });
+                ipcRenderer.send('ondragstart', { images: __lv_transformsJSON, target: s.current, resize: 120 });
             }
         }).apply(null, args);
   };
@@ -5417,7 +5469,7 @@ export function makeControllerFns(getScope: () => any) {
                     var __lv_height = $filterBar.outerHeight();
                     $("#box-container").css({
                         "padding-bottom": __lv_height,
-                        "height": `calc(100% - $${48 + __lv_height}px)`
+                        "height": `calc(100% - ${48 + __lv_height}px)`
                     });
                     $("#box-container-scrollbar").css({
                         "top": 48 + __lv_height,
@@ -5481,7 +5533,7 @@ export function makeControllerFns(getScope: () => any) {
                     try {
                         var key = Object.keys(__lv_image.fontMetas.postScriptName)[0];
                         var postScriptName = __lv_image.fontMetas.postScriptName && __lv_image.fontMetas.postScriptName[key];
-                        if (installedFonts[`$${postScriptName}_.$${__lv_image.ext}`]) {
+                        if (installedFonts[`${postScriptName}_.${__lv_image.ext}`]) {
                             eagle.filter.filterCounts['fontActivated']['activated']+=inc;
                         }
                         else {
@@ -5584,7 +5636,7 @@ export function makeControllerFns(getScope: () => any) {
                 if (item.tags && item.tags.length) {
                     var __lv_tags = item.tags.map(function (tag) {
                         try {
-                            return `<div class="tag color-$${$bodyScope.TagManager.tagMappings[tag].color}">$${tag}</div>`;
+                            return `<div class="tag color-${$bodyScope.TagManager.tagMappings[tag].color}">${tag}</div>`;
                         } catch (err) {}
                     });
                     tagsFormated = __lv_tags.join("");
@@ -5618,7 +5670,7 @@ export function makeControllerFns(getScope: () => any) {
 
                 $element.removeClass("bg-light bg-dark bg-gray bg-grid");
                 if (item.background) {
-                    $element.addClass(`bg-$${item.background}`);
+                    $element.addClass(`bg-${item.background}`);
                 }
 
                 var metas = '';
@@ -5634,10 +5686,10 @@ export function makeControllerFns(getScope: () => any) {
                             metas = item.fontMetas.weight;
                         }
                         else if (item.noPreview) {
-                            metas = `$${fileSize(item.size, 1)}`;
+                            metas = `${fileSize(item.size, 1)}`;
                         }
                         else if (SPECIAL_TYPES[item.ext]) {
-                            metas = `$${fileSize(item.size, 1)}`;
+                            metas = `${fileSize(item.size, 1)}`;
                         }
                         else if (item.ext === "url") {
 							if (item.duration) {
@@ -5653,15 +5705,15 @@ export function makeControllerFns(getScope: () => any) {
                         if (item.ext === "txt") {
                             var paragraphs = item.text.split("\n");
                             var paragraphsHTML = "";
-                            paragraphsHTML += `<h4>$${item.name.trim()}</h4>`;
+                            paragraphsHTML += `<h4>${item.name.trim()}</h4>`;
                             paragraphs.forEach(function (paragraph) {
-                                paragraphsHTML += `<p>$${paragraph.trim()}</p>`;
+                                paragraphsHTML += `<p>${paragraph.trim()}</p>`;
                             });
                             $("#box-" + item.id + " .txt-content div").html(paragraphsHTML);
                         }
                         break;
                     case 'FILESIZE':
-                        metas = `$${fileSize(item.size, 1)}`;
+                        metas = `${fileSize(item.size, 1)}`;
                         break;
                     case 'TYPE':
                         metas = item.ext && item.ext.toUpperCase();
@@ -5678,20 +5730,20 @@ export function makeControllerFns(getScope: () => any) {
                         metas = tagsFormated;
                         break;
                     case 'RATING':
-                        metas = `<span class="small star">$${ratingStrings[item.star]}</span>`;
+                        metas = `<span class="small star">${ratingStrings[item.star]}</span>`;
                         break;
                 }
                 $metas.html(metas);
 
                 $propTags.html(tagsFormated);
                 if (item.width) {
-                    $propResolution.html(`$${item.width} x $${item.height}`);
+                    $propResolution.html(`${item.width} x ${item.height}`);
                 }
                 else {
                     $propResolution.html(`-`);
                 }
-                $propRating.html(`<span class="small star">$${ratingStrings[item.star]}</span>`);
-                $propSize.html(`$${fileSize(item.size, 1)}`);
+                $propRating.html(`<span class="small star">${ratingStrings[item.star]}</span>`);
+                $propSize.html(`${fileSize(item.size, 1)}`);
 
                 if (isSelected) {
                     $element.addClass("selected");
@@ -5733,10 +5785,10 @@ export function makeControllerFns(getScope: () => any) {
 
                     if (item.orientation > 4) {
                         if (item.width < item.height) {
-                            $element.find("img").css("min-width", `$${item.height / item.width * 100}%`);
+                            $element.find("img").css("min-width", `${item.height / item.width * 100}%`);
                         }
                         else {
-                            $element.find("img").css("width", `$${item.height / item.width * 100}%`);
+                            $element.find("img").css("width", `${item.height / item.width * 100}%`);
                         }
                     }
                 }
@@ -5744,7 +5796,7 @@ export function makeControllerFns(getScope: () => any) {
                 if (item.fontMetas && item.fontMetas.postScriptName) {
                     var key = Object.keys(item.fontMetas.postScriptName)[0];
                     var postScriptName = item.fontMetas.postScriptName && item.fontMetas.postScriptName[key];
-                    var fontPath = `$${fontFolder}/$${sanitize(postScriptName)}.$${item.ext}`;
+                    var fontPath = `${fontFolder}/${sanitize(postScriptName)}.${item.ext}`;
                     var activatedLabel = i18n.__("Context.Image.Font.Activate");
                     var deactivatedLabel = i18n.__("Context.Image.Font.Deactivate");
                     // 添加正在启用、正在停用状态
@@ -5752,13 +5804,13 @@ export function makeControllerFns(getScope: () => any) {
                         $element.addClass("activating");
                     }
                     else if (fs.existsSync(fontPath)) {
-                        installedFonts[`$${postScriptName}_.$${item.ext}`] = true;
+                        installedFonts[`${postScriptName}_.${item.ext}`] = true;
                         $element.removeClass("activating");
                         $element.addClass("activated");
                         $element.find(".activate-btn").attr("title", deactivatedLabel);
                     }
                     else {
-                        installedFonts[`$${postScriptName}_.$${item.ext}`] = false;
+                        installedFonts[`${postScriptName}_.${item.ext}`] = false;
                         $element.removeClass("activating");
                         $element.removeClass("activated");
                         $element.find(".activate-btn").attr("title", activatedLabel);
@@ -5936,10 +5988,10 @@ export function makeControllerFns(getScope: () => any) {
                 var __lv_image = {
                     id: __lv_file.id || guid(),
                     name: fileName,
-                    __lv_path: __lv_file.path,
+                    path: __lv_file.path,
                     type: __lv_file.type,
                     size: __lv_file.size,
-                    __lv_tags: __lv_file.tags || [],
+                    tags: __lv_file.tags || [],
                     url: __lv_file.url || "",
                     annotation: __lv_file.annotation || "",
                     lastModified: __lv_file.lastModified,
@@ -5972,7 +6024,7 @@ export function makeControllerFns(getScope: () => any) {
             console.timeEnd("s.uploadFiles.初始化");
             console.time("s.uploadFiles.ipcRenderer.send");
             (window as any).IPCHelper.send('upload-local-files', {
-                __lv_files: images.reverse()
+                files: images.reverse()
             });
 
             console.timeEnd("s.uploadFiles.ipcRenderer.send");
@@ -6018,16 +6070,16 @@ export function makeControllerFns(getScope: () => any) {
                 }
 
                 __lv_tags = [...new Set(__lv_tags)];
-                console.log(`before: $${fileName.length}`)
+                console.log(`before: ${fileName.length}`)
                 fileName = fileName.substr(0, remainingFilenameLength(s.libraryPath));
-                console.log(`after: $${fileName.length}`)
+                console.log(`after: ${fileName.length}`)
 
 				fileName = sanitize(fileName).replace(/%/g, "").replace(/&lt;/g,"").replace(/&gt;/g,"").trim();
                 return {
                     id: params?.ids && params?.ids[index] || undefined,
                     url: url,
                     folders: __lv_fds || [],
-                    __lv_tags: __lv_tags,
+                    tags: __lv_tags,
                     type: params && params.types && params.types[index] || undefined,
                     name: fileName || undefined,
                     annotation: (params && params.annotations && params.annotations[index]) || "",
@@ -6093,8 +6145,8 @@ export function makeControllerFns(getScope: () => any) {
                         var w = $__lv_video[0].videoWidth;
                         var h = $__lv_video[0].videoHeight;
                         $__lv_video.css({
-                            'max-width': `$${w}px !important`,
-                            'max-height': `$${h}px !important`,
+                            'max-width': `${w}px !important`,
+                            'max-height': `${h}px !important`,
                         });
                         $__lv_video.addClass("fit");
                     }
@@ -6213,8 +6265,8 @@ export function makeControllerFns(getScope: () => any) {
             }
             s.showLargeImage = true;
             $detailContainer.smoothZoom('focusTo', {
-                __lv_x: __lv_width / 2,
-                __lv_y: __lv_height / 2 + __lv_offsetY,
+                x: __lv_width / 2,
+                y: __lv_height / 2 + __lv_offsetY,
                 zoom: parseInt(ratio),
                 speed: 0
             });

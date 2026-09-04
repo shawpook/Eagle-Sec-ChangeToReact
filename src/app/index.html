@@ -203,10 +203,18 @@
     <script src="js/lib/api/url-enlarger.js"></script>
     <script src="js/vendors/tippy.js"></script>
     <script src="js/vendors/jquery-1.8.0.min.js"></script>
+    <!-- jQuery UI 定制构建（含 resizable/sortable/draggable/droppable）：原框架同类依赖，
+         此前仅引了 css/jquery-ui.min.css 而漏引本脚本 → React 侧 `jQuery(el).resizable(...)`
+         / `.sortable(...)` 抛 "is not a function"，React 18 无 error boundary 时整树被卸载
+         （表现：#eagle-react-host 空、#eagle-inspector-host .inspector 不存在）。 -->
+    <script src="js/vendors/jquery-ui.min.js"></script>
     <script src="js/vendors/jquery-long-click.js"></script>
     <script src="js/vendors/jquery.bez.js"></script>
     <script src="js/vendors/lodash.js"></script>
     <script src="js/vendors/mousetrap.min.js"></script>
+    <!-- jquery-audio（$.playSound / $.stopSound）同属 app.bundle.js 内联件，b1-9d 摘除 bundle
+         后消失；scope 的 removeSound/duplicateSound/errorSound.play() 直调该插件。 -->
+    <script src="js/vendors/jquery-audio.js"></script>
     <script>
         if (typeof module === 'object') { window.module = module; module = undefined; }
         if (window.module) module = window.module;
@@ -215,6 +223,12 @@
         window.EagleConfig = require(appRoot + '/config.js');
     </script>
     <script src="js/services/lazy-load-manager.js"></script>
+    <!-- smoothZoom（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）原本内联在
+         app.bundle.js 里；b1-9d 摘除 bundle 后 $.fn.smoothZoom 与 BitmapViewer 一并消失 →
+         machineryEnterDetailMode 的初始化静默 no-op → 无 #bitmap-viewer canvas、无瓦片 →
+         详情交付闸门超时。载入 /vendor 提取版（应用层胶水的 angular.element 依赖已换等价物，
+         见该文件头注）。必须同步加载：fetch 注入会与进详情抢跑。 -->
+    <script src="/vendor/eagle-smooth-zoom.js"></script>
     <script src="js/services/shortcut-manager.js"></script>
     <script src="js/vendors/colorpicker/js/colorpicker.js"></script>
     <script src="js/vendors/colorpicker/js/eye.js"></script>

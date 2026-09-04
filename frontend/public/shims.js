@@ -927,6 +927,23 @@
   const paletteAnalysisRequests = new Map();
   let itemUpdateQueue = Promise.resolve();
 
+  // 本地导入在飞计数。capture 轮询（startCapturePolling）以「库里出现了 known/cache/raw
+  // 都没有的条目」判定为外部捕获并补发 file-uploaded；而本地导入的条目在 invoke 回到
+  // renderer 之前正好是这个形态（后端已落库、cache 尚未合并）——轮询与导入 .then 抢跑就会把
+  // 同一 id 各发一次 file-uploaded，itemDomain 因此两次 unshift（实测抢跑差 50~250ms，
+  // m1 的 `* drop import inserted duplicate item IDs` 即此）。轮询在 await 之后据此整轮跳过，
+  // 条目落地后统一由 emitImportedItems 发布。
+  let pendingLocalImports = 0;
+  let settledLocalImports = 0;
+  function trackLocalImport(promise) {
+    pendingLocalImports += 1;
+    const settle = () => { pendingLocalImports -= 1; settledLocalImports += 1; };
+    return promise.then(
+      (value) => { settle(); return value; },
+      (err) => { settle(); throw err; },
+    );
+  }
+
   function mergeCachedItems(updatedItems) {
     const cached = window.__mockLibraryCache || [];
     const updates = Array.isArray(updatedItems) ? updatedItems : [updatedItems];
@@ -1100,21 +1117,38 @@
   }
 
   async function refreshImportedThumbnails(items) {
-    const list = (Array.isArray(items) ? items : [items]).filter((item) => item && item.thumbnailTask);
+    // 原按 item.thumbnailTask 过滤——后端任务完成后即删除该字段，导入返回体若已晚于任务
+    // 完成，条目会被整段跳过、thumbnail-generated 永不触发（m1 markdown 阶段间歇失败）。
+    // 改：有 taskId 走任务轮询；无 taskId 则以库快照判定缩略图是否落定（noThumbnail 清除）。
+    const list = (Array.isArray(items) ? items : [items]).filter((item) => item && item.id);
     for (const item of list) {
       try {
         let complete = false;
         const deadline = Date.now() + 30000;
         while (Date.now() < deadline) {
-          const task = await thumbnailTaskSnapshot(item.thumbnailTask);
-          if (task && task.status === 'complete') {
-            complete = true;
-            break;
+          if (item.thumbnailTask) {
+            const task = await thumbnailTaskSnapshot(item.thumbnailTask).catch(() => null);
+            if (task && task.status === 'complete') {
+              complete = true;
+              break;
+            }
+            if (task && (task.status === 'failed' || task.status === 'cancelled' || task.error)) break;
+          } else {
+            const probeItems = await libraryItemsSnapshot();
+            const probe = probeItems.find((entry) => entry && entry.id === item.id);
+            if (probe && !probe.processingThumbnail && !probe.noThumbnail) {
+              complete = true;
+              break;
+            }
           }
-          if (task && (task.status === 'failed' || task.status === 'cancelled' || task.error)) break;
           await new Promise((resolve) => setTimeout(resolve, 200));
         }
         if (!complete) continue;
+        // 用户编辑（annotation/star/tags…）经 itemUpdateQueue 串行写回；若在其落库前取库快照，
+        // 这里 emit 的整条 item 会被 itemDomain 的 thumbnail-generated 处理器
+        // Object.assign 回 scope（bundle 逐字实现），既把内存改动回滚，也让随后 in-flight 的
+        // 写回克隆到旧值持久化（m1 multi inspector persistence 间歇失败）。先排空写回队列。
+        await itemUpdateQueue.catch(() => undefined);
         const libraryItems = await libraryItemsSnapshot();
         const updated = libraryItems.find((entry) => entry && entry.id === item.id);
         if (updated && !updated.processingThumbnail) {
@@ -1123,7 +1157,20 @@
             updated.height = Number(item.height) || 480;
           }
           mergeCachedItems(updated);
-          mockEmit('thumbnail-generated', updated);
+          // 只发缩略图相关字段：itemDomain 的 thumbnail-generated 处理器会
+          // Object.assign(existItem, generated)（bundle 逐字），整条库快照会把用户在轮询窗口内
+          // 改的 annotation/star/tags/folders 覆盖回旧值，并让 in-flight 的 images-change
+          // 克隆到旧值持久化（m1 multi inspector persistence 间歇失败的真源头）。
+          mockEmit('thumbnail-generated', {
+            id: updated.id,
+            name: updated.name,
+            ext: updated.ext,
+            width: updated.width,
+            height: updated.height,
+            noThumbnail: updated.noThumbnail,
+            processingThumbnail: false,
+            modificationTime: updated.modificationTime,
+          });
         }
       } catch (err) {
         console.warn('[eagle-shim] imported thumbnail refresh failed', err);
@@ -1177,16 +1224,23 @@
 
   function patchNonMediaMeta() {
     document.querySelectorAll('#box-container .box').forEach((box) => {
-      const extClass = Array.from(box.classList).find((name) => name.startsWith('ext-'));
-      const ext = extClass ? extClass.slice(4).toLowerCase() : '';
-      if (!ext || resolutionMediaExtensions.has(ext)) return;
-      const meta = box.querySelector('.metas');
-      if (!meta || !/^\d+\s*×\s*\d+$/.test(meta.textContent.trim())) return;
-      const sizeElement = box.querySelector('.prop.size');
-      const sizeText = sizeElement && sizeElement.textContent.trim();
-      const scope = window.angular ? angular.element(document.body).scope() : null;
-      const item = scope && scope.itemMappings && scope.itemMappings[box.getAttribute('data-box-id')];
-      meta.textContent = sizeText || formatFileSize(item && item.size);
+      // 单个 box 异常不得中断整轮（MutationObserver 回调抛出会漏掉后续 box）
+      try {
+        const extClass = Array.from(box.classList).find((name) => name.startsWith('ext-'));
+        const ext = extClass ? extClass.slice(4).toLowerCase() : '';
+        if (!ext || resolutionMediaExtensions.has(ext)) return;
+        const meta = box.querySelector('.metas');
+        if (!meta || !/^\d+\s*×\s*\d+$/.test(meta.textContent.trim())) return;
+        const sizeElement = box.querySelector('.prop.size');
+        const sizeText = sizeElement && sizeElement.textContent.trim();
+        const itemId = box.getAttribute('data-box-id');
+        const cached = (window.__mockLibraryCache || []).find((entry) => entry && entry.id === itemId);
+        const scope = window.angular ? angular.element(document.body).scope() : null;
+        const item = (scope && scope.itemMappings && scope.itemMappings[itemId]) || cached;
+        meta.textContent = sizeText || formatFileSize(item && item.size);
+      } catch (err) {
+        console.warn('[eagle-shim] non-media meta patch failed', err);
+      }
     });
   }
 
@@ -1196,6 +1250,9 @@
     const observer = new MutationObserver(patchNonMediaMeta);
     observer.observe(target, { childList: true, subtree: true });
     patchNonMediaMeta();
+    // 兜底重扫：网格重建（resetNgGridLayoutData）期间若观察节点被替换/漏触发，meta 会停留在
+    // “宽 × 高”。低频重扫（300ms）保证非媒体条目的 meta 最终收敛为文件大小。
+    setInterval(patchNonMediaMeta, 300);
   }
 
   function canAnalyzePalette(item) {
@@ -1459,7 +1516,7 @@
     if (desktopApi && desktopApi.clipboard && (channel === 'read-win-files' || channel === 'paste-image' || channel === 'paste-paths')) {
       const payload = params && params.params ? { ...params.params, folder: params.folder || params.params.folder } : (params || {});
       if (channel === 'paste-paths') payload.files = Array.isArray(params && params.files) ? params.files : [];
-      desktopApi.clipboard.import(payload).then((items) => emitImportedItems(items, channel)).catch((err) => {
+      trackLocalImport(desktopApi.clipboard.import(payload)).then((items) => emitImportedItems(items, channel)).catch((err) => {
         mockEmit('import:operation-result', { ok: false, channel, error: err.message });
         mockEmit('file-uploaded-end', { error: err.message });
       });
@@ -1592,7 +1649,7 @@
       if (channel === 'upload-urls') action = desktopApi.import.urls(params || []);
       if (channel === 'import-folders') action = desktopApi.import.folders(params || {});
       if (action) {
-        Promise.resolve(action)
+        trackLocalImport(Promise.resolve(action))
           .then((result) => {
             const batches = channel === 'import-folders' && Array.isArray(result) ? result : [result];
             const items = batches.flatMap((batch) => Array.isArray(batch) ? batch : Array.isArray(batch && batch.items) ? batch.items : batch && batch.id ? [batch] : []);
@@ -2940,7 +2997,11 @@
     });
     const tick = async () => {
       try {
+        const importGeneration = settledLocalImports;
         const library = await desktopApi.library.current();
+        // 本地导入在飞/本轮 await 期间刚落地：这批条目由 emitImportedItems 独家发布，
+        // 轮询整轮跳过，否则同 id 双发（见 trackLocalImport 处注释）。
+        if (pendingLocalImports > 0 || settledLocalImports !== importGeneration) return;
         const items = Array.isArray(library.items) ? library.items : [];
         const nextPath = library.path || library.rootDir || '';
         if (capturePollLibraryPath && capturePollLibraryPath !== nextPath) known.clear();
@@ -2948,7 +3009,9 @@
         const cachedIds = new Set((window.__mockLibraryCache || []).map((item) => item && item.id).filter(Boolean));
         let rawIds = new Set();
         try {
-          const scope = window.angular ? angular.element(document.body).scope() : null;
+          // 去 Angular 后 body scope 由 window.$bodyScope 承载（angular 缺席时原表达式恒 null，
+          // 这道「已在列表里」的防线会整条失效）。
+          const scope = window.angular ? angular.element(document.body).scope() : (window.$bodyScope || null);
           rawIds = new Set((scope && Array.isArray(scope.raw) ? scope.raw : []).map((item) => item && item.id).filter(Boolean));
         } catch (err) {
           // Ignore scope access failures; the cache check still protects against local imports.

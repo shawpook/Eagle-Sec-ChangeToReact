@@ -1534,7 +1534,10 @@ app.whenReady().then(async () => {
               }, 'original main scope', 25000);
               const source = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FILE_SOURCE || '')};
               const textSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_TEXT_SOURCE || '')};
-              const markdownSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_MARKDOWN_SOURCE || '')};
+              // 【项目决策·IGNORED】markdown 组件不属于原框架（bundle 原版无 md 特殊处理），
+              // 整体隔离排除：markdownSource 恒置空，下方 markdown 分支恒跳过。
+              // 测试面同步排除（tests/main-ui-workflow-closed-loop.mjs 不再传该 env）。
+              const markdownSource = '';
               const folderSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FOLDER_SOURCE || '')};
               const clipboardSource = ${JSON.stringify(process.env.EAGLE_WORKFLOW_CLIPBOARD_SOURCE || '')};
               const workflowFolderId = ${JSON.stringify(process.env.EAGLE_WORKFLOW_FOLDER_ID || '')};
@@ -1842,7 +1845,35 @@ app.whenReady().then(async () => {
                         && Number(getComputedStyle(document.querySelector('#detail-container')).opacity) > 0,
                     }
                   : null;
-              }, 'detail original delivery', 20000);
+              }, 'detail original delivery', 20000).catch(async (err) => {
+                // 超时诊断（同 markdown 缩略图门的富错误约定）：闸门状态 + 画布/容器实况
+                const state = window.__eagleDetailDeliveryState || null;
+                const canvas = document.querySelector('#bitmap-viewer canvas');
+                const viewer = document.querySelector('#bitmap-viewer');
+                const rect = (sel) => {
+                  const el = document.querySelector(sel);
+                  if (!el) return 'NONE';
+                  const box = el.getBoundingClientRect();
+                  return Math.round(box.width) + 'x' + Math.round(box.height);
+                };
+                const rawUrl = typeof scope.getRawUrl === 'function' ? String(scope.getRawUrl(scope.current) || '') : '';
+                let rawStatus = 'SKIP';
+                try {
+                  const probe = await fetch(rawUrl, { method: 'GET' });
+                  rawStatus = probe.status + '/' + (probe.headers.get('content-length') || '?');
+                } catch (fetchErr) { rawStatus = 'THROW ' + fetchErr.message; }
+                throw new Error(err.message + ' ' + JSON.stringify({
+                  state,
+                  canvas: canvas ? canvas.width + 'x' + canvas.height : 'NO-CANVAS',
+                  rects: { detailContainer: rect('#detail-container'), bitmapViewer: rect('#bitmap-viewer'), preloader: rect('.smooth_zoom_preloader'), detailImage: rect('#detail-image') },
+                  viewerParent: viewer && viewer.parentElement ? (viewer.parentElement.id || '') + '.' + viewer.parentElement.className : 'NONE',
+                  viewerStyle: viewer ? getComputedStyle(viewer).height + '/' + getComputedStyle(viewer).display + '/' + getComputedStyle(viewer).position : 'NONE',
+                  currentName: scope.current && scope.current.name + '.' + scope.current.ext,
+                  currentSize: scope.current && scope.current.width + 'x' + scope.current.height,
+                  rawUrl: rawUrl.slice(-80),
+                  rawStatus,
+                }));
+              });
               const previewResultPromise = new Promise((resolve, reject) => {
                 const ipc = require('electron').ipcRenderer;
                 const timer = setTimeout(() => reject(new Error('preview open timeout')), 10000);
@@ -1898,7 +1929,9 @@ app.whenReady().then(async () => {
           const renamed = current.items.find((item) => item.id === result.renamedId);
           const infoDir = renamed ? path.join(current.imagesDir, `${renamed.id}.info`) : '';
           const diskOk = Boolean(renamed && fs.existsSync(path.join(infoDir, `${renamed.name}.${renamed.ext}`)) && fs.existsSync(path.join(infoDir, `${renamed.name}_thumbnail.png`)));
-          const ok = result.originalPage && result.originalScope && result.originalInspector && result.textDrop && result.textDropExt === 'txt' && result.textThumbnailGenerated && result.markdownDrop && result.markdownDropExt === 'md' && result.markdownThumbnailGenerated && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
+          // 【项目决策·IGNORED】markdown 组件整体隔离排除：markdownSource 恒空 → markdownDrop
+          // 恒 false，三项 markdown 断言留在 ok 合取里会让全部门通过也只打印 SMOKE_FAIL，故摘除。
+          const ok = result.originalPage && result.originalScope && result.originalInspector && result.textDrop && result.textDropExt === 'txt' && result.textThumbnailGenerated && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
           console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, renamed })}`);
         } catch (err) {
           console.error(`MAIN_WORKFLOW_SMOKE_ERROR ${err.stack || err.message}`);

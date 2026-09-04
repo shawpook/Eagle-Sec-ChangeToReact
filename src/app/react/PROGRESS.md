@@ -11,6 +11,27 @@
 
 ---
 
+## ⚠️ 项目级约束：markdown 组件不属于原框架 —— 隔离、不处理
+
+**决策（2026-09-04，用户裁定）**：markdown 相关组件/断言**不是 Eagle 原框架（bundle）内的
+东西**，是后续叠加物。处理方式：**隔离 + 完全略过**——不修复、不补齐、不当回归查。
+
+- 依据：原框架 `SPECIAL_TYPES`（bundle 18994）**不含 `md`/`markdown`**；`metas` 分支
+  （bundle 34929）对 md 走 `width x height` 而非文件体积。所谓「markdown meta shows
+  file size」是后加预期，不是原框架行为。
+- 已执行的隔离（可逆，均为 `IGNORED` 备注）：
+  1. `tests/main-ui-workflow-closed-loop.mjs`：不再创建 markdown 样例、不再传
+     `EAGLE_WORKFLOW_MARKDOWN_SOURCE`；
+  2. `electron/main.cjs`：`markdownSource` 恒置空 → 其 markdown drop / thumbnail /
+     meta 断言全段恒跳过（`markdownDrop` 恒 `null`）。
+- **约束**：后续任何会话**不得**为了满足 markdown 断言而改业务代码（如把 `md` 塞进
+  `SPECIAL_TYPES`、给 md 加 `noPreview`、补 md 渲染链）；若某套件因 markdown 阶段失败，
+  按「隔离项」处理——确认隔离仍生效，而不是去修它。
+- 涉及后端/ shim 侧的 md 支持（`shims.js` 的 `textThumbnailExtensions`、`documentViewer
+  Extensions` 等）属既有实现，**保持不变**（不删不扩）。
+
+---
+
 ## 当前测试基线（2026-09-04 · 含已知失败白名单）
 
 开工先对基线；**白名单内的失败属预期，可先忽略，不要当回归查**。
@@ -18,21 +39,66 @@
 | 套件 | 状态 | 说明 |
 | --- | --- | --- |
 | `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
-| `npm run test:main-ui-workflow` | ❌ **已知失败（白名单）** | 停在 `MAIN_WORKFLOW_SMOKE_ERROR Error: text file drop import timeout`。 |
+| `npm run test:main-ui-workflow` | ✅ **绿（b1-9e）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0（连续两轮）。`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇**：`multi inspector persistence` 约 1/6 轮失败（详见下方 b1-9e 记录），非阻塞但需继续查。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
 | `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
 
-**m1 已知失败的判定与放行规则**：
+**m1 推进规则（原「text file drop import timeout」白名单已于 2026-09-04 解除）**：
 
-- 根因：拖放导入域 `onDropContainer`（bundle 52717，约 210 行 + `dragging` / `IS_HIDDEN_FILE`
-  等依赖）未端口 → shim 世界该函数不存在 → smoke 的 `onDropContainer(...)` 抛 TypeError，
-  被 `waitFor` 的 try/catch 吞掉后反复重试直至超时。
-- **已过的阶段**：`original main scope` 等待段（即 `window.$bodyScope.raw` 数组 + `listDone`）
-  已通过——这是 b1-9d 的目标段，验收依据是探针而非 m1。
-- **放行条件**：失败信息**恰好**是 `text file drop import timeout`。若变成别的失败点，
-  尤其是回到 `original main scope timeout`，即为**新回归**，必须查。
-- 解除白名单的前置：`onDropContainer` 落地（拖放导入域切片）。届时 m1 后续阶段
-  （markdown / 文件夹 / 剪贴板路径 / 剪贴板图片 / 唯一条目断言）可能再暴露新缺口，
-  需逐段推进而非一次性假设绿。
+- 该失败的根因是 `onDropContainer`（bundle 52717）未端口，**现已落地**（b1-9 收口片），
+  连带补齐 `IS_HIDDEN_FILE` / `sortByAZ` 供给与 `controllerFns` 的对象键误改名
+  （`__lv_files:` → `files:` / `__lv_path:` → `path:`，共 20 处）。
+- m1 已于 b1-9e 全程通过（见上表），后续以「保持绿 + 消除 `multi inspector persistence`
+  间歇失败」为目标。
+- **回归判据**：任何阶段若退回更早的失败点（如 `original main scope timeout`、
+  `text file drop import timeout`），即为新回归，必须查。
+- markdown 段：按「项目级约束」恒跳过，**不得**为满足其断言改业务代码。
+
+> **b1-9e：bundle 摘除后的「全局词法绑定」系统性缺口 + 模板字面量转义污染（2026-09-04）**
+>
+> app.bundle.js 从 index.html 摘除后，凡 bundle **内联但非 window 属性**的东西全部消失，
+> 且消费侧多在 `try/catch` 内 → 静默失败。本轮修复四类：
+> 1. **`URL_MODULE`**（bundle 顶层 `const`，classic script 的全局词法绑定）：
+>    `core/fileUrlHelper.ts` 裸引用 → `getRawUrl/getThumbnailUrl` 恒返回空串。改为按第 5 节
+>    契约本地解析（`require(appRoot + '/my_modules/url')` → `require('url')`）。
+> 2. **`$.fn.smoothZoom` + `BitmapViewer`**（vendor `jquery.smoothZoom.min.js` 被 bundle 内联）：
+>    详情原图管线整条死。提取为 `frontend/public/vendor/eagle-smooth-zoom.js`（仅 6 处
+>    `angular.element(...)` 换等价物，其余逐字节相同；生成脚本 `tests-tmp/extract-smooth-zoom.py`），
+>    由 index.html 同步加载。**不注入 `window.angular`**——全局 angular 存在会翻转
+>    `scopeBridge`（shim scope 不再建立）与 `itemDomain:654`（finishQueue 双处理规避）等探测点。
+> 3. **`$.playSound`**（vendor `jquery-audio.js` 同属内联件）+ scope 的 `removeSound/
+>    duplicateSound/errorSound`（bundle 20238-20254 controller init 状态，seed 时漏项）：
+>    `removeSelected` 在 `s.removeSound.play()` 处 TypeError。已补 index.html 引入 + seed 三件套。
+> 4. **`$${` 模板转义污染（controllerFns 149 处 / 94 行）**：提取器把 `${` 转义成 `$${`，
+>    运行时多出字面 `$`。污染面含 **localStorage 键**（`eagle.list.orderBy.$<rootDir>`、
+>    `eagle.list.layout.$<id>`）、**filterCounts 的 year/month 键**、字体安装路径、
+>    jQuery 选择器（`#$<id>-filter-item`）、各查看器 URL，以及 `getRawUrl` 的
+>    `?v=$<ver>`（**详情原图 404 的直接原因**）。已机械修正（`tests-tmp/fix-template-artifacts.py`）。
+>
+> 另修两处非 bundle 缺口：
+> - **scope shim 的 `$eval` 对着裸 shim 取值**（数据面字段只在 coreState、经 proxy 可达）→
+>   `startScopeSync` 的 12 个域快照自 b1 起永久停在初值（body 的 `is-detail-mode` 等类名
+>   不跟随 scope → 详情面板无尺寸 → 原图闸门超时）。`global/scopeShim.ts` 改为经 proxy 解析，
+>   并让字符串型 `$watch` 也走同一路径。
+> - **`machineryEnterDetailMode` 缺 digest flush**：bundle 靠 Angular digest 在 100ms
+>   smoothZoom 初始化前把 body 类落到 DOM，shim 世界需显式 `s.$evalAsync()`。
+>
+> **教训**：`if-absent` 守卫/探测点要查「真正消费的那个标识符」；bundle 内联的 vendor 与顶层
+> `const/let` 随 bundle 摘除一并消失，且多被 try/catch 吞掉——症状是「静默空值」而非报错。
+>
+> **遗留（下一段）**：
+> - `multi inspector persistence` 间歇失败（约 1/6）：多选批量改 annotation/star/tags 后，
+>   dropped 条目在**内存里被回滚到操作前快照**，随后 `ayncsImagesChange` 的延迟发送
+>   （setTimeout+rAF）克隆到旧值持久化（sendTrace 实证：payload 里 dropped 项恒为旧值、
+>   clipboard 项为新值；`item:operation-result` 无错误）。已修一处源头（shims
+>   `refreshImportedThumbnails` 改为只发缩略图字段 + 先排空 `itemUpdateQueue`，
+>   把失败率从 ~3/3 降到 ~1/6），真正的回滚者仍未定位——嫌疑是某个 `Object.assign(存量条目,
+>   库快照)` 的异步事件处理器（itemDomain 的 thumbnail-generated #2 / webp.converted /
+>   update-item-view-by-id 一类）。下一轮建议：在 mock 总线 emit 上挂钩记录「哪个 channel
+>   前后条目字段发生变化」（注意：用 `Object.defineProperty` 监视条目属性会让冒烟脚本整体抛错）。
+> - React 侧 45 处 `w.angular.copy/isNumber/extend/equals` 与 `angular.element(...).injector()`
+>   仍是死调用（bundle 在世时靠真 angular）。若要供给，必须同时给
+>   `scopeBridge:14` / `itemDomain:654` 等「bundle 在世」探测点加 `!__eagleShim` 门。
+
 
 **另一处未端口（不阻塞任何套件，仅在缩略图加载失败时触发）**：缩略图修复链
 `listImageError` / `tryToFixThumbnailError` / `fixThumbnail`（bundle 19537+）整条缺失，

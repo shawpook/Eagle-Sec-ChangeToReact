@@ -73,7 +73,7 @@ let updateZoomRatioTimeout: any = null;
 
 let filterCache: any = null;
 let shimFilterInst: any = null;
-function getFilter(): any {
+export function getFilter(): any {
   if (filterCache) return filterCache;
   try {
     const ang = (window as any).angular;
@@ -3295,6 +3295,13 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
   // 算出的 zoom 一定是錯的。正確的 zoom 會在下方 $timeout 回調中執行。
   w.eagle.inspector.activeTab = "ITEM";
   s.smoothZoomDone = false;
+
+  // bundle 依赖 Angular digest：ng-click 处理器返回后本轮 digest 立即把 body 的
+  // is-detail-mode 落到 DOM，100ms 后的 smoothZoom 初始化才量得到详情面板尺寸。
+  // shim 世界的 body 类走 watcher flush → store → React effect，若不在此显式 flush，
+  // 初始化会赶在类名之前跑，#bitmap-viewer 高度为 0 → BitmapViewer 不建 canvas、
+  // 无瓦片 → 详情原图交付闸门超时（m1 detail original delivery）。
+  s.$evalAsync();
 
   $timeout.cancel(zoomInitTimeout);
   zoomInitTimeout = $timeout(function () {
@@ -8747,6 +8754,230 @@ function machineryCalcuteAddImageTimeLeft(s: any): void {
   }
 }
 
+/* onDropContainer（bundle 52717-52928 逐字；controller 顶层函数 → 域内移植）
+   裸标识符 → window：dragging（bundle 顶层 var，读写均落 window live binding）/
+   require('path')/require('electron')/jQuery/$/fs/getExt/EagleConfig/IS_HIDDEN_FILE/
+   IS_DIRECTORY/walk/swal/i18n/electronLog/process/sortByAZ；$scope → s（bodyScope）；
+   $filter('i18n') 走 getFilter()（shim 版见 getFilter，bundle 在世走 injector 同语义）。
+   TS 唯一适配：三个独占 return 分支内 bundle 重复声明 file（第 2 分支为 let）→ 统一 var
+   （无行为差异）。
+   诚实缺口（与既有 w.is 消费面 8744 同状态，不在 b1-9 装载链上）：dragUrl 分支的
+   w.is（my_modules 无 is_js 包）与 s.uploadUrl（单数版，React 侧仅 uploadUrls）。 */
+export function machineryOnDropContainer(s: any, event: any): void {
+  const w = window as any;
+
+
+    if (w.dragging) {
+        w.dragging = false;
+        return;
+    }
+
+    event && event.preventDefault();
+    event && event.stopPropagation();
+
+    var fsPath = w.require('path');
+    var ipcRenderer = w.require('electron').ipcRenderer;
+    var folder = s.currentFolder;
+    var dragUrl = event.dataTransfer && w.jQuery("<div></div>").html(event.dataTransfer.getData("text/html")).find("img").attr("src");
+    var files = event.dataTransfer && event.dataTransfer.files;
+    var dragFile = false;
+
+    if (!dragUrl) {
+        if (w.is.url(event.dataTransfer.getData("text/plain"))) {
+            dragUrl = event.dataTransfer.getData("text/plain");
+        }
+        // if (dragUrl && dragUrl.indexOf("data:image") === -1 ) {
+        //     dragUrl = undefined;
+        // }
+        if (files && files[0] && files[0].path) {
+            dragFile = true;
+        }
+    }
+    console.log(dragFile);
+
+    w.$("#box-container").removeClass("drag-accept");
+
+    if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eaglepack") !== -1) {
+        var file = files[0];
+        var packPath = file.path;
+        ipcRenderer.send("open-eaglepack", {
+            path: packPath,
+            folderId: folder && folder.id
+        });
+        return;
+    }
+	else if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eagleplugin") !== -1) {
+        var file = files[0];
+        var pluginPath = file.path;
+        ipcRenderer.send("open-eagleplugin-file", {
+            path: pluginPath
+        });
+        return;
+    }
+    else if (!w.dragging && files.length == 1 && files[0].path.endsWith(".library")) {
+        var file2 = files[0];
+        var libraryPath = file.path;
+        ipcRenderer.send('open-library', libraryPath);
+        return;
+    }
+
+    if (!w.dragging && files && files[0] && files[0].path) {
+
+        // 如果文件夾名稱過長，路徑會變成很奇怪的符號
+        if (files[0] && !w.fs.existsSync(files[0].path)) {
+            w.swal({
+                html: `
+                    <div class="alert">
+                        <div class="alert-icon error"></div>
+                        <h4 class="alert-title">${w.i18n.__("Dialog.PathTooLong.Title")}</h4>
+                        <p class="alert-desc">${w.i18n.__("Dialog.PathTooLong.Description")}</p>
+                    </div>
+                `,
+                showCloseButton: false, showCancelButton: false, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                width: 360,
+                customClass: "alert-box",
+                cancelButtonColor: "#777777",
+                confirmButtonText: w.i18n.__("general.close"),
+            }).then(function () {});
+            w.electronLog && w.electronLog.error("[app] Unable to add local folder, beacuse the path is too long: " + files[0].path);
+            return;
+        }
+
+        console.time("拖曳档案事件");
+        s.showUploadQueue();
+
+        var fds = [];
+        var notSupportFiles = [];   // 不支持添加的文件
+
+
+        for (var i = 0; i < files.length; i++) {
+        // for (var i = files.length - 1; i >= 0; i--) {
+            var filePath = files[i].path;
+            var lowercase = filePath.toLowerCase();
+            var ext = w.getExt(files[i]);
+            if (ext) {
+                // var ext = w.getExt(files[i]);
+                if (w.EagleConfig.SUPPORT_FORMATS[ext]) {
+                    files[i].type = "image/" + ext;
+                    fds.push(files[i]);
+                }
+                else if (filePath.indexOf("svg") !== -1 || filePath.indexOf("icns") !== -1 || filePath.indexOf("ico") !== -1) {
+                    fds.push(files[i]);
+                }
+                else if (!w.IS_HIDDEN_FILE.check(lowercase)) {
+                    fds.push(files[i]);
+                }
+            }
+            // 使用者拖曳資料夾
+            else if (w.IS_DIRECTORY.check(filePath)) {
+                var dirFiles = w.walk(filePath);
+                if (dirFiles && dirFiles.length !== 0) {
+                    var now = Date.now();
+                    dirFiles.forEach(function (p: any, index: any) {
+                        var fpath = p;
+                        // var stat = fs.statSync(fpath);
+                        var f: any = {
+                            name: fsPath.basename(fpath),
+                            // size: stat.size,
+                            path: fpath,
+                            lastModified: now,
+                        };
+                        var ext = w.getExt(f);
+                        if (w.EagleConfig.SUPPORT_FORMATS[ext]) {
+                            f.type = "image/" + ext;
+                            fds.push(f);
+                        }
+                        else if (fpath.indexOf("svg") !== -1) {
+                            f.type = "image/svg+xml";
+                            fds.push(f);
+                        }
+                        else if (fpath.indexOf("icns") !== -1) {
+                            f.type = "icns";
+                            fds.push(f);
+                        }
+                        else if (fpath.indexOf("ico") !== -1) {
+                            f.type = "ico";
+                            fds.push(f);
+                        }
+                        else {
+                            fds.push(f);
+                            // notSupportFiles.push(f);
+                        }
+                    });
+                }
+                else {
+                    s.hideUploadQueue();
+                }
+            }
+            else {
+                fds.push(files[i]);
+                // notSupportFiles.push(files[i]);
+            }
+        }
+
+        if (fds.length == 0 && files.length == 1 && notSupportFiles.length > 0) {
+            s.hideUploadQueue();
+        }
+        else {
+            // let reason = (w.process.platform === 'darwin')? w.i18n.__("Dialog.NotSupport.Format.Descript.Mac") :  w.i18n.__("Dialog.NotSupport.Format.Descript.Windows");
+            // notSupportFiles.forEach(function (file) {
+            //     $bodyScope.errorList.push({
+            //         type: 'ADD_ERROR',
+            //         object: { 
+            //             name: file.name,
+            //             path: file.path 
+            //         },
+            //         reason: reason
+            //     });
+            // });
+            console.log("收到 Drop，準備添加");
+            // Windows 拖拽顺序无法对应当前 explorer，所以这里自己做了排序
+            if (w.process.platform === 'win32') { w.sortByAZ(fds); }
+            s.uploadFiles(fds, folder);
+            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to ${folder.name}(${folder.id})(Center), path: ${fds[0].path}`); }
+            else { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to All(Center), path: ${fds[0].path}`); }
+            s.$evalAsync();
+        }
+        console.timeEnd("拖曳档案事件");
+    }
+    // else if (!w.dragging && dragFile) {
+    //     s.uploadDraggingBoard(folder, dragUrl);
+    //     s.showUploadQueue();
+    //     console.log("上传记忆体内的图片");
+    // }
+    else if (!w.dragging && dragUrl) {
+        if (w.is.url(dragUrl)) {
+        // if (w.is.url(dragUrl) && dragUrl.indexOf("data:image" !== -1)) {
+            s.showUploadQueue();
+        }
+        if (w.is.url(dragUrl)) {
+            s.uploadUrl(dragUrl, folder);
+            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop url: ${dragUrl} to ${folder.name}(${folder.id})（Center）`); }
+            else { w.electronLog && w.electronLog.info(`[app] Drop url ${dragUrl} to All(Center)`); }
+        }
+        // bundle 原 bug 逐字保留：实参实为 ("data:image" > -1)，即 indexOf(false)
+        else if ((dragUrl as any).indexOf(("data:image" as any) > -1) ) {
+            s.uploadUrl(dragUrl, folder);
+            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop base64 url to: ${folder.name}(${folder.id})(Center)`); }
+            else { w.electronLog && w.electronLog.info(`[app] Drop base64 url to All(Center)`); }
+        }
+        else {
+            var $filter = getFilter();
+            var html = (w.process.platform === 'darwin')? $filter('i18n')("Dialog.NotSupport.Format.Descript.Mac") :  $filter('i18n')("Dialog.NotSupport.Format.Descript.Windows");
+            s.hideUploadQueue();
+            w.swal({
+                title: w.i18n.__("Dialog.NotSupport.Format.Title"),
+                html: html,
+                showCloseButton: false, showCancelButton: false, allowOutsideClick: true, focusConfirm: true, focusCancel: false, padding: 24,
+                width: 360,
+                cancelButtonColor: "#777777",
+                confirmButtonText: w.i18n.__("Dialog.NotSupport.Format.Buttom"),
+            }).then(function () {});
+        }
+    }
+    w.dragging = false;
+}
+
 /* showUploadQueue（bundle 45313-45324 逐字：addImageStartTime 立时 + 上传队列面板 +
    1s 剩余时间轮询）+ hideUploadQueue（45343-45351 逐字：空队列收面板 +
    updateWindowProgressBar（bundle 49810 **顶层 var throttle 单例 → window 可达**，w.* 直连
@@ -9953,6 +10184,23 @@ export function machinerySeedControllerState(s: any): void {
         s.isHideSubFolder = true;
         s.isHideNavigator = false;
         s.unlockPassword = "";
+        // 音效三件套（bundle 20238-20254 逐字；$.playSound 由 js/vendors/jquery-audio.js 提供，
+        // 该插件原内联在 app.bundle.js 内，b1-9d 后由 index.html 独立引入）
+        s.removeSound = {
+            play: function () {
+                w.$.playSound('sounds/remove.wav');
+            }
+        };
+        s.duplicateSound = {
+            play: function () {
+                w.$.playSound('sounds/duplicate.wav');
+            }
+        };
+        s.errorSound = {
+            play: function () {
+                w.$.playSound('sounds/error.wav');
+            }
+        };
         s.len = 100;
         s.sidebarList = [];
         s.sidebarIndex;
@@ -10618,6 +10866,13 @@ export function applyDataMachineryScope(): void {
   s.moveToFolders = (e: any) => machineryMoveToFolders(s, e);
   s.showUploadQueue = () => machineryShowUploadQueue(s);
   s.hideUploadQueue = () => machineryHideUploadQueue(s);
+  // b1-9d 收口：onDropContainer（bundle 顶层 function → 同 window live binding 语义）。
+  // 三处消费面都要命中：① smoke/CDP 直接调全局 onDropContainer(...)；② ListRegion
+  // scopeFn('onDropContainer') 只在 scope 上找；③ callScope 先查 fns 表再查 scope
+  // ——两者均不回落 window，故 window 与 scope 都要挂。bundle 在世时 window 已有绑定，
+  // if-absent 零改变。
+  s.onDropContainer = (event: any) => machineryOnDropContainer(s, event);
+  if (s.__eagleShim && !(window as any).onDropContainer) (window as any).onDropContainer = s.onDropContainer;
   s.importLinks = () => machineryImportLinks(s);
   s.videoScreenShot = (copyMode: any) => machineryVideoScreenShot(s, copyMode);
   // b1-7e：全局查重（getFolderImages/findDupclipate）+ 子文件夹列表 + 搜索聚焦 +

@@ -11,6 +11,22 @@ const path = (window as any).require
   ? (window as any).require('path')
   : (window as any).path;
 
+// URL_MODULE 是 bundle 顶层 const（classic script 的全局词法绑定，**不是 window 属性**，见
+// PROGRESS 第 5 节全局契约）。app.bundle.js 从 index.html 摘除后该绑定消失，本模块裸引用即抛
+// ReferenceError 并被下方各 try/catch 吞掉 → 所有 raw/thumbnail URL 静默变空串（详情原图
+// 无 URL → smoothZoom 不装载 → 交付闸门永不释放）。改为按契约本地解析（同 apiServerDomain
+// 的 require(appRoot + '/my_modules/url') 手法，退到 require('url')）。
+const URL_MODULE = (() => {
+  const req = (window as any).require;
+  if (typeof req !== 'function') return (window as any).URL_MODULE;
+  const appRoot = (window as any).appRoot;
+  const rootPath = appRoot && (appRoot.path || appRoot);
+  if (rootPath) {
+    try { return req(`${rootPath}/my_modules/url`); } catch (err) { /* 退到内建 url */ }
+  }
+  try { return req('url'); } catch (err) { return (window as any).URL_MODULE; }
+})();
+
 export const FileUrlHelper = {
     getMetadataPath: function (image) {
         try {

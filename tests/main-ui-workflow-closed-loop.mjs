@@ -115,11 +115,12 @@ try {
   const fixture = path.join(projectRoot, 'frontend/public/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png');
   const fileDropSource = path.join(tempRoot, 'Dropped Main.png');
   const textDropSource = path.join(tempRoot, 'Dropped Text.txt');
-  const markdownDropSource = path.join(tempRoot, 'Dropped Markdown.md');
+  // 【项目决策·IGNORED】markdown 组件不属于原框架（bundle 原版无 md 特殊处理），整体隔离
+  // 排除出测试面：不再创建 markdown 样例、不传 EAGLE_WORKFLOW_MARKDOWN_SOURCE，
+  // main.cjs 的 markdown 分支因此恒跳过。详见 PROGRESS.md 测试基线区备注。
   const clipboardPathSource = path.join(tempRoot, 'Clipboard Path.png');
   fs.copyFileSync(fixture, fileDropSource);
   fs.writeFileSync(textDropSource, 'Eagle reverse text drop audit\n', 'utf8');
-  fs.writeFileSync(markdownDropSource, '# Dropped Markdown\n\nEagle reverse markdown drop audit\n', 'utf8');
   fs.copyFileSync(fixture, clipboardPathSource);
   fs.copyFileSync(fixture, path.join(folderSource, 'Folder Item One.png'));
   fs.copyFileSync(fixture, path.join(folderSource, 'Folder Item Two.png'));
@@ -133,7 +134,7 @@ try {
     EAGLE_PREVIEW_URL: `http://localhost:${vitePort}/src/app/index.html`,
     EAGLE_WORKFLOW_FILE_SOURCE: fileDropSource,
     EAGLE_WORKFLOW_TEXT_SOURCE: textDropSource,
-    EAGLE_WORKFLOW_MARKDOWN_SOURCE: markdownDropSource,
+    // 【项目决策·IGNORED】markdown 组件已排除，不再传入 EAGLE_WORKFLOW_MARKDOWN_SOURCE
     EAGLE_WORKFLOW_FOLDER_SOURCE: folderSource,
     EAGLE_WORKFLOW_CLIPBOARD_SOURCE: clipboardPathSource,
     EAGLE_WORKFLOW_CLIPBOARD_IMAGE_SOURCE: fixture,

@@ -10202,6 +10202,19 @@ export function machinerySeedControllerState(s: any): void {
                 w.$.playSound('sounds/error.wav');
             }
         };
+        // b1-9l：controller init 接线补种三件（b1-9g 台账根因 5 + fx/fc 补种）
+        // platform（bundle 20066 `$scope.platform = process.platform`——BodyBindings 的
+        // data-platform 属性唯一数据源，shim 世界此前无人写入）
+        s.platform = w.process && w.process.platform ? w.process.platform : undefined;
+        // fixUtils（bundle 20513 `$scope.fixUtils = {}`——fixutil 进度对话框开合状态载体；
+        // 缺席时 body.fixUtils.isFixing 赋值直接 TypeError、7d6c 的 fx/fc 对话框永不出现）
+        s.fixUtils = {};
+        // initPlugins（bundle 20028 RootController init 调用——scope.inspector.inspectorItems
+        // 只由它填充，stage6 的 tags/folders/annotations/information 分区渲染数据源；
+        // eagleClasses 在 main.tsx 侧副作用安装，先于域接管；pluginModule 经 b1-9j 桥接）
+        if (w.eagle && w.eagle.inspector && typeof w.eagle.inspector.initPlugins === 'function') {
+            w.eagle.inspector.initPlugins();
+        }
         s.len = 100;
         s.sidebarList = [];
         s.sidebarIndex;

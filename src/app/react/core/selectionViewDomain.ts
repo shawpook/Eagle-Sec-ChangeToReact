@@ -93,6 +93,85 @@ export function takeoverSelectionViewDomain(): void {
   if (!s0 || typeof s0.$watch !== 'function') return;
 
   // ── watchCollection "selected"（34214 主 watcher；摘 body scope 全部 'selected' watcher）──
+  // ── selected 主 watcher（34214-34259 逐字；b1-9l 补挂——此前仅 darwin quicklook 变体注册过
+  //    （平台守卫错位），win32 上选中集变化无人重建 selectedMappings / 触发 updateSelection，
+  //    m1-E-selected-watch 断言面。依赖：setLastItem（38490 link var 逐字）、selectItemsView
+  //    （35073 逐字）随 watcher 一并补挂；AnnotationPreview（52076）整条未端口——按存在性守卫）──
+  const setLastItem = w.debounce(function (item: any) {
+    const s2: any = getBodyScope();
+    if (!s2) return;
+    if (item) {
+      localStorage.setItem(`eagle.lastViewItem.${s2.rootDir}`, item.id);
+      localStorage.setItem(`eagle.lastViewItemTime.${s2.rootDir}`, String(Date.now()));
+    }
+  }, 333);
+  const selectItemsView = function (items: any) {
+    const s2: any = getBodyScope();
+    if (!s2) return;
+    const $boxContainer = w.$("#box-container");
+    $boxContainer.find(".box.selected").removeClass("selected");
+    (items || []).forEach(function (item: any) {
+      if (s2.selectedMappings[item.id]) {
+        w.$("#box-" + item.id).addClass("selected");
+      }
+      else {
+        w.$("#box-" + item.id).removeClass("selected");
+      }
+    });
+  };
+  s0.$watchCollection("selected", function (newValue: any, oldValue: any) {
+    const s: any = getBodyScope();
+    if (!s) return;
+
+    s.selectedMappings = {};
+    s.zoomFitSize = 0;
+
+    s.selected.forEach(function (image: any, index: any) {
+      if (image) {
+        s.selectedMappings[image.id] = true;
+      }
+    });
+
+    if (s.selected.length > 0) {
+      s.updateSelection();
+    }
+
+    if (s.isDetailMode && s.smoothZoomDone) {
+      // 只在「詳情模式中切換圖片」時執行。（bundle 原注：剛進入詳情模式時 smoothZoomDone
+      // 為 false，#detail-image 尚未渲染，這些 DOM 操作無意義，且 updateNavigator 會在
+      // enterDetailMode 的 $timeout 中重做。）
+      s.showLargeImage = false;
+      s.rememberVideoCurrentTime(oldValue[0]);
+      if (w.AnnotationPreview) w.AnnotationPreview.hide();
+      w.$("#detail-image").data("degree", 0);
+      w.$("#detail-image").css({
+        "transform": ``,
+      });
+      setTimeout(() => {
+        const sNow: any = getBodyScope();
+        w.$("#detail-container").smoothZoom('updateNavigator', sNow && sNow.current);
+      }, 300);
+    }
+
+    if (s.selected.length === 1) {
+      s.lastSelectedIndex = s.currentIndex() - 1;
+    }
+
+    // 全选
+    if (s.selected.length === s.allData.length) {
+      s.lastSelectedIndex = s.selected.length - 1;
+      w.$(".box").addClass("selected");
+    }
+    else {
+      selectItemsView(s.selected);
+    }
+
+    var lastItem = s.selected[0];
+    if (lastItem) {
+      setLastItem(lastItem);
+    }
+  });
+
   // ── darwin quicklook watch（34265；平台守卫内注册，与 bundle 一致）──
   if (w.process.platform == 'darwin') {
     s0.$watchCollection("selected", w.debounce(function () {

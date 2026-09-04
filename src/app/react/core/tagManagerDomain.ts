@@ -9,6 +9,14 @@
  */
 // @ts-nocheck
 import { getBodyScope } from '../global/scopeBridge';
+// b1-9k：bundle link 体内 $filter/$timeout 为 Angular 注入服务——本文件 1307/1319/1379/
+// 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
+// ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
+// 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
+import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout } from './dataMachinery';
+
+const $filter: any = machineryGetFilter;
+const getTimeout: any = machineryGetTimeout;
 
 export function machineryBuildTagManager(s: any): any {
   const w: any = window as any;
@@ -1314,6 +1322,65 @@ export function machineryBuildTagManager(s: any): any {
         };
 
         s.TagManager = TagManager;
+
+        // selectTag（bundle 38870-38926 逐字；b1-9k 补端口——TagManager.tsx 标签点击
+        // onClick=call('selectTag')，缺席时静默 no-op → 标签选中/多选整条死）
+        s.selectTag = function (event, tag) {
+            event.stopPropagation();
+
+            if (event.button !== 0 && s.selectedTags[tag.name]) return;
+
+            s.$root.currentFocus = 'content';
+
+            // Shift 多選
+            if (event.shiftKey) {
+
+                let selectedTags = [];
+                let found = 0;
+
+                TagManager.tagsResult.display.forEach((item, index) => {
+                    if (item.type === "row") {
+                        const tags = item.tags;
+                        tags.forEach((tagName) => {
+                            if (tagName === s.lastSelectedTag || tagName === tag.name) {
+                                found++;
+                                selectedTags.push(tagName);
+                                return;
+                            }
+                            if (found === 2) {
+                                return;
+                            }
+                            if (found === 1) {
+                                selectedTags.push(tagName);
+                            }
+                        });
+                    }
+                });
+
+                selectedTags.forEach((tagName) => {
+                    if (s.selectedTags[tagName]) return;
+                    s.selectedTags[tagName] = true;
+                });
+
+                s.lastSelectedTag = tag.name;
+                return;
+            }
+
+            if (event.metaKey || event.ctrlKey) {
+                if (s.selectedTags[tag.name]) {
+                    delete s.selectedTags[tag.name];
+                }
+                else {
+                    s.selectedTags[tag.name] = true;
+                }
+                s.lastSelectedTag = tag.name;
+            }
+            else {
+                s.selectedTags = {};
+                s.selectedTags[tag.name] = true;
+                s.lastSelectedTag = tag.name;
+            }
+        };
 
         s.createTagGroup = function () {
             var newGroup = TagManager.createGroup($filter('i18n')('general.untitled.tagGroup'));

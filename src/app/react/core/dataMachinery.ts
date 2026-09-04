@@ -207,7 +207,8 @@ export function getFilter(): any {
 
 let timeoutCache: any = null;
 let shimTimeoutInst: any = null;
-function getTimeout(): any {
+// b1-9k 导出：tagManagerDomain 的裸 getTimeout（1307/1379/1654/1670）此前是死标识符
+export function getTimeout(): any {
   if (timeoutCache) return timeoutCache;
   try {
     const ang = (window as any).angular;

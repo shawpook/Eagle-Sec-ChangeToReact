@@ -329,6 +329,133 @@ export function makeControllerFns(getScope: () => any) {
         }).apply(null, args);
   };
 
+  // ── b1-9k：四個「小函数」补端口（b1-9g 台账根因 4a/4b/4e；bundle 逐字 + $scope→s 适配）──
+
+  /* cancelEmptyTrash（bundle 33602-33608 逐字；EmptyTrashProgress 取消按钮守卫式调用
+     s.cancelEmptyTrash——缺席时 isCleaningTrash 恒 true、对话框永不关。backgroundWindowID
+     为 bundle link var（window live binding）；shim 世界无背景窗，IPCHelper.sendTo 内部
+     try/catch 兜住 undefined id，与 ayncsImagesChange 的 undefined 判定同型） */
+  fns["cancelEmptyTrash"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            s.isCleaningTrash = false;
+            s.trashRemoved = 0;
+            s.currentTrashRemoved = 0;
+            IPCHelper.send('palette-resume');
+            IPCHelper.sendTo((window as any).backgroundWindowID, 'cancel-empty-trash');
+    }).apply(null, args);
+  };
+
+  /* cancelRegenerateThumbnail（bundle 34491-34494 逐字；FileThumbnailProgress 取消按钮同上——
+     缺席时 regenerateThumbnailQueue 不清空、缩略图进度框永不关） */
+  fns["cancelRegenerateThumbnail"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            IPCHelper.send('cancel.generate.thumbnail');
+            s.regenerateThumbnailQueue = [];
+    }).apply(null, args);
+  };
+
+  /* addToFolders（bundle 43200-43210 逐字；「添加到文件夹」入口——广播 OPEN-ADD-FOLDER-MODAL
+     打开 FolderModals。eagle.inspector.calculateFolders 由 eagleClasses 供给（bare eagle 经
+     window 全局回退解析，与同文件 ayncsImagesChange 同型） */
+  fns["addToFolders"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (e) {
+            if (s.selected.length > 0) {
+                s.$root.$broadcast("OPEN-ADD-FOLDER-MODAL", {
+                    current: s.currentFolder,
+                    folders: s.folders,
+                    images: s.selected,
+                    existsFolders: eagle.inspector.calculateFolders(s.selected),
+                });
+            }
+    }).apply(null, args);
+  };
+
+  /* createFolder（bundle 40538-40604 逐字；body 级 options 版——selectPanelEngine 的
+     新建文件夹 confirm 回调走 getBodyScope().createFolder({name,...})。guid 为 bundle
+     全局（bundleGlobals 供给 w.guid，bare 经 window 全局回退解析） */
+  fns["createFolder"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function ({ name, parentID, sibling, position = "top", callback }) {
+
+            if (name === undefined) return;
+
+            const folderId = guid();
+            const folder = {
+                id: folderId,
+                name: name,
+                folders: [],
+                modificationTime: Date.now(),
+                editable: false,
+                tags: [],
+                children: [],
+                isExpand: true,
+            };
+
+            if (parentID) {
+                folder.parent = parentID;
+            }
+
+            // 兄弟模式
+            if (sibling) {
+                const siblingParent = s.folderMappings[sibling.parent];
+                let index;
+                if (siblingParent) {
+                    index = siblingParent.children.indexOf(sibling);
+                    if (index === -1) index = siblingParent.children.length - 1;
+                    siblingParent.children.splice(index + 1, 0, folder);
+                }
+                else {
+                    index = s.folders.indexOf(sibling);
+                    if (index === -1) index = s.folders.length - 1;
+                    s.folders.splice(index + 1, 0, folder);
+                }
+            }
+            // 添加成為孩子
+            else if (parentID) {
+                const parent = s.folderMappings[parentID];
+                if (parent) {
+                    parent.children.splice(0, 0, folder);
+                }
+            }
+            // 添加在第一層
+            else {
+                if (position === "top") {
+                    s.folders.splice(0, 0, folder);
+                }
+                else if (position === "bottom") {
+                    s.folders.splice(s.folders.length, 0, folder);
+                }
+            }
+
+            s.folderMappings[folder.id] = folder;
+            s.addToRecentFolders([folder.id]);
+            s.updateSidebarList();
+            s.calculateImageBinding({ ignoreSort: true }, function() {
+                s.refreshSubfolderList();
+                s.saveFolder();
+                if (callback) callback(folder);
+                if (folder.parent) {
+                    electronLog && electronLog.info(`[app] New sub-folder: ${folder.id}, parent: ${folder.parent}`);
+                }
+                else {
+                    electronLog && electronLog.info(`[app] New folder: ${folder.id}`);
+                }
+                analytics.event('Folder', 'Create');
+            });
+    }).apply(null, args);
+  };
+
   fns["addToRecentFolders"] = function (...args) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     const s = getScope();

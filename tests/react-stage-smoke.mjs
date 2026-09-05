@@ -91,6 +91,20 @@ try {
     ['stage1-theme-sync-initial', `window.__eagleReactStore.getState().theme === (document.body.getAttribute('theme') || 'gray')`],
     ['stage1-preferences-key-shared', `window.__eagleReactStore.getState().preferences !== null && typeof window.__eagleReactStore.getState().preferences.general.language === 'string'`],
     ['stage1-actions-exposed', `typeof window.__eagleReactStore.getState().applyThemePreference === 'function' && typeof window.__eagleReactStore.getState().openRegisterModal === 'function'`],
+    // b1-9z：flatpickr 供给链——flatpickr.min.js（v3.0.6 经典脚本原生暴露
+    // window.FlatpickrInstance/window.flatpickr）+ zh l10n；构造契约 = new FP(input, opts)
+    // 返回实例（_input 指回、destroy/setDate 可调用）
+    ['b1-9z-flatpickr-supply', `(() => {
+      if (typeof window.flatpickr !== 'function' || typeof window.FlatpickrInstance !== 'function') return false;
+      if (!window.flatpickr.l10ns || !window.flatpickr.l10ns.zh) return false;
+      try {
+        const inp = document.createElement('input');
+        const inst = new window.FlatpickrInstance(inp, { locale: 'zh', dateFormat: 'Y-m-d' });
+        const ok = !!(inst && inst._input === inp && typeof inst.destroy === 'function' && inst.setDate instanceof Function);
+        inst.destroy();
+        return ok;
+      } catch (err) { return false; }
+    })()`],
   ];
 
   const failures = [];

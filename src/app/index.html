@@ -228,6 +228,13 @@
         window.i18n = new(require(appRoot + '/i18n'));
         window.EagleConfig = require(appRoot + '/config.js');
     </script>
+    <!-- flatpickr v3.0.6（b1-9z）——原 bundle 内联 vendor，b1 摘除后 FolderSelectPanels 的
+         FlatpickrInput 等 window.FlatpickrInstance 落空 → 智能文件夹日期规则输入静默 no-op。
+         该版本是经典脚本顶层 `function FlatpickrInstance` 声明，script 标签加载即原生暴露
+         构造器（不设 window.FlatpickrInstance 桥——桥会把构造器覆盖成工厂、毁掉 new 语义）；
+         zh l10n 供 dateOpts locale:'zh'。须在上方 module 清空块之后加载。 -->
+    <script src="js/modules/flatpicker/flatpickr.min.js"></script>
+    <script src="js/modules/flatpicker/l10n/zh.js"></script>
     <script src="js/services/lazy-load-manager.js"></script>
     <!-- smoothZoom（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）原本内联在
          app.bundle.js 里；b1-9d 摘除 bundle 后 $.fn.smoothZoom 与 BitmapViewer 一并消失 →

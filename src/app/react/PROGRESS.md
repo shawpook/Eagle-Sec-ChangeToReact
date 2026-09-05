@@ -174,6 +174,20 @@
 > T2（54 孤儿）删除台账双重实锤：basename 全仓 grep + require/import/script-src
 > 加载形态 grep 均 0 命中（`tests-tmp/orphan-ledger-b4s.sh`，不提交）。
 
+> **b1-9s：阶段 11 b3 批1 —— 54 个零引用孤儿删除（2026-09-05）**
+>
+> 删除台账双重实锤（basename 全仓 grep + require/import/script-src 加载形态 grep 均 0 命中，
+> `tests-tmp/orphan-ledger-b4s.sh`）：controllers 3、directives 23（filter-item-* 17 +
+> audio-media-element/folder-sortable/notification-btn/smart-folder-sortable/tag-rect-select）、
+> hover-preview/* 4、lib/api 3（duplicate-checker/reverse-image-search/url-enlarger-remote）、
+> lib/base.js、modules 4（angular-bind-notifier/angular-vs-repeat/flatpicker 两 plugin）、
+> nouislider.min.js（CSS 已于 b1-9r 删）、vendors 8、顶层 6（annotation-preview/api-server/
+> fix-utils/ipc-helper/recent-file-manager/rule-match）。无扩展名 require 形态不成立
+> （Node CJS 必须带 .js 才可解析），动态 require 面仅 thumbs 链（批2 处理）。
+> 保留面核对：eagle-api/url-enlarger 等活文件对被删文件零 require（台账覆盖全仓）。
+>
+> **验证**：suite 45/45（`tests-tmp/react-suite-b4s.log`）+ tsc EXIT:0。
+
 > **b1-9h…b1-9p：全量门 22 项陈旧失败全部修复（2026-09-05，自动推进系列）**
 >
 > 按 b1-9g 台账逐根因修复、逐项验证、逐轮提交。**22 个陈旧失败文件全部转绿**，

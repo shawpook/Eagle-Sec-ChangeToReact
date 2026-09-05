@@ -208,6 +208,42 @@
 > **验证**：suite 45/45（`tests-tmp/react-suite-b4t.log`）+ tsc EXIT:0 +
 > m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（detailDelivery mode:canvas tileCount:10）。
 
+> **b1-9w：P2 —— openItemContextMenu 点击路径审计 + 33 个缺口函数补端口（2026-09-05）**
+>
+> 审计方法：对 b1-9q 端口体（controllerFns 610-7757）提取全部 `s.X` 唯一符号 262 个，
+> 逐一对照 fns 表 + 全 React 语料（core/global/store/components 全量）的赋值面。
+> 结论：50 个 fns 直供、其余域内自管；**34 个真缺口**——其中 4 个 word-hit 实为
+> **已移植 UI 的活死按钮**：inspectorActions 的 copyTags/pasteTags（检查器标签复制/粘贴）、
+> Inspector 的 removeFromFolder、detailHooks 的 setAsVideoThumbnail——点击静默失败。
+>
+> 补端口 33 个 fns（162→195，1c3 契约同步；bundle 逐字 + 机械替换）：
+> 复制组 copyTags(_.throttle)/pasteTags/copyAs{Properity,FolderPath,Thumbnail,Base64}（clipboard
+> 新 const）；导出组 exportSelectedAs{Folder,Eaglepack,Format,ToCsv} + 级联 exportFolder/
+> checkDiskSpace（bundle 26732 为 3 行空实现直通回调）；打开组 openWithOther/openInFinder
+> （debounce 实例 __cc_* 惰性单例 + showFinderAlert → __lv_showFinderAlert 模块 var，
+> localStorage 19064 语义）/openFilesWithDefault/openInPreviewWindow/duplicateItem；
+> 缩略图组 regenerateThumbnail/replaceFile(124 行全体)/setCustomThumbnail{,FromClipboard}/
+> resetCustomThumbnail/setAsVideoThumbnail(s.getVideoPlayer 走 c9d 域内版)/loadSubtitles
+> （裸 item 语境=s.current）；文件夹组 removeFromFolder(30176 全体含 notify 撤销回调)/
+> newFolderWidthSelection/addToLastUsedFolder/changeImagesBackground/getNext；
+> 字体组 activateFonts/deactivateFonts（单数版 fns:346/2755 已在）+ changeFontDefaultLang/
+> renameFontsWithFullName。
+> bundleGlobals 补 4 个顶层全局供给：ayncsImagesGenerateThumbnail（49746，rAF 批次 300）、
+> openInNewWindow（49584，open-preview-window IPC）、RecentFileManager（52307 全体，
+> save 走 _throttle 4 参形）、getClipboardImage（2965；is.url 以协议前缀判定回落——
+> is.min.js 已随死窗清算删除，url 字段消费面只读 files/image）。
+> 顺带修复：w.clipboard 供给（eagleClasses.copyTags 的裸 clipboard 裸读此前无供给，
+> inspector 标签复制会 ReferenceError）。
+> 未移植（登记）：isContainAlphabet/searchRegexGroup/keyword_cn/keyword_tw 为 keyword
+> watcher 维护字段（bundle 29616/32180），属 filterDomain 域内逻辑，随 keyword watcher
+> 补全批次处理，非点击路径。
+> IPC 保真说明：duplicate-file/open-with-dialog/regenerate-thumbnail/copy-thumbnails/
+> set-custom-thumbnail/export-as-folder/export-images 通道 main 进程无 handler——bundle
+> 时代后台窗消亡后即空放，逐字移植保真不新造 handler。
+>
+> **验证**：suite 45/45（`tests-tmp/react-suite-b4w.log`）+ tsc EXIT:0 +
+> m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（`tests-tmp/m1-b4w.log`）。
+
 > **b1-9u：阶段 11 b2 —— 独立窗口旧文件清算（2026-09-05）**
 >
 > 删除 10 项：js/preview-window.js（102KB，React preview-window/* 逐字承接，

@@ -1805,6 +1805,244 @@ export function installBundleGlobals(): void {
     w.eagle.reverseImageSearch = new w.ReverseImageSearch();
   }
 
+  // ── b1-9w：菜单点击路径缺口供给（bundle 顶层全局补齐）────────────────────
+  // ayncsImagesGenerateThumbnail（bundle 49746-49769 逐字；批次 300 张经 rAF 节流发
+  // 'regenerate-thumbnail'——与 ayncsImagesGeneratePalette 同型，backgroundWindowID
+  // 判定同源；main 进程无该通道时为空放，bundle 时代语义即如此）
+  if (!w.ayncsImagesGenerateThumbnail) {
+    w.ayncsImagesGenerateThumbnail = function (images: any) {
+      if (!images || images.length === 0) return;
+      setTimeout(() => {
+        let total = images.length;
+        let once = 300;
+        let loopCount = total / once;
+        let countOfSend = 0;
+
+        function send() {
+          var start = countOfSend * once;
+          var willSendImages = images.slice(start, start + once);
+          countOfSend += 1;
+          if (w.backgroundWindowID === undefined) {
+            w.__eagleIpc.send('regenerate-thumbnail', willSendImages);
+          }
+          else {
+            w.__eagleIpc.sendTo(w.backgroundWindowID, 'regenerate-thumbnail', willSendImages);
+          }
+          loop();
+        }
+
+        function loop() {
+          if (countOfSend < loopCount) {
+            window.requestAnimationFrame(send);
+          }
+        }
+        loop();
+      }, 0);
+    };
+  }
+
+  // openInNewWindow（bundle 49584-49597 逐字：openInPreviewWindow 的承载，
+  // 'open-preview-window' 由 electron/main.cjs preview 窗链路承接）
+  if (!w.openInNewWindow) {
+    w.openInNewWindow = function (items: any) {
+      w.__eagleIpc.send('open-preview-window', {
+        images: items,
+        pluginModule: {
+          plugins: w.pluginModule.plugins,
+          previewExtension: {
+            thumbnailPluginMap: w.pluginModule.previewExtension.thumbnailPluginMap,
+            thumbnailPath: w.pluginModule.previewExtension.thumbnailPath,
+            thumbnailOptions: w.pluginModule.previewExtension.thumbnailOptions,
+            viewerPluginMap: w.pluginModule.previewExtension.viewerPluginMap,
+            viewerURL: w.pluginModule.previewExtension.viewerURL,
+          }
+        }
+      });
+    };
+  }
+
+  // RecentFileManager（bundle 52307-52389 逐字：最近打开文件记录，localStorage 持久化；
+  // save 走 w.throttle 实例——同 bundle 顶层裸 throttle 语义）
+  if (!w.RecentFileManager) {
+    w.RecentFileManager = {
+      libraryName: "",
+      recentFiles: [],
+      recentFilesOrder: {},
+      maxHistory: 5000,
+      init: function (libraryName: any) {
+        w.RecentFileManager.libraryName = libraryName;
+        let json = localStorage[`eagle.recentFiles.${w.RecentFileManager.libraryName}`];
+        if (json) {
+          try {
+            w.RecentFileManager.recentFiles = JSON.parse(json);
+            w.RecentFileManager.calOrders();
+          }
+          catch (err) {
+            w.RecentFileManager.recentFiles = [];
+          }
+        }
+      },
+      calOrders: function () {
+        try {
+          for (var i = 0; i < w.RecentFileManager.recentFiles.length; i++) {
+            let itemId = w.RecentFileManager.recentFiles[i];
+            w.RecentFileManager.recentFilesOrder[itemId] = i + 1;
+          }
+        }
+        catch (err) { }
+      },
+      isExists: function (item: any) {
+        if (!item || !item.id) return false;
+        return w.RecentFileManager.recentFilesOrder[item.id];
+      },
+      addFile: function (item: any) {
+        try {
+          if (!w.RecentFileManager.libraryName) {
+            console.error("RecentFileManager.libraryName is empty");
+            return;
+          }
+          if (!item || !item.id) return;
+          w.RecentFileManager.recentFiles.unshift(item.id);
+          w.RecentFileManager.calOrders();
+          w.RecentFileManager.save();
+        }
+        catch (err) { }
+      },
+      addFiles: function (items: any) {
+        try {
+          if (!w.RecentFileManager.libraryName) {
+            console.error("RecentFileManager.libraryName is empty");
+            return;
+          }
+          if (!items) return;
+          if (items.length >= 20) return;
+          items.reverse().forEach(function (item: any) {
+            if (!item || !item.id) return;
+            w.RecentFileManager.recentFiles.unshift(item.id);
+            w.RecentFileManager.calOrders();
+          });
+          w.RecentFileManager.save();
+        }
+        catch (err) { }
+      },
+      clean: function () {
+        w.RecentFileManager.recentFiles = [];
+        w.RecentFileManager.recentFilesOrder = {};
+        w.RecentFileManager.save();
+      },
+      save: _throttle(function () {
+        try {
+          if (!w.RecentFileManager.libraryName) {
+            console.error("RecentFileManager.libraryName is empty");
+            return;
+          }
+          // 最多保存 5000 個
+          w.RecentFileManager.recentFiles = [...new Set(w.RecentFileManager.recentFiles)];
+          if (w.RecentFileManager.recentFiles.length > w.RecentFileManager.maxHistory) {
+            w.RecentFileManager.recentFiles.length = w.RecentFileManager.maxHistory;
+          }
+          let json = JSON.stringify(w.RecentFileManager.recentFiles);
+          localStorage[`eagle.recentFiles.${w.RecentFileManager.libraryName}`] = json;
+        }
+        catch (err) { }
+      }, 1000, true, false)
+    };
+  }
+
+  // getClipboardImage（bundle 2965-3039 逐字；is.url 的 is.min.js 已随死窗清算删除
+  // （b1-9u），此处以等价协议前缀判定回落——url 字段的两个消费面均只读 files/image）
+  if (!w.getClipboardImage) {
+    w.getClipboardImage = async function () {
+      return new Promise((resolve: any, reject: any) => {
+        try {
+          let clipboardMod: any;
+          try { clipboardMod = req('electron').clipboard; } catch (err) { /* noop */ }
+          if (!clipboardMod && w.electron) clipboardMod = w.electron.clipboard;
+          if (!clipboardMod) return resolve({ image: undefined, url: undefined, files: [] });
+
+          let image: any;
+          let files: any = [];
+          let url: any;
+          let fileurl: any;
+          let name: any;
+
+          let nativeImg = clipboardMod.readImage();
+          if (!nativeImg.isEmpty()) {
+            image = nativeImg;
+          }
+
+          if (w.process.platform == 'darwin') {
+            let PASTEBOARD_FILE_URL = 'NSFilenamesPboardType';
+            let PASTEBOARD_URL_NAME = 'public.url-name';
+            let PASTEBOARD_URL = 'public.file-url';
+
+            let fileurlBuf = clipboardMod.readBuffer(PASTEBOARD_FILE_URL);
+            let nameBuf = clipboardMod.readBuffer(PASTEBOARD_URL_NAME);
+            let urlBuf = clipboardMod.readBuffer(PASTEBOARD_URL);
+
+            try {
+              fileurl = fileurlBuf.toString();
+              name = nameBuf.toString();
+              url = urlBuf.toString();
+            } catch (err) { }
+          }
+
+          if (fileurl) {
+            w.$(`<div>${fileurl}</div>`).find("plist").find("string").each(function (this: any) {
+              files.push(w.$(this).text());
+            })
+          }
+
+          let text = clipboardMod.readText();
+
+          // bundle：is.url(text)（is.min.js）——协议前缀或 www. 形态判定
+          const isUrl = /^(https?|ftp|file):\/\//i.test(text) || /^www\.[^\s]+$/i.test(text);
+
+          if (isUrl) {
+            w.$.ajax({
+              type: "HEAD",
+              url: text,
+              timeout: 10000,
+              complete: function (xhr: any, textStatus: any) {
+                let contentType = xhr.getResponseHeader('Content-Type') || "";
+                if (contentType.indexOf("image") > -1) {
+                  url = text;
+                }
+                return resolve({
+                  image: image,
+                  url: url,
+                  files: files
+                });
+              }
+            });
+          }
+          else {
+            if (w.process.platform == 'darwin') {
+              return resolve({
+                image: image,
+                url: url,
+                files: files
+              });
+            }
+            else {
+              const filePath = clipboardMod.readBuffer('FileNameW').toString('ucs2').replace(RegExp(String.fromCharCode(0), 'g'), '');
+              if (filePath) {
+                files.push(w.path.normalize(filePath));
+              }
+              return resolve({
+                image: image,
+                url: url,
+                files: files
+              });
+            }
+          }
+        } catch (err) {
+          resolve({ image: undefined, url: undefined, files: [] });
+        }
+      });
+    };
+  }
+
   if (!w.guid) w.guid = _guid;
   if (!w.throttle) w.throttle = _throttle;
   if (!w.debounce) w.debounce = _debounce;

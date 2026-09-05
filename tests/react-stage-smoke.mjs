@@ -16,6 +16,8 @@ import { bootStack, stop, waitFor, delay } from './react-cdp-harness.mjs';
 
 // b1-9ah：gif viewer 闭环用真实 fs 路径（glue 内 pathToFileURL 消费的是文件系统路径）
 const gifFixturePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'public', 'mock-assets', 'sample.gif');
+// b1-9ai：text-editor 闭环用 mock 库真实 images 目录（尾随分隔符，imagesDir 拼接惯例）
+const txtFixtureDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'public', 'mock-library', 'Eagle Reverse Demo.library', 'images') + path.sep;
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-react-stage-'));
 const librariesRoot = path.join(tempRoot, 'libraries');
@@ -205,6 +207,49 @@ try {
   });
   await waitFor(async () => (await waitExpr(`window.__b1_9ah && window.__b1_9ah.done === true`)).result.value, 'b1-9ah gif iframe', 25000);
 
+  // b1-9ai：text-editor React 接管闭环——塞真实 txt 项（原生 fs 读取 mock 库真实文件）
+  await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      window.__b1_9ai = { done: false, ok: false, bodyCls: '' };
+      const s = window.$bodyScope;
+      window.__b1_9ai.prevCurrent = s.current;
+      window.__b1_9ai.prevImagesDir = s.imagesDir;
+      s.current = { id: 'MOCK0001', name: 'Sample Notes', ext: 'txt' };
+      s.imagesDir = ${JSON.stringify(txtFixtureDir)};
+      const f = document.createElement('iframe');
+      f.style.display = 'none';
+      f.src = '/src/app/text-editor/text-editor.html?id=MOCK0001&theme=dark&language=zh_CN';
+      document.body.appendChild(f);
+      const poll = setInterval(function () {
+        try {
+          const d = f.contentDocument;
+          const el = d && d.getElementById('content');
+          window.__b1_9ai.bodyCls = d ? d.body.className : '';
+          const text = el ? (el.textContent || '') : '';
+          if (text.indexOf('Eagle Reverse text editor sample') > -1 && d.body.className.indexOf('dark') > -1) {
+            window.__b1_9ai.ok = true;
+            window.__b1_9ai.done = true;
+            clearInterval(poll);
+            s.current = window.__b1_9ai.prevCurrent;
+            s.imagesDir = window.__b1_9ai.prevImagesDir;
+            f.remove();
+          }
+        } catch (err) { /* iframe 未就绪继续等 */ }
+      }, 250);
+      setTimeout(function () {
+        window.__b1_9ai.done = true;
+        clearInterval(poll);
+        try {
+          s.current = window.__b1_9ai.prevCurrent;
+          s.imagesDir = window.__b1_9ai.prevImagesDir;
+          f.remove();
+        } catch (err2) {}
+      }, 20000);
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => (await waitExpr(`window.__b1_9ai && window.__b1_9ai.done === true`)).result.value, 'b1-9ai text-editor iframe', 25000);
+
   const assertions = [
     ['react-mount', `document.getElementById('eagle-react-host') !== null`],
     ['angular-main-app', `document.getElementById('main-app') !== null`],
@@ -267,6 +312,7 @@ try {
     ['b1-9ag-raw-viewer-react', `window.__b1_9ag && window.__b1_9ag.raw.ok === true`],
     ['b1-9ag-native-viewer-react', `window.__b1_9ag && window.__b1_9ag.native.ok === true`],
     ['b1-9ah-gif-viewer-react', `window.__b1_9ah && window.__b1_9ah.glue === true && window.__b1_9ah.ok === true`],
+    ['b1-9ai-text-editor-react', `window.__b1_9ai && window.__b1_9ai.ok === true`],
   ];
 
   const failures = [];

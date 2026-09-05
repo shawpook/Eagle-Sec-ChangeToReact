@@ -353,6 +353,31 @@
 > 同 DetailViewer:548 惯例）。
 > **验证**：tsc EXIT:0；react-stage-smoke 五断言全绿（b1-9ad/b1-9af/b1-9ag×2/b1-9ah）。
 
+> **b1-9ai：Phase B/批4——text-editor React 接管（angular.min.js 消费方 -1，2026-09-05）**
+>
+> text-editor.js（381 行 Angular 控制器）+ wMousetrap 绑定表 + editable-selectall 指令 +
+> 内联 throttle/debounce 全量 React 化（react/viewers/text-editor/entry.tsx）：
+> - **键盘**：wMousetrap 绑定表（0-5 星标直通 parent / F5·mod+r 刷新 / left·right 切换 /
+>   mod=·+·-·0·9 缩放 / mod+s 保存 / mod+backspace·del 吞键）原生 keydown 复刻；
+>   selectall 指令（mod+a 全选/esc 失焦）并入 content keydown。
+> - **保存链**：leading-edge 防抖（内联 debounce 逐字）→ createWriteStream 临时文件 →
+>   fs-extra moveSync 原子覆盖 → 'update-txt-item' 通知；缩放（hidden range input 状态化
+>   + html font-size + ctrl 滚轮 throttle 200ms immediate + wheelDelta 语义保留）。
+> - **修正与挂账**：原 save 错误路径裸 `ipcRenderer`（iframe 内 ReferenceError 潜伏）改经
+>   `window.parent.ipcRenderer`；原 `$parentScope.$eavlAsync()` 拼写 bug（静默 no-op）经
+>   $evalAsync 修正语义；changeName（模板 UI 已注释、零调用方）死代码不移植；
+>   **'update-txt-item' main 无监听**（残余台账⑧，与 empty-trash 同族——item 元数据 text
+>   经此通道悬空）。
+> - 壳：angular.min.js/mousetrap/wMousetrap/angular-contenteditable/jquery/lodash + 内联
+>   脚本全摘（**angular.min.js 消费方 2→1**，仅剩 font-viewer）；text-editor.js 删除；
+>   REACT_VIEWER_ENTRIES 登记；shims 的 text-editor 独立 mock 分支（window.$bodyScope +
+>   fs mock）继续覆盖 standalone 场景（截图回归面）。
+> - 断言教训：首版探针空转 20s——kickoff 漏 `appendChild`（iframe 未入 DOM，contentDocument
+>   恒 about:blank）；探针三段定位（fetch 200/hasRoot/hasEntry→服务面正确→落回 kickoff）。
+> - **闭环契约 b1-9ai**：真实 $bodyScope 塞 mock 库真实 txt 项（原生 fs 读
+>   Sample Notes.txt）→ iframe 加载 → content textContent 含样例文本 + body dark 类。
+> **验证**：tsc EXIT:0；react-stage-smoke 六断言全绿。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

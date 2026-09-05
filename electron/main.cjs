@@ -1692,6 +1692,9 @@ app.whenReady().then(async () => {
       app.quit();
     }, 70000);
     const clipboardImageSource = process.env.EAGLE_WORKFLOW_CLIPBOARD_IMAGE_SOURCE || '';
+    // b1-9am 修正：探针必须先于 writeImage 执行——探针 writeText 会覆盖剪贴板，
+    // 若晚于预写图片则 read-win-files 拿到空图（重启后健康路径首跑即暴露）
+    const __m1CbHealthy = clipboardHealthy();
     if (clipboardImageSource && fs.existsSync(clipboardImageSource)) {
       clipboard.writeImage(nativeImage.createFromPath(clipboardImageSource));
     }
@@ -1701,7 +1704,7 @@ app.whenReady().then(async () => {
         try {
           const result = await win.webContents.executeJavaScript(
             `(async () => {
-              const __cbHealthy = ${clipboardHealthy() ? 'true' : 'false'};
+              const __cbHealthy = ${__m1CbHealthy ? 'true' : 'false'};
               const waitFor = (check, label, timeout = 15000) => new Promise((resolve, reject) => {
                 const deadline = Date.now() + timeout;
                 const poll = async () => {
@@ -2703,6 +2706,8 @@ app.whenReady().then(async () => {
     return;
   }
   if (previewDeliverySmokeMode) {
+    // b1-9am 修正：探针在产生任何剪贴板内容前执行（探针 writeText 具破坏性，结果缓存）
+    const __pdCbHealthy = clipboardHealthy();
     const timeout = setTimeout(() => {
       console.error('PREVIEW_DELIVERY_SMOKE_TIMEOUT');
       app.quit();
@@ -2989,9 +2994,9 @@ app.whenReady().then(async () => {
           })()`
         );
         const firstInfo = await resolveItemFiles(result.initialId);
-        const clipboardPathOk = clipboardHealthy() && result.clipboardTextAfterCopyPath === firstInfo.originalReal;
-        const clipboardImageOk = clipboardHealthy() && !clipboard.readImage().isEmpty();
-        const clipboardSkipped = !clipboardHealthy();
+        const clipboardPathOk = __pdCbHealthy && result.clipboardTextAfterCopyPath === firstInfo.originalReal;
+        const clipboardImageOk = __pdCbHealthy && !clipboard.readImage().isEmpty();
+        const clipboardSkipped = !__pdCbHealthy;
         const shellOk = shellCalls.some((call) => call.action === 'openPath' && call.target === firstInfo.originalReal)
           && shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === firstInfo.originalReal)
           && shellCalls.some((call) => call.action === 'startDrag' && call.target === firstInfo.originalReal);
@@ -3145,6 +3150,8 @@ app.whenReady().then(async () => {
     return;
   }
   if (channelsSmokeMode) {
+    // b1-9am 修正：探针先于任何剪贴板内容产生（结果缓存）
+    clipboardHealthy();
     const smokeOut = process.env.EAGLE_CHANNELS_SMOKE_OUT || path.join(os.tmpdir(), 'eagle-channels-smoke');
     const thumbSource = process.env.EAGLE_CHANNELS_SMOKE_THUMB;
     const timeout = setTimeout(() => {

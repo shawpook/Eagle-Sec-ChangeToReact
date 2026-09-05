@@ -548,6 +548,22 @@
 > 三子菜单形状断言。
 > **门禁**：tsc EXIT:0；1c3 OK（232）；suite 47/47（commit 后记录）。
 >
+> **b1-9as：台账⑧收口——update-txt-item 主侧监听 + shim 往返（2026-09-06）**
+>
+> 原承载探明：run.jsc（bytenode 编译主进程入口，b5e7351 入库）常量池实锚
+> 'update-txt-item'（紧邻 file-save-fail/thumbnail-generated/webp.converted——确为 main
+> 侧 ipcMain.on，非渲染自转发）；渲染侧接收契约 = app.bundle.js:31141
+> `{id, text} → itemMappings[id].text + updateTxtItem`（itemDomain.ts:594 逐字已在）。
+> 三件套落地：① main.cjs ipcMain.on('update-txt-item') → BrowserWindow.getAllWindows()
+> webContents.send 回发（本地 iframe 同进程发不到 main，必须经 main 往返）；
+> ② shims.js send 路由 'update-txt-item' nativeRequire 直通（smoke:* 同款）；
+> ③ shims.js onIpc 桥登记（preload webContents.send → mockEmit 进 shim 总线——itemDomain
+> 两参监听签名与 shim emit 前置 {} 事件参天然兼容，实证于 shims 自定义 EventEmitter
+> callback({}, ...args)）。闭环测试 txt-update-closed-loop.mjs（bootStack 全栈——裸
+> regression-host 窗无 shims，require 走 nodeIntegration 原生通道测不到 shim 路由）：
+> 双捕获 shimBus（生产链）+ native（preload 桥原始交付）均实收 {id:'TXT1', text:'NEW'}。
+> **门禁**：tsc EXIT:0；1c3 OK（255）；suite 48/48。**台账⑧自此清零。**
+>
 > **b1-9aq：台账⑨第三批（收官批）——openSmartFolderContextMenu 主菜单 + 依赖面 23 fns（2026-09-05）**
 >
 > bundle 39550-40105（菜单本体多选/单选双分支）+ 依赖 fns 逐字移植（fns 表 232→255，
@@ -572,7 +588,7 @@
 > duplicates:empty-trash invoke 面可达，纯 ipc.send 分支悬空）；⑦ ~~native-viewer 双通道~~
 > **挂账**（generate-hight-resolution-thumbnail / nativeImage.createThumbnailFromPath——
 > 补监听需重建 psd/ppt 缩图引擎，缓存命中路径可用）；⑧ ~~update-txt-item 主侧无监听~~
-> **挂账**（item 元数据 text 通道悬空，文件落盘不受影响）；⑨ ~~expand 右键菜单族~~
+> **已修**（b1-9as：main 回发 + shim 直通/桥 + 闭环测试）；⑨ ~~expand 右键菜单族~~
 > **已修**（b1-9ao：openFolderExpandContextMenu + toggle 家族 7 fns；
 > openSmartFolderExpandContextMenu 实为 b1-9w 已就位、审计漏查）；~~openFolderContextMenu~~
 > **已修**（b1-9ap，含 26 依赖 fns + checkOperationSafety2/refreshSubfolderList 两个悬空

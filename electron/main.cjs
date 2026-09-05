@@ -1516,6 +1516,21 @@ function registerIpc() {
       event.sender.send('preview:action-result', { ok: false, action: 'ondragstart', error: err.message });
     }
   });
+
+  // b1-9as：update-txt-item 主侧监听（原 run.jsc 承载，随源码封存不可读；接收契约 =
+  // app.bundle.js:31141 渲染侧监听 {id, text}）。text-editor 保存后经渲染层发送，此处
+  // 回发各渲染窗——itemDomain 既有监听更新 itemMappings[id].text（本地 iframe 同进程
+  // 无法直投，必须经 main 往返）。
+  ipcMain.on('update-txt-item', (_event, params = {}) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (win.isDestroyed()) continue;
+      try {
+        win.webContents.send('update-txt-item', params);
+      } catch (err) {
+        // 窗口销毁竞态：跳过该窗
+      }
+    }
+  });
 }
 
 function setupMenu() {

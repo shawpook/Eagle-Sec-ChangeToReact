@@ -1365,6 +1365,16 @@
       }
       return;
     }
+    // b1-9as：update-txt-item 原生直通（text-editor 保存 → main 回发各渲染窗 →
+    // itemDomain 既有监听更新 itemMappings[id].text；本地总线发不到 main）
+    if (channel === 'update-txt-item' && nativeRequire) {
+      try {
+        nativeRequire('electron').ipcRenderer.send(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] update-txt-item native send failed', err);
+      }
+      return;
+    }
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
       items.forEach((item) => analyzeItemPalette(item, { force: true }));
@@ -1770,6 +1780,8 @@
       'update-archive-percent',
       'finish-archive-task',
       'abort-archive-task',
+      // b1-9as：main 回发 → shim 总线（itemDomain 两参监听签名兼容：shim emit 前置 {} 事件参）
+      'update-txt-item',
     ]) {
       desktopApi.onIpc(channel, (value) => mockEmit(channel, value));
     }

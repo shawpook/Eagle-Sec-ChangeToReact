@@ -250,6 +250,58 @@ try {
   });
   await waitFor(async () => (await waitExpr(`window.__b1_9ai && window.__b1_9ai.done === true`)).result.value, 'b1-9ai text-editor iframe', 25000);
 
+  // b1-9aj：font-viewer React 接管闭环——真实 ttf FontFace 加载 + 文章内容渲染
+  await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      window.__b1_9aj = { done: false, ok: false, support: null };
+      const s = window.$bodyScope;
+      window.__b1_9aj.prevCurrent = s.current;
+      window.__b1_9aj.prevImagesDir = s.imagesDir;
+      s.current = {
+        id: 'MOCK-FONT', name: 'LiberationSans-Regular', ext: 'ttf',
+        fontMetas: {
+          support: {},
+          fontFamily: { en: 'Liberation Sans' },
+          postScriptName: { en: 'LiberationSans-Regular' },
+          fullName: { en: 'Liberation Sans' },
+          numGlyphs: 3257,
+        },
+      };
+      s.imagesDir = ${JSON.stringify(txtFixtureDir)};
+      const f = document.createElement('iframe');
+      f.style.display = 'none';
+      f.src = '/src/app/font-viewer/font-viewer.html?id=MOCK-FONT&theme=dark';
+      document.body.appendChild(f);
+      const poll = setInterval(function () {
+        try {
+          const d = f.contentDocument;
+          const article = d && d.querySelector('.content .article');
+          window.__b1_9aj.support = d ? d.body.style.display === 'block' : null;
+          const html = article ? (article.innerHTML || '') : '';
+          if (html.indexOf('Moonlight') > -1) {
+            window.__b1_9aj.ok = true;
+            window.__b1_9aj.done = true;
+            clearInterval(poll);
+            s.current = window.__b1_9aj.prevCurrent;
+            s.imagesDir = window.__b1_9aj.prevImagesDir;
+            f.remove();
+          }
+        } catch (err) { /* iframe 未就绪继续等 */ }
+      }, 250);
+      setTimeout(function () {
+        window.__b1_9aj.done = true;
+        clearInterval(poll);
+        try {
+          s.current = window.__b1_9aj.prevCurrent;
+          s.imagesDir = window.__b1_9aj.prevImagesDir;
+          f.remove();
+        } catch (err2) {}
+      }, 25000);
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => (await waitExpr(`window.__b1_9aj && window.__b1_9aj.done === true`)).result.value, 'b1-9aj font iframe', 30000);
+
   const assertions = [
     ['react-mount', `document.getElementById('eagle-react-host') !== null`],
     ['angular-main-app', `document.getElementById('main-app') !== null`],
@@ -313,6 +365,7 @@ try {
     ['b1-9ag-native-viewer-react', `window.__b1_9ag && window.__b1_9ag.native.ok === true`],
     ['b1-9ah-gif-viewer-react', `window.__b1_9ah && window.__b1_9ah.glue === true && window.__b1_9ah.ok === true`],
     ['b1-9ai-text-editor-react', `window.__b1_9ai && window.__b1_9ai.ok === true`],
+    ['b1-9aj-font-viewer-react', `window.__b1_9aj && window.__b1_9aj.ok === true`],
   ];
 
   const failures = [];

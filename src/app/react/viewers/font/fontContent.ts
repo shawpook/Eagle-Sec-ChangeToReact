@@ -1,32 +1,9 @@
+/* b1-9aj：font-viewer 静态内容——font-viewer.js 29-118（i18nStrings）+ 480-739（translation）
+   机械抽取逐字；alphabet 字段改为 alphabetRaw（getAlphabetHTML 的原始输入模板——原实现
+   在字体就绪后调用，此处同序：FontFace 就绪 → buildAlphabetHTML(raw, fontCSSName)）。
+   preferredFamily 读 preferredSubfamily 为原实现 bug，逐字保留。 */
 
-var app = angular.module("FontViewerApp", ['mgo-mousetrap', 'contenteditable', 'tippy']);
-var fs = window.parent.require("fs");
-var urlParams = window.location.search.substr(1).split('&').reduce(
-	function(accumulator, currentValue) {
-		var pair = currentValue
-			.split('=')
-			.map(function(value) {
-				return decodeURIComponent(value);
-			});
-
-		accumulator[pair[0]] = pair[1];
-
-		return accumulator;
-	},
-	{}
-);
-
-$("body").on('click', 'a', function(event) {
-    event && event.preventDefault();
-    if ($(this).attr("target") == "_blank") {
-        var link = this.href;
-        window.parent.require("electron").shell.openExternal(link);
-    }
-});
-
-window.focus();
-
-var i18nStrings = {
+export const fontI18nStrings = {
 	'zh_CN': {
 		"FontViewer.Tab.Article": "预览",
 		"FontViewer.Tab.Waterfall": "大小",
@@ -115,369 +92,9 @@ var i18nStrings = {
 		"DoubleClick.Edit": "Double-click to edit",
 		"NotSupport": "Cannot preview this font. Reason: Font size exceeds 30MB or font format is incomplete. To repair its missing information, we recommend using the online tool:  <a href='https://convertio.co/ttf-otf/' target='_blank'>TTF to OTF Converter</a> .",
 	}
-}
+};
 
-app.config(function($sceProvider, $httpProvider) {
-    $sceProvider.enabled(false);
-});
-
-app.filter('i18n', function($window) {
-    return function(key, pairs) {
-    	var $parentScope = window.parent.$bodyScope;
-    	var lng = $parentScope.preferences.general.language;
-    	if (i18nStrings[lng]) {
-        	return i18nStrings[lng][key];
-        }
-        else {
-        	return i18nStrings["en"][key];
-        }
-    };
-});
-
-app.directive('mediumEditor', function () {
-    return {
-        restrict: 'A',
-        link: function (scope, element, attrs) {
-            var editor = new MediumEditor(element[0], {
-            	placeholder: {
-            		text: '',
-        			hideOnClick: true
-            	},
-            	toolbar: {
-            		// buttons: ['h2', 'h3', 'bold', 'italic', 'underline', 'anchor', 'quote'],
-            		buttons: ['h2', 'h3', 'bold', 'italic', 'underline', 'quote'],
-            	},
-            	anchor: {
-			        customClassOption: null,
-			        customClassOptionText: 'Button',
-			        linkValidation: false,
-			        placeholderText: 'Paste or type a link',
-			        targetCheckbox: false,
-			        targetCheckboxText: 'Open in new window'
-			    },
-			    paste: {
-			        cleanPastedHTML: true,
-			        cleanAttrs: ['style', 'dir'],
-			        cleanTags: ['label', 'meta'],
-			        cleanReplacements: ['img'],
-			        unwrapTags: ['sub', 'sup']
-			    },
-			    autoLink: true,
-			    // extensions: {
-			    //     'imageDragging': {}
-			    // }
-            });
-            editor.subscribe("editableKeydown", function (event) {
-            	var keyCode = event.keyCode;
-            	console.log(event)
-			    if (keyCode == 65 && (event.ctrlKey || event.metaKey)) {
-			        editor.selectAllContents();
-			    }
-            });
-        }
-    }
-});
-
-app.directive('editableSelectall', function() {
-    return function(scope, element, attrs) {
-        var mousetrap = new Mousetrap(element[0]);
-        mousetrap.bind('mod+a', function(event) {
-            event && event.stopPropagation();
-            window.setTimeout(function() {
-                var sel, range;
-                if (window.getSelection && document.createRange) {
-                    range = document.createRange();
-                    range.selectNodeContents(element[0]);
-                    sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                } else if (document.body.createTextRange) {
-                    range = document.body.createTextRange();
-                    range.moveToElementText(element[0]);
-                    range.select();
-                }
-            }, 1);
-        });
-        mousetrap.bind('esc', function(event) {
-            event && event.stopPropagation();
-            element.blur();
-        });
-    }
-});
-
-app.filter('themePath', function () {
-    return function (theme) {
-        if (theme === 'light' || theme === 'lightgray') {
-            return 'light';
-        }
-        else {
-            return 'dark';
-        }
-    };
-});
-
-app.controller("FontViewerController", function ($scope, $timeout) {
-
-	const $parentScope = window.parent.$bodyScope;
-	const  $window = jQuery(window);
-
-	$scope.getTheme = () => {
-		return urlParams.theme || "gray";
-	}
-
-	$scope.lng = $parentScope.preferences.general.language;
-	$scope.platform = window.parent.process.platform;
-    $scope.theme = $scope.getTheme();
-	$scope.currentTheme = localStorage.getItem("eagle.fontViewer.theme") || "auto";
-	$scope.currentTab = localStorage.getItem("eagle.fontViewer.tab") || "article";
-	
-	$scope.setAsFileName = function (fullName) {
-		if (!fullName) return;
-		$scope.fontName = fullName; 
-		$scope.newFontName = fullName;
-		$parentScope.inspector.newName = fullName;
-		$parentScope.imagesChange();
-		$parentScope.$evalAsync();
-	};
-
-	$scope.preventEnter = function(event) {
-	    if (event.keyCode === 13 || event.keyCode === 27) {
-	        event.preventDefault();
-	        $(event.target).trigger("blur");
-	    }
-	};
-
-	$scope.changeFontName = function () {
-		$timeout(function () {
-			var newName = $scope.newFontName;
-			if ($scope.newFontName === $scope.fontName) return;
-			if (newName !== "") {
-				$scope.fontName = $scope.newFontName;
-				$parentScope.inspector.newName = newName;
-				$parentScope.imagesChange();
-				$parentScope.$evalAsync();
-			}
-			else {
-				$scope.newFontName = $scope.fontName;
-			}
-		}, 200);
-	};
-
-	$scope.removeStar = function () {
-		$parentScope.removeStar();
-		$parentScope.$eavlAsync();
-	};
-	$scope.changeTo1Star = function () {
-		$parentScope.changeTo1Star();
-		$parentScope.$eavlAsync();
-	};
-	$scope.changeTo2Star = function () {
-		$parentScope.changeTo2Star();
-		$parentScope.$eavlAsync();
-	};
-	$scope.changeTo3Star = function () {
-		$parentScope.changeTo3Star();
-		$parentScope.$eavlAsync();
-	};
-	$scope.changeTo4Star = function () {
-		$parentScope.changeTo4Star();
-		$parentScope.$eavlAsync();
-	};
-	$scope.changeTo5Star = function () {
-		$parentScope.changeTo5Star();
-		$parentScope.$eavlAsync();
-	};
-	$scope.leftHandler = function () {
-		$parentScope.selectPrev();
-		$parentScope.$evalAsync();
-	};
-	$scope.rightHandler = function () {
-		$parentScope.selectNext();
-		$parentScope.$evalAsync();
-	};
-	$scope.escHandler = function (event) {
-		event && event.preventDefault();
-		$parentScope.escHandler();
-		$parentScope.$evalAsync();
-	};
-
-	$scope.chnageTheme = function (theme) {
-		$scope.currentTheme = theme;
-		localStorage.setItem("eagle.fontViewer.theme", theme);
-	};
-
-	$scope.chnageTab = function (tab) {
-		$scope.currentTab = tab;
-		localStorage.setItem("eagle.fontViewer.tab", tab);
-	};
-
-	$window.on("scroll", _.debounce(function () {
-		localStorage.setItem("eagle.fontViewer.scrollTop", $window.scrollTop());
-	}, 500, true));
-
-	// 全选功能
-	$("body").on('keydown', 'input, textarea', function(event) {
-	    var keyCode = event.keyCode;
-	    if (keyCode == 65 && (event.ctrlKey || event.metaKey)) {
-	        $(this).select();
-	    }
-	});
-
-	$("body").on('keydown', '[contenteditable]', function(event) {
-		var keyCode = event.keyCode;
-		var element = $(this);
-	    if (keyCode == 65 && (event.ctrlKey || event.metaKey)) {
-			event && event.stopPropagation();
-			window.setTimeout(function() {
-				var sel, range;
-				if (window.getSelection && document.createRange) {
-					range = document.createRange();
-					range.selectNodeContents(element[0]);
-					sel = window.getSelection();
-					sel.removeAllRanges();
-					sel.addRange(range);
-				} else if (document.body.createTextRange) {
-					range = document.body.createTextRange();
-					range.moveToElementText(element[0]);
-					range.select();
-				}
-			}, 1);
-		}
-	});
-
-	$("body").on("keyup", ".waterfall [contenteditable]", function () {
-		var val = $(this).text();
-		$(".waterfall [contenteditable]").not(this).text(val);
-	});
-
-	$('#preview-size').on('input', function () {
-		$(this).trigger('change');
-		var size = parseFloat($('#preview-size').val());
-		$("html").css("font-size", `${size}%`);
-		console.log($('#preview-size').val())
-		$(this).blur();
-		$(".waterfall").scrollLeft(0);
-	});
-
-	$scope.preventDefault = function (event) {
-		event.preventDefault();
-		event.stopPropagation();
-	};
-
-	$("body").on("mousewheel.zoomming", function (e) {
-	    if (e.altKey || e.ctrlKey || e.metaKey) {
-	        e.preventDefault();
-	        e.stopPropagation();
-	    }
-	});
-
-
-	$("body").on("mousewheel.zoomming", throttle(function(e) {
-	    if (e.altKey || e.ctrlKey || e.metaKey) {
-	        e.preventDefault();
-	        e.stopPropagation();
-	        if (e.originalEvent.wheelDelta > 5) { //alternative options for wheelData: wheelDeltaX & wheelDeltaY
-	            $scope.zoomIn();
-	            $scope.$evalAsync();
-	        } else if (e.originalEvent.wheelDelta < -5) {
-	            $scope.zoomOut();
-	            $scope.$evalAsync();
-	        }
-	        return false;
-	    }
-	}, 200, true));
-
-	$scope.zoomIn = function (event) {
-		event && event.preventDefault();
-		var size = parseFloat($('#preview-size').val());
-		size += 62.5 / 2;
-		size = Math.min(625, size);
-		$('#preview-size').val(size);
-		$('#preview-size').trigger("input");
-	};
-
-	$scope.zoomOut = function (event) {
-		event && event.preventDefault();
-		var size = parseFloat($('#preview-size').val());
-		size -= 62.5 / 2;
-		size = Math.max(31.25, size);
-		$('#preview-size').val(size);
-		$('#preview-size').trigger("input");
-	};
-
-	$scope.zoomFit = function (event) {
-		event && event.preventDefault();
-		$('#preview-size').val(62.5);
-		$('#preview-size').trigger("input");
-	};
-
-	var id = urlParams.id;
-	var lang = "en";
-	var fontMetas = $parentScope.current.fontMetas;
-	var fontPath = $parentScope.imagesDir + $parentScope.current.id + ".info/" + $parentScope.current.name + "." + $parentScope.current.ext;
-
-	fontPath = decodeURIComponent(fontPath);
-	// var key = 'en';
-	// if (lang === 'zh_TW') {
-	// 	key = 'zh-TW';
-	// }
-	// else if (lang === 'zh_CN') {
-	// 	key = 'zh';
-	// }
-	
-	var preferLng = 'en';
-	switch ($scope.lng) {
-		case 'zh_TW':
-		case 'zh_CN':
-			preferLng = "zh";
-			break;
-		default: 
-			preferLng = "en";
-	}
-
-	$scope.info = {
-		version: _.get(fontMetas, `version.${preferLng}`, undefined) || _.get(fontMetas, `version.en`, ""),
-		postScriptName: _.get(fontMetas, `postScriptName.${preferLng}`, undefined) || _.get(fontMetas, `postScriptName.en`, ""),
-		fullName: _.get(fontMetas, `fullName.${preferLng}`, undefined) || _.get(fontMetas, `fullName.en`, ""),
-		fontFamily: _.get(fontMetas, `fontFamily.${preferLng}`, undefined) || _.get(fontMetas, `fontFamily.en`, ""),
-		fontSubfamily: _.get(fontMetas, `fontSubfamily.${preferLng}`, undefined) || _.get(fontMetas, `fontSubfamily.en`, ""),
-		preferredFamily: _.get(fontMetas, `preferredSubfamily.en`, "Regular"),
-		preferredSubfamily: _.get(fontMetas, `preferredSubfamily.en`, "Regular"),
-		designer: _.get(fontMetas, `designer.${preferLng}`, undefined) || _.get(fontMetas, `designer.en`, ""),
-		designerURL: _.get(fontMetas, `designerURL.${preferLng}`, undefined) || _.get(fontMetas, `designerURL.en`, ""),
-		trademark: _.get(fontMetas, `trademark.${preferLng}`, undefined) || _.get(fontMetas, `trademark.en`, ""),
-        description: _.get(fontMetas, `description.${preferLng}`, undefined) || _.get(fontMetas, `description.en`, ""),
-		manufacturer: _.get(fontMetas, `manufacturer.${preferLng}`, undefined) || _.get(fontMetas, `manufacturer.en`, ""),
-		manufacturerURL: _.get(fontMetas, `manufacturerURL.${preferLng}`, undefined) || _.get(fontMetas, `manufacturerURL.en`, ""),
-		copyright: _.get(fontMetas, `copyright.${preferLng}`, undefined) || _.get(fontMetas, `copyright.en`, ""),
-		license: _.get(fontMetas, `license.${preferLng}`, undefined) || _.get(fontMetas, `license.en`, ""),
-		licenseURL: _.get(fontMetas, `licenseURL.${preferLng}`, undefined) || _.get(fontMetas, `licenseURL.en`, ""),
-		numGlyphs: _.get(fontMetas, `numGlyphs`, undefined),
-		weight: _.get(fontMetas, `weight`, undefined),
-	}
-    $scope.fontName = $parentScope.current.name;
-    $scope.newFontName = $scope.fontName;
-    $scope.fontFamily = (fontMetas.fontFamily && fontMetas.fontFamily.en) || $parentScope.current.name;
-
-    console.log($parentScope.current);
-    console.log(fontPath);
-
-    if (fs.existsSync(fontPath)) {
-    	window.parent.require("fs").readFile(fontPath, function (err, fontBinary) {
-    		if (!FontFace) return;
-    		let fontName = $scope.fontFamily.replace(/[({.})]/ig,"").replace(/\s/g, "").replace(/[@#$%^&*()<>:`'"\/\\|?*]/g, "").replace(/^\d+/, '');
-    		var font = new FontFace(fontName, fontBinary, {
-			 	style: 'normal', 
-			});
-			font.load();
-			font.loaded.then(function() {
-				document.fonts.add(font);
-				$scope.fontCSSName = fontName;
-				document.body.style.fontFamily = `'${fontName}'` + `, "Fallback Outline"`;
-				document.body.style.display = "block";
-				$scope.isSupport = true;
-
-				var translation = {
+export const fontTranslation = {
 					'jp': {
 						article: `
 							<h2>蓮池の月色</h2>
@@ -510,7 +127,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 							<div contenteditable="true" class="size14">永和九年 ABCDEFGH 0123456789</div>
 							<div contenteditable="true" class="size12">永和九年 ABCDEFGH 0123456789</div>
 						`,
-						alphabet: getAlphabetHTML(`
+						alphabetRaw: `
 							<div>
 								<div class="group">
 									<div class="group-name">ラテン</div>
@@ -537,7 +154,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 									<div class="group-items">、。〃「」『』〝〞︰﹐﹒﹔﹔﹕！＃＄％＆＊，．：；？＠～•…“‘·′”’</div>
 								</div>
 							</div>
-						`),
+						`,
 					},
 					'kr': {
 						article: `
@@ -562,7 +179,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 							<div contenteditable="true" class="size14">파도가푸르 ABCDEFGH 0123456789</div>
 							<div contenteditable="true" class="size12">파도가푸르 ABCDEFGH 0123456789</div>
 						`,
-						alphabet: getAlphabetHTML(`
+						alphabetRaw: `
 							<div>
 								<div class="group">
 									<div class="group-name">Latin</div>
@@ -581,7 +198,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 									<div class="group-items">‘?’“!”(%)[#]{@}/&\<-+÷×=>®©$€£¥¢:;,.*</div>
 								</div>
 							</div>
-						`),
+						`,
 					},
 					'zh_TW': {
 						article: `
@@ -612,7 +229,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 							<div contenteditable="true" class="size14">永和九年 ABCDEFGH 0123456789</div>
 							<div contenteditable="true" class="size12">永和九年 ABCDEFGH 0123456789</div>
 						`,
-						alphabet: getAlphabetHTML(`
+						alphabetRaw: `
 							<div>
 								<div class="group">
 									<div class="group-name">字母</div>
@@ -631,7 +248,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 									<div class="group-items">、。〃「」『』〝〞︰﹐﹒﹔﹔﹕！＃＄％＆＊，．：；？＠～•…“‘·′”’</div>
 								</div>
 							</div>
-						`),
+						`,
 					},
 					'zh_CN': {
 						article: `
@@ -662,7 +279,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 							<div contenteditable="true" class="size14">永和九年 ABCDEFGH 0123456789</div>
 							<div contenteditable="true" class="size12">永和九年 ABCDEFGH 0123456789</div>
 						`,
-						alphabet: getAlphabetHTML(`
+						alphabetRaw: `
 							<div>
 								<div class="group">
 									<div class="group-name">字母</div>
@@ -681,7 +298,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 									<div class="group-items">、。〃「」『』〝〞︰﹐﹒﹔﹔﹕！＃＄％＆＊，．：；？＠～•…“‘·′”’</div>
 								</div>
 							</div>
-						`),
+						`,
 					},
 					'en': {
 						article: `
@@ -710,7 +327,7 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 							<div contenteditable="true" class="size14">ABCDEFGH 0123456789</div>
 							<div contenteditable="true" class="size12">ABCDEFGH 0123456789</div>
 						`,
-						alphabet: getAlphabetHTML(`
+						alphabetRaw: `
 							<div>
 								<div class="group">
 									<div class="group-name">Latin</div>
@@ -734,132 +351,25 @@ app.controller("FontViewerController", function ($scope, $timeout) {
 								</div>
 							</div>
 						
-						`),
+						`,
 					},
-				}
-
-				function getAlphabetHTML (alphas) {
-					try {
-						const $html = $(alphas);
-						
-						$html.find(".group-items").each(function () {
-							const $items = $(this);
-							$items.html($items.html().replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').split('').map((alpha) => {
-								return `<span class="alpha-preview" label="${alpha}"><div class="char"><div class="before" style="font-family:'${$scope.fontCSSName}'">${alpha}</div><div class="after">${alpha}</div></div><div class="zoom" style="font-family:'${$scope.fontCSSName}'">${alpha}</div></span>`
-							}).join(''));
-						});
-
-						return $html.html();
-					}
-					catch (err) {
-						console.log(err);
-						return "";
-					}
 				};
 
-				$scope.content = {
-					article: translation[lang].article,
-					waterfall: translation[lang].waterfall,
-					alphabet: translation[lang].alphabet,
-				}
-
-				$scope.$apply();
-				setTimeout(function () {
-					var scrollTop = localStorage.getItem("eagle.fontViewer.scrollTop") || 0;
-					$window.scrollTop(scrollTop);
-
-					var editor = new MediumEditor($(".content .article"), {
-						placeholder: {
-							text: '',
-							hideOnClick: true
-						},
-						toolbar: {
-							// buttons: ['h2', 'h3', 'bold', 'italic', 'underline', 'anchor', 'quote'],
-							buttons: ['h2', 'h3', 'bold', 'italic', 'underline', 'quote'],
-						},
-						anchor: {
-							customClassOption: null,
-							customClassOptionText: 'Button',
-							linkValidation: false,
-							placeholderText: 'Paste or type a link',
-							targetCheckbox: false,
-							targetCheckboxText: 'Open in new window'
-						},
-						paste: {
-							cleanPastedHTML: true,
-							cleanAttrs: ['style', 'dir'],
-							cleanTags: ['label', 'meta'],
-							cleanReplacements: ['img'],
-							unwrapTags: ['sub', 'sup']
-						},
-						autoLink: true,
-						// extensions: {
-						//     'imageDragging': {}
-						// }
-					});
-					editor.subscribe("editableKeydown", function (event) {
-						var keyCode = event.keyCode;
-						if (keyCode == 65 && (event.ctrlKey || event.metaKey)) {
-							editor.selectAllContents();
-						}
-					});
-				}, 30);
-			}, function (err) {
-				console.log(err);
-				document.body.style.display = "block";
-				$scope.isSupport = false;
-				$scope.$evalAsync();
-			});
-    	});
-    }
-    else {
-    	document.body.style.display = "block";
-		$scope.isSupport = false;
-		$scope.$evalAsync();
-    }
-
-	var lng = window.parent.$bodyScope.preferences.general.language;
-	var lngMap = {
-		"ko_KR": "kr",
-		"ja_JP": "jp",
-	};
-
-	if (fontMetas.support) {
-		if (lng && lng !== "en" && fontMetas.support[lngMap[lng]]) {
-			lang = lngMap[lng];
-		}
-		else {
-			if (
-		    	(fontMetas.postScriptName && fontMetas.postScriptName.ja) || 
-		    	(fontMetas.fontFamily && fontMetas.fontFamily.ja)
-	    	) { lang = 'jp'; }
-			else if (fontMetas.support['zh_CN'] && fontMetas.support['zh_TW']) { lang = 'zh_CN'; }
-		    else if (fontMetas.support['zh_CN'] && fontMetas.postScriptName && fontMetas.postScriptName.zh) { lang = 'zh_CN'; }
-		    else if (fontMetas.support['zh_TW'] && fontMetas.postScriptName && fontMetas.postScriptName["zh_TW"]) { lang = 'zh_TW'; }
-		    else if (fontMetas.support['zh_CN']) { lang = 'zh_CN'; }
-		    else if (fontMetas.support['zh_TW']) { lang = 'zh_TW'; }
-		    else if (fontMetas.support['kr']) { lang = 'kr'; }
-		    else if (fontMetas.support['jp']) { lang = 'jp'; }
-		    else { lang = 'en'; }
-		}
-	}
-	else { lang = "en"; }
-
-	if (fontMetas.preferLng) {
-		lang = fontMetas.preferLng;
-	}
-
-	console.log(`语言判断：${lang}`);
-
-	$scope.activateFont = function () {
-		$scope.isActivate = true;
-		$parentScope.activateFont($parentScope.current, {showNotify: true, updateView: true});
-	};
-
-	$scope.deactivateFont = function () {
-		$scope.isActivate = false;
-		$parentScope.deactivateFont($parentScope.current, {showNotify: true, updateView: true});
-	};
-
-    $scope.isActivate = $parentScope.isFontActivate($parentScope.current);
-});
+export function buildAlphabetHTML(alphas: string, fontCSSName: string): string {
+  try {
+    const container = document.createElement('div');
+    container.innerHTML = alphas;
+    container.querySelectorAll('.group-items').forEach((items) => {
+      const el = items as HTMLElement;
+      const raw = (el.innerHTML || '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      el.innerHTML = raw.split('').map((alpha) => {
+        return `<span class="alpha-preview" label="${alpha}"><div class="char"><div class="before" style="font-family:'${fontCSSName}'">${alpha}</div><div class="after">${alpha}</div></div><div class="zoom" style="font-family:'${fontCSSName}'">${alpha}</div></span>`;
+      }).join('');
+    });
+    return container.innerHTML;
+  }
+  catch (err) {
+    console.log(err);
+    return '';
+  }
+}

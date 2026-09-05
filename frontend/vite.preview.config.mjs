@@ -46,6 +46,7 @@ const REACT_VIEWER_ENTRIES = {
   '/src/app/native-viewer/index.html': '/src/app/react/viewers/native/entry.tsx',
   '/src/app/gif-viewer/index.html': '/src/app/react/viewers/gif/entry.tsx',
   '/src/app/text-editor/text-editor.html': '/src/app/react/viewers/text-editor/entry.tsx',
+  '/src/app/font-viewer/font-viewer.html': '/src/app/react/viewers/font/entry.tsx',
 };
 
 function injectReactViewer(html, entry) {

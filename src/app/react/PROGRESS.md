@@ -378,6 +378,33 @@
 >   Sample Notes.txt）→ iframe 加载 → content textContent 含样例文本 + body dark 类。
 > **验证**：tsc EXIT:0；react-stage-smoke 六断言全绿。
 
+> **b1-9aj：Phase B/批5——font-viewer React 接管（angular.min.js 消费方归零，2026-09-05）**
+>
+> font-viewer.js（865 行 FontViewerApp）+ wMousetrap 绑定表 + selectall/contenteditable
+> 全量 React 化（react/viewers/font/entry.tsx + fontContent.ts）：
+> - **静态内容机械抽取**：i18nStrings（29-118）+ translation 4 语言（480-739，含荷塘月色
+>   全文）python 正则抽取逐字进 fontContent.ts（`alphabet: getAlphabetHTML(X)` →
+>   `alphabetRaw: X`，5 处替换；字体就绪后经 buildAlphabetHTML 展开 span.alpha-preview
+>   before/after/zoom 三层——原 getAlphabetHTML DOM 操作逐字）；preferredFamily 读
+>   preferredSubfamily 原 bug 保留。
+> - **加载链逐字**：语言判定（support/ja/zh 分支 + preferLng 覆盖）→ fs 存在检查 →
+>   readFile → FontFace(fontFamily 清洗名) → document.fonts.add → body font-family +
+>   display:block → isSupport；失败路径 isSupport=false → NotSupport i18n HTML。
+> - **交互面**：wMousetrap 绑定表原生复刻（含 enter/esc/backspace/space→escHandler 关闭、
+>   0-5 星标、mod 缩放）；MediumEditor（vendored，30ms 后 init + selectAllContents 订阅）；
+>   tippy（vendored，activate 按钮右placement）；waterfall 联动输入 keyup 委托；缩放滑杆
+>   （ng-model → 受控 input + progressbar width fontSize/625%）；scrollTop 持久化（500ms
+>   防抖）；scrollTop 恢复 + 主题/页签 localStorage（eagle.fontViewer.*）；字体改名跨窗
+>   同步（parent.inspector.newName + imagesChange，blur 读 span 文本）。
+> - **语义修正**：$eavlAsync 拼写 bug 同 b1-9ai 修正；mediumEditor 指令（模板未用死代码）
+>   不移植；壳保留 vendored medium-editor（js+css）与 vendors/tippy.js，摘除
+>   angular/mousetrap/wMousetrap/angular-contenteditable/jquery/lodash/modules-tippy。
+> - **angular.min.js 消费方 1→0**——C2 vendor 复审的删除前置条件达成。
+> - **闭环契约 b1-9aj**：真实 $bodyScope 塞 MOCK-FONT 项（mock 库真实
+>   LiberationSans-Regular.ttf，原生 fs）→ iframe 加载 → FontFace 就绪 →
+>   `.content .article` 含 'Moonlight'（en 内容分支实锤语言判定 + 加载链 + 渲染）。
+> **验证**：tsc EXIT:0；react-stage-smoke 七断言全绿。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

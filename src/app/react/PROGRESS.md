@@ -548,6 +548,23 @@
 > 三子菜单形状断言。
 > **门禁**：tsc EXIT:0；1c3 OK（232）；suite 47/47（commit 后记录）。
 >
+> **b1-9aq：台账⑨第三批（收官批）——openSmartFolderContextMenu 主菜单 + 依赖面 23 fns（2026-09-05）**
+>
+> bundle 39550-40105（菜单本体多选/单选双分支）+ 依赖 fns 逐字移植（fns 表 232→255，
+> 1c3 census 同步）：排序族 4（setSmartFoldersOrder/Order/SortIncrease——含 reload 链）、
+> batchRenameSmartFolders、icon/color 族 4（单/多选双面）、cloneSmartFolder（子树重 guid）、
+> renameSmartFolder、copySmartFolderLink、removeSmartFolder/removeSelectedSmartFolders
+> （swal 确认 + 闭包 removeSmartFolderClosure——origin 复原/openSmartFolder 接力/
+> QuickAccessManager 清理链全保）、smartFolderExportAsPack/AsFolder（existInSmartFilter
+> 经 dataMachinery:11317 已供——智能匹配面零缺口）、newSmartFolder/newChildSmartFolder
+> （NEW.SMART.FOLDER 广播→FolderSelectPanels:1054 监听）/newSmartFolderGroup/prependFolder、
+> openNewSmartFolderContextMenu（含 newSmartFolderGroup 建组→重命名接力链）、
+> refreshSmartFolderCount（26287 + 闭包 ayncsUpdateSmartFoldersCount——3 个一批
+> requestAnimationFrame 分批计数）、菜单本体（资源库历史子菜单/emoji/color role 全保）。
+> **闭环**：menu-popup 新增站点 9——真驱动单选分支：12 项标签 + 导出子菜单；fixture 增
+> /api/v2/smartFolder/create（contain 谓词、string value——三试校准 rules 形状）。
+> **门禁**：tsc EXIT:0；1c3 OK（255）；suite 47/47（commit 后记录）。**台账⑨自此清零。**
+>
 > **阶段 11 残余台账·终态**（b1-9am）：
 > ① collect-window/js 保留（活数据面）；② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；
 > ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~
@@ -559,8 +576,8 @@
 > **已修**（b1-9ao：openFolderExpandContextMenu + toggle 家族 7 fns；
 > openSmartFolderExpandContextMenu 实为 b1-9w 已就位、审计漏查）；~~openFolderContextMenu~~
 > **已修**（b1-9ap，含 26 依赖 fns + checkOperationSafety2/refreshSubfolderList 两个悬空
-> 供给补移植）；**余**：openSmartFolderContextMenu（39550，550 行，缺 33 fns——智能
-> 文件夹管理面）待移植（下一批 b1-9aq）。
+> 供给补移植）；openSmartFolderContextMenu **已修**（b1-9aq，含 23 依赖 fns——**台账⑨
+> 全清**）。
 > ④ ~~C 项：Menu.popup 自动化 + 8 iframe viewer 接管~~ **已完成**（b1-9af…b1-9ak 六批 +
 > b1-9ak 基建；pdf-viewer 判定免移植）；⑤ vendor 终删完成（本批）。
 >

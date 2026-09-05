@@ -48,6 +48,7 @@ try {
       };
       await post('/api/library/create', { name: 'Menu Popup Smoke', savePath: librariesRoot });
       await post('/api/folder/create', { name: '菜单验证文件夹' });
+      await post('/api/v2/smartFolder/create', { name: '菜单验证智能文件夹', conditions: [{ rules: [{ property: 'name', method: 'contain', value: '菜单' }] }] });
     },
   });
   const { page } = stack;
@@ -197,6 +198,38 @@ try {
     throw new Error(`folder context menu not drivable: ${JSON.stringify(folderMenuResult.result.value)}`);
   }
   console.log(`MENU_POPUP folder-context-menu OK labelCount=${folderMenuResult.result.value.labelCount} passwordSubmenu=${folderMenuResult.result.value.hasPasswordSubmenu} exportSubmenu=${folderMenuResult.result.value.hasExportSubmenu} historySubmenu=${folderMenuResult.result.value.hasHistorySubmenu}`);
+
+  // ── 站点 9：b1-9aq 侧栏 smart-folder 主菜单（单选分支）——真驱动 + 载荷断言 ──
+  const smartMenuResult = await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      try {
+        const s = window.$bodyScope;
+        if (typeof s.openSmartFolderContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
+        const smartFolder = (s.smartFolders || [])[0];
+        if (!smartFolder) return { ok: false, reason: 'no smart folder in sidebar' };
+        let captured = null;
+        const off = s.$on('CONTEXTMENU.OPEN', (ev, options) => { captured = options; });
+        s.openSmartFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, smartFolder);
+        off();
+        if (!captured) return { ok: false, reason: 'no broadcast captured' };
+        const labelCount = (captured.items || []).filter((it) => it.label).length;
+        const hasExportSubmenu = (captured.items || []).some((it) => it.submenu && it.submenu.items && it.submenu.items.some((x) => x.icon === 'ic-export-computer.svg' || x.icon === 'ic-export-eaglepack.svg'));
+        return {
+          ok: captured.showSearch === true
+            && labelCount >= 12
+            && hasExportSubmenu
+            && typeof captured.onOpened === 'function',
+          labelCount,
+          hasExportSubmenu,
+        };
+      } catch (err) { return { ok: false, reason: 'throw: ' + err.message }; }
+    })()`,
+    returnByValue: true,
+  });
+  if (!smartMenuResult.result.value || smartMenuResult.result.value.ok !== true) {
+    throw new Error(`smart folder context menu not drivable: ${JSON.stringify(smartMenuResult.result.value)}`);
+  }
+  console.log(`MENU_POPUP smart-folder-context-menu OK labelCount=${smartMenuResult.result.value.labelCount} exportSubmenu=${smartMenuResult.result.value.hasExportSubmenu}`);
 
   console.log(`MENU_POPUP_CLOSED_LOOP_OK ${JSON.stringify({ captures: captures.length, pwPopupCount })}`);
 } catch (err) {

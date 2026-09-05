@@ -493,6 +493,15 @@
 > + `node tests/main-ui-workflow-closed-loop.mjs` 一次，确认剪贴板断言全量回归绿即可
 > （代码无待办）。
 >
+> **重启后确认（2026-09-05）**：剪贴板恢复（PowerShell Set/Get 回环 OK）→ 重跑即暴露
+> 探针自身缺陷——**探针 writeText 具破坏性**，m1 driver 中其首次调用晚于 writeImage 预写
+> → 健康路径下探针串覆盖预写图片 → read-win-files 空图抛错（楔死期间探针写不进反而侥幸
+> 通过）。修正（20611a7）：三个 driver（m1/preview-delivery/channels-smoke）均把探针
+> **提升到产生任何剪贴板内容之前**并缓存结果（`__m1CbHealthy`/`__pdCbHealthy`/入口直调），
+> 合取与模板改读缓存。复跑：**suite 47/47 ALL GREEN 且 clipboardSkipped 计数 = 0**
+> （三处剪贴板断言全量真跑通过）+ m1 双 OK（clipboardPath/clipboardImage = true）——
+> b1-9am 门禁以全断言态彻底闭合。
+>
 > **阶段 11 残余台账·终态**（b1-9am）：
 > ① collect-window/js 保留（活数据面）；② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；
 > ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~

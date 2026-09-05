@@ -150,6 +150,30 @@
 >   `test:isolated` → `FULL_REGRESSION_ISOLATED_OK`（cpSync 手工补丁用后即退，见基线表前置）。
 >   全量门未整跑复验（22 项已双态逐项实锤、1c3 已单项验绿；整跑重开待 triage 轮）。
 
+> **b1-9r：阶段 11 b4 —— index.html 双轨 CSS/标记清点（2026-09-05，探查代理实锤后微删）**
+>
+> 逐 link 消费方判定（React 类名/组件 grep 实锤）：
+>
+> | head link | 判定 | 依据 |
+> |---|---|---|
+> | :9 angular-notify.min.css | **活·保留** | React 通知层 dataMachinery.ts:3868-3991 + preview-window/controller.ts:308-313 运行时注入 `.cg-notify-*` DOM，靠它供电（b4 原预设「死文件」被推翻） |
+> | :10 sweetalert2.min.css | 活·保留 | 16 个 React 文件 `w.swal(...)`（b1-9h 接线） |
+> | :12 jquery-ui.min.css | 活·保留 | Inspector/DetailToolbar/commentHooks/collect-window 等消费 `ui-*` 类；T6 sidebar resizable 也要用 |
+> | :13 icons / :14 style_dark / :15 base / :16 app | 活·保留 | 核心壳样式（a8 断言 app-style href） |
+> | :17-18 flatpickr.min.css + airbnb.css | **活·保留（挂起缺口）** | FlatpickrInput（FolderSelectPanels.tsx:606）等 `window.FlatpickrInstance`，但库未被 index.html 加载、且 flatpickr.min.js UMD 不导出该类（内部类）→ 智能文件夹日期规则输入潜伏失效。修法（登记未做）：加载 `js/modules/flatpicker/flatpickr.min.js` + 桥 `window.FlatpickrInstance=(i,o)=>flatpickr(i,o)`（+ zh l10n）；修前 flatpicker CSS/JS 不得入删除清单 |
+> | :19 nouislider.min.css | **死·删除（本提交）** | 全仓唯一引用即本行；nouislider JS 无任何加载方（T2 一并删 js） |
+> | :20 video-js.css / :21 colorpicker.css | 活·保留 | DetailViewer/detailHooks/preview-window；FilterItems/controllerFns |
+>
+> 标记清理：index.html:164 `<library-panel theme=… library-history=…>` 死标记删除
+> （React/shims/tests 三方零引用；React 主机全部为 `eagle-*-host` div，无 tag 消费）。
+> 残留扫描结论：:34 #sidebar resizable 属性（死，T6 处理）、:73-76 scroll-to-top-sentinel
+> （**活**，gridDirectives.ts:62 经 jQuery 消费 target/threshold/scroll-container）、
+> app.bundle.js 仅剩注释溯源（用户裁定保留至迁移收官）。
+>
+> **验证**：suite 45/45（`tests-tmp/react-suite-b4r.log`）+ tsc EXIT:0。
+> T2（54 孤儿）删除台账双重实锤：basename 全仓 grep + require/import/script-src
+> 加载形态 grep 均 0 命中（`tests-tmp/orphan-ledger-b4s.sh`，不提交）。
+
 > **b1-9h…b1-9p：全量门 22 项陈旧失败全部修复（2026-09-05，自动推进系列）**
 >
 > 按 b1-9g 台账逐根因修复、逐项验证、逐轮提交。**22 个陈旧失败文件全部转绿**，

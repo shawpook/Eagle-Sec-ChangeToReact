@@ -1531,6 +1531,39 @@ function registerIpc() {
       }
     }
   });
+
+  // b1-9ar：empty-trash 主侧监听（原 background 窗 trashQueue 承载，background.js:616——
+  // 随 b1-9t 删除）。逐 id 物理删除走 backend /api/item/emptyTrash（force 越过回收站
+  // 校验），每项完成回发 remove-trash-item 保持原 trashQueueCallback 的事件节奏
+  // （删除失败也回发——miscDomain 进度监听依赖「每项恰好一次」递进收口）；
+  // cancel-empty-trash = 原 trashQueue.pause()+remove(pending)：在飞项完成并回发后断点。
+  let emptyTrashCancelled = false;
+  ipcMain.on('empty-trash', async (event, imageIdString) => {
+    if (!imageIdString || !imageIdString.split) return;
+    const imageIds = String(imageIdString).split(',');
+    if (!imageIds || imageIds.length === 0) return;
+    emptyTrashCancelled = false;
+    for (const imageId of imageIds) {
+      if (!imageId) continue;
+      if (emptyTrashCancelled) break;
+      try {
+        await apiRequest('/api/item/emptyTrash', { method: 'POST', body: { ids: [imageId], force: true } });
+      } catch (err) {
+        // 原 trashQueueCallback：fse.remove 失败仅 electron-log，仍回发继续
+      }
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (win.isDestroyed()) continue;
+        try {
+          win.webContents.send('remove-trash-item');
+        } catch (err) {
+          // 窗口销毁竞态：跳过该窗
+        }
+      }
+    }
+  });
+  ipcMain.on('cancel-empty-trash', () => {
+    emptyTrashCancelled = true;
+  });
 }
 
 function setupMenu() {

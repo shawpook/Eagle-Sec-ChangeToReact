@@ -564,6 +564,25 @@
 > 双捕获 shimBus（生产链）+ native（preload 桥原始交付）均实收 {id:'TXT1', text:'NEW'}。
 > **门禁**：tsc EXIT:0；1c3 OK（255）；suite 48/48。**台账⑧自此清零。**
 >
+> **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
+>
+> 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash
+> 逗号串逐 id 物理删 `.info` + 每项回发 remove-trash-item（失败也回发，节奏不变）；
+> cancel-empty-trash = pause+清 pending（在飞项完成仍回发）。且发现台账漏项：进度壳的
+> 唯一原始激活路径 fns["emptyTrash"]（37013）/openTrashContextMenu（37924）从未移植——
+> 回收站右键菜单整族死按钮，**DuplicateFamily 四处 send 原版即不置位 isCleaningTrash**
+> （59555-59690 实锚），故不发明新置位、改按原版补移植三 fns（emptyTrash/emptyRestore
+> /openTrashContextMenu，fns 表 255→258，1c3 同步）。五件套落地：① shims.js send 直通
+> empty-trash/cancel-empty-trash（ayncsImagesRemove 分批串/DuplicateFamily 4 处/
+> cancelEmptyTrash 的 sendTo——shim sendTo 忽略 id 落本路由）；② shims.js onIpc 桥
+> remove-trash-item → mockEmit（miscDomain:892 既有监听递进收口）；③ main.cjs 逐 id
+> apiRequest('/api/item/emptyTrash', {ids:[id], force:true})（permanentDeleteItems 暂存
+> rename+rmSync+回滚语义）+ 每项完成 getAllWindows 回发 remove-trash-item；
+> ④ cancel-empty-trash 置 cancelled 标志（新 empty-trash 入口重置）；⑤ 闭环测试
+> empty-trash-closed-loop.mjs（bootStack 全栈 + 2 png fixture）：send('empty-trash',
+> 'id1,id2,') → backend 条目消失 + .info 物理消失 + 回程事件 ≥2。
+> **门禁**：tsc EXIT:0；1c3 OK（258）；suite 49/49。**台账⑥自此清零。**
+>
 > **b1-9aq：台账⑨第三批（收官批）——openSmartFolderContextMenu 主菜单 + 依赖面 23 fns（2026-09-05）**
 >
 > bundle 39550-40105（菜单本体多选/单选双分支）+ 依赖 fns 逐字移植（fns 表 232→255，
@@ -584,8 +603,8 @@
 > **阶段 11 残余台账·终态**（b1-9am）：
 > ① collect-window/js 保留（活数据面）；② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；
 > ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~
-> **已修**（b1-9ad）；⑥ ~~empty-trash 主侧无监听~~ **挂账**（DuplicateFamily 走
-> duplicates:empty-trash invoke 面可达，纯 ipc.send 分支悬空）；⑦ ~~native-viewer 双通道~~
+> **已修**（b1-9ad）；⑥ ~~empty-trash 主侧无监听~~ **已修**（b1-9ar：main 逐条删 +
+> emptyTrash/openTrashContextMenu 族补移植 + 闭环测试）；⑦ ~~native-viewer 双通道~~
 > **挂账**（generate-hight-resolution-thumbnail / nativeImage.createThumbnailFromPath——
 > 补监听需重建 psd/ppt 缩图引擎，缓存命中路径可用）；⑧ ~~update-txt-item 主侧无监听~~
 > **已修**（b1-9as：main 回发 + shim 直通/桥 + 闭环测试）；⑨ ~~expand 右键菜单族~~

@@ -534,6 +534,158 @@ export function makeControllerFns(getScope: () => any) {
     }).apply(null, args);
   };
 
+  /* emptyTrash（bundle 37013-37094 逐字；trash 右键菜单「清空回收站」唯一激活路径——
+     isCleaningTrash=true 由此置位驱动 EmptyTrashProgress；物理删除经 ayncsImagesRemove
+     分批发 empty-trash → main b1-9ar 逐 id 落 backend） */
+  fns["emptyTrash"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (s.trash && s.trash.length > 0) {
+                swal({
+                    html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${i18n.__('dialog.emptyTrash.title')}</h4>
+                            <p class="alert-desc">${i18n.__("dialog.emptyTrash.desc")}</p>
+                        </div>
+                    `,
+                    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+                    width: 400,
+                    customClass: "alert-box",
+                    cancelButtonColor: "#777777",
+                    confirmButtonText: i18n.__('dialog.emptyTrash.button'),
+                    cancelButtonText: i18n.__("general.cancel"),
+                }).then(function () {
+
+                    var removeCount = s.trash.length;
+
+                    var willDelete = {};
+                    s.trash.forEach(function(r: any) {
+                        if (r.id) {
+                            willDelete[r.id] = true;
+                        }
+                    });
+
+                    for (var i = 0; i < s.raw.length; i++) {
+                        var image = s.raw[i];
+                        if (image.id && willDelete[image.id]) {
+                            s.raw.splice(i, 1);
+                            delete s.itemMappings[image.id];
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    try { electronLog && electronLog.info(`[app] Empty trash`); } catch (err) {};
+                    ayncsImagesRemove(s.trash);
+
+                    s.trash = [];
+                    s.updateSelection();
+                    s.rebindRefresh();
+                    s.findDupclipate(undefined);
+
+                    // 更新進度
+                    s.removeProgress = 0;
+                    s.currentTrashRemoved = 0;
+                    s.trashRemoved += removeCount;
+                    s.isCleaningTrash = true;
+                    // 觸發 AI Search 全量同步
+                    eagle.aiSearch.fullSync();
+
+                    // 如果声音效果是开启的
+                    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+                        s.removeSound.play();
+                    }
+                });
+            }
+    }).apply(null, args);
+  };
+
+  /* emptyRestore（bundle 37096-37137 逐字；trash 右键菜单「全部恢复」——isDeleted=false
+     + ayncsImagesChange 回存） */
+  fns["emptyRestore"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (s.trash && s.trash.length > 0) {
+                swal({
+                    html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${i18n.__('dialog.restoreAll.title')}</h4>
+                            <p class="alert-desc">${i18n.__("dialog.restoreAll.desc")}</p>
+                        </div>
+                    `,
+                    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+                    width: 400,
+                    customClass: "alert-box",
+                    cancelButtonColor: "#777777",
+                    confirmButtonText: i18n.__('dialog.restoreAll.button'),
+                    cancelButtonText: i18n.__("general.cancel"),
+                }).then(function () {
+                    var changes = [];
+                    let now = Date.now();
+                    s.trash.forEach(function(image: any) {
+                        image.isDeleted = false;
+                        changes.push(image);
+                        s.updateFilterCounts(image, -1, now);
+                        // ipcRenderer.send('image-change', image);
+                    });
+                    if (changes.length > 0) {
+                        ayncsImagesChange(changes);
+                        try { electronLog && electronLog.info(`[app] Restore ${changes.length} files from trash`); } catch (err) {};
+                    }
+                    s.trash = [];
+
+                    s.calculateImageBinding({ ignoreSort: true }, function() {
+                        s.rebindRefresh();
+                        s.updateSelection();
+                        s.$evalAsync();
+                    });
+                });
+            }
+    }).apply(null, args);
+  };
+
+  /* openTrashContextMenu（bundle 37924-37952 逐字；侧栏 trash 右键菜单——
+     「清空回收站/全部恢复」双项，disabled = trash 空） */
+  fns["openTrashContextMenu"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (event: any) {
+
+            const disabled = s.trash.length === 0;
+            const $trash = $(event.delegateTarget);
+
+            ContextMenu.open({
+                items: [
+                    {
+                        disabled: disabled,
+                        label: i18n.__('context.emptyTrash.empty'),
+                        keywords: `empty delete remove trash`,
+                        icon: 'ic-trash-empty.svg',
+                        click: () => { s.$evalAsync(() => { s.emptyTrash(); }); }
+                    },
+                    {
+                        disabled: disabled,
+                        label: $filter('i18n')('context.emptyTrash.restoreAll'),
+                        keywords: `restore`,
+                        icon: 'ic-trash-restore.svg',
+                        click: () => { s.$evalAsync(() => { s.emptyRestore(); }); }
+                    }
+                ],
+                showSearch: false,
+                onOpened: () => {
+                    $trash.addClass("context-activate");
+                },
+                onClosed: () => {
+                    $trash.removeClass("context-activate");
+                }
+            });
+    }).apply(null, args);
+  };
+
   /* cancelRegenerateThumbnail（bundle 34491-34494 逐字；FileThumbnailProgress 取消按钮同上——
      缺席时 regenerateThumbnailQueue 不清空、缩略图进度框永不关） */
   fns["cancelRegenerateThumbnail"] = function (...args) {

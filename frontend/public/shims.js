@@ -1375,6 +1375,18 @@
       }
       return;
     }
+    // b1-9ar：empty-trash / cancel-empty-trash 原生直通（原 background 窗 trashQueue
+    // 承载——main 侧逐 id 物理删除 + 回发 remove-trash-item；发送面 = ayncsImagesRemove
+    // 分批串 + DuplicateFamily 四处 + cancelEmptyTrash 的 sendTo（shim sendTo 忽略 id
+    // 落到本路由）。本地总线发不到 main）
+    if ((channel === 'empty-trash' || channel === 'cancel-empty-trash') && nativeRequire) {
+      try {
+        nativeRequire('electron').ipcRenderer.send(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] ' + channel + ' native send failed', err);
+      }
+      return;
+    }
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
       items.forEach((item) => analyzeItemPalette(item, { force: true }));
@@ -1782,6 +1794,8 @@
       'abort-archive-task',
       // b1-9as：main 回发 → shim 总线（itemDomain 两参监听签名兼容：shim emit 前置 {} 事件参）
       'update-txt-item',
+      // b1-9ar：empty-trash 逐项删除进度回程（miscDomain:892 既有监听递进收口）
+      'remove-trash-item',
     ]) {
       desktopApi.onIpc(channel, (value) => mockEmit(channel, value));
     }

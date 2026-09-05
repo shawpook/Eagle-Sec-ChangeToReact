@@ -166,6 +166,38 @@ export function HoverShowSidebar() {
   return null;
 }
 
+/**
+ * #sidebar 拖宽（bundle 70423 resizable 指令 + 21138 onSidebarResize；b1-9x）。
+ * 原 index.html:34 的 `resizable="e" on-resize=…` 为 Angular 指令面（b1 后死属性，
+ * 已摘除）；本组件以 jQuery-UI resizable C 模式接线：handles 'e' / minWidth 200 /
+ * maxWidth 600，resize → onSidebarResize（≥200 门 + containerSize.sidebar 写回 +
+ * $$rebind::refreshContainSize 广播 + 500ms 去抖 relayout/offsetScrollbar/localStorage）。
+ */
+export function SidebarResizable() {
+  useEffect(() => {
+    const el = document.getElementById('sidebar');
+    const $ = (window as any).jQuery;
+    const scope = getBodyScope();
+    if (!el || !$ || !scope || typeof $.fn.resizable !== 'function') return;
+    const $el = $(el);
+    if ($el.hasClass('ui-resizable')) return;
+    $el.resizable({
+      maxWidth: 600,
+      minWidth: 200,
+      handles: 'e',
+      resize: function (event: any, ui: any) {
+        scopeApply(scope, (s: any) => {
+          if (typeof s.onSidebarResize === 'function') s.onSidebarResize(event, ui);
+        });
+      },
+    });
+    return () => {
+      try { $el.resizable('destroy'); } catch { /* noop */ }
+    };
+  }, []);
+  return null;
+}
+
 /** 详情模式包裹层（index.html 313-322 逐字；ng-show → display，元素身份不重建）。 */
 export function DetailWrapper() {
   const s = useBodyState();

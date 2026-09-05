@@ -3,7 +3,7 @@ import { AppRoot } from './app/AppRoot';
 import { SavingProgressBar, UploadQueueProgressBar } from './components/shell/ProgressBars';
 import { ToastAlerts } from './components/shell/ToastAlerts';
 import { FolderLockScreen, AppLockScreen } from './components/shell/LockScreens';
-import { BodyBindings, BoxContainerBindings, AppMenuButton, HoverShowSidebar, DetailWrapper } from './components/shell/BodyBindings';
+import { BodyBindings, BoxContainerBindings, AppMenuButton, HoverShowSidebar, SidebarResizable, DetailWrapper } from './components/shell/BodyBindings';
 import { DropAreas, ScrollToTop, SubFolderSection, ListLayoutHeader, PanelDropArea, BoxContainerListeners, GridDirectivesBinding } from './components/shell/ListRegion';
 import { ColorsPicker, AnnotationPreviewContainer } from './components/shell/MiscContainers';
 import { Sidebar } from './components/sidebar/Sidebar';
@@ -110,6 +110,7 @@ root.render(
     <GridDirectivesBinding />
     <AppMenuButton />
     <HoverShowSidebar />
+    <SidebarResizable />
     <DetailWrapper />
     <SavingProgressBar />
     <UploadQueueProgressBar />

@@ -9103,6 +9103,29 @@ export function makeControllerFns(getScope: () => any) {
     }).apply(null, args);
   };
 
+  // onSidebarResize（bundle 21138-21150 逐字；jQuery-UI resizable 的 resize 回调面，
+  // 挂载侧 = BodyBindings 的 #sidebar resizable 接线（原 index.html resizable 指令
+  // bundle 70423：maxWidth 600 / minWidth 200 / handles 'e'））
+  let __lv_onSidebarResizeTimeout: any = null;
+  fns["onSidebarResize"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(e, ui) {
+        if (ui && ui.size.width >= 200) {
+            s.containerSize.sidebar = ui.size.width;
+            s.$root.$broadcast('$$rebind::refreshContainSize');
+            s.updateSliderPosition();
+            clearTimeout(__lv_onSidebarResizeTimeout);
+            __lv_onSidebarResizeTimeout = setTimeout(function () {
+                s.relayout();
+                s.offsetScrollbar(30);
+                localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
+            }, 500);
+        }
+    }).apply(null, args);
+  };
+
   return fns;
 }
 

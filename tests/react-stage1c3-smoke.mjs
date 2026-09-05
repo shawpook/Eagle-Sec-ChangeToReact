@@ -99,7 +99,8 @@ try {
   //    cancelRegenerateThumbnail/addToFolders/createFolder，表 155→156→160；b1-9q
   //    openItemContextMenu/getLibraryHistory 等 160→162；b1-9w 菜单点击路径 33 个
   //    （copyTags/pasteTags/removeFromFolder/export 族/copyAs 族/字体族/缩略图族/
-  //    openInFinder/openFilesWithDefault/exportFolder/checkDiskSpace 等）162→195）──
+  //    openInFinder/openFilesWithDefault/exportFolder/checkDiskSpace 等）162→195；
+  //    b1-9x onSidebarResize（#sidebar resizable 写回链）195→196）──
   await assertExpr('c3-contract', `(() => {
     const c = window.__eagleCoreFns;
     if (!c) return false;
@@ -108,7 +109,7 @@ try {
       'openFolder','updateSidebarList','getThumbnailUrl','zoomFit','undo',
       'copyTags','pasteTags','removeFromFolder','exportSelectedToCsv','openInFinder',
       'regenerateThumbnail','newFolderWidthSelection','addToLastUsedFolder','copyAsBase64'];
-    return Object.keys(c).length === 195 && spot.every(k => typeof c[k] === 'function');
+    return Object.keys(c).length === 196 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

@@ -208,6 +208,24 @@
 > **验证**：suite 45/45（`tests-tmp/react-suite-b4t.log`）+ tsc EXIT:0 +
 > m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（detailDelivery mode:canvas tileCount:10）。
 
+> **b1-9x：P3 —— #sidebar 拖宽写回链 React 重实现（2026-09-05）**
+>
+> bundle 语义逐字复原：resizable 指令（70423：maxWidth 600 / minWidth 200 /
+> handles 'e'）+ onSidebarResize（21138-21150：≥200 门 + containerSize.sidebar 写回 +
+> `$$rebind::refreshContainSize` 广播 + updateSliderPosition + 500ms 去抖
+> relayout/offsetScrollbar(30)/localStorage `eagle.containerSize.sidebar`）。
+> 实现：fns 表补 `onSidebarResize`（195→196，1c3 契约同步）+ BodyBindings 新增
+> SidebarResizable（jQuery-UI resizable C 模式接线，同 HoverShowSidebar 惯例：
+> scopeApply → s.onSidebarResize(event, ui)，卸载时 resizable('destroy')，
+> ui-resizable 幂等守卫），main.tsx 挂载。
+> index.html:34 死属性摘除：`resizable="e" on-resize="…" ondragleave="…"` 为 Angular
+> 指令面（b1 后死）；onDragLeaveSidebar 在 bundle 全文无定义——连 bundle 时代都是
+> 死引用，一并清掉。containerSize.sidebar 种子（含 localStorage 覆盖）b1-9q 已在
+> dataMachinery 10418-10425。
+>
+> **验证**：suite 45/45（`tests-tmp/react-suite-b4x.log`）+ tsc EXIT:0 +
+> m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（`tests-tmp/m1-b4x.log`）。
+
 > **b1-9w：P2 —— openItemContextMenu 点击路径审计 + 33 个缺口函数补端口（2026-09-05）**
 >
 > 审计方法：对 b1-9q 端口体（controllerFns 610-7757）提取全部 `s.X` 唯一符号 262 个，

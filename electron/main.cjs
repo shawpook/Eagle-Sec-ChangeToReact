@@ -20,6 +20,10 @@ const exportProgressSmokeMode = process.argv.includes('--smoke-export-progress')
 const videoDetailSmokeMode = process.argv.includes('--smoke-video-detail');
 const regressionHostMode = process.argv.includes('--regression-host');
 const dragSmokeMode = process.argv.includes('--smoke-drag') || process.env.EAGLE_DRAG_SMOKE === '1';
+// b1-9ae：后台窗通道族闭环 smoke——真实渲染层 ipcRenderer.send → main handler → backend
+// 数据面全链验证（duplicate-file/export-as-folder/export-images/regenerate-thumbnail/
+// set-custom-thumbnail/copy-thumbnails；open-with-dialog 仅静态接线审计，避免真弹窗）
+const channelsSmokeMode = process.argv.includes('--smoke-channels') || process.env.EAGLE_CHANNELS_SMOKE === '1';
 const dragStartCalls = [];
 let cachedCurrentLibrary = null;
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
@@ -1389,7 +1393,9 @@ function registerIpc() {
 
   // set-custom-thumbnail：{item, thumbnailPath, width?, height?} → /api/item/setCustomThumbnail
   // （customThumbnailService.set 拷贝入 .info + 色板分析 + metadata 更新），完成后
-  // rebind-refresh 通知渲染层（bundle 时代 background 发 thumbnail-generated 的等价刷新面）
+  // rebind-refresh 通知渲染层（bundle 时代 background 发 thumbnail-generated 的等价刷新面）；
+  // b1-9ae：另回发 thumbnail-generated(item)——apiServerDomain machinerySetCustomThumbnail
+  // 的承诺链等这个回程事件 resolve（bundle 时代 background 完成缩图后的回程事件同型）
   ipcMain.on('set-custom-thumbnail', async (event, params = {}) => {
     try {
       const item = params.item || {};
@@ -1398,6 +1404,7 @@ function registerIpc() {
         method: 'POST',
         body: { id: item.id, thumbnailPath: params.thumbnailPath, width: params.width, height: params.height },
       });
+      event.sender.send('thumbnail-generated', item);
       event.sender.send('rebind-refresh');
     } catch (err) {
       console.error(`[b1-9aa] set-custom-thumbnail failed: ${err.message}`);
@@ -1536,7 +1543,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode || channelsSmokeMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -3082,6 +3089,107 @@ app.whenReady().then(async () => {
           console.log(`DRAG_SMOKE_OK ${JSON.stringify({ ...result, callCount: dragStartCalls.length })}`);
         } catch (err) {
           console.error(`DRAG_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
+  if (channelsSmokeMode) {
+    const smokeOut = process.env.EAGLE_CHANNELS_SMOKE_OUT || path.join(os.tmpdir(), 'eagle-channels-smoke');
+    const thumbSource = process.env.EAGLE_CHANNELS_SMOKE_THUMB;
+    const timeout = setTimeout(() => {
+      console.error('CHANNELS_SMOKE_TIMEOUT');
+      app.quit();
+    }, 90000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        const results = {};
+        try {
+          const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+          const sendFromRenderer = (channel, payload) => win.webContents.executeJavaScript(
+            `require('electron').ipcRenderer.send(${JSON.stringify(channel)}, ${payload === undefined ? 'undefined' : JSON.stringify(JSON.parse(JSON.stringify(payload)))}); true`
+          );
+          const lib = await apiRequest('/api/library/current?includeItems=true');
+          updateCachedCurrentLibrary(lib);
+          const items = (lib.items || []).filter((it) => it && !it.isDeleted);
+          if (!items.length) throw new Error('no items in library');
+          const item = items[0];
+
+          // 1) duplicate-file：items +1
+          const beforeCount = items.length;
+          await sendFromRenderer('duplicate-file', item.id);
+          let dupOk = false;
+          for (let i = 0; i < 80 && !dupOk; i++) {
+            await sleep(150);
+            const now = await apiRequest('/api/library/current?includeItems=true');
+            dupOk = (now.items || []).length === beforeCount + 1;
+          }
+          results.duplicateFile = dupOk;
+
+          // 2) export-as-folder：savePath 出现导出产物
+          const asFolderDir = path.join(smokeOut, 'as-folder');
+          fs.mkdirSync(asFolderDir, { recursive: true });
+          await sendFromRenderer('export-as-folder', { folder: undefined, images: [item], savePath: asFolderDir, needSpace: false });
+          let asFolderOk = false;
+          for (let i = 0; i < 80 && !asFolderOk; i++) {
+            await sleep(150);
+            asFolderOk = fs.existsSync(asFolderDir) && fs.readdirSync(asFolderDir).length > 0;
+          }
+          results.exportAsFolder = asFolderOk;
+
+          // 3) export-images：.eaglepack 落盘
+          const packPath = path.join(smokeOut, 'Export.eaglepack');
+          await sendFromRenderer('export-images', { images: [item], savePath: packPath });
+          let packOk = false;
+          for (let i = 0; i < 150 && !packOk; i++) {
+            await sleep(200);
+            packOk = fs.existsSync(packPath);
+          }
+          results.exportImages = packOk;
+
+          // 4) regenerate-thumbnail：缩略图文件 mtime 前移（backend 队列同步重生成）
+          let thumbOk = false;
+          const thumbFile = path.join(lib.rootDir, 'images', `${item.id}.info`, `${item.name}_thumbnail.png`);
+          if (fs.existsSync(thumbFile)) {
+            const t0 = fs.statSync(thumbFile).mtimeMs;
+            await sendFromRenderer('regenerate-thumbnail', [item]);
+            for (let i = 0; i < 100 && !thumbOk; i++) {
+              await sleep(150);
+              thumbOk = fs.existsSync(thumbFile) && fs.statSync(thumbFile).mtimeMs > t0;
+            }
+          }
+          results.regenerateThumbnail = thumbOk;
+
+          // 5) set-custom-thumbnail：customThumbnail 标志 + thumbnail-generated 回程事件
+          await win.webContents.executeJavaScript(
+            `window.__b1_9ae_gen = false; require('electron').ipcRenderer.on('thumbnail-generated', (_ev, it) => { window.__b1_9ae_gen = !!(it && it.id); }); true`
+          );
+          await sendFromRenderer('set-custom-thumbnail', { item, thumbnailPath: thumbSource, width: 320, height: 240 });
+          let customOk = false;
+          for (let i = 0; i < 80 && !customOk; i++) {
+            await sleep(150);
+            const now = await apiRequest('/api/library/current?includeItems=true');
+            const fresh = (now.items || []).find((it) => it.id === item.id) || {};
+            customOk = fresh.customThumbnail === true;
+          }
+          results.setCustomThumbnail = customOk;
+          results.thumbnailGeneratedEcho = await win.webContents.executeJavaScript('window.__b1_9ae_gen === true');
+
+          // 6) copy-thumbnails：CF_HDROP 剪贴板回读非空
+          await sendFromRenderer('copy-thumbnails', [item]);
+          let clipOk = false;
+          for (let i = 0; i < 60 && !clipOk; i++) {
+            await sleep(150);
+            clipOk = (clipboard.read('CF_HDROP') || Buffer.alloc(0)).length > 0;
+          }
+          results.copyThumbnails = clipOk;
+
+          console.log(`CHANNELS_SMOKE_OK ${JSON.stringify(results)}`);
+        } catch (err) {
+          console.error(`CHANNELS_SMOKE_ERROR ${err.stack || err.message}`);
         }
         clearTimeout(timeout);
         app.quit();

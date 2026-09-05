@@ -246,6 +246,44 @@
 > **验证**：b1-9z 单项 smoke 绿；b1-9aa suite 45/45 + m1 双 OK；b1-9ab suite 44/45
 > （唯 main-ui-workflow 偶发家族）+ 独立 m1 复验双 OK；tsc EXIT:0。
 
+> **b1-9ad/b1-9ae：迁移收官 Phase A——颜色筛选复活 + 通道发送端补漏（2026-09-05，
+> 用户裁定「一口气到收官」：Phase A → Phase B 六批 viewer 接管 → Phase C bundle 删除 capstone）**
+>
+> **A1（b1-9ad）颜色筛选排雷**：npm 落地 color-convert@2 + delta-e@0.0.8（bundle 9153-9154
+> 顶层 require 同款；**v3 勿升**——ESM 化且 Lab 输出取整策略变，v2 裸 `.lab` 取整 Lab 恰与
+> 原版行为一致）。移植 colorSimilarityDistance（32784，Lab+ΔE76/ΔE2000）+ colorFilter
+> （32689-32781，精确命中→colorDistancesMap 0.01 / ΔE 距离命中 / 白场代偿 / marked 自定义
+> 主色，全链逐字）+ grayColorFilter（32797，零依赖）→ machineryColorFilter/
+> machineryGrayColorFilter + seeds 赋值（b1-9ab 同款 machinery 赋值面）。消费面
+> machineryFilterContent 的 `data.filter(s.colorFilter)`/`(s.grayColorFilter)` +
+> colorDistancesMap 排序比较器全链复活——此前开启颜色/黑白筛选即 TypeError 被吞。
+> bundle 同域 rgb2lab（32664）全 bundle 零调用，死代码不移植；accuracy:20 默认值由
+> eagleClasses.ts:390 承载（勿重复）。ambient 声明进 global/vendor-modules.d.ts（无类型
+> 包；tsconfig strict + esModuleInterop）。**顺带排雷**：tsconfig types 引用的
+> @types/react/@types/react-dom 从未入 package.json（extraneous 安装，npm install 一动
+> 即被 prune）——转正 devDependencies（@19 对齐 react 19.1.0）。正向断言
+> `b1-9ad-colorfilter-pipeline` 进 react-stage-smoke（精确命中 0.01/ΔE 命中/不命中/黑白
+> 四态；规则值先存后还，纯函数无 rebindRefresh 副作用）。
+> **A2（b1-9ae）通道发送端补漏**：b1-9aa 只接了 main 侧 handler，renderer 侧仍有 6 处
+> `sendTo(backgroundWindowID, …)` 无条件空放（后台窗已除名，id=undefined）。修
+> controllerFns 5 处（setAsVideoThumbnail mpv 分支/setCustomThumbnail/
+> setCustomThumbnailFromClipboard 两分支/copyAsThumbnail）+ apiServerDomain
+> machinerySetCustomThumbnail（API 面同病）→ bundle 26409 自带条件模式
+> （undefined → IPCHelper.send/renderer ipcRenderer.send 走 main）。main 的
+> set-custom-thumbnail handler 补回程 `thumbnail-generated(item)`——machinerySetCustomThumbnail
+> 承诺链 10s resolve 依赖此事件（bundle 时代 background 完成缩图后的回程事件同型）。
+> cancel-empty-trash（bundle 33607 本就无条件 sendTo）维持逐字 + empty-trash 主侧监听
+> 缺口登记残余台账。**新闭环测试 channel-wiring-closed-loop.mjs（45→46）**：
+> `--smoke-channels` 隐藏窗真驱动（渲染层 executeJavaScript `ipcRenderer.send` → main
+> handler → backend 数据面全链）：duplicate-file items+1 / export-as-folder 产物落盘
+> （fs 独立复核）/ export-images .eaglepack 落盘（fs 复核）/ regenerate-thumbnail 缩略图
+> mtime 前移 / set-custom-thumbnail customThumbnail=true + thumbnail-generated 回程
+> / copy-thumbnails CF_HDROP 剪贴板回读非空；open-with-dialog 静态接线审计（真弹
+> rundll32 会挂测试机）。
+> **验证**：b1-9ad suite 45/45 全绿（含新断言）+ tsc EXIT:0；b1-9ae tsc EXIT:0 +
+> channel-wiring 首跑 7/7 全绿（`tests-tmp/channel-wiring-first.log`）+ suite 46 项
+> 45 过（唯 react-stage8e2 偶发家族，独立复验立即全绿——b1-9u/b1-9ab 同款协议）。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css
@@ -270,10 +308,13 @@
 > **P3（b1-9x）**：#sidebar 拖宽写回链 React 重实现（fns onSidebarResize 196 +
 > SidebarResizable 接线），index.html:34 死属性摘除。
 >
-> **阶段 11 残余台账**（b1-9z…b1-9ab 后更新）：① collect-window/js 保留（活数据面）；
+> **阶段 11 残余台账**（b1-9ad/ae 后更新）：① collect-window/js 保留（活数据面）；
 > ② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；③ ~~keyword watcher 维护字段~~ **已闭环**
 > （fns["search"] 早已逐字赋值——b1-9w 审计假阳性；searchFilter 管线真缺口已修，b1-9ab）；
-> ③' 新登记：s.colorFilter/s.grayColorFilter 同类无定义缺口（色板距离机器，下批）；
+> ③' ~~s.colorFilter/s.grayColorFilter 同类无定义缺口~~ **已修**（b1-9ad，npm 依赖落地 +
+> 三函数移植 + 正向断言）；⑥ 新登记：empty-trash/cancel-empty-trash 通道主侧无监听
+> （DuplicateFamily 已走 ipc.send，main 无 ipcMain.on('empty-trash')——重复项回收站清空
+> 链路悬空；duplicates:empty-trash handle 是另一条 invoke 面不背锅）；
 > ④ P4 C 项待排期：native Menu.popup 自动化、8 iframe viewer 窗接管（接管时
 > app.bundle.js 仍为逐字规范源——用户裁定保留至迁移收官）；⑤ vendor 全集以
 > index.html 实际 script 表 + React import 面 + 活窗口加载面为准（angular.min/

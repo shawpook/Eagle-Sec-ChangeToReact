@@ -8477,12 +8477,24 @@ export function makeControllerFns(getScope: () => any) {
                 fs.writeFileSync(newFilePath, decode.data);
 
                 s.current.thumbnailAt = currentTime;
-                ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
-                    item: s.current,
-                    thumbnailPath: newFilePath,
-                    width: s.current.width,
-                    height: s.current.height
-                });
+                // b1-9ae：后台窗已除名——backgroundWindowID undefined → 走 main（b1-9aa handler），
+                // 与 bundle 26409 条件模式同型（undefined → send 分支）
+                if ((window as any).backgroundWindowID === undefined) {
+                    ipcRenderer.send('set-custom-thumbnail', {
+                        item: s.current,
+                        thumbnailPath: newFilePath,
+                        width: s.current.width,
+                        height: s.current.height
+                    });
+                }
+                else {
+                    ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                        item: s.current,
+                        thumbnailPath: newFilePath,
+                        width: s.current.width,
+                        height: s.current.height
+                    });
+                }
             } catch (err) {
                 electronLog && electronLog.error(err.stack || err);
             }
@@ -8749,10 +8761,19 @@ export function makeControllerFns(getScope: () => any) {
                 return;
             }
 
-            ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
-                item: item,
-                thumbnailPath: filePath
-            });
+            // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
+            if ((window as any).backgroundWindowID === undefined) {
+                ipcRenderer.send('set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: filePath
+                });
+            }
+            else {
+                ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: filePath
+                });
+            }
 
         }).catch(err => {})
     }).apply(null, args);
@@ -8778,10 +8799,19 @@ export function makeControllerFns(getScope: () => any) {
                 let support_ext = { jpg: true, png: true, gif: true, bmp: true, webp: true };
                 if (support_ext[ext]) {
                     fse.copySync(filePath, newFilePath);
-                    ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
-                        item: item,
-                        thumbnailPath: newFilePath
-                    });
+                    // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
+                    if ((window as any).backgroundWindowID === undefined) {
+                        ipcRenderer.send('set-custom-thumbnail', {
+                            item: item,
+                            thumbnailPath: newFilePath
+                        });
+                    }
+                    else {
+                        ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                            item: item,
+                            thumbnailPath: newFilePath
+                        });
+                    }
                     return;
                 }
             }
@@ -8791,10 +8821,19 @@ export function makeControllerFns(getScope: () => any) {
         if (image) {
             let buffer = image.toPNG(100);
             fs.writeFileSync(newFilePath, buffer);
-            ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
-                item: item,
-                thumbnailPath: newFilePath
-            });
+            // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
+            if ((window as any).backgroundWindowID === undefined) {
+                ipcRenderer.send('set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: newFilePath
+                });
+            }
+            else {
+                ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: newFilePath
+                });
+            }
         }
     }).apply(null, args);
   };
@@ -9056,7 +9095,13 @@ export function makeControllerFns(getScope: () => any) {
     const s = getScope();
     if (!s) return;
     return (function () {
-        ipcRenderer.sendTo((window as any).backgroundWindowID, 'copy-thumbnails', s.selected);
+        // b1-9ae：同上——undefined → send 走 main（b1-9aa copy-thumbnails handler → CF_HDROP）
+        if ((window as any).backgroundWindowID === undefined) {
+            ipcRenderer.send('copy-thumbnails', s.selected);
+        }
+        else {
+            ipcRenderer.sendTo((window as any).backgroundWindowID, 'copy-thumbnails', s.selected);
+        }
         setTimeout(function () {
             s.notify({
                 message: $filter('i18n')("previewWindow.copied"),

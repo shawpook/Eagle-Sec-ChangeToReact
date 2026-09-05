@@ -49,6 +49,7 @@ const tests = [
   'tests/library-switch-ui-closed-loop.mjs',
   'tests/drag-start-closed-loop.mjs',
   'tests/preview-delivery-closed-loop.mjs',
+  'tests/channel-wiring-closed-loop.mjs',
 ];
 
 const failed = [];

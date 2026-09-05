@@ -1038,10 +1038,20 @@ function machinerySetCustomThumbnail(params: any): Promise<any> {
     const thumbnailPath = params.thumbnailPath;
     const item = bs.itemMappings[itemId];
     if (item) {
-      ipc.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
-        item: item,
-        thumbnailPath: thumbnailPath
-      });
+      // b1-9ae：同 controllerFns——undefined → send 走 main；main（b1-9aa handler）完成后
+      // 回发 thumbnail-generated 供本承诺链 resolve（bundle 时代 background 的回程事件）
+      if ((window as any).backgroundWindowID === undefined) {
+        ipc.send('set-custom-thumbnail', {
+          item: item,
+          thumbnailPath: thumbnailPath
+        });
+      }
+      else {
+        ipc.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+          item: item,
+          thumbnailPath: thumbnailPath
+        });
+      }
       // 確保縮圖已經生成，才回傳成功
       let itemReceived = false;
       const responseCallback = (_event: any, item: any) => {

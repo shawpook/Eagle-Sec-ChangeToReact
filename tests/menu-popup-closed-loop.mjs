@@ -159,6 +159,45 @@ try {
   }
   console.log(`MENU_POPUP folder-expand-menu OK labels=${JSON.stringify(expandResult.result.value.labels)}`);
 
+  // ── 站点 8：b1-9ap 侧栏 folder 主菜单（openFolderContextMenu，单选分支）——真驱动 +
+  // 载荷断言（新增資料夾/子資料夾/重命名/克隆/删除等单选面 + 密码子菜单 + 展开组）──
+  const folderMenuResult = await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      try {
+        const s = window.$bodyScope;
+        if (typeof s.openFolderContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
+        const folder = (s.folders || [])[0];
+        if (!folder) return { ok: false, reason: 'no folder' };
+        let captured = null;
+        const off = s.$on('CONTEXTMENU.OPEN', (ev, options) => { captured = options; });
+        s.openFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, folder);
+        off();
+        if (!captured) return { ok: false, reason: 'no broadcast captured' };
+        const labels = (captured.items || []).filter((it) => it.label).map((it) => it.label);
+        const hasPasswordSubmenu = (captured.items || []).some((it) => it.submenu && it.submenu.items && it.submenu.items.length === 4);
+        const hasExportSubmenu = (captured.items || []).some((it) => it.submenu && it.submenu.items && it.submenu.items.some((x) => x.icon === 'ic-export-computer.svg'));
+        const hasHistorySubmenu = (captured.items || []).some((it) => it.icon === 'ic-library-add-to.svg' && it.submenu && Array.isArray(it.submenu.items));
+        return {
+          ok: captured.showSearch === true
+            && labels.length >= 10
+            && hasPasswordSubmenu
+            && hasExportSubmenu
+            && hasHistorySubmenu
+            && typeof captured.onOpened === 'function',
+          labelCount: labels.length,
+          hasPasswordSubmenu,
+          hasExportSubmenu,
+          hasHistorySubmenu,
+        };
+      } catch (err) { return { ok: false, reason: 'throw: ' + err.message }; }
+    })()`,
+    returnByValue: true,
+  });
+  if (!folderMenuResult.result.value || folderMenuResult.result.value.ok !== true) {
+    throw new Error(`folder context menu not drivable: ${JSON.stringify(folderMenuResult.result.value)}`);
+  }
+  console.log(`MENU_POPUP folder-context-menu OK labelCount=${folderMenuResult.result.value.labelCount} passwordSubmenu=${folderMenuResult.result.value.hasPasswordSubmenu} exportSubmenu=${folderMenuResult.result.value.hasExportSubmenu} historySubmenu=${folderMenuResult.result.value.hasHistorySubmenu}`);
+
   console.log(`MENU_POPUP_CLOSED_LOOP_OK ${JSON.stringify({ captures: captures.length, pwPopupCount })}`);
 } catch (err) {
   failure = err;

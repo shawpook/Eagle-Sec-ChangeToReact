@@ -522,6 +522,32 @@
 > showSearch:false + onOpened/onClosed 可调。
 > **门禁**：tsc EXIT:0；1c3 census OK（204）；suite 47/47（commit 后记录）。
 >
+> **b1-9ap：台账⑨第二批——openFolderContextMenu 主菜单 + 依赖面 26 fns（2026-09-05）**
+>
+> bundle 39012-39549（538 行菜单本体）+ 依赖 fns 逐字移植（fns 表 204→232，1c3 census
+> 同步）：**模态后端确认**——菜单点击的五个广播通道 React 侧监听面全在（OPEN_RENAME→
+> BatchRenameArtstationModals:1563 / EDIT.SMART.FOLDER→FolderSelectPanels:1075 /
+> FOLDER_SETTINGS→SelectPanels:856 / SET-FOLDER-PASSWORD→SmallPanels:618 /
+> ADD_TO_LIBRARY→ProgressDialogs:1223），菜单可达即可用。**移植清单**：
+> 密码族 3（set/change/resetFolderPassword→广播）、排序族 4（setFoldersOrder/
+> setFolderOrder/setFoldersSortIncrease/setFolderSortIncrease——含 sortRawData/reload/
+> saveFolder 链）、lockFolder、settingFolder、renameFolder（#folder-input-{id} DOM 约定
+> 经 wQueryFocusFolderInput 保留）、batchRenameFolders、reorder 双雄（$scope 版+闭包版
+> reorderFolderByTitleClosure，localeCompare languageBCP numeric）、cloneFolder（含
+> 子树 id 重 guid）、removeFolder/removeSelectedFolders（swal checkbox 确认 + 递归闭包
+> removeFolderClosure——ayncsImagesChange/hiddenByCurrentFilter/QuickAccessManager/
+> cloneTree 复原链全保）、checkOperationSafety2（26824，悬空供给补移植）、
+> refreshSubfolderList（27462，同上——newFolder/removeFolder 回调消费面，b1-9al 后悬空）、
+> icon/color 族 4、folderExportAsPack/AsFolder（sanitizeFolderName win 保留名表逐字 +
+> export-as-folder/export-images 通道 b1-9aa 已实接）、moveFolders、newFolder、
+> copyFolderLink、showListSubfolderContent、菜单本体（多选/单选双分支 + 密码/导出/
+> 资源库历史三子菜单 + emoji/color role）。
+> **修正**：newFolder 实为 b1-9w 已移植（controllerFns:4119 __lv_ 风格）——本批误加重复
+> 实现已删；census 曾误记 230，实为 232（正则漏数带数字键名），1c3 已按 232 校准。
+> **闭环**：menu-popup 新增站点 8——真驱动单选分支：18 项标签 + 密码/导出/资源库历史
+> 三子菜单形状断言。
+> **门禁**：tsc EXIT:0；1c3 OK（232）；suite 47/47（commit 后记录）。
+>
 > **阶段 11 残余台账·终态**（b1-9am）：
 > ① collect-window/js 保留（活数据面）；② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；
 > ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~
@@ -531,10 +557,10 @@
 > 补监听需重建 psd/ppt 缩图引擎，缓存命中路径可用）；⑧ ~~update-txt-item 主侧无监听~~
 > **挂账**（item 元数据 text 通道悬空，文件落盘不受影响）；⑨ ~~expand 右键菜单族~~
 > **已修**（b1-9ao：openFolderExpandContextMenu + toggle 家族 7 fns；
-> openSmartFolderExpandContextMenu 实为 b1-9w 已就位、审计漏查）；**余**：
-> openFolderContextMenu（bundle 39012，538 行，缺 30 fns——文件夹管理主面）/
-> openSmartFolderContextMenu（39550，550 行，缺 33 fns——智能文件夹管理面）两个主菜单
-> 待移植（估 2000+ 行，b1-9w 级大批量，建议独立排期）。
+> openSmartFolderExpandContextMenu 实为 b1-9w 已就位、审计漏查）；~~openFolderContextMenu~~
+> **已修**（b1-9ap，含 26 依赖 fns + checkOperationSafety2/refreshSubfolderList 两个悬空
+> 供给补移植）；**余**：openSmartFolderContextMenu（39550，550 行，缺 33 fns——智能
+> 文件夹管理面）待移植（下一批 b1-9aq）。
 > ④ ~~C 项：Menu.popup 自动化 + 8 iframe viewer 接管~~ **已完成**（b1-9af…b1-9ak 六批 +
 > b1-9ak 基建；pdf-viewer 判定免移植）；⑤ vendor 终删完成（本批）。
 >

@@ -332,6 +332,27 @@
 > 契约 = img/canvas r6+fit-height2+src `_thumbnail.png`；native 契约 = ext:png 即时
 > body.ready（win32 早退分支）。
 
+> **b1-9ah：Phase B/批3——gif-viewer React 接管 + model-viewer 键盘通道补齐（2026-09-05）**
+>
+> **gif-viewer**：react/viewers/gif/entry.tsx（index.html 内联粘合层 ~80 行 jQuery 逐字——
+> URL path→file URL + body render-* 类 + 双 img 喂引擎 + load 完成/进度回调转投
+> `parent.$bodyScope.gifViewer.onFinished/onProgress`（tagManagerDomain:1806 主窗种子 +
+> preview-window/controller:1490 预览窗种子，两侧已供）+ 载入中途打开的进度位置模拟
+> + 150ms body.loaded）。gif-player.js（1143 行）= vendored SuperGif 引擎保留壳内；
+> jquery-1.8.0.min.js 本地副本 + rubbable.js（全仓零引用）删除。
+> **断言教训**：首版断言双处自伤——①onload+300ms 查 ins.src 撞 vite 冷转换竞态（模块
+> 服务滞后，src 尚未设置）；②frames.length>0 是数据特征非接线特征（sample.gif 解析出
+> 0 帧，探针实锤 `bodyCls:"render-normal loaded"、isGifReady:true`——加载与回程通道全
+> 通）。修正后契约 = render-* 类（poll 锁存）+ body.loaded + isGifReady，探针法
+> （smoke 复本注入诊断字段）定位仅 1 轮。
+> **model-viewer 判定**：O3DV 第三方 website 模板 + vendored o3dv.website.min.js，
+> 自有面仅 12 行 keyup→postMessage('Exit'/'Prev'/'Next') 粘合——免 React 化。
+> **真缺口修复**：bundle 20213-20238 的 window message 监听（Exit→leaveDetailMode/
+> Prev→selectPrev/Next→selectNext + $evalAsync）React 世界从未移植——iframe 聚焦时
+> ESC 无法退出详情、无法左右切换。补进 DetailContainerInterior useEffect（guard 包裹
+> 同 DetailViewer:548 惯例）。
+> **验证**：tsc EXIT:0；react-stage-smoke 五断言全绿（b1-9ad/b1-9af/b1-9ag×2/b1-9ah）。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

@@ -11,7 +11,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { bootStack, stop, waitFor, delay } from './react-cdp-harness.mjs';
+
+// b1-9ah：gif viewer 闭环用真实 fs 路径（glue 内 pathToFileURL 消费的是文件系统路径）
+const gifFixturePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'public', 'mock-assets', 'sample.gif');
 
 const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-react-stage-'));
 const librariesRoot = path.join(tempRoot, 'libraries');
@@ -149,6 +153,58 @@ try {
   });
   await waitFor(async () => (await waitExpr(`window.__b1_9ag && window.__b1_9ag.raw.done === true && window.__b1_9ag.native.done === true`)).result.value, 'b1-9ag raw/native iframes', 20000);
 
+  // b1-9ah：gif viewer React 接管闭环——真实 SuperGif 引擎加载 + onFinished 回程通道
+  await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      window.__b1_9ah = { done: false, ok: false, glue: false };
+      const f = document.createElement('iframe');
+      f.style.display = 'none';
+      f.src = '/src/app/gif-viewer/index.html?path=' + encodeURIComponent(${JSON.stringify(gifFixturePath)}) + '&render=normal';
+      f.onload = function () {
+        setTimeout(function () {
+          try {
+            const d = f.contentDocument;
+            const ins = d.getElementById('gif-player-ins');
+            if (ins && (ins.getAttribute('src') || '').indexOf('file:///') > -1) {
+              window.__b1_9ah.glue = true; // 早期命中即锁存（晚于此 SuperGif 可能消费掉 img）
+            }
+          } catch (err) { /* 未就绪等 poll 兜底 */ }
+        }, 300);
+      };
+      document.body.appendChild(f);
+      const poll = setInterval(function () {
+        try {
+          const d = f.contentDocument;
+          const cls = d ? d.body.className : '';
+          if (!window.__b1_9ah.glue && cls.indexOf('render-normal') > -1) {
+            window.__b1_9ah.glue = true; // render-* 类由 entry effect 同步设置（poll 兜底竞态）
+          }
+          const loaded = cls.indexOf('loaded') > -1;
+          const s = window.$bodyScope;
+          if (loaded && s && s.isGifReady === true) {
+            window.__b1_9ah.ok = true;
+            window.__b1_9ah.done = true;
+            clearInterval(poll);
+            // 复原主窗 gif 状态（onFinished 会写 isGifReady/frames）
+            try {
+              s.isGifReady = false;
+              s.gifPlayer = undefined;
+              s.gifViewer.frames = [];
+            } catch (err2) {}
+            f.remove();
+          }
+        } catch (err) { /* iframe 未就绪继续等 */ }
+      }, 250);
+      setTimeout(function () {
+        window.__b1_9ah.done = true;
+        clearInterval(poll);
+        try { f.remove(); } catch (err3) {}
+      }, 20000);
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => (await waitExpr(`window.__b1_9ah && window.__b1_9ah.done === true`)).result.value, 'b1-9ah gif iframe', 25000);
+
   const assertions = [
     ['react-mount', `document.getElementById('eagle-react-host') !== null`],
     ['angular-main-app', `document.getElementById('main-app') !== null`],
@@ -210,6 +266,7 @@ try {
     ['b1-9af-exif-viewer-react', `window.__b1_9af && window.__b1_9af.ok === true`],
     ['b1-9ag-raw-viewer-react', `window.__b1_9ag && window.__b1_9ag.raw.ok === true`],
     ['b1-9ag-native-viewer-react', `window.__b1_9ag && window.__b1_9ag.native.ok === true`],
+    ['b1-9ah-gif-viewer-react', `window.__b1_9ah && window.__b1_9ah.glue === true && window.__b1_9ah.ok === true`],
   ];
 
   const failures = [];

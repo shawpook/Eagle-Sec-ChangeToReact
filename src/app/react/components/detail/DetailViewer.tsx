@@ -501,6 +501,28 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
   const gestureRef = useRef<HTMLDivElement>(null);
   useMouseGesture(gestureRef, '.noSel');
 
+  // model-viewer iframe 键盘通道（bundle 20213-20238 逐字）——模型查看器页内
+  // ESC/←/→ postMessage('Exit'/'Prev'/'Next') 到 parent；React 世界此前无监听（活缺口，
+  // iframe 聚焦时 ESC 无法退出详情、无法左右切换）
+  useEffect(() => {
+    function onMessage(e: any) {
+      scopeApply(getBodyScope(), (s) => {
+        if (e.data === 'Exit' || e.message === 'Exit') {
+          if (typeof s.leaveDetailMode === 'function') s.leaveDetailMode();
+          s.$evalAsync?.();
+        } else if (e.data === 'Prev' || e.message === 'Prev') {
+          if (typeof s.selectPrev === 'function') s.selectPrev();
+          s.$evalAsync?.();
+        } else if (e.data === 'Next' || e.message === 'Next') {
+          if (typeof s.selectNext === 'function') s.selectNext();
+          s.$evalAsync?.();
+        }
+      });
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
   useDetailNgClass(snapshot);
   useRectComment(isCommentMode);
 

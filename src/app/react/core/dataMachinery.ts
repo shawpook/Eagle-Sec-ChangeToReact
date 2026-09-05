@@ -6180,6 +6180,251 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
   });
 }
 
+// ── b1-9ab：searchFilter 管线移植（bundle 29211-29346 + 32182-32283 逐字）──
+// 此前 s.searchFilter 无定义：machineryFilterContent 的 `data.filter(s.searchFilter)`
+// 在非空关键词时抛 TypeError，被 $timeout shim 的 try 吞掉 → 关键词搜索静默失效
+// （11a49 的非空用例期望空结果，崩了也空，断言空洞通过）。scopeShim get 无 fns 回退，
+// 故走 machinery 赋值面（colorFilter/grayColorFilter 同类缺口另批处理）。
+function escapeRegex(str: any): any {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function machineryConvertToRegexGroup(keywords: any, keywords_cn: any, keywords_tw: any): any {
+    const regexGroup: any = {
+        mustMatch: [] as any[],      // AND 邏輯
+        mustNotMatch: [] as any[],   // NOT 邏輯
+        anyMatch: [] as any[],       // OR 邏輯
+        exactMatch: [] as any[]      // 精確匹配（雙引號）
+    };
+
+    keywords.forEach((keyword: any, index: any) => {
+        if (Array.isArray(keyword)) {
+            // OR 群組
+            const positives: any[] = [];
+            const negatives: any[] = [];
+
+            keyword.forEach((k: any, orIndex: any) => {
+                if (k.startsWith('-')) {
+                    // 處理負向條件
+                    let word = k.substring(1).replace(/"/g, '');
+                    negatives.push(word);
+
+                    // 加入繁簡體版本
+                    if (keywords_cn && keywords_cn[index] && keywords_cn[index][orIndex]) {
+                        let word_cn = keywords_cn[index][orIndex].substring(1).replace(/"/g, '');
+                        if (word_cn !== word) negatives.push(word_cn);
+                    }
+                    if (keywords_tw && keywords_tw[index] && keywords_tw[index][orIndex]) {
+                        let word_tw = keywords_tw[index][orIndex].substring(1).replace(/"/g, '');
+                        if (word_tw !== word) negatives.push(word_tw);
+                    }
+                } else if (k.startsWith('"') && k.endsWith('"')) {
+                    // OR 群組中的精確匹配暫時當作一般匹配處理
+                    let word = k.replace(/"/g, '');
+                    positives.push(word);
+
+                    // 加入繁簡體版本
+                    if (keywords_cn && keywords_cn[index] && keywords_cn[index][orIndex]) {
+                        let word_cn = keywords_cn[index][orIndex].replace(/"/g, '');
+                        if (word_cn !== word) positives.push(word_cn);
+                    }
+                    if (keywords_tw && keywords_tw[index] && keywords_tw[index][orIndex]) {
+                        let word_tw = keywords_tw[index][orIndex].replace(/"/g, '');
+                        if (word_tw !== word) positives.push(word_tw);
+                    }
+                } else {
+                    // 處理正向條件
+                    let word = k;
+                    positives.push(word);
+
+                    // 加入繁簡體版本
+                    if (keywords_cn && keywords_cn[index] && keywords_cn[index][orIndex]) {
+                        let word_cn = keywords_cn[index][orIndex];
+                        if (word_cn !== word) positives.push(word_cn);
+                    }
+                    if (keywords_tw && keywords_tw[index] && keywords_tw[index][orIndex]) {
+                        let word_tw = keywords_tw[index][orIndex];
+                        if (word_tw !== word) positives.push(word_tw);
+                    }
+                }
+            });
+
+            // 建立正向 OR 的 RegEx
+            if (positives.length > 0) {
+                const pattern = positives.map(escapeRegex).join('|');
+                regexGroup.anyMatch.push(new RegExp(`(${pattern})`, 'i'));
+            }
+
+            // 負向條件單獨處理
+            negatives.forEach((neg: any) => {
+                regexGroup.mustNotMatch.push(new RegExp(escapeRegex(neg), 'i'));
+            });
+
+        } else if (keyword.startsWith('-')) {
+            // 單純 NOT
+            let word = keyword.substring(1).replace(/"/g, '');
+            let patterns = [word];
+
+            // 加入繁簡體版本
+            if (keywords_cn && keywords_cn[index]) {
+                let word_cn = keywords_cn[index].substring(1).replace(/"/g, '');
+                if (word_cn !== word) patterns.push(word_cn);
+            }
+            if (keywords_tw && keywords_tw[index]) {
+                let word_tw = keywords_tw[index].substring(1).replace(/"/g, '');
+                if (word_tw !== word) patterns.push(word_tw);
+            }
+
+            const pattern = patterns.map(escapeRegex).join('|');
+            regexGroup.mustNotMatch.push(new RegExp(`(${pattern})`, 'i'));
+
+        } else {
+            // 單純 AND
+            let word = keyword.replace(/"/g, '');
+            let patterns = [word];
+
+            // 加入繁簡體版本
+            if (keywords_cn && keywords_cn[index]) {
+                let word_cn = keywords_cn[index].replace(/"/g, '');
+                if (word_cn !== word) patterns.push(word_cn);
+            }
+            if (keywords_tw && keywords_tw[index]) {
+                let word_tw = keywords_tw[index].replace(/"/g, '');
+                if (word_tw !== word) patterns.push(word_tw);
+            }
+
+            const pattern = patterns.map(escapeRegex).join('|');
+            regexGroup.mustMatch.push(new RegExp(`(${pattern})`, 'i'));
+        }
+    });
+
+    return regexGroup;
+}
+
+function machineryMatchWithRegexGroup(text: any, regexGroup: any): any {
+    // 1. 所有 mustMatch 都必須匹配
+    for (let regex of regexGroup.mustMatch) {
+        if (!regex.test(text)) return false;
+    }
+
+    // 2. 所有 mustNotMatch 都不能匹配
+    for (let regex of regexGroup.mustNotMatch) {
+        if (regex.test(text)) return false;
+    }
+
+    // 3. 每個 anyMatch（OR群組）至少要有一個匹配
+    for (let regex of regexGroup.anyMatch) {
+        if (!regex.test(text)) return false;
+    }
+
+    // 如果沒有任何條件，或所有條件都通過
+    return regexGroup.mustMatch.length > 0 ||
+           regexGroup.mustNotMatch.length > 0 ||
+           regexGroup.anyMatch.length > 0;
+}
+
+function machinerySearchFilter(s: any, image: any): any {
+    const w = window as any;
+    try {
+        // 如果還沒有建立 RegEx 群組，先建立
+        if (!s.searchRegexGroup) {
+            s.searchRegexGroup = machineryConvertToRegexGroup(
+                s.keywords,
+                s.keywords_cn,
+                s.keywords_tw
+            );
+        }
+
+        // 建構要搜尋的文字內容
+        var name = image.name || "",
+            annotation = image.annotation || "",
+            ext = image.ext || "",
+            url = image.url || "",
+            allText = "";
+
+        // 組合所有可搜尋的文字
+        if (image.text) {
+            allText += image.text.toLowerCase() + " ";
+        }
+
+        if (image.rawMetas && image.rawMetas.camera) {
+            allText += `${image.rawMetas.camera} `;
+        }
+
+        if (name && s.isSearchScopeName) {
+            allText += `${name} `;
+        }
+
+        if (ext && s.isSearchScopeExt) {
+            allText += `.${ext} `;
+        }
+
+        if (url && s.isSearchScopeUrl && s.keyword.length >= 2) {
+            allText += `${url} `;
+        }
+
+        if (annotation && s.isSearchScopeNote) {
+            allText += `${annotation} `;
+        }
+
+        // 標註
+        if (s.isSearchScopeAnnotation && image.comments) {
+            image.comments.forEach(function (comment: any) {
+                allText += `${comment.annotation} `;
+            });
+        }
+
+        // 字體特殊處理
+        if (image.ext && w.FONT_TYPES[image.ext] && image.fontMetas) {
+            var preferLng = "zh";
+            var fullName = w._.get(image.fontMetas, `fullName.${preferLng}`, undefined) ||
+                           w._.get(image.fontMetas, `fullName.en`, "");
+            allText += `${fullName} `;
+
+            if (s.keyword.length > 2 && image.fontMetas.postScriptName) {
+                allText += `${JSON.stringify(image.fontMetas)} `;
+            }
+        }
+
+        // 標籤
+        if (s.isSearchScopeTag && image.tags && image.tags.length > 0) {
+            image.tags.forEach(function (tag: any) {
+                if (tag) allText += `${tag} `;
+            });
+        }
+
+        // 資料夾
+        if ((s.isSearchScopeFolderDesc || s.isSearchScopeFolderName) &&
+            image.folders && image.folders.length > 0) {
+            image.folders.forEach(function (folderId: any) {
+                var folder = s.folderMappings[folderId];
+                if (folder) {
+                    if (s.isSearchScopeFolderName && folder.name) {
+                        allText += `${folder.name} `;
+                    }
+                    if (s.isSearchScopeFolderDesc && folder.description) {
+                        allText += `${folder.description} `;
+                    }
+                }
+            });
+        }
+
+        // 使用 RegEx 群組進行匹配
+        const regexMatch = machineryMatchWithRegexGroup(allText.toLowerCase(), s.searchRegexGroup);
+
+        // 如果 regex 已經匹配，直接返回 true
+        if (regexMatch) return true;
+
+        // 否則使用 indexOf 進行簡單字串匹配（處理包含特殊字符的情況）
+        const keywordForIndexOf = s.keyword.toLowerCase();
+        return allText.toLowerCase().indexOf(keywordForIndexOf) > -1;
+    }
+    catch (err) {
+        console.error("Search filter error:", err);
+    }
+    return false;
+}
+
 /* filterContent（bundle 32583-32589 逐字；$scope→s。b1-9p 补端口——重新计算画面图片
    列表的统一入口：keyword watcher / eagle.filter 规则 watcher / 显示隐藏切换都汇聚到它，
    本体只是「清 shuffle + rebindRefresh(contentFilterCache) + 滚动归零」的编排） */
@@ -10752,6 +10997,9 @@ export function machinerySeedControllerState(s: any): void {
         if (localStorage.getItem("eagle.search.scope.url") === 'false') { s.isSearchScopeUrl = false; }
         if (localStorage.getItem("eagle.search.scope.annotation") === 'false') { s.isSearchScopeAnnotation = false; }
         if (localStorage.getItem("eagle.search.scope.note") === 'false') { s.isSearchScopeNote = false; }
+        // b1-9ab：searchFilter 管线（bundle 32182 逐字；machineryFilterContent 的
+        // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
+        s.searchFilter = (image: any) => machinerySearchFilter(s, image);
 
         w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
         s.showSubfolderContent = w.preferences.showSubfolderContent;

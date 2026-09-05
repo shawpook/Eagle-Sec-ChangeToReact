@@ -150,6 +150,29 @@ function clipboardFilePaths() {
   }))];
 }
 
+// b1-9aa：win32 剪贴板文件拷贝（原 background 经 copy-win-files 请求旧 main.js 实现，
+// 本仓从未落地——CF_HDROP = DROPFILES 头(20B, fWide=1) + 双 NUL 结尾宽字符路径；
+// 单文件写失败时回落位图，保证粘贴出图）
+function copyWinFilesToClipboard(paths) {
+  const targets = (Array.isArray(paths) ? paths : []).filter((entry) => entry && fs.existsSync(entry));
+  if (process.platform !== 'win32' || targets.length === 0) return;
+  try {
+    const fileList = Buffer.from(targets.map((entry) => `${entry}\0\0`).join(''), 'ucs2');
+    const header = Buffer.alloc(20);
+    header.writeUInt32LE(20, 0); // pFiles
+    header.writeUInt32LE(1, 16); // fWide
+    clipboard.writeBuffer('CF_HDROP', Buffer.concat([header, fileList, Buffer.from([0, 0])]));
+  } catch (err) {
+    if (targets.length === 1) {
+      const ext = path.extname(targets[0]).toLowerCase();
+      if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
+        const image = nativeImage.createFromPath(targets[0]);
+        if (!image.isEmpty()) clipboard.writeImage(image);
+      }
+    }
+  }
+}
+
 async function apiRequest(route, options = {}) {
   const target = new URL(`${apiBase}${route}`);
   const body = options.body ? JSON.stringify(options.body) : '';
@@ -1307,6 +1330,123 @@ function registerIpc() {
       event.sender.send('preview:action-result', { ok: false, action: 'copy-images', error: err.message });
     }
   });
+  // ── b1-9aa：后台窗通道族接管（原 background.js 承接；后台窗链路早期已断，b1-9w
+  // 逐字移植的菜单点击路径此前为空放——本块把通道接进 backend 数据面 / main 直连）──
+
+  // export-as-folder：{folder?, images, savePath, needSpace} → /api/export/as-folder
+  // （renderer 恒发 folder:undefined → backend exportImages 分支，形状一致）
+  ipcMain.on('export-as-folder', async (event, params = {}) => {
+    try {
+      const images = (Array.isArray(params.images) ? params.images : [])
+        .map((entry) => (entry && entry.id) || entry).filter(Boolean);
+      if (!params.savePath || images.length === 0) return;
+      const result = await apiRequest('/api/export/as-folder', { method: 'POST', body: { savePath: params.savePath, images } });
+      console.log(`[b1-9aa] export-as-folder done: ${JSON.stringify(result).slice(0, 200)}`);
+    } catch (err) {
+      console.error(`[b1-9aa] export-as-folder failed: ${err.message}`);
+    }
+  });
+
+  // export-images（选中项打包 .eaglepack）→ /api/export/eaglepack/start
+  // （job 型；packLibrary resolveSelectedItems 吃 items id 数组）
+  ipcMain.on('export-images', async (event, params = {}) => {
+    try {
+      const items = (Array.isArray(params.images) ? params.images : [])
+        .map((entry) => (entry && entry.id) || entry).filter(Boolean);
+      if (!params.savePath || items.length === 0) return;
+      const result = await apiRequest('/api/export/eaglepack/start', { method: 'POST', body: { destFile: params.savePath, items } });
+      console.log(`[b1-9aa] export-images job: ${JSON.stringify(result).slice(0, 200)}`);
+    } catch (err) {
+      console.error(`[b1-9aa] export-images failed: ${err.message}`);
+    }
+  });
+
+  // regenerate-thumbnail（批次）→ 逐文件 /api/item/thumbnailTask/start（backend 队列）
+  ipcMain.on('regenerate-thumbnail', async (event, files = []) => {
+    try {
+      const list = Array.isArray(files) ? files : [];
+      for (const file of list) {
+        if (!file || !file.id) continue;
+        await apiRequest('/api/item/thumbnailTask/start', { method: 'POST', body: { id: file.id } });
+      }
+      if (list.length > 0) console.log(`[b1-9aa] regenerate-thumbnail enqueued: ${list.length}`);
+    } catch (err) {
+      console.error(`[b1-9aa] regenerate-thumbnail failed: ${err.message}`);
+    }
+  });
+
+  // regenerate-video-thumbnail：{video, startAt} → thumbnailTask/start {id, startAt}
+  ipcMain.on('regenerate-video-thumbnail', async (event, params = {}) => {
+    try {
+      const video = params && params.video;
+      if (!video || !video.id) return;
+      await apiRequest('/api/item/thumbnailTask/start', { method: 'POST', body: { id: video.id, startAt: params.startAt } });
+      console.log(`[b1-9aa] regenerate-video-thumbnail enqueued: ${video.id} @${params.startAt}`);
+    } catch (err) {
+      console.error(`[b1-9aa] regenerate-video-thumbnail failed: ${err.message}`);
+    }
+  });
+
+  // set-custom-thumbnail：{item, thumbnailPath, width?, height?} → /api/item/setCustomThumbnail
+  // （customThumbnailService.set 拷贝入 .info + 色板分析 + metadata 更新），完成后
+  // rebind-refresh 通知渲染层（bundle 时代 background 发 thumbnail-generated 的等价刷新面）
+  ipcMain.on('set-custom-thumbnail', async (event, params = {}) => {
+    try {
+      const item = params.item || {};
+      if (!params.thumbnailPath || !item.id) return;
+      await apiRequest('/api/item/setCustomThumbnail', {
+        method: 'POST',
+        body: { id: item.id, thumbnailPath: params.thumbnailPath, width: params.width, height: params.height },
+      });
+      event.sender.send('rebind-refresh');
+    } catch (err) {
+      console.error(`[b1-9aa] set-custom-thumbnail failed: ${err.message}`);
+    }
+  });
+
+  // duplicate-file → /api/item/duplicate（backend 拷贝 .info + metadata 换 id + 内存注册）
+  ipcMain.on('duplicate-file', async (event, id) => {
+    try {
+      if (!id) return;
+      await apiRequest('/api/item/duplicate', { method: 'POST', body: { id } });
+      event.sender.send('rebind-refresh');
+    } catch (err) {
+      console.error(`[b1-9aa] duplicate-file failed: ${err.message}`);
+    }
+  });
+
+  // copy-thumbnails：缩略图文件入剪贴板（原 background win 分支转发 copy-win-files，
+  // 本仓 main 从未实现——补 CF_HDROP 写入；单图失败回落位图）
+  ipcMain.on('copy-thumbnails', async (event, images = []) => {
+    try {
+      const library = await currentLibrary();
+      const imagesDir = path.join(library.rootDir, 'images');
+      const paths = (Array.isArray(images) ? images : []).map((image) => {
+        if (!image || !image.id) return '';
+        const infoDir = path.join(imagesDir, `${image.id}.info`);
+        const target = image.noThumbnail
+          ? path.join(infoDir, `${image.name}.${image.ext}`)
+          : path.join(infoDir, `${image.name}_thumbnail.png`);
+        return fs.existsSync(target) ? target : '';
+      }).filter(Boolean);
+      if (!paths.length) return;
+      copyWinFilesToClipboard(paths);
+    } catch (err) {
+      console.error(`[b1-9aa] copy-thumbnails failed: ${err.message}`);
+    }
+  });
+
+  // open-with-dialog：原 EdgeJS.openAppDialog 等价（win32 rundll32 打开方式对话框）
+  ipcMain.on('open-with-dialog', (event, rawPath) => {
+    try {
+      const target = String(rawPath || '');
+      if (!target || process.platform !== 'win32') return;
+      require('node:child_process').spawn('rundll32.exe', ['shell32.dll,OpenAs_RunDLLW', target], { detached: true, stdio: 'ignore' }).unref();
+    } catch (err) {
+      console.error(`[b1-9aa] open-with-dialog failed: ${err.message}`);
+    }
+  });
+
   ipcMain.on('ondragstart', async (event, params = {}) => {
     try {
       let images = params.images;

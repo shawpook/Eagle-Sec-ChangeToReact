@@ -1795,6 +1795,20 @@
   if (desktopApi && desktopApi.item && typeof desktopApi.item.onOperationResult === 'function') {
     desktopApi.item.onOperationResult((result) => mockEmit('item:operation-result', result));
   }
+  // b1-9aa：后台窗通道族接管后的完成通知——main 在 duplicate-file/set-custom-thumbnail
+  // 落盘后回发 rebind-refresh；bundle 渲染层监听（bundle 23723）语义 =
+  // $scope.rebindRefresh() + $scope.scrollToSelectedItem()
+  if (desktopApi && typeof desktopApi.onRebindRefresh === 'function') {
+    desktopApi.onRebindRefresh(() => {
+      const scope = typeof window !== 'undefined' ? window.$bodyScope : null;
+      if (scope && typeof scope.rebindRefresh === 'function') {
+        try {
+          scope.rebindRefresh();
+          if (typeof scope.scrollToSelectedItem === 'function') scope.scrollToSelectedItem();
+        } catch (err) { /* 重载失败不阻塞通知链 */ }
+      }
+    });
+  }
   if (desktopApi && desktopApi.preview && typeof desktopApi.preview.onInit === 'function') {
     // 阶段9a：init 桥改缓冲——React 入口冷启动 vite transform 可能慢于本桥（8e-2 同款竞态）。
     // 未就绪时暂存 __eaglePendingPreviewInit 并 25ms 轮询就绪标记后补发（兜底 10s）。

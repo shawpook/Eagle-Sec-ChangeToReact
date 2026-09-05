@@ -1951,6 +1951,53 @@ app.get('/api/item/thumbnail', (req, res) => {
   }
 });
 
+// b1-9aa：条目复制（原 background.js duplicateFile 3824 逐字语义：拷贝 .info 全目录、
+// metadata 换新 id 写回；与 addFromPath 同惯例内存 unshift 注册，渲染层由 main 回发
+// rebind-refresh 触发重载）。手动递归拷贝——宿主 fs.cpSync(recursive) 缺陷绕行。
+function copyInfoDirRecursive(sourceDir, targetDir) {
+  fs.mkdirSync(targetDir, { recursive: true });
+  for (const entry of fs.readdirSync(sourceDir, { withFileTypes: true })) {
+    const sourcePath = path.join(sourceDir, entry.name);
+    const targetPath = path.join(targetDir, entry.name);
+    if (entry.isDirectory()) copyInfoDirRecursive(sourcePath, targetPath);
+    else fs.copyFileSync(sourcePath, targetPath);
+  }
+}
+
+app.post('/api/item/duplicate', (req, res) => {
+  try {
+    const id = req.body.id || req.body.itemID || req.body.itemId;
+    const origin = currentLibrary.items.find((entry) => entry.id === id);
+    if (!origin) {
+      res.status(404).json(fail('Item not found'));
+      return;
+    }
+    const imagesRoot = path.join(currentLibrary.rootDir, 'images');
+    const originDir = path.join(imagesRoot, `${id}.info`);
+    const originMetadataPath = path.join(originDir, 'metadata.json');
+    if (!fs.existsSync(originDir) || !fs.existsSync(originMetadataPath)) {
+      res.status(404).json(fail(`Item directory or metadata is missing: ${id}`));
+      return;
+    }
+    const newId = crypto.randomUUID();
+    const newDir = path.join(imagesRoot, `${newId}.info`);
+    if (fs.existsSync(newDir)) {
+      res.status(422).json({ ...fail(`Duplicated item directory already exists: ${newId}`), code: 'ITEM_DUPLICATE_CONFLICT' });
+      return;
+    }
+    copyInfoDirRecursive(originDir, newDir);
+    fs.rmSync(path.join(newDir, 'metadata.json'), { force: true });
+    const metadata = JSON.parse(fs.readFileSync(originMetadataPath, 'utf8'));
+    metadata.id = newId;
+    fs.writeFileSync(path.join(newDir, 'metadata.json'), JSON.stringify(metadata), 'utf8');
+    currentLibrary.items.unshift(metadata);
+    if (currentLibrary.itemMap instanceof Map) currentLibrary.itemMap.set(newId, metadata);
+    res.json(ok({ item: metadata }));
+  } catch (err) {
+    res.status(422).json({ ...fail(err.message), code: 'ITEM_DUPLICATE_FAILED' });
+  }
+});
+
 app.post('/api/item/export', (req, res) => {
   const id = req.body.id || req.body.itemID;
   const item = readItems().find((entry) => entry.id === id);

@@ -63,6 +63,8 @@ const api = {
   readFile: (target) => ipcRenderer.invoke('fs:read', target),
   resolvePath: (target) => ipcRenderer.invoke('library:resolve', target),
   nativeThumbnail: (target, options) => ipcRenderer.invoke('thumbnail:native', target, options),
+  // b1-9aa：后台窗通道族完成通知（duplicate-file/set-custom-thumbnail 落盘后 main 回发）
+  onRebindRefresh: (callback) => ipcRenderer.on('rebind-refresh', () => callback()),
   thumbnailUrl: (target) => `${thumbnailBaseUrl}/file/${encodeURIComponent(String(target || ''))}`,
   thumbnail: {
     setCustom: (params) => ipcRenderer.invoke('item:set-custom-thumbnail', params),

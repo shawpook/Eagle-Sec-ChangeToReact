@@ -58,6 +58,9 @@ import { getBodyScope } from '../global/scopeBridge';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
+// b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
+import colorConvert from 'color-convert';
+import DeltaE from 'delta-e';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -6425,6 +6428,140 @@ function machinerySearchFilter(s: any, image: any): any {
     return false;
 }
 
+// ── b1-9ad：颜色筛选管线移植（bundle 32688-32813 逐字；$scope→s）──
+// 此前 s.colorFilter/s.grayColorFilter 无定义：machineryFilterContent 的
+// `data.filter(s.colorFilter)` 在开启颜色筛选时抛 TypeError 被吞、黑白筛选同理，
+// 且 colorDistancesMap 排序比较器恒空。依赖 npm color-convert@2 + delta-e
+// （bundle 9153-9154 顶层 require 同款；v2 裸 .lab 输出取整 Lab 与原版行为一致）。
+// bundle 同域 rgb2lab（32664）全 bundle 零调用（死代码）不移植；
+// `eagle.filter.filterRules.color.accuracy = 20` 默认值已由 eagleClasses.ts 初始化承载。
+// 計算顏色相似性（bundle 32784-32795 逐字）
+function machineryColorSimilarityDistance(color1: any, color2: any): any {
+    var c1: any = colorConvert.rgb.lab(color1[0], color1[1], color1[2]);
+    var c2: any = colorConvert.rgb.lab(color2[0], color2[1], color2[2]);
+    var l1 = { L: c1[0], A: c1[1], B: c1[2] };
+    var l2 = { L: c2[0], A: c2[1], B: c2[2] };
+    var d76 = DeltaE.getDeltaE76(l1, l2);
+    var d2000 = DeltaE.getDeltaE00(l1, l2);
+    return {
+        d76: d76,
+        d2000: d2000,
+    };
+}
+
+/* colorFilter（bundle 32689-32781 逐字） */
+function machineryColorFilter(s: any, image: any): boolean {
+    const w = window as any;
+    try {
+        // 防呆
+        if (!image.palettes || image.palettes.length === 0) return false;
+
+        var ratio0 = image.palettes[0].ratio;
+        var r0 = image.palettes[0].color[0];
+        var g0 = image.palettes[0].color[1];
+        var b0 = image.palettes[0].color[2];
+        var rt = w.eagle.filter.filterRules.color.value[0];
+        var gt = w.eagle.filter.filterRules.color.value[1];
+        var bt = w.eagle.filter.filterRules.color.value[2];
+
+        if (ratio0 < 25) {
+            return false;
+        }
+
+        var white = [255, 255, 255];
+        var acceptAccuracy1 = w.eagle.filter.filterRules.color.accuracy;
+        var acceptAccuracy2 = (w.eagle.filter.filterRules.color.accuracy - 10 >= 5) ? w.eagle.filter.filterRules.color.accuracy - 10 : 3;
+
+        if (!w.eagle.filter.filterRules.color.value) return true;
+        if (!image.palettes || image.palettes.length < 0) return false;
+        if (!image.palettes[0]) return false;
+
+        if (image?.palettes?.[0]?.color && w.eagle?.filter?.filterRules?.color?.value) {
+            try {
+                const palette0 = image.palettes[0].color;
+                const filterColor = w.eagle.filter.filterRules.color.value;
+
+                const isMatchPalette0 = palette0[0] === filterColor[0] && palette0[1] === filterColor[1] && palette0[2] === filterColor[2];
+                const isMatchPalette1 = image.palettes[1]?.color &&
+                                        image.palettes[1].color[0] === filterColor[0] &&
+                                        image.palettes[1].color[1] === filterColor[1] &&
+                                        image.palettes[1].color[2] === filterColor[2];
+
+                if (isMatchPalette0 || isMatchPalette1) {
+                    s.colorDistancesMap[image.id] = 0.01;
+                    return true;
+                }
+            }
+            catch (err) {}
+        }
+
+        // 使用 YUV 相似模型计算 （ 0 ~ 1 ）
+        if (ratio0 > 33) {
+            let d1 = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, image.palettes[0].color);
+            if (d1.d2000 < acceptAccuracy1 && d1.d76 < acceptAccuracy1 + 50) {
+                s.colorDistancesMap[image.id] = d1.d76;
+                return true;
+            }
+            if (ratio0 > 50) {
+                let white_d = machineryColorSimilarityDistance(white, image.palettes[0].color);
+                if (white_d.d2000 < 5) {
+                    if (image.palettes[1] && image.palettes[1].ratio > 8) {
+                        let d2 = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, image.palettes[1].color);
+                        if (d2.d2000 < acceptAccuracy1 && d2.d76 < acceptAccuracy1 + 50) {
+                            s.colorDistancesMap[image.id] = d2.d76 + 5;
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        if (image.palettes[1] && image.palettes[1].ratio > 33) {
+            let d2 = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, image.palettes[1].color);
+            if (d2.d2000 < acceptAccuracy1 && d2.d76 < acceptAccuracy1 + 50) {
+                s.colorDistancesMap[image.id] = d2.d76;
+                return true;
+            }
+        }
+
+        // 自定义主色
+        for (var i = 0; i < image.palettes.length; i++) {
+            var palette = image.palettes[i];
+            if (palette.marked) {
+                var md = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, palette.color);
+                if (md.d2000 < 30) {
+                    s.colorDistancesMap[image.id] = md.d76;
+                    return true;
+                }
+            }
+        }
+    }
+    catch (err: any) {
+        w.electronLog && w.electronLog.error(err.stack || err);
+        return false;
+    }
+
+    return false;
+}
+
+/* grayColorFilter（bundle 32797-32813 逐字；零依赖） */
+function machineryGrayColorFilter(image: any): boolean {
+    if (image && image.palettes) {
+        for (var i = image.palettes.length - 1; i >= 0; i--) {
+            var palette = image.palettes[i];
+            if (palette.ratio >= 0.02) {
+                var r = palette.color[0];
+                var g = palette.color[1];
+                var b = palette.color[2];
+                if (Math.abs(r - g) >= 8 || Math.abs(r - b) >= 8 || Math.abs(g - b) >= 8) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 /* filterContent（bundle 32583-32589 逐字；$scope→s。b1-9p 补端口——重新计算画面图片
    列表的统一入口：keyword watcher / eagle.filter 规则 watcher / 显示隐藏切换都汇聚到它，
    本体只是「清 shuffle + rebindRefresh(contentFilterCache) + 滚动归零」的编排） */
@@ -11000,6 +11137,10 @@ export function machinerySeedControllerState(s: any): void {
         // b1-9ab：searchFilter 管线（bundle 32182 逐字；machineryFilterContent 的
         // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
         s.searchFilter = (image: any) => machinerySearchFilter(s, image);
+        // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
+        // data.filter(s.colorFilter)/data.filter(s.grayColorFilter) 消费面）
+        s.colorFilter = (image: any) => machineryColorFilter(s, image);
+        s.grayColorFilter = (image: any) => machineryGrayColorFilter(image);
 
         w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
         s.showSubfolderContent = w.preferences.showSubfolderContent;

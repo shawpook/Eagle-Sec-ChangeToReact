@@ -1387,6 +1387,18 @@
       }
       return;
     }
+    // b1-9at：generate-hight-resolution-thumbnail 原生直通（native-viewer win32 面——
+    // main 侧 b1-9at 走 backend nativePreview，成功落 finalFile 由轮询自取，失败回发
+    // native-preview-failed）。nodeIntegration 下 window.ipcRenderer 原生不存在
+    // （探针实证），供给 shim 版后 native/entry.tsx 的 parent.ipcRenderer.send 走本路由
+    if (channel === 'generate-hight-resolution-thumbnail' && nativeRequire) {
+      try {
+        nativeRequire('electron').ipcRenderer.send(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] generate-hight-resolution-thumbnail native send failed', err);
+      }
+      return;
+    }
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
       items.forEach((item) => analyzeItemPalette(item, { force: true }));
@@ -1737,6 +1749,15 @@
     console.debug('[eagle-shim] ipc send', channel, params);
   };
   ipcRenderer.invoke = function (channel, params) {
+    // b1-9at：darwin nativeImage 缩图直通（main 侧 b1-9at handle；win32 无效路径不触达）
+    if (channel === 'nativeImage.createThumbnailFromPath' && nativeRequire) {
+      try {
+        return nativeRequire('electron').ipcRenderer.invoke(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] nativeImage.createThumbnailFromPath invoke failed', err);
+        return Promise.resolve({ ok: false });
+      }
+    }
     if (desktopApi) {
       if (channel === 'get-collect-window-data') return desktopApi.getCollectWindowData();
       if (channel === 'library:get-current' && desktopApi.library) return desktopApi.library.current();
@@ -1796,6 +1817,8 @@
       'update-txt-item',
       // b1-9ar：empty-trash 逐项删除进度回程（miscDomain:892 既有监听递进收口）
       'remove-trash-item',
+      // b1-9at：native-viewer 优雅降级回程（native/entry.tsx 停轮询 + ready）
+      'native-preview-failed',
     ]) {
       desktopApi.onIpc(channel, (value) => mockEmit(channel, value));
     }
@@ -2953,10 +2976,19 @@
 
   window.Buffer = BrowserBuffer;
   window.global = window;
-  window.global.EAGLE_THUMBNAIL_TEMP_PATH = '/mock-thumbnails';
+  // b1-9at：mock 缩图临时目录仅浏览器预览态注入（Electron 运行时由 bundleGlobals
+  // userData/eagle-temp 接管——原 '/mock-thumbnails' 无条件写入会掩盖真实值，
+  // native-viewer 的 finalFile/轮询面全部错位）
+  if (!isElectronRuntime) {
+    window.global.EAGLE_THUMBNAIL_TEMP_PATH = '/mock-thumbnails';
+  }
   window.require = require;
   window.__eagleRequire = require;
   window.electron = electron;
+  // b1-9at：原 app 世界 window.ipcRenderer 直用面（native-viewer/text-editor viewer 的
+  // parent.ipcRenderer）。nodeIntegration 不注入该全局（探针实证 undefined），供 shim 总线
+  // （send 路由直通 + onIpc 桥回程）
+  window.ipcRenderer = ipcRenderer;
   window.$$electronIpc = ipcRenderer;
   window.__eagleIpc = ipcRenderer;
   window.__eagleSyncText = syncText;

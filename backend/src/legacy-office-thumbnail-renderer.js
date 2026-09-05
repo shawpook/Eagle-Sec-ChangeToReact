@@ -139,7 +139,8 @@ function runConverter({ converter, source, outdir, timeoutMs, onChild }) {
   });
 }
 
-async function convertToPdf({ source, converter, timeoutMs, onChild }) {
+// b1-9at：native-preview-service 复用（native-viewer 主侧引擎 soffice→pdf 面）
+export async function convertToPdf({ source, converter, timeoutMs, onChild }) {
   const outdir = fs.mkdtempSync(path.join(os.tmpdir(), 'eagle-office-convert-'));
   try {
     await runConverter({ converter, source, outdir, timeoutMs, onChild });

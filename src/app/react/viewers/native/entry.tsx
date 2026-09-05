@@ -5,9 +5,10 @@
  * send + 缓存轮询（img error → 1s 退避 cache-buster 重试；load → ready 隐 loader）。
  * 缓存于 parent.global.EAGLE_THUMBNAIL_TEMP_PATH/preview（nodeIntegration 下
  * window.global === window，与原实现同通道）；超 10 个缓存整目录清理。
- * **主侧登记**：'generate-hight-resolution-thumbnail' 与 'nativeImage.createThumbnailFromPath'
- * 在本仓 main 均无监听（原 background 承载已随 b1-9t 链路清死）——缓存未命中时轮询空转，
- * 与 empty-trash 同族，残余台账挂账。
+ * **主侧已落地（b1-9at，台账⑦收口）**：win32 'generate-hight-resolution-thumbnail' →
+ * main → backend /api/item/nativePreview（ai→pdf.js worker / ppt 族→soffice→worker /
+ * psd 族无引擎 UNSUPPORTED）成功落 finalFile 轮询自取，失败回发 native-preview-failed
+ * 停轮询 + ready 优雅降级；darwin invoke 经 shim 直通 → main nativeImage 原生缩图。
  */
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -17,11 +18,15 @@ const MAX_DIMENSION = 120000000;
 function NativeViewer() {
   const imgRef = useRef<HTMLImageElement | null>(null);
   const errorTimeoutRef = useRef<any>(null);
+  // b1-9at：主侧引擎明确失败（native-preview-failed）→ 停轮询 + ready（原版不支持
+  // 扩展早退同 UX；否则 img error → 1s cache-buster 无限空转）
+  const failedRef = useRef(false);
   const [ready, setReady] = useState(false);
   const [spec, setSpec] = useState<{ src: string; opacity?: number } | null>(null);
 
   // polling（原逐字语义）：error → 隐 + 1s 后 cache-buster 重试；load → 显 + ready
   function handleImageError() {
+    if (failedRef.current) return;
     const el = imgRef.current;
     if (!el) return;
     setSpec((prev) => (prev ? { ...prev, opacity: 0 } : prev));
@@ -54,6 +59,8 @@ function NativeViewer() {
     }, {});
 
     const isAppleSilicon = parent.process.platform === 'darwin' && parent.process.arch === 'arm64';
+    // b1-9at：失败回程监听用（win32 分支内另有同源局部 const，逐字保留）
+    const ipcRendererRef = parent.ipcRenderer;
     const p = urlParams.path;
     const fileName = urlParams.name;
     const filePath = decodeURIComponent(p) + fileName;
@@ -239,7 +246,24 @@ function NativeViewer() {
       }
     }
 
-    return () => clearTimeout(timer);
+    // b1-9at：主侧引擎失败回程（shim 总线两参签名——桥 emit 前置 {} 事件参）
+    const failedHandler = (_e: any, params: any) => {
+      if (params && params.ext !== ext) return;
+      failedRef.current = true;
+      if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
+      console.log('预览制作失败，停止轮询');
+      setReady(true);
+    };
+    if (ipcRendererRef && typeof ipcRendererRef.on === 'function') {
+      ipcRendererRef.on('native-preview-failed', failedHandler);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      if (ipcRendererRef && typeof ipcRendererRef.off === 'function') {
+        ipcRendererRef.off('native-preview-failed', failedHandler);
+      }
+    };
   }, []);
 
   // ready 类挂 body（原 body.ready CSS 由壳承载，隐 #loader）

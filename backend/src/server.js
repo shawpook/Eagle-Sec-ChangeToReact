@@ -46,6 +46,7 @@ import { TextDetailError, readTextItemDetail } from './text-detail-service.js';
 import { TextSaveError, TextSaveService } from './text-save-service.js';
 import { OFFICE_EXTENSIONS } from './office-document-support.js';
 import { LEGACY_OFFICE_EXTENSIONS } from './legacy-office-thumbnail-renderer.js';
+import { NativePreviewError, renderNativePreview } from './native-preview-service.js';
 import {
   OfficeDocumentViewerError,
   readOfficeDocumentViewer,
@@ -2303,6 +2304,28 @@ app.post('/api/item/emptyTrash', (req, res) => {
     res.json(ok(permanentDeleteItems(currentLibrary, ids, { force: req.body.force === true })));
   } catch (err) {
     res.status(400).json(fail(err.message));
+  }
+});
+
+// b1-9at：native-viewer 主侧引擎（残余台账⑦）——psd/psb/ai/ppt 族高分辨率预览。
+// 渲染直接落 output（main 侧传 viewer finalFile），失败回 NATIVE_PREVIEW_* 错误码由
+// main 转 native-preview-failed 优雅降级。
+function sendNativePreviewError(res, err) {
+  const statusCode = err instanceof NativePreviewError ? err.statusCode : (err.statusCode || 500);
+  res.status(statusCode).json({ ...fail(err.message), code: err.code || 'NATIVE_PREVIEW_FAILED' });
+}
+
+app.post('/api/item/nativePreview', async (req, res) => {
+  try {
+    const { filePath, output, size, ext } = req.body || {};
+    if (!filePath || !output || !ext) {
+      res.status(400).json(fail('filePath, output and ext are required'));
+      return;
+    }
+    const result = await renderNativePreview({ filePath, output, size, ext });
+    res.json(ok(result));
+  } catch (err) {
+    sendNativePreviewError(res, err);
   }
 });
 

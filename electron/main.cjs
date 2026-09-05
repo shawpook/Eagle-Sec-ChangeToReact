@@ -1564,6 +1564,42 @@ function registerIpc() {
   ipcMain.on('cancel-empty-trash', () => {
     emptyTrashCancelled = true;
   });
+
+  // b1-9at：native-viewer 主侧引擎（残余台账⑦；原 EdgeJS COM 管线随 7ba4c85 删除不可
+  // 重建——backend nativePreview 等价替换：ai→pdf.js worker / ppt 族→soffice→worker /
+  // psd 族无引擎 NATIVE_PREVIEW_UNSUPPORTED）。成功落 finalFile（viewer 轮询自取），
+  // 失败回发 native-preview-failed 优雅降级（viewer 停轮询 + ready）。
+  ipcMain.on('generate-hight-resolution-thumbnail', (event, params = {}) => {
+    apiRequest('/api/item/nativePreview', {
+      method: 'POST',
+      body: {
+        filePath: params.filePath,
+        output: params.finalFile,
+        size: params.size,
+        ext: params.ext,
+      },
+    }).catch(() => {
+      try {
+        if (!event.sender.isDestroyed()) event.sender.send('native-preview-failed', { ext: params.ext });
+      } catch (err) {
+        // 发送方销毁竞态：忽略
+      }
+      return null;
+    });
+  });
+
+  // b1-9at：darwin QL 无关路径（原 background 承载随 b1-9t 删除）——Electron 原生
+  // nativeImage.createThumbnailFromPath 落 tempFilePath，darwin viewer rename 后轮询。
+  ipcMain.handle('nativeImage.createThumbnailFromPath', async (_event, params = {}) => {
+    const thumbnail = nativeImage.createThumbnailFromPath(params.filePath, {
+      width: params.maxHeight || params.size || 1024,
+      height: params.maxHeight || params.size || 1024,
+    });
+    if (params.tempFilePath && !thumbnail.isEmpty()) {
+      fs.writeFileSync(params.tempFilePath, thumbnail.toPNG());
+    }
+    return { ok: !thumbnail.isEmpty() };
+  });
 }
 
 function setupMenu() {

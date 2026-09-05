@@ -583,6 +583,30 @@
 > 'id1,id2,') → backend 条目消失 + .info 物理消失 + 回程事件 ≥2。
 > **门禁**：tsc EXIT:0；1c3 OK（258）；suite 49/49。**台账⑥自此清零。**
 >
+> **b1-9at：台账⑦收口——native-viewer 主侧引擎 + 优雅降级（2026-09-06）**
+>
+> 引擎探测三实锚：① 原 EdgeJS COM 管线（PowerPoint slid.Export + ImageMagick）随
+> 7ba4c85 删除不可重建（MS Office + Windows 专属 COM）；② 本仓 sharp 构建输入格式表
+> 无 psd/pdf（jpeg/png/webp/tiff/gif/svg/heif/raw——psdload/pdfload 缺席，PDF 面走
+> electron pdf-thumbnail-worker.cjs pdf.js）；③ nodeIntegration 不注入
+> window.ipcRenderer 全局（探针实证 undefined）——native/entry.tsx:226 的
+> parent.ipcRenderer.send 此前必抛 TypeError，viewer 恒卡 loader。落地六件套：
+> ① shims.js window.ipcRenderer = shim 总线（原 app 世界直用面供给）；② send 直通
+> generate-hight-resolution-thumbnail + invoke 直通 nativeImage.createThumbnailFromPath
+> （darwin）+ onIpc 桥 native-preview-failed；③ **EAGLE_THUMBNAIL_TEMP_PATH mock 值
+> 改仅浏览器预览态注入**（原 '/mock-thumbnails' 无条件写入 Electron 运行时会掩盖
+> bundleGlobals userData/eagle-temp——finalFile/轮询面全错位的潜伏雷）；④ main.cjs
+> generate-hight-resolution-thumbnail → backend /api/item/nativePreview（成功落
+> finalFile 轮询自取，失败回发 native-preview-failed）+ nativeImage.createThumbnailFromPath
+> handle（Electron 原生缩图落 tempFilePath）；⑤ backend 新服务 native-preview-service.js
+> （ai→pdf.js worker 直读 PDF-compatible AI v9+ / ppt 族→soffice→worker（soffice 缺席
+> 501→UNSUPPORTED）/ psd 族无引擎 NATIVE_PREVIEW_UNSUPPORTED——无占位图伪装，诚实降级）
+> + legacy-office convertToPdf 导出复用；⑥ native/entry.tsx failed 监听（停轮询 +
+> ready，与原版不支持扩展早退同 UX）。闭环测试 native-preview-closed-loop.mjs（手造
+> 最小 PDF fixture 先经 worker 单体实验 200×200 PNG 实锚）：ext:'ai' → finalFile PNG
+> 字节；ext:'psd' → native-preview-failed 回程 + 不产 finalFile。
+> **门禁**：tsc EXIT:0；react-stage-smoke 全绿；suite 50/50。**台账⑦自此清零。**
+>
 > **b1-9aq：台账⑨第三批（收官批）——openSmartFolderContextMenu 主菜单 + 依赖面 23 fns（2026-09-05）**
 >
 > bundle 39550-40105（菜单本体多选/单选双分支）+ 依赖 fns 逐字移植（fns 表 232→255，
@@ -605,8 +629,8 @@
 > ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~
 > **已修**（b1-9ad）；⑥ ~~empty-trash 主侧无监听~~ **已修**（b1-9ar：main 逐条删 +
 > emptyTrash/openTrashContextMenu 族补移植 + 闭环测试）；⑦ ~~native-viewer 双通道~~
-> **挂账**（generate-hight-resolution-thumbnail / nativeImage.createThumbnailFromPath——
-> 补监听需重建 psd/ppt 缩图引擎，缓存命中路径可用）；⑧ ~~update-txt-item 主侧无监听~~
+> **已修**（b1-9at：backend nativePreview 引擎（ai 真渲/psd 族诚实降级）+ main 双
+> handler + window.ipcRenderer 供给 + 闭环测试）；⑧ ~~update-txt-item 主侧无监听~~
 > **已修**（b1-9as：main 回发 + shim 直通/桥 + 闭环测试）；⑨ ~~expand 右键菜单族~~
 > **已修**（b1-9ao：openFolderExpandContextMenu + toggle 家族 7 fns；
 > openSmartFolderExpandContextMenu 实为 b1-9w 已就位、审计漏查）；~~openFolderContextMenu~~

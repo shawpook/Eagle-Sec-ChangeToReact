@@ -13,8 +13,12 @@ const emojiRegex = /\p{Emoji_Presentation}|\p{Extended_Pictographic}|([0-9]\u{FE
 
 /** 原 ContextMenu.open（class 声明在 bundle 闭包内不可达，等价广播同一通道）。 */
 export function contextMenuOpen(options: any) {
+  // b1-9ao：C1 摘除 bundle 后 window.angular 缺席——htmlScope 解析恒 undefined、
+  // 菜单永不弹出（检查器 emoji/color 右键自 C1 起静默失效）。回退 bodyScope 广播
+  // （ContextMenuPanel 经 getBodyScope().$on 监听，scopeShim $broadcast 含自身监听者）。
   const htmlScope = (window as any).angular?.element?.('html')?.scope?.();
-  htmlScope?.$broadcast?.('CONTEXTMENU.OPEN', options);
+  const bodyScope = (window as any).$bodyScope;
+  (htmlScope || bodyScope)?.$broadcast?.('CONTEXTMENU.OPEN', options);
 }
 
 const isUrlLike = (value: string): boolean => {

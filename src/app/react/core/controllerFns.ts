@@ -9184,6 +9184,236 @@ export function makeControllerFns(getScope: () => any) {
     }).apply(null, args);
   };
 
+  // ── b1-9ao：侧栏 expand 右键菜单族（bundle 38578-38658 + toggle 家族 38730-38823 逐字）──
+  // 台账⑨首批：Sidebar.tsx:360 已消费 openFolderExpandContextMenu 但此前全仓无定义（活断）。
+  // ContextMenu.open（已删 DOM widget）→ 等价广播 CONTEXTMENU.OPEN（ContextMenuPanel 经
+  // getBodyScope().$on 监听，scopeShim $broadcast 含自身监听者）。onOpened/onClosed 的
+  // $(event.delegateTarget) → React synthetic currentTarget classList。
+
+  // controller 闭包函数 toggleAllFolders（bundle 38730-38735 逐字）
+  function toggleAllFolders(folders: any, isExpand: any) {
+    folders.forEach(function (f: any) {
+      if (f.isExpand !== isExpand) {
+        f.isExpand = isExpand;
+        localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
+      }
+    });
+    s.updateSidebarList();
+  }
+
+  // controller 闭包函数 toggleCurrentLevelFolders（bundle 38740-38746 逐字）
+  function toggleCurrentLevelFolders(folders: any, isExpand: any) {
+    folders.forEach(function (f: any) {
+      if (f.isExpand !== isExpand) {
+        f.isExpand = isExpand;
+        localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
+      }
+    });
+    s.updateSidebarList();
+  }
+
+  // controller 闭包函数 toggleAllSmartFolders（bundle 38831-38839 逐字；eagle.utils.tree.walk）
+  function toggleAllSmartFolders(smartFolders: any, isExpand: any) {
+    const walk = (w.eagle && w.eagle.utils && w.eagle.utils.tree && w.eagle.utils.tree.walk) || null;
+    if (walk) {
+      walk(smartFolders, 'children', function (f: any, parent: any) {
+        if (f.isExpand !== isExpand) {
+          f.isExpand = isExpand;
+          localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+        }
+      });
+    } else {
+      // 后备：等价平铺递归（walk 缺席时不静默丢展开态）
+      const walkAll = (nodes: any) => {
+        (nodes || []).forEach(function (f: any) {
+          if (f.isExpand !== isExpand) {
+            f.isExpand = isExpand;
+            localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+          }
+          walkAll(f.children);
+        });
+      };
+      walkAll(smartFolders);
+    }
+    s.updateSidebarList();
+  }
+
+  // controller 闭包函数 toggleCurrentLevelSmartFolders（bundle 38841-38849 逐字）
+  function toggleCurrentLevelSmartFolders(smartFolders: any, isExpand: any) {
+    smartFolders.forEach(function (f: any) {
+      if (f.isExpand !== isExpand) {
+        f.isExpand = isExpand;
+        localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+      }
+    });
+    s.updateSidebarList();
+  }
+
+  // toggleSelectFolder（bundle 38750-38753 逐字）
+  fns["toggleSelectFolder"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, folderArg) {
+      var expand = !folderArg.isExpand;
+      var folders = folderArg.children;
+      folderArg.isExpand = expand;
+      toggleCurrentLevelFolders(folders, expand);
+    }).apply(null, args);
+  };
+
+  // toggleCurrentLevelFolders（bundle 38757-38765 逐字）
+  fns["toggleCurrentLevelFolders"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, folderArg) {
+      var expand = !folderArg.isExpand;
+      var parent = s2.folderMappings[folderArg.parent];
+      var folders = s2.folders;
+      if (parent && parent.children) {
+        folders = parent.children;
+      }
+      toggleCurrentLevelFolders(folders, expand);
+    }).apply(null, args);
+  };
+
+  // toggleAllFolderExpand（bundle 38767-38780 逐字）
+  fns["toggleAllFolderExpand"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, folderArg) {
+      var folder = folderArg || s2.currentFolder;
+      if (s2.folders && s2.folders.length > 0) {
+        var expand = !s2.folders[0].isExpand;
+        if (folder) {
+          setTimeout(function () { s2.changeSidebarIndex(folder); s2.$evalAsync(); }, 100);
+          if (folder.parent) {
+            var parent = s2.folderMappings[folder.parent];
+            if (parent) {
+              expand = !parent.isExpand;
+            }
+          }
+        }
+        if (!expand) s2.sidebarIndex = 0;
+        toggleAllFolders(s2.folders, expand);
+        s2.updateSidebarList();
+      }
+    }).apply(null, args);
+  };
+
+  // toggleSelectSmartFolder（bundle 38786-38790 逐字）
+  fns["toggleSelectSmartFolder"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, smartFolderArg) {
+      var expand = !smartFolderArg.isExpand;
+      var smartFolders = smartFolderArg.children;
+      smartFolderArg.isExpand = expand;
+      toggleCurrentLevelSmartFolders(smartFolders, expand);
+    }).apply(null, args);
+  };
+
+  // toggleCurrentLevelSmartFolders（bundle 38792-38800 逐字）
+  fns["toggleCurrentLevelSmartFolders"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, smartFolderArg) {
+      var expand = !smartFolderArg.isExpand;
+      var parent = s2.smartFolderMappings[smartFolderArg.parent];
+      var smartFolders = s2.smartFolders;
+      if (parent && parent.children) {
+        smartFolders = parent.children;
+      }
+      toggleCurrentLevelSmartFolders(smartFolders, expand);
+    }).apply(null, args);
+  };
+
+  // toggleAllSmartFolderExpand（bundle 38801-38815 逐字）
+  fns["toggleAllSmartFolderExpand"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, smartFolderArg) {
+      var smartFolder = smartFolderArg || s2.currentSmartFolder;
+      if (s2.smartFolders && s2.smartFolders.length > 0) {
+        var expand = !s2.smartFolders[0].isExpand;
+        if (smartFolder) {
+          setTimeout(function () { s2.changeSidebarIndex(smartFolder); s2.$evalAsync(); }, 100);
+          if (smartFolder.parent) {
+            var parent = s2.smartFolderMappings[smartFolder.parent];
+            if (parent) {
+              expand = !parent.isExpand;
+            }
+          }
+        }
+        if (!expand) s2.sidebarIndex = 0;
+        toggleAllSmartFolders(s2.smartFolders, expand);
+        s2.updateSidebarList();
+      }
+    }).apply(null, args);
+  };
+
+  // toggleAllFolders（bundle 38816-38823 逐字；$scope 委托面）
+  fns["toggleAllFolders"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function () {
+      if (s2.currentSmartFolder) {
+        s2.toggleAllSmartFolderExpand();
+      }
+      else {
+        s2.toggleAllFolderExpand();
+      }
+    }).apply(null, args);
+  };
+
+  // openFolderExpandContextMenu（bundle 38578-38618 逐字；ContextMenu.open → 等价广播）
+  fns["openFolderExpandContextMenu"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (eventArg, folderArg) {
+      eventArg.stopPropagation();
+      const folderEl = eventArg && eventArg.currentTarget;
+      s2.$broadcast('CONTEXTMENU.OPEN', {
+        items: [
+          {
+            label: i18n.__('Context.Expand.Folder'),
+            icon: 'ic-expand.svg',
+            click: () => {
+              s2.toggleSelectFolder(eventArg, folderArg);
+              s2.$evalAsync();
+            }
+          },
+          {
+            label: i18n.__('Context.Expand.SameLevel.Folders'),
+            icon: 'ic-expand-same.svg',
+            click: () => {
+              s2.toggleCurrentLevelFolders(eventArg, folderArg);
+              s2.$evalAsync();
+            }
+          },
+          {
+            label: i18n.__('Context.Expand.All.Folders'),
+            icon: 'ic-expand-all.svg',
+            click: () => {
+              s2.toggleAllFolderExpand(eventArg, folderArg);
+              s2.$evalAsync();
+            }
+          },
+        ],
+        showSearch: false,
+        onOpened: () => {
+          folderArg.isSelected = true;
+          try { folderEl && folderEl.classList && folderEl.classList.add('context-activate'); } catch (err) { /* 委托元素缺席不阻塞 */ }
+          s2.$evalAsync();
+        },
+        onClosed: () => {
+          folderArg.isSelected = false;
+          try { folderEl && folderEl.classList && folderEl.classList.remove('context-activate'); } catch (err2) { /* 同上 */ }
+          s2.$evalAsync();
+        }
+      });
+    }).apply(null, args);
+  };
+
   return fns;
 }
 

@@ -121,6 +121,44 @@ try {
   const pwPopupCount = (pwSource.match(/contextMenu\.popup\(currentWindow\)/g) || []).length;
   if (pwPopupCount < 3) throw new Error(`preview-window popup sites expected >=3, got ${pwPopupCount}`);
 
+  // ── 站点 7：b1-9ao 侧栏 expand 右键菜单（DOM 菜单走 CONTEXTMENU.OPEN 广播）——
+  // 真驱动 + 临时 $on 捕获载荷断言（合成事件 + 从 sidebar 树取真实节点）──
+  await waitFor(async () => {
+    const r = await page.send('Runtime.evaluate', { expression: `(window.$bodyScope.folders || []).length > 0`, returnByValue: true });
+    return r.result.value === true;
+  }, 'sidebar folders ready', 20000);
+  const expandResult = await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      try {
+        const s = window.$bodyScope;
+        if (typeof s.openFolderExpandContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
+        const folder = (s.folders || [])[0];
+        if (!folder) return { ok: false, reason: 'no folder in sidebar' };
+        let captured = null;
+        const off = s.$on('CONTEXTMENU.OPEN', (ev, options) => { captured = options; });
+        const syntheticEvent = { stopPropagation() {}, currentTarget: null };
+        s.openFolderExpandContextMenu(syntheticEvent, folder);
+        off();
+        if (!captured) return { ok: false, reason: 'no CONTEXTMENU.OPEN captured' };
+        const labels = (captured.items || []).map((it) => it.label);
+        return {
+          ok: captured.showSearch === false
+            && captured.items && captured.items.length === 3
+            && typeof captured.onOpened === 'function'
+            && typeof captured.onClosed === 'function'
+            && labels.every((l) => typeof l === 'string' && l.length > 0),
+          labels,
+          folderExpandToggled: folder.isExpand !== undefined,
+        };
+      } catch (err) { return { ok: false, reason: 'throw: ' + err.message }; }
+    })()`,
+    returnByValue: true,
+  });
+  if (!expandResult.result.value || expandResult.result.value.ok !== true) {
+    throw new Error(`folder expand menu not drivable: ${JSON.stringify(expandResult.result.value)}`);
+  }
+  console.log(`MENU_POPUP folder-expand-menu OK labels=${JSON.stringify(expandResult.result.value.labels)}`);
+
   console.log(`MENU_POPUP_CLOSED_LOOP_OK ${JSON.stringify({ captures: captures.length, pwPopupCount })}`);
 } catch (err) {
   failure = err;

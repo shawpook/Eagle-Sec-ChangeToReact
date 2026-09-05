@@ -100,7 +100,9 @@ try {
   //    openItemContextMenu/getLibraryHistory 等 160→162；b1-9w 菜单点击路径 33 个
   //    （copyTags/pasteTags/removeFromFolder/export 族/copyAs 族/字体族/缩略图族/
   //    openInFinder/openFilesWithDefault/exportFolder/checkDiskSpace 等）162→195；
-  //    b1-9x onSidebarResize（#sidebar resizable 写回链）195→196）──
+  //    b1-9x onSidebarResize（#sidebar resizable 写回链）195→196；b1-9ao 侧栏 expand
+  //    右键菜单族（toggle 家族 7 + openFolderExpandContextMenu；smart expand 已在
+  //    b1-9w 就位）196→204）──
   await assertExpr('c3-contract', `(() => {
     const c = window.__eagleCoreFns;
     if (!c) return false;
@@ -108,8 +110,10 @@ try {
       'cleanSelected','select','search','resetFilter','clickNode','smartZoom',
       'openFolder','updateSidebarList','getThumbnailUrl','zoomFit','undo',
       'copyTags','pasteTags','removeFromFolder','exportSelectedToCsv','openInFinder',
-      'regenerateThumbnail','newFolderWidthSelection','addToLastUsedFolder','copyAsBase64'];
-    return Object.keys(c).length === 196 && spot.every(k => typeof c[k] === 'function');
+      'regenerateThumbnail','newFolderWidthSelection','addToLastUsedFolder','copyAsBase64',
+      'toggleSelectFolder','toggleAllFolderExpand','toggleSelectSmartFolder',
+      'toggleAllSmartFolderExpand','openFolderExpandContextMenu'];
+    return Object.keys(c).length === 204 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

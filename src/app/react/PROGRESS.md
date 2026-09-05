@@ -502,6 +502,26 @@
 > （三处剪贴板断言全量真跑通过）+ m1 双 OK（clipboardPath/clipboardImage = true）——
 > b1-9am 门禁以全断言态彻底闭合。
 >
+> **b1-9ao：收官后追加——台账⑨首批：侧栏 expand 右键菜单族（2026-09-05）**
+>
+> Sidebar.tsx:360 已消费的 openFolderExpandContextMenu 全仓无定义（活断）——首批补齐
+> toggle 家族 7 fns（toggleSelectFolder/toggleCurrentLevelFolders/toggleAllFolderExpand/
+> toggleSelectSmartFolder/toggleCurrentLevelSmartFolders/toggleAllSmartFolderExpand/
+> toggleAllFolders，bundle 38750-38823 逐字；controller 闭包 toggleAllFolders/
+> toggleCurrentLevelFolders/toggleAllSmartFolders/toggleCurrentLevelSmartFolders 为模块级
+> 函数）+ openFolderExpandContextMenu（bundle 38578-38618；ContextMenu.open → 模块常量
+> 等价广播，onOpened/onClosed 的 $(event.delegateTarget) → React synthetic currentTarget
+> classList）。**审计修正**：openSmartFolderExpandContextMenu 早在 b1-9w 已移植
+> （controllerFns:5213，ContextMenu.open 模块常量承载）——第二轮审计漏查该键，首批误加
+> 重复实现即删（fns 表 census 196→204，1c3 spot +5）。
+> **顺带修复**：inspectorActions.contextMenuOpen 的 htmlScope 解析依赖 window.angular
+> （C1 摘除 bundle 后恒 undefined）→ 检查器 emoji/color 右键自 C1 起静默失效——补
+> bodyScope 回退广播。
+> **闭环**：menu-popup-closed-loop 新增站点 7——真驱动（合成事件 + 真实侧栏节点）+
+> 临时 $on 捕获 CONTEXTMENU.OPEN 载荷：3 项 i18n 标签（「展开/收起文件夹」等实锤）+
+> showSearch:false + onOpened/onClosed 可调。
+> **门禁**：tsc EXIT:0；1c3 census OK（204）；suite 47/47（commit 后记录）。
+>
 > **阶段 11 残余台账·终态**（b1-9am）：
 > ① collect-window/js 保留（活数据面）；② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；
 > ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~
@@ -509,11 +529,12 @@
 > duplicates:empty-trash invoke 面可达，纯 ipc.send 分支悬空）；⑦ ~~native-viewer 双通道~~
 > **挂账**（generate-hight-resolution-thumbnail / nativeImage.createThumbnailFromPath——
 > 补监听需重建 psd/ppt 缩图引擎，缓存命中路径可用）；⑧ ~~update-txt-item 主侧无监听~~
-> **挂账**（item 元数据 text 通道悬空，文件落盘不受影响）；⑨ **新挂账**：Sidebar 消费的
-> openFolderContextMenu（bundle 39012）/openFolderExpandContextMenu（38578）/
-> openSmartFolderContextMenu（39550）/openSmartFolderExpandContextMenu（38619）四 fns
-> 全仓无定义（侧栏右键活断；openQuickAccessContextMenu/openSidebarVisibleContextMenu
-> 已有）——b1-9w 符号审计漏网面（JSX onContextMenu → scopeApply 调用路径）。
+> **挂账**（item 元数据 text 通道悬空，文件落盘不受影响）；⑨ ~~expand 右键菜单族~~
+> **已修**（b1-9ao：openFolderExpandContextMenu + toggle 家族 7 fns；
+> openSmartFolderExpandContextMenu 实为 b1-9w 已就位、审计漏查）；**余**：
+> openFolderContextMenu（bundle 39012，538 行，缺 30 fns——文件夹管理主面）/
+> openSmartFolderContextMenu（39550，550 行，缺 33 fns——智能文件夹管理面）两个主菜单
+> 待移植（估 2000+ 行，b1-9w 级大批量，建议独立排期）。
 > ④ ~~C 项：Menu.popup 自动化 + 8 iframe viewer 接管~~ **已完成**（b1-9af…b1-9ak 六批 +
 > b1-9ak 基建；pdf-viewer 判定免移植）；⑤ vendor 终删完成（本批）。
 >

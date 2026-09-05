@@ -1663,6 +1663,148 @@ export function installBundleGlobals(): void {
   if (w.pluginModule && !coreState.pluginModule) {
     coreState.pluginModule = w.pluginModule;
   }
+
+  // ── b1-9q：openItemContextMenu 依赖的 bundle 顶层全局（原码 51042/49552/49777/985）──
+  // playingAudiosElements（bundle 全局 let——cleanupBoxHoverPreview 归零写）
+  if (!w.playingAudiosElements) w.playingAudiosElements = [];
+
+  // cleanupBoxHoverPreview（bundle 50414-50457 逐字；hover 预览/音视频/iframe 清理）
+  if (!w.cleanupBoxHoverPreview) {
+    w.cleanupBoxHoverPreview = function ($box: any) {
+      if (!$box || !$box.length || !$box.hasClass('hover-active')) return;
+      $box.removeClass('hover-active');
+      clearTimeout($box[0]._spinnerTimeout);
+
+      var $thumbnail = $box.find('.thumbnail');
+      var $image = $thumbnail.find('img');
+      $image.show();
+
+      // Video — pause 停渲染 → remove 脫離 DOM → 清 src 釋放資源
+      $thumbnail.find('video').each(function (this: any) {
+        try { this.pause(); } catch (e) {}
+        w.$(this).remove();
+        try { this.src = ''; this.load(); } catch (e) {}
+      });
+
+      // MPV
+      $thumbnail.find('mpv-video').each(function (this: any) {
+        try { this.destroy(); } catch (e) {}
+      }).remove();
+
+      // Audio
+      $thumbnail.find('audio').each(function (this: any) {
+        try { this.pause(); this.src = ''; } catch (e) {}
+      }).remove();
+      w.playingAudiosElements = [];
+
+      // Iframe (YouTube/Vimeo)
+      $thumbnail.find('.iframe-wrap').each(function (this: any) {
+        try { w.$(this).find('iframe')[0].src = ''; } catch (e) {}
+      }).remove();
+
+      // 停用 iframe postMessage 狀態，避免 stale message handler 繼續更新已移除的 UI
+      if (typeof w._vimeoPlayerState !== 'undefined') w._vimeoPlayerState.active = false;
+      if (typeof w._ytPlayerState !== 'undefined') w._ytPlayerState.active = false;
+
+      // UI
+      $thumbnail.find('.video-loading-spinner').remove();
+      $thumbnail.find('.video-progress-bar, .audio-progress-bar, .audio-progress-bar-cursor, .current-time, .controls').remove();
+      $thumbnail.find('.mute-toggle').off().remove();
+      $thumbnail.find('.autoplay-toggle').off();
+      $image.off('mousedown.duration').off('mousemove.progressCursor');
+      $thumbnail.find('.hover-sentinel').remove();
+    };
+  }
+
+  // removePlayingAudios（bundle 51042-51045 逐字）
+  if (!w.removePlayingAudios) {
+    w.removePlayingAudios = function () {
+      w.$('#box-container .box.hover-active').each(function (this: any) {
+        w.cleanupBoxHoverPreview(w.$(this));
+      });
+    };
+  }
+
+  // openWithApplicationPath（bundle 49552-49565 逐字）
+  if (!w.openWithApplicationPath) {
+    w.openWithApplicationPath = function (appPath: any, filePath: any, image: any) {
+      var vidx = filePath.indexOf('?v=');
+      if (vidx > -1 && filePath) {
+        filePath = filePath.slice(0, vidx);
+      }
+      const spawnSync = w.require('child_process').spawnSync;
+      var params = ['-a', appPath, decodeURIComponent(filePath)];
+      var cp = spawnSync('open', params, {
+        timeout: 10000
+      });
+      if (cp && cp.error) {
+        w.process.kill(cp.pid);
+      }
+      w.RecentFileManager.addFile(image);
+    };
+  }
+
+  // ayncsImagesGeneratePalette（bundle 49777-49799 逐字；backgroundWindowID 判定与
+  // ayncsImagesChange 同型）
+  if (!w.ayncsImagesGeneratePalette) {
+    w.ayncsImagesGeneratePalette = function (images: any) {
+      if (!images || images.length === 0) return;
+      setTimeout(() => {
+        let total = images.length;
+        let once = 300;
+        let loopCount = total / once;
+        let countOfSend = 0;
+
+        function send() {
+          var start = countOfSend * once;
+          var willSendImages = images.slice(start, start + once);
+          countOfSend += 1;
+          if (w.backgroundWindowID === undefined) {
+            w.__eagleIpc.send('regenerate-palette', willSendImages);
+          }
+          else {
+            w.__eagleIpc.sendTo(w.backgroundWindowID, 'regenerate-palette', willSendImages);
+          }
+          loop();
+        }
+
+        function loop() {
+          if (countOfSend < loopCount) {
+            window.requestAnimationFrame(send);
+          }
+        }
+        loop();
+      }, 0);
+    };
+  }
+
+  // ReverseImageSearch（bundle 985-1011 逐字：类 + eagle.reverseImageSearch 挂载）
+  if (!w.ReverseImageSearch) {
+    w.ReverseImageSearch = class ReverseImageSearch {
+      #pluginId = 'eagle-plugin-search-by-image';
+
+      static ENGINES = {
+        GOOGLE: 'google',
+        YANDEX: 'yandex',
+        BING: 'bing',
+        TINEYE: 'tineye',
+        BAIDU: 'baidu',
+        SOGOU: 'sogou',
+        SAUCENAO: 'saucenao'
+      };
+
+      search(item: any, searchEngine: any = 'google') {
+        if (!item) return;
+        if (!w.pluginModule.checkPluginInstalled(this.#pluginId)) {
+          w.pluginModule.showInstallPluginDialog(this.#pluginId);
+          return;
+        }
+        w.pluginModule.openPluginById(this.#pluginId, { searchEngine: searchEngine });
+      }
+    };
+    w.eagle.reverseImageSearch = new w.ReverseImageSearch();
+  }
+
   if (!w.guid) w.guid = _guid;
   if (!w.throttle) w.throttle = _throttle;
   if (!w.debounce) w.debounce = _debounce;

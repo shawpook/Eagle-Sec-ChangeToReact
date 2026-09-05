@@ -103,7 +103,7 @@ try {
     const spot = ['cancelAllTasks','uploadFiles','changeOrderBy','switchGridLayout',
       'cleanSelected','select','search','resetFilter','clickNode','smartZoom',
       'openFolder','updateSidebarList','getThumbnailUrl','zoomFit','undo'];
-    return Object.keys(c).length === 160 && spot.every(k => typeof c[k] === 'function');
+    return Object.keys(c).length === 162 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

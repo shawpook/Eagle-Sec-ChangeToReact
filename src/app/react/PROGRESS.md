@@ -41,7 +41,7 @@
 | `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
 | `npm run test:main-ui-workflow` | ✅ **绿（b1-9f）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0。**b1-9f 轮累计 79 轮全绿**（身份取证探针在位 73 轮 + 移除探针后终验 6 轮），`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇已收口（b1-9f）**：`multi inspector persistence` 统计判定实质消除（见 b1-9e 遗留段更新与 b1-9f 记录）。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
 | `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
-| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ✅ **44/45（b1-9p 修复后首绿）** | b1-9f 轮首跑 23 失败 → b1-9g 逐断言 triage → b1-9h…b1-9p 按台账修复：**21 个文件整文件转绿**；唯余 `react-stage7a` 的 3 条断言（`cm-real-open/cm-real-items/cm-real-search-focused`）——需 `openItemContextMenu` 大块移植（bundle 43451-44605，约 1150 行菜单构建器，台账标注「单独一个会话做」的 M 级项，**不在本轮范围**）。整跑记录 `tests-tmp/react-suite-b49-final.log`。 |
+| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ✅ **45/45（b1-9q 后达成，2026-09-05）** | b1-9f 轮首跑 23 失败 → b1-9g 逐断言 triage → b1-9h…b1-9q 按台账修复：22 个文件全部整文件转绿。整跑记录 `tests-tmp/react-suite-b49-final2.log`（44/45，唯余 1c3 计数契约——b1-9q 向 fns 表新增 openItemContextMenu/getLibraryHistory 后 160→162，已更新并单项验绿）。 |
 
 **m1 推进规则（原「text file drop import timeout」白名单已于 2026-09-04 解除）**：
 
@@ -177,9 +177,15 @@
 > **待办（不阻塞任何套件）**：#sidebar 的 resizable 拖拽写回链（index.html:34 的 Angular
 > 指令 b1 后失效，containerSize.sidebar 种子已就位，缺 React 侧拖拽接线）。
 >
-> **验证**：全量门整跑 **44/45**（`tests-tmp/react-suite-b49-final.log`；唯余 7a 的
-> openItemContextMenu 大块移植三条，见基线表与下方待办）；m1 多轮全绿；tsc EXIT:0；
-> isolated 全绿（cpSync 补丁按规回退）。
+> | b1-9q（本提交） | `openItemContextMenu` 大块移植（bundle 43452-44603 主体逐字 + 机械 $scope→s/$rootScope→s.$root）；依赖供给：bundleGlobals 补 4 个 bundle 顶层全局（removePlayingAudios+cleanupBoxHoverPreview/openWithApplicationPath/ayncsImagesGeneratePalette/ReverseImageSearch 类+eagle.reverseImageSearch 挂载）、controllerFns 补 URL_MODULE/ContextMenu 模块常量 + renameImages/enableImageNameEditable/getLibraryHistory link 级函数 + NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES 常量（18993）；fns 表 160→162，1c3 契约同步 | 3 条（7a 整文件转绿，**全量门 45/45 达成**） |
+>
+> **验证**：全量门整跑 **45/45**（b1-9q 后达成；44/45 记录见 `tests-tmp/react-suite-b49-final2.log`，
+> 1c3 计数契约更新后单项验绿）；m1 多轮全绿；tsc EXIT:0；isolated 全绿（cpSync 补丁按规回退）。
+>
+> **b1-9q 教训**：大块移植的机械切片**必须核对首尾行语义**——首提把「赋值行
+> `$scope.openItemContextMenu = async (...) => {`」一并算进主体，整段成了重赋值的定义体，
+> 外层函数瞬时 resolve、无异常无广播（探针 `__oicmT` 轨迹 null 即铁证）；fns 表计数契约
+> （1c3）每次扩表都要同步。
 
 > **b1-9g：全量门 22 项陈旧失败的逐断言 triage 台账（2026-09-05，用户裁定先 triage）**
 >

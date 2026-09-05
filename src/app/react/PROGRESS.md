@@ -208,6 +208,28 @@
 > **验证**：suite 45/45（`tests-tmp/react-suite-b4t.log`）+ tsc EXIT:0 +
 > m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（detailDelivery mode:canvas tileCount:10）。
 
+> **b1-9u：阶段 11 b2 —— 独立窗口旧文件清算（2026-09-05）**
+>
+> 删除 10 项：js/preview-window.js（102KB，React preview-window/* 逐字承接，
+> preview-window.html 已不加载仅剩溯源注释）、js/preferences.js（48KB，react/preferences/
+> controller.ts 承接）、progress.html / manage-device.html / registration.html（三窗 electron
+> 全仓零打开方；manage-device/registration 由 frontend/public/replaced/* 接管，
+> vite.preview.config.mjs 拦截旧 URL 直接服务替代品，从不读旧文件）、
+> js/manage-device.js / js/registration.js / js/core.jsc（唯一加载方 registration.html
+> 的 bytenode 字节码）/ js/vendors/mailcheck.js（registration 专用，eagle-match-rules.js
+> 为自带移植副本）/ js/vendors/is.min.js（仅两个死窗加载；dataMachinery 的 is.number
+> 消费点 b1-9p 已替换）。
+> **collect-window/js 判活保留**：collect-window/index.html 已 React 化（阶段9b-1，
+> body 仅剩 React 宿主），但其自有 js/lib/api/*（window.eagle 数据面）+ vendors +
+> models/collect-item.js 仍被加载消费——b2「collect 待核」关闭为保留。
+> 台账复核排雷：main.cjs「preferences.js」为 preferences.json 正则点号误报；
+> directives 的「progress.html」为 *-progress.html 子串误报（templateUrl 指向自身模板）。
+>
+> **验证**：suite 44/45（`tests-tmp/react-suite-b4u.log`，唯一失败
+> main-ui-workflow-closed-loop = 既有偶发家族）→ 单跑复验 m1 全绿
+> （`tests-tmp/m1-b4u-reverify.log`，MAIN_WORKFLOW_SMOKE_OK + MAIN_UI_RESTART_OK）；
+> tsc EXIT:0。
+
 > **b1-9h…b1-9p：全量门 22 项陈旧失败全部修复（2026-09-05，自动推进系列）**
 >
 > 按 b1-9g 台账逐根因修复、逐项验证、逐轮提交。**22 个陈旧失败文件全部转绿**，

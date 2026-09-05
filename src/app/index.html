@@ -209,13 +209,13 @@
     <script src="js/vendors/jquery.bez.js"></script>
     <script src="js/vendors/lodash.js"></script>
     <script src="js/vendors/mousetrap.min.js"></script>
-    <!-- jquery-audio（$.playSound / $.stopSound）同属 app.bundle.js 内联件，b1-9d 摘除 bundle
-         后消失；scope 的 removeSound/duplicateSound/errorSound.play() 直调该插件。 -->
+    <!-- jquery-audio（$.playSound / $.stopSound）——scope 的 removeSound/duplicateSound/
+         errorSound.play() 直调该插件（原 bundle 内联件，b1-9d 摘除、b1-9al 独立加载）。 -->
     <script src="js/vendors/jquery-audio.js"></script>
-    <!-- sweetalert2（window.swal / window.sweetAlert）同属 app.bundle.js 内联 vendor，b1-9d
-         摘除 bundle 后消失；ProgressDialogs/ControllerModals/miscDomain 等的 w.swal(...) 确认
-         /输入弹窗全部被 ngSafe/try-catch 吞成静默 no-op，swal2 容器永不出现。vendor 文件尾部
-         自带 window.sweetAlert=window.swal=window.Sweetalert2 别名（CSS 已在 head:10）。 -->
+    <!-- sweetalert2（window.swal / window.sweetAlert，原 bundle 内联 vendor）——
+         ProgressDialogs/ControllerModals/miscDomain 等的 w.swal(...) 确认/输入弹窗依赖；
+         vendor 文件尾部自带 window.sweetAlert=window.swal=window.Sweetalert2 别名
+         （CSS 已在 head:10）。 -->
     <script src="js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
     <!-- artstation-download（window.Artstation，b1-9m）——原 b1 前由 index.html 引入的独立
          全局（顶层 var），BatchRenameArtstationModals 的 vaildateUrl 读
@@ -236,11 +236,10 @@
     <script src="js/modules/flatpicker/flatpickr.min.js"></script>
     <script src="js/modules/flatpicker/l10n/zh.js"></script>
     <script src="js/services/lazy-load-manager.js"></script>
-    <!-- smoothZoom（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）原本内联在
-         app.bundle.js 里；b1-9d 摘除 bundle 后 $.fn.smoothZoom 与 BitmapViewer 一并消失 →
-         machineryEnterDetailMode 的初始化静默 no-op → 无 #bitmap-viewer canvas、无瓦片 →
-         详情交付闸门超时。载入 /vendor 提取版（应用层胶水的 angular.element 依赖已换等价物，
-         见该文件头注）。必须同步加载：fetch 注入会与进详情抢跑。 -->
+    <!-- smoothZoom（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）——原 bundle 内联件，
+         b1-9d 摘除、b1-9al 以 /vendor 提取版独立加载（应用层胶水的 angular.element 依赖已换
+         等价物，见该文件头注）。缺失时 machineryEnterDetailMode 初始化静默 no-op →
+         无 #bitmap-viewer canvas、详情交付闸门超时。必须同步加载：fetch 注入会与进详情抢跑。 -->
     <script src="/vendor/eagle-smooth-zoom.js"></script>
     <script src="js/services/shortcut-manager.js"></script>
     <script src="js/vendors/colorpicker/js/colorpicker.js"></script>

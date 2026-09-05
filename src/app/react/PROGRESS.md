@@ -435,6 +435,21 @@
 > **验证**：tsc EXIT:0；menu-popup 独立跑 CLOSED_LOOP_OK（exit 0）；suite 47 项门禁
 > 见 commit 后记录。
 
+> **b1-9al：Phase C/收官 1——app.bundle.js 删除 capstone（-4.4MB / -106,658 行，2026-09-05）**
+>
+> 用户裁定「保留到迁移收官」的逐字规范源 app.bundle.js（4,406,623 字节 / 106,658 行）
+> 在 Phase A/B 全部完成后删除：删除前最终审计——全仓 `app.bundle` 引用面逐一过目，
+> 代码文件仅存注释（index.html 3 处历史注记 / tab-bar.js / eagle-smooth-zoom.js /
+> sidebarState.ts 溯源注释）+ 文档（TASK/README/项目结构/handover/REUSE_ROADMAP 等，
+> 历史文档不动）；**零活 script 标签、零 require/import**。index.html 三处注记改写为
+> 「原 bundle 内联件，b1-9d 摘除、b1-9al 独立加载」时态（jquery-audio/sweetalert2/
+> eagle-smooth-zoom——三件均为 b1-9d 摘除 bundle 后新立的独立加载，注记保留其依赖语义）。
+> **门禁（计划要求的 suite ×2 + m1 + tsc）**：tsc EXIT:0；suite 47/47 全绿 ×2 轮
+> （`tests-tmp/react-suite-b1-9al.log` + `-2.log`）；m1 MAIN_WORKFLOW_SMOKE_OK +
+> MAIN_UI_RESTART_OK（detailDelivery mode:canvas tileCount:10，全交付链实锤）。
+> **迁移里程碑**：4.2MB 的 Angular1 时代总成自此退出工作树——所有行为规范以 react/
+> 逐字移植 + 注释行号溯源为唯一载体。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

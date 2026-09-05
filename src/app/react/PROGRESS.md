@@ -284,6 +284,33 @@
 > channel-wiring 首跑 7/7 全绿（`tests-tmp/channel-wiring-first.log`）+ suite 46 项
 > 45 过（唯 react-stage8e2 偶发家族，独立复验立即全绿——b1-9u/b1-9ab 同款协议）。
 
+> **b1-9af：Phase B/批1——exif-viewer React 接管 + texture-viewer 处置 + pdf 判定（2026-09-05）**
+>
+> **侦察修正（重要）**：8 个 iframe viewer 实为「vendored 引擎 + 小粘合层」格局——
+> gif-player.js（1143 行）= 第三方 SuperGif/rubbable 引擎；raw-viewer 粘合仅 104 行
+> （引擎 dcraw.js）；model-viewer = 第三方 O3DV website 模板 + pickr；pdf-viewer =
+> PDF.js 官方 viewer（13657 行 vendored，`?path=/theme=` 参数消费在 vendored viewer.js
+> 内 + vite injectViewerConfig 注入，**无自有控制面、免移植**）。真正的 Eagle 自有
+> 控制面只有 exif-player.js（54 行）、raw-player.js（104 行）、native-viewer 内联脚本、
+> text-editor（380 行 Angular）、font-viewer（864 行 Angular）——后两个是 angular.min.js
+> 唯一存活消费方（B4/B5 主目标）。
+> **exif-viewer 接管**：react/viewers/exif/entry.tsx（54 行 jQuery 逐字语义——URL 参数
+> → r{n} 方向类 + fit-width(-2)/fit-height(-2) 适配类 + pixelated + src + show 淡入；
+> 缺参 parseInt→NaN→rNaN 类与原实现一致）；index.html 壳摘 jquery + exif-player.js、
+> `<img id="main-image">` 换 `#exif-root` 挂载点（CSS img 选择器对 React 渲染 img 依旧
+> 生效）；exif-player.js 删除。**vite 通用路由**：REACT_VIEWER_ENTRIES 表 +
+> injectReactViewer（壳页统一 generic route，接管一页登记一项——后续 B2/B3 复用）。
+> **texture-viewer 处置（零引用实锤后删）**：texture2png.js（28 行，module.exports 离屏
+> 转换 iframe 助手）全仓 grep 0 运行时消费（bundle/react/electron/backend/tests 全 0；
+> 仅文档 PROGRESS/项目结构/TASK 提及）；texture-viewer/ 10 文件（three.min.js+
+> EXR/RGBE loaders+fflate+lil-gui，13MB 级 vendored）随之同删；screenshot-regression.mjs
+> texture 快照项 + frontend/public/pages.html 调试链接同步摘除。EXR/HDR 缩略图在本仓
+> 由 backend 自有管线承载，texture2png 链路自 background 窗除名后即死。
+> **闭环契约**：react-stage-smoke 新增 `b1-9af-exif-viewer-react`——主窗挂真实 iframe
+> 过 vite 中间件链（壳 + shims 注入 + React entry），断言 r6/fit-height2/show 类 +
+> src 面（window.__b1_9af 先挂载后断言两段式，规避 Runtime.evaluate 无 awaitPromise）。
+> **验证**：tsc EXIT:0；react-stage-smoke 单跑全绿（b1-9ad/b1-9af 双断言 PASS）。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

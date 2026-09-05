@@ -62,7 +62,6 @@ const pages = [
   ['gif', `${origin}/src/app/gif-viewer/index.html?path=${encodeURIComponent('/mock-assets/sample.gif')}&render=normal`, 5000, () => !!document.querySelector('img[src*="sample.gif"]')],
   ['raw', `${origin}/src/app/raw-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/')}&ext=png&name=${encodeURIComponent('Welcome Library')}&width=1536&height=960&orientation=1`, 5000, () => !!document.querySelector('img[src*="thumbnail"]')],
   ['text-editor', `${origin}/src/app/text-editor/text-editor.html?theme=dark&language=zh_CN`, 5000, () => document.body.innerText.includes('Eagle Reverse text editor sample')],
-  ['texture', `${origin}/src/app/texture-viewer/index.html?path=${encodeURIComponent('/mock-assets/sample.hdr')}`, 5000, () => document.querySelectorAll('canvas').length > 0],
   ['native', `${origin}/src/app/native-viewer/index.html?path=${encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/')}&name=${encodeURIComponent('Welcome Library.png')}&id=MOCK0001&ext=png&width=1536&height=960`, 5000, () => document.body.classList.contains('ready')],
   ['model', `${origin}/src/app/model-viewer/website/index.html#model=/mock-assets/box.glb`, 8000, () => document.querySelector('#main_file_name')?.textContent === 'box.glb'],
   ['pdf', `${origin}/src/app/pdf-viewer/web/viewer.html?path=${encodeURIComponent('/mock-assets/sample.pdf')}`, 8000, () => !!document.querySelector('.pdfViewer .page')],

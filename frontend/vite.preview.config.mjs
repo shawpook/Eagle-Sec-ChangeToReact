@@ -38,6 +38,19 @@ function injectReactMount(html) {
   );
 }
 
+// b1-9af：viewer 窗接管通用路由——iframe 查看器页逐个切 React 后在此登记
+// （壳 HTML 保留，旧控制脚本摘除，入口由本表注入；generic route 统一处理）。
+const REACT_VIEWER_ENTRIES = {
+  '/src/app/exif-viewer/index.html': '/src/app/react/viewers/exif/entry.tsx',
+};
+
+function injectReactViewer(html, entry) {
+  return html.replace(
+    '</body>',
+    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="${entry}"></script>\n</body>`
+  );
+}
+
 // 阶段8：偏好窗口（独立页面）React 化入口——保留 shims 注入，另挂 preferences entry。
 function readPreviewPreferences() {
   const file = path.join(workspaceRoot, 'src/app/preferences.html');
@@ -153,8 +166,13 @@ export default defineConfig({
               if (url.startsWith('/src/app/collect-window/')) {
                 html = sanitizeCollectTemplates(html);
               }
+              html = injectPreviewScripts(allowSingleColorPalette(html));
+              const viewerEntry = REACT_VIEWER_ENTRIES[url];
+              if (viewerEntry) {
+                html = injectReactViewer(html, viewerEntry);
+              }
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
-              res.end(injectPreviewScripts(allowSingleColorPalette(html)));
+              res.end(html);
               return;
             }
           }

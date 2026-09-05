@@ -77,6 +77,35 @@ try {
   await waitFor(async () => (await waitExpr(`typeof window.eagle !== 'undefined' && typeof window.eagle.inspector !== 'undefined'`)).result.value, 'window.eagle', 45000);
   await waitFor(async () => (await waitExpr(`!!document.getElementById('eagle-react-host')`)).result.value, 'React mount host', 45000);
 
+  // b1-9af：exif-viewer React 接管闭环——主窗内挂真实 iframe 走 vite 中间件链
+  // （壳 + shims 注入 + react/viewers/exif entry），验证参数→方向/适配类 + src 面契约
+  await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      window.__b1_9af = { done: false, ok: false };
+      const f = document.createElement('iframe');
+      f.style.display = 'none';
+      f.src = '/src/app/exif-viewer/index.html?orientation=6&path=' + encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/Welcome Library.png') + '&width=100&height=50';
+      f.onload = function () {
+        setTimeout(function () {
+          try {
+            const img = f.contentDocument.getElementById('main-image');
+            window.__b1_9af.ok = !!img
+              && img.className.indexOf('r6') > -1
+              && img.className.indexOf('fit-height2') > -1
+              && img.className.indexOf('show') > -1
+              && (img.getAttribute('src') || '').indexOf('Welcome Library.png') > -1;
+          } catch (err) { window.__b1_9af.ok = false; }
+          window.__b1_9af.done = true;
+          try { f.remove(); } catch (err2) {}
+        }, 400);
+      };
+      document.body.appendChild(f);
+      setTimeout(function () { window.__b1_9af.done = true; }, 12000);
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => (await waitExpr(`window.__b1_9af && window.__b1_9af.done === true`)).result.value, 'b1-9af exif iframe', 15000);
+
   const assertions = [
     ['react-mount', `document.getElementById('eagle-react-host') !== null`],
     ['angular-main-app', `document.getElementById('main-app') !== null`],
@@ -135,6 +164,7 @@ try {
         }
       } catch (err) { return false; }
     })()`],
+    ['b1-9af-exif-viewer-react', `window.__b1_9af && window.__b1_9af.ok === true`],
   ];
 
   const failures = [];

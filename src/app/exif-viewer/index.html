@@ -3,8 +3,8 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<script src="../js/vendors/jquery-1.8.0.min.js"></script>
-		<script type="text/javascript" src="./exif-player.js"></script>
+		<!-- b1-9af：React 接管——jquery + exif-player.js 摘除，控制面迁至
+		     react/viewers/exif/entry.tsx（vite 中间件注入 React 入口与 preamble） -->
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
 		<title></title>
 		<style>
@@ -74,6 +74,6 @@
 	</head>
 
 	<body>
-		<img id="main-image"/>
+		<div id="exif-root"></div>
 	</body>
 </html>

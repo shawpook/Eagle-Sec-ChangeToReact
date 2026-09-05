@@ -188,6 +188,26 @@
 >
 > **验证**：suite 45/45（`tests-tmp/react-suite-b4s.log`）+ tsc EXIT:0。
 
+> **b1-9t：阶段 11 b3 批2 —— background 死链子树清算（2026-09-05）**
+>
+> 实锤链：background.html 全仓无打开方（electron/shims/react 零引用）→ 其 12 个脚本除
+> lodash/jquery/jquery-audio/eagle-api/url-enlarger（活窗口共用）外全入删除清单：
+> background.js(253KB)、tree.helper.js、ga4/ga、music-tempo.min、lib/api/screen-capture。
+> background.js 是 thumbs/** 唯一加载方（thumb.js 动态 require MODULE_PATH）→ thumbs 全树
+> 39 文件同删；thumbs→utils 依赖链随之清死：safeCopy/edge/captureURL/imageSize/getExt/
+> compress/executeJavaScriptInIsolatedWorld/nativeThumb（nativeThumb 仅被 thumbs 消费；
+> electron 的 nativeThumbnail 是主进程 IPC，无关同名物）。analyzer/color-analyzer 的
+> tests/backend 引用均指向 backend 自有副本（backend/src/color-analyzer.js）。
+> 另删：modules/angular-notify/angular-notify.min.js（React cgNotify 等价层自足，CSS 留）、
+> modules/flatpicker/ng-flatpickr.min.js（React FlatpickrInput 自带 link 逻辑；flatpicker
+> 主体与 CSS 因 FlatpickrInstance 潜伏缺口判活保留，见 b1-9r）、background.html（死窗根）。
+> core.jsc 挪 T4（唯一加载方 registration.html 死窗同批删）。
+> 台账复核：18 个 basename 全仓 grep 仅剩死链互引 + 3 处巧合（libtga.js 子串、
+> preview-window/controller.ts 溯源注释、scope.imageSize 无关同名）。
+>
+> **验证**：suite 45/45（`tests-tmp/react-suite-b4t.log`）+ tsc EXIT:0 +
+> m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（detailDelivery mode:canvas tileCount:10）。
+
 > **b1-9h…b1-9p：全量门 22 项陈旧失败全部修复（2026-09-05，自动推进系列）**
 >
 > 按 b1-9g 台账逐根因修复、逐项验证、逐轮提交。**22 个陈旧失败文件全部转绿**，

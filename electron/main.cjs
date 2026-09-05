@@ -24,6 +24,12 @@ const dragSmokeMode = process.argv.includes('--smoke-drag') || process.env.EAGLE
 // 数据面全链验证（duplicate-file/export-as-folder/export-images/regenerate-thumbnail/
 // set-custom-thumbnail/copy-thumbnails；open-with-dialog 仅静态接线审计，避免真弹窗）
 const channelsSmokeMode = process.argv.includes('--smoke-channels') || process.env.EAGLE_CHANNELS_SMOKE === '1';
+// b1-9ak：Menu.popup 冒烟捕获——@electron/remote 的方法调用不经 main 侧 Menu 原型
+// （原型补丁实测无效），改由渲染层 smoke 分支序列化菜单模板后经 IPC 通报（原生 popup
+// 无法被 CDP 观察且会阻塞会话）；捕获经 smoke:menu-popups 供闭环测试断言
+const menuPopupSmokeMode = process.argv.includes('--smoke-menu') || process.env.EAGLE_MENU_SMOKE === '1';
+const menuPopupCaptures = [];
+const menuPopupOutFile = process.env.EAGLE_MENU_SMOKE_OUT || '';
 const dragStartCalls = [];
 let cachedCurrentLibrary = null;
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
@@ -1099,6 +1105,26 @@ function registerIpc() {
     body: params,
   }));
 
+  ipcMain.handle('smoke:menu-popups', () => menuPopupCaptures);
+  if (menuPopupSmokeMode) {
+    const serializeNativeMenu = (menu) => (menu && menu.items ? menu.items : []).map((it) => ({
+      label: it.label,
+      type: it.type,
+      visible: it.visible,
+      submenu: it.submenu ? (it.submenu.items || []).length : undefined,
+    }));
+    ipcMain.on('smoke:menu-popup', (event, tpl = {}) => {
+      try {
+        // application-menu 站点：模板 main 侧原生序列化（remote 读 items 经代理，实测为空）
+        if (tpl.site === 'application-menu') {
+          menuPopupCaptures.push({ site: tpl.site, items: serializeNativeMenu(Menu.getApplicationMenu()) });
+        } else {
+          menuPopupCaptures.push(tpl);
+        }
+        if (menuPopupOutFile) fs.writeFileSync(menuPopupOutFile, JSON.stringify(menuPopupCaptures));
+      } catch (err) { /* 忽略非法模板 */ }
+    });
+  }
   ipcMain.handle('duplicates:empty-trash', (event, params = {}) => apiRequest('/api/item/emptyTrash', {
     method: 'POST',
     body: params,

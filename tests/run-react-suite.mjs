@@ -50,6 +50,7 @@ const tests = [
   'tests/drag-start-closed-loop.mjs',
   'tests/preview-delivery-closed-loop.mjs',
   'tests/channel-wiring-closed-loop.mjs',
+  'tests/menu-popup-closed-loop.mjs',
 ];
 
 const failed = [];

@@ -1355,6 +1355,16 @@
   }
 
   ipcRenderer.send = function (channel, params) {
+    // b1-9ak：smoke:* 测试通道原生直通（未路由通道走 shim 本地总线会进 console.debug
+    // 黑洞——menu-popup 闭环测试依赖 main 侧实收）
+    if (String(channel || '').indexOf('smoke:') === 0 && nativeRequire) {
+      try {
+        nativeRequire('electron').ipcRenderer.send(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] smoke channel send failed', channel, err);
+      }
+      return;
+    }
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
       items.forEach((item) => analyzeItemPalette(item, { force: true }));

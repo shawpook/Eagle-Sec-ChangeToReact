@@ -405,6 +405,36 @@
 >   `.content .article` 含 'Moonlight'（en 内容分支实锤语言判定 + 加载链 + 渲染）。
 > **验证**：tsc EXIT:0；react-stage-smoke 七断言全绿。
 
+> **b1-9ak：Phase B/批6——Menu.popup 自动化基建（六站点模板断言，45→46→47 第 47 项，2026-09-05）**
+>
+> **新闭环测试 menu-popup-closed-loop.mjs（套件 47 项）**：原生菜单无法被 CDP 观察（真弹
+> 会阻塞会话）。六站点验证 = 1 运行时闭环 + 5 静态接线审计：
+> - **运行时**：openApplicationContextMenu（scope 直调 → File/View/Help 模板断言）。
+> - **静态**：FolderModals moreButtonClick（Menu 构造 + 两 MenuItem + popup 调用）、
+>   shareMenu（ShareMenu 构造 + darwin 守卫——Windows 不可达）、preview-window 三菜单
+>   （openRatioContextMenu/view.zoom.fit、appmenu.view>opacity/revealInFolder、
+>   gifViewer setThumbnail/cancelRange + popup×3）。
+> **基建链**（三层坑位逐一排掉）：①preload 直通 `window.__EAGLE_MENU_SMOKE`（shims stub
+> 了 window.process/window.require，env 不可达）；②fns["openApplicationContextMenu"] 加
+> smoke 分支——渲染层只发 `{site}` 标记，**模板由 main 侧原生序列化**（@electron/remote
+> 经代理读 items 实测为空；Menu.prototype 原型补丁也实测无效——remote 方法调用不走
+> main 原型）；③shims 的 send 是智能路由器，未路由通道进 console.debug 黑洞——补
+> `smoke:*` 通道 nativeRequire 直通。main 捕获落盘 EAGLE_MENU_SMOKE_OUT（绕开 shim
+> invoke 不确定性），测试轮询文件。
+> **真缺口修复（新测试揪出）**：controllerFns 的 openApplicationContextMenu 用裸 `Menu`
+> （b1-9w 逐字移植遗留 ReferenceError——一调用即崩）——补 `Menu/MenuItem = remote`
+> 供给面。
+> **新缺口登记（残余台账⑨）**：Sidebar 消费的 5 个菜单 fns 中 4 个全仓无定义——
+> openFolderContextMenu（bundle 39012，侧栏右键主菜单，**活断**）、openFolderExpandContextMenu
+> （38578）、openSmartFolderContextMenu（39550）、openSmartFolderExpandContextMenu（38619）
+> （openQuickAccessContextMenu/openSidebarVisibleContextMenu 已有）——b1-9w 262 符号审计
+> 的漏网面（事件处理器经由 JSX onContextMenu 经 scopeApply 调用，非菜单点击路径）。
+> **工程教训**：测试进程在 Windows 上因 electron 子进程树句柄残留挂起事件循环（结果已
+> 输出但进程不退、套件 300s 超时杀掉误判 FAIL）——测试收尾显式 process.exit，
+> 失败语义经 failure 标志保留（exit 1）。
+> **验证**：tsc EXIT:0；menu-popup 独立跑 CLOSED_LOOP_OK（exit 0）；suite 47 项门禁
+> 见 commit 后记录。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

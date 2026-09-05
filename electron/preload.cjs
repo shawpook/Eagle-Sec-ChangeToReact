@@ -2,6 +2,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 const thumbnailBaseUrl = String(process.env.EAGLE_THUMBNAIL_URL || 'http://localhost:41692').replace(/\/$/, '');
 
+// b1-9ak：冒烟旗标直通（preload 的 process 是原生对象，先于 shims 注入且不被其覆盖；
+// 渲染层 window.process/window.require 均被 shims stub，env 不可达）
+window.__EAGLE_MENU_SMOKE = String(process.env.EAGLE_MENU_SMOKE || '') === '1';
+
 const api = {
   getAppInfo: () => ipcRenderer.invoke('app:get-info'),
   onIpc: (channel, callback) => {

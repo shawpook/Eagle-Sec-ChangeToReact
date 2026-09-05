@@ -58,6 +58,11 @@ let preferences: any = (window as any).electronSettings?.getPreferences?.() || {
 const FixUtils: any = {};
 const dialog: any = _req('@electron/remote')?.dialog;
 const systemPreferences: any = _req('@electron/remote')?.systemPreferences;
+// b1-9ak：Menu/MenuItem 供给——bundle 顶层 const（openApplicationContextMenu/ShareMenu
+// 等菜单路径消费；此前 bare Menu ReferenceError，menu-popup 闭环测试揪出）
+const remote: any = _req('@electron/remote');
+const Menu: any = remote?.Menu;
+const MenuItem: any = remote?.MenuItem;
 // Angular 注入服务 shim（$timeout 语义 = 延时执行 + digest）
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
   try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
@@ -4264,6 +4269,14 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function() {
             var applicationMenu = Menu.getApplicationMenu();
+            // b1-9ak：冒烟捕获分支——__EAGLE_MENU_SMOKE 时序列化菜单模板通报 main
+            // （原生 popup 无法被 CDP 观察且会阻塞会话；dragSmokeMode 同款先例）。
+            // 旗标由 preload 直通（shims 会 stub window.process/window.require，env 不可达）
+            if ((window as any).__EAGLE_MENU_SMOKE === true) {
+                // 模板由 main 侧原生序列化（remote 经代理读 items 实测为空）
+                ipcRenderer.send('smoke:menu-popup', { site: 'application-menu' });
+                return;
+            }
             applicationMenu.popup(currentWindow);
         }).apply(null, args);
   };

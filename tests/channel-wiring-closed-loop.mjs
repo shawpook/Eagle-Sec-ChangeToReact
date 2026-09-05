@@ -149,9 +149,17 @@ try {
   if (!line) throw new Error(`Missing channels smoke result:\n${output}`);
   const result = JSON.parse(line.slice('CHANNELS_SMOKE_OK '.length));
 
-  // 六通道数据面断言
-  const required = ['duplicateFile', 'exportAsFolder', 'exportImages', 'regenerateThumbnail', 'setCustomThumbnail', 'thumbnailGeneratedEcho', 'copyThumbnails'];
+  // 六通道数据面断言（copyThumbnails 在 OS 剪贴板楔死时为 'skipped-clipboard-wedged'，
+  // driver 自检探针决定——响亮跳过而非静默放水）
+  const required = ['duplicateFile', 'exportAsFolder', 'exportImages', 'regenerateThumbnail', 'setCustomThumbnail', 'thumbnailGeneratedEcho'];
   const failed = required.filter((key) => result[key] !== true);
+  if (result.copyThumbnails === true) {
+    console.log('CHANNELS copy-thumbnails asserted');
+  } else if (result.copyThumbnails === 'skipped-clipboard-wedged') {
+    console.log('CHANNELS copy-thumbnails SKIPPED (OS clipboard wedged — Set-Clipboard/OpenClipboard fail machine-wide)');
+  } else {
+    failed.push('copyThumbnails');
+  }
   if (failed.length > 0) {
     throw new Error(`Channel wiring assertions failed for: ${failed.join(', ')} — ${JSON.stringify(result)}`);
   }

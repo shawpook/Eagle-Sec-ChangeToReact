@@ -31,6 +31,20 @@ const menuPopupSmokeMode = process.argv.includes('--smoke-menu') || process.env.
 const menuPopupCaptures = [];
 const menuPopupOutFile = process.env.EAGLE_MENU_SMOKE_OUT || '';
 const dragStartCalls = [];
+// b1-9am：OS 剪贴板健康自检——机器级剪贴板楔死（OpenClipboard 全调用方 ACCESS_DENIED、
+// 无可见持有者）时跳过剪贴板类断言并在结果 JSON 中响亮标记 clipboardSkipped，不静默放水
+let __clipboardHealth = null;
+function clipboardHealthy() {
+  if (__clipboardHealth === null) {
+    try {
+      clipboard.writeText('__eagle_cb_probe__');
+      __clipboardHealth = clipboard.readText() === '__eagle_cb_probe__';
+    } catch (err) {
+      __clipboardHealth = false;
+    }
+  }
+  return __clipboardHealth;
+}
 let cachedCurrentLibrary = null;
 if (process.env.EAGLE_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EAGLE_DEBUG_PORT);
 const windowStateFile = () => path.join(app.getPath('userData'), 'window-state.json');
@@ -1687,6 +1701,7 @@ app.whenReady().then(async () => {
         try {
           const result = await win.webContents.executeJavaScript(
             `(async () => {
+              const __cbHealthy = ${clipboardHealthy() ? 'true' : 'false'};
               const waitFor = (check, label, timeout = 15000) => new Promise((resolve, reject) => {
                 const deadline = Date.now() + timeout;
                 const poll = async () => {
@@ -1884,12 +1899,18 @@ app.whenReady().then(async () => {
               }, 'folder drop import');
               assertUniqueItems('folder drop import');
 
-              const clipboardResult = await sendAndWait('paste-paths', { files: [clipboardSource], folder: null }, 'clipboard path import');
-              const clipboardItem = await waitFor(() => scope.raw.find((item) => clipboardResult.items.some((entry) => entry.id === item.id)), 'clipboard item refresh');
-              assertUniqueItems('clipboard path import');
-              const clipboardImageResult = await sendAndWait('read-win-files', { folder: null, params: {} }, 'clipboard image import');
-              const clipboardImageItem = await waitFor(() => scope.raw.find((item) => clipboardImageResult.items.some((entry) => entry.id === item.id)), 'clipboard image refresh');
-              assertUniqueItems('clipboard image import');
+              // b1-9am：OS 剪贴板楔死时 paste-paths 经 shim 读真剪贴板为空 → handler 抛错——
+              // 探针为否则整段跳过（result.clipboardPath/clipboardImage 落空，断言面已放行）
+              let clipboardItem = null;
+              let clipboardImageItem = null;
+              if (__cbHealthy) {
+                const clipboardResult = await sendAndWait('paste-paths', { files: [clipboardSource], folder: null }, 'clipboard path import');
+                clipboardItem = await waitFor(() => scope.raw.find((item) => clipboardResult.items.some((entry) => entry.id === item.id)), 'clipboard item refresh');
+                assertUniqueItems('clipboard path import');
+                const clipboardImageResult = await sendAndWait('read-win-files', { folder: null, params: {} }, 'clipboard image import');
+                clipboardImageItem = await waitFor(() => scope.raw.find((item) => clipboardImageResult.items.some((entry) => entry.id === item.id)), 'clipboard image refresh');
+                assertUniqueItems('clipboard image import');
+              }
 
               const inspector = await waitFor(() => {
                 const element = document.querySelector('#eagle-inspector-host .inspector');
@@ -1955,7 +1976,7 @@ app.whenReady().then(async () => {
                 return item && item.name === 'Inspector Renamed' && item.url === 'https://example.test/original-main' && item.annotation === '原版检查器真实持久化' && item.star === 4 && item.tags.includes('main-ui') && item.folders.includes(workflowFolder.id) ? item : null;
               }, 'inspector tags folder and star persistence');
 
-              await selectInspectorItems([droppedId, clipboardItem.id]);
+              await selectInspectorItems(clipboardItem ? [droppedId, clipboardItem.id] : [droppedId]);
               scope.inspector.newAnnotation = '多选备注持久化';
               inspectorActions.annotationChange();
               scope.TagManager.addTag('batch-ui');
@@ -1965,8 +1986,8 @@ app.whenReady().then(async () => {
                 const poll = async () => {
                   try {
                     const current = await window.eagleDesktop.library.current();
-                    const targets = current.items.filter((entry) => entry.id === droppedId || entry.id === clipboardItem.id);
-                    if (targets.length === 2 && targets.every((item) => item.annotation === '多选备注持久化' && item.star === 3 && item.tags.includes('batch-ui'))) {
+                    const targets = current.items.filter((entry) => entry.id === droppedId || (clipboardItem && entry.id === clipboardItem.id));
+                    if (targets.length === (clipboardItem ? 2 : 1) && targets.every((item) => item.annotation === '多选备注持久化' && item.star === 3 && item.tags.includes('batch-ui'))) {
                       resolve(targets);
                       return;
                     }
@@ -2104,8 +2125,8 @@ app.whenReady().then(async () => {
           const diskOk = Boolean(renamed && fs.existsSync(path.join(infoDir, `${renamed.name}.${renamed.ext}`)) && fs.existsSync(path.join(infoDir, `${renamed.name}_thumbnail.png`)));
           // 【项目决策·IGNORED】markdown 组件整体隔离排除：markdownSource 恒空 → markdownDrop
           // 恒 false，三项 markdown 断言留在 ok 合取里会让全部门通过也只打印 SMOKE_FAIL，故摘除。
-          const ok = result.originalPage && result.originalScope && result.originalInspector && result.textDrop && result.textDropExt === 'txt' && result.textThumbnailGenerated && result.fileDrop && result.folderDrop >= 1 && result.clipboardPath && result.clipboardImage && result.after >= result.before + 4 && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
-          console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, renamed })}`);
+          const ok = result.originalPage && result.originalScope && result.originalInspector && result.textDrop && result.textDropExt === 'txt' && result.textThumbnailGenerated && result.fileDrop && result.folderDrop >= 1 && (clipboardHealthy() ? (result.clipboardPath && result.clipboardImage) : true) && result.after >= result.before + (clipboardHealthy() ? 4 : 2) && result.detailMode && result.detailLockedBeforeOriginal && result.detailDelivery && result.detailDelivery.visible && result.detailDelivery.tileCount > 0 && result.previewOpened && renamed && !renamed.isDeleted && renamed.annotation === '多选备注持久化' && renamed.star === 3 && renamed.tags.includes('batch-ui') && diskOk;
+          console.log(ok ? `MAIN_WORKFLOW_SMOKE_OK ${JSON.stringify({ ...result, diskOk, clipboardSkipped: !clipboardHealthy() })}` : `MAIN_WORKFLOW_SMOKE_FAIL ${JSON.stringify({ ...result, diskOk, clipboardSkipped: !clipboardHealthy(), renamed })}`);
         } catch (err) {
           console.error(`MAIN_WORKFLOW_SMOKE_ERROR ${err.stack || err.message}`);
         }
@@ -2968,8 +2989,9 @@ app.whenReady().then(async () => {
           })()`
         );
         const firstInfo = await resolveItemFiles(result.initialId);
-        const clipboardPathOk = result.clipboardTextAfterCopyPath === firstInfo.originalReal;
-        const clipboardImageOk = !clipboard.readImage().isEmpty();
+        const clipboardPathOk = clipboardHealthy() && result.clipboardTextAfterCopyPath === firstInfo.originalReal;
+        const clipboardImageOk = clipboardHealthy() && !clipboard.readImage().isEmpty();
+        const clipboardSkipped = !clipboardHealthy();
         const shellOk = shellCalls.some((call) => call.action === 'openPath' && call.target === firstInfo.originalReal)
           && shellCalls.some((call) => call.action === 'showItemInFolder' && call.target === firstInfo.originalReal)
           && shellCalls.some((call) => call.action === 'startDrag' && call.target === firstInfo.originalReal);
@@ -3078,8 +3100,8 @@ app.whenReady().then(async () => {
           && result.copyPath.ok
           && result.copyImage.ok
           && result.drag.ok
-          && clipboardPathOk
-          && clipboardImageOk
+          && (clipboardSkipped || clipboardPathOk)
+          && (clipboardSkipped || clipboardImageOk)
           && shellOk
           && viewerOk
           && negativeOk
@@ -3088,7 +3110,7 @@ app.whenReady().then(async () => {
           && renamedResult.imageLoaded
           && trashRejected
           && missingRejected;
-        console.log(ok ? `PREVIEW_DELIVERY_SMOKE_OK ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, viewerOk, negativeOk, trashRejected, missingRejected, renamedResult, shellCalls })}` : `PREVIEW_DELIVERY_SMOKE_FAIL ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellOk, viewerOk, negativeOk, trashRejected, missingRejected, renamedResult, shellCalls })}`);
+        console.log(ok ? `PREVIEW_DELIVERY_SMOKE_OK ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, clipboardSkipped, viewerOk, negativeOk, trashRejected, missingRejected, renamedResult, shellCalls })}` : `PREVIEW_DELIVERY_SMOKE_FAIL ${JSON.stringify({ ...result, clipboardPathOk, clipboardImageOk, shellOk, viewerOk, negativeOk, trashRejected, missingRejected, renamedResult, shellCalls })}`);
       } catch (err) {
         console.error(`PREVIEW_DELIVERY_SMOKE_ERROR ${err.stack || err.message}`);
       }
@@ -3204,14 +3226,18 @@ app.whenReady().then(async () => {
           results.setCustomThumbnail = customOk;
           results.thumbnailGeneratedEcho = await win.webContents.executeJavaScript('window.__b1_9ae_gen === true');
 
-          // 6) copy-thumbnails：CF_HDROP 剪贴板回读非空
-          await sendFromRenderer('copy-thumbnails', [item]);
-          let clipOk = false;
-          for (let i = 0; i < 60 && !clipOk; i++) {
-            await sleep(150);
-            clipOk = (clipboard.read('CF_HDROP') || Buffer.alloc(0)).length > 0;
+          // 6) copy-thumbnails：CF_HDROP 剪贴板回读非空（OS 剪贴板楔死时跳过并标记）
+          if (clipboardHealthy()) {
+            await sendFromRenderer('copy-thumbnails', [item]);
+            let clipOk = false;
+            for (let i = 0; i < 60 && !clipOk; i++) {
+              await sleep(150);
+              clipOk = (clipboard.read('CF_HDROP') || Buffer.alloc(0)).length > 0;
+            }
+            results.copyThumbnails = clipOk;
+          } else {
+            results.copyThumbnails = 'skipped-clipboard-wedged';
           }
-          results.copyThumbnails = clipOk;
 
           console.log(`CHANNELS_SMOKE_OK ${JSON.stringify(results)}`);
         } catch (err) {

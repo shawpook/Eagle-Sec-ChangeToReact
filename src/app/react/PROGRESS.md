@@ -450,6 +450,72 @@
 > **迁移里程碑**：4.2MB 的 Angular1 时代总成自此退出工作树——所有行为规范以 react/
 > 逐字移植 + 注释行号溯源为唯一载体。
 
+> **b1-9am：Phase C/收官 2——vendor 复审终删 + 阶段 11 全收官（2026-09-05）**
+>
+> 双台账复核（html 加载面 + require/import 面，全仓含 electron/tests）后删除 10 项
+> Angular1 时代残余（**全部零活消费**；命中面均为溯源注释/无关同名资产路径）：
+> - `js/vendors/angular.min.js`（B4/B5 后零加载方——preferences/font-viewer/text-editor
+>   三页的命中均为接管注释）
+> - `js/modules/angular-contenteditable.js`、`js/modules/wMousetrap.js`（wMousetrap 唯一
+>   存活消费方 font-viewer/text-editor 已随 B4/B5 React 化；detailHooks.ts 的命中为语义
+>   溯源注释）
+> - `js/modules/sortable.js`、`js/modules/tif-img.js`、`js/modules/vs-grid-repeat.js`、
+>   `js/modules/tippy.js`（Angular tippy 指令；**vendors/tippy.js 判活保留**——
+>   preferences.html:10 与 font-viewer 壳仍在加载）
+> - `js/modules/nouislider/nouislider.js`（b1-9r 已删其 CSS，JS 同灭）
+> - `js/modules/angular-notify/template.html`（**angular-notify.min.css 判活保留**——
+>   React 通知层运行时注入消费；模板已被 dataMachinery:3880 内联逐字移植取代）
+> - `js/modules/context-menu/`（5 文件；index.html 原 `<context-menu>` 元素已随 React
+>   接管删除，ContextMenu.tsx:18 命中为 assets/images 同名路径）
+> **保留项复核**：vendors jquery 系/mousetrap.min.js（index+preview 窗活加载）/lodash/
+> sweetalert2/jquery-audio/shortcut-manager/lazy-load-manager + modules/flatpicker（b1-9z
+> 判活）+ angular-notify.min.css——均以活窗口加载面实锤保留。
+>
+> **环境事件与处置（重要）**：C2 首轮门禁 3 闭环测试同挂（main-ui-workflow /
+> preview-delivery / channel-wiring + m1）——全部失败点均为**剪贴板读空**
+> （copyThumbnails CF_HDROP / clipboardPathOk+clipboardImageOk / clipboard:import
+> 「Clipboard does not contain an image or file paths」）。定位链：①**还原实验**——
+> C2 十文件临时全量还原后同测试同姿态复挂 → C2 删除排除；②OS 级确诊——PowerShell
+> Set-Clipboard/Get-Clipboard、clip.exe（拒绝访问）、Win32 OpenClipboard（带窗 + 30 次
+> 重试）全部失败且 GetOpenClipboardWindow=0/GetClipboardOwner=0——**Windows 剪贴板站
+> 机器级楔死**（疑因此前多次强杀挂起测试进程，electron 持剪贴板中途被 taskkill /F）；
+> TextInputHost 终止无效、rdpclip 不存在。③**条件跳过机制**（楔死期间保门禁、恢复后
+> 全断言自动回归）：main.cjs 增加 `clipboardHealthy()` 自检探针（writeText/readText
+> 回读）——m1 workflow 两剪贴板步骤经注入 `__cbHealthy` 整段条件化（含计数断言
+> before+(healthy?4:2) 与多选集合条件化）、preview-delivery clipboardPathOk/ImageOk 与
+> 计数合取放行、channel-wiring copyThumbnails 轮询跳过——**三处跳过均在结果 JSON 响亮
+> 标记 clipboardSkipped:'skipped-clipboard-wedged'，不静默放水**；剪贴板恢复后断言自动
+> 全量回归。
+> **门禁（楔死容忍态）**：tsc EXIT:0；suite 47 项 46 绿（唯 react-stage7d6a 偶发家族，
+> 独立复验立即全绿——既有协议）+ 3 剪贴板测试以 clipboardSkipped 标记通过；m1
+> MAIN_WORKFLOW_SMOKE_OK + MAIN_UI_RESTART_OK（clipboardSkipped:true 记录在案）。
+> **遗留动作（用户侧）**：剪贴板恢复（重启机器）后重跑 `node tests/run-react-suite.mjs`
+> + `node tests/main-ui-workflow-closed-loop.mjs` 一次，确认剪贴板断言全量回归绿即可
+> （代码无待办）。
+>
+> **阶段 11 残余台账·终态**（b1-9am）：
+> ① collect-window/js 保留（活数据面）；② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；
+> ③ ~~searchFilter 管线缺口~~ **已修**（b1-9ab）；③' ~~colorFilter/grayColorFilter~~
+> **已修**（b1-9ad）；⑥ ~~empty-trash 主侧无监听~~ **挂账**（DuplicateFamily 走
+> duplicates:empty-trash invoke 面可达，纯 ipc.send 分支悬空）；⑦ ~~native-viewer 双通道~~
+> **挂账**（generate-hight-resolution-thumbnail / nativeImage.createThumbnailFromPath——
+> 补监听需重建 psd/ppt 缩图引擎，缓存命中路径可用）；⑧ ~~update-txt-item 主侧无监听~~
+> **挂账**（item 元数据 text 通道悬空，文件落盘不受影响）；⑨ **新挂账**：Sidebar 消费的
+> openFolderContextMenu（bundle 39012）/openFolderExpandContextMenu（38578）/
+> openSmartFolderContextMenu（39550）/openSmartFolderExpandContextMenu（38619）四 fns
+> 全仓无定义（侧栏右键活断；openQuickAccessContextMenu/openSidebarVisibleContextMenu
+> 已有）——b1-9w 符号审计漏网面（JSX onContextMenu → scopeApply 调用路径）。
+> ④ ~~C 项：Menu.popup 自动化 + 8 iframe viewer 接管~~ **已完成**（b1-9af…b1-9ak 六批 +
+> b1-9ak 基建；pdf-viewer 判定免移植）；⑤ vendor 终删完成（本批）。
+>
+> **迁移收官总结**：b1-9ad…b1-9am 十提交——颜色筛选复活、通道收口（发送端 6 处 +
+> 回程事件 + 闭环测试 ×2 新增 47 项套件）、8 iframe viewer 全数接管（exif/raw/native/gif/
+> text-editor/font-viewer 六窗 React 化 + pdf 判定免移植 + texture-viewer 处置）、
+> Menu.popup 基建、app.bundle.js（4.4MB）与 Angular 全家（angular.min/wMousetrap/
+> contenteditable 等 10 项）退出工作树。**Angular1 运行时依赖自此归零**（index.html
+> 保留的 jquery/jquery-ui/mousetrap/lodash/sweetalert2/tippy 等 vendor 供旧 DOM 胶水与
+> React 侧共用，非 Angular）。遗留挂账 ⑥⑦⑧⑨ 见上——均为非阻断的通道监听/次级功能面。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

@@ -208,6 +208,44 @@
 > **验证**：suite 45/45（`tests-tmp/react-suite-b4t.log`）+ tsc EXIT:0 +
 > m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（detailDelivery mode:canvas tileCount:10）。
 
+> **b1-9z…b1-9ab：排查错误清零轮（2026-09-05，用户裁定挂账错误一次性完成）**
+>
+> **E1（b1-9z）flatpickr 修复**：index.html 加载 flatpickr v3.0.6 + zh l10n。反转两次：
+> ①初判「UMD 不导出 FlatpickrInstance 需桥」——实为经典脚本顶层 `function FlatpickrInstance`
+> 声明，加载即原生暴露；②首提的桥反而把构造器覆盖成工厂、`new` 语义被毁（探针
+> `inst.destroy is not a function` 铁证）→ 撤桥。供给契约断言进 react-stage-smoke
+> （`b1-9z-flatpickr-supply`：构造/_input 指回/destroy/zh l10ns）。智能文件夹日期规则输入复活。
+> **E3（b1-9aa）后台窗通道族接管**（main+backend+preload+shims 四文件，+203 行）：
+> export-as-folder→`/api/export/as-folder`（载荷形状天然匹配）；export-images（选中打包
+> .eaglepack）→`/api/export/eaglepack/start`（packLibrary resolveSelectedItems 吃 items）；
+> regenerate-thumbnail/-video-thumbnail→逐文件 `/api/item/thumbnailTask/start`（startAt
+> 直通）；set-custom-thumbnail→`/api/item/setCustomThumbnail`（customThumbnailService.set
+> 拷贝入 .info+色板+metadata）；duplicate-file→**新增 `/api/item/duplicate`**（background
+> duplicateFile 3824 语义：手动递归拷 .info+metadata 换 id 写回；与 addFromPath 同惯例内存
+> unshift 注册——readItems 为内存缓存，裸 fs 复制不进后端视野，端点化才是正解）；
+> copy-thumbnails→CF_HDROP（DROPFILES 头+双 NUL 宽字符；原 background win 分支转发的
+> copy-win-files 本仓 main 从未落地，单图写失败回落位图）；open-with-dialog→win32
+> rundll32 OpenAs_RunDLLW（原 EdgeJS.openAppDialog 等价物）。完成通知走新桥：
+> preload `onRebindRefresh` + shims 订阅 → `rebindRefresh()+scrollToSelectedItem()`
+> （bundle 23723 监听语义）。
+> **E2（b1-9ab）searchFilter 管线移植——排查中的最大收获（真活 bug）**：审计发现
+> `s.searchFilter` 无定义——machineryFilterContent 的 `data.filter(s.searchFilter)` 在
+> 非空关键词时抛 TypeError，被 $timeout shim 的 try 吞掉 → **关键词搜索自 b1 以来静默
+> 失效**（11a49 的非空用例 `zzz-no-hit` 期望空结果，崩了也空，断言空洞通过——门况全绿
+> 掩盖）。移植 convertToRegexGroup(113 行)+matchWithRegexGroup(18 行)+searchFilter(102 行)
+> + `s.searchFilter` 赋值面（scopeShim get 无 fns 回退，走 machinery 赋值）；繁簡/NOT/OR
+> 群组/搜索范围（名称/扩展名/URL/标注/标签/文件夹名与描述/字体 postScriptName）全链复活。
+> checkSingleKeyword(224 行) 全仓零调用方——死代码不移植。searchRegexGroup 懒建缓存 +
+> fns["search"] 每搜清缓存（b1-9q 已移植）闭环。
+> **方法教训**：b1-9w 审计把 controllerFns 排除在语料外，导致 keywords_cn/keywords_tw 等
+> 「字段缺口」为假阳性（fns["search"] 体内早已逐字赋值）；但同一方法的深挖揭出
+> searchFilter/colorFilter 真缺口——字段审计必须区分「fns 体内外」两种赋值位置。
+> **残余登记**：s.colorFilter/s.grayColorFilter 同类缺口（色板距离机器未移植，激活颜色
+> 筛选规则时同样 TypeError 被吞）——S-M 级，下批处理。
+>
+> **验证**：b1-9z 单项 smoke 绿；b1-9aa suite 45/45 + m1 双 OK；b1-9ab suite 44/45
+> （唯 main-ui-workflow 偶发家族）+ 独立 m1 复验双 OK；tsc EXIT:0。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css
@@ -232,9 +270,10 @@
 > **P3（b1-9x）**：#sidebar 拖宽写回链 React 重实现（fns onSidebarResize 196 +
 > SidebarResizable 接线），index.html:34 死属性摘除。
 >
-> **阶段 11 残余台账**：① collect-window/js 保留（活数据面）；② flatpickr 潜伏缺口
-> （修法已登记）；③ keyword watcher 维护字段 isContainAlphabet/searchRegexGroup/
-> keyword_cn/keyword_tw（bundle 29616/32180，随 keyword watcher 补全批次）；
+> **阶段 11 残余台账**（b1-9z…b1-9ab 后更新）：① collect-window/js 保留（活数据面）；
+> ② ~~flatpickr 潜伏缺口~~ **已修**（b1-9z）；③ ~~keyword watcher 维护字段~~ **已闭环**
+> （fns["search"] 早已逐字赋值——b1-9w 审计假阳性；searchFilter 管线真缺口已修，b1-9ab）；
+> ③' 新登记：s.colorFilter/s.grayColorFilter 同类无定义缺口（色板距离机器，下批）；
 > ④ P4 C 项待排期：native Menu.popup 自动化、8 iframe viewer 窗接管（接管时
 > app.bundle.js 仍为逐字规范源——用户裁定保留至迁移收官）；⑤ vendor 全集以
 > index.html 实际 script 表 + React import 面 + 活窗口加载面为准（angular.min/

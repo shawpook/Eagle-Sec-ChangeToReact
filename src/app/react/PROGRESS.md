@@ -647,6 +647,13 @@
 > contenteditable 等 10 项）退出工作树。**Angular1 运行时依赖自此归零**（index.html
 > 保留的 jquery/jquery-ui/mousetrap/lodash/sweetalert2/tippy 等 vendor 供旧 DOM 胶水与
 > React 侧共用，非 Angular）。遗留挂账 ⑥⑦⑧⑨ 见上——均为非阻断的通道监听/次级功能面。
+>
+> **⑥⑦⑧⑨ 挂账清算收官**（b1-9ao…b1-9at，2026-09-05/06）：⑨ 侧栏右键菜单族三批
+> （b1-9ao/ap/aq，fns 196→255）→ ⑧ update-txt-item（b1-9as）→ ⑥ empty-trash（b1-9ar，
+> 含 emptyTrash/emptyRestore/openTrashContextMenu 漏项补移植 255→258）→ ⑦ native-viewer
+> （b1-9at，backend nativePreview 引擎 + window.ipcRenderer 供给 + TEMP_PATH 潜伏雷排
+> 除）。**残余台账 ①–⑨ 自此全部关闭**；套件 47→50（每通道一个闭环测试），fns 表 258，
+> 门禁 tsc EXIT:0 + 1c3 OK（258）+ suite 50/50 全绿。
 
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >

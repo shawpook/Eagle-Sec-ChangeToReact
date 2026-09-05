@@ -39,9 +39,9 @@
 | 套件 | 状态 | 说明 |
 | --- | --- | --- |
 | `npm run test:isolated` | ✅ 绿 | 末行 `FULL_REGRESSION_ISOLATED_OK`，EXIT:0。**前置：backend 三个 `fs.cpSync(recursive)` 临时补丁必须在树**（`backend/src/{library-migration,importer,library-backup-service}.js` + `tests/roadmap-panels.mjs`，宿主 cpSync 缺陷绕过，终审后 `git checkout` 回退）。 |
-| `npm run test:main-ui-workflow` | ✅ **绿（b1-9f）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0。**b1-9f 轮累计 79 轮全绿**（身份取证探针在位 73 轮 + 移除探针后终验 6 轮），`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**已知间歇已收口（b1-9f）**：`multi inspector persistence` 统计判定实质消除（见 b1-9e 遗留段更新与 b1-9f 记录）。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
+| `npm run test:main-ui-workflow` | ✅ **绿（b1-9f 起）** | 末行 `MAIN_WORKFLOW_SMOKE_OK` + `MAIN_UI_RESTART_OK`，EXIT:0。**b1-9f 轮累计 79 轮全绿**（身份取证探针在位 73 轮 + 移除探针后终验 6 轮），`detailDelivery` = `mode:"canvas"` / `tileCount:10` / `canvas 818x752` / `visible:true`。**b1-9r…b1-9x 清算系列每提交各补 m1 一轮全绿**（b4t/b4u-reverify/b4w/b4x；唯一偶发：b4u 整跑轮 main-ui-workflow 单跑复验即绿）。**已知间歇已收口（b1-9f）**：`multi inspector persistence` 统计判定实质消除（见 b1-9e 遗留段更新与 b1-9f 记录）。markdown 段按上方「项目级约束」**恒跳过**（`ok` 合取里的三项 markdown 断言已摘除，否则全门通过也只会打印 SMOKE_FAIL）。 |
 | `npx tsc --noEmit -p tsconfig.json` | ✅ 绿 | 必须读真实退出码（`echo "EXIT:$?"`）；EXIT:0 才算过。 |
-| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ✅ **45/45（b1-9q 后达成，2026-09-05）** | b1-9f 轮首跑 23 失败 → b1-9g 逐断言 triage → b1-9h…b1-9q 按台账修复：22 个文件全部整文件转绿。整跑记录 `tests-tmp/react-suite-b49-final2.log`（44/45，唯余 1c3 计数契约——b1-9q 向 fns 表新增 openItemContextMenu/getLibraryHistory 后 160→162，已更新并单项验绿）。 |
+| `node tests/run-react-suite.mjs`（React 全量门 45 项） | ✅ **45/45（b1-9q 达成；b1-9r…b1-9x 清算系列 5 轮全数复验绿）** | b1-9f 轮首跑 23 失败 → b1-9g 逐断言 triage → b1-9h…b1-9q 按台账修复：22 个文件全部整文件转绿。b1-9r…b1-9x（阶段 11 清算 + P2/P3）每提交双门复验：b4r/b4s/b4t/b4w/b4x 全绿（b4u 44/45 为偶发家族，单跑复验绿）。fns 表 162→195（b1-9w 菜单点击路径 33 个）→196（b1-9x onSidebarResize），1c3 契约同步。 |
 
 **m1 推进规则（原「text file drop import timeout」白名单已于 2026-09-04 解除）**：
 
@@ -207,6 +207,39 @@
 >
 > **验证**：suite 45/45（`tests-tmp/react-suite-b4t.log`）+ tsc EXIT:0 +
 > m1 `MAIN_WORKFLOW_SMOKE_OK`/`MAIN_UI_RESTART_OK`（detailDelivery mode:canvas tileCount:10）。
+
+> **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
+>
+> **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css
+> **判活保留**（React 通知层运行时注入 `.cg-notify-*` DOM，原预设「死文件」被推翻）、
+> flatpickr 两条判活保留（**潜伏缺口登记**：FlatpickrInput 等 `window.FlatpickrInstance`，
+> 库未加载且 UMD 不导出该类——智能文件夹日期规则输入失效；修法=加载库+桥+zh l10n，
+> 修前 flatpicker CSS/JS 不入删除清单）；实删 nouislider.min.css + `<library-panel>` 死标记。
+> scroll-to-top-sentinel 属性块判活保留（gridDirectives.ts:62 jQuery 消费）。
+> **b3 批1（b1-9s）**：54 个零引用孤儿删除（双台账实锤：basename 全仓 grep +
+> require/import/script-src 加载形态 grep 均 0 命中）。
+> **b3 批2（b1-9t）**：background 死链子树 57 文件（background.html 无打开方 →
+> background.js+thumbs 39+utils 8+tree.helper/ga4/ga/music-tempo/screen-capture+analyzer+
+> angular-notify.min.js+ng-flatpickr.min.js）；thumbs→utils 依赖链随链清死，
+> nativeThumb 仅被 thumbs 消费，electron nativeThumbnail 为无关同名 IPC。
+> **b2（b1-9u）**：独立窗口旧文件 10 项（preview-window.js/preferences.js 已被 React
+> 逐字承接仅剩溯源注释；progress/manage-device/registration 三死窗 + manage-device.js/
+> registration.js/core.jsc/mailcheck/is.min.js）；**collect-window/js 判活保留**
+> （React 化后自有 js/lib/api 数据面仍被消费——「collect 待核」关闭）。
+> **P2（b1-9w）**：菜单点击路径审计——262 个 s.X 符号对照供给面，34 缺口（含 4 个
+> 已移植 UI 活死按钮：inspector 标签复制/粘贴、removeFromFolder、setAsVideoThumbnail），
+> 33 个 fns 补端口（162→195）+ bundleGlobals 4 顶层全局 + w.clipboard 修复。
+> **P3（b1-9x）**：#sidebar 拖宽写回链 React 重实现（fns onSidebarResize 196 +
+> SidebarResizable 接线），index.html:34 死属性摘除。
+>
+> **阶段 11 残余台账**：① collect-window/js 保留（活数据面）；② flatpickr 潜伏缺口
+> （修法已登记）；③ keyword watcher 维护字段 isContainAlphabet/searchRegexGroup/
+> keyword_cn/keyword_tw（bundle 29616/32180，随 keyword watcher 补全批次）；
+> ④ P4 C 项待排期：native Menu.popup 自动化、8 iframe viewer 窗接管（接管时
+> app.bundle.js 仍为逐字规范源——用户裁定保留至迁移收官）；⑤ vendor 全集以
+> index.html 实际 script 表 + React import 面 + 活窗口加载面为准（angular.min/
+> global.js/devices.js 等仍被活窗口消费，不动）。
+> 累计删除 ~21,600 行死代码（54+57+10 文件）+ index.html 双轨清点。
 
 > **b1-9x：P3 —— #sidebar 拖宽写回链 React 重实现（2026-09-05）**
 >

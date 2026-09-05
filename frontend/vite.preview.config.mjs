@@ -42,6 +42,8 @@ function injectReactMount(html) {
 // （壳 HTML 保留，旧控制脚本摘除，入口由本表注入；generic route 统一处理）。
 const REACT_VIEWER_ENTRIES = {
   '/src/app/exif-viewer/index.html': '/src/app/react/viewers/exif/entry.tsx',
+  '/src/app/raw-viewer/index.html': '/src/app/react/viewers/raw/entry.tsx',
+  '/src/app/native-viewer/index.html': '/src/app/react/viewers/native/entry.tsx',
 };
 
 function injectReactViewer(html, entry) {

@@ -3,8 +3,8 @@
 
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-		<script src="../js/vendors/jquery-1.8.0.min.js"></script>
-		<script type="text/javascript" src="./raw-player.js"></script>
+		<!-- b1-9ag：React 接管——jquery + raw-player.js 摘除（控制面迁至 react/viewers/raw/
+		     entry.tsx，vite 中间件注入入口与 preamble）；dcraw.js 为 vendored 引擎保留 -->
 		<script type="text/javascript" src="../../my_modules/raw-parser/dcraw.js"></script>
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
 		<title></title>
@@ -72,7 +72,6 @@
 	</head>
 
 	<body>
-		<img id="main-image"/>
-		<canvas id="canvas"></canvas>
+		<div id="raw-root"></div>
 	</body>
 </html>

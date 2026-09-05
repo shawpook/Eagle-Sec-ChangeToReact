@@ -311,6 +311,27 @@
 > src 面（window.__b1_9af 先挂载后断言两段式，规避 Runtime.evaluate 无 awaitPromise）。
 > **验证**：tsc EXIT:0；react-stage-smoke 单跑全绿（b1-9ad/b1-9af 双断言 PASS）。
 
+> **b1-9ag：Phase B/批2——raw-viewer + native-viewer React 接管（2026-09-05）**
+>
+> **raw-viewer**：react/viewers/raw/entry.tsx（raw-player.js 104 行 jQuery 逐字——缩略图
+> img file:// URL 即时显示 + dcraw 引擎 100ms 延迟抽取 RAW 内嵌 JPEG 绘 canvas（<480px
+> 跳过）+ 方向/适配双元素类 + window.parent.focus()）；dcraw.js 为 vendored 引擎保留壳内
+> classic script（window.dcraw 直用）；raw-player.js 删除。src 赋值/show 两帧渲染对应
+> 原实现「元素先于类存在」的 CSS opacity 过渡语义。
+> **native-viewer**：react/viewers/native/entry.tsx（index.html 内联脚本 170 行逐字——
+> darwin qlmanage / nativeImage.createThumbnailFromPath invoke，win32
+> 'generate-hight-resolution-thumbnail' send + 缓存轮询：error→1s cache-buster 退避重试、
+> load→ready 隐 loader；缓存目录 parent.global.EAGLE_THUMBNAIL_TEMP_PATH/preview（node
+> integration 下 window.global===window 同通道）；超 10 个缓存整目录清理；原始 substring
+> indexOf ext 匹配怪癖逐字保留）。ready 类经 body.classList 保留壳 CSS 契约。
+> **主侧挂账（残余台账⑦）**：'generate-hight-resolution-thumbnail' 与
+> 'nativeImage.createThumbnailFromPath' 本仓 main 均无监听（原 background 承载随 b1-9t
+> 删除）——特殊格式高分辨率预览在缓存未命中时轮询空转；补监听需重建 psd/ppt 缩图引擎，
+> 非 viewer 接管范畴。
+> **验证**：tsc EXIT:0；react-stage-smoke 四断言全绿（b1-9ad/b1-9af/b1-9ag×2）——raw
+> 契约 = img/canvas r6+fit-height2+src `_thumbnail.png`；native 契约 = ext:png 即时
+> body.ready（win32 早退分支）。
+
 > **b1-9r…b1-9x：阶段 11 b2/b3/b4 清算收官 + P2/P3（2026-09-05，7 提交系列 e5a8311→7a79016）**
 >
 > **b4（b1-9r）**：index.html head 12 条 link 逐消费方判定——angular-notify.min.css

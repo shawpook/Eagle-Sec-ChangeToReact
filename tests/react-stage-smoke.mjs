@@ -106,6 +106,49 @@ try {
   });
   await waitFor(async () => (await waitExpr(`window.__b1_9af && window.__b1_9af.done === true`)).result.value, 'b1-9af exif iframe', 15000);
 
+  // b1-9ag：raw/native viewer React 接管闭环（同 b1-9af 两段式）
+  await page.send('Runtime.evaluate', {
+    expression: `(function () {
+      window.__b1_9ag = { raw: { done: false, ok: false }, native: { done: false, ok: false } };
+      const rawF = document.createElement('iframe');
+      rawF.style.display = 'none';
+      rawF.src = '/src/app/raw-viewer/index.html?ext=png&name=' + encodeURIComponent('Welcome Library') + '&width=1536&height=960&orientation=6&path=' + encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/');
+      rawF.onload = function () {
+        setTimeout(function () {
+          try {
+            const img = rawF.contentDocument.getElementById('main-image');
+            const canvas = rawF.contentDocument.getElementById('canvas');
+            window.__b1_9ag.raw.ok = !!img && !!canvas
+              && img.className.indexOf('r6') > -1 && canvas.className.indexOf('r6') > -1
+              && img.className.indexOf('fit-height2') > -1 && canvas.className.indexOf('fit-height2') > -1
+              && (img.getAttribute('src') || '').indexOf('_thumbnail.png') > -1;
+          } catch (err) { window.__b1_9ag.raw.ok = false; }
+          window.__b1_9ag.raw.done = true;
+          try { rawF.remove(); } catch (err2) {}
+        }, 500);
+      };
+      document.body.appendChild(rawF);
+      setTimeout(function () { window.__b1_9ag.raw.done = true; }, 12000);
+
+      const nativeF = document.createElement('iframe');
+      nativeF.style.display = 'none';
+      nativeF.src = '/src/app/native-viewer/index.html?ext=png&width=1536&height=960&id=MOCK0001&name=' + encodeURIComponent('Welcome Library.png') + '&path=' + encodeURIComponent('/mock-library/Eagle Reverse Demo.library/images/MOCK0001.info/');
+      nativeF.onload = function () {
+        setTimeout(function () {
+          try {
+            window.__b1_9ag.native.ok = nativeF.contentDocument.body.classList.contains('ready');
+          } catch (err) { window.__b1_9ag.native.ok = false; }
+          window.__b1_9ag.native.done = true;
+          try { nativeF.remove(); } catch (err2) {}
+        }, 1200);
+      };
+      document.body.appendChild(nativeF);
+      setTimeout(function () { window.__b1_9ag.native.done = true; }, 12000);
+    })()`,
+    returnByValue: true,
+  });
+  await waitFor(async () => (await waitExpr(`window.__b1_9ag && window.__b1_9ag.raw.done === true && window.__b1_9ag.native.done === true`)).result.value, 'b1-9ag raw/native iframes', 20000);
+
   const assertions = [
     ['react-mount', `document.getElementById('eagle-react-host') !== null`],
     ['angular-main-app', `document.getElementById('main-app') !== null`],
@@ -165,6 +208,8 @@ try {
       } catch (err) { return false; }
     })()`],
     ['b1-9af-exif-viewer-react', `window.__b1_9af && window.__b1_9af.ok === true`],
+    ['b1-9ag-raw-viewer-react', `window.__b1_9ag && window.__b1_9ag.raw.ok === true`],
+    ['b1-9ag-native-viewer-react', `window.__b1_9ag && window.__b1_9ag.native.ok === true`],
   ];
 
   const failures = [];

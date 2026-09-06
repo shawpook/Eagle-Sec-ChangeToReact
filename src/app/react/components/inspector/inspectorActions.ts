@@ -1,4 +1,5 @@
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
+import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 
@@ -412,7 +413,7 @@ export function inspectorCategoryNameChange() {
           (window as any).electronLog.info(`[app] Change inspctor folder name: ${originalName}(${target.id}) > ${target.name}`);
       } catch (err) {}
     }
-    getBodyScope().saveFolder();
+    saveFolder();
   }, 1000);
 }
 
@@ -431,7 +432,7 @@ export function inspectorCategoryDescriptionChange() {
   }
   clearTimeout(inspectorCategoryDescriptionChangeTimeout);
   inspectorCategoryDescriptionChangeTimeout = setTimeout(() => {
-    getBodyScope().saveFolder();
+    saveFolder();
   }, 1000);
 }
 

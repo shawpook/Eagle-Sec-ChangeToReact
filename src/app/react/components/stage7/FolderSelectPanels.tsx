@@ -1,6 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope } from '../../global/scopeBridge';
+import { updateSidebarList } from '../../services/sidebarService';
+import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
 import { useSelectAll } from '../hooks';
@@ -983,7 +985,7 @@ export function NewSmartFolderModal() {
       children.splice(idx, 0, smartFolder);
       smartFolder.imageCount = body.smartFolderCount(smartFolder);
       body.smartFolderMappings[smartFolder.id] = smartFolder;
-      body.updateSidebarList();
+      updateSidebarList();
       body.openSmartFolder(smartFolder);
       setTimeout(() => {
         body.changeSidebarIndex(smartFolder);
@@ -999,7 +1001,7 @@ export function NewSmartFolderModal() {
       smartFolderRef.current.modificationTime = Date.now();
       smartFolderRef.current.imageCount = body.smartFolderCount(smartFolderRef.current);
       if (smartFolderRef.current) {
-        body.updateSidebarList();
+        updateSidebarList();
         body.openSmartFolder(smartFolderRef.current);
         setTimeout(() => {
           body.changeSidebarIndex(smartFolderRef.current);
@@ -1020,7 +1022,7 @@ export function NewSmartFolderModal() {
         }, 200);
       }
     }
-    body.saveFolder();
+    saveFolder();
     isEditModeRef.current = undefined;
     setIsOpen(false);
     const input = document.getElementById('smart-folder-name-input');

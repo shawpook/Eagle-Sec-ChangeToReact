@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope, getRootScope } from '../../global/scopeBridge';
+import { calculateImageBinding } from '../../services/gridBindingService';
+import { updateSelection } from '../../services/selectionService';
 import { t } from '../../global/eagleGlobals';
 import { filesize, second2time } from '../../app/filters';
 import { $, getIpc } from '../detail/detailHooks';
@@ -293,13 +295,13 @@ function MergeEditor({
       });
 
       ayncsImagesChange(changed);
-      body.calculateImageBinding({}, function () {
+      calculateImageBinding({}, function () {
         body.notify({
           message: t('notify.removeDuplicate.successMsg'),
           duration: 750,
         });
         body.rebindRefresh();
-        body.updateSelection();
+        updateSelection();
         stateRef.current.isMerging = false;
         onMerged({
           changed: changed,
@@ -1641,7 +1643,7 @@ export function DuplicateModal() {
         if (body.selectedMappings[image.id]) {
           body.selectedMappings = {};
           body.selected = [];
-          body.updateSelection();
+          updateSelection();
         }
         close();
       }

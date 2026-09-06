@@ -3,6 +3,9 @@ import { createPortal } from 'react-dom';
 import { usePanelState, PanelSnapshot, loadPjson } from '../../store/panelState';
 import { useToolbarState } from '../../store/toolbarState';
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
+import { updateSidebarList } from '../../services/sidebarService';
+import { calculateImageBinding } from '../../services/gridBindingService';
+import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { filesize } from '../../app/filters';
 import { useTippy } from '../hooks';
@@ -656,11 +659,11 @@ export function FolderPasswordModal() {
         folder.password = encoded;
         folder.isUnlock = false;
         folder.passwordTips = passwordTips;
-        s.updateSidebarList();
-        s.calculateImageBinding({ ignoreSort: true }, () => {
+        updateSidebarList();
+        calculateImageBinding({ ignoreSort: true }, () => {
           s.rebindRefresh();
         });
-        s.saveFolder();
+        saveFolder();
         close();
         electronLog && electronLog.info(`[app] 设置文件夹密码：${folder.name}(${folder.id})`);
       } else {
@@ -673,10 +676,10 @@ export function FolderPasswordModal() {
           folder.password = encoded;
           folder.isUnlock = false;
           folder.passwordTips = passwordTips;
-          s.calculateImageBinding({ ignoreSort: true }, () => {
+          calculateImageBinding({ ignoreSort: true }, () => {
             s.rebindRefresh();
           });
-          s.saveFolder();
+          saveFolder();
           close();
           electronLog && electronLog.info(`修改文件夹密码：${folder.name}(${folder.id})`);
         } else {
@@ -691,11 +694,11 @@ export function FolderPasswordModal() {
         delete folder.password;
         delete folder.isUnlock;
         delete folder.passwordTips;
-        s.updateSidebarList();
-        s.calculateImageBinding({ ignoreSort: true }, () => {
+        updateSidebarList();
+        calculateImageBinding({ ignoreSort: true }, () => {
           s.rebindRefresh();
         });
-        s.saveFolder();
+        saveFolder();
         close();
         electronLog && electronLog.info(`移除文件夹密码：${folder.name}(${folder.id})`);
       } else {

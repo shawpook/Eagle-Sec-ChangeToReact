@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
+import { updateSidebarList } from '../../services/sidebarService';
+import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
 import { $, req, getIpc } from '../detail/detailHooks';
@@ -866,8 +868,8 @@ export function AddToFolderModal() {
       body.folderMappings[newFolder.id] = newFolderCopy;
 
       renderFolderList();
-      body.updateSidebarList();
-      body.saveFolder();
+      updateSidebarList();
+      saveFolder();
       focusSeach();
     });
   };
@@ -934,8 +936,8 @@ export function AddToFolderModal() {
           folder.isExpand = true;
 
           renderFolderList();
-          body.updateSidebarList();
-          body.saveFolder();
+          updateSidebarList();
+          saveFolder();
           focusSeach();
         });
       },
@@ -986,8 +988,8 @@ export function AddToFolderModal() {
           body.folderMappings[newFolder.id] = newFolderCopy;
 
           renderFolderList();
-          body.updateSidebarList();
-          body.saveFolder();
+          updateSidebarList();
+          saveFolder();
           focusSeach();
         });
       },

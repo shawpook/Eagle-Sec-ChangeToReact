@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTagManagerState } from '../../store/tagManagerState';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
+import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { useTippy } from '../hooks';
 import { ContentEditable } from '../inspector/ContentEditable';
@@ -287,7 +288,7 @@ export function TagManagerPanel() {
           const order = jQuery(el).sortable('toArray', { attribute: 'data-group-id' });
           const groups = s.TagManager.groups || [];
           s.TagManager.groups = order.map((id: string) => groups.find((g: any) => g.id === id)).filter(Boolean);
-          if (typeof s.saveFolder === 'function') s.saveFolder();
+          saveFolder();
           s.$evalAsync?.();
           const w = window as any;
           w.tagRectSelecting = false;

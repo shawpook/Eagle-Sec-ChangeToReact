@@ -741,6 +741,22 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bb：P0 批 2——四大热点 service 收编（2026-09-06）**
+>
+> 新建 `src/app/react/services/` 四模块（桥接模式）：selectionService（updateSelection）、
+> sidebarService（updateSidebarList）、folderService（saveFolder）、gridBindingService
+> （calculateImageBinding）——实现体暂留 machinery（S2/S5/S7/S1 竖切迁入），service 为
+> **组件侧唯一入口**（内含 typeof 守卫，等价原 TagManager 的 `typeof s.saveFolder ===
+> 'function'` 形态）。组件侧 33 处直呼 scope 属性迁移为直调 service（9 文件：
+> BatchRenameArtstationModals 8 / FolderModals 6 / SmallPanels 9 / FolderSelectPanels 3 /
+> DuplicateFamily 3 / InspectorTagSelectPanel 2 / inspectorActions 2 / ControllerModals 1 /
+> TagManager 1）。哨兵 getBodyScope 685→684（组件侧 −5、新桥 +4）；scopeApply 面不变
+> （SmallPanels 块结构保留）。教训入账：**replace_all 编辑勿跨语义行——一次误删
+> TagManager.addTags 行，哨兵式 grep 复查即抓回**。门禁：tsc EXIT:0 + 哨兵 OK +
+> 定向 12 项（7a/7c/7d1a/7d1b/7d1c1/7d6a smoke + main-ui-workflow/channel-wiring/
+> menu-popup/ui-interactions/drag-start/empty-trash closed-loop）全绿。
+>
+>
 > **【REWRITE-PLAN v2 定稿：彻底化全程计划至收尾 + b1-9ba 基建批（2026-09-06）】**
 > 用户拍板三决策：① 门禁节奏 = **定向 + 竖切收官全量**（常规批定向子集 ~10 项，
 > 竖切收官/危险批 53 项全量）；② **独立窗口面纳入本轮**（preview-window/

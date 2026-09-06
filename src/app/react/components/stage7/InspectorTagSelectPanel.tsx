@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope } from '../../global/scopeBridge';
+import { calculateImageBinding } from '../../services/gridBindingService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
 import { $, getIpc } from '../detail/detailHooks';
@@ -191,14 +192,14 @@ export function InspectorTagSelectPanel() {
             onAdd: (tags: any) => {
               console.log(`onAdd: ${tags}`);
               body.TagManager.addTags(tags);
-              body.calculateImageBinding({ ignoreSort: true }, () => {});
+              calculateImageBinding({ ignoreSort: true }, () => {});
             },
             onRemove: (tags: any) => {
               console.log(`onRemove: ${tags}`);
               tags.forEach((tag: any) => {
                 body.TagManager.removeTag(tag);
               });
-              body.calculateImageBinding({ ignoreSort: true }, () => {});
+              calculateImageBinding({ ignoreSort: true }, () => {});
             },
           });
           bumpAll();

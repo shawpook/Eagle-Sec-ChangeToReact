@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
+import { updateSelection } from '../../services/selectionService';
 import { t } from '../../global/eagleGlobals';
 import { useSidebarState } from '../../store/sidebarState';
 import { useToolbarState } from '../../store/toolbarState';
@@ -129,7 +130,7 @@ export function ErrorModal() {
             if (item) {
               Object.assign(item, error.modifiedData);
               body.updateItemView(item);
-              body.updateSelection();
+              updateSelection();
               if (typeof body.$evalAsync === 'function') body.$evalAsync();
               ayncsImagesChange([item]);
             }

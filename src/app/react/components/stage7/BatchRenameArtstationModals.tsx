@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getBodyScope, getRootScope } from '../../global/scopeBridge';
+import { updateSidebarList } from '../../services/sidebarService';
+import { calculateImageBinding } from '../../services/gridBindingService';
+import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { numberFixedLen } from '../../app/filters';
 import { getIpc, req } from '../detail/detailHooks';
@@ -129,9 +132,9 @@ export function ArtstationImportModal() {
     };
     body.folders.push(folder);
     body.folderMappings[folder.id] = folder;
-    body.updateSidebarList();
-    body.calculateImageBinding();
-    body.saveFolder();
+    updateSidebarList();
+    calculateImageBinding();
+    saveFolder();
     return folder;
   };
 
@@ -1276,7 +1279,7 @@ export function BatchRenameModal() {
         item.name = newNameFormatted;
         originNames[item.id] = originName;
       });
-      getBodyScope().saveFolder();
+      saveFolder();
       getRootScope()?.$broadcast('CALCULATE_IMAGE_BINDING');
     }
 
@@ -1297,7 +1300,7 @@ export function BatchRenameModal() {
         item.name = newNameFormatted;
         originNames[item.id] = originName;
       });
-      getBodyScope().saveFolder();
+      saveFolder();
       getRootScope()?.$broadcast('CALCULATE_IMAGE_BINDING');
 
       // 儲存搜尋歷史
@@ -1326,7 +1329,7 @@ export function BatchRenameModal() {
               item.name = originNames[item.id];
             }
           });
-          getBodyScope().saveFolder();
+          saveFolder();
           getRootScope()?.$broadcast('CALCULATE_IMAGE_BINDING');
         }
       );
@@ -1457,8 +1460,8 @@ export function BatchRenameModal() {
 
     ayncsImagesChange(changed);
     hiddenByCurrentFilter(changed);
-    body.saveFolder();
-    body.calculateImageBinding();
+    saveFolder();
+    calculateImageBinding();
   };
   const renameTagsRef = useRef(renameTags);
   renameTagsRef.current = renameTags;

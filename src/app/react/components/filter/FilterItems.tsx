@@ -5,6 +5,7 @@ import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper, substring } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
 import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
+import { ColorPicker } from './ColorPicker';
 
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
@@ -145,46 +146,37 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
   };
 
   const activeHex = rgbToHexFn(value?.[0], value?.[1], value?.[2]);
-  const pickerRef = useRef<HTMLDivElement>(null);
 
-  // #colorpickerHolder jQuery ColorPicker（bundle:68096-68127 逐字）
-  useEffect(() => {
-    const holder = pickerRef.current;
-    const $ = (window as any).jQuery || (window as any).$;
-    if (!holder || !$ || !$.fn?.ColorPicker) return;
-    let colorChangeTimeout: any;
-    ($(holder) as any).ColorPicker({
-      color: '0087EF',
-      flat: true,
-      onChange: (_hsb: unknown, hex: string) => {
-        const color = '#' + String(hex).toUpperCase();
-        if (!color) return;
-        clearTimeout(colorChangeTimeout);
-        colorChangeTimeout = setTimeout(() => {
-          const s = bodyScope();
-          const root = s?.$root;
-          if (root?.currentColor) {
-            root.currentColor.$setViewValue(color);
-            root.currentColor.$render();
-            s.$evalAsync();
-          } else if (s) {
-            s.hexColor = color;
-            s.filterWithColor && s.filterWithColor(s.hexToRGB(color));
-            s.$evalAsync();
-          }
-        }, 33);
-        const valueInput = document.getElementById('colors-picker-value') as HTMLInputElement | null;
-        const colorInput = document.getElementById('colors-picker') as HTMLInputElement | null;
-        if (valueInput) valueInput.value = color.toUpperCase();
-        if (colorInput) colorInput.value = color;
-        setTimeout(() => {
-          const si = rootRef.current?.querySelector('.shortcut-input') as HTMLElement | null;
-          si?.focus();
-        }, 24);
-      },
-    });
-    return () => { try { ($(holder) as any).ColorPicker('destroy'); } catch {} };
-  }, []);
+  // b1-9bj：自研 ColorPicker（原 #colorpickerHolder jQuery ColorPicker，bundle:68096-68127
+  // 契约等价——onChange 33ms 防抖 + currentColor ngModel 优先路径 + 同步 colors-picker
+  // 双输入框 + 快捷输入框回焦）
+  const colorChangeTimeout = useRef<any>(null);
+  const handlePickerChange = (hex: string) => {
+    const color = '#' + String(hex).toUpperCase();
+    if (!color) return;
+    clearTimeout(colorChangeTimeout.current);
+    colorChangeTimeout.current = setTimeout(() => {
+      const s = bodyScope();
+      const root = s?.$root;
+      if (root?.currentColor) {
+        root.currentColor.$setViewValue(color);
+        root.currentColor.$render();
+        s.$evalAsync();
+      } else if (s) {
+        s.hexColor = color;
+        s.filterWithColor && s.filterWithColor(s.hexToRGB(color));
+        s.$evalAsync();
+      }
+    }, 33);
+    const valueInput = document.getElementById('colors-picker-value') as HTMLInputElement | null;
+    const colorInput = document.getElementById('colors-picker') as HTMLInputElement | null;
+    if (valueInput) valueInput.value = color.toUpperCase();
+    if (colorInput) colorInput.value = color;
+    setTimeout(() => {
+      const si = rootRef.current?.querySelector('.shortcut-input') as HTMLElement | null;
+      si?.focus();
+    }, 24);
+  };
 
   const openColorPicker = () => {
     const colorInput = document.getElementById('colors-picker') as HTMLInputElement | null;
@@ -218,7 +210,9 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
             <div className="menu-content">
               <div className="color-filter">
                 <div>
-                  <div id="colorpickerHolder" ref={pickerRef} style={{ margin: '-10px -14px 0px' }} />
+                  <div style={{ margin: '-10px -14px 0px' }}>
+                    <ColorPicker color={value ? activeHex : undefined} onChange={handlePickerChange} />
+                  </div>
                 </div>
                 <div className="palettes">
                   <div
@@ -300,9 +294,10 @@ function filterFoldersFn(folders: FilterFolderItem[], keyword: string): FilterFo
     const w = window as any;
     const chineseConvert = w.chineseConvert;
     const pinyinlite = w.pinyinlite;
-    const _ = w._;
     const cartesianProduct = w.cartesianProduct;
-    if (!chineseConvert || !pinyinlite || !_) return folders;
+    // b1-9bj：原 `!_` 守卫（lodash）随 vendor 退役移除——本函数不消费 lodash 方法，
+    // 该守卫在 bc 卸载 lodash.js 后会使关键词搜索静默失效（哨兵盲区：裸绑定无方法调用）
+    if (!chineseConvert || !pinyinlite) return folders;
     const keyword_cn = chineseConvert.tw2cn(keyword).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\ /g, '').toLowerCase();
     const items = folders.map((folder) => {
       const nameCN = chineseConvert.tw2cn(folder.name).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -319,7 +314,9 @@ function filterFoldersFn(folders: FilterFolderItem[], keyword: string): FilterFo
     });
     const scores = items.map((item) => ({
       item,
-      score: Math.max(...item.search.map((pinyin: string) => (_.string && _.score ? _.score : (window as any).fuzzy_score)(pinyin, keyword_cn))),
+      // b1-9bj：原 `_.string && _.score ? _.score : fuzzy_score` 为失真 fallback——
+      // 语义 = String.prototype.score 原型扩展（bundle 2621），对齐其余搜索面同形调用
+      score: Math.max(...item.search.map((pinyin: string) => (pinyin as any).score(keyword_cn))),
     }));
     return scores
       .filter((i) => i.score > 0)

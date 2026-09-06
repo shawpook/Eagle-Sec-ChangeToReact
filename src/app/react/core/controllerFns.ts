@@ -3275,7 +3275,8 @@ export function makeControllerFns(getScope: () => any) {
                 eagle.filter.filterRules.color.gray = false;
                 eagle.filter.filterRules.color.value = color;
                 var hexColor = s.rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2]);
-                $('#colorpickerHolder').ColorPickerSetColor(hexColor);
+                // b1-9bj：原 ColorPickerSetColor 随 vendor 退役——自研 picker 经 props 从
+                // rules.color.value 派生，此处写面即外部同步
                 if (hexColor.length > 6) {
                     s.hexColor = hexColor;
                 }

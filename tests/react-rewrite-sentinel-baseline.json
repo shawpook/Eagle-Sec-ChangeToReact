@@ -3,18 +3,19 @@
   "counts": {
     "evalAsync": 384,
     "apply": 9,
-    "watch": 23,
+    "watch": 21,
     "watchCollection": 8,
     "broadcast": 129,
     "on": 76,
-    "scopeApply": 207,
+    "scopeApply": 185,
     "callScope": 27,
-    "getBodyScope": 686,
+    "getBodyScope": 670,
     "jQuery": 78,
     "rootAccess": 495,
-    "coreState": 32,
+    "coreState": 31,
     "lodashWindow": 0,
-    "lodashBare": 25,
-    "vendorScriptTags": 9
+    "lodashBind": 0,
+    "lodashBare": 22,
+    "vendorScriptTags": 6
   }
 }

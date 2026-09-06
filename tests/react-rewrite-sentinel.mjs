@@ -55,6 +55,13 @@ const metrics = {
   jQuery: /\bjQuery\(/g,
   rootAccess: /\$root\./g,
   coreState: /\bcoreState\b/g,
+  // b1-9bc：lodash 退役度量——window 绑定调用 + 裸 _.method 调用（注释命中计入，
+  // 基线为确定性上界；新注释勿用 _.method 形态措辞）
+  lodashWindow: /(?:\bw|window|\(window as any\))\._\./g,
+  // b1-9bj 补盲区：裸 lodash 绑定（const _ = w._ / w._; ）——bc 时 `!_` 守卫因 lodash
+  // 卸载而静默失效的教训（无方法调用形态，lodashWindow/lodashBare 均不命中）
+  lodashBind: /(?:\bw|window|\(window as any\))\._\s*(?:[;=,)\r\n]|$)/g,
+  lodashBare: /(^|[^\w$.'"])_\.[a-z][a-zA-Z0-9]*\b/g,
 };
 
 // b1-9ba 处置面（PROGRESS b1-9ba 节）：禁止复活。

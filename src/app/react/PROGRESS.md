@@ -741,6 +741,24 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bj：S3 批 10——自研取色器 + colorpicker vendor 退役（2026-09-06）**
+>
+> 新建 `components/filter/ColorPicker.tsx`：自研 HSV 平面取色器（SV 方格 + 横向色相条、
+> Pointer Events、零 vendor；onChange 派发不带 # 的 6 位大写 hex 对齐原 vendor 契约、
+> color props 外部同步 = ColorPickerSetColor 等价物）。FilterItems 色筛选项换装：原
+> jQuery ColorPicker 挂载 effect（flat 模式 + 33ms 防抖 + currentColor ngModel 路径 +
+> colors-picker 双输入框同步 + 快捷框回焦）逐字保留为 handlePickerChange；vendor 的
+> js×3 + css 从 index.html 退役（vendor script 标签 9→6）；controllerFns 的
+> ColorPickerSetColor 调用摘除（scope 写 rules.color.value 即 props 同步）。
+> **顺手修 bc 真回归**：filterFoldersFn 的 `const _ = w._` + `!_` 守卫——lodash.js 卸载
+> 后 `w._` 恒 undefined → 文件夹筛选关键词搜索静默失效（**哨兵盲区：裸绑定无方法调用
+> 形态**，lodashWindow/lodashBare 均不命中）；同函数的 `_.string && _.score` 失真
+> fallback 修正为 String.prototype.score 原型扩展同形调用。哨兵新增 **lodashBind**
+> 度量堵盲区（0）。quickSearch 核查：QuickSearchModal.tsx 已是 React 组件（$on 通道
+> 触发面保留至 P4），计划项「quickSearch React 化」已由更早批次满足，无动作。
+> 门禁：tsc + 哨兵 + 定向 6 项全绿。
+>
+>
 > **b1-9bi：S3 批 9——filter 13 watcher 退役 → filterService 订阅（2026-09-06）**
 >
 > 新建 `services/filterService.ts`：setFilterRule = 12 条被 watch 数值路径（file/duration/

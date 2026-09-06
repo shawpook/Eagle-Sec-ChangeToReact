@@ -58,6 +58,7 @@ import { getBodyScope } from '../global/scopeBridge';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
+import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut } from '../services/gridService';
 // b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
@@ -3085,123 +3086,20 @@ export function machineryZoom(s: any): void {
 
 /* ── c15b：列表高度/缩放适配 ─────────────────────────────────────────── */
 
-// ── c15b 域内自管（原 controller 闭包 var：saveListHeightTimeout，33719 邻域）──
-let saveListHeightTimeout: any = null;
-
-/* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-folder localStorage 键逐字） */
+/* b1-9bd：saveListHeight 实现体归位 services/gridService.ts——此处仅存委托壳
+   （machinery 内部其余 2 处直调点与 scope 挂载面不变）。 */
 export function machinerySaveListHeight(s: any, height: any): void {
-  clearTimeout(saveListHeightTimeout);
-  saveListHeightTimeout = setTimeout(function () {
-    if (s.currentFolder) {
-      localStorage.setItem("eagle.list.thumbSize." + s.currentFolder.id, height);
-    } else if (s.currentSmartFolder) {
-      localStorage.setItem("eagle.list.thumbSize." + s.currentSmartFolder.id, height);
-    } else if (s.currentTag) {
-      localStorage.setItem("eagle.list.thumbSize." + s.currentTag, height);
-    } else if (s.viewMode === 'all') {
-      localStorage.setItem("eagle.list.thumbSize.all", height);
-    } else if (s.viewMode === 'unfiled') {
-      localStorage.setItem("eagle.list.thumbSize.unfiled", height);
-    } else if (s.viewMode === 'untagged') {
-      localStorage.setItem("eagle.list.thumbSize.untagged", height);
-    } else if (s.viewMode === 'trash') {
-      localStorage.setItem("eagle.list.thumbSize.trash", height);
-    } else if (s.viewMode === 'random') {
-      localStorage.setItem("eagle.list.thumbSize.random", height);
-    } else if (s.viewMode === 'recent') {
-      localStorage.setItem("eagle.list.thumbSize.recent", height);
-    }
-  }, 150);
+  gridSaveListHeight(s, height);
 }
 
-/* adjustLayoutWidth（bundle 33839-33947 逐字；ig._layout._columnLength 经 window 解析，
-   scrollToCurrentItem 经 scope 解析） */
+/* b1-9bd：adjustLayoutWidth 实现体归位 services/gridService.ts */
 export function machineryAdjustLayoutWidth(s: any, increases: any): void {
-  const w = window as any;
-  if (!s.isItemBindCalculated) return;
-
-  increases = increases || 0;
-  var height;
-  s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
-  s.boxContianerHeight = w.$("#box-container").height() || s.boxContianerHeight;
-  if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-    if (!w.ig._layout._columnLength) return;
-    var containerWidth = w.$("#box-container").width() || s.boxContianerWidth;
-    containerWidth = containerWidth - 16 - 10 - 6;
-    var currentColumn = w.ig._layout._columnLength;
-    var newColumn = (currentColumn + increases) || 1;
-    var newHeight = parseInt(((containerWidth - 10 * (newColumn + 1))) / newColumn as any);
-    height = Math.ceil(newHeight / 5) * 5;
-    if (height > s.MAX_LIST_WIDTH) height = s.MAX_LIST_WIDTH;
-  }
-  else {
-    let step = 50;
-    if (s.imageSize.height > 500) {
-      step = 100;
-    }
-    else if (s.imageSize.height < 200) {
-      step = 25;
-    }
-    height = parseInt((s.imageSize.height + (step * -increases)) / 5 as any) * 5;
-  }
-  if (height > s.MAX_LIST_WIDTH) height = s.MAX_LIST_WIDTH;
-  if (height < 75) height = 75;
-  s.imageSize.height = parseInt(height);
-
-  if (!height) height = s.imageSize.height;
-  if (Number.isFinite(height) && height > 0) {
-    s.lastImageHeight = s.imageSize.height;
-    w.$("#box-container").attr("box-size", height);
-    var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
-    if (margin === Infinity) margin = 10;
-    s.relayout(margin);
-
-    s.scrollToCurrentItem();
-  }
+  gridAdjustLayoutWidth(s, increases);
 }
 
-/* zoomFit（bundle 33949-33985 逐字；changeListHeight/adjustLayoutWidth/smartZoom/
-   zoomFitEdge 经 scope 解析） */
+/* b1-9bd：zoomFit 实现体归位 services/gridService.ts */
 export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
-  const w = window as any;
-  event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    s.imageSize.height = 150;
-    s.changeListHeight();
-    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      s.adjustLayoutWidth(0);
-      machinerySaveListHeight(s, s.imageSize.height);
-    }
-  } else {
-    if (s.VIDEO_TYPES[s.current.ext]) {
-      // 如果是視頻格式，撐滿畫面
-      var mpvPlayer = w.$(".detail-wrap mpv-video")[0];
-      if (mpvPlayer) {
-        mpvPlayer.scaleMode = 'fit';
-      }
-      else {
-        var $video = w.$(".detail-wrap video");
-        if ($video.length > 0) {
-          $video.removeClass("fit");
-        }
-      }
-      return;
-    }
-    s.zoomFitSize = 0;
-    s.lastZoomMode = "fit";
-    localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
-    s.imageSize.zoomRatio = 100;
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-
-    if (!noAnimation) {
-      w.$("#detail-container").addClass("zooming");
-      setTimeout(function () {
-        w.$("#detail-container").removeClass("zooming");
-      }, 300);
-    }
-
-    s.smartZoom(undefined, true);
-  }
+  gridZoomFit(s, event, noAnimation);
 }
 
 /* ── c15c：选择定位/侧栏索引/页面重置/筛选计数 ───────────────────────── */
@@ -5861,40 +5759,14 @@ export function machineryToggleAll(s: any, $event: any): void {
   else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
 }
 
-/* zoomIn（bundle 33883-33898 逐字：非详情 adjustLayoutWidth(-1)+saveListHeight（c15b
-   machinery 版直调）+ 详情 5 步进 ratioExp 梯度（400/200/100/50/25/10/5 封顶 800）+
-   updateZoomRatio machinery 版）；zoomOut（33899-33914 逐字：对称梯度 + 非详情多一步
-   checkListItemsLessThanContainer（scope 解析）） */
+/* b1-9bd：zoomIn/zoomOut 实现体归位 services/gridService.ts（详情分支的 ratio 梯度
+   仍经 scope 解析 getRatioExp/getRatioNonExp/updateZoomRatio，S4 详情竖切归位） */
 export function machineryZoomIn(s: any, event: any): void {
-  event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    s.adjustLayoutWidth(-1);
-    machinerySaveListHeight(s, s.imageSize.height);
-  } else {
-    var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
-    var ratioExp = s.getRatioExp(ratio);
-    if (ratioExp >= 400) { ratioExp = 800; } else if (ratioExp >= 200) { ratioExp = 400; } else if (ratioExp >= 100) { ratioExp = 200; } else if (ratioExp >= 50) { ratioExp = 100; } else if (ratioExp >= 25) { ratioExp = 50; } else if (ratioExp >= 10) { ratioExp = 25; } else if (ratioExp >= 5) { ratioExp = 10; } else { ratioExp = 5; }
-    if (ratioExp > 800) ratioExp = 800;
-    s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-    s.updateZoomRatio(undefined, undefined, undefined, true);
-  }
+  gridZoomIn(s, event);
 }
 
 export function machineryZoomOut(s: any, event: any): void {
-  event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    s.adjustLayoutWidth(1);
-    machinerySaveListHeight(s, s.imageSize.height);
-    s.checkListItemsLessThanContainer();
-  } else {
-    var ratio = Math.floor(s.imageSize.zoomRatio / 5) * 5;
-    var ratioExp = s.getRatioExp(ratio);
-    if (ratioExp <= 10) { ratioExp = 5; } else if (ratioExp <= 25) { ratioExp = 10; } else if (ratioExp <= 50) { ratioExp = 25; } else if (ratioExp <= 100) { ratioExp = 50; } else if (ratioExp <= 200) { ratioExp = 100; } else if (ratioExp <= 400) { ratioExp = 200; } else if (ratioExp <= 800) { ratioExp = 400; }
-    s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-    s.updateZoomRatio(undefined, undefined, undefined, true);
-  }
+  gridZoomOut(s, event);
 }
 
 /* saveHandler（bundle 35985-35991 逐字：crop 模式 saveCrop；saveCrop 经 scope 解析） */

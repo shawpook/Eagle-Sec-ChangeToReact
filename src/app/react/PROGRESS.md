@@ -741,6 +741,21 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bd：S1 批 4——gridService zoom 族归位（2026-09-06）**
+>
+> 新建 `src/app/react/services/gridService.ts`：saveListHeight（150ms 防抖 per-view
+> localStorage）/adjustLayoutWidth（列数换算 + egjs relayout + box-size attr）/zoomFit/
+> zoomIn/zoomOut 五函数实现体自 dataMachinery 逐字搬移；machinery 侧留委托壳（内部
+> 3 处直调点与 scope 挂载面不变，键位表 '-'/'+'/'mod±' 路径零改动）；详情分支 ratio
+> 梯度仍经 scope 解析（getRatioExp/getRatioNonExp/updateZoomRatio，S4 归位）。
+> BoxList Ctrl/Alt+滚轮改直调 gridService（去 callFn 绕道）。**gridState 决策：推迟到
+> be 与 infinitegrid 交换一并落地**——imageSize 是对象态，嵌套写不经 scopeShim 顶层
+> set 陷阱，先造镜像 = 第三份拷贝违背单源目标（REWRITE-PLAN 批注同步）。哨兵
+> getBodyScope 684→686（service 便捷包装 ×2）；coreState 触发词教训：**注释措辞也算
+> 计数——gridService 头注释改写**。门禁：tsc + 哨兵 + utils 单测 + 定向 6 项（含
+> ui-interactions ctrl-滚轮缩放断言 ⑤）全绿。
+>
+>
 > **b1-9bc：P0 批 3——lodash 原生化 + vendor lodash.js 退役（2026-09-06）**
 >
 > 新建 `src/app/react/utils/func.ts`（debounce/throttle，含 cancel/flush）+

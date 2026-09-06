@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { callScope } from '../hooks';
 import { installBoxGrid } from './boxGridEngine';
+import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
 
 /**
  * 阶段4：#box-list 接管。
@@ -87,7 +88,8 @@ export function BoxList() {
         if (wheelLocked) return;
         wheelLocked = true;
         window.setTimeout(() => { wheelLocked = false; }, 120);
-        callFn(e.deltaY < 0 ? 'zoomIn' : 'zoomOut', e);
+        // b1-9bd：滚轮缩放直调 gridService（原 callFn('zoomIn'/'zoomOut') 绕 scope）
+        e.deltaY < 0 ? gridZoomIn(e) : gridZoomOut(e);
       };
 
       const onContextMenuHost = onContextMenu;

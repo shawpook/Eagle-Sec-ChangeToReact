@@ -3243,8 +3243,9 @@ export function machineryResetPage(s: any): void {
   const w = window as any;
 
   // Note: 切换文件夹时，强制触发 inspector 输入框先进行 change
+  // b1-9ba：RESET_PAGE 广播全树无接收者（原接收者随 bundle 摘除退役）——广播体移除，
+  // 本函数其余状态复位语义不变。
   (document.activeElement as any)?.blur?.();
-  s.$root.$broadcast("RESET_PAGE");
   s.listDone = false;
   setTimeout(() => { w.ig.clear(); }, 40);
   s.isOpenWebpagePanel = false;
@@ -9358,16 +9359,11 @@ export function machineryChangeMetaItems(s: any, type: any): void {
   w.electronLog && w.electronLog.info(`[app] Change list display info: ${s.listMetaType}`);
 }
 
-/* moveToFolders（bundle 43242-43251 逐字：MOVE_TO_FOLDER 广播（folderList 活对象）） */
-export function machineryMoveToFolders(s: any, e: any): void {
-  if (s.selected.length > 0) {
-    s.$root.$broadcast("MOVE_TO_FOLDER", {
-      current: s.currentFolder,
-      folders: s.folderList,
-      images: s.selected
-    });
-  }
-}
+/* moveToFolders（bundle 43242-43251 逐字：MOVE_TO_FOLDER 广播（folderList 活对象））
+   b1-9ba：该频道全树无 $on 接收者（原接收者随 bundle 摘除退役，js/directives 侧文件
+   从未挂载）——广播体移除，函数保形（快捷键 'move-to-folders' 入口与 s.moveToFolders
+   挂载面不变；移动到文件夹竖切时按 React 语义归位）。 */
+export function machineryMoveToFolders(_s: any, _e: any): void {}
 
 // ── b1-7d-3 域内自管（原 controller 闭包 var：addImageTimeLeftInterval 45319 邻域）──
 let addImageTimeLeftInterval: any = null;

@@ -655,7 +655,8 @@ export function PluginCenter() {
       bumpAll();
     });
 
-    // $on("REFRESH_PLUGIN_CENTER")（镜像 344-348）
+    // b1-9ba：应用侧发送面随 bundle 摘除死亡，但 7d5b 契约（广播不崩、面板保持）
+    // 仍锁定本监听——保留，插件竖切时归位。
     const offRefresh = body.$on('REFRESH_PLUGIN_CENTER', async (event: any, categoryId: any) => {
       void categoryId;
       calculateListRef.current();

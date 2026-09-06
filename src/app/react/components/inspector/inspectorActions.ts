@@ -874,18 +874,12 @@ export function bindInspectorEvents(): () => void {
   });
 
   if (scope) {
-    const offSave = scope.$on('INSPECTOR_SAVE_CHANGES', () => {
-      imagesChange();
-    });
-    const offUninstall = scope.$on('PLUGIN_UNINSTALL', () => {
-      (window as any).eagle.inspector.initPlugins();
-    });
+    // b1-9ba：INSPECTOR_SAVE_CHANGES / PLUGIN_UNINSTALL 兩頻道全樹無發送者（原發送面在
+    // bundle，摘除後死亡）——死監聽移除；UPDATE_INSPECTOR 仍有活發送面，保留。
     const offUpdate = scope.$on('UPDATE_INSPECTOR', () => {
       updateSelection();
     });
     offs.push(() => {
-      offSave();
-      offUninstall();
       offUpdate();
     });
   }

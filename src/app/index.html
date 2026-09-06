@@ -205,8 +205,8 @@
          / `.sortable(...)` 抛 "is not a function"，React 18 无 error boundary 时整树被卸载
          （表现：#eagle-react-host 空、#eagle-inspector-host .inspector 不存在）。 -->
     <script src="js/vendors/jquery-ui.min.js"></script>
-    <script src="js/vendors/jquery-long-click.js"></script>
-    <script src="js/vendors/jquery.bez.js"></script>
+    <!-- b1-9ba：jquery-long-click.js / jquery.bez.js 移除——全树零消费（长按事件与
+         cubic-bezier 缓动均无调用点），纯死供应商脚本。 -->
     <script src="js/vendors/lodash.js"></script>
     <script src="js/vendors/mousetrap.min.js"></script>
     <!-- jquery-audio（$.playSound / $.stopSound）——scope 的 removeSound/duplicateSound/

@@ -741,6 +741,48 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **【REWRITE-PLAN v2 定稿：彻底化全程计划至收尾 + b1-9ba 基建批（2026-09-06）】**
+> 用户拍板三决策：① 门禁节奏 = **定向 + 竖切收官全量**（常规批定向子集 ~10 项，
+> 竖切收官/危险批 53 项全量）；② **独立窗口面纳入本轮**（preview-window/
+> collect-window/viewers）；③ 非 Angular 第三方库**全部自研替换**（唯一例外
+> @egjs/react-infinitegrid 官方 React 绑定）。旧「数据面零改动/逐字移植」铁律
+> 退役，行为锁定移交回归套件。REWRITE-PLAN.md 重写为 v2：P0 基建 3 批 → P1 竖切
+> 7 面 17 批（网格/侧栏/筛选搜索/详情/菜单族/批量回收站/inspector）→ P2 独立窗口
+> 2 批 → P3 UI 原语自研 2 批 → P4 终审 3 批（digest 退役 → fns 表清零 →
+> scopeShim/scopeBridge/coreState 删除 + grep 永久哨兵 + 收官审计），共 27 批，
+> 提交号 b1-9ba → b1-9ca；DoD 六项（六文件删除 grep-zero / 永久哨兵扩面 / vendor
+> 清零 / infinitegrid / 套件 65+ / 收官文档）。
+>
+> **b1-9ba：基建批——bus.ts + 死供应商/死频道处置 + 彻底化哨兵（2026-09-06）**
+>
+> ① **`global/bus.ts`**：类型化事件总线（on/once/emit + `defineChannel<P>` 按频道
+> 类型化句柄；handler 异常隔离对齐 scopeShim.$broadcast 语义；`window.__eagleBus`
+> 测试面）——$broadcast/$on 的最终替代物，竖切逐频道迁移。
+> ② **死供应商**：index.html 移除 jquery-long-click.js / jquery.bez.js（全树零消费，
+> vendor script 标签 12→10）。
+> ③ **死频道处置（重推导）**：bundle 已摘除 → 接收者只可能在 react 树。$broadcast
+> 40 频道 ∩ $on 41 频道归一化 diff，并排除动态频道名（$on(eventName) 变量形式：
+> FilterItemShell/Sidebar）与未挂载文件（js/directives、js/plugin 均不被 index.html
+> 加载）干扰。**无接收死广播 5 条移除**：MOVE_TO_FOLDER（machineryMoveToFolders
+> 函数保形、快捷键入口不变）、RESET_PAGE（machineryResetPage 保其余复位语义）、
+> OPEN_IMAGE_FILTER ×2（libraryDomain 保 hasUrlState 消费标记）、OPEN_LIBRARY_PANEL
+> （fns switchLibrary else 支留注释）、Update_Tags_Filter（tagManagerDomain）。
+> **无发送死监听 3 处移除**：INSPECTOR_SAVE_CHANGES + PLUGIN_UNINSTALL
+> （inspectorActions）、UPDATE_PLUGIN_PANEL（PluginFamily）。均为 bundle 摘除时代
+> 即死链路（全树无对端），移除行为中立。**两监听经契约复核保留**：OPEN_NOTIFICATION
+> （7c 强契约：广播→弹窗开）、REFRESH_PLUGIN_CENTER（7d5b 契约：广播不崩）——
+> 发送面虽死但套件锁定行为，随竖切归位。死特性登记 REWRITE-PLAN v2 §五（程式库
+> 面板/URL imageFilter 直开/移动到文件夹选择器/通知弹窗），竖切时重建或正式移除。
+> ④ **`tests/react-rewrite-sentinel.mjs`**：彻底化单调门——13 项计数
+> （evalAsync 384/apply 9/watch 23+8/broadcast 129/on 76/scopeApply 207/callScope 27/
+> getBodyScope 685/jQuery 78/rootAccess 481/coreState 32/vendorScriptTags 10）对照
+> `react-rewrite-sentinel-baseline.json`，超基线即 FAIL（防倒退），低于基线提示随批
+> 更新；死频道复活哨兵（按行排除 // 注释误报——controllerFns 历史注释教训）+
+> vendor 退役标签哨兵（只认 src= 标签形态）；套件 52→**53** 项，哨兵列第 1（无
+> Electron、毫秒级，最快暴露）。哨兵自校准发现并回填：on 76/getBodyScope 685。
+> 门禁：tsc EXIT:0（honest unpiped）+ 全量 53 项。
+>
+>
 > **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
 >
 > 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash

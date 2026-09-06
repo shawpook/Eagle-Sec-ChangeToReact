@@ -668,11 +668,8 @@ export function PluginPanel() {
     if (!body) return;
     const jQuery = $();
 
-    // $on("UPDATE_PLUGIN_PANEL")（镜像 19-22）
-    const offUpdate = body.$on('UPDATE_PLUGIN_PANEL', () => {
-      calculateListRef.current();
-      bumpAll();
-    });
+    // b1-9ba：UPDATE_PLUGIN_PANEL 頻道全樹無發送者（原發送面在 bundle，摘除後死亡）
+    // ——死監聽移除。
 
     // $on("OPEN_PLUGIN_PANEL")（镜像 59-80 逐字）
     const offOpen = body.$on('OPEN_PLUGIN_PANEL', (event: any, params: any) => {
@@ -763,7 +760,6 @@ export function PluginPanel() {
     };
 
     return () => {
-      offUpdate();
       offOpen();
       if (input) input.removeEventListener('keyup', onKeyup);
     };

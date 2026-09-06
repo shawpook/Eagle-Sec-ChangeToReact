@@ -6838,7 +6838,9 @@ export function makeControllerFns(getScope: () => any) {
                 FixUtils.openContextMenu();
             }
             else {
-                s.$root.$broadcast("OPEN_LIBRARY_PANEL");
+                // b1-9ba：OPEN_LIBRARY_PANEL 廣播全樹無接收者（library-panel 指令檔從未
+                // 掛載，bundle 摘除後徹底死亡）——廣播體移除；程式庫面板豎切時按 React
+                // 語義歸位。
             }
         }).apply(null, args);
   };

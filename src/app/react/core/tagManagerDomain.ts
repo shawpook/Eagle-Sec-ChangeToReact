@@ -1316,7 +1316,8 @@ export function machineryBuildTagManager(s: any): any {
                     w.eagle.filter.isOpen = true;
                     w.eagle.filter.tagFilterLogic = "OR";
                     s.filterWithTags(tags);
-                    s.$broadcast("Update_Tags_Filter");
+                    // b1-9ba：Update_Tags_Filter 廣播全樹無接收者（原接收者隨 bundle 摘除
+                    // 退役）——廣播體移除，filterWithTags 直呼語義不變。
                 }, 200);
             });
         };

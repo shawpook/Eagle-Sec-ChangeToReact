@@ -1,0 +1,18 @@
+{
+  "generated": "b1-9ba",
+  "counts": {
+    "evalAsync": 384,
+    "apply": 9,
+    "watch": 23,
+    "watchCollection": 8,
+    "broadcast": 129,
+    "on": 76,
+    "scopeApply": 207,
+    "callScope": 27,
+    "getBodyScope": 685,
+    "jQuery": 78,
+    "rootAccess": 481,
+    "coreState": 32,
+    "vendorScriptTags": 10
+  }
+}

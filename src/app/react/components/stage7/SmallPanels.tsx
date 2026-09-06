@@ -457,6 +457,8 @@ export function LayoutPanel() {
 
 export function NotificationModal() {
   const { snapshot } = usePanelState();
+  // b1-9ba：应用侧 OPEN_NOTIFICATION 发送面随 bundle 摘除死亡，但 7c 契约
+  // （广播→弹窗开）仍锁定本监听——保留，通知竖切时随发送面重建一并归位。
   const [isOpen, setOpen] = useState(false);
   const host = usePortalHost('eagle-notification-host');
   const { theme } = snapshot;

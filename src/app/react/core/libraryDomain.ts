@@ -805,18 +805,9 @@ export function takeoverLibraryDomain(): void {
         }
 
         // 處理 imageFilter 參數
+        // b1-9ba：原 OPEN_IMAGE_FILTER 廣播全樹無接收者（原接收者隨 bundle 摘除退役）
+        // ——廣播體移除，僅保留 hasUrlState 消費標記（「URL 狀態已處理」原語義）。
         if (urlState.imageFilter) {
-          if (urlState.imageFilter.startsWith('base64:')) {
-            if (s.$root && s.$root.$broadcast) s.$root.$broadcast('OPEN_IMAGE_FILTER', {
-              base64: urlState.imageFilter.substring(7),
-              fromUrl: true // 標記來自 URL 變更
-            });
-          } else {
-            if (s.$root && s.$root.$broadcast) s.$root.$broadcast('OPEN_IMAGE_FILTER', {
-              itemId: urlState.imageFilter,
-              fromUrl: true // 標記來自 URL 變更
-            });
-          }
           hasUrlState = true;
         }
 

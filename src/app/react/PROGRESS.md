@@ -564,6 +564,47 @@
 > 双捕获 shimBus（生产链）+ native（preload 桥原始交付）均实收 {id:'TXT1', text:'NEW'}。
 > **门禁**：tsc EXIT:0；1c3 OK（255）；suite 48/48。**台账⑧自此清零。**
 >
+> **【UX 回归实锚（用户真机反馈驱动，b1-9au/aw 前置诊断）】** 用户报"按钮点不了/图像点不开"。
+> 七轮 CDP 真机探针（Input.dispatchMouseEvent 真实鼠标路径 + 页面内事件日志/函数包装）
+> 定位五类根因，全部实锚非臆测：① 双击缩略图进详情的 jQuery 委托（bundle 22183）随 C1
+> 消亡后从未重挂——enterDetailMode 函数体健在（选中后直调正常进详情、原图正常渲染），
+> 纯触发器缺失；② 条目右键委托（22212）缺失 + BoxList 容器级右键错绑
+> openFileListContextMenu（该 fns 也从未移植——原 45249），条目右键全死；③ **22 处非
+> 守卫 w.angular.\***（copy/isNumber/element+injector）——C1 摘除 bundle 后全是哑雷，
+> 实测 adjustLayoutWidth 缩放 halfway 抛 `undefined.isNumber`（尺寸改了 relayout 没跑）；
+> ④ eagle-hover-preview.js 提取片（b1-9am 按函数选拼）漏 4 个 bundle 顶层 var 声明
+> （hoverPreviewObserver/mouseoverAudioTimeout/updateCursorInterval/HoverPreviewKeydown）
+> ——每次悬停缩略图抛未捕获 ReferenceError、Z 键预览死；⑤ Ctrl/Alt+滚轮网格缩放
+> （19764/19771）、onBoxMouseup（34821）、名称双击重命名（22178）、openFileWithDefault
+> （33301）均未移植。方法论教训三则：探针连点 (0,0)（img 懒加载 0×0 矩形）、
+> enterDetailMode/openItemContextMenu 的选中守卫、"无结果"系 ContextMenuPanel 隐藏
+> 空态模板误报——误诊均由页面内 instrumentation 纠正。
+>
+> **b1-9au：UX 修复批——网格交互层重建 + 通道黑洞补路由（2026-09-06）**
+>
+> 五 fns 补移植（fns 表 258→263，1c3 同步）：openFileWithDefault（33301 逐字）、
+> openFileListContextMenu（45249）、openOrderMenu（45253——Toolbar 排序按钮同为先前的
+> 死按钮）、onBoxMouseup（34821）、onBoxListDblClick（22178+22183 合并：名称双击 →
+> enableImageNameEditable 模块内直调；缩略图双击 → ctrl/meta 新窗 / alt 系统开启 /
+> habits.doubleclick 分支进详情）。BoxList.tsx 原生监听重挂委托族：dblclick/mouseup/
+> contextmenu（框内→openItemContextMenu、框外→openFileListContextMenu）+ wheel（挂
+> #box-container，Ctrl/Alt+滚轮 120ms leading throttle）。**关键坑：fns 表条目不经
+> scopeShim get 回退，React 侧必须走 callScope 路由**（hooks.ts core-first）。
+> shim 补三通道直通：open-with-default（string rawPath 面 + previewCurrentItemId 排除
+> 预览窗既有分支——回归实锚：无排除时 preview-delivery 闭环超时）、duplicate-file/
+> copy-thumbnails（**b1-9aa main handler 此前从 UI 不可达——channel-wiring 闭环曾因
+> 冒烟窗加载失败走原生 require 侥幸全绿，用户 vite 常驻后全栈页面下实锚黑洞**）。
+> openFilesWithDefault 裸 `path` → `__lv_path`（同类哑雷）。R9 真机复验：双击
+> (350,112) → BoxList 监听 → callScope → enterDetailMode("Probe 3") → isDetailMode=true
+> 全链通；channel-wiring 全通道实绿（含 copyThumbnails）。
+>
+> **b1-9aw：hover-preview 提取片声明补齐（2026-09-06）**
+>
+> eagle-hover-preview.js 头部回填 4 个 bundle 顶层 var（hoverPreviewObserver =
+> IntersectionObserver 实例逐字 + mouseoverAudioTimeout + updateCursorInterval +
+> HoverPreviewKeydown）——node --check 过，悬停零 ReferenceError、Z 键预览/sentinel
+> 观察器复活。
+>
 > **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
 >
 > 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash

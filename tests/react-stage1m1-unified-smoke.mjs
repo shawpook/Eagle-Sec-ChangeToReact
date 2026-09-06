@@ -134,7 +134,8 @@ try {
     const a4 = F.takenOver === true && lc('keyword-suggestion') >= 1 && lc('show-and-search') >= 1 && (s.__bus['REBIND_REFRESH'] || []).length >= 1;
     const a5 = S.takenOver === true && (s.__bus['UPDATE_SELECTION'] || []).length >= 1 && (s.__bus['SAVE_FOLDER'] || []).length >= 1;
     const a6 = M.takenOver === true && lc('before-quit') >= 1 && lc('window.maximize') >= 1 && lc('change.current.theme') >= 1 && lc('jieba-extract-done') >= 1;
-    const a7 = filterMinTotal === 1;
+    // b1-9bi：12 个 eagle.filter 字符串 watcher 退役为 filterService 订阅——契约 = scope 零 watcher + 订阅在
+    const a7 = filterMinTotal === 0 && F.ruleSubscribed === true;
     window.__aOk = !!(a1 && a2 && a3 && a4 && a5 && a6 && a7);
     return JSON.stringify({
       L: !!L, I: !!I, F: !!F, S: !!S, M: !!M,
@@ -426,16 +427,15 @@ try {
     s.filterContent = function () { n++; return orig.apply(s, arguments); };
     window.__m1fc = () => n;
     s.eagle_filter_probe = true;
-    // 触发 watch：写 filterRules.file.min（经 digest 触发域内 watcher）
+    // 触发订阅：写 filterRules.file.min（b1-9bi 起 setFilterRule 是唯一写路径——
+    // 原 scopeShim 轮询 watcher 已退役为 filterService 显式订阅）
     setTimeout(() => {
-      s.$apply(function () {
-        window.eagle.filter.filterRules.file.min = 100;
-      });
+      window.__eagleFilterService.setFilterRule('file', 'min', 100);
     }, 50);
     return true;
   })()`);
   await delay(900);
-  await assertExpr('m1-D-filter-watch-fires', `window.__m1fc() >= 1`);
+  await assertExpr('m1-D-filter-watch-fires', `window.__m1fc() >= 1 && window.__eagleFilterService.listenerCount() >= 1`);
 
   await evalNow(`(() => {
     const s = window.$bodyScope;

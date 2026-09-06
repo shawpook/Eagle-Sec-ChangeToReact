@@ -741,6 +741,23 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bi：S3 批 9——filter 13 watcher 退役 → filterService 订阅（2026-09-06）**
+>
+> 新建 `services/filterService.ts`：setFilterRule = 12 条被 watch 数值路径（file/duration/
+> bpm min/max、shape width/height、resolution minW/maxW/minH/maxH）的**唯一写路径**
+> （镜像写 eagle.filter.filterRules + 显式通知订阅者；`window.__eagleFilterService` 测试面）；
+> onFilterRuleChange 订阅中心 + setFilterRuleAndApply 便捷面。filterDomain：12 个
+> scopeShim 轮询字符串 watcher（含 sweep claim 机制——bundle 已亡，对端竞争不复存在）
+> 退役为单订阅（shape 组保留 width&&height 双条件原语义）；keyword watcher（bundle
+> 33653）→ useListState.subscribe 变更差守卫（keyword 已是委托字段，store 订阅即全量
+> 触发面）。FilterItems2 的 18 个写点（4 组 onCommit ×2 + 4 组 reset）全部改道
+> setFilterRule——穷举式 grep 确认无漏网写入方。**1m1 契约同步**：a7 从「watcher 计数
+> =1」改为「scope 零 watcher + ruleSubscribed」；m1-D 从直写 scope 改经
+> __eagleFilterService.setFilterRule（旧写入形态本身即被退役面）。门禁：tsc + 哨兵 +
+> 定向 6 项（1m1 首红 = D 段旧形态写入，改新正典路径后绿；main-ui 80s 子进程预算
+> 抖动，串行复跑绿）。
+>
+>
 > **b1-9bh：S2 批 8——侧栏 DnD 原生化（jquery-ui draggable/droppable 退役面 1/3）（2026-09-06）**
 >
 > initSidebarDrag 重写为原生 HTML5 DnD：dragstart（payload/dragCheck/helper 语义逐字

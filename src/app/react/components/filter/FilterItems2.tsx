@@ -8,6 +8,7 @@ import { useTippy } from '../hooks';
 import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
 import { KIND_COMPONENTS } from './FilterItems';
 import { useToolbarState } from '../../store/toolbarState';
+import { setFilterRule } from '../../services/filterService';
 
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
@@ -287,7 +288,7 @@ function ShapeItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   maxlength={256}
                   placeholder="W"
                   value={shape.width}
-                  onCommit={(v) => { filter().filterRules.shape.width = v === '' ? undefined : Number(v); }}
+                  onCommit={(v) => { setFilterRule('shape', 'width', v === '' ? undefined : Number(v)); }}
                 />
                 :
                 <DebouncedInput
@@ -295,7 +296,7 @@ function ShapeItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   maxlength={256}
                   placeholder="H"
                   value={shape.height}
-                  onCommit={(v) => { filter().filterRules.shape.height = v === '' ? undefined : Number(v); }}
+                  onCommit={(v) => { setFilterRule('shape', 'height', v === '' ? undefined : Number(v)); }}
                 />
               </div>
             ) : null}
@@ -690,9 +691,8 @@ function DurationItem({ snapshot }: { snapshot: FilterSnapshot }) {
   useTippy(rootRef, snapshot);
   const clear = (e: React.MouseEvent) => {
     e && e.stopPropagation();
-    const r = filter().filterRules.duration;
-    r.min = undefined;
-    r.max = undefined;
+    setFilterRule('duration', 'min', undefined);
+    setFilterRule('duration', 'max', undefined);
     runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
@@ -708,9 +708,9 @@ function DurationItem({ snapshot }: { snapshot: FilterSnapshot }) {
             <div className="file-size-filter">
               <div className="item">
                 <div className="range">
-                  <DebouncedInput placeholder={t('filter.duration>Min')} value={rule.min} onCommit={(v) => { filter().filterRules.duration.min = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.duration>Min')} value={rule.min} onCommit={(v) => { setFilterRule('duration', 'min', v === '' ? undefined : Number(v)); }} />
                   <span>-</span>
-                  <DebouncedInput placeholder={t('filter.duration>Max')} value={rule.max} onCommit={(v) => { filter().filterRules.duration.max = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.duration>Max')} value={rule.max} onCommit={(v) => { setFilterRule('duration', 'max', v === '' ? undefined : Number(v)); }} />
                   <div className="select select-xs">
                     <select
                       tabIndex={-1}
@@ -744,9 +744,8 @@ function BpmItem({ snapshot }: { snapshot: FilterSnapshot }) {
   useTippy(rootRef, snapshot);
   const clear = (e: React.MouseEvent) => {
     e && e.stopPropagation();
-    const r = filter().filterRules.bpm;
-    r.min = undefined;
-    r.max = undefined;
+    setFilterRule('bpm', 'min', undefined);
+    setFilterRule('bpm', 'max', undefined);
     runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
@@ -762,9 +761,9 @@ function BpmItem({ snapshot }: { snapshot: FilterSnapshot }) {
             <div className="file-size-filter">
               <div className="item">
                 <div className="range">
-                  <DebouncedInput placeholder={t('filter.duration>Min')} value={rule.min} onCommit={(v) => { filter().filterRules.bpm.min = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.duration>Min')} value={rule.min} onCommit={(v) => { setFilterRule('bpm', 'min', v === '' ? undefined : Number(v)); }} />
                   <span>-</span>
-                  <DebouncedInput placeholder={t('filter.duration>Max')} value={rule.max} onCommit={(v) => { filter().filterRules.bpm.max = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.duration>Max')} value={rule.max} onCommit={(v) => { setFilterRule('bpm', 'max', v === '' ? undefined : Number(v)); }} />
                 </div>
               </div>
             </div>
@@ -784,9 +783,8 @@ function SizeItem({ snapshot }: { snapshot: FilterSnapshot }) {
   useTippy(rootRef, snapshot);
   const clear = (e: React.MouseEvent) => {
     e && e.stopPropagation();
-    const r = filter().filterRules.file;
-    r.min = undefined;
-    r.max = undefined;
+    setFilterRule('file', 'min', undefined);
+    setFilterRule('file', 'max', undefined);
     runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
@@ -802,9 +800,9 @@ function SizeItem({ snapshot }: { snapshot: FilterSnapshot }) {
             <div className="file-size-filter">
               <div className="item">
                 <div className="range">
-                  <DebouncedInput placeholder={t('filter.fileSize>Min')} value={rule.min} onCommit={(v) => { filter().filterRules.file.min = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.fileSize>Min')} value={rule.min} onCommit={(v) => { setFilterRule('file', 'min', v === '' ? undefined : Number(v)); }} />
                   <span>-</span>
-                  <DebouncedInput placeholder={t('filter.fileSize>Max')} value={rule.max} onCommit={(v) => { filter().filterRules.file.max = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.fileSize>Max')} value={rule.max} onCommit={(v) => { setFilterRule('file', 'max', v === '' ? undefined : Number(v)); }} />
                   <div className="select select-xs">
                     <select
                       tabIndex={-1}
@@ -854,8 +852,10 @@ function ResolutionItem({ snapshot }: { snapshot: FilterSnapshot }) {
   useTippy(rootRef, snapshot);
   const clear = (e: React.MouseEvent) => {
     e && e.stopPropagation();
-    const r = filter().filterRules.resolution;
-    r.minW = r.maxW = r.minH = r.maxH = undefined;
+    setFilterRule('resolution', 'minW', undefined);
+    setFilterRule('resolution', 'maxW', undefined);
+    setFilterRule('resolution', 'minH', undefined);
+    setFilterRule('resolution', 'maxH', undefined);
     runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
@@ -872,17 +872,17 @@ function ResolutionItem({ snapshot }: { snapshot: FilterSnapshot }) {
               <div className="item">
                 <div className="label">{t('filter.resolution>width')}</div>
                 <div className="range">
-                  <DebouncedInput placeholder={t('filter.resolution>min')} value={rule.minW} onCommit={(v) => { filter().filterRules.resolution.minW = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.resolution>min')} value={rule.minW} onCommit={(v) => { setFilterRule('resolution', 'minW', v === '' ? undefined : Number(v)); }} />
                   -
-                  <DebouncedInput placeholder={t('filter.resolution>max')} value={rule.maxW} onCommit={(v) => { filter().filterRules.resolution.maxW = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.resolution>max')} value={rule.maxW} onCommit={(v) => { setFilterRule('resolution', 'maxW', v === '' ? undefined : Number(v)); }} />
                 </div>
               </div>
               <div className="item">
                 <div className="label">{t('filter.resolution>height')}</div>
                 <div className="range">
-                  <DebouncedInput placeholder={t('filter.resolution>min')} value={rule.minH} onCommit={(v) => { filter().filterRules.resolution.minH = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.resolution>min')} value={rule.minH} onCommit={(v) => { setFilterRule('resolution', 'minH', v === '' ? undefined : Number(v)); }} />
                   -
-                  <DebouncedInput placeholder={t('filter.resolution>max')} value={rule.maxH} onCommit={(v) => { filter().filterRules.resolution.maxH = v === '' ? undefined : Number(v); }} />
+                  <DebouncedInput placeholder={t('filter.resolution>max')} value={rule.maxH} onCommit={(v) => { setFilterRule('resolution', 'maxH', v === '' ? undefined : Number(v)); }} />
                 </div>
               </div>
             </div>

@@ -13,7 +13,9 @@
  *   bundle 处理器后重挂。UPDATE_SELECTION/SAVE_FOLDER 留 cZ-6。
  */
 
-import { removeChannelListenersBySource, sweepForeignWatchers, persistSweep } from './appCore';
+import { removeChannelListenersBySource } from './appCore';
+import { onFilterRuleChange } from '../services/filterService';
+import { useListState } from '../store/listState';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 
@@ -117,52 +119,34 @@ export function takeoverFilterDomain(): void {
     };
   }
 
-  // ── eagle.filter watch 族 12 个（摘 bundle watcher → 域内重挂同表达式）──
+  // ── eagle.filter watch 族 12 个（b1-9bi：scopeShim 轮询 watcher → filterService 订阅）──
+  // 原 12 个字符串 watcher（file/duration/bpm min/max ×6、shape ×2、resolution ×4）随
+  // bundle 摘除已无对端竞争，轮询式变更探测由 filterService 的显式写通知替代；
+  // shape 双条件（width && height 才 filterContent）原语义保留。1m1 的 a7 契约同步改为
+  // 「scope 零 watcher + 订阅在」（diag.ruleSubscribed）。
   const s0: any = getBodyScope();
-  if (s0 && typeof s0.$watch === 'function') {
-    // 注册本域 watcher 句柄 → sweep 清扫 bundle 同 exp watcher（含竞态晚注册的 2s/8s 复扫）
-    const claim = (exp: string, fn: any) => {
-      s0.$watch(exp, fn);
-      diag.watchesRemoved += sweepForeignWatchers(s0, exp, [fn]);
-      persistSweep(s0, exp, [fn], undefined, undefined, diag);
-    };
-    const filterContentWatch = (exp: string) => {
-      claim(exp, function () {
-        const s: any = getBodyScope();
-        if (!s) return;
-        s.filterContent();
-      });
-    };
-    const shapeWatch = (exp: string) => {
-      claim(exp, function () {
-        const s: any = getBodyScope();
-        if (!s) return;
-        if (w.eagle.filter.filterRules.shape.width && w.eagle.filter.filterRules.shape.height) {
-          s.filterContent();
-        }
-      });
-    };
-    filterContentWatch('eagle.filter.filterRules.file.min');
-    filterContentWatch('eagle.filter.filterRules.file.max');
-    filterContentWatch('eagle.filter.filterRules.duration.min');
-    filterContentWatch('eagle.filter.filterRules.duration.max');
-    filterContentWatch('eagle.filter.filterRules.bpm.min');
-    filterContentWatch('eagle.filter.filterRules.bpm.max');
-    shapeWatch('eagle.filter.filterRules.shape.width');
-    shapeWatch('eagle.filter.filterRules.shape.height');
-    filterContentWatch('eagle.filter.filterRules.resolution.minW');
-    filterContentWatch('eagle.filter.filterRules.resolution.maxW');
-    filterContentWatch('eagle.filter.filterRules.resolution.minH');
-    filterContentWatch('eagle.filter.filterRules.resolution.maxH');
+  onFilterRuleChange((group: string, _key: string) => {
+    const s: any = getBodyScope();
+    if (!s) return;
+    if (group === 'shape') {
+      const shape = w.eagle.filter.filterRules.shape || {};
+      if (shape.width && shape.height) s.filterContent();
+      return;
+    }
+    s.filterContent();
+  });
+  diag.ruleSubscribed = true;
 
-    // keyword watcher（33653 逐字；b1-9p 补挂——keyword 变化 → search 重算（fns 移植版，
-    // 内置 keywordModelTimeout 防抖）。shim 字符串 watcher 经 evalPath('keyword') 解析
-    // coreState.keyword，可直接触发）
-    s0.$watch('keyword', function (newValue: any) {
-      const s: any = getBodyScope();
-      if (!s) return;
-      s.search(newValue);
+  // keyword watcher（bundle 33653 → listState 订阅；keyword 已是委托字段——scope 写经
+  // 委托进 store，store 订阅即全量触发面；变更差值守卫对齐原 watcher 的 last 比较语义）
+  if (s0) {
+    useListState.subscribe((state: any, prev: any) => {
+      if (state && prev && state.keyword !== prev.keyword) {
+        const s: any = getBodyScope();
+        if (s && typeof s.search === 'function') s.search(state.keyword);
+      }
     });
+    diag.keywordSubscribed = true;
   }
 
   // ── $on 广播处理器（摘 bundle → 域内重挂；发送方仍在 bundle 未移植路径）──

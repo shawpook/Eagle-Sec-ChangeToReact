@@ -605,6 +605,35 @@
 > HoverPreviewKeydown）——node --check 过，悬停零 ReferenceError、Z 键预览/sentinel
 > 观察器复活。
 >
+> **b1-9av：w.angular.\* 哑雷清除 + 键盘层复活 + scopeShim 读写分裂修复（2026-09-06）**
+>
+> ① 16 处活雷替换（dataMachinery 15 + ProgressDialogs 3；itemDomain 2 处为注释、
+> libraryDomain 2 处带守卫诊断代码加注防误报）：angular.copy ×15 → structuredClone
+> （folder/tag/conditions 纯数据面）、angular.isNumber ×2 → Number.isFinite（缩放
+> halfway 崩溃点）、injector().get('$filter') ×1 → getFilter()('i18n')（与相邻行既有
+> 供给一致）。② 键盘层复活：全仓无一处 Mousetrap.bind——原 initMousetrap 的绑定消费端
+> （bundle 49326-49341 逐字：throttle 25 + $evalAsync）随 mgo-mousetrap 指令消亡，
+> ~50 键（Enter/方向键/Del/星标/undo/quicklook/mod 系）全死且 update-menu/
+> update-preferences 重绑通道在 React 世界无发送方。三件套：machineryInitMousetrap
+> 补绑定循环 + applyDataMachineryScope 尾部启动期初始化 + **scopeShim set 陷阱双写修复**
+> （get 优先读 target 而 set 只写 coreState——target 预置字段读写分裂实锚：
+> controller 种子 s.mousetrap={} 恒读旧值，bindings map 写入即丢、R10 往返探针
+> sameRef:false 坐标；另两坑：s.initMousetrap 恒 undefined（三键盘 fns 从未装配 scope，
+> 直接调模块函数）、s.mousetrap 种子 {} 不可作 if-absent 判据）。
+>
+> **b1-9ax：UI 交互闭环测试入套件（50→51）（2026-09-06）**
+>
+> 本轮 UX 事故的制度性补强——50 项套件此前只验数据面通道、不验真实交互。7 断言全绿：
+> dblclick-opens-detail（真实 CDP 双击 .box 中心）/ exit-message-leaves-detail
+> （viewer 'Exit' postMessage 原版链）/ enter-key-opens-detail（键盘层全链）/
+> item-context-menu-nonempty（CONTEXTMENU.OPEN 广播 payload——面板 React state 驱动，
+> s.activeMenu 为旧服务字段不可靠）/ list-contextmenu-opens-order-panel（合成
+> contextmenu + OPEN_LAYOUT_PANEL 间谍）/ ctrl-wheel-zoom-changes-grid-size（CDP
+> modifiers 位掩码 2=Ctrl）/ hover-zero-reference-errors（b1-9aw 回归哨兵）。
+> 断言全部用 scope/广播信号，视觉类不可靠（误报史见 b1-9au 节）。
+>
+> **门禁（au+aw+av+ax 四批累计）**：tsc EXIT:0；1c3 OK（263）；suite 51/51 全绿。
+>
 > **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
 >
 > 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash

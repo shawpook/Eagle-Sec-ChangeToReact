@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（50 项，顺序隔离执行）。
+ * React 全量回归套件（51 项，顺序隔离执行）。
  */
 import { spawnSync } from 'node:child_process';
 
@@ -54,6 +54,7 @@ const tests = [
   'tests/txt-update-closed-loop.mjs',
   'tests/empty-trash-closed-loop.mjs',
   'tests/native-preview-closed-loop.mjs',
+  'tests/ui-interactions-closed-loop.mjs',
 ];
 
 const failed = [];

@@ -686,6 +686,119 @@ export function makeControllerFns(getScope: () => any) {
     }).apply(null, args);
   };
 
+  /* openFileWithDefault（bundle 33301-33308 逐字；debounce 经 window 全局回退——
+     openFilesWithDefault（8755）同款适配。双击缩略图 habits.doubleclick==='external'
+     分支的唯一依赖，此前缺席） */
+  fns["openFileWithDefault"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (file: any) {
+            if (!file || !file.id) return;
+            if ($(".swal2-container").length > 0) { return; }
+            var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+            var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
+            IPCHelper.send('open-with-default', rawPath);
+            RecentFileManager.addFile(file);
+    }).apply(null, args);
+  };
+
+  /* openFileListContextMenu（bundle 45249-45251 逐字；列表空白处右键唯一正主——
+     此前缺席致 BoxList 容器级右键解析恒 undefined、条目右键也被错绑到此） */
+  fns["openFileListContextMenu"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (event: any) {
+            event.stopPropagation();
+            s.openOrderMenu();
+    }).apply(null, args);
+  };
+
+  /* openOrderMenu（bundle 45253-45257 逐字；Toolbar 排序按钮 + 列表右键共用——
+     此前缺席致排序按钮点击无效果） */
+  fns["openOrderMenu"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (event: any) {
+            event && event.stopPropagation();
+            s.$root.$broadcast("OPEN_LAYOUT_PANEL");
+            updateCurrentOrderAndIncrease();
+    }).apply(null, args);
+  };
+
+  /* onBoxMouseup（bundle 34821-34844 逐字；box mouseup 收拢选择 + sidebar focus 边界——
+     原委托链（21938）的一部分，此前未移植） */
+  fns["onBoxMouseup"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (event: any, image: any) {
+            if (event && event.button === 0) {
+
+                // 如果從 sidebar focus 狀態點擊列表已選擇圖片，不該造成已選擇圖片選取狀態消失
+                if (s.$root.currentFocus !== "content" && s.selected.length > 1) {
+                    if (image && s.selectedMappings[image.id]) {
+                        s.$root.currentFocus = "content";
+                        return;
+                    }
+                }
+                if (image && s.selectedMappings[image.id]) {
+                    // 如果點擊這些按鍵，就許消選取
+                    if (event) {
+                        if (event.metaKey || event.shiftKey || event.ctrlKey) {}
+                        // 符合系统操作逻辑
+                        else {
+                            var targetSelectedIndex = s.allData.indexOf(image);
+                            s.selected = [image];
+                            s.lastSelectedIndex = targetSelectedIndex;
+                        }
+                    }
+                    return;
+                }
+            }
+    }).apply(null, args);
+  };
+
+  /* onBoxListDblClick（bundle 22178+22183 委托 dblclick 逐字合并——「图像打不开」根因：
+     原 jQuery 委托绑定随 C1 消亡后从未重挂。name 双击 → enableImageNameEditable（本文件
+     136 行移植版）；缩略图/img/video 双击 → ctrl/meta 新窗、alt 系统开启、否则按
+     habits.doubleclick 进详情/系统开启。enableImageNameEditable 为模块内函数直调） */
+  fns["onBoxListDblClick"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event: any, item: any, isName: any, $element: any) {
+            if (isName) {
+                enableImageNameEditable(event, $element);
+                return;
+            }
+            if (!item) return;
+            if (event.metaKey || event.ctrlKey) {
+                if (
+                    (EagleConfig.SUPPORT_FORMATS[item.ext] && !AUDIO_TYPES[item.ext]) ||
+                    (window as any).pluginModule?.previewExtension?.viewerPluginMap?.[item.ext]
+                ) {
+                    openInNewWindow([item]);
+                    (window as any).analytics?.event?.('NewWindow', 'Open', item.ext);
+                }
+                return;
+            }
+            else if (event.altKey) {
+                s.openFilesWithDefault([item]);
+                return;
+            }
+            else {
+                if (s.$root.preferences.habits.doubleclick !== 'external') {
+                    s.enterDetailMode(event, item);
+                }
+                else {
+                    // 使用预设软体开启
+                    s.openFileWithDefault(item);
+                }
+                s.$evalAsync();
+            }
+    }).apply(null, args);
+  };
+
   /* cancelRegenerateThumbnail（bundle 34491-34494 逐字；FileThumbnailProgress 取消按钮同上——
      缺席时 regenerateThumbnailQueue 不清空、缩略图进度框永不关） */
   fns["cancelRegenerateThumbnail"] = function (...args) {
@@ -8762,8 +8875,8 @@ export function makeControllerFns(getScope: () => any) {
             files.forEach(function (file, index) {
                 if (!file || !file.id) return;
                 if (index < 40) {
-                    var folderPath = path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
-                    var rawPath = path.normalize(folderPath + file.name + "." + file.ext);
+                    var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+                    var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
                     ipcRenderer.send('open-with-default', rawPath);
                 }
             });

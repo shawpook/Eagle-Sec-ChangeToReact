@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
+import { callScope } from '../hooks';
 import { installBoxGrid } from './boxGridEngine';
 
 /**
@@ -34,12 +35,75 @@ export function BoxList() {
         }
         scopeApply(getBodyScope(), (s) => s.cleanSelected && s.cleanSelected(e));
       };
-      const onContextMenu = (e: MouseEvent) => scopeApply(getBodyScope(), (s) => s.openFileListContextMenu && s.openFileListContextMenu(e));
+
+      // b1-9au：网格交互层重建——原 jQuery 委托族（bundle 21938 mouseup / 22178 名称双击
+      // 重命名 / 22183 缩略图双击进详情 / 22212 条目右键）随 C1 消亡后仅 mousedown 选中
+      // 重挂过，其余全数缺失（图像点不开、条目右键错绑容器菜单、名称双击重命名死、
+      // mouseup 收拢选择死）。按原委托语义以原生监听重挂。
+      const boxFrom = (target: EventTarget | null) =>
+        (target as HTMLElement | null)?.closest?.('.box') as HTMLElement | null;
+      const itemOf = (boxEl: HTMLElement | null) => {
+        const s = getBodyScope();
+        const id = boxEl?.getAttribute('data-box-id');
+        return id && s?.itemMappings ? s.itemMappings[id] : null;
+      };
+      const callFn = (fn: string, ...args: any[]) => {
+        // fns 表条目不经 scopeShim get 回退（无 fns-table fallback），必须走 callScope 路由
+        (callScope(fn, ...args) as (e?: any) => any)(undefined);
+      };
+
+      const onMouseUp = (e: MouseEvent) => {
+        const boxEl = boxFrom(e.target);
+        if (!boxEl) return;
+        callFn('onBoxMouseup', e, itemOf(boxEl));
+      };
+
+      const onDblClick = (e: MouseEvent) => {
+        const boxEl = boxFrom(e.target);
+        if (!boxEl) return;
+        const isName = !!(e.target as HTMLElement | null)?.classList?.contains('name');
+        callFn('onBoxListDblClick', e, itemOf(boxEl), isName, isName ? (e.target as HTMLElement) : null);
+      };
+
+      const onContextMenu = (e: MouseEvent) => {
+        const boxEl = boxFrom(e.target);
+        if (boxEl) {
+          // 原 22212：条目右键 → openItemContextMenu（stopPropagation）
+          e.stopPropagation();
+          callFn('openItemContextMenu', e, itemOf(boxEl));
+          return;
+        }
+        // 原 45249：列表空白处右键 → openFileListContextMenu（排序面板）
+        callFn('openFileListContextMenu', e);
+      };
+
+      // 原 19764/19771：Ctrl/Alt+滚轮网格缩放（throttle 120 leading 语义；原绑定在
+      // #box-container 容器——含 box 间空隙区域）
+      let wheelLocked = false;
+      const onWheel = (e: WheelEvent) => {
+        if (!e.altKey && !e.ctrlKey) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (wheelLocked) return;
+        wheelLocked = true;
+        window.setTimeout(() => { wheelLocked = false; }, 120);
+        callFn(e.deltaY < 0 ? 'zoomIn' : 'zoomOut', e);
+      };
+
+      const onContextMenuHost = onContextMenu;
       host.addEventListener('mousedown', onMouseDown);
-      host.addEventListener('contextmenu', onContextMenu);
+      host.addEventListener('mouseup', onMouseUp);
+      host.addEventListener('dblclick', onDblClick);
+      host.addEventListener('contextmenu', onContextMenuHost);
+      // wheel 只挂容器（原版语义；box-list 在其内，事件自然冒泡）
+      const boxContainer = document.getElementById('box-container');
+      boxContainer?.addEventListener('wheel', onWheel, { passive: false });
       cleanups.push(() => {
         host.removeEventListener('mousedown', onMouseDown);
-        host.removeEventListener('contextmenu', onContextMenu);
+        host.removeEventListener('mouseup', onMouseUp);
+        host.removeEventListener('dblclick', onDblClick);
+        host.removeEventListener('contextmenu', onContextMenuHost);
+        boxContainer?.removeEventListener('wheel', onWheel);
       });
     }
 

@@ -1399,6 +1399,29 @@
       }
       return;
     }
+    // b1-9au：open-with-default 原生直通（主窗网格/菜单「以默认应用打开」——main 侧既有
+    // ipcMain.on('open-with-default') handler 收 rawPath。下方 1587 附近的既有分支只服务
+    // 预览窗（previewCurrentItemId 面），主窗路径此前黑洞。预览窗上下文仍走既有分支——
+    // 其 runPreviewAction → preview:action-result 回程是 preview-delivery 闭环测试契约）
+    if (channel === 'open-with-default' && typeof params === 'string' && nativeRequire && !previewCurrentItemId()) {
+      try {
+        nativeRequire('electron').ipcRenderer.send(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] open-with-default native send failed', err);
+      }
+      return;
+    }
+    // b1-9au：duplicate-file / copy-thumbnails 原生直通（main 侧 b1-9aa 既有 handler——
+    // 此前无 shim 路由致 UI 面创建副本/复制缩略图黑洞；channel-wiring 闭环曾因冒烟窗
+    // 加载失败走原生 require 侥幸通过，全栈页面下实锚黑洞）
+    if ((channel === 'duplicate-file' || channel === 'copy-thumbnails') && nativeRequire) {
+      try {
+        nativeRequire('electron').ipcRenderer.send(channel, params);
+      } catch (err) {
+        console.warn('[eagle-shim] ' + channel + ' native send failed', err);
+      }
+      return;
+    }
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
       items.forEach((item) => analyzeItemPalette(item, { force: true }));

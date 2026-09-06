@@ -104,7 +104,8 @@ try {
   //    右键菜单族（toggle 家族 7 + openFolderExpandContextMenu；smart expand 已在
   //    b1-9w 就位）196→232；b1-9aq openSmartFolderContextMenu 主菜单
   //    + 依赖面 23 fns 232→255；b1-9ar empty-trash 族（emptyTrash/emptyRestore/
-  //    openTrashContextMenu）255→258）──
+  //    openTrashContextMenu）255→258；b1-9au 网格交互层（openFileWithDefault/
+  //    openFileListContextMenu/openOrderMenu/onBoxMouseup/onBoxListDblClick）258→263）──
   await assertExpr('c3-contract', `(() => {
     const c = window.__eagleCoreFns;
     if (!c) return false;
@@ -117,8 +118,9 @@ try {
       'toggleAllSmartFolderExpand','openFolderExpandContextMenu',
       'openFolderContextMenu','openSmartFolderContextMenu','cloneSmartFolder',
       'smartFolderExportAsPack','removeSelectedSmartFolders','emptyTrash',
-      'emptyRestore','openTrashContextMenu'];
-    return Object.keys(c).length === 258 && spot.every(k => typeof c[k] === 'function');
+      'emptyRestore','openTrashContextMenu','openFileWithDefault',
+      'openFileListContextMenu','openOrderMenu','onBoxMouseup','onBoxListDblClick'];
+    return Object.keys(c).length === 263 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

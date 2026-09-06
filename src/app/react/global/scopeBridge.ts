@@ -88,11 +88,25 @@ export function startScopeSync({ watch, build, apply }: ScopeSyncOptions): () =>
     return () => clearInterval(retry);
   }
   let applying = false;
+  let lastSnapshot: unknown = null;
+  // b1-9az：no-op 快照跳过——监听值变化但 build 输出未变时（如 orderBy 换名而 boxSortable
+  // 不变），setState 仍生成新对象触发全量订阅者重渲染；BodyBindings 对 body.className
+  // 是整写语义，会把外部命令式 classList.add 的类抹掉（7c welcome-open 实锚）。
+  const shallowEq = (a: any, b: any): boolean => {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    const ka = Object.keys(a);
+    if (ka.length !== Object.keys(b).length) return false;
+    return ka.every((k) => a[k] === b[k]);
+  };
   const push = () => {
     if (applying) return;
     applying = true;
     try {
-      apply(build(scope));
+      const next = build(scope);
+      if (lastSnapshot !== null && shallowEq(next, lastSnapshot)) return;
+      lastSnapshot = next;
+      apply(next);
     } catch (err) {
       console.error('[react-scope-bridge] snapshot build failed', err);
     } finally {

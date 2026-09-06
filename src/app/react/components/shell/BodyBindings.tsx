@@ -37,7 +37,8 @@ export function BodyBindings() {
     if (!body) return;
 
     // class 插值（class="{{::platform}} {{language}} current-focus-{{currentFocus}} {{viewMode}}-view"）
-    const base = [s.platform, s.language, `current-focus-${s.currentFocus}`, `${s.viewMode}-view`]
+    // b1-9az：viewMode 已源翻转（裸值，openFolder 会写 undefined）——展示级默认在此收敛
+    const base = [s.platform, s.language, `current-focus-${s.currentFocus}`, `${s.viewMode || 'all'}-view`]
       .filter(Boolean).join(' ');
     // ng-class 28 项（index.html 38-68 逐字）
     const map: Record<string, boolean> = {

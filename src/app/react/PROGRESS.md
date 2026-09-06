@@ -675,6 +675,41 @@
 > **门禁**：tsc EXIT:0；1c3 OK（263——评级 fns 走 machinery 侧，fns 表不变）；
 > suite 52/52。
 >
+> **【方向变更 + 彻底化启动（b1-9az 起，REWRITE-PLAN.md）】** 用户明确：根本任务是
+> "原地改造为 React 19 + TS + Vite"，要**改得彻底**——逐字移植/数据面零改动铁律
+> 让位于架构彻底化，行为锁定改由回归套件承担。量化审计：残留 25k 行（28%）——
+> scopeShim 195 + fns 表 12,622 + machinery 11,882；组件层 576 处 scopeApply 绕道；
+> $evalAsync/$watch/$broadcast 742 处 digest 语义；jQuery 1,056 处 + vendor 6 脚本。
+> 五阶段蓝图入库 **src/app/react/REWRITE-PLAN.md**（状态单源 → fns 拆解竖切 →
+> digest 退役 → jQuery 退役 → 终审删 shim），每批 52 项套件把门。
+>
+> **b1-9az：彻底化 R1 批 1——状态单源机制 + bodyState 20 字段源翻转（2026-09-06）**
+>
+> 机制：scopeShim 增迁移注册表 `migrateScopeFieldToStore(name, read, write)`——注册
+> 字段 get/set 委托 zustand store（set 保留 coreState 镜像供 __eagleCoreState 诊断
+> 面），startScopeSync 对已迁字段退化为无害回声（快照读 store→写 store 恒等）；未
+> 注册字段行为不变。bodyState 首批注册 20 个顶层同名字段（theme/viewMode/
+> isHideSidebar/isDetailMode 等——派生字段与嵌套路径留待后续批）。验证探针 5/5：
+> scope-reads-store / scope-write-lands-in-store（Tab 键 → toggleAll → store）/
+> store-write-readable-via-scope / body-class-follows-store /
+> detailmode-scope-write-in-store。residue-closed-loop 增哨言
+> scope-delegates-migrated-fields-to-store。tsc 真实 EXIT:0（无管道直跑）；suite
+> 52/52。
+>
+> **b1-9az 首跑三红诊断（全套件抓出的真实回退，全部修复）**：① **sync 回声强转篡源**
+> ——迁移字段若留在 build 快照里，`viewMode || 'all'` 类强转会经 apply 写回 store
+> （openFolder 写 undefined、≤200ms 内被回声改写 'all'，`!s.viewMode` 守卫失效 →
+> 网格失效 residue box-located 红）；修：迁移字段从 build/watch 全部剔除，展示级
+> 默认（viewMode || 'all'）移到消费点 BodyBindings。② **cz1 契约修订**——
+> core→scope 透明对已迁移字段按设计不再成立（coreState 是镜像），该方向断言改用
+> 未迁移字段 keyword。③ **同值 setState 抹类**（7c welcome-open，栈实锚
+> onWelcome → $evalAsync → flushWatchers → libraryDomain watcher → 同值写迁移字段
+> → setState → BodyBindings（无 selector 全量订阅 + body.className 整写）重渲染抹掉
+> 外部命令式 classList.add 的 is-welcome-page）；修两层：委托写入加同值守卫 +
+> startScopeSync push 加快照浅比较 no-op 跳过（对所有 store 生效）。教训入账：
+> **整写型 DOM 绑定组件（className/textContent）对"同值 setState 也会重渲染"敏感，
+> 状态单源迁移必须带同值守卫**。
+>
 > **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
 >
 > 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash

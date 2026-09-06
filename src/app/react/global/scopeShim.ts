@@ -21,6 +21,17 @@
 
 import { coreState } from '../core/appCore';
 
+// b1-9az：字段迁移注册表（彻底化 R1——状态单源机制，REWRITE-PLAN.md 阶段 1）。
+// 注册字段以 zustand store 为唯一状态源：get 委托 store、set 写 store（coreState 保留
+// 镜像供 __eagleCoreState 诊断面）；未注册字段行为不变。注册由各 store 模块完成
+// （bodyState 首批 20 字段）。scopeShim 由此逐批从"状态真身"降级为适配器，待全部
+// 字段迁完、fns/machinery 归位后整个删除。
+const migratedFields = new Map<string, { read: () => any; write: (v: any) => void }>();
+
+export function migrateScopeFieldToStore(name: string, read: () => any, write: (v: any) => void): void {
+  migratedFields.set(name, { read, write });
+}
+
 export function createBodyScopeShim(): any {
   const watchers: any[] = [];
   let flushTimer: any = null;
@@ -166,9 +177,18 @@ export function createBodyScopeShim(): any {
   const proxy = new Proxy(shim, {
     get(target: any, prop: string) {
       if (prop in target) return target[prop];
+      const migrated = migratedFields.get(prop);
+      if (migrated) return migrated.read();
       return coreState[prop];
     },
     set(target: any, prop: string, value: any) {
+      const migrated = migratedFields.get(prop);
+      if (migrated) {
+        migrated.write(value);
+        // 迁移期镜像：__eagleCoreState 诊断面与未迁移读取方不失真
+        coreState[prop] = value;
+        return true;
+      }
       coreState[prop] = value;
       // b1-9av：target 预置字段双写——get 优先读 target（prop in target），只写 coreState
       // 会造成读写分裂（实锚：mousetrap 种子 {} 恒读旧值，键盘 bindings map 写入即丢）

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { startScopeSync } from '../global/scopeBridge';
+import { migrateScopeFieldToStore } from '../global/scopeShim';
 
 /**
  * 11-pre a8：body 绑定层状态源（body ng-class 28 项 + class 插值 + theme/platform/vibrancy
@@ -86,6 +87,30 @@ export const useBodyState = create<BodyState>(() => ({
   inspectorWidth: 300,
 }));
 
+// b1-9az：彻底化 R1 首批源翻转——bodyState 20 个顶层同名字段以本 store 为唯一状态源
+// （scopeShim get/set 委托，startScopeSync 对这些字段退化为无害回声）。派生字段
+// （imageHeight/listProp*/boxSortable/hideBadge 等）与嵌套路径（inspector.*、
+// preferences.*、containerSize.*、currentFolder.*）暂留快照链，后续批次按同机制
+// 逐组迁移（REWRITE-PLAN.md 阶段 1）。
+const MIGRATED_SCOPE_FIELDS: ReadonlyArray<keyof BodyState> = [
+  'theme', 'platform', 'language', 'currentFocus', 'viewMode', 'isLoading', 'layoutOptions',
+  'isWin11', 'isDetailMode', 'isInlineMode', 'isCommentMode', 'isGrayscaleMode',
+  'isHideNavigator', 'smoothZoomDone', 'layout', 'isCropMode', 'isMaximize',
+  'isHideSidebar', 'isSlideshowMode', 'vibrancyEnabled',
+];
+for (const fieldName of MIGRATED_SCOPE_FIELDS) {
+  migrateScopeFieldToStore(
+    fieldName,
+    () => useBodyState.getState()[fieldName],
+    // b1-9az：同值守卫——scope 侧 watcher 在每次 $evalAsync flush 都会回写同值字段
+    // （libraryDomain 注册信息链，7c welcome-open 实锚），无守卫则每次 flush 都 setState
+    // → BodyBindings（整写 body.className）重渲染抹掉外部命令式 class（is-welcome-page）
+    (value: any) => {
+      if (useBodyState.getState()[fieldName] !== value) useBodyState.setState({ [fieldName]: value } as Partial<BodyState>);
+    },
+  );
+}
+
 let bound = false;
 
 export function bindBodySync(): void {
@@ -96,18 +121,21 @@ export function bindBodySync(): void {
   (window as any).__eagleBodyState = useBodyState;
 
   startScopeSync({
+    // b1-9az：MIGRATED_SCOPE_FIELDS 已源翻转（store 为源）——不再入快照。若留在 build 里，
+    // 强转快照（如 viewMode undefined → 'all'）会经 apply 写回 store，篡改源值
+    // （openFolder 写 undefined、200ms 内被回声改写 'all'，破坏 `!s.viewMode` 守卫——
+    // suite 7c/1cz1/residue 三红实锚）。裸值语义 = 原 coreState 语义；展示级默认
+    // （viewMode || 'all'）由消费点负责。
     watch: [
-      'theme', 'platform', 'language', 'currentFocus', 'viewMode', 'isLoading', 'layoutOptions',
-      'isWin11', 'isDetailMode', 'isInlineMode', 'isCommentMode', 'isGrayscaleMode',
-      'isHideNavigator', 'smoothZoomDone', 'imageSize.height', 'layout',
+      'imageSize.height',
       'listLayoutSettings.props.resolution', 'listLayoutSettings.props.dateImported',
       'listLayoutSettings.props.tags', 'listLayoutSettings.props.rating',
       'listLayoutSettings.props.extension', 'listLayoutSettings.props.fileSize',
       'currentFolder.orderBy', 'orderBy', 'eagle.filter.filterBadge', 'keyword',
-      'isCropMode', 'isMaximize', 'isHideSidebar', 'inspector.isHideInspector',
-      'eagle.filter.isOpen', 'isSlideshowMode', '$root.preferences.general.showSidebarBadge',
+      'inspector.isHideInspector', 'eagle.filter.isOpen',
+      '$root.preferences.general.showSidebarBadge',
       '$root.preferences.habits.hoverZoom', '$root.preferences.habits.transparency',
-      'currentComment', 'vibrancyEnabled', 'containerSize.sidebar', 'inspector.width',
+      'currentComment', 'containerSize.sidebar', 'inspector.width',
     ],
     build: (scope) => {
       const currentFolderOrderBy = scope.currentFolder && scope.currentFolder.orderBy;
@@ -116,22 +144,7 @@ export function bindBodySync(): void {
       const habits = (scope.$root && scope.$root.preferences && scope.$root.preferences.habits) || {};
       const props = (scope.listLayoutSettings && scope.listLayoutSettings.props) || {};
       return {
-        theme: scope.theme || 'dark',
-        platform: scope.platform || '',
-        language: scope.language || '',
-        currentFocus: scope.currentFocus || '',
-        viewMode: scope.viewMode || 'all',
-        isLoading: !!scope.isLoading,
-        layoutOptions: scope.layoutOptions || '',
-        isWin11: !!scope.isWin11,
-        isDetailMode: !!scope.isDetailMode,
-        isInlineMode: !!scope.isInlineMode,
-        isCommentMode: !!scope.isCommentMode,
-        isGrayscaleMode: !!scope.isGrayscaleMode,
-        isHideNavigator: !!scope.isHideNavigator,
-        smoothZoomDone: scope.smoothZoomDone !== false,
         imageHeight: (scope.imageSize && scope.imageSize.height) || 0,
-        layout: scope.layout || '',
         listPropResolution: !!props.resolution,
         listPropDateImported: !!props.dateImported,
         listPropTags: !!props.tags,
@@ -145,21 +158,16 @@ export function bindBodySync(): void {
           && !filterBadge
           && !scope.keyword
         ),
-        isCropMode: !!scope.isCropMode,
-        isMaximize: !!scope.isMaximize,
-        isHideSidebar: !!scope.isHideSidebar,
         isHideInspector: !!(scope.inspector && scope.inspector.isHideInspector),
         filterOpen: !!(scope.eagle && scope.eagle.filter && scope.eagle.filter.isOpen),
-        isSlideshowMode: !!scope.isSlideshowMode,
         hideBadge: general.showSidebarBadge == 'false',
         hideZoomBtn: habits.hoverZoom == 'off',
         showTransparentGrid: habits.transparency == 'show',
         hasCurrentComment: !!scope.currentComment,
-        vibrancyEnabled: !!scope.vibrancyEnabled,
         sidebarWidth: (scope.containerSize && scope.containerSize.sidebar) || 220,
         inspectorWidth: (scope.inspector && scope.inspector.width) || 300,
-      } as BodyState;
+      } as Partial<BodyState>;
     },
-    apply: (snapshot) => useBodyState.setState(snapshot as BodyState),
+    apply: (snapshot) => useBodyState.setState(snapshot as Partial<BodyState>),
   });
 }

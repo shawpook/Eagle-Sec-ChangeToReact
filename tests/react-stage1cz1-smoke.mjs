@@ -111,13 +111,17 @@ try {
     return ok;
   })()`);
 
-  // ── 双向透明 ──
+  // ── 双向透明（b1-9az 契约修订：已源翻转字段（theme/viewMode 等 20 个，见
+  //    bodyState MIGRATED_SCOPE_FIELDS）store 为源——scope→core 镜像仍成立，core→scope
+  //    方向按设计不再透明（coreState 是镜像）；该方向用未迁移字段 keyword 验证）──
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.theme = 'light';
     window.__t1 = window.__eagleCoreState.theme === 'light';
-    window.__eagleCoreState.theme = 'dark';
-    window.__t2 = b.theme === 'dark';
+    const savedKeyword = window.__eagleCoreState.keyword;
+    window.__eagleCoreState.keyword = 'cz1-core-writes';
+    window.__t2 = b.keyword === 'cz1-core-writes';
+    window.__eagleCoreState.keyword = savedKeyword;
     return true;
   })()`);
   await assertExpr('cz1-scope-to-core', `window.__t1 === true`);

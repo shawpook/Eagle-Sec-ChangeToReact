@@ -105,6 +105,15 @@ async function main() {
   const deadKeys = await evaluate(`(() => { const s = window.$bodyScope; if (!s.mousetrap) return ['no-map']; const dead = []; for (const k of Object.keys(s.mousetrap)) { if (typeof s.mousetrap[k] !== 'function') dead.push(k); } return dead; })()`);
   assert('mousetrap-zero-dead-keys', deadKeys.length === 0, deadKeys);
 
+  // V1b R1 源翻转哨兵（b1-9az）：迁移字段 scope 读 === store 读——委托链静默退化的回归网
+  const sourceFlip = await evaluate(`(() => {
+    const s = window.$bodyScope; const st = window.__eagleBodyState && window.__eagleBodyState.getState();
+    if (!st) return { bad: ['no-bodyState'] };
+    const fields = ['theme', 'viewMode', 'isHideSidebar', 'isDetailMode'];
+    return { bad: fields.filter((f) => s[f] !== st[f]) };
+  })()`);
+  assert('scope-delegates-migrated-fields-to-store', sourceFlip.bad.length === 0, sourceFlip);
+
   // V2 文件夹点击真打开
   const row = await rectCenter(`(function () { const c = document.getElementById('sidebar-item-container'); if (!c) return null; const name = Array.from(c.querySelectorAll('.name')).filter(function (e) { return e.textContent.trim() === '设计参考'; })[0]; return name ? name.closest('.item') : null; })()`);
   assert('folder-row-located', !!row && row.w > 0, row);

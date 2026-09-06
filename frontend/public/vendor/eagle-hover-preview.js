@@ -1,3 +1,25 @@
+// b1-9aw：提取片缺失声明补齐（bundle 顶层 var 在原 script 内跨段共享；
+// b1-9am 按函数选拼提取时声明行落在区间外——悬停即抛 ReferenceError、
+// Z 键预览/hover sentinel 观察器全死。声明原文逐字回填）
+var hoverPreviewObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+        if (!entry.isIntersecting) {
+            var sentinelEl = entry.target;
+            var $box = $(sentinelEl).closest('.box');
+            if (!$box.length && sentinelEl._hoverBox) {
+                $box = $(sentinelEl._hoverBox);
+            }
+            // box 還在被 hover 時不由 observer 清理，避免 cleanup→mouseenter 循環
+            if ($box.length && $box.is(':hover')) return;
+            cleanupBoxHoverPreview($box);
+            hoverPreviewObserver.unobserve(sentinelEl);
+        }
+    });
+}, { threshold: [0] });
+var mouseoverAudioTimeout;
+var updateCursorInterval;
+var HoverPreviewKeydown = false;
+
 function cleanupBoxHoverPreview($box) {
     if (!$box || !$box.length || !$box.hasClass('hover-active')) return;
     $box.removeClass('hover-active');

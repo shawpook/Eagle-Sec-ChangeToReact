@@ -3147,7 +3147,7 @@ export function machineryAdjustLayoutWidth(s: any, increases: any): void {
   s.imageSize.height = parseInt(height);
 
   if (!height) height = s.imageSize.height;
-  if (w.angular.isNumber(height) && height > 0) {
+  if (Number.isFinite(height) && height > 0) {
     s.lastImageHeight = s.imageSize.height;
     w.$("#box-container").attr("box-size", height);
     var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
@@ -3866,6 +3866,24 @@ export function machineryDestoryMousetrap(s: any): void {
 export function machineryInitMousetrap(s: any): void {
   machineryDestoryMousetrap(s);
   s.mousetrap = machineryBuildMousetrap(s);
+  // b1-9av：mousetrap 绑定消费端补移植（bundle 49326-49341 逐字——原由 mgo-mousetrap
+  // 指令 + 本函数双承载，Angular 消亡后 map 无人 bind，全键盘层死：Enter/方向键/Del/
+  // Mod+Z/空格 quicklook 等）。applyWrapper 逐字：throttle 25 + $evalAsync。
+  const w = window as any;
+  const Mousetrap = w.Mousetrap;
+  if (!Mousetrap || !s.mousetrap) return;
+  const applyWrapper = function (func: any) {
+    return w.throttle(function (e: any) {
+      func(e);
+      s.$evalAsync();
+    }, 25);
+  };
+  for (var key in s.mousetrap) {
+    if (s.mousetrap.hasOwnProperty(key)) {
+      Mousetrap.unbind(key);
+      Mousetrap.bind(key, applyWrapper(s.mousetrap[key]));
+    }
+  }
 }
 
 /* ── c17b：notify（cgNotify 服务等价移植）────────────────────────────── */
@@ -5987,8 +6005,8 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
 
           selectedItems.forEach((item: any) => {
             origin.push(item);
-            originFolders.push(w.angular.copy(item.folders));
-            originTags.push(w.angular.copy(item.tags));
+            originFolders.push(structuredClone(item.folders));
+            originTags.push(structuredClone(item.tags));
             originDeleted.push(item.isDeleted);
           });
 
@@ -6066,7 +6084,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
               message = message.replace("images", "image");
             }
             if (selectedFolders.length === 1) {
-              message = w.angular.element(document.body).injector().get('$filter')('i18n')("notify.image.moveToFolder", [
+              message = getFilter()('i18n')("notify.image.moveToFolder", [
                 { "property": "folderId", "value": selectedFolders[0].id },
                 { "property": "imageCount", "value": selectedItems.length },
                 { "property": "folderName", "value": selectedFolders[0].name }
@@ -7193,7 +7211,7 @@ export function machineryUpdateSliderPosition(s: any): void {
 export function machineryChangeListHeight(s: any, height: any): void {
   const w = window as any;
   if (!height) height = s.imageSize.height;
-  if (w.angular.isNumber(height) && height > 0) {
+  if (Number.isFinite(height) && height > 0) {
 
     height = parseInt(height / 5 as any) * 5;
 
@@ -7848,7 +7866,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
     let parent = s.smartFolderMappings[smartFolder.parent];
     children = parent.children;
   }
-  var origin = w.angular.copy(children);
+  var origin = structuredClone(children);
   var idx = children.indexOf(smartFolder);
 
   if (idx === -1) return;
@@ -8003,7 +8021,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
               image.isDeleted = true;
             }
           }
-          originalImageFolders.push(w.angular.copy(image.folders));
+          originalImageFolders.push(structuredClone(image.folders));
           image.folders.splice(idx, 1);
           changed.push(image);
           originalImages.push(image);
@@ -8030,7 +8048,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
                   image.isDeleted = true;
                 }
               }
-              originalImageFolders.push(w.angular.copy(image.folders));
+              originalImageFolders.push(structuredClone(image.folders));
               image.folders.splice(idx, 1);
               changed.push(image);
               originalImages.push(image);
@@ -8207,7 +8225,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   let now = Date.now();
   s.selected.forEach(function (image: any) {
     origin.push(image);
-    originFolders.push(w.angular.copy(image.folders));
+    originFolders.push(structuredClone(image.folders));
     s.currentFolder.imagesMappings[image.id] = false;
     if (s.currentFolder.parent) {
       if (s.folderMappings[s.currentFolder.parent].imagesMappings) {
@@ -10421,7 +10439,7 @@ export function machineryEditTag(s: any, tag: any): void {
     w.electronLog && w.electronLog.info(`[app] Rename tag: [${tag.name}] > [${newName}]`);
     w.analytics.event('Tag', 'Rename', newName);
 
-    var originTag = w.angular.copy(tag);
+    var originTag = structuredClone(tag);
 
     // 更新所有出现该标签的图片
     var originImages: any[] = [];
@@ -10435,7 +10453,7 @@ export function machineryEditTag(s: any, tag: any): void {
         var idx = image.tags.indexOf(tag.name);
         if (idx !== -1 && newName) {
           originImages.push(image);
-          originImagesTags.push(w.angular.copy(image.tags));
+          originImagesTags.push(structuredClone(image.tags));
           image.tags[idx] = newName;
           image.tags = [...new Set(image.tags)];
           changed.push(image);
@@ -10451,7 +10469,7 @@ export function machineryEditTag(s: any, tag: any): void {
     if (TagManager.groups.length > 0) {
       TagManager.groups.forEach(function (group: any) {
         originGroups.push(group);
-        originGroupsTags.push(w.angular.copy(group.tags));
+        originGroupsTags.push(structuredClone(group.tags));
         if (group.tags) {
           var idx = group.tags.indexOf(tag.name);
           if (idx !== -1 && newName) {
@@ -10468,7 +10486,7 @@ export function machineryEditTag(s: any, tag: any): void {
       });
     }
 
-    var originHistoryTags: any = w.angular.copy(originHistoryTags);
+    var originHistoryTags: any = structuredClone(originHistoryTags);
     try {
       if (TagManager.historyTags && TagManager.historyTags.length > 0) {
         var idx = TagManager.historyTags.indexOf(tag.name);
@@ -10496,7 +10514,7 @@ export function machineryEditTag(s: any, tag: any): void {
         var idx = folder.tags.indexOf(tag.name);
         if (idx !== -1 && newName) {
           originFolders.push(folder);
-          originFoldersTags.push(w.angular.copy(folder.tags));
+          originFoldersTags.push(structuredClone(folder.tags));
           folder.tags[idx] = newName;
           folder.tags = [...new Set(folder.tags)];
         }
@@ -10509,7 +10527,7 @@ export function machineryEditTag(s: any, tag: any): void {
     w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
       if (!smartFolder.conditions) return;
       originSmartFolders.push(smartFolder);
-      originConditions.push(w.angular.copy(smartFolder.conditions));
+      originConditions.push(structuredClone(smartFolder.conditions));
 
       smartFolder.conditions.forEach(function (condition: any) {
         if (!condition.rules) return;
@@ -11574,6 +11592,21 @@ export function applyDataMachineryScope(): void {
   s.getAncestorSmartFolders = (folder: any, folders: any[]) => machineryGetAncestorSmartFolders(s, folder, folders);
   s.toggleAllFolders = (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand);
   s.toggleAllSmartFolders = (smartFolders: any, isExpand: any) => machineryToggleAllSmartFoldersInner(s, smartFolders, isExpand);
+
+  // b1-9av：启动期键盘绑定。原链 = update-menu/update-preferences IPC → initMousetrap
+  // （bundle 22399/22408），该两通道 React 世界无发送方无桥（PROGRESS 曾登记"暂留"）——
+  // 键盘层自启动起全死（Enter/方向键/Del/星标/undo/quicklook 等 ~50 键）。
+  // 直接调模块函数（initMousetrap/buildMousetrap/destoryMousetrap 三者从未装配到 scope，
+  // s.initMousetrap 恒 undefined——route 表只是标记）；initMousetrap = destory+rebuild+
+  // rebind 幂等（controller 种子的 s.mousetrap = {} 不可作 if-absent 判据），无条件执行。
+  try {
+    const wm = window as any;
+    if (s.__eagleShim && wm.Mousetrap) {
+      machineryInitMousetrap(s);
+    }
+  } catch (err: any) {
+    console.error('[data-machinery] keyboard init failed', err);
+  }
 
   (window as any).__eagleDataMachinery = {
     version: 50,

@@ -119,6 +119,8 @@ function domainGetMemory(): void {
 }
 
 function domainDigestDurationTest(s: any): void {
+  // b1-9av：本函数为 bundle 时代 digest 诊断（Angular injector 面带守卫）——shim 世界
+  // 无 window.angular，守卫恒 clearInterval 空转，非哑雷（勿列入 structuredClone 替换清单）
   const w = window as any;
   const interval = setInterval(function () {
     try {

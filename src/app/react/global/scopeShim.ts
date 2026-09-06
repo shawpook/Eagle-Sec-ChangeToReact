@@ -170,6 +170,9 @@ export function createBodyScopeShim(): any {
     },
     set(target: any, prop: string, value: any) {
       coreState[prop] = value;
+      // b1-9av：target 预置字段双写——get 优先读 target（prop in target），只写 coreState
+      // 会造成读写分裂（实锚：mousetrap 种子 {} 恒读旧值，键盘 bindings map 写入即丢）
+      if (prop in target) target[prop] = value;
       return true;
     },
     has(target: any, prop: string) {

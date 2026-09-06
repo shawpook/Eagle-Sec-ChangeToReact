@@ -1018,9 +1018,9 @@ export function FileAddLibraryProgress() {
 
       const libraryPath = params.library.path;
       const items = params.items;
-      let folder = params.folder ? w.angular.copy(params.folder) : undefined;
-      const smartFolder = params.smartFolder ? w.angular.copy(params.smartFolder) : undefined;
-      const tagGroup = params.tagGroup ? w.angular.copy(params.tagGroup) : undefined;
+      let folder = params.folder ? structuredClone(params.folder) : undefined;
+      const smartFolder = params.smartFolder ? structuredClone(params.smartFolder) : undefined;
+      const tagGroup = params.tagGroup ? structuredClone(params.tagGroup) : undefined;
       const success: any[] = [];
       const fail: any[] = [];
 

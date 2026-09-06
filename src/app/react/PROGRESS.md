@@ -741,6 +741,23 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bh：S2 批 8——侧栏 DnD 原生化（jquery-ui draggable/droppable 退役面 1/3）（2026-09-06）**
+>
+> initSidebarDrag 重写为原生 HTML5 DnD：dragstart（payload/dragCheck/helper 语义逐字
+> 保留——helper 改离屏渲染 + setDragImage(-5,-5) 等价原 cursorAt{top:-5,left:-5}）、
+> zone drop（tolerance:'pointer' 由 zone DIV 原生命中替代——考据实锚 zone 为 1px 绝对
+> 定位条带无 pointer-events:none，DOM 命中语义与 jQuery hit-test 一致）、dragend 清理。
+> 原 mouseover 惰性初始化退役（原生监听零成本，渲染即挂）；dragCheck 守卫迁移 =
+> OS 文件拖放不放行（对齐 jQuery droppable 仅对 ui-draggable 生效的原语义）。顺删
+> Sidebar 8 处死 onDrop*/onDragEnter/Over/Leave 处理器（s.onDropFolder 族全树无定义，
+> scopeApply 吞错型死代码；ListRegion:238 同型死处理器属 content 子文件夹条面，留后续批）。
+> **套件补缺**：`tests/react-s2-sidebar-dnd-closed-loop.mjs`（套件第 55 项）——侧栏
+> 拖拽此前零覆盖，8 断言（dragstart 契约 ×3 / name-area 嵌套 / dragend 清理 ×2 /
+> bottom-area 同级）全绿；教训入账：**bootStack 的 beforeElectron 返回值被丢弃，
+> 跨段数据走闭包变量**。jquery-ui 剩余消费面：TagManager sortable / gridDirectives
+> resizable（后续竖切）。门禁：tsc + 哨兵 + DnD 闭环 8/8 + 定向 6 项全绿。
+>
+>
 > **b1-9bg：S2 批 7——侧栏树函数族归位（2026-09-06）**
 >
 > sidebarService.ts 扩充：clickNode / clickSmartNode（中键+dragCheck 守卫、meta 多选、

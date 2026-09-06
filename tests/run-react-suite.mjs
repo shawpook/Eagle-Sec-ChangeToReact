@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（54 项，顺序隔离执行）。
+ * React 全量回归套件（55 项，顺序隔离执行）。
  * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
  */
@@ -52,6 +52,7 @@ const tests = [
   'tests/source-mode-ui-closed-loop.mjs',
   'tests/library-switch-ui-closed-loop.mjs',
   'tests/drag-start-closed-loop.mjs',
+  'tests/react-s2-sidebar-dnd-closed-loop.mjs',
   'tests/preview-delivery-closed-loop.mjs',
   'tests/channel-wiring-closed-loop.mjs',
   'tests/menu-popup-closed-loop.mjs',

@@ -119,8 +119,6 @@ export function useVirtualWindow(containerRef: React.RefObject<HTMLDivElement | 
 /* ============ jQuery UI 拖拽（sidebar*Item 指令移植） ============ */
 
 function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'quickAccess') {
-  const $ = (window as any).jQuery || (window as any).$;
-  if (!$ || !$.ui) return () => {};
   const cleanups: Array<() => void> = [];
   const isSmart = kind === 'smartFolder';
   const isQuick = kind === 'quickAccess';
@@ -129,110 +127,114 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
   root.querySelectorAll<HTMLElement>(`[data-sidebar-kind="${kind}"]`).forEach((el) => {
     if ((el as any).__eagleDragInit) return;
     (el as any).__eagleDragInit = true;
-    let initTimeout: any;
-    let hasInit = false;
     const detach: Array<() => void> = [];
-
-    const initEvent = () => {
-      const bodyScope = getBodyScope();
-      if (!bodyScope) return;
-      const $root = bodyScope.$root;
-      const dragKey = isSmart ? 'draggedSmartFolders' : 'draggedFolders';
-
-      $(el).draggable({
-        scroll: false,
-        distance: 5,
-        appendTo: 'body',
-        cursor: 'default',
-        cursorAt: { top: -5, left: -5 },
-        helper: (event: any) => {
-          const id = $(event.target).closest('[data-sidebar-node-id]').attr('data-sidebar-node-id');
-          const live = findLiveNode(id);
-          $root[dragKey] = [];
-          let last = live;
-          const selectedKey = isSmart ? 'selectedSmartFolders' : 'selectedFolders';
-          if ($root[selectedKey] && $root[selectedKey].indexOf(live) > -1) {
-            last = $root[selectedKey][$root[selectedKey].length - 1];
-            $root[selectedKey].forEach((f: any) => $root[dragKey].push(f));
-          } else {
-            $root[dragKey].push(last);
-          }
-          $root.draggedQuickAccess = live;
-          const count = $root[dragKey].length || 1;
-          const folderName = (last && last.name) || '';
-          const folderIcon = (last && last.icon) || 'folder-close';
-          if (count > 1) {
-            return $(`
-              <div class='multiple-drag-folder-helper multiple'>
-                <div class="icon icon-${folderIcon}"><div class="fake-svg"></div></div>
-                <div class="name">${folderName}</div>
-                <div class="badge">${count}</div>
-              </div>`);
-          }
-          return $(`
-            <div class='multiple-drag-folder-helper'>
-              <div class="icon icon-${folderIcon}"><div class="fake-svg"></div></div>
-              <div class="name">${folderName}</div>
-            </div>`);
-        },
-        start: () => {
-          (window as any).dragCheck = true;
-          $('body').addClass(isSmart ? 'dragging-smart-folder' : 'dragging-folder');
-          $('body').addClass('dragging-quick-access');
-          $(el).addClass('prevent-drop');
-        },
-        stop: () => {
-          $('body').removeClass(isSmart ? 'dragging-smart-folder' : 'dragging-folder');
-          $('body').removeClass('dragging-quick-access');
-          $(el).removeClass('prevent-drop');
-          setTimeout(() => { (window as any).dragCheck = false; }, 50);
-        },
-      });
-
-      const dropInto = (selector: string, fnName: string, asSiblingBelow?: boolean) => {
-        $(el)
-          .find(selector)
-          .droppable({
-            tolerance: 'pointer',
-            drop: (event: any) => {
-              event.stopPropagation();
-              const id = $(event.target).closest('[data-sidebar-node-id]').attr('data-sidebar-node-id');
-              const target = findLiveNode(id);
-              if (target) {
-                const dragged = bodyScope.$root[dragKey];
-                bodyScope[fnName](dragged, target, ...(asSiblingBelow ? [true] : []));
-                bodyScope.$evalAsync();
-              }
-            },
-          });
-      };
-
-      if (isQuick) {
-        dropInto(`.${prefix}-top-area`, 'moveFoldersAsSibling');
-        dropInto(`.${prefix}-bottom-area`, 'moveFoldersAsSibling', true);
-      } else if (isSmart) {
-        dropInto(`.${prefix}-name-area`, 'moveSmartFoldersToSmartFolder');
-        dropInto(`.${prefix}-top-area`, 'moveSmartFolderTo');
-        dropInto(`.${prefix}-bottom-area`, 'moveSmartFolderTo', true);
-      } else {
-        dropInto(`.${prefix}-name-area`, 'moveFoldersToFolder');
-        dropInto(`.${prefix}-top-area`, 'moveFoldersAsSibling');
-        dropInto(`.${prefix}-bottom-area`, 'moveFoldersAsSibling', true);
-      }
-    };
-
-    const onOver = () => {
-      initTimeout = setTimeout(() => { if (!hasInit) { initEvent(); hasInit = true; } }, 100);
-    };
-    const onLeave = () => { if (initTimeout) clearTimeout(initTimeout); };
-    el.addEventListener('mouseover', onOver);
-    el.addEventListener('mouseleave', onLeave);
-    detach.push(() => el.removeEventListener('mouseover', onOver));
-    detach.push(() => el.removeEventListener('mouseleave', onLeave));
     cleanups.push(() => {
       detach.forEach((fn) => fn());
-      try { $(el).draggable('destroy'); } catch {}
-      try { $(el).find('.ui-droppable').droppable('destroy'); } catch {}
+      el.draggable = false;
+    });
+
+    // b1-9bh：原生 HTML5 DnD 替代 jQuery UI draggable/droppable（原惰性 mouseover 初始化
+    // 一并退役——原生监听零成本，节点渲染即挂；helper/dragCheck/body class 语义逐字保留）。
+    el.draggable = true;
+    let helperEl: HTMLElement | null = null;
+
+    const onDragStart = (e: DragEvent) => {
+      const bodyScope = getBodyScope();
+      if (!bodyScope) {
+        e.preventDefault();
+        return;
+      }
+      const $root = bodyScope.$root;
+      const dragKey = isSmart ? 'draggedSmartFolders' : 'draggedFolders';
+      const nodeEl = (e.currentTarget as HTMLElement).closest('[data-sidebar-node-id]') as HTMLElement | null;
+      const id = nodeEl && nodeEl.getAttribute('data-sidebar-node-id');
+      const live = findLiveNode(id || '');
+      $root[dragKey] = [];
+      let last = live;
+      const selectedKey = isSmart ? 'selectedSmartFolders' : 'selectedFolders';
+      if ($root[selectedKey] && $root[selectedKey].indexOf(live) > -1) {
+        last = $root[selectedKey][$root[selectedKey].length - 1];
+        $root[selectedKey].forEach((f: any) => $root[dragKey].push(f));
+      } else {
+        $root[dragKey].push(last);
+      }
+      $root.draggedQuickAccess = live;
+      const count = $root[dragKey].length || 1;
+      const folderName = (last && last.name) || '';
+      const folderIcon = (last && last.icon) || 'folder-close';
+      // 原 helper（appendTo:'body' + cursorAt{top:-5,left:-5}）→ setDragImage 离屏渲染等价
+      helperEl = document.createElement('div');
+      helperEl.className = count > 1 ? 'multiple-drag-folder-helper multiple' : 'multiple-drag-folder-helper';
+      helperEl.innerHTML = count > 1
+        ? `<div class="icon icon-${folderIcon}"><div class="fake-svg"></div></div><div class="name">${folderName}</div><div class="badge">${count}</div>`
+        : `<div class="icon icon-${folderIcon}"><div class="fake-svg"></div></div><div class="name">${folderName}</div>`;
+      helperEl.style.position = 'fixed';
+      helperEl.style.top = '-1000px';
+      helperEl.style.left = '-1000px';
+      document.body.appendChild(helperEl);
+      const dt = e.dataTransfer;
+      if (dt) {
+        try { dt.setDragImage(helperEl, -5, -5); } catch (err) { /* setDragImage 失败不阻塞 */ }
+        dt.setData('text/plain', String(id || ''));
+        dt.effectAllowed = 'move';
+      }
+      (window as any).dragCheck = true;
+      document.body.classList.add(isSmart ? 'dragging-smart-folder' : 'dragging-folder');
+      document.body.classList.add('dragging-quick-access');
+      el.classList.add('prevent-drop');
+    };
+
+    const onDragEnd = () => {
+      document.body.classList.remove(isSmart ? 'dragging-smart-folder' : 'dragging-folder');
+      document.body.classList.remove('dragging-quick-access');
+      el.classList.remove('prevent-drop');
+      if (helperEl) {
+        helperEl.remove();
+        helperEl = null;
+      }
+      setTimeout(() => { (window as any).dragCheck = false; }, 50);
+    };
+
+    el.addEventListener('dragstart', onDragStart);
+    detach.push(() => el.removeEventListener('dragstart', onDragStart));
+    el.addEventListener('dragend', onDragEnd);
+    detach.push(() => el.removeEventListener('dragend', onDragEnd));
+
+    // dropInto 等价（tolerance:'pointer' 由 zone div 原生命中替代；dragCheck 守卫 =
+    // 原 jQuery droppable 仅对 ui-draggable 生效的语义——OS 文件拖放不放行）
+    const zones: Array<[string, string, boolean?]> = isQuick
+      ? [[`.${prefix}-top-area`, 'moveFoldersAsSibling'], [`.${prefix}-bottom-area`, 'moveFoldersAsSibling', true]]
+      : isSmart
+        ? [[`.${prefix}-name-area`, 'moveSmartFoldersToSmartFolder'], [`.${prefix}-top-area`, 'moveSmartFolderTo'], [`.${prefix}-bottom-area`, 'moveSmartFolderTo', true]]
+        : [[`.${prefix}-name-area`, 'moveFoldersToFolder'], [`.${prefix}-top-area`, 'moveFoldersAsSibling'], [`.${prefix}-bottom-area`, 'moveFoldersAsSibling', true]];
+
+    zones.forEach(([selector, fnName, asSiblingBelow]) => {
+      const zone = el.querySelector(selector) as HTMLElement | null;
+      if (!zone) return;
+      const onOver = (e: DragEvent) => {
+        if ((window as any).dragCheck) e.preventDefault();
+      };
+      const onDrop = (e: DragEvent) => {
+        if (!(window as any).dragCheck) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const bodyScope = getBodyScope();
+        if (!bodyScope) return;
+        const nodeEl = (e.target as HTMLElement).closest('[data-sidebar-node-id]') as HTMLElement | null;
+        const id = nodeEl && nodeEl.getAttribute('data-sidebar-node-id');
+        const target = findLiveNode(id || '');
+        if (target) {
+          const dragged = bodyScope.$root[isSmart ? 'draggedSmartFolders' : 'draggedFolders'];
+          bodyScope[fnName](dragged, target, ...(asSiblingBelow ? [true] : []));
+          bodyScope.$evalAsync();
+        }
+      };
+      zone.addEventListener('dragover', onOver);
+      zone.addEventListener('drop', onDrop);
+      detach.push(() => {
+        zone.removeEventListener('dragover', onOver);
+        zone.removeEventListener('drop', onDrop);
+      });
     });
   });
 
@@ -336,10 +338,6 @@ function FolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; theme
       onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openFolderContextMenu(e, live)); }}
       onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
       onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.rename(e, live)); }}
-      onDrop={(e) => scopeApply(getBodyScope(), (s) => s.onDropFolder(e.nativeEvent))}
-      onDragEnter={(e) => scopeApply(getBodyScope(), (s) => s.onDragEnterFolder(e.nativeEvent))}
-      onDragOver={(e) => scopeApply(getBodyScope(), (s) => s.onDragOverFolder(e.nativeEvent))}
-      onDragLeave={(e) => scopeApply(getBodyScope(), (s) => s.onDragLeaveFolder(e.nativeEvent))}
     >
       <div className="guidelines">
         {(node.guidelines || []).map((line, i) => {
@@ -449,10 +447,6 @@ function QuickAccessNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
         }}
         onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openQuickAccessContextMenu(e, live)); }}
         onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
-        onDrop={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDropFolder(e.nativeEvent)) : undefined}
-        onDragEnter={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDragEnterFolder(e.nativeEvent)) : undefined}
-        onDragOver={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDragOverFolder(e.nativeEvent)) : undefined}
-        onDragLeave={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDragLeaveFolder(e.nativeEvent)) : undefined}
       >
         <div className="icon">
           <div className="lock-icon lock"><img src={iconSrc(theme, 'ic-lock-folder.svg')} /></div>

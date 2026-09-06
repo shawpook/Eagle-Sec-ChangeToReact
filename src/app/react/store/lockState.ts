@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { startScopeSync } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
+import { migrateScopeFieldToStore } from '../global/scopeShim';
 
 /**
  * 11-pre a3：lock-screen 双块状态源（文件夹密码锁 + 应用锁屏）。
@@ -48,6 +49,17 @@ function checkCanUseTouchID(): boolean {
 
 let bound = false;
 
+// b1-9az R1-batch2：isAppLocked 源翻转——$root 即 proxy 自指，scope 侧
+// `s.$root.isAppLocked = x` 经同一 set 陷阱落本 store。folderLocked/folderPasswordTips
+// 为 currentFolder 嵌套派生，留快照链。同值守卫同 bodyState（b1-9az 批 1 教训）。
+migrateScopeFieldToStore(
+  'isAppLocked',
+  () => useLockState.getState().isAppLocked,
+  (value: any) => {
+    if (useLockState.getState().isAppLocked !== value) useLockState.setState({ isAppLocked: !!value });
+  },
+);
+
 export function bindLockSync(): void {
   if (bound) return;
   bound = true;
@@ -56,13 +68,12 @@ export function bindLockSync(): void {
   (window as any).__eagleLockState = useLockState;
 
   startScopeSync({
-    watch: ['$root.isAppLocked', 'currentFolder.password', 'currentFolder.isUnLock', 'currentFolder.passwordTips'],
+    watch: ['currentFolder.password', 'currentFolder.isUnLock', 'currentFolder.passwordTips'],
     build: (scope) => ({
-      isAppLocked: !!(scope.$root && scope.$root.isAppLocked),
       folderLocked: !!(scope.currentFolder && scope.currentFolder.password && !scope.currentFolder.isUnLock),
       folderPasswordTips: (scope.currentFolder && scope.currentFolder.passwordTips) || '',
-    }),
-    apply: (snapshot) => useLockState.setState(snapshot as LockState),
+    } as Partial<LockState>),
+    apply: (snapshot) => useLockState.setState(snapshot as Partial<LockState>),
   });
 
   useLockState.setState({ canUseTouchID: checkCanUseTouchID() });

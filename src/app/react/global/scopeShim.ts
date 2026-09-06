@@ -32,6 +32,11 @@ export function migrateScopeFieldToStore(name: string, read: () => any, write: (
   migratedFields.set(name, { read, write });
 }
 
+/** 诊断/测试契约：已源翻转字段清单（cz1 等机制测试动态选未迁移字段用）。 */
+export function getMigratedScopeFieldNames(): string[] {
+  return Array.from(migratedFields.keys());
+}
+
 export function createBodyScopeShim(): any {
   const watchers: any[] = [];
   let flushTimer: any = null;
@@ -211,5 +216,8 @@ export function exposeScopeShimDiagnostics(): void {
   (window as any).__eagleScopeShim = {
     factory: createBodyScopeShim,
     active: false,
+    // b1-9az 批 2：已源翻转字段清单（cz1 等机制测试动态选未迁移字段——静态字段名
+    // 会随迁移批次推进而失效，keyword 即被批 2 迁移后踩中）
+    migratedFieldNames: getMigratedScopeFieldNames,
   };
 }

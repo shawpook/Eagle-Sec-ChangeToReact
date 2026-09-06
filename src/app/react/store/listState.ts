@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { startScopeSync } from '../global/scopeBridge';
+import { migrateScopeFieldToStore } from '../global/scopeShim';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域（drop-areas / sub-folder 列表 / 列表列头 /
@@ -61,6 +62,26 @@ export const useListState = create<ListState>(() => ({
 
 let bound = false;
 
+// b1-9az R1-batch2：恒等字段源翻转第二批（listState 8 个）。viewMode/isLoading/layout
+// 已由 bodyState 源翻转——此处保留为快照镜像（scope 读经委托取 bodyState 值，回写本
+// store 仅镜像），不重复注册（注册表同名覆盖）。派生/嵌套字段（counts/folderLocked/
+// subFolders 等）留快照链，随阶段 2 竖切归位。
+const MIGRATED_LIST_FIELDS: ReadonlyArray<keyof ListState> = [
+  'keyword', 'listDone', 'isHideSubFolder', 'showSubfolderContent',
+  'currentOrderBy', 'currentSortIncrease', 'unfiledCount', 'untaggedCount',
+];
+for (const fieldName of MIGRATED_LIST_FIELDS) {
+  migrateScopeFieldToStore(
+    fieldName,
+    () => useListState.getState()[fieldName],
+    // 同值守卫（b1-9az 批 1 教训）：scope watcher 每次 flush 回写同值字段时不得触发
+    // setState（否则整写型 DOM 绑定组件被无谓重渲染）
+    (value: any) => {
+      if (useListState.getState()[fieldName] !== value) useListState.setState({ [fieldName]: value } as Partial<ListState>);
+    },
+  );
+}
+
 export function bindListSync(): void {
   if (bound) return;
   bound = true;
@@ -69,39 +90,32 @@ export function bindListSync(): void {
   (window as any).__eagleListState = useListState;
 
   startScopeSync({
+    // b1-9az R1-batch2：MIGRATED_LIST_FIELDS 已源翻转，不入快照（回声强转篡源教训，
+    // 见 bodyState 批 1）。viewMode/isLoading/layout 为 bodyState 已迁字段的镜像副本。
     watch: [
-      'viewMode', 'isLoading', 'filtereds.length', 'allData.length', 'keyword',
+      'viewMode', 'isLoading', 'layout', 'filtereds.length', 'allData.length',
       'currentSmartFolder', 'eagle.filter.filterBadge', 'currentFolder.children.length',
-      'currentFolder.password', 'currentFolder.isUnLock', 'unfiledCount', 'untaggedCount',
-      'trash.length', 'raw.length', 'subFolders.length', 'listDone', 'isHideSubFolder',
-      'showSubfolderContent', '$root.selectedFolders.length', 'subFolders',
-      'selectedFolderMappings', 'layout', 'currentOrderBy', 'currentSortIncrease',
+      'currentFolder.password', 'currentFolder.isUnLock', 'trash.length', 'raw.length',
+      'subFolders.length', '$root.selectedFolders.length', 'subFolders',
+      'selectedFolderMappings',
     ],
     build: (scope) => ({
       viewMode: scope.viewMode,
       isLoading: !!scope.isLoading,
+      layout: scope.layout,
       filteredsCount: (scope.filtereds && scope.filtereds.length) || 0,
       allDataCount: (scope.allData && scope.allData.length) || 0,
-      keyword: scope.keyword || '',
       hasSmartFolder: !!scope.currentSmartFolder,
       filterBadge: (scope.eagle && scope.eagle.filter && scope.eagle.filter.filterBadge) || 0,
       folderChildrenCount: (scope.currentFolder && scope.currentFolder.children && scope.currentFolder.children.length) || 0,
       folderLocked: !!(scope.currentFolder && scope.currentFolder.password && !scope.currentFolder.isUnLock),
-      unfiledCount: scope.unfiledCount || 0,
-      untaggedCount: scope.untaggedCount || 0,
       trashCount: (scope.trash && scope.trash.length) || 0,
       rawCount: (scope.raw && scope.raw.length) || 0,
       subFoldersCount: (scope.subFolders && scope.subFolders.length) || 0,
-      listDone: !!scope.listDone,
-      isHideSubFolder: !!scope.isHideSubFolder,
-      showSubfolderContent: !!scope.showSubfolderContent,
       noSelectedFolders: !(scope.$root && scope.$root.selectedFolders && scope.$root.selectedFolders.length > 0),
       subFolders: scope.subFolders ? scope.subFolders.slice() : [],
       selectedFolderMappings: { ...(scope.selectedFolderMappings || {}) },
-      layout: scope.layout || '',
-      currentOrderBy: scope.currentOrderBy || '',
-      currentSortIncrease: scope.currentSortIncrease !== false,
-    }),
-    apply: (snapshot) => useListState.setState(snapshot as ListState),
+    } as Partial<ListState>),
+    apply: (snapshot) => useListState.setState(snapshot as Partial<ListState>),
   });
 }

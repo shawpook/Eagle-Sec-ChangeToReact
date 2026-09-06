@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { startScopeSync } from '../global/scopeBridge';
+import { migrateScopeFieldToStore } from '../global/scopeShim';
 
 /**
  * 11-pre a2：toast-alert 三块状态源（index.html 失败重试提示 / 本地服务器警告 /
@@ -24,17 +25,30 @@ export const useToastState = create<ToastState>(() => ({
 
 let bound = false;
 
+// b1-9az R1-batch2：恒等字段源翻转（toastState 2 个布尔；errorCount 为 errorList.length
+// 派生，留快照链）。同值守卫同 bodyState/listState（b1-9az 批 1 教训）。
+const MIGRATED_TOAST_FIELDS: ReadonlyArray<keyof ToastState> = [
+  'localhostError', 'libraryPathPermissionError',
+];
+for (const fieldName of MIGRATED_TOAST_FIELDS) {
+  migrateScopeFieldToStore(
+    fieldName,
+    () => useToastState.getState()[fieldName],
+    (value: any) => {
+      if (useToastState.getState()[fieldName] !== value) useToastState.setState({ [fieldName]: value } as Partial<ToastState>);
+    },
+  );
+}
+
 export function bindToastSync(): void {
   if (bound) return;
   bound = true;
 
   startScopeSync({
-    watch: ['errorList.length', 'localhostError', 'libraryPathPermissionError'],
+    watch: ['errorList.length'],
     build: (scope) => ({
       errorCount: (scope.errorList && scope.errorList.length) || 0,
-      localhostError: !!scope.localhostError,
-      libraryPathPermissionError: !!scope.libraryPathPermissionError,
-    }),
-    apply: (snapshot) => useToastState.setState(snapshot as ToastState),
+    } as Partial<ToastState>),
+    apply: (snapshot) => useToastState.setState(snapshot as Partial<ToastState>),
   });
 }

@@ -710,6 +710,37 @@
 > **整写型 DOM 绑定组件（className/textContent）对"同值 setState 也会重渲染"敏感，
 > 状态单源迁移必须带同值守卫**。
 >
+> **b1-9az R1 批 2：listState 8 + toastState 2 + lockState 1 字段源翻转（2026-09-06）**
+>
+> 扁平 store 普查结论：可逐字段委托的仅 bodyState（批 1）/listState/lockState/
+> toastState 四个；toolbarState/detailState/inspectorState/sidebarState/panelState/
+> tagManagerState 为单 snapshot 整体形状（逐字段委托不适用，留阶段 2 竖切收编；
+> 其与 bodyState 重复镜像的字段经 scope 委托自动保持一致）；uploadState 全嵌套/
+> 派生，跳过。批 2 注册 11 字段：listState（keyword/listDone/isHideSubFolder/
+> showSubfolderContent/currentOrderBy/currentSortIncrease/unfiledCount/untaggedCount
+> ——keyword 有 undefined 写入（dataMachinery:3267），消费方全为布尔/比较上下文，
+> 裸值安全）、toastState（localhostError/libraryPathPermissionError）、lockState
+> （isAppLocked——$root 即 proxy 自指，s.$root.isAppLocked 写入经同一陷阱）。保留
+> listState 的 viewMode/isLoading/layout 为 bodyState 已迁字段镜像副本（ListRegion:290
+> 读 l.layout——**镜像字段不可从 build 删除**，回声教训的对称面）；不重复注册
+> （注册表同名覆盖）。验证 r2-verify 6/6：三 store scope↔store 双向 + 同值守卫
+> subscribe 计数 + 镜像跟随 + 真实搜索框链路。tsc 真实 EXIT:0；suite 52/52。
+>
+> **cz1 二红教训（套件抓出，已修）**：批 1 修订 cz1-core-to-scope 时静态选了 keyword,
+> 批 2 恰好迁移 keyword 自踩——静态字段名会随迁移批次失效。修：scopeShim 暴露
+> `getMigratedScopeFieldNames()`（挂 window.__eagleScopeShim.migratedFieldNames），
+> cz1 动态从候选表选未迁移字段。**机制测试选探测字段必须动态化**。
+>
+> **阶段 1 完成判定（R1 收官）**：扁平 store 的恒等字段已全部翻转（bodyState 20 +
+> listState 8 + toastState 2 + lockState 1 = 31 字段）；扁平 store 普查无可继续项。
+> **委托机制的天赋边界**：只覆盖原始值顶层字段——对象嵌套态（imageSize.height、
+> currentFolder.*、selected[]）的变更不经过顶层 set 陷阱，无法委托；其状态单源化
+> 属于阶段 2 竖切本职（store action + 不可变更新，随各子系统 fns 归位一并落地）。
+> 阶段 2 首竖切（网格视图）备料完成：zoomIn/Out 双分支（网格 adjustLayoutWidth/
+> saveListHeight/checkListItemsLessThanContainer + localStorage；详情 zoomRatio
+> 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
+>
+>
 > **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
 >
 > 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash

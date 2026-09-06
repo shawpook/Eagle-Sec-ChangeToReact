@@ -695,7 +695,3 @@ export function installBoxGrid(): () => void {
     scopeEventsDereg = [];
   };
 }
-
-export function getBoxListHost(): HTMLElement | null {
-  return document.getElementById('box-list');
-}

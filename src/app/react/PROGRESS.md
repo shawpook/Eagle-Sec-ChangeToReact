@@ -741,6 +741,21 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bf：S1 收官——残余/孤儿清扫（2026-09-06）**
+>
+> be2 考据定论（通读 boxGridEngine.ts 全文）：现行网格 = vanilla egjs **v3** API
+> （window.eg UMD 提取自 bundle；getGroupKeys/groupKey 分页窗口 page=60 + append/prepend
+> + `_items._data` 私有读 + layoutComplete 后处理 selected/lazyLoad/raw attr）——
+> @egjs/react-infinitegrid（v4 React children 模型）交换 = 条目模板 React 化（getItem/
+> generateItem 300 行）+ 分页模型重构 + 布局回调迁移 + 私有 API facade，**全计划最大
+> 单批，独立完整会话执行**（契约已录 gridService.ts 头注 + REWRITE-PLAN be2 批注）。
+> bf 清扫：boxGridEngine 死孤儿 getBoxListHost 删除（全树零消费）；Toolbar 缩放按钮
+> call('zoomIn'/'zoomOut') 直调 gridService（滚轮路径同款先例，套件已验证无 flush 依赖
+> ——scopeShim ensureFlushTimer 兜底）；BatchSavePanel 的 zoomIn/Out 为本地列表尺寸
+> （非主网格面），不动。**S1 收官全量 54 项 ALL GREEN**；S1 状态 = bd/be/bf 完成，
+> be2 遗留批交接。
+>
+>
 > **b1-9be：S1 批 5——switchLayout 归位 + infinitegrid 依赖就位（2026-09-06）**
 >
 > machinerySwitchLayout 实现体（body class 四分支 + relayout/offsetScrollbar/initMenu

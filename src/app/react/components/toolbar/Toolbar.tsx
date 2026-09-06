@@ -5,6 +5,7 @@ import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
+import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
 
 /**
  * 阶段3a：工具栏接管。
@@ -342,7 +343,7 @@ export function Toolbar() {
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('appmenu.view>zoomOut')} <key>-</key>`}
-            onClick={call('zoomOut')}
+            onClick={gridZoomOut}
           >
             <img src={iconSrc(snapshot.theme, 'ic-toolbar-zoom-out.svg')} />
           </div>
@@ -372,7 +373,7 @@ export function Toolbar() {
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('appmenu.view>zoomIn')} <key>+</key>`}
-            onClick={call('zoomIn')}
+            onClick={gridZoomIn}
           >
             <img src={iconSrc(snapshot.theme, 'ic-toolbar-zoom-in.svg')} />
           </div>

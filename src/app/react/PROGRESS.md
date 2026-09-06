@@ -741,6 +741,20 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9be：S1 批 5——switchLayout 归位 + infinitegrid 依赖就位（2026-09-06）**
+>
+> machinerySwitchLayout 实现体（body class 四分支 + relayout/offsetScrollbar/initMenu
+> 经 scope 解析）搬移 gridService.ts → gridSwitchLayout，machinery 留委托壳。
+> @egjs/react-infinitegrid@4.13.0 安装（官方 React 绑定，全项目唯一保留第三方；导出面
+> InfiniteGrid/MasonryInfiniteGrid/JustifiedInfiniteGrid/FrameInfiniteGrid/
+> PackingInfiniteGrid）。**be 拆分决策**：renderer 交换立为独立批 be2—— vanilla 实例
+> `new w.eg.InfiniteGrid("#box-container .box-list")` 的条目 DOM 由 boxGridEngine
+> 字符串构建，交换 = 条目渲染 React 化 + `window.ig` facade 化（方法面普查：
+> remove×7/getItems×6/clear×5/trigger×2/layout×2/getGroupKeys×1/_layout._columnLength×2，
+> 契约已录 gridService.ts 头注），machinery 调用面零改动；体量独立成批，危险批全量门禁。
+> REWRITE-PLAN v2 批表同步（S1 = bd/be/be2/bf 四批）。门禁：tsc + 定向 4 项。
+>
+>
 > **b1-9bd：S1 批 4——gridService zoom 族归位（2026-09-06）**
 >
 > 新建 `src/app/react/services/gridService.ts`：saveListHeight（150ms 防抖 per-view

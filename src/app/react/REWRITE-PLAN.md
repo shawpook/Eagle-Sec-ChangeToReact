@@ -64,8 +64,12 @@ scopeShim / scopeBridge / fns 表 / controllerFns.ts / dataMachinery.ts / jQuery
 - **S1 网格（批 4-6：b1-9bd / be / bf）**
   - bd：gridState（imageSize/containerSize/layout/viewType）+ gridService + zoom 族
     （zoomIn/zoomOut/ctrl 滚轮）从 fns/machinery 归位。
-  - be：switchLayout 链 + egjs-infinitegrid → **@egjs/react-infinitegrid**（官方
-    React 绑定，唯一保留的第三方）；w.ig 全局退役评估。
+  - be：switchLayout 链归位 gridService（b1-9be 完成）+ @egjs/react-infinitegrid@4.13
+    依赖就位 + `window.ig` facade 契约普查（remove/getItems/clear/trigger/layout/
+    getGroupKeys/_layout._columnLength——gridService.ts 头注）。
+  - be2（交换施工批）：条目渲染 React 化 + `window.ig` 变 facade 对象（方法子集委托
+    React InfiniteGrid ref，machinery 调用面零改动）+ vanilla `new w.eg.InfiniteGrid`
+    创建面退役；危险批，**全量门禁**。
   - bf：S1 残余 + 孤儿清扫，竖切收官**全量门禁**。
 - **S2 侧栏（批 7-8：b1-9bg / bh）**：sidebarState 收编 + 树 fns（clickNode/
   openFolder/dragCheck 链）；sidebar draggable/droppable → 原生 HTML5 DnD /

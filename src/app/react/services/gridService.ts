@@ -175,3 +175,65 @@ export function zoomOut(event: any): void {
   const s = getBodyScope();
   if (s) gridZoomOut(s, event);
 }
+
+/* switchLayout（bundle 33790-33846 逐字；body class 四分支 + relayout/offsetScrollbar/
+   initMenu 仍经 scope 解析；forceLayout 参数原实现未消费，逐字保留签名） */
+export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
+  const w = window as any;
+  var $container = w.$("#box-container");
+  var allLayout = "grid-layout justified-layout list-layout";
+  switch (layout) {
+    case "GridLayout":
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+      });
+      s.layout = "GridLayout";
+      $container.removeClass(allLayout).addClass("grid-layout");
+      s.relayout();
+      // $scope.adjustLayoutWidth(0);
+      w.electronLog && w.electronLog.info("[app] Layout: Waterfall");
+      break;
+    case "SquareLayout":
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+        w.$("body").addClass("is-square-layout");
+      });
+      s.layout = "SquareLayout";
+      $container.removeClass(allLayout).addClass("grid-layout");
+      s.relayout();
+      // $scope.adjustLayoutWidth(0);
+      w.electronLog && w.electronLog.info("[app] Layout: Grid");
+      break;
+    case "ListLayout":
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+        w.$("body").addClass("is-list-layout");
+      });
+      s.layout = "ListLayout";
+      $container.removeClass(allLayout).addClass("list-layout");
+      s.relayout();
+      w.electronLog && w.electronLog.info("[app] Layout: List");
+      break;
+    default:
+      window.requestAnimationFrame(() => {
+        w.$("body").removeClass("is-square-layout is-list-layout");
+      });
+      s.layout = "JustifiedLayout";
+      $container.removeClass(allLayout).addClass("justified-layout");
+      s.relayout();
+      w.electronLog && w.electronLog.info("[app] Layout: Justified");
+  }
+
+  s.offsetScrollbar(30);
+  // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
+  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
+}
+
+/* ── b1-9be：@egjs/react-infinitegrid 交换的 window.ig facade 契约（交换批施工依据）──
+   现存 vanilla InfiniteGrid 实例（libraryDomain 创建 `new w.eg.InfiniteGrid("#box-container
+   .box-list")`）被以下方法面消费（全树普查）：
+   - remove ×7 / getItems ×6 / clear ×5 / trigger ×2（'prepend' 等）/ layout ×2 /
+     getGroupKeys ×1 / _layout._columnLength ×2（gridAdjustLayoutWidth 列数换算）
+   交换批保留 window.ig 为 facade 对象：方法子集委托 React InfiniteGrid ref，
+   machinery/scope 世界调用面零改动；React 侧条目渲染改由 React 组件承载。
+*/

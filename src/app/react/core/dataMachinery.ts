@@ -58,7 +58,7 @@ import { getBodyScope } from '../global/scopeBridge';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
-import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut } from '../services/gridService';
+import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 // b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
@@ -1041,57 +1041,10 @@ export function machineryUpdateItemsView(s: any, items: any[]): void {
   }
 }
 
-/* switchLayout（bundle 33790-33846 逐字；relayout/offsetScrollbar/initMenu 仍由 bundle
-   承载经 scope 解析） */
+/* b1-9be：switchLayout 实现体归位 services/gridService.ts（body class 四分支 +
+   relayout/offsetScrollbar/initMenu 仍经 scope 解析） */
 export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): void {
-  const w = window as any;
-  var $container = w.$("#box-container");
-  var allLayout = "grid-layout justified-layout list-layout";
-  switch (layout) {
-    case "GridLayout":
-      window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
-      });
-      s.layout = "GridLayout";
-      $container.removeClass(allLayout).addClass("grid-layout");
-      s.relayout();
-      // $scope.adjustLayoutWidth(0);
-      w.electronLog && w.electronLog.info("[app] Layout: Waterfall");
-      break;
-    case "SquareLayout":
-      window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
-        w.$("body").addClass("is-square-layout");
-      });
-      s.layout = "SquareLayout";
-      $container.removeClass(allLayout).addClass("grid-layout");
-      s.relayout();
-      // $scope.adjustLayoutWidth(0);
-      w.electronLog && w.electronLog.info("[app] Layout: Grid");
-      break;
-    case "ListLayout":
-      window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
-        w.$("body").addClass("is-list-layout");
-      });
-      s.layout = "ListLayout";
-      $container.removeClass(allLayout).addClass("list-layout");
-      s.relayout();
-      w.electronLog && w.electronLog.info("[app] Layout: List");
-      break;
-    default:
-      window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
-      });
-      s.layout = "JustifiedLayout";
-      $container.removeClass(allLayout).addClass("justified-layout");
-      s.relayout();
-      w.electronLog && w.electronLog.info("[app] Layout: Justified");
-  }
-
-  s.offsetScrollbar(30);
-  // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
-  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
+  gridSwitchLayout(s, layout, forceLayout);
 }
 
 /* resetImageData（bundle 30540-30548 逐字；controller 闭包函数 → 域内移植） */

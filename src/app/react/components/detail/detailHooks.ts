@@ -2,6 +2,7 @@ import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { useEffect } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { ipcRenderer } from '../../global/eagleGlobals';
+import { updateZoomRatio } from '../../services/detailService';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -1905,10 +1906,9 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
 
           ratio = Math.max(5, Math.min(200, ratio));
 
-          scopeApply(getBodyScope(), function (s) {
-            s.updateZoomRatio(ratio, originData.x, originData.y);
-            s.$evalAsync?.();
-          });
+          // b1-9bk：直调 detailService（原 scopeApply 绕道；$evalAsync 语义保留）
+          updateZoomRatio(ratio, originData.x, originData.y);
+          getBodyScope()?.$evalAsync?.();
         } else {
           updateGestureVisual(event.pageX, event.pageY);
         }

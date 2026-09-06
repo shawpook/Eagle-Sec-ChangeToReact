@@ -741,6 +741,20 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bk：S4 批 11——detailService 归位（2026-09-07）**
+>
+> 新建 `services/detailService.ts`：toggleDetailMode / smartZoom / updateZoomRatio 三函数
+> 实现体自 dataMachinery 逐字搬移（machinery 留委托壳，键位表 'enter' 与内部调用点零
+> 改动）；**三处重复的 zooming 类 300ms 护栏块抽取为 beginZoomingTransition()**（原
+> updateZoomRatioTimeout 闭包变量 = updateZoomRatio/homeHandler/endHandler 共用句柄，
+> home/end 的复制粘贴块随之去重）；getRatioExp/NonExp 留 machinery（双侧函数声明提升的
+> 既有循环依赖模式）。组件侧 3 处直调：FolderModals smartZoom ×2、detailHooks pinch
+> 缩放 updateZoomRatio ×1（$evalAsync 语义保留）。smoothZoom 本体（74 调用面：machinery
+> 36 / controllerFns 21 / preview-window 17）留 bl 批剥壳。哨兵 scopeApply 185→184、
+> getBodyScope 670→672（bg/bh 直调削减已被 bj 重播种吸收，bk 便捷包装 +2）逐批如实吸收。门禁：tsc + 哨兵 + 定向 4 项（preview-delivery
+> 详情链路）全绿。
+>
+>
 > **b1-9bj：S3 批 10——自研取色器 + colorpicker vendor 退役（2026-09-06）**
 >
 > 新建 `components/filter/ColorPicker.tsx`：自研 HSV 平面取色器（SV 方格 + 横向色相条、

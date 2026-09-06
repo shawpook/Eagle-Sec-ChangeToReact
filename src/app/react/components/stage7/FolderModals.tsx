@@ -9,6 +9,7 @@ import { $, req, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { max, uniq } from '../../utils/lang';
+import { smartZoom } from '../../services/detailService';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1103,11 +1104,13 @@ export function AddToFolderModal() {
       if (next) {
         body.selected = [next];
         body.current = next;
-        body.smartZoom();
+        // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
+        smartZoom();
       } else if (prev) {
         body.selected = [prev];
         body.current = prev;
-        body.smartZoom();
+        // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
+        smartZoom();
       } else {
         body.selected = [];
         body.leaveDetailMode();

@@ -2747,7 +2747,10 @@ export function makeControllerFns(getScope: () => any) {
     const s = getScope();
     if (!s) return;
     return (function(event, folder) {
-            if (event.which == 2 || dragCheck) {
+            // b1-9ay：dragCheck 原 bundle 闭包 var，逐字移植丢声明后裸引用在首次拖拽前
+            // 是未声明全局——每个侧栏文件夹点击即 ReferenceError 且被 $apply 吞
+            // （sweep B6 直调实锤）。Sidebar draggable 经 window.dragCheck 中转。
+            if (event.which == 2 || (window as any).dragCheck) {
                 event.stopPropagation();
                 return;
             }
@@ -2799,7 +2802,8 @@ export function makeControllerFns(getScope: () => any) {
     const s = getScope();
     if (!s) return;
     return (function (event, smartFolder) {
-            if (event.which == 2 || dragCheck) {
+            // b1-9ay：同 clickNode——dragCheck 经 window 中转（原 bundle 闭包 var）
+            if (event.which == 2 || (window as any).dragCheck) {
                 event.stopPropagation();
                 return;
             }

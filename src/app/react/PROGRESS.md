@@ -634,6 +634,47 @@
 >
 > **门禁（au+aw+av+ax 四批累计）**：tsc EXIT:0；1c3 OK（263）；suite 51/51 全绿。
 >
+> **b1-9ay：残余扫查批——七轮真机走查再拔三雷（2026-09-06）**
+>
+> 用户追问"逐字移植架构会不会遗留很多问题"——以系统性扫查作答而非猜测：sweep A
+> （Page.reload 全程 CDP 事件捕获启动普查：**0 致命错**，仅 3 个静态资源 404）+ sweep
+> B1-B7（逐面真机走查七轮：侧栏/工具栏/搜索/详情/评级/快速搜索/偏好设置窗/批量菜单）。
+> 方法论沉淀三条：①**Mousetrap 字符键监听 keypress**——CDP keyDown 必须带 text 参数，
+> 否则 Enter/方向键/mod 组合（keydown 系）能过而字母/数字键全假死，且报错被
+> applyWrapper+throttle 吞成静默；②**scopeApply/$apply 吞错走 console.error**，
+> window.onerror 侦听是盲区——必须捕获 CDP consoleAPICalled（B7 起在网）；③**哑键
+> 全量枚举**：`Object.entries(s.mousetrap).filter(typeof!=='function')` 一条诊断
+> 抓全"绑定期 handler 缺失"类。
+>
+> **三真修**：① **clickNode/clickSmartNode 裸 `dragCheck` ReferenceError**（sweep B6
+> 直调实锤）——原 bundle 闭包 var，逐字移植丢声明后每个侧栏文件夹点击必抛且被
+> scopeApply 吞（用户侧表现：点文件夹无反应）；改经 `window.dragCheck` 通道（与
+> Sidebar draggable start/stop 写入侧同一变量，globals.d.ts:21）。② **评级键族
+> 0-5 全灭**（sweep B5 哑键枚举 5/67）——c18f-1 批仅落了 changeTo5Star，
+> removeStar/changeTo1-4Star 定义+赋值双缺（bundle 30292-30314），按键即
+> `TypeError: func is not a function`；machinery 逐字补齐五 fns+赋值+注册表。
+> ③ **3 个静态资源 404**——ic-logic-or/and.svg（原版 Eagle 资产复刻仓从未有，
+> 按既有 ic-logic 家族视觉语言合成）+ ic-welcome-library-missing-icon.png
+> （SmallPanels:1196 72×72 消费，pngjs 合成 64×64 占位）。
+>
+> **撤案（考据为原版设计，非 bug）**：`body #toggle-all-btn{display:none}` ——
+> 侧栏开关按钮仅 hide-sidebar 态显示（style_*.css 四主题一致）；筛选条 17 items
+> 收起态全隐 = `snapshot.filterIsOpen` 门控（FilterItems2:1037，原版同构）；快速
+> 搜索绑定 **J 键**（buildMousetrap `'j': s.openQuickSearch`），Ctrl+F 非其绑定。
+> 验证探针侧纠错：toggle-all 信号应为 isHideSidebar 而非 selected；评级字段是
+> `star` 非 rating；toolbar `call()` 对缺失 fn 静默跳过（与 BoxList callFn 同语义）。
+>
+> **验证**：residue-verify 探针 8/8 PASS——mousetrap-zero-dead-keys /
+> folder-click-opens-folder（cf+hash）/ smart-folder-click-opens / rating-key-sets-star
+> （'3'→star 3）/ rating-key-0-clears-star / zero-console-errors（含 404 清零）。
+> 沉淀 **tests/residue-closed-loop.mjs 套件第 52 项**（同断言 + consoleAPICalled
+> 全程哨兵）。harness connect() 补 CDP 事件缓冲（events 数组，此前事件全弃）。
+> 偏好设置窗（ipc 'open.preferences' → 独立 target）多窗面探明健康：加载 complete、
+> 零错误。
+>
+> **门禁**：tsc EXIT:0；1c3 OK（263——评级 fns 走 machinery 侧，fns 表不变）；
+> suite 52/52。
+>
 > **b1-9ar：台账⑥收口——empty-trash 主侧闭环 + 进度/取消复活（2026-09-06）**
 >
 > 原承载探明：background.js:616 trashQueue 渲染窗承载（随 b1-9t 删除）——empty-trash

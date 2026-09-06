@@ -5747,6 +5747,33 @@ export function machineryChangeTo5Star(s: any, event: any): void {
   s.changeStar(5, true, true);
 }
 
+/* removeStar/changeTo1Star…changeTo4Star（bundle 30292-30314 逐字补齐——b1-9ay：c18f-1 批
+   此前仅落了 changeTo5Star，mousetrap '0'-'4' 五键绑定期读到 undefined，按键即
+   TypeError: func is not a function（sweep B5/B6 实锤）） */
+export function machineryRemoveStar(s: any): void {
+  s.changeStar(undefined, true);
+}
+
+export function machineryChangeTo1Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  s.changeStar(1, true, true);
+}
+
+export function machineryChangeTo2Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  s.changeStar(2, true, true);
+}
+
+export function machineryChangeTo3Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  s.changeStar(3, true, true);
+}
+
+export function machineryChangeTo4Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  s.changeStar(4, true, true);
+}
+
 /* closeWindowHandler（bundle 30802-30812 逐字；**bundle 原版怪癖：参数名为 $event 但体内
    引用全局 event——ESM 经 w.event 复刻同语义**（mousetrap 派发期内 window.event 即键盘事件）；
    IPCHelper 脚本级词法绑定（c17a 接装）经 window） */
@@ -11417,6 +11444,12 @@ export function applyDataMachineryScope(): void {
   s.pageDownHandler = machineryPageDownHandler(s);
   s.pageUpHandler = machineryPageUpHandler(s);
   // c18f-1：小 handler 批
+  // b1-9ay：评级键族补齐（mousetrap '0'-'5' 六键的 handler 此前仅 changeTo5Star 在册）
+  s.removeStar = () => machineryRemoveStar(s);
+  s.changeTo1Star = (event: any) => machineryChangeTo1Star(s, event);
+  s.changeTo2Star = (event: any) => machineryChangeTo2Star(s, event);
+  s.changeTo3Star = (event: any) => machineryChangeTo3Star(s, event);
+  s.changeTo4Star = (event: any) => machineryChangeTo4Star(s, event);
   s.changeTo5Star = (event: any) => machineryChangeTo5Star(s, event);
   s.closeWindowHandler = ($event: any) => machineryCloseWindowHandler(s, $event);
   s.nHandler = ($event: any) => machineryNHandler(s, $event);
@@ -11699,6 +11732,11 @@ export function applyDataMachineryScope(): void {
     pageDownHandler: 'machinery',
     pageUpHandler: 'machinery',
     changeTo5Star: 'machinery',
+    removeStar: 'machinery',
+    changeTo1Star: 'machinery',
+    changeTo2Star: 'machinery',
+    changeTo3Star: 'machinery',
+    changeTo4Star: 'machinery',
     closeWindowHandler: 'machinery',
     nHandler: 'machinery',
     mHandler: 'machinery',

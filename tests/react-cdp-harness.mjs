@@ -90,8 +90,14 @@ export async function connect(wsUrl) {
   const ws = new WebSocket(wsUrl);
   let id = 0;
   const pending = new Map();
+  const events = []; // CDP 事件缓冲（exceptionThrown/consoleAPICalled 等），滚动上限防泄漏
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
+    if (!message.id) {
+      events.push(message);
+      if (events.length > 1000) events.splice(0, events.length - 1000);
+      return;
+    }
     if (message.id && pending.has(message.id)) {
       const entry = pending.get(message.id);
       pending.delete(message.id);
@@ -104,6 +110,7 @@ export async function connect(wsUrl) {
   });
   return {
     ws,
+    events,
     send(method, params = {}) {
       return new Promise((resolve, reject) => {
         const messageId = ++id;
@@ -167,13 +174,27 @@ export async function bootStack({
     });
     await waitFor(async () => (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).ok, 'Electron CDP');
     await waitFor(() => electron.output().includes('REGRESSION_HOST_READY'), 'Electron host');
-    const targets = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
-    const target = targets.find((entry) => entry.type === 'page' && entry.url.includes(String(vitePort)));
-    if (!target) throw new Error(`Main page target not found: ${JSON.stringify(targets)}`);
-    const page = await connect(target.webSocketDebuggerUrl);
+    // 连接竞态防护：窗口加载期 page target 可能被导航销毁——ws.onopen 永不触发。
+    // 连接 6s 超时 + 重新拉取 target 重试（上限 15 次），探针/闭环测试均走此路径。
+    let page = null;
+    for (let attempt = 0; attempt < 15 && !page; attempt++) {
+      const targetsNow = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json();
+      const target = targetsNow.find((entry) => entry.type === 'page' && entry.url.includes(String(vitePort)));
+      if (!target) { await delay(500); continue; }
+      try {
+        page = await Promise.race([
+          connect(target.webSocketDebuggerUrl),
+          new Promise((resolve, reject) => setTimeout(() => reject(new Error('cdp connect timeout')), 6000)),
+        ]);
+      } catch (err) {
+        page = null;
+        await delay(500);
+      }
+    }
+    if (!page) throw new Error('CDP page connect failed after retries');
     await page.send('Runtime.enable');
     await page.send('Page.enable');
-    return { apiPort, thumbnailPort, extensionPort, vitePort, debugPort, backend, vite, electron, page, targets };
+    return { apiPort, thumbnailPort, extensionPort, vitePort, debugPort, backend, vite, electron, page, targets: [] };
   } catch (err) {
     await stop(backend);
     await stop(vite);

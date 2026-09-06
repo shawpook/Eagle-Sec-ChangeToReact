@@ -4,6 +4,7 @@ import { useSidebarState, themePath, SidebarNodeSnapshot } from '../../store/sid
 import { findLiveNode, getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper, longTitle } from '../../app/filters';
+import { clickNode, clickSmartNode, toggleFolderExpand, toggleSmartFolderExpand, dblclickSidebarFolder, preventMiddleClick } from '../../services/sidebarService';
 
 /**
  * 阶段2：侧栏接管。
@@ -331,9 +332,9 @@ function FolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; theme
       parent={node.parent}
       className={`item sidebar-folder-item ${node.cls}`}
       style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
-      onClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.clickNode(e, live)); }}
+      onClick={(e) => { const live = findLiveNode(node.id); clickNode(e, live); }}
       onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openFolderContextMenu(e, live)); }}
-      onMouseDown={(e) => { if (e.button === 1) scopeApply(getBodyScope(), (s) => s.preventMiddleClick(e)); }}
+      onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
       onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.rename(e, live)); }}
       onDrop={(e) => scopeApply(getBodyScope(), (s) => s.onDropFolder(e.nativeEvent))}
       onDragEnter={(e) => scopeApply(getBodyScope(), (s) => s.onDragEnterFolder(e.nativeEvent))}
@@ -354,26 +355,26 @@ function FolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; theme
       </div>
       <div
         className="expand-icon"
-        onClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleFolderExpand(e, live)); }}
+        onClick={(e) => { const live = findLiveNode(node.id); toggleFolderExpand(e, live); }}
         onMouseDown={(e) => e.stopPropagation()}
         onMouseUp={(e) => e.stopPropagation()}
         onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openFolderExpandContextMenu(e, live)); }}
       >
         <img src={iconSrc(theme, 'ic-arrow-right.svg')} />
       </div>
-      <div className="icon" onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleFolderExpand(e, live)); }}>
+      <div className="icon" onDoubleClick={(e) => { const live = findLiveNode(node.id); toggleFolderExpand(e, live); }}>
         <div className="lock-icon lock"><img src={iconSrc(theme, 'ic-lock-folder.svg')} /></div>
         <div className="fake-svg png" />
       </div>
       <div
         className="name"
-        onDoubleClick={(e) => { e.stopPropagation(); const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.dblclickSidebarFolder(e, live)); }}
+        onDoubleClick={(e) => { e.stopPropagation(); const live = findLiveNode(node.id); dblclickSidebarFolder(e, live); }}
         title={longTitle(node.name)}
         dangerouslySetInnerHTML={{ __html: fuzzy(keyword, node.name) }}
       />
       <RenameInput node={node} commitFn="changeFolderName" />
-      <div className="badge self" onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleFolderExpand(e, live)); }}>{num(node.imageCount)}</div>
-      <div className="badge descendant" onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleFolderExpand(e, live)); }}>{num(node.descendantImageCount)}</div>
+      <div className="badge self" onDoubleClick={(e) => { const live = findLiveNode(node.id); toggleFolderExpand(e, live); }}>{num(node.imageCount)}</div>
+      <div className="badge descendant" onDoubleClick={(e) => { const live = findLiveNode(node.id); toggleFolderExpand(e, live); }}>{num(node.descendantImageCount)}</div>
       <div className="active-bg" />
       <div className="multiple-drop-folder-top-area" />
       <div className="multiple-drop-folder-name-area" />
@@ -390,9 +391,9 @@ function SmartFolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
       id={`smart-folder-${node.id}`}
       className={`item depth-${(node.styles && node.styles.depth) || 0} sidebar-smart-folder-item ${node.cls}`}
       style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
-      onClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.clickSmartNode(e, live)); }}
+      onClick={(e) => { const live = findLiveNode(node.id); clickSmartNode(e, live); }}
       onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openSmartFolderContextMenu(e, live)); }}
-      onMouseDown={(e) => { if (e.button === 1) scopeApply(getBodyScope(), (s) => s.preventMiddleClick(e)); }}
+      onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
     >
       <div className="guidelines">
         {(node.guidelines || []).map((line, i) => (
@@ -405,14 +406,14 @@ function SmartFolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
       </div>
       <div
         className="expand-icon"
-        onClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleSmartFolderExpand(e, live)); }}
+        onClick={(e) => { const live = findLiveNode(node.id); toggleSmartFolderExpand(e, live); }}
         onMouseDown={(e) => e.stopPropagation()}
         onMouseUp={(e) => e.stopPropagation()}
         onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openSmartFolderExpandContextMenu(e, live)); }}
       >
         <img src={iconSrc(theme, 'ic-arrow-right.svg')} />
       </div>
-      <div className="icon" onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleSmartFolderExpand(e, live)); }}>
+      <div className="icon" onDoubleClick={(e) => { const live = findLiveNode(node.id); toggleSmartFolderExpand(e, live); }}>
         <div className="fake-svg png" style={{ WebkitMaskImage: `url(${maskIcon('ic_smart-folder.png')})` }} />
       </div>
       <div
@@ -422,7 +423,7 @@ function SmartFolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
         dangerouslySetInnerHTML={{ __html: fuzzy(keyword, node.name) }}
       />
       <RenameInput node={node} commitFn="changeSmartFolderName" autoFocusEvent={`rename-folder-${node.id}`} />
-      <div className="badge" onDoubleClick={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.toggleSmartFolderExpand(e, live)); }}>{num(node.imageCount)}</div>
+      <div className="badge" onDoubleClick={(e) => { const live = findLiveNode(node.id); toggleSmartFolderExpand(e, live); }}>{num(node.imageCount)}</div>
       <div className="active-bg" />
       <div className="multiple-drop-smart-folder-top-area" />
       <div className="multiple-drop-smart-folder-name-area" />
@@ -447,7 +448,7 @@ function QuickAccessNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
           });
         }}
         onContextMenu={(e) => { const live = findLiveNode(node.id); scopeApply(getBodyScope(), (s) => s.openQuickAccessContextMenu(e, live)); }}
-        onMouseDown={(e) => { if (e.button === 1) scopeApply(getBodyScope(), (s) => s.preventMiddleClick(e)); }}
+        onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
         onDrop={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDropFolder(e.nativeEvent)) : undefined}
         onDragEnter={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDragEnterFolder(e.nativeEvent)) : undefined}
         onDragOver={isFolder ? (e) => scopeApply(getBodyScope(), (s) => s.onDragOverFolder(e.nativeEvent)) : undefined}
@@ -565,7 +566,7 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
           style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
           onClick={(e) => scopeApply(getBodyScope(), (s) => s[meta.open] && s[meta.open]())}
           onContextMenu={(e) => scopeApply(getBodyScope(), (s) => s.openSidebarVisibleContextMenu(e))}
-          onMouseDown={(e) => { if (e.button === 1) scopeApply(getBodyScope(), (s) => s.preventMiddleClick(e)); }}
+          onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
         >
           <div className="icon">
             <div className="fake-svg" style={{ WebkitMaskImage: `url(${maskIcon(meta.mask)})` }} />

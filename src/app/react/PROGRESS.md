@@ -741,6 +741,21 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bg：S2 批 7——侧栏树函数族归位（2026-09-06）**
+>
+> sidebarService.ts 扩充：clickNode / clickSmartNode（中键+dragCheck 守卫、meta 多选、
+> shift 区间选择）、toggleFolderExpand / toggleSmartFolderExpand（展开四分支：⌘+alt
+> 全层级 / ⌘ 第一层 / alt 子层 / 普通写 localStorage）、dblclickSidebarFolder（偏好分流
+> collapse/rename）、preventMiddleClick——实现体自 fns 表逐字搬移（fns 表条目保留，
+> shim if-absent 桥不拆，P4 随表退役）；b1-9ay 的 window.dragCheck 守卫逐字保留。
+> Sidebar.tsx 14 处 scopeApply 绕道改直调（clickNode×1/clickSmartNode×1/toggle×7/
+> dblclick×1/preventMiddleClick×4）；菜单族 contextmenu 处理器留 scope 路由（S5 归位）、
+> DnD 四事件留 bh。**教训入账：整文件 Write 覆盖会把该文件既有导出清掉——sidebarService
+> 重写时丢掉 b1-9bb 的 updateSidebarList 桥，tsc 四文件 TS2305 即抓**；rootAccess
+> 481→495（fns 表 + service 双份拷贝，P4 删表归零，基线如实吸收）。门禁：tsc + 哨兵 +
+> 定向 7 项（含 drag-start 的 dragCheck 触面）全绿。
+>
+>
 > **b1-9bf：S1 收官——残余/孤儿清扫（2026-09-06）**
 >
 > be2 考据定论（通读 boxGridEngine.ts 全文）：现行网格 = vanilla egjs **v3** API

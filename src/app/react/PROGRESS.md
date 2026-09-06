@@ -741,6 +741,17 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **【S4 中期全量 55 项 ALL GREEN + S5-bn 考据定论（2026-09-07）】**
+> bk/bm 后全量门禁通过。**S5-bn 施工边界（考据）**：openItemContextMenu =
+> fns["openItemContextMenu"]（controllerFns 921-2079，1,159 行 async builder →
+> label/keywords/click descriptor 树 → ContextMenu.open → CONTEXTMENU.OPEN 广播 →
+> ContextMenuPanel $on 消费）。**非 bd/bk 式可机械搬移函数**：体深依赖 makeControllerFns
+> 闭包私有面——initLinkVars / __cc_* 惰性单例 ×33（8115+ 补端口）/ ContextMenu 模块
+> 常量 / URL_MODULE 惰性解析。bn 拆两步：先把这些闭包 helper 归位（bo 前置），
+> 再整体搬 itemMenuService + descriptor 类型化；dispatch 改 eagleBus（defineChannel）
+> 与 ContextMenuPanel 订阅迁移同步做。
+>
+>
 > **b1-9bm：S4 批 13——媒体族归位 + videopreview 原生化（2026-09-07）**
 >
 > ① **videopreview 状态机 jQuery→原生**：detailHooks 内 videojs 进度条缩略图预览的 7 个

@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="css/preferences.css">
     <script src="js/vendors/jquery-1.8.0.min.js"></script>
     <script src="js/vendors/tippy.js"></script>
-    <script src="js/vendors/lodash.js"></script>
     <script src="js/services/shortcut-manager.js"></script>
 </head>
 
@@ -17,8 +16,9 @@
          angular.min.js/preferences.js/wMousetrap/tippy模块/shortcut-input 脚本删除）。
          窗口整体由 React 承载：react/preferences/shell.tsx（sidebar/header/content/footer/
          密码弹窗 + controller.ts 控制器数据面），入口由 vite 注入。
-         保留脚本：jQuery（search-active 标记）/tippy 厂家库（window.tippy）/lodash/
-         shortcut-manager（window.ShortcutManager 单例，ShortcutInput 消费）。 -->
+         保留脚本：jQuery（search-active 标记）/tippy 厂家库（window.tippy）/
+         shortcut-manager（window.ShortcutManager 单例，ShortcutInput 消费）。
+         b1-9bc：lodash 移除（页面与已加载脚本零 _ 消费；主窗调用点已原生化）。 -->
     <div id="eagle-preferences-react-host"></div>
 </body>
 </html>

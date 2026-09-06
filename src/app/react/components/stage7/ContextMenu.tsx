@@ -5,6 +5,7 @@ import { t } from '../../global/eagleGlobals';
 import { shortcuts } from '../../app/filters';
 import { useToolbarState } from '../../store/toolbarState';
 import { $ } from '../detail/detailHooks';
+import { max } from '../../utils/lang';
 
 /**
  * 阶段7a：contextMenu 模块接管。
@@ -711,7 +712,6 @@ export function ContextMenuPanel() {
   const getSearchResultMenu = (keyword: string) => {
     const st = stateRef.current;
     const chineseConvert = (window as any).chineseConvert;
-    const _ = (window as any)._;
 
     const filterItems = (items: any[], kw: string) => {
       if (!items) return items;
@@ -733,7 +733,7 @@ export function ContextMenuPanel() {
         return {
           item: item,
           name: itemName,
-          score: _.max(item.search.map((pinyin: string) => (pinyin as any).score(keyword_cn))),
+          score: max(item.search.map((pinyin: string) => (pinyin as any).score(keyword_cn))),
         };
       });
 

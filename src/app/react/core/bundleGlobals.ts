@@ -20,6 +20,7 @@ import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
 import { coreState } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
+import { get } from '../utils/lang';
 
 declare const Buffer: any;
 
@@ -253,35 +254,35 @@ function _getHashID(image: any, hasColorInfo: any): any {
           hashID = 'pdf-' + image.size + image.width + image.height;
           break;
         case 'ttf': {
-          var uniqueID = w._.get(image, `fontMetas.uniqueID.en`, w._.get(image, `fontMetas.uniqueID.zh`, w._.get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
+          var uniqueID = get(image, `fontMetas.uniqueID.en`, get(image, `fontMetas.uniqueID.zh`, get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
           if (!uniqueID) return undefined;
-          var postScriptName = w._.get(image, `fontMetas.postScriptName.en`, w._.get(image, `fontMetas.postScriptName.zh`, w._.get(image, `fontMetas.postScriptName.jp`, undefined)));
-          var version = w._.get(image, `fontMetas.version.en`, w._.get(image, `fontMetas.version.zh`, w._.get(image, `fontMetas.version.jp`, undefined)));
+          var postScriptName = get(image, `fontMetas.postScriptName.en`, get(image, `fontMetas.postScriptName.zh`, get(image, `fontMetas.postScriptName.jp`, undefined)));
+          var version = get(image, `fontMetas.version.en`, get(image, `fontMetas.version.zh`, get(image, `fontMetas.version.jp`, undefined)));
           hashID = 'ttf-' + image.size + uniqueID + postScriptName + version;
           break;
         }
         case 'otf': {
-          var uniqueID2 = w._.get(image, `fontMetas.uniqueID.en`, w._.get(image, `fontMetas.uniqueID.zh`, w._.get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
+          var uniqueID2 = get(image, `fontMetas.uniqueID.en`, get(image, `fontMetas.uniqueID.zh`, get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
           if (!uniqueID2) return undefined;
-          var postScriptName2 = w._.get(image, `fontMetas.postScriptName.en`, w._.get(image, `fontMetas.postScriptName.zh`, w._.get(image, `fontMetas.postScriptName.jp`, undefined)));
-          var version2 = w._.get(image, `fontMetas.version.en`, w._.get(image, `fontMetas.version.zh`, w._.get(image, `fontMetas.version.jp`, undefined)));
+          var postScriptName2 = get(image, `fontMetas.postScriptName.en`, get(image, `fontMetas.postScriptName.zh`, get(image, `fontMetas.postScriptName.jp`, undefined)));
+          var version2 = get(image, `fontMetas.version.en`, get(image, `fontMetas.version.zh`, get(image, `fontMetas.version.jp`, undefined)));
           hashID = 'otf-' + image.size + uniqueID2 + postScriptName2 + version2;
           break;
         }
         case 'ttc': {
-          var uniqueID3 = w._.get(image, `fontMetas.uniqueID.en`, w._.get(image, `fontMetas.uniqueID.zh`, w._.get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
+          var uniqueID3 = get(image, `fontMetas.uniqueID.en`, get(image, `fontMetas.uniqueID.zh`, get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
           if (!uniqueID3) return undefined;
-          var postScriptName3 = w._.get(image, `fontMetas.postScriptName.en`, w._.get(image, `fontMetas.postScriptName.zh`, w._.get(image, `fontMetas.postScriptName.jp`, undefined)));
-          var version3 = w._.get(image, `fontMetas.version.en`, w._.get(image, `fontMetas.version.zh`, w._.get(image, `fontMetas.version.jp`, undefined)));
+          var postScriptName3 = get(image, `fontMetas.postScriptName.en`, get(image, `fontMetas.postScriptName.zh`, get(image, `fontMetas.postScriptName.jp`, undefined)));
+          var version3 = get(image, `fontMetas.version.en`, get(image, `fontMetas.version.zh`, get(image, `fontMetas.version.jp`, undefined)));
           hashID = 'ttc-' + image.size + uniqueID3 + postScriptName3 + version3;
           console.log(hashID);
           break;
         }
         case 'woff': {
-          var uniqueID4 = w._.get(image, `fontMetas.uniqueID.en`, w._.get(image, `fontMetas.uniqueID.zh`, w._.get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
+          var uniqueID4 = get(image, `fontMetas.uniqueID.en`, get(image, `fontMetas.uniqueID.zh`, get(image, `fontMetas.uniqueID.jp`, image?.fontMetas?.ID)));
           if (!uniqueID4) return undefined;
-          var postScriptName4 = w._.get(image, `fontMetas.postScriptName.en`, w._.get(image, `fontMetas.postScriptName.zh`, w._.get(image, `fontMetas.postScriptName.jp`, undefined)));
-          var version4 = w._.get(image, `fontMetas.version.en`, w._.get(image, `fontMetas.version.zh`, w._.get(image, `fontMetas.version.jp`, undefined)));
+          var postScriptName4 = get(image, `fontMetas.postScriptName.en`, get(image, `fontMetas.postScriptName.zh`, get(image, `fontMetas.postScriptName.jp`, undefined)));
+          var version4 = get(image, `fontMetas.version.en`, get(image, `fontMetas.version.zh`, get(image, `fontMetas.version.jp`, undefined)));
           hashID = 'woff-' + image.size + uniqueID4 + postScriptName4 + version4;
           break;
         }

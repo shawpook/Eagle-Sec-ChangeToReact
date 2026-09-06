@@ -8,6 +8,7 @@ import { usePanelState } from '../../store/panelState';
 import { $, req, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVirtualWindow } from '../sidebar/Sidebar';
+import { max, uniq } from '../../utils/lang';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -404,7 +405,6 @@ export function AddToFolderModal() {
   const filterFolders = (folders: any[], keyword: string) => {
     if (!keyword) return folders;
     const w = window as any;
-    const _ = w._;
     const { chineseConvert, pinyinlite, cartesianProduct } = loadPinyinModules();
     const folderMappings = folderMappingsRef.current;
     const keyword_cn = chineseConvert
@@ -432,7 +432,7 @@ export function AddToFolderModal() {
         name: folderNameCN,
         search: [
           folderNameCN,
-          ..._.uniq(
+          ...uniq(
             cartesianProduct(pinyinlite(folderNameCN, { keepUnrecognized: true }).filter((p: any) => p.length > 0)).map(
               (item: any) => item.join(' ')
             )
@@ -442,7 +442,7 @@ export function AddToFolderModal() {
     });
 
     const scores = folderSearchItems.map((item: any) => {
-      let score = _.max(item.search.map((pinyin: any) => (pinyin as any).score(keyword_cn)));
+      let score = max(item.search.map((pinyin: any) => (pinyin as any).score(keyword_cn)));
       const folder = item.folder;
       if (folder && folder.parent && folderMappings[folder.parent]) {
         if (folderMappings[folder.parent].showChildren) {

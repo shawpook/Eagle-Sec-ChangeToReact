@@ -6,6 +6,7 @@ import { t } from '../../global/eagleGlobals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
+import { max, uniq } from '../../utils/lang';
 
 /**
  * 阶段7c-2：quickSearchModal 接管。
@@ -359,8 +360,6 @@ export function QuickSearchModal() {
     const body = getBodyScope();
     if (!body) return;
     const w = window as any;
-    const _ = w._;
-    if (!_) return;
     const { pinyinlite, cartesianProduct } = loadPinyinModules();
 
     const keyword_cn = w.chineseConvert
@@ -500,7 +499,7 @@ export function QuickSearchModal() {
           name: folderNameCN,
           search: [
             folderNameCN,
-            ..._.uniq(
+            ...uniq(
               cartesianProduct(pinyinlite(folderNameCN, { keepUnrecognized: true }).filter((p: any) => p.length > 0)).map(
                 (item: any) => item.join(' ')
               )
@@ -513,7 +512,7 @@ export function QuickSearchModal() {
         return {
           item: item,
           name: item.name,
-          score: _.max(item.search.map((pinyin: any) => (pinyin as any).score(keyword_cn))),
+          score: max(item.search.map((pinyin: any) => (pinyin as any).score(keyword_cn))),
         };
       });
 

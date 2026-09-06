@@ -16,6 +16,8 @@ import { machineryGetVideoPlayer, machineryCalcRotateDegree, machineryGetFolderP
   machineryGetArroundBox, machineryGetAncestorSmartFolders, machineryCalcuteContainFolders,
   machineryToggleAllFolders, machineryToggleCurrentLevelFolders, machineryToggleAllSmartFoldersInner,
   machineryToggleCurrentLevelSmartFoldersInner, machineryFilterSidebarItem, getFilter as machineryGetFilter } from './dataMachinery';
+import { debounce, throttle } from '../utils/func';
+import { get, isString, unescape } from '../utils/lang';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -48,10 +50,10 @@ const electronSettings: any = (window as any).electronSettings;
 const electronLog: any = (window as any).electronLog || console;
 const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
 // b1-9w：菜单点击路径补端口的全局消费（clipboard 由 copyAs* 族 / eagleClasses.copyTags 消费；
-// _ 为 lodash——copyTags 的 _.throttle / renameFontsWithFullName 的 _.get / openFilesWithDefault
-// 的 _.debounce 消费；showFinderAlert 为 bundle 19064-19068 顶层 var，localStorage 初始化）
+// b1-9bc：原 window._（lodash）消费面已原生化——copyTags 用 utils/func throttle、
+// renameFontsWithFullName 用 utils/lang get、openFilesWithDefault 用 utils/func debounce；
+// showFinderAlert 为 bundle 19064-19068 顶层 var，localStorage 初始化）
 const clipboard: any = _req('electron')?.clipboard || (window as any).clipboard;
-const _: any = (window as any)._;
 let __lv_showFinderAlert: any = localStorage.getItem("eagle.hint.showInFinder") !== 'false';
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -196,7 +198,7 @@ function enableImageNameEditable(event: any, $name: any) {
       var image = $scope.selected[0];
       name = name.substr(0, remainingFilenameLength($scope.libraryPath));
       name = sanitize(name).replace(/%/g, '').replace(/&lt;/g, '').replace(/&gt;/g, '').trim();
-      name = _.unescape(name);
+      name = unescape(name);
       eagle.inspector.newName = name;
 
       if (emojiRegex.test(name)) {
@@ -375,7 +377,7 @@ export function makeControllerFns(getScope: () => any) {
             }, 150);
         }
 
-      __lv_setLastFolder = _.debounce(function setLastFolder (folderId: any) {
+      __lv_setLastFolder = debounce(function setLastFolder (folderId: any) {
             if (!folderId) {
                 localStorage.removeItem(`eagle.lastFolder.${getBodyScope().rootDir}`);
             }
@@ -2482,7 +2484,7 @@ export function makeControllerFns(getScope: () => any) {
                     __lv_TagManager.rawdata = [];
                     Object.keys(__lv_tags).forEach(function(key) {
                         if (!__lv_pinyinCache[key]) {
-                            if (_.isString(__lv_tags[key].name)) {
+                            if (isString(__lv_tags[key].name)) {
                                 __lv_pinyinCache[key] = tinyPinyin.convertToPinyin(__lv_tags[key].name);
                             }
                         }
@@ -8117,7 +8119,7 @@ export function makeControllerFns(getScope: () => any) {
   let __cc_copyTags: any = null;
   fns["copyTags"] = function (...args) {
     if (!__cc_copyTags) {
-      __cc_copyTags = _.throttle(function () {
+      __cc_copyTags = throttle(function () {
         const s = getScope();
         if (!s) return;
         eagle.inspector.copyTags();
@@ -8583,7 +8585,7 @@ export function makeControllerFns(getScope: () => any) {
                     if (item && FONT_TYPES[item.ext]) {
                         if (item.fontMetas) {
                             try {
-                                var fontFamily = _.get(item.fontMetas, `fontFamily.${preferLng}`, undefined) || _.get(item.fontMetas, `fontFamily.en`, "");
+                                var fontFamily = get(item.fontMetas, `fontFamily.${preferLng}`, undefined) || get(item.fontMetas, `fontFamily.en`, "");
                                 if (fontFamily && fontFamily.length > 0) {
                                     var originName = item.name;
                                     var newName = fontFamily;
@@ -8664,7 +8666,7 @@ export function makeControllerFns(getScope: () => any) {
   let __cc_openWithOther: any = null;
   fns["openWithOther"] = function (...args) {
     if (!__cc_openWithOther) {
-      __cc_openWithOther = _.debounce(function () {
+      __cc_openWithOther = debounce(function () {
         const s = getScope();
         if (!s) return;
         if (s.selected.length > 0) {
@@ -8704,7 +8706,7 @@ export function makeControllerFns(getScope: () => any) {
                 }, 10);
             }
         };
-        return _.debounce(function () {
+        return debounce(function () {
             const s = getScope();
             if (!s) return;
 
@@ -8873,7 +8875,7 @@ export function makeControllerFns(getScope: () => any) {
   let __cc_openFilesWithDefault: any = null;
   fns["openFilesWithDefault"] = function (...args) {
     if (!__cc_openFilesWithDefault) {
-      __cc_openFilesWithDefault = _.debounce(function(files) {
+      __cc_openFilesWithDefault = debounce(function(files) {
         const s = getScope();
         if (!s) return;
         if ($(".swal2-container").length > 0) { return; }

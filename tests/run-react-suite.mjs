@@ -1,12 +1,13 @@
 /**
- * React 全量回归套件（53 项，顺序隔离执行）。
- * b1-9ba 起第 1 项为彻底化哨兵（无 Electron、毫秒级）——Angular-ism 单调递减门，
- * 放最前让倒退最快暴露。
+ * React 全量回归套件（54 项，顺序隔离执行）。
+ * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
+ * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
  */
 import { spawnSync } from 'node:child_process';
 
 const tests = [
   'tests/react-rewrite-sentinel.mjs',
+  'tests/react-utils-native.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',

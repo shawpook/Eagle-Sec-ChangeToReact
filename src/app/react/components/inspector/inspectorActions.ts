@@ -2,6 +2,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
+import { unescape } from '../../utils/lang';
 
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
@@ -220,7 +221,7 @@ export function imagesChange() {
   let name = eagleIns.newName;
   name = String(name ?? '').substr(0, req((window as any).appRoot.path + '/app/js/utils/remainingFilenameLength.js')(getBodyScope()?.libraryPath));
   name = (window as any).sanitize(name).replace(/%/g, '').replace(/&lt;/g, '').replace(/&gt;/g, '').trim();
-  name = (window as any)._.unescape(name);
+  name = unescape(name);
 
   // 禁止清除名稱，一定要有文字
   if (name === '' && getBodyScope().selected.length === 1) {
@@ -316,7 +317,7 @@ export function annotationChange() {
   const eagleIns = (window as any).eagle.inspector;
   let annotation = eagleIns.newAnnotation;
   annotation = String(annotation ?? '').substr(0, 20480);
-  annotation = (window as any)._.unescape(annotation);
+  annotation = unescape(annotation);
 
   const items = [...getBodyScope().selected];
 
@@ -486,7 +487,7 @@ export function rgbToHex(r: number, g: number, b: number): string | false {
 
 export function copyComment(event: any, image: any, comment: any) {
   if (comment && comment.annotation) {
-    req('electron')?.clipboard?.writeText((window as any)._.unescape(comment.annotation));
+    req('electron')?.clipboard?.writeText(unescape(comment.annotation));
     getBodyScope().notify({
       message: t('previewWindow.copied'),
       duration: 750,

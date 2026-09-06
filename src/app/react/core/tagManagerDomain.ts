@@ -14,6 +14,7 @@ import { getBodyScope } from '../global/scopeBridge';
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
 import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout } from './dataMachinery';
+import { debounce } from '../utils/func';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -1138,7 +1139,7 @@ export function machineryBuildTagManager(s: any): any {
             TagManager.changeGroupBy(TagManager.groupBy);
         };
 
-        TagManager.calculateTagsDebounce = _.debounce(TagManager.calculateTags, 500);
+        TagManager.calculateTagsDebounce = debounce(TagManager.calculateTags, 500);
 
         TagManager.createGroup = function (groupName: any) {
             var newGroup = {

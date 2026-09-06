@@ -741,6 +741,27 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bc：P0 批 3——lodash 原生化 + vendor lodash.js 退役（2026-09-06）**
+>
+> 新建 `src/app/react/utils/func.ts`（debounce/throttle，含 cancel/flush）+
+> `utils/lang.ts`（get/unescape/max/uniq/isString）。**语义按 vendored lodash 4.x 实测
+> 复刻而非注释口径**：`debounce(fn, wait, true)` 第三参被 isObject 拦截 → 实际运行时
+> 是 trailing（bundle 注释 "leading" 口径与运行时不符，以运行时为准）；throttle =
+> leading+trailing 双缘（窗外首调立即、窗内末次入参窗尾补发一次）。全部调用点原生化：
+> dataMachinery 15（debounce×4/throttle×3/get×2/unescape×2/isString/uniq/max）、
+> bundleGlobals 36（get，字体 hashID 链）、controllerFns 9 + 删 `const _: any =
+> (window as any)._` 绑定、tagManagerDomain 1（calculateTagsDebounce）、inspectorActions 3
+> （unescape）、QuickSearchModal/ContextMenu/FolderModals 5 + 删局部 `const _ =` 与
+> `if (!_) return` 守卫。index.html + preferences.html 的 lodash.js script 移除（两窗口
+> 剩余已加载脚本零 `_` 消费；preferences 注释同步更新）。**单测抓真 bug**：get 的中途
+> 断链（如 `{a:{}, 'a.b.c'}`）lodash 归一 undefined 后回落 default，初版实现提前 return
+> undefined——`tests/react-utils-native.mjs`（19 断言，套件第 2 项，纯 Node）锁语义后修。
+> 哨兵新增 lodashWindow/lodashBare 两度量（0/25，25 全为历史注释；新注释勿用 _.method
+> 措辞），vendorScriptTags 10→9。门禁：tsc EXIT:0 + utils 单测 + 哨兵 + 定向 11 项
+> （首跑两红 main-ui-workflow 超时/empty-trash EBUSY 清理——**并行起多 Electron 套件
+> 的资源争抢误报**，串行复跑双双即绿；教训入账：**定向子集不得并行launch**）。
+>
+>
 > **b1-9bb：P0 批 2——四大热点 service 收编（2026-09-06）**
 >
 > 新建 `src/app/react/services/` 四模块（桥接模式）：selectionService（updateSelection）、

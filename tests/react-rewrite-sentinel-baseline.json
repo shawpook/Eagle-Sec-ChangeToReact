@@ -13,6 +13,8 @@
     "jQuery": 78,
     "rootAccess": 481,
     "coreState": 32,
-    "vendorScriptTags": 10
+    "lodashWindow": 0,
+    "lodashBare": 25,
+    "vendorScriptTags": 9
   }
 }

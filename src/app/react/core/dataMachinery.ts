@@ -61,6 +61,8 @@ import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
 // b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
+import { debounce, throttle } from '../utils/func';
+import { get, isString, max, uniq, unescape } from '../utils/lang';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -638,7 +640,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       TagManager.rawdata = [];
       Object.keys(tags).forEach(function(key: any) {
         if (!pinyinCache[key]) {
-          if (w._.isString(tags[key].name)) {
+          if (isString(tags[key].name)) {
             pinyinCache[key] = w.tinyPinyin.convertToPinyin(tags[key].name);
           }
         }
@@ -800,7 +802,7 @@ export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] 
     return {
       folder: folder,
       name: folderNameCN,
-      search: [folderNameCN, ...w._.uniq(
+      search: [folderNameCN, ...uniq(
         w.cartesianProduct(w.pinyinlite(folderNameCN, { keepUnrecognized: true }).filter((p: any) => p.length > 0))
           .map((item: any) => item.join(' '))
       )],
@@ -811,7 +813,7 @@ export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] 
     return {
       item: item,
       name: item.name,
-      score: w._.max(item.search.map((pinyin: any) => pinyin.score(keyword_cn))),
+      score: max(item.search.map((pinyin: any) => pinyin.score(keyword_cn))),
     };
   });
 
@@ -1137,7 +1139,7 @@ function machineryAutoResizeTagFilter(s: any): void {
    adjustLayoutWidth 仍由 bundle 承载经 scope 解析；rebindRefresh 已是移植版（scope 解析即达）） */
 export function machineryReload(s: any): any {
   const w = window as any;
-  return w._.debounce(function reload(keepDetailMode: any) {
+  return debounce(function reload(keepDetailMode: any) {
     s.hexColor = undefined;
     s.unlockPassword = "";
 
@@ -3307,7 +3309,7 @@ function machinerySetViewMode(s: any, viewMode: any): void {
   const w = window as any;
   if (!viewMode) return;
   if (!setViewModeDebounced) {
-    setViewModeDebounced = w._.debounce(function (vm: any) {
+    setViewModeDebounced = debounce(function (vm: any) {
       localStorage.setItem(`eagle.viewMode.${s.rootDir}`, vm);
     }, 500);
   }
@@ -3319,7 +3321,7 @@ let setLastFolderDebounced: any = null;
 function machinerySetLastFolder(s: any, folderId: any): void {
   const w = window as any;
   if (!setLastFolderDebounced) {
-    setLastFolderDebounced = w._.debounce(function (fid: any) {
+    setLastFolderDebounced = debounce(function (fid: any) {
       if (!fid) {
         localStorage.removeItem(`eagle.lastFolder.${s.rootDir}`);
       }
@@ -5589,7 +5591,7 @@ function machineryScrollbarTo(element: any, to: any, duration: any): void {
    （与 bundle controller init 同语义），shift+space 绑定消费 */
 export function machineryPageDownHandler(s: any): any {
   const w = window as any;
-  return w._.throttle(function (event: any) {
+  return throttle(function (event: any) {
     var offset = w.$(window).height() - 72;
     if (s.isDetailMode) {
       w.$("#detail-container").smoothZoom('moveY', offset);
@@ -5604,7 +5606,7 @@ export function machineryPageDownHandler(s: any): any {
 /* pageUpHandler（bundle 35691-35702 逐字：含 prepend 触发面 ig.trigger("prepend")） */
 export function machineryPageUpHandler(s: any): any {
   const w = window as any;
-  return w._.throttle(function (event: any) {
+  return throttle(function (event: any) {
     var offset = w.$(window).height() - 72;
     if (s.isDetailMode) {
       w.$("#detail-container").smoothZoom('moveY', -offset);
@@ -6426,8 +6428,8 @@ function machinerySearchFilter(s: any, image: any): any {
         // 字體特殊處理
         if (image.ext && w.FONT_TYPES[image.ext] && image.fontMetas) {
             var preferLng = "zh";
-            var fullName = w._.get(image.fontMetas, `fullName.${preferLng}`, undefined) ||
-                           w._.get(image.fontMetas, `fullName.en`, "");
+            var fullName = get(image.fontMetas, `fullName.${preferLng}`, undefined) ||
+                           get(image.fontMetas, `fullName.en`, "");
             allText += `${fullName} `;
 
             if (s.keyword.length > 2 && image.fontMetas.postScriptName) {
@@ -7495,7 +7497,7 @@ export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any
    一次性创建（与 bundle controller init 同语义） */
 export function machineryOffsetScrollbar(s: any): any {
   const w = window as any;
-  return w._.debounce(function offsetScrollbar(delay: any, forceScroll: any) {
+  return debounce(function offsetScrollbar(delay: any, forceScroll: any) {
     machineryOffsetScrollbarImm(s, delay, forceScroll);
   }, 100, true);
 }
@@ -8634,7 +8636,7 @@ export function machineryOpenFilter(s: any): void {
 
 export function machineryToggleFilterByType(s: any): any {
   const w = window as any;
-  return w._.throttle(function (filterType: any, event: any) {
+  return throttle(function (filterType: any, event: any) {
     event && event.preventDefault();
 
     // 特殊處理：image 篩選器需要檢查 AI 搜尋
@@ -10218,7 +10220,7 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
 
       name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
       name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
-      name = w._.unescape(name);
+      name = unescape(name);
       w.eagle.inspector.newName = name;
 
       if (emojiRegex.test(name)) {
@@ -10330,7 +10332,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
       var name = newName;
       name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
       name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
-      name = w._.unescape(name);
+      name = unescape(name);
 
       if (emojiRegex.test(name)) {
         name = name.replace(emojiRegex, '');

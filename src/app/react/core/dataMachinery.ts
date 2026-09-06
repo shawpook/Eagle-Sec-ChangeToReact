@@ -60,6 +60,7 @@ import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
 import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 import { detailUpdateZoomRatio, detailSmartZoom, detailToggleDetailMode, beginZoomingTransition } from '../services/detailService';
+import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot } from '../services/mediaService';
 // b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
@@ -6296,63 +6297,7 @@ export function machineryPrevGifFrame(s: any, amount: any = 1): void {
    REFRESH_VIDEO_COMMENTS 广播 + updateItemView（scope 解析）+ ipcRenderer 统一表达式
    send('image-change')） */
 export function machineryAddVideoComment(s: any, video: any, videoElem: any): void {
-  const w = window as any;
-  if (!video || !videoElem) return;
-
-  videoElem.pause();
-
-  w.swal({
-    html: `
-                    <div class="alert">
-                        <div class="alert-icon create"></div>
-                        <h4 class="alert-title">${w.i18n.__('dialog.videoComment.title')}</h4>
-                    </div>
-                `,
-    input: 'textarea',
-    inputPlaceholder: w.i18n.__("dialog.videoComment.placeholder"),
-    allowEnterKey: false,
-    showCloseButton: false,
-    showCancelButton: true,
-    allowOutsideClick: false,
-    focusConfirm: false,
-    focusCancel: false,
-    padding: 10,
-    position: 'bottom',
-    width: 400,
-    customClass: "alert-box",
-    cancelButtonColor: "#777777",
-    confirmButtonText: w.i18n.__("dialog.videoComment.save"),
-    cancelButtonText: w.i18n.__("general.cancel"),
-  }).then(function (result: any) {
-
-    if (!result) return;
-
-    var comment = {
-      id: w.guid(),
-      duration: videoElem.currentTime,
-      annotation: result,
-      lastModified: Date.now()
-    }
-
-    if (!s.current.comments) {
-      s.current.comments = [];
-    }
-
-    s.current.comments.push(comment);
-    s.current.comments = s.current.comments.sort(function (a: any, b: any) {
-      var da = a.duration;
-      var db = b.duration;
-      if (da > db) return 1;
-      if (da < db) return -1;
-      return 0;
-    })
-    s.$root.$broadcast("REFRESH_VIDEO_COMMENTS");
-    s.updateItemView(video);
-    s.$evalAsync();
-
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-    ipc.send('image-change', s.current);
-  })
+  mediaAddVideoComment(s, video, videoElem);
 }
 
 /* newFileFromTemplate（bundle 37336-37374 逐字：resourcesPath/EAGLE_THUMBNAIL_TEMP_PATH 为
@@ -7252,12 +7197,7 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
 
 /* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
 export function machineryGetVideoPlayer(s: any): any {
-  const w = window as any;
-  var mpv = w.$(".detail-wrap mpv-video")[0];
-  if (mpv) return { el: mpv, type: 'mpv' };
-  var native = w.$(".detail-wrap video")[0];
-  if (native) return { el: native, type: 'native' };
-  return null;
+  return mediaGetVideoPlayer(s);
 }
 
 /* rememberScrollTops（bundle 31142-31150 逐字：inline/edge 模式跳过 + smoothZoom
@@ -7276,15 +7216,7 @@ export function machineryRememberScrollTops(s: any, item: any): void {
 /* rememberVideoCurrentTime（bundle 31726-31736 逐字：视频类 → getVideoPlayer().el.currentTime
    → eagle.videoPlayer.currentTime.{id} 键） */
 export function machineryRememberVideoCurrentTime(s: any, item: any): void {
-  const w = window as any;
-  if (!item) return;
-  if (w.VIDEO_TYPES[item.ext]) {
-    var player = machineryGetVideoPlayer(s);
-    if (player) {
-      var currentTime = player.el.currentTime;
-      w.localStorage.setItem("eagle.videoPlayer.currentTime." + item.id, currentTime);
-    }
-  }
+  mediaRememberVideoCurrentTime(s, item);
 }
 
 /* addToRecentFile（bundle 36435-36443 逐字：1s 后 current 换人则不记（已換人 console）→
@@ -9374,73 +9306,7 @@ export function machineryImportLinks(s: any): void {
    双路 → copyMode 剪贴板（electron.nativeImage）或 screencapture-from-extension 上送
    （guid + currentTime.toFixed(2) 命名）） */
 export async function machineryVideoScreenShot(s: any, copyMode: any): Promise<void> {
-  const w = window as any;
-  if (s.current && w.VIDEO_TYPES[s.current.ext]) {
-
-    var player = machineryGetVideoPlayer(s);
-    if (!player) return;
-
-    var currentTime = player.el.currentTime;
-    var width = s.current.width;
-    var height = s.current.height;
-    var base64;
-
-    if (player.type === 'mpv') {
-      // mpv-video: 使用 screenshot API 取得 ImageData 再轉 base64
-      try {
-        var imageData = await player.el.screenshot(currentTime);
-        if (!imageData) return;
-        var canvas = document.createElement('canvas');
-        canvas.width = imageData.width;
-        canvas.height = imageData.height;
-        canvas.getContext('2d')!.putImageData(imageData, 0, 0);
-        base64 = canvas.toDataURL("image/jpeg", 0.95);
-      } catch (err: any) {
-        w.electronLog && w.electronLog.error(err.stack || err);
-        return;
-      }
-    }
-    else {
-      // native video: 使用 canvas drawImage
-      var video = player.el;
-      var canvas = document.createElement('canvas');
-      var ctx = canvas.getContext('2d')!;
-      canvas.width = width;
-      canvas.height = height;
-      video.setAttribute("crossOrigin", 'Anonymous');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      base64 = canvas.toDataURL("image/jpeg", 0.95);
-    }
-
-    if (copyMode) {
-      try {
-        var nativeImage = w.electron.nativeImage;
-        var newImage = nativeImage.createFromDataURL(base64);
-
-        w.electron.clipboard.writeImage(newImage);
-        s.notify({
-          message: w.i18n.__("previewWindow.copied"),
-          duration: 750
-        });
-      }
-      catch (err: any) {
-        w.electronLog && w.electronLog.error(err.stack || err);
-      }
-    }
-    else {
-      var data = {
-        id: w.guid(),
-        name: `${s.current.name} - ${currentTime.toFixed(2)}`,
-        url: s.current.url || "",
-        tags: [],
-        modificationTime: s.current.modificationTime + 1 || Date.now(),
-        folders: s.current.folders || [],
-        base64data: base64,
-      };
-      const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-      ipc.sendTo(w.backgroundWindowID, 'screencapture-from-extension', data);
-    }
-  }
+  return mediaVideoScreenShot(s, copyMode);
 }
 
 /* getFolderImages（bundle 42841-42865 逐字：倒序扫描 raw + folders 归属判定；

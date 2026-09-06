@@ -741,6 +741,24 @@
 > 阶梯 + updateZoomRatio）、imageSize 写入面 8+ 处、smoothZoom 调用点 67 处。
 >
 >
+> **b1-9bm：S4 批 13——媒体族归位 + videopreview 原生化（2026-09-07）**
+>
+> ① **videopreview 状态机 jQuery→原生**：detailHooks 内 videojs 进度条缩略图预览的 7 个
+> jQuery 命名空间事件块（mousedown.videopreview/mouseup.videoprocess/mousemove 等）改
+> 原生 addEventListener——`onVp` 辅助 + **模块级清理注册表**（dispose 原命名空间 off 与
+> 视频重挂统一走 clearVideopreviewListeners，杜绝 body 级监听泄漏——原 dispose 清理
+> 漏掉 progressbar 的 mouseup.videoprocess，属顺带修复）；pageX/offsetX/buttons 均
+> MouseEvent 原生字段，拖拽 seek 数学逐字保留。
+> ② **mediaService 归位**：addVideoComment（swal 输入 → comments 落库 + 广播刷新）/
+> getVideoPlayer（mpv/native 双探）/ rememberVideoCurrentTime / videoScreenShot（mpv
+> screenshot API / native drawImage 双路）四函数自 dataMachinery 逐字搬移（machinery 留
+> 委托壳），组件侧 8 处直调（detailHooks ×6、inspectorActions ×2）。
+> **教训入账**：跨行注释的 span 推导连续三误（6293 空行 / 9447 越入下一函数注释 /
+> 花括号计数器被模板字符串扰乱）——**文本 span 操作必须逐块断言首尾行内容**，断言
+> 连续三次拦下错位写入。哨兵 getBodyScope 672→670。门禁：tsc + 哨兵 + 定向 4 项全绿。
+> S4 余量：bl（smoothZoom 剥壳，74 调用面）独立完整会话。
+>
+>
 > **b1-9bk：S4 批 11——detailService 归位（2026-09-07）**
 >
 > 新建 `services/detailService.ts`：toggleDetailMode / smartZoom / updateZoomRatio 三函数

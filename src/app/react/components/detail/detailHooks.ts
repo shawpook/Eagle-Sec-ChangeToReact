@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { ipcRenderer } from '../../global/eagleGlobals';
 import { updateZoomRatio } from '../../services/detailService';
+import { addVideoComment, videoScreenShot } from '../../services/mediaService';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -47,6 +48,17 @@ export const detailContainer = (): HTMLElement => document.getElementById('detai
 /* mediaElement（bundle 64843-65684 逐字移植）                          */
 /* ------------------------------------------------------------------ */
 
+// b1-9bm：videopreview 原生监听清理注册表——dispose（原 jQuery 命名空间 off）与
+// 视频重挂（原 .off().on() 链）统一走此摘除，杜绝 body 级监听泄漏。
+let videopreviewCleanups: Array<() => void> = [];
+function clearVideopreviewListeners(): void {
+  const pending = videopreviewCleanups;
+  videopreviewCleanups = [];
+  pending.forEach((fn) => {
+    try { fn(); } catch (err) { /* noop */ }
+  });
+}
+
 export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | null>) {
   useEffect(() => {
     const video = videoRef.current as HTMLVideoElement;
@@ -88,8 +100,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
 
         element.off();
         // element.remove() 不做：节点由 React 管理
-        $()('.vjs-progress-holder.vjs-slider.vjs-slider-horizontal').off('mousedown.videopreview').off('mousemove.videopreview');
-        $()('body').off('mousemove.videopreview').off('mouseup.videopreview');
+        clearVideopreviewListeners();
         if ($()('#not-support-preview').length > 0) {
           $()('#not-support-preview').css('display', '');
         }
@@ -192,10 +203,10 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           bodyScope.setAsVideoThumbnail();
         },
         'player.thumbnail.copy': () => {
-          bodyScope.videoScreenShot(true);
+          videoScreenShot(true);
         },
         'player.thumbnail.save': () => {
-          bodyScope.videoScreenShot();
+          videoScreenShot();
         },
       };
 
@@ -489,6 +500,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         });
       }
 
+      clearVideopreviewListeners();
       function initThumbnailPewivew() {
         const $container = $()('.vjs-progress-holder.vjs-slider.vjs-slider-horizontal');
         const $thumbnailVideo = $()('<video/>', {
@@ -507,10 +519,17 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         let offsetX: number | undefined;
         let originPaused: boolean | undefined;
         let isMouseDown = false;
+        // b1-9bm：jQuery 命名空间事件 → 原生监听（清理注册表：dispose 与重挂时统一摘除；
+        // pageX/offsetX/buttons 均为 MouseEvent 原生字段，语义零改动）
+        const containerEl = $container[0] as HTMLElement;
+        const progressBarEl = $progressbar[0] as HTMLElement;
+        const thumbVideoEl = $thumbnailVideo[0] as HTMLElement;
+        const onVp = (el: HTMLElement, type: 'mousedown' | 'mousemove' | 'mouseup', fn: (e: MouseEvent) => void) => {
+          el.addEventListener(type, fn as EventListener);
+          videopreviewCleanups.push(() => el.removeEventListener(type, fn as EventListener));
+        };
 
-        $container
-          .off('mousedown.videopreview')
-          .on('mousedown.videopreview', function (event: any) {
+        onVp(containerEl, 'mousedown', function (event: MouseEvent) {
             event.stopPropagation();
             startX = event.pageX;
             offsetX = event.offsetX;
@@ -523,12 +542,12 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             }
           });
 
-        $progressbar.off('mouseup.videoprocess').on('mouseup.videoprocess', function () {
+        onVp(progressBarEl, 'mouseup', function () {
           startX = undefined;
           isMouseDown = false;
         });
 
-        $container.off('mousemove.videopreview').on('mousemove.videopreview', function (event: any) {
+        onVp(containerEl, 'mousemove', function (event: MouseEvent) {
           if (startX === undefined) {
             startX = event.pageX;
             offsetX = event.offsetX;
@@ -571,33 +590,27 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           void videoWidth;
         };
 
-        $()('body')
-          .off('mousemove.videopreview')
-          .on('mousemove.videopreview', function (event: any) {
+        onVp(document.body, 'mousemove', function (event: MouseEvent) {
             if (startX === undefined) {
               return;
             }
             updateVideoPreview(event);
           });
 
-        $()(video)
-          .off('mousedown.videopreview')
-          .on('mousedown.videopreview', function (event: any) {
+        onVp(video, 'mousedown', function (event: MouseEvent) {
             startX = undefined;
             isMouseDown = false;
             updateVideoPreview(event);
           });
 
-        $()('.vjs-button')
-          .off('mousedown.videopreview')
-          .on('mousedown.videopreview', function () {
+        document.querySelectorAll('.vjs-button').forEach((btn) => {
+          onVp(btn as HTMLElement, 'mousedown', function () {
             startX = undefined;
             isMouseDown = false;
           });
+        });
 
-        $()('body')
-          .off('mouseup.videopreview')
-          .on('mouseup.videopreview', function (event: any) {
+        onVp(document.body, 'mouseup', function (event: MouseEvent) {
             startX = undefined;
             isMouseDown = false;
             if (event.buttons === 0 || (event.buttons === undefined && event.which === 1)) {
@@ -651,7 +664,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           noteBtn.addClass('vjs-icon-note');
           noteBtn.on('click', function () {
             video.pause();
-            getBodyScope().addVideoComment(getBodyScope().current, video);
+            addVideoComment(getBodyScope()?.current, video);
           });
           const $noteBtn = $()(noteBtn.el_).detach();
           $noteBtn.insertBefore($fullScreenButton);
@@ -1077,7 +1090,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         if (!isInPreviewWindow) {
           noteManager.setOnAdd(function () {
             video.pause();
-            getBodyScope().addVideoComment(getBodyScope().current, video);
+            addVideoComment(getBodyScope()?.current, video);
           });
         } else {
           noteManager.hideButton();
@@ -1277,10 +1290,10 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
           getBodyScope().setAsVideoThumbnail();
         },
         'player.thumbnail.copy': function () {
-          getBodyScope().videoScreenShot(true);
+          videoScreenShot(true);
         },
         'player.thumbnail.save': function () {
-          getBodyScope().videoScreenShot();
+          videoScreenShot();
         },
       };
 

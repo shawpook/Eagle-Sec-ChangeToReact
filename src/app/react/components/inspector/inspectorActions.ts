@@ -3,6 +3,7 @@ import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
+import { rememberVideoCurrentTime } from '../../services/mediaService';
 
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
@@ -285,7 +286,7 @@ export function imagesChange() {
 
     // 避免修改影片名稱造成影片重頭播放
     if (getBodyScope().isDetailMode) {
-      getBodyScope().rememberVideoCurrentTime(getBodyScope().current);
+      rememberVideoCurrentTime(getBodyScope()?.current);
       if ($()('#font-viewer').length > 0) {
         $()('iframe#font-viewer').contents().find('.font-name span').text(eagleIns.newName);
       }
@@ -373,7 +374,7 @@ export function urlChange() {
       (window as any).electronLog.info(`[app] Change items info from inspctor, total: ${getBodyScope().selected.length} files`);
 
       if (getBodyScope().isDetailMode) {
-        getBodyScope().rememberVideoCurrentTime(getBodyScope().current);
+        rememberVideoCurrentTime(getBodyScope()?.current);
         if ($()('#font-viewer').length > 0) {
           $()('iframe#font-viewer').contents().find('.font-name span').text(eagleIns.newName);
         }

@@ -752,6 +752,23 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9br：S6 批 18——文件夹核心操作族归位 folderCoreService（S6 收官，2026-09-07）**
+>
+> **范围考据**：S6 余量盘点——emptyTrash/cancelEmptyTrash 已随 bq 迁 batchOps，
+> moveTo 三兄弟在 FolderModals，moveFolders/removeFolder 在 folderMenuService；
+> 剩余正主 = 文件夹创建/移动/归档/回收站恢复 7 fns：createFolder(73) / newFolder(131)
+> / newFolderWidthSelection(96) / addImagesToFolder(71) / moveFoldersAsSibling(108)
+> / moveFoldersToFolder(96) / emptyRestore(43)，共 618 行 → **services/
+> folderCoreService.ts**（662 行，install 工厂同 bo/bp/bq，代码体零改动）。
+> controllerFns 7,348→6,733 行（S6 两批合计 -1,297）。
+> 哨兵 getBodyScope 669→670（$filter shim 第五处双写吸收，P4 归零）。
+> 门禁：tsc 0 + esbuild bundle OK + 哨兵 OK + 定向 5 项全绿（menu-popup /
+> ui-interactions 7/7——含 addFromPaths fixture 驱动 openItemContextMenu 断言 /
+> 1m1 a7=true / stage7a / probe8 scope+core=object）。probe5 的 ok:false 为探针
+> 2s 等待窗 vs fixture 图刷出时序（ui-interactions 同链路绿，非回归）。
+> **S6 竖切完成**（bq 批量操作 + br 文件夹核心/回收站）。
+>
+>
 > **b1-9bq：S6 批 17——批量操作归位 batchOpsService（2026-09-07）**
 >
 > **范围考据**：批量操作主面盘点——移动族（moveToFolders 已在 dataMachinery、

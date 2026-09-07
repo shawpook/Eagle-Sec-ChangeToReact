@@ -99,11 +99,14 @@ try {
   if (!appLabels.includes('View') || !appLabels.includes('Help')) throw new Error(`application menu template incomplete: ${JSON.stringify(appLabels)}`);
   console.log(`MENU_POPUP application-menu OK labels=${JSON.stringify(appLabels)}`);
 
-  // ── 站点 1/3：主窗静态接线审计 ──
+  // ── 站点 1/3：主窗静态接线审计（b1-9bn：shareMenu 构造随 builder 迁 itemMenuService）──
   const fnsSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'controllerFns.ts'), 'utf8');
-  if (!fnsSource.includes('new remote.ShareMenu(')) throw new Error('shareMenu ShareMenu construction missing');
-  if (!fnsSource.includes('shareMenu.popup()')) throw new Error('shareMenu popup call missing');
-  if (!fnsSource.includes("process.platform === 'darwin'")) throw new Error('shareMenu darwin guard missing');
+  const menuSource = fnsSource
+    + fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'services', 'itemMenuService.ts'), 'utf8')
+    + fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'contextMenuDomain.ts'), 'utf8');
+  if (!menuSource.includes('new remote.ShareMenu(')) throw new Error('shareMenu ShareMenu construction missing');
+  if (!menuSource.includes('shareMenu.popup()')) throw new Error('shareMenu popup call missing');
+  if (!menuSource.includes("process.platform === 'darwin'")) throw new Error('shareMenu darwin guard missing');
 
   // ── 站点 1：FolderModals 模态树菜单（moreButtonClick）模板构造审计 ──
   const fmSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'components', 'stage7', 'FolderModals.tsx'), 'utf8');

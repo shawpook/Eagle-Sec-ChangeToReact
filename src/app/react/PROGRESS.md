@@ -752,6 +752,48 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bn：S5 批 14——openItemContextMenu 归位 itemMenuService + contextMenuDomain（2026-09-07）**
+>
+> **考据推翻预估**：bn 前置考据（91f46c8）以为 1,159 行构建器深绑 makeControllerFns
+> 闭包私有面（initLinkVars/__cc_*×33）——标识符普查证明**闭包依赖仅壳层前导**
+> （initLinkVars + getScope），__cc_* 惰性单例全部经 scope 面调用（s.copyTags() 等 12 处
+> s.xxx 委托），ContextMenu/URL_MODULE/renameImages 本就是模块级常量。闭包耦合恐惧
+> 源于「未先做逐符号普查」。
+> ① **contextMenuDomain.ts（新）**：URL_MODULE（惰性解析）/ ContextMenu（open/close =
+> 根 scope 广播 CONTEXTMENU.OPEN/CLOSE，React ContextMenuPanel $on 消费）/ renameImages
+> （bare event = window.event 怪癖逐字）/ openWithApplicationPath（bundleGlobals 兜底）
+> 集中归位 + export 化。controllerFns 其余 8 个菜单 builder（openTrashContextMenu/
+> openFileListContextMenu/openFolderExpandContextMenu/openNewContextMenu/
+> openFilterAddContextMenu/openQuickAccessContextMenu 等）暂经 import ContextMenu 消费——
+> **bo 批 CONTEXTMENU 频道切 eagleBus 时发射端在此集中切换**（本批频道零改动：测试契约
+> menu-popup 站点 7/8/9 与 ui-interactions ③ 均经 scope.$on 捕获，双通道双投递窗口风险
+> 避免）。
+> ② **itemMenuService.ts（新，1,193 行）**：openItemContextMenu async 构建器整体逐字
+> 搬移（s 参数化——bd/bk 式；显式符号解析段：EagleConfig/VIDEO/AUDIO/FONT/
+> NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES 常量、ipcRenderer/electronLog/currentWindow/
+> remote 模块常量、bare eagle/i18n/$bodyScope/swal/preferences/process/path/require/
+> appRoot/FileUrlHelper/pluginModule/ReverseImageSearch/ayncsImagesChange/
+> ayncsImagesGeneratePalette/removePlayingAudios 经 window 全局回退——bundleGlobals 供给，
+> 与 controllerFns @ts-nocheck 形态等价；@ts-nocheck 同源惯例）。fns 表留壳
+> （itemMenuOpenItemContextMenu(getScope(), ...args)），挂载面/键位表/内部调用零改动。
+> ③ **真回归×2（探针驱动定位）**：(a) controllerFns import 只导 getContextMenu 未导
+> ContextMenu 本名 → 其余 8 个 builder 运行时 ReferenceError（menu-popup 站点 8 揪出）；
+> (b) itemMenuService $filter shim 缺 machineryGetFilter 回退 → shim 世界首行
+> `$filter(...) is not a function`（探针5 锁死：unhandledrejection 捕获 + waitFor 轮询
+> 就绪——探针 1-4 的超时全是探针自身基建 bug：bootStack 参数形态/ESM file URL/
+> pngjs 具名导出/fixture 时序，教训：**探针必须照抄既有测试的 boot 模板**）。
+> menu-popup 静态审计面同步：shareMenu 站点审计改为 controllerFns+itemMenuService+
+> contextMenuDomain 三文件联合读（搬迁后正主位移）。
+> **协议落地**：本批全程按「循环思考根因排查」新协议执行——span 手术脚本内容锚定位
+> （0/1-based 手算错断言连续拦下 6 次，全部拦截于写入前）+ 逐块首尾行断言 + bash 隔离
+> python 走文件不走内联。controllerFns 12,627→11,433 行（-1,194）。哨兵 getBodyScope
+> 670→669（注释裸词去重，合法下降）。门禁：tsc 0 + 哨兵 OK + 定向 5 项全绿
+> （menu-popup 5 站点 / ui-interactions 7/7 含 item-context-menu / stage7a / 1m1
+> a7=true / 探针 30 项菜单广播）。
+> S5 余量：bo（folder/smartFolder 菜单 + CRUD 37 + CONTEXTMENU→eagleBus 原子切换）、bp
+> （filterAdd/new/orderBy 12）。
+>
+>
 > **b1-9bm：S4 批 13——媒体族归位 + videopreview 原生化（2026-09-07）**
 >
 > ① **videopreview 状态机 jQuery→原生**：detailHooks 内 videojs 进度条缩略图预览的 7 个

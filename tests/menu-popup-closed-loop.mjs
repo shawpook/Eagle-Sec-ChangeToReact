@@ -139,7 +139,7 @@ try {
         const folder = (s.folders || [])[0];
         if (!folder) return { ok: false, reason: 'no folder in sidebar' };
         let captured = null;
-        const off = s.$on('CONTEXTMENU.OPEN', (ev, options) => { captured = options; });
+        const off = window.__eagleBus.on('CONTEXTMENU.OPEN', (options) => { captured = options; });
         const syntheticEvent = { stopPropagation() {}, currentTarget: null };
         s.openFolderExpandContextMenu(syntheticEvent, folder);
         off();
@@ -173,7 +173,7 @@ try {
         const folder = (s.folders || [])[0];
         if (!folder) return { ok: false, reason: 'no folder' };
         let captured = null;
-        const off = s.$on('CONTEXTMENU.OPEN', (ev, options) => { captured = options; });
+        const off = window.__eagleBus.on('CONTEXTMENU.OPEN', (options) => { captured = options; });
         s.openFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, folder);
         off();
         if (!captured) return { ok: false, reason: 'no broadcast captured' };
@@ -211,7 +211,7 @@ try {
         const smartFolder = (s.smartFolders || [])[0];
         if (!smartFolder) return { ok: false, reason: 'no smart folder in sidebar' };
         let captured = null;
-        const off = s.$on('CONTEXTMENU.OPEN', (ev, options) => { captured = options; });
+        const off = window.__eagleBus.on('CONTEXTMENU.OPEN', (options) => { captured = options; });
         s.openSmartFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, smartFolder);
         off();
         if (!captured) return { ok: false, reason: 'no broadcast captured' };

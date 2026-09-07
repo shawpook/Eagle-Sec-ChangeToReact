@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope } from '../../global/scopeBridge';
+import { contextMenuOpenChannel, contextMenuCloseChannel } from '../../global/bus';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts } from '../../app/filters';
 import { useToolbarState } from '../../store/toolbarState';
@@ -953,17 +953,16 @@ export function ContextMenuPanel() {
     setPersistents(menu.persistents);
   };
 
-  // CONTEXTMENU.OPEN / CLOSE 事件
+  // CONTEXTMENU.OPEN / CLOSE 事件（b1-9bo：自 scope $on 切 eagleBus 订阅——
+  // 频道原子切换的消费端；scope 未就绪不再阻断订阅）
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
-    const offOpen = scope.$on('CONTEXTMENU.OPEN', (event: any, options: any) => {
+    const offOpen = contextMenuOpenChannel.on((options: any) => {
       init(options);
       setOpen(true);
       rerender();
       openContextMenu();
     });
-    const offClose = scope.$on('CONTEXTMENU.CLOSE', () => {
+    const offClose = contextMenuCloseChannel.on(() => {
       close();
     });
     return () => {

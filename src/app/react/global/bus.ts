@@ -80,3 +80,9 @@ export function defineChannel<P = void>(name: string) {
     on: (handler: (payload: P) => void) => eagleBus.on(name, handler as BusHandler),
   };
 }
+
+// ── b1-9bo：CONTEXTMENU 频道（首个 $broadcast → eagleBus 整频道切换）──
+// 契约沿用原广播：OPEN 载荷 = ContextMenu.open(options) 的 descriptor 树
+// （items/width/showSearch/persistents/onOpened/onClosed…）；CLOSE 无载荷。
+export const contextMenuOpenChannel = defineChannel<any>('CONTEXTMENU.OPEN');
+export const contextMenuCloseChannel = defineChannel<void>('CONTEXTMENU.CLOSE');

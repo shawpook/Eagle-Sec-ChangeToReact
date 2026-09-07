@@ -752,6 +752,40 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bo：S5 批 15——folder/smartFolder 族归位 + CONTEXTMENU→eagleBus 原子切换（2026-09-07）**
+>
+> **面A 频道切换（首个 $broadcast→eagleBus 整频道退役）**：bus.ts defineChannel 落地
+> contextMenuOpenChannel/CloseChannel（载荷契约沿用原广播）；发射端 4 处同批切换——
+> contextMenuDomain（集中点）/controllerFns openFolderExpandContextMenu 体内直发/
+> selectPanelEngine openAppContextMenu/inspectorActions contextMenuOpen（后者顺带消亡
+> b1-9ao 时代 angular 缺席 htmlScope 回退问题）；消费端 ContextMenuPanel $on×2→bus.on。
+> 测试契约同步：stage7a 4 发射 + menu-popup 3 间谍 + ui-interactions 1 间谍 2 CLOSE 全
+> 改 __eagleBus 直达（测的是「通道→面板」而非 scope 面，非回避）。collect-window
+> 本就独立监听器体系，不涉。哨兵合法下降吸收：broadcast 129→124、on 76→73、
+> getBodyScope 669→664。
+> **面B folder/smartFolder 族搬迁（≈2,560 行）**：b1-9ap 台账区（948 行：reorder/
+> removeFolderClosure 2 闭包 + 27 fns）+ b1-9aq 台账区（644 行：ayncsUpdateSmartFolders
+> Count/removeSmartFolderClosure 2 闭包 + 21 fns）+ 三 builder（openFolderContextMenu
+> 544 / openSmartFolderContextMenu 369 / openNewSmartFolderContextMenu 33）+ 模块级
+> 辅助 3（treeWalkSafe/wElectronLogInfo/wQueryFocusFolderInput）→ **services/
+> folderMenuService.ts**（2,614 行）。结构=installFolderMenuFns(fns, getScope) 工厂——
+> 提取区原为 makeControllerFns 闭包段（依赖仅 fns 表+getScope），整段包进工厂与原作用
+> 域完全等价，**代码体零改动**；controllerFns 尾部 installFolderMenuFns(fns, getScope)
+> 批量注册（50 个 fns 条目名/挂载面/键位表零改动，P4 fns 表清零时随壳退役）。
+> 符号解析段（$filter 双轨/$timeout digest shim/i18n/preferences/eagle/swal/dialog/
+> remote/currentWindow）与 controllerFns 同源双写——哨兵 apply 9→10、getBodyScope
+> 664→666 为搬迁复制合法吸收（P4 删 controllerFns 时归零）。
+> **过程拦截**（协议持续生效）：bo-surgery 断言 `count==1` 被自身注释里的函数名
+> 误触（==2 修正）；tsc '}' expected 揪出 helpers 提取件在 wQueryFocusFolderInput
+> 函数头行截断（i_wqfi+1 只取到声明行）——逐块括号平衡断言补位（brace delta==0
+> 门禁加入重组脚本）；controllerFns 忘 import contextMenuOpenChannel 由 menu-popup
+> 站点 7 运行时揪出。controllerFns 11,433→8,866 行（-2,567）。
+> 门禁：tsc 0 + 哨兵 OK + 定向 5 项全绿（menu-popup 5 站点含新 builder 双站 /
+> ui-interactions 7/7 / stage7a（bus 通道下 8 断言）/ 1m1 a7=true / 探针6：263 fns
+> 完整 + folder CRUD 10 名注册 + openFolderContextMenu bus 广播 27 项）。
+> S5 余量：bp（filterAdd/new/orderBy 12 builder 三批合收）。
+>
+>
 > **b1-9bn：S5 批 14——openItemContextMenu 归位 itemMenuService + contextMenuDomain（2026-09-07）**
 >
 > **考据推翻预估**：bn 前置考据（91f46c8）以为 1,159 行构建器深绑 makeControllerFns

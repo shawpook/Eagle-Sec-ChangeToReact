@@ -1,4 +1,5 @@
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
+import { contextMenuOpenChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
@@ -14,14 +15,11 @@ import { rememberVideoCurrentTime } from '../../services/mediaService';
 
 const emojiRegex = /\p{Emoji_Presentation}|\p{Extended_Pictographic}|([0-9]\u{FE0F}\u{20E3})|([\*#\u{1F51F}]\u{FE0F}\u{20E3})/gmu;
 
-/** 原 ContextMenu.open（class 声明在 bundle 闭包内不可达，等价广播同一通道）。 */
+/** 原 ContextMenu.open（class 声明在 bundle 闭包内不可达，等价发射同一通道）。 */
 export function contextMenuOpen(options: any) {
-  // b1-9ao：C1 摘除 bundle 后 window.angular 缺席——htmlScope 解析恒 undefined、
-  // 菜单永不弹出（检查器 emoji/color 右键自 C1 起静默失效）。回退 bodyScope 广播
-  // （ContextMenuPanel 经 getBodyScope().$on 监听，scopeShim $broadcast 含自身监听者）。
-  const htmlScope = (window as any).angular?.element?.('html')?.scope?.();
-  const bodyScope = (window as any).$bodyScope;
-  (htmlScope || bodyScope)?.$broadcast?.('CONTEXTMENU.OPEN', options);
+  // b1-9bo：CONTEXTMENU 频道切 eagleBus（b1-9ao 时代的 htmlScope/angular 缺席问题
+  // 随频道切换一并消亡——不再依赖 scope 面）
+  contextMenuOpenChannel.emit(options);
 }
 
 const isUrlLike = (value: string): boolean => {

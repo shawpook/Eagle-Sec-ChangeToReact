@@ -3,14 +3,14 @@
  *
  * 居民（全部逐字，仅 export 化）：
  * - URL_MODULE：bundle 顶层 const（fileUrlHelper 同款惰性解析）
- * - getContextMenu()：原模块常量 ContextMenu（bundle 15836-15843；angular.element("html")
- *   .scope() → scope 桥（正文同形）—— 根 scope 广播 CONTEXTMENU.OPEN/CLOSE，React
- *   ContextMenuPanel $on 消费）。bo 批该频道切 eagleBus 时，发射端在此集中切换。
+ * - ContextMenu：原模块常量（bundle 15836-15843；b1-9bo 起 CHANNEL 归宿 =
+ *   eagleBus contextMenuOpenChannel/CloseChannel——所有发射端集中在此切换）
  * - renameImages：bundle 41480-41495（bare event 为 bundle window.event 怪癖逐字保留）
  * - openWithApplicationPath：bundleGlobals 若缺的等价兜底（正常路径 window 供给）
  */
 // @ts-nocheck
 import { getBodyScope } from '../global/scopeBridge';
+import { contextMenuOpenChannel, contextMenuCloseChannel } from '../global/bus';
 
 // URL_MODULE（bundle 顶层 const；fileUrlHelper.ts 同款惰性解析）
 export const URL_MODULE: any = (() => {
@@ -22,16 +22,15 @@ export const URL_MODULE: any = (() => {
   try { return req('url'); } catch (err) { return (window as any).URL_MODULE; }
 })();
 
-// ContextMenu（bundle 15836-15843 逐字；angular.element("html").scope() → scope 桥——
-// 根 scope 广播，React ContextMenuPanel 经 $on('CONTEXTMENU.OPEN') 消费）
+// ContextMenu（bundle 15836-15843 逐字；b1-9bo：CONTEXTMENU 频道自 scope 广播整体
+// 切 eagleBus（原子切换：发射 4 端 + 消费 ContextMenuPanel + 测试契约同批迁移，
+// 无双通道双投递窗口））
 const _legacyContextMenu: any = {
   open(options: any) {
-    const root: any = getBodyScope();
-    root && root.$broadcast && root.$broadcast('CONTEXTMENU.OPEN', options);
+    contextMenuOpenChannel.emit(options);
   },
   close() {
-    const root: any = getBodyScope();
-    root && root.$broadcast && root.$broadcast('CONTEXTMENU.CLOSE');
+    contextMenuCloseChannel.emit();
   },
 };
 

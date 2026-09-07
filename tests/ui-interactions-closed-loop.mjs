@@ -137,7 +137,7 @@ try {
   // ③ 条目右键 → openItemContextMenu 构建（先单击选中——守卫要求）。断言信号 =
   //    CONTEXTMENU.OPEN 广播 payload（ContextMenuPanel 是 React state 驱动，
   //    s.activeMenu 为旧服务字段不可靠）
-  await evaluate(`(() => { window.__ctxMenuPayload = null; window.$bodyScope.$on('CONTEXTMENU.OPEN', (_e, opts) => { window.__ctxMenuPayload = { count: opts && opts.items ? opts.items.length : 0 }; }); return true; })()`);
+  await evaluate(`(() => { window.__ctxMenuPayload = null; window.__eagleBus.on('CONTEXTMENU.OPEN', (opts) => { window.__ctxMenuPayload = { count: opts && opts.items ? opts.items.length : 0 }; }); return true; })()`);
   await press(c1.x, c1.y, 'left', 1);
   await delay(300);
   await press(c1.x, c1.y, 'right', 1);
@@ -146,7 +146,7 @@ try {
     return r && r.count > 0 ? r : null;
   }, 'item context menu broadcast', 15000);
   assert('item-context-menu-nonempty', itemMenu.count > 0, itemMenu);
-  await evaluate(`(() => { const s = window.$bodyScope; if (typeof s.$broadcast === 'function') s.$broadcast('CONTEXTMENU.CLOSE'); return true; })()`);
+  await evaluate(`(() => { window.__eagleBus.emit('CONTEXTMENU.CLOSE'); return true; })()`);
   await delay(400);
 
   // ④ 列表空白右键 → OPEN_LAYOUT_PANEL 广播（排序面板；用 $on 间谍断言，面板 DOM 形态不稳）。
@@ -163,7 +163,7 @@ try {
     return r ? { fired: true } : null;
   }, 'list context menu layout broadcast', 15000);
   assert('list-contextmenu-opens-order-panel', layoutFired.fired === true, layoutFired);
-  await evaluate(`(() => { const s = window.$bodyScope; if (typeof s.$broadcast === 'function') s.$broadcast('CONTEXTMENU.CLOSE'); return true; })()`);
+  await evaluate(`(() => { window.__eagleBus.emit('CONTEXTMENU.CLOSE'); return true; })()`);
   await delay(400);
 
   // ⑤ Ctrl+滚轮 → 网格尺寸变化（CDP modifiers 位掩码：2 = Ctrl）

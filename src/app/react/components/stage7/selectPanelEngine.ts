@@ -1,6 +1,7 @@
 import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
 import { getBodyScope, getRootScope } from '../../global/scopeBridge';
+import { contextMenuOpenChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1c-1：SelectPanel 体系纯类逐字移植（React 组件层见 SelectPanels.tsx）。
@@ -26,10 +27,9 @@ export const deepCopy = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 
 const w = () => window as any;
 
-/** ContextMenu.open（bundle 15836-15843）：$rootScope.$broadcast('CONTEXTMENU.OPEN', options) */
+/** ContextMenu.open（bundle 15836-15843）：b1-9bo 起经 eagleBus 频道发射（原 $rootScope 广播） */
 export function openAppContextMenu(options: any) {
-  const rootScope = getRootScope();
-  if (rootScope) rootScope.$broadcast('CONTEXTMENU.OPEN', options);
+  contextMenuOpenChannel.emit(options);
 }
 
 const loadPinyinModules = () => {

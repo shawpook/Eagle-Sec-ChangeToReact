@@ -128,7 +128,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `window.$bodyScope.$apply(() => {
       window.__cmClicked = 0;
-      window.$bodyScope.$root.$broadcast('CONTEXTMENU.OPEN', {
+      window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [
           { label: 'Stage7A Item', click: () => { window.__cmClicked++; } },
           { role: 'separator' },
@@ -171,7 +171,7 @@ try {
   // ── keepOpen + checked 翻转 ──
   await page.send('Runtime.evaluate', {
     expression: `window.$bodyScope.$apply(() => {
-      window.$bodyScope.$root.$broadcast('CONTEXTMENU.OPEN', {
+      window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [{ label: 'KeepOpen Item', keepOpen: true, checked: false, click: () => {} }],
         showSearch: true,
       });
@@ -198,7 +198,7 @@ try {
   // ── 子菜单（右方向键 → submenu.open） ──
   await page.send('Runtime.evaluate', {
     expression: `window.$bodyScope.$apply(() => {
-      window.$bodyScope.$root.$broadcast('CONTEXTMENU.OPEN', {
+      window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [
           {
             label: 'Parent Item',
@@ -251,7 +251,7 @@ try {
   // ── 搜索过滤 ──
   await page.send('Runtime.evaluate', {
     expression: `window.$bodyScope.$apply(() => {
-      window.$bodyScope.$root.$broadcast('CONTEXTMENU.OPEN', {
+      window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [
           { label: 'Alpha Action', click: () => {} },
           { label: 'Beta Action', click: () => {} },
@@ -318,7 +318,7 @@ try {
   await screenshotTo('test-run/react-stage7a-menu.png', 10000);
   // 关闭菜单收尾（broadcast 返回事件对象，包一层避免 CDP 深序列化）
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$root.$broadcast('CONTEXTMENU.CLOSE'); return true; })()`,
+    expression: `(() => { window.__eagleBus.emit('CONTEXTMENU.CLOSE'); return true; })()`,
     returnByValue: true,
   });
 

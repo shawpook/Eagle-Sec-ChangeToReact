@@ -752,6 +752,59 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **【S4-bl 考据定案：smoothZoom 剥壳——vendor 3,988 行双窗卸载（2026-09-07）】**
+>
+> **vendor 真身**：/vendor/eagle-smooth-zoom.js（3,988 行，b1-9e 提取）= jquery.smoothZoom
+> 1.7.0 的应用 fork——Zoomer（40+ 方法）+ BitmapViewer（瓦片 canvas 链 29-905 行）+
+> `$.fn.smoothZoom` 插件壳。**双加载路径**：主窗 index.html:243
+> `/vendor/eagle-smooth-zoom.js`；预览窗 preview-window.html:62
+> `js/vendors/jquery.smoothZoom.min.js`（同 fork 压缩版 130KB，靠 window.angular stub
+> 桥 angular.element 兜底）。fork 自研增量：边界锁定（Animate 内 transformY∈
+> [-(h·sc)+50, sH-60]，X 侧 10px 留边 + 10000·sc dummy 偏移）、navigator mini-map +
+> 横/纵 scrollbar、BitmapViewer 瓦片/viewport 优化/HEIC/预载、wheel scrollBehavior 三模、
+> drag 1px 抖动阈值、zoom 按钮族已掏空（zoomIn/zoomOut/move*/Reset 全空函数）。
+>
+> **消费面 13 API**（74 调用点，全走 `w.$("#detail-container").smoothZoom(...)`）：
+> init（machinery enterDetailMode 3323 / preview-window controller 1903，参数同款：
+> responsive/无动画/zoom_MAX 800/MIN 5/on_IMAGE_LOAD 链）、updateNavigator（18 点，
+> 换图主通道：navigator 缩略图 + isSupportFormat 16 格式 → BitmapViewer.loadURL，
+> animated→img 直挂，else→img 兜底）、cleanBitmapViewer（5）、clearPreloadData（2）、
+> goTo(tX,tY,rA)（2，restoreScrollTops）、goToY（6：40/-99999999 边缘跳页 + inspector
+> comment 定位）、moveY（9：±150/±offset/-outerHeight+60）、focusTo（6）、getChangedData
+> （rememberScrollTops）、getZoomData（detailHooks 容错包装）、preload（2，100ms 防抖）、
+> rotate/flip（imageOpsService 4 + preview-window 4）。分布：dataMachinery 34 /
+> preview-controller 17 / controllerFns 16 / 其余 7 文件零散。**伴生联动**：
+> `$(window).trigger("orientationchange")` ×9（jQuery 触发，引擎自带窗事件后需换
+> engine.remeasure()）+ `$(".smooth_zoom_preloader")` show/scrollLeft/width/one ×5
+> （app 侧 jQuery 读，DOM 类名保留即免改，留 P4）。
+>
+> **DOM/状态契约**：transform 目标 = `#detail-container` 本体（`this.$image = $elem`），
+> 插件将其 wrap 进自建 `.noSel.smooth_zoom_preloader`（stage5 测试锁
+> `closest('.smooth_zoom_preloader')`）；chrome = hitArea + 双 scrollbar + navigator +
+> `#bitmap-viewer`，样式全在 style_light/dark.css 压缩段（类名保留即零 CSS 迁移）。
+> 状态面 rA/_x/_y/_sc/tX/tY/iW/iH/sW/sH + getZoomData norm/scaled/center/ratio 字段 +
+> getChangedData {tX,tY,rA}。$scope 胶水：mouseWheel/mouseDown/Animate/scrollbar 拖拽
+> 直读 $bodyScope（current/imageSize/selectNext/isCommentMode/startDrag/
+> preferences.habits.scrollBehavior）。#detail-container 现由 BodyBindings React 渲染
+> （壳身份不重建），DetailContainerInterior portal 进入；`#detail-image` 由 DetailViewer
+> 渲染（BitmapViewer 的 img 兜底开关对象）。
+>
+> **bl 施工定案（两批）**：① **bl-A 主窗**——`core/bitmapViewer.ts`（BitmapViewer 逐字
+> 搬迁，jQuery 面 5 点→裸 DOM：$("#detail-image") attr/css、$(container/canvas).css）
+> + `core/smoothZoomEngine.ts`（Zoomer 逐字搬迁：init/setContainer/Animate/mouse 三件/
+> wheel 三模/navigator+scrollbar 拖拽/13 API/remeasure；**裁除死路径**：landmarks 全族
+> （app 零调用、模板无 .landmarks DOM）+ usemap/mapAreas + 已掏空按钮族；jQuery ~45 点
+> → 模块内 micro-DOM helper ~40 行；$scope 胶水保留 window.$bodyScope 读法）+ React
+> chrome（BodyBindings 内 .smooth_zoom_preloader wrap + hitArea/scrollbar/navigator/
+> bitmap-viewer 宿主，类名逐一保留）+ index.html 摘 script + 主窗调用面 57+9 点机械切换
+> （`w.$("#detail-container").smoothZoom(m,…)` → `detailZoomEngine().m(…)`）。
+> ② **bl-B 预览窗**——preview-window controller 17 点 + init 切同引擎 + preview-window.html
+> 摘 min.js + angular stub，preview-delivery-closed-loop + 全量套件 + 哨兵基线
+> （vendorScriptTags 口径 -2）。门禁：stage5（包裹关系断言不变）+ m1 detail delivery +
+> probe-b19d 系。数学逐字搬迁（非重写）＝行为锁定 doctrine：Animate 边界锁/wheel 三模/
+> drag 阈值/getZoomData toFixed(14) 字符串字段逐字保留。
+>
+>
 > **b1-9bt：S7 批 20——字体族+tag 漏网收口 fontTagService（S7 收官，2026-09-07）**
 >
 > **范围考据**：TagManager 域（2,213 行 tagManagerDomain）与 installedFonts 初扫

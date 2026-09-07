@@ -752,6 +752,26 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bs：S7 批 19——图像操作+视图更新族归位 imageOpsService（2026-09-07）**
+>
+> **范围考据**：S7「inspector 表单族」盘点——inspectorState store（353 行）/
+> inspectorActions.ts（926 行）/ Inspector.tsx（1,424 行）阶段 6 已成型；bs 的剩余
+> 正主 = controllerFns 的图像操作+视图更新 16 fns：updateItemView(222)/
+> calculateImageBinding(280)/rotateImage(143)/replaceFile(129)/saveCrop(103)/
+> changeStar(67)/flipImage(65) + 缩略图/视频帧小族 9（regenerateThumbnail/
+> cancelRegenerateThumbnail/getThumbnailPath/getThumbnailUrl/copeVideoFrame/
+> saveVideoFrame/startDrag/updateSelection/currentIndex），共 1,094 行 →
+> **services/imageOpsService.ts**（1,164 行，install 工厂同 bo-bp-bq-br，
+> 代码体零改动）。controllerFns 6,733→5,642 行。
+> 符号解析段第 6 处双写（$timeout/$filter/fs/sanitize）——哨兵 apply 11→12、
+> getBodyScope 670→672 合法吸收（P4 归零）。
+> 门禁：tsc 0 + esbuild OK + 哨兵 OK + 定向 6 项（menu-popup 5 站 / ui-interactions
+> 7/7 / 1m1 a7=true / stage7a / probe-filter-toggle 0 / **m1 主链路**——首跑
+> multi inspector persistence timeout 为已知 ~1/6 间歇家族（handover b1-9e 已录，
+> 与 updateItemView 搬迁无关——重跑全绿含 detailDelivery tileCount=10）。
+> S7 余量：bt（TagManager/installedFonts + 剩余杂项收口）。
+>
+>
 > **b1-9br：S6 批 18——文件夹核心操作族归位 folderCoreService（S6 收官，2026-09-07）**
 >
 > **范围考据**：S6 余量盘点——emptyTrash/cancelEmptyTrash 已随 bq 迁 batchOps，

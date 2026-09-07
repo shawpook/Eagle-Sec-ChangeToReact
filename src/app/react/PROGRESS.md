@@ -752,6 +752,29 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bq：S6 批 17——批量操作归位 batchOpsService（2026-09-07）**
+>
+> **范围考据**：批量操作主面盘点——移动族（moveToFolders 已在 dataMachinery、
+> moveToTop/Inner/Bottom 已在 FolderModals.tsx 阶段7d、moveFolders 在 folderMenuService）
+> + controllerFns 剩余 19 fns（679 行）= 本批搬迁面：移动（addToFolders/
+> addToLastUsedFolder/addToRecentFolders/removeFromFolder 104 行）/ 打标（copyTags/
+> pasteTags/excludeWithTag/getSelectedTags/openTag）/ 删除+回收站（emptyTrash/
+> cancelEmptyTrash/cleanAllError/cleanSelected）/ 选中滚动（getSelectedItemElements/
+> scrollToSelectedItem）/ 导出（exportSelectedAs ×4）→ **services/batchOpsService.ts**
+> （749 行，install 工厂同 bo/bp——提取区闭包依赖仅 fns/getScope，代码体零改动）。
+> controllerFns 8,023→7,348 行。
+> **真回归×1（新诊断手法）**：batchOpsService import 笔误 `../core/ipHelper`
+> （实为 ipcHelper）——tsc 因 @ts-nocheck 不查、Vite dev 对解析失败**静默中断
+> 整条 main.tsx 模块链**（0 console 日志、$bodyScope 永不挂载、全部 Electron 冒烟
+> scope timeout）。诊断链：probe8 console 捕获（0 日志=模块链未执行）→ esbuild
+> bundle main.tsx → BUILD FAIL 精确报出未解析路径。**教训入账：新 service 的 import
+> 路径必须走 esbuild bundle 快检（秒级），tsc 对 nocheck 文件无保护。**
+> 哨兵 apply 10→11、getBodyScope 667→669（$timeout/$filter shim 双写吸收，P4 归零）。
+> 门禁：tsc 0 + esbuild bundle OK + 哨兵 OK + 定向 5 项全绿（menu-popup / ui-7/
+> 7 / 1m1 a7=true / stage7a / probe8 scope+core 恢复 object）。
+> S6 余量：br（回收站 UI + 杂项面板归位收尾）。
+>
+>
 > **b1-9bp：S5 批 16——剩余菜单 builder 收口 miscMenuService（S5 竖切收官，2026-09-07）**
 >
 > **范围定案**：计划口径「filterAdd/new/orderBy 12」经考据=剩余菜单 builder 合收——

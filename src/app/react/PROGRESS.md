@@ -752,6 +752,22 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bt：S7 批 20——字体族+tag 漏网收口 fontTagService（S7 收官，2026-09-07）**
+>
+> **范围考据**：TagManager 域（2,213 行 tagManagerDomain）与 installedFonts 初扫
+> （bundleGlobals 1286-1305）b1-9d/c 已归位；bt 正主 = 字体操作族 8 fns
+> （activateFont/deactivateFont/activateFonts/deactivateFonts/renameFontsWithFullName/
+> changeFontDefaultLang/isFontActivate/getFontPath，240 行）+ S3 遗留 tag 漏网 4
+> （filterWithTag 47/renameTagGroupKeyup 18/renameTagGroupBlur 11/onTagSidebarResize
+> 18），共 334 行 → **services/fontTagService.ts**（386 行，install 工厂同模式，
+> 代码体零改动）。controllerFns 5,642→5,312 行（install 工厂 + 148 fns 壳；
+> **P4-bz 的 fns 表清零终点 = 删壳 148 个**）。
+> 哨兵 getBodyScope 672→673（$filter shim 第 7 处双写吸收）。
+> 门禁：tsc 0 + esbuild OK + 哨兵 OK + 定向 6 项全绿（menu-popup 5 站 / ui-7/7 /
+> 1m1 a7=true / stage7a 首跑 cm-keepopen 偶发红单跑复验绿 / probe-filter-toggle 0）。
+> **S7 竖切完成**（bs 图像+视图更新 / bt 字体+tag 漏网）。
+>
+>
 > **b1-9bs：S7 批 19——图像操作+视图更新族归位 imageOpsService（2026-09-07）**
 >
 > **范围考据**：S7「inspector 表单族」盘点——inspectorState store（353 行）/

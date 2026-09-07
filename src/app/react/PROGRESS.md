@@ -752,6 +752,29 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bp：S5 批 16——剩余菜单 builder 收口 miscMenuService（S5 竖切收官，2026-09-07）**
+>
+> **范围定案**：计划口径「filterAdd/new/orderBy 12」经考据=剩余菜单 builder 合收——
+> 10 个（openTrashContextMenu 35 / openFileListContextMenu 8 / openOrderMenu 9 /
+> openApplicationContextMenu 17 / openFilterAddContextMenu 329 / openNewContextMenu 256 /
+> openQuickAccessContextMenu 30 / openRatioContextMenu 26 / openSidebarVisibleContextMenu 90 /
+> openSmartFolderExpandContextMenu 45，共 845 行）→ **services/miscMenuService.ts**
+> （899 行，install 工厂同 bo——提取区依赖仅 fns/getScope/模块常量，代码体零改动）。
+> click 面全走 s.xxx scope 委托（openOrderMenu → OPEN_LAYOUT_PANEL +
+> updateCurrentOrderAndIncrease 自 controllerFns 既有导出 import——双 service install
+> 循环形态与 controllerFns⇄dataMachinery 先例同构）。
+> controllerFns 8,866→8,023 行（-843，另 +2 install 挂钩）；菜单族竖切三批合计
+> controllerFns -4,604 行（12,627→8,023）。哨兵 getBodyScope 666→667（$filter shim
+> 第三处双写吸收，P4 归零）。
+> **过程拦截**：bp-surgery unpack 笔误（4 元组按 3 元解）——ValueError 在删除前爆，
+> 文件零损。stage7a cm-overlay-close 首跑红——单跑复验绿（偶发家族，非回归）。
+> 门禁：tsc 0 + 哨兵 OK + 定向 5 项全绿（menu-popup 5 站点 / ui-interactions 7/7 /
+> stage7a 单跑 8 断言 / 1m1 a7=true / 探针7：263 fns + 10 builder 全注册 +
+> openOrderMenu→OPEN_LAYOUT_PANEL + openTrashContextMenu bus 广播 2 项）。
+> **S5 菜单族竖切完成**（bn item / bo folder+频道 / bp 收尾）；余量：S4-bl、S1-be2
+> （独立会话），S6 bq/br 起。
+>
+>
 > **b1-9bo：S5 批 15——folder/smartFolder 族归位 + CONTEXTMENU→eagleBus 原子切换（2026-09-07）**
 >
 > **面A 频道切换（首个 $broadcast→eagleBus 整频道退役）**：bus.ts defineChannel 落地

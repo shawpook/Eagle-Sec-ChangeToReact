@@ -28,6 +28,7 @@ import { installTippy } from './tippyLite';
 import { installAudioPlugin } from './audioPlugin';
 import { installArtstation } from './artstation';
 import { installFlatpickr } from './flatpickrLite';
+import { syncListFromScope } from '../store/listState';
 
 declare const Buffer: any;
 
@@ -407,6 +408,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
         bs.allData = bs.allData.filter((item: any) => {
           return !hiddenItemMap[item.id];
         });
+        syncListFromScope();
 
         if (hiddenElements.length > 0) {
           bs.$broadcast("gl:removeItems", hiddenElements);

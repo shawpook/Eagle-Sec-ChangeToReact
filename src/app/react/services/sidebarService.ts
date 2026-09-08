@@ -18,6 +18,7 @@ import {
   machineryToggleAllSmartFoldersInner,
   machineryToggleCurrentLevelSmartFoldersInner,
 } from '../core/dataMachinery';
+import { syncListFromScope } from '../store/listState';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
@@ -33,6 +34,7 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
     if (s.currentFolder) {
       if (s.$root.selectedFolders.indexOf(s.currentFolder) === -1) {
         s.$root.selectedFolders.push(s.currentFolder);
+        syncListFromScope();
       }
       s.$root.selectedFoldersMappings[s.currentFolder.id] = s.currentFolder;
     }
@@ -59,6 +61,7 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
         var __lv_idx = s.$root.selectedFolders.indexOf(item);
         if (__lv_idx === -1) {
           s.$root.selectedFolders.push(item);
+          syncListFromScope();
           s.$root.selectedFoldersMappings[item.id] = item;
         }
       }

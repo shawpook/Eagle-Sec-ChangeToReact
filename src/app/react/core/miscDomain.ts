@@ -22,6 +22,8 @@
 import { removeChannelListenersBySource } from './appCore';
 import { getBodyScope, getRootScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
+import { syncErrorCount } from '../store/toastState';
+import { syncUploadFromScope } from '../store/uploadState';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -457,6 +459,7 @@ export function takeoverMiscDomain(): void {
     if (!s) return;
     s.$evalAsync(function () {
       s.progress = progress;
+      syncUploadFromScope();
     });
   });
   ipc.on('add-download-task', function () {
@@ -464,6 +467,7 @@ export function takeoverMiscDomain(): void {
     if (!s) return;
     s.$evalAsync(function () {
       s.uploadQueue.push({});
+      syncUploadFromScope();
     });
   });
   ipc.on('add-download-tasks', function (_event: any, count: any) {
@@ -472,6 +476,7 @@ export function takeoverMiscDomain(): void {
     s.$evalAsync(function () {
       for (let i = 0; i < count; i++) {
         s.uploadQueue.push({});
+        syncUploadFromScope();
       }
     });
   });
@@ -876,6 +881,7 @@ export function takeoverMiscDomain(): void {
 
     // 针对特定类型（超时）提供错误帮助
     s.errorList.push(errorItem);
+    syncErrorCount();
     if (s.errorList.length === 1) {
       if (s.$root.preferences.notification.soundEffect.enable != 'false') {
         s.errorSound.play();

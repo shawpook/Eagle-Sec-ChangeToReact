@@ -11,6 +11,7 @@ import { deepCopy, openAppContextMenu, FolderSelectPanel } from './selectPanelEn
 import { ayncsImagesChange, hiddenByCurrentFilter } from './FolderModals';
 import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
+import { syncUploadFromScope } from '../../store/uploadState';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -394,6 +395,7 @@ export function ArtstationImportModal() {
         names.push(image.title.replace(/%/g, '').replace(/[:|"<>,.^&*?//-]+/g, '').substr(0, 36) || w().guid());
         originals.push(image.link || pageUrlRef.current);
         getBodyScope().uploadQueue.push({});
+        syncUploadFromScope();
       });
 
       let selectedFolderIds: any[] = [];

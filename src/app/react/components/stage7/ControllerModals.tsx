@@ -10,6 +10,8 @@ import { req, getIpc } from '../detail/detailHooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { ayncsImagesChange } from './FolderModals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
+import { syncErrorCount } from '../../store/toastState';
+import { syncUploadFromScope } from '../../store/uploadState';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
@@ -79,6 +81,7 @@ export function ErrorModal() {
     const idx = errorListRef.current.indexOf(task);
     if (idx > -1) {
       errorListRef.current.splice(idx, 1);
+      syncErrorCount(errorListRef.current);
       bump((v) => v + 1);
     }
   };
@@ -100,6 +103,7 @@ export function ErrorModal() {
     errorListRef.current.forEach((error) => {
       if (error.type === 'DOWNLOAD_ERROR') {
         body.uploadQueue.push({});
+        syncUploadFromScope();
         urlFiles.push({
           id: w.guid(),
           url: error.object.url,
@@ -148,6 +152,7 @@ export function ErrorModal() {
     }
 
     errorListRef.current.length = 0;
+    syncErrorCount(errorListRef.current);
     close();
     bump((v) => v + 1);
   };
@@ -192,6 +197,7 @@ export function ErrorModal() {
       cancelButtonText: t('general.cancel'),
     }).then(() => {
       errorListRef.current.length = 0;
+      syncErrorCount(errorListRef.current);
       close();
       const body = getBodyScope();
       if (body && typeof body.$evalAsync === 'function') body.$evalAsync();

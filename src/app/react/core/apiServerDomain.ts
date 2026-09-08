@@ -19,6 +19,7 @@
  */
 
 import { getBodyScope } from '../global/scopeBridge';
+import { syncUploadFromScope } from '../store/uploadState';
 
 let installed = false;
 
@@ -661,6 +662,7 @@ function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: 
   });
   imageUrls.forEach(function () {
     bs.uploadQueue.push({});
+    syncUploadFromScope();
   });
 
   if (tags && tags?.length > 0) {

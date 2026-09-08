@@ -20,6 +20,8 @@ import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
+import { syncUploadFromScope } from '../store/uploadState';
+import { syncListFromScope } from '../store/listState';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -281,6 +283,7 @@ export function takeoverItemDomain(): void {
       if (newImage.id && s.itemMappings[newImage.id]) { return; }
 
       if (s.raw) { s.raw.unshift(newImage); }
+      syncListFromScope();
       // b1-9o：raw 变更后失效内容过滤缓存（bundle 导入路径走无缓存 rebindRefresh 隐式重建，
       // shim 世界导入路径不经过 rebindRefresh——缓存不失效则 filterContent 永远吃到旧快照，
       // 11a49 的 a4 空态无法闭合即此）
@@ -309,6 +312,7 @@ export function takeoverItemDomain(): void {
       const img = s.raw[i];
       if (img.id === id) {
         s.raw.splice(i, 1);
+        syncListFromScope();
         break;
       }
     }
@@ -467,11 +471,13 @@ export function takeoverItemDomain(): void {
           }
           else {
             if (s.raw) { s.raw.unshift(image); }
+            syncListFromScope();
             s.addToDuplicateMapping(image);
           }
         }
         catch (err) {
           if (s.raw) { s.raw.unshift(image); }
+          syncListFromScope();
           s.itemMappings[image.id] = image;
           s.addToDuplicateMapping(image);
           electronLog && electronLog.error((err as any).stack || err);
@@ -480,6 +486,7 @@ export function takeoverItemDomain(): void {
       // 否則添加至列表中
       else {
         if (s.raw) { s.raw.unshift(image); }
+        syncListFromScope();
         s.addToDuplicateMapping(image);
       }
 
@@ -516,6 +523,7 @@ export function takeoverItemDomain(): void {
     }
 
     s.finishQueue.push(image);
+    syncUploadFromScope();
 
     // Note: 故意不使用 async 來更新畫面，加速畫面性能
     const progress = s.finishQueue.length / s.uploadQueue.length;
@@ -671,7 +679,9 @@ export function takeoverItemDomain(): void {
       if (!s.raw || s.raw.length === 0) {
         if (s.finishQueue.length > 0 && s.finishQueue.length === s.uploadQueue.length) {
           s.finishQueue = [];
+          syncUploadFromScope();
           s.uploadQueue = [];
+          syncUploadFromScope();
           s.hideUploadQueue();
         }
         return;
@@ -695,7 +705,9 @@ export function takeoverItemDomain(): void {
         });
 
         s.finishQueue = [];
+        syncUploadFromScope();
         s.uploadQueue = [];
+        syncUploadFromScope();
         $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
         $("#upload-queue-progress").find(".current").width(s.finishQueue.length / s.uploadQueue.length * 100 + "%");
         s.hideUploadQueue();
@@ -719,6 +731,7 @@ export function takeoverItemDomain(): void {
           s.duplicateQueue.forEach(function (img: any) {
             s.addToDuplicateMapping(img);
             if (s.raw) { s.raw.unshift(img); }
+            syncListFromScope();
           });
           s.duplicateQueue = [];
         }

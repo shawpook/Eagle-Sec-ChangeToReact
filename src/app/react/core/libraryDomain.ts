@@ -33,6 +33,10 @@ import { removeChannelListenersBySource } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
+import { syncErrorCount } from '../store/toastState';
+import { syncFolderLock } from '../store/lockState';
+import { syncListFromScope } from '../store/listState';
+import { syncUploadFromScope } from '../store/uploadState';
 
 declare const ga4track: any;
 declare const IPCHelper: any;
@@ -412,6 +416,7 @@ export function takeoverLibraryDomain(): void {
     s.isItemBindCalculated = false;
     if (s.$root && s.$root.$broadcast) s.$root.$broadcast("CLOSE-TAGS-POPUP");
     s.allData = [];
+    syncListFromScope();
     s.isLoading = false;
     s.startCursor = 0;
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
@@ -520,6 +525,7 @@ export function takeoverLibraryDomain(): void {
     s.all = [];
     s.shuffle = [];
     s.trash = [];
+    syncListFromScope();
     s.untaggedCount = 0;
     s.unfiledCount = 0;
     s.tags = [];
@@ -544,10 +550,15 @@ export function takeoverLibraryDomain(): void {
     s.selectedMappings = {};
     s.folderMappings = {};
     s.currentFolder = undefined;
+    syncFolderLock();
+    syncListFromScope();
     s.currentSmartFolder = undefined;
+    syncListFromScope();
     s.smartFolderMappings = {};
     s.uploadQueue = [];
+    syncUploadFromScope();
     s.finishQueue = [];
+    syncUploadFromScope();
     s.isDetailMode = false;
     s.isInlineMode = false;
     s.isGrayscaleMode = false;
@@ -711,6 +722,7 @@ export function takeoverLibraryDomain(): void {
     // raw 为空时建立会永久保留空快照，11a49 的 a4 空态无法闭合即此）
     s.contentFilterCache = null;
     s.raw = images;
+    syncListFromScope();
 
     s.calculateImageBinding({}, function () {
       s.viewMode = localStorage.getItem(`eagle.viewMode.${s.rootDir}`) || "all";
@@ -993,6 +1005,7 @@ export function takeoverLibraryDomain(): void {
     console.timeEnd("前台总耗时");
 
     s.errorList = [];
+    syncErrorCount();
 
     if ($) {
       // 检查 localhost 是否可以连线，如果无法练接，通常是本地代理搞鬼，提示用户关闭或调整代理工具

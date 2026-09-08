@@ -30,6 +30,9 @@ import { ContextMenu, renameImages } from './contextMenuDomain';
 import { contextMenuOpenChannel } from '../global/bus';
 import { debounce, throttle } from '../utils/func';
 import { get, isString, unescape } from '../utils/lang';
+import { syncFolderLock } from '../store/lockState';
+import { syncUploadFromScope } from '../store/uploadState';
+import { syncListFromScope } from '../store/listState';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -636,7 +639,9 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function() {
             s.uploadQueue = [];
+            syncUploadFromScope();
             s.finishQueue = [];
+            syncUploadFromScope();
 
             (window as any).IPCHelper.send('cancel.all');
             // 讓 Palette Queue 繼續
@@ -750,6 +755,7 @@ export function makeControllerFns(getScope: () => any) {
                 if (s.currentFolder) {
                     if (s.$root.selectedFolders.indexOf(s.currentFolder) === -1) {
                         s.$root.selectedFolders.push(s.currentFolder);
+                        syncListFromScope();
                     }
                     s.$root.selectedFoldersMappings[s.currentFolder.id] = s.currentFolder;
                 }
@@ -776,6 +782,7 @@ export function makeControllerFns(getScope: () => any) {
                         var __lv_idx = s.$root.selectedFolders.indexOf(item);
                         if (__lv_idx === -1) {
                             s.$root.selectedFolders.push(item);
+                            syncListFromScope();
                             s.$root.selectedFoldersMappings[item.id] = item;
                         }
                     }
@@ -1957,6 +1964,7 @@ export function makeControllerFns(getScope: () => any) {
             ScrollbarSaver.saveScrollPosition();
 
             s.currentSmartFolder = undefined;
+            syncListFromScope();
             s.$root.currentFocus = focus || "sidebar";
             s.resetPage();
             s.viewMode = undefined;
@@ -1965,6 +1973,8 @@ export function makeControllerFns(getScope: () => any) {
 
             if (s.currentFolder != folder) {
                 s.currentFolder = folder;
+                syncFolderLock();
+                syncListFromScope();
                 s.currentFolderChildren = s.getChildFoldersMap(folder);
             }
 
@@ -2068,6 +2078,8 @@ export function makeControllerFns(getScope: () => any) {
             if (s.currentSmartFolder) { s.currentSmartFolder.editable = false; }
 
             s.currentFolder = undefined;
+            syncFolderLock();
+            syncListFromScope();
             eagle.inspector.reset();
             s.currentFolderChildren = undefined;
             s.$root.selectedSmartFoldersMappings = {};
@@ -2079,6 +2091,7 @@ export function makeControllerFns(getScope: () => any) {
 
             if (s.currentSmartFolder != smartFolder) {
                 s.currentSmartFolder = smartFolder;
+                syncListFromScope();
             }
 
 			if (localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]) {
@@ -2194,6 +2207,7 @@ export function makeControllerFns(getScope: () => any) {
     return (function () {
             eagle.filter.isLock = false;
             eagle.filter.filterBadge = 0;
+            syncListFromScope();
 
             eagle.filter.resetFilterRules();
 
@@ -2493,6 +2507,7 @@ export function makeControllerFns(getScope: () => any) {
 
             s.$root.currentFocus = "content";
             s.selectedFolderMappings = {};
+            syncListFromScope();
 
             $("input:focus").blur();
             $("[contenteditable]:focus").blur();
@@ -2642,6 +2657,7 @@ export function makeControllerFns(getScope: () => any) {
                 var __lv_image = s.getItemByElement(__lv_target[0]);
                 s.selected = [__lv_image];
                 s.selectedFolderMappings = {};
+                syncListFromScope();
                 if (s.isDetailMode) {
                     s.current = s.selected[0];
                 }
@@ -2689,6 +2705,7 @@ export function makeControllerFns(getScope: () => any) {
 
             s.selected = [s.allData[end]];
             s.selectedFolderMappings = {};
+            syncListFromScope();
             s.$root.currentFocus = "content";
 
             if (s.isDetailMode) {
@@ -2761,6 +2778,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.autoScroll(0);
             }
             s.selectedFolderMappings = {};
+            syncListFromScope();
             s.$root.currentFocus = "content";
             if (s.current) {
                 detailZoom()?.updateNavigator( $bodyScope.current);
@@ -2825,6 +2843,7 @@ export function makeControllerFns(getScope: () => any) {
                 var __lv_image = s.getItemByElement(__lv_target[0]);
                 s.selected = [__lv_image];
                 s.selectedFolderMappings = {};
+                syncListFromScope();
                 if (s.isDetailMode) {
                     s.current = s.selected[0];
                 }
@@ -3435,6 +3454,8 @@ export function makeControllerFns(getScope: () => any) {
                     Registration && Registration.license && s.unlockPassword && s.unlockPassword === Registration.license.code
                 ) {
                     s.currentFolder.isUnLock = true;
+                    syncFolderLock();
+                    syncListFromScope();
                     s.isLoading = true;
                     s.updateSidebarList();
                     s.calculateImageBinding({ ignoreSort: true }, function () {
@@ -3788,6 +3809,7 @@ export function makeControllerFns(getScope: () => any) {
                 }
 
                 s.uploadQueue.push(__lv_image);
+                syncUploadFromScope();
             }
             console.timeEnd("s.uploadFiles.初始化");
             console.time("s.uploadFiles.ipcRenderer.send");

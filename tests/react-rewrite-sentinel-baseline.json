@@ -9,13 +9,13 @@
     "on": 73,
     "scopeApply": 184,
     "callScope": 27,
-    "getBodyScope": 683,
+    "getBodyScope": 687,
     "jQuery": 78,
-    "rootAccess": 495,
+    "rootAccess": 494,
     "coreState": 31,
     "lodashWindow": 0,
     "lodashBind": 0,
     "lodashBare": 22,
-    "vendorScriptTags": 6
+    "vendorScriptTags": 2
   }
 }

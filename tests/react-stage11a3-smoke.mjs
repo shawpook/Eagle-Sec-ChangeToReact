@@ -119,10 +119,13 @@ try {
   await assertExpr('a3-initial-hidden', `document.querySelectorAll('.lock-screen').length === 0`);
 
   // ── 文件夹锁 ──
+  // b1-9by-A：快照链退役——直写 scope 后手动驱动 __eagleLockSync/__eagleListSync（模拟生产写入点）
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.currentFolder = { id: 'FOLDER-LOCK-TEST', name: 'Locked Folder', password: window.btoa('123456'), passwordTips: 'hint-tips', isUnLock: false };
     b.$evalAsync();
+    window.__eagleLockSync && window.__eagleLockSync();
+    window.__eagleListSync && window.__eagleListSync();
     return true;
   })()`);
   await assertExpr('a3-folder-lock-visible', `(() => {

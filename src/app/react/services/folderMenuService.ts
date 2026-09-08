@@ -19,6 +19,8 @@
 import { getBodyScope } from '../global/scopeBridge';
 import { ContextMenu } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { syncFolderLock } from '../store/lockState';
+import { syncListFromScope } from '../store/listState';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -297,10 +299,12 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         let subFolders: any[] = [];
         if (s.showSubfolderContent) {
           s.subFolders = getAllChildFolder(s.currentFolder);
+          syncListFromScope();
           if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
         }
         else {
           s.subFolders = s.currentFolder.children;
+          syncListFromScope();
           if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = false;
         }
         if (s.keyword) {
@@ -315,11 +319,13 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
               }
             }
           });
+          syncListFromScope();
           if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
         }
       }
       else {
         s.subFolders = [];
+        syncListFromScope();
       }
     }).apply(null, args);
   };
@@ -471,6 +477,8 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
     return (function (event: any, folder: any) {
       s.viewMode = undefined;
       s.currentFolder = folder;
+      syncFolderLock();
+      syncListFromScope();
       folder.editable = true;
       folder.newFolderName = folder.name;
       setTimeout(function () {
@@ -1813,6 +1821,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
     return (function (event: any, smartFolder: any) {
       s.viewMode = undefined;
       s.currentSmartFolder = smartFolder;
+      syncListFromScope();
       smartFolder.editable = true;
       smartFolder.newFolderName = smartFolder.name;
       setTimeout(function () {
@@ -1868,6 +1877,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         s.openSmartFolder(children[idx]);
       } else {
         s.currentSmartFolder = undefined;
+        syncListFromScope();
         s.openAll();
       }
     }
@@ -1880,6 +1890,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           s.openSmartFolder(children[idx - 1]);
         } else {
           s.currentSmartFolder = undefined;
+          syncListFromScope();
           s.openAll();
         }
       }

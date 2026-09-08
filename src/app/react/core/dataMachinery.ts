@@ -67,6 +67,9 @@ import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
 import { debounce, throttle } from '../utils/func';
 import { get, isString, max, uniq, unescape } from '../utils/lang';
+import { syncFolderLock } from '../store/lockState';
+import { syncUploadFromScope } from '../store/uploadState';
+import { syncListFromScope } from '../store/listState';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -313,12 +316,14 @@ export function machinerySortRawData(s: any, orderBy: any): void {
       s.raw = s.raw.sort(function (a: any, b: any) {
         return collator.compare(a.name, b.name);
       });
+      syncListFromScope();
       break;
     case 'EXT':
       var collator2 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
       s.raw = s.raw.sort(function (a: any, b: any) {
         return collator2.compare(a.ext, b.ext);
       });
+      syncListFromScope();
       break;
     case 'RESOLUTION':
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -328,6 +333,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(ra < rb) return -1;
         return 0;
       });
+      syncListFromScope();
       break;
     case 'FILESIZE':
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -337,6 +343,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(sizeA < sizeB) return -1;
         return 0;
       });
+      syncListFromScope();
       break;
     case 'RATING':
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -346,6 +353,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(starA < starB) return -1;
         return 0;
       });
+      syncListFromScope();
       break;
     case 'DURATION':
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -355,6 +363,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(durationA < durationB) return -1;
         return 0;
       });
+      syncListFromScope();
       break;
     case 'BTIME':
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -363,6 +372,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(btimeA > btimeB) return -1;
         if(btimeA < btimeB) return 1;
       });
+      syncListFromScope();
       break;
     case 'MTIME':
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -371,6 +381,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(mtimeA > mtimeB) return -1;
         if(mtimeA < mtimeB) return 1;
       });
+      syncListFromScope();
       break;
     case 'TAGS':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
@@ -380,6 +391,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         const bTag1 = b?.tags?.[0] ?? '';
         return collator3.compare(aTag1, bTag1);
       });
+      syncListFromScope();
       break;
     default:
       s.raw = s.raw.sort(function(a: any, b: any) {
@@ -388,6 +400,7 @@ export function machinerySortRawData(s: any, orderBy: any): void {
         if(mtimeA > mtimeB) return -1;
         if(mtimeA < mtimeB) return 1;
       });
+      syncListFromScope();
   }
   updateCurrentOrderAndIncrease();
   console.timeEnd("sortRawData");
@@ -425,6 +438,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       s.unfiledCount = 0;
       s.untaggedCount = 0;
       s.trash = [];
+      syncListFromScope();
       s.folderMappings = {};
       s.tagsSuggestion = [];
       s.folderList = [];
@@ -488,6 +502,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
         if (image.isDeleted) {
           s.trash.push(image);
+          syncListFromScope();
         }
         else {
 
@@ -678,6 +693,7 @@ export function machineryCalcuteFilterBadge(): void {
   const w = window as any;
   const filter = w.eagle.filter;
   filter.filterBadge = 0;
+  syncListFromScope();
   // 标签
   if (filter.filterRules.tag.includes) {
     filter.filterBadge += filter.filterRules.tag.includes.length;
@@ -878,6 +894,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   console.timeEnd("sort:置顶");
 
   s.allData = data;
+  syncListFromScope();
 
   // Note: 2019/08/05 避免拖拽順序使用 $scope.itemMappings 獲取的內容跟真實內容不一致，造成拖拽無法使用
   // 這段代碼主要用來刷新頁面上出現元件的有效性
@@ -890,6 +907,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   }
 
   s.filtereds = s.allData.slice(0, s.len * s.page);
+  syncListFromScope();
 
   s.refreshSubfolderList();
 
@@ -1066,6 +1084,7 @@ export function machineryPrependImages(s: any, images: any[], updateView: any): 
 
   if (images[0].id) {
     s.allData.unshift(images[0]);
+    syncListFromScope();
     clearTimeout(prependImagesTimeout);
     prependImagesTimeout = setTimeout(function () {
       machineryResetImageData(s, images);
@@ -3077,12 +3096,17 @@ export function machineryResetPage(s: any): void {
   s.currentTag = undefined;
   s.startCursor = 0;
   s.currentFolder = undefined;
+  syncFolderLock();
+  syncListFromScope();
   w.eagle.inspector.reset();
   s.currentFolderChildren = undefined;
   s.currentSmartFolder = undefined;
+  syncListFromScope();
   s.$root.selectedFoldersMappings = {};
   s.$root.selectedFolders = [];
+  syncListFromScope();
   s.selectedFolderMappings = {};
+  syncListFromScope();
   s.$root.selectedSmartFoldersMappings = {};
   s.$root.selectedSmartFolders = [];
   s.currentId = undefined;
@@ -4140,6 +4164,7 @@ export function machinerySelectNext(s: any, event: any): void {
 
   s.selected = [s.allData[end]];
   s.selectedFolderMappings = {};
+  syncListFromScope();
   s.$root.currentFocus = "content";
 
   if (s.isDetailMode) {
@@ -4210,6 +4235,7 @@ export function machinerySelectPrev(s: any, event: any): void {
     s.autoScroll(0);
   }
   s.selectedFolderMappings = {};
+  syncListFromScope();
   s.$root.currentFocus = "content";
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
@@ -4982,6 +5008,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
   }
   else if (s.$root.currentFocus == "sidebar") {
     s.$root.selectedFolders = [];
+    syncListFromScope();
     s.$root.selectedFoldersMappings = {};
     s.$root.selectedSmartFoldersMappings = {};
     s.$root.selectedSmartFolders = [];
@@ -5103,6 +5130,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
   }
   else if (s.$root.currentFocus == "sidebar") {
     s.$root.selectedFolders = [];
+    syncListFromScope();
     s.$root.selectedFoldersMappings = {};
     s.$root.selectedSmartFoldersMappings = {};
     s.$root.selectedSmartFolders = [];
@@ -5337,6 +5365,7 @@ export function machinerySelectUp(s: any, event: any): void {
     var image = s.getItemByElement(target[0]);
     s.selected = [image];
     s.selectedFolderMappings = {};
+    syncListFromScope();
     if (s.isDetailMode) {
       s.current = s.selected[0];
     }
@@ -5394,6 +5423,7 @@ export function machinerySelectDown(s: any, event: any): void {
     var image = s.getItemByElement(target[0]);
     s.selected = [image];
     s.selectedFolderMappings = {};
+    syncListFromScope();
     if (s.isDetailMode) {
       s.current = s.selected[0];
     }
@@ -7401,6 +7431,7 @@ export function machineryRemovePermanently(s: any): void {
     var idx = s.raw.indexOf(r);
     if (idx != -1) {
       s.raw.splice(idx, 1);
+      syncListFromScope();
     }
   });
 
@@ -7476,6 +7507,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
       s.openSmartFolder(children[idx]);
     } else {
       s.currentSmartFolder = undefined;
+      syncListFromScope();
       s.openAll();
     }
   }
@@ -7488,6 +7520,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
         s.openSmartFolder(children[idx - 1]);
       } else {
         s.currentSmartFolder = undefined;
+        syncListFromScope();
         s.openAll();
       }
     }
@@ -8252,11 +8285,13 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
   s.currentTag = undefined;
   s.startCursor = 0;
   s.currentSmartFolder = undefined;
+  syncListFromScope();
   s.$root.selectedSmartFolders = [];
   s.$root.selectedSmartFoldersMappings = {};
   var idx = s.$root.selectedFolders.indexOf(folder);
   if (idx === -1) {
     s.$root.selectedFolders.push(folder);
+    syncListFromScope();
     s.$root.selectedFoldersMappings[folder.id] = folder;
     if (needReload) {
       s.startCursor = 0;
@@ -8267,6 +8302,7 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
   else {
     if (s.$root.selectedFolders.length > 1) {
       s.$root.selectedFolders.splice(idx, 1);
+      syncListFromScope();
       delete s.$root.selectedFoldersMappings[folder.id];
       if (needReload) {
         s.startCursor = 0;
@@ -8563,7 +8599,10 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
   s.currentTag = undefined;
   s.startCursor = 0;
   s.currentFolder = undefined;
+  syncFolderLock();
+  syncListFromScope();
   s.$root.selectedFolders = [];
+  syncListFromScope();
   s.$root.selectedFoldersMappings = {};
   var idx = s.$root.selectedSmartFolders.indexOf(smartFolder);
   if (idx === -1) {
@@ -8597,6 +8636,8 @@ export function machineryRenameFolder(s: any, event: any, folder: any): void {
   // if (folder.password && !folder.isUnLock) return;
   s.viewMode = undefined;
   s.currentFolder = folder;
+  syncFolderLock();
+  syncListFromScope();
   folder.editable = true;
   folder.newFolderName = folder.name;
   setTimeout(function () {
@@ -8611,6 +8652,7 @@ export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any)
   const w = window as any;
   s.viewMode = undefined;
   s.currentSmartFolder = smartFolder;
+  syncListFromScope();
   smartFolder.editable = true;
   smartFolder.newFolderName = smartFolder.name;
   setTimeout(function () {
@@ -8695,6 +8737,8 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
     await w.require('@electron/remote').systemPreferences.promptTouchID(w.i18n.__('unlock.folder.touchid.prompt') || '驗證以解鎖文件夾');
     // 驗證成功，解鎖文件夾
     s.currentFolder.isUnLock = true;
+    syncFolderLock();
+    syncListFromScope();
     s.isLoading = true;
     s.updateSidebarList();
     s.calculateImageBinding({ ignoreSort: true }, function () {
@@ -8949,6 +8993,7 @@ function machineryCalcuteAddImageTimeLeft(s: any): void {
     var remain = parseInt((estimatedTotalTime - elapsedTime) / 1000 as any);
     if (w.is.number(remain)) {
       s.addImageTimeLeftInSeconds = remain;
+      syncUploadFromScope();
     }
   }
 }
@@ -9297,6 +9342,7 @@ export function machineryImportLinks(s: any): void {
             ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
           }
           s.uploadQueue.push({});
+          syncUploadFromScope();
         }
       });
     });
@@ -9527,10 +9573,12 @@ export function machineryRefreshSubfolderList(s: any): void {
   if (s.currentFolder) {
     if (s.showSubfolderContent) {
       s.subFolders = machineryGetAllChildFolder(s, s.currentFolder);
+      syncListFromScope();
       s.subFolderSortableOptions.disabled = true;
     }
     else {
       s.subFolders = s.currentFolder.children;
+      syncListFromScope();
       s.subFolderSortableOptions.disabled = false;
     }
     if (s.keyword) {
@@ -9545,11 +9593,13 @@ export function machineryRefreshSubfolderList(s: any): void {
           }
         }
       });
+      syncListFromScope();
       s.subFolderSortableOptions.disabled = true;
     }
   }
   else {
     s.subFolders = [];
+    syncListFromScope();
   }
 }
 
@@ -9643,8 +9693,10 @@ export function machinerySelectFolder(s: any, event: any, folder: any): void {
   (document.activeElement as any).blur();
   if (folder) {
     s.selectedFolderMappings = {};
+    syncListFromScope();
     s.selectedMappings = {};
     s.selectedFolderMappings[folder.id] = true;
+    syncListFromScope();
     s.$root.currentFocus = "content";
     s.selected = [];
     s.updateSelection();
@@ -10403,6 +10455,7 @@ export function machinerySeedControllerState(s: any): void {
         s.sidebarIndex;
         s.all = [];
         s.trash = [];
+        syncListFromScope();
         s.untaggedCount = 0;
         s.unfiledCount = 0;
         s.images = [];
@@ -10410,16 +10463,21 @@ export function machinerySeedControllerState(s: any): void {
         s.selectedMappings = {};
         s.lockedImages = {};
         s.filtereds = [];
+        syncListFromScope();
         s.allData = [];
+        syncListFromScope();
         s.shuffle = [];
         s.$root.selectedFolders = [];
+        syncListFromScope();
         s.$root.selectedFoldersMappings = {};
         s.$root.selectedSmartFolders = [];
         s.$root.selectedSmartFoldersMappings = {};
         s.folderMappings = {};
         s.smartFolderMappings = {};
         s.uploadQueue = [];
+        syncUploadFromScope();
         s.finishQueue = [];
+        syncUploadFromScope();
         s.finishGenerateQueue = [];
         s.regenerateThumbnailQueue = [];
         

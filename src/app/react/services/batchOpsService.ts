@@ -23,6 +23,8 @@ import { getBodyScope } from '../global/scopeBridge';
 import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
+import { syncFolderLock } from '../store/lockState';
+import { syncListFromScope } from '../store/listState';
 
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
@@ -110,6 +112,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                         var image = s.raw[i];
                         if (image.id && willDelete[image.id]) {
                             s.raw.splice(i, 1);
+                            syncListFromScope();
                             delete s.itemMappings[image.id];
                             i--;
                             continue;
@@ -120,6 +123,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                     ayncsImagesRemove(s.trash);
 
                     s.trash = [];
+                    syncListFromScope();
                     s.updateSelection();
                     s.rebindRefresh();
                     s.findDupclipate(undefined);
@@ -245,6 +249,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             __lv_cleanSelectedTimeout = $timeout(function() {
                 s.selected = [];
                 s.selectedFolderMappings = {};
+                syncListFromScope();
                 s.updateSelection();
             }, 100);
         }).apply(null, args);
@@ -521,6 +526,8 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             s.resetPage();
             s.$root.currentFocus = "content";
             s.currentFolder = undefined;
+            syncFolderLock();
+            syncListFromScope();
             s.currentFolderChildren = undefined;
             __lv_TagManager.filterWithTags([tag], ignoreHistory);
         }).apply(null, args);

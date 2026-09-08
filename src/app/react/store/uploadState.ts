@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer, t } from '../global/eagleGlobals';
 
 /**
@@ -68,6 +68,22 @@ function attachBackgroundState(): void {
   ipc.on('background-state', backgroundStateHandler);
 }
 
+/**
+ * b1-9by-A：上传四字段直写收敛——uploadQueue/finishQueue（push/splice/重置）、
+ * progress（update-progress ipc）、addImageTimeLeftInSeconds 写入点调用
+ * （原 200ms 轮询快照退役；ProgressDialogs 的 rootRef.* 为组件本地态不经此）。
+ */
+export function syncUploadFromScope(): void {
+  const s: any = getBodyScope();
+  if (!s) return;
+  useUploadState.getState().set({
+    queueLength: (s.uploadQueue && s.uploadQueue.length) || 0,
+    finishCount: (s.finishQueue && s.finishQueue.length) || 0,
+    progress: typeof s.progress === 'number' ? s.progress : 0,
+    timeLeft: s.addImageTimeLeftInSeconds || 0,
+  });
+}
+
 let bound = false;
 
 export function bindUploadSync(): void {
@@ -76,17 +92,11 @@ export function bindUploadSync(): void {
 
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleUploadState = useUploadState;
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleUploadSync = syncUploadFromScope;
 
-  startScopeSync({
-    watch: ['uploadQueue.length', 'finishQueue.length', 'progress', 'addImageTimeLeftInSeconds'],
-    build: (scope) => ({
-      queueLength: (scope.uploadQueue && scope.uploadQueue.length) || 0,
-      finishCount: (scope.finishQueue && scope.finishQueue.length) || 0,
-      progress: typeof scope.progress === 'number' ? scope.progress : 0,
-      timeLeft: scope.addImageTimeLeftInSeconds || 0,
-    }),
-    apply: (snapshot) => useUploadState.getState().set(snapshot as Partial<UploadState>),
-  });
+  // b1-9by-A：startScopeSync 退役——保留一次性对齐，后续由写入点直调驱动。
+  syncUploadFromScope();
 
   const ipc = ipcRenderer();
   if (ipc && typeof ipc.on === 'function') {

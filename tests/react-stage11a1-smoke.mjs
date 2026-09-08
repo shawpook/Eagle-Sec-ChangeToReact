@@ -129,11 +129,13 @@ try {
   await assertExpr('a1-saving-closed-after', `!document.querySelector('.saving-progress-bar').classList.contains('open')`);
 
   // ── upload 条：scope 队列快照 ──
+  // b1-9by-A：快照链退役——直写 scope 后手动驱动 __eagleUploadSync（模拟生产写入点）
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.uploadQueue = [{}, {}];
     b.finishQueue = [];
     b.$evalAsync();
+    window.__eagleUploadSync && window.__eagleUploadSync();
     return true;
   })()`);
   await assertExpr('a1-upload-open-counter', `(() => {
@@ -152,6 +154,7 @@ try {
     const b = window.$bodyScope;
     b.finishQueue = [{}];
     b.$evalAsync();
+    window.__eagleUploadSync && window.__eagleUploadSync();
     return true;
   })()`);
   await assertExpr('a1-upload-finish-half', `(() => {
@@ -167,6 +170,7 @@ try {
     b.finishQueue = [];
     b.progress = 0.42;
     b.$evalAsync();
+    window.__eagleUploadSync && window.__eagleUploadSync();
     return true;
   })()`);
   await assertExpr('a1-upload-single-progress', `(() => {
@@ -179,6 +183,7 @@ try {
     const b = window.$bodyScope;
     b.addImageTimeLeftInSeconds = 3725;
     b.$evalAsync();
+    window.__eagleUploadSync && window.__eagleUploadSync();
     return true;
   })()`);
   await assertExpr('a1-upload-timeleft', `(() => {

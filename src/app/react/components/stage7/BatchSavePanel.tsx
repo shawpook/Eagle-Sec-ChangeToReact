@@ -7,6 +7,7 @@ import { duration } from '../../app/filters';
 import { FolderSelectPanel } from './selectPanelEngine';
 import { openGeneralTagSelectPanel, themePathOf } from './SelectPanels';
 import { fuzzyMatchHtml } from './ContextMenu';
+import { syncUploadFromScope } from '../../store/uploadState';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -974,6 +975,7 @@ export function BatchSavePanel() {
           imageUrls.push(original.base64 ?? original.src ?? item.src);
         }
         body.uploadQueue.push({});
+        syncUploadFromScope();
       }
     });
 

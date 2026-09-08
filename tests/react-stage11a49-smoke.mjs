@@ -174,6 +174,7 @@ try {
   })()`);
 
   // ── a5：sub-folder 列表 ──
+  // b1-9by-A：快照链退役——直写 scope 后手动驱动 __eagleListSync（模拟生产写入点）
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.selectedFolders = [];
@@ -185,6 +186,7 @@ try {
     b.listDone = true;
     b.isHideSubFolder = true;
     b.$evalAsync();
+    window.__eagleListSync && window.__eagleListSync();
     return true;
   })()`);
   await assertExpr('a5-subfolder-visible', `(() => {

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
 
@@ -47,11 +47,10 @@ function checkCanUseTouchID(): boolean {
   return false;
 }
 
-let bound = false;
-
 // b1-9az R1-batch2：isAppLocked 源翻转——$root 即 proxy 自指，scope 侧
 // `s.$root.isAppLocked = x` 经同一 set 陷阱落本 store。folderLocked/folderPasswordTips
-// 为 currentFolder 嵌套派生，留快照链。同值守卫同 bodyState（b1-9az 批 1 教训）。
+// 为 currentFolder 嵌套派生，b1-9by-A 起由写入点直调 syncFolderLock 驱动。
+// 同值守卫同 bodyState（b1-9az 批 1 教训）。
 migrateScopeFieldToStore(
   'isAppLocked',
   () => useLockState.getState().isAppLocked,
@@ -60,21 +59,31 @@ migrateScopeFieldToStore(
   },
 );
 
-export function bindLockSync(): void {
-  if (bound) return;
-  bound = true;
+/**
+ * b1-9by-A：folderLocked/folderPasswordTips 直写收敛——currentFolder 对象替换
+ * （dataMachinery/controllerFns/libraryDomain/folderMenuService/batchOpsService）与
+ * isUnLock 写点调用（原 200ms 轮询快照退役）。
+ */
+export function syncFolderLock(): void {
+  const s: any = getBodyScope();
+  if (!s) return;
+  const cf = s.currentFolder;
+  const locked = !!(cf && cf.password && !cf.isUnLock);
+  const tips = (cf && cf.passwordTips) || '';
+  const cur = useLockState.getState();
+  if (cur.folderLocked !== locked || cur.folderPasswordTips !== tips) {
+    useLockState.setState({ folderLocked: locked, folderPasswordTips: tips });
+  }
+}
 
+export function bindLockSync(): void {
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleLockState = useLockState;
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleLockSync = syncFolderLock;
 
-  startScopeSync({
-    watch: ['currentFolder.password', 'currentFolder.isUnLock', 'currentFolder.passwordTips'],
-    build: (scope) => ({
-      folderLocked: !!(scope.currentFolder && scope.currentFolder.password && !scope.currentFolder.isUnLock),
-      folderPasswordTips: (scope.currentFolder && scope.currentFolder.passwordTips) || '',
-    } as Partial<LockState>),
-    apply: (snapshot) => useLockState.setState(snapshot as Partial<LockState>),
-  });
+  // b1-9by-A：startScopeSync 退役——保留一次性对齐，后续由写入点直调驱动。
+  syncFolderLock();
 
   useLockState.setState({ canUseTouchID: checkCanUseTouchID() });
 

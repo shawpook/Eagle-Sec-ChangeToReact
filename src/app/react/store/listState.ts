@@ -1,11 +1,15 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { getBodyScope } from '../global/scopeBridge';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
+import { useBodyState } from './bodyState';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域（drop-areas / sub-folder 列表 / 列表列头 /
- * scroll-to-top / 面板拖放浮层）状态源。全部为 body scope 的 digest 驱动状态，
- * startScopeSync 快照与原 ng-if/ng-show/ng-class 同源同语义。
+ * scroll-to-top / 面板拖放浮层）状态源。
+ *
+ * b1-9by-A：startScopeSync 退役——13 个快照字段改写入点直调 syncListFromScope
+ * （数组变异/对象替换/过滤器徽标各写入方）；viewMode/isLoading/layout 镜像改由
+ * useBodyState 订阅供给（bodyState 源翻转字段，同一状态源不再走 scope 快照回声）。
  */
 
 interface ListState {
@@ -60,12 +64,9 @@ export const useListState = create<ListState>(() => ({
   currentSortIncrease: true,
 }));
 
-let bound = false;
-
-// b1-9az R1-batch2：恒等字段源翻转第二批（listState 8 个）。viewMode/isLoading/layout
-// 已由 bodyState 源翻转——此处保留为快照镜像（scope 读经委托取 bodyState 值，回写本
-// store 仅镜像），不重复注册（注册表同名覆盖）。派生/嵌套字段（counts/folderLocked/
-// subFolders 等）留快照链，随阶段 2 竖切归位。
+// b1-9az R1-batch2：恒等字段源翻转第二批（listState 8 个）。keyword/listDone/
+// isHideSubFolder/showSubfolderContent/currentOrderBy/currentSortIncrease/unfiledCount/
+// untaggedCount 已源翻转——scope 读写经委托落本 store，不参与快照同步。
 const MIGRATED_LIST_FIELDS: ReadonlyArray<keyof ListState> = [
   'keyword', 'listDone', 'isHideSubFolder', 'showSubfolderContent',
   'currentOrderBy', 'currentSortIncrease', 'unfiledCount', 'untaggedCount',
@@ -82,40 +83,70 @@ for (const fieldName of MIGRATED_LIST_FIELDS) {
   );
 }
 
+// b1-9by-A：快照深比较守卫（scopeBridge startScopeSync 同款语义——subFolders slice()
+// 逐元素引用比较，元素相同则不触发 setState，整写型组件不被无谓重渲染）。
+function shallowEq(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastSnapshot: any = null;
+
+/**
+ * b1-9by-A：13 个列表快照字段直写收敛——写入点（raw/trash/allData/filtereds/subFolders
+ * 数组变异、currentFolder/currentSmartFolder/selectedFolders/selectedFolderMappings 写、
+ * eagle.filter.filterBadge 写）调用。原 startScopeSync 200ms 轮询退役。
+ * viewMode/isLoading/layout 不在此列（useBodyState 镜像，见 bindListSync）。
+ */
+export function syncListFromScope(): void {
+  const s: any = getBodyScope();
+  if (!s) return;
+  const next = {
+    filteredsCount: (s.filtereds && s.filtereds.length) || 0,
+    allDataCount: (s.allData && s.allData.length) || 0,
+    hasSmartFolder: !!s.currentSmartFolder,
+    filterBadge: (s.eagle && s.eagle.filter && s.eagle.filter.filterBadge) || 0,
+    folderChildrenCount: (s.currentFolder && s.currentFolder.children && s.currentFolder.children.length) || 0,
+    folderLocked: !!(s.currentFolder && s.currentFolder.password && !s.currentFolder.isUnLock),
+    trashCount: (s.trash && s.trash.length) || 0,
+    rawCount: (s.raw && s.raw.length) || 0,
+    subFoldersCount: (s.subFolders && s.subFolders.length) || 0,
+    noSelectedFolders: !(s.$root && s.$root.selectedFolders && s.$root.selectedFolders.length > 0),
+    subFolders: s.subFolders ? s.subFolders.slice() : [],
+    selectedFolderMappings: { ...(s.selectedFolderMappings || {}) },
+  };
+  if (lastSnapshot !== null && shallowEq(next, lastSnapshot)) return;
+  lastSnapshot = next;
+  useListState.setState(next as Partial<ListState>);
+}
+
+let bound = false;
+
 export function bindListSync(): void {
   if (bound) return;
   bound = true;
 
   // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
   (window as any).__eagleListState = useListState;
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleListSync = syncListFromScope;
 
-  startScopeSync({
-    // b1-9az R1-batch2：MIGRATED_LIST_FIELDS 已源翻转，不入快照（回声强转篡源教训，
-    // 见 bodyState 批 1）。viewMode/isLoading/layout 为 bodyState 已迁字段的镜像副本。
-    watch: [
-      'viewMode', 'isLoading', 'layout', 'filtereds.length', 'allData.length',
-      'currentSmartFolder', 'eagle.filter.filterBadge', 'currentFolder.children.length',
-      'currentFolder.password', 'currentFolder.isUnLock', 'trash.length', 'raw.length',
-      'subFolders.length', '$root.selectedFolders.length', 'subFolders',
-      'selectedFolderMappings',
-    ],
-    build: (scope) => ({
-      viewMode: scope.viewMode,
-      isLoading: !!scope.isLoading,
-      layout: scope.layout,
-      filteredsCount: (scope.filtereds && scope.filtereds.length) || 0,
-      allDataCount: (scope.allData && scope.allData.length) || 0,
-      hasSmartFolder: !!scope.currentSmartFolder,
-      filterBadge: (scope.eagle && scope.eagle.filter && scope.eagle.filter.filterBadge) || 0,
-      folderChildrenCount: (scope.currentFolder && scope.currentFolder.children && scope.currentFolder.children.length) || 0,
-      folderLocked: !!(scope.currentFolder && scope.currentFolder.password && !scope.currentFolder.isUnLock),
-      trashCount: (scope.trash && scope.trash.length) || 0,
-      rawCount: (scope.raw && scope.raw.length) || 0,
-      subFoldersCount: (scope.subFolders && scope.subFolders.length) || 0,
-      noSelectedFolders: !(scope.$root && scope.$root.selectedFolders && scope.$root.selectedFolders.length > 0),
-      subFolders: scope.subFolders ? scope.subFolders.slice() : [],
-      selectedFolderMappings: { ...(scope.selectedFolderMappings || {}) },
-    } as Partial<ListState>),
-    apply: (snapshot) => useListState.setState(snapshot as Partial<ListState>),
-  });
+  // b1-9by-A：viewMode/isLoading/layout 镜像改由 bodyState 订阅供给（原 scope 快照
+  // 镜像退役；isLoading 沿原 build 的 !! 强转语义，viewMode/layout 原样）。
+  const mirror = (st: any) => {
+    const cur = useListState.getState();
+    const next: Partial<ListState> = {};
+    if (cur.viewMode !== st.viewMode) next.viewMode = st.viewMode;
+    if (cur.isLoading !== !!st.isLoading) next.isLoading = !!st.isLoading;
+    if (cur.layout !== st.layout) next.layout = st.layout;
+    if (Object.keys(next).length) useListState.setState(next);
+  };
+  mirror(useBodyState.getState());
+  useBodyState.subscribe(mirror);
+
+  // b1-9by-A：startScopeSync 退役——保留一次性对齐，后续由写入点直调驱动。
+  syncListFromScope();
 }

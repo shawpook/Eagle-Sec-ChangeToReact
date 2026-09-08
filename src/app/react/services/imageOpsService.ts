@@ -22,6 +22,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
+import { syncListFromScope } from '../store/listState';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -484,6 +485,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                     s.unfiledCount = 0;
                     s.untaggedCount = 0;
                     s.trash = [];
+                    syncListFromScope();
                     s.folderMappings = {};
                     s.tagsSuggestion = [];
                     s.folderList = [];
@@ -547,6 +549,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
 
                         if (__lv_image.isDeleted) {
                             s.trash.push(__lv_image);
+                            syncListFromScope();
                         }
 						else {
 

@@ -115,10 +115,12 @@ try {
   await assertExpr('a2-initial-empty', `document.querySelectorAll('.toast-alert').length === 0`);
 
   // ── 失败重试提示 ──
+  // b1-9by-A：快照链退役——直写 scope 后手动驱动 __eagleToastSync（模拟生产写入点）
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.errorList = [{}];
     b.$evalAsync();
+    window.__eagleToastSync && window.__eagleToastSync();
     return true;
   })()`);
   await assertExpr('a2-error-toast-1', `(() => {
@@ -129,6 +131,7 @@ try {
     const b = window.$bodyScope;
     b.errorList = [{}, {}];
     b.$evalAsync();
+    window.__eagleToastSync && window.__eagleToastSync();
     return true;
   })()`);
   await assertExpr('a2-error-toast-2', `(() => {

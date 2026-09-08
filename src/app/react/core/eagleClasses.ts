@@ -11,6 +11,7 @@
 import { getBodyScope } from '../global/scopeBridge';
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle } from './eagleApi';
+import { syncListFromScope } from '../store/listState';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }
@@ -511,6 +512,7 @@ class ItemFilter {
 
         // 篩選器計數
         this.filterBadge = 0;
+        syncListFromScope();
 	}
 
     resetFilterRules() {

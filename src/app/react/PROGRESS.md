@@ -1312,6 +1312,39 @@
 > 后 React 同步刷新，比旧链更快，无回归面（只会更及时）。
 >
 
+> **b1-9by-A：toast/lock/upload/list 四链退役——sync 直写收敛（2026-09-09）**
+>
+> 四 store 的 startScopeSync 快照链全退役（24/218 表达式）：toastState.errorCount（1）、
+> lockState.folderLocked/folderPasswordTips（3）、uploadState 四字段（4）、listState 13
+> 快照字段（16 watch 中 13 直写 + viewMode/isLoading/layout 3 镜像改 useBodyState
+> 订阅供给——mirror() 同值守卫，isLoading 沿原 build !! 强转语义）。**新 sync 面**：
+> syncErrorCount（toastState，errorList 变异点直调）/syncFolderLock（lockState）/
+> syncUploadFromScope（uploadState）/syncListFromScope（listState——scopeBridge
+> startScopeSync 的 build+shallowEq+lastSnapshot 守卫语义平移，subFolders slice 逐元素
+> 引用比较防整写组件无谓重渲染）。bindXxxSync 收敛为一次性对齐（保留启动期快照语义）
+> + __eagleXxxSync 测试面暴露（__eagleListState 等诊断面保留）。
+> **写入点收敛 116 处**（regex 手术脚本 tests-tmp/by-a-sites2.py——brace-match 多行
+> 语句到语句尾插入，10 处 raw.sort/filter 回调正确落语句尾；dataMachinery 51/
+> controllerFns 16/itemDomain 11/folderMenuService 8/libraryDomain 8/其余 22）；
+> eagleClasses this.filterBadge setter 直调覆盖类内写点。
+> **施工坑 ×3**：① 手术脚本 v1/v2 双 apply 块双插+错位（sidebarService 多行 import
+> 内插/ControllerModals then 回调错位/itemDomain else 前错位，esbuild 三红）——16 文件
+> git checkout 回滚重放，v2 单 apply 路径 + 多行 import 取语句尾插入定版；② 脚本
+> import 清单漏配 libraryDomain 的 uploadState（它有 uploadQueue 写点）→ boot 期 ipc
+> 链 ReferenceError → 套件 10 文件连挂（grid boxes rendered timeout 面之外观）——
+> 调试探针 tests-tmp/by-a-dbg.mjs（console 异常捕获 + __eagle 状态 dump）定位，补
+> import 复绿；③ 套件并行假象——两探针流并行抢 CPU 双双挂死（electron 20min 不退），
+> 教训：套件/探针必须串行。BatchRenameArtstationModals 'w().is.number' console 噪音为
+> 既有（window.is 探针环境时序），非本批回归。
+> **tests 契约更新**（快照链退役等价物）：stage11a1（4 写块）/a2（2）/a3（1）/a49（1）
+> 直写 scope 后补 window.__eagleXxxSync() 调用（模拟生产写入点语义）；a3 app-lock 段
+> 零改动通过（isAppLocked 委托字段经 proxy set 直达 store——迁移机制实证）。
+> **sentinel 基线吸收**：getBodyScope 683→687（四 sync helper 过渡态调用，by-D 搬迁
+> 时随语义归位）、rootAccess 495→494（listState watch 串字符串移除）、vendorScriptTags
+> 6→2（bv/bx/bx2 三批 vendor 摘除累积漂移补录）、coreState 31 平（注释裸词随手清理）。
+> **门禁**：esbuild 双入口 EXIT:0；sentinel OK；套件 55/55 ALL GREEN。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

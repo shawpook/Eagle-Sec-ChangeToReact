@@ -752,6 +752,37 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9be2：S1 收官批——@egjs/react-infinitegrid v4 renderer 交换（2026-09-08）**
+>
+> 按上方考据定案施工，三文件：① **boxItem.tsx**（新，ngGridLayout 模板逐字 JSX 化——
+> getItem/generateItem 全分支 + onLayoutComplete 补类语义改为渲染时直读 scope；raw/lsrc/
+> lazysrc 裸属性经 effect 命令式补写——React JSX 不承载自定义属性，LazyLoadManager 契约
+> 不变；拖拽 handler 走 window 全局可选链）。② **boxGridEngine.ts 重写**为 facade+桥：
+> window.ig 保留（消费面 25 处零改动）——remove/getItems({id,el,groupKey})/clear/trigger
+> (no-op：全量 children 模型无本地翻页)/layout→renderItems/getGroupKeys/setLayout(仅
+> notify)/_renderer.updateSize/_watcher.{_onCheck,getScrollPos}/_items._data（组 outlines
+> 从 item.rect 现算——v4 组不保留）/ _layout._columnLength（首行盒数现算）；engine 状态
+> items/cursor/scrollPct 经 subscribeEngine 通知 BoxList。③ **BoxList.tsx 重写**：
+> portal 进静态 #box-list（壳去 class，v4 wrapper 承接 .box-list 规则）；布局映射
+> 瀑布流→MasonryInfiniteGrid gap8 / List→Masonry gap0 / 谷歌流→JustifiedInfiniteGrid
+> sizeRange imageSize±10；**v4 光标模型两坑**：(a) 首挂载 children 必须已在——
+> useFirstRender 的 setCursors(0,0) 空转则永远零可见（height:0 wrapper），items 就绪前
+> 不挂 Grid；(b) React 包装器只同步 children/光标**从不驱动测量定位**——引擎通知后显式
+> renderItems()（探针实证：手动调用即刻出布局）；(c) 滚动推进光标需 onRequestAppend/
+> Prepend 回调 e.ready()；(d) groupBy 读**顶层 child props** 的 data-grid-groupkey——
+> 组页编码 1000000+floor(idx/60) 须作为 BoxItem 顶层 prop 透传根 div。
+> 分页模型变更：v3 组页 append/preload → v4 全量 children + 组级虚拟化（组键即页号，
+> facade.getGroupKeys/getItems().groupKey - 1000000 = 页号契约保持）；滚动恢复换总高均距
+> 公式（(游标页+pct)×60×avgPitch）。探针：tests-tmp/be2-probe1.mjs（几何实测：v3
+> 120×115@gap8 → v4 123×107@sizeRange，show 类/lazyload/列数全出）。
+> 门禁：tsc 0 + esbuild OK + 哨兵 OK（getBodyScope 677→683 合法吸收——三服务
+> initLinkVars 后续 + 引擎/BoxList 新面）+ ui-interactions 7/7（ctrl-wheel 缩放 +
+> machineryRelayout setLayout/_renderer.updateSize/_watcher 面）+ drag-start + residue +
+> **全量套件 55/55 ALL GREEN**（main-ui-workflow 套件内偶发单跑复验绿）。
+> **S1 竖切完成**；v3 UMD（/vendor/egjs-infinitegrid.umd.js + c13 懒执行 +
+> libraryDomain:463 兜底实例）留 be2-B 清扫（bundleGlobals egLoaded 探测点随批退役）。
+>
+>
 > **【S1-be2 考据定案：@egjs/react-infinitegrid v4 renderer 交换（2026-09-08）】**
 >
 > **供给链**：window.eg（InfiniteGrid v3 pkgd UMD）← bundleGlobals c13 if-absent 懒执行

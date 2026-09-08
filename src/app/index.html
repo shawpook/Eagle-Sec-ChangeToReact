@@ -82,11 +82,9 @@
                 <div id="eagle-sub-folder-host"></div>
                 <!-- 列表列头（React 接管，舊區塊已刪；11-pre a6） -->
                 <div id="eagle-list-header-host"></div>
-                    <div
-						id="box-list"
-                        class="box-list"
-                    >
-                    </div>
+                    <!-- b1-9be2：#box-list 转纯挂载壳（class 由 v4 wrapper 承接，避免
+                         .box-list 规则双重生效；React BoxList portal 进本元素） -->
+                    <div id="box-list"></div>
             </div>
             <!-- 面板拖放浮层（React 接管，舊區塊已刪；11-pre a9） -->
             <div id="eagle-panel-droparea-host"></div>

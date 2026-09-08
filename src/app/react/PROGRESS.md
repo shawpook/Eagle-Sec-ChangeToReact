@@ -964,6 +964,33 @@
 > main-ui-workflow/ui-interactions 等经新 keymap 天然回归）。
 >
 
+> **b1-9bv-B：旧采集窗死源精确退役——定案勘误 + 20 文件清退（2026-09-08）**
+>
+> **定案勘误（bv-B 动手前核查拦截）**：定案块"src/app/collect-window/ 整目录零引用死源"
+> **结论有误**——第一遍 grep 未含 *.mjs，漏掉 frontend/vite.preview.config.mjs 的三处
+> 活引用：readCollectWindow():81 以旧壳 index.html 为 dev 模板读入注入 React entry、
+> :152 服务该 URL、:171 服务 /src/app/collect-window/ 静态资源；且 9b-1 注释与
+> react/collect-window/controller.ts 自述"数据面走页面保留的 window.eagle（js/lib/api/*
+> 脚本）"。**该目录实为 dev 模式采集窗的模板+供给混合体，仅 Angular 面为死**。
+> **精确死活定界**（逐文件引用核查 + shell 注释保留清单）：
+> - **活（全保留）**：index.html（dev 模板，body 已是 React 宿主）、js/lib/api/* ×11
+>   （window.eagle 数据面：utils/env/crypto/i18n/fetch/url-enlarger/folder/library/tag/
+>   item/swal-dialog）、js/lib/api/i18n.js→locales/*.json（getURL('locales/${locale}.json')
+>   活链）、js/vendors/{jquery×2, sweetalert2, chinese_convert, pinyinlite, tiny-pinyin}
+>   （面板引擎与 save 依赖）、js/models/collect-item.js（window.CollectItem）、
+>   css/collect-window.css（28 处 url(../assets/…)→assets/ 连带活）、scss/（css 之源，
+>   保守保留）；
+> - **死（本批清退 20 文件）**：js/controllers/collect.js（Angular CollectController）、
+>   js/directives/ 整目录 11 文件（context-menu×2 html+js/folder-select-panel/library-
+>   switcher/select-panel/tag-select-panel/fallback-src——React 侧
+>   selectPanelEngine/tagPanelEngine/folderPanel/contextMenu 已承接，外部引用仅注释考据）、
+>   js/modules/ 整目录 6 文件（angular-contenteditable/angular-vs-repeat.min/vs-grid-
+>   repeat/vs-repeat-auto-scroll/stop-wheel/i18n(Angular $http 版，活版在 js/lib/api/))、
+>   js/lib/collect-window.js（384 行扩展 iframe 建器，全仓零加载）、js/vendors/
+>   angular.min.js（Angular 本体）。
+> **门禁**：esbuild EXIT:0 + 套件 ALL GREEN。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

@@ -1423,6 +1423,60 @@
 > （ca）与 controllerFns/dataMachinery/shimFnsBridge（bz）两项删除面。
 >
 
+> **【b1-9bz 考据定案：fns 表清零 + controllerFns/dataMachinery/shimFnsBridge 三文件删除（2026-09-09）】**
+>
+> **实锚数字**（tests-tmp/bz-inventory.py 盘点，bz-inventory.json 在案）：
+> controllerFns.ts 5,467 行 = 头部/imports ~215 + makeControllerFns 表体（**148 壳
+> 4,584 行** + __lv_ 声明/initLinkVars）+ 4 独立导出（5105-5467）。表形态
+> `fns["name"] = function (...args){ try{initLinkVars();}catch{}; const s = getScope(); … }`
+> ——**per-call 取 scope**，表体已含 by 批 sync 直写调用（活体）；__lv_ link 级共享变量
+> ~50 个跨函数共享，归位必须按族同落一文件。dataMachinery.ts 11,736 行 = **241 导出
+> 函数** + applyDataMachineryScope（**230 个 s.xxx= 挂载** + controller init 状态种子）+
+> ~25 顶层模块态（防抖句柄/filterCache/cgStack）。shimFnsBridge.ts 23 行 = attachCoreFnsToShim
+> if-absent 挂表。
+>
+> **双面双体架构定性**：boot 顺序（main.tsx bridgeWhenReady）= attachCoreFnsToShim 先挂
+> 表函数 → applyDataMachineryScope 后挂 machinery wrapper **覆盖 43 个同名双键**；
+> callScope 路由（hooks.ts coreFnsCache）表优先 → 表体活，scope 面 s.xxx() machinery 版活
+> ——**43 双键两份移植体都活着**，单源化须逐函数比对（machinery 侧实现名带 machinery
+> 前缀；by sync 直写差异优先保留收敛侧）。callScope 消费面：直接 27 点（LockScreens 7/
+> ToastAlerts 4/BodyBindings 3/ProgressBars 1/hooks 版 BoxList 12）+ **panels8e 本地
+> callScope 10 点**（本地自实现非 hooks）+ BoxList callFn 动态 4 名（onBoxMouseup/
+> onBoxListDblClick/openFileListContextMenu/openItemContextMenu）。scope 函数面消费
+> ~250 点：machinery 内部互调 32 + 表内互调 30 + services ~59（itemMenu 20/folderMenu
+> 10/miscMenu 9/batchOps 7/folderCore 5/gridService 4/sidebarService 4）+ components
+> ~50（Sidebar 14/FilterItems 18/SmallPanels 5/QuickSearchModal 4/DetailViewer 4）+
+> domains ~25（libraryDomain 8/miscDomain 7/itemDomain 4/filterDomain 3/smoothZoom
+> Engine 3）+ store/sidebarState 3。**preview-window 26 处命中为盘点误报**——其 scope
+> 为 controller.ts 自建本地对象（449 行起 scope.getRawPath=… 全本地实现，仅 import
+> FileUrlHelper/smoothZoomEngine），bz 范围排除；其 $watch/$evalAsync/$on 门面退役归 ca
+> 哨兵扩面。16 疑似零消费壳复核：onBoxMouseup/onBoxListDblClick/openItemContextMenu
+> 经 BoxList callFn 活；真死壳（clickNode 仅 stage1c3 spot typeof 检查等）随契约改写删体。
+> 4 独立导出落点：updateCurrentOrderAndIncrease→miscDomain（dataMachinery 4 +
+> miscMenuService 3 消费）、isInFolder→itemDomain（4 消费方）、updateSuggestions→
+> miscDomain（dataMachinery 消费）、parseKeywordsWithOR **零消费直删**。
+>
+> **四笔拆分**：
+> - **bz-A 表体归位**：148 壳逐字平移至归属 services（__lv_ 族同迁、initLinkVars 形态
+>   保留）；表项改 `fns["name"] = svcFn` 指针（callScope/scope 双面零行为变化）；4 独立
+>   导出归位 + 真死壳删除。
+> - **bz-B scope 函数面直调化**：~250 点 s.xxx() → 直 import + 显式 s 实参（签名保留到
+>   ca——machinery (s,…) 参数形态不动，ca 删 scopeShim 时再消 s 参改 store 读）。
+> - **bz-C callScope 退役**：27 点 + panels8e 本地 10 点直调化；hooks callScope/
+>   coreFnsCache/__eagleCoreFns 摘除；shimFnsBridge + main.tsx attach 摘除；
+>   stage1c3-smoke 14 函数在位/路由证明 + probe-filter-toggle 契约改写为服务面。
+> - **bz-D machinery 归位 + 删除**：241 导出按族迁 services（模块态随迁、防抖实例
+>   apply 期创建语义保留）；applyDataMachineryScope 状态种子部分抽 core/shimSeeds.ts
+>   （保留到 ca）；三文件删除 grep-zero + sentinel 吸收（callScope 27→0、scopeApply
+>   大降为预期 DECREASED）+ 全量门禁。
+>
+> **风险与拆雷预案**：① 双键单源化逐函数比对（bz-dual dump 在案）；② __lv_ 族共享态
+> 同文件落点防双份态；③ machinery 顶层 let 防抖句柄随族迁移；④ 循环 import——双侧
+> 函数声明提升无顶层执行面（b1-8 先例），禁增顶层副作用；⑤ 汇聚点（machineryUpdate
+> SidebarList/machineryFilterContent 的 by 收敛点）搬迁时原样保持；⑥ 服务族已有
+> installXxxFns 注册面（b1-9bn..bt 六族），bz-A 落点优先并入同族服务。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

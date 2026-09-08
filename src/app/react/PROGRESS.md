@@ -1230,6 +1230,32 @@
 > setDate 预填/destroy/外点关闭）+ 套件（stage-smoke b1-9z 断言天然回归）。
 >
 
+> **b1-9bx2 施工：flatpickr v3.0.6 自研月历 flatpickrLite.ts（2026-09-08）**
+>
+> 新模块 react/core/flatpickrLite.ts（~560 行）：双全局平价——`flatpickr` 函数选择器
+> 包装（statics defaultConfig/l10ns{en,default=Object.create(en),zh}/localize/
+> setDefaults）+ `FlatpickrInstance` 构造器（.defaultConfig 同引用）。实现面：config
+> 三层合并（defaults+instanceConfig+dataset 逐字——dataset 键 enabletime 原样落位）、
+> l10n 原型链解析（zh 覆盖 weekdays/months/rangeSeparator' 至 '/scrollTitle，缺省沿
+> 链落 en）、input 面（type=text+flatpickr-input+readonly）、42 格日历（prevMonthDay/
+> nextMonthDay/today/selected/range inRange·startRange·endRange）+ monthNav（SVG 箭头
+> 逐字+cur-month 中文月名+cur-year numInputWrapper）、单/双选择链（range 二次选择先
+> 清空重选+排序+hover inRange 预览）、onChange(selectedDates,dateStr,instance)+change/
+> input 事件派发、closeOnSelect（single 即关/range 选满 2 关）、外点关闭（range 单选态
+> 清空重画）、Esc、resize 重定位（debounce 50）、J() 定位逐字（absolute 文档坐标+上下
+> 翻转+rightMost）、setDate（Date|number|'Y-m-d' 解析+排序+跳月+值回写，不触发
+> Change）、destroy 全清还原。enableTime 面按定案 date-only（原框架 no-op 等价）。
+> **施工坑 ×3**：① makeDay range 单选态 `selectedDates[1]` undefined → sameDay 抛
+> getFullYear → buildDays 中断首击 Change 丢失（dbg 全栈定位，补 length>1 守卫）；②
+> 探针 focus 事件在 CDP evaluate 环境哑火（activeElement 已设事件不派发）→ 改走
+> mousedown 开启路径（vendor 平价——真实用户点击走 mousedown）；③ 首击重建 days DOM
+> 后探针二击用的是失联节点（重查活节点）。**门禁**：esbuild EXIT:0；bx2-probe 八断言
+> 全绿（供给链契约/DOM 42 格+周日开局+中文月名+SVG 箭头/单选 onChange+Y-m-d 值+
+> closeOnSelect/range 双选' 至 '分隔+选满关/setDate 预填不触发/外点关闭+range 清空/
+> destroy 还原/零 ReferenceError）。**套件 ALL GREEN**（stage-smoke b1-9z-flatpickr-
+> supply 天然回归）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

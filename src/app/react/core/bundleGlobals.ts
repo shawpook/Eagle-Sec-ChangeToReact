@@ -27,6 +27,7 @@ import { installDialog } from './dialog';
 import { installTippy } from './tippyLite';
 import { installAudioPlugin } from './audioPlugin';
 import { installArtstation } from './artstation';
+import { installFlatpickr } from './flatpickrLite';
 
 declare const Buffer: any;
 
@@ -2023,6 +2024,10 @@ export function installBundleGlobals(): void {
   // 应用代码移植（$.getJSON→fetch、parallelLimit 本地化；index.html 两 classic 标签同批摘除）
   installAudioPlugin();
   installArtstation();
+
+  // b1-9bx2：flatpickr v3.0.6 自研月历（vendor js+l10n/zh.js 同批摘除；css 保留=类名契约；
+  // enableTime 原框架即 no-op 按 date-only 等价实现，考据见 PROGRESS b1-9bx2）
+  installFlatpickr();
   if (!w.debounce) w.debounce = _debounce;
   if (!w.fuzzy_match) w.fuzzy_match = _fuzzy_match;
   if (!w.decodeBase64Image) w.decodeBase64Image = _decodeBase64Image;

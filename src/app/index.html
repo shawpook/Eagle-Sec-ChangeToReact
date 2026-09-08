@@ -233,13 +233,11 @@
         window.i18n = new(require(appRoot + '/i18n'));
         window.EagleConfig = require(appRoot + '/config.js');
     </script>
-    <!-- flatpickr v3.0.6（b1-9z）——原 bundle 内联 vendor，b1 摘除后 FolderSelectPanels 的
-         FlatpickrInput 等 window.FlatpickrInstance 落空 → 智能文件夹日期规则输入静默 no-op。
-         该版本是经典脚本顶层 `function FlatpickrInstance` 声明，script 标签加载即原生暴露
-         构造器（不设 window.FlatpickrInstance 桥——桥会把构造器覆盖成工厂、毁掉 new 语义）；
-         zh l10n 供 dateOpts locale:'zh'。须在上方 module 清空块之后加载。 -->
-    <script src="js/modules/flatpicker/flatpickr.min.js"></script>
-    <script src="js/modules/flatpicker/l10n/zh.js"></script>
+    <!-- b1-9bx2：flatpickr v3.0.6（window.flatpickr 函数选择器 + window.FlatpickrInstance
+         构造器）+ l10n/zh.js 退役——自研月历（react/core/flatpickrLite.ts）经
+         installBundleGlobals 供给双全局（供给链契约 stage-smoke b1-9z 断言面不变；
+         data-enabletime 原框架即 no-op 按 date-only 等价实现，考据见 PROGRESS b1-9bx2）；
+         flatpickr.min.css（head:17）保留 = .flatpickr-* 类名契约样式。 -->
     <script src="js/services/lazy-load-manager.js"></script>
     <!-- b1-9bl：smoothZoom vendor（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）退役——
          引擎逐字归位 react/core/smoothZoomEngine.ts + bitmapViewer.ts（$、#detail-container

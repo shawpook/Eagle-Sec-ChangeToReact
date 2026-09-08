@@ -1159,6 +1159,27 @@
 > popper 计数混入现网 useTippy 实例（改按内容过滤计数）。**套件 ALL GREEN**。
 >
 
+> **b1-9bx-B：jquery-audio 自研 + artstation 应用代码移植——双 classic 退役（2026-09-08）**
+>
+> **react/core/audioPlugin.ts（~60 行）**：$.playSound（debounce 500 immediate 逐字——
+> 窗口首触发立即建 audio+embed DOM appendTo body）/$.stopSound（移除全部 .sound-player），
+> 去 jQuery 化（vanilla DOM）。消费面=dataMachinery 10320-10334 音效三件套 ×3。
+> **react/core/artstation.ts（~200 行）**：artstation-download.js（7,644B 应用代码非
+> 第三方库）逐字移植挂 w.Artstation——isValidUrl/getUserNameFromUrl/getUserInfo/
+> getUserProjects 四方法（BatchRenameArtstationModals 消费面零改动）。移植拆除三处
+> （录档）：① $.getJSON→fetch().json()；② require('async') parallelLimit→本地实现
+> （first error → final(err, partial) 同构）；③ getUserInfo 原码 `finishCallback(...)`
+> 未定义（ReferenceError 哑雷）→ callback + `if (!userName)` 缺 return（空名仍发请求
+> → 二次 callback）→ 补 return。getVideoSrcFromIframe 的 $(html).attr/$(doc).find →
+> DOMParser 等价；indexOf('mp4') truthy 原码逐字保留。
+> **退役**：index.html jquery-audio.js + artstation-download.js 两 classic 标签摘除
+> （归档注释）、vendor 文件删除（1,068B + 7,644B）。
+> **门禁**：esbuild EXIT:0；bxb-probe 七断言全绿（facade/playSound 首触发 immediate+
+> debounce 窗口内单实例+src 正确/stopSound 清零/isValidUrl·getUserNameFromUrl 纯函数/
+> 非法 url callback {msg}（哑雷拆除实证）/空名提前 return 不触网/零 ReferenceError——
+> 全程不触网路径）。**套件 ALL GREEN**。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

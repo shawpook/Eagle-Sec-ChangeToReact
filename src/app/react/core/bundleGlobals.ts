@@ -25,6 +25,8 @@ import { installHoverPreview } from './hoverPreview';
 import { installKeymap } from './keymap';
 import { installDialog } from './dialog';
 import { installTippy } from './tippyLite';
+import { installAudioPlugin } from './audioPlugin';
+import { installArtstation } from './artstation';
 
 declare const Buffer: any;
 
@@ -2016,6 +2018,11 @@ export function installBundleGlobals(): void {
   // b1-9bx-A：tippy v6.3.7 自研替换（vendor 脚本标签同批摘除；preview 窗经
   // preview-window/entry.tsx 另行 install）
   installTippy();
+
+  // b1-9bx-B：jquery-audio 自研（$.playSound/$.stopSound 音效三件套供给）+ artstation
+  // 应用代码移植（$.getJSON→fetch、parallelLimit 本地化；index.html 两 classic 标签同批摘除）
+  installAudioPlugin();
+  installArtstation();
   if (!w.debounce) w.debounce = _debounce;
   if (!w.fuzzy_match) w.fuzzy_match = _fuzzy_match;
   if (!w.decodeBase64Image) w.decodeBase64Image = _decodeBase64Image;

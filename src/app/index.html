@@ -213,17 +213,19 @@
          installBundleGlobals 供给 window.Mousetrap（global bind/unbind + new Mousetrap(el)
          元素实例；v1.6.3 行为契约考据见 PROGRESS P2-bv）。 -->
     <!-- jquery-audio（$.playSound / $.stopSound）——scope 的 removeSound/duplicateSound/
-         errorSound.play() 直调该插件（原 bundle 内联件，b1-9d 摘除、b1-9al 独立加载）。 -->
-    <script src="js/vendors/jquery-audio.js"></script>
+         errorSound.play() 直调该插件（原 bundle 内联件，b1-9d 摘除、b1-9al 独立加载）。
+         b1-9bx-B：jquery-audio.js 退役——自研 audioPlugin（react/core/audioPlugin.ts，去
+         jQuery 化同语义 debounce 500 immediate）经 installBundleGlobals 供给 $.playSound/
+         $.stopSound。 -->
     <!-- b1-9bw-A：sweetalert2 v6.11.0（window.swal / window.sweetAlert）JS 退役——自研
          Dialog（react/core/dialog.ts）经 installBundleGlobals 供给 window.swal（65 调用点
          消费面契约 + then(ok,cancel) 双参/getInput·getConfirmButton 哑雷实装，考据见
          PROGRESS P3-bw）；sweetalert2.min.css（head:10）保留 = .swal2-* 类名契约样式，
          本仓 65 站点全部直调 options 形态，无 .fire/.mixin/setDefaults 依赖。 -->
-    <!-- artstation-download（window.Artstation，b1-9m）——原 b1 前由 index.html 引入的独立
-         全局（顶层 var），BatchRenameArtstationModals 的 vaildateUrl 读
-         Artstation.isValidUrl；摘除引入后 blur 校验链抛 ReferenceError 被吞、url-error 永不显示。 -->
-    <script src="js/artstation-download.js"></script>
+    <!-- b1-9bx-B：artstation-download（window.Artstation，b1-9m）退役——应用代码逐字移植
+         react/core/artstation.ts 经 installBundleGlobals 供给（$.getJSON→fetch、
+         parallelLimit 本地化、getUserInfo 两处哑雷拆除，录档见 PROGRESS P3-bx）；
+         BatchRenameArtstationModals 的 vaildateUrl/blur 校验链消费面零改动。 -->
     <script>
         if (typeof module === 'object') { window.module = module; module = undefined; }
         if (window.module) module = window.module;

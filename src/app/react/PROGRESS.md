@@ -752,6 +752,27 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **【7d1a mv-closed 破案（2026-09-08 续）——folderCoreService 漏 import + 空洞断言教训】**
+>
+> 上条 ③ 的三嫌疑全部排除，真凶另在别处。**破案链**（MutationObserver + fiber 反查 +
+> unhandledrejection 陷阱三件套）：① modal className 自 confirm 点击至最终检查**零变化**
+> → React 从未重渲染，cancel 的 setView 从未生效；② fiber 反查活实例
+> `view{open=true,selectedFolders=1}` 且 elIsConnected=true → 排除双实例/卸载重挂；③
+> `window.addEventListener('unhandledrejection')` 陷阱抓到真身——
+> `ReferenceError: machineryGetFolderParentChilder is not defined @ folderCoreService`：
+> **br 迁移漏带该 import**。链路：swal .then → onConfirm（FolderModals 1907）→
+> body.moveFoldersAsSibling → 首次调用 machineryGetFolderParentChilder 即抛 → cancel()
+> 永远执行不到 → 弹窗不关。**且 mv-data-plane-sibling 是空洞通过**（move 从未发生，双方
+> parent 均 undefined，`undefined === undefined` 恒真）——修 import 前对该断言的
+> "合法通过"判定全是假象。修：folderCoreService import 补
+> `machineryGetFolderParentChilder`（全服务 machinery* 裸引审计：仅此一处缺）。
+> **方法论三账**：(a) 未处理 promise rejection 不走 CDP Runtime.exceptionThrown——
+> 页面级 unhandledrejection 陷阱才是可靠探针（此前 PAGE_EXC 零捕获全因此误判"无异常"）；
+> (b) 断言可能空洞通过——`a.x === b.x` 在双方 undefined 时恒真，回归判定须先证数据面
+> 真实变更；(c) fiber 反查（`__reactFiber$` 键上溯 + hooks 链安全序列化）是判定
+> "setState 是否作用于活实例"的直接手段。**套件 55/55 ALL GREEN（bq 以来首次全量收官）**。
+>
+>
 > **【b1-9bl-B 连带清算：bo-bt 迁移服务 link-var 漏带 3 服务 + 7d1a 存疑（2026-09-08）】**
 >
 > 全量套件（bl 后首跑，亦是 bq 以来首次全量）暴露 3 红，两红已修一红存疑：

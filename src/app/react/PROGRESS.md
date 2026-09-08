@@ -866,6 +866,79 @@
 > reject 载荷 identity 字段），下次复发即可直接读身份分裂实况。
 >
 
+> **【P2-bv 考据定案：mousetrap 自研 + 旧采集窗死源退役（2026-09-07）】**
+>
+> 批名勘误：P2-bv 计划名"collect-window / document-viewer / viewers React 化 + mousetrap
+> 自研"——前三项考据实证均为历史批次已完成：**collect-window** 阶段 9b-1/9b-2 已 React
+> 绞杀（react/collect-window 七件套 + dist eagle-app/collect-window.html vite 构建）；旧
+> Angular 壳 src/app/collect-window/（index.html + css/js/scss，384 行 collect-window.js）
+> 全仓零引用 = 死源（唯一"collect-window.html"引用为零；js/lib/collect-window.js:45 的
+> 扩展 iframe src 指扩展目录非本壳）。**document-viewer** = frontend/document-viewer/ 独立
+> React 前端（main.tsx→DocumentViewerApp + components/hooks/lib/stores；electron main.cjs
+> :2250 smoke 走 /frontend/document-viewer/index.html + #eagle-document-viewer-container）。
+> **viewers** = react/viewers/{exif,font,gif,native,raw,text-editor} 六 entry 全 React
+> （b1-9ai/aj 等），键盘面均原生 keydown 复刻、不依赖 window.Mousetrap。
+> **本批实际主体 = mousetrap 自研（计划括号 ~80 行 keymap）+ 旧死源退役。**
+>
+> **mousetrap 消费面盘点**：vendor = js/vendors/mousetrap.min.js v1.6.3（4,994B；
+> beautified 215 行逐条考据）。加载点仅剩 index.html:209 + preview-window.html
+> （preferences 8e-2 / text-editor b1-9ai / font-viewer b1-9aj 已移除；collect dist 壳
+> 不加载）。**消费全部在 React 世界、零 classic 消费**（index.html 剩余 classic 面
+> eagle-api/url-enlarger/tippy/jquery/jquery-ui/jquery-audio/sweetalert2/
+> artstation-download/flatpickr×2/lazy-load-manager/shortcut-manager grep 零命中）：
+> - 主窗全局 bind/unbind：dataMachinery.ts 3686/3709（machineryDestory/InitMousetrap，
+>   b1-9av 绑定循环）+ components/detail/detailHooks.ts 227-228/1315-1316/1601-1602；
+> - preview-window 全局：preview-window/detailHooks.ts 386-387/394（usePreviewMousetrap，
+>   wMousetrap.js 语义——该文件已不存在，仅注释引用）；
+> - 元素实例 new Mousetrap(el)：components/hooks.ts:40（useSelectAll：mod+a/esc+reset）、
+>   inspector/ContentEditable.tsx:146（mod+a 全选/esc）、sidebar/Sidebar.tsx:720；
+> - **零消费（descope 录档）**：sequences（空格序列组合）、trigger、addKeycodes、keyup
+>   action（keyup dispatch 仅服务 keyup-action 回调）、stopCallback 覆写、handleKey
+>   外部直调、enabled 开关。
+> shortcut-manager.js 为纯应用代码（冲突检测/normalize/格式转换，electronToMousetrap 只是
+> 字符串变换、零依赖 mousetrap 本体）——**不在自研范围**，维持 classic 加载。
+>
+> **v1.6.3 行为契约（自研规格书，beautified 逐条）**：
+> ① 组合解析：alias option→alt/command→meta/return→enter/escape→esc/plus→+/
+>    mod→meta(Mac)|ctrl(Win)；"++"→"+plus"；SHIFT 符号表（"~"→`并 push shift 等，
+>    仅显式 action≠keypress 时启用）；修饰符 sort 后集合比较；
+> ② action 判定：special 表（backspace/tab/enter/shift/ctrl/alt/capslock/esc/space/
+>    pageup/pagedown/end/home/left/up/right/down/ins/del/meta×3 + f1-f19 + numpad0-9）
+>    →keydown，否则 keypress；有修饰符→强制 keydown；
+> ③ 字符提取：keypress→fromCharCode（无 shiftKey 时小写化）；keydown→special 表→
+>    标点表（106-222：* + - . / ; = , - . / ` [ \ ] '）→字母小写；
+> ④ 修饰匹配：keypress 且 !metaKey && !ctrlKey → 跳过匹配（任意修饰放行）；否则精确
+>    集合匹配；
+> ⑤ stopCallback 链：' mousetrap ' class 放行 → D(event.target, instance.target)
+>    （target 自身或祖先含实例 target → 放行；global 实例 target=document 时 D 的
+>    a===u 守卫先于 a===b 终止 → false 继续——元素实例放行、global 不放行的关键分叉）
+>    → composedPath[0] 影子校正 → INPUT|SELECT|TEXTAREA|isContentEditable 拦截；
+> ⑥ 派发：handler(event, combo)；返回 false → preventDefault+stopPropagation；
+>    stopCallback 真则跳过且不 prevent；
+> ⑦ unbind = bind noop 覆盖（同 combo+action rebind splice 语义）——自研取真删除，
+>    可观察等价（unbind 后按键无动作、不 prevent）；
+> ⑧ hardcoded 表逐键过验：'='/'*'/'`'/'0'-'5'/字母 → keypress（'=' 等标点不在 special
+>    表反查）；space/enter/tab/backspace/del/方向/f 键 → keydown；mod±/mod++/mod+-/
+>    alt+left/shift+space → keydown。keypress 键在输入框被 stopCallback 拦截、global
+>    mod+a 亦拦（输入框全选走元素实例 trap——useSelectAll 存在的原因，现网行为一致）。
+>
+> **施工定案两笔**：
+> - bv-A = react/core/keymap.ts 自研（Keymap 类 bind/unbind/reset/stopCallback/handleKey
+>   + statics 绑 document 全局实例 + installKeymap() 幂等工厂，bu install 同款）；
+>   install ×2：主窗 bundleGlobals.ts（installHoverPreview 同区）、preview-window/
+>   entry.tsx 模块顶（preview bundle 不走 installBundleGlobals、eval 期先于
+>   usePreviewMousetrap effect）；index.html:209 + preview-window.html script 标签摘除 +
+>   js/vendors/mousetrap.min.js 删除；专项探针（global 字符键 keypress / 修饰 keydown /
+>   unbind / 输入框拦截 / 元素实例 D 放行 + reset）。
+> - bv-B = src/app/collect-window/ 死源退役（整目录）+ 全量门收官。
+>
+> **global.js/devices.js 归属盘点（录档不动）**：preview-window.html 专属生命线——
+> preview bundle 不走 installBundleGlobals，global.js 供 FileUrlHelper/videoHelper/
+> getDurationString/裸标识符（path/fs/clipboard…），devices.js 供 devicesMetrics（主窗
+> 已 c18a 入 bundleGlobals、preview 侧仍靠 classic script）→ preview 窗 bundleGlobals 化
+> =后批（P4 收官评估），本轮不动。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

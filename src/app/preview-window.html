@@ -44,7 +44,10 @@
     <script src="js/vendors/jquery-ui.min.js"></script>
     <script src="js/global.js"></script>
     <script src="js/devices.js"></script>
-        <script src="js/vendors/mousetrap.min.js"></script>
+    <!-- b1-9bv-A：mousetrap.min.js（v1.6.3）退役——自研 keymap（react/core/keymap.ts），
+         preview bundle 不走 installBundleGlobals，由 preview-window/entry.tsx 模块求值期
+         installKeymap() 供给 window.Mousetrap（usePreviewMousetrap 消费面，契约见
+         PROGRESS P2-bv）。 -->
     <link rel="stylesheet" href="css/jquery-ui.min.css">
     <link href="js/vendors/videojs/video-js.css" rel="stylesheet">
     <script src="js/vendors/videojs/video.js"></script>

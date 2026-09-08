@@ -939,6 +939,31 @@
 > =后批（P4 收官评估），本轮不动。
 >
 
+> **b1-9bv-A：mousetrap v1.6.3 自研替换——keymap.ts install 化 + 双窗接线（2026-09-08）**
+>
+> 新模块 react/core/keymap.ts（~190 行）：Keymap 类（bind/unbind/reset/stopCallback/
+> handleKey + parse）按定案契约实现——special 表 keydown / 其余 keypress、有修饰符强制
+> keydown、keypress 无 meta/ctrl 跳过修饰匹配（v1.6.3 e2 短路）、rebind splice 覆盖、
+> unbind 真删除（noop 覆盖等价）、stopCallback 四级链含 D() 的 a===document 守卫分叉
+> （global 恒落到 INPUT 拦截、元素实例 target 内放行——useSelectAll 依赖）。**ACTION_
+> KEYDOWN_NAMES 建表排除 96-111 段**（v1.6.3 p 反查表条件 `95<c2 && 112>c2`——numpad
+> 数字 '0'-'9' 不进 keydown 判定，hardcoded 星标键 keypress 行为逐键一致）。global 面 =
+> document 实例方法复制为构造器 statics（v1.6.3 d.init 同构），new Mousetrap(el) 元素
+> 实例同构造器双通道。installKeymap() 幂等工厂（bu 同款）。
+> **接线 ×2**：主窗 bundleGlobals.ts（installHoverPreview 后）；preview-window/entry.tsx
+> 模块求值期（preview bundle 不走 installBundleGlobals，先于 usePreviewMousetrap effect）。
+> **退役**：index.html:209 + preview-window.html script 标签摘除（带 b1-9bv-A 归档注释）+
+> js/vendors/mousetrap.min.js 删除。descope（全仓零消费录档）：sequences/trigger/
+> addKeycodes/keyup action/stopCallback 覆写。
+> **门禁**：esbuild 主 bundle + preview entry 双 EXIT:0；bv-probe1 十五断言全绿（facade
+> 面/keypress 字符键/keydown action 区分/f9 special/mod+shift+k 精确匹配（缺 shift 不
+> 触发）/输入框 stopCallback 拦截+blur 放行/'mousetrap' class 豁免/元素实例 D 放行+
+> reset/handler false→preventDefault/rebind 覆盖/unbind/零 ReferenceError）。探针坑
+> ×2：CDP 无 'keyPress' 类型（keyDown 带 text 双发）；modifiers 是 int 位掩码（ctrl=2
+> shift=8）非数组。**套件 ALL GREEN**（现役键盘覆盖全行为级——b1-9av 绑定循环/
+> main-ui-workflow/ui-interactions 等经新 keymap 天然回归）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

@@ -205,8 +205,10 @@
     <!-- b1-9ba：jquery-long-click.js / jquery.bez.js 移除——全树零消费（长按事件与
          cubic-bezier 缓动均无调用点），纯死供应商脚本。
          b1-9bc：lodash.js 移除——react 树调用点全部原生化（src/app/react/utils/{func,lang}.ts，
-         debounce/throttle/get/unescape/max/uniq/isString），其余已加载脚本零消费。 -->
-    <script src="js/vendors/mousetrap.min.js"></script>
+         debounce/throttle/get/unescape/max/uniq/isString），其余已加载脚本零消费。
+         b1-9bv-A：mousetrap.min.js（v1.6.3）退役——自研 keymap（react/core/keymap.ts）经
+         installBundleGlobals 供给 window.Mousetrap（global bind/unbind + new Mousetrap(el)
+         元素实例；v1.6.3 行为契约考据见 PROGRESS P2-bv）。 -->
     <!-- jquery-audio（$.playSound / $.stopSound）——scope 的 removeSound/duplicateSound/
          errorSound.play() 直调该插件（原 bundle 内联件，b1-9d 摘除、b1-9al 独立加载）。 -->
     <script src="js/vendors/jquery-audio.js"></script>

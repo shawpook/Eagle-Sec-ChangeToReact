@@ -22,6 +22,7 @@ import { coreState } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
 import { get } from '../utils/lang';
 import { installHoverPreview } from './hoverPreview';
+import { installKeymap } from './keymap';
 
 declare const Buffer: any;
 
@@ -2001,6 +2002,10 @@ export function installBundleGlobals(): void {
 
   // b1-9bu-A：hover-preview 家族同步安装（原 c16b 注入块退役；Z 键监听段随 install 回填）
   installHoverPreview();
+
+  // b1-9bv-A：mousetrap v1.6.3 自研替换（vendor 脚本标签同批摘除；preview 窗经
+  // preview-window/entry.tsx 另行 install）
+  installKeymap();
   if (!w.debounce) w.debounce = _debounce;
   if (!w.fuzzy_match) w.fuzzy_match = _fuzzy_match;
   if (!w.decodeBase64Image) w.decodeBase64Image = _decodeBase64Image;

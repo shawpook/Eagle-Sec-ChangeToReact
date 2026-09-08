@@ -2,6 +2,11 @@ import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
 import PreviewShell from './shell';
 import { applyController } from './controller';
+import { installKeymap } from '../core/keymap';
+
+// b1-9bv-A：mousetrap vendor 脚本标签已摘除——本 bundle 不走 installBundleGlobals，
+// 在模块求值期自行 install（usePreviewMousetrap effect 前于 render，时序安全）。
+installKeymap();
 
 /**
  * 阶段9a-1：预览大窗 React 入口（preview-window.html / PreviewWindowController 绞杀者）。

@@ -1459,8 +1459,8 @@ export function machineryCheckTouchIDSupport(s: any): void {
   }
 }
 
-/* relayout（bundle 27329-27364 逐字；ig = window.eg.InfiniteGrid 实例（libraryDomain
-   loaded 处理器创建），eg = window.eg（c13 UMD 提取 if-absent 供给）） */
+/* relayout（bundle 27329-27364 逐字；be2 起 ig = window.ig facade（v4 引擎），布局选项
+   经 setLayout(label, opts) 通知 facade——v4 sizeRange/gap 由 BoxList 渲染时从 scope 派生） */
 export function machineryRelayout(s: any, margin: any): void {
   const w = window as any;
   if (!s.isItemBindCalculated) return;
@@ -1471,7 +1471,7 @@ export function machineryRelayout(s: any, margin: any): void {
   if (!ig) return;
   if (s.layout === "JustifiedLayout") {
     var cw = $container.width();
-    ig.setLayout(w.eg.InfiniteGrid.JustifiedLayout, {
+    ig.setLayout('JustifiedLayout', {
       minSize: currentImageSize * 1 - 10,
       maxSize: currentImageSize * 1 + 10,
       margin: 8,
@@ -1481,7 +1481,7 @@ export function machineryRelayout(s: any, margin: any): void {
     ig._watcher._onCheck();
   }
   else if (s.layout === "ListLayout") {
-    ig.setLayout(w.eg.InfiniteGrid.GridLayout, {
+    ig.setLayout('GridLayout', {
       margin: 0,
       align: "left",
     });
@@ -1490,7 +1490,7 @@ export function machineryRelayout(s: any, margin: any): void {
     ig._watcher._onCheck();
   }
   else {
-    ig.setLayout(w.eg.InfiniteGrid.GridLayout, {
+    ig.setLayout('GridLayout', {
       margin: Math.max(margin, 8) || 8,
       align: "left",
     });

@@ -1543,24 +1543,8 @@ export function installBundleGlobals(): void {
     };
   }
 
-  // c13：eg/InfiniteGrid（bundle 3497-8094 内联 pkgd UMD，b1 死亡）——if-absent 懒执行
-  // public/vendor 的逐字节提取副本（new Function sloppy 模式 this=globalThis，root=self
-  // 语义不变）。libraryDomain 的 new w.eg.InfiniteGrid 与 machineryRelayout 消费。
-  if (!w.eg || !w.eg.InfiniteGrid) {
-    try {
-      fetch('/vendor/egjs-infinitegrid.umd.js')
-        .then((r) => r.text())
-        .then((txt) => {
-          try {
-            new Function(txt)();
-            if (w.__eagleBundleGlobals) w.__eagleBundleGlobals.egLoaded = true;
-          } catch (err) {
-            console.error('[bundleGlobals] egjs UMD exec failed', err);
-          }
-        })
-        .catch((err) => console.error('[bundleGlobals] egjs UMD fetch failed', err));
-    } catch (err) { /* noop */ }
-  }
+  // c13（be2 退役）：eg/InfiniteGrid v3 UMD 懒执行已随 infinitegrid v4 renderer 交换移除——
+  // window.eg 不再供给，window.ig 由 boxGridEngine facade 承接。
 
   // c14：智能文件夹规则匹配族（bundle 8369-9418 顶层函数逐字节提取副本；区域内 require
   // → w.require 机械替换）。26 个 isMatch*Rule + intersect/hexToRGB/rgbToHex/

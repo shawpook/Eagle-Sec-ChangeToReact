@@ -459,12 +459,7 @@ export function takeoverLibraryDomain(): void {
       ipc.send('quit');
     }
 
-    if (!w.ig) {
-      w.ig = new w.eg.InfiniteGrid("#box-container .box-list", {
-        isOverflowScroll: false,
-        threshold: 2000
-      });
-    }
+    // be2：v3 兜底实例退役——window.ig = v4 facade（boxGridEngine registerGridRef 装载）
     if (w.ig && w.ig.clear) w.ig.clear();
 
     // 初始化 LazyLoadManager

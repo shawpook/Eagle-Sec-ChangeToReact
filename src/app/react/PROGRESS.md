@@ -752,6 +752,20 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
+>
+> 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →
+> `setLayout('JustifiedLayout'/'GridLayout', opts)`（facade 忽略类参数，v4 sizeRange/gap
+> 由 BoxList 渲染时从 scope 派生）；② libraryDomain 兜底 `new w.eg.InfiniteGrid` 块删除
+> （window.ig = v4 facade，clear 保留）；③ bundleGlobals c13 UMD 懒执行块摘除
+> （window.eg 不再供给）；④ m1-A8 测试契约原子换新：`w.eg.InfiniteGrid.*` 存在性 →
+> `window.ig facade 三方法 + !w.eg`（bo CONTEXTMENU 同款测试同批切换惯例）。
+> `git rm frontend/public/vendor/egjs-infinitegrid.umd.js`（v3 pkgd UMD 提取副本退役；
+> eagle-hover-preview.js 注记引用为历史注释）。门禁：tsc 0 + m1（新 A8 契约）+
+> ui-interactions 7/7 + library-switch + **全量套件 ALL GREEN**。be2 完成——S1 竖切
+> v4 引擎化收官，第三方针外依赖仅剩 @egjs/react-infinitegrid（计划唯一例外）。
+>
+>
 > **b1-9be2：S1 收官批——@egjs/react-infinitegrid v4 renderer 交换（2026-09-08）**
 >
 > 按上方考据定案施工，三文件：① **boxItem.tsx**（新，ngGridLayout 模板逐字 JSX 化——

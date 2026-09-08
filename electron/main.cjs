@@ -2064,10 +2064,32 @@ app.whenReady().then(async () => {
               }, 'inspector tags folder and star persistence');
 
               await selectInspectorItems(clipboardItem ? [droppedId, clipboardItem.id] : [droppedId]);
+              // b1-9f 取证探针贴回（PROGRESS b1-9f 节配方）：multi inspector persistence 复发
+              // 取证——早照（操作前）+ reject 载荷 identity，判定 itemMappings/raw/selected 身份分裂
+              const earlyIdentity = (() => {
+                const rawEntry = scope.raw && scope.raw.find((i) => i.id === droppedId);
+                const mapEntry = scope.itemMappings && scope.itemMappings[droppedId];
+                return {
+                  mapIsRaw: mapEntry === rawEntry,
+                  selIsMap: Array.isArray(scope.selected) && scope.selected.some((it) => it === mapEntry),
+                  rawVals: rawEntry && [rawEntry.star, rawEntry.annotation, (rawEntry.tags || []).join('/')],
+                  mapVals: mapEntry && [mapEntry.star, mapEntry.annotation, (mapEntry.tags || []).join('/')],
+                  selVals: scope.selected && scope.selected.map((it) => it && [String(it.id).slice(-4), it.star, it.annotation]),
+                };
+              })();
               scope.inspector.newAnnotation = '多选备注持久化';
               inspectorActions.annotationChange();
               scope.TagManager.addTag('batch-ui');
               scope.changeStar(3, false, true);
+              const midIdentity = (() => {
+                const rawEntry = scope.raw && scope.raw.find((i) => i.id === droppedId);
+                const mapEntry = scope.itemMappings && scope.itemMappings[droppedId];
+                return {
+                  mapIsRaw: mapEntry === rawEntry,
+                  rawVals: rawEntry && [rawEntry.star, rawEntry.annotation, (rawEntry.tags || []).join('/')],
+                  mapVals: mapEntry && [mapEntry.star, mapEntry.annotation, (mapEntry.tags || []).join('/')],
+                };
+              })();
               await new Promise((resolve, reject) => {
                 const deadline = Date.now() + 15000;
                 const poll = async () => {
@@ -2084,6 +2106,8 @@ app.whenReady().then(async () => {
                         clipboardId: clipboardItem && clipboardItem.id,
                         targets,
                         selectedIds: scope.selected && scope.selected.map((item) => item && item.id),
+                        earlyIdentity,
+                        identity: midIdentity,
                       })));
                       return;
                     }

@@ -844,6 +844,28 @@
 > 已知录档：假媒体文件后端不标 noPreview（GUARDDUMP 实证 np:false）。
 >
 
+> **b1-9bu-C：youtube/vimeo iframe 悬停预览复活（2026-09-07）**
+>
+> hoverPreview.ts 增段（+608 行）：youtube-hover-preview.js 1-303 + vimeo-hover-preview.js
+> 1-291（b1-9s 误删、git e8afdfc^ 取回）全文逐字搬迁——ytPostCommand/vimeoPostMessage
+> + window message 监听 ×2 + enter/leave 委托 ×4 + _ytPlayerState/_vimeoPlayerState 模块
+> 闭包状态（本模块 cleanupBoxHoverPreview 的 bare typeof 清理引用与 handlers 同 install
+> 作用域，var 提升语义一致）。bilibili-hover-preview.js 为 site isolation 时代移除桩
+> （3 行注释），无可移植=维持退役。de-Angular ×4 + getDurationString → _w ×4 + drag
+> 三兄弟 ×6 _w.?.（同 bu-B 录档）。
+> **门禁**：esbuild EXIT:0；bu-probe3 六断言全绿。探针 fixture 考据：URL item 无法经
+> API 造假（addFromURL 走 controlledDownloader 真下载）→ 注入合成盒（.box.url.youtube
+> DOM + itemMappings 登记）断言委托 handler 全链——enter → 200ms → iframe-wrap +
+> youtube-nocookie/embed/{videoID} 与 player.vimeo.com/video/{videoID} 嵌入 src 精确
+> 匹配 → leave → wrap/spinner 清理归零 + 零 ReferenceError。
+> **multi inspector persistence 偶发复发 + 取证探针复贴**：bu-C 全量套件首跑 MUW 败
+> （multi inspector persistence timeout），单跑连败三走势；二分实锤非 bu-C 回归
+> （stash bu-C 后 bu-B 状态同败）——b1-9f 收口前已知 1/6 偶发家族复发（马拉松测试期
+> 败率异常偏高、机器安静后单跑复绿）。按 b1-9f 节配方将 snapIdentity 取证探针贴回
+> electron/main.cjs（selectInspectorItems 后 earlyIdentity + 操作后 midIdentity +
+> reject 载荷 identity 字段），下次复发即可直接读身份分裂实况。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

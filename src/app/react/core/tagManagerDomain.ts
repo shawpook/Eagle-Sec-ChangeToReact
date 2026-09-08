@@ -8,7 +8,6 @@
  *   调 machineryBuildTagManager(s) 挂 w.TagManager + s.TagManager。
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 // b1-9k：bundle link 体内 $filter/$timeout 为 Angular 注入服务——本文件 1307/1319/1379/
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
@@ -18,6 +17,7 @@ import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
+import { getBodyScope } from './appCore';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;

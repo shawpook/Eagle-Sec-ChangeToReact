@@ -1,7 +1,7 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
 import { useEffect } from 'react';
-import { getBodyScope } from '../global/scopeBridge';
 import { controllerScope, applyController } from './controller';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 阶段9a：preview-window.js 特有指令的逐字移植（与阶段5 detailHooks 同风格）。

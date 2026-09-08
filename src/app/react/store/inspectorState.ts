@@ -4,7 +4,7 @@ import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
-import { getBodyScope } from '../global/scopeBridge';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 阶段6：检查器状态 —— 快照自 EagleController scope + eagle.inspector 全局对象。

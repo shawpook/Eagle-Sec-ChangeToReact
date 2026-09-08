@@ -7,7 +7,6 @@
  * bundle 同名函数退为后备。cZ 时随状态一并迁入 AppCore。
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom } from './smoothZoomEngine';
 import { IPCHelper } from './ipcHelper';
 // b1-8 裸引用审计修复：controller 闭包裸调改走 machinery 移植版直调（ESM 循环依赖——
@@ -41,6 +40,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { getBodyScope } from './appCore';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };

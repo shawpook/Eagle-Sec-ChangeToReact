@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useInspectorState, InspectorSnapshot, SelectedItemSnapshot } from '../../store/inspectorState';
 import { useToolbarState } from '../../store/toolbarState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { filesize, duration, longTitle, substring, sortHSL, shortcuts } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
@@ -41,6 +40,7 @@ import {
 import { req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段6：检查器接管。

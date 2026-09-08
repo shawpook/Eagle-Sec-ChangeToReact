@@ -1,3 +1,4 @@
+import { getBodyScope } from '../../core/appCore';
 /**
  * b1-9be2：内容网格引擎 —— @egjs/react-infinitegrid v4 renderer 交换（v3 vanilla 退役）。
  *
@@ -13,7 +14,6 @@
  * transform 由 v4 ItemRenderer 写入（与 v3 同为 absolute + translate 模型）。
  */
 
-import { getBodyScope } from '../../global/scopeBridge';
 
 type EngineState = {
   items: any[];

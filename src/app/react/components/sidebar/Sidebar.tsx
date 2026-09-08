@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useSidebarState, themePath, SidebarNodeSnapshot } from '../../store/sidebarState';
-import { findLiveNode, getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper, longTitle } from '../../app/filters';
 import { clickNode, clickSmartNode, toggleFolderExpand, toggleSmartFolderExpand, dblclickSidebarFolder, preventMiddleClick } from '../../services/sidebarService';
 import { syncSidebarFromScope } from '../../store/sidebarState';
+import { findLiveNode, getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段2：侧栏接管。

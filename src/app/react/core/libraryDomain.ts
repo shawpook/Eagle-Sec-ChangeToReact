@@ -29,8 +29,7 @@
  *   复刻（原码第三参为误传的成功回调，Angular 按默认配置发送）。
  */
 
-import { removeChannelListenersBySource } from './appCore';
-import { getBodyScope } from '../global/scopeBridge';
+import { getBodyScope, removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
 import { syncErrorCount } from '../store/toastState';

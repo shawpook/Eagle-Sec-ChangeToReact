@@ -1,6 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope } from '../../global/scopeBridge';
 import { updateSidebarList } from '../../services/sidebarService';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
@@ -10,6 +9,7 @@ import { $ } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。

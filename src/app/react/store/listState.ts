@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
 import { useBodyState } from './bodyState';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域（drop-areas / sub-folder 列表 / 列表列头 /

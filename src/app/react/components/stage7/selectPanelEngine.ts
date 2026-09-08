@@ -1,7 +1,7 @@
 import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
-import { getBodyScope, getRootScope } from '../../global/scopeBridge';
 import { contextMenuOpenChannel } from '../../global/bus';
+import { getBodyScope, getRootScope } from '../../core/appCore';
 
 /**
  * 阶段7d-1c-1：SelectPanel 体系纯类逐字移植（React 组件层见 SelectPanels.tsx）。

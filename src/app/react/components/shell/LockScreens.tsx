@@ -5,9 +5,9 @@ import { useAppState } from '../../store/appState';
 import { useSidebarState } from '../../store/sidebarState';
 import { useToolbarState } from '../../store/toolbarState';
 import { t } from '../../global/eagleGlobals';
-import { getBodyScope } from '../../global/scopeBridge';
 import { callScope } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * 11-pre a3：文件夹密码锁 + 应用锁屏（index.html 156-170 / 424-444 逐字）。

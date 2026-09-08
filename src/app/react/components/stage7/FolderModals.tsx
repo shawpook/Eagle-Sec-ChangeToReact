@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { updateSidebarList } from '../../services/sidebarService';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
@@ -12,6 +11,7 @@ import { max, uniq } from '../../utils/lang';
 import { smartZoom } from '../../services/detailService';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
+import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController

@@ -1,11 +1,11 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { detailZoom } from '../../core/smoothZoomEngine';
 import { useEffect } from 'react';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { ipcRenderer } from '../../global/eagleGlobals';
 import { updateZoomRatio } from '../../services/detailService';
 import { addVideoComment, videoScreenShot } from '../../services/mediaService';
 import { syncDetailFromScope } from '../../store/detailState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement

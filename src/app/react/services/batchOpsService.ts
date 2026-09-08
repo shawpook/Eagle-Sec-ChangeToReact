@@ -19,7 +19,6 @@
  * - dialog/remote/currentWindow → electron 同源
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
@@ -30,6 +29,7 @@ import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncDetailFromScope } from '../store/detailState';
+import { getBodyScope } from '../core/appCore';
 
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析

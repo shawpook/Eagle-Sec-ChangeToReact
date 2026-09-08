@@ -15,9 +15,8 @@
  * - **有意略去/等价**：无（本片全部行为域内复刻；$timeout 语义 = setTimeout + $apply）。
  */
 
-import { removeChannelListenersBySource, sweepForeignWatchers, persistSweep } from './appCore';
+import { getBodyScope, persistSweep, removeChannelListenersBySource, sweepForeignWatchers } from './appCore';
 import { detailZoom } from './smoothZoomEngine';
-import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
 import { syncUploadFromScope } from '../store/uploadState';

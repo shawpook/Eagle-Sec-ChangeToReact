@@ -1,3 +1,4 @@
+import { getBodyScope } from '../../core/appCore';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -11,7 +12,6 @@
  * b3 bundle 分解处理。文件含 @ts-nocheck：逐字 JS 移植不做 TS 改写。
  */
 // @ts-nocheck
-import { getBodyScope } from '../../global/scopeBridge';
 
 function deepCopy(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
 

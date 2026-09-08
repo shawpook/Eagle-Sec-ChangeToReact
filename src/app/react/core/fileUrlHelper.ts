@@ -1,3 +1,4 @@
+import { getBodyScope } from './appCore';
 /**
  * c1：FileUrlHelper 逐字移植（bundle 2287 起对象字面量提取；b1 数据面接管前置）。
  * 机械替换：$bodyScope → getBodyScope()；path → window.require('path')（mock 经 shims
@@ -5,7 +6,6 @@
  * bundle 的 window.FileUrlHelper 在过渡期共存；React 消费方一律改走本模块 import。
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 
 const path = (window as any).require
   ? (window as any).require('path')

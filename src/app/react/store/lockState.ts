@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 11-pre a3：lock-screen 双块状态源（文件夹密码锁 + 应用锁屏）。

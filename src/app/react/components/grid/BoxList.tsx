@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MasonryInfiniteGrid, JustifiedInfiniteGrid } from '@egjs/react-infinitegrid';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { callScope } from '../hooks';
 import {
   installBoxGrid,
@@ -12,6 +11,7 @@ import {
 } from './boxGridEngine';
 import { BoxItem } from './boxItem';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * b1-9be2：#box-list 接管 —— @egjs/react-infinitegrid v4 renderer。

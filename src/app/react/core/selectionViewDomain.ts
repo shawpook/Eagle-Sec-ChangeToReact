@@ -11,9 +11,8 @@
  * - **$on UPDATE_SELECTION / SAVE_FOLDER（42379/42383）**：$$listeners 摘除后重挂。
  */
 
-import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom } from './smoothZoomEngine';
-import { sweepForeignWatchers, persistSweep } from './appCore';
+import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
 
 let done = false;

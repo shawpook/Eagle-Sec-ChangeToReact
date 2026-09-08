@@ -1,3 +1,4 @@
+import { getBodyScope } from '../core/appCore';
 /**
  * b1-9bi：筛选服务 —— filterRules 数值规则写面 + 订阅中心。
  *
@@ -8,7 +9,6 @@
  * filterDomain 订阅后转 filterContent（shape 组保留 width&&height 双条件原语义）。
  * 其他规则（color/tag/folder/type 的点击序列）不经此——它们自带 filterContent 触发链。
  */
-import { getBodyScope } from '../global/scopeBridge';
 
 export type FilterRuleListener = (group: string, key: string) => void;
 

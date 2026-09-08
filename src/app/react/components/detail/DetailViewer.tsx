@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { DetailSnapshot } from '../../store/detailState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import {
   useMediaElement,
@@ -21,6 +20,7 @@ import {
   removeComment,
   recomputeCommentRatio,
 } from './commentHooks';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段5：#detail-container 内部（index.html 646-924 行逐字转写）。

@@ -54,7 +54,6 @@
  * 复用 controllerFns 移植版（getBodyScope 后端）；$filter/$timeout 经 injector 注入（Angular digest 语义不变）。
  */
 
-import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom, ensureDetailZoom } from './smoothZoomEngine';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
@@ -79,6 +78,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { getBodyScope } from './appCore';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};

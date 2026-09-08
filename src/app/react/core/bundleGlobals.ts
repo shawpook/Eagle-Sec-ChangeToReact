@@ -18,8 +18,7 @@
 
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
-import { coreState } from './appCore';
-import { getBodyScope } from '../global/scopeBridge';
+import { coreState, getBodyScope } from './appCore';
 import { get } from '../utils/lang';
 import { installHoverPreview } from './hoverPreview';
 import { installKeymap } from './keymap';

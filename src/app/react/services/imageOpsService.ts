@@ -17,7 +17,6 @@
  * - IPCHelper → core 同源；dialog/currentWindow/remote/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
@@ -26,6 +25,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
+import { getBodyScope } from '../core/appCore';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行

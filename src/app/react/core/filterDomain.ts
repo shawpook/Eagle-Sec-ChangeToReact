@@ -13,10 +13,9 @@
  *   bundle 处理器后重挂。UPDATE_SELECTION/SAVE_FOLDER 留 cZ-6。
  */
 
-import { removeChannelListenersBySource } from './appCore';
+import { getBodyScope, removeChannelListenersBySource } from './appCore';
 import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
-import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncFilterFromScope } from '../store/filterState';
 

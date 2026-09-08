@@ -15,10 +15,10 @@
  *   既有形态等价，bo 批 CONTEXTMENU 频道切 eagleBus 时一并复核）
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { syncInspectorFromScope } from '../store/inspectorState';
+import { getBodyScope } from '../core/appCore';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};

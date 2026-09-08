@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 11-pre a7：colors-picker 与 annotation-preview-container 接管（index.html 原块逐字）。

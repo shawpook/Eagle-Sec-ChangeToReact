@@ -18,8 +18,8 @@
  *   混淆段（/api/check curl 探测路由，18846）逐字保留原混淆代码。
  */
 
-import { getBodyScope } from '../global/scopeBridge';
 import { syncUploadFromScope } from '../store/uploadState';
+import { getBodyScope } from './appCore';
 
 let installed = false;
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { getBodyScope } from '../../global/scopeBridge';
 import { FileUrlHelper } from '../../core/fileUrlHelper';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * b1-9be2：box 条目 JSX —— ng-grid-layout 模板（bundle:66524-66963）逐字 JSX 化。

@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { second2time } from '../../app/filters';
 import { getIpc, req } from '../detail/detailHooks';
+import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段7d-6a：进度对话框族（第一部分）接管。

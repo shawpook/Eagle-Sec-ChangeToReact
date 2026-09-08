@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { updateSelection } from '../../services/selectionService';
 import { t } from '../../global/eagleGlobals';
 import { useSidebarState } from '../../store/sidebarState';
@@ -12,6 +11,7 @@ import { ayncsImagesChange } from './FolderModals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
+import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController

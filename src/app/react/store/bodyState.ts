@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
-import { getBodyScope } from '../global/scopeBridge';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 11-pre a8：body 绑定层状态源（body ng-class 28 项 + class 插值 + theme/platform/vibrancy

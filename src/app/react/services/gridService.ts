@@ -10,11 +10,11 @@
  * imageSize 对象态的 store 单源化随 S1-be（infinitegrid 交换）一并落地——
  * 对象嵌套写不经 scopeShim 顶层 set 陷阱，先行镜像会造成第三份拷贝。
  */
-import { getBodyScope } from '../global/scopeBridge';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { getBodyScope } from '../core/appCore';
 
 let saveListHeightTimeout: any = null;
 

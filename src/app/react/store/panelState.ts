@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 阶段7c-1：小弹窗族（layout-panel / notification / new-version / folder-password /

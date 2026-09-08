@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req } from '../detail/detailHooks';
 import { duration } from '../../app/filters';
@@ -9,6 +8,7 @@ import { openGeneralTagSelectPanel, themePathOf } from './SelectPanels';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。

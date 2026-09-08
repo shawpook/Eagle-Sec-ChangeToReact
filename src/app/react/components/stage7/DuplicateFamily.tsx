@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope } from '../../global/scopeBridge';
 import { calculateImageBinding } from '../../services/gridBindingService';
 import { updateSelection } from '../../services/selectionService';
 import { t } from '../../global/eagleGlobals';
@@ -13,6 +12,7 @@ import { useVsRepeat } from './FolderSelectPanels';
 import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
+import { getBodyScope, getRootScope } from '../../core/appCore';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。

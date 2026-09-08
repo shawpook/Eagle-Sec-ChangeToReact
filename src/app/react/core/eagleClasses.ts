@@ -8,7 +8,6 @@
  * 本模块实例暂不覆写 window.eagle（bundle 实例仍为权威态，随 c 域切片逐步切换）。
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle } from './eagleApi';
 import { syncListFromScope } from '../store/listState';
@@ -17,6 +16,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
+import { getBodyScope } from './appCore';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }

@@ -174,3 +174,65 @@ export function removeChannelListenersBySource(ipc: any, channel: string, signat
   } catch (err) { /* noop */ }
   return removed;
 }
+
+// ── b1-9by-D：scopeBridge 摘除迁入（coreState 访问器语义归位；scopeShim 惰性调用
+// 环安全——createBodyScopeShim 仅在 getBodyScope 内首次调用）──
+import { createBodyScopeShim } from '../global/scopeShim';
+
+export function getBodyScope(): any {
+  const w = window as any;
+  if (w.$bodyScope) return w.$bodyScope;
+  const angular = w.angular;
+  if (angular && angular.element) {
+    const scope = angular.element(document.body).scope();
+    if (scope) return scope;
+  }
+  // c11：b1 后 Angular 缺席（angular 由 app.bundle.js 内联定义，无独立 script 标签）→
+  // scope shim（coreState 后端）。bundle 在世时此分支不可达——classic script 先于 React
+  // module 执行，w.angular 必然已定义。
+  if (!angular) {
+    const shim = createBodyScopeShim();
+    w.$bodyScope = shim;
+    if (w.__eagleScopeShim) w.__eagleScopeShim.active = true;
+    return shim;
+  }
+  return null;
+}
+
+export function getRootScope(): any {
+  const scope = getBodyScope();
+  return scope ? scope.$root : null;
+}
+
+/** 在 Angular 作用域上下文中执行表达式（等价 ng-click 的 $apply 语义，digest 期内安全跳过）。 */
+export function scopeApply(scope: any, fn: (scope: any) => void): void {
+  if (!scope) return;
+  if (scope.$$phase || scope.$root.$$phase) {
+    try {
+      fn(scope);
+    } catch (err) {
+      console.error('[react-scope-bridge]', err);
+    }
+    return;
+  }
+  try {
+    scope.$apply(fn.bind(null, scope));
+  } catch (err) {
+    console.error('[react-scope-bridge]', err);
+  }
+}
+
+/** 依据 node id 从活的 sidebarList 中取回 node 实例（事件回调必须传活对象）。 */
+export function findLiveNode(nodeId: string): any {
+  const scope = getBodyScope();
+  if (!scope || !Array.isArray(scope.sidebarList)) return null;
+  return scope.sidebarList.find((node: any) => node && node.id === nodeId) || null;
+}
+
+/** 把 Angular ng-class 风格的对象序列化为 class 字符串（保持 key 插入顺序）。 */
+export function classObjectToString(map: Record<string, unknown> | undefined | null): string {
+  if (!map) return '';
+  return Object.keys(map)
+    .filter((key) => map[key])
+    .join(' ');
+}

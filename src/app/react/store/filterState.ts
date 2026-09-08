@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 阶段3b：筛选面板状态 —— 快照自 EagleController scope + eagle.filter（bundle:312-606 ItemFilter）。

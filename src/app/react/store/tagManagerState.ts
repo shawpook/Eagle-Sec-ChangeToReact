@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 阶段7b：标签管理（tag-manager 指令 + TagManager 服务渲染结果）状态快照。

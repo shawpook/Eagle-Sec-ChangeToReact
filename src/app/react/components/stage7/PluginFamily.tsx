@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts } from '../../app/filters';
 import { usePanelState } from '../../store/panelState';
@@ -8,6 +7,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
+import { getBodyScope, getRootScope } from '../../core/appCore';
 
 /**
  * 阶段7d-5a：pluginPanel + pluginCreator 接管（pluginCenter 见 7d-5b）。

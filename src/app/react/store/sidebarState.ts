@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { classObjectToString, getBodyScope } from '../global/scopeBridge';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
+import { classObjectToString, getBodyScope } from '../core/appCore';
 
 /**
  * 阶段2：侧栏状态 —— 快照自 EagleController scope（规范 app.bundle.js:20197+）。

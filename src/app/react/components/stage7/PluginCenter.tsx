@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { numberAbbreviate } from '../../app/filters';
 import { $, getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * 阶段7d-5b：pluginCenter 接管（bundle 62140-62723 附近；镜像 js/directives/plugin-center.js

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePanelState, PanelSnapshot, loadPjson } from '../../store/panelState';
 import { useToolbarState } from '../../store/toolbarState';
-import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { updateSidebarList } from '../../services/sidebarService';
 import { calculateImageBinding } from '../../services/gridBindingService';
 import { saveFolder } from '../../services/folderService';
@@ -12,6 +11,7 @@ import { useTippy } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { $, getIpc, getCurrentWindow, req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
+import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段7c-1：小弹窗族接管。

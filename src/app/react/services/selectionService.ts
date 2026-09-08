@@ -1,3 +1,4 @@
+import { getBodyScope } from '../core/appCore';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -7,7 +8,6 @@
  * 的本地 updateSelection 是 React 镜像版（不走 scope），互不相干。S7 inspector 竖切
  * 把实现体迁入本模块并退役 scope 挂载。
  */
-import { getBodyScope } from '../global/scopeBridge';
 
 export function updateSelection(): void {
   const s = getBodyScope();

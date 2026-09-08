@@ -4,7 +4,7 @@ import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
-import { getBodyScope } from '../global/scopeBridge';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 阶段3a：工具栏状态 —— 快照自 EagleController scope（规范 index.html:141-273 模板所需字段）。

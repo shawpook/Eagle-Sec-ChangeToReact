@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDetailState, DetailSnapshot } from '../../store/detailState';
 import { useToolbarState } from '../../store/toolbarState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy } from '../hooks';
@@ -11,6 +10,7 @@ import { req } from './detailHooks';
 import { useMouseGesture } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。

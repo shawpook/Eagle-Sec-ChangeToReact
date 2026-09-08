@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope } from '../../global/scopeBridge';
 import { updateSidebarList } from '../../services/sidebarService';
 import { calculateImageBinding } from '../../services/gridBindingService';
 import { saveFolder } from '../../services/folderService';
@@ -12,6 +11,7 @@ import { ayncsImagesChange, hiddenByCurrentFilter } from './FolderModals';
 import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
 import { syncUploadFromScope } from '../../store/uploadState';
+import { getBodyScope, getRootScope } from '../../core/appCore';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。

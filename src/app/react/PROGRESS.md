@@ -1402,6 +1402,27 @@
 > **门禁**：esbuild 双入口 EXIT:0；sentinel OK；套件 55/55 ALL GREEN。
 >
 
+> **b1-9by-D：scopeBridge 摘除——getBodyScope 族迁入 appCore + 文件删除（2026-09-09）**
+>
+> startScopeSync/ScopeSyncOptions 零引用实锚后（by-A/B/C 十二链退役成果），scopeBridge
+> 剩余五函数（getBodyScope/getRootScope/scopeApply/findLiveNode/classObjectToString）
+> 整体迁入 **core/appCore.ts**（coreState 访问器语义归位；文件尾追加带 b1-9by-D 归档
+> 注释；scopeShim import 环为惰性调用安全——createBodyScopeShim 仅 getBodyScope 内
+> 首次触发）。**78 文件 import 机械改写**（按目录深度映射 core→./、services|store|
+> global|preferences→../、components→../../、root→./；与既有 appCore import 合并去重），
+> **scopeBridge.ts 删除（git rm）**。全树残留引用=历史注释（无代码引用，grep-zero 达成）。
+> **施工坑 ×2**：① 首版脚本 nonlocal 语法错——git rm 已先行执行致 scopeBridge 缺失，
+> git checkout 恢复后重放（教训：破坏性操作与生成脚本分步提交确认）；② preview-window
+> 的相对深度映射进 else 分支算成 ./core——9a2/9a3/preview-delivery 三连挂，改 ../core
+> 复绿。
+> **sentinel 基线吸收**：watch 21→20（startScopeSync 字符串 watch 移除）、getBodyScope
+> 695→693（import 面收缩）、coreState 30→31（迁移注释裸词）。
+> **门禁**：esbuild 双入口 EXIT:0；sentinel OK；套件 55/55 ALL GREEN。
+> **b1-9by 批收官**：218 表达式快照链全数退役（sync 直写 878 处 + 汇聚点收敛 + 订阅
+> 触发 + 类内 setter 收敛）；scopeBridge.ts 删除 grep-zero；剩 scopeShim/appCore.coreState
+> （ca）与 controllerFns/dataMachinery/shimFnsBridge（bz）两项删除面。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

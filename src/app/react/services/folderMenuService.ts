@@ -16,13 +16,13 @@
  * - treeWalkSafe/wElectronLogInfo/wQueryFocusFolderInput → 模块级逐字（原 b1-9ap 辅助）
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { ContextMenu } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncInspectorFromScope } from '../store/inspectorState';
+import { getBodyScope } from '../core/appCore';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;

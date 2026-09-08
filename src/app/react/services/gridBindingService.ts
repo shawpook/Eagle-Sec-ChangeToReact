@@ -1,3 +1,4 @@
+import { getBodyScope } from '../core/appCore';
 /**
  * b1-9bb：网格索引绑定服务 —— calculateImageBinding 热点收编。
  *
@@ -7,7 +8,6 @@
  * 属性）。数据底座级耦合（sortRawData/TagManager/pinyinCache/getFilter）——实现体
  * 随 S1 网格竖切评估迁入或保留至 P4 终审。
  */
-import { getBodyScope } from '../global/scopeBridge';
 
 export function calculateImageBinding(params?: any, callback?: () => void): void {
   const s = getBodyScope();

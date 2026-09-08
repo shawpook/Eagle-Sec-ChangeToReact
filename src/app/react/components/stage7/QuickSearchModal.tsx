@@ -1,12 +1,12 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
 import { max, uniq } from '../../utils/lang';
+import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段7c-2：quickSearchModal 接管。

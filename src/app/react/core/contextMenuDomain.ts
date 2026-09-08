@@ -9,8 +9,8 @@
  * - openWithApplicationPath：bundleGlobals 若缺的等价兜底（正常路径 window 供给）
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { contextMenuOpenChannel, contextMenuCloseChannel } from '../global/bus';
+import { getBodyScope } from './appCore';
 
 // URL_MODULE（bundle 顶层 const；fileUrlHelper.ts 同款惰性解析）
 export const URL_MODULE: any = (() => {

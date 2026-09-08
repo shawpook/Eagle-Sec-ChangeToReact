@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { useListState } from '../../store/listState';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
-import { getBodyScope } from '../../global/scopeBridge';
 import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } from '../grid/gridDirectives';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。

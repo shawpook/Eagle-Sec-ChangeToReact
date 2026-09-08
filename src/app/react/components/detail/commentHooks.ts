@@ -1,9 +1,9 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { useEffect, useRef } from 'react';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer

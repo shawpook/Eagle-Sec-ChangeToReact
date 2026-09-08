@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope } from '../../global/scopeBridge';
 import { calculateImageBinding } from '../../services/gridBindingService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
@@ -8,6 +7,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { TagSelectPanel } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVsGridRepeat, themePathOf } from './SelectPanels';
+import { getBodyScope } from '../../core/appCore';
 
 /**
  * 阶段7d-3a：inspectorTagSelectPanel 指令接管（bundle 57911-58122 + inspector-tag-select-panel.html）。

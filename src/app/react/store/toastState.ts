@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 11-pre a2：toast-alert 三块状态源（index.html 失败重试提示 / 本地服务器警告 /

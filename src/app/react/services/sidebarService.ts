@@ -11,7 +11,6 @@
  * 本模块是**组件侧唯一入口**（Sidebar.tsx 此前 ~30 处 scopeApply 绕道）。
  * 菜单族（openFolderContextMenu 等）归 S5 菜单竖切；DnD（onDropFolder 族）归 bh。
  */
-import { getBodyScope } from '../global/scopeBridge';
 import {
   machineryToggleAllFolders,
   machineryToggleCurrentLevelFolders,
@@ -20,6 +19,7 @@ import {
 } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
+import { getBodyScope } from '../core/appCore';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */

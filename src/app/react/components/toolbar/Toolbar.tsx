@@ -1,7 +1,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useToolbarState, ToolbarSnapshot } from '../../store/toolbarState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
@@ -10,6 +9,7 @@ import { syncBodyFromScope } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段3a：工具栏接管。

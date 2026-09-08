@@ -14,11 +14,11 @@
  * - $filter → 双轨 shim；ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncBodyFromScope } from '../store/bodyState';
+import { getBodyScope } from '../core/appCore';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。

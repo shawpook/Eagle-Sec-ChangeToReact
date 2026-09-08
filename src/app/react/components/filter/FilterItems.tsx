@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FilterSnapshot, FilterFolderItem } from '../../store/filterState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper, substring } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
 import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 

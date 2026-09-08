@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { getBodyScope, scopeApply } from '../global/scopeBridge';
 
 /** tippy 指令移植（bundle:17365）：对子树内 [tippy][tippy-content] 元素初始化 tooltip。 */
 export function useTippy(ref: React.RefObject<HTMLElement | null>, dep: unknown) {
@@ -55,6 +54,7 @@ export function useSelectAll(ref: React.RefObject<HTMLElement | null>) {
 // c3：React 侧已移植的 controller 函数表（逐字，操作同一 scope）——callScope 优先命中，
 // bundle 同名函数退为后备；cZ 状态迁入 AppCore 后 scope 后备随之消亡。
 import { makeControllerFns } from '../core/controllerFns';
+import { getBodyScope, scopeApply } from '../core/appCore';
 let coreFnsCache: Record<string, any> | null = null;
 function getCoreFns(): Record<string, any> {
   if (coreFnsCache === null) {

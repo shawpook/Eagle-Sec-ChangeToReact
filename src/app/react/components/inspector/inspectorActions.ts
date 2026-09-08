@@ -1,4 +1,3 @@
-import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
 import { detailZoom } from '../../core/smoothZoomEngine';
 import { contextMenuOpenChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
@@ -6,6 +5,7 @@ import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
+import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。

@@ -19,8 +19,7 @@
  *   .then 等价复刻（Angular response {data:...} 包装经适配函数还原）。
  */
 
-import { removeChannelListenersBySource } from './appCore';
-import { getBodyScope, getRootScope } from '../global/scopeBridge';
+import { getBodyScope, getRootScope, removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncErrorCount } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';

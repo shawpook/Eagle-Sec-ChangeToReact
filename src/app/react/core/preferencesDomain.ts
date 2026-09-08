@@ -10,8 +10,7 @@
  *   —— owner 溯源后 theme/preferences 落点正确）。
  */
 
-import { amputateChannel } from './appCore';
-import { getBodyScope } from '../global/scopeBridge';
+import { amputateChannel, getBodyScope } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { refreshTouchID } from '../store/lockState';
 

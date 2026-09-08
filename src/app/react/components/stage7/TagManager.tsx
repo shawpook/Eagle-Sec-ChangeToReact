@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTagManagerState } from '../../store/tagManagerState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { useTippy } from '../hooks';
@@ -11,6 +10,7 @@ import { $ } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { syncTagManagerFromScope } from '../../store/tagManagerState';
 import { syncFilterFromScope } from '../../store/filterState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。

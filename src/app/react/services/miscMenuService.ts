@@ -17,13 +17,13 @@
  * - $filter → scope $root → machinery getFilter 双轨
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { ContextMenu } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { updateCurrentOrderAndIncrease } from '../core/controllerFns';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { getBodyScope } from '../core/appCore';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;

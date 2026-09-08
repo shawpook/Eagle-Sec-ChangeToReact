@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getBodyScope, getRootScope } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
 import { $, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
+import { getBodyScope, getRootScope } from '../../core/appCore';
 
 /**
  * 阶段7d-1c-1：tagsInput + generalTagSelectPanel + AutoTaggingController 接管。

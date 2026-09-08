@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * filterItem 基础指令移植（bundle:67305-67559，attribute 指令）。

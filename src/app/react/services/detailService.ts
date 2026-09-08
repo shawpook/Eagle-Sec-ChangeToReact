@@ -7,10 +7,10 @@
  * controllerFns⇄dataMachinery 先例）。组件侧唯一入口：FolderModals 的 smartZoom ×2、
  * detailHooks 的 updateZoomRatio ×1 改直调。
  */
-import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom } from '../core/smoothZoomEngine';
 import { machineryGetRatioExp, machineryGetRatioNonExp } from '../core/dataMachinery';
 import { syncDetailFromScope } from '../store/detailState';
+import { getBodyScope } from '../core/appCore';
 
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──

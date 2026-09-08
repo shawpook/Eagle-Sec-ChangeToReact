@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFilterState, FilterSnapshot } from '../../store/filterState';
-import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy } from '../hooks';
@@ -10,6 +9,7 @@ import { KIND_COMPONENTS } from './FilterItems';
 import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
 import { syncFilterFromScope } from '../../store/filterState';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 

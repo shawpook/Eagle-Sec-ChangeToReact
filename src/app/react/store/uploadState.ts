@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer, t } from '../global/eagleGlobals';
+import { getBodyScope } from '../core/appCore';
 
 /**
  * 11-pre a1：upload-queue-progress / saving-progress-bar 状态源。

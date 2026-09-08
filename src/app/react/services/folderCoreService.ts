@@ -15,12 +15,12 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getBodyScope } from '../global/scopeBridge';
 import { getFilter as machineryGetFilter, machineryGetFolderParentChilder } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncDetailFromScope } from '../store/detailState';
+import { getBodyScope } from '../core/appCore';
 
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };

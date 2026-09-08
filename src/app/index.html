@@ -212,11 +212,11 @@
     <!-- jquery-audio（$.playSound / $.stopSound）——scope 的 removeSound/duplicateSound/
          errorSound.play() 直调该插件（原 bundle 内联件，b1-9d 摘除、b1-9al 独立加载）。 -->
     <script src="js/vendors/jquery-audio.js"></script>
-    <!-- sweetalert2（window.swal / window.sweetAlert，原 bundle 内联 vendor）——
-         ProgressDialogs/ControllerModals/miscDomain 等的 w.swal(...) 确认/输入弹窗依赖；
-         vendor 文件尾部自带 window.sweetAlert=window.swal=window.Sweetalert2 别名
-         （CSS 已在 head:10）。 -->
-    <script src="js/vendors/sweetalert2/sweetalert2.all.min.js"></script>
+    <!-- b1-9bw-A：sweetalert2 v6.11.0（window.swal / window.sweetAlert）JS 退役——自研
+         Dialog（react/core/dialog.ts）经 installBundleGlobals 供给 window.swal（65 调用点
+         消费面契约 + then(ok,cancel) 双参/getInput·getConfirmButton 哑雷实装，考据见
+         PROGRESS P3-bw）；sweetalert2.min.css（head:10）保留 = .swal2-* 类名契约样式，
+         本仓 65 站点全部直调 options 形态，无 .fire/.mixin/setDefaults 依赖。 -->
     <!-- artstation-download（window.Artstation，b1-9m）——原 b1 前由 index.html 引入的独立
          全局（顶层 var），BatchRenameArtstationModals 的 vaildateUrl 读
          Artstation.isValidUrl；摘除引入后 blur 校验链抛 ReferenceError 被吞、url-error 永不显示。 -->

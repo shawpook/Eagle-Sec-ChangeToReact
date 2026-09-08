@@ -1045,6 +1045,38 @@
 > bw-B = vendor JS 删除 + 全量门收官（7d1a/7d1b/11a2/7d1c2 等 swal DOM 断言天然回归）。
 >
 
+> **b1-9bw-A：sweetalert2 v6.11.0 自研替换——dialog.ts install 化 + 哑雷实装（2026-09-08）**
+>
+> 新模块 react/core/dialog.ts（~660 行）：swal 直调形态全契约复刻——v6.11 类名表/defaults/
+> DOM 模板逐字（全输入类型预渲染 + 5 icon + buttonswrapper + ×）、useRejections:true
+> Promise 面（confirm resolve(true|trim 值/radio checked)；cancel/×/overlay/esc reject
+> 四理由；then(ok,cancel) 双参消费）、input text·textarea·radio(inputOptions)·select·
+> checkbox、inputValidator 直调 .then（消费方全 Promise）+ showValidationError/
+> resetValidationError/inputerror 类/aria、滚动条补偿+iosfix+焦点还原+recalculateHeight
+> （MutationObserver 50ms debounce）、open/close 动画类序列、Esc/Tab/Enter 键盘面
+> （Enter 仅焦点在 input 上 confirm）。**施工坑 ×2**：① v6 元素查找双轨——L()=modal 直接
+> 子节点（全输入类型），w()/C()/k()/x()=container querySelector（confirm/cancel 在
+> buttonswrapper 内非直系！首版 childByClass 全量误用 → titleEl null TypeError，dbg 探针
+> 抓栈定位后统一 querySelector）；② v6 z() 对 target=body 恒重建 container
+> （r2.parentNode!==i2.parentNode 恒真）——首版误读为"同 target 复用"，修正为恒重建。
+> **哑雷实装**：statics getConfirmButton/getInput——v6.11 J 静态面**无此二者**（beauty
+> 实证仅 isVisible/close/clickConfirm/clickCancel/showLoading 等），FolderModals:1778
+> 与 dataMachinery:9937 的 onOpen 内调用现网即 TypeError（setTimeout 吞掉=静默坏）——
+> 自研实装（input select+focus、confirm focus 语义首次真正生效）。descope 录档：
+> string 简写/preConfirm/showLoaderOnConfirm/timer/image*/progressSteps/queue/setDefaults/
+> email-url 内置 validator/file·range 输入/icon·maxWidth（v6 即 Unknown parameter 忽略，
+> 自研静默忽略零行为差异）。**接线**：bundleGlobals installDialog()（keymap 同区）；
+> index.html:219 vendor JS 标签摘除（css:10 保留=类名契约）；collect-window 自带副本
+> 独立供给不动。**门禁**：esbuild EXIT:0；bw-probe1 十五断言全绿（facade/confirm
+> resolve true/cancel·esc·overlay·close 四 reject 理由/allowOutsideClick false 保留/
+> DOM 类结构（套件同款 .swal2-container .swal2-confirm 断言面）/input text trim+statics/
+> validator 失败显 validationerror 后通过/radio inputOptions 初值/textarea/type:'error'
+> icon/allowEnterKey:false blur/零 ReferenceError）。探针坑：evaluate 漏 awaitPromise →
+> Promise 序列化 {} 假阴；outer.__dom 挂函数对象不可序列化 → __bwCap 捕获模式。
+> **套件 ALL GREEN**（7d1a/7d1b/7d1c2/7d6a-c/11a2 等 swal DOM 断言探针全数经新 Dialog
+> 回归）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

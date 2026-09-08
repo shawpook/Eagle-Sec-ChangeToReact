@@ -18,6 +18,7 @@
 import { getBodyScope } from '../global/scopeBridge';
 import { getFilter as machineryGetFilter, machineryGetFolderParentChilder } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
+import { syncSidebarFromScope } from '../store/sidebarState';
 
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -649,6 +650,7 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                         try { electronLog && electronLog.info(`[app] Restore ${changes.length} files from trash`); } catch (err) {};
                     }
                     s.trash = [];
+                    syncSidebarFromScope();
                     syncListFromScope();
 
                     s.calculateImageBinding({ ignoreSort: true }, function() {

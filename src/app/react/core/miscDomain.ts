@@ -24,6 +24,9 @@ import { getBodyScope, getRootScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncErrorCount } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { syncFilterFromScope } from '../store/filterState';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -592,6 +595,8 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     s.TagManager.historyTags = [];
+    syncFilterFromScope();
+    syncTagManagerFromScope();
     s.availableHistoryTags = [];
     s.TagManager.save();
     s.$evalAsync();
@@ -904,6 +909,7 @@ export function takeoverMiscDomain(): void {
     s.$evalAsync();
     if (s.currentTrashRemoved >= s.trashRemoved || s.removeProgress > 98) {
       s.isCleaningTrash = false;
+      syncSidebarFromScope();
       s.trashRemoved = 0;
       s.currentTrashRemoved = 0;
       IPCHelper.send('palette-resume');
@@ -972,14 +978,24 @@ export function takeoverMiscDomain(): void {
     });
 
     s.TagManager.suggestions = s.TagManager.excludeExistTags(selectedTags, s.TagManager.suggestions);
+    syncFilterFromScope();
+    syncTagManagerFromScope();
     // TagManager.suggestions = TagManager.suggestions.unique();
     s.TagManager.suggestions = [...new Set(s.TagManager.suggestions)];
+    syncFilterFromScope();
+    syncTagManagerFromScope();
 
     // 移除 Stopword
     const sw = w.require('stopword');
     s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions);
+    syncFilterFromScope();
+    syncTagManagerFromScope();
     s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions, sw.zh);
+    syncFilterFromScope();
+    syncTagManagerFromScope();
     s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions, sw.ja);
+    syncFilterFromScope();
+    syncTagManagerFromScope();
 
     // Note: 优先将已经有标签放在最前方，剩下的标签使用标题排序放在后面
     s.TagManager.suggestions = s.TagManager.suggestions.sort(function (a: any, b: any) {
@@ -998,6 +1014,8 @@ export function takeoverMiscDomain(): void {
       catch (err) { /* noop */ }
       return 0;
     });
+    syncFilterFromScope();
+    syncTagManagerFromScope();
     s.$evalAsync();
   });
 }

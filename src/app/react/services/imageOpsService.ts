@@ -23,6 +23,8 @@ import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncFilterFromScope } from '../store/filterState';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -481,14 +483,17 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                     var __lv_tags = {};
                     var exts = {};
                     s.all = [];
+                    syncSidebarFromScope();
                     s.untagged = [];
                     s.unfiledCount = 0;
                     s.untaggedCount = 0;
                     s.trash = [];
+                    syncSidebarFromScope();
                     syncListFromScope();
                     s.folderMappings = {};
                     s.tagsSuggestion = [];
                     s.folderList = [];
+                    syncSidebarFromScope();
                     s.lockedImages = {};
 
                     let ancestorsCache = {};
@@ -502,6 +507,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
 
                         // 列表版本 Folders
                         s.folderList.push(folder);
+                        syncSidebarFromScope();
 
                         // 去除重複的資料夾
                         folder.children = $filter('unique')(folder.children, 'id');
@@ -549,6 +555,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
 
                         if (__lv_image.isDeleted) {
                             s.trash.push(__lv_image);
+                            syncSidebarFromScope();
                             syncListFromScope();
                         }
 						else {
@@ -586,6 +593,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
 
                             if (!s.lockedImages[__lv_image.id]) {
                                 s.all.push(__lv_image);
+                                syncSidebarFromScope();
                                 exts[__lv_image.ext] = true;
                                 if (__lv_image.tags && __lv_image.tags.length == 0) {
                                     s.untaggedCount++;
@@ -669,7 +677,9 @@ export function installImageOpsFns(fns: any, getScope: any): void {
 
                     extList = extList.sort();
                     eagle.filter.filterTypes = [...extList, ...eagle.filter.buildInTypes];
+                    syncFilterFromScope();
                     eagle.filter.filterTypes = [...new Set(eagle.filter.filterTypes)];
+                    syncFilterFromScope();
 
                     // 如果祖先门没有封面，补上封面
                     eagle.utils.tree.walk(s.folders, 'children', function(folder, parent) {
@@ -717,9 +727,11 @@ export function installImageOpsFns(fns: any, getScope: any): void {
 
                     __lv_TagManager.calculateTags();
                     s.tags = __lv_TagManager.rawdata;
+                    syncSidebarFromScope();
 
                     if (!s.tags) {
                         s.tags = [];
+                        syncSidebarFromScope();
                     }
 
                     console.timeEnd("calculateImageBinding");

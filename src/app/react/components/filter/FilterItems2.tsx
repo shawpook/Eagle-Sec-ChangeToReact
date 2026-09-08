@@ -9,6 +9,7 @@ import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterI
 import { KIND_COMPONENTS } from './FilterItems';
 import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
+import { syncFilterFromScope } from '../../store/filterState';
 
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
@@ -576,6 +577,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
     scopeApply(bodyScope(), (s) => {
       s.calculateDateFilter && s.calculateDateFilter();
       s.filterImportDateMonths = s.getDateFilterCountsArray && s.getDateFilterCountsArray('date');
+      syncFilterFromScope();
       s.filterModifyDateMonths = s.getDateFilterCountsArray && s.getDateFilterCountsArray('mtime');
       s.$evalAsync();
     });
@@ -592,6 +594,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
       if (isImport && s.filterContent) s.filterContent();
       s.reload && s.reload();
       if (isImport) { s.filterImportDateMonths = []; s.filterModifyDateMonths = []; }
+      syncFilterFromScope();
     }]);
   };
 

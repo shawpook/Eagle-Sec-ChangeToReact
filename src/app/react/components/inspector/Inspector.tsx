@@ -39,6 +39,7 @@ import {
   bindInspectorEvents,
 } from './inspectorActions';
 import { req } from '../detail/detailHooks';
+import { syncPanelFromScope } from '../../store/panelState';
 
 /**
  * 阶段6：检查器接管。

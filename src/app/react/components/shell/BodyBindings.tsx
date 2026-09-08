@@ -6,6 +6,7 @@ import { useSidebarState } from '../../store/sidebarState';
 import { useAppState } from '../../store/appState';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { callScope } from '../hooks';
+import { syncPanelFromScope } from '../../store/panelState';
 
 /**
  * 11-pre a8：body 绑定层 React 等价（C 模式直写静态壳节点）。

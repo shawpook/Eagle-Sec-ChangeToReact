@@ -1345,6 +1345,36 @@
 > **门禁**：esbuild 双入口 EXIT:0；sentinel OK；套件 55/55 ALL GREEN。
 >
 
+> **b1-9by-B：filter/panel/tagManager/sidebar 四中链退役——sync 直写收敛（2026-09-09）**
+>
+> 四 store 的 startScopeSync 快照链全退役（86/218 累计 110）：panel 18、filter 22、
+> tagManager 19、sidebar 27。**统一 sync 面**：syncPanelFromScope/syncFilterFromScope/
+> syncTagManagerFromScope/syncSidebarFromScope——各 store 原 build 平移为独立函数
+> （buildPanelSnapshot/buildTmSnapshot，filter/sidebar 复用已有 buildSnapshot）+
+> shallowEq+lastSnapshot 守卫；**委托字段经 useBodyState/useListState zustand 订阅触发
+> re-sync**（theme/platform/layout/currentOrderBy/keyword/filteredsCount 等——单写者
+> 防快照 clobber）；bindXxxSync 收敛为 __eagleXxxSync 测试面暴露+订阅+一次性对齐。
+> **汇聚点单点收敛**（本批关键发现）：① updateSidebarList 是侧栏变异流唯一汇聚点
+> （76 调用方）——machineryUpdateSidebarList 重建体尾（$timeout 回调内 s.sidebarList=list
+> 后）单点挂 syncSidebarFromScope 覆盖全部 76 流；② sidebarService 四事件包装
+> （clickNode/toggleFolderExpand 族）函数尾直推（isSelected/currentId 节点变异）；
+> ③ machineryFilterContent 函数体首挂 syncFilterFromScope（eagle.filter 规则深变异
+> 经 filterContent 收口——早退分支也覆盖）。
+> **写入点收敛 238 处**：panel 面 41（panel 自有字段 17 + currentFolder/currentSmartFolder
+> 复用点 + inspector.isHideInspector）、sidebar/tagManager 面 150（sidebarList/quickAccess/
+> folderList/容器尺寸/TagManager 族/selectedTags/selectingTags/currentTagGroup/
+> tagViewMode 族/containerSize.tagSidebar）、filter 面 47（eagle.filter 字段族/规则对象/
+> containFolders/containTags/tagKeyword/filterImportDateMonths/TagManager.groups 补列）。
+> **施工坑 ×2**：① panelState 原 build 为 startScopeSync 内联体——整块替换后
+> syncPanelFromScope 引用 buildSnapshot 报 ReferenceError（boot 断，grid boxes timeout
+> 外观，stage7b 挂）——原 build 逐字平移为 buildPanelSnapshot 复绿；注释内
+> `tagViewMode*/` 序列提前闭合 JSDoc（esbuild 断言）——改词规避；② 手术脚本模板
+> 复用（单 apply 路径/多行 import 语句尾/brace-match/assert 配对审计）零新增事故。
+> **sentinel 基线吸收**：getBodyScope 687→691（四 sync helper 过渡态）。
+> **门禁**：esbuild 双入口 EXIT:0；sentinel OK；套件 55/55 ALL GREEN（54 功能项 +
+> sentinel）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

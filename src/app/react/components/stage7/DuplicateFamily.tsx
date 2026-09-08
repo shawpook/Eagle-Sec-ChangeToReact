@@ -11,6 +11,7 @@ import { ayncsImagesChange } from './FolderModals';
 import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
 import { themePathOf } from './SelectPanels';
+import { syncSidebarFromScope } from '../../store/sidebarState';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
@@ -97,6 +98,7 @@ function MergeEditor({
         }
         if (item.tags && item.tags.length > 0) {
           group.props.tags = group.props.tags.concat(item.tags);
+          syncSidebarFromScope();
         }
         if (item.annotation) {
           group.props.annotations.push(item.annotation);
@@ -106,6 +108,7 @@ function MergeEditor({
         group.props.urls = [...new Set(group.props.urls)];
         group.props.folders = [...new Set(group.props.folders)];
         group.props.tags = [...new Set(group.props.tags)];
+        syncSidebarFromScope();
         // sort tags
         group.props.tags = group.props.tags.sort((a: any, b: any) => {
           try {
@@ -114,6 +117,7 @@ function MergeEditor({
             return 0;
           }
         });
+        syncSidebarFromScope();
         group.props.annotations = [...new Set(group.props.annotations)];
 
         if (item.star && item.star > 0) {

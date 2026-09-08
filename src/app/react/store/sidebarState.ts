@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { classObjectToString, startScopeSync } from '../global/scopeBridge';
+import { classObjectToString, getBodyScope } from '../global/scopeBridge';
+import { useBodyState } from './bodyState';
+import { useListState } from './listState';
 
 /**
  * 阶段2：侧栏状态 —— 快照自 EagleController scope（规范 app.bundle.js:20197+）。
@@ -100,40 +102,40 @@ export const setSidebarSnapshot = (snapshot: SidebarSnapshot) =>
   useSidebarState.setState({ snapshot });
 
 /** 接入 Angular scope → React 快照同步（AppRoot 挂载时调用一次）。 */
-export function bindSidebarSync(): () => void {
-  return startScopeSync({
-    watch: [
-      'sidebarList',
-      'viewMode',
-      'currentId',
-      'folderKeyword',
-      'isCleaningTrash',
-      'isUILoaded',
-      'isLoading',
-      'isExpandFolder',
-      'isExpandSmartFolder',
-      'isExpandQuickAccess',
-      'containerSize.sidebar',
-      'libraryPath',
-      'libraryName',
-      'showSlowNotify',
-      'showNTFSWarning',
-      'paletteQueuePaused',
-      'currentProcessCount',
-      'sidebarIndex',
-      'theme',
-      'quickAccess.length',
-      'smartFolderList.length',
-      'folderList.length',
-      'tags.length',
-      'trash.length',
-      'all.length',
-      'unfiledCount',
-      'untaggedCount',
-    ],
-    build: (scope) => buildSnapshot(scope),
-    apply: (snapshot) => setSidebarSnapshot(snapshot as SidebarSnapshot),
-  });
+// b1-9by-B：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqSidebar(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastSidebarSnapshot: any = null;
+
+/**
+ * b1-9by-B：sidebar 快照直写收敛——变异流汇聚点 updateSidebarList（machinery 重建体尾，
+ * 76 调用方）+ sidebarService 点击/展开四包装 + 顶层标量/数组写点直调；viewMode/isLoading/
+ * theme/unfiledCount/untaggedCount 等委托字段经 useBodyState/useListState 订阅触发
+ * re-sync。原 startScopeSync 200ms 轮询退役。
+ */
+export function syncSidebarFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildSnapshot(scope);
+  if (lastSidebarSnapshot !== null && shallowEqSidebar(next, lastSidebarSnapshot)) return;
+  lastSidebarSnapshot = next;
+  setSidebarSnapshot(next);
+}
+
+export function bindSidebarSync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleSidebarSync = syncSidebarFromScope;
+  // 委托字段（bodyState/listState 源翻转）变化 → re-sync。
+  useBodyState.subscribe(() => syncSidebarFromScope());
+  useListState.subscribe(() => syncSidebarFromScope());
+  // 启动期一次性对齐。
+  syncSidebarFromScope();
 }
 
 const themePath = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');

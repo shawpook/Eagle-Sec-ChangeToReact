@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { getBodyScope } from '../global/scopeBridge';
+import { useBodyState } from './bodyState';
+import { useListState } from './listState';
 
 /**
  * 阶段7b：标签管理（tag-manager 指令 + TagManager 服务渲染结果）状态快照。
@@ -75,30 +77,43 @@ export const useTagManagerState = create<{ snapshot: TagManagerSnapshot }>(() =>
 
 const setSnapshot = (snapshot: TagManagerSnapshot) => useTagManagerState.setState({ snapshot });
 
-export function bindTagManagerSync(): () => void {
-  return startScopeSync({
-    watch: [
-      'viewMode',
-      'isDetailMode',
-      'tagViewMode',
-      'tagViewModeName',
-      'tagViewLayoutMode',
-      'keyword',
-      'newGroupName',
-      'currentTagGroup',
-      'selectedTags',
-      'selectingTags',
-      'TagManager.groups',
-      'TagManager.allTags.length',
-      'TagManager.unfiledTags.length',
-      'TagManager.starredTags.length',
-      'TagManager.rawdata.length',
-      'TagManager.tagsResult',
-      'TagManager.tagMappings',
-      'containerSize.tagSidebar',
-      'theme',
-    ],
-    build: (scope) => {
+// b1-9by-B：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqTm(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastTmSnapshot: any = null;
+
+/**
+ * b1-9by-B：tagManager 快照直写收敛——TagManager.*（标签域）/selectedTags/selectingTags/
+ * currentTagGroup/newGroupName/tagViewMode 族/containerSize 写入点直调；viewMode/
+ * isDetailMode/keyword/theme 委托字段经 useBodyState/useListState 订阅触发 re-sync。
+ * 原 startScopeSync 200ms 轮询退役。
+ */
+export function syncTagManagerFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildTmSnapshot(scope);
+  if (lastTmSnapshot !== null && shallowEqTm(next, lastTmSnapshot)) return;
+  lastTmSnapshot = next;
+  setSnapshot(next);
+}
+
+export function bindTagManagerSync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleTagManagerSync = syncTagManagerFromScope;
+  // 委托字段（bodyState/listState 源翻转）变化 → re-sync。
+  useBodyState.subscribe(() => syncTagManagerFromScope());
+  useListState.subscribe(() => syncTagManagerFromScope());
+  // 启动期一次性对齐。
+  syncTagManagerFromScope();
+}
+
+function buildTmSnapshot(scope: any): TagManagerSnapshot {
       const tm = scope.TagManager || {};
       const groups = Array.isArray(tm.groups) ? tm.groups : [];
       const tagMappings: Record<string, { name?: string; color?: string; imageCount?: number }> = {};
@@ -148,8 +163,5 @@ export function bindTagManagerSync(): () => void {
           : [],
         tagMappings,
         tagSidebarWidth: scope.containerSize?.tagSidebar || 200,
-      } as TagManagerSnapshot;
-    },
-    apply: (snapshot) => setSnapshot(snapshot as TagManagerSnapshot),
-  });
+  };
 }

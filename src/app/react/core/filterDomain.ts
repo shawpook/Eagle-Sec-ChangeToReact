@@ -18,6 +18,7 @@ import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
+import { syncFilterFromScope } from '../store/filterState';
 
 let done = false;
 
@@ -110,6 +111,7 @@ export function takeoverFilterDomain(): void {
       const s: any = getBodyScope();
       if (!s) return;
       w.eagle.filter.isOpen = !w.eagle.filter.isOpen;
+      syncFilterFromScope();
       if (!w.eagle.filter.isOpen) {
         w.$("[filter-item].open").removeClass("open");
       }

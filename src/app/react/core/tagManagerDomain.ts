@@ -15,6 +15,8 @@ import { getBodyScope } from '../global/scopeBridge';
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
 import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout } from './dataMachinery';
 import { debounce } from '../utils/func';
+import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { syncFilterFromScope } from '../store/filterState';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -398,6 +400,8 @@ export function machineryBuildTagManager(s: any): any {
             changedItems = [...new Set(changedItems)];
             
             s.TagManager.isDirty = true;
+            syncFilterFromScope();
+            syncTagManagerFromScope();
             s.calcuteContainTags(s.filtereds);
             s.updateSelection();
             s.updateItemsView(s.selected);
@@ -441,6 +445,8 @@ export function machineryBuildTagManager(s: any): any {
                 TagManager.tagMappings[tag].imageCount++;
             }
             s.TagManager.isDirty = true;
+            syncFilterFromScope();
+            syncTagManagerFromScope();
 
             s.calcuteContainTags(s.filtereds);
             TagManager.addHistoryTag(tag);
@@ -467,6 +473,8 @@ export function machineryBuildTagManager(s: any): any {
                             TagManager.tagMappings[tag].imageCount--;
                             if (TagManager.tagMappings[tag].imageCount === 0) {
                             	s.TagManager.isDirty = true;
+                            	syncFilterFromScope();
+                            	syncTagManagerFromScope();
                                 delete TagManager.tagMappings[tag];
                                 let historyIdx = TagManager.historyTags.indexOf(tag);
 					           	if (historyIdx > -1) {
@@ -1315,7 +1323,9 @@ export function machineryBuildTagManager(s: any): any {
             s.openAll(false, function () {
                 getTimeout()(function () {
                     w.eagle.filter.isOpen = true;
+                    syncFilterFromScope();
                     w.eagle.filter.tagFilterLogic = "OR";
+                    syncFilterFromScope();
                     s.filterWithTags(tags);
                     // b1-9ba：Update_Tags_Filter 廣播全樹無接收者（原接收者隨 bundle 摘除
                     // 退役）——廣播體移除，filterWithTags 直呼語義不變。
@@ -1324,6 +1334,8 @@ export function machineryBuildTagManager(s: any): any {
         };
 
         s.TagManager = TagManager;
+        syncFilterFromScope();
+        syncTagManagerFromScope();
 
         // selectTag（bundle 38870-38926 逐字；b1-9k 补端口——TagManager.tsx 标签点击
         // onClick=call('selectTag')，缺席时静默 no-op → 标签选中/多选整条死）
@@ -1362,6 +1374,7 @@ export function machineryBuildTagManager(s: any): any {
                 selectedTags.forEach((tagName) => {
                     if (s.selectedTags[tagName]) return;
                     s.selectedTags[tagName] = true;
+                    syncTagManagerFromScope();
                 });
 
                 s.lastSelectedTag = tag.name;
@@ -1374,12 +1387,15 @@ export function machineryBuildTagManager(s: any): any {
                 }
                 else {
                     s.selectedTags[tag.name] = true;
+                    syncTagManagerFromScope();
                 }
                 s.lastSelectedTag = tag.name;
             }
             else {
                 s.selectedTags = {};
+                syncTagManagerFromScope();
                 s.selectedTags[tag.name] = true;
+                syncTagManagerFromScope();
                 s.lastSelectedTag = tag.name;
             }
         };
@@ -1387,10 +1403,14 @@ export function machineryBuildTagManager(s: any): any {
         s.createTagGroup = function () {
             var newGroup = TagManager.createGroup($filter('i18n')('general.untitled.tagGroup'));
             s.tagViewMode = "GROUP";
+            syncTagManagerFromScope();
             s.tagViewModeName = `GROUP-${newGroup.id}`;
+            syncTagManagerFromScope();
             s.currentTagGroup = newGroup;
+            syncTagManagerFromScope();
             s.renameTagGroup(newGroup);
             s.selectedTags = {};
+            syncTagManagerFromScope();
             TagManager.renderTagsResult();
         };
 
@@ -1399,10 +1419,14 @@ export function machineryBuildTagManager(s: any): any {
             tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "ALL";
+            syncTagManagerFromScope();
             s.tagViewModeName = "ALL";
+            syncTagManagerFromScope();
             s.$root.currentFocus = 'tags';
             s.currentTagGroup = undefined;
+            syncTagManagerFromScope();
             s.selectedTags = {};
+            syncTagManagerFromScope();
             TagManager.renderTagsResult();
         };
 
@@ -1411,10 +1435,14 @@ export function machineryBuildTagManager(s: any): any {
             tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "UNFILED";
+            syncTagManagerFromScope();
             s.tagViewModeName = "UNFILED";
+            syncTagManagerFromScope();
             s.$root.currentFocus = 'tags';
             s.currentTagGroup = undefined;
+            syncTagManagerFromScope();
             s.selectedTags = {};
+            syncTagManagerFromScope();
             TagManager.renderTagsResult();
         };
 
@@ -1423,10 +1451,14 @@ export function machineryBuildTagManager(s: any): any {
             tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "STARRED";
+            syncTagManagerFromScope();
             s.tagViewModeName = "STARRED";
+            syncTagManagerFromScope();
             s.$root.currentFocus = 'tags';
             s.currentTagGroup = undefined;
+            syncTagManagerFromScope();
             s.selectedTags = {};
+            syncTagManagerFromScope();
             TagManager.renderTagsResult();
         };
 
@@ -1434,13 +1466,17 @@ export function machineryBuildTagManager(s: any): any {
             tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "GROUP";
+            syncTagManagerFromScope();
             s.tagViewModeName = `GROUP-${group.id}`;
+            syncTagManagerFromScope();
             s.$root.currentFocus = 'tags';
             s.currentTagGroup = group;
+            syncTagManagerFromScope();
             TagManager.renderTagsResult();
             w.$("input:focus").blur();
             if (s.currentTagGroup === group) return;
             s.selectedTags = {};
+            syncTagManagerFromScope();
         };
 
         
@@ -1615,7 +1651,9 @@ export function machineryBuildTagManager(s: any): any {
 
         s.renameTagGroup = function (group: any) {
             s.currentTagGroup = group;
+            syncTagManagerFromScope();
             s.newGroupName = group.name;
+            syncTagManagerFromScope();
             group.editable = true;
             setTimeout(function() {
                 w.$("#group-input-" + group.id).focus().select();
@@ -1657,9 +1695,11 @@ export function machineryBuildTagManager(s: any): any {
                 var idx = TagManager.removeGroup(group.id);
                 if (TagManager.groups[idx]) {
                     s.currentTagGroup = TagManager.groups[idx];
+                    syncTagManagerFromScope();
                 }
                 else if (TagManager.groups[idx - 1]) {
                     s.currentTagGroup = TagManager.groups[idx - 1];
+                    syncTagManagerFromScope();
                 }
                 else {
                     s.openTagAllGroup();

@@ -9,6 +9,8 @@ import { ContentEditable } from '../inspector/ContentEditable';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { $ } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
+import { syncTagManagerFromScope } from '../../store/tagManagerState';
+import { syncFilterFromScope } from '../../store/filterState';
 
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
@@ -288,6 +290,8 @@ export function TagManagerPanel() {
           const order = jQuery(el).sortable('toArray', { attribute: 'data-group-id' });
           const groups = s.TagManager.groups || [];
           s.TagManager.groups = order.map((id: string) => groups.find((g: any) => g.id === id)).filter(Boolean);
+          syncFilterFromScope();
+          syncTagManagerFromScope();
           saveFolder();
           s.$evalAsync?.();
           const w = window as any;
@@ -524,12 +528,14 @@ export function TagManagerPanel() {
                           e.nativeEvent.stopPropagation();
                           scopeApply(getBodyScope(), (s) => {
                             s.newGroupName = (e.target as HTMLInputElement).value;
+                            syncTagManagerFromScope();
                             if (typeof s.renameTagGroupKeyup === 'function') s.renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), s.newGroupName);
                           });
                         }}
                         onBlur={(e) => {
                           scopeApply(getBodyScope(), (s) => {
                             s.newGroupName = (e.target as HTMLInputElement).value;
+                            syncTagManagerFromScope();
                             if (typeof s.renameTagGroupBlur === 'function') s.renameTagGroupBlur(liveGroup(group.id), s.newGroupName);
                           });
                         }}

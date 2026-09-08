@@ -70,6 +70,11 @@ import { get, isString, max, uniq, unescape } from '../utils/lang';
 import { syncFolderLock } from '../store/lockState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncListFromScope } from '../store/listState';
+import { syncPanelFromScope } from '../store/panelState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { syncFilterFromScope } from '../store/filterState';
+import { syncFilterFromScope } from '../store/filterState';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -434,14 +439,17 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       var tags: any = {};
       var exts: any = {};
       s.all = [];
+      syncSidebarFromScope();
       s.untagged = [];
       s.unfiledCount = 0;
       s.untaggedCount = 0;
       s.trash = [];
+      syncSidebarFromScope();
       syncListFromScope();
       s.folderMappings = {};
       s.tagsSuggestion = [];
       s.folderList = [];
+      syncSidebarFromScope();
       s.lockedImages = {};
 
       const ancestorsCache: any = {};
@@ -454,6 +462,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
         // 列表版本 Folders
         s.folderList.push(folder);
+        syncSidebarFromScope();
 
         // 去除重複的資料夾
         const $filter = getFilter();
@@ -502,6 +511,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
         if (image.isDeleted) {
           s.trash.push(image);
+          syncSidebarFromScope();
           syncListFromScope();
         }
         else {
@@ -539,6 +549,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
           if (!s.lockedImages[image.id]) {
             s.all.push(image);
+            syncSidebarFromScope();
             exts[image.ext] = true;
             if (image.tags && image.tags.length == 0) {
               s.untaggedCount++;
@@ -621,7 +632,9 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
       extList = extList.sort();
       w.eagle.filter.filterTypes = [...extList, ...w.eagle.filter.buildInTypes];
+      syncFilterFromScope();
       w.eagle.filter.filterTypes = [...new Set(w.eagle.filter.filterTypes)];
+      syncFilterFromScope();
 
       // 如果祖先门没有封面，补上封面
       w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any) {
@@ -669,9 +682,11 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
       TagManager.calculateTags();
       s.tags = TagManager.rawdata;
+      syncSidebarFromScope();
 
       if (!s.tags) {
         s.tags = [];
+        syncSidebarFromScope();
       }
 
       console.timeEnd("calculateImageBinding");
@@ -1045,6 +1060,7 @@ export function machineryUpdateSidebarList(s: any): void {
     });
 
     s.sidebarList = list;
+    syncSidebarFromScope();
   }, 20);
 }
 
@@ -2786,6 +2802,7 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
   });
 
   s.containTags = [];
+  syncFilterFromScope();
 
   var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   result.containTags = result.containTags.sort(function (a: any, b: any) {
@@ -2794,6 +2811,7 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
 
   result.containTags.forEach(function (tag: any) {
     s.containTags.push(tag);
+    syncFilterFromScope();
   });
 
   // 显示未标签功能
@@ -2805,6 +2823,7 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
       index: 100000000,
       isNoTags: true
     });
+    syncFilterFromScope();
   }
 }
 
@@ -3075,8 +3094,10 @@ export function machineryChangeSidebarIndex(s: any, node: any): void {
   const idx = s.sidebarList.indexOf(folder);
   if (idx !== -1) {
     s.sidebarIndex = -1;
+    syncSidebarFromScope();
     $timeout(function () {
       s.sidebarIndex = idx;
+      syncSidebarFromScope();
     }, 1);
   }
 }
@@ -3096,11 +3117,13 @@ export function machineryResetPage(s: any): void {
   s.currentTag = undefined;
   s.startCursor = 0;
   s.currentFolder = undefined;
+  syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
   w.eagle.inspector.reset();
   s.currentFolderChildren = undefined;
   s.currentSmartFolder = undefined;
+  syncPanelFromScope();
   syncListFromScope();
   s.$root.selectedFoldersMappings = {};
   s.$root.selectedFolders = [];
@@ -3110,6 +3133,7 @@ export function machineryResetPage(s: any): void {
   s.$root.selectedSmartFoldersMappings = {};
   s.$root.selectedSmartFolders = [];
   s.currentId = undefined;
+  syncSidebarFromScope();
   s.layout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
 
   if (!w.eagle.filter.isLock) {
@@ -4109,8 +4133,10 @@ export function machinerySelectAll(s: any, event: any): void {
   event && event.stopPropagation();
   if (s.viewMode == 'alltags') {
     s.selectedTags = {};
+    syncTagManagerFromScope();
     s.TagManager.tagsResult.tags.forEach((tagName: any) => {
       s.selectedTags[tagName] = true;
+      syncTagManagerFromScope();
     });
   }
   else {
@@ -5529,8 +5555,10 @@ export function machineryToggleAll(s: any, $event: any): void {
   }
   if (s.isHideSidebar) {
     w.eagle.inspector.isHideInspector = s.isHideSidebar = false;
+    syncPanelFromScope();
   } else {
     w.eagle.inspector.isHideInspector = s.isHideSidebar = true;
+    syncPanelFromScope();
   }
   $timeout(function () {
     s.lastItemStates = {};
@@ -6287,6 +6315,8 @@ function machineryGrayColorFilter(image: any): boolean {
    本体只是「清 shuffle + rebindRefresh(contentFilterCache) + 滚动归零」的编排） */
 export function machineryFilterContent(s: any, type?: any): void {
   const w = window as any;
+  // b1-9by-B：规则流汇聚点——eagle.filter 规则深变异经本函数收口后直推 filter 快照
+  syncFilterFromScope();
   if (!s.isItemBindCalculated) return;
   // 重新计算画面图片列表
   s.shuffle = [];
@@ -7146,6 +7176,7 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
         if (!w.eagle.filter.filterCamerasMapping[camera]) {
           w.eagle.filter.filterCamerasMapping[camera] = true;
           w.eagle.filter.filterCameras = Object.keys(w.eagle.filter.filterCamerasMapping);
+          syncFilterFromScope();
         }
       }
       else {
@@ -7507,6 +7538,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
       s.openSmartFolder(children[idx]);
     } else {
       s.currentSmartFolder = undefined;
+      syncPanelFromScope();
       syncListFromScope();
       s.openAll();
     }
@@ -7520,6 +7552,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
         s.openSmartFolder(children[idx - 1]);
       } else {
         s.currentSmartFolder = undefined;
+        syncPanelFromScope();
         syncListFromScope();
         s.openAll();
       }
@@ -8007,10 +8040,14 @@ export function machineryOpenTagAllGroup(s: any): void {
   tagRectSelecting = false;
   s.keyword = "";
   s.tagViewMode = "ALL";
+  syncTagManagerFromScope();
   s.tagViewModeName = "ALL";
+  syncTagManagerFromScope();
   s.$root.currentFocus = 'tags';
   s.currentTagGroup = undefined;
+  syncTagManagerFromScope();
   s.selectedTags = {};
+  syncTagManagerFromScope();
   s.TagManager.renderTagsResult();
 }
 
@@ -8019,10 +8056,14 @@ export function machineryOpenUnfiledGroup(s: any): void {
   tagRectSelecting = false;
   s.keyword = "";
   s.tagViewMode = "UNFILED";
+  syncTagManagerFromScope();
   s.tagViewModeName = "UNFILED";
+  syncTagManagerFromScope();
   s.$root.currentFocus = 'tags';
   s.currentTagGroup = undefined;
+  syncTagManagerFromScope();
   s.selectedTags = {};
+  syncTagManagerFromScope();
   s.TagManager.renderTagsResult();
 }
 
@@ -8031,10 +8072,14 @@ export function machineryOpenStarredGroup(s: any): void {
   tagRectSelecting = false;
   s.keyword = "";
   s.tagViewMode = "STARRED";
+  syncTagManagerFromScope();
   s.tagViewModeName = "STARRED";
+  syncTagManagerFromScope();
   s.$root.currentFocus = 'tags';
   s.currentTagGroup = undefined;
+  syncTagManagerFromScope();
   s.selectedTags = {};
+  syncTagManagerFromScope();
   s.TagManager.renderTagsResult();
 }
 
@@ -8043,13 +8088,17 @@ export function machineryOpenTagGroup(s: any, group: any): void {
   tagRectSelecting = false;
   s.keyword = "";
   s.tagViewMode = "GROUP";
+  syncTagManagerFromScope();
   s.tagViewModeName = `GROUP-${group.id}`;
+  syncTagManagerFromScope();
   s.$root.currentFocus = 'tags';
   s.currentTagGroup = group;
+  syncTagManagerFromScope();
   s.TagManager.renderTagsResult();
   w.$("input:focus").blur();
   if (s.currentTagGroup === group) return;
   s.selectedTags = {};
+  syncTagManagerFromScope();
 }
 
 /* removeTagGroup（bundle 48620-48661 逐字：有标签确认框 → remove 内嵌闭包（TagManager
@@ -8061,9 +8110,11 @@ export function machineryRemoveTagGroup(s: any, group: any): void {
     var idx = s.TagManager.removeGroup(group.id);
     if (s.TagManager.groups[idx]) {
       s.currentTagGroup = s.TagManager.groups[idx];
+      syncTagManagerFromScope();
     }
     else if (s.TagManager.groups[idx - 1]) {
       s.currentTagGroup = s.TagManager.groups[idx - 1];
+      syncTagManagerFromScope();
     }
     else {
       machineryOpenTagAllGroup(s);
@@ -8172,6 +8223,7 @@ export function machineryFocusAppUnlockPassword(s: any): void {
 export function machineryPausePalette(s: any): void {
   const w = window as any;
   s.paletteQueuePaused = true;
+  syncSidebarFromScope();
   w.$("#background-state-spinner .sm-spiner").removeClass("has-animation");
   w.IPCHelper.send('change-palette-pause');
 }
@@ -8179,6 +8231,7 @@ export function machineryPausePalette(s: any): void {
 export function machineryResumePalette(s: any): void {
   const w = window as any;
   s.paletteQueuePaused = false;
+  syncSidebarFromScope();
   w.$("#background-state-spinner .sm-spiner").addClass("has-animation");
   w.IPCHelper.send('change-palette-resume');
 }
@@ -8228,6 +8281,7 @@ export function machineryOpenFilter(s: any): void {
   const w = window as any;
   if (!w.eagle.filter.isOpen) {
     w.eagle.filter.isOpen = true;
+    syncFilterFromScope();
     s.updateContainerHieght(true);
   }
 }
@@ -8285,6 +8339,7 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
   s.currentTag = undefined;
   s.startCursor = 0;
   s.currentSmartFolder = undefined;
+  syncPanelFromScope();
   syncListFromScope();
   s.$root.selectedSmartFolders = [];
   s.$root.selectedSmartFoldersMappings = {};
@@ -8298,6 +8353,7 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
       s.reload();
     }
     s.currentId = 'folder-' + folder.id;
+    syncSidebarFromScope();
   }
   else {
     if (s.$root.selectedFolders.length > 1) {
@@ -8457,6 +8513,7 @@ export function machineryToggleAllSmartFolderExpand(s: any, event: any, selected
       }
     }
     if (!expand) s.sidebarIndex = 0;
+    syncSidebarFromScope();
     machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
     s.updateSidebarList();
   }
@@ -8599,6 +8656,7 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
   s.currentTag = undefined;
   s.startCursor = 0;
   s.currentFolder = undefined;
+  syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
   s.$root.selectedFolders = [];
@@ -8613,6 +8671,7 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
       s.reload();
     }
     s.currentId = 'smart-folder-' + smartFolder.id;
+    syncSidebarFromScope();
   }
   else {
     if (s.$root.selectedSmartFolders.length > 1) {
@@ -8636,6 +8695,7 @@ export function machineryRenameFolder(s: any, event: any, folder: any): void {
   // if (folder.password && !folder.isUnLock) return;
   s.viewMode = undefined;
   s.currentFolder = folder;
+  syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
   folder.editable = true;
@@ -8652,6 +8712,7 @@ export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any)
   const w = window as any;
   s.viewMode = undefined;
   s.currentSmartFolder = smartFolder;
+  syncPanelFromScope();
   syncListFromScope();
   smartFolder.editable = true;
   smartFolder.newFolderName = smartFolder.name;
@@ -8777,6 +8838,7 @@ export function machineryGetSmartFolderList(s: any): any[] {
   let guidelinesMap: any = {};
 
   s.smartFolderList = [];
+  syncSidebarFromScope();
 
   w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
 
@@ -8803,6 +8865,7 @@ export function machineryGetSmartFolderList(s: any): any[] {
 
     // 列表版本 SmartFolders
     s.smartFolderList.push(smartFolder);
+    syncSidebarFromScope();
 
     s.smartFolderMappings[smartFolder.id] = smartFolder;
 
@@ -8965,6 +9028,7 @@ export function machineryUpdateListSlider(s: any, size: any): void {
 export function machineryChangeMetaItems(s: any, type: any): void {
   const w = window as any;
   s.listMetaType = type;
+  syncPanelFromScope();
   w.localStorage.setItem("eagle.list.meta.type", s.listMetaType);
   s.updateItemsView(s.allData);
   w.electronLog && w.electronLog.info(`[app] Change list display info: ${s.listMetaType}`);
@@ -9501,11 +9565,13 @@ export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo
 
     if (Object.keys(w.eagle.filter.filterCamerasMapping).length > 0) {
       w.eagle.filter.filterCameras = Object.keys(w.eagle.filter.filterCamerasMapping);
+      syncFilterFromScope();
       w.eagle.filter.filterCameras = w.eagle.filter.filterCameras.sort(function (a: any, b: any) {
         if (a > b) return 1;
         if (a < b) return -1;
         return 0;
       });
+      syncFilterFromScope();
     }
   }
   else {
@@ -9962,7 +10028,9 @@ export function machineryBatchRenameSmartFolders(s: any): void {
 export function machineryRenameTagGroup(s: any, group: any): void {
   const w = window as any;
   s.currentTagGroup = group;
+  syncTagManagerFromScope();
   s.newGroupName = group.name;
+  syncTagManagerFromScope();
   group.editable = true;
   setTimeout(function () {
     w.$("#group-input-" + group.id).focus().select();
@@ -10396,18 +10464,28 @@ export function machinerySeedControllerState(s: any): void {
         // 为 Angular rebind 系统工件，shim 世界由 bodyState 的 watch 自动跟随；
         // #sidebar 的 resizable 指令（index.html:34）b1 后失效，拖拽写回链待办）
         s.containerSize = { sidebar: 240 };
+        syncSidebarFromScope();
+        syncTagManagerFromScope();
         const sidebarSizeRaw = localStorage.getItem("eagle.containerSize.sidebar");
         if (sidebarSizeRaw) {
             s.containerSize.sidebar = parseInt(sidebarSizeRaw);
+            syncSidebarFromScope();
+            syncTagManagerFromScope();
             if (s.containerSize.sidebar < 200) s.containerSize.sidebar = 200;
+            syncSidebarFromScope();
+            syncTagManagerFromScope();
         }
         const tagSidebarRaw = localStorage.getItem("eagle.containerSize.tagSidebar");
         if (tagSidebarRaw) {
             s.containerSize.tagSidebar = parseInt(tagSidebarRaw);
+            syncSidebarFromScope();
+            syncTagManagerFromScope();
         }
         const tagFilterRaw = localStorage.getItem("eagle.containerSize.tagFilter");
         if (tagFilterRaw) {
             s.containerSize.tagFilter = parseInt(tagFilterRaw);
+            syncSidebarFromScope();
+            syncTagManagerFromScope();
         }
         // fixUtils（bundle 20513 `$scope.fixUtils = {}`——fixutil 进度对话框开合状态载体；
         // 缺席时 body.fixUtils.isFixing 赋值直接 TypeError、7d6c 的 fx/fc 对话框永不出现）
@@ -10416,6 +10494,7 @@ export function machinerySeedControllerState(s: any): void {
         // machineryCalcuteFilterBadge 读取；缺席时 search 链在 updateSuggestions 处
         // TypeError 断链、filterContent 永不执行（b1-9o 探针实证））
         s.containTags = [];
+        syncFilterFromScope();
         // page（bundle 21062 `$scope.page = 1`——rebindRefresh 的
         // `s.filtereds = s.allData.slice(0, s.len * s.page)` 乘数；缺席时 NaN →
         // filtereds 恒空数组（b1-9o 探针实证 a4 空态无法闭合））
@@ -10452,9 +10531,12 @@ export function machinerySeedControllerState(s: any): void {
         }
         s.len = 100;
         s.sidebarList = [];
+        syncSidebarFromScope();
         s.sidebarIndex;
         s.all = [];
+        syncSidebarFromScope();
         s.trash = [];
+        syncSidebarFromScope();
         syncListFromScope();
         s.untaggedCount = 0;
         s.unfiledCount = 0;
@@ -10485,11 +10567,17 @@ export function machinerySeedControllerState(s: any): void {
         s.$root.currentFocus = "sidebar";
         s.showSubfolderContent = false;
         s.showOriginalImageWhenLarge = localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false'
+        syncPanelFromScope();
         s.showName = false;
+        syncPanelFromScope();
         s.showMetas = false;
+        syncPanelFromScope();
         s.showAnnotation = true;
+        syncPanelFromScope();
         s.showFileExtension = true;
+        syncPanelFromScope();
         s.showFileExtensionLabel = true;
+        syncPanelFromScope();
         s.orderBy = localStorage.getItem("eagle.list.orderBy") || "IMPORT";
         s.orderByName = w.i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
         s.isSearchScopeName = true;
@@ -10501,10 +10589,13 @@ export function machinerySeedControllerState(s: any): void {
         s.isSearchScopeAnnotation = true;
         s.isSearchScopeNote = true;
         s.listMetaType = localStorage.getItem("eagle.list.meta.type") || "RESOLUTION";
+        syncPanelFromScope();
         s.sortIncrease = true;
         s.layout = "";
         s.layoutOptions = localStorage["eagle.list.layout.options"] || "Fit";
+        syncPanelFromScope();
         s.paletteQueuePaused = false;
+        syncSidebarFromScope();
         s.paletteQueueDelay = 20;
         
         // Grid Layout 相关
@@ -10747,34 +10838,41 @@ export function machinerySeedControllerState(s: any): void {
 
         if (localStorage.getItem("eagle.list.show.name") == 'false') {
             s.showName = false;
+            syncPanelFromScope();
             w.$("#box-container").addClass("hide-box-name");
         }
         else {
             s.showName = true;
+            syncPanelFromScope();
             w.$("#box-container").removeClass("hide-box-name");
         }
 
         if (localStorage.getItem("eagle.list.show.meta") == 'false') {
             s.showMetas = false;
+            syncPanelFromScope();
             w.$("#box-container").addClass("hide-box-metas");
         }
         else {
             s.showMetas = true;
+            syncPanelFromScope();
             w.$("#box-container").removeClass("hide-box-metas");
         }
 
         if (localStorage.getItem("eagle.list.show.annotation") == 'false') {
             s.showAnnotation = false;
+            syncPanelFromScope();
             w.$("#box-container").addClass("hide-box-annotation");
         }
 
         if (localStorage.getItem("eagle.list.show.extension") == 'false') {
             s.showFileExtension = false;
+            syncPanelFromScope();
             w.$("#box-container").addClass("hide-box-extension");
         }
 
         if (localStorage.getItem("eagle.list.show.extension_LABEL") == 'false') {
             s.showFileExtensionLabel = false;
+            syncPanelFromScope();
             w.$("#box-container").addClass("hide-box-extension-label");
         }
 
@@ -10810,18 +10908,25 @@ export function machinerySeedControllerState(s: any): void {
         s.folders = [];
         s.smartFolders = [];
         s.quickAccess = [];
+        syncSidebarFromScope();
         s.isExpandFolder = true;
+        syncSidebarFromScope();
         s.isExpandSmartFolder = true;
+        syncSidebarFromScope();
         s.isExpandQuickAccess = true;
+        syncSidebarFromScope();
 
         if (localStorage.getItem("eagle.sidebar.folder.expand") == 'false') {
             s.isExpandFolder = false;
+            syncSidebarFromScope();
         }
         if (localStorage.getItem("eagle.sidebar.smartFolder.expand") == 'false') {
             s.isExpandSmartFolder = false;
+            syncSidebarFromScope();
         }
         if (localStorage.getItem("eagle.sidebar.quickAccess.expand") == 'false') {
             s.isExpandQuickAccess = false;
+            syncSidebarFromScope();
         }
 
         s.inspector = w.eagle.inspector;
@@ -10845,7 +10950,11 @@ export function applyDataMachineryScope(): void {
   if (s.__eagleShim && !s.TagManager) {
     const w = window as any;
     w.TagManager = machineryBuildTagManager(s);
+    syncFilterFromScope();
+    syncTagManagerFromScope();
     s.TagManager = w.TagManager;
+    syncFilterFromScope();
+    syncTagManagerFromScope();
   }
 
   // b1-9d：controller init 注入面补种（bundle 20055 `$rootScope.preferences = preferences` /

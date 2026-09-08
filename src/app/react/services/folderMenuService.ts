@@ -21,6 +21,7 @@ import { ContextMenu } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
+import { syncPanelFromScope } from '../store/panelState';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -477,6 +478,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
     return (function (event: any, folder: any) {
       s.viewMode = undefined;
       s.currentFolder = folder;
+      syncPanelFromScope();
       syncFolderLock();
       syncListFromScope();
       folder.editable = true;
@@ -1821,6 +1823,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
     return (function (event: any, smartFolder: any) {
       s.viewMode = undefined;
       s.currentSmartFolder = smartFolder;
+      syncPanelFromScope();
       syncListFromScope();
       smartFolder.editable = true;
       smartFolder.newFolderName = smartFolder.name;
@@ -1877,6 +1880,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         s.openSmartFolder(children[idx]);
       } else {
         s.currentSmartFolder = undefined;
+        syncPanelFromScope();
         syncListFromScope();
         s.openAll();
       }
@@ -1890,6 +1894,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           s.openSmartFolder(children[idx - 1]);
         } else {
           s.currentSmartFolder = undefined;
+          syncPanelFromScope();
           syncListFromScope();
           s.openAll();
         }

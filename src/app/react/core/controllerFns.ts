@@ -33,6 +33,10 @@ import { get, isString, unescape } from '../utils/lang';
 import { syncFolderLock } from '../store/lockState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncListFromScope } from '../store/listState';
+import { syncPanelFromScope } from '../store/panelState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { syncFilterFromScope } from '../store/filterState';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -614,6 +618,7 @@ export function makeControllerFns(getScope: () => any) {
             var foldersMappings = __lv_result.containFoldersMappings;
             
             s.containFolders = [];
+            syncFilterFromScope();
 
             if (__lv_result.noFoldersCount > 0) {
                 s.containFolders.push({
@@ -622,12 +627,14 @@ export function makeControllerFns(getScope: () => any) {
                     isNoFolder: true,
                     imageCount: __lv_result.noFoldersCount
                 });
+                syncFilterFromScope();
             }
 
             eagle.utils.tree.walk(s.folders, 'children', function (folder, parent, depth) {
                 var __lv_folderId = folder.id;
                 if (foldersMappings[__lv_folderId]) {
                     s.containFolders.push(foldersMappings[__lv_folderId]);
+                    syncFilterFromScope();
                 }
             });
         }).apply(null, args);
@@ -711,8 +718,10 @@ export function makeControllerFns(getScope: () => any) {
             const __lv_idx = s.sidebarList.indexOf(folder);
             if (__lv_idx !== -1) {
                 s.sidebarIndex = -1;
+                syncSidebarFromScope();
                 $timeout(function () {
                     s.sidebarIndex = __lv_idx; 
+                    syncSidebarFromScope();
                 }, 1);
             }
         }).apply(null, args);
@@ -1175,6 +1184,7 @@ export function makeControllerFns(getScope: () => any) {
                 }
             }
             eagle.filter.isOpen = true;
+            syncFilterFromScope();
             s.isDetailMode = false;
             s.updateContainerHieght();
             s.page = 1;
@@ -1220,6 +1230,7 @@ export function makeControllerFns(getScope: () => any) {
 
             if (eagle.filter.folderFilterLogic === "AND") {
                 eagle.filter.filterFolderKeyword = "";
+                syncFilterFromScope();
                 $("#filter-folder-list").scrollTop(0);
             }
 
@@ -1964,15 +1975,18 @@ export function makeControllerFns(getScope: () => any) {
             ScrollbarSaver.saveScrollPosition();
 
             s.currentSmartFolder = undefined;
+            syncPanelFromScope();
             syncListFromScope();
             s.$root.currentFocus = focus || "sidebar";
             s.resetPage();
             s.viewMode = undefined;
             s.currentId = currentId || "folder-" + folder.id;
+            syncSidebarFromScope();
             s.currentFolderPath = s.getFolderFullPath(folder);
 
             if (s.currentFolder != folder) {
                 s.currentFolder = folder;
+                syncPanelFromScope();
                 syncFolderLock();
                 syncListFromScope();
                 s.currentFolderChildren = s.getChildFoldersMap(folder);
@@ -2078,6 +2092,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.currentSmartFolder) { s.currentSmartFolder.editable = false; }
 
             s.currentFolder = undefined;
+            syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
             eagle.inspector.reset();
@@ -2088,9 +2103,11 @@ export function makeControllerFns(getScope: () => any) {
             s.resetPage();
             s.viewMode = undefined;
             s.currentId = currentId || "smart-folder-" + smartFolder.id;
+            syncSidebarFromScope();
 
             if (s.currentSmartFolder != smartFolder) {
                 s.currentSmartFolder = smartFolder;
+                syncPanelFromScope();
                 syncListFromScope();
             }
 
@@ -2206,13 +2223,16 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function () {
             eagle.filter.isLock = false;
+            syncFilterFromScope();
             eagle.filter.filterBadge = 0;
             syncListFromScope();
 
             eagle.filter.resetFilterRules();
 
             s.containTags = [];
+            syncFilterFromScope();
             s.containFolders = [];
+            syncFilterFromScope();
 
             eagle.filter.filterRules.import.selectedMonths = {};
             eagle.filter.filterRules.mtime.selectedMonths = {};
@@ -3101,8 +3121,10 @@ export function makeControllerFns(getScope: () => any) {
             }
             if (s.isHideSidebar) {
                 eagle.inspector.isHideInspector = s.isHideSidebar = false;
+                syncPanelFromScope();
             } else {
                 eagle.inspector.isHideInspector = s.isHideSidebar = true;
+                syncPanelFromScope();
             }
             $timeout(function() {
                 s.lastItemStates = {};
@@ -3207,6 +3229,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function () {
             s.isExpandFolder = !s.isExpandFolder;
+            syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.folder.expand", s.isExpandFolder);
             s.updateSidebarList();
         }).apply(null, args);
@@ -3266,6 +3289,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function () {
             s.isExpandQuickAccess = !s.isExpandQuickAccess;
+            syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.quickAccess.expand", s.isExpandQuickAccess);
             s.updateSidebarList();
         }).apply(null, args);
@@ -3345,6 +3369,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function () {
             s.isExpandSmartFolder = !s.isExpandSmartFolder;
+            syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.smartFolder.expand", s.isExpandSmartFolder);
             s.updateSidebarList();
         }).apply(null, args);
@@ -3541,6 +3566,7 @@ export function makeControllerFns(getScope: () => any) {
                         if (!eagle.filter.filterCamerasMapping[camera]) {
                             eagle.filter.filterCamerasMapping[camera] = true;
                             eagle.filter.filterCameras = Object.keys(eagle.filter.filterCamerasMapping);
+                            syncFilterFromScope();
                         }
                     }
                     else {
@@ -3711,6 +3737,7 @@ export function makeControllerFns(getScope: () => any) {
                 });
 
                 s.sidebarList = list;
+                syncSidebarFromScope();
             }, 20);
         }).apply(null, args);
   };
@@ -4711,6 +4738,8 @@ export function makeControllerFns(getScope: () => any) {
     return (function(e, ui) {
         if (ui && ui.size.width >= 200) {
             s.containerSize.sidebar = ui.size.width;
+            syncSidebarFromScope();
+            syncTagManagerFromScope();
             s.$root.$broadcast('$$rebind::refreshContainSize');
             s.updateSliderPosition();
             clearTimeout(__lv_onSidebarResizeTimeout);

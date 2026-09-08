@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { getBodyScope } from '../global/scopeBridge';
+import { useBodyState } from './bodyState';
+import { useListState } from './listState';
 
 /**
  * 阶段3b：筛选面板状态 —— 快照自 EagleController scope + eagle.filter（bundle:312-606 ItemFilter）。
@@ -82,35 +84,40 @@ export const useFilterState = create<{ snapshot: FilterSnapshot }>(() => ({ snap
 
 const setSnapshot = (snapshot: FilterSnapshot) => useFilterState.setState({ snapshot });
 
-export function bindFilterSync(): () => void {
-  return startScopeSync({
-    watch: [
-      'eagle.filter.isOpen',
-      'eagle.filter.filterBadge',
-      'eagle.filter.isLock',
-      'eagle.filter.toolbar',
-      'eagle.filter.pinned',
-      'eagle.filter.filterRules',
-      'eagle.filter.filterCounts',
-      'eagle.filter.filterCameras',
-      'eagle.filter.filterTypes',
-      'eagle.filter.tagFilterLogic',
-      'eagle.filter.folderFilterLogic',
-      'eagle.filter.filterFolderKeyword',
-      'tagKeyword',
-      'containFolders',
-      'containTags',
-      'TagManager.groups',
-      'SavedFilter.filters.length',
-      'SavedFilter.isOpen',
-      'filtereds.length',
-      'keyword',
-      'theme',
-      'filterImportDateMonths',
-    ],
-    build: (scope) => buildSnapshot(scope),
-    apply: (snapshot) => setSnapshot(snapshot as FilterSnapshot),
-  });
+// b1-9by-B：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqFilter(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastFilterSnapshot: any = null;
+
+/**
+ * b1-9by-B：filter 快照直写收敛——eagle.filter 规则流汇聚点 machineryFilterContent
+ * 函数体首 + eagle.filter/containFolders/containTags/tagKeyword/filterImportDateMonths
+ * 写入点直调；keyword/theme/filteredsCount 委托字段经 useBodyState/useListState 订阅
+ * 触发 re-sync。原 startScopeSync 200ms 轮询退役。
+ */
+export function syncFilterFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildSnapshot(scope);
+  if (lastFilterSnapshot !== null && shallowEqFilter(next, lastFilterSnapshot)) return;
+  lastFilterSnapshot = next;
+  setSnapshot(next);
+}
+
+export function bindFilterSync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleFilterSync = syncFilterFromScope;
+  // 委托字段（bodyState/listState 源翻转）变化 → re-sync。
+  useBodyState.subscribe(() => syncFilterFromScope());
+  useListState.subscribe(() => syncFilterFromScope());
+  // 启动期一次性对齐。
+  syncFilterFromScope();
 }
 
 function buildSnapshot(scope: any): FilterSnapshot {

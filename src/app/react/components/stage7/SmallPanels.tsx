@@ -11,6 +11,7 @@ import { filesize } from '../../app/filters';
 import { useTippy } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { $, getIpc, getCurrentWindow, req } from '../detail/detailHooks';
+import { syncPanelFromScope } from '../../store/panelState';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -382,6 +383,7 @@ export function LayoutPanel() {
                     onChange={(e) =>
                       scopeApply(getBodyScope(), (s) => {
                         s.listMetaType = e.target.value;
+                        syncPanelFromScope();
                       })
                     }
                   >

@@ -25,6 +25,9 @@ import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
+import { syncPanelFromScope } from '../store/panelState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncFilterFromScope } from '../store/filterState';
 
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
@@ -71,6 +74,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
     if (!s) return;
     return (function () {
             s.isCleaningTrash = false;
+            syncSidebarFromScope();
             s.trashRemoved = 0;
             s.currentTrashRemoved = 0;
             IPCHelper.send('palette-resume');
@@ -123,6 +127,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                     ayncsImagesRemove(s.trash);
 
                     s.trash = [];
+                    syncSidebarFromScope();
                     syncListFromScope();
                     s.updateSelection();
                     s.rebindRefresh();
@@ -133,6 +138,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                     s.currentTrashRemoved = 0;
                     s.trashRemoved += removeCount;
                     s.isCleaningTrash = true;
+                    syncSidebarFromScope();
                     // 觸發 AI Search 全量同步
                     eagle.aiSearch.fullSync();
 
@@ -514,6 +520,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             }
 
             s.tagKeyword = "";
+            syncFilterFromScope();
             s.filterContent();
         }).apply(null, args);
   };
@@ -526,6 +533,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             s.resetPage();
             s.$root.currentFocus = "content";
             s.currentFolder = undefined;
+            syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
             s.currentFolderChildren = undefined;

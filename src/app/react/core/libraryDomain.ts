@@ -37,6 +37,10 @@ import { syncErrorCount } from '../store/toastState';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncUploadFromScope } from '../store/uploadState';
+import { syncPanelFromScope } from '../store/panelState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { syncFilterFromScope } from '../store/filterState';
 
 declare const ga4track: any;
 declare const IPCHelper: any;
@@ -248,6 +252,7 @@ export function takeoverLibraryDomain(): void {
     if (!s) return;
     s.$evalAsync(function () {
       s.libraryPath = "";
+      syncSidebarFromScope();
       s.isLoading = false;
       s.$root.initMenu();
     });
@@ -413,6 +418,7 @@ export function takeoverLibraryDomain(): void {
     if (!s) return;
     if (w.ig && w.ig.clear) w.ig.clear();
     s.isUILoaded = false;
+    syncSidebarFromScope();
     s.isItemBindCalculated = false;
     if (s.$root && s.$root.$broadcast) s.$root.$broadcast("CLOSE-TAGS-POPUP");
     s.allData = [];
@@ -504,6 +510,7 @@ export function takeoverLibraryDomain(): void {
 
     if (!s.isUILoaded) {
       s.isUILoaded = true;
+      syncSidebarFromScope();
     }
 
     if (w.process.platform == 'darwin') {
@@ -523,14 +530,19 @@ export function takeoverLibraryDomain(): void {
     w.dragging = false;
     s.winMenu = [];
     s.all = [];
+    syncSidebarFromScope();
     s.shuffle = [];
     s.trash = [];
+    syncSidebarFromScope();
     syncListFromScope();
     s.untaggedCount = 0;
     s.unfiledCount = 0;
     s.tags = [];
+    syncSidebarFromScope();
     s.selectedTags = {};
+    syncTagManagerFromScope();
     s.selectingTags = {};
+    syncTagManagerFromScope();
     // allTags = {} —— bundle 闭包死变量（全 bundle 零消费点），略去
     s.lockedImages = {};
     s.itemMappings = {};
@@ -540,6 +552,7 @@ export function takeoverLibraryDomain(): void {
     if (w.eagle && w.eagle.filter) {
       w.eagle.filter.filterExtensions = {};
       w.eagle.filter.filterCameras = [];
+      syncFilterFromScope();
     }
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
 
@@ -550,9 +563,11 @@ export function takeoverLibraryDomain(): void {
     s.selectedMappings = {};
     s.folderMappings = {};
     s.currentFolder = undefined;
+    syncPanelFromScope();
     syncFolderLock();
     syncListFromScope();
     s.currentSmartFolder = undefined;
+    syncPanelFromScope();
     syncListFromScope();
     s.smartFolderMappings = {};
     s.uploadQueue = [];
@@ -565,13 +580,17 @@ export function takeoverLibraryDomain(): void {
     s.usingGifPlayer = false;
     s.showDetailImage = false;
     s.currentTagGroup = undefined;
+    syncTagManagerFromScope();
     s.tagViewMode = "ALL";
+    syncTagManagerFromScope();
     s.folderKeyword = "";
+    syncSidebarFromScope();
     if (w.eagle && w.eagle.filter && w.eagle.filter.filterRules) {
       w.eagle.filter.filterRules.color.gray = false;
     }
     w.hardDiskSpeed = undefined;
     s.showSlowNotify = false;
+    syncSidebarFromScope();
     if (w.SlowNotify) {
       w.SlowNotify.hasShow = false;
       w.SlowNotify.slowCount = 0;
@@ -583,7 +602,9 @@ export function takeoverLibraryDomain(): void {
     // lastProcessedUrlState = null —— controller 闭包 guard（bundle 20539），另一写入方（watcher）仍在，略去
 
     s.libraryName = pathMod.basename(params.rootDir).replace('.library', '');
+    syncSidebarFromScope();
     s.libraryPath = pathMod.normalize(params.rootDir);
+    syncSidebarFromScope();
 
     if (w.process.platform == 'darwin') {
       s.rootDir = encodeURI(params.rootDir);
@@ -608,6 +629,7 @@ export function takeoverLibraryDomain(): void {
 
     const userLayoutOptions = localStorage.getItem("eagle.list.layout.options") || "Fit";
     s.layoutOptions = userLayoutOptions;
+    syncPanelFromScope();
     s.switchLayout(userLayout);
 
     if (w.RecentFileManager && w.RecentFileManager.init) w.RecentFileManager.init(s.libraryName);
@@ -641,8 +663,11 @@ export function takeoverLibraryDomain(): void {
     }
 
     s.quickAccess = params.quickAccess || [];
+    syncSidebarFromScope();
     if (s.TagManager) {
       s.TagManager.groups = params.tagsGroups || [];
+      syncFilterFromScope();
+      syncTagManagerFromScope();
       // Note: 过去版本如果使用者曾经使用批量添加，标签会多了一个 \r 符号
       s.TagManager.groups.forEach(function (group: any) {
         if (group && group.tags) {
@@ -946,6 +971,7 @@ export function takeoverLibraryDomain(): void {
       // 需要判断什么时候在更新画面，什么时候不需要
       s.paletteQueueDelay = state.paletteQueueDelay;
       s.currentProcessCount = number;
+      syncSidebarFromScope();
       void s.lastProcessCount;
 
       requestAnimationFrame(() => {
@@ -977,6 +1003,7 @@ export function takeoverLibraryDomain(): void {
           $backgroundStateComponent.hide();
         }
         s.paletteQueuePaused = state.paletteQueuePaused;
+        syncSidebarFromScope();
         if (!s.paletteQueuePaused) {
           $backgroundStateSpinner.addClass("has-animation");
           $backgroundStateSpinnerIcon.show();
@@ -1067,13 +1094,16 @@ export function takeoverLibraryDomain(): void {
         if (driveType.indexOf("ntfs") > -1 || driveType.indexOf("lifs") > -1) {
           if ((window as any).isVentura) {
             s.showNTFSWarning = isNTFS(s.libraryPath);
+            syncSidebarFromScope();
           }
           else {
             s.showNTFSWarning = true;
+            syncSidebarFromScope();
           }
         }
         else {
           s.showNTFSWarning = false;
+          syncSidebarFromScope();
         }
       }
       catch (err) {

@@ -12,6 +12,7 @@ import { getBodyScope } from '../global/scopeBridge';
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle } from './eagleApi';
 import { syncListFromScope } from '../store/listState';
+import { syncPanelFromScope } from '../store/panelState';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }

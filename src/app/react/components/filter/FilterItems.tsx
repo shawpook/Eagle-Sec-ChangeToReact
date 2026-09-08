@@ -6,6 +6,7 @@ import { shortcuts, shortcutsWrapper, substring } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
 import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
 import { ColorPicker } from './ColorPicker';
+import { syncFilterFromScope } from '../../store/filterState';
 
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
@@ -383,6 +384,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const changeRule = (rule: string) => {
     scopeApply(bodyScope(), (s) => {
       s.eagle.filter.folderFilterLogic = rule;
+      syncFilterFromScope();
       const selectedCount = (s.containFolders || []).filter((f: any) => f && f.isSelected).length;
       if (selectedCount > 0) {
         s.page = 1;
@@ -433,6 +435,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   clearTimeout((window as any).__foldersSearchTimer);
                   (window as any).__foldersSearchTimer = setTimeout(() => {
                     scopeApply(bodyScope(), (s) => { s.eagle.filter.filterFolderKeyword = e.target.value; });
+                    syncFilterFromScope();
                   }, 100);
                 }}
               />
@@ -608,6 +611,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const changeRule = (rule: string) => {
     scopeApply(bodyScope(), (s) => {
       s.eagle.filter.tagFilterLogic = rule;
+      syncFilterFromScope();
       const sel = (s.containTags || []).filter((tg: any) => tg && (tg.isSelected || tg.isExcluded)).length;
       if (sel > 0) {
         s.page = 1;
@@ -660,6 +664,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   clearTimeout((window as any).__tagsSearchTimer);
                   (window as any).__tagsSearchTimer = setTimeout(() => {
                     scopeApply(bodyScope(), (s) => { s.tagKeyword = e.target.value; });
+                    syncFilterFromScope();
                   }, 100);
                 }}
               />

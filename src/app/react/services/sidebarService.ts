@@ -19,6 +19,7 @@ import {
   machineryToggleCurrentLevelSmartFoldersInner,
 } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
+import { syncSidebarFromScope } from '../store/sidebarState';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
@@ -217,26 +218,32 @@ export function updateSidebarList(): void {
 export function clickNode(event: any, folder: any): void {
   const s = getBodyScope();
   if (s) sidebarClickNode(s, event, folder);
+  // b1-9by-B：isSelected/currentId 等节点变异后直推快照（原 200ms 轮询退役）
+  syncSidebarFromScope();
 }
 
 export function clickSmartNode(event: any, smartFolder: any): void {
   const s = getBodyScope();
   if (s) sidebarClickSmartNode(s, event, smartFolder);
+  syncSidebarFromScope();
 }
 
 export function toggleFolderExpand(event: any, folder: any): void {
   const s = getBodyScope();
   if (s) sidebarToggleFolderExpand(s, event, folder);
+  syncSidebarFromScope();
 }
 
 export function toggleSmartFolderExpand(event: any, smartFolder: any): void {
   const s = getBodyScope();
   if (s) sidebarToggleSmartFolderExpand(s, event, smartFolder);
+  syncSidebarFromScope();
 }
 
 export function dblclickSidebarFolder(event: any, folder: any): void {
   const s = getBodyScope();
   if (s) sidebarDblclickFolder(s, event, folder);
+  syncSidebarFromScope();
 }
 
 export function preventMiddleClick(event: any): void {

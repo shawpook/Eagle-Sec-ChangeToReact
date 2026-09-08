@@ -1077,6 +1077,14 @@
 > 回归）。
 >
 
+> **b1-9bw-B：sweetalert2 vendor JS 退役 + 全量门收官（2026-09-08）**
+>
+> src/app/js/vendors/sweetalert2/sweetalert2.all.min.js 删除（24,944B；目录仅存
+> sweetalert2.min.css=类名契约样式，index.html:10 续用）。删除前引用核查：全仓零残留
+> （collect-window 自带副本+swal-dialog.js=独立供给链不动；preview/viewers/preferences
+> 零 swal 消费）。**门禁**：esbuild EXIT:0 + 套件 ALL GREEN。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

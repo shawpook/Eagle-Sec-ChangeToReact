@@ -1085,6 +1085,54 @@
 > 零 swal 消费）。**门禁**：esbuild EXIT:0 + 套件 ALL GREEN。
 >
 
+> **【P3-bx 考据定案：tippy v6.3.7 自研 + 三小件评估（2026-09-08）】**
+>
+> vendor 考据：js/vendors/tippy.js = **v6.3.7**（102KB UMD 全家桶：core + animateFill/
+> followCursor/inlinePositioning/sticky；运行时注入 css 1,289B——`var css` 字面量，即样式
+> 规格书）。加载点 index.html:198 + preview-window.html:42。classic 面零活消费
+> （media-element.js=死 Angular 指令）。
+> **消费面盘点**（23 文件 369 处提及 = JSX 标记属性为主）：API 面 = `tippy(el, options)`
+> 构造 ×7 站点（hooks.ts useTippy + Sidebar.tsx:255 内联复制 + viewers/font/entry.tsx
+> 452/455）+ `instance.destroy()`。**零其他实例方法**（_tippy/.setContent/hideAll/
+> .unmount 全仓零消费）。useTippy hook（components/hooks.ts）5 引用（FilterItems2/Sidebar/
+> SmallPanels/Toolbar + preview-window/shell.tsx:225 经 hooks import）：扫
+> [tippy][tippy-content] → tippy(el,{animation:'scale',arrow:false,content,placement:
+> attr||'right',allowHTML:true}) → cleanup destroy；单颗失败 try/catch 不中断兄弟。
+> **options 并集**：content(string)/placement/animation:'scale'/**vendor 无 scale
+> keyframes（grep 实证——纯 data 属性，无专属样式，show/hide 即普通过渡）**/arrow:false/
+> allowHTML:true；font-viewer 简参 {content, placement:'right'}（且不 destroy=重复调用
+> ——自研须单例幂等）。placement 标记值分布：bottom 85/top 21/left 2/right 2（四向全）。
+> **DOM/行为契约**：div[data-tippy-root]（popper，appendTo 默认 document.body——
+> non-interactive 分支）> .tippy-box[data-placement^=X][data-animation=scale][data-state]
+> > .tippy-arrow（arrow:false 时不建）+ .tippy-content（allowHTML → innerHTML，含
+> &lt;key&gt; 键帽标记）；trigger=mouseenter/focus show、mouseleave/blur hide；z-index
+> 9999999。tests：stage5 断言 `#eagle-detail-host [tippy][data-tippy-root],
+> #eagle-detail-host [tippy]`（后者=参考元素在 host 内即满足）、8e 断言 tippy-content
+> 属性值、9a3 断言预览窗挂载——**[tippy]/[tippy-content]/[tippy-placement] 标记属性
+> 契约必须原样保留**。
+> **自研定案**：react/core/tippyLite.ts（~260 行）installTippy() 幂等挂 w.tippy——单例
+> /元素（el._tippy 幂等守卫）、mouseenter/focus+mouseleave/blur 事件、原生定位算法
+> （placement 四向 + getBoundingClientRect + viewport clamp）、destroy() 全清、css 逐字
+> 注入 once。useTippy/Sidebar/font-viewer 零改动（经 window.tippy 透明换装）。
+> **附带评估三件（计划"逐个评估"）**：
+> - **jquery-audio.js（1,068B）**：$.playSound（debounce 500 immediate，audio+embed DOM
+>   appendTo body）/$.stopSound（remove .sound-player）——消费面 dataMachinery 10320-10334
+>   音效三件套 ×3 → 自研 react/core/audioPlugin.ts（vanilla DOM 去 jQuery）；
+> - **artstation-download.js（7,644B，应用代码非第三方库）**：Artstation.isValidUrl/
+>   getUserNameFromUrl/getUserInfo/getUserProjects 四方法（BatchRenameArtstationModals
+>   消费；title/loading/urlLabel/folderLabel/import/importManual 为 i18n 键非方法）→
+>   逐字移植 react/core/artstation.ts（$.getJSON→fetch、require('async') parallelLimit→
+>   本地实现）挂 w.Artstation；
+> - **flatpickr（43,604B）**：有消费面（智能文件夹日期规则：单值/between 双值/
+>   enableTime/zh locale，FolderSelectPanels FlatpickrInput）→ 自研=完整月历组件
+>   （网格/翻页/range/时间输入），量级独立成批 → **拆独立批 b1-9bx2**（bx 收官后单独
+>   定案施工）。
+> **施工定案两笔**：bx-A = tippyLite.ts + install ×2（bundleGlobals + preview entry）+
+> 两 html script 标签摘除 + tippy.js 删除 + 专项探针 + 套件（stage5/8e/9a3 天然回归）；
+> bx-B = audioPlugin.ts + artstation.ts + jquery-audio.js/artstation-download.js 删除 +
+> 探针 + 套件。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

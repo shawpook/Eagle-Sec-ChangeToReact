@@ -1133,6 +1133,32 @@
 > 探针 + 套件。
 >
 
+> **b1-9bx-A：tippy v6.3.7 自研替换——tippyLite.ts install 化 + 双窗接线（2026-09-08）**
+>
+> 新模块 react/core/tippyLite.ts（~190 行）：tippy(el, options) 构造（单例幂等 el._tippy
+> ——font-viewer 重复调用在 vendor 下本就是双 popper 缺陷，本实现收敛为内容更新语义）+
+> destroy() 全清 + 原生定位算法（placement 四向含 -start/-end 对齐 + 主轴 10px
+> （vendor offset [0,10]）+ viewport 8px clamp，popper fixed 定位与
+> getBoundingClientRect 同 viewport 坐标系）+ mouseenter/focus show、mouseleave/blur
+> hide 状态机（data-state visible/hidden + visibility）+ css 1,289B 逐字注入（#eagle-
+> tippy-css once）。**vendor 无 scale keyframes（grep 实证）**——'scale' animation 纯
+> data 属性，无专属样式需复刻。**实例面补课**：props 镜像（tests/stage9a3 断言
+> instance.props.content——首跑套件 stage9a3 pw3a-tippy-mounted 单点 FAIL 抓出，补
+> props: {...options} 后复绿；instance 实例属性消费仅此一处）。
+> **接线 ×2**：bundleGlobals installTippy()（dialog 同区）+ preview-window/entry.tsx
+> 模块求值期（keymap 同款时序）。**退役**：index.html:198 + preview-window.html:42
+> script 标签摘除（带归档注释）+ js/vendors/tippy.js 删除（102KB）。useTippy/Sidebar/
+> font-viewer 零改动（经 window.tippy 透明换装）；[tippy]/[tippy-content]/
+> [tippy-placement] 标记属性契约原样（stage5/8e 断言面）。
+> **门禁**：esbuild 双入口 EXIT:0；bx-probe1 九断言全绿（facade+css 注入/useTippy 同构
+> 流程 DOM 结构（data-tippy-root 落 body/.tippy-box data-placement^=bottom/
+> data-animation=scale/allowHTML 键帽标记）/show-hide 状态机+bottom 定位 sanity/三向
+> 几何（top/left/right）/arrow 默认存在 vs false 不建/destroy 全清/单例幂等（v1→v2 收敛
+> +现网 24 popper 隔离计数）/现网 [tippy] 参考元素在位/零 ReferenceError）。探针坑 ×3：
+> 测试元素无定位被 viewport clamp 假阴（补 fixed 定位）、③未 show 读坐标 null、⑥全局
+> popper 计数混入现网 useTippy 实例（改按内容过滤计数）。**套件 ALL GREEN**。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

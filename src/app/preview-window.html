@@ -39,7 +39,9 @@
     window.EAGLE_THUMBNAIL_TEMP_PATH = window.path.normalize((window.USER_DATA_PATH || '') + '/eagle-temp');
     try { window.electronSettings = require(appRoot + '/my_modules/electron-settings'); } catch (err) {}
     </script>
-    <script src="js/vendors/tippy.js"></script>
+    <!-- b1-9bx-A：tippy.min.js 退役——自研 tippyLite（react/core/tippyLite.ts），
+         preview bundle 不走 installBundleGlobals，由 preview-window/entry.tsx 模块求值期
+         installTippy() 供给 window.tippy（shell 的 useTippy 消费面，契约见 PROGRESS P3-bx）。 -->
     <script src="js/vendors/jquery-1.8.0.min.js"></script>
     <script src="js/vendors/jquery-ui.min.js"></script>
     <script src="js/global.js"></script>

@@ -1,4 +1,5 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
+import { detailZoom, ensureDetailZoom } from '../core/smoothZoomEngine';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -667,7 +668,7 @@ scope.updateZoomRatio = function (ratio: number, x: any, y: any, hasTransition?:
     }, 300);
   }
 
-  (window as any).$('#detail-container').smoothZoom('focusTo', {
+  detailZoom()?.focusTo( {
     zoom: scope.imageSize.zoomRatio,
     pageX: pageX,
     pageY: pageY,
@@ -873,16 +874,16 @@ scope.rotateImage = function (event: any, image: any, writeToFile = false) {
     if (!event.shiftKey) {
       degree = degree - 90;
       rotationDegree = -90;
-      (window as any).$('#detail-container').smoothZoom('rotate', { angle: -90, item: rotatedImage });
+      detailZoom()?.rotate( { angle: -90, item: rotatedImage });
     } else {
       degree = degree + 90;
       rotationDegree = 90;
-      (window as any).$('#detail-container').smoothZoom('rotate', { angle: 90, item: rotatedImage });
+      detailZoom()?.rotate( { angle: 90, item: rotatedImage });
     }
   } else {
     degree = degree - 90;
     rotationDegree = -90;
-    (window as any).$('#detail-container').smoothZoom('rotate', { angle: -90, item: rotatedImage });
+    detailZoom()?.rotate( { angle: -90, item: rotatedImage });
   }
 
   (window as any).$('#detail-image').data('degree', degree);
@@ -940,7 +941,7 @@ scope.flipImage = function (event: any, image: any, writeToFile = false) {
     scaleX = -1;
   }
 
-  (window as any).$('#detail-container').smoothZoom('flip', scaleX, scaleY);
+  detailZoom()?.flip( scaleX, scaleY);
 
   const shouldWriteToFile = writeToFile && scope.preferences?.habits?.imageRotateMode === 'write';
   if (shouldWriteToFile && rotatedImage) {
@@ -1063,7 +1064,7 @@ scope.zoomFitEdge = function (event: any, hasTransition?: boolean) {
     scope.zoomFitSize = scope.imageSize.zoomRatio;
   }
 
-  (window as any).$('#detail-container').smoothZoom('focusTo', {
+  detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,
     zoom: scope.imageSize.zoomRatio,
@@ -1160,20 +1161,20 @@ scope.toggleVideoPlay = function () {
 };
 
 scope.homeHandler = function (event: any) {
-  (window as any).$('#detail-container').smoothZoom('goToY', 40);
+  detailZoom()?.goToY( 40);
 };
 
 scope.endHandler = function (event: any) {
-  (window as any).$('#detail-container').smoothZoom('goToY', -99999999);
-  (window as any).$('#detail-container').smoothZoom('moveY', -window.outerHeight + 60);
+  detailZoom()?.goToY( -99999999);
+  detailZoom()?.moveY( -window.outerHeight + 60);
 };
 
 scope.upHandler = function () {
-  (window as any).$('#detail-container').smoothZoom('moveY', -100);
+  detailZoom()?.moveY( -100);
 };
 
 scope.downHandler = function () {
-  (window as any).$('#detail-container').smoothZoom('moveY', 100);
+  detailZoom()?.moveY( 100);
 };
 
 /* ---- 导航（1761-1795 逐字） ---- */
@@ -1190,7 +1191,7 @@ scope.selectNext = function (event?: any) {
   } else {
     return;
   }
-  (window as any).$('#detail-container').smoothZoom('updateNavigator', scope.current);
+  detailZoom()?.updateNavigator( scope.current);
   scope.zoom();
 };
 
@@ -1206,7 +1207,7 @@ scope.selectPrev = function (event?: any) {
   } else {
     return;
   }
-  (window as any).$('#detail-container').smoothZoom('updateNavigator', scope.current);
+  detailZoom()?.updateNavigator( scope.current);
   scope.zoom();
 };
 
@@ -1867,7 +1868,7 @@ scope.smartZoom = function () {
     scope.imageSize.zoomRatio = parseInt(String(ratio));
   }
 
-  (window as any).$('#detail-container').smoothZoom('focusTo', {
+  detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,
     zoom: scope.imageSize.zoomRatio,
@@ -1900,7 +1901,7 @@ function isMobileResolution(w: number, h: number) {
 
 function initContainer() {
   scope.showDetailImage = false;
-  (window as any).$('#detail-container').smoothZoom({
+  ensureDetailZoom({
     width: '100%',
     height: '100%',
     responsive: true,
@@ -1917,7 +1918,7 @@ function initContainer() {
     zoom_MIN: 5,
     on_IMAGE_LOAD: function () {
       setTimeout(function () {
-        (window as any).$('#detail-container').smoothZoom('updateNavigator', scope.current);
+        detailZoom()?.updateNavigator( scope.current);
         (window as any).$(window).trigger('orientationchange');
         scope.zoom();
         (window as any).$('#detail-container').css('opacity', 1);

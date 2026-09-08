@@ -752,6 +752,53 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **【b1-9bl-B 连带清算：bo-bt 迁移服务 link-var 漏带 3 服务 + 7d1a 存疑（2026-09-08）】**
+>
+> 全量套件（bl 后首跑，亦是 bq 以来首次全量）暴露 3 红，两红已修一红存疑：
+> ① **1c3 cleanSelected**——batchOpsService 迁移漏带闭包变量 `__lv_cleanSelectedTimeout`
+> （严格模式赋值即 ReferenceError；c3 直接调用现形）。修：服务模块声明 + select 的取消点
+> 改走 `cancelCleanSelectedTimeout()` 导出（controllerFns 闭包旧声明与 2500 行取消点删除，
+> 保持 select 取消 pending timer 契约单源）。
+> ② **7c2 qs-tag-open-viewmode**——openTag 体直引 `__lv_TagManager.filterWithTags`（服务内
+> 未声明）→ ReferenceError 中断 viewMode 结算链；且 5 个迁移服务的
+> `try { initLinkVars(); } catch` 全为 no-op（initLinkVars 本体是 controllerFns 闭包私有，
+> 无导出无导入）。修：batchOps/imageOps/fontTag 三服务本地重建 initLinkVars
+> （getBodyScope().TagManager 晚挂载解析，controllerFns 278 行同式）+ 补声明漏带 var
+> （__lv_TagManager×3 / __lv_calculateImageBindingTimeout / __lv_lastRotateImage /
+> __lv_pinyinCache / __lv_rotateImage*Timeout×2 / __lv_onTagSidebarResizeTimeout /
+> __lv_path）。folderCore/miscMenu/itemMenu/folderMenu 盘点无缺（miscMenu 的
+> __lv_target 为 $__lv_target 误报）。
+> ③ **7d1a mv-closed（未解，下会话续）**——move-folder 弹窗 confirm 后不关。诊断已排除：
+> swal 正常 resolve（PRE click 时 open→POST 500ms 仍 open→FINAL 1.1s 已关，关闭偏慢本身
+> 亦可疑）；folderMappings 双方都在（mapLen=3，target/fav mapped=true）→ mv-data-plane
+> 非空洞通过，move 真实发生 → onConfirm 必已执行到 cancel()；PAGE_EXC 监听零捕获（无
+> 未处理异常）。剩余嫌疑：cancel() 的 setView(open:false) 被 scopeShim/startScopeSync
+> 的 store 回声或 watcher 抵消（对照 7c 同值 setState 抹类教训的逆向面）；或
+> FolderModals 双组件实例（AddToFolder 1376 / MoveFolder 1996）portal 目标交叉；或 swal
+> 关闭延迟暴露 then 链时序。工具：tests-tmp/react-stage7d1a-smoke-dbg.mjs（PAGE_EXC 监听
+> + 三处状态快照已就位），tests-tmp/7d1a-dbg-out{,2,3}.txt 留档。
+> **哨兵盲点重申**：vendorScriptTags 只读主窗 index.html（预览窗 min.js 摘除不可见）。
+>
+>
+> **b1-9bl-B：S4 批 12 收官——preview-window 切同引擎 + vendor 双文件删除（2026-09-08）**
+>
+> controller.ts 16 点同款手术（init 1903→ensureDetailZoom，15 method→`detailZoom()?.m`，
+> `(window as any).` 前缀 16 处剥离，import 自 '../core/smoothZoomEngine'）。
+> preview-window.html 摘 `js/vendors/jquery.smoothZoom.min.js` 标签 + **window.angular
+> stub 整块删除**（stub 唯一消费方即 min.js 的 5 处 angular.element 兜底；global.js/
+> devices.js 零 angular）。**vendor 文件双双退役**：`git rm src/app/js/vendors/
+> jquery.smoothZoom.min.js`（130KB 压缩版）+ `frontend/public/vendor/eagle-smooth-zoom.js`
+> （3,988 行提取版；复现脚本 tests-tmp/extract-smooth-zoom.py 保留）。引擎硬编码
+> `#detail-container` 查找双窗通用（预览窗同 id），jQuery/jquery-ui/bitmapWorker 路径
+> 预览窗均在位。**哨兵盲点录档**：vendorScriptTags 口径只读主窗 index.html
+> `<script src="js/vendors/">`，预览窗标签从未入计数（本次 -1 不可见）——后续 bw/bx
+> 摘主窗 swal/tippy 时才会走该口径下降。
+> 门禁：tsc 0 + esbuild(node) OK + 哨兵 OK（基线零变更）+ preview-delivery-closed-loop
+> OK（image/jpg/svg/gif/pdf/video/mpv 交付矩阵 + 重命名 + 回收站/缺失拒绝 + 翻页 +
+> open-default/reveal/copy-path/copy-image/drag 动作面）+ native-preview-closed-loop OK
+> + 全量套件（结果见下批注记）。**S4-bl 完成：smoothZoom 剥壳双窗卸载**。
+>
+>
 > **b1-9bl-A：S4 批 12——smoothZoom 引擎+BitmapViewer 剥壳归位（主窗，2026-09-08）**
 >
 > 按上方考据定案执行：`core/bitmapViewer.ts`（vendor 29-826 逐字，809 行）+

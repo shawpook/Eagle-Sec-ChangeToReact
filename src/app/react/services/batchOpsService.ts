@@ -24,6 +24,21 @@ import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
 
+// b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
+// initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
+// （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
+// try { initLinkVars(); } 从 no-op 转为真实供给。
+var __lv_cleanSelectedTimeout;
+var __lv_TagManager;
+const initLinkVars = () => {
+	const s0: any = getBodyScope();
+	if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
+};
+
+export function cancelCleanSelectedTimeout(): void {
+	try { $timeout.cancel(__lv_cleanSelectedTimeout); } catch (err) { /* $timeout shim 未就绪时无 timer 可取消 */ }
+}
+
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

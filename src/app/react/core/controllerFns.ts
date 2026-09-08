@@ -22,7 +22,7 @@ import { machineryGetVideoPlayer, machineryCalcRotateDegree, machineryGetFolderP
 import { itemMenuOpenItemContextMenu } from '../services/itemMenuService';
 import { installFolderMenuFns } from '../services/folderMenuService';
 import { installMiscMenuFns } from '../services/miscMenuService';
-import { installBatchOpsFns } from '../services/batchOpsService';
+import { installBatchOpsFns, cancelCleanSelectedTimeout } from '../services/batchOpsService';
 import { installFolderCoreFns } from '../services/folderCoreService';
 import { installImageOpsFns } from '../services/imageOpsService';
 import { installFontTagFns } from '../services/fontTagService';
@@ -224,7 +224,8 @@ export function makeControllerFns(getScope: () => any) {
   var __lv_openSmartFolderTimeout;
   var __lv_updateSidebarListTimeout;
   var __lv_calculateFilterCountsTimeout;
-  var __lv_cleanSelectedTimeout;
+  // __lv_cleanSelectedTimeout → batchOpsService 模块单源（b1-9bl-B；select 取消点走
+  // cancelCleanSelectedTimeout 导出，保持 select 取消 pending cleanSelected timer 契约）
   var __lv_start;
   var __lv_image;
   var __lv_video;
@@ -2496,7 +2497,7 @@ export function makeControllerFns(getScope: () => any) {
             $("input:focus").blur();
             $("[contenteditable]:focus").blur();
 
-            $timeout.cancel(__lv_cleanSelectedTimeout);
+            cancelCleanSelectedTimeout();
 
             if (s.isPreviewing) {
                 s.isPreviewing = false;

@@ -18,6 +18,18 @@ import { getBodyScope } from '../global/scopeBridge';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
+// b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
+// 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
+// try { initLinkVars(); } 从 no-op 转为真实供给。
+var __lv_TagManager;
+var __lv_onTagSidebarResizeTimeout;
+var __lv_path;
+const initLinkVars = () => {
+	const s0: any = getBodyScope();
+	if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
+	if (!__lv_path) __lv_path = _req('path');
+};
+
 const i18n: any = (window as any).i18n;
 const eagle: any = (window as any).eagle;
 const swal: any = (...args: any[]) => (window as any).swal(...args);

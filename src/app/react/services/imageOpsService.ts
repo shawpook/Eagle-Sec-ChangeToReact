@@ -23,6 +23,20 @@ import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
 
+// b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
+// 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
+// try { initLinkVars(); } 从 no-op 转为真实供给。
+var __lv_TagManager;
+var __lv_calculateImageBindingTimeout;
+var __lv_lastRotateImage;
+var __lv_rotateImageSaveTimeout;
+var __lv_rotateImageTimeout;
+var __lv_pinyinCache = {};
+const initLinkVars = () => {
+	const s0: any = getBodyScope();
+	if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
+};
+
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

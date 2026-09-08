@@ -21,6 +21,7 @@ import { eagle as coreEagle } from './eagleApi';
 import { coreState } from './appCore';
 import { getBodyScope } from '../global/scopeBridge';
 import { get } from '../utils/lang';
+import { installHoverPreview } from './hoverPreview';
 
 declare const Buffer: any;
 
@@ -1569,27 +1570,12 @@ export function installBundleGlobals(): void {
     } catch (err) { /* noop */ }
   }
 
-  // c16b：hover-preview 子系统（bundle 50414-52048 顶层单元逐字节提取：cleanupBoxHoverPreview/
-  // startHoverPreviewWatch/removePlayingAudios/removeBoxAudioPlayer/HoverPreview——文件内
-  // 互引同 script 解析，$bodyScope/FileUrlHelper/$ 经 window 调用时解析）
-  if (!w.HoverPreview) {
-    try {
-      fetch('/vendor/eagle-hover-preview.js')
-        .then((r) => r.text())
-        .then((txt) => {
-          try {
-            const script = document.createElement('script');
-            script.textContent = txt;
-            document.head.appendChild(script);
-            script.remove();
-            if (w.__eagleBundleGlobals) w.__eagleBundleGlobals.hoverPreviewLoaded = true;
-          } catch (err) {
-            console.error('[bundleGlobals] hover-preview exec failed', err);
-          }
-        })
-        .catch((err) => console.error('[bundleGlobals] hover-preview fetch failed', err));
-    } catch (err) { /* noop */ }
-  }
+  // ── c16b→b1-9bu-A：hover-preview 注入块退役 ─────────────────────────────
+  // 原 fetch('/vendor/eagle-hover-preview.js') 注入 + cleanupBoxHoverPreview/
+  // removePlayingAudios if-absent 重复定义已摘除——改由 react/core/hoverPreview.ts
+  // installHoverPreview() 同步供给（消 load 竞态）；安装点在 _throttle 挂载之后
+  // （vendor body 委托绑定 install 期即以裸 throttle 实例化，bundle 2400 helper
+  // 签名 fn/delay/immediate 与 utils/func 版不同，不可换用）。
 
   // c18a：缩放辅助（devicesMetrics 数据表 8245-8339 逐字节提取 + isMobileResolution/
   // getImagePixelDensity/isMobileWidth 移植（controller 闭包函数，非顶层）——machinerySmartZoom
@@ -1653,62 +1639,7 @@ export function installBundleGlobals(): void {
   // playingAudiosElements（bundle 全局 let——cleanupBoxHoverPreview 归零写）
   if (!w.playingAudiosElements) w.playingAudiosElements = [];
 
-  // cleanupBoxHoverPreview（bundle 50414-50457 逐字；hover 预览/音视频/iframe 清理）
-  if (!w.cleanupBoxHoverPreview) {
-    w.cleanupBoxHoverPreview = function ($box: any) {
-      if (!$box || !$box.length || !$box.hasClass('hover-active')) return;
-      $box.removeClass('hover-active');
-      clearTimeout($box[0]._spinnerTimeout);
 
-      var $thumbnail = $box.find('.thumbnail');
-      var $image = $thumbnail.find('img');
-      $image.show();
-
-      // Video — pause 停渲染 → remove 脫離 DOM → 清 src 釋放資源
-      $thumbnail.find('video').each(function (this: any) {
-        try { this.pause(); } catch (e) {}
-        w.$(this).remove();
-        try { this.src = ''; this.load(); } catch (e) {}
-      });
-
-      // MPV
-      $thumbnail.find('mpv-video').each(function (this: any) {
-        try { this.destroy(); } catch (e) {}
-      }).remove();
-
-      // Audio
-      $thumbnail.find('audio').each(function (this: any) {
-        try { this.pause(); this.src = ''; } catch (e) {}
-      }).remove();
-      w.playingAudiosElements = [];
-
-      // Iframe (YouTube/Vimeo)
-      $thumbnail.find('.iframe-wrap').each(function (this: any) {
-        try { w.$(this).find('iframe')[0].src = ''; } catch (e) {}
-      }).remove();
-
-      // 停用 iframe postMessage 狀態，避免 stale message handler 繼續更新已移除的 UI
-      if (typeof w._vimeoPlayerState !== 'undefined') w._vimeoPlayerState.active = false;
-      if (typeof w._ytPlayerState !== 'undefined') w._ytPlayerState.active = false;
-
-      // UI
-      $thumbnail.find('.video-loading-spinner').remove();
-      $thumbnail.find('.video-progress-bar, .audio-progress-bar, .audio-progress-bar-cursor, .current-time, .controls').remove();
-      $thumbnail.find('.mute-toggle').off().remove();
-      $thumbnail.find('.autoplay-toggle').off();
-      $image.off('mousedown.duration').off('mousemove.progressCursor');
-      $thumbnail.find('.hover-sentinel').remove();
-    };
-  }
-
-  // removePlayingAudios（bundle 51042-51045 逐字）
-  if (!w.removePlayingAudios) {
-    w.removePlayingAudios = function () {
-      w.$('#box-container .box.hover-active').each(function (this: any) {
-        w.cleanupBoxHoverPreview(w.$(this));
-      });
-    };
-  }
 
   // openWithApplicationPath（bundle 49552-49565 逐字）
   if (!w.openWithApplicationPath) {
@@ -2030,6 +1961,9 @@ export function installBundleGlobals(): void {
 
   if (!w.guid) w.guid = _guid;
   if (!w.throttle) w.throttle = _throttle;
+
+  // b1-9bu-A：hover-preview 家族同步安装（原 c16b 注入块退役；Z 键监听段随 install 回填）
+  installHoverPreview();
   if (!w.debounce) w.debounce = _debounce;
   if (!w.fuzzy_match) w.fuzzy_match = _fuzzy_match;
   if (!w.decodeBase64Image) w.decodeBase64Image = _decodeBase64Image;
@@ -2277,6 +2211,7 @@ export function installBundleGlobals(): void {
   // 诊断契约：冒烟断言全部关键全局在位（bundle 在世 = 沿用其绑定；b1 后 = 本模块供给）
   (window as any).__eagleBundleGlobals = {
     installed: true,
+    hoverPreviewLoaded: true,   // b1-9bu-A：hover-preview 改 installHoverPreview 同步供给（原 c16b 注入标记）
     present: ['appRoot', 'EagleConfig', 'VIDEO_TYPES', 'AUDIO_TYPES', 'FONT_TYPES', 'SPECIAL_TYPES',
       'fileSize', 'fse', 'tinyPinyin', 'pinyinlite', 'readChunk', 'writeFileAtomic', 'cartesianProduct',
       'sanitize', 'unicodeNormalize', 'chineseConvert', 'colorConvert', 'DeltaE', 'installedFonts',

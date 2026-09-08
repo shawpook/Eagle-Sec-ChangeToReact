@@ -790,6 +790,31 @@
 > 套件收官。门禁沿 bl 惯例 + 真机探针先行。
 >
 
+> **b1-9bu-A：悬浮预览家族逐字接管——hoverPreview.ts install 化 + Z 键复活（2026-09-07）**
+>
+> 四步原子批：① /vendor/eagle-hover-preview.js（494 行）→ react/core/hoverPreview.ts
+> install 化逐字搬迁（js/hover-preview.js 361-387 Z 键 keydown/keyup 监听段回填——
+> b1-9am 按函数选拼缺失段、b1-9aw 仅回填声明，"Z 键预览复活"结论经本轮探针证伪；
+> mouseoverAudioProgressTimeout 提取片缺失声明补齐；$bodyScope/playingAudiosElements/
+> HoverPreviewKeydown 显式 _w 前缀跨世界共享存储）；② bundleGlobals c16b fetch 注入块
+> + cleanupBoxHoverPreview/removePlayingAudios if-absent 重复定义摘除（消 load 竞态），
+> installHoverPreview() 挂 _throttle 之后同步调用（vendor body 委托绑定 install 期即以
+> 裸 throttle 实例化——bundle 2400 helper 签名 fn/delay/immediate 与 utils/func 版不同
+> 不可换用），hoverPreviewLoaded 诊断标志移 __eagleBundleGlobals 对象字面量（原赋值点
+> 早于对象创建恒 false）；③ controllerFns:2484 `HoverPreviewKeydown = false` 裸赋值
+> strict-mode 活雷拆除（ESM 语义下 zoom-btn 悬停中点击 box 即 ReferenceError 断选中链）；
+> ④ 两死文件退役：frontend/public/vendor/eagle-hover-preview.js + src/app/js/
+> hover-preview.js（零 script 引用实锤）。消费点零改动（window facade：dataMachinery/
+> itemMenuService/controllerFns/gridDirectives）。
+> **门禁**：esbuild 快检 EXIT:0；bu-probe1 五断言全绿（facade 面/mouseover lastElem/
+> Z down→isShow+容器 show 类/Z up 归零/悬停零 ReferenceError）——Z 键悬停预览自 React
+> 切换以来首次复活；ui-interactions ⑦⑧ 新增 z-key-shows/hides-hover-preview 入库
+> （checks 7→9；首跑 ⑦ 假阴定位 = ④ 排序面板 #layout-panel-search 自聚焦常驻，Z 键
+> 设计即输入焦点静默——断言前置 blur 还原网格焦点态）；全量套件 53/55 绿，stage7a
+> cm-overlay-close + main-ui-workflow multi-inspector 两败均单跑复验绿（已知负载偶发
+> 家族，与 bu 变更无涉——7a/1c2 面不触 hover 链）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

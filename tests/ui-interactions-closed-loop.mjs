@@ -185,8 +185,25 @@ try {
   const hoverErrors = await evaluate(`window.__uxErrors.slice(0, 5)`);
   assert('hover-zero-reference-errors', hoverErrors.length === 0, hoverErrors);
 
+  // ⑦ Z 键悬停预览全链（b1-9bu-A 复活实锚：b1-9am 提取片缺 keydown/keyup 段，
+  //    b1-9aw 仅回填声明、绑定从未到位——本断言锁住 mouseover→lastElem→Z→show→keyup→hide）
+  //    前置：④ 排序面板搜索框 #layout-panel-search 自聚焦且常驻——Z 键设计即输入焦点
+  //    时静默（keydown 守卫 + show() input:focus 守卫双重），blur 还原网格焦点态
+  await evaluate(`(() => { const ae = document.activeElement; if (ae && ae.blur) ae.blur(); return true; })()`);
+  await delay(150);
+  await sendT('Input.dispatchMouseEvent', { type: 'mouseMoved', x: centers[0].x, y: centers[0].y });
+  await delay(300);
+  await sendT('Input.dispatchKeyEvent', { type: 'keyDown', key: 'z', code: 'KeyZ', windowsVirtualKeyCode: 90 });
+  await delay(250);
+  const zShow = await evaluate(`(() => ({ show: window.HoverPreview.isShow, kd: window.HoverPreviewKeydown }))()`);
+  assert('z-key-shows-hover-preview', zShow.show === true && zShow.kd === true, zShow);
+  await sendT('Input.dispatchKeyEvent', { type: 'keyUp', key: 'z', code: 'KeyZ', windowsVirtualKeyCode: 90 });
+  await delay(250);
+  const zHide = await evaluate(`(() => ({ show: window.HoverPreview.isShow, kd: window.HoverPreviewKeydown, err: window.__uxErrors.length }))()`);
+  assert('z-keyup-hides-hover-preview', zHide.show === false && zHide.kd === false && zHide.err === 0, zHide);
+
   if (failures.length > 0) throw new Error(`UI interaction assertions failed: ${failures.join(', ')}`);
-  console.log(`UI_INTERACTIONS_CLOSED_LOOP_OK ${JSON.stringify({ checks: 7 })}`);
+  console.log(`UI_INTERACTIONS_CLOSED_LOOP_OK ${JSON.stringify({ checks: 9 })}`);
 } catch (err) {
   failure = err;
   console.error(`UI_INTERACTIONS_CLOSED_LOOP_FAIL ${err.message}`);

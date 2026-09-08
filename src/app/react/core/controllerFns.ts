@@ -2481,7 +2481,7 @@ export function makeControllerFns(getScope: () => any) {
 
             if (HoverPreview.isShow) {
                 HoverPreview.hide();
-                HoverPreviewKeydown = false;
+                (window as any).HoverPreviewKeydown = false;
                 HoverPreview.lastElem = undefined;
             }
 

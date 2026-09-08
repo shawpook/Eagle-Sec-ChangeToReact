@@ -1,3 +1,161 @@
+/**
+ * b1-9bu-A：/vendor/eagle-hover-preview.js 剥壳归位——悬浮预览家族逐字搬迁 install 化
+ * （vendor 494 行全量 + js/hover-preview.js Z 键监听段回填——b1-9am 按函数选拼提取时
+ * 绑定段落在区间外，Z 键悬停预览自 React 切换起死，b1-9aw 仅回填声明未到位；
+ * 考据定案见 PROGRESS「P2-bu」。mouseoverAudioProgressTimeout 为提取片缺失声明补齐
+ * （vendor:116 裸引用、全仓无声明，removeBoxAudioPlayer 一调用即 ReferenceError 的哑雷）。
+ * 过渡期保留面：$ / FileUrlHelper / throttle 裸标识经 window（bundleGlobals 供给，bl 同款；
+ * throttle 必须 bundle 2400 helper——签名 fn/delay/immediate，与 utils/func 版不同）；
+ * $bodyScope / playingAudiosElements / HoverPreviewKeydown 显式 _w 前缀（跨世界共享存储：
+ * openItemContextMenu 与 controllerFns 清理点同源）。vendor 脚本与 c16b fetch 注入/
+ * if-absent 重复定义随本批退役；install 由 bundleGlobals 在 _throttle 挂载后同步调用。
+ */
+// @ts-nocheck
+
+const _w: any = window as any;
+
+let installed = false;
+
+export function installHoverPreview(): void {
+  if (installed) return;
+  installed = true;
+
+// b1-9aw：提取片缺失声明补齐（bundle 顶层 var 在原 script 内跨段共享；
+// b1-9am 按函数选拼提取时声明行落在区间外——悬停即抛 ReferenceError、
+// Z 键预览/hover sentinel 观察器全死。声明原文逐字回填）
+var hoverPreviewObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+        if (!entry.isIntersecting) {
+            var sentinelEl = entry.target;
+            var $box = $(sentinelEl).closest('.box');
+            if (!$box.length && sentinelEl._hoverBox) {
+                $box = $(sentinelEl._hoverBox);
+            }
+            // box 還在被 hover 時不由 observer 清理，避免 cleanup→mouseenter 循環
+            if ($box.length && $box.is(':hover')) return;
+            cleanupBoxHoverPreview($box);
+            hoverPreviewObserver.unobserve(sentinelEl);
+        }
+    });
+}, { threshold: [0] });
+var mouseoverAudioTimeout;
+var updateCursorInterval;
+var mouseoverAudioProgressTimeout;   // b1-9bu-A：提取片缺失声明补齐（vendor:116 裸引用全仓无声明）
+_w.HoverPreviewKeydown = false;
+
+function cleanupBoxHoverPreview($box) {
+    if (!$box || !$box.length || !$box.hasClass('hover-active')) return;
+    $box.removeClass('hover-active');
+    clearTimeout($box[0]._spinnerTimeout);
+
+    var $thumbnail = $box.find('.thumbnail');
+    var $image = $thumbnail.find('img');
+    $image.show();
+
+    // Video — pause 停渲染 → remove 脫離 DOM → 清 src 釋放資源
+    $thumbnail.find('video').each(function () {
+        try { this.pause(); } catch (e) {}
+        $(this).remove();
+        try { this.src = ''; this.load(); } catch (e) {}
+    });
+
+    // MPV
+    $thumbnail.find('mpv-video').each(function () {
+        try { this.destroy(); } catch (e) {}
+    }).remove();
+
+    // Audio
+    $thumbnail.find('audio').each(function () {
+        try { this.pause(); this.src = ''; } catch (e) {}
+    }).remove();
+    _w.playingAudiosElements = [];
+
+    // Iframe (YouTube/Vimeo)
+    $thumbnail.find('.iframe-wrap').each(function () {
+        try { $(this).find('iframe')[0].src = ''; } catch (e) {}
+    }).remove();
+
+    // 停用 iframe postMessage 狀態，避免 stale message handler 繼續更新已移除的 UI
+    if (typeof _vimeoPlayerState !== 'undefined') _vimeoPlayerState.active = false;
+    if (typeof _ytPlayerState !== 'undefined') _ytPlayerState.active = false;
+
+    // UI
+    $thumbnail.find('.video-loading-spinner').remove();
+    $thumbnail.find('.video-progress-bar, .audio-progress-bar, .audio-progress-bar-cursor, .current-time, .controls').remove();
+    $thumbnail.find('.mute-toggle').off().remove();
+    $thumbnail.find('.autoplay-toggle').off();
+    $image.off('mousedown.duration').off('mousemove.progressCursor');
+    $thumbnail.find('.hover-sentinel').remove();
+}
+
+
+function startHoverPreviewWatch($box) {
+    $box.find('.hover-sentinel').each(function () {
+        hoverPreviewObserver.unobserve(this);
+        $(this).remove();
+    });
+    $box.addClass('hover-active');
+    var sentinel = document.createElement('div');
+    sentinel.className = 'hover-sentinel';
+    sentinel._hoverBox = $box[0];
+    $box.find('.thumbnail').append(sentinel);
+    requestAnimationFrame(function () {
+        hoverPreviewObserver.observe(sentinel);
+    });
+}
+
+
+function removePlayingAudios () {
+    $('#box-container .box.hover-active').each(function () {
+        cleanupBoxHoverPreview($(this));
+    });
+};
+
+
+function removeBoxAudioPlayer (event) {
+    
+    if (event) {
+        if (event.originalEvent) {
+            if (!event.originalEvent.screenX || !event.originalEvent.screenY) {
+                return;
+            } 
+        }
+        event.stopPropagation();
+    }
+
+    // b1-9d：去 Angular 后 window.angular 缺席；_w.$bodyScope 即 bundle 世界同对象
+    // （同 egjs-infinitegrid.umd.js 内 Eagle 自有写法），bundle 在世时语义零改变。
+    var $scope = _w.$bodyScope || angular.element("body").scope();
+    var $box = $(".box").has(event.target);
+    disarmHoverSentinel($box);
+    var image = $scope.getItemByElement($box[0]);
+
+    if (!image) return;
+
+    var $image = $box.find("img");
+
+    // 悬停 500ms 在开始播放
+    clearTimeout(mouseoverAudioTimeout);
+    clearTimeout(mouseoverAudioProgressTimeout);
+    clearInterval(updateCursorInterval);
+    $image.off('mousedown.duration').off('mousemove.progressCursor');
+    $box.find(".current-time").remove();
+    $box.find(".audio-progress-bar").off().remove();
+    $box.find(".audio-progress-bar-cursor").remove();
+    $box.find(".autoplay-toggle").off();
+    $box.find(".controls").remove();
+
+    if (_w.playingAudiosElements.length > 0) {
+        _w.playingAudiosElements.forEach(function (audio) {
+            audio.pause();
+            audio.src = "";
+            $(audio).remove();
+        });
+        _w.playingAudiosElements = [];
+    }
+}
+
+
 var HoverPreview = {
     isShow: false,
     lastElem: undefined,
@@ -31,7 +189,7 @@ var HoverPreview = {
         clearTimeout(HoverPreview.showTimeout);
         var $hoverImage = HoverPreview.$container.find("img");
         var $imageWraper = HoverPreview.$container.find(".image-wraper");
-        var image = $bodyScope.getItemByElement(HoverPreview.lastElem.parentElement);
+        var image = _w.$bodyScope.getItemByElement(HoverPreview.lastElem.parentElement);
         if (image.noPreview) return;
         var thumbnailPath = FileUrlHelper.getLastestThumbnailUrl(image);
         var offset = $(HoverPreview.lastElem).offset();
@@ -258,7 +416,7 @@ var HoverPreview = {
         var loadRaw = function () {
             clearTimeout(HoverPreview.loadRawTimeout);
             HoverPreview.loadRawTimeout = setTimeout(function () {
-                var rawPath = $bodyScope.getRawUrl(image);
+                var rawPath = _w.$bodyScope.getRawUrl(image);
                 var img = new Image();
                 img.onload = function() {
                     $hoverImage.attr("src", rawPath);
@@ -297,7 +455,7 @@ var HoverPreview = {
 //     clearTimeout(HoverPreview.keyupTimeout);
 //     HoverPreview.lastElem = this;
 
-//     if (HoverPreviewKeydown) {
+//     if (_w.HoverPreviewKeydown) {
 //         HoverPreview.show();
 //         return;
 //     }
@@ -315,7 +473,7 @@ $("body").on('mouseover', '.box', throttle(function(event) {
     clearTimeout(HoverPreview.keyupTimeout);
     let thumbnail = $(this).find(".thumbnail")[0];
     HoverPreview.lastElem = thumbnail;
-    if (HoverPreviewKeydown) {
+    if (_w.HoverPreviewKeydown) {
         HoverPreview.show();
         return;
     }
@@ -331,7 +489,7 @@ $("body").on('mouseleave', '.box', throttle(function(event) {
 
 
 $("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
-    if ($bodyScope.preferences.habits.hoverZoom === "on") {
+    if (_w.$bodyScope.preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         
         // 找到包含 data-box-id 的父元素（處理不同 DOM 結構）
@@ -348,7 +506,7 @@ $("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
 });
 
 $("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
-    if ($bodyScope.preferences.habits.hoverZoom === "on") {
+    if (_w.$bodyScope.preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         if (HoverPreview.lastElem) {
             HoverPreview.hide();
@@ -357,9 +515,12 @@ $("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
 });
 
 
-var HoverPreviewKeydown = false;
+
+
+// ── b1-9bu-A：Z 键监听回填（js/hover-preview.js 361-387 逐字；b1-9am 提取片缺失段，
+// Z 键悬停预览自 React 切换起死——本段即复活路径；$bodyScope/HoverPreviewKeydown → _w）──
 $(window).on("keydown.hover-preview", function (event) {
-    if (HoverPreviewKeydown || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (_w.HoverPreviewKeydown || event.ctrlKey || event.metaKey || event.shiftKey) return;
 
     // Check the currently focused element
     const focusedElement = document.activeElement;
@@ -370,10 +531,10 @@ $(window).on("keydown.hover-preview", function (event) {
         return;
     }
 
-    if ($bodyScope.isDetailMode) return;
+    if (_w.$bodyScope.isDetailMode) return;
     
     if (event.keyCode === 90) {
-        HoverPreviewKeydown = true;
+        _w.HoverPreviewKeydown = true;
         HoverPreview.show();
     }
 });
@@ -381,7 +542,18 @@ $(window).on("keydown.hover-preview", function (event) {
 $(window).on("keyup.hover-preview", function (event) {
     if (event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.keyCode === 90) {
-        HoverPreviewKeydown = false;
+        _w.HoverPreviewKeydown = false;
         HoverPreview.hide();
     }
 });
+
+
+// ── window facade（classic script 顶层声明→window 属性语义等价；消费点零改动：
+// dataMachinery w.HoverPreview/w.removePlayingAudios、itemMenuService removePlayingAudios、
+// controllerFns HoverPreview.isShow/HoverPreviewKeydown、gridDirectives delete lastElem）──
+_w.cleanupBoxHoverPreview = cleanupBoxHoverPreview;
+_w.startHoverPreviewWatch = startHoverPreviewWatch;
+_w.removePlayingAudios = removePlayingAudios;
+_w.removeBoxAudioPlayer = removeBoxAudioPlayer;
+_w.HoverPreview = HoverPreview;
+}

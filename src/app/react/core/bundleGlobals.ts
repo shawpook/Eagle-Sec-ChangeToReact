@@ -1962,6 +1962,43 @@ export function installBundleGlobals(): void {
   if (!w.guid) w.guid = _guid;
   if (!w.throttle) w.throttle = _throttle;
 
+  /* b1-9bu-B：videoHelper（global.js 694-703 逐字；throttle → bundle 2400 helper _throttle——
+     global.js 已退役不再加载，bundleGlobals 供给；detailHooks 详情视频 seek 的
+     window.videoHelper 活雷同批修复） */
+  var _videoHelper = {
+      // 这是个很白痴的设定，浏览器默认会使用 throttle 功能，如果短时间疯狂修改 currentTime 画面不会立即更新，以列方式是加大更新 currentTime 的时间差，骗过浏览器的节流功能
+      setCurrentTime: _throttle(function setCurrentTime(v, currentTime) {
+          v.currentTime = currentTime;
+      }, 33),
+      setVideosCurrentTime: _throttle(function setCurrentTime(vs, currentTime) {
+          vs.forEach(v => {
+              v.currentTime = currentTime;
+          });
+      }, 33)
+  }
+  if (!w.videoHelper) w.videoHelper = _videoHelper;
+
+  /* b1-9bu-B：getDurationString（global.js 891-909 逐字；悬停播放 current-time 依赖） */
+  function _getDurationString(number, total) {
+      if (number) {
+          var date = new Date(null);
+          var seconds = Math.max(1, parseInt(number));
+          date.setSeconds(seconds);
+          if (total && total <= 60 && seconds < 3600) {
+              let fract = number - Math.trunc(number);
+              return date.toISOString().substr(15, 4) + "" + fract.toFixed(2).substr(1);
+          }
+          else if (seconds < 3600) {
+              return date.toISOString().substr(14, 5);
+          }
+          else {
+              return date.toISOString().substr(11, 8);
+          }
+      }
+      return "";
+  }
+  if (!w.getDurationString) w.getDurationString = _getDurationString;
+
   // b1-9bu-A：hover-preview 家族同步安装（原 c16b 注入块退役；Z 键监听段随 install 回填）
   installHoverPreview();
   if (!w.debounce) w.debounce = _debounce;
@@ -2216,7 +2253,7 @@ export function installBundleGlobals(): void {
       'fileSize', 'fse', 'tinyPinyin', 'pinyinlite', 'readChunk', 'writeFileAtomic', 'cartesianProduct',
       'sanitize', 'unicodeNormalize', 'chineseConvert', 'colorConvert', 'DeltaE', 'installedFonts',
       'fontFolder', 'FileUrlHelper',
-      'guid', 'throttle', 'debounce', 'fuzzy_match', 'decodeBase64Image', 'cloneTree', 'getHashID',
+      'guid', 'videoHelper', 'getDurationString', 'throttle', 'debounce', 'fuzzy_match', 'decodeBase64Image', 'cloneTree', 'getHashID',
       'hiddenByCurrentFilter', 'ayncsImagesChange', 'startAPIServer', 'stopAPIServer',
       'checkBackgroundHeartbeat', 'ipcRenderer', 'currentWindow', 'app', 'VIDEO_TYPES_GLOBAL',
       'pluginModule',

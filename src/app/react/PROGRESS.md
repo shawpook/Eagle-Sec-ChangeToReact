@@ -815,6 +815,35 @@
 > 家族，与 bu 变更无涉——7a/1c2 面不触 hover 链）。
 >
 
+> **b1-9bu-B：video/audio 悬停播放复活——绑定段回填 + videoHelper/getDurationString 供给（2026-09-07）**
+>
+> hoverPreview.ts 增段（+575 行）：video-hover-preview.js 78-84/86-475（disarmHoverSentinel
+> + videoHoverSelector enter/leave + removeBoxVideoPlayer + native→mpv 三层 fallback）+
+> audio-hover-preview.js 7-167/169（b1-9s 零引用孤儿误删、git e8afdfc^ 取回——enter 绑定 +
+> 播放器 UI + mouseleave/dragstart 双绑定 + currentWindow hide 停播绑定）。de-Angular 三处
+> （angular.element → _w.$bodyScope，b1-9d 同款）+ angular.isNumber → Number.isFinite
+> （b1-9av 同款）；drag 三兄弟 _w.?.（onDragStartContainer 族 React 世界尚未供给——网格
+> 拖拽独立缺口另批，preventDefault 先行保阻断语义）；mouseX bundle 隐式全局显式化；
+> removePlayingAudios/removeBoxAudioPlayer 重复声明裁剪（vendor 版为准）。
+> **哑雷拆除**：disarmHoverSentinel（vendor:107 removeBoxAudioPlayer 裸调用、提取片缺失
+> 声明——一触发即 ReferenceError）随 part1 回填就位；videoHelper + getDurationString
+> （global.js 694-703/891-909 逐字，global.js 已退役不加载）入 bundleGlobals 供给——
+> detailHooks:578 详情视频 seek 的 window.videoHelper 活雷同批修复（挂载 _throttle 后，
+> 内部 throttle → _throttle 同 helper）。dead file 退役：video-hover-preview.js（内容
+> 已全部入模块）。
+> **门禁**：esbuild EXIT:0；bu-probe2 七断言全绿（mp4/mp3 盒渲染、enter→播放器元素+
+> 进度条、leave→清理归零、playingAudiosElements 登记、零 ReferenceError）。**探针
+> 方法论四账**（假媒体无尺寸元数据引出）：① 假媒体 w/h=0 在 v4 布局下与相邻项重叠，
+> 真实鼠标命中落在 PNG 盒上（elementFromPoint 实证）→ 依 b1-9ax ④ 先例改 jQuery
+> trigger 合成事件断言委托链；② 假 mp4 无法解码 → video 建出即 error → fallbackToMpv
+> 移除原生换死 mpv 元素——瞬态必被 5s 轮询错过，50ms 采样 seen 记录器捕获；③ 假 mp3
+> canplay 永不触发 → .audio-progress-bar（canplay 条件挂载）不出现——断言改 audio
+> 元素+controls+登记三信号；④ installBundleGlobals 中途死亡定位：提取时
+> getDurationString 漏改 _getDurationString 命名 → 挂载行 ReferenceError →
+> __eagleBundleGlobals（函数尾）恒缺、网格空载——bgInstalled/vh 双探针定位。
+> 已知录档：假媒体文件后端不标 noPreview（GUARDDUMP 实证 np:false）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

@@ -752,6 +752,32 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **【S1-be2 考据定案：@egjs/react-infinitegrid v4 renderer 交换（2026-09-08）】**
+>
+> **供给链**：window.eg（InfiniteGrid v3 pkgd UMD）← bundleGlobals c13 if-absent 懒执行
+> `/vendor/egjs-infinitegrid.umd.js`（bundle 3497-8094 提取副本，new Function sloppy）；实例
+> 创建在 boxGridEngine:530 `new eg.InfiniteGrid('#box-container .box-list', {isOverflowScroll:
+> false, threshold: 2000})`（libraryDomain:463 为 if-absent 兜底，`if (!w.ig)` 守卫不双建）。
+> **引擎现状**：boxGridEngine.ts = ngGridLayout 指令（bundle 66496-67305）逐字移植——模板
+> 字符串 + templateData（tagsFormated/sortableHelper/src…）命令式生成 boxes 到静态
+> #box-list；v3 调用面 append×4 / setLayout×3（GridLayout/JustifiedLayout 按 s.layout 运行
+> 时切换）/ prepend×2 / layout×2 / getGroupKeys×2 / remove / clear / on / destroy /
+> _updateContainerHeight。**消费面（gridService 契约区已录）**：remove×7 / getItems×6 /
+> clear×5 / trigger×2 / layout×2 / getGroupKeys / _layout._columnLength×2（列数换算）。
+> **window.NgGridStrings + bodyScope gl:* 事件 + resetNgGridLayoutData 契约**保持同名。
+> **v4 目标形态**：@egjs/react-infinitegrid 4.13.0 在位（esm 导出 InfiniteGrid/
+> JustifiedInfiniteGrid/MasonryInfiniteGrid/PackingInfiniteGrid/FrameInfiniteGrid——布局即
+> 组件，children 驱动 + data-grid-groupkey；ref 方法面 setItems/getItems/getVisibleItems/
+> scrollTo/clear 等）。**施工要点**：① window.ig 保留为 facade（gridService 契约区既定），
+> 13 个方法/属性逐项委托 ref 或等效实现（_layout._columnLength → 活布局实例列数读取，
+> v4 等效面施工时对 node_modules 源核实）；② setLayout 运行时切换 → 布局组件类型切换
+> （React 重挂代价评估 vs 单组件 props 切换）；③ 模板生成 boxes → React children 渲染，
+> 与 LazyLoadManager（IntersectionObserver root #box-container）/框选（NgGridStrings/
+> ig DOM 消费）/scrollbar 的耦合面逐项过闸；④ append/prepend → 条目 state 增量 + 
+> onRequestAppend/Prepend；⑤ 门禁沿用 S1 竖切测试族（网格 residue/ctrl-wheel/drag-start
+> 等）+ 哨兵。**体量＝独立完整会话**（引擎 ~700 行 + facade + 耦合面过闸）。
+>
+>
 > **【7d1a mv-closed 破案（2026-09-08 续）——folderCoreService 漏 import + 空洞断言教训】**
 >
 > 上条 ③ 的三嫌疑全部排除，真凶另在别处。**破案链**（MutationObserver + fiber 反查 +

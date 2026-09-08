@@ -55,6 +55,7 @@
  */
 
 import { getBodyScope } from '../global/scopeBridge';
+import { detailZoom, ensureDetailZoom } from './smoothZoomEngine';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
 import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
@@ -3330,7 +3331,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
   zoomInitTimeout = $timeout(function () {
     if (!s.initDetailMode) {
       s.initDetailMode = true;
-      w.$("#detail-container").smoothZoom({
+      ensureDetailZoom({
         width: '100%',
         height: '100%',
         responsive: true,
@@ -3353,7 +3354,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
             if (!s.lastZoom()) {
               s.zoom(image);
             }
-            w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+            detailZoom()?.updateNavigator( s.current);
 
             w.$("#detail-container").css("opacity", 1);
             w.$(".smooth_zoom_preloader").show();
@@ -3369,7 +3370,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
       });
     } else {
       s.smoothZoomDone = true;
-      w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+      detailZoom()?.updateNavigator( s.current);
       w.$(window).trigger("orientationchange");
       if (!s.lastZoom()) {
         s.zoom(image);
@@ -3416,8 +3417,8 @@ export function machineryLeaveDetailMode(s: any): void {
 
     s.isInlineMode = false;
     s.fadeOutDetailMode();
-    w.$("#detail-container").smoothZoom('cleanBitmapViewer');
-    w.$("#detail-container").smoothZoom('clearPreloadData');
+    detailZoom()?.cleanBitmapViewer();
+    detailZoom()?.clearPreloadData();
 
     if (s.isGifReady === true) {
       s.isGifReady = false;
@@ -3851,7 +3852,7 @@ export function machineryLastZoom(s: any): boolean {
   if (s.isInlineMode) return false;
   var state = s.lastItemStates[s.current.id];
   if (state && state.data && state.data.tX !== undefined) {
-    w.$("#detail-container").smoothZoom('goTo', state.data.tX, state.data.tY, state.data.rA);
+    detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
     var ratio = parseInt(state.data.rA * 100 as any);
     s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
     s.imageSize.zoomRatioExp = ratio;
@@ -3994,7 +3995,7 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
     s.zoomFitSize = ratio;
   }
   s.showLargeImage = true;
-  $detailContainer.smoothZoom('focusTo', {
+  detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,
     zoom: parseInt(ratio),
@@ -4134,7 +4135,7 @@ export function machinerySelectNext(s: any, event: any): void {
     return;
   }
   else {
-    w.$("#detail-container").smoothZoom('cleanBitmapViewer');
+    detailZoom()?.cleanBitmapViewer();
   }
 
   s.selected = [s.allData[end]];
@@ -4151,7 +4152,7 @@ export function machinerySelectNext(s: any, event: any): void {
   s.autoScroll(end);
 
   if (s.current) {
-    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    detailZoom()?.updateNavigator( s.current);
     if (!s.lastZoom()) {
       s.zoom();
     }
@@ -4188,7 +4189,7 @@ export function machinerySelectPrev(s: any, event: any): void {
   if (s.allData.length == 0) { return; }
 
   if (s.isDetailMode) {
-    w.$("#detail-container").smoothZoom('cleanBitmapViewer');
+    detailZoom()?.cleanBitmapViewer();
     s.rememberScrollTops(s.current);
     s.isGifReady = false;
   }
@@ -4211,7 +4212,7 @@ export function machinerySelectPrev(s: any, event: any): void {
   s.selectedFolderMappings = {};
   s.$root.currentFocus = "content";
   if (s.current) {
-    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    detailZoom()?.updateNavigator( s.current);
     if (!s.lastZoom()) {
       s.zoom();
     }
@@ -4973,7 +4974,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         return;
       }
       else {
-        w.$("#detail-container").smoothZoom('moveY', -150);
+        detailZoom()?.moveY( -150);
       }
     } else {
       s.selectUp(event);
@@ -5094,7 +5095,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         return;
       }
       else {
-        w.$("#detail-container").smoothZoom('moveY', 150);
+        detailZoom()?.moveY( 150);
       }
     } else {
       s.selectDown(event);
@@ -5261,7 +5262,7 @@ export function machineryPageDownHandler(s: any): any {
   return throttle(function (event: any) {
     var offset = w.$(window).height() - 72;
     if (s.isDetailMode) {
-      w.$("#detail-container").smoothZoom('moveY', offset);
+      detailZoom()?.moveY( offset);
     }
     else {
       var scrollTop = w.$(".box-container").scrollTop();
@@ -5276,7 +5277,7 @@ export function machineryPageUpHandler(s: any): any {
   return throttle(function (event: any) {
     var offset = w.$(window).height() - 72;
     if (s.isDetailMode) {
-      w.$("#detail-container").smoothZoom('moveY', -offset);
+      detailZoom()?.moveY( -offset);
     }
     else {
       var scrollTop = w.$(".box-container").scrollTop();
@@ -5345,7 +5346,7 @@ export function machinerySelectUp(s: any, event: any): void {
     s.forceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
     s.isGifReady = false;
-    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    detailZoom()?.updateNavigator( s.current);
     if (!s.lastZoom()) {
       s.zoom();
     }
@@ -5402,7 +5403,7 @@ export function machinerySelectDown(s: any, event: any): void {
     s.forceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
     s.isGifReady = false;
-    w.$("#detail-container").smoothZoom('updateNavigator', s.current);
+    detailZoom()?.updateNavigator( s.current);
     if (!s.lastZoom()) {
       s.zoom();
     }
@@ -7208,7 +7209,7 @@ export function machineryRememberScrollTops(s: any, item: any): void {
   if (s.lastZoomMode === "edge") return;
   if (item && item.id) {
     s.lastItemStates[item.id] = {
-      data: w.$("#detail-container").smoothZoom('getChangedData')
+      data: detailZoom()?.getChangedData()
     }
   }
 }
@@ -7261,12 +7262,12 @@ export function machineryPreloadImage(s: any, mode: any): void {
     const preImage = s.allData[idx - 2];
     if (mode === "next") {
       if (nextImage && supportFoamts[nextImage?.ext]) {
-        w.$("#detail-container").smoothZoom('preload', nextImage);
+        detailZoom()?.preload( nextImage);
       }
     }
     else {
       if (preImage && supportFoamts[preImage?.ext]) {
-        w.$("#detail-container").smoothZoom('preload', preImage);
+        detailZoom()?.preload( preImage);
       }
     }
   }, 100);
@@ -7280,7 +7281,7 @@ export function machineryHomeHandler(s: any, event: any): void {
   const w = window as any;
   if (s.isDetailMode) {
     beginZoomingTransition();
-    w.$("#detail-container").smoothZoom('goToY', 40);
+    detailZoom()?.goToY( 40);
   }
   else {
     s.gotoTop();
@@ -7293,8 +7294,8 @@ export function machineryEndHandler(s: any, event: any): void {
   const w = window as any;
   if (s.isDetailMode) {
     beginZoomingTransition();
-    w.$("#detail-container").smoothZoom('goToY', -99999999);
-    w.$("#detail-container").smoothZoom('moveY', -window.outerHeight + 60);
+    detailZoom()?.goToY( -99999999);
+    detailZoom()?.moveY( -window.outerHeight + 60);
   }
   else {
     s.gotoBottom();

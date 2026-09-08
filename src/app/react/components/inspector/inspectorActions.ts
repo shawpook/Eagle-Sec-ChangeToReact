@@ -1,4 +1,5 @@
 import { getBodyScope, getRootScope, scopeApply } from '../../global/scopeBridge';
+import { detailZoom } from '../../core/smoothZoomEngine';
 import { contextMenuOpenChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
@@ -509,7 +510,7 @@ export function openComment(event: any, image: any, comment: any) {
     if ($commentElem.length > 0 && !(window as any).isElementInViewport($commentElem[0])) {
       const offsetY = -200;
       $()('#detail-container').safeZoomData();
-      $()('#detail-container').smoothZoom('goToY', -(comment.y + offsetY) * (bodyScope.imageSize.zoomRatio || 100) / 100);
+      detailZoom()?.goToY( -(comment.y + offsetY) * (bodyScope.imageSize.zoomRatio || 100) / 100);
       setTimeout(function () {
         (window as any).AnnotationPreview.show();
       }, 100);

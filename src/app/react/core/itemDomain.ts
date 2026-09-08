@@ -16,6 +16,7 @@
  */
 
 import { removeChannelListenersBySource, sweepForeignWatchers, persistSweep } from './appCore';
+import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope } from '../global/scopeBridge';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
@@ -228,7 +229,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
         /* 原码空分支（视频当前时间的特殊处理占位），逐字保留 */
       }
       else {
-        $("#detail-container").smoothZoom('updateNavigator', s.current);
+        detailZoom()?.updateNavigator( s.current);
       }
     }
   }
@@ -558,7 +559,7 @@ export function takeoverItemDomain(): void {
         const temp = new Image();
         temp.onload = function () {
           $detailImage.attr("src", rawURL);
-          $("#detail-container").smoothZoom('updateNavigator', generated);
+          detailZoom()?.updateNavigator( generated);
 
           $detailImage.data("degree", 0);
 

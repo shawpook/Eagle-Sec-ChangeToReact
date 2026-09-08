@@ -1,4 +1,5 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
+import { detailZoom } from '../../core/smoothZoomEngine';
 import { useEffect } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { ipcRenderer } from '../../global/eagleGlobals';
@@ -25,7 +26,7 @@ export const $: any = () => {
   if (jQuery && !jQuery.fn.safeZoomData) {
     jQuery.fn.safeZoomData = function (this: any) {
       try {
-        return this.smoothZoom('getZoomData');
+        return detailZoom()?.getZoomData();
       } catch (err) {
         return { ratio: 1, scaledX: 0, scaledY: 0 };
       }

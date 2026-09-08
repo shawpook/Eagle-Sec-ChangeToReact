@@ -236,11 +236,9 @@
     <script src="js/modules/flatpicker/flatpickr.min.js"></script>
     <script src="js/modules/flatpicker/l10n/zh.js"></script>
     <script src="js/services/lazy-load-manager.js"></script>
-    <!-- smoothZoom（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）——原 bundle 内联件，
-         b1-9d 摘除、b1-9al 以 /vendor 提取版独立加载（应用层胶水的 angular.element 依赖已换
-         等价物，见该文件头注）。缺失时 machineryEnterDetailMode 初始化静默 no-op →
-         无 #bitmap-viewer canvas、详情交付闸门超时。必须同步加载：fetch 注入会与进详情抢跑。 -->
-    <script src="/vendor/eagle-smooth-zoom.js"></script>
+    <!-- b1-9bl：smoothZoom vendor（详情原图缩放 / BitmapViewer / bitmapWorker 瓦片链）退役——
+         引擎逐字归位 react/core/smoothZoomEngine.ts + bitmapViewer.ts（$、#detail-container
+         消费契约不变）。b1-9al 提取版 /vendor/eagle-smooth-zoom.js 同批摘除。 -->
     <script src="js/services/shortcut-manager.js"></script>
     <!-- b1-9bj：colorpicker vendor（js+css）退役——自研 components/filter/ColorPicker.tsx -->
     <script>

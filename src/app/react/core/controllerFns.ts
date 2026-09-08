@@ -8,6 +8,7 @@
  */
 // @ts-nocheck
 import { getBodyScope } from '../global/scopeBridge';
+import { detailZoom } from './smoothZoomEngine';
 import { IPCHelper } from './ipcHelper';
 // b1-8 裸引用审计修复：controller 闭包裸调改走 machinery 移植版直调（ESM 循环依赖——
 // 双侧均为函数声明提升，无顶层执行面，运行时安全；colliding 名（calcuteContainFolders/
@@ -1050,8 +1051,8 @@ export function makeControllerFns(getScope: () => any) {
                 __lv_updateZoomRatioTimeout = setTimeout(function () {
                     $("#detail-container").removeClass("zooming");
                 }, 300);
-            	$("#detail-container").smoothZoom('goToY', -99999999);
-            	$("#detail-container").smoothZoom('moveY', -window.outerHeight + 60);
+            	detailZoom()?.goToY( -99999999);
+            	detailZoom()?.moveY( -window.outerHeight + 60);
             }
             else { 
                 s.gotoBottom();
@@ -1708,7 +1709,7 @@ export function makeControllerFns(getScope: () => any) {
                 __lv_updateZoomRatioTimeout = setTimeout(function () {
                     $("#detail-container").removeClass("zooming");
                 }, 300);
-            	$("#detail-container").smoothZoom('goToY', 40);
+            	detailZoom()?.goToY( 40);
             }
             else {
                 s.gotoTop();
@@ -1788,7 +1789,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.isInlineMode) return false;
             var state = s.lastItemStates[s.current.id];
             if (state && state.data && state.data.tX !== undefined) {
-                $("#detail-container").smoothZoom('goTo', state.data.tX, state.data.tY, state.data.rA);
+                detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
                 var ratio = parseInt(state.data.rA * 100);
                 s.imageSize.zoomRatio = s.getRatioNonExp(ratio);
                 s.imageSize.zoomRatioExp = ratio;
@@ -1828,8 +1829,8 @@ export function makeControllerFns(getScope: () => any) {
 
                 s.isInlineMode = false;
                 s.fadeOutDetailMode();
-                $("#detail-container").smoothZoom('cleanBitmapViewer');
-                $("#detail-container").smoothZoom('clearPreloadData');
+                detailZoom()?.cleanBitmapViewer();
+                detailZoom()?.clearPreloadData();
                 
                 if (s.isGifReady === true) {
                     s.isGifReady = false;
@@ -2649,7 +2650,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
                 s.isGifReady = false;
-                $("#detail-container").smoothZoom('updateNavigator', $bodyScope.current);
+                detailZoom()?.updateNavigator( $bodyScope.current);
                 if (!s.lastZoom()) {
                     s.zoom();
                 }
@@ -2682,7 +2683,7 @@ export function makeControllerFns(getScope: () => any) {
                 return;
             }
             else {
-                $("#detail-container").smoothZoom('cleanBitmapViewer');
+                detailZoom()?.cleanBitmapViewer();
             }
 
             s.selected = [s.allData[end]];
@@ -2699,7 +2700,7 @@ export function makeControllerFns(getScope: () => any) {
             s.autoScroll(end);
 
             if (s.current) {
-                $("#detail-container").smoothZoom('updateNavigator', $bodyScope.current);
+                detailZoom()?.updateNavigator( $bodyScope.current);
                 if (!s.lastZoom()) {
                     s.zoom();
                 }
@@ -2738,7 +2739,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.allData.length == 0) { return; }
 
             if (s.isDetailMode) {
-                $("#detail-container").smoothZoom('cleanBitmapViewer');
+                detailZoom()?.cleanBitmapViewer();
                 s.rememberScrollTops(s.current);
                 s.isGifReady = false;
             }
@@ -2761,7 +2762,7 @@ export function makeControllerFns(getScope: () => any) {
             s.selectedFolderMappings = {};
             s.$root.currentFocus = "content";
             if (s.current) {
-                $("#detail-container").smoothZoom('updateNavigator', $bodyScope.current);
+                detailZoom()?.updateNavigator( $bodyScope.current);
                 if (!s.lastZoom()) {
                     s.zoom();
                 }
@@ -2832,7 +2833,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
                 s.isGifReady = false;
-                $("#detail-container").smoothZoom('updateNavigator', $bodyScope.current);
+                detailZoom()?.updateNavigator( $bodyScope.current);
                 if (!s.lastZoom()) {
                     s.zoom();
                 }
@@ -2997,7 +2998,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
             }
             s.showLargeImage = true;
-            $detailContainer.smoothZoom('focusTo', {
+            detailZoom()?.focusTo( {
                 x: __lv_width / 2,
                 y: __lv_height / 2 + __lv_offsetY,
                 zoom: s.imageSize.zoomRatio,
@@ -3720,7 +3721,7 @@ export function makeControllerFns(getScope: () => any) {
                 }, 300);
             }
             
-            $("#detail-container").smoothZoom('focusTo', {
+            detailZoom()?.focusTo( {
                 zoom: s.imageSize.zoomRatioExp,
                 pageX: pageX,
                 pageY: pageY,
@@ -4030,7 +4031,7 @@ export function makeControllerFns(getScope: () => any) {
                 s.zoomFitSize = ratio;
             }
             s.showLargeImage = true;
-            $detailContainer.smoothZoom('focusTo', {
+            detailZoom()?.focusTo( {
                 x: __lv_width / 2,
                 y: __lv_height / 2 + __lv_offsetY,
                 zoom: parseInt(ratio),

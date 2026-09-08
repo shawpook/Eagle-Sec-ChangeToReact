@@ -18,6 +18,7 @@
  */
 // @ts-nocheck
 import { getBodyScope } from '../global/scopeBridge';
+import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
@@ -748,16 +749,16 @@ export function installImageOpsFns(fns: any, getScope: any): void {
             if (event.type === "click") {
                 if (!event.shiftKey) {
                     degree = degree - 90;
-                    $("#detail-container").smoothZoom('rotate', {angle: -90, item: rotatedImage});
+                    detailZoom()?.rotate( {angle: -90, item: rotatedImage});
                 }
                 else {
                     degree = degree + 90;
-                    $("#detail-container").smoothZoom('rotate', {angle: 90, item: rotatedImage});
+                    detailZoom()?.rotate( {angle: 90, item: rotatedImage});
                 }
             }
             else {
                 degree = degree - 90;
-                $("#detail-container").smoothZoom('rotate', {angle: -90, item: rotatedImage});
+                detailZoom()?.rotate( {angle: -90, item: rotatedImage});
             }
 
             $("#detail-image").data("degree", degree);
@@ -885,7 +886,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
             }
             
             // 調用 smoothZoom flip 方法進行 bitmap 翻轉顯示
-            $("#detail-container").smoothZoom('flip', scaleX, scaleY);
+            detailZoom()?.flip( scaleX, scaleY);
 
             // 處理檔案寫入功能，根據設定決定是否寫入
             var shouldWriteToFile = writeToFile && s.preferences.habits.imageRotateMode === 'write';

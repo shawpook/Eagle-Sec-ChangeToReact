@@ -12,6 +12,7 @@
  */
 
 import { getBodyScope } from '../global/scopeBridge';
+import { detailZoom } from './smoothZoomEngine';
 import { sweepForeignWatchers, persistSweep } from './appCore';
 
 let done = false;
@@ -149,7 +150,7 @@ export function takeoverSelectionViewDomain(): void {
       });
       setTimeout(() => {
         const sNow: any = getBodyScope();
-        w.$("#detail-container").smoothZoom('updateNavigator', sNow && sNow.current);
+        detailZoom()?.updateNavigator( sNow && sNow.current);
       }, 300);
     }
 

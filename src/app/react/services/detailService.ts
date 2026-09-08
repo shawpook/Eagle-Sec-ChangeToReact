@@ -8,6 +8,7 @@
  * detailHooks 的 updateZoomRatio ×1 改直调。
  */
 import { getBodyScope } from '../global/scopeBridge';
+import { detailZoom } from '../core/smoothZoomEngine';
 import { machineryGetRatioExp, machineryGetRatioNonExp } from '../core/dataMachinery';
 
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
@@ -47,7 +48,7 @@ export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTra
     beginZoomingTransition();
   }
 
-  w.$("#detail-container").smoothZoom('focusTo', {
+  detailZoom()?.focusTo( {
     zoom: s.imageSize.zoomRatioExp,
     pageX: pageX,
     pageY: pageY,
@@ -178,7 +179,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
     s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
   }
   s.showLargeImage = true;
-  $detailContainer.smoothZoom('focusTo', {
+  detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,
     zoom: s.imageSize.zoomRatio,

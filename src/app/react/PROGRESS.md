@@ -752,6 +752,32 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+> **b1-9bl-A：S4 批 12——smoothZoom 引擎+BitmapViewer 剥壳归位（主窗，2026-09-08）**
+>
+> 按上方考据定案执行：`core/bitmapViewer.ts`（vendor 29-826 逐字，809 行）+
+> `core/smoothZoomEngine.ts`（vendor IIFE 体 831-3926 + checkBoolean/prop 常量，3,144 行，
+> `$.fn.smoothZoom` 插件壳 → `ensureDetailZoom/detailZoom` 模块单例 API）。**修正一处
+> 定案偏差**：orientationchange 伴生 9 点免改——jQuery 无命名空间 trigger 会命中
+> `.sz` 命名空间绑定，引擎原样保留 `$(window).bind("…resize.sz…")` 即收。主窗调用面
+> 49 点机械切换（machinery 23/controllerFns 15/imageOps 4/itemDomain 2/detailService 2/
+> selectionView 1/inspectorActions 1/detailHooks 包装体 1；init 1 点→ensureDetailZoom，
+> 其余→`detailZoom()?.m(...)`）；index.html 摘 `/vendor/eagle-smooth-zoom.js`。
+> **手术两坑**（断言全拦，零损重跑）：① method 改写漏补闭括号（首跑 controllerFns
+> 15 点全坏→git checkout 恢复）；② `w.$(...)` 接收者的 `w.` 前缀漏在改写前缀外
+> （24 处 `w.detailZoom()?.` 二次文本修正）。**连锁回归一记**：bitmapViewer 漏
+> `export`——vendor 世界 class 是 classic script 顶层全局，ESM 必须显式导出；
+> 症状=main.tsx 整链静默中断（Vite 转换/静态 fetch 全 200、无 overlay、0 console），
+> 探针 5 连（vite-only 转换→overlay→活页动态 import cache-bust）定位到
+> "does not provide an export named 'BitmapViewer'"。**esbuild 快检口径修订**：
+> 新增 `--platform=node`（bitmapViewer 体内 `require('app-root-path')` 为 HEIC 分支
+> 运行时 require，browser 模式静态解析即炸假阴性；Vite 不改写 bare require，
+> Electron renderer 全局 require 原样可用）。
+> 哨兵 evalAsync 384→388 合法吸收（引擎体内 $rootScope/$scope $evalAsync 逐字随迁）。
+> 门禁：tsc 0 + esbuild(node) OK + 哨兵 OK + **stage5 21 PASS**（包裹关系/
+> 交付闸门/滑条联动/退出复位）+ m1 OK + menu-popup 5 站 + ui-interactions 7 查。
+> 主窗 vendor 退役；preview-window（min.js+angular stub+17 点）留 bl-B。
+>
+>
 > **【S4-bl 考据定案：smoothZoom 剥壳——vendor 3,988 行双窗卸载（2026-09-07）】**
 >
 > **vendor 真身**：/vendor/eagle-smooth-zoom.js（3,988 行，b1-9e 提取）= jquery.smoothZoom

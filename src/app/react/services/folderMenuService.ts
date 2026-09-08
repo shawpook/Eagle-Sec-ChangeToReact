@@ -22,6 +22,7 @@ import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
+import { syncInspectorFromScope } from '../store/inspectorState';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -433,6 +434,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       delete folder.isUnLock;
       s.isLoading = true;
       s.selected = [];
+      syncInspectorFromScope();
       s.updateSidebarList();
       s.calculateImageBinding({ ignoreSort: true }, function () {
         s.rebindRefresh();

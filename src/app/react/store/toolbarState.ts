@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { useSidebarState } from './sidebarState';
+import { usePanelState } from './panelState';
+import { useFilterState } from './filterState';
+import { useListState } from './listState';
+import { useBodyState } from './bodyState';
+import { getBodyScope } from '../global/scopeBridge';
 
 /**
  * 阶段3a：工具栏状态 —— 快照自 EagleController scope（规范 index.html:141-273 模板所需字段）。
@@ -86,39 +91,7 @@ export const useToolbarState = create<{ snapshot: ToolbarSnapshot }>(() => ({ sn
 
 const setSnapshot = (snapshot: ToolbarSnapshot) => useToolbarState.setState({ snapshot });
 
-export function bindToolbarSync(): () => void {
-  return startScopeSync({
-    watch: [
-      'viewMode',
-      'keyword',
-      'allData.length',
-      'currentFolder',
-      'currentFolderPath',
-      'currentSmartFolder',
-      'selectedFolders.length',
-      'selectedSmartFolders.length',
-      'currentTag',
-      'tags.length',
-      'isDetailMode',
-      'isInlineMode',
-      'isHideSidebar',
-      'isMaximize',
-      'isAlwaysOnTop',
-      'inspector.isHideInspector',
-      'imageSize.height',
-      'MAX_LIST_WIDTH',
-      'eagle.filter.isOpen',
-      'eagle.filter.filterBadge',
-      'tagViewLayoutMode',
-      'pluginModule.pinnedPlugins',
-      'pluginModule.needUpdatePluginCount',
-      'theme',
-      'showSuggestions',
-      'keywordSuggestions',
-      'hsks',
-      'searchIndex',
-    ],
-    build: (scope) => {
+function buildToolbarSnapshot(scope: any): ToolbarSnapshot {
       const preferences = scope.preferences || {};
       const currentFolder = scope.currentFolder || null;
       const currentSmartFolder = scope.currentSmartFolder || null;
@@ -168,7 +141,39 @@ export function bindToolbarSync(): () => void {
         searchIndex: typeof scope.searchIndex === 'number' ? scope.searchIndex : -1,
         keybinds: (preferences.shortcuts && preferences.shortcuts.keybinds) || {},
       } as ToolbarSnapshot;
-    },
-    apply: (snapshot) => setSnapshot(snapshot as ToolbarSnapshot),
-  });
+}
+
+// b1-9by-C：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqToolbar(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastToolbarSnapshot: any = null;
+
+/** b1-9by-C：快照直写收敛——原 startScopeSync 200ms 轮询退役。 */
+export function syncToolbarFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildToolbarSnapshot(scope);
+  if (lastToolbarSnapshot !== null && shallowEqToolbar(next, lastToolbarSnapshot)) return;
+  lastToolbarSnapshot = next;
+  useToolbarState.setState({ snapshot: next as ToolbarSnapshot });
+}
+
+export function bindToolbarSync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleToolbarSync = syncToolbarFromScope;
+  // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
+  (window as any).__eagleToolbarState = useToolbarState;
+  useBodyState.subscribe(() => syncToolbarFromScope());
+  useListState.subscribe(() => syncToolbarFromScope());
+  useFilterState.subscribe(() => syncToolbarFromScope());
+  usePanelState.subscribe(() => syncToolbarFromScope());
+  useSidebarState.subscribe(() => syncToolbarFromScope());
+  // 启动期一次性对齐。
+  syncToolbarFromScope();
 }

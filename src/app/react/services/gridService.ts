@@ -11,6 +11,10 @@
  * 对象嵌套写不经 scopeShim 顶层 set 陷阱，先行镜像会造成第三份拷贝。
  */
 import { getBodyScope } from '../global/scopeBridge';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 
 let saveListHeightTimeout: any = null;
 
@@ -73,7 +77,10 @@ export function gridAdjustLayoutWidth(s: any, increases: any): void {
   if (height > s.MAX_LIST_WIDTH) height = s.MAX_LIST_WIDTH;
   if (height < 75) height = 75;
   s.imageSize.height = parseInt(height);
-
+  syncToolbarFromScope();
+  syncBodyFromScope();
+  syncDetailFromScope();
+  syncInspectorFromScope();
   if (!height) height = s.imageSize.height;
   if (Number.isFinite(height) && height > 0) {
     s.lastImageHeight = s.imageSize.height;
@@ -93,6 +100,10 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
   event && event.preventDefault && event.preventDefault();
   if (!s.isDetailMode) {
     s.imageSize.height = 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.changeListHeight();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
       s.adjustLayoutWidth(0);
@@ -115,6 +126,7 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
     }
     s.zoomFitSize = 0;
     s.lastZoomMode = "fit";
+    syncDetailFromScope();
     localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
     s.imageSize.zoomRatio = 100;
     s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);

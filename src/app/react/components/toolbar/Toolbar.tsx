@@ -6,6 +6,10 @@ import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
+import { syncBodyFromScope } from '../../store/bodyState';
+import { syncDetailFromScope } from '../../store/detailState';
+import { syncInspectorFromScope } from '../../store/inspectorState';
+import { syncToolbarFromScope } from '../../store/toolbarState';
 
 /**
  * 阶段3a：工具栏接管。
@@ -60,6 +64,7 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
     if (win.isFullScreen()) win.setFullScreen(false);
     else if (!win.isMaximized()) { win.maximize(); const s = getBodyScope(); if (s) s.isMaximize = true; }
     else { win.unmaximize(); const s = getBodyScope(); if (s) s.isMaximize = false; }
+    syncToolbarFromScope();
   };
   const restore = maximize;
   const close = () => currentWindow()?.close?.();
@@ -235,6 +240,7 @@ export function Toolbar() {
         const current = plugins.map((_: unknown, i: number) => i);
         if (JSON.stringify(order) !== JSON.stringify(current)) {
           s.pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
+          syncToolbarFromScope();
         }
       });
     };
@@ -363,6 +369,10 @@ export function Toolbar() {
               onChange={(e) => {
                 const v = Number(e.target.value);
                 scopeApply(getBodyScope(), (s) => { s.imageSize.height = v; });
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 call('onListSizeChange')();
               }}
             />

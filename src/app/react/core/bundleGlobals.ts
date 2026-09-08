@@ -29,6 +29,7 @@ import { installAudioPlugin } from './audioPlugin';
 import { installArtstation } from './artstation';
 import { installFlatpickr } from './flatpickrLite';
 import { syncListFromScope } from '../store/listState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 
 declare const Buffer: any;
 
@@ -1635,6 +1636,7 @@ export function installBundleGlobals(): void {
   // pluginModule（bundle 19040：const pluginModule = require(`${appRoot}/app/js/plugin`)）
   if (!w.pluginModule && w.appRoot) {
     try { w.pluginModule = req(w.appRoot + '/app/js/plugin'); } catch (err) { /* noop */ }
+    syncToolbarFromScope();
   }
   // b1-9j：bundle 20207 的 $scope.pluginModule = pluginModule —— shim 世界数据面字段只经
   // coreState/proxy 可达；插件面板（PluginFamily）与详情查看分支（detailState 的 pluginExt）

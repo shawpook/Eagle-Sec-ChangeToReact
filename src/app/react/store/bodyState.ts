@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { usePanelState } from './panelState';
+import { useFilterState } from './filterState';
+import { getBodyScope } from '../global/scopeBridge';
 import { migrateScopeFieldToStore } from '../global/scopeShim';
 
 /**
@@ -113,31 +115,7 @@ for (const fieldName of MIGRATED_SCOPE_FIELDS) {
 
 let bound = false;
 
-export function bindBodySync(): void {
-  if (bound) return;
-  bound = true;
-
-  // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
-  (window as any).__eagleBodyState = useBodyState;
-
-  startScopeSync({
-    // b1-9az：MIGRATED_SCOPE_FIELDS 已源翻转（store 为源）——不再入快照。若留在 build 里，
-    // 强转快照（如 viewMode undefined → 'all'）会经 apply 写回 store，篡改源值
-    // （openFolder 写 undefined、200ms 内被回声改写 'all'，破坏 `!s.viewMode` 守卫——
-    // suite 7c/1cz1/residue 三红实锚）。裸值语义 = 原 coreState 语义；展示级默认
-    // （viewMode || 'all'）由消费点负责。
-    watch: [
-      'imageSize.height',
-      'listLayoutSettings.props.resolution', 'listLayoutSettings.props.dateImported',
-      'listLayoutSettings.props.tags', 'listLayoutSettings.props.rating',
-      'listLayoutSettings.props.extension', 'listLayoutSettings.props.fileSize',
-      'currentFolder.orderBy', 'orderBy', 'eagle.filter.filterBadge', 'keyword',
-      'inspector.isHideInspector', 'eagle.filter.isOpen',
-      '$root.preferences.general.showSidebarBadge',
-      '$root.preferences.habits.hoverZoom', '$root.preferences.habits.transparency',
-      'currentComment', 'containerSize.sidebar', 'inspector.width',
-    ],
-    build: (scope) => {
+function buildBodySnapshot(scope: any): Partial<BodyState> {
       const currentFolderOrderBy = scope.currentFolder && scope.currentFolder.orderBy;
       const filterBadge = (scope.eagle && scope.eagle.filter && scope.eagle.filter.filterBadge) || 0;
       const general = (scope.$root && scope.$root.preferences && scope.$root.preferences.general) || {};
@@ -167,7 +145,36 @@ export function bindBodySync(): void {
         sidebarWidth: (scope.containerSize && scope.containerSize.sidebar) || 220,
         inspectorWidth: (scope.inspector && scope.inspector.width) || 300,
       } as Partial<BodyState>;
-    },
-    apply: (snapshot) => useBodyState.setState(snapshot as Partial<BodyState>),
-  });
+}
+
+// b1-9by-C：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqBody(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastBodySnapshot: any = null;
+
+/** b1-9by-C：快照直写收敛——原 startScopeSync 200ms 轮询退役。 */
+export function syncBodyFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildBodySnapshot(scope);
+  if (lastBodySnapshot !== null && shallowEqBody(next, lastBodySnapshot)) return;
+  lastBodySnapshot = next;
+  useBodyState.setState(next as any);
+}
+
+export function bindBodySync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleBodySync = syncBodyFromScope;
+  // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
+  (window as any).__eagleBodyState = useBodyState;
+  useFilterState.subscribe(() => syncBodyFromScope());
+  usePanelState.subscribe(() => syncBodyFromScope());
+  // 启动期一次性对齐。
+  syncBodyFromScope();
 }

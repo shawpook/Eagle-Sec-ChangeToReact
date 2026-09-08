@@ -12,6 +12,7 @@ import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
 import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
+import { syncInspectorFromScope } from '../../store/inspectorState';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
@@ -1466,6 +1467,7 @@ export function DuplicateModal() {
     body.openUnfiled();
     setTimeout(() => {
       body.selected = [item];
+      syncInspectorFromScope();
       body.scrollToSelectedItem();
     }, 500);
   };
@@ -1647,6 +1649,7 @@ export function DuplicateModal() {
         if (body.selectedMappings[image.id]) {
           body.selectedMappings = {};
           body.selected = [];
+          syncInspectorFromScope();
           updateSelection();
         }
         close();

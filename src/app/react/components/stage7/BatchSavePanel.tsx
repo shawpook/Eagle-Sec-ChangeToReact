@@ -8,6 +8,7 @@ import { FolderSelectPanel } from './selectPanelEngine';
 import { openGeneralTagSelectPanel, themePathOf } from './SelectPanels';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { syncUploadFromScope } from '../../store/uploadState';
+import { syncInspectorFromScope } from '../../store/inspectorState';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -485,6 +486,7 @@ export function BatchSavePanel() {
 
     // Note: 取消全域选取的图片
     body.selected = [];
+    syncInspectorFromScope();
     itemsRef.current = [];
     displayedRef.current = [];
     selectedRef.current = [];

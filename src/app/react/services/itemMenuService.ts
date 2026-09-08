@@ -18,6 +18,7 @@
 import { getBodyScope } from '../global/scopeBridge';
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { syncInspectorFromScope } from '../store/inspectorState';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
@@ -546,6 +547,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 duration: 1500
                             });
                             s.selected = [s.getNext()];
+                            syncInspectorFromScope();
                             s.rebindRefresh();
                             // s.scrollToSelectedItem();
                             s.$evalAsync();

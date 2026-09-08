@@ -165,7 +165,7 @@ try {
 
   // ── 缩放滑条快照联动 ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.sliderZoomRatio = 150; window.$bodyScope.$apply();`,
+    expression: `window.$bodyScope.sliderZoomRatio = 150; window.$bodyScope.$apply(); window.__eagleDetailSync && window.__eagleDetailSync();`,
     returnByValue: true,
   });
   await assertExpr(
@@ -177,7 +177,7 @@ try {
     `(() => { const bar = document.querySelector('#detail-slider-ratio')?.closest('.range-wrap')?.querySelector('.range-progressbar .current'); return bar && bar.style.width !== ''; })()`
   );
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.sliderZoomRatio = 100; window.$bodyScope.$apply();`,
+    expression: `window.$bodyScope.sliderZoomRatio = 100; window.$bodyScope.$apply(); window.__eagleDetailSync && window.__eagleDetailSync();`,
     returnByValue: true,
   });
 

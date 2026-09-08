@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req } from './detailHooks';
+import { syncDetailFromScope } from '../../store/detailState';
 
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
@@ -63,6 +64,7 @@ export function useRectComment(enabled: boolean) {
     scopeApply(getBodyScope(), function (s) {
       if (!s.commentRect) {
         s.commentRect = {};
+        syncDetailFromScope();
       }
       s.dragging = false;
     });
@@ -206,6 +208,7 @@ export function recomputeCommentRatio() {
   if (image && image.width && $image.length) {
     scopeApply($bodyScope, function (s) {
       s.ratio = image.width / $image.width();
+      syncDetailFromScope();
     });
   }
 }
@@ -231,6 +234,7 @@ export function useCommentsContainer(currentId: string | undefined, hasComments:
           if (!image) return;
           scopeApply(getBodyScope(), function (s) {
             s.ratio = image.width / $image.width();
+            syncDetailFromScope();
             s.$evalAsync?.();
           });
           $image.off('load.comment');

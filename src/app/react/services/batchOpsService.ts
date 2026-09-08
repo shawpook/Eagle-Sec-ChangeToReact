@@ -28,6 +28,8 @@ import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncDetailFromScope } from '../store/detailState';
 
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
@@ -212,14 +214,21 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 var prev = s.allData[s.lastIndex - 1];
                 if (next) {
                     s.selected = [next];
+                    syncInspectorFromScope();
                     s.current = next;
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
                 else if (prev) {
                     s.selected = [prev];
+                    syncInspectorFromScope();
                     s.current = prev;
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
                 else {
                     s.selected = [];
+                    syncInspectorFromScope();
                     s.leaveDetailMode();
                 }
             }
@@ -254,6 +263,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             if (event.metaKey || event.shiftKey || event.ctrlKey) return;
             __lv_cleanSelectedTimeout = $timeout(function() {
                 s.selected = [];
+                syncInspectorFromScope();
                 s.selectedFolderMappings = {};
                 syncListFromScope();
                 s.updateSelection();
@@ -345,16 +355,23 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             var prev = s.allData[s.lastIndex - 1];
             if (next) {
                 s.selected = [next];
+                syncInspectorFromScope();
                 if (s.isDetailMode) {
                     s.current = next;
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
             } else if (prev) {
                 s.selected = [prev];
+                syncInspectorFromScope();
                 if (s.isDetailMode) {
                     s.current = prev;
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
             } else {
                 s.selected = [];
+                syncInspectorFromScope();
                 s.leaveDetailMode();
             }
 

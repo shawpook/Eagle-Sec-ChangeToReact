@@ -18,6 +18,7 @@ import { getBodyScope } from '../global/scopeBridge';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { syncBodyFromScope } from '../store/bodyState';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
@@ -385,6 +386,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
     return (function(e, ui) {
             if (ui && ui.size.width >= 200) {
                 s.containerSize.tagSidebar = ui.size.width;
+                syncBodyFromScope();
                 syncSidebarFromScope();
                 syncTagManagerFromScope();
                 s.$root.$broadcast('$$rebind::refreshContainSize');

@@ -40,6 +40,7 @@ import {
 } from './inspectorActions';
 import { req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
+import { syncInspectorFromScope } from '../../store/inspectorState';
 
 /**
  * 阶段6：检查器接管。
@@ -283,6 +284,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
         onClick={(e) =>
           scopeApply(getBodyScope(), (s) => {
             s.inspector.showTags = !s.inspector.showTags;
+            syncInspectorFromScope();
           })
         }
       >
@@ -400,6 +402,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
             onClick={() =>
               scopeApply(getBodyScope(), (s) => {
                 s.inspector.showFolders = !s.inspector.showFolders;
+                syncInspectorFromScope();
               })
             }
           >
@@ -452,6 +455,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
             onClick={() =>
               scopeApply(getBodyScope(), (s) => {
                 s.inspector.showFolders = !s.inspector.showFolders;
+                syncInspectorFromScope();
               })
             }
           >
@@ -640,6 +644,7 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
         onClick={() =>
           scopeApply(getBodyScope(), (s) => {
             s.inspector.showComments = !s.inspector.showComments;
+            syncInspectorFromScope();
           })
         }
       >
@@ -687,6 +692,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
             onClick={() =>
               scopeApply(getBodyScope(), (s) => {
                 s.inspector.showProperties = !s.inspector.showProperties;
+                syncInspectorFromScope();
               })
             }
           >
@@ -778,6 +784,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
             onClick={() =>
               scopeApply(getBodyScope(), (s) => {
                 s.inspector.showProperties = !s.inspector.showProperties;
+                syncInspectorFromScope();
               })
             }
           >
@@ -1057,6 +1064,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
           const order = jQuery(el).sortable('toArray', { attribute: 'data-item-id' });
           const items = s.inspector.inspectorItems || [];
           s.inspector.inspectorItems = order.map((id: string) => items.find((i: any) => String(i.id) === id)).filter(Boolean);
+          syncInspectorFromScope();
         });
       },
     });
@@ -1085,12 +1093,14 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   const writeName = (html: string) => {
     scopeApply(getBodyScope(), (s) => {
       s.inspector.newName = html;
+      syncInspectorFromScope();
     });
     inspectorNameChange();
   };
   const writeAnnotation = (html: string) => {
     scopeApply(getBodyScope(), (s) => {
       s.inspector.newAnnotation = html;
+      syncInspectorFromScope();
     });
     annotationChange();
   };
@@ -1098,6 +1108,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   const writeUrl = (html: string) => {
     scopeApply(getBodyScope(), (s) => {
       s.inspector.newUrl = html;
+      syncInspectorFromScope();
     });
     // ng-model-options debounce 200
     clearTimeout(urlDebounce.id);
@@ -1169,6 +1180,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
             onClick={() =>
               scopeApply(getBodyScope(), (s) => {
                 s.inspector.showProperties = !s.inspector.showProperties;
+                syncInspectorFromScope();
               })
             }
           >

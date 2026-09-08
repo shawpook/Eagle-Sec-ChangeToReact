@@ -10,6 +10,7 @@
 import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom } from '../core/smoothZoomEngine';
 import { machineryGetRatioExp, machineryGetRatioNonExp } from '../core/dataMachinery';
+import { syncDetailFromScope } from '../store/detailState';
 
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
@@ -200,6 +201,7 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
     s.isInlineMode = !!isInline;
     if (s.isInlineMode) {
       s.isCommentMode = false;
+      syncDetailFromScope();
     }
   }
   if (s.$root.currentFocus == "sidebar" || s.$root.currentFocus == "tags") {

@@ -27,6 +27,10 @@ import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -320,6 +324,7 @@ export function takeoverMiscDomain(): void {
       s.boxContianerHeight = $("#box-container").height() || s.boxContianerHeight;
     }, 200);
     s.isMaximize = true;
+    syncToolbarFromScope();
     s.lastItemStates = {};
     s.$evalAsync();
   });
@@ -332,6 +337,7 @@ export function takeoverMiscDomain(): void {
       s.boxContianerHeight = $("#box-container").height() || s.boxContianerHeight;
     }, 200);
     s.isMaximize = false;
+    syncToolbarFromScope();
     s.lastItemStates = {};
     s.$evalAsync();
   });
@@ -531,6 +537,7 @@ export function takeoverMiscDomain(): void {
         s.openAll();
       }
       s.selected = [];
+      syncInspectorFromScope();
       domainTimeout(s, function () {
         s.select(undefined, item);
         s.enterDetailMode(undefined, item);
@@ -639,6 +646,7 @@ export function takeoverMiscDomain(): void {
       if (folders && folders.length > 0 && folders[0] && s.folderMappings[folders[0]]) {
         s.openFolder(s.folderMappings[folders[0]]);
         s.selected = [];
+        syncInspectorFromScope();
         domainTimeout(s, function () {
           s.select(undefined, image);
           s.scrollToSelectedItem();
@@ -647,6 +655,7 @@ export function takeoverMiscDomain(): void {
       else {
         s.openAll();
         s.selected = [];
+        syncInspectorFromScope();
         domainTimeout(s, function () {
           s.select(undefined, image);
           s.scrollToSelectedItem();
@@ -655,6 +664,7 @@ export function takeoverMiscDomain(): void {
     }
     else {
       s.selected = [];
+      syncInspectorFromScope();
       s.openAll();
     }
     s.$evalAsync();
@@ -715,6 +725,9 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     s.$root.preferences.general.showSidebarBadge = true;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
     s.$evalAsync();
   });
 
@@ -722,6 +735,9 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     s.$root.preferences.general.showSidebarBadge = false;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
     s.$evalAsync();
   });
 

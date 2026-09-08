@@ -21,6 +21,9 @@ import { getBodyScope } from '../global/scopeBridge';
 import { ContextMenu } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
 import { updateCurrentOrderAndIncrease } from '../core/controllerFns';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -783,6 +786,12 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         click: () => {
                             if (s.$root.preferences.sidebar.unfiled === "true") s.$root.preferences.sidebar.unfiled = 'false';
                             else s.$root.preferences.sidebar.unfiled = "true";
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
                             ipcRenderer.send('chnage-preferences', s.$root.preferences);
                         }
                     },
@@ -794,6 +803,9 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         click: () => {
                             if (s.$root.preferences.sidebar.untagged === "true") s.$root.preferences.sidebar.untagged = 'false';
                             else s.$root.preferences.sidebar.untagged = "true";
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
                             ipcRenderer.send('chnage-preferences', s.$root.preferences);
                         }
                     },
@@ -804,7 +816,13 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         keepOpen: true,
                         click: () => {
                             if (s.$root.preferences.sidebar.recent === "true") s.$root.preferences.sidebar.recent = 'false';
-                            else s.$root.preferences.sidebar.recent = "true";
+                                                        else s.$root.preferences.sidebar.recent = "true";
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
                             ipcRenderer.send('chnage-preferences', s.$root.preferences);
                         }
                     },
@@ -815,7 +833,13 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         keepOpen: true,
                         click: () => {
                             if (s.$root.preferences.sidebar.random === "true") s.$root.preferences.sidebar.random = 'false';
-                            else s.$root.preferences.sidebar.random = "true";
+                                                        else s.$root.preferences.sidebar.random = "true";
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
                             ipcRenderer.send('chnage-preferences', s.$root.preferences);
                         }
                     },
@@ -826,7 +850,13 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         keepOpen: true,
                         click: () => {
                             if (s.$root.preferences.sidebar.community2 === "true") s.$root.preferences.sidebar.community2 = 'false';
-                            else s.$root.preferences.sidebar.community2 = "true";
+                                                        else s.$root.preferences.sidebar.community2 = "true";
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
+                            syncToolbarFromScope();
+                            syncBodyFromScope();
+                            syncDetailFromScope();
                             ipcRenderer.send('chnage-preferences', s.$root.preferences);
                         }
                     },

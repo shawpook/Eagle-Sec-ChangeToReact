@@ -17,6 +17,7 @@ import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout } fr
 import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncDetailFromScope } from '../store/detailState';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -1896,6 +1897,7 @@ export function machineryBuildTagManager(s: any): any {
             setSpeed: function (speed: any = 1) {
                 if (!s.gifPlayer) return;
                 s.gifViewer.speed = speed;
+                syncDetailFromScope();
                 s.$evalAsync();
                 s.gifPlayer.set_speed(speed);
                 w.$(".gif-toolbar-btn.speed span").text(`${speed}x`);
@@ -1903,8 +1905,11 @@ export function machineryBuildTagManager(s: any): any {
             mousedown: function (event: any) {
                 if (event.button !== 0) return;
                 s.gifViewer.mousedownX = event.clientX;
+                syncDetailFromScope();
                 s.gifViewer.mousedownY = event.clientY;
+                syncDetailFromScope();
                 s.gifViewer.mousedownTime = Date.now();
+                syncDetailFromScope();
             },
             mouseup: function (event: any) {
                 if (event.button !== 0) return;
@@ -1917,6 +1922,7 @@ export function machineryBuildTagManager(s: any): any {
             cancelRange: function () {
                 if (s.gifViewer.range !== undefined) {
                     s.gifViewer.range = undefined;
+                    syncDetailFromScope();
                     var $resizableBar = w.$(".gif-toolbar .resize-bar");
                     $resizableBar.css({
                         left: "0%",
@@ -1948,13 +1954,20 @@ export function machineryBuildTagManager(s: any): any {
                 clearInterval(s.gifUpadteInterval);
                 if (s.isGifReady === true) {
                     s.isGifReady = false;
+                    syncDetailFromScope();
                     delete s.gifViewer.frames;
                     s.gifViewer.frames = [];
+                    syncDetailFromScope();
                     s.gifViewer.mousedownTime = 0;
+                    syncDetailFromScope();
                     s.gifViewer.mousedownX = 0;
+                    syncDetailFromScope();
                     s.gifViewer.mousedownY = 0;
+                    syncDetailFromScope();
                     s.gifViewer.range = undefined;
+                    syncDetailFromScope();
                     s.gifPlayer = undefined;
+                    syncDetailFromScope();
                     s.$evalAsync();
                 }
                 updateGifProgressbar(progress);
@@ -1962,10 +1975,15 @@ export function machineryBuildTagManager(s: any): any {
             },
             onFinished: function (result: any) {
                 s.gifViewer.range = undefined;
+                syncDetailFromScope();
                 s.gifPlayer = result.gifPlayer;
+                syncDetailFromScope();
                 s.isGifReady = true;
+                syncDetailFromScope();
                 s.gifViewer.frames = result.frames;
+                syncDetailFromScope();
                 s.gifViewer.playing = result.playing;
+                syncDetailFromScope();
                 s.gifViewer.setSpeed(1);
                 s.$evalAsync();
                 var $resizableBar = w.$(".gif-toolbar .resize-bar");
@@ -2056,23 +2074,28 @@ export function machineryBuildTagManager(s: any): any {
                         if (gifPlayerLastResizeLeft !== left) {
                             if (s.gifViewer.range === undefined) {
                                 s.gifViewer.range = [index, s.gifViewer.frames.length];
+                                syncDetailFromScope();
                             }
                             else {
                                 s.gifViewer.range = [index, s.gifViewer.range[1]];
+                                syncDetailFromScope();
                             }
                         }
                         // 移動 end
                         else if (gifPlayerLastResizeWidth !== width) {
                             if (s.gifViewer.range === undefined) {
                                 s.gifViewer.range = [0, index + 1];
+                                syncDetailFromScope();
                             }
                             else {
                                 s.gifViewer.range = [s.gifViewer.range[0], index + 1];
+                                syncDetailFromScope();
                             }
                         }
 
                         if (s.gifViewer.range && s.gifViewer.range[0] > s.gifViewer.range[1]) {
                             s.gifViewer.range = [s.gifViewer.range[1], s.gifViewer.range[0]];
+                            syncDetailFromScope();
                         }
                         console.log(s.gifViewer.range);
 
@@ -2116,7 +2139,7 @@ export function machineryBuildTagManager(s: any): any {
                 }, 50);
             }
         };
-
+        syncDetailFromScope();
         var updateGifIndicator = function (index: any) {
             var percent = (index - 1) / (s.gifViewer.frames.length - 1) * 100;
             if (percent < 0) percent = 0;

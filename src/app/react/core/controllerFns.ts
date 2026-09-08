@@ -37,6 +37,10 @@ import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 
 // ── bundle 模块级 const shim（18982-19045 区域子集；按批次函数实际引用引入）──
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -406,6 +410,7 @@ export function makeControllerFns(getScope: () => any) {
                         else {
                             var targetSelectedIndex = s.allData.indexOf(image);
                             s.selected = [image];
+                            syncInspectorFromScope();
                             s.lastSelectedIndex = targetSelectedIndex;
                         }
                     }
@@ -697,6 +702,7 @@ export function makeControllerFns(getScope: () => any) {
             else {
                 if (orderBy) {
                     s.orderBy = orderBy;
+                    syncBodyFromScope();
                     s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
                     localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
                     s.sortRawData(s.orderBy);
@@ -1101,6 +1107,7 @@ export function makeControllerFns(getScope: () => any) {
             else {
                 if (s.isCropMode) {
                     s.isCropMode = false;
+                    syncDetailFromScope();
                 }
                 else if (AnnotationPreview.isShow) {
                 	AnnotationPreview.hide();
@@ -1825,19 +1832,24 @@ export function makeControllerFns(getScope: () => any) {
     return (function() {
 
             s.isCropMode = false;
+            syncDetailFromScope();
             s.usingGifPlayer = false;
-
+            syncDetailFromScope();
             if (s.isDetailMode) {
                 
                 s.rememberScrollTops(s.current);
 
                 s.isDetailMode = false;
                 s.showDetailImage = false;
+                syncDetailFromScope();
                 s.smoothZoomDone = false;
+                syncDetailFromScope();
                 s.commentRect = undefined;
-
+                syncDetailFromScope();
                 // 記住上次播放位置
                 s.rememberVideoCurrentTime(s.current); s.current = undefined;
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 $timeout.cancel(__lv_zoomInitTimeout);
 
                 setTimeout(function() {
@@ -1853,13 +1865,20 @@ export function makeControllerFns(getScope: () => any) {
                 
                 if (s.isGifReady === true) {
                     s.isGifReady = false;
+                    syncDetailFromScope();
                     delete s.gifViewer.frames;
                     s.gifViewer.frames = [];
+                    syncDetailFromScope();
                     s.gifViewer.mousedownTime = 0;
+                    syncDetailFromScope();
                     s.gifViewer.mousedownX = 0;
+                    syncDetailFromScope();
                     s.gifViewer.mousedownY = 0;
+                    syncDetailFromScope();
                     s.gifViewer.range = undefined;
+                    syncDetailFromScope();
                     s.gifPlayer = undefined;
+                    syncDetailFromScope();
                 }
 
                 // b1-8：initMousetrap 为 bundle 闭包链（destoryMousetrap/buildMousetrap）——
@@ -1895,9 +1914,11 @@ export function makeControllerFns(getScope: () => any) {
                     if (!currentWindow.isMaximized()) {
                         currentWindow.maximize();
                         s.isMaximize = true;
+                        syncToolbarFromScope();
                     } else {
                         currentWindow.unmaximize();
                         s.isMaximize = false;
+                        syncToolbarFromScope();
                     }
                 } else {
                     currentWindow.minimize();
@@ -1917,6 +1938,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.gifPlayer && s.isGifReady) {
                 s.gifPlayer.pause();
                 s.gifViewer.playing = false;
+                syncDetailFromScope();
                 var curr = s.gifPlayer.get_current_frame();
                 var total = s.gifViewer.frames.length;
                 var __lv_idx = curr + amount;
@@ -1983,7 +2005,7 @@ export function makeControllerFns(getScope: () => any) {
             s.currentId = currentId || "folder-" + folder.id;
             syncSidebarFromScope();
             s.currentFolderPath = s.getFolderFullPath(folder);
-
+            syncToolbarFromScope();
             if (s.currentFolder != folder) {
                 s.currentFolder = folder;
                 syncPanelFromScope();
@@ -2021,6 +2043,10 @@ export function makeControllerFns(getScope: () => any) {
             var __lv_height = localStorage.getItem("eagle.list.thumbSize." + folder.id) || 150;
             __lv_height = parseInt(__lv_height);
             s.imageSize.height = parseInt(__lv_height / 5) * 5;
+            syncToolbarFromScope();
+            syncBodyFromScope();
+            syncDetailFromScope();
+            syncInspectorFromScope();
             __lv_updateListHeight(s.imageSize.height);
             if (!ignoreReload) {
                 ScrollbarSaver.restoreScrollPosition();
@@ -2136,7 +2162,15 @@ export function makeControllerFns(getScope: () => any) {
                     });
                 }
                 s.imageSize.height = localStorage.getItem("eagle.list.thumbSize." + smartFolder.id) || 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.imageSize.height = parseInt(s.imageSize.height);
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 __lv_updateListHeight(s.imageSize.height);
                 ScrollbarSaver.restoreScrollPosition();
                 s.reload();
@@ -2176,7 +2210,15 @@ export function makeControllerFns(getScope: () => any) {
                     UrlStateService.setState({ view: 'unfiled', folder: null, smartfolder: null, tag: null, color: null });
                 }
                 s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.unfiled") || 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.imageSize.height = parseInt(s.imageSize.height);
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 __lv_setLastFolder(undefined);
                 __lv_updateListHeight(s.imageSize.height);
                 ScrollbarSaver.restoreScrollPosition();
@@ -2195,6 +2237,7 @@ export function makeControllerFns(getScope: () => any) {
             if (s.gifPlayer && s.isGifReady) {
                 s.gifPlayer.pause();
                 s.gifViewer.playing = false;
+                syncDetailFromScope();
                 var curr = s.gifPlayer.get_current_frame();
                 var __lv_idx = curr - amount;
                 if (__lv_idx < 0) __lv_idx = 0;
@@ -2476,11 +2519,13 @@ export function makeControllerFns(getScope: () => any) {
             // 標籤管理模式下，不需要顯示搜尋建議
             if (s.viewMode === 'alltags') {
                 s.showSuggestions = false;
+                syncToolbarFromScope();
                 return;
             }
             if (rectSelecting) return;
             updateSuggestions();
             s.showSuggestions = true;
+            syncToolbarFromScope();
         }).apply(null, args);
   };
 
@@ -2562,6 +2607,7 @@ export function makeControllerFns(getScope: () => any) {
                     	if (event.button !== 2) {
 	                        var __lv_idx = s.selected.indexOf(__lv_image);
 	                        s.selected.splice(__lv_idx, 1);
+	                        syncInspectorFromScope();
 	                        delete s.selectedMappings[__lv_image.id];
                         }
                     }
@@ -2573,6 +2619,7 @@ export function makeControllerFns(getScope: () => any) {
 
             if (event && !event.metaKey && !event.shiftKey && !event.ctrlKey) {
                 s.selected = [];
+                syncInspectorFromScope();
                 s.lastSelectedIndex = targetSelectedIndex;
             }
             if (event && (event.metaKey || event.ctrlKey) ) {
@@ -2580,6 +2627,7 @@ export function makeControllerFns(getScope: () => any) {
             }
             if (event && event.shiftKey) {
                 s.selected.push(__lv_image);
+                syncInspectorFromScope();
                 s.selectedMappings[__lv_image.id] = true;
                 var selection = s.getSelection();
 
@@ -2605,8 +2653,10 @@ export function makeControllerFns(getScope: () => any) {
                             var alidx = s.selected.indexOf(s.allData[i]);
                             if (alidx !== -1) {
                                 s.selected.splice(alidx, 1);
+                                syncInspectorFromScope();
                             }
                             s.selected.push(s.allData[i]);
+                            syncInspectorFromScope();
                             s.selectedMappings[s.allData[i].id] = true;
                         }
                     }
@@ -2617,8 +2667,10 @@ export function makeControllerFns(getScope: () => any) {
                             var alidx = s.selected.indexOf(s.allData[i]);
                             if (alidx !== -1) {
                                 s.selected.splice(alidx, 1);
+                                syncInspectorFromScope();
                             }
                             s.selected.push(s.allData[i]);
+                            syncInspectorFromScope();
                             s.selectedMappings[s.allData[i].id] = true;
                         }
                     }
@@ -2626,10 +2678,12 @@ export function makeControllerFns(getScope: () => any) {
             } else if (!s.selectedMappings[__lv_image.id]) {
                 if (__lv_image && s.selected.indexOf(__lv_image) === -1) {
                     s.selected.push(__lv_image);
+                    syncInspectorFromScope();
                     s.selectedMappings[__lv_image.id] = true;
                 }
             }
             s.selected = [...new Set(s.selected)];
+            syncInspectorFromScope();
         }).apply(null, args);
   };
 
@@ -2676,17 +2730,23 @@ export function makeControllerFns(getScope: () => any) {
             if (__lv_target) {
                 var __lv_image = s.getItemByElement(__lv_target[0]);
                 s.selected = [__lv_image];
+                syncInspectorFromScope();
                 s.selectedFolderMappings = {};
                 syncListFromScope();
                 if (s.isDetailMode) {
                     s.current = s.selected[0];
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
                 s.autoScroll(__lv_target);
             }
             if (s.isDetailMode) {
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.isGifReady = false;
+                syncDetailFromScope();
                 detailZoom()?.updateNavigator( $bodyScope.current);
                 if (!s.lastZoom()) {
                     s.zoom();
@@ -2724,6 +2784,7 @@ export function makeControllerFns(getScope: () => any) {
             }
 
             s.selected = [s.allData[end]];
+            syncInspectorFromScope();
             s.selectedFolderMappings = {};
             syncListFromScope();
             s.$root.currentFocus = "content";
@@ -2732,7 +2793,10 @@ export function makeControllerFns(getScope: () => any) {
                 $timeout.cancel(__lv_nextTimeout);
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.isGifReady = false;
+                syncDetailFromScope();
             }
 
             s.autoScroll(end);
@@ -2780,21 +2844,30 @@ export function makeControllerFns(getScope: () => any) {
                 detailZoom()?.cleanBitmapViewer();
                 s.rememberScrollTops(s.current);
                 s.isGifReady = false;
+                syncDetailFromScope();
             }
 
             if (s.allData[__lv_start - 1]) {
                 s.selected = [];
+                syncInspectorFromScope();
                 s.selected.push(s.allData[__lv_start - 1]);
+                syncInspectorFromScope();
                 if (s.isDetailMode) {
                     s.forceFitImageSize(s.selected[0], true);
                     s.current = s.selected[0];
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
                 s.autoScroll(__lv_start - 1);
             } else {
                 s.selected = [];
+                syncInspectorFromScope();
                 s.selected.push(s.allData[0]);
+                syncInspectorFromScope();
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.autoScroll(0);
             }
             s.selectedFolderMappings = {};
@@ -2862,17 +2935,23 @@ export function makeControllerFns(getScope: () => any) {
             if (__lv_target) {
                 var __lv_image = s.getItemByElement(__lv_target[0]);
                 s.selected = [__lv_image];
+                syncInspectorFromScope();
                 s.selectedFolderMappings = {};
                 syncListFromScope();
                 if (s.isDetailMode) {
                     s.current = s.selected[0];
+                    syncDetailFromScope();
+                    syncInspectorFromScope();
                 }
                 s.autoScroll(__lv_target);
             }
             if (s.isDetailMode) {
                 s.forceFitImageSize(s.selected[0], true);
                 s.current = s.selected[0];
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.isGifReady = false;
+                syncDetailFromScope();
                 detailZoom()?.updateNavigator( $bodyScope.current);
                 if (!s.lastZoom()) {
                     s.zoom();
@@ -3244,11 +3323,13 @@ export function makeControllerFns(getScope: () => any) {
                 if (s.gifViewer.playing) {
                     s.gifPlayer.pause();
                     s.gifViewer.playing = false;
+                    syncDetailFromScope();
                     s.$evalAsync();
                 }
                 else {
                     s.gifPlayer.play();
                     s.gifViewer.playing = true;
+                    syncDetailFromScope();
                     s.$evalAsync();
                 }
                 $(".gif-viewer").css("opacity", 0.8);
@@ -3265,6 +3346,7 @@ export function makeControllerFns(getScope: () => any) {
     if (!s) return;
     return (function () {
             s.usingGifPlayer = !s.usingGifPlayer;
+            syncDetailFromScope();
             analytics.event('GifViewer', 'Open');
         }).apply(null, args);
   };
@@ -3385,11 +3467,13 @@ export function makeControllerFns(getScope: () => any) {
                 if (s.lastZoomMode !== "edge") {
                     s.zoomFit(event);
                     s.lastZoomMode = "edge";
+                    syncDetailFromScope();
                     s.zoomFitSize = s.imageSize.zoomRatioExp;
                 }
                 else {
                     s.zoomActual(event);
                     s.lastZoomMode = "fit";
+                    syncDetailFromScope();
                     s.zoomFitSize = 0;
                 }
             }
@@ -3397,10 +3481,12 @@ export function makeControllerFns(getScope: () => any) {
                 if (s.lastZoomMode !== "edge") {
                     s.zoomFitEdge(event, true);
                     s.lastZoomMode = "edge";
+                    syncDetailFromScope();
                 }
                 else {
                     s.zoomFit(event);
                     s.lastZoomMode = "fit";
+                    syncDetailFromScope();
                 }
             }
             localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
@@ -3941,6 +4027,10 @@ export function makeControllerFns(getScope: () => any) {
             event && event.preventDefault && event.preventDefault();
             if (!s.isDetailMode) {
                 s.imageSize.height = 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.changeListHeight();
                 if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
                     s.adjustLayoutWidth(0);
@@ -3980,6 +4070,10 @@ export function makeControllerFns(getScope: () => any) {
             event && event.preventDefault && event.preventDefault();
             if (!s.isDetailMode) {
                 s.imageSize.height = 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.changeListHeight();
                 if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
                     s.adjustLayoutWidth(0);
@@ -4002,6 +4096,7 @@ export function makeControllerFns(getScope: () => any) {
                 }
                 s.zoomFitSize = 0;
                 s.lastZoomMode = "fit";
+                syncDetailFromScope();
                 localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
                 s.imageSize.zoomRatio = 100;
                 s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
@@ -4738,6 +4833,7 @@ export function makeControllerFns(getScope: () => any) {
     return (function(e, ui) {
         if (ui && ui.size.width >= 200) {
             s.containerSize.sidebar = ui.size.width;
+            syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
             s.$root.$broadcast('$$rebind::refreshContainSize');
@@ -5232,7 +5328,7 @@ export function parseKeywordsWithOR(keywordStr) {
 export function updateSuggestions() {
             console.time("updateSuggestions");
             getBodyScope().searchIndex = -1;
-
+            syncToolbarFromScope();
             var keyword = "";
             if (getBodyScope().keyword) {
                 keyword = getBodyScope().keyword.toLowerCase();
@@ -5245,7 +5341,7 @@ export function updateSuggestions() {
                 }
                 return false;
             }).slice(0,8);
-
+            syncToolbarFromScope();
             var suggestions = [];
             var wordsIndex = {};
             var dataset = [];
@@ -5287,9 +5383,11 @@ export function updateSuggestions() {
 	            //     suggestions.length = 5;
 	            // }
             	getBodyScope().keywordSuggestions = suggestions;
+            	syncToolbarFromScope();
                 getBodyScope().keywordSuggestions = getBodyScope().keywordSuggestions.filter((suggestion) => {
                     return getBodyScope().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
                 });
+                syncToolbarFromScope();
             	console.timeEnd("updateSuggestions");
             	return;
             }
@@ -5360,8 +5458,10 @@ export function updateSuggestions() {
             }
             else {
                 getBodyScope().showSuggestions = false;
+                syncToolbarFromScope();
             }
 
             getBodyScope().keywordSuggestions = suggestions;
+            syncToolbarFromScope();
             console.timeEnd("updateSuggestions");
         }

@@ -25,6 +25,7 @@ import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncDetailFromScope } from '../store/detailState';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -999,6 +1000,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                                 };
                                 s.uploadFiles([newFile]);
                                 s.isCropMode = false;
+                                syncDetailFromScope();
                                 s.leaveDetailMode();
                                 s.$evalAsync();
                             });
@@ -1047,6 +1049,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                                             fse.removeSync(imagePath + ".bk");
                                         }
                                         s.isCropMode = false;
+                                        syncDetailFromScope();
                                         s.$evalAsync();
                                     });
                             });
@@ -1054,6 +1057,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                     }
                     else {
                         s.isCropMode = false;
+                        syncDetailFromScope();
                     }
                 });
             }, 500);

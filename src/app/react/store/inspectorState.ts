@@ -1,6 +1,10 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { usePanelState } from './panelState';
+import { useFilterState } from './filterState';
+import { useListState } from './listState';
+import { useBodyState } from './bodyState';
+import { getBodyScope } from '../global/scopeBridge';
 
 /**
  * 阶段6：检查器状态 —— 快照自 EagleController scope + eagle.inspector 全局对象。
@@ -196,43 +200,7 @@ function snapshotItem(item: any): SelectedItemSnapshot {
   };
 }
 
-export function bindInspectorSync(): () => void {
-  return startScopeSync({
-    watch: [
-      'selected',
-      'selected.length',
-      'current',
-      'isDetailMode',
-      'viewMode',
-      'theme',
-      'trialRemain',
-      'inspector.width',
-      'inspector.activeTab',
-      'inspector.isRenaming',
-      'inspector.showProperties',
-      'inspector.showTags',
-      'inspector.showFolders',
-      'inspector.showComments',
-      'inspector.newName',
-      'inspector.newNamePlaceholder',
-      'inspector.newUrl',
-      'inspector.newUrlPlaceholder',
-      'inspector.newAnnotation',
-      'inspector.newTags',
-      'inspector.folders',
-      'inspector.star',
-      'inspector.size',
-      'inspector.category',
-      'inspector.inspectorFolder',
-      'inspector.inspectorItems',
-      '$root.selectedFolders',
-      'selectedFolderMappings',
-      'currentFolder',
-      'currentSmartFolder',
-      'TagManager.tagMappings',
-      'TagManager.groups',
-    ],
-    build: (scope) => {
+function buildInspectorSnapshot(scope: any): InspectorSnapshot {
       const ins = scope.inspector || {};
       const selected = Array.isArray(scope.selected) ? scope.selected : [];
       const tagMappings = scope.TagManager?.tagMappings || {};
@@ -347,7 +315,38 @@ export function bindInspectorSync(): () => void {
         isDetailMode: !!scope.isDetailMode,
         currentExt: scope.current?.ext || '',
       } as InspectorSnapshot;
-    },
-    apply: (snapshot) => setSnapshot(snapshot as InspectorSnapshot),
-  });
+}
+
+// b1-9by-C：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqInspector(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastInspectorSnapshot: any = null;
+
+/** b1-9by-C：快照直写收敛——原 startScopeSync 200ms 轮询退役。 */
+export function syncInspectorFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildInspectorSnapshot(scope);
+  if (lastInspectorSnapshot !== null && shallowEqInspector(next, lastInspectorSnapshot)) return;
+  lastInspectorSnapshot = next;
+  useInspectorState.setState({ snapshot: next as InspectorSnapshot });
+}
+
+export function bindInspectorSync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleInspectorSync = syncInspectorFromScope;
+  // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
+  (window as any).__eagleInspectorState = useInspectorState;
+  useBodyState.subscribe(() => syncInspectorFromScope());
+  useListState.subscribe(() => syncInspectorFromScope());
+  useFilterState.subscribe(() => syncInspectorFromScope());
+  usePanelState.subscribe(() => syncInspectorFromScope());
+  // 启动期一次性对齐。
+  syncInspectorFromScope();
 }

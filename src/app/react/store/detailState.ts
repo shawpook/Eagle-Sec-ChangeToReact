@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import { startScopeSync } from '../global/scopeBridge';
+import { usePanelState } from './panelState';
+import { useFilterState } from './filterState';
+import { useListState } from './listState';
+import { useBodyState } from './bodyState';
+import { getBodyScope } from '../global/scopeBridge';
 
 /**
  * 阶段5：详情模式与查看器状态 —— 快照自 EagleController scope。
@@ -177,40 +181,7 @@ function callGetter(scope: any, name: string, arg?: any): string {
   }
 }
 
-export function bindDetailSync(): () => void {
-  return startScopeSync({
-    watch: [
-      'isDetailMode',
-      'isInlineMode',
-      'isCommentMode',
-      'isCropMode',
-      'initDetailMode',
-      'useMpvPlayer',
-      'showDetailImage',
-      'smoothZoomDone',
-      'usingGifPlayer',
-      'isGifReady',
-      'current',
-      'commentRect',
-      'ratio',
-      'imageSize',
-      'sliderZoomRatio',
-      'lastZoomMode',
-      'gifViewer.speed',
-      'gifViewer.playing',
-      'allData.length',
-      'inspector.isHideInspector',
-      'inspector.isRenaming',
-      'inspector.width',
-      'supportRotate',
-      'supportCrop',
-      'theme',
-      'pluginModule.pinnedPlugins',
-      'pluginModule.needUpdatePluginCount',
-      'preferences.habits.gifViewer',
-      'preferences.habits.renderBehavior',
-    ],
-    build: (scope) => {
+function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
       const preferences = scope.preferences || {};
       const keybinds = (preferences.shortcuts && preferences.shortcuts.keybinds) || {};
       const habits = (scope.$root?.preferences || preferences).habits || {};
@@ -327,7 +298,38 @@ export function bindDetailSync(): () => void {
         pinnedPlugins: pinned.map((p: any) => ({ name: p?.manifest?.name, icon: p?.icon })),
         needUpdatePluginCount: scope.pluginModule?.needUpdatePluginCount || 0,
       } as DetailSnapshot;
-    },
-    apply: (snapshot) => setSnapshot(snapshot as DetailSnapshot),
-  });
+}
+
+// b1-9by-C：快照深比较守卫（scopeBridge startScopeSync 同款语义）。
+function shallowEqDetail(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  const ka = Object.keys(a);
+  if (ka.length !== Object.keys(b).length) return false;
+  return ka.every((k) => a[k] === b[k]);
+}
+
+let lastDetailSnapshot: any = null;
+
+/** b1-9by-C：快照直写收敛——原 startScopeSync 200ms 轮询退役。 */
+export function syncDetailFromScope(): void {
+  const scope: any = getBodyScope();
+  if (!scope) return;
+  const next = buildDetailSnapshot(scope);
+  if (lastDetailSnapshot !== null && shallowEqDetail(next, lastDetailSnapshot)) return;
+  lastDetailSnapshot = next;
+  useDetailState.setState({ snapshot: next as DetailSnapshot });
+}
+
+export function bindDetailSync(): void {
+  // 供闭环测试直写 scope 后手动驱动（原 $evalAsync 触发快照链的等价物）。
+  (window as any).__eagleDetailSync = syncDetailFromScope;
+  // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
+  (window as any).__eagleDetailState = useDetailState;
+  useBodyState.subscribe(() => syncDetailFromScope());
+  useListState.subscribe(() => syncDetailFromScope());
+  useFilterState.subscribe(() => syncDetailFromScope());
+  usePanelState.subscribe(() => syncDetailFromScope());
+  // 启动期一次性对齐。
+  syncDetailFromScope();
 }

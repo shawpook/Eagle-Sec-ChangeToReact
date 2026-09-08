@@ -13,6 +13,10 @@ import { FileUrlHelper } from './fileUrlHelper';
 import { eagle } from './eagleApi';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncToolbarFromScope } from '../store/toolbarState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncInspectorFromScope } from '../store/inspectorState';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }
@@ -228,6 +232,12 @@ class Inspector {
     set isHideInspector(value) {
         this.#isHideInspector = value;
         localStorage.setItem("eagle.inspector.isHideInspector", value);
+        // b1-9by-C：类内 setter 收敛——inspector 显隐变化直推消费快照（原 200ms 轮询退役）
+        syncBodyFromScope();
+        syncToolbarFromScope();
+        syncDetailFromScope();
+        syncInspectorFromScope();
+        syncPanelFromScope();
     }
 
     get width() {
@@ -238,6 +248,9 @@ class Inspector {
         if (isNaN(value)) return;
         this.#width = value;
         localStorage.setItem("eagle.containerSize.inspector", value);
+        // b1-9by-C：宽度变化直推 body/inspector 快照
+        syncBodyFromScope();
+        syncInspectorFromScope();
     }
 
     get showProperties() {

@@ -5,6 +5,7 @@ import { getBodyScope, scopeApply } from '../../global/scopeBridge';
 import { ipcRenderer } from '../../global/eagleGlobals';
 import { updateZoomRatio } from '../../services/detailService';
 import { addVideoComment, videoScreenShot } from '../../services/mediaService';
+import { syncDetailFromScope } from '../../store/detailState';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -253,6 +254,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           console.log('[mediaElement] Falling back to MPV player');
           scopeApply(getBodyScope(), function (s) {
             s.useMpvPlayer = true;
+            syncDetailFromScope();
           });
         } catch (err) {}
       }, 100, true)
@@ -331,6 +333,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         console.log('[mediaElement] Unplayable video detected (no dimensions or duration), falling back to MPV');
         scopeApply(getBodyScope(), function (s) {
           s.useMpvPlayer = true;
+          syncDetailFromScope();
         });
         return;
       }
@@ -342,6 +345,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           console.log('[mediaElement] No frames rendered during playback, falling back to MPV');
           scopeApply(getBodyScope(), function (s) {
             s.useMpvPlayer = true;
+            syncDetailFromScope();
           });
         }
       }, 1500);
@@ -1019,6 +1023,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
       if (newId !== oldId && oldId !== undefined) {
         scopeApply(getBodyScope(), function (s) {
           s.useMpvPlayer = false;
+          syncDetailFromScope();
         });
       }
     });
@@ -1040,6 +1045,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
 
         scopeApply(getBodyScope(), function (s) {
           s.useMpvPlayer = false;
+          syncDetailFromScope();
         });
       } catch (err) {
         console.error('[mpvMediaElement] Error during destroy:', err);

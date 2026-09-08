@@ -1375,6 +1375,33 @@
 > sentinel）。
 >
 
+> **b1-9by-C：toolbar/body/detail/inspector 四大链退役——sync 直写收敛（2026-09-09）**
+>
+> 最后四链 startScopeSync 全退役（108/218——**12 链 218 表达式全数归零**）：toolbar 28、
+> body 19、detail 29、inspector 32。**store 转换器**（tests-tmp/by-c-transform.py）：四链
+> 内联 build 逐字平移为独立 buildXxxSnapshot + shallowEq/lastSnapshot 守卫 + sync 面 +
+> 订阅 bind（toolbar 订阅 body/list/filter/panel/sidebar 五源；body 订阅 filter/panel；
+> detail/inspector 订阅 body/list/filter/panel）——重叠字段（currentFolder/filterBadge/
+> inspectorHide/allDataCount 等）走跨 store 订阅触发，不增写点。
+> **写入点收敛 324 处**（26 文件：imageSize 24/current/selected/inspector 字段族/
+> gifViewer 族/sliderZoomRatio/pluginModule/containerSize/orderBy/listLayoutSettings/
+> preferences 深写/suggestions 族/isMaximize 族）+ current 写点补 detail 33 处（detail
+> 投影全依赖 current——首笔只挂 inspector 的漏配）。**类内 setter 收敛**：eagleClasses
+> inspector 的 isHideInspector/width setter 内直推五消费快照（s.inspector.toggle() 与
+> 全部赋值形态覆盖）。
+> **施工坑 ×4**：① 转换器 build 体截取残尾（`} as X;` 后双余 `}`）×4 文件——regex
+> 修复；② **包裹形 store 的 setState 错位**（toolbar/detail/inspector 为
+> {snapshot: X} 包裹形，平铺 setState 合并后 .snapshot 永不更新——探针 __eagleXxxSync
+> 手调 ready 恒 false 实锚）→ 改 setState({snapshot: next})；③ by-c 手术脚本插入缺
+> `\n` 粘行（408 处 glue）+ if/else 单行链中间插入断链（miscMenuService 3 处 + Toolbar
+> 1 处）——regex 补行 + 链尾重排修复；④ 二次误跑脚本双插——git checkout 26 文件回滚
+> 单次重放（教训：脚本必须跑前确认 --apply 单次语义）。
+> **tests 契约更新**：stage5 sliderZoomRatio 直写块补 __eagleDetailSync（模拟生产写入点）。
+> **sentinel 基线吸收**：getBodyScope 691→695（四 sync helper）、rootAccess 494→490
+> （watch 串字符串移除）、coreState 31→30（bodyState watch 注释改写）。
+> **门禁**：esbuild 双入口 EXIT:0；sentinel OK；套件 55/55 ALL GREEN。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

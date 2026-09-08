@@ -22,6 +22,7 @@ import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './controllerFns';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncListFromScope } from '../store/listState';
+import { syncInspectorFromScope } from '../store/inspectorState';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -753,6 +754,7 @@ export function takeoverItemDomain(): void {
             var MAX_AUTO_SELECT = 1000;
             if (newItems && newItems.length <= MAX_AUTO_SELECT) {
               s.selected = newItems;
+              syncInspectorFromScope();
               var targetSelectedIndex = s.allData.indexOf(s.selected[0]);
               s.lastSelectedIndex = targetSelectedIndex;
               s.$root.currentFocus = "content";

@@ -10,6 +10,8 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { max, uniq } from '../../utils/lang';
 import { smartZoom } from '../../services/detailService';
+import { syncInspectorFromScope } from '../../store/inspectorState';
+import { syncDetailFromScope } from '../../store/detailState';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1103,16 +1105,23 @@ export function AddToFolderModal() {
       const prev = body.allData[body.lastIndex - 1];
       if (next) {
         body.selected = [next];
+        syncInspectorFromScope();
         body.current = next;
+        syncDetailFromScope();
+        syncInspectorFromScope();
         // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
         smartZoom();
       } else if (prev) {
         body.selected = [prev];
+        syncInspectorFromScope();
         body.current = prev;
+        syncDetailFromScope();
+        syncInspectorFromScope();
         // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
         smartZoom();
       } else {
         body.selected = [];
+        syncInspectorFromScope();
         body.leaveDetailMode();
       }
     }
@@ -1169,7 +1178,10 @@ export function AddToFolderModal() {
             image.isDeleted = originDeleted[index];
           });
           getBodyScope().selected = origin;
+          syncInspectorFromScope();
           getBodyScope().current = origin[0];
+          syncDetailFromScope();
+          syncInspectorFromScope();
           rootScope.$broadcast('CALCULATE_IMAGE_BINDING');
           rootScope.$broadcast('REBIND_REFRESH', true);
           rootScope.$broadcast('UPDATE_SELECTION');

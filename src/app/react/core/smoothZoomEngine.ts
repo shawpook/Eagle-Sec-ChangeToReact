@@ -11,6 +11,7 @@
 // @ts-nocheck
 import { FileUrlHelper } from './fileUrlHelper';
 import { BitmapViewer } from './bitmapViewer';
+import { syncDetailFromScope } from '../store/detailState';
 
 
 	/*****************************************************************************
@@ -2742,7 +2743,9 @@ if (!self._mousedown) return;
 				if (image.animated) {
 					clearTimeout(self.loadBitmapViewerTimeout);
 					$rootScope.supportCrop = false;
+					syncDetailFromScope();
 					$rootScope.supportRotate = false;
+					syncDetailFromScope();
 					self.bitmapViewer.clear();
 					if ($("#detail-image").attr("src") !== rawURL) {
 						$("#detail-image").attr("src", rawURL);
@@ -2760,7 +2763,9 @@ if (!self._mousedown) return;
 							const result = await self.bitmapViewer.loadURL(rawURL, image);
 							if (result?.usingImgTag) {
 								$rootScope.supportCrop = false;
+								syncDetailFromScope();
 								$rootScope.supportRotate = false;
+								syncDetailFromScope();
 								self.bitmapViewer.clear();
 								if ($("#detail-image").attr("src") !== rawURL) {
 									$("#detail-image").attr("src", rawURL);
@@ -2769,7 +2774,9 @@ if (!self._mousedown) return;
 							}
 							else {
 								$rootScope.supportCrop = true;
+								syncDetailFromScope();
 								$rootScope.supportRotate = true;
+								syncDetailFromScope();
 								$("#detail-image").attr("src", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC");
 							}
 							$rootScope.$evalAsync();
@@ -2784,7 +2791,9 @@ if (!self._mousedown) return;
 			}
 			else {
 				$rootScope.supportCrop = false;
+				syncDetailFromScope();
 				$rootScope.supportRotate = false;
+				syncDetailFromScope();
 				$rootScope.$evalAsync();
 				self.bitmapViewer.clear();
 			}

@@ -14,6 +14,7 @@
 import { getBodyScope } from '../global/scopeBridge';
 import { detailZoom } from './smoothZoomEngine';
 import { sweepForeignWatchers, persistSweep } from './appCore';
+import { syncDetailFromScope } from '../store/detailState';
 
 let done = false;
 
@@ -207,6 +208,7 @@ export function takeoverSelectionViewDomain(): void {
     const s: any = getBodyScope();
     if (!s) return;
     s.sliderZoomRatio = newValue;
+    syncDetailFromScope();
   };
   s0.$watch("imageSize.zoomRatio", zFn1);
   sweepForeignWatchers(s0, 'imageSize.zoomRatio', [zFn1], 'sliderZoomRatio');

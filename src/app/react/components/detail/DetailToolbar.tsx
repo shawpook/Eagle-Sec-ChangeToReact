@@ -9,6 +9,8 @@ import { CornerBtns } from '../toolbar/Toolbar';
 import { getCurrentWindow, $ } from './detailHooks';
 import { req } from './detailHooks';
 import { useMouseGesture } from './detailHooks';
+import { syncDetailFromScope } from '../../store/detailState';
+import { syncToolbarFromScope } from '../../store/toolbarState';
 
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
@@ -201,6 +203,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
           const order = jQuery(el).sortable('toArray', { attribute: 'data-plugin-index' }).map(Number);
           const plugins = s.pluginModule.pinnedPlugins || [];
           s.pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
+          syncToolbarFromScope();
         });
       },
     });
@@ -263,6 +266,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
                 const value = Number(e.target.value);
                 scopeApply(getBodyScope(), (s) => {
                   s.sliderZoomRatio = value;
+                  syncDetailFromScope();
                 });
               }}
             />

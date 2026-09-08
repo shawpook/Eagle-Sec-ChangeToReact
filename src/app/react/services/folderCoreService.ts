@@ -19,6 +19,8 @@ import { getBodyScope } from '../global/scopeBridge';
 import { getFilter as machineryGetFilter, machineryGetFolderParentChilder } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncDetailFromScope } from '../store/detailState';
 
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -399,6 +401,8 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 });
                 s.images = origin;
                 s.current = origin[0];
+                syncDetailFromScope();
+                syncInspectorFromScope();
                 s.calculateImageBinding({ ignoreSort: true }, function () {
                     s.rebindRefresh();
                     s.updateSelection();

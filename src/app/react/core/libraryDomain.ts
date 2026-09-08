@@ -41,6 +41,9 @@ import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncInspectorFromScope } from '../store/inspectorState';
 
 declare const ga4track: any;
 declare const IPCHelper: any;
@@ -185,6 +188,7 @@ export function takeoverLibraryDomain(): void {
     const s: any = getBodyScope();
     if (!s) return;
     s.trialRemain = params.trialRemain;
+    syncInspectorFromScope();
     w.Registration = params.Registration;
     s.Registration = params.Registration;
     w.machineID = params.machineID;
@@ -548,6 +552,7 @@ export function takeoverLibraryDomain(): void {
     s.itemMappings = {};
     s.lastItemStates = {};
     s.isCropMode = false;
+    syncDetailFromScope();
     s.startCursor = 0;
     if (w.eagle && w.eagle.filter) {
       w.eagle.filter.filterExtensions = {};
@@ -559,7 +564,10 @@ export function takeoverLibraryDomain(): void {
     s.duplicateMappings = {};
     s.images = [];
     s.selected = [];
+    syncInspectorFromScope();
     s.current = undefined;
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.selectedMappings = {};
     s.folderMappings = {};
     s.currentFolder = undefined;
@@ -578,7 +586,9 @@ export function takeoverLibraryDomain(): void {
     s.isInlineMode = false;
     s.isGrayscaleMode = false;
     s.usingGifPlayer = false;
+    syncDetailFromScope();
     s.showDetailImage = false;
+    syncDetailFromScope();
     s.currentTagGroup = undefined;
     syncTagManagerFromScope();
     s.tagViewMode = "ALL";
@@ -621,6 +631,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     s.orderBy = localStorage.getItem(`eagle.list.orderBy.${s.rootDir}`) || localStorage.getItem("eagle.list.orderBy") || "IMPORT";
+    syncBodyFromScope();
     const userLayout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
 
     if (localStorage.getItem(`eagle.list.sortIncrease.${s.rootDir}`)) {
@@ -770,6 +781,7 @@ export function takeoverLibraryDomain(): void {
                 !s.lockedImages[lastItem.id]
               ) {
                 s.selected = [lastItem];
+                syncInspectorFromScope();
                 s.scrollToSelectedItem();
                 s.$evalAsync();
               }
@@ -785,6 +797,7 @@ export function takeoverLibraryDomain(): void {
                 s.existInSmartFilter(lastSmartFolder, lastItem)
               ) {
                 s.selected = [lastItem];
+                syncInspectorFromScope();
                 s.scrollToSelectedItem();
                 s.$evalAsync();
               }
@@ -797,6 +810,7 @@ export function takeoverLibraryDomain(): void {
               const DAY_7 = 604800000;
               if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) && lastItem && !s.lockedImages[lastItem.id]) {
                 s.selected = [lastItem];
+                syncInspectorFromScope();
                 s.scrollToSelectedItem();
                 s.$evalAsync();
               }

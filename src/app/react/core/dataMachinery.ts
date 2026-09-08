@@ -75,6 +75,10 @@ import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncFilterFromScope } from '../store/filterState';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncDetailFromScope } from '../store/detailState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -1140,6 +1144,7 @@ export function machineryReload(s: any): any {
 
       if (s.selected.length > 0) {
         s.selected = [];
+        syncInspectorFromScope();
       }
     }
 
@@ -2852,30 +2857,48 @@ export function machineryUpdateSelection(s: any): void {
     var selected = s.selected;
     if (selected.length > 1) {
       s.inspector.newNamePlaceholder = w.i18n.__("inspector.names.multipleTitles");
+      syncInspectorFromScope();
       s.inspector.newUrlPlaceholder = w.i18n.__("inspector.names.multipleUrls");
+      syncInspectorFromScope();
       s.inspector.newName = w.eagle.inspector.calculateName(selected);
+      syncInspectorFromScope();
       s.inspector.newUrl = w.eagle.inspector.calculateUrl(selected);
+      syncInspectorFromScope();
       s.inspector.newTags = w.eagle.inspector.calculateTags(selected);
+      syncInspectorFromScope();
       s.inspector.newAnnotation = w.eagle.inspector.calculateAnnotation(selected);
+      syncInspectorFromScope();
       s.inspector.folders = w.eagle.inspector.calculateFolders(selected);
       s.inspector.star = w.eagle.inspector.calculateStar(selected);
+      syncInspectorFromScope();
       s.inspector.size = w.eagle.inspector.calculateFileSize(selected);
+      syncInspectorFromScope();
       s.inspector.activeTab = "ITEM";
+      syncInspectorFromScope();
     } else if (selected.length == 1) {
       if (selected[0]) {
         s.inspector.newNamePlaceholder = getFilter()('i18n')("title");
+        syncInspectorFromScope();
         s.inspector.newUrlPlaceholder = "http://";
+        syncInspectorFromScope();
         s.inspector.newName = selected[0].name || "";
+        syncInspectorFromScope();
         s.inspector.newUrl = selected[0].url || "";
+        syncInspectorFromScope();
         s.inspector.newTags = selected[0].tags;
+        syncInspectorFromScope();
         s.inspector.newAnnotation = selected[0].annotation || "";
+        syncInspectorFromScope();
         s.inspector.folders = [];
         s.inspector.star = selected[0].star || 0;
+        syncInspectorFromScope();
         s.inspector.activeTab = "ITEM";
+        syncInspectorFromScope();
       }
     }
     else {
       s.inspector.activeTab = "SIDEBAR";
+      syncInspectorFromScope();
       switch (s.viewMode) {
         case "all":
           s.inspector.category = {
@@ -2887,6 +2910,7 @@ export function machineryUpdateSelection(s: any): void {
             exportable: false,
             editable: false
           };
+          syncInspectorFromScope();
           break;
         case "unfiled":
           s.inspector.category = {
@@ -2898,6 +2922,7 @@ export function machineryUpdateSelection(s: any): void {
             exportable: false,
             editable: false
           };
+          syncInspectorFromScope();
           break;
         case "untagged":
           s.inspector.category = {
@@ -2909,6 +2934,7 @@ export function machineryUpdateSelection(s: any): void {
             exportable: false,
             editable: false
           };
+          syncInspectorFromScope();
           break;
         case "trash":
           s.inspector.category = {
@@ -2920,6 +2946,7 @@ export function machineryUpdateSelection(s: any): void {
             exportable: false,
             editable: false
           };
+          syncInspectorFromScope();
           break;
         case "duplicate":
           s.inspector.category = {
@@ -2931,6 +2958,7 @@ export function machineryUpdateSelection(s: any): void {
             exportable: false,
             editable: false
           };
+          syncInspectorFromScope();
           break;
         default:
           if (s.$root.selectedFolders.length > 0) {
@@ -2943,6 +2971,7 @@ export function machineryUpdateSelection(s: any): void {
               exportable: false,
               editable: false
             };
+            syncInspectorFromScope();
           }
           else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
             var selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key) {
@@ -2959,6 +2988,7 @@ export function machineryUpdateSelection(s: any): void {
                 exportable: !(w.eagle.inspector.inspectorFolder.password && !w.eagle.inspector.inspectorFolder.isUnLock),
                 editable: !(w.eagle.inspector.inspectorFolder.password && !w.eagle.inspector.inspectorFolder.isUnLock)
               };
+              syncInspectorFromScope();
             }
           }
           else if (s.currentFolder) {
@@ -2972,6 +3002,7 @@ export function machineryUpdateSelection(s: any): void {
               exportable: true,
               editable: true
             };
+            syncInspectorFromScope();
           }
           else if (s.currentSmartFolder) {
             s.inspector.category = {
@@ -2983,6 +3014,7 @@ export function machineryUpdateSelection(s: any): void {
               exportable: true,
               editable: true
             };
+            syncInspectorFromScope();
           }
       }
     }
@@ -2990,6 +3022,7 @@ export function machineryUpdateSelection(s: any): void {
     // 排序標籤，優先使用群組順序排，皆者使用字母順序排
     if (s.inspector.newTags.length > 0) {
       s.inspector.newTags = sortTagsForSelection(s, s.inspector.newTags);
+      syncInspectorFromScope();
     }
   }, 30);
 }
@@ -3115,6 +3148,7 @@ export function machineryResetPage(s: any): void {
   setTimeout(() => { w.ig.clear(); }, 40);
   s.isOpenWebpagePanel = false;
   s.currentTag = undefined;
+  syncToolbarFromScope();
   s.startCursor = 0;
   s.currentFolder = undefined;
   syncPanelFromScope();
@@ -3324,7 +3358,15 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
       s.UrlStateService.setState({ view: 'all', folder: null, smartfolder: null, tag: null, color: null });
     }
     s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.all") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
@@ -3360,14 +3402,18 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
   image = image || s.selected[s.selected.length - 1];
   s.isDetailMode = true;
   s.current = image;
+  syncDetailFromScope();
+  syncInspectorFromScope();
   s.selected = [image];
+  syncInspectorFromScope();
   s.showDetailImage = true;
+  syncDetailFromScope();
   // 移除 $scope.zoom(image) — 此時 Angular 尚未跑 digest，
   // body 還沒有 is-detail-mode class，$(".content-panel").width() 讀到的是列表模式尺寸，
   // 算出的 zoom 一定是錯的。正確的 zoom 會在下方 $timeout 回調中執行。
   w.eagle.inspector.activeTab = "ITEM";
   s.smoothZoomDone = false;
-
+  syncDetailFromScope();
   // bundle 依赖 Angular digest：ng-click 处理器返回后本轮 digest 立即把 body 的
   // is-detail-mode 落到 DOM，100ms 后的 smoothZoom 初始化才量得到详情面板尺寸。
   // shim 世界的 body 类走 watcher flush → store → React effect，若不在此显式 flush，
@@ -3379,6 +3425,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
   zoomInitTimeout = $timeout(function () {
     if (!s.initDetailMode) {
       s.initDetailMode = true;
+      syncDetailFromScope();
       ensureDetailZoom({
         width: '100%',
         height: '100%',
@@ -3398,7 +3445,9 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
           $timeout(function () {
             w.$(window).trigger("orientationchange");
             s.showDetailImage = true;
+            syncDetailFromScope();
             s.smoothZoomDone = true;
+            syncDetailFromScope();
             if (!s.lastZoom()) {
               s.zoom(image);
             }
@@ -3418,6 +3467,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
       });
     } else {
       s.smoothZoomDone = true;
+      syncDetailFromScope();
       detailZoom()?.updateNavigator( s.current);
       w.$(window).trigger("orientationchange");
       if (!s.lastZoom()) {
@@ -3442,19 +3492,24 @@ export function machineryLeaveDetailMode(s: any): void {
   const $timeout = getTimeout();
 
   s.isCropMode = false;
+  syncDetailFromScope();
   s.usingGifPlayer = false;
-
+  syncDetailFromScope();
   if (s.isDetailMode) {
 
     s.rememberScrollTops(s.current);
 
     s.isDetailMode = false;
     s.showDetailImage = false;
+    syncDetailFromScope();
     s.smoothZoomDone = false;
+    syncDetailFromScope();
     s.commentRect = undefined;
-
+    syncDetailFromScope();
     // 記住上次播放位置
     s.rememberVideoCurrentTime(s.current); s.current = undefined;
+    syncDetailFromScope();
+    syncInspectorFromScope();
     $timeout.cancel(zoomInitTimeout);
 
     setTimeout(function () {
@@ -3470,13 +3525,20 @@ export function machineryLeaveDetailMode(s: any): void {
 
     if (s.isGifReady === true) {
       s.isGifReady = false;
+      syncDetailFromScope();
       delete s.gifViewer.frames;
       s.gifViewer.frames = [];
+      syncDetailFromScope();
       s.gifViewer.mousedownTime = 0;
+      syncDetailFromScope();
       s.gifViewer.mousedownX = 0;
+      syncDetailFromScope();
       s.gifViewer.mousedownY = 0;
+      syncDetailFromScope();
       s.gifViewer.range = undefined;
+      syncDetailFromScope();
       s.gifPlayer = undefined;
+      syncDetailFromScope();
     }
 
     w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s);
@@ -3923,6 +3985,10 @@ export function machineryZoomActual(s: any, event: any): void {
   event && event.preventDefault && event.preventDefault();
   if (!s.isDetailMode) {
     s.imageSize.height = 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.changeListHeight();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
       s.adjustLayoutWidth(0);
@@ -3961,11 +4027,13 @@ export function machineryToggleZoom(s: any, event: any): void {
     if (s.lastZoomMode !== "edge") {
       s.zoomFit(event);
       s.lastZoomMode = "edge";
+      syncDetailFromScope();
       s.zoomFitSize = s.imageSize.zoomRatioExp;
     }
     else {
       s.zoomActual(event);
       s.lastZoomMode = "fit";
+      syncDetailFromScope();
       s.zoomFitSize = 0;
     }
   }
@@ -3973,10 +4041,12 @@ export function machineryToggleZoom(s: any, event: any): void {
     if (s.lastZoomMode !== "edge") {
       s.zoomFitEdge(event, true);
       s.lastZoomMode = "edge";
+      syncDetailFromScope();
     }
     else {
       s.zoomFit(event);
       s.lastZoomMode = "fit";
+      syncDetailFromScope();
     }
   }
   localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
@@ -4143,6 +4213,7 @@ export function machinerySelectAll(s: any, event: any): void {
     var selected: any[] = [];
     Array.prototype.push.apply(selected, s.allData);
     s.selected = selected;
+    syncInspectorFromScope();
     s.selectedMappings = {};
     $timeout.cancel(cleanSelectedTimeout);
     s.$root.currentFocus = "content";
@@ -4189,6 +4260,7 @@ export function machinerySelectNext(s: any, event: any): void {
   }
 
   s.selected = [s.allData[end]];
+  syncInspectorFromScope();
   s.selectedFolderMappings = {};
   syncListFromScope();
   s.$root.currentFocus = "content";
@@ -4197,7 +4269,10 @@ export function machinerySelectNext(s: any, event: any): void {
     $timeout.cancel(nextTimeout);
     s.forceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.isGifReady = false;
+    syncDetailFromScope();
   }
 
   s.autoScroll(end);
@@ -4243,21 +4318,30 @@ export function machinerySelectPrev(s: any, event: any): void {
     detailZoom()?.cleanBitmapViewer();
     s.rememberScrollTops(s.current);
     s.isGifReady = false;
+    syncDetailFromScope();
   }
 
   if (s.allData[start - 1]) {
     s.selected = [];
+    syncInspectorFromScope();
     s.selected.push(s.allData[start - 1]);
+    syncInspectorFromScope();
     if (s.isDetailMode) {
       s.forceFitImageSize(s.selected[0], true);
       s.current = s.selected[0];
+      syncDetailFromScope();
+      syncInspectorFromScope();
     }
     s.autoScroll(start - 1);
   } else {
     s.selected = [];
+    syncInspectorFromScope();
     s.selected.push(s.allData[0]);
+    syncInspectorFromScope();
     s.forceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.autoScroll(0);
   }
   s.selectedFolderMappings = {};
@@ -4321,12 +4405,14 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
     let idx = s.selected.indexOf(startItem);
     if (idx !== -1) {
       s.selected.splice(idx, 1);
+      syncInspectorFromScope();
       s.autoScroll(s.lastSelectedIndex);
     }
   }
   else {
     if (s.allData[end]) {
       s.selected.push(s.allData[end]);
+      syncInspectorFromScope();
       s.autoScroll(end);
     }
   }
@@ -4350,12 +4436,14 @@ export function machineryMultipleSelectPrev(s: any, event: any): void {
     let idx = s.selected.indexOf(endItem);
     if (idx !== -1) {
       s.selected.splice(idx, 1);
+      syncInspectorFromScope();
       s.autoScroll(s.lastSelectedIndex);
     }
   }
   else {
     if (s.allData[start - 1]) {
       s.selected.push(s.allData[start - 1]);
+      syncInspectorFromScope();
       s.autoScroll(start - 1);
     }
   }
@@ -4518,8 +4606,11 @@ export function machineryRemoveSelected(s: any, event: any): void {
               s.updateFilterCounts(image, 1, now);
             });
             s.selected = origin;
+            syncInspectorFromScope();
             if (s.isDetailMode) {
               s.current = origin[0];
+              syncDetailFromScope();
+              syncInspectorFromScope();
             }
             s.calculateImageBinding({ ignoreSort: true }, function () {
               if (
@@ -4552,16 +4643,23 @@ export function machineryRemoveSelected(s: any, event: any): void {
 
           if (next) {
             s.selected = [next];
+            syncInspectorFromScope();
             if (s.isDetailMode) {
               s.current = next;
+              syncDetailFromScope();
+              syncInspectorFromScope();
             }
           } else if (prev) {
             s.selected = [prev];
+            syncInspectorFromScope();
             if (s.isDetailMode) {
               s.current = prev;
+              syncDetailFromScope();
+              syncInspectorFromScope();
             }
           } else {
             s.selected = [];
+            syncInspectorFromScope();
             if (s.isDetailMode) {
               s.leaveDetailMode();
             }
@@ -5390,17 +5488,23 @@ export function machinerySelectUp(s: any, event: any): void {
   if (target) {
     var image = s.getItemByElement(target[0]);
     s.selected = [image];
+    syncInspectorFromScope();
     s.selectedFolderMappings = {};
     syncListFromScope();
     if (s.isDetailMode) {
       s.current = s.selected[0];
+      syncDetailFromScope();
+      syncInspectorFromScope();
     }
     s.autoScroll(target);
   }
   if (s.isDetailMode) {
     s.forceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.isGifReady = false;
+    syncDetailFromScope();
     detailZoom()?.updateNavigator( s.current);
     if (!s.lastZoom()) {
       s.zoom();
@@ -5448,17 +5552,23 @@ export function machinerySelectDown(s: any, event: any): void {
   if (target) {
     var image = s.getItemByElement(target[0]);
     s.selected = [image];
+    syncInspectorFromScope();
     s.selectedFolderMappings = {};
     syncListFromScope();
     if (s.isDetailMode) {
       s.current = s.selected[0];
+      syncDetailFromScope();
+      syncInspectorFromScope();
     }
     s.autoScroll(target);
   }
   if (s.isDetailMode) {
     s.forceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.isGifReady = false;
+    syncDetailFromScope();
     detailZoom()?.updateNavigator( s.current);
     if (!s.lastZoom()) {
       s.zoom();
@@ -5834,7 +5944,10 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
                 }
               });
               s.selected = origin;
+              syncInspectorFromScope();
               s.current = origin[0];
+              syncDetailFromScope();
+              syncInspectorFromScope();
               s.$root.$broadcast("CALCULATE_IMAGE_BINDING");
               s.$root.$broadcast("REBIND_REFRESH", true);
               s.$root.$broadcast("UPDATE_SELECTION");
@@ -6332,6 +6445,7 @@ export function machineryNextGifFrame(s: any, amount: any = 1): void {
   if (s.gifPlayer && s.isGifReady) {
     s.gifPlayer.pause();
     s.gifViewer.playing = false;
+    syncDetailFromScope();
     var curr = s.gifPlayer.get_current_frame();
     var total = s.gifViewer.frames.length;
     var idx = curr + amount;
@@ -6345,6 +6459,7 @@ export function machineryPrevGifFrame(s: any, amount: any = 1): void {
   if (s.gifPlayer && s.isGifReady) {
     s.gifPlayer.pause();
     s.gifViewer.playing = false;
+    syncDetailFromScope();
     var curr = s.gifPlayer.get_current_frame();
     var idx = curr - amount;
     if (idx < 0) idx = 0;
@@ -6441,7 +6556,15 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
       w.UrlStateService.setState({ view: 'random', folder: null, smartfolder: null, tag: null, color: null });
     }
     s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.random") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
     w.$("#sidebar-item-container").scrollTop(0);
     s.reload();
@@ -6476,7 +6599,15 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
       w.UrlStateService.setState({ view: 'unfiled', folder: null, smartfolder: null, tag: null, color: null });
     }
     s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.unfiled") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
@@ -6509,7 +6640,15 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
       w.UrlStateService.setState({ view: 'untagged', folder: null, smartfolder: null, tag: null, color: null });
     }
     s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.untagged") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
@@ -6542,7 +6681,15 @@ export function machineryOpenRecent(s: any, ignoreHistory: any): void {
       w.UrlStateService.setState({ view: 'recent', folder: null, smartfolder: null, tag: null, color: null });
     }
     s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.recent") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
@@ -6563,7 +6710,7 @@ export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
   s.images = [];
   s.isDetailMode = false;
   s.selected = [];
-
+  syncInspectorFromScope();
   if (!ignoreHistory) {
     w.UrlStateService.setState({ view: 'community', folder: null, smartfolder: null, tag: null, color: null });
   }
@@ -6594,7 +6741,7 @@ export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
   s.images = [];
   s.isDetailMode = false;
   s.selected = [];
-
+  syncInspectorFromScope();
   if (!ignoreHistory) {
     w.UrlStateService.setState({ view: 'alltags', folder: null, smartfolder: null, tag: null, color: null });
   }
@@ -6630,7 +6777,15 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
       w.UrlStateService.setState({ view: 'trash', folder: null, smartfolder: null, tag: null, color: null });
     }
     s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.trash") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
@@ -7471,6 +7626,7 @@ export function machineryRemovePermanently(s: any): void {
   var itemElements = machineryGetSelectedItemElements(s);
   s.$root.$broadcast("gl:removeItems", itemElements);
   s.selected = [];
+  syncInspectorFromScope();
   s.calculateImageBinding({ ignoreSort: true }, function () {
     s.rebindRefresh(true);
     s.updateSelection();
@@ -7938,8 +8094,11 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
       machineryUpdateFilterCounts(s, image, 1, now);
     });
     s.selected = origin;
+    syncInspectorFromScope();
     if (s.isDetailMode) {
       s.current = origin[0];
+      syncDetailFromScope();
+      syncInspectorFromScope();
     }
     s.calculateImageBinding({ ignoreSort: true }, function () {
       s.rebindRefresh();
@@ -7958,16 +8117,23 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   var prev = s.allData[s.lastIndex - 1];
   if (next) {
     s.selected = [next];
+    syncInspectorFromScope();
     if (s.isDetailMode) {
       s.current = next;
+      syncDetailFromScope();
+      syncInspectorFromScope();
     }
   } else if (prev) {
     s.selected = [prev];
+    syncInspectorFromScope();
     if (s.isDetailMode) {
       s.current = prev;
+      syncDetailFromScope();
+      syncInspectorFromScope();
     }
   } else {
     s.selected = [];
+    syncInspectorFromScope();
     s.leaveDetailMode();
   }
   $timeout(function () {
@@ -7998,6 +8164,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
 export function machineryToggleCommentMode(s: any, event: any): void {
   event.preventDefault();
   s.isCommentMode = !s.isCommentMode;
+  syncDetailFromScope();
 }
 
 /* fadeOutDetailMode（bundle 31672-31678 逐字：selected 首盒 popdown 100ms） */
@@ -8250,6 +8417,7 @@ export function machinerySaveLayout(s: any, folder: any, layout: any): void {
 /* cancelCrop（bundle 36091-36093 逐字） */
 export function machineryCancelCrop(s: any): void {
   s.isCropMode = false;
+  syncDetailFromScope();
 }
 
 /* openFilter（bundle 30173-30178 逐字）+ FILTER_ID_MAP（30204 前注释映射表逐字）+
@@ -8337,6 +8505,7 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
   s.$root.currentFocus = "sidebar";
   s.viewMode = undefined;
   s.currentTag = undefined;
+  syncToolbarFromScope();
   s.startCursor = 0;
   s.currentSmartFolder = undefined;
   syncPanelFromScope();
@@ -8438,6 +8607,7 @@ export function machineryOpenDuplicate(s: any, options: any = {}): void {
         s.selected = s.selected.filter((item: any) => {
           return !item.isDeleted;
         });
+        syncInspectorFromScope();
         s.$evalAsync();
       },
     });
@@ -8632,6 +8802,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
           w.$("#box-container").css("visibility", "hidden");
           s.reload();
           s.selected = [];
+          syncInspectorFromScope();
           $timeout(function () {
             s.select(undefined, target);
             machineryAutoScroll(s, undefined);
@@ -8654,6 +8825,7 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
   s.$root.currentFocus = "sidebar";
   s.viewMode = undefined;
   s.currentTag = undefined;
+  syncToolbarFromScope();
   s.startCursor = 0;
   s.currentFolder = undefined;
   syncPanelFromScope();
@@ -9674,6 +9846,7 @@ export function machineryFocusSeach(s: any): void {
   const w = window as any;
   w.$("#search").focus().select();
   s.showSuggestions = true;
+  syncToolbarFromScope();
 }
 
 /* newSmartFolder（bundle 39944-39946 逐字：$rootScope.$broadcast → s.$root（shim $root
@@ -9765,6 +9938,7 @@ export function machinerySelectFolder(s: any, event: any, folder: any): void {
     syncListFromScope();
     s.$root.currentFocus = "content";
     s.selected = [];
+    syncInspectorFromScope();
     s.updateSelection();
   }
 }
@@ -10431,6 +10605,7 @@ export function machinerySeedControllerState(s: any): void {
   const w = window as any;
         s.libraryHistory = [];  // bundle 20535（seed 区间外的 controller init 字段——showTutorial 等消费）
         s.MAX_LIST_WIDTH = 900;
+        syncToolbarFromScope();
         s.MAX_DIMENSION = 120000000;
         s.isHideMainNav = true;	// 3.0 侧栏
         s.isHideSidebar = false;
@@ -10469,21 +10644,25 @@ export function machinerySeedControllerState(s: any): void {
         const sidebarSizeRaw = localStorage.getItem("eagle.containerSize.sidebar");
         if (sidebarSizeRaw) {
             s.containerSize.sidebar = parseInt(sidebarSizeRaw);
+            syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
             if (s.containerSize.sidebar < 200) s.containerSize.sidebar = 200;
+            syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
         }
         const tagSidebarRaw = localStorage.getItem("eagle.containerSize.tagSidebar");
         if (tagSidebarRaw) {
             s.containerSize.tagSidebar = parseInt(tagSidebarRaw);
+            syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
         }
         const tagFilterRaw = localStorage.getItem("eagle.containerSize.tagFilter");
         if (tagFilterRaw) {
             s.containerSize.tagFilter = parseInt(tagFilterRaw);
+            syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
         }
@@ -10542,6 +10721,7 @@ export function machinerySeedControllerState(s: any): void {
         s.unfiledCount = 0;
         s.images = [];
         s.selected = [];
+        syncInspectorFromScope();
         s.selectedMappings = {};
         s.lockedImages = {};
         s.filtereds = [];
@@ -10579,6 +10759,7 @@ export function machinerySeedControllerState(s: any): void {
         s.showFileExtensionLabel = true;
         syncPanelFromScope();
         s.orderBy = localStorage.getItem("eagle.list.orderBy") || "IMPORT";
+        syncBodyFromScope();
         s.orderByName = w.i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
         s.isSearchScopeName = true;
         s.isSearchScopeFolderName = true;
@@ -10889,12 +11070,15 @@ export function machinerySeedControllerState(s: any): void {
         if (localStorage["eagle.list.layout.settings"]) {
             try {
                 s.listLayoutSettings = JSON.parse(localStorage["eagle.list.layout.settings"]);
+                syncBodyFromScope();
             } catch (err) {
                 s.listLayoutSettings = defaultListLayoutSettings;
+                syncBodyFromScope();
             }
         }
         else {
             s.listLayoutSettings = defaultListLayoutSettings;
+            syncBodyFromScope();
         }
 
         s.imageSize = {
@@ -10902,8 +11086,14 @@ export function machinerySeedControllerState(s: any): void {
             zoomRatio: 100,
             subfolderWidth: 150
         };
+        syncToolbarFromScope();
+        syncBodyFromScope();
+        syncDetailFromScope();
+        syncInspectorFromScope();
         s.sliderZoomRatio = 100;
+        syncDetailFromScope();
         s.lastZoomMode = localStorage["eagle.viewer.lastZoomMode"] || "fit";
+        syncDetailFromScope();
         s.tagsSuggestion = [];
         s.folders = [];
         s.smartFolders = [];

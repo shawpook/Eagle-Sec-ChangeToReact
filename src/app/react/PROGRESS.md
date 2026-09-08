@@ -1180,6 +1180,56 @@
 > 全程不触网路径）。**套件 ALL GREEN**。
 >
 
+> **【b1-9bx2 考据定案：flatpickr v3.0.6 自研月历（2026-09-08）】**
+>
+> vendor 考据：js/modules/flatpicker/flatpickr.min.js = **v3.0.6**（43,604B；beautified
+> 716 行逐条）+ l10n/zh.js（zh 数据；`var flatpickr = flatpickr || {l10ns:{}}` 桥）+
+> css 保留（index.html:17，类名契约如 swal/tippy 先例）。全局形态：`flatpickr`（**函数**
+> ——选择器包装 _flatpickr，statics defaultConfig/l10ns{en,default=Object.create(en)}/
+> localize/setDefaults）+ `FlatpickrInstance`（顶层 function 声明构造器）双全局。
+> **消费面**（FolderSelectPanels FlatpickrInput，bundle 17416 逐字移植件）：`new FP(input,
+> fpOpts)`（dateFormat 'Y-m-d'/allowInput:false/locale zh|en/mode:'range' 仅 dateOpts2/
+> onChange 写 rule.value=[getTime...]）+ fpOnSetup(instance)→datePostSetup setDate(Date|
+> Date[]) 预填（不触发 onChange）+ destroy() cleanup + instance._input（__eagleRule
+> 挂载点）。
+> **tests 契约**：stage-smoke b1-9z-flatpickr-supply——`typeof window.flatpickr ===
+> 'function'` + l10ns.zh + `new FlatpickrInstance(input, {locale:'zh', dateFormat:
+> 'Y-m-d'})` 返回实例 {._input===input, .destroy, .setDate}。
+> **关键考据发现**：JSX `data-enabletime`（dataset.enabletime）≠ config.enableTime
+> （大小写错位）→ **enableTime 在原框架即 no-op**（时间选择器从未渲染，历史 typo）——
+> 自研按 date-only 实现维持行为等价（录档）。
+> **行为契约（自研规格书，beautified 逐条）**：
+> ① 定位 J()：absolute 文档坐标（pageYOffset+rect），下方空间不足且上方容得下→翻转
+>    （-height-2）+arrowTop/arrowBottom 类，left 溢出 body→rightMost 类+right 定位；
+> ② 日历 DOM：.flatpickr-calendar > .flatpickr-month（prev/next month SVG prevArrow/
+>    nextArrow 逐字 + .cur-month（l10n.months.longhand + scrollTitle title）+
+>    .numInputWrapper>.numInput.cur-year+arrowUp/Down）+ .flatpickr-weekdays（7×
+>    .flatpickr-weekday=shorthand 按 firstDayOfWeek 轮转）+ .flatpickr-days>.dayContainer
+>    （42 格：prevMonthDay/nextMonthDay/today/selected/disabled，range 加 inRange/
+>    startRange/endRange/notAllowed）；
+> ③ 选择 U()：single=[date]；range 二次选择先 clear 重选+按时间排序；hover P() inRange
+>    预览（min/maxRangeDate notAllowed 屏蔽）；onChange(selectedDates, dateStr, instance)
+>    + input change/input 事件派发；closeOnSelect（single 即关/range 选满 2 关）；
+> ④ 关闭链：document mousedown 场外（Y——range 单选态清空重画）、input blur、Esc；
+>    input focus/mousedown 开（clickOpens）；resize 重定位（debounce 50）；
+> ⑤ setDate(date|Date[]，triggerChange=false)：parseDate→排序过滤→redraw+跳月+le() 值
+>    回写；clear(false) 清值；
+> ⑥ 值回写 le()：formatDate 'Y-m-d' token 表逐字（Y/m/d/H/i/J/F/M...），range 用
+>    l10n.rangeSeparator（zh ' 至 '）join；
+> ⑦ l10n 解析 B()：l10n=Object.create(l10ns.default)+extend(l10ns[locale])——zh 覆盖
+>    weekdays/months/rangeSeparator/weekAbbreviation/scrollTitle/toggleTitle，缺省
+>    （firstDayOfWeek/daysInMonth/ordinal）沿原型链落 en（周日开局）；locale 'en' 直接
+>    default（en 全量）；
+> ⑧ input 面：type='text'+flatpickr-input 类+readonly（allowInput false）+destroy 还原；
+> ⑨ descope（消费面/tests 零触及）：altInput/mobile input、time picker 整面（enableTime
+>    no-op 考据）、weekNumbers/inline/static/appendTo、plugins、minDate/maxDate 通道
+>    （config 默认 null 保留、箭头隐藏分支保留）、完整键盘导航（保 Esc/Enter/年份输入）。
+> **施工单笔 bx2** = react/core/flatpickrLite.ts（~500 行）+ bundleGlobals installFlatpickr
+> + index.html:241-242 两 script 标签摘除（css 留）+ vendor flatpickr.min.js+l10n/zh.js
+> 删除 + 专项探针（供给链契约/DOM/zh l10n/单选 onChange+值回写/range 双选+至 分隔/
+> setDate 预填/destroy/外点关闭）+ 套件（stage-smoke b1-9z 断言天然回归）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

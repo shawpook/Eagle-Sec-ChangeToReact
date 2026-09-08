@@ -1256,6 +1256,62 @@
 > supply 天然回归）。
 >
 
+> **【b1-9by 考据定案：digest 清扫 + startScopeSync 退役（2026-09-08）】**
+>
+> **218 实锚**：12 store watch 表达式总和精确对上计划数字——body19+detail29+filter22+
+> inspector32+list16+lock3+panel18+sidebar27+tagManager19+toast1+toolbar28+upload4=218；
+> 去重根 ~80 字段，build 侧派生/改名快照字段 ~150 个。
+> **架构现状**：app.bundle.js 已死（index.html 无 angular script），getBodyScope()=
+> scopeShim（coreState 后端 proxy，migrateScopeFieldToStore 已翻转 30+ 字段为 store
+> 委托——az R1/R2 机制）；类实例同引用链实锚：`s.eagle = w.eagle`（dataMachinery:10394，
+> bundle 21615 平价）、`s.inspector = w.eagle.inspector`（:10769，bundle 54307 平价）——
+> 嵌套写入全部是类实例/普通对象 in-place 变异，sync watcher 靠 shim 200ms 轮询
+> flushWatchers 深比较兜底捕获。
+> **"$evalAsync/$apply 残余归零"考据**：react 树（除 shim/bridge 自身）直接调用=0；
+> 实指 **scopeApply 包装 209 处**——shim $apply = fn()+flushWatchers，flush 另有 200ms
+> 轮询兜底 → scopeApply ≈ 直调（仅 ≤200ms 时延差），可机械展开。
+> **scopeBridge 消费面**：getBodyScope 66 文件 719 处 / scopeApply 21 文件 209 处 /
+> getRootScope 12 文件 54 处 / findLiveNode 1 文件 25 处 / classObjectToString 1 文件
+> 6 处 / startScopeSync 12 store。**依赖约束**：controllerFns/dataMachinery（bz 删）
+> import getBodyScope → by 删 scopeBridge.ts 须先做 getBodyScope 族搬迁（语义零变，
+> 机械改 import）；startScopeSync 随 12 链退役先行摘除。
+> **嵌套写入点量化**（268 处 / 10 根）：imageSize 82（controllerFns 23+dataMachinery
+> 21+preview controller 11+miscMenu 11+gridService 8）/ inspector 64（machinery 41+
+> Inspector.tsx 13）/ gifViewer 58（preview 23+tagManagerDomain 19）/ TagManager 19 /
+> currentFolder 15 / containerSize 8 / subFolders 8 / preferences 6 / pluginModule 5 /
+> listLayoutSettings 3；其中 controllerFns+dataMachinery ~133 处（bz 归位死亡，by 期
+> 仍活——其写入字段摘 watch 前必须先有 store 供给，见层2 收敛）。
+> **施工策略（五层，写入点改动量最小化）**：
+> - **层1 标量字段**（~40：keyword/viewMode/theme/orderBy/layout/platform/
+>   isHideSidebar/isDetailMode/currentId...）：migrateScopeFieldToStore 注册（同值守卫
+>   必带——az 批 1 整写组件重渲染抹外部命令式 class 教训）+ watch 删行，写入点零改
+>   （proxy set 委托）。
+> - **层2 类实例嵌套**（inspector/eagle.filter/gifViewer/listLayoutSettings.props）：
+>   **accessor setter 收敛**——eagleClasses 本就是 #私有字段+get/set 形态（isHideInspector/
+>   width 实锚），set 内直写 store；268 类写入点中此层全部零改动（属性赋值自动触发
+>   setter）。风险面：{…展开}/JSON 序列化对 accessor 的行为差异现场验证。
+> - **层3 普通对象/数组**（containerSize/currentFolder/subFolders/selectedFolders/
+>   TagManager/SavedFilter）：写入点直写 store（~60 处，`s.x.y=v`→useXxxState.setState）。
+>   数组根（subFolders push/splice in-place）accessor 无法拦截——必须写入点改。
+> - **层4 派生字段**（imageHeight/listProp×5/boxSortable/hideBadge/hideZoomBtn/
+>   filterOpen/sidebarWidth/inspectorWidth/noSelectedFolders/folderLocked/errorCount/
+>   folderChildrenCount 等 ~20）：基底 setter 内重算直写（boxSortable=orderBy+filterBadge
+>   +keyword 三条件合算，挂在最后触发基底）；基底在 machinery 内的（imageSize 82 处）
+>   收敛到 accessor 后天然覆盖。
+> - **层5 收官**：12 链 bindXxxSync 删除（store 模块链体+main.tsx:177-188 调用）→
+>   scopeBridge 删 startScopeSync/ScopeSyncOptions → getBodyScope/getRootScope/scopeApply/
+>   findLiveNode/classObjectToString 搬迁 appCore.ts（coreState 同居）→ 66 import 行
+>   机械改写 → **scopeBridge.ts 删除（grep-zero）**。
+> **拆笔**：by-A 小链收官（toast1/lock3/upload4/list16 已半迁）+ 层1 标量注册批；
+> by-B 中链（filter22/panel18/tagManager19/sidebar27）；by-C 大链（toolbar28/body19/
+> detail29/inspector32，accessor 收敛+派生重算）；by-D 层5 机械摘除。每笔门禁：定向
+> 断言（bindXxxSync 后 watch 字段 store 值直写可达）+ 套件全绿 + esbuild EXIT:0。
+> **风险预案**：① 摘 watch 行前逐字段确认全部写入路径已供给（含 machinery 内活写入
+> 点——bz 才死）；② 数组/展开变异绕 setter；③ getRootScope 的 $root.preferences 读
+> 面走 coreState 镜像（preferences 域已有直读面）；④ 200ms 轮询时延语义差异——直写
+> 后 React 同步刷新，比旧链更快，无回归面（只会更及时）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

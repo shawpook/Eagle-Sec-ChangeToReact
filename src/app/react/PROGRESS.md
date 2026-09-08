@@ -752,6 +752,44 @@
 > 与 ContextMenuPanel 订阅迁移同步做。
 >
 >
+
+> **【P2-bu 考据定案：悬浮预览家族接管（2026-09-07）】**
+>
+> 批名勘误：P2-bu 计划名"preview-window React 化"——考据实证预览窗本体阶段 9a 已完成
+> 绞杀（entry/shell/controller/detailHooks 四件 + bl-B 同引擎切换），窗口侧残余 vendor 面
+> （tippy 28 消费点→bx、mousetrap/shortcut-manager 27+14 点→bv、videojs→viewers、
+> jquery/jquery-ui→P4、global.js/devices.js 待 bv 盘点）全部归属后批。本批实际主体 =
+> 计划括号内的"悬浮预览窗"家族（主窗网格悬停子系统，/vendor/eagle-hover-preview.js
+> 494 行经 c16b fetch 注入）。**生死矩阵（React 世界现状）**：
+> ① zoom-btn 悬停放大浮层【活】——vendor body 委托绑定（448-492）+ boxItem:415 渲染
+> .zoom-btn + index.html:187 #hover-preview-container；
+> ② Z 键按住悬停预览【死】——keydown/keyup 绑定段只存在于死文件 js/hover-preview.js:360-386，
+> vendor 提取片（b1-9am 按函数选拼）无此段、React 世界零置位点；b1-9aw"Z 键预览复活"
+> 结论证伪（仅回填 4 个声明，绑定段从未到位；ui-interactions hover-zero-reference-errors
+> 只断言零 ReferenceError、不断言 Z 功能，故门禁未拦）；
+> ③ 网格视频悬停播放【死】——videoHoverSelector（.box.ext-XXX .thumbnail）mouseenter 绑定
+> 只在死文件 video-hover-preview.js:92（native video→mpv 三层 fallback 475 行）；
+> ④ 网格音频悬停播放【死】——enter 绑定源 audio-hover-preview.js（216 行）已于 b1-9s 作
+> 零引用孤儿删除（git e8afdfc^ 可取回）；mouseoverAudioProgressTimeout 全仓零声明
+> （vendor:116 裸引用哑雷，removeBoxAudioPlayer 一调用即炸——幸其绑定亦缺，未现形）；
+> ⑤ iframe 悬停（youtube 303/vimeo 291/bilibili 3 行）【死】——b1-9s 同批删除；
+> ⑥ cleanup 消费面【活但空转】——dataMachinery:3384/itemMenuService:50 调
+> removePlayingAudios，但无 box 会进 hover-active。
+> **回填可行性实证**：#box-container 存在（index.html:69）、BoxItem 根 `ext-${ext}` 类
+> （boxItem:367）与音频选择器（.box.mp3 等）匹配、$bodyScope（main.tsx:223 归一）/
+> w.throttle（bundleGlobals:2032）/w.FileUrlHelper（1415）/w.rectSelecting（2111）供给齐备。
+> mpv 依赖缺口：mpv-media-element.js 为 Angular 指令（409 行）零加载零编译，&lt;mpv-video&gt;
+> 无自定义元素定义——fallbackToMpv 建出死 DOM（cleanup 兜底移除），native 不可播格式
+> （mkv/avi 等）悬停仅 spinner 后回退缩略图，录档为行为差异，mpv 面板待后批评估。
+> **施工定案三笔**：bu-A = /vendor/eagle-hover-preview.js → react/core/hoverPreview.ts
+> 逐字接管（Z 键段回填 + mouseoverAudioProgressTimeout 补齐 + playingAudiosElements
+> window-backed）+ c16b fetch 注入/if-absent 重复定义摘除（消 load 竞态）+ controllerFns:2484
+> `HoverPreviewKeydown = false` strict-mode 活雷拆除（ESM 裸赋值 ReferenceError，
+> zoom-btn 悬停中点击 box 即断选中链）+ Z 键断言入 ui-interactions；bu-B = video/audio
+> 悬停播放复活（de-Angular 同 b1-9d 替换）+ 两死文件退役；bu-C = iframe 三件套 +
+> 套件收官。门禁沿 bl 惯例 + 真机探针先行。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

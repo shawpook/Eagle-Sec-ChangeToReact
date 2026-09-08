@@ -991,6 +991,60 @@
 > **门禁**：esbuild EXIT:0 + 套件 ALL GREEN。
 >
 
+> **【P3-bw 考据定案：sweetalert2 v6.11.0 自研 Dialog（2026-09-08）】**
+>
+> vendor 考据：js/vendors/sweetalert2/sweetalert2.all.min.js = **v6.11.0**（24,944B；
+> beautified 561 行逐条考据），window.swal/sweetAlert/Sweetalert2 别名，index.html:217
+> script + :10 css。直调 `swal(options)` 形态（零 .fire/.mixin/.setDefaults/.queue 消费）。
+> **调用面盘点**（tests-tmp/bw-inventory.py.js brace-depth 解析器，字符串字面量跳过）：
+> 65 直调站点、18 文件（dataMachinery 13/miscDomain 8/folderMenuService 9/imageOpsService
+> 4/PluginCenter 4/PluginFamily 3/ProgressDialogs 3/FolderModals 2/batchOpsService 2/
+> tagManagerDomain 2/folderCoreService 2/inspectorActions/mediaService/itemMenuService/
+> eagleClasses/ControllerModals/DuplicateFamily/selectPanelEngine/collect-window/folderPanel）。
+> 消费形态：64 `.then(...)`（含 **then(ok,cancel) 双参**——FolderModals:1783，reject 契约
+> 真实消费）、1 fire-and-forget。
+> **options 并集**：html 64/width 64/padding 64/customClass 61/showCloseButton 64/
+> showCancelButton 64/allowOutsideClick 64/focusConfirm 64/focusCancel 63/
+> cancelButtonColor 63/confirmButtonText 65/cancelButtonText 57 + input 13（text/
+> textarea/radio）/inputValue 12/inputPlaceholder 11/inputValidator 7（**全 Promise
+> 返回**——vendor 直调 .then 同构安全）/allowEnterKey 7/showConfirmButton 6/title 3/
+> position 2（'bottom'）/icon 2（**v6.11 无此参数=Unknown parameter 静默忽略**，自研同构
+> 忽略）/confirmButtonColor 2/onOpen 1/inputOptions 1（radio）/maxWidth 1（无效参数）/
+> type 1（'error'）/text 1。
+> **statics**：getConfirmButton（FolderModals:1778 onOpen 内 focus）、getInput
+> （dataMachinery:9937 onOpen 内 select+focus）。**show-swal ipc**（miscDomain:131）：
+> main 进程 params{title,description,button}→标准 confirm。**classic 面零活消费**：
+> directives/*.js 等 swal 调用全为 Angular 死源（index.html 不加载）；auto-import.js 发
+> 'show-swal' ipc 落 React miscDomain。collect-window 的 js/lib/api/swal-dialog.js + 自带
+> vendor 副本 = 独立供给链（bv-B 录），不在本批范围。**preConfirm 全树零消费**。
+> **v6.11 行为契约（自研规格书）**：
+> ① useRejections:true 默认——confirm 无 input resolve(true)、有 input resolve(trim 值/
+>    radio checked value)；cancel→reject('cancel')、×→reject('close')、overlay
+>    （allowOutsideClick）→reject('overlay')、esc→reject('esc')；
+> ② DOM 模板逐字（全输入类型预渲染 + 5 icon + buttonswrapper + × 按钮）；modal
+>    className 每次 reset→customClass 附加；width/padding inline；position class；
+>    type 5 种合法校验 + success/error 动画类；
+> ③ 单实例复用：container 存在且 target 同 → 复用 modal 重走参数面；
+> ④ 焦点：allowEnterKey→focusCancel/focusConfirm/首 focusable，否则 blur；onOpen
+>    setTimeout(0)；滚动条补偿（body padding-right）+ iosfix + 关闭焦点还原；
+> ⑤ keydown：Enter 仅当焦点在 input 上触发 confirm（target===getInput()）；Tab 于
+>    focusables（tabindex 排序）循环；Esc dismiss。v6 劫持 window.onkeydown（save/
+>    restore）——全树无其他 onkeydown 属性使用者 → 自研 addEventListener 等价替代；
+> ⑥ validation：inputValidator .then(ok→confirm 值, err→showValidationError)；
+>    showValidationError→.swal2-validationerror 显出 + input inputerror 类/aria-invalid；
+>    输入 oninput/onchange reset；recalculateHeight（MutationObserver 50ms debounce
+>    min-height 重算）；
+> ⑦ 动画：open=modal swal2-show + container swal2-fade + overflowY animationend 后
+>    auto；close=swal2-hide + animationend 后移除 container；
+> ⑧ 无效参数（icon/maxWidth）忽略——vendor 会 console warn，自研静默忽略（零行为差异）。
+> **CSS 决策**：sweetalert2.min.css 保留（class 契约面=样式规格书本身，自研复刻 DOM
+> 类名即零视觉回归）；vendor **JS** 退役。
+> **施工定案两笔**：bw-A = react/core/dialog.ts 自研（installDialog 幂等工厂挂 w.swal +
+> statics；契约①-⑧）+ bundleGlobals install + index.html 摘 script 标签（css 留）+
+> 专项探针（resolve/reject 理由、input 三型、validator、statics、swal2-* DOM 类名）；
+> bw-B = vendor JS 删除 + 全量门收官（7d1a/7d1b/11a2/7d1c2 等 swal DOM 断言天然回归）。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

@@ -67,6 +67,14 @@ const $filter: any = (name: string) => {
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
   try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
 }, ms || 0);
+// b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
+// 同款注释）。本落点此前只有调用形态 → __lv_calculateImageBindingTimeout 取消点
+// `$timeout.cancel is not a function` 即抛，且被上层 electronLog 缺席的 catch 静默吞掉。
+$timeout.cancel = function (timer: any): boolean {
+  if (timer === null || timer === undefined) return false;
+  try { clearTimeout(timer); } catch (err) { /* noop */ }
+  return true;
+};
 
 /* 16 fns（逐字；fns/getScope 为闭包注入） */
 export function installImageOpsFns(fns: any, getScope: any): void {

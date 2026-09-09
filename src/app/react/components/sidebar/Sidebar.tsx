@@ -132,6 +132,10 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
     cleanups.push(() => {
       detach.forEach((fn) => fn());
       el.draggable = false;
+      // b1-9bz-A 收口：守卫必须与 cleanup 同生共死——此前 cleanup 摘监听 + 置
+      // draggable=false 但保留 __eagleDragInit，effect 二次运行（snapshot.nodes 变更）时
+      // 挂接被守卫跳过，侧栏拖拽永久失效（react-s2-sidebar-dnd 8 项全挂）。摘净即幂等。
+      delete (el as any).__eagleDragInit;
     });
 
     // b1-9bh：原生 HTML5 DnD 替代 jQuery UI draggable/droppable（原惰性 mouseover 初始化

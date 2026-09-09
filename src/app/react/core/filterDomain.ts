@@ -21,6 +21,11 @@ import { syncFilterFromScope } from '../store/filterState';
 import { machineryCalcuteContainFolders } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+// b1-9bz-A 收口：迁移体 contentFilter/search/searchFocus 消费的原 controllerFns 闭包符号
+// isInFolder / updateSuggestions 已随 bz-A 归位到 itemDomain / miscDomain；本落点缺 import 时
+// 运行期 ReferenceError（与 initLinkVars 缺失同款的静默-catch 陷阱），补齐解析。
+import { isInFolder } from './itemDomain';
+import { updateSuggestions } from './miscDomain';
 
 let done = false;
 
@@ -194,6 +199,16 @@ const FONT_TYPES: any = {}; (EagleConfig.FONT_FORMATS || []).forEach(function (e
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
   try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
 }, ms || 0);
+// b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态，被 60+ 处移植代码
+// 消费（__lv_keywordModelTimeout / __lv_nextTimeout / __lv_calculateImageBindingTimeout …）。
+// 本落点此前只提供调用形态 → search 首行 `$timeout.cancel is not a function` 即抛，异常经
+// calculateImageBinding 的 catch（electronLog 缺席时静默）吞掉 → boot 链 openAll→reload→
+// listDone 永不闭合（35/55 挂）。语义取「取消延时执行」（不涉 Angular promise/$apply 未决异常）。
+$timeout.cancel = function (timer: any): boolean {
+  if (timer === null || timer === undefined) return false;
+  try { clearTimeout(timer); } catch (err) { /* noop */ }
+  return true;
+};
 
 // —— link 级共享态（原 makeControllerFns 闭包声明）——
 var __lv_ext: any;

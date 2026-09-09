@@ -1200,6 +1200,14 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 
+// b1-9bz-A 收口：本落点无 __lv_ link 态随迁，但迁移体头部统一带 `try { initLinkVars(); }`
+// 序言——缺少本声明时运行期 ReferenceError（被空 catch 吞掉，无症状但破坏迁移体统一形态）。
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+};
+
 const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function openItemContextMenu(...args: any[]) {

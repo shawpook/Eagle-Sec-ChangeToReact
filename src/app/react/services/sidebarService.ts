@@ -263,6 +263,14 @@ let preferences: any = (window as any).electronSettings?.getPreferences?.() || {
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
   try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
 }, ms || 0);
+// b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
+// 同款注释）——本落点当前无 cancel 消费面，但移植体与社会面共享同一 shim 语义，补平以防后续
+// 归位体踩同类坑（`$timeout.cancel is not a function` 会被 electronLog 缺席的 catch 静默吞掉）。
+$timeout.cancel = function (timer: any): boolean {
+  if (timer === null || timer === undefined) return false;
+  try { clearTimeout(timer); } catch (err) { /* noop */ }
+  return true;
+};
 
 // —— link 级共享态（原 makeControllerFns 闭包声明）——
 var __lv_onSidebarResizeTimeout: any;

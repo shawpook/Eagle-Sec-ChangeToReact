@@ -1498,6 +1498,45 @@
 > **docs/handover-b1-9bz-A-2026-09-07.md**（含已排除项：vite 缓存、函数面缺失、管线坏、
 > 回调没跑——均勿重查）。本提交 = 交接快照，boot 链修复后另起正式提交。
 >
+>
+> **【b1-9bz-A 收官：boot 链断点 = 迁移体标识符绑定漂移；全套件 55/55 ALL GREEN（2026-09-09）】**
+>
+> **根因（判别探针实锚，交接文档两个嫌疑均被排除）**：既非 machineryOpenAll:3339 快路径早退
+> （boot 形态实测 allDataLen=0 → 三条件不成立），也非真 Angular $timeout 吞 rejection。
+> 真实断点 = `machineryOpenAll` → `s.resetPage()` **同步**抛
+> **TypeError: $timeout.cancel is not a function**，栈落在 **filterDomain.ts 的 search**
+> （listState 关键字订阅 → `s.search` → 首行 `$timeout.cancel(__lv_keywordModelTimeout)`）。
+> 异常冒泡进 libraryDomain:762 `s.calculateImageBinding` 回调，被 dataMachinery:703
+> `catch (err) { w.electronLog && w.electronLog.error(...) }` 吞掉——**shim 世界 electronLog
+> 为 undefined ⇒ boot 期零 console.error**，这正是"零异常却链死"的解释通道，也是头号嫌疑
+> 被误判的原因。手动 `s.openAll(true)` 能通是因为 zustand 等值写不触发订阅、search 不再被调用。
+>
+> **为什么是 bz-A 引入**：121 表体迁出 controllerFns 后，各落点文件**自带的同名局部
+> `$timeout` shim 只有调用形态、没有 `.cancel`**（原 controllerFns:92-105 是有 `.cancel`
+> 的）。迁移体的 `$timeout` 静默绑定到语义不同的同名对象——**esbuild 不报错（名字可解析）、
+> DELTA 审计也不报（标识符"已覆盖"）**，只在运行期、且只在被静默 catch 的路径上显形。同类
+> 共三族：① 6 落点缺 `$timeout.cancel`（filterDomain/miscDomain/folderCoreService/
+> imageOpsService/sidebarService/lockService）；② filterDomain 缺 `isInFolder`（已归位
+> itemDomain）与 `updateSuggestions`（已归位 miscDomain）两条 import → 运行期
+> ReferenceError；③ lockService/itemMenuService 缺 `initLinkVars` 声明（迁移体统一序言，
+> 空 catch 吞掉）。
+>
+> **修复**：上述三族补齐（`$timeout.cancel` 语义 = 取消延时执行，与原 shim 逐字一致）。
+> **附带修复（b1-9bh 潜伏）**：`initSidebarDrag` 的 `__eagleDragInit` 守卫与 cleanup 不对称
+> —— cleanup 摘监听 + 置 `draggable=false` 却保留守卫，effect 二次运行（snapshot.nodes
+> 变更）时挂接被跳过，侧栏拖拽永久失效；bz-A 多出的一次 sidebar 快照更新使其显形
+> （react-s2-sidebar-dnd 8 项全挂 + main-ui-workflow）。cleanup 摘净守卫即幂等。
+>
+> **新增两项静态闸门（可复用）**：`tests-tmp/bz-a-binding-audit.py`——标识符绑定漂移审计
+> （新落点无绑定 / 同名声明体不同，含 `$timeout.cancel` 这类"声明后附加属性赋值"指纹）；
+> `tests-tmp/bz-a-delta2.py`——107 个迁移体逐体 `newFree - oldFree` 增量（原表体 vs 新落点）。
+> 二者现均为零。**教训：bz 系后续归位批必须跑这两项**，esbuild + 旧 DELTA 审计覆盖不了
+> "名字可解析但绑定错对象"这一族。
+>
+> **门禁**：esbuild/vite 双入口 0 错；DELTA 审计 PASS；哨兵 SENTINEL_OK；
+> **套件 55/55 ALL GREEN**（交接态 35/55 挂 → 全绿）。bz-A 收官，下一批 bz-B（callScope
+> /scopeFace 双面直调化）。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

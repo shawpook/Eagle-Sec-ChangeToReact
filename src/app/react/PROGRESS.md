@@ -1623,8 +1623,31 @@
 > （首轮 8e2 的 `pf8e2-password-modal-focus` 为负载抖动，单跑过、复跑全绿）。
 >
 > **bz-B 消费面到此收口**（hooks 版 16 + DetailToolbar 34 + ListRegion 6 + panels8e 10
-> = 66 点）。剩余为 scopeFace ~250 点 `s.xxx()` 直调化 + 43 双键单源化 +
+> = 66 点）。剩余为 scopeFace `s.xxx()` 直调化 + 43 双键单源化 +
 > shimFnsBridge/main.tsx attach 摘除 + stage1c3/probe-filter-toggle 契约改写。
+>
+>
+> **【b1-9bz 考据修正：scopeFace 实锚 910 处（定案 ~250 点低估 3.6×）——2026-09-09 普查】**
+>
+> 工具 `tests-tmp/bz-b-scopeface.py`（扫描 `s.NAME(` / `scope.NAME(` 形态，按 bz-b-route-map
+> 同口径判档），全量结果落盘 `tests-tmp/bz-b-scopeface-map.txt`。**全树 1023 处 / 354 个
+> 名字**，扣除三个**独立 scope**（preview-window 80：其 scope 为 controller.ts 自建本地对象，
+> 定案已判定排除；preferences 18：controllerScope；collect-window 15）后，
+> **bz-B 真实范围 = 910 处**。
+>
+> | 目录 | 处数 | 其中双键 | 说明 |
+> |---|---|---|---|
+> | services | 496 | 147 | 最大头——各 landing service 内部的 `s.xxx()` 互调（定案 250 点未覆盖这部分） |
+> | core | 250 | 66 | filterDomain/itemDomain/miscDomain + bundleGlobals 等 |
+> | components | 156 | 32 | Sidebar 34 / FilterItems2 40 / FilterItems 29 等 |
+> | store | 7 | 2 | |
+>
+> **判档**：MACHINERY 单源 381 / **DUAL 双键 270** / TABLE_ONLY 单源 310 / NONE 62
+> （无供给，保留 scope 面回退）。另计 **scopeShim API 面 340 处**（`$evalAsync` 294 /
+> `$on` 38 / `$apply` 6 / `$broadcast` 2）——**不属 bz-B**，随 P4-ca 删 scopeShim 统一处置。
+>
+> **对排期的影响**：scopeFace 必须按目录拆成多笔（建议 services→core→components 各一笔，
+> 笔内再按判档分刀：单源先走、双键留到「43 双键单源化」逐函数比对后再动）。
 >
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**

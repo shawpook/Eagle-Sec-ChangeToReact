@@ -83,6 +83,36 @@ export function openApplicationContextMenu(...args: any[]) {
 }
 
 /* 10 builder（逐字；fns/getScope 为闭包注入） */
+/* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，
+   提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
+   组件侧改直 import，零行为变化。 */
+export function openRatioContextMenu(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getBodyScope();
+    if (!s) return;
+    return (function() {
+            ContextMenu.open({
+                items: [
+                    { label: '5%', checked: parseInt(s.imageSize.zoomRatioExp) == 5, click: () => { s.updateZoomRatio(s.getRatioNonExp(5), undefined, undefined, true); s.imageSize.zoomRatioExp = 5; s.$evalAsync(); } },
+                    { label: '10%', checked: parseInt(s.imageSize.zoomRatioExp) == 10, click: () => { s.updateZoomRatio(s.getRatioNonExp(10), undefined, undefined, true); s.imageSize.zoomRatioExp = 10; s.$evalAsync(); } },
+                    { label: '25%', checked: parseInt(s.imageSize.zoomRatioExp) == 25, click: () => { s.updateZoomRatio(s.getRatioNonExp(25), undefined, undefined, true); s.imageSize.zoomRatioExp = 25; s.$evalAsync(); } },
+                    { label: '50%', checked: parseInt(s.imageSize.zoomRatioExp) == 50, click: () => { s.updateZoomRatio(s.getRatioNonExp(50), undefined, undefined, true); s.imageSize.zoomRatioExp = 50; s.$evalAsync(); } },
+                    { label: '100%', checked: parseInt(s.imageSize.zoomRatioExp) == 100, click: () => { s.updateZoomRatio(s.getRatioNonExp(100), undefined, undefined, true); s.imageSize.zoomRatioExp = 100; s.$evalAsync(); } },
+                    { label: '125%', checked: parseInt(s.imageSize.zoomRatioExp) == 125, click: () => { s.updateZoomRatio(s.getRatioNonExp(125), undefined, undefined, true); s.imageSize.zoomRatioExp = 125; s.$evalAsync(); } },
+                    { label: '150%', checked: parseInt(s.imageSize.zoomRatioExp) == 150, click: () => { s.updateZoomRatio(s.getRatioNonExp(150), undefined, undefined, true); s.imageSize.zoomRatioExp = 150; s.$evalAsync(); } },
+                    { label: '200%', checked: parseInt(s.imageSize.zoomRatioExp) == 200, click: () => { s.updateZoomRatio(s.getRatioNonExp(200), undefined, undefined, true); s.imageSize.zoomRatioExp = 200; s.$evalAsync(); } },
+                    { label: '300%', checked: parseInt(s.imageSize.zoomRatioExp) == 300, click: () => { s.updateZoomRatio(s.getRatioNonExp(300), undefined, undefined, true); s.imageSize.zoomRatioExp = 300; s.$evalAsync(); } },
+                    { label: '400%', checked: parseInt(s.imageSize.zoomRatioExp) == 400, click: () => { s.updateZoomRatio(s.getRatioNonExp(400), undefined, undefined, true); s.imageSize.zoomRatioExp = 400; s.$evalAsync(); } },
+                    { label: '800%', checked: parseInt(s.imageSize.zoomRatioExp) == 800, click: () => { s.updateZoomRatio(s.getRatioNonExp(800), undefined, undefined, true); s.imageSize.zoomRatioExp = 800; s.$evalAsync(); } },
+                    { role: 'separator' },
+                    { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { s.zoomActual(); s.$evalAsync(); } },
+                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { s.zoomFit(); s.$evalAsync(); } },
+                ],
+                showSearch: false,
+            });            
+        }).apply(null, args);
+}
+
 export function installMiscMenuFns(fns: any, getScope: any): void {
   fns["openTrashContextMenu"] = function (...args) {
     const s = getScope();
@@ -752,32 +782,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
         }).apply(null, args);
   };
 
-  fns["openRatioContextMenu"] = function (...args) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function() {
-            ContextMenu.open({
-                items: [
-                    { label: '5%', checked: parseInt(s.imageSize.zoomRatioExp) == 5, click: () => { s.updateZoomRatio(s.getRatioNonExp(5), undefined, undefined, true); s.imageSize.zoomRatioExp = 5; s.$evalAsync(); } },
-                    { label: '10%', checked: parseInt(s.imageSize.zoomRatioExp) == 10, click: () => { s.updateZoomRatio(s.getRatioNonExp(10), undefined, undefined, true); s.imageSize.zoomRatioExp = 10; s.$evalAsync(); } },
-                    { label: '25%', checked: parseInt(s.imageSize.zoomRatioExp) == 25, click: () => { s.updateZoomRatio(s.getRatioNonExp(25), undefined, undefined, true); s.imageSize.zoomRatioExp = 25; s.$evalAsync(); } },
-                    { label: '50%', checked: parseInt(s.imageSize.zoomRatioExp) == 50, click: () => { s.updateZoomRatio(s.getRatioNonExp(50), undefined, undefined, true); s.imageSize.zoomRatioExp = 50; s.$evalAsync(); } },
-                    { label: '100%', checked: parseInt(s.imageSize.zoomRatioExp) == 100, click: () => { s.updateZoomRatio(s.getRatioNonExp(100), undefined, undefined, true); s.imageSize.zoomRatioExp = 100; s.$evalAsync(); } },
-                    { label: '125%', checked: parseInt(s.imageSize.zoomRatioExp) == 125, click: () => { s.updateZoomRatio(s.getRatioNonExp(125), undefined, undefined, true); s.imageSize.zoomRatioExp = 125; s.$evalAsync(); } },
-                    { label: '150%', checked: parseInt(s.imageSize.zoomRatioExp) == 150, click: () => { s.updateZoomRatio(s.getRatioNonExp(150), undefined, undefined, true); s.imageSize.zoomRatioExp = 150; s.$evalAsync(); } },
-                    { label: '200%', checked: parseInt(s.imageSize.zoomRatioExp) == 200, click: () => { s.updateZoomRatio(s.getRatioNonExp(200), undefined, undefined, true); s.imageSize.zoomRatioExp = 200; s.$evalAsync(); } },
-                    { label: '300%', checked: parseInt(s.imageSize.zoomRatioExp) == 300, click: () => { s.updateZoomRatio(s.getRatioNonExp(300), undefined, undefined, true); s.imageSize.zoomRatioExp = 300; s.$evalAsync(); } },
-                    { label: '400%', checked: parseInt(s.imageSize.zoomRatioExp) == 400, click: () => { s.updateZoomRatio(s.getRatioNonExp(400), undefined, undefined, true); s.imageSize.zoomRatioExp = 400; s.$evalAsync(); } },
-                    { label: '800%', checked: parseInt(s.imageSize.zoomRatioExp) == 800, click: () => { s.updateZoomRatio(s.getRatioNonExp(800), undefined, undefined, true); s.imageSize.zoomRatioExp = 800; s.$evalAsync(); } },
-                    { role: 'separator' },
-                    { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { s.zoomActual(); s.$evalAsync(); } },
-                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { s.zoomFit(); s.$evalAsync(); } },
-                ],
-                showSearch: false,
-            });            
-        }).apply(null, args);
-  };
+  fns["openRatioContextMenu"] = openRatioContextMenu;
 
   fns["openSidebarVisibleContextMenu"] = function (...args) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

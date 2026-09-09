@@ -5,6 +5,8 @@ import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
 import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } from '../grid/gridDirectives';
 import { getBodyScope } from '../../core/appCore';
+import { openFileListContextMenu } from '../../services/miscMenuService';
+import { machineryOnDropContainer } from '../../core/dataMachinery';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。
@@ -336,17 +338,27 @@ export function BoxContainerListeners() {
     const box = document.getElementById('box-container');
     const scope = getBodyScope();
     if (!box || !scope) return;
-    const call = (fn: string) => (e: Event) => {
+    /* b1-9bz-B：原 `call(fn: string)` 字符串派发退役（scope 面直取，同 DetailToolbar）。
+       onDragEnter/Leave/Over/MouseMove 四个在表与 machinery 均无供给，保留 scope 面回退。 */
+    const call = (fn: (...a: any[]) => any) => (e: Event) => {
       const s = getBodyScope();
-      if (s && typeof s[fn] === 'function') s[fn](e);
+      if (s && typeof fn === 'function') fn(e);
     };
-    const onContextMenu = (e: Event) => { e.preventDefault(); call('openFileListContextMenu')(e); };
+    const callM = (fn: (...a: any[]) => any) => (e: Event) => {
+      const s = getBodyScope();
+      if (s && typeof fn === 'function') fn(s, e);
+    };
+    const callF = (name: string) => (e: Event) => {
+      const s = getBodyScope();
+      if (s && typeof s[name] === 'function') (s[name] as any)(e);
+    };
+    const onContextMenu = (e: Event) => { e.preventDefault(); call(openFileListContextMenu)(e); };
     box.addEventListener('contextmenu', onContextMenu);
-    const enter = call('onDragEnterContainer');
-    const leave = call('onDragLeaveContainer');
-    const over = call('onDragOverContainer');
-    const drop = call('onDropContainer');
-    const move = call('onMouseMoveContainer');
+    const enter = callF('onDragEnterContainer');
+    const leave = callF('onDragLeaveContainer');
+    const over = callF('onDragOverContainer');
+    const drop = callM(machineryOnDropContainer);
+    const move = callF('onMouseMoveContainer');
     box.addEventListener('dragenter', enter);
     box.addEventListener('dragleave', leave);
     box.addEventListener('dragover', over);

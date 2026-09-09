@@ -77,6 +77,332 @@ $timeout.cancel = function (timer: any): boolean {
 };
 
 /* 16 fns（逐字；fns/getScope 为闭包注入） */
+/* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，
+   提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
+   组件侧改直 import，零行为变化。 */
+export function rotateImage(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getBodyScope();
+    if (!s) return;
+    return (function (event, __lv_image) {
+
+            if (s.isCropMode) return;
+
+            if (__lv_lastRotateImage === __lv_image) {
+                clearTimeout(__lv_rotateImageTimeout);
+                clearTimeout(__lv_rotateImageSaveTimeout);
+            }
+
+            if ($("canvas#detail-image").length > 0) {
+                alert("Not support apng file format.");
+                return;
+            }
+
+            let rotatedImage = __lv_image || s.selected[0];
+            if (!rotatedImage) return;
+
+            if (s.preferences.habits.imageRotateMode === 'write') {
+                const [originalWidth, originalHeight] = [rotatedImage.width, rotatedImage.height];
+                [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
+            }
+            
+            var degree = $("#detail-image").data("degree") || 0;
+            
+            // 鼠标点击
+            if (event.type === "click") {
+                if (!event.shiftKey) {
+                    degree = degree - 90;
+                    detailZoom()?.rotate( {angle: -90, item: rotatedImage});
+                }
+                else {
+                    degree = degree + 90;
+                    detailZoom()?.rotate( {angle: 90, item: rotatedImage});
+                }
+            }
+            else {
+                degree = degree - 90;
+                detailZoom()?.rotate( {angle: -90, item: rotatedImage});
+            }
+
+            $("#detail-image").data("degree", degree);
+            $("#detail-image").css({
+                "transform": `rotate(${degree}deg) scaleX(1) scaleY(1)`,
+                "transition": "transform 100ms ease-in-out"
+            });
+
+            __lv_lastRotateImage = rotatedImage;
+
+            s.isRotating = true;
+            __lv_rotateImageSaveTimeout = setTimeout(async function () {
+
+                // 检查度数，如果不为 0 并且设定为写入文件时执行写入动作
+                if (degree % 360 != 0 && s.preferences.habits.imageRotateMode === 'write') {
+                    var rawPath = FileUrlHelper.getRawPath(rotatedImage);
+                    if (!rawPath) {
+                        s.isRotating = false;
+                        return;
+                    }
+
+                    try {
+                        fs.accessSync(rawPath, fs.W_OK)
+                    }
+                    catch (err) {
+                        s.isRotating = false;
+                        rotatedImage.width = originalWidth;
+                        rotatedImage.height = originalHeight;
+                        $("#detail-image").css({
+                            "transform": `none`,
+                            "transition": "none"
+                        });
+
+                        swal({
+                            html: `
+                                <div class="alert">
+                                    <div class="alert-icon error"></div>
+                                    <h4 class="alert-title">Error</h4>
+                                    <p class="alert-desc">${err?.message}</p>
+                                </div>
+                            `,
+                            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+                            width: 400,
+                            customClass: "alert-box",
+                            confirmButtonColor: "#1373FB", // 1373FB
+                            cancelButtonColor: "#777777",
+                            confirmButtonText: i18n.__('general.ok'),
+                            cancelButtonText: i18n.__("general.cancel"),
+                        }).then(() => {});
+                        return;
+                    }
+
+                    // 使用統一的 rotateImage utils 處理所有格式
+                    try {
+                        const rotateImage = require(appRoot.path + '/app/js/utils/rotateImage.js');
+                        const __lv_result = await rotateImage(rawPath, degree, {
+                            onSuccess: function(newWidth, newHeight) {
+                                // 如果 utils 返回了新的尺寸，更新圖片尺寸
+                                if (newWidth && newHeight) {
+                                    rotatedImage.width = newWidth;
+                                    rotatedImage.height = newHeight;
+                                    s.updateItemView(rotatedImage);
+                                    s.relayout();
+                                }
+                            }
+                        });
+                        
+                        // 旋轉成功
+                        s.isRotating = false;
+                        delete rotatedImage.orientation;
+                        s.updateItemView(rotatedImage);
+                        ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
+                        s.$evalAsync();
+                        
+                        try { 
+                            electronLog && electronLog.info(`[app] Rotate image: ${rotatedImage.name}(${rotatedImage.id})`); 
+                        } catch (err) {};
+                        
+                    } catch (err) {
+                        // 旋轉失敗，恢復原狀
+                        s.isRotating = false;
+                        rotatedImage.width = originalWidth;
+                        rotatedImage.height = originalHeight;
+                        $("#detail-image").css({
+                            "transform": `none`,
+                            "transition": "none"
+                        });
+                        
+                        console.error('Image rotation failed:', err);
+                        alert(err.message || "Image rotation failed.");
+                        
+                        electronLog && electronLog.error(err.stack || err);
+                        s.$evalAsync();
+                    }
+                }
+                else {
+                    s.isRotating = false;
+                }
+            }, 200);
+        }).apply(null, args);
+}
+
+/* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，
+   提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
+   组件侧改直 import，零行为变化。 */
+export function flipImage(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getBodyScope();
+    if (!s) return;
+    return (function (event, __lv_image, writeToFile = false) {
+
+            if (s.isCropMode) return;
+            var rotatedImage = __lv_image || s.selected[0];
+            if (!rotatedImage) return;
+
+            // 直接進行 bitmap 翻轉，不需要狀態追蹤
+            var scaleX = 1, scaleY = 1;
+            if (event.type === "click") {
+                if (!event.shiftKey) {
+                    scaleX = -1; // 水平翻轉
+                }
+                else {
+                    scaleY = -1; // 垂直翻轉
+                }
+            }
+            else {
+                scaleX = -1; // 預設水平翻轉
+            }
+            
+            // 調用 smoothZoom flip 方法進行 bitmap 翻轉顯示
+            detailZoom()?.flip( scaleX, scaleY);
+
+            // 處理檔案寫入功能，根據設定決定是否寫入
+            var shouldWriteToFile = writeToFile && s.preferences.habits.imageRotateMode === 'write';
+            if (shouldWriteToFile && rotatedImage) {
+                // 根據 scaleX 和 scaleY 決定翻轉類型
+                var flipType;
+                if (scaleX === -1 && scaleY === -1) {
+                    flipType = 'both';
+                } else if (scaleX === -1) {
+                    flipType = 'horizontal';
+                } else if (scaleY === -1) {
+                    flipType = 'vertical';
+                }
+
+                // 使用正確的方式獲取檔案路徑
+                var rawPath = FileUrlHelper.getRawPath(rotatedImage);
+                if (!rawPath) {
+                    console.warn('Cannot get raw path for image:', rotatedImage);
+                    return;
+                }
+
+                // 載入 flipImage 工具模組並執行翻轉
+                try {
+                    const flipImageUtil = require(appRoot.path + '/app/js/utils/flipImage.js');
+                    flipImageUtil(rawPath, flipType)
+                        .then(() => {
+                            console.log(`Image flipped (${flipType}) and saved: ${rawPath}`);
+                            // 重新生成縮圖
+                            ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
+                        })
+                        .catch(err => {
+                            console.error(`Failed to save flipped image: ${err.message}`);
+                        });
+                } catch (requireErr) {
+                    console.error(`Failed to load flipImage module: ${requireErr.message}`);
+                }
+            }
+        }).apply(null, args);
+}
+
+/* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，
+   提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
+   组件侧改直 import，零行为变化。 */
+export function saveCrop(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getBodyScope();
+    if (!s) return;
+    return (function (saveAsNewFile) {
+            var $cropArea = $("#crop-image-tool .crop-area");
+            var [top, left] = [$cropArea.css("top").replace("px", ""), $cropArea.css("left").replace("px", "")];
+            var [__lv_width, __lv_height] = [$cropArea.width(), $cropArea.height()];
+            var croppedImage = s.current;
+            var imagePath = FileUrlHelper.getRawPath(croppedImage);
+
+            electronLog.info(`[app] Crop image: ${imagePath}`);
+
+            if (!fs.existsSync(imagePath)) {
+                s.cancelCrop();
+                electronLog.error(`[app] Image file does not exist`);
+                return;
+            }
+            setTimeout(() => {
+                const imageCropper = require(appRoot + '/my_modules/image-cropper');
+                imageCropper(imagePath, croppedImage, top, left, __lv_width, __lv_height, function (err, { buffer, base64 }) {
+                    electronLog.info(`[app] Prepare to write to file: ${imagePath}`);
+
+                    if (buffer && buffer.length > 0) {
+
+                        if (saveAsNewFile) {
+                            let newId = guid();
+                            let newFilePath = `${EAGLE_THUMBNAIL_TEMP_PATH}/${newId}.${croppedImage.ext}`;
+                            fs.writeFile(newFilePath, buffer, function (err) {
+                                let newFile = {
+                                    name: croppedImage.name,
+                                    path: newFilePath,
+                                    lastModified: Date.now(),
+                                    tags: croppedImage.tags || [],
+                                    folders: croppedImage.folders || [],
+                                    url: croppedImage.url || "",
+                                    lastModified: croppedImage.modificationTime + 0.1,
+                                    modificationTime: croppedImage.modificationTime + 0.1,
+                                    star: croppedImage.star,
+                                    merged: true
+                                };
+                                s.uploadFiles([newFile]);
+                                s.isCropMode = false;
+                                syncDetailFromScope();
+                                s.leaveDetailMode();
+                                s.$evalAsync();
+                            });
+                            return;
+                        }
+
+                        setTimeout(function () {
+                            swal({
+                                html: `
+                                    <div class="alert">
+                                        <div class="alert-image" style="display: flex; justify-content: center;">
+                                            <img src="${base64}" style="margin-bottom: 12px;object-fit: scale-down;width: 350px;height: 350px;border-radius: 6px;">
+                                        </div>
+                                        <h4 class="alert-title">${i18n.__("dialog.cropConfirm.title")}</h4>
+                                        <p class="alert-desc">${i18n.__("dialog.cropConfirm.desc")}</p>
+                                    </div>
+                                `,
+                                showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                                width: 400,
+                                customClass: "tutorial-modal",
+                                cancelButtonColor: "#777777",
+                                confirmButtonText: i18n.__("dialog.cropConfirm.saveButton"),
+                                cancelButtonText: i18n.__("general.cancel"),
+                            }).then(function() {
+                                fse.copySync(imagePath, imagePath + ".bk", { preserveTimestamps: true });
+                                    fs.writeFile(imagePath, buffer, function (err) {
+                                        if (!err) {
+                                            fse.removeSync(imagePath + ".bk");
+                                            ipcRenderer.send('regenerate-thumbnail', [croppedImage]);
+                                            [croppedImage.width, croppedImage.height] = [__lv_width, __lv_height];
+                                            s.updateItemView(croppedImage);
+
+                                            // 强制更新相关 folder 封面
+                                            if (croppedImage.folders) {
+                                                croppedImage.folders.forEach(function (fid) {
+                                                    s.resetFolderCover(s.folderMappings[fid]);
+                                                });
+                                            }
+
+                                            s.calculateImageBinding({ ignoreSort: true }, function () {});
+                                            s.relayout();
+                                            s.$evalAsync();
+                                        }
+                                        else {
+                                            fse.copySync(imagePath + ".bk", imagePath, { preserveTimestamps: true });
+                                            fse.removeSync(imagePath + ".bk");
+                                        }
+                                        s.isCropMode = false;
+                                        syncDetailFromScope();
+                                        s.$evalAsync();
+                                    });
+                            });
+                        }, 200);
+                    }
+                    else {
+                        s.isCropMode = false;
+                        syncDetailFromScope();
+                    }
+                });
+            }, 500);
+        }).apply(null, args);
+}
+
 export function installImageOpsFns(fns: any, getScope: any): void {
   fns["changeStar"] = function (...args) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
@@ -755,322 +1081,11 @@ export function installImageOpsFns(fns: any, getScope: any): void {
         }).apply(null, args);
   };
 
-  fns["rotateImage"] = function (...args) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (event, __lv_image) {
+  fns["rotateImage"] = rotateImage;
 
-            if (s.isCropMode) return;
+  fns["flipImage"] = flipImage;
 
-            if (__lv_lastRotateImage === __lv_image) {
-                clearTimeout(__lv_rotateImageTimeout);
-                clearTimeout(__lv_rotateImageSaveTimeout);
-            }
-
-            if ($("canvas#detail-image").length > 0) {
-                alert("Not support apng file format.");
-                return;
-            }
-
-            let rotatedImage = __lv_image || s.selected[0];
-            if (!rotatedImage) return;
-
-            if (s.preferences.habits.imageRotateMode === 'write') {
-                const [originalWidth, originalHeight] = [rotatedImage.width, rotatedImage.height];
-                [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
-            }
-            
-            var degree = $("#detail-image").data("degree") || 0;
-            
-            // 鼠标点击
-            if (event.type === "click") {
-                if (!event.shiftKey) {
-                    degree = degree - 90;
-                    detailZoom()?.rotate( {angle: -90, item: rotatedImage});
-                }
-                else {
-                    degree = degree + 90;
-                    detailZoom()?.rotate( {angle: 90, item: rotatedImage});
-                }
-            }
-            else {
-                degree = degree - 90;
-                detailZoom()?.rotate( {angle: -90, item: rotatedImage});
-            }
-
-            $("#detail-image").data("degree", degree);
-            $("#detail-image").css({
-                "transform": `rotate(${degree}deg) scaleX(1) scaleY(1)`,
-                "transition": "transform 100ms ease-in-out"
-            });
-
-            __lv_lastRotateImage = rotatedImage;
-
-            s.isRotating = true;
-            __lv_rotateImageSaveTimeout = setTimeout(async function () {
-
-                // 检查度数，如果不为 0 并且设定为写入文件时执行写入动作
-                if (degree % 360 != 0 && s.preferences.habits.imageRotateMode === 'write') {
-                    var rawPath = FileUrlHelper.getRawPath(rotatedImage);
-                    if (!rawPath) {
-                        s.isRotating = false;
-                        return;
-                    }
-
-                    try {
-                        fs.accessSync(rawPath, fs.W_OK)
-                    }
-                    catch (err) {
-                        s.isRotating = false;
-                        rotatedImage.width = originalWidth;
-                        rotatedImage.height = originalHeight;
-                        $("#detail-image").css({
-                            "transform": `none`,
-                            "transition": "none"
-                        });
-
-                        swal({
-                            html: `
-                                <div class="alert">
-                                    <div class="alert-icon error"></div>
-                                    <h4 class="alert-title">Error</h4>
-                                    <p class="alert-desc">${err?.message}</p>
-                                </div>
-                            `,
-                            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
-                            width: 400,
-                            customClass: "alert-box",
-                            confirmButtonColor: "#1373FB", // 1373FB
-                            cancelButtonColor: "#777777",
-                            confirmButtonText: i18n.__('general.ok'),
-                            cancelButtonText: i18n.__("general.cancel"),
-                        }).then(() => {});
-                        return;
-                    }
-
-                    // 使用統一的 rotateImage utils 處理所有格式
-                    try {
-                        const rotateImage = require(appRoot.path + '/app/js/utils/rotateImage.js');
-                        const __lv_result = await rotateImage(rawPath, degree, {
-                            onSuccess: function(newWidth, newHeight) {
-                                // 如果 utils 返回了新的尺寸，更新圖片尺寸
-                                if (newWidth && newHeight) {
-                                    rotatedImage.width = newWidth;
-                                    rotatedImage.height = newHeight;
-                                    s.updateItemView(rotatedImage);
-                                    s.relayout();
-                                }
-                            }
-                        });
-                        
-                        // 旋轉成功
-                        s.isRotating = false;
-                        delete rotatedImage.orientation;
-                        s.updateItemView(rotatedImage);
-                        ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-                        s.$evalAsync();
-                        
-                        try { 
-                            electronLog && electronLog.info(`[app] Rotate image: ${rotatedImage.name}(${rotatedImage.id})`); 
-                        } catch (err) {};
-                        
-                    } catch (err) {
-                        // 旋轉失敗，恢復原狀
-                        s.isRotating = false;
-                        rotatedImage.width = originalWidth;
-                        rotatedImage.height = originalHeight;
-                        $("#detail-image").css({
-                            "transform": `none`,
-                            "transition": "none"
-                        });
-                        
-                        console.error('Image rotation failed:', err);
-                        alert(err.message || "Image rotation failed.");
-                        
-                        electronLog && electronLog.error(err.stack || err);
-                        s.$evalAsync();
-                    }
-                }
-                else {
-                    s.isRotating = false;
-                }
-            }, 200);
-        }).apply(null, args);
-  };
-
-  fns["flipImage"] = function (...args) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (event, __lv_image, writeToFile = false) {
-
-            if (s.isCropMode) return;
-            var rotatedImage = __lv_image || s.selected[0];
-            if (!rotatedImage) return;
-
-            // 直接進行 bitmap 翻轉，不需要狀態追蹤
-            var scaleX = 1, scaleY = 1;
-            if (event.type === "click") {
-                if (!event.shiftKey) {
-                    scaleX = -1; // 水平翻轉
-                }
-                else {
-                    scaleY = -1; // 垂直翻轉
-                }
-            }
-            else {
-                scaleX = -1; // 預設水平翻轉
-            }
-            
-            // 調用 smoothZoom flip 方法進行 bitmap 翻轉顯示
-            detailZoom()?.flip( scaleX, scaleY);
-
-            // 處理檔案寫入功能，根據設定決定是否寫入
-            var shouldWriteToFile = writeToFile && s.preferences.habits.imageRotateMode === 'write';
-            if (shouldWriteToFile && rotatedImage) {
-                // 根據 scaleX 和 scaleY 決定翻轉類型
-                var flipType;
-                if (scaleX === -1 && scaleY === -1) {
-                    flipType = 'both';
-                } else if (scaleX === -1) {
-                    flipType = 'horizontal';
-                } else if (scaleY === -1) {
-                    flipType = 'vertical';
-                }
-
-                // 使用正確的方式獲取檔案路徑
-                var rawPath = FileUrlHelper.getRawPath(rotatedImage);
-                if (!rawPath) {
-                    console.warn('Cannot get raw path for image:', rotatedImage);
-                    return;
-                }
-
-                // 載入 flipImage 工具模組並執行翻轉
-                try {
-                    const flipImageUtil = require(appRoot.path + '/app/js/utils/flipImage.js');
-                    flipImageUtil(rawPath, flipType)
-                        .then(() => {
-                            console.log(`Image flipped (${flipType}) and saved: ${rawPath}`);
-                            // 重新生成縮圖
-                            ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-                        })
-                        .catch(err => {
-                            console.error(`Failed to save flipped image: ${err.message}`);
-                        });
-                } catch (requireErr) {
-                    console.error(`Failed to load flipImage module: ${requireErr.message}`);
-                }
-            }
-        }).apply(null, args);
-  };
-
-  fns["saveCrop"] = function (...args) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (saveAsNewFile) {
-            var $cropArea = $("#crop-image-tool .crop-area");
-            var [top, left] = [$cropArea.css("top").replace("px", ""), $cropArea.css("left").replace("px", "")];
-            var [__lv_width, __lv_height] = [$cropArea.width(), $cropArea.height()];
-            var croppedImage = s.current;
-            var imagePath = FileUrlHelper.getRawPath(croppedImage);
-
-            electronLog.info(`[app] Crop image: ${imagePath}`);
-
-            if (!fs.existsSync(imagePath)) {
-                s.cancelCrop();
-                electronLog.error(`[app] Image file does not exist`);
-                return;
-            }
-            setTimeout(() => {
-                const imageCropper = require(appRoot + '/my_modules/image-cropper');
-                imageCropper(imagePath, croppedImage, top, left, __lv_width, __lv_height, function (err, { buffer, base64 }) {
-                    electronLog.info(`[app] Prepare to write to file: ${imagePath}`);
-
-                    if (buffer && buffer.length > 0) {
-
-                        if (saveAsNewFile) {
-                            let newId = guid();
-                            let newFilePath = `${EAGLE_THUMBNAIL_TEMP_PATH}/${newId}.${croppedImage.ext}`;
-                            fs.writeFile(newFilePath, buffer, function (err) {
-                                let newFile = {
-                                    name: croppedImage.name,
-                                    path: newFilePath,
-                                    lastModified: Date.now(),
-                                    tags: croppedImage.tags || [],
-                                    folders: croppedImage.folders || [],
-                                    url: croppedImage.url || "",
-                                    lastModified: croppedImage.modificationTime + 0.1,
-                                    modificationTime: croppedImage.modificationTime + 0.1,
-                                    star: croppedImage.star,
-                                    merged: true
-                                };
-                                s.uploadFiles([newFile]);
-                                s.isCropMode = false;
-                                syncDetailFromScope();
-                                s.leaveDetailMode();
-                                s.$evalAsync();
-                            });
-                            return;
-                        }
-
-                        setTimeout(function () {
-                            swal({
-                                html: `
-                                    <div class="alert">
-                                        <div class="alert-image" style="display: flex; justify-content: center;">
-                                            <img src="${base64}" style="margin-bottom: 12px;object-fit: scale-down;width: 350px;height: 350px;border-radius: 6px;">
-                                        </div>
-                                        <h4 class="alert-title">${i18n.__("dialog.cropConfirm.title")}</h4>
-                                        <p class="alert-desc">${i18n.__("dialog.cropConfirm.desc")}</p>
-                                    </div>
-                                `,
-                                showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-                                width: 400,
-                                customClass: "tutorial-modal",
-                                cancelButtonColor: "#777777",
-                                confirmButtonText: i18n.__("dialog.cropConfirm.saveButton"),
-                                cancelButtonText: i18n.__("general.cancel"),
-                            }).then(function() {
-                                fse.copySync(imagePath, imagePath + ".bk", { preserveTimestamps: true });
-                                    fs.writeFile(imagePath, buffer, function (err) {
-                                        if (!err) {
-                                            fse.removeSync(imagePath + ".bk");
-                                            ipcRenderer.send('regenerate-thumbnail', [croppedImage]);
-                                            [croppedImage.width, croppedImage.height] = [__lv_width, __lv_height];
-                                            s.updateItemView(croppedImage);
-
-                                            // 强制更新相关 folder 封面
-                                            if (croppedImage.folders) {
-                                                croppedImage.folders.forEach(function (fid) {
-                                                    s.resetFolderCover(s.folderMappings[fid]);
-                                                });
-                                            }
-
-                                            s.calculateImageBinding({ ignoreSort: true }, function () {});
-                                            s.relayout();
-                                            s.$evalAsync();
-                                        }
-                                        else {
-                                            fse.copySync(imagePath + ".bk", imagePath, { preserveTimestamps: true });
-                                            fse.removeSync(imagePath + ".bk");
-                                        }
-                                        s.isCropMode = false;
-                                        syncDetailFromScope();
-                                        s.$evalAsync();
-                                    });
-                            });
-                        }, 200);
-                    }
-                    else {
-                        s.isCropMode = false;
-                        syncDetailFromScope();
-                    }
-                });
-            }, 500);
-        }).apply(null, args);
-  };
+  fns["saveCrop"] = saveCrop;
 
   // replaceFile（bundle 33333-33456 全体，含 executeFileReplacement/handleError 内层）
   fns["replaceFile"] = function (...args) {

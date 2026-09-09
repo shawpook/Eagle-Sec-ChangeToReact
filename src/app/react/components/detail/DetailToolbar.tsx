@@ -11,6 +11,13 @@ import { useMouseGesture } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { flipImage, rotateImage, saveCrop } from '../../services/imageOpsService';
+import { flipVideo, rotateVideo, toggleGifPlay } from '../../services/mediaService';
+import { maximize } from '../../core/miscDomain';
+import { openFileWithDefault } from '../../core/itemDomain';
+import { openItemContextMenu } from '../../services/itemMenuService';
+import { openRatioContextMenu } from '../../services/miscMenuService';
+import { machineryCancelCrop, machineryLeaveDetailMode, machineryNextGifFrame, machineryOpenPluginPanel, machineryPrevGifFrame, machinerySelectNext, machinerySelectPrev, machineryToggleAll, machineryToggleCommentMode, machineryToggleZoom, machineryZoomActual } from '../../core/dataMachinery';
 
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
@@ -21,9 +28,24 @@ import { getBodyScope, scopeApply } from '../../core/appCore';
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
-const call = (fn: string, ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (scope) => {
-    if (typeof scope[fn] === 'function') scope[fn](...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+/* b1-9bz-B：原 `call(fn: string)` 字符串派发退役。三形态按「scope 面当前由谁供给」分流
+   （本文件的 call 是 scope 面直取，不是 hooks 那种表优先）：
+     call  —— 落点导出（表项指针 = 同对象）
+     callM —— machinery 导出（s.NAME 由 applyDataMachineryScope 挂 machinery 包装）
+     callF —— 表与 machinery 均无供给，保留 scope 面回退（命中旧 bundle 或空转，不得删调用点）
+   参数语义逐字保留：preArgs 优先且不传事件；e 为 undefined 时不传参；目标非函数时空转。 */
+const callArgs = (preArgs: any[], e: any) => (preArgs.length ? preArgs : e === undefined ? [] : [e]);
+const call = (fn: (...a: any[]) => any, ...preArgs: any[]) => (e?: any) =>
+  scopeApply(getBodyScope(), () => {
+    if (typeof fn === 'function') fn(...callArgs(preArgs, e));
+  });
+const callM = (fn: (...a: any[]) => any, ...preArgs: any[]) => (e?: any) =>
+  scopeApply(getBodyScope(), (s: any) => {
+    if (typeof fn === 'function') fn(s, ...callArgs(preArgs, e));
+  });
+const callF = (name: string, ...preArgs: any[]) => (e?: any) =>
+  scopeApply(getBodyScope(), (s: any) => {
+    if (s && typeof s[name] === 'function') s[name](...callArgs(preArgs, e));
   });
 
 /* ---------------- webview-toolbar 指令（bundle:64319 + 模板逐字） ---------------- */
@@ -217,14 +239,14 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
   const stopDbl = (e: any) => e.stopPropagation();
 
   return (
-    <div className="toolbar has-border" ref={toolbarRef} onDoubleClick={(e) => { e.stopPropagation(); call('maximize')(e); }}>
+    <div className="toolbar has-border" ref={toolbarRef} onDoubleClick={(e) => { e.stopPropagation(); call(maximize)(e); }}>
       {/* 麵包削 */}
       <div className="breadcrumbs" style={{ minWidth: 24 }} onDoubleClick={stopDbl}>
         <div
           id="toggle-all-btn"
           className="ic-btn"
-          onContextMenu={call('openSidebarMenu')}
-          onClick={call('toggleAll')}
+          onContextMenu={callF('openSidebarMenu')}
+          onClick={callM(machineryToggleAll)}
         >
           <img src={iconSrc(theme, 'ic_toggle-sidebar.svg')} />
         </div>
@@ -233,7 +255,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
           tippy=""
           tippy-content={`${t('toolbar.exitBtn')}<key>ESC</key>`}
           tippy-placement="bottom"
-          onClick={call('leaveDetailMode')}
+          onClick={callM(machineryLeaveDetailMode)}
         >
           <img src={iconSrc(theme, 'ic-toolbar-exit.svg')} />
         </div>
@@ -273,9 +295,9 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
           </div>
           <div
             className="ic-btn"
-            onContextMenu={call('toggleRatioContextMenu')}
+            onContextMenu={callF('toggleRatioContextMenu')}
             onMouseUp={(e) => e.stopPropagation()}
-            onClick={call('openRatioContextMenu')}
+            onClick={call(openRatioContextMenu)}
           >
             {Number.isFinite(zoomRatioExp) ? Math.round(zoomRatioExp).toLocaleString('en-US') : zoomRatioExp}%
           </div>
@@ -290,13 +312,13 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
         <div className="right" onDoubleClick={stopDbl}>
           <input id="crop-width" type="number" placeholder={t('general.w')} />
           <input id="crop-height" type="number" placeholder={t('general.h')} style={{ marginRight: 12 }} />
-          <div className="ic-btn has-padding primary" onClick={call('saveCrop')}>
+          <div className="ic-btn has-padding primary" onClick={call(saveCrop)}>
             {t('toolbar.cropSaveBtn')}
           </div>
-          <div className="ic-btn has-padding" onClick={(e) => call('saveCrop', true)(e)}>
+          <div className="ic-btn has-padding" onClick={(e) => call(saveCrop, true)(e)}>
             {t('toolbar.cropSaveAs')}
           </div>
-          <div className="ic-btn has-padding" onClick={call('cancelCrop')}>
+          <div className="ic-btn has-padding" onClick={callM(machineryCancelCrop)}>
             {t('general.cancel')}
           </div>
         </div>
@@ -305,12 +327,12 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
       {/* 插件工具列 */}
       {showPluginRight && (
         <div className="right" onDoubleClick={stopDbl}>
-          <div className={`ic-btn prev no-padding${currentIndex == 1 ? ' disabled' : ''}`} onClick={call('selectPrev')}>
+          <div className={`ic-btn prev no-padding${currentIndex == 1 ? ' disabled' : ''}`} onClick={callM(machinerySelectPrev)}>
             <img src={iconSrc(theme, 'ic-toolbar-prev.svg')} />
           </div>
           <div
             className={`ic-btn next no-padding${currentIndex == allDataCount ? ' disabled' : ''}`}
-            onClick={call('selectNext')}
+            onClick={callM(machinerySelectNext)}
           >
             <img src={iconSrc(theme, 'ic-toolbar-next.svg')} />
           </div>
@@ -348,7 +370,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
             tippy-content={`${t('general.plugin')} <key>P</key>`}
             tippy-placement="bottom"
             style={viewMode === 'alltags' ? { display: 'none' } : undefined}
-            onClick={call('openPluginPanel')}
+            onClick={callM(machineryOpenPluginPanel)}
           >
             <img src={iconSrc(theme, 'ic-toolbar-plugin.svg')} />
             {needUpdatePluginCount > 0 && <div className="badge-count" />}
@@ -361,7 +383,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-content={`${t('toolbar.openInDefaultBtn')}${shortcuts(shortcutsWrapper(keybinds['view.file.opendefault'] || ''))}`}
               tippy-placement="bottom"
-              onClick={(e) => call('openFileWithDefault', current)(e)}
+              onClick={(e) => call(openFileWithDefault, current)(e)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-open-default.svg')} />
             </div>
@@ -372,7 +394,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-content={`${t('toolbar.flipBtnHint')}${shortcuts(shortcutsWrapper(keybinds['edit.image.flip'] || ''))}`}
               tippy-placement="bottom"
-              onClick={(e) => call('flipVideo', e, current)(e)}
+              onClick={(e) => call(flipVideo, e, current)(e)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-flip.svg')} />
             </div>
@@ -383,7 +405,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-placement="bottom"
               tippy-content={`${t('toolbar.rotateBtnHint')}${shortcuts(shortcutsWrapper(keybinds['edit.image.rotate'] || ''))}`}
-              onClick={(e) => call('rotateVideo', e, current)(e)}
+              onClick={(e) => call(rotateVideo, e, current)(e)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-rotate.svg')} />
             </div>
@@ -392,7 +414,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
           {/* 逐帧播放 */}
           <div
             className={`ic-btn${usingGifPlayer ? ' active' : ''}`}
-            onClick={call('toggleGifPlayerMode')}
+            onClick={callF('toggleGifPlayerMode')}
             tippy=""
             tippy-placement="bottom"
             tippy-content={t('gifViewer.enableBtn')}
@@ -408,7 +430,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('general.viewMode.annotation')}<key>C</key>`}
-            onClick={call('toggleCommentMode')}
+            onClick={callM(machineryToggleCommentMode)}
           >
             <img src={iconSrc(theme, 'ic-toolbar-comment.svg')} />
             {commentsCount > 0 && <div className="badge">{commentsCount}</div>}
@@ -420,7 +442,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-placement="bottom"
               tippy-content={`${t('toolbar.flipBtnHint')}${shortcuts('<key>Shift</key><key>F</key>')}`}
-              onClick={(e) => call('flipImage', e, current, true)(e)}
+              onClick={(e) => call(flipImage, e, current, true)(e)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-flip.svg')} />
             </div>
@@ -432,7 +454,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-placement="bottom"
               tippy-content={`${t('toolbar.rotateBtnHint')}${shortcuts('<key>Shift</key><key>R</key>')}`}
-              onClick={(e) => call('rotateImage', e, current)(e)}
+              onClick={(e) => call(rotateImage, e, current)(e)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-rotate.svg')} />
             </div>
@@ -449,7 +471,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-placement="bottom"
               tippy-content={`${t('toolbar.cropBtnHint')}${shortcuts(shortcutsWrapper(keybinds['edit.image.crop'] || ''))}`}
-              onClick={(e) => call('cropImage', e, current)(e)}
+              onClick={(e) => callF('cropImage', e, current)(e)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-crop.svg')} />
             </div>
@@ -465,7 +487,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               tippy=""
               tippy-placement="bottom"
               tippy-content={`${t('toolbar.zoomActualBtn')}${shortcuts(shortcutsWrapper(keybinds['view.zoom.actual'] || ''))}`}
-              onClick={call('zoomActual')}
+              onClick={callM(machineryZoomActual)}
             >
               <img src={iconSrc(theme, 'ic-toolbar-zoom-actual.svg')} />
             </div>
@@ -476,16 +498,16 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
             tippy=""
             tippy-placement="bottom"
             tippy-content={`${t('toolbar.zoomFitPage')}${shortcuts('<key>`</key>')}`}
-            onClick={call('toggleZoom')}
+            onClick={callM(machineryToggleZoom)}
           >
             <img src={iconSrc(theme, 'ic-toolbar-zoom-fit.svg')} />
           </div>
-          <div className={`ic-btn prev no-padding${currentIndex == 1 ? ' disabled' : ''}`} onClick={call('selectPrev')}>
+          <div className={`ic-btn prev no-padding${currentIndex == 1 ? ' disabled' : ''}`} onClick={callM(machinerySelectPrev)}>
             <img src={iconSrc(theme, 'ic-toolbar-prev.svg')} />
           </div>
           <div
             className={`ic-btn next no-padding${currentIndex == allDataCount ? ' disabled' : ''}`}
-            onClick={call('selectNext')}
+            onClick={callM(machinerySelectNext)}
           >
             <img src={iconSrc(theme, 'ic-toolbar-next.svg')} />
           </div>
@@ -542,7 +564,7 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              call('toggleGifPlay')(e);
+              call(toggleGifPlay)(e);
             }}
           >
             <img src={iconSrc(theme, 'player/ic-toolbar-play.svg')} />
@@ -557,7 +579,7 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              call('toggleGifPlay')(e);
+              call(toggleGifPlay)(e);
             }}
           >
             <img src={iconSrc(theme, 'player/ic-toolbar-pause.svg')} />
@@ -571,7 +593,7 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            call('prevGifFrame')(e);
+            callM(machineryPrevGifFrame)(e);
           }}
         >
           <img src={iconSrc(theme, 'player/ic-toolbar-backward.svg')} />
@@ -584,7 +606,7 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            call('nextGifFrame')(e);
+            callM(machineryNextGifFrame)(e);
           }}
         >
           <img src={iconSrc(theme, 'player/ic-toolbar-forward.svg')} />
@@ -625,7 +647,7 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            call('openGifContextMenu')(e);
+            callF('openGifContextMenu')(e);
           }}
         >
           <img src={iconSrc(theme, 'player/ic-toolbar-more.svg')} />
@@ -697,7 +719,7 @@ export function NotSupportPreview({ snapshot }: { snapshot: DetailSnapshot }) {
           <div
             className="button button-xs button-grey"
             onDoubleClick={(e) => e.stopPropagation()}
-            onClick={(e) => call('openItemContextMenu', e, current)(e)}
+            onClick={(e) => call(openItemContextMenu, e, current)(e)}
           >
             <img src={`assets/images/${themePathOf(theme)}/icons/context-menu/ic-open-other.svg`} />
             {t('pages.noPreview.openOther')}
@@ -747,7 +769,7 @@ export function DetailFloatingBits({ snapshot }: { snapshot: DetailSnapshot }) {
             <div
               className="icon-btn active has-padding"
               onDoubleClick={(e) => e.stopPropagation()}
-              onClick={(e) => call('openItemContextMenu', e, current)(e)}
+              onClick={(e) => call(openItemContextMenu, e, current)(e)}
             >
               {t('pages.tooBigPreview.button')}
             </div>
@@ -763,7 +785,7 @@ export function DetailFloatingBits({ snapshot }: { snapshot: DetailSnapshot }) {
       <div className="inline-toolbar" onDoubleClick={(e) => e.stopPropagation()} style={!isInlineMode ? { display: 'none' } : undefined}>
         <div
           className={`inline-toolbar-btn prev-btn${isInlineMode ? ' inline-mode' : ''}${currentIndex == 1 ? ' disabled' : ''}`}
-          onClick={call('selectPrev')}
+          onClick={callM(machinerySelectPrev)}
         >
           <img src={`assets/images/${themePathOf(theme)}/icons/ic-inline-prev-btn.svg`} />
         </div>
@@ -774,7 +796,7 @@ export function DetailFloatingBits({ snapshot }: { snapshot: DetailSnapshot }) {
         </div>
         <div
           className={`inline-toolbar-btn next-btn${isInlineMode ? ' inline-mode' : ''}${currentIndex == allDataCount ? ' disabled' : ''}`}
-          onClick={call('selectNext')}
+          onClick={callM(machinerySelectNext)}
         >
           <img src={`assets/images/${themePathOf(theme)}/icons/ic-inline-next-btn.svg`} />
         </div>
@@ -784,7 +806,7 @@ export function DetailFloatingBits({ snapshot }: { snapshot: DetailSnapshot }) {
         id="inline-close-btn"
         className="inline-float-btn"
         style={!isInlineMode ? { display: 'none' } : undefined}
-        onClick={call('leaveDetailMode')}
+        onClick={callM(machineryLeaveDetailMode)}
         tippy=""
         tippy-content={`${t('toolbar.exitBtn')}<key>Space</key>`}
         tippy-placement="left"

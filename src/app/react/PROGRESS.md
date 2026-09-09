@@ -1571,6 +1571,38 @@
 > **门禁**：esbuild 语法检 8 文件 0 错；react-stage-smoke 过；哨兵 SENTINEL_OK；
 > **套件 55/55 ALL GREEN**。
 >
+>
+> **【b1-9bz-B-2：DetailToolbar 34 点 / ListRegion 6 点的本地 call() 派发器直调化（2026-09-09）】**
+>
+> **与 bz-B-1 的关键差异**：这两个文件的本地 `call()` 是 **scope 面直取**（`scope[fn]`），
+> 不像 hooks 的 callScope 那样表优先——因此**双键必须走 machinery 导出**，走 c3 落点即
+> 行为变更。落点归属用 `tests-tmp/bz-b-route-map.py` 逐名判定（TABLE_ONLY/MACHINERY/NONE），
+> 判定结果落盘 `tests-tmp/bz-b-routemap-detail.txt`。
+>
+> **40 点 / 32 名分流**：MACHINERY 12（cancelCrop / leaveDetailMode / nextGifFrame /
+> openPluginPanel / prevGifFrame / selectNext / selectPrev / toggleAll / toggleCommentMode /
+> toggleZoom / zoomActual / onDropContainer）→ `callM(machineryXxx)`（s.NAME 挂载体逐字
+> 等价）；TABLE_ONLY 11（含本笔新提升的 flipImage / rotateImage / saveCrop /
+> openRatioContextMenu）→ `call(落点导出)`；NONE 9（cropImage / openGifContextMenu /
+> openSidebarMenu / toggleGifPlayerMode / toggleRatioContextMenu + 4 个 drag 容器处理器）
+> → `callF('name')` **保留 scope 面回退**——表与 machinery 均无供给，命中旧 bundle 或空转，
+> 不得删调用点改语义。
+>
+> **参数语义逐字保留**：`call('saveCrop', true)(e)` 传 preArgs、**不传事件**；e 为 undefined
+> 时不传参；目标非函数时空转——三形态 helper 共用同一 `callArgs`，未做任何"顺手修正"。
+>
+> **4 个 install 家族条目提升为具名导出**（imageOpsService 的 rotateImage 143 行 / flipImage
+> 65 行 / saveCrop 106 行、miscMenuService 的 openRatioContextMenu 26 行）：依赖的 `__lv_*` /
+> initLinkVars / detailZoom 均已在模块作用域，install 注入的 getScope 等价 getBodyScope，
+> 表项改 `fns["X"] = X;` 指针。
+>
+> **哨兵基线吸收**：scopeApply 199→201、getBodyScope 726→734（三形态 helper +2、提升体
+> `const s = getBodyScope()` 4 处、ListRegion helper +2）。
+>
+> **门禁**：esbuild 语法检 0 错；react-stage-smoke 过；哨兵 SENTINEL_OK；**套件 55/55
+> ALL GREEN**。**bz-B 消费面剩余**：panels8e 本地 10 点（preferences/controller.ts 另一套
+> scope，非 body scope，独立成笔）。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

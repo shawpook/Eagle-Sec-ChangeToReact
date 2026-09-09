@@ -1,21 +1,21 @@
 {
-  "generated": "b1-9ba",
+  "generated": "b1-9bz-A",
   "counts": {
-    "evalAsync": 388,
-    "apply": 12,
+    "evalAsync": 385,
+    "apply": 16,
     "watch": 20,
     "watchCollection": 8,
-    "broadcast": 124,
+    "broadcast": 122,
     "on": 73,
     "scopeApply": 184,
     "callScope": 27,
-    "getBodyScope": 693,
+    "getBodyScope": 708,
     "jQuery": 78,
-    "rootAccess": 490,
+    "rootAccess": 464,
     "coreState": 31,
     "lodashWindow": 0,
     "lodashBind": 0,
-    "lodashBare": 22,
+    "lodashBare": 20,
     "vendorScriptTags": 2
   }
 }

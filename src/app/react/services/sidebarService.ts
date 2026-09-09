@@ -20,6 +20,10 @@ import {
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
+import { machineryFilterSidebarItem } from '../core/dataMachinery';
+import { contextMenuOpenChannel } from '../global/bus';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncTagManagerFromScope } from '../store/tagManagerState';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
@@ -249,3 +253,355 @@ export function dblclickSidebarFolder(event: any, folder: any): void {
 export function preventMiddleClick(event: any): void {
   sidebarPreventMiddleClick(event);
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+// —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
+const electronSettings: any = (window as any).electronSettings;
+
+let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
+
+const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
+  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+}, ms || 0);
+
+// —— link 级共享态（原 makeControllerFns 闭包声明）——
+var __lv_onSidebarResizeTimeout: any;
+var __lv_updateSidebarListTimeout: any;
+
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+};
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function changeSidebarIndex(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (node) {
+            const folder = s.folderMappings[node?.id];
+            const __lv_idx = s.sidebarList.indexOf(folder);
+            if (__lv_idx !== -1) {
+                s.sidebarIndex = -1;
+                syncSidebarFromScope();
+                $timeout(function () {
+                    s.sidebarIndex = __lv_idx; 
+                    syncSidebarFromScope();
+                }, 1);
+            }
+        }).apply(null, args);
+  }
+
+export function dblclickSidebarSmartFolderGroup(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event, folder) {
+        	if (s.$root.preferences.habits.dblclickSidebarItem === 'collapse') {
+        		s.toggleSmartFolderExpand(event, folder);
+        	}
+        	else {
+        		s.renameSmartFolder(event, folder);
+        	}
+        }).apply(null, args);
+  }
+
+export function getNodeClass(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (node) {
+            var __lv_result = {
+                'active active-item': (s.$root.selectedFolders.length === 0 && s.currentId == 'folder-' + node.id) || s.$root.selectedFoldersMappings[node.id],
+                'locked': node.password && !node.isUnLock,
+                'collapsed': !node.isExpand && !s.folderKeyword.length,
+                'editable': node.editable,
+                'selected': node.isSelected,
+                'editable': node.editable,
+                'empty-node': node.children && node.children.length == 0,
+                'show-badge': node.imageCount > 0,
+                'close': node.children && node.children.length <= 0 && node.isExpand,
+                'show-lock-icon': node.password && !node.isUnLock,
+                'show-unlock-icon': node.password && node.isUnLock,
+                'has-childred': node.children && node.children.length > 0,
+                'first': node.styles && node.styles.first,
+                'last': node.styles && node.styles.last,
+            }
+            __lv_result[`depth-${node.styles.depth}`] = true;
+            __lv_result[`icon-${node.icon}`] = true;
+            __lv_result[`color-${node.iconColor}`] = true;
+			let parent = s.folderMappings[node.parent];
+			if (parent) {
+				__lv_result[`parent-color-${parent?.iconColor}`] = true;
+			}
+            return __lv_result;
+        }).apply(null, args);
+  }
+
+export function getQuickAccessClass(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (item) {
+            var node;
+            if (item.type === 'folder') {
+                node = s.folderMappings[item.id];
+            }
+            else {
+                node = s.smartFolderMappings[item.id];
+            }
+            
+            if (!node) return;
+
+            var __lv_result = {
+                'active active-item': s.currentId === ('quickaccess-' + node.id),
+                'locked': node.password && !node.isUnLock,
+                'collapsed': !node.isExpand && !s.folderKeyword.length,
+                'selected': node.isSelected,
+                'editable': node.editable,
+                'empty-node': node.children && node.children.length == 0,
+                'color-red': node.iconColor == 'red',
+                'color-orange': node.iconColor == 'orange',
+                'color-yellow': node.iconColor == 'yellow',
+                'color-green': node.iconColor == 'green',
+                'color-aqua': node.iconColor == 'aqua',
+                'color-blue': node.iconColor == 'blue',
+                'color-purple': node.iconColor == 'purple',
+                'color-pink': node.iconColor == 'pink',
+                'show-badge': node.imageCount > 0,
+                'close': node.children && node.children.length <= 0 && node.isExpand,
+                'show-lock-icon': node.password && !node.isUnLock,
+                'show-unlock-icon': node.password && node.isUnLock,
+                'has-childred': node.children && node.children.length > 0,
+            }
+            __lv_result['icon-' + node.icon] = true;
+            return __lv_result;
+        }).apply(null, args);
+  }
+
+export function getSmartFolderClass(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (smartFolder) {
+            
+            var __lv_result = {
+                'editable': smartFolder.editable,
+                'selected': smartFolder.isSelected,
+                'collapsed': !smartFolder.isExpand && !s.folderKeyword.length,
+                'active active-item': (s.$root.selectedSmartFolders.length === 0 && s.currentId == 'smart-folder-' + smartFolder.id) || s.$root.selectedSmartFoldersMappings[smartFolder.id],
+                'color-red': smartFolder.iconColor == 'red',
+                'color-orange': smartFolder.iconColor == 'orange',
+                'color-yellow': smartFolder.iconColor == 'yellow',
+                'color-green': smartFolder.iconColor == 'green',
+                'color-aqua': smartFolder.iconColor == 'aqua',
+                'color-blue': smartFolder.iconColor == 'blue',
+                'color-purple': smartFolder.iconColor == 'purple',
+                'color-pink': smartFolder.iconColor == 'pink',
+                'has-childred': smartFolder.children && smartFolder.children.length > 0,
+                'empty-node': !smartFolder.children || smartFolder.children.length == 0,
+                'first': smartFolder.styles && smartFolder.styles.first,
+                'last': smartFolder.styles && smartFolder.styles.last,
+            };
+            __lv_result['icon-' + smartFolder.icon] = true;
+			let parent = s.smartFolderMappings[smartFolder.parent];
+			if (parent) {
+				__lv_result[`parent-color-${parent?.iconColor}`] = true;
+			}
+            return __lv_result;
+        }).apply(null, args);
+  }
+
+export function hoverHideSidebar(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function ($event) {
+            $event && $event.stopPropagation();
+            if ($("#sidebar").hasClass("hover-show")) {
+                $("#sidebar").removeClass("hover-show");
+                setTimeout(() => {
+                    $("#sidebar").removeClass("slide-in");
+                }, 300);
+            }
+        }).apply(null, args);
+  }
+
+export function hoverShowSidebar(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function ($event) {
+            $event && $event.stopPropagation();
+            if (s.isHideSidebar) {
+                if (!$("#sidebar").hasClass("hover-show")) {
+                    $("#sidebar").addClass("slide-in");
+                    $("#sidebar").addClass("hover-show");
+                }
+            }
+        }).apply(null, args);
+  }
+
+export function sidebarFocus(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function($event) {
+            $event && $event.stopPropagation();
+            s.$root.currentFocus = "sidebar";
+        }).apply(null, args);
+  }
+
+export function onSidebarResize(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(e, ui) {
+        if (ui && ui.size.width >= 200) {
+            s.containerSize.sidebar = ui.size.width;
+            syncBodyFromScope();
+            syncSidebarFromScope();
+            syncTagManagerFromScope();
+            s.$root.$broadcast('$$rebind::refreshContainSize');
+            s.updateSliderPosition();
+            clearTimeout(__lv_onSidebarResizeTimeout);
+            __lv_onSidebarResizeTimeout = setTimeout(function () {
+                s.relayout();
+                s.offsetScrollbar(30);
+                localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
+            }, 500);
+        }
+    }).apply(null, args);
+  }
+
+export function toggleSelectFolder(...args: any[]) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, folderArg) {
+      var expand = !folderArg.isExpand;
+      var folders = folderArg.children;
+      folderArg.isExpand = expand;
+      toggleCurrentLevelFolders(folders, expand);
+    }).apply(null, args);
+  }
+
+export function toggleCurrentLevelFolders(...args: any[]) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, folderArg) {
+      var expand = !folderArg.isExpand;
+      var parent = s2.folderMappings[folderArg.parent];
+      var folders = s2.folders;
+      if (parent && parent.children) {
+        folders = parent.children;
+      }
+      toggleCurrentLevelFolders(folders, expand);
+    }).apply(null, args);
+  }
+
+export function toggleAllFolderExpand(...args: any[]) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, folderArg) {
+      var folder = folderArg || s2.currentFolder;
+      if (s2.folders && s2.folders.length > 0) {
+        var expand = !s2.folders[0].isExpand;
+        if (folder) {
+          setTimeout(function () { s2.changeSidebarIndex(folder); s2.$evalAsync(); }, 100);
+          if (folder.parent) {
+            var parent = s2.folderMappings[folder.parent];
+            if (parent) {
+              expand = !parent.isExpand;
+            }
+          }
+        }
+        if (!expand) s2.sidebarIndex = 0;
+        toggleAllFolders(s2.folders, expand);
+        s2.updateSidebarList();
+      }
+    }).apply(null, args);
+  }
+
+export function toggleSelectSmartFolder(...args: any[]) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, smartFolderArg) {
+      var expand = !smartFolderArg.isExpand;
+      var smartFolders = smartFolderArg.children;
+      smartFolderArg.isExpand = expand;
+      toggleCurrentLevelSmartFolders(smartFolders, expand);
+    }).apply(null, args);
+  }
+
+export function toggleAllSmartFolderExpand(...args: any[]) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, smartFolderArg) {
+      var smartFolder = smartFolderArg || s2.currentSmartFolder;
+      if (s2.smartFolders && s2.smartFolders.length > 0) {
+        var expand = !s2.smartFolders[0].isExpand;
+        if (smartFolder) {
+          setTimeout(function () { s2.changeSidebarIndex(smartFolder); s2.$evalAsync(); }, 100);
+          if (smartFolder.parent) {
+            var parent = s2.smartFolderMappings[smartFolder.parent];
+            if (parent) {
+              expand = !parent.isExpand;
+            }
+          }
+        }
+        if (!expand) s2.sidebarIndex = 0;
+        toggleAllSmartFolders(s2.smartFolders, expand);
+        s2.updateSidebarList();
+      }
+    }).apply(null, args);
+  }
+
+export function openFolderExpandContextMenu(...args: any[]) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (eventArg, folderArg) {
+      eventArg.stopPropagation();
+      const folderEl = eventArg && eventArg.currentTarget;
+      contextMenuOpenChannel.emit({
+        items: [
+          {
+            label: i18n.__('Context.Expand.Folder'),
+            icon: 'ic-expand.svg',
+            click: () => {
+              s2.toggleSelectFolder(eventArg, folderArg);
+              s2.$evalAsync();
+            }
+          },
+          {
+            label: i18n.__('Context.Expand.SameLevel.Folders'),
+            icon: 'ic-expand-same.svg',
+            click: () => {
+              s2.toggleCurrentLevelFolders(eventArg, folderArg);
+              s2.$evalAsync();
+            }
+          },
+          {
+            label: i18n.__('Context.Expand.All.Folders'),
+            icon: 'ic-expand-all.svg',
+            click: () => {
+              s2.toggleAllFolderExpand(eventArg, folderArg);
+              s2.$evalAsync();
+            }
+          },
+        ],
+        showSearch: false,
+        onOpened: () => {
+          folderArg.isSelected = true;
+          try { folderEl && folderEl.classList && folderEl.classList.add('context-activate'); } catch (err) { /* 委托元素缺席不阻塞 */ }
+          s2.$evalAsync();
+        },
+        onClosed: () => {
+          folderArg.isSelected = false;
+          try { folderEl && folderEl.classList && folderEl.classList.remove('context-activate'); } catch (err2) { /* 同上 */ }
+          s2.$evalAsync();
+        }
+      });
+    }).apply(null, args);
+  }

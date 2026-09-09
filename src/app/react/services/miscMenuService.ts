@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
 import { getFilter as machineryGetFilter } from '../core/dataMachinery';
-import { updateCurrentOrderAndIncrease } from '../core/controllerFns';
+import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncToolbarFromScope } from '../store/toolbarState';

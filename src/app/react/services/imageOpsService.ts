@@ -1195,3 +1195,191 @@ export function installImageOpsFns(fns: any, getScope: any): void {
     }).apply(null, args);
   };
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+// —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
+const EagleConfig: any = (window as any).EagleConfig || {};
+
+const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
+
+const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function (ext: string) { AUDIO_TYPES[ext] = true; });
+
+const NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES: any = { tif: true, jpg: true, png: true, bmp: true, webp: true };
+
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function flipHandler(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function ($event) {
+        	if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
+        		s.flipVideo($event, s.current);
+        	}
+        	else {
+        		s.flipImage($event, s.current, true);
+        	}
+        }).apply(null, args);
+  }
+
+export function rotateHandler(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function ($event) {
+        	if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
+        		s.rotateVideo($event, s.current);
+        	}
+        	else {
+        		s.rotateImage($event, s.current);
+        	}
+        }).apply(null, args);
+  }
+
+export function setCustomThumbnail(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        let item = s.selected[0];
+        if (!item || NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES[item.ext]) return;
+        dialog.showOpenDialog(currentWindow, {
+            title: "Choose thumbnail",
+            filters: [
+                { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp', 'webp'] },
+            ],
+            properties: ['openFile']
+        }).then(result => {
+            let paths = result.filePaths;
+            if (!paths || paths.length === 0) return;
+            let filePath = paths[0];
+            let stat = fs.statSync(filePath);
+
+            // 检查文件大小、尺寸，超过进行警告
+            if (stat.size > 10000000) {
+                swal({
+                    html: `
+                        <div class="alert">
+                            <div class="alert-icon error"></div>
+                            <h4 class="alert-title">Exceed the Maximum File Size</h4>
+                            <p class="alert-desc">The file has not been added for it exceeds the maximum file size of 10MB.</p>
+                        </div>
+                    `,
+                    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                    width: 400,
+                    customClass: "alert-box",
+                    cancelButtonColor: "#777777",
+                    confirmButtonText: i18n.__("general.ok"),
+                    cancelButtonText: i18n.__("general.cancel"),
+                }).then(function () {});
+                return;
+            }
+
+            // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
+            if ((window as any).backgroundWindowID === undefined) {
+                ipcRenderer.send('set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: filePath
+                });
+            }
+            else {
+                ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: filePath
+                });
+            }
+
+        }).catch(err => {})
+    }).apply(null, args);
+  }
+
+export function setCustomThumbnailFromClipboard(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (async function() {
+        let item = s.selected[0];
+        if (!item || NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES[item.ext]) return;
+        let newFilePath = `${EAGLE_THUMBNAIL_TEMP_PATH}/${guid()}.png`;
+        let clipboardData = await getClipboardImage();
+        let filePath = clipboardData?.files[0];
+        let image = clipboardData.image;
+
+        if (filePath) {
+            try {
+                let ext = getExt({path: filePath});
+                let support_ext = { jpg: true, png: true, gif: true, bmp: true, webp: true };
+                if (support_ext[ext]) {
+                    fse.copySync(filePath, newFilePath);
+                    // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
+                    if ((window as any).backgroundWindowID === undefined) {
+                        ipcRenderer.send('set-custom-thumbnail', {
+                            item: item,
+                            thumbnailPath: newFilePath
+                        });
+                    }
+                    else {
+                        ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                            item: item,
+                            thumbnailPath: newFilePath
+                        });
+                    }
+                    return;
+                }
+            }
+            catch (err) {}
+        }
+
+        if (image) {
+            let buffer = image.toPNG(100);
+            fs.writeFileSync(newFilePath, buffer);
+            // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
+            if ((window as any).backgroundWindowID === undefined) {
+                ipcRenderer.send('set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: newFilePath
+                });
+            }
+            else {
+                ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                    item: item,
+                    thumbnailPath: newFilePath
+                });
+            }
+        }
+    }).apply(null, args);
+  }
+
+export function resetCustomThumbnail(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        delete s.selected[0].customThumbnail;
+        s.regenerateThumbnailQueue.push(s.selected[0]);
+        s.$evalAsync();
+        ayncsImagesGenerateThumbnail([s.selected[0]]);
+    }).apply(null, args);
+  }
+
+export function changeImagesBackground(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (images, color) {
+        if (!images || images.length === 0) return;
+        for (let i = 0; i < images.length; i++) {
+            var image = images[i];
+            if (!color) {
+                delete image.background;
+            }
+            else {
+                image.background = color;
+            }
+        }
+        ayncsImagesChange(images);
+        s.updateItemsView(s.selected);
+        try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
+    }).apply(null, args);
+  }

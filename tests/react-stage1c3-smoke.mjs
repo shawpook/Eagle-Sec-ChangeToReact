@@ -120,7 +120,7 @@ try {
       'smartFolderExportAsPack','removeSelectedSmartFolders','emptyTrash',
       'emptyRestore','openTrashContextMenu','openFileWithDefault',
       'openFileListContextMenu','openOrderMenu','onBoxMouseup','onBoxListDblClick'];
-    return Object.keys(c).length === 263 && spot.every(k => typeof c[k] === 'function');
+    return Object.keys(c).length === 236 && spot.every(k => typeof c[k] === 'function');
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

@@ -21,6 +21,12 @@ import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
+import { machineryGetAncestorSmartFolders } from '../core/dataMachinery';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncFolderLock } from '../store/lockState';
+import { syncPanelFromScope } from '../store/panelState';
+import { syncToolbarFromScope } from '../store/toolbarState';
+import { debounce } from '../utils/func';
 
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -667,3 +673,394 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
     }).apply(null, args);
   };
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+// —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
+const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
+
+const FixUtils: any = {};
+
+const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
+  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+}, ms || 0);
+
+// —— link 级共享态（原 makeControllerFns 闭包声明）——
+var __lv_image: any;
+var __lv_openSmartFolderTimeout: any;
+var __lv_openUnfiledTimeout: any;
+var __lv_path: any;
+var __lv_setLastFolder: any;
+var __lv_updateListHeight: any;
+
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+  // __lv_path（原 initLinkVars 逐字）
+        __lv_path = _req('path');
+
+  // __lv_updateListHeight（原 initLinkVars 逐字）
+        __lv_updateListHeight = function (height: any) {
+              clearTimeout(updateListHeightTimeout);
+              updateListHeightTimeout = setTimeout(function () {
+                  $("#box-container").attr("box-size", height);
+              }, 50);
+          };
+  // __lv_setLastFolder（原 initLinkVars 逐字）
+        __lv_setLastFolder = debounce(function setLastFolder (folderId: any) {
+              if (!folderId) {
+                  localStorage.removeItem(`eagle.lastFolder.${getBodyScope().rootDir}`);
+              }
+              else {
+              	getBodyScope().setViewMode("all");
+                  localStorage.setItem(`eagle.lastFolder.${getBodyScope().rootDir}`, folderId);
+              }
+          }, 500);
+};
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function getLibraryHistory(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (length) {
+            let result = [];
+            s.libraryHistory.forEach(function (history, index) {
+
+                var libraryName = __lv_path.basename(history).replace('.library', '');
+                var libraryPath = __lv_path.dirname(history).replace(/\\$/g, "").replace(/\/$/, "");
+
+                if (length === undefined) {
+                    result.push({
+                        name: libraryName,
+                        dir: libraryPath,
+                        path: history
+                    });
+                }
+                else if (index + 1 < length) {
+                    result.push({
+                        name: libraryName,
+                        dir: libraryPath,
+                        path: history
+                    });
+                }
+            });
+            return result;
+    }).apply(null, args);
+  }
+
+export function openFolder(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(fd, ignoreHistory, currentId, ignoreReload, focus) {
+            const folder = s.folderMappings[fd?.id];
+
+            if (!folder) return;
+            
+            // Skip if already in the same folder, but NOT when navigating from URL (ignoreHistory = true)
+            // Also check viewMode to ensure we're not coming from a different view type
+            if (!ignoreHistory && s.currentFolder === folder && !s.viewMode && (s.allData.length > 0 || s.subFolders.length > 0) && eagle.filter.filterRules.color.value == undefined &&
+                eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
+            ) {
+                if (s.isDetailMode) {
+                    s.leaveDetailMode();
+                }
+                return;
+            }
+
+            ScrollbarSaver.saveScrollPosition();
+
+            s.currentSmartFolder = undefined;
+            syncPanelFromScope();
+            syncListFromScope();
+            s.$root.currentFocus = focus || "sidebar";
+            s.resetPage();
+            s.viewMode = undefined;
+            s.currentId = currentId || "folder-" + folder.id;
+            syncSidebarFromScope();
+            s.currentFolderPath = s.getFolderFullPath(folder);
+            syncToolbarFromScope();
+            if (s.currentFolder != folder) {
+                s.currentFolder = folder;
+                syncPanelFromScope();
+                syncFolderLock();
+                syncListFromScope();
+                s.currentFolderChildren = s.getChildFoldersMap(folder);
+            }
+
+			if (localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
+                if (s.layout !== localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
+                    s.switchLayout(localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
+                }
+			}
+
+            if (!currentId || currentId.indexOf("quickaccess-") === -1) {
+	            var ancestors = s.getAncestorFolders(folder, []);
+	            if (ancestors.length > 0) {
+	                for (var i = 0; i < ancestors.length; i++) {
+	                    s.expandFolder(ancestors[i]);
+	                }
+	            }
+            }
+
+            if (!ignoreHistory) {
+                UrlStateService.setState({ 
+                    view: 'folder', 
+                    folder: folder.id,
+                    smartfolder: null,
+                    tag: null,
+                    color: null,
+                    page: s.page
+                });
+            }
+
+            var __lv_height = localStorage.getItem("eagle.list.thumbSize." + folder.id) || 150;
+            __lv_height = parseInt(__lv_height);
+            s.imageSize.height = parseInt(__lv_height / 5) * 5;
+            syncToolbarFromScope();
+            syncBodyFromScope();
+            syncDetailFromScope();
+            syncInspectorFromScope();
+            __lv_updateListHeight(s.imageSize.height);
+            if (!ignoreReload) {
+                ScrollbarSaver.restoreScrollPosition();
+                s.reload();
+            }
+            else {
+                s.rebindRefresh();
+            }
+            if (s.currentFolder) {
+                __lv_setLastFolder(s.currentFolder.id);
+            }
+
+            analytics.screenView('Folder');
+            
+            // 如果文件夾有密碼且未解鎖，並且支援 Touch ID，自動觸發 Touch ID 驗證
+            if (s.currentFolder && s.currentFolder.password && !s.currentFolder.isUnLock) {
+                if (s.canUseTouchID) {
+                    // 延遲一下以確保 UI 已渲染
+                    $timeout(function () {
+                        s.unlockFolderWithTouchID();
+                    }, 500);
+                }
+            }
+        }).apply(null, args);
+  }
+
+export function openSmartFolder(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(smartFolder, ignoreHistory, currentId) {
+            if (!smartFolder) return;
+            if (s.currentSmartFolder === smartFolder && s.allData.length > 0 && eagle.filter.filterRules.color.value == undefined &&
+                eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
+            ) {
+                if (s.isDetailMode) {
+                    s.leaveDetailMode();
+                }
+                return;
+            }
+
+            ScrollbarSaver.saveScrollPosition();
+
+            if (s.currentFolder) { s.currentFolder.editable = false; }
+            if (s.currentSmartFolder) { s.currentSmartFolder.editable = false; }
+
+            s.currentFolder = undefined;
+            syncPanelFromScope();
+            syncFolderLock();
+            syncListFromScope();
+            eagle.inspector.reset();
+            s.currentFolderChildren = undefined;
+            s.$root.selectedSmartFoldersMappings = {};
+            s.$root.selectedSmartFolders = [];
+            s.$root.currentFocus = "sidebar";
+            s.resetPage();
+            s.viewMode = undefined;
+            s.currentId = currentId || "smart-folder-" + smartFolder.id;
+            syncSidebarFromScope();
+
+            if (s.currentSmartFolder != smartFolder) {
+                s.currentSmartFolder = smartFolder;
+                syncPanelFromScope();
+                syncListFromScope();
+            }
+
+			if (localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]) {
+				s.switchLayout(localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
+			}
+
+            if (!currentId || currentId.indexOf("quickaccess-") === -1) {
+	            var ancestors = machineryGetAncestorSmartFolders(s, smartFolder, []);
+	            if (ancestors.length > 0) {
+	                for (var i = 0; i < ancestors.length; i++) {
+	                    s.expandSmartFolder(ancestors[i]);
+	                }
+	            }
+            }
+
+            $timeout.cancel(__lv_openSmartFolderTimeout);
+            __lv_openSmartFolderTimeout = $timeout(function() {
+                if (!ignoreHistory) {
+                    UrlStateService.setState({
+                        view: 'smartfolder',
+                        smartfolder: smartFolder.id,
+                        folder: null,
+                        tag: null,
+                        color: null
+                    });
+                }
+                s.imageSize.height = localStorage.getItem("eagle.list.thumbSize." + smartFolder.id) || 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                s.imageSize.height = parseInt(s.imageSize.height);
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                __lv_updateListHeight(s.imageSize.height);
+                ScrollbarSaver.restoreScrollPosition();
+                s.reload();
+                analytics.screenView('SmartFolder');
+
+                if (s.currentSmartFolder) {
+	                __lv_setLastFolder(s.currentSmartFolder.id);
+	            }
+
+            }, 25);
+        }).apply(null, args);
+  }
+
+export function openUnfiled(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(ignoreHistory) {
+
+            if (s.viewMode === 'unfiled' && s.allData.length > 0 && eagle.filter.filterRules.color.value == undefined) {
+                if (s.isDetailMode) {
+                    s.leaveDetailMode();
+                }
+                return;
+            }
+
+            ScrollbarSaver.saveScrollPosition();
+            s.viewMode = 'unfiled';
+            s.$root.currentFocus = "sidebar";
+            s.resetPage();
+
+            $timeout.cancel(__lv_openUnfiledTimeout);
+            __lv_openUnfiledTimeout = $timeout(function() {
+                if (!ignoreHistory) {
+                    UrlStateService.setState({ view: 'unfiled', folder: null, smartfolder: null, tag: null, color: null });
+                }
+                s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.unfiled") || 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                s.imageSize.height = parseInt(s.imageSize.height);
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                __lv_setLastFolder(undefined);
+                __lv_updateListHeight(s.imageSize.height);
+                ScrollbarSaver.restoreScrollPosition();
+                $("#sidebar-item-container").scrollTop(0);
+                s.reload();
+                analytics.screenView('Unfiled');
+            }, 50);
+        }).apply(null, args);
+  }
+
+export function smartFolderCount(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (smartFolder) {
+            if (smartFolder) {
+
+            	if (smartFolder.conditions.length === 0) return 0;
+                // console.time("计算智能文件夹图片数量");
+                var images = [];
+                images = s.raw.filter(function (__lv_image) {
+                    if (__lv_image.isDeleted) return false;
+                    return s.existInSmartFilter(smartFolder, __lv_image);
+                });
+                if (Object.keys(s.lockedImages).length > 0) {
+                    images = images.filter(s.lockImageFilter);
+                }
+                // console.timeEnd("计算智能文件夹图片数量");
+                return images.length;
+            }
+        }).apply(null, args);
+  }
+
+export function switchLibrary(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            var shortcutMode = event.button === undefined;
+            var openFixUtils = event && (event.altKey || event.metaKey || event.ctrlKey);
+            if (openFixUtils && !shortcutMode) {
+                FixUtils.openContextMenu();
+            }
+            else {
+                // b1-9ba：OPEN_LIBRARY_PANEL 廣播全樹無接收者（library-panel 指令檔從未
+                // 掛載，bundle 摘除後徹底死亡）——廣播體移除；程式庫面板豎切時按 React
+                // 語義歸位。
+            }
+        }).apply(null, args);
+  }
+
+export function duplicateItem(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            event && event.preventDefault();
+            event && event.stopPropagation();
+            if (s.selected[0]) {
+                ipcRenderer.send('duplicate-file', s.selected[0].id);
+            }
+        }).apply(null, args);
+  }
+
+export function exportFolder(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(callback) {
+        dialog.showOpenDialog(currentWindow, {
+            title: $filter('i18n')('dialog.exportAsFolder.title'),
+            filters: [],
+            properties: ['openDirectory', 'createDirectory'],
+            buttonLabel: $filter('i18n')("dialog.exportAsFolder.botton")
+        }).then(result => {
+            var paths = result.filePaths;
+            if (paths && paths[0]) {
+                var savePath = paths[0];
+                callback(savePath)
+            }
+            else {
+                callback(undefined);
+            }
+        });
+    }).apply(null, args);
+  }
+
+export function checkDiskSpace(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(path, needSpace, callback) {
+        callback && callback();
+    }).apply(null, args);
+  }

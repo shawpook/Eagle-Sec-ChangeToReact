@@ -18,10 +18,11 @@
 import { getBodyScope, persistSweep, removeChannelListenersBySource, sweepForeignWatchers } from './appCore';
 import { detailZoom } from './smoothZoomEngine';
 import { ipcRenderer } from '../global/eagleGlobals';
-import { isInFolder } from './controllerFns';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
+import { IPCHelper } from '../core/ipcHelper';
+import { debounce } from '../utils/func';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -830,3 +831,567 @@ export function takeoverItemDomain(): void {
     }, 300);
   }
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+// —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
+const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
+
+const EagleConfig: any = (window as any).EagleConfig || {};
+
+const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function (ext: string) { AUDIO_TYPES[ext] = true; });
+
+const fs: any = _req('fs');
+
+const electronSettings: any = (window as any).electronSettings;
+
+const electronLog: any = (window as any).electronLog || console;
+
+const __cf_ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+
+const clipboard: any = _req('electron')?.clipboard || (window as any).clipboard;
+
+let __lv_showFinderAlert: any = localStorage.getItem("eagle.hint.showInFinder") !== 'false';
+
+const i18n: any = (window as any).i18n;
+
+let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
+
+const $filter: any = (name: string) => {
+  const s: any = getBodyScope();
+  if (s && s.$root && s.$root.$filter) return s.$root.$filter(name);
+  // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（Angular 在世走 injector，
+  // 缺席时为 EagleApp.filter 逐字移植的等价表），否则 `$filter('i18n')(…)` 首行即抛。
+  const inst: any = machineryGetFilter();
+  return inst ? inst(name) : undefined;
+};
+
+// —— link 级共享态（原 makeControllerFns 闭包声明）——
+var __lv_image: any;
+var __lv_path: any;
+
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+  // __lv_path（原 initLinkVars 逐字）
+        __lv_path = _req('path');
+
+};
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function openFileWithDefault(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (file: any) {
+            if (!file || !file.id) return;
+            if ($(".swal2-container").length > 0) { return; }
+            var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+            var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
+            IPCHelper.send('open-with-default', rawPath);
+            RecentFileManager.addFile(file);
+    }).apply(null, args);
+  }
+
+export function copyAsLink(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event, items) {
+            if (!items || !items[0]) return;
+            let text = ``;
+            items.forEach(function (item, index) {
+                if (item && item.id) {
+                    // http://localhost:41595/item?id=:item.id
+                    text += `http://localhost:41595/item?id=${item.id}`;
+                    // text += `eagle://item/${item.id}`;
+                    if (index !== items.length - 1) {
+                        text += "\n";
+                    }
+                }
+            });
+
+            clipboard.writeText(text);
+            s.notify({
+                message: i18n.__("notify.colorCopySuccess"),
+                duration: 750
+            });
+        }).apply(null, args);
+  }
+
+export function copyAsPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            if (!s.selected || !s.selected[0]) return;
+            let copyText = "";
+            s.selected.forEach(function (item, index) {
+                var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + item.id + ".info/");
+                var rawPath = __lv_path.normalize(folderPath + item.name + "." + item.ext);
+                if (index == 0) {
+                    copyText += rawPath;
+                }
+                else {
+                    copyText += `\n${rawPath}`;
+                }
+            });
+            clipboard.writeText(copyText);
+            s.notify({
+                message: $filter('i18n')("notify.copyPath.successMsg"),
+                duration: 750
+            });
+        }).apply(null, args);
+  }
+
+export function getFolderFullPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (folder) {
+            if (folder) {
+                if (folder.parent) {
+                    try {
+                        var ancestors = s.getAncestorFolders(folder, []);
+                        ancestors.unshift(folder);
+                        var names = ancestors.reverse().map(function (folder) {
+                            return folder.name || "";
+                        });
+                        var namePath = names.join(" / ");
+                        return namePath;
+                    }
+                    catch (err) {
+                        return "";
+                    }
+                }
+                else {
+                    return folder.name || "";
+                }
+            }
+            return "";
+        }).apply(null, args);
+  }
+
+export function getGIFPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.current) {
+                var gifPath = FileUrlHelper.getRawPath(s.current);
+                var gifUrl = FileUrlHelper.getRawUrl(s.current);
+                var renderBehavior = s.$root.preferences.habits.renderBehavior;
+                return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(s.current.name + ".gif") + `&render=${renderBehavior}`;
+            }
+        }).apply(null, args);
+  }
+
+export function getModelPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.current) {
+                var rawUrl = FileUrlHelper.getRawUrl(s.current);
+				rawUrl = rawUrl.replaceAll(',', '%2C');
+                var type = s.current.ext;
+				return `model-viewer/website/index.html#model=${rawUrl}`;
+            }
+        }).apply(null, args);
+  }
+
+export function getNativeViewerPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.current) {
+                var __lv_filePath = s.imagesDir + s.current.id + ".info/";
+                return "native-viewer/index.html?path=" + encodeURIComponent(__lv_filePath) + "&name=" + encodeURIComponent(s.current.name + "." + s.current.ext) + "&ext=" + s.current.ext + "&width=" + s.current.width + "&height=" + s.current.height + "&id=" + s.current.id;
+            }
+        }).apply(null, args);
+  }
+
+export function getPDFPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.current) {
+            	var pdfPath = FileUrlHelper.getRawUrl(s.current);
+                var locale = preferences.general.language.replace("_", "-");
+                return `pdf-viewer/web/viewer.html?path=${encodeURIComponent(pdfPath)}&locale=${locale}&theme=${s.theme}`;
+            }
+        }).apply(null, args);
+  }
+
+export function getRawPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (__lv_image) {
+            if (!__lv_image || !s.imagesDir) return;
+            if (!s.modifiedMappings[__lv_image.id]) {
+                return "file://" +  getRawPath(s.imagesDir, __lv_image);
+            }
+            else {
+                return "file://" +  getRawPath(s.imagesDir, __lv_image) + "?v=" + s.modifiedMappings[__lv_image.id];
+            }
+        }).apply(null, args);
+  }
+
+export function getRawUrl(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (__lv_image) {
+            if (!s.imagesDir || !__lv_image) return;
+            let rawUrl = FileUrlHelper.getRawUrl(__lv_image);
+            if (!EagleConfig.SUPPORT_FORMATS[__lv_image.ext]) {
+                rawUrl = FileUrlHelper.getThumbnailUrl(__lv_image);
+            }
+            if ($bodyScope.modifiedMappings && $bodyScope.modifiedMappings[__lv_image.id]) {
+	            rawUrl = `${rawUrl}?v=${$bodyScope.modifiedMappings[__lv_image.id]}`;
+	        }
+        	return rawUrl;
+        }).apply(null, args);
+  }
+
+export function getRawViewerPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.current) {
+                var __lv_image = s.current;
+                var rawPath = s.imagesDir + s.current.id + ".info/";
+                return `./raw-viewer/index.html?orientation=${__lv_image.orientation}&path=${encodeURIComponent(rawPath)}&name=${encodeURIComponent(__lv_image.name)}&ext=${__lv_image.ext}&width=${__lv_image.width}&height=${__lv_image.height}`;
+            }
+        }).apply(null, args);
+  }
+
+export function getTxtPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.current) {
+                return `./text-editor/text-editor.html?id=${s.current.id}&theme=${s.theme}&name=${s.current.name}&language=${s.language}`;
+            }
+        }).apply(null, args);
+  }
+
+export function getURLSrc(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            let item = s.current;
+        	if (item.ext === "url") {
+        		var embed;
+        		if (item.medium === "youtube") {
+        			embed = `https://www.youtube-nocookie.com/embed/${item.videoID}?autoplay=1&vq=hq1080`;
+        		}
+        		else if (item.medium === "vimeo") {
+        			embed = `https://player.vimeo.com/video/${item.videoID}?autoplay=1`;
+        		}
+        		else {
+        			embed = item.url;
+        		}
+        		return embed;
+        	}
+            else {
+                return FileUrlHelper.getRawUrl(s.current);
+            }
+        }).apply(null, args);
+  }
+
+export function openItemLocation(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (item, folder) {
+            s.resetFilter();
+            s.keyword = "";
+            s.quickOpenFolder(folder, item);
+        }).apply(null, args);
+  }
+
+export function openWithOther(...args: any[]) {
+    if (!__cc_openWithOther) {
+      __cc_openWithOther = debounce(function () {
+        const s = getScope();
+        if (!s) return;
+        if (s.selected.length > 0) {
+            __cf_ipcRenderer.send('open-with-dialog', FileUrlHelper.getRawPath(s.selected[0]));
+        }
+      }, 200, true);
+    }
+    return __cc_openWithOther(...args);
+  }
+
+export function openInFinder(...args: any[]) {
+    if (!__cc_openInFinder) {
+      __cc_openInFinder = (function () {
+        function openInFinderImpl() {
+            const s = getScope();
+            if (!s) return;
+            if (s.selected.length > 0) {
+                s.checkOperationSafety(function () {
+                    s.selected.forEach(function (file, index) {
+                        if (index > 30) return;
+                        var folderPath = path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+                        var rawPath = path.normalize(folderPath + file.name + "." + file.ext);
+                        if (fs.existsSync(rawPath)) {
+                            __cf_ipcRenderer.send('show-item-in-folder', rawPath);
+                        }
+                        else if (fs.existsSync(folderPath + 'metadata.json')) {
+                            __cf_ipcRenderer.send('show-item-in-folder', folderPath + 'metadata.json');
+                        }
+                        else {
+                            __cf_ipcRenderer.send('show-item-in-folder', folderPath);
+                        }
+                        electronLog && electronLog.info("[app] Open item inFinder: " + folderPath);
+                    });
+                }, 10);
+            }
+        };
+        return debounce(function () {
+            const s = getScope();
+            if (!s) return;
+
+            // 禁止在任何 Modal 开启时，使用这个功能，避免快捷键冲突
+            if ($(".modal.open, .import-modal.open").length > 0) return;
+            if (!s.selected.length) return;
+
+            var btnLable;
+
+            if (process.platform === 'win32') {
+                btnLable = i18n.__("dialog.openInFinder.openExplorerBtn");
+            }
+            else {
+                btnLable = i18n.__("dialog.openInFinder.openFinderBtn");
+            }
+
+            if (__lv_showFinderAlert) {
+                swal({
+                    html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${i18n.__("dialog.openInFinder.title")}</h4>
+                            <p class="alert-desc">${i18n.__("dialog.openInFinder.desc")}</p>
+                        </div>
+                    `,
+                    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                    width: 400,
+                    customClass: "alert-box",
+                    input: 'checkbox',
+                    inputValue: 0,
+                    inputValidator: function (result) {
+                        return new Promise(function (resolve, reject) {
+                            resolve(result);
+                        })
+                    },
+                    inputPlaceholder: i18n.__('general.askagain'),
+                    cancelButtonColor: "#777777",
+                    confirmButtonText: btnLable,
+                    cancelButtonText: i18n.__("general.cancel"),
+                }).then(function (result) {
+                    __lv_showFinderAlert = (result === 0);
+                    if (!__lv_showFinderAlert) {
+                        localStorage.setItem("eagle.hint.showInFinder", __lv_showFinderAlert);
+                    }
+                    openInFinderImpl();
+                });
+            }
+            else {
+                openInFinderImpl();
+            }
+
+
+        }, 200, true);
+      })();
+    }
+    return __cc_openInFinder(...args);
+  }
+
+export function openFilesWithDefault(...args: any[]) {
+    if (!__cc_openFilesWithDefault) {
+      __cc_openFilesWithDefault = debounce(function(files) {
+        const s = getScope();
+        if (!s) return;
+        if ($(".swal2-container").length > 0) { return; }
+        s.checkOperationSafety(function () {
+            files.forEach(function (file, index) {
+                if (!file || !file.id) return;
+                if (index < 40) {
+                    var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+                    var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
+                    __cf_ipcRenderer.send('open-with-default', rawPath);
+                }
+            });
+            RecentFileManager.addFiles(files);
+        }, 10);
+      }, 500, true);
+    }
+    return __cc_openFilesWithDefault(...args);
+  }
+
+export function openInPreviewWindow(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        if (s.selected.length <= 20000) {
+            var items = s.selected.filter(function (item) {
+                return (EagleConfig.SUPPORT_FORMATS[item.ext] || pluginModule?.previewExtension.thumbnailPluginMap[item.ext]) && !AUDIO_TYPES[item.ext];
+            });
+            if (items.length > 0) {
+                openInNewWindow(items);
+                analytics.event('NewWindow', 'Open', items[0].ext);
+                RecentFileManager.addFiles(items);
+            }
+        }
+    }).apply(null, args);
+  }
+
+export function copyAsProperity(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (properity) {
+        if (!s.selected || !s.selected[0]) return;
+        let copyText = "";
+        s.selected.forEach(function (item, index) {
+            if (index == 0) {
+                copyText += `${item[properity] || ""}`;
+            }
+            else {
+                copyText += `\n${item[properity] || ""}`;
+            }
+        });
+        clipboard.writeText(copyText);
+        s.notify({
+            message: $filter('i18n')("notify.copyPath.successMsg"),
+            duration: 750
+        });
+    }).apply(null, args);
+  }
+
+export function copyAsFolderPath(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+        if (!s.selected || !s.selected[0]) return;
+        let copyText = "";
+        s.selected.forEach(function (item, index) {
+            var folderPath = path.normalize(s.libraryPath + "/images/" + item.id + ".info/");
+            if (index == 0) {
+                copyText += folderPath;
+            }
+            else {
+                copyText += `\n${folderPath}`;
+            }
+        });
+        clipboard.writeText(copyText);
+        s.notify({
+            message: $filter('i18n')("notify.copyPath.successMsg"),
+            duration: 750
+        });
+    }).apply(null, args);
+  }
+
+export function copyAsThumbnail(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        // b1-9ae：同上——undefined → send 走 main（b1-9aa copy-thumbnails handler → CF_HDROP）
+        if ((window as any).backgroundWindowID === undefined) {
+            __cf_ipcRenderer.send('copy-thumbnails', s.selected);
+        }
+        else {
+            __cf_ipcRenderer.sendTo((window as any).backgroundWindowID, 'copy-thumbnails', s.selected);
+        }
+        setTimeout(function () {
+            s.notify({
+                message: $filter('i18n')("previewWindow.copied"),
+                duration: 1000
+            });
+        }, 150);
+    }).apply(null, args);
+  }
+
+export function copyAsBase64(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        let item = s.selected[0];
+        let folderPath = path.normalize(s.libraryPath + "/images/" + item.id + ".info/");
+        let rawPath = path.normalize(`${folderPath}${item.name}.${item.ext}`);
+        let thumbPath = path.normalize(`${folderPath}${item.name}_thumbnail.png`);
+        let imageType = { jpg: true, jfif: true, insp: true, png: true, webp: true, gif: true };
+        let ext2type = { "gif": "gif", "jpg": "jpeg", "png": "png", "jpeg": "jpeg", "jfif": "jpeg", "jpe": "jpeg", "insp": "jpeg", "webp": "webp" };
+        let type;
+        let base64;
+
+        try {
+            if (imageType[item.ext]) {
+                type = ext2type[item.ext];
+                base64 = fs.readFileSync(rawPath, 'base64');
+            }
+            else {
+                type = "webp";
+                base64 = fs.readFileSync(thumbPath, 'base64');
+            }
+
+            clipboard.writeText(`data:image/${type};base64,${base64}`);
+            s.notify({
+                message: $filter('i18n')("previewWindow.copied"),
+                duration: 1000
+            });
+        }
+        catch (err) {
+            electronLog && electronLog.error(err.stack || err);
+        }
+    }).apply(null, args);
+  }
+
+export function isInFolder (__lv_image, folder) {
+            try {
+            	if (!folder) return false;
+                if (!__lv_image) return false;
+                if (!__lv_image.folders || !__lv_image.folders.indexOf) {
+                    __lv_image.folders = [];
+                }
+                // 状况1: 该资料夹本身包含图片
+                var isContain = __lv_image.folders.indexOf(folder.id) > -1;
+                if (getBodyScope().showSubfolderContent) {
+                    // 状况2: 该资料夹不包含图片，但该资料夹的子文件夹包含
+                    // 加速版本作法，更快判断图片是否存在于子文件夹
+                    if (getBodyScope().currentFolderChildren) {
+                        for (var i = 0; i < __lv_image.folders.length; i++) {
+                            var __lv_folderId = __lv_image.folders[i];
+                            if (getBodyScope().currentFolderChildren[__lv_folderId]) {
+                                return true;
+                            }
+                        }
+                    }
+                    else {
+                        eagle.utils.tree.walk(folder.children, 'children', function (child, parent) {
+                            if (__lv_image.folders && __lv_image.folders.length > 0 && __lv_image.folders.indexOf(child.id) > -1) {
+                                isContain = true;
+                                return;
+                            }
+                        });
+                    }
+                }
+                return isContain;
+            }
+            catch (err) {
+                return false;
+            }
+        }

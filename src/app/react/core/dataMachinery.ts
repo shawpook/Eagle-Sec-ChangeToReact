@@ -57,7 +57,8 @@
 import { detailZoom, ensureDetailZoom } from './smoothZoomEngine';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
-import { updateCurrentOrderAndIncrease, isInFolder } from './controllerFns';
+import { updateCurrentOrderAndIncrease } from './miscDomain';
+import { isInFolder } from './itemDomain';
 import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 import { detailUpdateZoomRatio, detailSmartZoom, detailToggleDetailMode, beginZoomingTransition } from '../services/detailService';
 import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot } from '../services/mediaService';
@@ -1175,7 +1176,6 @@ export function machineryReload(s: any): any {
     setTimeout(function () {
       w.$("#box-container").trigger("scroll");
     }, 500);
-
   }, 100, true);
 }
 

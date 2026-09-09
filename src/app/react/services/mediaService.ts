@@ -1,4 +1,7 @@
 import { getBodyScope } from '../core/appCore';
+import { machineryCalcRotateDegree, machineryGetVideoPlayer } from '../core/dataMachinery';
+import { IPCHelper } from '../core/ipcHelper';
+import { syncDetailFromScope } from '../store/detailState';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -189,3 +192,228 @@ export function addVideoComment(video: any, videoElem: any): void {
   const s = getBodyScope();
   if (s) mediaAddVideoComment(s, video, videoElem);
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+// —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
+const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
+
+const fs: any = _req('fs');
+
+const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
+
+const electronLog: any = (window as any).electronLog || console;
+
+const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+
+const dialog: any = _req('@electron/remote')?.dialog;
+
+const remote: any = _req('@electron/remote');
+
+// —— link 级共享态（原 makeControllerFns 闭包声明）——
+var __lv_video: any;
+
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+};
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function flipVideo(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            var player = machineryGetVideoPlayer(s);
+            if (!player) return;
+
+            if (player.type === 'mpv') {
+                var mpv = player.el;
+                var flip = (mpv.previewFlip || 1) * -1;
+                mpv.flip(flip);
+            }
+            else {
+                var $__lv_video = $(player.el);
+                var flip = ($__lv_video.data("flip") || 1) * -1;
+                $__lv_video.data("flip", flip);
+                if (flip === 1) {
+                    $__lv_video.removeClass("flip");
+                }
+                else {
+                    $__lv_video.addClass("flip");
+                }
+            }
+        }).apply(null, args);
+  }
+
+export function rotateVideo(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            var player = machineryGetVideoPlayer(s);
+            if (!player) return;
+
+            if (player.type === 'mpv') {
+                var mpv = player.el;
+                var degree = machineryCalcRotateDegree(mpv.previewRotation || 0, event);
+                mpv.rotate(degree);
+            }
+            else {
+                var __lv_video = player.el;
+                var $__lv_video = $(__lv_video);
+                var degree = machineryCalcRotateDegree($__lv_video.data("degree") || 0, event);
+
+                $__lv_video.data("degree", degree);
+                $__lv_video.removeClass("r90 r180 r270");
+                if (degree) $__lv_video.addClass(`r${degree}`);
+
+                if (degree === 90 || degree === 270) {
+                    __lv_video.style.setProperty('max-height', `calc(${__lv_video.videoHeight / __lv_video.videoWidth * 100}% - 24px)`, 'important');
+                }
+                else {
+                    $__lv_video.css({ "max-height": "" });
+                }
+            }
+        }).apply(null, args);
+  }
+
+export function toggleGifPlay(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (s.gifPlayer && s.isGifReady) {
+                if (s.gifViewer.playing) {
+                    s.gifPlayer.pause();
+                    s.gifViewer.playing = false;
+                    syncDetailFromScope();
+                    s.$evalAsync();
+                }
+                else {
+                    s.gifPlayer.play();
+                    s.gifViewer.playing = true;
+                    syncDetailFromScope();
+                    s.$evalAsync();
+                }
+                $(".gif-viewer").css("opacity", 0.8);
+                setTimeout(function () {
+                    $(".gif-viewer").css("opacity", 1);
+                }, 100);
+            }
+        }).apply(null, args);
+  }
+
+export function toggleSlideshow(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+                if (!s.isSlideshowMode) {
+                    s.enterSlideshowMode();
+                } else {
+                    s.leaveSlideshowMode();
+                }
+            }).apply(null, args);
+  }
+
+export function setAsVideoThumbnail(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (async function() {
+        if (!s.current) return;
+
+        var player = s.getVideoPlayer();
+        if (!player) return;
+
+        var currentTime = player.el.currentTime;
+
+        if (player.type === 'mpv') {
+            try {
+                var imageData = await player.el.screenshot(currentTime);
+                if (!imageData) return;
+                var canvas = document.createElement('canvas');
+                canvas.width = imageData.width;
+                canvas.height = imageData.height;
+                canvas.getContext('2d').putImageData(imageData, 0, 0);
+                var base64 = canvas.toDataURL("image/jpeg", 0.95);
+                var decode = decodeBase64Image(base64);
+                if (!decode || !decode.data) return;
+
+                var newFilePath = EAGLE_THUMBNAIL_TEMP_PATH + "/" + guid() + ".jpg";
+                fs.writeFileSync(newFilePath, decode.data);
+
+                s.current.thumbnailAt = currentTime;
+                // b1-9ae：后台窗已除名——backgroundWindowID undefined → 走 main（b1-9aa handler），
+                // 与 bundle 26409 条件模式同型（undefined → send 分支）
+                if ((window as any).backgroundWindowID === undefined) {
+                    ipcRenderer.send('set-custom-thumbnail', {
+                        item: s.current,
+                        thumbnailPath: newFilePath,
+                        width: s.current.width,
+                        height: s.current.height
+                    });
+                }
+                else {
+                    ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
+                        item: s.current,
+                        thumbnailPath: newFilePath,
+                        width: s.current.width,
+                        height: s.current.height
+                    });
+                }
+            } catch (err) {
+                electronLog && electronLog.error(err.stack || err);
+            }
+        }
+        else {
+            s.current.thumbnailAt = currentTime;
+            IPCHelper.send('regenerate-video-thumbnail', {
+                video: s.current,
+                startAt: currentTime
+            });
+        }
+    }).apply(null, args);
+  }
+
+export function loadSubtitles(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        const item = s.current;
+        // 1. show file choose dialog
+        dialog.showOpenDialog(currentWindow, {
+            title: "Load Subtitles",
+            properties: ['openFile'],
+            filters: [
+                { name: 'Subtitles', extensions: ['srt', 'vtt'] }
+            ]
+        }).then((result) => {
+            if (!result.canceled) {
+                const filePath = result.filePaths[0];
+                const itemName = item.name;
+                const ext = path.extname(filePath).toLowerCase();
+                const rawPath = FileUrlHelper.getRawPath(item);
+                const infoPath = path.dirname(rawPath);
+                const subtitlePath = `${infoPath}/${itemName}${ext}`;
+
+                fs.copyFile(filePath, subtitlePath, (err) => {
+                    if (err) {
+                        alert("An error ocurred updating the file" + err.message);
+                    }
+                    else {
+                        const video = $(".detail-wrap video")[0];
+                        if (video) {
+                            const src = video.src;
+                            const newSrc = src.replace(/v=\d+/, `v=${Date.now()}`);
+                            video.src = newSrc;
+                        }
+                    }
+                });
+            }
+        });
+    }).apply(null, args);
+  }

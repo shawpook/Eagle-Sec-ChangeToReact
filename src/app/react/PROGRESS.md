@@ -1477,6 +1477,28 @@
 > installXxxFns 注册面（b1-9bn..bt 六族），bz-A 落点优先并入同族服务。
 >
 
+> **【b1-9bz-A 手术已 apply + 交接快照提交（2026-09-09，"b1-9bz-A 卡住交接-9.9日下午"）】**
+>
+> **已落地**：controllerFns.ts 缩为指针注册表（121 指针 + 6 install，236 键；148 壳
+> 归位 11 落点：filterDomain/itemDomain/miscDomain/folderCore/selection/sidebar/media/
+> imageOps/itemMenu + 新建 lockService/uploadService/viewOpsService）；27 死壳删除；
+> 4 独立导出归位（parseKeywordsWithOR 零消费直删）；dataMachinery/libraryDomain/
+> miscMenuService import 改写；stage1c3 计数 263→236；哨兵基线吸收（evalAsync 385/
+> apply 16/broadcast 122/rootAccess 464/getBodyScope 708/lodashBare 20）。
+>
+> **闸门已过**：esbuild 0 错、DELTA 审计 PASS（117 体）、哨兵 SENTINEL_OK、boot 探针
+> 函数面健康（shimFnsBridge attached=236，14 抽查全 function）。
+>
+> **卡点（未解，交接给下一会话）**：全套件 35/55 挂，全部同根——boot 期 openAll→
+> reload→listDone 链未闭合（isItemBindCalculated=true 但 listDone=false、
+> colorDistancesMap=undefined、网格不渲染；手动 s.openAll(true) 一调即通，管线本身没坏）。
+> 头号嫌疑：machineryOpenAll:3339 快路径早退（viewMode=='all' && allData.length>0 &&
+> color.value==undefined → callback 后 return，reload 永不执行）；第二嫌疑：真 Angular
+> $timeout（旧 bundle 活着）静默吞 $timeout 回调异常。判别探针与全部证据链见交接文档
+> **docs/handover-b1-9bz-A-2026-09-07.md**（含已排除项：vite 缓存、函数面缺失、管线坏、
+> 回调没跑——均勿重查）。本提交 = 交接快照，boot 链修复后另起正式提交。
+>
+
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >
 > 四步原子批：① machineryRelayout 三处 `setLayout(w.eg.InfiniteGrid.X, opts)` →

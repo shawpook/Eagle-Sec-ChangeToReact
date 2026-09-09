@@ -31,7 +31,7 @@
 
 import { getBodyScope, removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
-import { isInFolder } from './controllerFns';
+import { isInFolder } from './itemDomain';
 import { syncErrorCount } from '../store/toastState';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';

@@ -1197,3 +1197,12 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
         s.$root.currentFocus = "content";  };
   return run(...args);
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function openItemContextMenu(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    return itemMenuOpenItemContextMenu(getScope(), ...args);
+  }

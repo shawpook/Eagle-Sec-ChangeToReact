@@ -30,6 +30,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { detailZoom } from '../core/smoothZoomEngine';
 
 declare const IPCHelper: any;
 declare const remote: any;
@@ -1034,3 +1035,471 @@ export function takeoverMiscDomain(): void {
     s.$evalAsync();
   });
 }
+
+// ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
+// —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
+const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
+
+const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
+
+const electronLog: any = (window as any).electronLog || console;
+
+const __cf_ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+
+const systemPreferences: any = _req('@electron/remote')?.systemPreferences;
+
+const remote: any = _req('@electron/remote');
+
+const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
+  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+}, ms || 0);
+
+// —— link 级共享态（原 makeControllerFns 闭包声明）——
+var __lv_zoomInitTimeout: any;
+
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+};
+
+const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
+
+export function changeOrderBy(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (orderBy) {
+            if (s.currentFolder) {
+                s.setFolderOrder(s.currentFolder, orderBy);
+                try { electronLog && electronLog.info(`[app] Change folder order to “${s.currentFolder.name}(${s.currentFolder.id})” order by: ${orderBy}`); } catch (err) {};
+            }
+            else if (s.currentSmartFolder) {
+                s.setSmartFolderOrder(s.currentSmartFolder, orderBy);
+                try { electronLog && electronLog.info(`[app] Change smart-folder order to “${s.currentSmartFolder.name}(${s.currentSmartFolder.id})” order by: ${orderBy}`); } catch (err) {};
+            }
+            else {
+                if (orderBy) {
+                    s.orderBy = orderBy;
+                    syncBodyFromScope();
+                    s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
+                    localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
+                    s.sortRawData(s.orderBy);
+                    s.rebindRefresh();
+                    s.$evalAsync();
+                    try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
+                }
+            }
+            updateCurrentOrderAndIncrease();
+        }).apply(null, args);
+  }
+
+export function cleanLibraryPathPermissionError(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            s.libraryPathPermissionError = false;
+        }).apply(null, args);
+  }
+
+export function cleanLocalhostError(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            s.localhostError = false;
+        }).apply(null, args);
+  }
+
+export function contentFocus(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function($event) {
+            s.$root.currentFocus = "content";
+        }).apply(null, args);
+  }
+
+export function dblclickContentPanel(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (!s.isCropMode) {
+                s.leaveDetailMode();
+            }    
+        }).apply(null, args);
+  }
+
+export function escHandler(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function($event) {
+            if ($(".swal2-container").length > 0) return;
+            if ($(".select-panel.open:not(.pinned)").length > 0) {
+                $(".select-panel.open").removeClass("open");
+                return;
+            }
+            s.selectedFolder = undefined;
+            if (s.isSlideshowMode) {
+                s.isSlideshowMode = false;
+                __cf_ipcRenderer.send("leave-slideshow");
+                return;
+            }
+            if (!s.isDetailMode) {
+                if (document.activeElement?.tagName !== "INPUT") {
+                    s.cleanSelected($event);
+                }
+            } 
+            else {
+                if (s.isCropMode) {
+                    s.isCropMode = false;
+                    syncDetailFromScope();
+                }
+                else if (AnnotationPreview.isShow) {
+                	AnnotationPreview.hide();
+                }
+                else {
+                    s.leaveDetailMode();
+                }
+            }
+            if (s.isPreviewing) {
+                if (process.platform == 'darwin') {
+                    __cf_ipcRenderer.send('quicklook', s.selected[0]);
+                    s.isPreviewing = false;
+                }
+                return;
+            }
+        }).apply(null, args);
+  }
+
+export function leaveDetailMode(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+
+            s.isCropMode = false;
+            syncDetailFromScope();
+            s.usingGifPlayer = false;
+            syncDetailFromScope();
+            if (s.isDetailMode) {
+                
+                s.rememberScrollTops(s.current);
+
+                s.isDetailMode = false;
+                s.showDetailImage = false;
+                syncDetailFromScope();
+                s.smoothZoomDone = false;
+                syncDetailFromScope();
+                s.commentRect = undefined;
+                syncDetailFromScope();
+                // 記住上次播放位置
+                s.rememberVideoCurrentTime(s.current); s.current = undefined;
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                $timeout.cancel(__lv_zoomInitTimeout);
+
+                setTimeout(function() {
+                    if (s.isDetailMode) return;
+                    $(".content-panel.detail-mode").removeClass("inline-mode open");
+                    $(".smooth_zoom_preloader").scrollLeft(0);
+                }, 50);
+
+                s.isInlineMode = false;
+                s.fadeOutDetailMode();
+                detailZoom()?.cleanBitmapViewer();
+                detailZoom()?.clearPreloadData();
+                
+                if (s.isGifReady === true) {
+                    s.isGifReady = false;
+                    syncDetailFromScope();
+                    delete s.gifViewer.frames;
+                    s.gifViewer.frames = [];
+                    syncDetailFromScope();
+                    s.gifViewer.mousedownTime = 0;
+                    syncDetailFromScope();
+                    s.gifViewer.mousedownX = 0;
+                    syncDetailFromScope();
+                    s.gifViewer.mousedownY = 0;
+                    syncDetailFromScope();
+                    s.gifViewer.range = undefined;
+                    syncDetailFromScope();
+                    s.gifPlayer = undefined;
+                    syncDetailFromScope();
+                }
+
+                // b1-8：initMousetrap 为 bundle 闭包链（destoryMousetrap/buildMousetrap）——
+                // strangling 期 bundle 自管重绑定 / post-b1 bridgeWhenReady 等价；此处跳过不阻塞清理
+                try { initMousetrap(); } catch (err) { /* b1-8b 接装前可达性缺失，忽略 */ }
+                clearInterval(s.gifUpadteInterval);
+            }
+        }).apply(null, args);
+  }
+
+export function maximize(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            if (process.platform == 'darwin') {
+                var isMax = remote.systemPreferences.getUserDefault("AppleActionOnDoubleClick", "string") !== 'Minimize';
+                if (isMax) {
+                    if (!currentWindow.isMaximized()) {
+                        currentWindow.maximize();
+                        s.isMaximize = true;
+                        syncToolbarFromScope();
+                    } else {
+                        currentWindow.unmaximize();
+                        s.isMaximize = false;
+                        syncToolbarFromScope();
+                    }
+                } else {
+                    currentWindow.minimize();
+                }
+            }
+        }).apply(null, args);
+  }
+
+export function openErrorModal(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            s.$root.$broadcast("OPEN_ERROR", {
+                errorList: s.errorList
+            });
+        }).apply(null, args);
+  }
+
+export function toggleFolderVisible(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            s.isExpandFolder = !s.isExpandFolder;
+            syncSidebarFromScope();
+            localStorage.setItem("eagle.sidebar.folder.expand", s.isExpandFolder);
+            s.updateSidebarList();
+        }).apply(null, args);
+  }
+
+export function togglePaletteProcessing(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (s.paletteQueuePaused) {
+                s.resumePalette();
+            }
+            else {
+                s.pausePalette();
+            }
+        }).apply(null, args);
+  }
+
+export function toggleQuickAccessVisible(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            s.isExpandQuickAccess = !s.isExpandQuickAccess;
+            syncSidebarFromScope();
+            localStorage.setItem("eagle.sidebar.quickAccess.expand", s.isExpandQuickAccess);
+            s.updateSidebarList();
+        }).apply(null, args);
+  }
+
+export function toggleSmartFolderVisible(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            s.isExpandSmartFolder = !s.isExpandSmartFolder;
+            syncSidebarFromScope();
+            localStorage.setItem("eagle.sidebar.smartFolder.expand", s.isExpandSmartFolder);
+            s.updateSidebarList();
+        }).apply(null, args);
+  }
+
+export function undo(...args: any[]) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            s.$root.undo();
+            s.$root.closeAll();
+        }).apply(null, args);
+  }
+
+export function updateCurrentOrderAndIncrease () {
+        	var orderBy;
+            var sortIncrease;
+            if (getBodyScope().currentFolder) {
+                orderBy = getBodyScope().currentFolder.orderBy;
+                if (getBodyScope().currentFolder.orderBy) {
+                    sortIncrease = getBodyScope().currentFolder.sortIncrease;
+                }
+                else {
+                    sortIncrease = getBodyScope().sortIncrease;
+                }
+            }
+            else if (getBodyScope().currentSmartFolder) {
+                if (getBodyScope().currentSmartFolder.orderBy) {
+                    sortIncrease = getBodyScope().currentSmartFolder.sortIncrease;
+                }
+                else {
+                    sortIncrease = getBodyScope().sortIncrease;
+                }
+                orderBy = getBodyScope().currentSmartFolder.orderBy;
+            }
+            else {
+                orderBy = getBodyScope().orderBy;
+                sortIncrease = getBodyScope().sortIncrease;
+            }
+            getBodyScope().currentOrderBy = orderBy;
+            getBodyScope().currentSortIncrease = sortIncrease;
+        }
+
+export function updateSuggestions() {
+            console.time("updateSuggestions");
+            getBodyScope().searchIndex = -1;
+            syncToolbarFromScope();
+            var keyword = "";
+            if (getBodyScope().keyword) {
+                keyword = getBodyScope().keyword.toLowerCase();
+            }
+
+            getBodyScope().hsks = getBodyScope().historySearchKeywords.filter(function (word) {
+                if (!keyword || keyword == "") return true;
+                if (word) {
+                    return fuzzy_match(word, keyword).length > 0;
+                }
+                return false;
+            }).slice(0,8);
+            syncToolbarFromScope();
+            var suggestions = [];
+            var wordsIndex = {};
+            var dataset = [];
+            var currPageTags = [];
+            var allCount = $bodyScope.all.length;
+            getBodyScope().containTags.forEach(function (tag) {
+            	if (tag.imageCount && !tag.isNoTags) {
+	            	currPageTags.push({
+	            		word: tag.name.toLowerCase(),
+	            		weight: tag.imageCount,
+	            	})
+            	}
+            });
+
+            if (!keyword) {
+                // 推薦關鍵字，暫時移除，感覺多餘了
+            	// suggestions = currPageTags;
+            	// suggestions.forEach(function (suggestion) {
+	        	// 	wordsIndex[suggestion.word] = suggestion.weight;
+	        	// });
+
+	        	// // 去重复
+	            // var duplicatesMap = {};
+	            // suggestions = suggestions.filter(function (suggestion) {
+	            // 	if (!duplicatesMap[suggestion.word]) {
+	            // 		duplicatesMap[suggestion.word] = true;
+	            // 		return true;
+	            // 	}
+	            // 	return false;
+	            // });
+
+            	// suggestions = suggestions.sort(function(a, b) {
+	            //     if(a.weight > b.weight) return -1;
+	            //     if(a.weight < b.weight) return 1;
+	            //     return 0;
+	            // });
+
+	            // if (suggestions.length > 5) {
+	            //     suggestions.length = 5;
+	            // }
+            	getBodyScope().keywordSuggestions = suggestions;
+            	syncToolbarFromScope();
+                getBodyScope().keywordSuggestions = getBodyScope().keywordSuggestions.filter((suggestion) => {
+                    return getBodyScope().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
+                });
+                syncToolbarFromScope();
+            	console.timeEnd("updateSuggestions");
+            	return;
+            }
+
+            if (getBodyScope().globalKeywords && getBodyScope().globalKeywords.length) {
+            	dataset = currPageTags.concat(getBodyScope().globalKeywords);
+            }
+
+            getBodyScope().keyword_cn = chineseConvert.tw2cn(keyword);
+            getBodyScope().keyword_tw = chineseConvert.cn2tw(keyword);
+            getBodyScope().isKeywordTW = keyword === getBodyScope().keyword_tw;
+            getBodyScope().isKeywordCN = keyword === getBodyScope().keyword_cn;
+            getBodyScope().isEnglish = getBodyScope().isKeywordTW === getBodyScope().isKeywordCN;
+
+            if (keyword.length === 1 && getBodyScope().isContainAlphabet) {
+                suggestions = dataset.filter(function(suggestion) {
+                    return keyword.toLowerCase() === suggestion.word[0].toLowerCase();
+                });
+            }
+            else {
+                suggestions = dataset.filter(function(suggestion) {
+                    var __lv_idx = suggestion.word.toLowerCase().indexOf(keyword);
+                    if (getBodyScope().isEnglish) {
+                        return (__lv_idx > -1);
+                    }
+                    else if (getBodyScope().isKeywordTW) {
+                        return (__lv_idx > -1) && (suggestion.word != keyword) ||
+                        (suggestion.word.indexOf(getBodyScope().keyword_cn) > -1)
+                    }
+                    else if (getBodyScope().isKeywordCN) {
+                        return (__lv_idx > -1) && (suggestion.word != keyword) ||
+                        (suggestion.word.indexOf(getBodyScope().keyword_tw) > -1)
+                    }
+                });
+            }
+
+            suggestions.forEach(function (suggestion) {
+        		wordsIndex[suggestion.word] = suggestion.weight;
+        	});
+
+            suggestions = suggestions.sort(function(a, b) {
+                if(a.weight > b.weight) return -1;
+                if(a.weight < b.weight) return 1;
+                return 0;
+            });
+
+            // 去重复
+            var duplicatesMap = {};
+            suggestions = suggestions.filter(function (suggestion) {
+            	if (!duplicatesMap[suggestion.word]) {
+            		duplicatesMap[suggestion.word] = true;
+            		return true;
+            	}
+            	return false;
+            });
+
+            if (suggestions.length > 5) {
+                suggestions.length = 5;
+            }
+            
+            if (suggestions.length > 0) {
+                if (suggestions.length === 1 && suggestions[0].word == getBodyScope().keyword) {
+
+                }
+                else {
+                    // getBodyScope().showSuggestions = true;
+                }
+            }
+            else {
+                getBodyScope().showSuggestions = false;
+                syncToolbarFromScope();
+            }
+
+            getBodyScope().keywordSuggestions = suggestions;
+            syncToolbarFromScope();
+            console.timeEnd("updateSuggestions");
+        }

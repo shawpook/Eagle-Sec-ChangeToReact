@@ -6,7 +6,9 @@ import { useInspectorState } from '../../store/inspectorState';
 import { useAppState } from '../../store/appState';
 import { second2time } from '../../app/filters';
 import { t } from '../../global/eagleGlobals';
-import { callScope } from '../hooks';
+// b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
+import { cancelAllTasks } from '../../services/uploadService';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 11-pre a1：文件写入进度条 + 檔案添加進度條（index.html 88-110 逐字）。
@@ -88,7 +90,7 @@ export function UploadQueueProgressBar() {
         </div>
       )}
       {hasQueue && (
-        <div className="ic-btn cancel" onClick={callScope('cancelAllTasks')}>
+        <div className="ic-btn cancel" onClick={(e) => scopeApply(getBodyScope(), () => cancelAllTasks(e))}>
           <img src={`assets/images/${themePathOf(theme)}/icons/ic-modal-close.svg`} />
         </div>
       )}

@@ -68,6 +68,21 @@ const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
   try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
 }, ms || 0);
 
+/* b1-9bz-B：ToastAlerts 的「清空全部错误」此前只能经 callScope 字符串路由命中（条目在
+   install 体内匿名注册）。提升为具名导出（bz-A 落点同形态：install 注入的 getScope 等价
+   getBodyScope），表项改指针、组件侧改直 import + scopeApply，零行为变化。 */
+export function cleanAllError(...args: any[]) {
+  try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+  const s = getBodyScope();
+  if (!s) return;
+  return (function (event: any) {
+          event && event.stopPropagation();
+          s.$root.$broadcast("CLEAN_ALL_ERROR", {
+              errorList: s.errorList
+          });
+      }).apply(null, args);
+}
+
 /* 19 fns（逐字；fns/getScope 为闭包注入） */
 export function installBatchOpsFns(fns: any, getScope: any): void {
   fns["cancelEmptyTrash"] = function (...args) {
@@ -236,17 +251,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
     }).apply(null, args);
   };
 
-  fns["cleanAllError"] = function (...args) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (event) {
-            event && event.stopPropagation();
-            s.$root.$broadcast("CLEAN_ALL_ERROR", {
-                errorList: s.errorList
-            });
-        }).apply(null, args);
-  };
+  fns["cleanAllError"] = cleanAllError;
 
   fns["cleanSelected"] = function (...args) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

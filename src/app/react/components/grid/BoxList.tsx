@@ -1,7 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MasonryInfiniteGrid, JustifiedInfiniteGrid } from '@egjs/react-infinitegrid';
-import { callScope } from '../hooks';
+// b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
+import { onBoxMouseup, onBoxListDblClick } from '../../services/selectionService';
+import { openItemContextMenu } from '../../services/itemMenuService';
+import { openFileListContextMenu } from '../../services/miscMenuService';
 import {
   installBoxGrid,
   subscribeEngine,
@@ -69,29 +72,31 @@ export function BoxList() {
         const id = boxEl?.getAttribute('data-box-id');
         return id && s?.itemMappings ? s.itemMappings[id] : null;
       };
-      const callFn = (fn: string, ...args: any[]) => {
-        (callScope(fn, ...args) as (e?: any) => any)(undefined);
+      // b1-9bz-B：原 callScope 字符串路由 → 落点导出直调（表项本就是这些导出的指针，
+      // 同对象调用，零行为变化）；scopeApply 包裹保留原 ng-click digest 语义。
+      const callFn = (fn: (...a: any[]) => any, ...args: any[]) => {
+        scopeApply(getBodyScope(), () => fn(...args));
       };
 
       const onMouseUp = (e: MouseEvent) => {
         const boxEl = boxFrom(e.target);
         if (!boxEl) return;
-        callFn('onBoxMouseup', e, itemOf(boxEl));
+        callFn(onBoxMouseup, e, itemOf(boxEl));
       };
       const onDblClick = (e: MouseEvent) => {
         const boxEl = boxFrom(e.target);
         if (!boxEl) return;
         const isName = !!(e.target as HTMLElement | null)?.classList?.contains('name');
-        callFn('onBoxListDblClick', e, itemOf(boxEl), isName, isName ? (e.target as HTMLElement) : null);
+        callFn(onBoxListDblClick, e, itemOf(boxEl), isName, isName ? (e.target as HTMLElement) : null);
       };
       const onContextMenu = (e: MouseEvent) => {
         const boxEl = boxFrom(e.target);
         if (boxEl) {
           e.stopPropagation();
-          callFn('openItemContextMenu', e, itemOf(boxEl));
+          callFn(openItemContextMenu, e, itemOf(boxEl));
           return;
         }
-        callFn('openFileListContextMenu', e);
+        callFn(openFileListContextMenu, e);
       };
 
       let wheelLocked = false;

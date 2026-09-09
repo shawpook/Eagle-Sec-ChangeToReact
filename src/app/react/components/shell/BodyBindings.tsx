@@ -4,7 +4,9 @@ import { useBodyState } from '../../store/bodyState';
 import { useListState } from '../../store/listState';
 import { useSidebarState } from '../../store/sidebarState';
 import { useAppState } from '../../store/appState';
-import { callScope } from '../hooks';
+// b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
+import { contentFocus, dblclickContentPanel } from '../../core/miscDomain';
+import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 
@@ -141,7 +143,7 @@ export function AppMenuButton() {
   }, []);
   if (!host || !isLoading) return null;
   return createPortal(
-    <div className="icon-btn application-menu-btn fixed" style={{ position: 'absolute', left: 12, top: 12 }} onClick={(e) => callScope('openApplicationContextMenu')(e)}>
+    <div className="icon-btn application-menu-btn fixed" style={{ position: 'absolute', left: 12, top: 12 }} onClick={(e) => scopeApply(getBodyScope(), () => openApplicationContextMenu(e))}>
       <img src={`assets/images/${theme === 'light' || theme === 'lightgray' ? 'light' : 'dark'}/icons/ic-app-menu.svg`} />
     </div>,
     host
@@ -223,8 +225,8 @@ export function DetailWrapper() {
       id="eagle-detail-wrapper"
       className="content-panel detail-mode"
       style={{ display: 'none' }}
-      onDoubleClick={(e) => callScope('dblclickContentPanel')(e)}
-      onMouseDown={(e) => callScope('contentFocus')(e)}
+      onDoubleClick={(e) => scopeApply(getBodyScope(), () => dblclickContentPanel(e))}
+      onMouseDown={(e) => scopeApply(getBodyScope(), () => contentFocus(e))}
     >
       {/* 詳情模式工具列/懸浮層（React portal 內容為 Fragment） */}
       <div id="eagle-detail-host" />

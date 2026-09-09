@@ -3,7 +3,10 @@ import { createPortal } from 'react-dom';
 import { useToastState } from '../../store/toastState';
 import { useAppState } from '../../store/appState';
 import { t } from '../../global/eagleGlobals';
-import { callScope } from '../hooks';
+// b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
+import { cleanLibraryPathPermissionError, cleanLocalhostError, openErrorModal } from '../../core/miscDomain';
+import { cleanAllError } from '../../services/batchOpsService';
+import { getBodyScope, scopeApply } from '../../core/appCore';
 
 /**
  * 11-pre a2：toast-alert 三块（index.html 96-121 逐字——失败重试提示 / 本地服务器无法
@@ -36,7 +39,7 @@ export function ToastAlerts() {
   return createPortal(
     <>
       {errorCount > 0 && (
-        <div className="toast-alert" onClick={callScope('openErrorModal')}>
+        <div className="toast-alert" onClick={(e) => scopeApply(getBodyScope(), () => openErrorModal(e))}>
           <div className="icon">
             <img src={`assets/images/${themePath}/icons/ic-toast-error.svg`} />
           </div>
@@ -49,7 +52,7 @@ export function ToastAlerts() {
               {t('notify.errorToast.errorMsg2')}
             </span>
           </div>
-          <div className="ic-btn clean-btn" onClick={callScope('cleanAllError')}>
+          <div className="ic-btn clean-btn" onClick={(e) => scopeApply(getBodyScope(), () => cleanAllError(e))}>
             <img src={`assets/images/${themePath}/icons/ic-modal-close.svg`} />
           </div>
         </div>
@@ -61,7 +64,7 @@ export function ToastAlerts() {
             <img src={`assets/images/${themePath}/icons/ic-toast-error.svg`} />
           </div>
           <div className="message" dangerouslySetInnerHTML={{ __html: t('notify.localhostError.msg') }} />
-          <div className="ic-btn clean-btn" onClick={callScope('cleanLocalhostError')}>
+          <div className="ic-btn clean-btn" onClick={(e) => scopeApply(getBodyScope(), () => cleanLocalhostError(e))}>
             <img src={`assets/images/${themePath}/icons/ic-modal-close.svg`} />
           </div>
         </div>
@@ -76,7 +79,7 @@ export function ToastAlerts() {
             className="message"
             dangerouslySetInnerHTML={{ __html: t('notify.libraryPermissionError.msg') }}
           />
-          <div className="ic-btn clean-btn" onClick={callScope('cleanLibraryPathPermissionError')}>
+          <div className="ic-btn clean-btn" onClick={(e) => scopeApply(getBodyScope(), () => cleanLibraryPathPermissionError(e))}>
             <img src={`assets/images/${themePath}/icons/ic-modal-close.svg`} />
           </div>
         </div>

@@ -42,6 +42,46 @@ const $filter: any = (name: string) => {
   return inst ? inst(name) : undefined;
 };
 
+/* b1-9bz-B 收口：本文件 7 处迁移体/shell 头部统一带 `try { initLinkVars(); }` 序言，但
+   install 体内此前从未定义 initLinkVars（运行期 ReferenceError 被空 catch 吞掉，无症状）。
+   本落点无 __lv_ link 态随迁，补空实现使序言诚实（同 lockService/itemMenuService 处理）。 */
+let lvInited = false;
+const initLinkVars = () => {
+  if (lvInited) return;
+  lvInited = true;
+};
+
+/* b1-9bz-B：这两个条目此前只能在 install 体内以匿名函数注册，组件侧（BodyBindings 的
+   应用菜单按钮 / BoxList 的 callFn 动态派发）只能经 callScope 字符串路由命中。提升为具名
+   导出（bz-A 落点同形态：install 注入的 getScope 等价 getBodyScope），表项改指针，
+   组件侧改直 import + scopeApply，零行为变化。 */
+export function openFileListContextMenu(...args: any[]) {
+  const s = getBodyScope();
+  if (!s) return;
+  return (function (event: any) {
+          event.stopPropagation();
+          s.openOrderMenu();
+  }).apply(null, args);
+}
+
+export function openApplicationContextMenu(...args: any[]) {
+  try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+  const s = getBodyScope();
+  if (!s) return;
+  return (function () {
+          var applicationMenu = Menu.getApplicationMenu();
+          // b1-9ak：冒烟捕获分支——__EAGLE_MENU_SMOKE 时序列化菜单模板通报 main
+          // （原生 popup 无法被 CDP 观察且会阻塞会话；dragSmokeMode 同款先例）。
+          // 旗标由 preload 直通（shims 会 stub window.process/window.require，env 不可达）
+          if ((window as any).__EAGLE_MENU_SMOKE === true) {
+              // 模板由 main 侧原生序列化（remote 经代理读 items 实测为空）
+              ipcRenderer.send('smoke:menu-popup', { site: 'application-menu' });
+              return;
+          }
+          applicationMenu.popup(currentWindow);
+      }).apply(null, args);
+}
+
 /* 10 builder（逐字；fns/getScope 为闭包注入） */
 export function installMiscMenuFns(fns: any, getScope: any): void {
   fns["openTrashContextMenu"] = function (...args) {
@@ -80,14 +120,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
     }).apply(null, args);
   };
 
-  fns["openFileListContextMenu"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (event: any) {
-            event.stopPropagation();
-            s.openOrderMenu();
-    }).apply(null, args);
-  };
+  fns["openFileListContextMenu"] = openFileListContextMenu;
 
   fns["openOrderMenu"] = function (...args) {
     const s = getScope();
@@ -99,23 +132,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
     }).apply(null, args);
   };
 
-  fns["openApplicationContextMenu"] = function (...args) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function() {
-            var applicationMenu = Menu.getApplicationMenu();
-            // b1-9ak：冒烟捕获分支——__EAGLE_MENU_SMOKE 时序列化菜单模板通报 main
-            // （原生 popup 无法被 CDP 观察且会阻塞会话；dragSmokeMode 同款先例）。
-            // 旗标由 preload 直通（shims 会 stub window.process/window.require，env 不可达）
-            if ((window as any).__EAGLE_MENU_SMOKE === true) {
-                // 模板由 main 侧原生序列化（remote 经代理读 items 实测为空）
-                ipcRenderer.send('smoke:menu-popup', { site: 'application-menu' });
-                return;
-            }
-            applicationMenu.popup(currentWindow);
-        }).apply(null, args);
-  };
+  fns["openApplicationContextMenu"] = openApplicationContextMenu;
 
   fns["openFilterAddContextMenu"] = function (...args) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

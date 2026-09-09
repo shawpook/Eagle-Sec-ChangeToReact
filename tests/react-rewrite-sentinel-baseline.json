@@ -1,5 +1,5 @@
 {
-  "generated": "b1-9bz-A",
+  "generated": "b1-9bz-B",
   "counts": {
     "evalAsync": 385,
     "apply": 16,
@@ -7,9 +7,9 @@
     "watchCollection": 8,
     "broadcast": 122,
     "on": 73,
-    "scopeApply": 184,
-    "callScope": 27,
-    "getBodyScope": 708,
+    "scopeApply": 199,
+    "callScope": 11,
+    "getBodyScope": 726,
     "jQuery": 78,
     "rootAccess": 464,
     "coreState": 31,

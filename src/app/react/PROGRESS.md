@@ -1537,6 +1537,40 @@
 > **套件 55/55 ALL GREEN**（交接态 35/55 挂 → 全绿）。bz-A 收官，下一批 bz-B（callScope
 > /scopeFace 双面直调化）。
 >
+>
+> **【b1-9bz-B-1：callScope 消费面直调化（20 点）+ hooks 派发器摘除（2026-09-09）】**
+>
+> **可证零行为变化的前提**：bz-A 后表项已是落点导出**指针**（`fns["NAME"] = 落点导出`），
+> 故 `callScope('NAME')` 命中的对象与直调该导出是**同一函数**——本笔不需要逐函数比对
+> （43 双键单源化留到后续笔，那时才涉及 machinery/c3 二选一）。
+>
+> **20 点**：BodyBindings 3（openApplicationContextMenu / dblclickContentPanel /
+> contentFocus）、LockScreens 7（focusUnlockPassword / unlockPasswordKeyup /
+> unlockFolderWithTouchID / focusAppUnlockPassword / unlockAppPasswordKeydown /
+> unlockAppPasswordKeyup / unlockWithTouchID）、ProgressBars 1（cancelAllTasks）、
+> ToastAlerts 4（openErrorModal / cleanAllError / cleanLocalhostError /
+> cleanLibraryPathPermissionError）、BoxList callFn 4 名（onBoxMouseup /
+> onBoxListDblClick / openItemContextMenu / openFileListContextMenu）+ 派发器本身。
+> 统一形态 `scopeApply(getBodyScope(), () => fn(e))`——保留原 callScope 内部的
+> ng-click $apply 语义，只摘掉字符串路由。
+>
+> **三处条目提升为具名导出**（此前只在 install 体内匿名注册，消费侧只能字符串派发）：
+> miscMenuService 的 openFileListContextMenu / openApplicationContextMenu、batchOpsService
+> 的 cleanAllError；install 体改 `fns["X"] = X;` 指针。顺带补 miscMenuService 的
+> `initLinkVars` 空实现（7 处序言此前是静默 ReferenceError，与 bz-A 同款陷阱）。
+> **unlockWithTouchID 保留 scope 面回退**：表与 src 均无供给，原路径本就是
+> `scope[fn]`（命中旧 bundle 或空转），不得擅自删调用点改语义。
+>
+> **hooks.ts**：`callScope` 导出摘除（零消费），仅剩测试契约 `__eagleCoreFns`
+> （stage1c3 / probe-filter-toggle 的「表在位」路由证明随后续笔改写为服务面）。
+>
+> **哨兵基线吸收**：callScope 27→11（panels8e 本地 10 + 定义 1 留待下一笔）；
+> scopeApply 184→199、getBodyScope 708→726 —— 直调化的机械产物（原 callScope 内部 1 处
+> 摊到 15 个站点 + 3 个新导出），最终批（bz-C/D 摘 scopeShim）应大降为 DECREASED。
+>
+> **门禁**：esbuild 语法检 8 文件 0 错；react-stage-smoke 过；哨兵 SENTINEL_OK；
+> **套件 55/55 ALL GREEN**。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

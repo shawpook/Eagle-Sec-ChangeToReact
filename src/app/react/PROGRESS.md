@@ -1603,6 +1603,29 @@
 > ALL GREEN**。**bz-B 消费面剩余**：panels8e 本地 10 点（preferences/controller.ts 另一套
 > scope，非 body scope，独立成笔）。
 >
+>
+> **【b1-9bz-B-3：panels8e 本地 callScope 10 点直调化 —— callScope 全树归零（2026-09-09）】**
+>
+> **第三套、也是最后一套字符串派发**：panels8e 的本地 `callScope(fn, ...args)` 走的是
+> **preferences 的 controllerScope**（不是 body scope）：
+> `applyController((s) => s[fn] && s[fn](...args))`。而 `applyController` 传入的 `s` 恒等于
+> `controllerScope`，故 `s[fn](...args)` 与 `controllerScope.fn(...args)` **同对象、同 this**
+> （方法体大量用 `this.preferences`），notify 语义不变 → 零行为变化。
+>
+> **10 点 / 8 方法**：openPasswordModal(new/change) / lockNow / toggleTouchIDClick /
+> openAutoImport / chooseAutoImportPath / revealAutoImportPath / copyApiToken(×2) /
+> regenerateApiToken → `applyController(() => controllerScope.X(...))`；本地 `callScope`
+> 定义删除。
+>
+> **哨兵**：**callScope 11 → 0**（DECREASED，全树零字符串派发），其余项 flat。
+>
+> **门禁**：esbuild 语法检 0 错；哨兵 SENTINEL_OK；**套件 55/55 ALL GREEN**
+> （首轮 8e2 的 `pf8e2-password-modal-focus` 为负载抖动，单跑过、复跑全绿）。
+>
+> **bz-B 消费面到此收口**（hooks 版 16 + DetailToolbar 34 + ListRegion 6 + panels8e 10
+> = 66 点）。剩余为 scopeFace ~250 点 `s.xxx()` 直调化 + 43 双键单源化 +
+> shimFnsBridge/main.tsx attach 摘除 + stage1c3/probe-filter-toggle 契约改写。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

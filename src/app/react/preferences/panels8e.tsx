@@ -6,7 +6,7 @@ import {
   ShortcutInput,
   PanelSnap,
 } from './panels';
-import { applyController } from './controller';
+import { applyController, controllerScope } from './controller';
 
 /**
  * 阶段8e：偏好窗口最后五个面板——通知（notification）/截图（screencapture）/
@@ -46,9 +46,9 @@ function themeDir(snap: PanelSnap): string {
   return themePathFor(themeAttrCss(snap));
 }
 
-function callScope(fn: string, ...args: any[]) {
-  applyController((s: any) => s[fn] && s[fn](...args));
-}
+/* b1-9bz-B：本地 callScope 字符串派发退役——8 个方法改为 controllerScope 直调。
+   applyController 传入的 s 恒等于 controllerScope，故 `s[fn](...args)` 与
+   `controllerScope.fn(...args)` 同对象同 this，notify 语义不变 → 零行为变化。 */
 
 /** notification 面板（preferences.html 78-169 逐字）。 */
 export function NotificationPanelContent(props: { snap: PanelSnap }) {
@@ -467,7 +467,7 @@ export function PrivacyPanelContent(props: { snap: PanelSnap }) {
             <NgToggle
               value={privacy.enable}
               onChange={(v) => setPrivacy('enable', v)}
-              onClick={(e) => callScope('openPasswordModal', e, 'new')}
+              onClick={(e) => applyController(() => controllerScope.openPasswordModal(e, 'new'))}
             />
           </div>
           <div className="block-hint">
@@ -476,7 +476,7 @@ export function PrivacyPanelContent(props: { snap: PanelSnap }) {
           {privacy.enable === 'true' && (
             <>
               <div className="separator"></div>
-              <div className="list-item" onClick={(e) => callScope('openPasswordModal', e, 'change')}>
+              <div className="list-item" onClick={(e) => applyController(() => controllerScope.openPasswordModal(e, 'change'))}>
                 <img src={`assets/images/${dir}/icons/preferences/ic-edit.svg`} width={20} height={20} />
                 {pfT('preferencesWindow.privacy.change')}
                 <div className="right">
@@ -484,7 +484,7 @@ export function PrivacyPanelContent(props: { snap: PanelSnap }) {
                 </div>
               </div>
               <div className="separator"></div>
-              <div className="list-item" onClick={(e) => callScope('lockNow', e)}>
+              <div className="list-item" onClick={(e) => applyController(() => controllerScope.lockNow(e))}>
                 <img src={`assets/images/${dir}/icons/preferences/ic-lock.svg`} width={20} height={20} />
                 {pfT('preferencesWindow.privacy.lock')}
                 <div className="right">
@@ -495,7 +495,7 @@ export function PrivacyPanelContent(props: { snap: PanelSnap }) {
               {touchIdVisible && (
                 <>
                   <div className="separator"></div>
-                  <div className="list-item" onClick={(e) => callScope('toggleTouchIDClick', e)}>
+                  <div className="list-item" onClick={(e) => applyController(() => controllerScope.toggleTouchIDClick(e))}>
                     <img src={`assets/images/${dir}/icons/preferences/ic-touchid.svg`} width={20} height={20} />
                     {pfT('preferencesWindow.privacy.touchid')}
                     <div className="right">
@@ -546,7 +546,7 @@ export function AutoImportPanelContent(props: { snap: PanelSnap }) {
                   s.preferences.autoImport.enable = v;
                 })
               }
-              onClick={(e) => callScope('openAutoImport', e)}
+              onClick={(e) => applyController(() => controllerScope.openAutoImport(e))}
             />
           </div>
           <div className="block-hint">
@@ -555,7 +555,7 @@ export function AutoImportPanelContent(props: { snap: PanelSnap }) {
           {autoImport.enable === 'true' && (
             <>
               <div className="separator"></div>
-              <div className="list-item" onClick={(e) => callScope('chooseAutoImportPath', e)}>
+              <div className="list-item" onClick={(e) => applyController(() => controllerScope.chooseAutoImportPath(e))}>
                 <img src={`assets/images/${dir}/icons/preferences/ic-watch-folder.svg`} width={20} height={20} />
                 {pfT('preferencesWindow.autoImport.chooseBtn')}
                 <div
@@ -569,7 +569,7 @@ export function AutoImportPanelContent(props: { snap: PanelSnap }) {
                 </div>
               </div>
               <div className="separator"></div>
-              <div className="list-item" onClick={(e) => callScope('revealAutoImportPath', e)}>
+              <div className="list-item" onClick={(e) => applyController(() => controllerScope.revealAutoImportPath(e))}>
                 <img src={`assets/images/${dir}/icons/preferences/ic-folder.svg`} width={20} height={20} />
                 {pfT('preferencesWindow.autoImport.revealBtn')}
                 <div className="right">
@@ -599,11 +599,11 @@ export function DeveloperPanelContent(props: { snap: PanelSnap }) {
         <div className="block-content api-token-container">
           <div className="block-title">{pfT('preferencesWindow.developer.apiToken')}</div>
           <div className="api-token-block">
-            <div className="api-token" onClick={() => callScope('copyApiToken')}>
+            <div className="api-token" onClick={() => applyController(() => controllerScope.copyApiToken())}>
               <div className="value">{apiToken}</div>
               <div
                 className="copy-btn"
-                onClick={() => callScope('copyApiToken')}
+                onClick={() => applyController(() => controllerScope.copyApiToken())}
                 tippy=""
                 tippy-placement="top"
                 tippy-content={pfT('appmenu.edit>copy')}
@@ -611,7 +611,7 @@ export function DeveloperPanelContent(props: { snap: PanelSnap }) {
                 <img src={`assets/images/${dir}/icons/preferences/ic-copy.svg`} />
               </div>
             </div>
-            <div className="button button-grey button-xs" onClick={(e) => callScope('regenerateApiToken', e)}>
+            <div className="button button-grey button-xs" onClick={(e) => applyController(() => controllerScope.regenerateApiToken(e))}>
               {pfT('preferencesWindow.developer.regenerate')}
             </div>
           </div>

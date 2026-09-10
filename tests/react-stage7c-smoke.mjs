@@ -206,7 +206,7 @@ try {
 
   // ── notification modal ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$root.$broadcast('OPEN_NOTIFICATION'); return true; })()`,
+    expression: `(() => { window.__eagleBus.emit('OPEN_NOTIFICATION'); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(

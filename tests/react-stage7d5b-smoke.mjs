@@ -156,7 +156,7 @@ try {
   // ── REFRESH_PLUGIN_CENTER 不崩 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('REFRESH_PLUGIN_CENTER');
+      window.__eagleBus.emit('REFRESH_PLUGIN_CENTER');
       return true;
     })()`,
     returnByValue: true,

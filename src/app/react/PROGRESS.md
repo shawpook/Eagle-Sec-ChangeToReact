@@ -1726,6 +1726,20 @@
 > **39 个全部需要逐个体检**。建议顺序：① B 档 5 个短体（9–17 行，体检成本最低）；
 > ② C 档 21 个先厘清 install 家族与 shimFnsBridge 的耦合；③ B 档 4 个长体最后人工比对。
 >
+> **B 档 5 个短体体检结果**（工具 `tests-tmp/bz-b-dual-diff.py`，并列输出两份体）：
+>
+> | 名字 | 判定 | 差异点 |
+> |---|---|---|
+> | `toggleSlideshow` | **等价** | c3 直调 `machineryEnter/LeaveSlideshowMode(s)`；machinery 走 `s.enterSlideshowMode()`，而该挂载就是 machinery 版 |
+> | `focusAppUnlockPassword` | **等价** | 仅 jQuery 取法不同（全局 `$` vs `w.$`），逻辑逐行一致 |
+> | `changeSidebarIndex` | **等价** | 仅 `$timeout` 取法（全局 vs `getTimeout()`）与局部变量名（`__lv_idx` / `idx`）不同 |
+> | `undo` | **不等价（收敛侧 = machinery）** | c3 裸调 `s.$root.undo()` / `s.$root.closeAll()`；machinery 带 `typeof` 守卫，且 `closeAll` 缺席时兜底 `cgNotifyServiceCloseAll()` |
+> | `toggleSelectSmartFolder` | **待再查一层** | 3 行主体一致（`expand/children/isExpand`），但内层调用不同：`toggleCurrentLevelSmartFolders` vs `machineryToggleCurrentLevelSmartFoldersInner` |
+>
+> 5 个里 3 等价 / 1 不等价 / 1 需下钻 —— **证实双键只能逐个判断，不可批量**。等价对的收敛
+> 动作统一为：表项改为指向 machinery 版（表项签名不传 s，需保留薄转发体），或删 c3 体并让
+> 表项指向 machinery 的具名导出。
+>
 > 在此之前 **shimFnsBridge / `__eagleCoreFns` 摘除不具备条件**：EXCLUDE 白名单 7 名的调用
 > 仍走 scope 面，bundle 缺席时需要 fns 表补缺口；且 `stage1c3` 契约抽查的 41 个名字里含
 > `updateSidebarList` / `zoomFit` / `undo` / `smartZoom` / `zoomIn` 等双键。

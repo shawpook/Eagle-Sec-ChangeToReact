@@ -23,7 +23,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
-import { machineryAddToDuplicateMapping, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRelayout, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
+import { getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 declare const IPCHelper: any;
@@ -48,7 +48,7 @@ function ensureMuteRebind(s: any): any {
   const w = window as any;
   if (!domainMuteRebind && w.throttle) {
     domainMuteRebind = w.throttle(function () {
-      s.rebindRefresh(true);
+      machineryRebindRefresh(s, true);
     }, 3000, true);
   }
   return domainMuteRebind;
@@ -66,7 +66,7 @@ function domainMuteCalcuteImageBinding(s: any, params: any, callback: any): void
   }
   clearTimeout(domainMuteCalcuteImageBindingTimeout);
   domainMuteCalcuteImageBindingTimeout = setTimeout(function () {
-    s.calculateImageBinding(params, callback);
+    machineryCalculateImageBinding(s, params, callback);
     domainMuteCalcuteImageBindingTimeout = undefined;
   }, params.timeout || domainMuteCalcuteImageBindingTimeoutDuration);
 }
@@ -142,7 +142,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
     if (image.noPreview !== generated.noPreview) {
       image.noPreview = generated.noPreview;
       if (image.noPreview) {
-        s.rebindRefresh();
+        machineryRebindRefresh(s);
       }
     }
 
@@ -296,9 +296,9 @@ export function takeoverItemDomain(): void {
       const needUpdateView = key <= 1;
       s.startCursor = 0;
       machineryPrependImages(s, [newImage], needUpdateView);
-      s.calculateImageBinding({ ignoreSort: false }, function () {
+      machineryCalculateImageBinding(s, { ignoreSort: false }, function () {
         ensureMuteRebind(s) && ensureMuteRebind(s)();
-        s.updateSelection();
+        machineryUpdateSelection(s);
       });
     }
     s.$evalAsync();
@@ -323,8 +323,8 @@ export function takeoverItemDomain(): void {
     if (w.ig && w.ig.remove) w.ig.remove($("#box-" + id)[0]);
 
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
-      s.rebindRefresh(true);
-      s.updateSelection();
+      machineryRebindRefresh(s, true);
+      machineryUpdateSelection(s);
       s.$evalAsync();
     });
   });
@@ -409,11 +409,11 @@ export function takeoverItemDomain(): void {
       delete img.processingPalette;
     }
 
-    s.updateSelection();
+    machineryUpdateSelection(s);
 
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
-      s.rebindRefresh(true);
-      s.updateSelection();
+      machineryRebindRefresh(s, true);
+      machineryUpdateSelection(s);
       s.$evalAsync();
     });
     void hashID;
@@ -542,7 +542,7 @@ export function takeoverItemDomain(): void {
 
     // 仅更新包含此图片的列表
     if (s.finishQueue.length === s.uploadQueue.length) {
-      s.calculateImageBinding({}, function () {
+      machineryCalculateImageBinding(s, {}, function () {
         s.$evalAsync();
       });
     }
@@ -629,9 +629,9 @@ export function takeoverItemDomain(): void {
   ipc.on('calculateImageBinding', function () {
     const s = sNow();
     if (!s) return;
-    s.calculateImageBinding({}, function () {
+    machineryCalculateImageBinding(s, {}, function () {
       ensureMuteRebind(s) && ensureMuteRebind(s)();
-      s.updateSelection();
+      machineryUpdateSelection(s);
     });
     s.$evalAsync();
   });
@@ -646,8 +646,8 @@ export function takeoverItemDomain(): void {
 
     machineryUpdateSidebarList(s);
 
-    s.calculateImageBinding({ ignoreSort: true }, function () {
-      s.rebindRefresh();
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machineryRebindRefresh(s);
       s.$evalAsync();
       machinerySaveFolder(s);
     });
@@ -769,7 +769,7 @@ export function takeoverItemDomain(): void {
           }
         }
 
-        s.calculateImageBinding({}, function () {
+        machineryCalculateImageBinding(s, {}, function () {
           // NOTE: 图片添加完成后，如果添加的图片不是使用者正在查看的文件夹，不需要刷新画面
           if (s.currentFolder) {
             try {
@@ -863,7 +863,7 @@ const $filter: any = (name: string) => {
   if (s && s.$root && s.$root.$filter) return s.$root.$filter(name);
   // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（Angular 在世走 injector，
   // 缺席时为 EagleApp.filter 逐字移植的等价表），否则 `$filter('i18n')(…)` 首行即抛。
-  const inst: any = machineryGetFilter();
+  const inst: any = getFilter();
   return inst ? inst(name) : undefined;
 };
 

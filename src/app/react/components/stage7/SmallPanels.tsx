@@ -14,6 +14,7 @@ import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
 import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
+import { machineryRebindRefresh } from '../../core/dataMachinery';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -665,7 +666,7 @@ export function FolderPasswordModal() {
         folder.passwordTips = passwordTips;
         updateSidebarList();
         calculateImageBinding({ ignoreSort: true }, () => {
-          s.rebindRefresh();
+          machineryRebindRefresh(s);
         });
         saveFolder();
         close();
@@ -681,7 +682,7 @@ export function FolderPasswordModal() {
           folder.isUnlock = false;
           folder.passwordTips = passwordTips;
           calculateImageBinding({ ignoreSort: true }, () => {
-            s.rebindRefresh();
+            machineryRebindRefresh(s);
           });
           saveFolder();
           close();
@@ -700,7 +701,7 @@ export function FolderPasswordModal() {
         delete folder.passwordTips;
         updateSidebarList();
         calculateImageBinding({ ignoreSort: true }, () => {
-          s.rebindRefresh();
+          machineryRebindRefresh(s);
         });
         saveFolder();
         close();

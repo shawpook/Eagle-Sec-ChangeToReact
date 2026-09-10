@@ -1,4 +1,5 @@
 import { getBodyScope } from '../core/appCore';
+import { machineryCalculateImageBinding } from '../core/dataMachinery';
 /**
  * b1-9bb：网格索引绑定服务 —— calculateImageBinding 热点收编。
  *
@@ -11,5 +12,5 @@ import { getBodyScope } from '../core/appCore';
 
 export function calculateImageBinding(params?: any, callback?: () => void): void {
   const s = getBodyScope();
-  if (s && typeof s.calculateImageBinding === 'function') s.calculateImageBinding(params, callback);
+  if (s && typeof s.calculateImageBinding === 'function') machineryCalculateImageBinding(s, params, callback);
 }

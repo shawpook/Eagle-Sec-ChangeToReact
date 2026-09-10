@@ -977,7 +977,7 @@ export function machineryRebindRefreshLazy(s: any): void {
   const $timeout = getTimeout();
   $timeout.cancel(rebindRefreshLazyTimeout);
   rebindRefreshLazyTimeout = $timeout(function () {
-    s.rebindRefresh();
+    machineryRebindRefresh(s);
   }, 1000);
 }
 
@@ -1158,9 +1158,9 @@ export function machineryReload(s: any): any {
     s.loadMoreDisable = false;
     s.lastImageHeight = s.imageSize.height;
     s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
-    s.rebindRefresh();
+    machineryRebindRefresh(s);
     machineryRelayout(s);
-    s.updateSelection();
+    machineryUpdateSelection(s);
     machineryCalculateFilterCounts(s);
     machineryUpdateSubFolderWidth(s);
     w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
@@ -4618,11 +4618,11 @@ export function machineryRemoveSelected(s: any, event: any): void {
               syncDetailFromScope();
               syncInspectorFromScope();
             }
-            s.calculateImageBinding({ ignoreSort: true }, function () {
+            machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
               if (
                 s.viewMode !== 'random'
               ) {
-                s.rebindRefresh();
+                machineryRebindRefresh(s);
               }
               w.ScrollbarSaver.restoreScrollPosition();
             });
@@ -4684,14 +4684,14 @@ export function machineryRemoveSelected(s: any, event: any): void {
           s.lastSelectedIndex = machineryCurrentIndex(s) - 1;
           machineryAutoScroll(s);
 
-          s.calculateImageBinding({ ignoreSort: true }, function () {
+          machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
             if (
               s.viewMode !== 'random' ||
               (s.currentFolder && s.currentFolder.orderBy !== "RANDOM")
             ) {
-              s.rebindRefresh(true);
+              machineryRebindRefresh(s, true);
             }
-            s.updateSelection();
+            machineryUpdateSelection(s);
             if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
             else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
           });
@@ -6439,7 +6439,7 @@ export function machineryFilterContent(s: any, type?: any): void {
   if (!s.isItemBindCalculated) return;
   // 重新计算画面图片列表
   s.shuffle = [];
-  s.rebindRefresh(undefined, s.contentFilterCache);
+  machineryRebindRefresh(s, undefined, s.contentFilterCache);
   s.$evalAsync();
   w.$("#box-container").scrollTop(0);
   void type;
@@ -6752,7 +6752,7 @@ export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
     w.UrlStateService.setState({ view: 'alltags', folder: null, smartfolder: null, tag: null, color: null });
   }
 
-  s.rebindRefresh();
+  machineryRebindRefresh(s);
   w.analytics.screenView('AllTags');
   $timeout(() => {
     s.TagManager.renderTagsResult();
@@ -7633,9 +7633,9 @@ export function machineryRemovePermanently(s: any): void {
   s.$root.$broadcast("gl:removeItems", itemElements);
   s.selected = [];
   syncInspectorFromScope();
-  s.calculateImageBinding({ ignoreSort: true }, function () {
-    s.rebindRefresh(true);
-    s.updateSelection();
+  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+    machineryRebindRefresh(s, true);
+    machineryUpdateSelection(s);
   });
 }
 
@@ -7897,7 +7897,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
     }
   }
   else {
-    s.rebindRefresh();
+    machineryRebindRefresh(s);
   }
 
   // 播放删除音效
@@ -7915,7 +7915,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
 
   // 移除记录
   delete s.folderMappings[folder.id];
-  s.calculateImageBinding({ ignoreSort: true }, function () {
+  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
     s.$evalAsync();
     machinerySaveFolderDebounce(s);
     if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
@@ -7946,7 +7946,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
         delete img.isDeleted;
       }
 
-      s.calculateImageBinding({ ignoreSort: true }, function () {
+      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
         openFolder(s.folderMappings[folder.id]);
         w.electronLog && w.electronLog.info(`[app] Resotre deleted folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`);
       });
@@ -8106,8 +8106,8 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    s.calculateImageBinding({ ignoreSort: true }, function () {
-      s.rebindRefresh();
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machineryRebindRefresh(s);
       w.ScrollbarSaver.restoreScrollPosition();
     });
     machineryZoom(s);
@@ -8153,12 +8153,12 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
 
   machineryAutoScroll(s, undefined);
 
-  s.calculateImageBinding({ ignoreSort: true }, function () {
+  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
     if (s.currentFolder && s.currentFolder.orderBy === "RANDOM") { }
     else {
-      s.rebindRefresh(true);
+      machineryRebindRefresh(s, true);
     }
-    s.updateSelection();
+    machineryUpdateSelection(s);
     if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
   });
@@ -8980,9 +8980,9 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
     syncListFromScope();
     s.isLoading = true;
     machineryUpdateSidebarList(s);
-    s.calculateImageBinding({ ignoreSort: true }, function () {
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       s.reload();
-      s.updateSelection();
+      machineryUpdateSelection(s);
       s.isLoading = false;
       s.unlockPassword = "";
       s.$evalAsync();
@@ -9868,7 +9868,7 @@ export function machineryPrependFolder(s: any, folder: any): void {
   s.folderMappings[folder.id] = folder;
   machineryUpdateSidebarList(s);
   setTimeout(function () {
-    s.calculateImageBinding({ ignoreSort: true }, function () {
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machinerySaveFolder(s);
     });
   }, 1000);
@@ -9945,7 +9945,7 @@ export function machinerySelectFolder(s: any, event: any, folder: any): void {
     s.$root.currentFocus = "content";
     s.selected = [];
     syncInspectorFromScope();
-    s.updateSelection();
+    machineryUpdateSelection(s);
   }
 }
 
@@ -10379,9 +10379,9 @@ export function machineryEditTag(s: any, tag: any): void {
 
     tag.name = newName;
     tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
-    s.calculateImageBinding({ ignoreSort: true }, function () {
-      s.rebindRefresh();
-      s.updateSelection();
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machineryRebindRefresh(s);
+      machineryUpdateSelection(s);
     });
 
     var message = getFilter()('i18n')("notify.tag.nameChange", [

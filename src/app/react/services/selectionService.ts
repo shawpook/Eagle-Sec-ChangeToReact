@@ -2,7 +2,7 @@ import { getBodyScope } from '../core/appCore';
 import { cancelCleanSelectedTimeout } from '../services/batchOpsService';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
-import { machineryEnterDetailMode, machineryGetSelection, machineryOpenPluginPanel } from '../core/dataMachinery';
+import { machineryEnterDetailMode, machineryGetSelection, machineryOpenPluginPanel, machineryUpdateSelection } from '../core/dataMachinery';
 import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
@@ -16,7 +16,7 @@ import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
 
 export function updateSelection(): void {
   const s = getBodyScope();
-  if (s && typeof s.updateSelection === 'function') s.updateSelection();
+  if (s && typeof s.updateSelection === 'function') machineryUpdateSelection(s);
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══

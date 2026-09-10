@@ -20,7 +20,7 @@
  */
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCheckOperationSafety, machineryFindDupclipate, machineryForceFitImageSize, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryRelayout, machineryResetPage, machineryZoom } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryFilterContent, machineryFindDupclipate, machineryForceFitImageSize, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryRebindRefresh, machineryRelayout, machineryResetPage, machineryUpdateSelection, machineryZoom } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
@@ -147,8 +147,8 @@ export function emptyTrash(...args: any[]) {
                     s.trash = [];
                     syncSidebarFromScope();
                     syncListFromScope();
-                    s.updateSelection();
-                    s.rebindRefresh();
+                    machineryUpdateSelection(s);
+                    machineryRebindRefresh(s);
                     machineryFindDupclipate(s, undefined);
 
                     // 更新進度
@@ -218,7 +218,7 @@ export function addToLastUsedFolder(...args: any[]) {
             if (!recentFolders || recentFolders.length === 0) return;
             if (!recentFolders[0] || !s.selected[0]) return;
             var folder = recentFolders[0];
-            s.addToRecentFolders([folder.id]);
+            addToRecentFolders([folder.id]);
             addImagesToFolder(s.selected, folder);
             if (s.viewMode === 'unfiled') {
                 var itemElements = machineryGetSelectedItemElements(s);
@@ -269,7 +269,7 @@ export function cleanSelected(...args: any[]) {
                 syncInspectorFromScope();
                 s.selectedFolderMappings = {};
                 syncListFromScope();
-                s.updateSelection();
+                machineryUpdateSelection(s);
             }, 100);
         }).apply(null, args);
 }
@@ -305,7 +305,7 @@ export function pasteTags(...args: any[]) {
                     }
                 });
             });
-            s.updateSelection();
+            machineryUpdateSelection(s);
             ayncsImagesChange(s.selected);
             hiddenByCurrentFilter(s.selected);
             electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${s.selected.length} files`);
@@ -392,9 +392,9 @@ export function removeFromFolder(...args: any[]) {
             s.removeSound.play();
         }
 
-        s.calculateImageBinding({ ignoreSort: true }, function() {
-            s.rebindRefresh(true);
-            s.updateSelection();
+        machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
+            machineryRebindRefresh(s, true);
+            machineryUpdateSelection(s);
         });
 
         s.$root.notify({
@@ -410,13 +410,13 @@ export function removeFromFolder(...args: any[]) {
 
             // 如果這張圖片就在這個資料夾，畫面需要更新
             if (s.currentFolder && s.currentFolder.id === folderId) {
-                s.calculateImageBinding({ ignoreSort: true }, function() {
-                    s.rebindRefresh();
-                    s.updateSelection();
+                machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
+                    machineryRebindRefresh(s);
+                    machineryUpdateSelection(s);
                 });
             } else {
-                s.updateSelection();
-                s.rebindRefresh(true);
+                machineryUpdateSelection(s);
+                machineryRebindRefresh(s, true);
             }
 
             ayncsImagesChange(origins);
@@ -468,7 +468,7 @@ export function scrollToSelectedItem(...args: any[]) {
                         console.log($(`#box-${__lv_target.id}`).length);
                         // 東西不在畫面上，強制更新畫面然後定位
                         if ($(`#box-${__lv_target.id}`).length === 0 || startPage !== s.startCursor) {
-                            s.rebindRefresh(undefined, undefined, startPage);
+                            machineryRebindRefresh(s, undefined, undefined, startPage);
                             machineryRelayout(s);    
                         }
                         $("#box-container").css("visibility", "hidden");
@@ -526,7 +526,7 @@ export function excludeWithTag(...args: any[]) {
 
             s.tagKeyword = "";
             syncFilterFromScope();
-            s.filterContent();
+            machineryFilterContent(s);
         }).apply(null, args);
 }
 

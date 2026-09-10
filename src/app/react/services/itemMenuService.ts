@@ -16,7 +16,7 @@
  */
 // @ts-nocheck
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryCheckOperationSafety, machineryCopyImages, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow, machineryVideoScreenShot } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryCopyImages, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRebindRefresh, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow, machineryVideoScreenShot } from '../core/dataMachinery';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { copyAsBase64, copyAsFolderPath, copyAsLink, copyAsPath, copyAsProperity, copyAsThumbnail, openFilesWithDefault, openInFinder, openInPreviewWindow, openItemLocation, openWithOther } from '../core/itemDomain';
@@ -228,8 +228,8 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         s.selected.forEach((item) => {
                             item.isDeleted = false;
                         });
-                        s.calculateImageBinding({ ignoreSort: true }, () => {
-                            s.rebindRefresh(true);
+                        machineryCalculateImageBinding(s, { ignoreSort: true }, () => {
+                            machineryRebindRefresh(s, true);
                         });
                         const itemElements = machineryGetSelectedItemElements(s);
                         s.$root.$broadcast("gl:removeItems", itemElements);
@@ -512,7 +512,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 message: message,
                                 duration: 1500
                             });
-                            s.rebindRefresh();
+                            machineryRebindRefresh(s);
                             // scrollToSelectedItem();
                             s.$evalAsync();
                         });
@@ -556,7 +556,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             });
                             s.selected = [getNext()];
                             syncInspectorFromScope();
-                            s.rebindRefresh();
+                            machineryRebindRefresh(s);
                             // scrollToSelectedItem();
                             s.$evalAsync();
                         });

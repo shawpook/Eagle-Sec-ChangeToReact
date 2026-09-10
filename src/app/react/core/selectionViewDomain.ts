@@ -14,7 +14,7 @@
 import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
-import { machineryChangeMetaItems, machineryCurrentIndex, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSubFolderWidth } from './dataMachinery';
+import { machineryChangeMetaItems, machineryCurrentIndex, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
 
 let done = false;
 

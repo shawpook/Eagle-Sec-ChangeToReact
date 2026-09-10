@@ -1,4 +1,5 @@
 import { getBodyScope } from '../core/appCore';
+import { machineryFilterContent } from '../core/dataMachinery';
 /**
  * b1-9bi：筛选服务 —— filterRules 数值规则写面 + 订阅中心。
  *
@@ -42,7 +43,7 @@ export function setFilterRule(group: string, key: string, value: any): void {
 export function setFilterRuleAndApply(group: string, key: string, value: any): void {
   setFilterRule(group, key, value);
   const s = getBodyScope();
-  if (s && typeof s.filterContent === 'function') s.filterContent();
+  if (s && typeof s.filterContent === 'function') machineryFilterContent(s);
 }
 
 // 闭环测试（CDP Runtime.evaluate）可直接访问（b1-9bi 起 setFilterRule 是 12 条数值

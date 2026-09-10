@@ -6,7 +6,7 @@
 import { getBodyScope } from '../core/appCore';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncUploadFromScope } from '../store/uploadState';
-import { machineryHideUploadQueue, machineryShowUploadQueue } from '../core/dataMachinery';
+import { getFilter, machineryHideUploadQueue, machineryShowUploadQueue } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -40,7 +40,7 @@ const $filter: any = (name: string) => {
   if (s && s.$root && s.$root.$filter) return s.$root.$filter(name);
   // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（Angular 在世走 injector，
   // 缺席时为 EagleApp.filter 逐字移植的等价表），否则 `$filter('i18n')(…)` 首行即抛。
-  const inst: any = machineryGetFilter();
+  const inst: any = getFilter();
   return inst ? inst(name) : undefined;
 };
 

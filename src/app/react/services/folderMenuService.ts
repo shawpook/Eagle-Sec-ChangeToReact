@@ -17,7 +17,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryGetFolderImages, machineryNewSmartFolder, machineryOpenAll, machineryPrependFolder, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryCalculateImageBinding, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryGetFolderImages, machineryNewSmartFolder, machineryOpenAll, machineryPrependFolder, machineryRebindRefresh, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
@@ -166,7 +166,7 @@ export function setFoldersOrder(...args: any[]) {
         machinerySetFolderOrder(s, folder, orderBy);
       });
       machinerySortRawData(s, orderBy);
-      s.rebindRefresh();
+      machineryRebindRefresh(s);
       s.$evalAsync();
     }).apply(null, args);
 }
@@ -183,7 +183,7 @@ export function setFoldersSortIncrease(...args: any[]) {
     if (!s) return;
     return (function (folders: any, sortIncrease: any, ignoreReload: any) {
       folders.forEach(function (folder: any) {
-        s.setFolderSortIncrease(folder, sortIncrease);
+        setFolderSortIncrease(folder, sortIncrease);
       });
     }).apply(null, args);
 }
@@ -213,9 +213,9 @@ export function lockFolder(...args: any[]) {
       s.selected = [];
       syncInspectorFromScope();
       machineryUpdateSidebarList(s);
-      s.calculateImageBinding({ ignoreSort: true }, function () {
-        s.rebindRefresh();
-        s.updateSelection();
+      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+        machineryRebindRefresh(s);
+        machineryUpdateSelection(s);
         s.isLoading = false;
       });
     }).apply(null, args);
@@ -308,7 +308,7 @@ export function cloneFolder(...args: any[]) {
         machinerySaveFolder(s);
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
-      s.calculateImageBinding({ ignoreSort: true }, function () {});
+      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
     }).apply(null, args);
 }
 
@@ -615,9 +615,9 @@ export function showListSubfolderContent(...args: any[]) {
       s.showSubfolderContent = !s.showSubfolderContent;
       preferences.showSubfolderContent = s.showSubfolderContent;
       (window as any).electronSettings.set('preferences', preferences).then(function () {});
-      s.calculateImageBinding({ ignoreSort: true }, function () {
-        s.rebindRefresh();
-        s.updateSelection();
+      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+        machineryRebindRefresh(s);
+        machineryUpdateSelection(s);
         const scrollbar = document.getElementById('box-container-scrollbar') || (w.$ && w.$('#box-container-scrollbar')[0]);
         if (scrollbar) scrollbar.dispatchEvent(new Event('UPDATE_BOX_SCROLLBAR', { bubbles: true }));
       });
@@ -685,7 +685,7 @@ export function openFolderContextMenu(...args: any[]) {
           label: i18n.__('context.order.orderBy>default'),
           icon: 'ic-order-by.svg',
           click: () => {
-            s.setFoldersOrder(selectedFolders, undefined);
+            setFoldersOrder(selectedFolders, undefined);
           }
         };
 
@@ -697,7 +697,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: order,
             icon: `ic-order-by-${order}.svg`,
             click: () => {
-              s.setFoldersOrder(selectedFolders, uppercase || undefined);
+              setFoldersOrder(selectedFolders, uppercase || undefined);
             }
           };
         });
@@ -708,7 +708,7 @@ export function openFolderContextMenu(...args: any[]) {
             label: i18n.__('context.order.orderBy>increase'),
             icon: 'ic-order-by-increase.svg',
             click: () => {
-              s.setFoldersSortIncrease(selectedFolders, true);
+              setFoldersSortIncrease(selectedFolders, true);
             }
           },
           {
@@ -716,7 +716,7 @@ export function openFolderContextMenu(...args: any[]) {
             label: i18n.__('context.order.orderBy>decrease'),
             icon: 'ic-order-by-decrease.svg',
             click: () => {
-              s.setFoldersSortIncrease(selectedFolders, false);
+              setFoldersSortIncrease(selectedFolders, false);
             }
           },
         ];
@@ -756,7 +756,7 @@ export function openFolderContextMenu(...args: any[]) {
             icon: 'ic-folder-move.svg',
             accelerator: s.$root.preferences.shortcuts.keybinds['edit.folder.move'],
             click: () => {
-              s.moveFolders(selectedFolders, folder);
+              moveFolders(selectedFolders, folder);
               s.$evalAsync();
             }
           },
@@ -792,7 +792,7 @@ export function openFolderContextMenu(...args: any[]) {
                   keywords: '導出 エクスポート 本地 export computer local',
                   icon: 'ic-export-computer.svg',
                   click: () => {
-                    s.folderExportAsFolder(event);
+                    folderExportAsFolder(event);
                     s.$evalAsync();
                   }
                 }
@@ -810,7 +810,7 @@ export function openFolderContextMenu(...args: any[]) {
               items: [{
                 role: 'emoji',
                 click: (emoji: any) => {
-                  s.changeSelectedFoldersIcon(event, emoji);
+                  changeSelectedFoldersIcon(event, emoji);
                 }
               }]
             }
@@ -819,7 +819,7 @@ export function openFolderContextMenu(...args: any[]) {
           {
             role: 'color',
             click: (color: any) => {
-              s.changeSelectedFoldersColor(event, color);
+              changeSelectedFoldersColor(event, color);
               s.$evalAsync();
             }
           },
@@ -872,7 +872,7 @@ export function openFolderContextMenu(...args: any[]) {
             icon: 'ic-folder-move.svg',
             accelerator: s.$root.preferences.shortcuts.keybinds['edit.folder.move'],
             click: () => {
-              s.moveFolders(selectedFolders, folder);
+              moveFolders(selectedFolders, folder);
               s.$evalAsync();
             }
           },
@@ -922,7 +922,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '複製 連結 copy link',
             icon: 'ic-folder-copy-link.svg',
             click: () => {
-              s.copyFolderLink(event, folder);
+              copyFolderLink(event, folder);
               s.$evalAsync();
             }
           },
@@ -933,7 +933,7 @@ export function openFolderContextMenu(...args: any[]) {
             icon: 'ic-folder-auto-tag.svg',
             disabled: disabled,
             click: (event2: any) => {
-              s.settingFolder(event2, folder);
+              settingFolder(event2, folder);
               s.$evalAsync();
             }
           },
@@ -948,7 +948,7 @@ export function openFolderContextMenu(...args: any[]) {
                   label: i18n.__('context.folder.password>create'),
                   accelerator: preferences.shortcuts.keybinds['edit.folder.password.create'],
                   click: () => {
-                    s.setFolderPassword(folder);
+                    setFolderPassword(folder);
                     s.$evalAsync();
                   }
                 },
@@ -957,7 +957,7 @@ export function openFolderContextMenu(...args: any[]) {
                   label: i18n.__('context.folder.password>change'),
                   accelerator: preferences.shortcuts.keybinds['edit.folder.password.change'],
                   click: () => {
-                    s.changeFolderPassword(folder);
+                    changeFolderPassword(folder);
                     s.$evalAsync();
                   }
                 },
@@ -966,7 +966,7 @@ export function openFolderContextMenu(...args: any[]) {
                   label: i18n.__('context.folder.password>reset'),
                   accelerator: preferences.shortcuts.keybinds['edit.folder.password.reset'],
                   click: () => {
-                    s.resetFolderPassword(folder);
+                    resetFolderPassword(folder);
                     s.$evalAsync();
                   }
                 },
@@ -975,7 +975,7 @@ export function openFolderContextMenu(...args: any[]) {
                   label: i18n.__('context.folder.password>lock'),
                   accelerator: preferences.shortcuts.keybinds['edit.folder.password.lock'],
                   click: () => {
-                    s.lockFolder(event, folder);
+                    lockFolder(event, folder);
                     s.$evalAsync();
                   }
                 }
@@ -1060,7 +1060,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '複製 克隆 clone',
             icon: 'ic-clone.svg',
             click: () => {
-              s.cloneFolder(event, folder);
+              cloneFolder(event, folder);
               s.$evalAsync();
             }
           },
@@ -1081,7 +1081,7 @@ export function openFolderContextMenu(...args: any[]) {
                   keywords: '導出 エクスポート 本地 export computer local',
                   icon: 'ic-export-computer.svg',
                   click: () => {
-                    s.folderExportAsFolder(event, folder);
+                    folderExportAsFolder(event, folder);
                     s.$evalAsync();
                   }
                 },
@@ -1091,7 +1091,7 @@ export function openFolderContextMenu(...args: any[]) {
                   keywords: '導出 エクスポート export eaglepack',
                   icon: 'ic-export-eaglepack.svg',
                   click: () => {
-                    s.folderExportAsPack(event, folder);
+                    folderExportAsPack(event, folder);
                     s.$evalAsync();
                   }
                 }
@@ -1113,7 +1113,7 @@ export function openFolderContextMenu(...args: any[]) {
             label: i18n.__('context.folder.toogleSubFolderContent'),
             icon: 'ic-folder-show-sub-folder-content.svg',
             click: () => {
-              s.showListSubfolderContent();
+              showListSubfolderContent();
               s.$evalAsync();
             }
           },
@@ -1127,7 +1127,7 @@ export function openFolderContextMenu(...args: any[]) {
               items: [{
                 role: 'emoji',
                 click: (emoji: any) => {
-                  s.changeFolderIcon(event, folder, emoji);
+                  changeFolderIcon(event, folder, emoji);
                 }
               }]
             }
@@ -1136,7 +1136,7 @@ export function openFolderContextMenu(...args: any[]) {
           {
             role: 'color',
             click: (color: any) => {
-              s.changeFolderColor(event, folder, color);
+              changeFolderColor(event, folder, color);
               s.$evalAsync();
             }
           },
@@ -1179,7 +1179,7 @@ export function setSmartFoldersOrder(...args: any[]) {
         machinerySetSmartFolderOrder(s, folder, orderBy);
       });
       machinerySortRawData(s, orderBy);
-      s.rebindRefresh();
+      machineryRebindRefresh(s);
       s.$evalAsync();
     }).apply(null, args);
 }
@@ -1196,7 +1196,7 @@ export function setSmartFoldersSortIncrease(...args: any[]) {
     if (!s) return;
     return (function (smartFolders: any, sortIncrease: any, ignoreReload: any) {
       smartFolders.forEach(function (folder: any) {
-        s.setSmartFolderSortIncrease(folder, sortIncrease);
+        setSmartFolderSortIncrease(folder, sortIncrease);
       });
     }).apply(null, args);
 }
@@ -1587,7 +1587,7 @@ export function openNewSmartFolderContextMenu(...args: any[]) {
             label: i18n.__('appmenu.file>createSmartFolderGroup'),
             icon: 'ic-smart-folder-new-group.svg',
             click: () => {
-              var smartFolderGroup = s.newSmartFolderGroup(event);
+              var smartFolderGroup = newSmartFolderGroup(event);
               openSmartFolder(smartFolderGroup);
               $timeout(function () {
                 machineryRenameSmartFolder(s, event, smartFolderGroup);
@@ -1656,7 +1656,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           label: i18n.__('context.order.orderBy>default'),
           icon: 'ic-order-by.svg',
           click: () => {
-            s.setSmartFoldersOrder(selectedSmartFolders, undefined);
+            setSmartFoldersOrder(selectedSmartFolders, undefined);
           }
         };
 
@@ -1668,7 +1668,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: order,
             icon: `ic-order-by-${order}.svg`,
             click: () => {
-              s.setSmartFoldersOrder(selectedSmartFolders, uppercase || undefined);
+              setSmartFoldersOrder(selectedSmartFolders, uppercase || undefined);
             }
           };
         });
@@ -1679,7 +1679,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             label: i18n.__('context.order.orderBy>increase'),
             icon: 'ic-order-by-increase.svg',
             click: () => {
-              s.setSmartFoldersSortIncrease(selectedSmartFolders, true);
+              setSmartFoldersSortIncrease(selectedSmartFolders, true);
             }
           },
           {
@@ -1687,7 +1687,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             label: i18n.__('context.order.orderBy>decrease'),
             icon: 'ic-order-by-decrease.svg',
             click: () => {
-              s.setSmartFoldersSortIncrease(selectedSmartFolders, false);
+              setSmartFoldersSortIncrease(selectedSmartFolders, false);
             }
           },
         ];
@@ -1750,7 +1750,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
               items: [{
                 role: 'emoji',
                 click: (emoji: any) => {
-                  s.changeSelectedSmartFoldersIcon(event, emoji);
+                  changeSelectedSmartFoldersIcon(event, emoji);
                 }
               }]
             }
@@ -1759,7 +1759,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           {
             role: 'color',
             click: (color: any) => {
-              s.changeSelectedSmartFoldersColor(event, color);
+              changeSelectedSmartFoldersColor(event, color);
               s.$evalAsync();
             }
           },
@@ -1798,7 +1798,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '資料夾 文件夾 新建 建立 新增 智能 智慧 子 smart folder dir new create sub child',
             icon: 'ic-smart-folder-new-sub.svg',
             click: function () {
-              s.newChildSmartFolder(event, smartFolder);
+              newChildSmartFolder(event, smartFolder);
               s.$evalAsync();
             }
           },
@@ -1820,7 +1820,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '規則 修改 編輯 edit rule',
             icon: 'ic-smart-folder-rule.svg',
             click: () => {
-              s.settingFolder(event, smartFolder);
+              settingFolder(event, smartFolder);
               s.$evalAsync();
             }
           },
@@ -1830,7 +1830,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '複製 克隆 clone',
             icon: 'ic-clone.svg',
             click: () => {
-              s.cloneSmartFolder(event, smartFolder);
+              cloneSmartFolder(event, smartFolder);
               s.$evalAsync();
             }
           },
@@ -1840,7 +1840,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '複製 連結 copy link',
             icon: 'ic-copy-link.svg',
             click: () => {
-              s.copySmartFolderLink(event, smartFolder);
+              copySmartFolderLink(event, smartFolder);
               s.$evalAsync();
             }
           },
@@ -1894,7 +1894,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
                   keywords: '導出 エクスポート 本地 export computer local',
                   icon: 'ic-export-computer.svg',
                   click: () => {
-                    s.smartFolderExportAsFolder(event, smartFolder);
+                    smartFolderExportAsFolder(event, smartFolder);
                     s.$evalAsync();
                   }
                 },
@@ -1903,7 +1903,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
                   keywords: '導出 エクスポート export eaglepack',
                   icon: 'ic-export-eaglepack.svg',
                   click: () => {
-                    s.smartFolderExportAsPack(event, smartFolder);
+                    smartFolderExportAsPack(event, smartFolder);
                     s.$evalAsync();
                   }
                 }
@@ -1926,7 +1926,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
               items: [{
                 role: 'emoji',
                 click: (emoji: any) => {
-                  s.changeSmartFolderIcon(event, smartFolder, emoji);
+                  changeSmartFolderIcon(event, smartFolder, emoji);
                 }
               }]
             }
@@ -1935,7 +1935,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           {
             role: 'color',
             click: (color: any) => {
-              s.changeSmartFolderColor(event, smartFolder, color);
+              changeSmartFolderColor(event, smartFolder, color);
               s.$evalAsync();
             }
           },
@@ -2085,7 +2085,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       }
     }
     else {
-      s.rebindRefresh();
+      machineryRebindRefresh(s);
     }
 
     // 播放删除音效
@@ -2104,7 +2104,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
     // 移除记录
     delete s.folderMappings[folder.id];
     void folderId;
-    s.calculateImageBinding({ ignoreSort: true }, function () {
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       s.$evalAsync();
       s.saveFolderDebounce && machinerySaveFolderDebounce(s);
       if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
@@ -2136,7 +2136,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           image3.folders = JSON.parse(JSON.stringify(imageOriginalFolders));
         }
         machineryUpdateSidebarList(s);
-        s.rebindRefresh();
+        machineryRebindRefresh(s);
         w.ayncsImagesChange(originalImages);
       });
     }

@@ -1791,6 +1791,43 @@
 > 三项均改善）。
 >
 >
+> **【b1-9bz-B-6：EXCLUDE 解锁 —— scope 面残留 153 → 9 处】**
+>
+> EXCLUDE 白名单由 7 名收缩到 3 名（`search` / `restoreDefaultShortcuts` / `copyApiToken`），
+> 其余 4 名（`filterContent` / `rebindRefresh` / `updateSelection` / `calculateImageBinding`）
+> 全部直调化；**只逐点保留 4 个契约可观测的派发点**（stage1m1 的 4 个 spy 断言）：
+>
+> | 派发点 | 位置 |
+> |---|---|
+> | `s.filterContent()` ×2 | `core/filterDomain.ts` `onFilterRuleChange` 处理器内 |
+> | `s.rebindRefresh(mute)` | `core/filterDomain.ts` `$on('REBIND_REFRESH')` 处理器内 |
+> | `s.updateSelection()` | `core/selectionViewDomain.ts` `$watchCollection('selected')` 内 |
+> | `s.updateSelection()` | `core/selectionViewDomain.ts` `$on('UPDATE_SELECTION')` 内 |
+>
+> 回写脚本 `tests-tmp/bz-b6-keep-sites.py`：按锚点做**括号配对**定位处理器块，块内定向回写。
+> 本批直调 198 处（core 67 / services 103 / components 28）；EXCLUDE 残留由 **153 降到 9**
+> （5 处派发点 + `search` 3 处 + preferences `restoreDefaultShortcuts` 1 处）。
+>
+> **踩坑（务必记住）**：为「零参调用不留尾逗号」在转换器里加了**提前 return** 的分支，
+> 结果跳过了 import 登记 → `machineryFilterContent` 被引用 18 次而**零 import** →
+> ReferenceError 被 `runSeq` 吞掉 → `react-stage-smoke` 的
+> 「type check drives rules + badge + breadcrumb」超时（手动 `s.filterContent()` 可恢复）。
+> **规则：转换器里任何提前 return 都必须先完成 import 登记。**
+> 为此新增专项校验器 `tests-tmp/bz-b-unresolved.py`（`machineryXxx(` 必须有 import 或顶层声明；
+> 扫描前先剥注释，否则注释里的符号会误报）。
+>
+> **顺带修掉 2 处历史遗留未解析符号**：`itemDomain.ts` / `uploadService.ts` 的
+> `machineryGetFilter()` —— 正确符号是 dataMachinery 导出的 `getFilter`（`540fa6c` 引入的笔误）。
+>
+> **工具修正**：`MOUNT_ARROW` 的 DUAL 判档对**可选参数**漏判（`type?: any` → `type?` ≠ `type`），
+> 使 `filterContent` 被误判 TABLE（落点会换成 filterDomain 里需要 scope 的那份 c3 包装体，
+> 与挂载的 `machineryFilterContent` 是**两份实现**）。修法：形参归一 `re.split(r'[?:=]', x)[0]`。
+>
+> **验收**：esbuild 0 错 / import·遮蔽·未解析 三项校验全 0 / `stage-smoke`、`1m1`、`stage8d`、
+> `stage8e`、`stage5` 全过 / 哨兵 `SENTINEL_OK` / 全套件 54/55（唯一失败 `stage5` 套件内挂、
+> 单跑 3/3 通过，属环境抖动）。
+>
+>
 > **【b1-9bz-B-5：双键单源化首批 —— 3 个等价对（B7 起步）】**
 >
 > 单源化的正确动作**不是删 c3 体**（`focusAppUnlockPassword` 被 `LockScreens.tsx` 直接

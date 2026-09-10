@@ -6,7 +6,7 @@
 import { getBodyScope } from '../core/appCore';
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
-import { machineryFocusAppUnlockPassword, machineryReload, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { machineryCalculateImageBinding, machineryFocusAppUnlockPassword, machineryReload, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -122,9 +122,9 @@ export function unlockPasswordKeyup(...args: any[]) {
                     syncListFromScope();
                     s.isLoading = true;
                     machineryUpdateSidebarList(s);
-                    s.calculateImageBinding({ ignoreSort: true }, function () {
+                    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
                         s.reload();
-                        s.updateSelection();
+                        machineryUpdateSelection(s);
                         s.isLoading = false;
                         s.unlockPassword = "";
                     });

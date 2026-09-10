@@ -26,7 +26,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 // 运行期 ReferenceError（与 initLinkVars 缺失同款的静默-catch 陷阱），补齐解析。
 import { isInFolder } from './itemDomain';
 import { updateSuggestions } from './miscDomain';
-import { machineryCalculateFilterCounts, machineryExistInSmartFilter, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
+import { machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFilterContent, machineryRebindRefresh, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
 
 let done = false;
 
@@ -165,7 +165,7 @@ export function takeoverFilterDomain(): void {
     s0.$on('CALCULATE_IMAGE_BINDING', function (_e: any, params: any) {
       const s: any = getBodyScope();
       if (!s) return;
-      s.calculateImageBinding(params);
+      machineryCalculateImageBinding(s, params);
     });
 
     diag.listenersRemoved['REBIND_REFRESH'] = removeScopeListener(s0, 'REBIND_REFRESH');
@@ -452,7 +452,7 @@ export function excludeWithFolder(...args: any[]) {
                 $("#filter-folder-list").scrollTop(0);
             }
 
-            s.filterContent();
+            machineryFilterContent(s);
             machineryCalculateFilterCounts(s);
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
@@ -466,7 +466,7 @@ export function filterContent(...args: any[]) {
             if (!s.isItemBindCalculated) return;
             // 重新计算画面图片列表
             s.shuffle = [];
-            s.rebindRefresh(undefined, s.contentFilterCache);
+            machineryRebindRefresh(s, undefined, s.contentFilterCache);
             s.$evalAsync();
             $("#box-container").scrollTop(0);
         }).apply(null, args);
@@ -517,7 +517,7 @@ export function filterWithColor(...args: any[]) {
             }
 
             $timeout(function () {
-                s.filterContent();
+                machineryFilterContent(s);
                 machineryCalculateFilterCounts(s);
             }, 50);
             analytics.event('Filter', 'Color');
@@ -549,7 +549,7 @@ export function filterWithFolder(...args: any[]) {
                 $("#filter-folder-list").scrollTop(0);
             }
 
-            s.filterContent();
+            machineryFilterContent(s);
             machineryCalculateFilterCounts(s);
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
@@ -713,7 +713,7 @@ export function search(...args: any[]) {
                     
                     updateSuggestions();
                     s.startCursor = 0;
-                    s.filterContent();
+                    machineryFilterContent(s);
                     machineryCalculateFilterCounts(s);
                 }
                 else {

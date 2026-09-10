@@ -197,7 +197,7 @@ export function zoomFit(...args: any[]) {
                 syncDetailFromScope();
                 localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
                 s.imageSize.zoomRatio = 100;
-                s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+                s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
 
                 if (!noAnimation) {
                     $("#detail-container").addClass("zooming");

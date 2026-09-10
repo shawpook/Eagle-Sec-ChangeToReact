@@ -14,7 +14,7 @@
  * - $filter → 双轨 shim；ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryCalculateFilterCounts, machineryCheckOperationSafety, machineryRelayout, machineryUpdateItemsView, machineryUpdateSliderPosition } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryFilterContent, machineryRebindRefresh, machineryRelayout, machineryUpdateItemsView, machineryUpdateSelection, machineryUpdateSliderPosition } from '../core/dataMachinery';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncBodyFromScope } from '../store/bodyState';
@@ -195,9 +195,9 @@ export function renameFontsWithFullName(...args: any[]) {
                 ayncsImagesChange(updates);
                 hiddenByCurrentFilter(updates);
                 machineryUpdateItemsView(s, items);
-                s.calculateImageBinding({}, function () {
-                    s.rebindRefresh(true);
-                    s.updateSelection();
+                machineryCalculateImageBinding(s, {}, function () {
+                    machineryRebindRefresh(s, true);
+                    machineryUpdateSelection(s);
                 });
             }, 10);
         }
@@ -214,7 +214,7 @@ export function activateFonts(...args: any[]) {
             fs.mkdirSync(fontFolder);
         }
         items.forEach(function (font) {
-            s.activateFont(font, {showNotify: false, updateView: false});
+            activateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
             machineryUpdateItemsView(s, items);
@@ -236,7 +236,7 @@ export function deactivateFonts(...args: any[]) {
     return (function (items) {
         if (!fs.existsSync(fontFolder)) { return; }
         items.forEach(function (font) {
-            s.deactivateFont(font, {showNotify: false, updateView: false});
+            deactivateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
             machineryUpdateItemsView(s, items);
@@ -338,7 +338,7 @@ export function filterWithTag(...args: any[]) {
                 $("#filter-panel .tags-container").scrollTop(0);
             }
 
-            s.filterContent();
+            machineryFilterContent(s);
             machineryCalculateFilterCounts(s);
         }).apply(null, args);
 }

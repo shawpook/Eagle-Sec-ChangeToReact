@@ -12,7 +12,7 @@
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
-import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout, machineryCalcuteContainTags, machineryCheckOperationSafety2, machineryOpenAll, machineryOpenTagAllGroup, machineryRemoveTagGroup, machineryRenameTagGroup, machinerySaveFolder, machineryUpdateItemsView } from './dataMachinery';
+import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout, machineryCalculateImageBinding, machineryCalcuteContainTags, machineryCheckOperationSafety2, machineryOpenAll, machineryOpenTagAllGroup, machineryRemoveTagGroup, machineryRenameTagGroup, machinerySaveFolder, machineryUpdateItemsView, machineryUpdateSelection } from './dataMachinery';
 import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
@@ -405,7 +405,7 @@ export function machineryBuildTagManager(s: any): any {
             syncFilterFromScope();
             syncTagManagerFromScope();
             machineryCalcuteContainTags(s, s.filtereds);
-            s.updateSelection();
+            machineryUpdateSelection(s);
             machineryUpdateItemsView(s, s.selected);
 
             w.ayncsImagesChange(changedItems);
@@ -452,7 +452,7 @@ export function machineryBuildTagManager(s: any): any {
 
             machineryCalcuteContainTags(s, s.filtereds);
             TagManager.addHistoryTag(tag);
-            s.updateSelection();
+            machineryUpdateSelection(s);
 
             machineryUpdateItemsView(s, s.selected);
 
@@ -504,13 +504,13 @@ export function machineryBuildTagManager(s: any): any {
             }
 
 			machineryCalcuteContainTags(s, s.filtereds);
-			s.updateSelection();
+			machineryUpdateSelection(s);
 			machineryUpdateItemsView(s, s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
             w.$("#tag-search-input").focus();
-            s.calculateImageBinding({ignoreSort : true}, () => {});
+            machineryCalculateImageBinding(s, {ignoreSort : true}, () => {});
             w.electronLog.info(`[app] Remove tag [${tag}] from ${changedItems.length} files`);
         };
 
@@ -1220,7 +1220,7 @@ export function machineryBuildTagManager(s: any): any {
                 // 如果移除图片标签，那就需要重新计算整体关系
                 if (isRemoveTags) {
                     TagManager.removeTagsPermanently(group.tags);
-                    s.calculateImageBinding({ ignoreSort: true });
+                    machineryCalculateImageBinding(s, { ignoreSort: true });
                     try {
                         w.electronLog.info(`[app] Remove tag group(${group.id}) also remove includes tags`);
                     } catch (err: any) {};
@@ -1514,7 +1514,7 @@ export function machineryBuildTagManager(s: any): any {
                             });
                         }
                         s.TagManager.removeStarredTags(remove);
-                        s.calculateImageBinding({ ignoreSort: true }, () => {});
+                        machineryCalculateImageBinding(s, { ignoreSort: true }, () => {});
                     }
                 });
             }, 50);
@@ -1552,7 +1552,7 @@ export function machineryBuildTagManager(s: any): any {
                             });
                         }
                         s.TagManager.removeTagsFromGroup(group.id, remove);
-                        s.calculateImageBinding({ ignoreSort: true }, () => {});
+                        machineryCalculateImageBinding(s, { ignoreSort: true }, () => {});
                     }
                 });
             }, 50);

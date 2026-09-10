@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -103,7 +103,7 @@ export function createFolder(...args: any[]) {
             s.folderMappings[folder.id] = folder;
             addToRecentFolders([folder.id]);
             machineryUpdateSidebarList(s);
-            s.calculateImageBinding({ ignoreSort: true }, function() {
+            machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                 machineryRefreshSubfolderList(s);
                 machinerySaveFolder(s);
                 if (callback) callback(folder);
@@ -232,10 +232,10 @@ export function newFolder(...args: any[]) {
 
             // Note: 如果用戶當前選擇多個文件，表示正在分類，這時候不要跳轉是比較好的選擇
             if (s.selected.length === 0 && !ignoreAutoOpen) {
-                s.openFolder(folder);
+                openFolder(folder);
             }
             setTimeout(function() {
-                s.calculateImageBinding({ ignoreSort: true }, function() {
+                machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                     machineryRefreshSubfolderList(s);
                     machinerySaveFolder(s);
                     if (folder.parent) {
@@ -333,10 +333,10 @@ export function newFolderWidthSelection(...args: any[]) {
             });
             ayncsImagesChange(s.selected);
             hiddenByCurrentFilter(s.selected);
-            s.calculateImageBinding({ ignoreSort: true }, function() {
-                s.rebindRefresh();
+            machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
+                machineryRebindRefresh(s);
             });
-            s.openFolder(folder);
+            openFolder(folder);
             setTimeout(function() {
                 machinerySaveFolder(s);
             }, 1000);
@@ -385,9 +385,9 @@ export function addImagesToFolder(...args: any[]) {
             });
             ayncsImagesChange(images);
             hiddenByCurrentFilter(images);
-            s.calculateImageBinding({ ignoreSort: true }, function () {
-                s.rebindRefresh(true);
-                s.updateSelection();
+            machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+                machineryRebindRefresh(s, true);
+                machineryUpdateSelection(s);
             });
 
             var message = $filter('i18n')("notify.image.moveToFolder", [
@@ -408,9 +408,9 @@ export function addImagesToFolder(...args: any[]) {
                 s.current = origin[0];
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                s.calculateImageBinding({ ignoreSort: true }, function () {
-                    s.rebindRefresh();
-                    s.updateSelection();
+                machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+                    machineryRebindRefresh(s);
+                    machineryUpdateSelection(s);
                 });
                 ayncsImagesChange(origin);
             });
@@ -662,9 +662,9 @@ export function emptyRestore(...args: any[]) {
                     syncSidebarFromScope();
                     syncListFromScope();
 
-                    s.calculateImageBinding({ ignoreSort: true }, function() {
-                        s.rebindRefresh();
-                        s.updateSelection();
+                    machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
+                        machineryRebindRefresh(s);
+                        machineryUpdateSelection(s);
                         s.$evalAsync();
                     });
                 });
@@ -853,7 +853,7 @@ export function openFolder(...args: any[]) {
                 s.reload();
             }
             else {
-                s.rebindRefresh();
+                machineryRebindRefresh(s);
             }
             if (s.currentFolder) {
                 __lv_setLastFolder(s.currentFolder.id);

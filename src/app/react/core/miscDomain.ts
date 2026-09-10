@@ -34,7 +34,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryMoveToFolders, machineryNewSmartFolder, machineryOpenAll, machineryPausePalette, machineryPrependFolder, machineryQuickOpenFolder, machineryRememberScrollTops, machineryRememberVideoCurrentTime, machineryResumePalette, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryMoveToFolders, machineryNewSmartFolder, machineryOpenAll, machineryPausePalette, machineryPrependFolder, machineryQuickOpenFolder, machineryRebindRefresh, machineryRememberScrollTops, machineryRememberVideoCurrentTime, machineryResumePalette, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
@@ -524,7 +524,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('rebind-refresh', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.rebindRefresh();
+    machineryRebindRefresh(s);
     scrollToSelectedItem();
   });
 
@@ -1099,7 +1099,7 @@ export function changeOrderBy(...args: any[]) {
                     s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
                     localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
                     machinerySortRawData(s, s.orderBy);
-                    s.rebindRefresh();
+                    machineryRebindRefresh(s);
                     s.$evalAsync();
                     try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
                 }

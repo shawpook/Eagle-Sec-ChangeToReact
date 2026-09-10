@@ -44,7 +44,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
-import { machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenTrialModal, machineryOpenUnfiled, machineryOpenUntagged, machineryShowTutorial, machinerySmartFolderCount, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenTrialModal, machineryOpenUnfiled, machineryOpenUntagged, machineryRebindRefresh, machineryShowTutorial, machinerySmartFolderCount, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateSidebarList } from './dataMachinery';
 import { filterWithColor } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 declare const ga4track: any;
@@ -322,8 +322,8 @@ export function takeoverLibraryDomain(): void {
     s.smartFolders = newLibrary.smartFolders || [];
 
     machineryUpdateSidebarList(s);
-    s.calculateImageBinding({ ignoreSort: true }, function () {
-      s.rebindRefresh();
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machineryRebindRefresh(s);
       s.$evalAsync();
     });
   });
@@ -762,7 +762,7 @@ export function takeoverLibraryDomain(): void {
     s.raw = images;
     syncListFromScope();
 
-    s.calculateImageBinding({}, function () {
+    machineryCalculateImageBinding(s, {}, function () {
       s.viewMode = localStorage.getItem(`eagle.viewMode.${s.rootDir}`) || "all";
       s.isItemBindCalculated = true;
       if (s.viewMode == "all") {

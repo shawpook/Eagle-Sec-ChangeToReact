@@ -63,7 +63,7 @@ export function openFileListContextMenu(...args: any[]) {
   if (!s) return;
   return (function (event: any) {
           event.stopPropagation();
-          s.openOrderMenu();
+          openOrderMenu();
   }).apply(null, args);
 }
 

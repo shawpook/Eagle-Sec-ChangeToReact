@@ -192,7 +192,7 @@ export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: 
 /* dblclickSidebarFolder（bundle 23420 邻域逐字：偏好分流 collapse / rename） */
 export function sidebarDblclickFolder(s: any, event: any, folder: any): void {
   if (s.$root.preferences.habits.dblclickSidebarItem === 'collapse') {
-    s.toggleFolderExpand(event, folder);
+    toggleFolderExpand(event, folder);
   }
   else {
     machineryRenameFolder(s, event, folder);
@@ -293,7 +293,7 @@ export function dblclickSidebarSmartFolderGroup(...args: any[]) {
     if (!s) return;
     return (function (event, folder) {
         	if (s.$root.preferences.habits.dblclickSidebarItem === 'collapse') {
-        		s.toggleSmartFolderExpand(event, folder);
+        		toggleSmartFolderExpand(event, folder);
         	}
         	else {
         		machineryRenameSmartFolder(s, event, folder);

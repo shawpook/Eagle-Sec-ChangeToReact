@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryCancelCrop, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView, machineryVideoScreenShot } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCancelCrop, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView, machineryVideoScreenShot } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -381,7 +381,7 @@ export function saveCrop(...args: any[]) {
                                                 });
                                             }
 
-                                            s.calculateImageBinding({ ignoreSort: true }, function () {});
+                                            machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
                                             machineryRelayout(s);
                                             s.$evalAsync();
                                         }
@@ -991,7 +991,7 @@ export function flipHandler(...args: any[]) {
         		flipVideo($event, s.current);
         	}
         	else {
-        		s.flipImage($event, s.current, true);
+        		flipImage($event, s.current, true);
         	}
         }).apply(null, args);
   }
@@ -1005,7 +1005,7 @@ export function rotateHandler(...args: any[]) {
         		rotateVideo($event, s.current);
         	}
         	else {
-        		s.rotateImage($event, s.current);
+        		rotateImage($event, s.current);
         	}
         }).apply(null, args);
   }

@@ -2156,8 +2156,16 @@
 >   「theme switch to light」**稳定失败**。真因：原版在 scope 无 `$apply` 时**抛错被 catch**
 >   （fn 不执行），直调则执行了 fn —— 是真实行为差异而非等价改造。**保留原实现**，
 >   该 1 处内部 `$apply` 留给 C-6（删 scopeShim）统一处置。
-> - 结论：`s.$evalAsync` / `s.$apply` 调用面全树归零；唯一残留是 `scopeApply` 实现内部的
->   `$apply` 间接层（1 处，非调用面），属 C-6 范围。
+> - **边界修正（实测）**：`collect-window` / `preview-window` / `preferences` / `viewers`
+>   四个目录**各有独立的 scope shim 实例**（各自的 watchers 数组）。把它们的 `s.$evalAsync()`
+>   改成全局 `scopeEvalAsync()` 后，flush 的是 bodyScope 的 watcher、本窗口的不再被立即触发
+>   —— stage9b1 的 `pw4a-search-create-row` / `pw4c-tagpanel-create-row` 稳定失败。已整体
+>   恢复（提交 `8ecf06a`）。
+> - 结论：**主窗口（core / services / components / store）scope 面 digest 调用清零**；
+>   四个独立窗口保留原调用（待 C-5 处置）；`scopeApply` 实现内部的 `$apply` 间接层保留
+>   （1 处，非调用面，待 C-6）。
+> - **教训**：跨窗口/多实例对象上的方法（`X.$xxx()`）不可机械改名为全局函数 ——
+>   `X` 是哪个实例决定语义。这与 C-2 的 `$root` 前缀坑同源（都是"接收者身份"问题）。
 >
 > **⚠️ 顺序修正（2026-09-10，实证）**：原计划 C-3 → C-4 是**错的**。
 > 读 `global/scopeShim.ts` 的实现后发现：

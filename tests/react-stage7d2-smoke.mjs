@@ -286,7 +286,7 @@ try {
   // ── IMPORT_ARTSTATION ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('IMPORT_ARTSTATION');
+      window.__eagleBus.emit('IMPORT_ARTSTATION');
       return true;
     })()`,
     returnByValue: true,
@@ -391,7 +391,7 @@ try {
   // ── 截图留档 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('IMPORT_ARTSTATION');
+      window.__eagleBus.emit('IMPORT_ARTSTATION');
       return true;
     })()`,
     returnByValue: true,

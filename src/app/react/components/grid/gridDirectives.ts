@@ -1,5 +1,6 @@
 import { getBodyScope } from '../../core/appCore';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
+import { autoscrollChannel } from '../../global/bus';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -25,7 +26,7 @@ export function initAutoScroll() {
   const attrs = {};
 
             var $container = $(elem);
-            $scope.$on("AutoScroll", function (event, index) {
+            autoscrollChannel.on(function (event, index) {
 
                 // 暫時做修正，未來有直接滾動 index 的方式再調整
                 if (!$bodyScope.selected || $bodyScope.selected.length === 0) return;

@@ -115,7 +115,7 @@ try {
   ]);
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('IMPORT_IMAGES', {
+      window.__eagleBus.emit('IMPORT_IMAGES', {
         title: '冒烟收集',
         url: 'https://example.com/gallery',
         images: ${imagesJson},
@@ -258,7 +258,7 @@ try {
   // ── 再次打开 → Esc 关闭 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('IMPORT_IMAGES', {
+      window.__eagleBus.emit('IMPORT_IMAGES', {
         title: '冒烟收集2',
         url: 'https://example.com/gallery2',
         images: ${imagesJson},
@@ -283,7 +283,7 @@ try {
   // ── 截图留档 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('IMPORT_IMAGES', {
+      window.__eagleBus.emit('IMPORT_IMAGES', {
         title: '冒烟收集3',
         url: 'https://example.com/gallery3',
         images: ${imagesJson},

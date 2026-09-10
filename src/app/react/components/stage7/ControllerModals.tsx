@@ -14,7 +14,7 @@ import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { machineryToggleAll } from '../../core/dataMachinery';
 import { uploadFiles } from '../../services/uploadService';
-import { openUrlInPanelChannel } from '../../global/bus';
+import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
@@ -53,11 +53,11 @@ export function ErrorModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const offOpen = scope.$on('OPEN_ERROR', (e: any, params: any) => {
+    const offOpen = openErrorChannel.on((params: any) => {
       errorListRef.current = params.errorList;
       setOpen(true);
     });
-    const offClean = scope.$on('CLEAN_ALL_ERROR', (e: any, params: any) => {
+    const offClean = cleanAllErrorChannel.on((params: any) => {
       errorListRef.current = params.errorList;
       cleanAll();
     });

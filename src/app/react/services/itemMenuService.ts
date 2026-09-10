@@ -113,7 +113,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 image: iconUrl,
                 fallbackImage: 'assets/images/base/library-logo.svg',
                 click: () => {
-                    s.addToLibraryChannel.emit({
+                    addToLibraryChannel.emit({
                         items: items,
                         library: history
                     });
@@ -986,14 +986,14 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 visible: item.ext === 'webp',
                                 label: "PNG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert png 轉換`,
-                                click: () => { s.webpConvertStartChannel.emit({ images: s.selected, format: "png" }); s.$evalAsync(); }
+                                click: () => { webpConvertStartChannel.emit({ images: s.selected, format: "png" }); s.$evalAsync(); }
                             },
                             // JPG
                             {
                                 visible: item.ext === 'webp',
                                 label: "JPG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert jpg 轉換`,
-                                click: () => { s.webpConvertStartChannel.emit({ images: s.selected, format: "jpg" }); s.$evalAsync(); }
+                                click: () => { webpConvertStartChannel.emit({ images: s.selected, format: "jpg" }); s.$evalAsync(); }
                             },
                         ]
                     }

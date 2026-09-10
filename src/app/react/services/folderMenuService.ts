@@ -25,7 +25,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
-import { addToLibraryChannel, newSmartFolderChannel, setFolderPasswordChannel } from '../global/bus';
+import { addToLibraryChannel, editSmartFolderChannel, folderSettingsChannel, newSmartFolderChannel, openMoveFolderModalChannel, setFolderPasswordChannel } from '../global/bus';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -135,7 +135,7 @@ export function setFolderPassword(...args: any[]) {
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
-      s.setFolderPasswordChannel.emit({ folder: f, mode: 'new' });
+      setFolderPasswordChannel.emit({ folder: f, mode: 'new' });
     }).apply(null, args);
 }
 
@@ -145,7 +145,7 @@ export function changeFolderPassword(...args: any[]) {
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
-      s.setFolderPasswordChannel.emit({ folder: f, mode: 'change' });
+      setFolderPasswordChannel.emit({ folder: f, mode: 'change' });
     }).apply(null, args);
 }
 
@@ -155,7 +155,7 @@ export function resetFolderPassword(...args: any[]) {
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
-      s.setFolderPasswordChannel.emit({ folder: f, mode: 'reset' });
+      setFolderPasswordChannel.emit({ folder: f, mode: 'reset' });
     }).apply(null, args);
 }
 
@@ -242,10 +242,10 @@ export function settingFolder(...args: any[]) {
       if (!f) return;
 
       if (f.conditions) {
-        s.$root.$broadcast('EDIT.SMART.FOLDER', f);
+        editSmartFolderChannel.emit(f);
       }
       else {
-        s.$root.$broadcast('FOLDER_SETTINGS', f);
+        folderSettingsChannel.emit(f);
       }
     }).apply(null, args);
 }
@@ -585,7 +585,7 @@ export function moveFolders(...args: any[]) {
     return (function (selectedFolders: any, node: any) {
       var selected = (selectedFolders && selectedFolders.length > 0) ? selectedFolders : [node];
       if (selected && selected.length > 0) {
-        s.$root.$broadcast('OPEN-MOVE-FOLDER-MODAL', {
+        openMoveFolderModalChannel.emit({
           current: s.currentFolder,
           folders: s.folders,
           selectedFolders: selected
@@ -660,7 +660,7 @@ export function openFolderContextMenu(...args: any[]) {
           icon: 'ic-library-logo.svg',
           click: () => {
             const items2 = machineryGetFolderImages(s, folder, true);
-            s.addToLibraryChannel.emit({
+            addToLibraryChannel.emit({
               folder: folder,
               items: items2,
               library: history
@@ -1537,7 +1537,7 @@ export function newChildSmartFolder(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
-      s.newSmartFolderChannel.emit({ smartFolder: smartFolder || s.currentSmartFolder, parent: smartFolder });
+      newSmartFolderChannel.emit({ smartFolder: smartFolder || s.currentSmartFolder, parent: smartFolder });
     }).apply(null, args);
 }
 
@@ -1631,7 +1631,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           accelerator: history.dir,
           icon: 'ic-library-logo.svg',
           click: () => {
-            s.addToLibraryChannel.emit({
+            addToLibraryChannel.emit({
               smartFolder: smartFolder,
               items: [],
               library: history

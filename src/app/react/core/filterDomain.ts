@@ -27,6 +27,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { isInFolder } from './itemDomain';
 import { updateSuggestions } from './miscDomain';
 import { machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFilterContent, machineryRebindRefresh, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
+import { closeQuickSearchModalChannel, resetFilterChannel } from '../global/bus';
 
 let done = false;
 
@@ -340,7 +341,7 @@ export function closeQuickSearch(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function (event) {
-            s.$root.$broadcast('CLOSE_QUICK_SEARCH_MODAL');
+            closeQuickSearchModalChannel.emit();
         }).apply(null, args);
   }
 
@@ -636,7 +637,7 @@ export function resetFilter(...args: any[]) {
 
             $("[filter-item].open").removeClass("open");
             s.startCursor = 0;
-            s.$root.$broadcast("Reset_Filter");
+            resetFilterChannel.emit();
             machineryCalculateFilterCounts(s);
         }).apply(null, args);
   }

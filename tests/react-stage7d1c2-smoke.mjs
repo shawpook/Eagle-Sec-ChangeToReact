@@ -137,7 +137,7 @@ try {
       const folders = body.folders.filter((f) => f.name === '测试夹A' || f.name === '测试夹B');
       const selected = {};
       selected[body.folders.find((f) => f.name === '测试夹A').id] = true;
-      body.$root.$broadcast('FOLDER.SELECT.PANEL.OPEN', {
+      window.__eagleBus.emit('FOLDER.SELECT.PANEL.OPEN', {
         folders,
         selectedIds: selected,
         onChanged: (r) => { window.__folderPanelResult = r; },
@@ -199,7 +199,7 @@ try {
   // ── 搜索建夹：关键字 → create 项 → swal 输入 → body.createFolder → onCreatedFolder ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('FOLDER.SELECT.PANEL.OPEN', {
+      window.__eagleBus.emit('FOLDER.SELECT.PANEL.OPEN', {
         folders: window.$bodyScope.folders,
         selectedIds: {},
         onChanged: () => {},
@@ -420,7 +420,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const sf = window.$bodyScope.smartFolders.find((f) => f.name === '冒烟智能夹');
-      window.$bodyScope.$root.$broadcast('EDIT.SMART.FOLDER', sf);
+      window.__eagleBus.emit('EDIT.SMART.FOLDER', sf);
       return true;
     })()`,
     returnByValue: true,
@@ -460,7 +460,7 @@ try {
   // ── 截图留档 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('FOLDER.SELECT.PANEL.OPEN', {
+      window.__eagleBus.emit('FOLDER.SELECT.PANEL.OPEN', {
         folders: window.$bodyScope.folders,
         selectedIds: {},
         onChanged: () => {},

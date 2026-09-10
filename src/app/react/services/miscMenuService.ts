@@ -28,6 +28,7 @@ import { importFolders } from './uploadService';
 import { getRatioNonExp } from './viewOpsService';
 import { emptyTrash } from './batchOpsService';
 import { emptyRestore, newFolder } from './folderCoreService';
+import { openLayoutPanelChannel } from '../global/bus';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -157,7 +158,7 @@ export function openOrderMenu(...args: any[]) {
     if (!s) return;
     return (function (event: any) {
             event && event.stopPropagation();
-            s.$root.$broadcast("OPEN_LAYOUT_PANEL");
+            openLayoutPanelChannel.emit();
             updateCurrentOrderAndIncrease();
     }).apply(null, args);
 }

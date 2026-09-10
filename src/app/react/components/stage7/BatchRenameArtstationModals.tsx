@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openFolder } from '../../services/folderCoreService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
-import { openRenameChannel } from '../../global/bus';
+import { importArtstationChannel, importImagesChannel, openRenameChannel } from '../../global/bus';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -178,7 +178,7 @@ export function ArtstationImportModal() {
     const body = getBodyScope();
     if (!body) return;
 
-    const off = body.$on('IMPORT_ARTSTATION', (e: any) => {
+    const off = importArtstationChannel.on(() => {
       open();
     });
 
@@ -350,7 +350,7 @@ export function ArtstationImportModal() {
             importFolders = [newFolder];
           }
 
-          getRootScope()?.$broadcast('IMPORT_IMAGES', {
+          importImagesChannel.emit({
             title: userNameRef.current,
             url: pageUrlRef.current,
             images: images,

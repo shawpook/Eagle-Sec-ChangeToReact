@@ -57,7 +57,7 @@ try {
   console.log('artstation-global:', await ev(`(() => { try { return typeof window.Artstation + ':' + typeof window.Artstation.isValidUrl; } catch (e) { return 'ERR ' + e.message; } })()`));
   console.log('art-open:', await ev(`(() => {
     try {
-      window.$bodyScope.$root.$broadcast('IMPORT_ARTSTATION');
+      window.__eagleBus.emit('IMPORT_ARTSTATION');
       return 'ok';
     } catch (e) { return 'ERR: ' + e.message; }
   })()`));

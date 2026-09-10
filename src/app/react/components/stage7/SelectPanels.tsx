@@ -6,7 +6,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
 import { getBodyScope, getRootScope } from '../../core/appCore';
-import { saveFolderChannel } from '../../global/bus';
+import { folderSettingsChannel, generalTagSelectPanelOpenChannel, saveFolderChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1c-1：tagsInput + generalTagSelectPanel + AutoTaggingController 接管。
@@ -30,7 +30,7 @@ export const themePathOf = (theme: string) => (theme === 'light' || theme === 'l
 export function openGeneralTagSelectPanel(params: any) {
   // GeneralTagSelectPanel 类（58115-58120）：$rootScope（html scope）广播
   const rootScope = getRootScope();
-  if (rootScope) rootScope.$broadcast('GENERAL.TAG.SELECT.PANEL.OPEN', params);
+  if (rootScope) generalTagSelectPanelOpenChannel.emit(params);
 }
 
 /* ================= vsGridRepeat 指令（14686-15106）→ useVsGridRepeat ================= */
@@ -379,7 +379,7 @@ export function GeneralTagSelectPanel() {
     const scope = getBodyScope();
     let off: any;
     if (scope) {
-      const offOpen = scope.$on('GENERAL.TAG.SELECT.PANEL.OPEN', (event: any, params: any) => {
+      const offOpen = generalTagSelectPanelOpenChannel.on((params: any) => {
         setTimeout(() => {
           panel.init(params);
           bump((v) => v + 1);
@@ -854,7 +854,7 @@ export function AutoTaggingModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('FOLDER_SETTINGS', (e: any, folder: any) => {
+    const off = folderSettingsChannel.on((folder: any) => {
       folderRef.current = folder;
       setOpen(true);
       setFolderName(folder.name);

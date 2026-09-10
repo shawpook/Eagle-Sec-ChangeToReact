@@ -152,7 +152,7 @@ try {
   // ④ 列表空白右键 → OPEN_LAYOUT_PANEL 广播（排序面板；用 $on 间谍断言，面板 DOM 形态不稳）。
   //    合成 contextmenu 直接派发在 #box-list（真实右键在同一监听链上，去 CDP 坐标/覆盖层
   //    脆弱性——R9 教训：监听链一致即可，命中测试交给 boxFrom 分支）
-  await evaluate(`(() => { window.__layoutPanelFired = false; window.$bodyScope.$on('OPEN_LAYOUT_PANEL', () => { window.__layoutPanelFired = true; }); return true; })()`);
+  await evaluate(`(() => { window.__layoutPanelFired = false; window.__eagleBus.on('OPEN_LAYOUT_PANEL', () => { window.__layoutPanelFired = true; }); return true; })()`);
   await evaluate(`(() => {
     const host = document.getElementById('box-list');
     host.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 350, clientY: 500 }));

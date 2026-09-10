@@ -18,7 +18,7 @@ import { machineryRebindRefresh } from '../../core/dataMachinery';
 import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
-import { setFolderPasswordChannel } from '../../global/bus';
+import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, setFolderPasswordChannel } from '../../global/bus';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -121,7 +121,7 @@ export function LayoutPanel() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN_LAYOUT_PANEL', () => {
+    const off = openLayoutPanelChannel.on(() => {
       const el = panelRef.current;
       if (el) movePanelToCursorPosition(el);
       setOpen(true);
@@ -836,7 +836,7 @@ export function MousewheelModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN_MOUSEWHEEL_PREFERENCE_WINDOW', () => {
+    const off = openMousewheelPreferenceWindowChannel.on(() => {
       setOpen(true);
       scope.$evalAsync?.();
     });
@@ -906,7 +906,7 @@ export function AboutPanel() {
     (async () => setPjson(await loadPjson()))();
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN_ABOUT_PANEL', () => setOpen(true));
+    const off = openAboutPanelChannel.on(() => setOpen(true));
     return () => off();
   }, []);
 

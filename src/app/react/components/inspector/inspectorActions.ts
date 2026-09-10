@@ -1,5 +1,5 @@
 import { detailZoom } from '../../core/smoothZoomEngine';
-import { contextMenuOpenChannel, refreshVideoCommentsChannel, setFolderPasswordChannel, updateInspectorChannel } from '../../global/bus';
+import { contextMenuOpenChannel, openAboutPanelChannel, refreshVideoCommentsChannel, setFolderPasswordChannel, updateInspectorChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
@@ -763,7 +763,7 @@ export function openHelpContextMenu() {
         icon: 'ic-eagle-logo.svg',
         keywords: 'about アバウト 关于',
         click: () => {
-          getRootScope()?.$broadcast('OPEN_ABOUT_PANEL');
+          openAboutPanelChannel.emit();
         },
       },
       {

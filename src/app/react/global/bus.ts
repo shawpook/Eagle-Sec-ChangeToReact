@@ -116,3 +116,25 @@ export const inspectorTagSelectPanelOpenChannel = defineChannel<any>('INSPECTOR.
 export const saveFolderChannel = defineChannel<any>('SAVE_FOLDER');
 export const openQuickSearchModalChannel = defineChannel<any>('OPEN_QUICK_SEARCH_MODAL');
 export const openUrlInPanelChannel = defineChannel<any>('OPEN_URL_IN_PANEL');
+
+// ── b1-9bz-C-2 频道迁移 ──
+export const openPluginCreatorChannel = defineChannel<any>('OPEN_PLUGIN_CREATOR');
+export const openPluginCenterChannel = defineChannel<any>('OPEN_PLUGIN_CENTER');
+export const resetFilterChannel = defineChannel<any>('Reset_Filter');
+export const openPluginPanelChannel = defineChannel<any>('OPEN_PLUGIN_PANEL');
+export const openPluginCenterDetailChannel = defineChannel<any>('OPEN_PLUGIN_CENTER_DETAIL');
+export const openMousewheelPreferenceWindowChannel = defineChannel<any>('OPEN_MOUSEWHEEL_PREFERENCE_WINDOW');
+export const openLayoutPanelChannel = defineChannel<any>('OPEN_LAYOUT_PANEL');
+export const openErrorChannel = defineChannel<any>('OPEN_ERROR');
+export const openAboutPanelChannel = defineChannel<any>('OPEN_ABOUT_PANEL');
+export const openMoveFolderModalChannel = defineChannel<any>('OPEN-MOVE-FOLDER-MODAL');
+export const openAddFolderModalChannel = defineChannel<any>('OPEN-ADD-FOLDER-MODAL');
+export const importImagesChannel = defineChannel<any>('IMPORT_IMAGES');
+export const importArtstationChannel = defineChannel<any>('IMPORT_ARTSTATION');
+export const generalTagSelectPanelOpenChannel = defineChannel<any>('GENERAL.TAG.SELECT.PANEL.OPEN');
+export const folderSettingsChannel = defineChannel<any>('FOLDER_SETTINGS');
+export const folderSelectPanelOpenChannel = defineChannel<any>('FOLDER.SELECT.PANEL.OPEN');
+export const editSmartFolderChannel = defineChannel<any>('EDIT.SMART.FOLDER');
+export const closeQuickSearchModalChannel = defineChannel<any>('CLOSE_QUICK_SEARCH_MODAL');
+export const cleanAllErrorChannel = defineChannel<any>('CLEAN_ALL_ERROR');
+export const autoscrollChannel = defineChannel<any>('AutoScroll');

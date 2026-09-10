@@ -8,6 +8,7 @@ import { openAppContextMenu } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
 
 /**
  * 阶段7d-5a：pluginPanel + pluginCreator 接管（pluginCenter 见 7d-5b）。
@@ -524,7 +525,7 @@ export function PluginPanel() {
           label: t('modal.pluginPanel.contextMenu.viewInPluginCenter'),
           click: () => {
             closeRef.current();
-            getRootScope()?.$broadcast('OPEN_PLUGIN_CENTER_DETAIL', item.plugin.manifest.id);
+            openPluginCenterDetailChannel.emit(item.plugin.manifest.id);
             getRootScope()?.$evalAsync();
           },
         },
@@ -587,7 +588,7 @@ export function PluginPanel() {
           label: t('modal.pluginPanel.contextMenu.createPlugin'),
           icon: 'ic-folder-new-folder.svg',
           click: () => {
-            getRootScope()?.$broadcast('OPEN_PLUGIN_CREATOR');
+            openPluginCreatorChannel.emit();
             getRootScope()?.$evalAsync();
           },
         },
@@ -625,7 +626,7 @@ export function PluginPanel() {
   };
 
   const openPluginCenter = (categoryId?: any) => {
-    getRootScope()?.$broadcast('OPEN_PLUGIN_CENTER', categoryId);
+    openPluginCenterChannel.emit(categoryId);
   };
 
   // selectCurrent/selectPrev/selectNext（镜像 310-342 逐字）
@@ -672,7 +673,7 @@ export function PluginPanel() {
     // ——死監聽移除。
 
     // $on("OPEN_PLUGIN_PANEL")（镜像 59-80 逐字）
-    const offOpen = body.$on('OPEN_PLUGIN_PANEL', (event: any, params: any) => {
+    const offOpen = openPluginPanelChannel.on((params: any) => {
       void params;
       const pluginModule = body.pluginModule;
       rootRef.current.currentIndex = -1;
@@ -991,13 +992,13 @@ export function PluginCreator() {
     if (!body) return;
 
     // $on("OPEN_PLUGIN_CREATOR")（镜像 16-18）
-    const off = body.$on('OPEN_PLUGIN_CREATOR', (event: any, params: any) => {
+    const off = openPluginCreatorChannel.on((params: any) => {
       void params;
       setIsOpen(true);
     });
 
     // auto-focus 指令等价（OPEN_PLUGIN_CREATOR → $timeout(100) → click + focus + select）
-    const offAutoFocus = body.$on('OPEN_PLUGIN_CREATOR', () => {
+    const offAutoFocus = openPluginCreatorChannel.on(() => {
       setTimeout(() => {
         const el = nameInputRef.current;
         if (el) {

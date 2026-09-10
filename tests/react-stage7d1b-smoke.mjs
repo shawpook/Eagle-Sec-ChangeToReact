@@ -104,7 +104,7 @@ try {
   // ── ErrorModal：OPEN_ERROR ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_ERROR', {
+      window.__eagleBus.emit('OPEN_ERROR', {
         errorList: [
           { type: 'DOWNLOAD_ERROR', reason: 'BASE64_ERROR', object: { name: 'Net One', url: '', website: 'https://example.com/a' } },
           { type: 'ADD_ERROR', reason: 'FORMAT_NOT_SUPPORTED', object: { name: 'Local One', path: 'C:/tmp/local-one.txt' } },
@@ -152,7 +152,7 @@ try {
     expression: `(() => {
       const s = window.$bodyScope;
       s.itemMappings['FAKE-ITEM-1'] = { id: 'FAKE-ITEM-1', name: 'old-name', tags: [] };
-      s.$root.$broadcast('OPEN_ERROR', {
+      window.__eagleBus.emit('OPEN_ERROR', {
         errorList: [
           { type: 'EDIT_ERROR', reason: 'SAVE_FAILED', object: { name: 'old-name', path: 'C:/tmp/x.png' }, modifiedData: { id: 'FAKE-ITEM-1', name: 'new-name' } },
         ],
@@ -179,7 +179,7 @@ try {
   // CLEAN_ALL_ERROR → swal 确认
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_ERROR', {
+      window.__eagleBus.emit('OPEN_ERROR', {
         errorList: [
           { type: 'ADD_ERROR', reason: 'X', object: { name: 'a', path: 'C:/a' } },
         ],
@@ -191,7 +191,7 @@ try {
   await assertExpr('em-clean-reopen', `!!document.querySelector('#eagle-error-modal-host .error-modal')`);
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('CLEAN_ALL_ERROR', { errorList: window.__emProbeList || [] });
+      window.__eagleBus.emit('CLEAN_ALL_ERROR', { errorList: window.__emProbeList || [] });
       return true;
     })()`,
     returnByValue: true,
@@ -275,7 +275,7 @@ try {
   // ── 截图留档（ErrorModal 打开态） ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_ERROR', {
+      window.__eagleBus.emit('OPEN_ERROR', {
         errorList: [
           { type: 'DOWNLOAD_ERROR', reason: 'HTTP_ERROR', detail: '403', object: { name: 'Shot A', url: 'https://example.com/x.png', website: 'https://example.com/x' } },
         ],

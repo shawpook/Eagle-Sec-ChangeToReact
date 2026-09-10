@@ -1578,7 +1578,7 @@ export function machineryBuildTagManager(s: any): any {
                     click: () => {
                         if (!tagGroup || !history) return;
                         if (w.fs.existsSync(history.path)) {
-                            s.addToLibraryChannel.emit({
+                            addToLibraryChannel.emit({
                                 tagGroup, tagGroup,
                                 items: [],
                                 library: history

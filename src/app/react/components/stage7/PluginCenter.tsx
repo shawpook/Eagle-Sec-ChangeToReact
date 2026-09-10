@@ -6,6 +6,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
+import { openPluginCenterChannel, openPluginCenterDetailChannel } from '../../global/bus';
 
 /**
  * 阶段7d-5b：pluginCenter 接管（bundle 62140-62723 附近；镜像 js/directives/plugin-center.js
@@ -641,13 +642,13 @@ export function PluginCenter() {
     };
 
     // $on("OPEN_PLUGIN_CENTER")（镜像 333-336）
-    const offOpen = body.$on('OPEN_PLUGIN_CENTER', async (event: any, categoryId: any) => {
+    const offOpen = openPluginCenterChannel.on(async (categoryId: any) => {
       await openRef.current(categoryId);
       bumpAll();
     });
 
     // $on("OPEN_PLUGIN_CENTER_DETAIL")（镜像 338-342）
-    const offOpenDetail = body.$on('OPEN_PLUGIN_CENTER_DETAIL', async (event: any, pluginId: any) => {
+    const offOpenDetail = openPluginCenterDetailChannel.on(async (pluginId: any) => {
       await openRef.current();
       try {
         await openPluginById(pluginId);
@@ -665,7 +666,7 @@ export function PluginCenter() {
     });
 
     // auto-focus 指令等价（OPEN_PLUGIN_CENTER → click + focus + select）
-    const offAutoFocus = body.$on('OPEN_PLUGIN_CENTER', () => {
+    const offAutoFocus = openPluginCenterChannel.on(() => {
       setTimeout(() => {
         const el = searchInputRef.current;
         if (el) {

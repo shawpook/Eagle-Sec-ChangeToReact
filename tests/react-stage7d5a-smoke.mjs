@@ -106,7 +106,7 @@ try {
   // ── OPEN_PLUGIN_PANEL 广播 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_PLUGIN_PANEL');
+      window.__eagleBus.emit('OPEN_PLUGIN_PANEL');
       return true;
     })()`,
     returnByValue: true,
@@ -163,7 +163,7 @@ try {
   // ── OPEN_PLUGIN_CREATOR ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_PLUGIN_CREATOR');
+      window.__eagleBus.emit('OPEN_PLUGIN_CREATOR');
       return true;
     })()`,
     returnByValue: true,
@@ -199,7 +199,7 @@ try {
   // ── 截图留档 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_PLUGIN_PANEL');
+      window.__eagleBus.emit('OPEN_PLUGIN_PANEL');
       return true;
     })()`,
     returnByValue: true,

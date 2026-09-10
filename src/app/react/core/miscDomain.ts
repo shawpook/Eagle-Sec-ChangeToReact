@@ -38,6 +38,7 @@ import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOut
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
+import { openErrorChannel } from '../global/bus';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -1282,7 +1283,7 @@ export function openErrorModal(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            s.$root.$broadcast("OPEN_ERROR", {
+            openErrorChannel.emit({
                 errorList: s.errorList
             });
         }).apply(null, args);

@@ -127,7 +127,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       window.__tagPanelResult = null;
-      window.$bodyScope.$root.$broadcast('GENERAL.TAG.SELECT.PANEL.OPEN', {
+      window.__eagleBus.emit('GENERAL.TAG.SELECT.PANEL.OPEN', {
         tagManager: window.$bodyScope.TagManager,
         selectedTags: { '参考素材': true },
         onChanged: (r) => { window.__tagPanelResult = r; },
@@ -181,7 +181,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const s = window.$bodyScope;
-      s.$root.$broadcast('FOLDER_SETTINGS', s.folders.find((f) => f.name === '自动标签夹'));
+      window.__eagleBus.emit('FOLDER_SETTINGS', s.folders.find((f) => f.name === '自动标签夹'));
       return true;
     })()`,
     returnByValue: true,
@@ -252,7 +252,7 @@ try {
   // ── 截图留档（面板打开态） ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('GENERAL.TAG.SELECT.PANEL.OPEN', {
+      window.__eagleBus.emit('GENERAL.TAG.SELECT.PANEL.OPEN', {
         tagManager: window.$bodyScope.TagManager,
         selectedTags: {},
         onChanged: () => {},

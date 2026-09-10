@@ -13,6 +13,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
+import { openAddFolderModalChannel, openMoveFolderModalChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -545,7 +546,7 @@ export function AddToFolderModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN-ADD-FOLDER-MODAL', (e: any, params: any) => {
+    const off = openAddFolderModalChannel.on((params: any) => {
       const body = getBodyScope();
       const w = window as any;
       foldersRef.current = [];
@@ -1662,7 +1663,7 @@ export function MoveFolderModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN-MOVE-FOLDER-MODAL', (e: any, params: any) => {
+    const off = openMoveFolderModalChannel.on((params: any) => {
       const w = window as any;
       foldersRef.current = [];
       selectedFoldersMappingsRef.current = {};

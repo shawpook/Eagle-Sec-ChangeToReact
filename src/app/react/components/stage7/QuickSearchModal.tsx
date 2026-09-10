@@ -12,7 +12,7 @@ import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
-import { openQuickSearchModalChannel } from '../../global/bus';
+import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -559,7 +559,7 @@ export function QuickSearchModal() {
       inputRef.current?.select();
       runKeywordChange(modeRef.current, keywordRef.current);
     });
-    const offClose = scope.$on('CLOSE_QUICK_SEARCH_MODAL', () => {
+    const offClose = closeQuickSearchModalChannel.on(() => {
       close();
     });
     return () => {

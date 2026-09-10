@@ -88,7 +88,7 @@ import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
-import { inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openQuickSearchModalChannel, openUrlInPanelChannel, updateInspectorChannel } from '../global/bus';
+import { autoscrollChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, updateInspectorChannel } from '../global/bus';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -3467,7 +3467,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
             // 如果用户没有设置过 mousewheel 偏好
             if (!s.$root.preferences.habits.scrollBehaviorTour) {
               w.$(".smooth_zoom_preloader").one("mousewheel.tour", function () {
-                s.$root.$broadcast("OPEN_MOUSEWHEEL_PREFERENCE_WINDOW");
+                openMousewheelPreferenceWindowChannel.emit();
               });
             }
           }, 100);
@@ -4246,7 +4246,7 @@ export function machinerySelectNext(s: any, event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (s.isCropMode) {
-    s.moveCropToolChannel.emit({ horizontal: 1, vertical: 0 });
+    moveCropToolChannel.emit({ horizontal: 1, vertical: 0 });
     return;
   }
 
@@ -4307,7 +4307,7 @@ export function machinerySelectPrev(s: any, event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (s.isCropMode) {
-    s.moveCropToolChannel.emit({ horizontal: -1, vertical: 0 });
+    moveCropToolChannel.emit({ horizontal: -1, vertical: 0 });
     return;
   }
 
@@ -4376,7 +4376,7 @@ export function machinerySelectPrev(s: any, event: any): void {
 /* multipleSelectUp（bundle 35898-35906 逐字：ListLayout 委派 multipleSelectPrev） */
 export function machineryMultipleSelectUp(s: any, event: any): void {
   if (s.isCropMode) {
-    s.moveCropToolChannel.emit({ horizontal: 0, vertical: -10 });
+    moveCropToolChannel.emit({ horizontal: 0, vertical: -10 });
     return;
   }
   if (s.layout === "ListLayout") {
@@ -4387,7 +4387,7 @@ export function machineryMultipleSelectUp(s: any, event: any): void {
 /* multipleSelectDown（bundle 35964-35972 逐字：ListLayout 委派 multipleSelectNext） */
 export function machineryMultipleSelectDown(s: any, event: any): void {
   if (s.isCropMode) {
-    s.moveCropToolChannel.emit({ horizontal: 0, vertical: 10 });
+    moveCropToolChannel.emit({ horizontal: 0, vertical: 10 });
     return;
   }
   if (s.layout === "ListLayout") {
@@ -4400,7 +4400,7 @@ export function machineryMultipleSelectDown(s: any, event: any): void {
 export function machineryMultipleSelectNext(s: any, event: any): void {
   if (s.$root.currentFocus == 'sidebar') return;
   if (s.isCropMode) {
-    s.moveCropToolChannel.emit({ horizontal: 10, vertical: 0 });
+    moveCropToolChannel.emit({ horizontal: 10, vertical: 0 });
     return;
   }
   if (s.isDetailMode) return;
@@ -4431,7 +4431,7 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
 export function machineryMultipleSelectPrev(s: any, event: any): void {
   if (s.$root.currentFocus == 'sidebar') return;
   if (s.isCropMode) {
-    s.moveCropToolChannel.emit({ horizontal: -10, vertical: 0 });
+    moveCropToolChannel.emit({ horizontal: -10, vertical: 0 });
     return;
   }
   if (s.isDetailMode) return;
@@ -4918,7 +4918,7 @@ export function machineryKeyRightHandler(s: any, event: any): void {
 export function machineryModUpHandler(s: any, event: any): void {
   if (s.isCropMode) {
     event && event.preventDefault();
-    s.resizeCropToolChannel.emit({
+    resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: -1
     });
@@ -4932,7 +4932,7 @@ export function machineryModUpHandler(s: any, event: any): void {
 export function machineryModDownHandler(s: any, event: any): void {
   if (s.isCropMode) {
     event && event.preventDefault();
-    s.resizeCropToolChannel.emit({
+    resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: 1
     });
@@ -4947,7 +4947,7 @@ export function machineryModLeftHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isDetailMode) {
     if (s.isCropMode) {
-      s.resizeCropToolChannel.emit({
+      resizeCropToolChannel.emit({
         horizontal: -1,
         vertical: 0
       });
@@ -4963,7 +4963,7 @@ export function machineryModRightHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isDetailMode) {
     if (s.isCropMode) {
-      s.resizeCropToolChannel.emit({
+      resizeCropToolChannel.emit({
         horizontal: 1,
         vertical: 0
       });
@@ -4978,7 +4978,7 @@ export function machineryModRightHandler(s: any, event: any): void {
 export function machineryModShiftUpHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.resizeCropToolChannel.emit({
+    resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: -10
     });
@@ -4989,7 +4989,7 @@ export function machineryModShiftUpHandler(s: any, event: any): void {
 export function machineryModShiftDownHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.resizeCropToolChannel.emit({
+    resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: 10
     });
@@ -5000,7 +5000,7 @@ export function machineryModShiftDownHandler(s: any, event: any): void {
 export function machineryModShiftLeftHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.resizeCropToolChannel.emit({
+    resizeCropToolChannel.emit({
       horizontal: -10,
       vertical: 0
     });
@@ -5011,7 +5011,7 @@ export function machineryModShiftLeftHandler(s: any, event: any): void {
 export function machineryModShiftRightHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.resizeCropToolChannel.emit({
+    resizeCropToolChannel.emit({
       horizontal: 10,
       vertical: 0
     });
@@ -5128,7 +5128,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
   if (s.$root.currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
-        s.moveCropToolChannel.emit({ horizontal: 0, vertical: -1 });
+        moveCropToolChannel.emit({ horizontal: 0, vertical: -1 });
         return;
       }
       else {
@@ -5250,7 +5250,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
   if (s.$root.currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
-        s.moveCropToolChannel.emit({ horizontal: 0, vertical: 1 });
+        moveCropToolChannel.emit({ horizontal: 0, vertical: 1 });
         return;
       }
       else {
@@ -5782,7 +5782,7 @@ export function machinerySetFolderCover(s: any): void {
 
 /* openQuickSearch（bundle 32512-32514 逐字） */
 export function machineryOpenQuickSearch(s: any, event: any): void {
-  s.openQuickSearchModalChannel.emit();
+  openQuickSearchModalChannel.emit();
 }
 
 /* openActionsPanel（bundle 43279-43282 逐字；eagle.action 经 window） */
@@ -6729,7 +6729,7 @@ export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
     "ja_JP": "jp"
   };
   let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
-  s.openUrlInPanelChannel.emit(`${baseUrl}`);
+  openUrlInPanelChannel.emit(`${baseUrl}`);
   w.$bodyScope.leaveDetailMode();
 }
 
@@ -6924,7 +6924,7 @@ export function machineryOpenPrevSmartFolder(s: any): void {
 export function machineryAutoScroll(s: any, index: any): void {
   const $timeout = getTimeout();
   $timeout(function () {
-    s.$broadcast("AutoScroll", index);
+    autoscrollChannel.emit(index);
   }, 50);
 }
 
@@ -8188,7 +8188,7 @@ export function machineryFadeOutDetailMode(s: any): void {
 /* openPluginPanel（bundle 37324 逐字：OPEN_PLUGIN_PANEL 广播，含 // return 注释逐字） */
 export function machineryOpenPluginPanel(s: any, event: any): void {
   // return;
-  s.$root.$broadcast("OPEN_PLUGIN_PANEL");
+  openPluginPanelChannel.emit();
 }
 
 /* saveFolderDebounce（bundle 42390-42396 逐字：isLibrarySaving 指示 + saveFolder 防抖 1s；
@@ -8778,7 +8778,7 @@ export function machineryOpenHuaban(s: any): void {
 }
 
 export function machineryOpenArtstation(s: any): void {
-  s.$root.$broadcast("IMPORT_ARTSTATION");
+  importArtstationChannel.emit();
 }
 
 /* quickOpenFolder（bundle 44900-44936 逐字：openFolder(ignoreReload=true)/openAll 分流 +
@@ -9860,7 +9860,7 @@ export function machineryFocusSeach(s: any): void {
 /* newSmartFolder（bundle 39944-39946 逐字：$rootScope.$broadcast → s.$root（shim $root
    同体语义）） */
 export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): void {
-  s.newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
+  newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
 }
 
 /* prependFolder（bundle 39968-39979 逐字：unshift + folderMappings 登记 + updateSidebarList
@@ -10169,7 +10169,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
 export function machineryRenameImages(s: any): void {
   const w = window as any;
   if (s.selected.length > 1) {
-    s.openRenameChannel.emit({
+    openRenameChannel.emit({
       type: "IMAGE",
       images: s.selected
     });
@@ -10190,7 +10190,7 @@ export function machineryBatchRenameFolders(s: any): void {
   var selectedFolders = s.$root.selectedFolders;
   if (selectedFolders.length === 0) return;
 
-  s.openRenameChannel.emit({
+  openRenameChannel.emit({
     type: "FOLDER",
     folders: selectedFolders
   });
@@ -10200,7 +10200,7 @@ export function machineryBatchRenameSmartFolders(s: any): void {
   var selectedSmartFolders = s.$root.selectedSmartFolders;
   if (selectedSmartFolders.length === 0) return;
 
-  s.openRenameChannel.emit({
+  openRenameChannel.emit({
     type: "SMART_FOLDER",
     folders: selectedSmartFolders
   });
@@ -10463,7 +10463,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
           return !!s.selectedTags[tag.name];
         });
 
-        s.openRenameChannel.emit({
+        openRenameChannel.emit({
           type: "TAGS",
           tags: selectedTags.slice()
         });

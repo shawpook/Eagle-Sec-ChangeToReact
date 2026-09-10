@@ -100,7 +100,7 @@ try {
   // ── OPEN_PLUGIN_CENTER 广播 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_PLUGIN_CENTER');
+      window.__eagleBus.emit('OPEN_PLUGIN_CENTER');
       return true;
     })()`,
     returnByValue: true,
@@ -178,7 +178,7 @@ try {
   // ── 截图留档（重新打开） ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_PLUGIN_CENTER');
+      window.__eagleBus.emit('OPEN_PLUGIN_CENTER');
       return true;
     })()`,
     returnByValue: true,

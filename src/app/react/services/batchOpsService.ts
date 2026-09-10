@@ -33,6 +33,7 @@ import { getBodyScope } from '../core/appCore';
 import { checkDiskSpace, exportFolder } from './folderCoreService';
 import { select } from './selectionService';
 import { addImagesToFolder } from './folderCoreService';
+import { cleanAllErrorChannel, openAddFolderModalChannel } from '../global/bus';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -79,7 +80,7 @@ export function cleanAllError(...args: any[]) {
   if (!s) return;
   return (function (event: any) {
           event && event.stopPropagation();
-          s.$root.$broadcast("CLEAN_ALL_ERROR", {
+          cleanAllErrorChannel.emit({
               errorList: s.errorList
           });
       }).apply(null, args);
@@ -175,7 +176,7 @@ export function addToFolders(...args: any[]) {
     if (!s) return;
     return (function (e) {
             if (s.selected.length > 0) {
-                s.$root.$broadcast("OPEN-ADD-FOLDER-MODAL", {
+                openAddFolderModalChannel.emit({
                     current: s.currentFolder,
                     folders: s.folders,
                     images: s.selected,

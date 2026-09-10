@@ -123,7 +123,7 @@ try {
 
   // ── autoScroll 广播 ──
   await evalNow(`(() => {
-    window.$bodyScope.$broadcast('AutoScroll', 0);
+    window.__eagleBus.emit('AutoScroll', 0);
     return true;
   })()`);
   await assertExpr('b0-autoscroll-broadcast-ok', `!window.__eagleGridDirectiveErrors`);

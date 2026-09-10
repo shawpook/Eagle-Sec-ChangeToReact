@@ -104,7 +104,7 @@ try {
 
   // ── about panel ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$root.$broadcast('OPEN_ABOUT_PANEL'); return true; })()`,
+    expression: `(() => { window.__eagleBus.emit('OPEN_ABOUT_PANEL'); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(`about-open`, `document.getElementById('about-panel').classList.contains('open')`);
@@ -116,7 +116,7 @@ try {
 
   // ── mousewheel modal（数据面） ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$root.$broadcast('OPEN_MOUSEWHEEL_PREFERENCE_WINDOW'); return true; })()`,
+    expression: `(() => { window.__eagleBus.emit('OPEN_MOUSEWHEEL_PREFERENCE_WINDOW'); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(
@@ -184,7 +184,7 @@ try {
 
   // ── layout panel ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$root.$broadcast('OPEN_LAYOUT_PANEL'); return true; })()`,
+    expression: `(() => { window.__eagleBus.emit('OPEN_LAYOUT_PANEL'); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(`layout-open`, `document.getElementById('layout-panel').classList.contains('open')`);
@@ -248,7 +248,7 @@ try {
 
   // ── 截图（about 打开状态） ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$root.$broadcast('OPEN_ABOUT_PANEL'); return true; })()`,
+    expression: `(() => { window.__eagleBus.emit('OPEN_ABOUT_PANEL'); return true; })()`,
     returnByValue: true,
   });
   await delay(400);

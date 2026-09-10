@@ -40,7 +40,7 @@ export function renameImages() {
   const s: any = getBodyScope();
   if (!s) return;
   if (s.selected.length > 1) {
-    s.openRenameChannel.emit({
+    openRenameChannel.emit({
       type: 'IMAGE',
       images: s.selected,
     });

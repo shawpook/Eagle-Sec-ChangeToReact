@@ -11,7 +11,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope } from '../../core/appCore';
 import { uploadUrls } from '../../services/uploadService';
 import { addToRecentFolders } from '../../services/batchOpsService';
-import { openDuplicateChannel } from '../../global/bus';
+import { importImagesChannel, openDuplicateChannel } from '../../global/bus';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -1019,7 +1019,7 @@ export function BatchSavePanel() {
 
     // $on("IMPORT_IMAGES")（25-28）
     offs.push(
-      body.$on('IMPORT_IMAGES', (e: any, params: any) => {
+      importImagesChannel.on((params: any) => {
         setIsOpen(true);
         init(params);
         bumpAll();

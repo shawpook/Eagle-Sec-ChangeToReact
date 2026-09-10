@@ -67,7 +67,7 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
       if (da < db) return -1;
       return 0;
     })
-    s.refreshVideoCommentsChannel.emit();
+    refreshVideoCommentsChannel.emit();
     machineryUpdateItemView(s, video);
     s.$evalAsync();
 

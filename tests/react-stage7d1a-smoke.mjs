@@ -253,7 +253,7 @@ try {
     expression: `(() => {
       const s = window.$bodyScope;
       const folderA = s.folders.find((x) => x.name === '收藏夹');
-      s.$root.$broadcast('OPEN-MOVE-FOLDER-MODAL', { current: null, folders: s.folders, selectedFolders: [folderA] });
+      window.__eagleBus.emit('OPEN-MOVE-FOLDER-MODAL', { current: null, folders: s.folders, selectedFolders: [folderA] });
       return true;
     })()`,
     returnByValue: true,

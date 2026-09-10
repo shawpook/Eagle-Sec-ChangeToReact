@@ -1,6 +1,6 @@
 import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
-import { contextMenuOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
+import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { createFolder } from '../../services/folderCoreService';
 
@@ -1855,9 +1855,9 @@ export class FolderSelectPanel extends SelectPanel {
   collapsedFolderIds: any = {};
 
   static open(params: any) {
-    // 原：angular.element("html").scope().$broadcast('FOLDER.SELECT.PANEL.OPEN', params)
+    // 原：angular.element("html").folderSelectPanelOpenChannel.emit(params)
     const rootScope = getRootScope();
-    if (rootScope) rootScope.$broadcast('FOLDER.SELECT.PANEL.OPEN', params);
+    if (rootScope) folderSelectPanelOpenChannel.emit(params);
   }
 
   constructor(params: any) {

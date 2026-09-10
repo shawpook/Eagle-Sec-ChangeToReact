@@ -1,6 +1,0 @@
-MENU_POPUP application-menu OK labels=["File","View","Help"]
-MENU_POPUP folder-expand-menu OK labels=["展开/收起文件夹","展开/收起同阶层文件夹","展开/收起所有文件夹"]
-MENU_POPUP folder-context-menu OK labelCount=18 passwordSubmenu=true exportSubmenu=true historySubmenu=true
-MENU_POPUP smart-folder-context-menu OK labelCount=12 exportSubmenu=true
-MENU_POPUP_CLOSED_LOOP_OK {"captures":1,"pwPopupCount":3}
-cleanup incomplete: EBUSY: resource busy or locked, unlink 'C:\Users\ADMINI~1\AppData\Local\Temp\eagle-menu-popup-jGLyvN\user-data\Dictionaries\en-US-10-1.bdic'

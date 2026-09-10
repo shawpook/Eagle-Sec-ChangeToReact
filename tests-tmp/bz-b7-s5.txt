@@ -1,9 +1,0 @@
-file:///H:/dev/Eagle-Sec-development%20-%20%E5%89%AF%E6%9C%AC/tests/react-cdp-harness.mjs:42
-  throw new Error(`${label} timeout${lastError ? `: ${lastError.message}` : ''}`);
-        ^
-
-Error: grid boxes rendered timeout
-    at waitFor (file:///H:/dev/Eagle-Sec-development%20-%20%E5%89%AF%E6%9C%AC/tests/react-cdp-harness.mjs:42:9)
-    at async file:///H:/dev/Eagle-Sec-development%20-%20%E5%89%AF%E6%9C%AC/tests/react-stage5-smoke.mjs:62:3
-
-Node.js v22.22.2

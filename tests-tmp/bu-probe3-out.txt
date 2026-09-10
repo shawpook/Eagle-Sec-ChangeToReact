@@ -1,7 +1,0 @@
-PASS synthetic-boxes-injected
-PASS youtube-hover-creates-iframe
-PASS youtube-mouseleave-cleans
-PASS vimeo-hover-creates-iframe
-PASS vimeo-mouseleave-cleans
-PASS hover-zero-reference-errors
-BU3_PROBE_OK

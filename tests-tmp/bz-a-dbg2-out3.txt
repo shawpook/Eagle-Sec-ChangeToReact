@@ -1,1 +1,0 @@
-RESULT: {"pipeline":{"colorDistancesMap":"undefined","isItemBindCalculated":true,"listDone":false,"rawLen":1},"step_relayout":"ok","step_updateSelection":"ok","step_calculateFilterCounts":"ok","step_updateSubFolderWidth":"ok","step_rebindRefresh":"ok","listDoneAfter":false,"colorMapAfter":"object","colorFilterResult":true,"dist":0.01,"grayResult":true,"swallowed":[]}

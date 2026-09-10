@@ -1,6 +1,0 @@
-=== 迁移后新出现的未绑定标识符（newFree - oldFree）===
-src/app/react/core/filterDomain.ts :: contentFilter -> isInFolder
-src/app/react/core/filterDomain.ts :: search -> updateSuggestions
-src/app/react/core/filterDomain.ts :: searchFocus -> updateSuggestions
-
-migrated bodies matched: 3

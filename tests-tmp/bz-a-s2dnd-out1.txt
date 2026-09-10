@@ -1,6 +1,0 @@
-sidebar node ids: ["FOLDER-07C8PQJJ","FOLDER-Z7F6KBMR","FOLDER-96PZP0PZ"]
-PASS folder ids resolved
-FAIL dragstart sets dragCheck — {"helper":false}
-FAIL dragstart builds draggedFolders payload — {"helper":false}
-FAIL dragstart mounts helper — {"helper":false}
-SIDEBAR_DND_CLOSED_LOOP_FAIL alpha nested into beta timeout

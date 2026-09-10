@@ -1,3 +1,0 @@
-APPLY OK
-指针数: 121
-落点: {'core/filterDomain.ts': 5, 'core/itemDomain.ts': 5, 'core/miscDomain.ts': 5, 'services/folderCoreService.ts': 5, 'services/imageOpsService.ts': 5, 'services/itemMenuService.ts': 5, 'services/lockService.ts': 5, 'services/mediaService.ts': 5, 'services/selectionService.ts': 5, 'services/sidebarService.ts': 5, 'services/uploadService.ts': 5, 'services/viewOpsService.ts': 5}

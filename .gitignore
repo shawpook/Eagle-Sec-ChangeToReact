@@ -28,3 +28,4 @@ Thumbs.db
 # 豁免 src 原版 my_modules 的 dist 构建产物，保持全量跟踪
 !src/my_modules/*/dist/
 !src/my_modules/*/dist/**
+tests-tmp/

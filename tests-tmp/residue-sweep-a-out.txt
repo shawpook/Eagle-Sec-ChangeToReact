@@ -1,6 +1,0 @@
-SWEEP_A_ERRORS {"total":3,"fatal":0}
-SWEEP_A_ERR noise x1 [log:network] Failed to load resource: the server responded with a status of 404 (Not Found) http://127.0.0.1:12003/src/app/assets/images/dark/icons/filter/ic-logic-or.svg 
-SWEEP_A_ERR noise x1 [log:network] Failed to load resource: the server responded with a status of 404 (Not Found) http://127.0.0.1:12003/src/app/assets/images/dark/icons/filter/ic-logic-and.svg 
-SWEEP_A_ERR noise x1 [log:network] Failed to load resource: the server responded with a status of 404 (Not Found) http://127.0.0.1:12003/src/app/assets/images/base/icons/ic-welcome-library-missing-icon.png 
-SWEEP_A_TARGETS [{"type":"page","url":"http://127.0.0.1:12003/src/app/index.html#!/?view=all","title":"Eagle"},{"type":"iframe","url":"https://core.eagle.cool/app-notifications?theme=undefined&version=&buildVersion=","title":"https://core.eagle.cool/app-notification"}]
-SWEEP_A_OK

@@ -1,0 +1,20 @@
+PASS pf8e-notification-rendered
+PASS pf8e-notification-ngif-sections
+PASS pf8e-notification-toggle-dataplane
+PASS pf8e-screencapture-rendered
+PASS pf8e-format-quality-dataplane
+PASS pf8e-capture-window-dataplane
+PASS pf8e-capture-disable
+PASS pf8e-privacy-initial
+PASS pf8e-privacy-toggle-no-modal
+PASS pf8e-privacy-change-modal
+PASS pf8e-privacy-modal-close
+PASS pf8e-autoimport-initial
+PASS pf8e-autoimport-section
+PASS pf8e-developer-regenerate
+PASS pf8e-developer-copy-wiring
+PASS pf8e-search-filter
+PASS pf8e-all-old-blocks-removed
+PASS screenshot-saved test-run/react-stage8e-search.png
+
+STAGE8E SMOKE OK

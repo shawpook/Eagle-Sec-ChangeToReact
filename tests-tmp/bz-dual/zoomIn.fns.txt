@@ -1,0 +1,20 @@
+  fns["zoomIn"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event) {
+            event && event.preventDefault && event.preventDefault();
+            if (!s.isDetailMode) {
+                s.adjustLayoutWidth(-1);
+                __lv_saveListHeight(s.imageSize.height);
+            } else {
+                var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
+                var ratioExp = s.getRatioExp(ratio);
+                if (ratioExp >= 400) { ratioExp = 800; } else if (ratioExp >= 200) { ratioExp = 400; } else if (ratioExp >= 100) { ratioExp = 200; } else if (ratioExp >= 50) { ratioExp = 100; } else if (ratioExp >= 25) { ratioExp = 50; } else if (ratioExp >= 10) { ratioExp = 25; } else if (ratioExp >= 5) { ratioExp = 10; } else { ratioExp = 5; }
+                if (ratioExp > 800) ratioExp = 800;
+                s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
+                s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+                s.updateZoomRatio(undefined, undefined, undefined, true);
+            }
+        }).apply(null, args);
+  };

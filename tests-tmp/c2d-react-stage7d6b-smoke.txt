@@ -1,0 +1,24 @@
+PASS pd6b-hosts
+PASS pd6b-old-elements-gone
+PASS ft-open-counter-0-2
+PASS ft-progress-50
+PASS ft-cancel-closed
+PASS dr-open-40
+PASS dr-closed
+PASS fe-open-0
+PASS fe-progress-50
+PASS fe-finish-closed
+PASS fe-finish-dir-closed
+PASS fe-show-item-in-folder
+PASS fe-close-export-closed
+PASS fe-cancel-closed
+PASS fe-cancel-ipc
+PASS al-open-0-1
+PASS al-cancel-closed
+PASS al-electron-info-ipc
+PASS al-swal-shown
+PASS al-multi-open-0-2
+PASS al-multi-cancel-closed
+PASS screenshot-saved test-run/react-stage7d6b-progress-dialogs.png
+
+STAGE7D6B SMOKE OK

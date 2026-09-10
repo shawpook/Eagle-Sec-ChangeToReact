@@ -1,0 +1,66 @@
+{
+ "changeStar": [
+  1051,
+  1117
+ ],
+ "updateItemView": [
+  4538,
+  4759
+ ],
+ "updateSelection": [
+  4761,
+  4768
+ ],
+ "startDrag": [
+  3937,
+  3947
+ ],
+ "copeVideoFrame": [
+  1353,
+  1360
+ ],
+ "saveVideoFrame": [
+  3265,
+  3272
+ ],
+ "cancelRegenerateThumbnail": [
+  500,
+  508
+ ],
+ "getThumbnailPath": [
+  2221,
+  2229
+ ],
+ "getThumbnailUrl": [
+  2231,
+  2239
+ ],
+ "currentIndex": [
+  1413,
+  1421
+ ],
+ "regenerateThumbnail": [
+  5664,
+  5676
+ ],
+ "calculateImageBinding": [
+  658,
+  937
+ ],
+ "rotateImage": [
+  2899,
+  3041
+ ],
+ "flipImage": [
+  1776,
+  1840
+ ],
+ "saveCrop": [
+  3075,
+  3177
+ ],
+ "replaceFile": [
+  5678,
+  5807
+ ]
+}

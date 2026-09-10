@@ -1,0 +1,41 @@
+{
+  "id": "MOCK0007",
+  "name": "Empty Search",
+  "ext": "png",
+  "width": 1280,
+  "height": 800,
+  "size": 55788,
+  "url": "",
+  "website": "",
+  "annotation": "空搜索结果状态。",
+  "tags": [
+    "空状态",
+    "搜索"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-EMPTY"
+  ],
+  "star": 3,
+  "palettes": [
+    {
+      "color": [
+        249,
+        250,
+        251
+      ]
+    },
+    {
+      "color": [
+        150,
+        156,
+        168
+      ]
+    }
+  ],
+  "modificationTime": 1785147883020,
+  "lastModified": 1785147883020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

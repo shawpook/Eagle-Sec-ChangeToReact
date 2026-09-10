@@ -1,0 +1,13 @@
+  fns["mHandler"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function($event) {
+            if (!s.isDetailMode) {
+                return;
+            }
+            if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
+                $(".vjs-mute-control").click();
+            }
+        }).apply(null, args);
+  };

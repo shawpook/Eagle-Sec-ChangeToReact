@@ -1,0 +1,114 @@
+[
+ {
+  "name": "U1-openfolder-chain",
+  "outcome": "FAIL",
+  "detail": {
+   "pre": {
+    "hasOpenFolder": "function",
+    "hasClickNode": "function",
+    "dragCheck": "undef-global",
+    "mappingsSample": [
+     "FOLDER-UX4OYLE5"
+    ],
+    "mappingHasTarget": [
+     "FOLDER-UX4OYLE5"
+    ]
+   },
+   "after": {
+    "sp": {
+     "clickNode": [
+      "called"
+     ],
+     "openFolder": [],
+     "openFolderRet": []
+    },
+    "hash": "#!/?view=all",
+    "boxes": 3,
+    "cf": null,
+    "err": []
+   }
+  }
+ },
+ {
+  "name": "U2-toggle-all-state",
+  "outcome": "FAIL",
+  "detail": {
+   "pre": {
+    "has": "function",
+    "hide": false,
+    "bodyCls": "win32 current-focus-sidebar all-view is-middle-box show-list-resolution show-list-dateImported show-list-extension show-list-fileSize",
+    "sbCls": "sidebar ui-resizable"
+   },
+   "post": {
+    "sp": [],
+    "hide": false,
+    "bodyCls": "win32 current-focus-sidebar all-view is-middle-box show-list-resolution show-list-dateImported show-list-extension show-list-fileSize",
+    "sbCls": "sidebar ui-resizable",
+    "sbW": 240,
+    "err": 0
+   },
+   "restored": {
+    "hide": false,
+    "sbW": 240
+   }
+  }
+ },
+ {
+  "name": "U3-quicksearch-j-keypress",
+  "outcome": "PASS",
+  "detail": {
+   "opened": {
+    "vis": true,
+    "op": "1",
+    "cls": "quick-search open"
+   },
+   "typed": {
+    "v": "SweepB",
+    "results": 4,
+    "err": 0
+   }
+  }
+ },
+ {
+  "name": "U4-rating-star-keypress",
+  "outcome": "FAIL",
+  "detail": {
+   "star": null
+  }
+ },
+ {
+  "name": "U5-filter-toolbar-visibility",
+  "outcome": "PASS",
+  "detail": {
+   "hostCls": "filter-toolbar",
+   "hostDisp": "flex",
+   "hostRect": {
+    "w": 798,
+    "h": 32
+   },
+   "itemCount": 17,
+   "visibleItems": 0,
+   "itemNames": [
+    "颜色",
+    "标签",
+    "文件夹",
+    "形状",
+    "评分",
+    "格式",
+    "尺寸",
+    "时长",
+    "大小",
+    "标注"
+   ]
+  }
+ },
+ {
+  "name": "U6-r-key-refreshrandom",
+  "outcome": "FAIL",
+  "detail": {
+   "sp": [],
+   "err": 1,
+   "boxes": 3
+  }
+ }
+]

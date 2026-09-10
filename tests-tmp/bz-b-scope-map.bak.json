@@ -1,0 +1,3517 @@
+{
+ "isSearchScopeAnnotation": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "MAX_LIST_WIDTH": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "900"
+ },
+ "openFolderExpandContextMenu": {
+  "route": "TABLE",
+  "export": "openFolderExpandContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "batchRenameFolders": {
+  "route": "DUAL",
+  "export": "machineryBatchRenameFolders",
+  "arity": 0,
+  "rhs": "() => machineryBatchRenameFolders(s)"
+ },
+ "getNodeClass": {
+  "route": "TABLE",
+  "export": "getNodeClass",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "lockApp": {
+  "route": "MACH",
+  "export": "machineryLockApp",
+  "arity": 0,
+  "rhs": "() => machineryLockApp(s)"
+ },
+ "rotateHandler": {
+  "route": "TABLE",
+  "export": "rotateHandler",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/imageOpsService"
+ },
+ "copyImages": {
+  "route": "MACH",
+  "export": "machineryCopyImages",
+  "arity": 1,
+  "rhs": "(event: any) => machineryCopyImages(s, event)"
+ },
+ "removeFolderContents": {
+  "route": "MACH",
+  "export": "machineryRemoveFolderContents",
+  "arity": 1,
+  "rhs": "(params: any) => machineryRemoveFolderContents(s, params)"
+ },
+ "openSmartFolder": {
+  "route": "TABLE",
+  "export": "openSmartFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "updateSidebarList": {
+  "route": "DUAL",
+  "export": "machineryUpdateSidebarList",
+  "arity": 0,
+  "rhs": "() => machineryUpdateSidebarList(s)"
+ },
+ "smartZoom": {
+  "route": "DUAL",
+  "export": "machinerySmartZoom",
+  "arity": 2,
+  "rhs": "(target: any, forceMode: any) => machinerySmartZoom(s, target, forceMode)"
+ },
+ "selected": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "preloadImage": {
+  "route": "MACH",
+  "export": "machineryPreloadImage",
+  "arity": 1,
+  "rhs": "(mode: any) => machineryPreloadImage(s, mode)"
+ },
+ "openFilter": {
+  "route": "MACH",
+  "export": "machineryOpenFilter",
+  "arity": 0,
+  "rhs": "() => machineryOpenFilter(s)"
+ },
+ "modifiedMappings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "uploadQueue": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "modDownHandler": {
+  "route": "MACH",
+  "export": "machineryModDownHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModDownHandler(s, event)"
+ },
+ "uploadFiles": {
+  "route": "TABLE",
+  "export": "uploadFiles",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/uploadService"
+ },
+ "back": {
+  "route": "MACH",
+  "export": "machineryBack",
+  "arity": 0,
+  "rhs": "() => machineryBack(s)"
+ },
+ "openQuickSearch": {
+  "route": "DUAL",
+  "export": "machineryOpenQuickSearch",
+  "arity": 1,
+  "rhs": "(event: any) => machineryOpenQuickSearch(s, event)"
+ },
+ "startCursor": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "0"
+ },
+ "cleanLibraryPathPermissionError": {
+  "route": "TABLE",
+  "export": "cleanLibraryPathPermissionError",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "getSmartFolderList": {
+  "route": "MACH",
+  "export": "machineryGetSmartFolderList",
+  "arity": 0,
+  "rhs": "() => machineryGetSmartFolderList(s)"
+ },
+ "onSidebarResize": {
+  "route": "TABLE",
+  "export": "onSidebarResize",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "changeOrderBy": {
+  "route": "TABLE",
+  "export": "changeOrderBy",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "smartFolderCount": {
+  "route": "DUAL",
+  "export": "machinerySmartFolderCount",
+  "arity": 1,
+  "rhs": "(smartFolder: any) => machinerySmartFolderCount(s, smartFolder)"
+ },
+ "createTxtFileFromTemplate": {
+  "route": "MACH",
+  "export": "machineryCreateTxtFileFromTemplate",
+  "arity": 1,
+  "rhs": "(event: any) => machineryCreateTxtFileFromTemplate(s, event)"
+ },
+ "isGifReady": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "isSearchScopeName": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getChildFoldersMap": {
+  "route": "MACH",
+  "export": "machineryGetChildFoldersMap",
+  "arity": 1,
+  "rhs": "(folder: any) => machineryGetChildFoldersMap(s, folder)"
+ },
+ "viewMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "'all'"
+ },
+ "addImageStartTime": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "Date.now()"
+ },
+ "checkOperationSafety": {
+  "route": "MACH",
+  "export": "machineryCheckOperationSafety",
+  "arity": 2,
+  "rhs": "(callback: any, amount: any) => machineryCheckOperationSafety(s, callback, amoun"
+ },
+ "editTag": {
+  "route": "MACH",
+  "export": "machineryEditTag",
+  "arity": 1,
+  "rhs": "(tag: any) => machineryEditTag(s, tag)"
+ },
+ "getLibraryHistory": {
+  "route": "TABLE",
+  "export": "getLibraryHistory",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "focusSeach": {
+  "route": "MACH",
+  "export": "machineryFocusSeach",
+  "arity": 0,
+  "rhs": "() => machineryFocusSeach(s)"
+ },
+ "tagsSuggestion": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "emptyTrash": {
+  "route": "TABLE",
+  "export": "emptyTrash",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "getFolderFullPath": {
+  "route": "TABLE",
+  "export": "getFolderFullPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "getGIFPath": {
+  "route": "TABLE",
+  "export": "getGIFPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "lastItemStates": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "modShiftUpHandler": {
+  "route": "MACH",
+  "export": "machineryModShiftUpHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModShiftUpHandler(s, event)"
+ },
+ "selectAll": {
+  "route": "MACH",
+  "export": "machinerySelectAll",
+  "arity": 1,
+  "rhs": "(event: any) => machinerySelectAll(s, event)"
+ },
+ "openPluginPanel": {
+  "route": "MACH",
+  "export": "machineryOpenPluginPanel",
+  "arity": 1,
+  "rhs": "(event: any) => machineryOpenPluginPanel(s, event)"
+ },
+ "setSmartFolderOrder": {
+  "route": "DUAL",
+  "export": "machinerySetSmartFolderOrder",
+  "arity": 2,
+  "rhs": "(folder: any, orderBy: any) => machinerySetSmartFolderOrder(s, folder, orderBy)"
+ },
+ "settingFolder": {
+  "route": "TABLE",
+  "export": "settingFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "historySearchKeywords": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "JSON.parse(historySearchKeywords)"
+ },
+ "cloneFolder": {
+  "route": "TABLE",
+  "export": "cloneFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "exportSelectedToCsv": {
+  "route": "TABLE",
+  "export": "exportSelectedToCsv",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "currentTag": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "len": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "100"
+ },
+ "isSearchScopeNote": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "nHandler": {
+  "route": "MACH",
+  "export": "machineryNHandler",
+  "arity": 1,
+  "rhs": "($event: any) => machineryNHandler(s, $event)"
+ },
+ "rememberVideoCurrentTime": {
+  "route": "MACH",
+  "export": "machineryRememberVideoCurrentTime",
+  "arity": 1,
+  "rhs": "(item: any) => machineryRememberVideoCurrentTime(s, item)"
+ },
+ "copyAsThumbnail": {
+  "route": "TABLE",
+  "export": "copyAsThumbnail",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "multipleSelectUp": {
+  "route": "MACH",
+  "export": "machineryMultipleSelectUp",
+  "arity": 1,
+  "rhs": "(event: any) => machineryMultipleSelectUp(s, event)"
+ },
+ "subFolders": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "machineryGetAllChildFolder(s, s.currentFolder)"
+ },
+ "getPDFPath": {
+  "route": "TABLE",
+  "export": "getPDFPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "removeFolder": {
+  "route": "DUAL",
+  "export": "machineryRemoveFolder",
+  "arity": 2,
+  "rhs": "(folder: any, params: any) => machineryRemoveFolder(s, folder, params)"
+ },
+ "changeFolderIcon": {
+  "route": "TABLE",
+  "export": "changeFolderIcon",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "checkTouchIDSupport": {
+  "route": "MACH",
+  "export": "machineryCheckTouchIDSupport",
+  "arity": 0,
+  "rhs": "() => machineryCheckTouchIDSupport(s)"
+ },
+ "renameFontsWithFullName": {
+  "route": "TABLE",
+  "export": "renameFontsWithFullName",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "quicklook": {
+  "route": "MACH",
+  "export": "machineryQuicklook",
+  "arity": 1,
+  "rhs": "(event: any) => machineryQuicklook(s, event)"
+ },
+ "expandFolder": {
+  "route": "MACH",
+  "export": "machineryExpandFolder",
+  "arity": 1,
+  "rhs": "(folder: any) => machineryExpandFolder(s, folder)"
+ },
+ "resetPage": {
+  "route": "MACH",
+  "export": "machineryResetPage",
+  "arity": 0,
+  "rhs": "() => machineryResetPage(s)"
+ },
+ "onDetailClick": {
+  "route": "TABLE",
+  "export": "onDetailClick",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/selectionService"
+ },
+ "isCommentMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "!s.isCommentMode"
+ },
+ "showFileExtension": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "renameCurrentFolder": {
+  "route": "MACH",
+  "export": "machineryRenameCurrentFolder",
+  "arity": 1,
+  "rhs": "(event: any) => machineryRenameCurrentFolder(s, event)"
+ },
+ "calculateFilterCounts": {
+  "route": "MACH",
+  "export": "machineryCalculateFilterCounts",
+  "arity": 0,
+  "rhs": "() => machineryCalculateFilterCounts(s)"
+ },
+ "openStarredGroup": {
+  "route": "MACH",
+  "export": "machineryOpenStarredGroup",
+  "arity": 0,
+  "rhs": "() => machineryOpenStarredGroup(s)"
+ },
+ "onBoxMouseup": {
+  "route": "TABLE",
+  "export": "onBoxMouseup",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/selectionService"
+ },
+ "addToRecentFolders": {
+  "route": "TABLE",
+  "export": "addToRecentFolders",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "lastIndex": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "s.getSelection().start"
+ },
+ "toggleAll": {
+  "route": "MACH",
+  "export": "machineryToggleAll",
+  "arity": 1,
+  "rhs": "($event: any) => machineryToggleAll(s, $event)"
+ },
+ "contentFilterCache": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "result.slice(0)"
+ },
+ "isOpenWebpagePanel": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "getFolderImages": {
+  "route": "MACH",
+  "export": "machineryGetFolderImages",
+  "arity": 2,
+  "rhs": "(folder: any, includeSubFolder: any) => machineryGetFolderImages(s, folder, incl"
+ },
+ "selectedFolderMappings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "maximize": {
+  "route": "TABLE",
+  "export": "maximize",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "updateItemView": {
+  "route": "DUAL",
+  "export": "machineryUpdateItemView",
+  "arity": 1,
+  "rhs": "(item: any) => machineryUpdateItemView(s, item)"
+ },
+ "layoutOptions": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "localStorage[\"eagle.list.layout.options\"] || \"Fit\""
+ },
+ "toggleSmartFolderVisible": {
+  "route": "TABLE",
+  "export": "toggleSmartFolderVisible",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "batchRenameSmartFolders": {
+  "route": "DUAL",
+  "export": "machineryBatchRenameSmartFolders",
+  "arity": 0,
+  "rhs": "() => machineryBatchRenameSmartFolders(s)"
+ },
+ "getFolderList": {
+  "route": "MACH",
+  "export": "machineryGetFolderList",
+  "arity": 0,
+  "rhs": "() => machineryGetFolderList(s)"
+ },
+ "getAncestorFolders": {
+  "route": "MACH",
+  "export": "machineryGetAncestorFolders",
+  "arity": 2,
+  "rhs": "(folder: any, folders: any[]) => machineryGetAncestorFolders(s, folder, folders)"
+ },
+ "smartFolderList": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "selectUp": {
+  "route": "MACH",
+  "export": "machinerySelectUp",
+  "arity": 1,
+  "rhs": "(event: any) => machinerySelectUp(s, event)"
+ },
+ "renameTagGroup": {
+  "route": "MACH",
+  "export": "machineryRenameTagGroup",
+  "arity": 1,
+  "rhs": "(group: any) => machineryRenameTagGroup(s, group)"
+ },
+ "expandSmartFolder": {
+  "route": "MACH",
+  "export": "machineryExpandSmartFolder",
+  "arity": 1,
+  "rhs": "(smartFolder: any) => machineryExpandSmartFolder(s, smartFolder)"
+ },
+ "tagViewMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "\"ALL\""
+ },
+ "orderByName": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`)"
+ },
+ "rebindRefresh": {
+  "route": "MACH",
+  "export": "machineryRebindRefresh",
+  "arity": 3,
+  "rhs": "(muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRef"
+ },
+ "modShiftRightHandler": {
+  "route": "MACH",
+  "export": "machineryModShiftRightHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModShiftRightHandler(s, event)"
+ },
+ "currentTagGroup": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "orderBy": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "localStorage.getItem(\"eagle.list.orderBy\") || \"IMPORT\""
+ },
+ "switchSquareLayout": {
+  "route": "TABLE",
+  "export": "switchSquareLayout",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/viewOpsService"
+ },
+ "changeFontDefaultLang": {
+  "route": "TABLE",
+  "export": "changeFontDefaultLang",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "saveFolderDebounce": {
+  "route": "MACH",
+  "export": "machinerySaveFolderDebounce",
+  "arity": 0,
+  "rhs": "() => machinerySaveFolderDebounce(s)"
+ },
+ "finishQueue": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "isInlineMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "openDuplicate": {
+  "route": "MACH",
+  "export": "machineryOpenDuplicate",
+  "arity": 1,
+  "rhs": "(options: any) => machineryOpenDuplicate(s, options)"
+ },
+ "enableSubFolderNameEditable": {
+  "route": "MACH",
+  "export": "machineryEnableSubFolderNameEditable",
+  "arity": 2,
+  "rhs": "(event: any, folder: any) => machineryEnableSubFolderNameEditable(s, event, fold"
+ },
+ "openFileListContextMenu": {
+  "route": "TABLE",
+  "export": "openFileListContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "smartFolders": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "origin"
+ },
+ "newFolderWidthSelection": {
+  "route": "TABLE",
+  "export": "newFolderWidthSelection",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "refreshSubfolderList": {
+  "route": "DUAL",
+  "export": "machineryRefreshSubfolderList",
+  "arity": 0,
+  "rhs": "() => machineryRefreshSubfolderList(s)"
+ },
+ "removeFromDuplicateMapping": {
+  "route": "MACH",
+  "export": "machineryRemoveFromDuplicateMapping",
+  "arity": 1,
+  "rhs": "(image: any) => machineryRemoveFromDuplicateMapping(s, image)"
+ },
+ "flipImage": {
+  "route": "TABLE",
+  "export": "flipImage",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "toggleExtFilter": {
+  "route": "TABLE",
+  "export": "toggleExtFilter",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "switchGridLayout": {
+  "route": "TABLE",
+  "export": "switchGridLayout",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/viewOpsService"
+ },
+ "openUnfiled": {
+  "route": "DUAL",
+  "export": "machineryOpenUnfiled",
+  "arity": 1,
+  "rhs": "(ignoreHistory: any) => machineryOpenUnfiled(s, ignoreHistory)"
+ },
+ "hexToRGB": {
+  "route": "TABLE",
+  "export": "hexToRGB",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "findDupclipate": {
+  "route": "MACH",
+  "export": "machineryFindDupclipate",
+  "arity": 2,
+  "rhs": "(currentFolder: any, hasColorInfo: any) => machineryFindDupclipate(s, currentFol"
+ },
+ "quickOpenFolder": {
+  "route": "MACH",
+  "export": "machineryQuickOpenFolder",
+  "arity": 2,
+  "rhs": "(folder: any, t: any) => machineryQuickOpenFolder(s, folder, t)"
+ },
+ "modRightHandler": {
+  "route": "MACH",
+  "export": "machineryModRightHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModRightHandler(s, event)"
+ },
+ "isFontActivate": {
+  "route": "TABLE",
+  "export": "isFontActivate",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "isLibrarySaving": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getRawViewerPath": {
+  "route": "TABLE",
+  "export": "getRawViewerPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "selectFolder": {
+  "route": "MACH",
+  "export": "machinerySelectFolder",
+  "arity": 2,
+  "rhs": "(event: any, folder: any) => machinerySelectFolder(s, event, folder)"
+ },
+ "unfiledCount": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "0"
+ },
+ "openParentFolder": {
+  "route": "MACH",
+  "export": "machineryOpenParentFolder",
+  "arity": 0,
+  "rhs": "() => machineryOpenParentFolder(s)"
+ },
+ "gotoBottom": {
+  "route": "MACH",
+  "export": "machineryGotoBottom",
+  "arity": 0,
+  "rhs": "() => machineryGotoBottom(s)"
+ },
+ "lastSelectedIndex": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "s.currentIndex() - 1"
+ },
+ "smartFolderExportAsFolder": {
+  "route": "TABLE",
+  "export": "smartFolderExportAsFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "switchLayout": {
+  "route": "MACH",
+  "export": "machinerySwitchLayout",
+  "arity": 2,
+  "rhs": "(layout: any, forceLayout: any) => machinerySwitchLayout(s, layout, forceLayout)"
+ },
+ "shuffle": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "data"
+ },
+ "sidebarList": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "list"
+ },
+ "openCommunity": {
+  "route": "MACH",
+  "export": "machineryOpenCommunity",
+  "arity": 1,
+  "rhs": "(ignoreHistory: any) => machineryOpenCommunity(s, ignoreHistory)"
+ },
+ "saveVideoFrame": {
+  "route": "TABLE",
+  "export": "saveVideoFrame",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "openApplicationContextMenu": {
+  "route": "TABLE",
+  "export": "openApplicationContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "duplicates": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "switchJustifiedLayout": {
+  "route": "TABLE",
+  "export": "switchJustifiedLayout",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/viewOpsService"
+ },
+ "selectPrev": {
+  "route": "MACH",
+  "export": "machinerySelectPrev",
+  "arity": 1,
+  "rhs": "(event: any) => machinerySelectPrev(s, event)"
+ },
+ "getDateFilterCountsArray": {
+  "route": "TABLE",
+  "export": "getDateFilterCountsArray",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "sidebarIndex": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "-1"
+ },
+ "isSearchScopeFolderName": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "finishGenerateQueue": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "openRecent": {
+  "route": "MACH",
+  "export": "machineryOpenRecent",
+  "arity": 1,
+  "rhs": "(ignoreHistory: any) => machineryOpenRecent(s, ignoreHistory)"
+ },
+ "sliderZoomRatio": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "100"
+ },
+ "calcuteContainFolders": {
+  "route": "TABLE",
+  "export": "calcuteContainFolders",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "getRawUrl": {
+  "route": "TABLE",
+  "export": "getRawUrl",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "select": {
+  "route": "TABLE",
+  "export": "select",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/selectionService"
+ },
+ "pageUpHandler": {
+  "route": "PREBIND",
+  "export": "machineryPageUpHandler",
+  "arity": 0,
+  "rhs": "machineryPageUpHandler(s)"
+ },
+ "searchInAll": {
+  "route": "MACH",
+  "export": "machinerySearchInAll",
+  "arity": 0,
+  "rhs": "() => machinerySearchInAll(s)"
+ },
+ "openPrevFolder": {
+  "route": "MACH",
+  "export": "machineryOpenPrevFolder",
+  "arity": 0,
+  "rhs": "() => machineryOpenPrevFolder(s)"
+ },
+ "openInFinder": {
+  "route": "TABLE",
+  "export": "openInFinder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "showMetas": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "isHideMainNav": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "saveLayout": {
+  "route": "MACH",
+  "export": "machinerySaveLayout",
+  "arity": 2,
+  "rhs": "(folder: any, layout: any) => machinerySaveLayout(s, folder, layout)"
+ },
+ "NAME": {
+  "route": "TABLE",
+  "export": null,
+  "arity": 0,
+  "rhs": "",
+  "module": null
+ },
+ "zoomFit": {
+  "route": "DUAL",
+  "export": "machineryZoomFit",
+  "arity": 2,
+  "rhs": "(event: any, noAnimation: any) => machineryZoomFit(s, event, noAnimation)"
+ },
+ "importFolders": {
+  "route": "TABLE",
+  "export": "importFolders",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/uploadService"
+ },
+ "mousetrap": {
+  "route": "PREBIND",
+  "export": "machineryBuildMousetrap",
+  "arity": 0,
+  "rhs": "machineryBuildMousetrap(s)"
+ },
+ "copyAsFolderPath": {
+  "route": "TABLE",
+  "export": "copyAsFolderPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "keyPHandler": {
+  "route": "MACH",
+  "export": "machineryKeyPHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryKeyPHandler(s, event)"
+ },
+ "unlockAppPasswordKeyup": {
+  "route": "TABLE",
+  "export": "unlockAppPasswordKeyup",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/lockService"
+ },
+ "openSmartFolderExpandContextMenu": {
+  "route": "TABLE",
+  "export": "openSmartFolderExpandContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "colorFilter": {
+  "route": "MACH",
+  "export": "machineryColorFilter",
+  "arity": 1,
+  "rhs": "(image: any) => machineryColorFilter(s, image)"
+ },
+ "zoomOut": {
+  "route": "MACH",
+  "export": "machineryZoomOut",
+  "arity": 1,
+  "rhs": "(event: any) => machineryZoomOut(s, event)"
+ },
+ "isExpandFolder": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "copyAsProperity": {
+  "route": "TABLE",
+  "export": "copyAsProperity",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "gifPlayer": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "rememberScrollTops": {
+  "route": "MACH",
+  "export": "machineryRememberScrollTops",
+  "arity": 1,
+  "rhs": "(item: any) => machineryRememberScrollTops(s, item)"
+ },
+ "openNextSmartFolder": {
+  "route": "MACH",
+  "export": "machineryOpenNextSmartFolder",
+  "arity": 0,
+  "rhs": "() => machineryOpenNextSmartFolder(s)"
+ },
+ "updateListSlider": {
+  "route": "MACH",
+  "export": "machineryUpdateListSlider",
+  "arity": 1,
+  "rhs": "(size: any) => machineryUpdateListSlider(s, size)"
+ },
+ "isHideNavigator": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "updateFilterCounts": {
+  "route": "DUAL",
+  "export": "machineryUpdateFilterCounts",
+  "arity": 3,
+  "rhs": "(image: any, inc: any, now: any) => machineryUpdateFilterCounts(s, image, inc, n"
+ },
+ "updateSliderPosition": {
+  "route": "MACH",
+  "export": "machineryUpdateSliderPosition",
+  "arity": 0,
+  "rhs": "() => machineryUpdateSliderPosition(s)"
+ },
+ "rotateImage": {
+  "route": "TABLE",
+  "export": "rotateImage",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "changeSelectedFoldersIcon": {
+  "route": "TABLE",
+  "export": "changeSelectedFoldersIcon",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "openFolder": {
+  "route": "TABLE",
+  "export": "openFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "reorderAllFolderByTitle": {
+  "route": "TABLE",
+  "export": null,
+  "arity": 0,
+  "rhs": "",
+  "module": null
+ },
+ "openWithOther": {
+  "route": "TABLE",
+  "export": "openWithOther",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "showSubfolderContent": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "openArtstation": {
+  "route": "MACH",
+  "export": "machineryOpenArtstation",
+  "arity": 0,
+  "rhs": "() => machineryOpenArtstation(s)"
+ },
+ "isSearchScopeFolderDesc": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "inspector": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.eagle.inspector"
+ },
+ "setCustomThumbnailFromClipboard": {
+  "route": "TABLE",
+  "export": "setCustomThumbnailFromClipboard",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/imageOpsService"
+ },
+ "toggleFolderExpand": {
+  "route": "TABLE",
+  "export": "toggleFolderExpand",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "keyUpHandler": {
+  "route": "MACH",
+  "export": "machineryKeyUpHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryKeyUpHandler(s, event)"
+ },
+ "activateFonts": {
+  "route": "TABLE",
+  "export": "activateFonts",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "openSidebarVisibleContextMenu": {
+  "route": "TABLE",
+  "export": "openSidebarVisibleContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "keyCHandler": {
+  "route": "MACH",
+  "export": "machineryKeyCHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryKeyCHandler(s, event)"
+ },
+ "openPinterest": {
+  "route": "MACH",
+  "export": "machineryOpenPinterest",
+  "arity": 0,
+  "rhs": "() => machineryOpenPinterest(s)"
+ },
+ "prependFolder": {
+  "route": "DUAL",
+  "export": "machineryPrependFolder",
+  "arity": 1,
+  "rhs": "(folder: any) => machineryPrependFolder(s, folder)"
+ },
+ "toggleGifPlay": {
+  "route": "TABLE",
+  "export": "toggleGifPlay",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/mediaService"
+ },
+ "hoverShowSidebar": {
+  "route": "TABLE",
+  "export": "hoverShowSidebar",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "regenerateThumbnailQueue": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "removeFromFolder": {
+  "route": "TABLE",
+  "export": "removeFromFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "duplicateItem": {
+  "route": "TABLE",
+  "export": "duplicateItem",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "refreshRandom": {
+  "route": "MACH",
+  "export": "machineryRefreshRandom",
+  "arity": 0,
+  "rhs": "() => machineryRefreshRandom(s)"
+ },
+ "openNewContextMenu": {
+  "route": "TABLE",
+  "export": "openNewContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "lockedImages": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "focusAppUnlockPassword": {
+  "route": "DUAL",
+  "export": "machineryFocusAppUnlockPassword",
+  "arity": 0,
+  "rhs": "() => machineryFocusAppUnlockPassword(s)"
+ },
+ "zoom": {
+  "route": "DUAL",
+  "export": "machineryZoom",
+  "arity": 0,
+  "rhs": "() => machineryZoom(s)"
+ },
+ "duplicateGroupings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "toggleAllSmartFolders": {
+  "route": "MACH",
+  "export": "machineryToggleAllSmartFoldersInner",
+  "arity": 2,
+  "rhs": "(smartFolders: any, isExpand: any) => machineryToggleAllSmartFoldersInner(s, sma"
+ },
+ "toggleFilterByType": {
+  "route": "PREBIND",
+  "export": "machineryToggleFilterByType",
+  "arity": 0,
+  "rhs": "machineryToggleFilterByType(s)"
+ },
+ "isLoading": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "closeQuickSearch": {
+  "route": "TABLE",
+  "export": "closeQuickSearch",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "openInspectorFolderSelectPanel": {
+  "route": "MACH",
+  "export": "machineryOpenInspectorFolderSelectPanel",
+  "arity": 1,
+  "rhs": "(event: any) => machineryOpenInspectorFolderSelectPanel(s, event)"
+ },
+ "selectNext": {
+  "route": "MACH",
+  "export": "machinerySelectNext",
+  "arity": 1,
+  "rhs": "(event: any) => machinerySelectNext(s, event)"
+ },
+ "changeFolderColor": {
+  "route": "TABLE",
+  "export": "changeFolderColor",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "addToFolders": {
+  "route": "TABLE",
+  "export": "addToFolders",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "cleanAllError": {
+  "route": "TABLE",
+  "export": "cleanAllError",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "changeTo4Star": {
+  "route": "MACH",
+  "export": "machineryChangeTo4Star",
+  "arity": 1,
+  "rhs": "(event: any) => machineryChangeTo4Star(s, event)"
+ },
+ "renameSmartFolder": {
+  "route": "DUAL",
+  "export": "machineryRenameSmartFolder",
+  "arity": 2,
+  "rhs": "(event: any, smartFolder: any) => machineryRenameSmartFolder(s, event, smartFold"
+ },
+ "newFileFromTemplate": {
+  "route": "MACH",
+  "export": "machineryNewFileFromTemplate",
+  "arity": 1,
+  "rhs": "(ext: any) => machineryNewFileFromTemplate(s, ext)"
+ },
+ "flipHandler": {
+  "route": "TABLE",
+  "export": "flipHandler",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/imageOpsService"
+ },
+ "changeSmartFolderColor": {
+  "route": "TABLE",
+  "export": "changeSmartFolderColor",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "getSelectedItemElements": {
+  "route": "DUAL",
+  "export": "machineryGetSelectedItemElements",
+  "arity": 0,
+  "rhs": "() => machineryGetSelectedItemElements(s)"
+ },
+ "activateFont": {
+  "route": "TABLE",
+  "export": "activateFont",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "sortRawData": {
+  "route": "MACH",
+  "export": "machinerySortRawData",
+  "arity": 1,
+  "rhs": "(orderBy: any) => machinerySortRawData(s, orderBy)"
+ },
+ "toggleSlideshow": {
+  "route": "DUAL",
+  "export": "machineryToggleSlideshow",
+  "arity": 0,
+  "rhs": "() => machineryToggleSlideshow(s)"
+ },
+ "openFolderContextMenu": {
+  "route": "TABLE",
+  "export": "openFolderContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "excludeWithFolder": {
+  "route": "TABLE",
+  "export": "excludeWithFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "currentSmartFolder": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "isCropMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "openHuaban": {
+  "route": "MACH",
+  "export": "machineryOpenHuaban",
+  "arity": 0,
+  "rhs": "() => machineryOpenHuaban(s)"
+ },
+ "lastImageHeight": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "s.imageSize.height"
+ },
+ "unlockPassword": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "\"\""
+ },
+ "escHandler": {
+  "route": "TABLE",
+  "export": "escHandler",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "addImageTimeLeftInSeconds": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "remain"
+ },
+ "copyAsPath": {
+  "route": "TABLE",
+  "export": "copyAsPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "currentId": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "openNextFolder": {
+  "route": "MACH",
+  "export": "machineryOpenNextFolder",
+  "arity": 0,
+  "rhs": "() => machineryOpenNextFolder(s)"
+ },
+ "newFolder": {
+  "route": "TABLE",
+  "export": "newFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "openTrashContextMenu": {
+  "route": "TABLE",
+  "export": "openTrashContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "toggleFolderVisible": {
+  "route": "TABLE",
+  "export": "toggleFolderVisible",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "multipleSelectNext": {
+  "route": "MACH",
+  "export": "machineryMultipleSelectNext",
+  "arity": 1,
+  "rhs": "(event: any) => machineryMultipleSelectNext(s, event)"
+ },
+ "checkListItemsLessThanContainer": {
+  "route": "MACH",
+  "export": "machineryCheckListItemsLessThanContainer",
+  "arity": 0,
+  "rhs": "() => machineryCheckListItemsLessThanContainer(s)"
+ },
+ "dblclickSidebarSmartFolderGroup": {
+  "route": "TABLE",
+  "export": "dblclickSidebarSmartFolderGroup",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "adjustLayoutWidth": {
+  "route": "MACH",
+  "export": "machineryAdjustLayoutWidth",
+  "arity": 1,
+  "rhs": "(increases: any) => machineryAdjustLayoutWidth(s, increases)"
+ },
+ "changeMetaItems": {
+  "route": "MACH",
+  "export": "machineryChangeMetaItems",
+  "arity": 1,
+  "rhs": "(type: any) => machineryChangeMetaItems(s, type)"
+ },
+ "getRecentFolders": {
+  "route": "MACH",
+  "export": "machineryGetRecentFolders",
+  "arity": 1,
+  "rhs": "(length: any) => machineryGetRecentFolders(s, length)"
+ },
+ "resetFilter": {
+  "route": "TABLE",
+  "export": "resetFilter",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "addImagesToFolder": {
+  "route": "TABLE",
+  "export": "addImagesToFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "addToRecentFile": {
+  "route": "MACH",
+  "export": "machineryAddToRecentFile",
+  "arity": 1,
+  "rhs": "(item: any) => machineryAddToRecentFile(s, item)"
+ },
+ "showUploadQueue": {
+  "route": "MACH",
+  "export": "machineryShowUploadQueue",
+  "arity": 0,
+  "rhs": "() => machineryShowUploadQueue(s)"
+ },
+ "folders": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "originalFolders"
+ },
+ "unlockAppPasswordKeydown": {
+  "route": "TABLE",
+  "export": "unlockAppPasswordKeydown",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/lockService"
+ },
+ "contentFilter": {
+  "route": "DUAL",
+  "export": "machineryContentFilter",
+  "arity": 1,
+  "rhs": "(image: any) => machineryContentFilter(s, image)"
+ },
+ "existInSmartFilter": {
+  "route": "MACH",
+  "export": "machineryExistInSmartFilter",
+  "arity": 2,
+  "rhs": "(smartFolder: any, image: any) => machineryExistInSmartFilter(s, smartFolder, im"
+ },
+ "nextHistory": {
+  "route": "MACH",
+  "export": "machineryNextHistory",
+  "arity": 0,
+  "rhs": "() => machineryNextHistory(s)"
+ },
+ "multipleSelectDown": {
+  "route": "MACH",
+  "export": "machineryMultipleSelectDown",
+  "arity": 1,
+  "rhs": "(event: any) => machineryMultipleSelectDown(s, event)"
+ },
+ "untagged": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "forceFitImageSize": {
+  "route": "MACH",
+  "export": "machineryForceFitImageSize",
+  "arity": 2,
+  "rhs": "(image: any, usingThumbnail: any) => machineryForceFitImageSize(s, image, usingT"
+ },
+ "keyLeftHandler": {
+  "route": "MACH",
+  "export": "machineryKeyLeftHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryKeyLeftHandler(s, event)"
+ },
+ "smoothZoomDone": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "searchFocus": {
+  "route": "TABLE",
+  "export": "searchFocus",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "newSmartFolder": {
+  "route": "DUAL",
+  "export": "machineryNewSmartFolder",
+  "arity": 2,
+  "rhs": "(event: any, smartFolder: any) => machineryNewSmartFolder(s, event, smartFolder)"
+ },
+ "openTagAllGroup": {
+  "route": "MACH",
+  "export": "machineryOpenTagAllGroup",
+  "arity": 0,
+  "rhs": "() => machineryOpenTagAllGroup(s)"
+ },
+ "removeSmartFolder": {
+  "route": "DUAL",
+  "export": "machineryRemoveSmartFolder",
+  "arity": 1,
+  "rhs": "(smartFolder: any) => machineryRemoveSmartFolder(s, smartFolder)"
+ },
+ "onDropContainer": {
+  "route": "MACH",
+  "export": "machineryOnDropContainer",
+  "arity": 1,
+  "rhs": "(event: any) => machineryOnDropContainer(s, event)"
+ },
+ "openInspectorTagSelectPanel": {
+  "route": "MACH",
+  "export": "machineryOpenInspectorTagSelectPanel",
+  "arity": 0,
+  "rhs": "() => machineryOpenInspectorTagSelectPanel(s)"
+ },
+ "toggleAllFolders": {
+  "route": "MACH",
+  "export": "machineryToggleAllFolders",
+  "arity": 2,
+  "rhs": "(folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand)"
+ },
+ "listLayoutSettings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "JSON.parse(localStorage[\"eagle.list.layout.settings\"])"
+ },
+ "contentFocus": {
+  "route": "TABLE",
+  "export": "contentFocus",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "showListSubfolderContent": {
+  "route": "TABLE",
+  "export": "showListSubfolderContent",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "searchFilter": {
+  "route": "MACH",
+  "export": "machinerySearchFilter",
+  "arity": 1,
+  "rhs": "(image: any) => machinerySearchFilter(s, image)"
+ },
+ "enterDetailMode": {
+  "route": "MACH",
+  "export": "machineryEnterDetailMode",
+  "arity": 2,
+  "rhs": "($event: any, image: any) => machineryEnterDetailMode(s, $event, image)"
+ },
+ "currentFolder": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "openQuickAccessContextMenu": {
+  "route": "TABLE",
+  "export": "openQuickAccessContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "setFolderOrder": {
+  "route": "DUAL",
+  "export": "machinerySetFolderOrder",
+  "arity": 3,
+  "rhs": "(folder: any, orderBy: any, ignoreReload: any) => machinerySetFolderOrder(s, fol"
+ },
+ "folderExportAsFolder": {
+  "route": "TABLE",
+  "export": "folderExportAsFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "updateSubFolderWidth": {
+  "route": "MACH",
+  "export": "machineryUpdateSubFolderWidth",
+  "arity": 0,
+  "rhs": "() => machineryUpdateSubFolderWidth(s)"
+ },
+ "copyFolderLink": {
+  "route": "TABLE",
+  "export": "copyFolderLink",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "getRatioNonExp": {
+  "route": "TABLE",
+  "export": "getRatioNonExp",
+  "arity": 0,
+  "rhs": "(ratio: any) => machineryGetRatioNonExp(ratio)",
+  "module": "../services/viewOpsService"
+ },
+ "showName": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "exportSelectedAsFormat": {
+  "route": "TABLE",
+  "export": "exportSelectedAsFormat",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "changeTo5Star": {
+  "route": "MACH",
+  "export": "machineryChangeTo5Star",
+  "arity": 1,
+  "rhs": "(event: any) => machineryChangeTo5Star(s, event)"
+ },
+ "duplicateQueue": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "openInPreviewWindow": {
+  "route": "TABLE",
+  "export": "openInPreviewWindow",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "changeSelectedFoldersColor": {
+  "route": "TABLE",
+  "export": "changeSelectedFoldersColor",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "removeSelectedSmartFolders": {
+  "route": "DUAL",
+  "export": "machineryRemoveSelectedSmartFolders",
+  "arity": 0,
+  "rhs": "() => machineryRemoveSelectedSmartFolders(s)"
+ },
+ "multipleOpenSmartFolder": {
+  "route": "MACH",
+  "export": "machineryMultipleOpenSmartFolder",
+  "arity": 2,
+  "rhs": "(smartFolder: any, needReload: any) => machineryMultipleOpenSmartFolder(s, smart"
+ },
+ "getSmartFolderClass": {
+  "route": "TABLE",
+  "export": "getSmartFolderClass",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "createFolder": {
+  "route": "TABLE",
+  "export": "createFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "cleanLocalhostError": {
+  "route": "TABLE",
+  "export": "cleanLocalhostError",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "sortData": {
+  "route": "MACH",
+  "export": "machinerySortData",
+  "arity": 2,
+  "rhs": "(data: any, orderBy: any) => machinerySortData(s, data, orderBy)"
+ },
+ "toggleQuickAccessVisible": {
+  "route": "TABLE",
+  "export": "toggleQuickAccessVisible",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "hoverHideSidebar": {
+  "route": "TABLE",
+  "export": "hoverHideSidebar",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "reload": {
+  "route": "PREBIND",
+  "export": "machineryReload",
+  "arity": 0,
+  "rhs": "machineryReload(s)"
+ },
+ "boxContianerHeight": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.$(\"#box-container\").height() || s.boxContianerHeight"
+ },
+ "initDetailMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "rotateVideo": {
+  "route": "TABLE",
+  "export": "rotateVideo",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/mediaService"
+ },
+ "rgbToHex": {
+  "route": "MACH",
+  "export": "machineryRgbToHex",
+  "arity": 3,
+  "rhs": "(r: any, g: any, b: any) => machineryRgbToHex(s, r, g, b)"
+ },
+ "cancelCrop": {
+  "route": "MACH",
+  "export": "machineryCancelCrop",
+  "arity": 0,
+  "rhs": "() => machineryCancelCrop(s)"
+ },
+ "filterWithTag": {
+  "route": "TABLE",
+  "export": "filterWithTag",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "isSearchScopeExt": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getModelPath": {
+  "route": "TABLE",
+  "export": "getModelPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "switchLibrary": {
+  "route": "TABLE",
+  "export": "switchLibrary",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "toggleCommentMode": {
+  "route": "MACH",
+  "export": "machineryToggleCommentMode",
+  "arity": 1,
+  "rhs": "(event: any) => machineryToggleCommentMode(s, event)"
+ },
+ "scrollToSelectedItem": {
+  "route": "TABLE",
+  "export": "scrollToSelectedItem",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "reorderFolderByTitle": {
+  "route": "TABLE",
+  "export": null,
+  "arity": 0,
+  "rhs": "",
+  "module": null
+ },
+ "videoScreenShot": {
+  "route": "MACH",
+  "export": "machineryVideoScreenShot",
+  "arity": 1,
+  "rhs": "(copyMode: any) => machineryVideoScreenShot(s, copyMode)"
+ },
+ "offsetScrollbar": {
+  "route": "PREBIND",
+  "export": "machineryOffsetScrollbar",
+  "arity": 0,
+  "rhs": "machineryOffsetScrollbar(s)"
+ },
+ "isDuplicateImage": {
+  "route": "MACH",
+  "export": "machineryIsDuplicateImage",
+  "arity": 1,
+  "rhs": "(image: any) => machineryIsDuplicateImage(s, image)"
+ },
+ "commentRect": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "removeSelectedFolders": {
+  "route": "DUAL",
+  "export": "machineryRemoveSelectedFolders",
+  "arity": 0,
+  "rhs": "() => machineryRemoveSelectedFolders(s)"
+ },
+ "isExpandSmartFolder": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "changeTo2Star": {
+  "route": "MACH",
+  "export": "machineryChangeTo2Star",
+  "arity": 1,
+  "rhs": "(event: any) => machineryChangeTo2Star(s, event)"
+ },
+ "openUntagged": {
+  "route": "MACH",
+  "export": "machineryOpenUntagged",
+  "arity": 1,
+  "rhs": "(ignoreHistory: any) => machineryOpenUntagged(s, ignoreHistory)"
+ },
+ "openAllTags": {
+  "route": "MACH",
+  "export": "machineryOpenAllTags",
+  "arity": 1,
+  "rhs": "(ignoreHistory: any) => machineryOpenAllTags(s, ignoreHistory)"
+ },
+ "togglePaletteProcessing": {
+  "route": "TABLE",
+  "export": "togglePaletteProcessing",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "getNext": {
+  "route": "TABLE",
+  "export": "getNext",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/viewOpsService"
+ },
+ "untaggedCount": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "0"
+ },
+ "openFilterAddContextMenu": {
+  "route": "TABLE",
+  "export": "openFilterAddContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "uploadUrls": {
+  "route": "TABLE",
+  "export": "uploadUrls",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/uploadService"
+ },
+ "getQuickAccessList": {
+  "route": "MACH",
+  "export": "machineryGetQuickAccessList",
+  "arity": 0,
+  "rhs": "() => machineryGetQuickAccessList(s)"
+ },
+ "sortIncrease": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getArroundBox": {
+  "route": "MACH",
+  "export": "machineryGetArroundBox",
+  "arity": 1,
+  "rhs": "(index: any) => machineryGetArroundBox(s, index)"
+ },
+ "onBoxListDblClick": {
+  "route": "TABLE",
+  "export": "onBoxListDblClick",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/selectionService"
+ },
+ "paletteQueueDelay": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "20"
+ },
+ "filterWithColor": {
+  "route": "TABLE",
+  "export": "filterWithColor",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "current": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "image"
+ },
+ "changeTo3Star": {
+  "route": "MACH",
+  "export": "machineryChangeTo3Star",
+  "arity": 1,
+  "rhs": "(event: any) => machineryChangeTo3Star(s, event)"
+ },
+ "openErrorModal": {
+  "route": "TABLE",
+  "export": "openErrorModal",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "toggleCurrentLevelFolders": {
+  "route": "TABLE",
+  "export": "toggleCurrentLevelFolders",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "containerSize": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{ sidebar: 240 }"
+ },
+ "cancelAllTasks": {
+  "route": "TABLE",
+  "export": "cancelAllTasks",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/uploadService"
+ },
+ "removeSelected": {
+  "route": "MACH",
+  "export": "machineryRemoveSelected",
+  "arity": 1,
+  "rhs": "(event: any) => machineryRemoveSelected(s, event)"
+ },
+ "addToLastUsedFolder": {
+  "route": "TABLE",
+  "export": "addToLastUsedFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "getSelection": {
+  "route": "MACH",
+  "export": "machineryGetSelection",
+  "arity": 0,
+  "rhs": "() => machineryGetSelection(s)"
+ },
+ "smartFolderExportAsPack": {
+  "route": "TABLE",
+  "export": "smartFolderExportAsPack",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "fixUtils": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "changeSelectedSmartFoldersIcon": {
+  "route": "TABLE",
+  "export": "changeSelectedSmartFoldersIcon",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "resetCustomThumbnail": {
+  "route": "TABLE",
+  "export": "resetCustomThumbnail",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/imageOpsService"
+ },
+ "emptyRestore": {
+  "route": "TABLE",
+  "export": "emptyRestore",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "getFontPath": {
+  "route": "TABLE",
+  "export": "getFontPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "openTrash": {
+  "route": "MACH",
+  "export": "machineryOpenTrash",
+  "arity": 1,
+  "rhs": "(ignoreHistory: any) => machineryOpenTrash(s, ignoreHistory)"
+ },
+ "showDetailImage": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "onTagSidebarResize": {
+  "route": "TABLE",
+  "export": "onTagSidebarResize",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "openItemContextMenu": {
+  "route": "TABLE",
+  "export": "openItemContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/itemMenuService"
+ },
+ "keyword": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "focusUnlockPassword": {
+  "route": "TABLE",
+  "export": "focusUnlockPassword",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/lockService"
+ },
+ "multipleSelectPrev": {
+  "route": "MACH",
+  "export": "machineryMultipleSelectPrev",
+  "arity": 1,
+  "rhs": "(event: any) => machineryMultipleSelectPrev(s, event)"
+ },
+ "exportSelectedAsFolder": {
+  "route": "TABLE",
+  "export": "exportSelectedAsFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "changeSmartFolderIcon": {
+  "route": "TABLE",
+  "export": "changeSmartFolderIcon",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "usingGifPlayer": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "keyRightHandler": {
+  "route": "MACH",
+  "export": "machineryKeyRightHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryKeyRightHandler(s, event)"
+ },
+ "itemMappings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "search": {
+  "route": "TABLE",
+  "export": "search",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "zoomFitSize": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "s.imageSize.zoomRatioExp"
+ },
+ "showTutorial": {
+  "route": "MACH",
+  "export": "machineryShowTutorial",
+  "arity": 0,
+  "rhs": "() => machineryShowTutorial(s)"
+ },
+ "selectedTags": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "getItemByElement": {
+  "route": "MACH",
+  "export": "machineryGetItemByElement",
+  "arity": 1,
+  "rhs": "(element: any) => machineryGetItemByElement(s, element)"
+ },
+ "colorDistancesMap": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "selectedMappings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "keyDownHandler": {
+  "route": "MACH",
+  "export": "machineryKeyDownHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryKeyDownHandler(s, event)"
+ },
+ "listMetaType": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "type"
+ },
+ "MAX_DIMENSION": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "120000000"
+ },
+ "tagViewModeName": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "\"ALL\""
+ },
+ "moveFoldersToFolder": {
+  "route": "TABLE",
+  "export": "moveFoldersToFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "endHandler": {
+  "route": "MACH",
+  "export": "machineryEndHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryEndHandler(s, event)"
+ },
+ "showFileExtensionLabel": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "isSearchScopeUrl": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getTxtPath": {
+  "route": "TABLE",
+  "export": "getTxtPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "undo": {
+  "route": "DUAL",
+  "export": "machineryUndo",
+  "arity": 0,
+  "rhs": "() => machineryUndo(s)"
+ },
+ "modShiftDownHandler": {
+  "route": "MACH",
+  "export": "machineryModShiftDownHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModShiftDownHandler(s, event)"
+ },
+ "closeWindowHandler": {
+  "route": "MACH",
+  "export": "machineryCloseWindowHandler",
+  "arity": 1,
+  "rhs": "($event: any) => machineryCloseWindowHandler(s, $event)"
+ },
+ "toggleSelectFolder": {
+  "route": "TABLE",
+  "export": "toggleSelectFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "regenerateThumbnail": {
+  "route": "TABLE",
+  "export": "regenerateThumbnail",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "openSmartFolderContextMenu": {
+  "route": "TABLE",
+  "export": "openSmartFolderContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "autoScroll": {
+  "route": "MACH",
+  "export": "machineryAutoScroll",
+  "arity": 1,
+  "rhs": "(index: any) => machineryAutoScroll(s, index)"
+ },
+ "newChildSmartFolder": {
+  "route": "TABLE",
+  "export": "newChildSmartFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "openTagGroup": {
+  "route": "MACH",
+  "export": "machineryOpenTagGroup",
+  "arity": 1,
+  "rhs": "(group: any) => machineryOpenTagGroup(s, group)"
+ },
+ "toggleAllSmartFolderExpand": {
+  "route": "DUAL",
+  "export": "machineryToggleAllSmartFolderExpand",
+  "arity": 2,
+  "rhs": "(event: any, selectedSmartFolder: any) => machineryToggleAllSmartFolderExpand(s,"
+ },
+ "pausePalette": {
+  "route": "MACH",
+  "export": "machineryPausePalette",
+  "arity": 0,
+  "rhs": "() => machineryPausePalette(s)"
+ },
+ "moveFoldersAsSibling": {
+  "route": "TABLE",
+  "export": "moveFoldersAsSibling",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderCoreService.ts"
+ },
+ "prevHistory": {
+  "route": "MACH",
+  "export": "machineryPrevHistory",
+  "arity": 0,
+  "rhs": "() => machineryPrevHistory(s)"
+ },
+ "leaveSlideshowMode": {
+  "route": "MACH",
+  "export": "machineryLeaveSlideshowMode",
+  "arity": 0,
+  "rhs": "() => machineryLeaveSlideshowMode(s)"
+ },
+ "filtereds": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "s.allData.slice(0, s.len * s.page)"
+ },
+ "toggleExtFilterExclude": {
+  "route": "TABLE",
+  "export": "toggleExtFilterExclude",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "isPreviewing": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "!s.isPreviewing"
+ },
+ "changeSidebarIndex": {
+  "route": "DUAL",
+  "export": "machineryChangeSidebarIndex",
+  "arity": 1,
+  "rhs": "(node: any) => machineryChangeSidebarIndex(s, node)"
+ },
+ "isSlideshowMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getFolderParentChilder": {
+  "route": "MACH",
+  "export": "machineryGetFolderParentChilder",
+  "arity": 1,
+  "rhs": "(folder: any) => machineryGetFolderParentChilder(s, folder)"
+ },
+ "checkOperationSafety2": {
+  "route": "DUAL",
+  "export": "machineryCheckOperationSafety2",
+  "arity": 3,
+  "rhs": "(count: any, callback: any, amount: any) => machineryCheckOperationSafety2(s, co"
+ },
+ "zoomActual": {
+  "route": "MACH",
+  "export": "machineryZoomActual",
+  "arity": 1,
+  "rhs": "(event: any) => machineryZoomActual(s, event)"
+ },
+ "saveCrop": {
+  "route": "TABLE",
+  "export": "saveCrop",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "changeFolderPassword": {
+  "route": "TABLE",
+  "export": "changeFolderPassword",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "cloneSmartFolder": {
+  "route": "TABLE",
+  "export": "cloneSmartFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "openFilesWithDefault": {
+  "route": "TABLE",
+  "export": "openFilesWithDefault",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "exportSelectedAsEaglepack": {
+  "route": "TABLE",
+  "export": "exportSelectedAsEaglepack",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "isHideSidebar": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "zoomFitEdge": {
+  "route": "MACH",
+  "export": "machineryZoomFitEdge",
+  "arity": 2,
+  "rhs": "(event: any, hasTransition: any) => machineryZoomFitEdge(s, event, hasTransition"
+ },
+ "calcuteFilterResult": {
+  "route": "MACH",
+  "export": "machineryCalcuteFilterResult",
+  "arity": 2,
+  "rhs": "(data: any[], contentFilterCache: any) => machineryCalcuteFilterResult(s, data, "
+ },
+ "all": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "getNativeViewerPath": {
+  "route": "TABLE",
+  "export": "getNativeViewerPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "setFolderPassword": {
+  "route": "TABLE",
+  "export": "setFolderPassword",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "toggleCurrentLevelSmartFolders": {
+  "route": "MACH",
+  "export": "machineryToggleCurrentLevelSmartFolders",
+  "arity": 2,
+  "rhs": "(event: any, smartFolder: any) => machineryToggleCurrentLevelSmartFolders(s, eve"
+ },
+ "resumePalette": {
+  "route": "MACH",
+  "export": "machineryResumePalette",
+  "arity": 0,
+  "rhs": "() => machineryResumePalette(s)"
+ },
+ "updateContainerHieght": {
+  "route": "MACH",
+  "export": "machineryUpdateContainerHieght",
+  "arity": 2,
+  "rhs": "(hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimatio"
+ },
+ "pageDownHandler": {
+  "route": "PREBIND",
+  "export": "machineryPageDownHandler",
+  "arity": 0,
+  "rhs": "machineryPageDownHandler(s)"
+ },
+ "moveFolders": {
+  "route": "TABLE",
+  "export": "moveFolders",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "filterWithFolder": {
+  "route": "TABLE",
+  "export": "filterWithFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "copeVideoFrame": {
+  "route": "TABLE",
+  "export": "copeVideoFrame",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "updateTxtItem": {
+  "route": "MACH",
+  "export": "machineryUpdateTxtItem",
+  "arity": 1,
+  "rhs": "(item: any) => machineryUpdateTxtItem(s, item)"
+ },
+ "renameTagGroupBlur": {
+  "route": "TABLE",
+  "export": "renameTagGroupBlur",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "calculateDateFilter": {
+  "route": "TABLE",
+  "export": "calculateDateFilter",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "saveHandler": {
+  "route": "MACH",
+  "export": "machinerySaveHandler",
+  "arity": 0,
+  "rhs": "() => machinerySaveHandler(s)"
+ },
+ "folderMappings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "calculateImageBinding": {
+  "route": "DUAL",
+  "export": "machineryCalculateImageBinding",
+  "arity": 2,
+  "rhs": "(params: any, callback: any) => machineryCalculateImageBinding(s, params, callba"
+ },
+ "unlockFolderWithTouchID": {
+  "route": "MACH",
+  "export": "machineryUnlockFolderWithTouchID",
+  "arity": 1,
+  "rhs": "(event: any) => machineryUnlockFolderWithTouchID(s, event)"
+ },
+ "currentFolderChildren": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "openAll": {
+  "route": "MACH",
+  "export": "machineryOpenAll",
+  "arity": 2,
+  "rhs": "(ignoreHistory: any, callback: any) => machineryOpenAll(s, ignoreHistory, callba"
+ },
+ "zoomIn": {
+  "route": "DUAL",
+  "export": "machineryZoomIn",
+  "arity": 1,
+  "rhs": "(event: any) => machineryZoomIn(s, event)"
+ },
+ "toggleDetailMode": {
+  "route": "MACH",
+  "export": "machineryToggleDetailMode",
+  "arity": 2,
+  "rhs": "($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline)"
+ },
+ "setSmartFoldersSortIncrease": {
+  "route": "TABLE",
+  "export": "setSmartFoldersSortIncrease",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "importLinks": {
+  "route": "MACH",
+  "export": "machineryImportLinks",
+  "arity": 0,
+  "rhs": "() => machineryImportLinks(s)"
+ },
+ "showAnnotation": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "openItemLocation": {
+  "route": "TABLE",
+  "export": "openItemLocation",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "duplicateTarget": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ },
+ "openTag": {
+  "route": "TABLE",
+  "export": "openTag",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "openActionsPanel": {
+  "route": "MACH",
+  "export": "machineryOpenActionsPanel",
+  "arity": 1,
+  "rhs": "(event: any) => machineryOpenActionsPanel(s, event)"
+ },
+ "startDrag": {
+  "route": "TABLE",
+  "export": "startDrag",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "newGroupName": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "group.name"
+ },
+ "updateItemsView": {
+  "route": "MACH",
+  "export": "machineryUpdateItemsView",
+  "arity": 1,
+  "rhs": "(items: any[]) => machineryUpdateItemsView(s, items)"
+ },
+ "boxContianerWidth": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.$(\"#box-container\").width() || s.boxContianerWidth"
+ },
+ "isHideSubFolder": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "toggleZoom": {
+  "route": "MACH",
+  "export": "machineryToggleZoom",
+  "arity": 1,
+  "rhs": "(event: any) => machineryToggleZoom(s, event)"
+ },
+ "grayColorFilter": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "(image: any) => machineryGrayColorFilter(image)"
+ },
+ "getRatioExp": {
+  "route": "TABLE",
+  "export": "getRatioExp",
+  "arity": 0,
+  "rhs": "(ratio: any) => machineryGetRatioExp(ratio)",
+  "module": "../services/viewOpsService"
+ },
+ "modUpHandler": {
+  "route": "MACH",
+  "export": "machineryModUpHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModUpHandler(s, event)"
+ },
+ "sidebarFocus": {
+  "route": "TABLE",
+  "export": "sidebarFocus",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "smartFolderMappings": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "{}"
+ },
+ "openOrderMenu": {
+  "route": "TABLE",
+  "export": "openOrderMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "openNewSmartFolderContextMenu": {
+  "route": "TABLE",
+  "export": "openNewSmartFolderContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "checkDiskSpace": {
+  "route": "TABLE",
+  "export": "checkDiskSpace",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "setViewMode": {
+  "route": "MACH",
+  "export": "machinerySetViewMode",
+  "arity": 1,
+  "rhs": "(viewMode: any) => machinerySetViewMode(s, viewMode)"
+ },
+ "openRandom": {
+  "route": "MACH",
+  "export": "machineryOpenRandom",
+  "arity": 2,
+  "rhs": "(ignoreHistory: any, callback: any) => machineryOpenRandom(s, ignoreHistory, cal"
+ },
+ "eagle": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.eagle"
+ },
+ "getThumbnailUrl": {
+  "route": "TABLE",
+  "export": "getThumbnailUrl",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "getThumbnailPath": {
+  "route": "TABLE",
+  "export": "getThumbnailPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "deactivateFonts": {
+  "route": "TABLE",
+  "export": "deactivateFonts",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "getAncestorSmartFolders": {
+  "route": "MACH",
+  "export": "machineryGetAncestorSmartFolders",
+  "arity": 2,
+  "rhs": "(folder: any, folders: any[]) => machineryGetAncestorSmartFolders(s, folder, fol"
+ },
+ "showSuggestions": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "lockFolder": {
+  "route": "TABLE",
+  "export": "lockFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "renameTagGroupKeyup": {
+  "route": "TABLE",
+  "export": "renameTagGroupKeyup",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "images": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "setAsVideoThumbnail": {
+  "route": "TABLE",
+  "export": "setAsVideoThumbnail",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/mediaService"
+ },
+ "getVideoPlayer": {
+  "route": "MACH",
+  "export": "machineryGetVideoPlayer",
+  "arity": 0,
+  "rhs": "() => machineryGetVideoPlayer(s)"
+ },
+ "changeStar": {
+  "route": "DUAL",
+  "export": "machineryChangeStar",
+  "arity": 3,
+  "rhs": "(star: any, showNotify: any, force: any) => machineryChangeStar(s, star, showNot"
+ },
+ "copyTags": {
+  "route": "TABLE",
+  "export": "copyTags",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "getExtendTags": {
+  "route": "MACH",
+  "export": "machineryGetExtendTags",
+  "arity": 2,
+  "rhs": "(folder: any, tags: any[]) => machineryGetExtendTags(s, folder, tags)"
+ },
+ "rebindRefreshLazy": {
+  "route": "MACH",
+  "export": "machineryRebindRefreshLazy",
+  "arity": 0,
+  "rhs": "() => machineryRebindRefreshLazy(s)"
+ },
+ "setSmartFoldersOrder": {
+  "route": "TABLE",
+  "export": "setSmartFoldersOrder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "flipVideo": {
+  "route": "TABLE",
+  "export": "flipVideo",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/mediaService"
+ },
+ "setSmartFolderSortIncrease": {
+  "route": "TABLE",
+  "export": "setSmartFolderSortIncrease",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "calcRotateDegree": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "(currentDegree: any, event: any) => machineryCalcRotateDegree(currentDegree, eve"
+ },
+ "paletteQueuePaused": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "isDetailMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "openFileWithDefault": {
+  "route": "TABLE",
+  "export": "openFileWithDefault",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "replaceFile": {
+  "route": "TABLE",
+  "export": "replaceFile",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "updateSelection": {
+  "route": "DUAL",
+  "export": "machineryUpdateSelection",
+  "arity": 0,
+  "rhs": "() => machineryUpdateSelection(s)"
+ },
+ "trash": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "deactivateFont": {
+  "route": "TABLE",
+  "export": "deactivateFont",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/fontTagService.ts"
+ },
+ "layout": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem(\""
+ },
+ "showLargeImage": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "cleanSelected": {
+  "route": "TABLE",
+  "export": "cleanSelected",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "addToDuplicateMapping": {
+  "route": "MACH",
+  "export": "machineryAddToDuplicateMapping",
+  "arity": 1,
+  "rhs": "(image: any) => machineryAddToDuplicateMapping(s, image)"
+ },
+ "quickAccess": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "setFolderCover": {
+  "route": "MACH",
+  "export": "machinerySetFolderCover",
+  "arity": 0,
+  "rhs": "() => machinerySetFolderCover(s)"
+ },
+ "lastZoom": {
+  "route": "DUAL",
+  "export": "machineryLastZoom",
+  "arity": 0,
+  "rhs": "() => machineryLastZoom(s)"
+ },
+ "copySmartFolderLink": {
+  "route": "TABLE",
+  "export": "copySmartFolderLink",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "folderList": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "toggleSmartFolderExpand": {
+  "route": "TABLE",
+  "export": "toggleSmartFolderExpand",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "prevGifFrame": {
+  "route": "MACH",
+  "export": "machineryPrevGifFrame",
+  "arity": 1,
+  "rhs": "(amount: any) => machineryPrevGifFrame(s, amount)"
+ },
+ "copyAsLink": {
+  "route": "TABLE",
+  "export": "copyAsLink",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "setFoldersSortIncrease": {
+  "route": "TABLE",
+  "export": "setFoldersSortIncrease",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "resetFolderCover": {
+  "route": "MACH",
+  "export": "machineryResetFolderCover",
+  "arity": 1,
+  "rhs": "(folder: any) => machineryResetFolderCover(s, folder)"
+ },
+ "tags": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "TagManager.rawdata"
+ },
+ "getSelectedItems": {
+  "route": "MACH",
+  "export": "machineryGetSelectedItems",
+  "arity": 0,
+  "rhs": "() => machineryGetSelectedItems(s)"
+ },
+ "calcuteContainTags": {
+  "route": "MACH",
+  "export": "machineryCalcuteContainTags",
+  "arity": 1,
+  "rhs": "(data: any[]) => machineryCalcuteContainTags(s, data)"
+ },
+ "currentIndex": {
+  "route": "DUAL",
+  "export": "machineryCurrentIndex",
+  "arity": 0,
+  "rhs": "() => machineryCurrentIndex(s)"
+ },
+ "setFoldersOrder": {
+  "route": "TABLE",
+  "export": "setFoldersOrder",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "filterContent": {
+  "route": "TABLE",
+  "export": "filterContent",
+  "arity": 0,
+  "rhs": "(type?: any) => machineryFilterContent(s, type)",
+  "module": "../core/filterDomain"
+ },
+ "gotoTop": {
+  "route": "MACH",
+  "export": "machineryGotoTop",
+  "arity": 0,
+  "rhs": "() => machineryGotoTop(s)"
+ },
+ "allData": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "data"
+ },
+ "scrollToCurrentItem": {
+  "route": "MACH",
+  "export": "machineryScrollToCurrentItem",
+  "arity": 0,
+  "rhs": "() => machineryScrollToCurrentItem(s)"
+ },
+ "getSelectedTags": {
+  "route": "DUAL",
+  "export": "machineryGetSelectedTags",
+  "arity": 0,
+  "rhs": "() => machineryGetSelectedTags(s)"
+ },
+ "excludeWithTag": {
+  "route": "TABLE",
+  "export": "excludeWithTag",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "preelaborations": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "pasteTags": {
+  "route": "TABLE",
+  "export": "pasteTags",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "switchListLayout": {
+  "route": "TABLE",
+  "export": "switchListLayout",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/viewOpsService"
+ },
+ "isSearchScopeTag": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "changeTo1Star": {
+  "route": "MACH",
+  "export": "machineryChangeTo1Star",
+  "arity": 1,
+  "rhs": "(event: any) => machineryChangeTo1Star(s, event)"
+ },
+ "removePermanently": {
+  "route": "MACH",
+  "export": "machineryRemovePermanently",
+  "arity": 0,
+  "rhs": "() => machineryRemovePermanently(s)"
+ },
+ "setCustomThumbnail": {
+  "route": "TABLE",
+  "export": "setCustomThumbnail",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/imageOpsService"
+ },
+ "cancelEmptyTrash": {
+  "route": "TABLE",
+  "export": "cancelEmptyTrash",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/batchOpsService.ts"
+ },
+ "removeTagGroup": {
+  "route": "MACH",
+  "export": "machineryRemoveTagGroup",
+  "arity": 1,
+  "rhs": "(group: any) => machineryRemoveTagGroup(s, group)"
+ },
+ "notify": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "notifyFn"
+ },
+ "modShiftLeftHandler": {
+  "route": "MACH",
+  "export": "machineryModShiftLeftHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModShiftLeftHandler(s, event)"
+ },
+ "toggleSelectSmartFolder": {
+  "route": "DUAL",
+  "export": "machineryToggleSelectSmartFolder",
+  "arity": 2,
+  "rhs": "(event: any, smartFolder: any) => machineryToggleSelectSmartFolder(s, event, sma"
+ },
+ "mHandler": {
+  "route": "MACH",
+  "export": "machineryMHandler",
+  "arity": 1,
+  "rhs": "($event: any) => machineryMHandler(s, $event)"
+ },
+ "refreshSmartFolderCount": {
+  "route": "TABLE",
+  "export": null,
+  "arity": 0,
+  "rhs": "",
+  "module": null
+ },
+ "moveToFolders": {
+  "route": "MACH",
+  "export": "machineryMoveToFolders",
+  "arity": 1,
+  "rhs": "(e: any) => machineryMoveToFolders(s, e)"
+ },
+ "getQuickAccessClass": {
+  "route": "TABLE",
+  "export": "getQuickAccessClass",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "openTrialModal": {
+  "route": "MACH",
+  "export": "machineryOpenTrialModal",
+  "arity": 1,
+  "rhs": "(trialRemain: any) => machineryOpenTrialModal(s, trialRemain)"
+ },
+ "multipleOpenFolder": {
+  "route": "MACH",
+  "export": "machineryMultipleOpenFolder",
+  "arity": 2,
+  "rhs": "(folder: any, needReload: any) => machineryMultipleOpenFolder(s, folder, needRel"
+ },
+ "saveFolder": {
+  "route": "MACH",
+  "export": "machinerySaveFolder",
+  "arity": 0,
+  "rhs": "() => machinerySaveFolder(s)"
+ },
+ "getURLSrc": {
+  "route": "TABLE",
+  "export": "getURLSrc",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "leaveDetailMode": {
+  "route": "DUAL",
+  "export": "machineryLeaveDetailMode",
+  "arity": 0,
+  "rhs": "() => machineryLeaveDetailMode(s)"
+ },
+ "canUseTouchID": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "systemPreferences.canPromptTouchID()"
+ },
+ "loadMoreDisable": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "false"
+ },
+ "openPrevSmartFolder": {
+  "route": "MACH",
+  "export": "machineryOpenPrevSmartFolder",
+  "arity": 0,
+  "rhs": "() => machineryOpenPrevSmartFolder(s)"
+ },
+ "relayout": {
+  "route": "MACH",
+  "export": "machineryRelayout",
+  "arity": 1,
+  "rhs": "(margin: any) => machineryRelayout(s, margin)"
+ },
+ "modLeftHandler": {
+  "route": "MACH",
+  "export": "machineryModLeftHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryModLeftHandler(s, event)"
+ },
+ "cancelRegenerateThumbnail": {
+  "route": "TABLE",
+  "export": "cancelRegenerateThumbnail",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/imageOpsService.ts"
+ },
+ "nextGifFrame": {
+  "route": "MACH",
+  "export": "machineryNextGifFrame",
+  "arity": 1,
+  "rhs": "(amount: any) => machineryNextGifFrame(s, amount)"
+ },
+ "filterWithHexColor": {
+  "route": "TABLE",
+  "export": "filterWithHexColor",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/filterDomain"
+ },
+ "keywordDebounce": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "50"
+ },
+ "listDone": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "openRatioContextMenu": {
+  "route": "TABLE",
+  "export": "openRatioContextMenu",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/miscMenuService.ts"
+ },
+ "removeStar": {
+  "route": "MACH",
+  "export": "machineryRemoveStar",
+  "arity": 0,
+  "rhs": "() => machineryRemoveStar(s)"
+ },
+ "filterData": {
+  "route": "MACH",
+  "export": "machineryFilterData",
+  "arity": 1,
+  "rhs": "(data: any[]) => machineryFilterData(s, data)"
+ },
+ "addVideoComment": {
+  "route": "MACH",
+  "export": "machineryAddVideoComment",
+  "arity": 2,
+  "rhs": "(video: any, videoElem: any) => machineryAddVideoComment(s, video, videoElem)"
+ },
+ "isExpandQuickAccess": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "true"
+ },
+ "getChildFoldersMaps": {
+  "route": "MACH",
+  "export": "machineryGetChildFoldersMaps",
+  "arity": 1,
+  "rhs": "(folders: any) => machineryGetChildFoldersMaps(s, folders)"
+ },
+ "selectDown": {
+  "route": "MACH",
+  "export": "machinerySelectDown",
+  "arity": 1,
+  "rhs": "(event: any) => machinerySelectDown(s, event)"
+ },
+ "homeHandler": {
+  "route": "MACH",
+  "export": "machineryHomeHandler",
+  "arity": 1,
+  "rhs": "(event: any) => machineryHomeHandler(s, event)"
+ },
+ "toggleAllFolderExpand": {
+  "route": "TABLE",
+  "export": "toggleAllFolderExpand",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "openUnfiledGroup": {
+  "route": "MACH",
+  "export": "machineryOpenUnfiledGroup",
+  "arity": 0,
+  "rhs": "() => machineryOpenUnfiledGroup(s)"
+ },
+ "prependImages": {
+  "route": "MACH",
+  "export": "machineryPrependImages",
+  "arity": 2,
+  "rhs": "(images: any[], updateView: any) => machineryPrependImages(s, images, updateView"
+ },
+ "TagManager": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.TagManager"
+ },
+ "resetFolderPassword": {
+  "route": "TABLE",
+  "export": "resetFolderPassword",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "changeListHeight": {
+  "route": "MACH",
+  "export": "machineryChangeListHeight",
+  "arity": 1,
+  "rhs": "(height: any) => machineryChangeListHeight(s, height)"
+ },
+ "page": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "1"
+ },
+ "changeSelectedSmartFoldersColor": {
+  "route": "TABLE",
+  "export": "changeSelectedSmartFoldersColor",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "dblclickContentPanel": {
+  "route": "TABLE",
+  "export": "dblclickContentPanel",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/miscDomain"
+ },
+ "changeImagesBackground": {
+  "route": "TABLE",
+  "export": "changeImagesBackground",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/imageOpsService"
+ },
+ "lastZoomMode": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "\"edge\""
+ },
+ "hideUploadQueue": {
+  "route": "MACH",
+  "export": "machineryHideUploadQueue",
+  "arity": 0,
+  "rhs": "() => machineryHideUploadQueue(s)"
+ },
+ "unlockPasswordKeyup": {
+  "route": "TABLE",
+  "export": "unlockPasswordKeyup",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/lockService"
+ },
+ "getRawPath": {
+  "route": "TABLE",
+  "export": "getRawPath",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "copyAsBase64": {
+  "route": "TABLE",
+  "export": "copyAsBase64",
+  "arity": 0,
+  "rhs": "",
+  "module": "../core/itemDomain"
+ },
+ "clickNode": {
+  "route": "TABLE",
+  "export": "clickNode",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/sidebarService"
+ },
+ "exportFolder": {
+  "route": "TABLE",
+  "export": "exportFolder",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/folderCoreService"
+ },
+ "setFolderSortIncrease": {
+  "route": "TABLE",
+  "export": "setFolderSortIncrease",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "platform": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "w.process && w.process.platform ? w.process.platform : undefined"
+ },
+ "updateZoomRatio": {
+  "route": "DUAL",
+  "export": "machineryUpdateZoomRatio",
+  "arity": 4,
+  "rhs": "(ratio: any, x: any, y: any, hasTransition: any) => machineryUpdateZoomRatio(s, "
+ },
+ "newSmartFolderGroup": {
+  "route": "TABLE",
+  "export": "newSmartFolderGroup",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "renameFolder": {
+  "route": "DUAL",
+  "export": "machineryRenameFolder",
+  "arity": 2,
+  "rhs": "(event: any, folder: any) => machineryRenameFolder(s, event, folder)"
+ },
+ "enterSlideshowMode": {
+  "route": "MACH",
+  "export": "machineryEnterSlideshowMode",
+  "arity": 0,
+  "rhs": "() => machineryEnterSlideshowMode(s)"
+ },
+ "containTags": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "[]"
+ },
+ "loadSubtitles": {
+  "route": "TABLE",
+  "export": "loadSubtitles",
+  "arity": 0,
+  "rhs": "",
+  "module": "../services/mediaService"
+ },
+ "gotoBottomTimeout": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "setTimeout(function () { $boxContainer.scrollTop(1000000); }, i)"
+ },
+ "folderExportAsPack": {
+  "route": "TABLE",
+  "export": "folderExportAsPack",
+  "arity": 0,
+  "rhs": "",
+  "module": "src/app/react/services/folderMenuService.ts"
+ },
+ "fadeOutDetailMode": {
+  "route": "MACH",
+  "export": "machineryFadeOutDetailMode",
+  "arity": 0,
+  "rhs": "() => machineryFadeOutDetailMode(s)"
+ },
+ "hexColor": {
+  "route": "SKIP",
+  "export": null,
+  "arity": 0,
+  "rhs": "undefined"
+ }
+}

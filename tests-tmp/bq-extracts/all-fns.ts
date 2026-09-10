@@ -1,0 +1,697 @@
+  fns["cancelEmptyTrash"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            s.isCleaningTrash = false;
+            s.trashRemoved = 0;
+            s.currentTrashRemoved = 0;
+            IPCHelper.send('palette-resume');
+            IPCHelper.sendTo((window as any).backgroundWindowID, 'cancel-empty-trash');
+    }).apply(null, args);
+  };
+
+  fns["emptyTrash"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (s.trash && s.trash.length > 0) {
+                swal({
+                    html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${i18n.__('dialog.emptyTrash.title')}</h4>
+                            <p class="alert-desc">${i18n.__("dialog.emptyTrash.desc")}</p>
+                        </div>
+                    `,
+                    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+                    width: 400,
+                    customClass: "alert-box",
+                    cancelButtonColor: "#777777",
+                    confirmButtonText: i18n.__('dialog.emptyTrash.button'),
+                    cancelButtonText: i18n.__("general.cancel"),
+                }).then(function () {
+
+                    var removeCount = s.trash.length;
+
+                    var willDelete = {};
+                    s.trash.forEach(function(r: any) {
+                        if (r.id) {
+                            willDelete[r.id] = true;
+                        }
+                    });
+
+                    for (var i = 0; i < s.raw.length; i++) {
+                        var image = s.raw[i];
+                        if (image.id && willDelete[image.id]) {
+                            s.raw.splice(i, 1);
+                            delete s.itemMappings[image.id];
+                            i--;
+                            continue;
+                        }
+                    }
+
+                    try { electronLog && electronLog.info(`[app] Empty trash`); } catch (err) {};
+                    ayncsImagesRemove(s.trash);
+
+                    s.trash = [];
+                    s.updateSelection();
+                    s.rebindRefresh();
+                    s.findDupclipate(undefined);
+
+                    // 更新進度
+                    s.removeProgress = 0;
+                    s.currentTrashRemoved = 0;
+                    s.trashRemoved += removeCount;
+                    s.isCleaningTrash = true;
+                    // 觸發 AI Search 全量同步
+                    eagle.aiSearch.fullSync();
+
+                    // 如果声音效果是开启的
+                    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+                        s.removeSound.play();
+                    }
+                });
+            }
+    }).apply(null, args);
+  };
+
+  fns["addToFolders"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (e) {
+            if (s.selected.length > 0) {
+                s.$root.$broadcast("OPEN-ADD-FOLDER-MODAL", {
+                    current: s.currentFolder,
+                    folders: s.folders,
+                    images: s.selected,
+                    existsFolders: eagle.inspector.calculateFolders(s.selected),
+                });
+            }
+    }).apply(null, args);
+  };
+
+  fns["addToRecentFolders"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (folderIDs) {
+            if (!folderIDs || folderIDs.length == 0 ) return;
+            var recentMoveFolders = localStorage.getItem("recentMoveFolders");
+            if (recentMoveFolders) {
+                recentMoveFolders = JSON.parse(recentMoveFolders);
+            }
+            else {
+                recentMoveFolders = [];
+            }
+            folderIDs.forEach(function (folderID) {
+                recentMoveFolders.unshift(folderID);
+            });
+            recentMoveFolders = recentMoveFolders.unique();
+            recentMoveFolders = recentMoveFolders.slice(0, 50);
+
+            localStorage.setItem("recentMoveFolders", JSON.stringify(recentMoveFolders));
+        }).apply(null, args);
+  };
+
+  // addToLastUsedFolder（bundle 43211-43251 全体）
+  fns["addToLastUsedFolder"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        s.checkOperationSafety(function () {
+            var recentFolders = s.getRecentFolders();
+            if (!recentFolders || recentFolders.length === 0) return;
+            if (!recentFolders[0] || !s.selected[0]) return;
+            var folder = recentFolders[0];
+            s.addToRecentFolders([folder.id]);
+            s.addImagesToFolder(s.selected, folder);
+            if (s.viewMode === 'unfiled') {
+                var itemElements = s.getSelectedItemElements();
+                s.$root.$broadcast("gl:removeItems", itemElements);
+                // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
+                s.lastIndex = s.getSelection().start;
+                var next = s.allData[s.lastIndex + s.selected.length];
+                var prev = s.allData[s.lastIndex - 1];
+                if (next) {
+                    s.selected = [next];
+                    s.current = next;
+                }
+                else if (prev) {
+                    s.selected = [prev];
+                    s.current = prev;
+                }
+                else {
+                    s.selected = [];
+                    s.leaveDetailMode();
+                }
+            }
+        });
+    }).apply(null, args);
+  };
+
+  fns["cleanAllError"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            event && event.stopPropagation();
+            s.$root.$broadcast("CLEAN_ALL_ERROR", {
+                errorList: s.errorList
+            });
+        }).apply(null, args);
+  };
+
+  fns["cleanSelected"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event) {
+            // 忽略事件传送
+            if (event && $("#box-container").outerWidth() <= event.offsetX + 10) {
+                event.stopPropagation();
+                return;
+            }
+
+            // event && event.stopPropagation();
+            if (event.metaKey || event.shiftKey || event.ctrlKey) return;
+            __lv_cleanSelectedTimeout = $timeout(function() {
+                s.selected = [];
+                s.selectedFolderMappings = {};
+                s.updateSelection();
+            }, 100);
+        }).apply(null, args);
+  };
+
+  fns["copyTags"] = function (...args) {
+    if (!__cc_copyTags) {
+      __cc_copyTags = throttle(function () {
+        const s = getScope();
+        if (!s) return;
+        eagle.inspector.copyTags();
+        s.notify({
+          message: $filter('i18n')("Context.Tag.Copy.Success"),
+          duration: 750
+        });
+      }, 500);
+    }
+    return __cc_copyTags(...args);
+  };
+
+  // pasteTags（bundle 30236-30253）
+  fns["pasteTags"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event) {
+        event && event.preventDefault();
+        event && event.stopPropagation();
+        var copiedTags = eagle.inspector.copiedTags;
+        if (s.selected && s.selected.length > 0 && copiedTags && copiedTags.length > 0) {
+            s.selected.forEach(function (image) {
+                copiedTags.forEach(function (tag) {
+                    if (image.tags.indexOf(tag) === -1) {
+                        image.tags.push(tag);
+                    }
+                });
+            });
+            s.updateSelection();
+            ayncsImagesChange(s.selected);
+            hiddenByCurrentFilter(s.selected);
+            electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${s.selected.length} files`);
+        }
+    }).apply(null, args);
+  };
+
+  // removeFromFolder（bundle 30074-30176 全体）
+  fns["removeFromFolder"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event, folderId) {
+
+        if (event && event.stopPropagation) {
+            event.stopPropagation();
+        }
+
+        if (!folderId && s.selected.length <= 0) return;
+
+        var origins = [];
+
+        s.selected.forEach(function(image) {
+            var idx = image.folders.indexOf(folderId);
+            if (idx !== -1) {
+                origins.push(image);
+                image.folders.splice(idx, 1);
+            }
+        });
+
+        try {
+            electronLog && electronLog.info(`[app] Remove ${s.selected.length} files from ${s.folderMappings[folderId].name}(${folderId})`);
+        } catch (err) {};
+
+        ayncsImagesChange(s.selected);
+        hiddenByCurrentFilter(s.selected);
+
+        var message = $filter('i18n')("notify.image.removeFromFolder", [
+            { "property": "imageCount", "value": s.selected.length },
+            { "property": "folderName", "value": s.folderMappings[folderId].name }
+        ]);
+
+        if (s.selected.length === 1) { message = message.replace("images", "image"); }
+
+        // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
+        if (s.currentFolder && s.currentFolder.id === folderId) {
+            s.lastIndex = s.getSelection().start;
+            var next = s.allData[s.lastIndex + s.selected.length];
+            var prev = s.allData[s.lastIndex - 1];
+            if (next) {
+                s.selected = [next];
+                if (s.isDetailMode) {
+                    s.current = next;
+                }
+            } else if (prev) {
+                s.selected = [prev];
+                if (s.isDetailMode) {
+                    s.current = prev;
+                }
+            } else {
+                s.selected = [];
+                s.leaveDetailMode();
+            }
+
+            if (s.isDetailMode) {
+                $timeout(function() {
+                    s.forceFitImageSize(s.current);
+                    s.zoom();
+                }, 100);
+            }
+            ScrollbarSaver.saveScrollPosition();
+
+            var itemElements = s.getSelectedItemElements();
+            s.$root.$broadcast("gl:removeItems", itemElements);
+        }
+
+        if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+            s.removeSound.play();
+        }
+
+        s.calculateImageBinding({ ignoreSort: true }, function() {
+            s.rebindRefresh(true);
+            s.updateSelection();
+        });
+
+        s.$root.notify({
+            message: message,
+            duration: 5000,
+        }, function() {
+            origins.forEach(function(image) {
+                if (image.folders.indexOf(folderId) === -1) {
+                    image.folders.push(folderId);
+                    image.folders = [...new Set(image.folders)];
+                }
+            });
+
+            // 如果這張圖片就在這個資料夾，畫面需要更新
+            if (s.currentFolder && s.currentFolder.id === folderId) {
+                s.calculateImageBinding({ ignoreSort: true }, function() {
+                    s.rebindRefresh();
+                    s.updateSelection();
+                });
+            } else {
+                s.updateSelection();
+                s.rebindRefresh(true);
+            }
+
+            ayncsImagesChange(origins);
+        });
+    }).apply(null, args);
+  };
+
+  fns["getSelectedTags"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (!s.selectedTags) return [];
+            return Object.keys(s.selectedTags);
+        }).apply(null, args);
+  };
+
+  fns["getSelectedItemElements"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            var items = s.getSelectedItems();
+            items = items.map(function (item) {
+                // if (!item.el) {
+                //     item.el = $(item.content)[0];
+                //     console.log(item.el);
+                // }
+                return item.el;
+            });
+            return items;
+        }).apply(null, args);
+  };
+
+  fns["scrollToSelectedItem"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            var __lv_target = s.selected[0];
+            // 自动定位
+            if (__lv_target) {
+
+                if (__lv_target.id) {
+                    var $box =$(`#box-${__lv_target.id}`);
+                    if ($box.length > 0 && isElementVisible($box[0]) ) {
+                        console.log("无须滚动");
+                        return;
+                    }
+                }
+                // var originSelected = [];
+                // originSelected = originSelected.concat(s.selected);
+                if (s.currentFolder && s.currentFolder.orderBy === "RANDOM") {
+                    return;        
+                }
+
+                for (var i = s.allData.length - 1; i >= 0; i--) {
+                    var __lv_image = s.allData[i];
+                    if (__lv_target && __lv_target === __lv_image) {
+                        var startPage = parseInt(i / 60);
+                        console.log(`目标在第 ${startPage} 页`);
+                        console.log($(`#box-${__lv_target.id}`).length);
+                        // 東西不在畫面上，強制更新畫面然後定位
+                        if ($(`#box-${__lv_target.id}`).length === 0 || startPage !== s.startCursor) {
+                            s.rebindRefresh(undefined, undefined, startPage);
+                            s.relayout();    
+                        }
+                        $("#box-container").css("visibility", "hidden");
+                        s.startCursor = startPage;
+                        s.$root.currentFocus = "content";
+                        $timeout(function () {
+                            // s.selected = originSelected;
+                            s.selected.forEach(function (item) {
+                                s.select(undefined, item);
+                            })
+                            s.autoScroll();
+                            setTimeout(function () {
+                                $("#box-container").css("visibility", "initial");
+                            }, 50);
+                        }, 200);
+                        s.$evalAsync();
+                        break;
+                    }
+                }
+            }
+        }).apply(null, args);
+  };
+
+  fns["excludeWithTag"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (tag) {
+            // 已存在
+            if (tag.isNoTags) {
+                eagle.filter.filterRules.tag.no = !eagle.filter.filterRules.tag.no;
+                tag.isSelected = false;
+                tag.isExcluded = true;
+            }
+            else {
+                var tagName = tag.name;
+                var __lv_idx = eagle.filter.filterRules.tag.includes.indexOf(tagName);
+                if (__lv_idx > -1) {
+                    eagle.filter.filterRules.tag.includes.splice(__lv_idx, 1);
+                    tag.isSelected = false;
+                }
+                else {
+                    var eidx = eagle.filter.filterRules.tag.excludes.indexOf(tagName);
+                    if (eidx > -1) {
+                        eagle.filter.filterRules.tag.excludes.splice(eidx, 1);
+                        tag.isExcluded = false;
+                    }
+                    else {
+                        eagle.filter.filterRules.tag.excludes.push(tagName);
+                        tag.isExcluded = true;
+                        tag.isSelected = false;
+                    }
+                }
+            }
+
+            s.tagKeyword = "";
+            s.filterContent();
+        }).apply(null, args);
+  };
+
+  fns["openTag"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(tag, ignoreHistory) {
+            s.resetPage();
+            s.$root.currentFocus = "content";
+            s.currentFolder = undefined;
+            s.currentFolderChildren = undefined;
+            __lv_TagManager.filterWithTags([tag], ignoreHistory);
+        }).apply(null, args);
+  };
+
+  // exportSelectedAsFolder（bundle 26364-26449）
+  fns["exportSelectedAsFolder"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        if (s.selected.length === 0) return;
+        s.exportFolder(function (savePath) {
+            if (savePath) {
+                var imageNames = {};
+                for (var i = 0; i < s.selected.length; i++) {
+                    var image = s.selected[i];
+                    imageNames[image.name + "." + image.ext] = image.name;
+                }
+
+                var needSpace = eagle.inspector.calculateFileSize(s.selected);
+                s.checkDiskSpace(savePath, needSpace, function () {
+
+                    fs.readdir(savePath, function(err, files) {
+
+                        var sameFileCount = 0;
+
+                        files.forEach(function (filename) {
+                            if (imageNames[filename]) {
+                                sameFileCount++;
+                            }
+                        });
+
+                        if (sameFileCount > 0) {
+
+                            var message = $filter('i18n')("Dialog.Export.As.Folder.Message", [
+                                { "property": "savePath", "value": savePath },
+                                { "property": "sameFileCount", "value": sameFileCount },
+                            ]);
+
+                            swal({
+                                html: `
+                                    <div class="alert">
+                                        <div class="alert-icon warning"></div>
+                                        <h4 class="alert-title">${i18n.__("Dialog.Export.As.Folder.Title")}</h4>
+                                        <p class="alert-desc">${message}</p>
+                                    </div>
+                                `,
+                                showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                                width: 400,
+                                customClass: "alert-box",
+                                cancelButtonColor: "#777777",
+                                confirmButtonText: i18n.__("Dialog.Export.As.Folder.Button"),
+                                cancelButtonText: i18n.__("general.cancel"),
+                            }).then(function () {
+                                if ((window as any).backgroundWindowID === undefined) {
+                                    IPCHelper.send('export-as-folder', {
+                                        folder: undefined,
+                                        images: s.selected,
+                                        savePath: savePath,
+                                        needSpace: needSpace
+                                    });
+                                }
+                                else {
+                                    IPCHelper.sendTo((window as any).backgroundWindowID, 'export-as-folder', {
+                                        folder: undefined,
+                                        images: s.selected,
+                                        savePath: savePath,
+                                        needSpace: needSpace
+                                    });
+                                }
+                            });
+                        }
+                        else {
+                            if ((window as any).backgroundWindowID === undefined) {
+                                IPCHelper.send('export-as-folder', {
+                                    folder: undefined,
+                                    images: s.selected,
+                                    savePath: savePath,
+                                    needSpace: needSpace
+                                });
+                            }
+                            else {
+                                IPCHelper.sendTo((window as any).backgroundWindowID, 'export-as-folder', {
+                                    folder: undefined,
+                                    images: s.selected,
+                                    savePath: savePath,
+                                    needSpace: needSpace
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+        });
+    }).apply(null, args);
+  };
+
+  // exportSelectedAsEaglepack（bundle 26589-26613）
+  fns["exportSelectedAsEaglepack"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        if (s.selected.length === 0) return;
+        var defaultPath = path.join("*/", 'Untitled' + '.eaglepack');
+
+        dialog.showSaveDialog(currentWindow, {
+            defaultPath: defaultPath,
+            title: i18n.__('Context.Image.Export'),
+            filters: [{ name: 'Eagle Package File', extensions: ['eaglepack'] }]
+        }).then(result => {
+            var savePath = result.filePath;
+            if (!savePath) return;
+            if ((window as any).backgroundWindowID === undefined) {
+                IPCHelper.send('export-images', {
+                    images: s.selected,
+                    savePath: savePath
+                });
+            }
+            else {
+                IPCHelper.sendTo((window as any).backgroundWindowID, 'export-images', {
+                    images: s.selected,
+                    savePath: savePath
+                });
+            }
+        });
+    }).apply(null, args);
+  };
+
+  // exportSelectedAsFormat（bundle 26633-26636）
+  fns["exportSelectedAsFormat"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        if (s.selected.length === 0) return;
+        eagle.customExport.open(s.selected);
+    }).apply(null, args);
+  };
+
+  // exportSelectedToCsv（bundle 26638-26730；bundle 体内局部 const fs = require('fs')
+  // 与模块级 fs 同物，收编）
+  fns["exportSelectedToCsv"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+        if (s.selected.length === 0) return;
+
+        electronLog.info(`[App] Export CSV started, selected count: ${s.selected.length}`);
+
+        const options = {
+            title: i18n.__('dialog.exportCsv.title'),
+            defaultPath: 'eagle-export.csv',
+            filters: [
+                { name: 'CSV Files', extensions: ['csv'] }
+            ]
+        };
+
+        const filePath = dialog.showSaveDialogSync(options);
+        if (!filePath) return;
+
+        // CSV 字串轉義函數
+        function escapeCSV(str) {
+            if (!str) return '';
+            str = String(str);
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        }
+
+        // 日期格式化函數
+        function formatDate(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toISOString().replace('T', ' ').slice(0, 19);
+        }
+
+        try {
+            // 準備 CSV 數據
+            const headers = ['ID', 'Name', 'Extension', 'Width', 'Height', 'Duration',
+                             'URL', 'Annotation', 'Comments', 'Tags', 'Folders',
+                             'Size', 'Rating', 'Imported At', 'Modified At', 'File Path'];
+
+            const rows = s.selected.map(item => {
+                // 獲取文件夾名稱
+                let folderNames = [];
+                if (item.folders && item.folders.length > 0) {
+                    folderNames = item.folders.map(folderId => {
+                        // 使用 folderMappings 取得文件夾名稱
+                        const folder = s.folderMappings[folderId];
+                        return folder ? folder.name : folderId;
+                    });
+                }
+                // item.comments[0].annotation
+                const commentString = item?.comments ? item?.comments?.map(comment => comment.annotation).join('\n') : '';
+
+                return [
+                    item.id,
+                    escapeCSV(item.name),
+                    item.ext || '',
+                    item.width || '',
+                    item.height || '',
+                    item.duration || '', // 影片持續時間
+                    escapeCSV(item.url || ''),
+                    escapeCSV(item.annotation || ''),
+                    escapeCSV(commentString), // 圖片標住
+                    escapeCSV((item.tags || []).join(', ')),
+                    escapeCSV(folderNames.join(', ')), // 使用文件夾名稱
+                    item.size || '',
+                    item.star || '',
+                    formatDate(item.modificationTime),
+                    formatDate(item.lastModified),
+                    escapeCSV(FileUrlHelper.getRawPath(item))
+                ];
+            });
+
+            // 寫入檔案
+            const csvContent = [headers, ...rows]
+                .map(row => row.join(','))
+                .join('\n');
+
+            fs.writeFileSync(filePath, '\uFEFF' + csvContent, 'utf8'); // BOM for Excel
+
+            // 顯示成功訊息
+            s.$root.notify({
+                message: i18n.__('notify.exporCSV.title'),
+                duration: 5000,
+            });
+
+            ipcRenderer.send('show-item-in-folder', filePath);
+
+        } catch (error) {
+            electronLog.error('[App] Export CSV failed:', error);
+        }
+    }).apply(null, args);
+  };

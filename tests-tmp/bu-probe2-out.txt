@@ -1,0 +1,9 @@
+GUARDDUMP {"mp4":{"id":"ITEM-1788852466055-ODIR05ZX","found":true,"np":false,"nt":true},"mp3":{"id":"ITEM-1788852466183-PNB7O1YX","found":true,"np":false,"nt":true},"hoverPlay":"true"}
+PASS mp4-box-rendered
+PASS video-hover-creates-player
+PASS video-mouseleave-cleans
+PASS mp3-box-rendered
+PASS audio-hover-creates-player
+PASS audio-mouseleave-cleans
+PASS hover-zero-reference-errors
+BU2_PROBE_OK

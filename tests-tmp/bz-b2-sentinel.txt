@@ -1,0 +1,18 @@
+=== Angular-ism / glue counts (src/app/react) ===
+  385  (base   385)       flat  evalAsync
+   16  (base    16)       flat  apply
+   20  (base    20)       flat  watch
+    8  (base     8)       flat  watchCollection
+  122  (base   122)       flat  broadcast
+   73  (base    73)       flat  on
+  201  (base   199)  REGRESSED  scopeApply
+   11  (base    11)       flat  callScope
+  734  (base   726)  REGRESSED  getBodyScope
+   78  (base    78)       flat  jQuery
+  464  (base   464)       flat  rootAccess
+   31  (base    31)       flat  coreState
+    0  (base     0)       flat  lodashWindow
+    0  (base     0)       flat  lodashBind
+   20  (base    20)       flat  lodashBare
+    2  (base     2)       flat  vendorScriptTags
+SENTINEL_REGRESSED ["metric scopeApply: 201 > baseline 199","metric getBodyScope: 734 > baseline 726"]

@@ -1,0 +1,42 @@
+  fns["zoomActual"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event) {
+            event && event.preventDefault && event.preventDefault();
+            if (!s.isDetailMode) {
+                s.imageSize.height = 150;
+                syncToolbarFromScope();
+                syncBodyFromScope();
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                s.changeListHeight();
+                if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
+                    s.adjustLayoutWidth(0);
+                    __lv_saveListHeight(s.imageSize.height);
+                }
+            } else {
+                s.imageSize.zoomRatio = 100;
+                s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+                s.updateZoomRatio(100, undefined, undefined, true);
+
+                // 如果是視頻格式，尽可能使用视频原来尺寸
+                var mpvPlayer = $(".detail-wrap mpv-video")[0];
+                if (mpvPlayer) {
+                    mpvPlayer.scaleMode = 'original';
+                }
+                else {
+                    var $__lv_video = $(".detail-wrap video");
+                    if ($__lv_video.length > 0) {
+                        var w = $__lv_video[0].videoWidth;
+                        var h = $__lv_video[0].videoHeight;
+                        $__lv_video.css({
+                            'max-width': `${w}px !important`,
+                            'max-height': `${h}px !important`,
+                        });
+                        $__lv_video.addClass("fit");
+                    }
+                }
+            }
+        }).apply(null, args);
+  };

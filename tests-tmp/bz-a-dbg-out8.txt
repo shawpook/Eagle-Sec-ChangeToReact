@@ -1,0 +1,18 @@
+STEP boot-start
+STEP boot-done
+STEP main-ready
+STEP delay-done
+=== exceptions/errors: 4
+EXC: ReferenceError: keepDetailMode is not defined
+    at machineryReload (http://127.0.0.1:12003/src/app/react/core/dataMachinery.ts:902:57)
+    at applyDataMachineryScope (http://127.0.0.1:12003/src/app/react/core/dataMachinery.ts:9160:14)
+    at bridgeWhenReady (http://127.0.0.1:12003/src/app/react/main.tsx:509:5)
+    at http://127.0.0.1:12003/src/app/react/main.tsx:524:1 @ http://127.0.0.1:12003/src/app/react/core/dataMachinery.ts : 901
+EXC: TypeError: n.process.listenerCount is not a function
+    at window.onerror (node:electron/js2c/renderer_init:2:33076) @ node:electron/js2c/renderer_init : 1
+CONSOLE-ERR: TypeError: Cannot read properties of undefined (reading 'number')
+    at http://127.0.0.1:12003/src/app/react/components/stage7/BatchRenameArtstationModals.tsx:831:18
+    at ngSafe (http://127.0.0.1:12003/src/app/react/components/stage7/BatchRenameArtstationModals.tsx:22:5)
+    at http://127.0.0.1:1 @ http://127.0.0.1:12003/src/app/react/components/stage7/BatchRenameArtstationModals.tsx
+CONSOLE-ERR: The tag <%s> is unrecognized in this browser. If you meant to render a React component, start its name with an uppercase letter. key @ http://127.0.0.1:12003/node_modules/.vite/deps/react-dom_client.js?v=06945208
+STATE: {"eagle":"object","eagleShim":"boolean","coreFns":"object","coreState":"object","shimFnsBridge":"{\"attached\":236}","fnFace":"colorFilter=function,grayColorFilter=function,searchFilter=function,rebindRefresh=function,select=function,clickNode=function,calculateImageBinding=function,updateSidebarList=function,filterContent=function,openItemContextMenu=function,cancelAllTasks=function,contentFocus=function,zoomFit=function,changeOrderBy=function","coreFnsKeys":236}

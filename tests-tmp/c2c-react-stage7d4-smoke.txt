@@ -1,0 +1,16 @@
+PASS dup-hosts
+PASS dup-old-elements-gone
+PASS dup-roots-rendered
+FAIL dsp-open-initial
+FAIL dsp-scan-result
+FAIL dsp-empty-state
+FAIL dsp-reinit-initial
+FAIL dm-open
+FAIL dm-rendered-sides
+FAIL dm-show-spy
+FAIL dm-save-dataplane
+FAIL dm-reopen
+FAIL dm-cancel-dataplane
+WARN screenshot failed: screenshot timeout (5000ms)
+
+STAGE7D4 SMOKE FAILED: 10 assertion(s): dsp-open-initial, dsp-scan-result, dsp-empty-state, dsp-reinit-initial, dm-open, dm-rendered-sides, dm-show-spy, dm-save-dataplane, dm-reopen, dm-cancel-dataplane

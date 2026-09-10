@@ -1,0 +1,470 @@
+{
+ "core/filterDomain.ts": {
+  "names": [
+   "calculateDateFilter",
+   "calcuteContainFolders",
+   "closeQuickSearch",
+   "contentFilter",
+   "excludeWithFolder",
+   "filterContent",
+   "filterWithColor",
+   "filterWithFolder",
+   "filterWithHexColor",
+   "getDateFilterCountsArray",
+   "hexToRGB",
+   "openQuickSearch",
+   "resetFilter",
+   "search",
+   "searchFocus",
+   "toggleExtFilter",
+   "toggleExtFilterExclude",
+   "updateFilterCounts",
+   "parseKeywordsWithOR (独立导出)"
+  ],
+  "imports": {
+   "./dataMachinery": [
+    "machineryCalcuteContainFolders"
+   ],
+   "../store/filterState": [
+    "syncFilterFromScope"
+   ],
+   "../store/listState": [
+    "syncListFromScope"
+   ],
+   "../store/toolbarState": [
+    "syncToolbarFromScope"
+   ]
+  },
+  "consts": [
+   "$timeout",
+   "AUDIO_TYPES",
+   "DATE_1_DAY",
+   "DATE_30_DAY",
+   "DATE_365_DAY",
+   "DATE_7_DAY",
+   "DATE_90_DAY",
+   "FONT_TYPES"
+  ],
+  "lv": [
+   "__lv_ext",
+   "__lv_image",
+   "__lv_keywordModelTimeout",
+   "__lv_now",
+   "__lv_searchTimeout"
+  ]
+ },
+ "core/itemDomain.ts": {
+  "names": [
+   "openFileWithDefault",
+   "copyAsLink",
+   "copyAsPath",
+   "getFolderFullPath",
+   "getGIFPath",
+   "getModelPath",
+   "getNativeViewerPath",
+   "getPDFPath",
+   "getRawPath",
+   "getRawUrl",
+   "getRawViewerPath",
+   "getTxtPath",
+   "getURLSrc",
+   "openItemLocation",
+   "openWithOther",
+   "openInFinder",
+   "openFilesWithDefault",
+   "openInPreviewWindow",
+   "copyAsProperity",
+   "copyAsFolderPath",
+   "copyAsThumbnail",
+   "copyAsBase64",
+   "isInFolder (独立导出)"
+  ],
+  "imports": {
+   "./ipcHelper": [
+    "IPCHelper"
+   ],
+   "../utils/func": [
+    "debounce"
+   ],
+   "./appCore": [
+    "getBodyScope"
+   ]
+  },
+  "consts": [
+   "$filter",
+   "AUDIO_TYPES",
+   "EagleConfig",
+   "clipboard",
+   "electronLog",
+   "fs",
+   "ipcRenderer",
+   "preferences"
+  ],
+  "lv": [
+   "__lv_image",
+   "__lv_path",
+   "__lv_showFinderAlert"
+  ]
+ },
+ "core/miscDomain.ts": {
+  "names": [
+   "changeOrderBy",
+   "cleanLibraryPathPermissionError",
+   "cleanLocalhostError",
+   "contentFocus",
+   "dblclickContentPanel",
+   "escHandler",
+   "leaveDetailMode",
+   "maximize",
+   "openErrorModal",
+   "toggleFolderVisible",
+   "togglePaletteProcessing",
+   "toggleQuickAccessVisible",
+   "toggleSmartFolderVisible",
+   "undo",
+   "updateCurrentOrderAndIncrease (独立导出)",
+   "updateSuggestions (独立导出)"
+  ],
+  "imports": {
+   "./smoothZoomEngine": [
+    "detailZoom"
+   ],
+   "./appCore": [
+    "getBodyScope"
+   ],
+   "../store/bodyState": [
+    "syncBodyFromScope"
+   ],
+   "../store/detailState": [
+    "syncDetailFromScope"
+   ],
+   "../store/inspectorState": [
+    "syncInspectorFromScope"
+   ],
+   "../store/sidebarState": [
+    "syncSidebarFromScope"
+   ],
+   "../store/toolbarState": [
+    "syncToolbarFromScope"
+   ]
+  },
+  "consts": [
+   "$timeout",
+   "currentWindow",
+   "electronLog",
+   "ipcRenderer",
+   "remote",
+   "systemPreferences"
+  ],
+  "lv": [
+   "__lv_zoomInitTimeout"
+  ]
+ },
+ "services/folderCoreService.ts": {
+  "names": [
+   "getLibraryHistory",
+   "openFolder",
+   "openSmartFolder",
+   "openUnfiled",
+   "smartFolderCount",
+   "switchLibrary",
+   "duplicateItem",
+   "exportFolder",
+   "checkDiskSpace"
+  ],
+  "imports": {
+   "./dataMachinery": [
+    "machineryGetAncestorSmartFolders"
+   ],
+   "../store/bodyState": [
+    "syncBodyFromScope"
+   ],
+   "../store/detailState": [
+    "syncDetailFromScope"
+   ],
+   "../store/lockState": [
+    "syncFolderLock"
+   ],
+   "../store/inspectorState": [
+    "syncInspectorFromScope"
+   ],
+   "../store/listState": [
+    "syncListFromScope"
+   ],
+   "../store/panelState": [
+    "syncPanelFromScope"
+   ],
+   "../store/sidebarState": [
+    "syncSidebarFromScope"
+   ],
+   "../store/toolbarState": [
+    "syncToolbarFromScope"
+   ]
+  },
+  "consts": [
+   "$filter",
+   "$timeout",
+   "FixUtils",
+   "currentWindow",
+   "dialog",
+   "ipcRenderer"
+  ],
+  "lv": [
+   "__lv_image",
+   "__lv_openSmartFolderTimeout",
+   "__lv_openUnfiledTimeout",
+   "__lv_path",
+   "__lv_setLastFolder",
+   "__lv_updateListHeight"
+  ]
+ },
+ "services/imageOpsService.ts": {
+  "names": [
+   "flipHandler",
+   "rotateHandler",
+   "setCustomThumbnail",
+   "setCustomThumbnailFromClipboard",
+   "resetCustomThumbnail",
+   "changeImagesBackground"
+  ],
+  "imports": {},
+  "consts": [
+   "AUDIO_TYPES",
+   "NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES",
+   "VIDEO_TYPES",
+   "currentWindow",
+   "dialog",
+   "electronLog",
+   "fs",
+   "ipcRenderer"
+  ],
+  "lv": []
+ },
+ "services/itemMenuService.ts": {
+  "names": [
+   "openItemContextMenu"
+  ],
+  "imports": {
+   "../services/itemMenuService": [
+    "itemMenuOpenItemContextMenu"
+   ]
+  },
+  "consts": [],
+  "lv": []
+ },
+ "services/lockService.ts": {
+  "names": [
+   "focusAppUnlockPassword",
+   "focusUnlockPassword",
+   "unlockAppPasswordKeydown",
+   "unlockAppPasswordKeyup",
+   "unlockPasswordKeyup"
+  ],
+  "imports": {
+   "../store/lockState": [
+    "syncFolderLock"
+   ],
+   "../store/listState": [
+    "syncListFromScope"
+   ]
+  },
+  "consts": [
+   "$timeout",
+   "preferences"
+  ],
+  "lv": []
+ },
+ "services/mediaService.ts": {
+  "names": [
+   "flipVideo",
+   "rotateVideo",
+   "toggleGifPlay",
+   "toggleSlideshow",
+   "setAsVideoThumbnail",
+   "loadSubtitles"
+  ],
+  "imports": {
+   "./ipcHelper": [
+    "IPCHelper"
+   ],
+   "./dataMachinery": [
+    "machineryCalcRotateDegree",
+    "machineryGetVideoPlayer"
+   ],
+   "../store/detailState": [
+    "syncDetailFromScope"
+   ]
+  },
+  "consts": [
+   "currentWindow",
+   "dialog",
+   "electronLog",
+   "fs",
+   "ipcRenderer"
+  ],
+  "lv": [
+   "__lv_video"
+  ]
+ },
+ "services/selectionService.ts": {
+  "names": [
+   "onBoxMouseup",
+   "onBoxListDblClick",
+   "onDetailClick",
+   "select"
+  ],
+  "imports": {
+   "../services/batchOpsService": [
+    "cancelCleanSelectedTimeout"
+   ],
+   "../store/inspectorState": [
+    "syncInspectorFromScope"
+   ],
+   "../store/listState": [
+    "syncListFromScope"
+   ]
+  },
+  "consts": [
+   "AUDIO_TYPES",
+   "EagleConfig",
+   "currentWindow",
+   "ipcRenderer",
+   "preferences"
+  ],
+  "lv": [
+   "__lv_image"
+  ]
+ },
+ "services/sidebarService.ts": {
+  "names": [
+   "changeSidebarIndex",
+   "clickNode",
+   "dblclickSidebarSmartFolderGroup",
+   "getNodeClass",
+   "getQuickAccessClass",
+   "getSmartFolderClass",
+   "hoverHideSidebar",
+   "hoverShowSidebar",
+   "sidebarFocus",
+   "toggleFolderExpand",
+   "toggleSmartFolderExpand",
+   "updateSidebarList",
+   "onSidebarResize",
+   "toggleSelectFolder",
+   "toggleCurrentLevelFolders",
+   "toggleAllFolderExpand",
+   "toggleSelectSmartFolder",
+   "toggleAllSmartFolderExpand",
+   "openFolderExpandContextMenu"
+  ],
+  "imports": {
+   "../global/bus": [
+    "contextMenuOpenChannel"
+   ],
+   "./dataMachinery": [
+    "machineryFilterSidebarItem",
+    "machineryToggleAllFolders",
+    "machineryToggleAllSmartFoldersInner",
+    "machineryToggleCurrentLevelFolders",
+    "machineryToggleCurrentLevelSmartFoldersInner"
+   ],
+   "../store/bodyState": [
+    "syncBodyFromScope"
+   ],
+   "../store/listState": [
+    "syncListFromScope"
+   ],
+   "../store/sidebarState": [
+    "syncSidebarFromScope"
+   ],
+   "../store/tagManagerState": [
+    "syncTagManagerFromScope"
+   ]
+  },
+  "consts": [
+   "$timeout",
+   "preferences"
+  ],
+  "lv": [
+   "__lv_onSidebarResizeTimeout",
+   "__lv_updateSidebarListTimeout"
+  ]
+ },
+ "services/uploadService.ts": {
+  "names": [
+   "cancelAllTasks",
+   "importFolders",
+   "uploadFiles",
+   "uploadUrls"
+  ],
+  "imports": {
+   "./ipcHelper": [
+    "IPCHelper"
+   ],
+   "../store/uploadState": [
+    "syncUploadFromScope"
+   ]
+  },
+  "consts": [
+   "$filter",
+   "currentWindow",
+   "dialog",
+   "emojiRegex",
+   "ipcRenderer",
+   "remainingFilenameLength",
+   "sanitize"
+  ],
+  "lv": [
+   "__lv_fds",
+   "__lv_files",
+   "__lv_path",
+   "__lv_result"
+  ]
+ },
+ "services/viewOpsService.ts": {
+  "names": [
+   "getRatioExp",
+   "getRatioNonExp",
+   "lastZoom",
+   "smartZoom",
+   "switchGridLayout",
+   "switchJustifiedLayout",
+   "switchListLayout",
+   "switchSquareLayout",
+   "updateZoomRatio",
+   "zoom",
+   "zoomFit",
+   "zoomIn",
+   "getNext"
+  ],
+  "imports": {
+   "./smoothZoomEngine": [
+    "detailZoom"
+   ],
+   "../store/bodyState": [
+    "syncBodyFromScope"
+   ],
+   "../store/detailState": [
+    "syncDetailFromScope"
+   ],
+   "../store/inspectorState": [
+    "syncInspectorFromScope"
+   ],
+   "../store/toolbarState": [
+    "syncToolbarFromScope"
+   ]
+  },
+  "consts": [
+   "VIDEO_TYPES",
+   "preferences"
+  ],
+  "lv": [
+   "__lv_saveListHeight",
+   "__lv_target",
+   "__lv_updateZoomRatioTimeout",
+   "__lv_video",
+   "__lv_x",
+   "__lv_y"
+  ]
+ }
+}

@@ -1,0 +1,10 @@
+STEP boot-start
+STEP boot-done
+STEP main-ready
+STEP delay-done
+=== exceptions/errors: 2
+EXC: ReferenceError: Cannot access 'EagleConfig' before initialization
+    at http://127.0.0.1:12070/src/app/react/core/itemDomain.ts:675:1 @ http://127.0.0.1:12070/src/app/react/core/itemDomain.ts : 674
+EXC: TypeError: n.process.listenerCount is not a function
+    at window.onerror (node:electron/js2c/renderer_init:2:33076) @ node:electron/js2c/renderer_init : 1
+STATE: {"eagle":"object","eagleShim":"undefined","coreFns":"undefined","coreState":"undefined","bodyScopeKeys":-1}

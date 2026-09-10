@@ -1,0 +1,7 @@
+STEP boot-start
+STEP boot-done
+STEP main-ready
+STEP delay-done
+=== exceptions/errors: 1
+CONSOLE-ERR: The tag <%s> is unrecognized in this browser. If you meant to render a React component, start its name with an uppercase letter. key @ http://127.0.0.1:12003/node_modules/.vite/deps/react-dom_client.js?v=06945208
+STATE: {"eagle":"object","eagleShim":"boolean","coreFns":"object","coreState":"object","bodyScopeKeys":16}

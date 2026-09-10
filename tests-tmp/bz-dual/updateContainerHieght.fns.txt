@@ -1,0 +1,37 @@
+  fns["updateContainerHieght"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (hasAnimation, __lv_delay = 1) {
+            let duration = 170;
+            if (!hasAnimation) duration = 1;
+            setTimeout(() => {
+                if (eagle.filter.isOpen) {
+                    var $filterBar = $("#filter-toolbar");
+                    var __lv_height = $filterBar.outerHeight();
+                    $("#box-container").css({
+                        "padding-bottom": __lv_height,
+                        "height": `calc(100% - ${48 + __lv_height}px)`
+                    });
+                    $("#box-container-scrollbar").css({
+                        "top": 48 + __lv_height,
+                    });
+                    $("#box-container").css({
+                        "margin-top": __lv_height,
+                    });
+                }
+                else {
+                    $("#box-container").css({
+                        "padding-bottom": 0,
+                        "height": `calc(100% - 48px)`
+                    });
+                    $("#box-container-scrollbar").css({
+                        "top": 48,
+                    });
+                    $("#box-container").css({
+                        "margin-top": 0,
+                    });
+                }
+            }, __lv_delay);
+        }).apply(null, args);
+  };

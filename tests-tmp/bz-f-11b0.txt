@@ -1,0 +1,10 @@
+PASS b0-init-no-errors
+PASS b0-rectselect-rect-shown
+PASS b0-rectselect-rect-hidden
+PASS b0-autoscroll-broadcast-ok
+PASS b0-scrollbar-thumb-style
+PASS b0-scrollbar-normal-mode
+PASS b0-sentinel-init
+PASS b0-directive-attrs-gone
+PASS screenshot-saved test-run/react-stage11b0-smoke.png
+STAGE11B0 SMOKE OK

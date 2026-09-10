@@ -1,0 +1,87 @@
+  fns["saveFolder"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function() {
+            console.time("s.saveFolder");
+
+            // 保存時進行日文濁音正規化
+            const unrom = require(appRoot.path + '/app/js/utils/unorm.js');
+            const nfc = (text) => {
+                try {
+                    return unrom.nfc(text);
+                }
+                catch (err) {
+                    return text;
+                }
+            };
+
+            var folders = [];
+            cloneTree(folders, s.folders);
+
+            eagle.utils.tree.walk(folders, 'children', function (folder, parent, depth) {
+                folder.name = nfc(folder.name);
+            });
+            
+            const smartFolders = s.smartFolders.map(function(smartFolder) {
+                var clone = {
+                    id: smartFolder.id,
+                    icon: smartFolder.icon,
+                    iconColor: smartFolder.iconColor,
+                    name: smartFolder.name,
+                    description: smartFolder.description || "",
+                    modificationTime: smartFolder.modificationTime,
+                    conditions: smartFolder.conditions,
+                };
+                if (smartFolder.children) {
+                	clone.children = smartFolder.children;
+                }
+                if (smartFolder.orderBy) {
+                    clone.orderBy = smartFolder.orderBy;
+                    clone.sortIncrease = smartFolder.sortIncrease;
+                }
+                return clone;
+            });
+
+            eagle.utils.tree.walk(smartFolders, 'children', function (smartFolder, parent, depth) {
+                smartFolder.name = nfc(smartFolder.name);
+            });
+
+            const groups = __lv_TagManager.groups.map(function (__lv_group) {
+                var g = {
+                    id: __lv_group.id,
+                    name: nfc(__lv_group.name),
+                    tags: __lv_group.tags
+                };
+                if (__lv_group.color) {
+                    g.color = __lv_group.color;
+                }
+                if (__lv_group.description !== undefined) {
+                    g.description = __lv_group.description;
+                }
+                return g;
+            });
+
+            const quickAccess = s.quickAccess.map(function (item) {
+                return {
+                    type: item.type,
+                    id: item.id
+                }
+            });
+
+            const __lv_libraryPath = s.libraryPath;
+
+            (window as any).IPCHelper.send('folders-change', {
+                // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
+                libraryDir: __lv_libraryPath,
+                folders: folders,
+                smartFolders: smartFolders,
+                quickAccess: quickAccess,
+                tagsGroups: groups,
+            });
+
+            console.timeEnd("s.saveFolder");
+        }).apply(null, args);
+  };
+
+

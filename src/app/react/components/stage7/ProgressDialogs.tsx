@@ -7,6 +7,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
 import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
 import { addToLibraryChannel, webpConvertStartChannel } from '../../global/bus';
+import { useBodyState } from '../../store/bodyState';
 
 /**
  * 阶段7d-6a：进度对话框族（第一部分）接管。
@@ -53,32 +54,14 @@ const ngNumber = (v: any, frac: number) => {
 
 export function EmptyTrashProgress() {
   const [host, setHost] = useState<HTMLElement | null>(null);
-  const [, bump] = useState(0);
-  const bumpAll = () => bump((v: number) => v + 1);
-  const [isCleaning, setIsCleaning] = useState(false);
-  const [removeProgress, setRemoveProgress] = useState(0);
+  // b1-9bz-C-4：isCleaningTrash / removeProgress 已源翻转到 bodyState（scopeShim 读写委托
+  // store）——组件直接订阅，原 body.$watch 桥接退役（watcher 归零）。
+  const isCleaning = useBodyState((s) => s.isCleaningTrash);
+  const removeProgress = useBodyState((s) => s.removeProgress);
 
   useEffect(() => {
     setHost(document.getElementById('eagle-empty-trash-progress-host'));
   }, []);
-
-  useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
-    // 模板绑定 isCleaningTrash/removeProgress 解析到 body scope → $watch 桥接 digest 变化
-    const off1 = body.$watch('isCleaningTrash', (v: any) => setIsCleaning(!!v));
-    const off2 = body.$watch('removeProgress', (v: any) => {
-      setRemoveProgress(Number(v) || 0);
-      bumpAll();
-    });
-    setIsCleaning(!!body.isCleaningTrash);
-    setRemoveProgress(Number(body.removeProgress) || 0);
-    return () => {
-      off1();
-      off2();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [host]);
 
   if (!host) return null;
 

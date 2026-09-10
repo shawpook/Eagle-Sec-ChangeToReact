@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eagle 许可状态</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/registration.css">
+  <style>
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #1f2023;
+      color: #f5f5f7;
+    }
+    .preview-license {
+      width: min(480px, calc(100vw - 48px));
+      padding: 28px;
+      border-radius: 8px;
+      background: #26272b;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+    }
+    .preview-license img {
+      width: 100%;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+    .preview-license h1 {
+      margin: 20px 0 8px;
+      font-size: 22px;
+      font-weight: 600;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 20px;
+      background: rgba(52, 199, 89, .14);
+      color: #34c759;
+      font-size: 13px;
+    }
+    .preview-license dl {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 10px;
+      margin: 22px 0 0;
+      font-size: 14px;
+    }
+    .preview-license dt {
+      color: #9aa0a6;
+    }
+    .preview-license dd {
+      margin: 0;
+      word-break: break-all;
+    }
+    .note {
+      margin-top: 22px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, .08);
+      color: #9aa0a6;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <main class="preview-license">
+    <img src="assets/images/dark/illustrations/register-remain.png" alt="">
+    <h1>Eagle 许可状态</h1>
+    <span class="status">已激活（预览环境）</span>
+    <dl>
+      <dt>邮箱</dt>
+      <dd>preview@eagle.local</dd>
+      <dt>机器 ID</dt>
+      <dd>preview-machine-id</dd>
+      <dt>版本</dt>
+      <dd>4.0.0 preview</dd>
+    </dl>
+    <p class="note">
+      该页面为复刻工程的安全替代页面，不包含原版授权、试用、注册或许可校验逻辑。
+    </p>
+  </main>
+</body>
+</html>

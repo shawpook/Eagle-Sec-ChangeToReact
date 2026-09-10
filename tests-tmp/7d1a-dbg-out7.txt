@@ -1,0 +1,34 @@
+PASS fmd-hosts
+PASS fmd-old-blocks-gone
+PASS atf-open
+PASS atf-search-focused
+PASS atf-tree-rendered
+PASS atf-label-rendered
+PASS atf-check-toggles
+PASS atf-closed
+PASS atf-data-plane
+PASS atf-recent-saved
+PASS atf-reopen-recent-row
+PASS atf-filter
+PASS atf-create-row
+PASS atf-esc-closed
+PASS atf-reopen2
+PASS atf-remove-from-original-persist
+PASS mv-open
+PASS mv-source-disabled
+PASS mv-tree-rendered
+PASS mv-swal-shown
+DBG7D1A-PRE: {"containers":1,"visible":["flex"]}
+DBG7D1A-POST: {"containers":1,"swalOpen":true}
+DBG7D1A-MUT@POST: []
+DBG7D1A-TRAP: {"rej":"ReferenceError: machineryGetFolderParentChilder is not defined\n    at http://127.0.0.1:12002/src/app/react/services/folderCoreService.ts:392:22\n    at fns.moveFoldersAsSibling (http://127.0.0.1:12002/src/app/react/services/folderCoreService.ts:461:7)\n    at body.moveFoldersAsSibling (<anonymous>:17:23)\n    at http://127.0.0.1:12002/src/app/react/components/stage7/FolderModals.tsx:1907:14\n    at http://127.0.0.1:12002/src/app/react/components/stage7/FolderModals.tsx:1809:9","err":null,"calls":[{"n":3,"isBottom":true,"sel":"收藏夹"}]}
+DBG7D1A-FIBER@POST: view.open@POST=true
+DBG7D1A-MAP: {"mapLen":3,"targetMapped":true,"favMapped":true}
+PASS mv-data-plane-sibling
+DBG7D1A: {"cls":"modal move-folder-modal open","swalOpen":false,"overlay":true}
+DBG7D1A-MUT@FINAL: []
+DBG7D1A-FIBER: {"hops":2,"hooks":["[obj]","[obj]","[obj]","view{open=true,selectedFolders=1}","[ref/queue]","[ref/queue]","[ref/queue]","[ref/queue]","[ref/queue]","[ref/queue]"],"elIsConnected":true}
+FAIL mv-closed
+WARN screenshot failed: screenshot timeout (5000ms)
+
+STAGE7D1A SMOKE FAILED: 1 assertion(s): mv-closed

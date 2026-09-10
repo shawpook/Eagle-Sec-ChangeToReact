@@ -1,0 +1,18 @@
+PASS pd6c-hosts
+PASS pd6c-old-elements-gone
+PASS pd6c-12-hosts
+FAIL wc-swal-shown
+FAIL wc-open-0-2
+FAIL wc-progress-50
+PASS wc-finish-closed
+FAIL wc-swal-reshown
+PASS wc-cancel-closed
+FAIL wc-cancel-ipc
+PASS fx-open-3-10
+PASS fx-cancel-noop-still-open
+PASS fx-closed-dialog-gone
+PASS fc-open-2-4
+PASS fc-closed-dialog-gone
+WARN screenshot failed: screenshot timeout (5000ms)
+
+STAGE7D6C SMOKE FAILED: 5 assertion(s): wc-swal-shown, wc-open-0-2, wc-progress-50, wc-swal-reshown, wc-cancel-ipc

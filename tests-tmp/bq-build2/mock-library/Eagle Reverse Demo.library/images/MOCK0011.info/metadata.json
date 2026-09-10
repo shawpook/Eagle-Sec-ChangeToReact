@@ -1,0 +1,41 @@
+{
+  "id": "MOCK0011",
+  "name": "Plugin Created",
+  "ext": "png",
+  "width": 1280,
+  "height": 720,
+  "size": 7092,
+  "url": "https://developer.eagle.cool",
+  "website": "developer.eagle.cool",
+  "annotation": "插件创建完成提示图。",
+  "tags": [
+    "插件",
+    "创建"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-PLUGIN"
+  ],
+  "star": 4,
+  "palettes": [
+    {
+      "color": [
+        255,
+        255,
+        255
+      ]
+    },
+    {
+      "color": [
+        255,
+        202,
+        66
+      ]
+    }
+  ],
+  "modificationTime": 1784802283020,
+  "lastModified": 1784802283020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

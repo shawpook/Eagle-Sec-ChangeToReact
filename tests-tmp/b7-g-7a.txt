@@ -1,0 +1,17 @@
+PASS cm-host
+PASS cm-old-element-gone
+PASS cm-real-open
+PASS cm-real-items
+PASS cm-real-search-focused
+PASS cm-custom-open
+PASS cm-disabled-class
+PASS cm-click-callback
+PASS cm-closed-after-click
+PASS cm-keepopen-checked-toggle
+PASS cm-submenu-open
+PASS cm-submenu-closed
+PASS cm-search-initial-count
+PASS cm-search-filtered
+PASS cm-overlay-close
+PASS screenshot-saved test-run/react-stage7a-menu.png
+STAGE7A_SMOKE_OK

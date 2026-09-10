@@ -1,0 +1,12 @@
+SWEEP_B7_Y1 {"chain":[{"tag":"div#toggle-all-btn","cls":"ic-btn","disp":"none","w":"auto","h":"24px","vis":"visible","overflow":"visible"},{"tag":"div","cls":"breadcrumbs","disp":"flex","w":"84px","h":"48px","vis":"visible","overflow":"visible"},{"tag":"div#eagle-toolbar-host","cls":"toolbar","disp":"flex","w":"798px","h":"48px","vis":"visible","overflow":"hidden"},{"tag":"div#list-content-panel","cls":"content-panel","disp":"block","w":"798px","h":"800px","vis":"visible","overflow":"visible"},{"tag":"div#main-app","cls":"","disp":"block","w":"1280px","h":"800px","vis":"visible","overflow":"hidden"},{"tag":"body","cls":"win32 current-focus-sidebar all-view is-","disp":"block","w":"1280px","h":"800px","vis":"visible","overflow":"hidden"}],"btnRect":{"x":0,"y":0,"w":0,"h":0},"img":{"complete":true,"nw":14,"src":"app/assets/images/dark/icons/ic_toggle-sidebar.svg"}}
+SWEEP_B7_SKIP toggle-all-toolbar (no size/no element)
+SWEEP_B7_CLICKED openOrderMenu-btn @797,24
+SWEEP_B7_CLICKED toggleFilter-btn @823,24
+SWEEP_B7_CLICKED zoomOut-btn @470,24
+SWEEP_B7_SKIP refresh-random (no size/no element)
+SWEEP_B7_CLICKED folder-row @119,380
+SWEEP_B7_SKIP smart-node-if-any (no size/no element)
+SWEEP_B7_SKIP detail-rotate (no size/no element)
+SWEEP_B7_CONSOLE_ERRORS {"total":0,"list":[]}
+SWEEP_B7_SUMMARY {"toggleAllCollapapsed":true,"swallowedFatal":0}
+SWEEP_B7_OK

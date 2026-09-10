@@ -1,0 +1,16 @@
+PASS dup-hosts
+PASS dup-old-elements-gone
+PASS dup-roots-rendered
+PASS dsp-open-initial
+PASS dsp-scan-result
+PASS dsp-empty-state
+PASS dsp-reinit-initial
+PASS dm-open
+PASS dm-rendered-sides
+PASS dm-show-spy
+PASS dm-save-dataplane
+PASS dm-reopen
+PASS dm-cancel-dataplane
+PASS screenshot-saved test-run/react-stage7d4-duplicate.png
+
+STAGE7D4 SMOKE OK

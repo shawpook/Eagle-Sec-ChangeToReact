@@ -1,0 +1,35 @@
+  fns["toggleZoom"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function (event) {
+            if (!s.isDetailMode) return;
+            if (s.VIDEO_TYPES[s.current.ext]) {
+                if (s.lastZoomMode !== "edge") {
+                    s.zoomFit(event);
+                    s.lastZoomMode = "edge";
+                    syncDetailFromScope();
+                    s.zoomFitSize = s.imageSize.zoomRatioExp;
+                }
+                else {
+                    s.zoomActual(event);
+                    s.lastZoomMode = "fit";
+                    syncDetailFromScope();
+                    s.zoomFitSize = 0;
+                }
+            }
+            else {
+                if (s.lastZoomMode !== "edge") {
+                    s.zoomFitEdge(event, true);
+                    s.lastZoomMode = "edge";
+                    syncDetailFromScope();
+                }
+                else {
+                    s.zoomFit(event);
+                    s.lastZoomMode = "fit";
+                    syncDetailFromScope();
+                }
+            }
+            localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
+        }).apply(null, args);
+  };

@@ -1,0 +1,21 @@
+PASS cm-hosts
+PASS cm-old-blocks-gone
+PASS em-open
+PASS em-rows-structure
+PASS em-header
+PASS em-remove-row
+PASS em-reopen
+PASS em-retry-edit-dataplane
+PASS em-retry-closes
+PASS em-clean-reopen
+PASS em-swal-shown
+PASS em-clean-closes
+PASS wp-shell-rendered
+PASS wp-hidden-initially
+PASS wp-visible-community
+PASS wp-left-offset
+PASS wp-url-in-panel
+PASS wp-hidden-again
+PASS screenshot-saved test-run/react-stage7d1b-modals.png
+
+STAGE7D1B SMOKE OK

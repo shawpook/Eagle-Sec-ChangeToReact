@@ -1,0 +1,42 @@
+{
+  "id": "MOCK0002",
+  "name": "Welcome Extension",
+  "ext": "png",
+  "width": 1536,
+  "height": 960,
+  "size": 74499,
+  "url": "https://eagle.cool/extensions",
+  "website": "eagle.cool",
+  "annotation": "浏览器扩展引导素材。",
+  "tags": [
+    "UI",
+    "扩展",
+    "引导"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-WELCOME"
+  ],
+  "star": 4,
+  "palettes": [
+    {
+      "color": [
+        32,
+        34,
+        38
+      ]
+    },
+    {
+      "color": [
+        242,
+        243,
+        246
+      ]
+    }
+  ],
+  "modificationTime": 1785579883020,
+  "lastModified": 1785579883020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

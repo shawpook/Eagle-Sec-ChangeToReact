@@ -1,0 +1,15 @@
+  fns["toggleAllFolders"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function () {
+      if (s2.currentSmartFolder) {
+        s2.toggleAllSmartFolderExpand();
+      }
+      else {
+        s2.toggleAllFolderExpand();
+      }
+    }).apply(null, args);
+  };
+
+  // openFolderExpandContextMenu（bundle 38578-38618 逐字；b1-9bo：直发广播改
+  // eagleBus 频道——CONTEXTMENU 频道原子切换面之一）

@@ -1,0 +1,65 @@
+PASS react-mount
+PASS angular-main-app
+PASS angular-sidebar
+PASS angular-box-container
+PASS global-eagle
+PASS global-i18n
+PASS global-settings
+PASS react-store-exposed
+PASS react-store-theme
+PASS stage1-theme-sync-initial
+PASS stage1-preferences-key-shared
+PASS stage1-actions-exposed
+PASS b1-9z-flatpickr-supply
+PASS b1-9ad-colorfilter-pipeline
+PASS b1-9af-exif-viewer-react
+PASS b1-9ag-raw-viewer-react
+PASS b1-9ag-native-viewer-react
+PASS b1-9ah-gif-viewer-react
+PASS b1-9ai-text-editor-react
+PASS b1-9aj-font-viewer-react
+PASS stage1-app-style-follows-theme (css/style_light.css)
+PASS stage1-theme-restore (dark)
+PASS stage2-library-loaded
+PASS stage2-sidebar-list-rendered
+PASS stage2-all-item-active
+PASS stage2-folder-item-classes
+PASS stage2-folder-badge-counts
+PASS stage2-labels-present
+PASS stage2-footer-search
+PASS stage2-droparea
+PASS stage2-vs-spacers
+PASS stage2-header-library-btn
+PASS stage2-sidebar-width-set
+PASS stage2-all-badge-visible
+PASS stage2-click-unfiled-activates
+PASS stage2-click-all-restores
+PASS stage3a-toolbar-host-rendered
+PASS stage3a-breadcrumb-all-active
+PASS stage3a-prev-next-btns
+PASS stage3a-zoom-slider
+PASS stage3a-zoom-progressbar-width
+PASS stage3a-search-input
+PASS stage3a-filter-btn-with-badge-slot
+PASS stage3a-corner-window-btns-hidden-by-default
+PASS stage3a-toolbar-visible
+PASS stage3a-filter-toggle-active
+PASS stage3a-filter-toggle-restored
+PASS stage3a-corner-btns-when-inspector-hidden
+PASS stage3a-corner-btns-restored
+PASS stage3a-search-keyword-roundtrip
+PASS stage3a-keyword-restored
+PASS stage3b-17-items-rendered
+PASS stage3b-filter-items-hidden-by-default
+PASS stage3b-overlay-persists
+PASS stage3b-panel-opens
+PASS stage3b-types-open-exclusive
+file:///H:/dev/Eagle-Sec-development%20-%20%E5%89%AF%E6%9C%AC/tests/react-cdp-harness.mjs:42
+  throw new Error(`${label} timeout${lastError ? `: ${lastError.message}` : ''}`);
+        ^
+
+Error: type check drives rules + badge + breadcrumb timeout
+    at waitFor (file:///H:/dev/Eagle-Sec-development%20-%20%E5%89%AF%E6%9C%AC/tests/react-cdp-harness.mjs:42:9)
+    at async file:///H:/dev/Eagle-Sec-development%20-%20%E5%89%AF%E6%9C%AC/tests/react-stage-smoke.mjs:726:3
+
+Node.js v22.22.2

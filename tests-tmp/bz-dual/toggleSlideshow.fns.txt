@@ -1,0 +1,12 @@
+  fns["toggleSlideshow"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+                if (!s.isSlideshowMode) {
+                    s.enterSlideshowMode();
+                } else {
+                    s.leaveSlideshowMode();
+                }
+            }).apply(null, args);
+  };

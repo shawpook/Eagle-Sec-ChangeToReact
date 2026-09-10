@@ -1,0 +1,13 @@
+PASS itp-host
+PASS itp-old-island-gone
+PASS itp-root-rendered
+PASS itp-open
+PASS itp-tag-rendered-selected
+PASS itp-pinned
+PASS itp-overlay-hidden-when-pinned
+PASS itp-enter-toggled-off
+PASS itp-onremove-dataplane
+PASS itp-esc-closed
+PASS screenshot-saved test-run/react-stage7d3a-inspector-panel.png
+
+STAGE7D3A SMOKE OK

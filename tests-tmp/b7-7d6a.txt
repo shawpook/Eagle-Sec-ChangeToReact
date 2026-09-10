@@ -1,0 +1,33 @@
+PASS pd-hosts
+PASS pd-old-elements-gone
+PASS et-closed-initial
+PASS et-open
+PASS et-counter
+PASS et-progressbar-width
+PASS et-cancel-button
+PASS et-cancel-closed
+PASS et-cancel-palette-resume
+PASS ll-closed-after-boot
+PASS ll-open-library-loading
+PASS ll-metadata-progress-41
+PASS ll-metadata-progress-95
+PASS ll-closed-after-loaded
+PASS lm-open
+PASS lm-counter-0-5
+PASS lm-counter-2-5
+PASS lm-cancel-closed
+PASS lm-cancel-ipc
+PASS lm-close-import-closed
+PASS lm-swal-shown
+PASS lm-reload-app-ipc
+PASS ei-open-startmsg
+PASS ei-doningmsg
+PASS ei-finish-closed
+FAIL ei-cancel-closed
+PASS ee-open-doningmsg
+PASS ee-percent-width
+PASS ee-abort-closed
+PASS ee-cancel-closed
+WARN screenshot failed: screenshot timeout (5000ms)
+
+STAGE7D6A SMOKE FAILED: 1 assertion(s): ei-cancel-closed

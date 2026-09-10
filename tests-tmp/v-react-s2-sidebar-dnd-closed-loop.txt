@@ -1,0 +1,10 @@
+sidebar node ids: ["FOLDER-TT24JIA2","FOLDER-MVCGOSRN","FOLDER-7YVCAHUO"]
+PASS folder ids resolved
+PASS dragstart sets dragCheck
+PASS dragstart builds draggedFolders payload
+PASS dragstart mounts helper
+PASS name-area drop moves folder into target
+PASS dragend removes helper
+PASS dragend resets dragCheck
+PASS bottom-area drop keeps sibling parity
+SIDEBAR_DND_CLOSED_LOOP_OK {"checks":8}

@@ -1,0 +1,12 @@
+  fns["toggleSelectSmartFolder"] = function (...args) {
+    const s2 = getScope();
+    if (!s2) return;
+    return (function (event, smartFolderArg) {
+      var expand = !smartFolderArg.isExpand;
+      var smartFolders = smartFolderArg.children;
+      smartFolderArg.isExpand = expand;
+      toggleCurrentLevelSmartFolders(smartFolders, expand);
+    }).apply(null, args);
+  };
+
+  // toggleCurrentLevelSmartFolders（bundle 38792-38800 逐字）

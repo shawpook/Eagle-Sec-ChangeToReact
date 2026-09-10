@@ -1,0 +1,1 @@
+RESULT: {"colorFilterResult":false,"grayResult":true}

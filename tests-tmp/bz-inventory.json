@@ -1,0 +1,2285 @@
+{
+ "fnsCount": 148,
+ "fnsTotalLines": 4584,
+ "lvVars": {
+  "__lv_path": [
+   "copyAsPath",
+   "getLibraryHistory",
+   "openFileWithDefault",
+   "openFilesWithDefault",
+   "openItemContextMenu",
+   "uploadFiles"
+  ],
+  "__lv_now": [
+   "calculateDateFilter",
+   "calculateFilterCounts",
+   "cancelAllTasks",
+   "updateFilterCounts",
+   "uploadFiles"
+  ],
+  "__lv_image": [
+   "calculateDateFilter",
+   "calculateFilterCounts",
+   "cancelAllTasks",
+   "contentFilter",
+   "getRawPath",
+   "getRawUrl",
+   "getRawViewerPath",
+   "getSelection",
+   "onDetailClick",
+   "select",
+   "selectDown",
+   "selectUp",
+   "smartFolderCount",
+   "updateFilterCounts",
+   "uploadFiles"
+  ],
+  "__lv_calculateFilterCountsTimeout": [
+   "calculateFilterCounts"
+  ],
+  "__lv_result": [
+   "calcuteContainFolders",
+   "getNodeClass",
+   "getQuickAccessClass",
+   "getSmartFolderClass",
+   "importFolders"
+  ],
+  "__lv_folderId": [
+   "calcuteContainFolders"
+  ],
+  "__lv_idx": [
+   "changeSidebarIndex",
+   "clickNode",
+   "clickSmartNode",
+   "getSelection",
+   "nextGifFrame",
+   "prevGifFrame",
+   "select"
+  ],
+  "__lv_updateZoomRatioTimeout": [
+   "endHandler",
+   "homeHandler",
+   "updateZoomRatio"
+  ],
+  "__lv_video": [
+   "flipVideo",
+   "rotateVideo",
+   "zoomActual",
+   "zoomFit"
+  ],
+  "__lv_filePath": [
+   "getNativeViewerPath"
+  ],
+  "__lv_offset": [
+   "gotoBottom",
+   "selectDown",
+   "selectUp"
+  ],
+  "__lv_zoomInitTimeout": [
+   "leaveDetailMode"
+  ],
+  "__lv_updateListHeight": [
+   "openFolder",
+   "openSmartFolder",
+   "openUnfiled"
+  ],
+  "__lv_setLastFolder": [
+   "openFolder",
+   "openSmartFolder",
+   "openUnfiled"
+  ],
+  "__lv_height": [
+   "openFolder",
+   "smartZoom",
+   "updateContainerHieght",
+   "zoomFitEdge"
+  ],
+  "__lv_openSmartFolderTimeout": [
+   "openSmartFolder"
+  ],
+  "__lv_openUnfiledTimeout": [
+   "openUnfiled"
+  ],
+  "__lv_libraryPath": [
+   "saveFolder"
+  ],
+  "__lv_group": [
+   "saveFolder"
+  ],
+  "__lv_TagManager": [
+   "saveFolder"
+  ],
+  "__lv_keywordModelTimeout": [
+   "search"
+  ],
+  "__lv_searchTimeout": [
+   "search"
+  ],
+  "__lv_start": [
+   "select",
+   "selectNext",
+   "selectPrev",
+   "selectUp"
+  ],
+  "__lv_target": [
+   "selectDown",
+   "selectUp",
+   "smartZoom"
+  ],
+  "__lv_nextTimeout": [
+   "selectNext"
+  ],
+  "__lv_prevTimeout": [
+   "selectPrev"
+  ],
+  "__lv_width": [
+   "smartZoom",
+   "zoomFitEdge"
+  ],
+  "__lv_offsetY": [
+   "smartZoom",
+   "zoomFitEdge"
+  ],
+  "__lv_ext": [
+   "toggleExtFilter",
+   "toggleExtFilterExclude"
+  ],
+  "__lv_delay": [
+   "updateContainerHieght"
+  ],
+  "__lv_updateSidebarListTimeout": [
+   "updateSidebarList"
+  ],
+  "__lv_x": [
+   "updateZoomRatio"
+  ],
+  "__lv_y": [
+   "updateZoomRatio"
+  ],
+  "__lv_file": [
+   "uploadFiles"
+  ],
+  "__lv_files": [
+   "uploadFiles",
+   "uploadUrls"
+  ],
+  "__lv_fds": [
+   "uploadUrls"
+  ],
+  "__lv_tags": [
+   "uploadUrls"
+  ],
+  "__lv_saveListHeight": [
+   "zoomActual",
+   "zoomFit",
+   "zoomIn",
+   "zoomOut"
+  ],
+  "__lv_showFinderAlert": [
+   "openInFinder",
+   "openWithOther"
+  ],
+  "__lv_onSidebarResizeTimeout": [
+   "copyAsBase64",
+   "onSidebarResize"
+  ]
+ },
+ "lvDeclCount": 54,
+ "dualKeys": [
+  "calculateFilterCounts",
+  "changeSidebarIndex",
+  "contentFilter",
+  "endHandler",
+  "filterContent",
+  "focusAppUnlockPassword",
+  "getRatioExp",
+  "getRatioNonExp",
+  "getSelection",
+  "gotoBottom",
+  "homeHandler",
+  "lastZoom",
+  "leaveDetailMode",
+  "mHandler",
+  "nextGifFrame",
+  "openQuickSearch",
+  "openUnfiled",
+  "prevGifFrame",
+  "saveFolder",
+  "selectDown",
+  "selectNext",
+  "selectPrev",
+  "selectUp",
+  "smartFolderCount",
+  "smartZoom",
+  "toggleAll",
+  "toggleSlideshow",
+  "toggleZoom",
+  "undo",
+  "updateContainerHieght",
+  "updateFilterCounts",
+  "updateSidebarList",
+  "updateZoomRatio",
+  "zoom",
+  "zoomActual",
+  "zoomFit",
+  "zoomFitEdge",
+  "zoomIn",
+  "zoomOut",
+  "toggleSelectSmartFolder",
+  "toggleCurrentLevelSmartFolders",
+  "toggleAllSmartFolderExpand",
+  "toggleAllFolders"
+ ],
+ "standaloneConsumers": {
+  "updateCurrentOrderAndIncrease": {
+   "core/dataMachinery.ts": 4,
+   "services/miscMenuService.ts": 3
+  },
+  "isInFolder": {
+   "components/stage7/SelectPanels.tsx": 2,
+   "core/dataMachinery.ts": 4,
+   "core/itemDomain.ts": 3,
+   "core/libraryDomain.ts": 2
+  },
+  "parseKeywordsWithOR": {},
+  "updateSuggestions": {
+   "core/dataMachinery.ts": 3
+  }
+ },
+ "machineryExportCount": 241,
+ "machineryMountedCount": 230,
+ "machineryConsumers": {
+  "getFilter": [
+   "core/controllerFns.ts",
+   "core/tagManagerDomain.ts",
+   "services/batchOpsService.ts",
+   "services/folderCoreService.ts",
+   "services/folderMenuService.ts",
+   "services/fontTagService.ts",
+   "services/imageOpsService.ts",
+   "services/itemMenuService.ts",
+   "services/miscMenuService.ts"
+  ],
+  "getTimeout": [
+   "core/tagManagerDomain.ts"
+  ],
+  "machineryFilterSidebarItem": [
+   "core/controllerFns.ts"
+  ],
+  "machineryGetRatioExp": [
+   "services/detailService.ts"
+  ],
+  "machineryGetRatioNonExp": [
+   "services/detailService.ts"
+  ],
+  "machineryGetArroundBox": [
+   "core/controllerFns.ts"
+  ],
+  "machineryGetVideoPlayer": [
+   "core/controllerFns.ts"
+  ],
+  "machineryToggleCurrentLevelSmartFoldersInner": [
+   "core/controllerFns.ts",
+   "services/sidebarService.ts"
+  ],
+  "machineryToggleAllSmartFoldersInner": [
+   "core/controllerFns.ts",
+   "services/sidebarService.ts"
+  ],
+  "machineryGetAncestorSmartFolders": [
+   "core/controllerFns.ts"
+  ],
+  "machineryCalcuteContainFolders": [
+   "core/controllerFns.ts"
+  ],
+  "machineryGetFolderParentChilder": [
+   "core/controllerFns.ts",
+   "services/folderCoreService.ts"
+  ],
+  "machineryCalcRotateDegree": [
+   "core/controllerFns.ts"
+  ],
+  "machineryToggleAllFolders": [
+   "core/controllerFns.ts",
+   "services/sidebarService.ts"
+  ],
+  "machineryToggleCurrentLevelFolders": [
+   "core/controllerFns.ts",
+   "services/sidebarService.ts"
+  ],
+  "applyDataMachineryScope": [
+   "main.tsx",
+   "core/tagManagerDomain.ts"
+  ]
+ },
+ "getBodyScope": {
+  "main.tsx": 1,
+  "components/hooks.ts": 1,
+  "components/detail/commentHooks.ts": 27,
+  "components/detail/detailHooks.ts": 53,
+  "components/detail/DetailToolbar.tsx": 6,
+  "components/detail/DetailViewer.tsx": 6,
+  "components/filter/FilterItems.tsx": 4,
+  "components/filter/FilterItems2.tsx": 4,
+  "components/filter/FilterItemShell.tsx": 4,
+  "components/grid/boxGridEngine.ts": 4,
+  "components/grid/boxItem.tsx": 1,
+  "components/grid/BoxList.tsx": 5,
+  "components/grid/gridDirectives.ts": 3,
+  "components/inspector/Inspector.tsx": 36,
+  "components/inspector/inspectorActions.ts": 65,
+  "components/shell/BodyBindings.tsx": 2,
+  "components/shell/ListRegion.tsx": 5,
+  "components/shell/LockScreens.tsx": 1,
+  "components/shell/MiscContainers.tsx": 1,
+  "components/sidebar/Sidebar.tsx": 41,
+  "components/stage7/BatchRenameArtstationModals.tsx": 11,
+  "components/stage7/BatchSavePanel.tsx": 6,
+  "components/stage7/ControllerModals.tsx": 10,
+  "components/stage7/DuplicateFamily.tsx": 11,
+  "components/stage7/FolderModals.tsx": 25,
+  "components/stage7/FolderSelectPanels.tsx": 9,
+  "components/stage7/InspectorTagSelectPanel.tsx": 3,
+  "components/stage7/PluginCenter.tsx": 8,
+  "components/stage7/PluginFamily.tsx": 13,
+  "components/stage7/ProgressDialogs.tsx": 16,
+  "components/stage7/QuickSearchModal.tsx": 12,
+  "components/stage7/selectPanelEngine.ts": 5,
+  "components/stage7/SelectPanels.tsx": 4,
+  "components/stage7/SmallPanels.tsx": 16,
+  "components/stage7/TagManager.tsx": 12,
+  "components/toolbar/Toolbar.tsx": 17,
+  "core/apiServerDomain.ts": 36,
+  "core/appCore.ts": 3,
+  "core/bundleGlobals.ts": 3,
+  "core/contextMenuDomain.ts": 1,
+  "core/controllerFns.ts": 72,
+  "core/dataMachinery.ts": 25,
+  "core/eagleClasses.ts": 15,
+  "core/fileUrlHelper.ts": 7,
+  "core/filterDomain.ts": 11,
+  "core/itemDomain.ts": 1,
+  "core/libraryDomain.ts": 8,
+  "core/miscDomain.ts": 1,
+  "core/preferencesDomain.ts": 1,
+  "core/selectionViewDomain.ts": 11,
+  "global/scopeShim.ts": 2,
+  "preview-window/detailHooks.ts": 1,
+  "services/batchOpsService.ts": 4,
+  "services/detailService.ts": 2,
+  "services/filterService.ts": 1,
+  "services/folderCoreService.ts": 1,
+  "services/folderMenuService.ts": 2,
+  "services/folderService.ts": 1,
+  "services/fontTagService.ts": 2,
+  "services/gridBindingService.ts": 1,
+  "services/gridService.ts": 2,
+  "services/imageOpsService.ts": 6,
+  "services/itemMenuService.ts": 1,
+  "services/mediaService.ts": 4,
+  "services/miscMenuService.ts": 1,
+  "services/selectionService.ts": 1,
+  "services/sidebarService.ts": 6,
+  "store/bodyState.ts": 1,
+  "store/detailState.ts": 1,
+  "store/filterState.ts": 1,
+  "store/inspectorState.ts": 1,
+  "store/listState.ts": 1,
+  "store/lockState.ts": 1,
+  "store/panelState.ts": 1,
+  "store/sidebarState.ts": 1,
+  "store/tagManagerState.ts": 1,
+  "store/toastState.ts": 1,
+  "store/toolbarState.ts": 1,
+  "store/uploadState.ts": 1
+ },
+ "scopeApply": {
+  "components/hooks.ts": 1,
+  "components/detail/commentHooks.ts": 9,
+  "components/detail/detailHooks.ts": 13,
+  "components/detail/DetailToolbar.tsx": 5,
+  "components/detail/DetailViewer.tsx": 5,
+  "components/filter/FilterItems.tsx": 19,
+  "components/filter/FilterItems2.tsx": 9,
+  "components/filter/FilterItemShell.tsx": 3,
+  "components/grid/BoxList.tsx": 2,
+  "components/inspector/Inspector.tsx": 17,
+  "components/inspector/inspectorActions.ts": 1,
+  "components/shell/BodyBindings.tsx": 2,
+  "components/shell/MiscContainers.tsx": 1,
+  "components/sidebar/Sidebar.tsx": 38,
+  "components/stage7/ControllerModals.tsx": 2,
+  "components/stage7/ProgressDialogs.tsx": 4,
+  "components/stage7/QuickSearchModal.tsx": 9,
+  "components/stage7/SmallPanels.tsx": 5,
+  "components/stage7/TagManager.tsx": 10,
+  "components/toolbar/Toolbar.tsx": 12,
+  "core/appCore.ts": 1,
+  "preferences/panels.tsx": 16
+ },
+ "fns": {
+  "openFileWithDefault": {
+   "line": [
+    370,
+    391
+   ],
+   "size": 21,
+   "scopeFace": {
+    "core/controllerFns.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "onBoxMouseup": {
+   "line": [
+    392,
+    426
+   ],
+   "size": 34,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "onBoxListDblClick": {
+   "line": [
+    427,
+    477
+   ],
+   "size": 50,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openItemContextMenu": {
+   "line": [
+    478,
+    484
+   ],
+   "size": 6,
+   "scopeFace": {
+    "components/inspector/inspectorActions.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getLibraryHistory": {
+   "line": [
+    485,
+    515
+   ],
+   "size": 30,
+   "scopeFace": {
+    "services/folderMenuService.ts": 2
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "calculateDateFilter": {
+   "line": [
+    516,
+    592
+   ],
+   "size": 76,
+   "scopeFace": {
+    "components/filter/FilterItems2.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "calculateFilterCounts": {
+   "line": [
+    593,
+    615
+   ],
+   "size": 22,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 2,
+    "core/controllerFns.ts": 5,
+    "core/dataMachinery.ts": 1,
+    "services/fontTagService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "calcuteContainFolders": {
+   "line": [
+    616,
+    647
+   ],
+   "size": 31,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 2
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "cancelAllTasks": {
+   "line": [
+    648,
+    688
+   ],
+   "size": 40,
+   "callScope": {
+    "components/shell/ProgressBars.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "changeOrderBy": {
+   "line": [
+    689,
+    717
+   ],
+   "size": 28,
+   "scopeFace": {
+    "components/stage7/SmallPanels.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "changeSidebarIndex": {
+   "line": [
+    718,
+    737
+   ],
+   "size": 19,
+   "scopeFace": {
+    "components/stage7/QuickSearchModal.tsx": 2,
+    "core/dataMachinery.ts": 8,
+    "core/libraryDomain.ts": 1,
+    "core/miscDomain.ts": 3,
+    "services/folderCoreService.ts": 2
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "cleanLibraryPathPermissionError": {
+   "line": [
+    738,
+    746
+   ],
+   "size": 8,
+   "callScope": {
+    "components/shell/ToastAlerts.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "cleanLocalhostError": {
+   "line": [
+    747,
+    756
+   ],
+   "size": 9,
+   "callScope": {
+    "components/shell/ToastAlerts.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "clickNode": {
+   "line": [
+    757,
+    813
+   ],
+   "size": 56,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "clickSmartNode": {
+   "line": [
+    814,
+    863
+   ],
+   "size": 49,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "closeQuickSearch": {
+   "line": [
+    864,
+    872
+   ],
+   "size": 8,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "contentFilter": {
+   "line": [
+    873,
+    963
+   ],
+   "size": 90,
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "contentFocus": {
+   "line": [
+    964,
+    973
+   ],
+   "size": 9,
+   "callScope": {
+    "components/shell/BodyBindings.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "copyAsLink": {
+   "line": [
+    974,
+    999
+   ],
+   "size": 25,
+   "scopeFace": {
+    "preview-window/controller.ts": 1,
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "copyAsPath": {
+   "line": [
+    1000,
+    1025
+   ],
+   "size": 25,
+   "scopeFace": {
+    "preview-window/controller.ts": 1,
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "dblclickContentPanel": {
+   "line": [
+    1026,
+    1036
+   ],
+   "size": 10,
+   "callScope": {
+    "components/shell/BodyBindings.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "dblclickSidebarFolder": {
+   "line": [
+    1037,
+    1050
+   ],
+   "size": 13,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "dblclickSidebarSmartFolderGroup": {
+   "line": [
+    1051,
+    1065
+   ],
+   "size": 14,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "endHandler": {
+   "line": [
+    1066,
+    1085
+   ],
+   "size": 19,
+   "scopeFace": {
+    "core/dataMachinery.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "escHandler": {
+   "line": [
+    1086,
+    1128
+   ],
+   "size": 42,
+   "scopeFace": {
+    "preferences/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "excludeWithFolder": {
+   "line": [
+    1129,
+    1152
+   ],
+   "size": 23,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 1,
+    "core/controllerFns.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "filterContent": {
+   "line": [
+    1153,
+    1166
+   ],
+   "size": 13,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 7,
+    "components/filter/FilterItems2.tsx": 18,
+    "core/controllerFns.ts": 4,
+    "core/filterDomain.ts": 2,
+    "services/batchOpsService.ts": 1,
+    "services/filterService.ts": 1,
+    "services/fontTagService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "filterWithColor": {
+   "line": [
+    1167,
+    1218
+   ],
+   "size": 51,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 2,
+    "components/filter/FilterItems2.tsx": 1,
+    "components/inspector/Inspector.tsx": 1,
+    "components/shell/MiscContainers.tsx": 1,
+    "core/controllerFns.ts": 2,
+    "core/libraryDomain.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "filterWithFolder": {
+   "line": [
+    1219,
+    1249
+   ],
+   "size": 30,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "filterWithHexColor": {
+   "line": [
+    1250,
+    1269
+   ],
+   "size": 19,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 4
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "flipHandler": {
+   "line": [
+    1270,
+    1284
+   ],
+   "size": 14,
+   "scopeFace": {
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "flipVideo": {
+   "line": [
+    1285,
+    1311
+   ],
+   "size": 26,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "focusAppUnlockPassword": {
+   "line": [
+    1312,
+    1327
+   ],
+   "size": 15,
+   "callScope": {
+    "components/shell/LockScreens.tsx": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "focusUnlockPassword": {
+   "line": [
+    1328,
+    1338
+   ],
+   "size": 10,
+   "callScope": {
+    "components/shell/LockScreens.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getDateFilterCountsArray": {
+   "line": [
+    1339,
+    1359
+   ],
+   "size": 20,
+   "scopeFace": {
+    "components/filter/FilterItems2.tsx": 2
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getExifRawPath": {
+   "line": [
+    1360,
+    1370
+   ],
+   "size": 10,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getFolderFullPath": {
+   "line": [
+    1371,
+    1399
+   ],
+   "size": 28,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "store/inspectorState.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getGIFPath": {
+   "line": [
+    1400,
+    1413
+   ],
+   "size": 13,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getModelPath": {
+   "line": [
+    1414,
+    1427
+   ],
+   "size": 13,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getNativeViewerPath": {
+   "line": [
+    1428,
+    1439
+   ],
+   "size": 11,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getNodeClass": {
+   "line": [
+    1440,
+    1471
+   ],
+   "size": 31,
+   "scopeFace": {
+    "store/sidebarState.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getPDFPath": {
+   "line": [
+    1472,
+    1484
+   ],
+   "size": 12,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getQuickAccessClass": {
+   "line": [
+    1485,
+    1525
+   ],
+   "size": 40,
+   "scopeFace": {
+    "store/sidebarState.ts": 2
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getRatioExp": {
+   "line": [
+    1526,
+    1537
+   ],
+   "size": 11,
+   "scopeFace": {
+    "core/controllerFns.ts": 8,
+    "core/dataMachinery.ts": 1,
+    "services/gridService.ts": 5
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "getRatioNonExp": {
+   "line": [
+    1538,
+    1549
+   ],
+   "size": 11,
+   "scopeFace": {
+    "core/controllerFns.ts": 5,
+    "core/smoothZoomEngine.ts": 1,
+    "services/gridService.ts": 2,
+    "services/miscMenuService.ts": 11
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "getRawPath": {
+   "line": [
+    1550,
+    1564
+   ],
+   "size": 14,
+   "scopeFace": {
+    "components/detail/commentHooks.ts": 1,
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getRawUrl": {
+   "line": [
+    1565,
+    1581
+   ],
+   "size": 16,
+   "scopeFace": {
+    "components/grid/boxItem.tsx": 3,
+    "components/inspector/Inspector.tsx": 1,
+    "core/itemDomain.ts": 1,
+    "preview-window/shell.tsx": 6
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getRawViewerPath": {
+   "line": [
+    1582,
+    1596
+   ],
+   "size": 14,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getSelection": {
+   "line": [
+    1597,
+    1620
+   ],
+   "size": 23,
+   "scopeFace": {
+    "core/controllerFns.ts": 6,
+    "core/dataMachinery.ts": 9,
+    "services/batchOpsService.ts": 2
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "getSmartFolderClass": {
+   "line": [
+    1621,
+    1655
+   ],
+   "size": 34,
+   "scopeFace": {
+    "store/sidebarState.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getTxtPath": {
+   "line": [
+    1656,
+    1666
+   ],
+   "size": 10,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getURLSrc": {
+   "line": [
+    1667,
+    1691
+   ],
+   "size": 24,
+   "scopeFace": {
+    "preview-window/shell.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "gotoBottom": {
+   "line": [
+    1692,
+    1714
+   ],
+   "size": 22,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "core/dataMachinery.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "hexToRGB": {
+   "line": [
+    1715,
+    1726
+   ],
+   "size": 11,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 1,
+    "components/filter/FilterItems2.tsx": 1,
+    "components/shell/MiscContainers.tsx": 1,
+    "core/controllerFns.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "homeHandler": {
+   "line": [
+    1727,
+    1745
+   ],
+   "size": 18,
+   "scopeFace": {
+    "core/dataMachinery.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "hoverHideSidebar": {
+   "line": [
+    1746,
+    1760
+   ],
+   "size": 14,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "hoverShowSidebar": {
+   "line": [
+    1761,
+    1775
+   ],
+   "size": 14,
+   "scopeFace": {
+    "components/shell/BodyBindings.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "importFolders": {
+   "line": [
+    1776,
+    1806
+   ],
+   "size": 30,
+   "scopeFace": {
+    "core/miscDomain.ts": 2,
+    "services/miscMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "lastZoom": {
+   "line": [
+    1807,
+    1827
+   ],
+   "size": 20,
+   "scopeFace": {
+    "core/controllerFns.ts": 6,
+    "core/dataMachinery.ts": 8
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "leaveDetailMode": {
+   "line": [
+    1828,
+    1891
+   ],
+   "size": 63,
+   "scopeFace": {
+    "components/detail/detailHooks.ts": 3,
+    "components/detail/DetailViewer.tsx": 1,
+    "core/controllerFns.ts": 5,
+    "core/dataMachinery.ts": 10,
+    "services/batchOpsService.ts": 2,
+    "services/detailService.ts": 1,
+    "services/imageOpsService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "mHandler": {
+   "line": [
+    1892,
+    1905
+   ],
+   "size": 13,
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "maximize": {
+   "line": [
+    1906,
+    1932
+   ],
+   "size": 26,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1,
+    "components/toolbar/Toolbar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "nextGifFrame": {
+   "line": [
+    1933,
+    1951
+   ],
+   "size": 18,
+   "scopeFace": {
+    "core/dataMachinery.ts": 2,
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "onDetailClick": {
+   "line": [
+    1952,
+    1964
+   ],
+   "size": 12,
+   "scopeFace": {
+    "components/detail/detailHooks.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openErrorModal": {
+   "line": [
+    1965,
+    1976
+   ],
+   "size": 11,
+   "callScope": {
+    "components/shell/ToastAlerts.tsx": 1
+   },
+   "scopeFace": {
+    "core/miscDomain.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openFolder": {
+   "line": [
+    1977,
+    2075
+   ],
+   "size": 98,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1,
+    "components/stage7/BatchRenameArtstationModals.tsx": 1,
+    "components/stage7/QuickSearchModal.tsx": 2,
+    "core/controllerFns.ts": 1,
+    "core/dataMachinery.ts": 10,
+    "core/libraryDomain.ts": 2,
+    "core/miscDomain.ts": 4,
+    "services/detailService.ts": 1,
+    "services/folderCoreService.ts": 2,
+    "services/folderMenuService.ts": 2,
+    "services/sidebarService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openItemLocation": {
+   "line": [
+    2076,
+    2088
+   ],
+   "size": 12,
+   "scopeFace": {
+    "components/stage7/QuickSearchModal.tsx": 2,
+    "services/itemMenuService.ts": 2
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openQuickSearch": {
+   "line": [
+    2089,
+    2099
+   ],
+   "size": 10,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "openSmartFolder": {
+   "line": [
+    2100,
+    2188
+   ],
+   "size": 88,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1,
+    "components/stage7/QuickSearchModal.tsx": 2,
+    "core/controllerFns.ts": 1,
+    "core/dataMachinery.ts": 9,
+    "core/libraryDomain.ts": 2,
+    "core/miscDomain.ts": 2,
+    "services/folderMenuService.ts": 5,
+    "services/sidebarService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openUnfiled": {
+   "line": [
+    2189,
+    2231
+   ],
+   "size": 42,
+   "scopeFace": {
+    "core/dataMachinery.ts": 6,
+    "core/libraryDomain.ts": 2
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "prevGifFrame": {
+   "line": [
+    2232,
+    2249
+   ],
+   "size": 17,
+   "scopeFace": {
+    "core/dataMachinery.ts": 2,
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "preventMiddleClick": {
+   "line": [
+    2250,
+    2262
+   ],
+   "size": 12,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "resetFilter": {
+   "line": [
+    2263,
+    2289
+   ],
+   "size": 26,
+   "scopeFace": {
+    "components/filter/FilterItems2.tsx": 1,
+    "core/controllerFns.ts": 1,
+    "core/dataMachinery.ts": 3
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "rotateHandler": {
+   "line": [
+    2290,
+    2304
+   ],
+   "size": 14,
+   "scopeFace": {
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "rotateVideo": {
+   "line": [
+    2305,
+    2337
+   ],
+   "size": 32,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "saveFolder": {
+   "line": [
+    2338,
+    2425
+   ],
+   "size": 87,
+   "scopeFace": {
+    "core/dataMachinery.ts": 8,
+    "core/itemDomain.ts": 2,
+    "core/selectionViewDomain.ts": 1,
+    "core/tagManagerDomain.ts": 1,
+    "services/folderCoreService.ts": 5,
+    "services/folderMenuService.ts": 18,
+    "services/folderService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "search": {
+   "line": [
+    2426,
+    2513
+   ],
+   "size": 87,
+   "scopeFace": {
+    "components/toolbar/Toolbar.tsx": 2,
+    "core/filterDomain.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "searchFocus": {
+   "line": [
+    2514,
+    2531
+   ],
+   "size": 17,
+   "scopeFace": {
+    "components/toolbar/Toolbar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "select": {
+   "line": [
+    2532,
+    2689
+   ],
+   "size": 157,
+   "scopeFace": {
+    "components/grid/BoxList.tsx": 1,
+    "core/dataMachinery.ts": 1,
+    "core/miscDomain.ts": 3,
+    "services/batchOpsService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "selectDown": {
+   "line": [
+    2690,
+    2757
+   ],
+   "size": 67,
+   "scopeFace": {
+    "core/dataMachinery.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "selectNext": {
+   "line": [
+    2758,
+    2820
+   ],
+   "size": 62,
+   "scopeFace": {
+    "components/detail/DetailViewer.tsx": 1,
+    "core/dataMachinery.ts": 1,
+    "core/smoothZoomEngine.ts": 2
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "selectPrev": {
+   "line": [
+    2821,
+    2892
+   ],
+   "size": 71,
+   "scopeFace": {
+    "components/detail/DetailViewer.tsx": 1,
+    "core/dataMachinery.ts": 1,
+    "core/smoothZoomEngine.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "selectUp": {
+   "line": [
+    2893,
+    2962
+   ],
+   "size": 69,
+   "scopeFace": {
+    "core/dataMachinery.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "sidebarFocus": {
+   "line": [
+    2963,
+    2972
+   ],
+   "size": 9,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "smartFolderCount": {
+   "line": [
+    2973,
+    2995
+   ],
+   "size": 22,
+   "scopeFace": {
+    "components/stage7/FolderModals.tsx": 1,
+    "core/libraryDomain.ts": 1,
+    "services/folderMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "smartZoom": {
+   "line": [
+    2996,
+    3129
+   ],
+   "size": 133,
+   "scopeFace": {
+    "core/controllerFns.ts": 2,
+    "core/dataMachinery.ts": 1,
+    "preview-window/controller.ts": 2,
+    "services/gridService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "switchGridLayout": {
+   "line": [
+    3130,
+    3140
+   ],
+   "size": 10,
+   "scopeFace": {
+    "components/stage7/SmallPanels.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "switchJustifiedLayout": {
+   "line": [
+    3141,
+    3151
+   ],
+   "size": 10,
+   "scopeFace": {
+    "components/stage7/SmallPanels.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "switchLibrary": {
+   "line": [
+    3152,
+    3169
+   ],
+   "size": 17,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "switchListLayout": {
+   "line": [
+    3170,
+    3180
+   ],
+   "size": 10,
+   "scopeFace": {
+    "components/stage7/SmallPanels.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "switchSquareLayout": {
+   "line": [
+    3181,
+    3191
+   ],
+   "size": 10,
+   "scopeFace": {
+    "components/stage7/SmallPanels.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleAll": {
+   "line": [
+    3192,
+    3235
+   ],
+   "size": 43,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1,
+    "components/stage7/ControllerModals.tsx": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "toggleExtFilter": {
+   "line": [
+    3236,
+    3250
+   ],
+   "size": 14,
+   "scopeFace": {
+    "components/filter/FilterItems2.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleExtFilterExclude": {
+   "line": [
+    3251,
+    3265
+   ],
+   "size": 14,
+   "scopeFace": {
+    "components/filter/FilterItems2.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleFolderExpand": {
+   "line": [
+    3266,
+    3304
+   ],
+   "size": 38,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "services/sidebarService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleFolderVisible": {
+   "line": [
+    3305,
+    3316
+   ],
+   "size": 11,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleGifPlay": {
+   "line": [
+    3317,
+    3342
+   ],
+   "size": 25,
+   "scopeFace": {
+    "core/dataMachinery.ts": 1,
+    "core/tagManagerDomain.ts": 1,
+    "preview-window/controller.ts": 3
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleGifPlayerMode": {
+   "line": [
+    3343,
+    3353
+   ],
+   "size": 10,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "togglePaletteProcessing": {
+   "line": [
+    3354,
+    3367
+   ],
+   "size": 13,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleQuickAccessVisible": {
+   "line": [
+    3368,
+    3379
+   ],
+   "size": 11,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleRatioContextMenu": {
+   "line": [
+    3380,
+    3393
+   ],
+   "size": 13,
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleSlideshow": {
+   "line": [
+    3394,
+    3406
+   ],
+   "size": 12,
+   "scopeFace": {
+    "components/detail/DetailViewer.tsx": 1,
+    "core/miscDomain.ts": 2,
+    "preview-window/shell.tsx": 1,
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "toggleSmartFolderExpand": {
+   "line": [
+    3407,
+    3447
+   ],
+   "size": 40,
+   "scopeFace": {
+    "core/controllerFns.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleSmartFolderVisible": {
+   "line": [
+    3448,
+    3459
+   ],
+   "size": 11,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleZoom": {
+   "line": [
+    3460,
+    3495
+   ],
+   "size": 35,
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "undo": {
+   "line": [
+    3496,
+    3505
+   ],
+   "size": 9,
+   "scopeFace": {
+    "preview-window/controller.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "unlockAppPasswordKeydown": {
+   "line": [
+    3506,
+    3515
+   ],
+   "size": 9,
+   "callScope": {
+    "components/shell/LockScreens.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "unlockAppPasswordKeyup": {
+   "line": [
+    3516,
+    3550
+   ],
+   "size": 34,
+   "callScope": {
+    "components/shell/LockScreens.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "unlockPasswordKeyup": {
+   "line": [
+    3551,
+    3588
+   ],
+   "size": 37,
+   "callScope": {
+    "components/shell/LockScreens.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "updateContainerHieght": {
+   "line": [
+    3589,
+    3626
+   ],
+   "size": 37,
+   "scopeFace": {
+    "components/filter/FilterItems.tsx": 1,
+    "components/filter/FilterItems2.tsx": 1,
+    "components/filter/FilterItemShell.tsx": 2,
+    "core/controllerFns.ts": 1,
+    "core/dataMachinery.ts": 2,
+    "core/filterDomain.ts": 1,
+    "core/libraryDomain.ts": 2,
+    "services/miscMenuService.ts": 2
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "updateFilterCounts": {
+   "line": [
+    3627,
+    3735
+   ],
+   "size": 108,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "core/dataMachinery.ts": 4,
+    "core/itemDomain.ts": 2,
+    "services/folderCoreService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "updateSidebarList": {
+   "line": [
+    3736,
+    3830
+   ],
+   "size": 94,
+   "scopeFace": {
+    "core/controllerFns.ts": 10,
+    "core/dataMachinery.ts": 22,
+    "core/itemDomain.ts": 1,
+    "core/libraryDomain.ts": 4,
+    "services/folderCoreService.ts": 5,
+    "services/folderMenuService.ts": 16,
+    "services/sidebarService.ts": 3
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "updateZoomRatio": {
+   "line": [
+    3831,
+    3867
+   ],
+   "size": 36,
+   "scopeFace": {
+    "core/controllerFns.ts": 3,
+    "core/dataMachinery.ts": 1,
+    "preview-window/controller.ts": 4,
+    "services/gridService.ts": 2,
+    "services/miscMenuService.ts": 11
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "uploadFiles": {
+   "line": [
+    3868,
+    3938
+   ],
+   "size": 70,
+   "scopeFace": {
+    "core/dataMachinery.ts": 2,
+    "services/imageOpsService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "uploadUrls": {
+   "line": [
+    3939,
+    4001
+   ],
+   "size": 62,
+   "scopeFace": {
+    "components/stage7/BatchRenameArtstationModals.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "zoom": {
+   "line": [
+    4002,
+    4021
+   ],
+   "size": 19,
+   "scopeFace": {
+    "core/controllerFns.ts": 7,
+    "core/dataMachinery.ts": 15,
+    "preview-window/controller.ts": 6,
+    "services/batchOpsService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "zoomActual": {
+   "line": [
+    4022,
+    4064
+   ],
+   "size": 42,
+   "scopeFace": {
+    "core/controllerFns.ts": 2,
+    "core/dataMachinery.ts": 1,
+    "preview-window/controller.ts": 2,
+    "services/miscMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "zoomFit": {
+   "line": [
+    4065,
+    4115
+   ],
+   "size": 50,
+   "scopeFace": {
+    "core/controllerFns.ts": 3,
+    "core/dataMachinery.ts": 3,
+    "preview-window/controller.ts": 2,
+    "services/miscMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "zoomFitEdge": {
+   "line": [
+    4116,
+    4187
+   ],
+   "size": 71,
+   "scopeFace": {
+    "core/controllerFns.ts": 3,
+    "core/dataMachinery.ts": 3,
+    "preview-window/controller.ts": 2
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "zoomIn": {
+   "line": [
+    4188,
+    4208
+   ],
+   "size": 20,
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "zoomOut": {
+   "line": [
+    4209,
+    4238
+   ],
+   "size": 29,
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "duplicateItem": {
+   "line": [
+    4239,
+    4254
+   ],
+   "size": 15,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "exportFolder": {
+   "line": [
+    4255,
+    4278
+   ],
+   "size": 23,
+   "scopeFace": {
+    "services/batchOpsService.ts": 1,
+    "services/folderMenuService.ts": 2
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "checkDiskSpace": {
+   "line": [
+    4279,
+    4296
+   ],
+   "size": 17,
+   "scopeFace": {
+    "services/batchOpsService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openWithOther": {
+   "line": [
+    4297,
+    4312
+   ],
+   "size": 15,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openInFinder": {
+   "line": [
+    4313,
+    4400
+   ],
+   "size": 87,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "setAsVideoThumbnail": {
+   "line": [
+    4401,
+    4462
+   ],
+   "size": 61,
+   "scopeFace": {
+    "components/detail/detailHooks.ts": 1,
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "loadSubtitles": {
+   "line": [
+    4463,
+    4505
+   ],
+   "size": 42,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openFilesWithDefault": {
+   "line": [
+    4506,
+    4530
+   ],
+   "size": 24,
+   "scopeFace": {
+    "core/controllerFns.ts": 1,
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "setCustomThumbnail": {
+   "line": [
+    4531,
+    4589
+   ],
+   "size": 58,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "setCustomThumbnailFromClipboard": {
+   "line": [
+    4590,
+    4647
+   ],
+   "size": 57,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "resetCustomThumbnail": {
+   "line": [
+    4648,
+    4660
+   ],
+   "size": 12,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "getNext": {
+   "line": [
+    4661,
+    4673
+   ],
+   "size": 12,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "changeImagesBackground": {
+   "line": [
+    4674,
+    4698
+   ],
+   "size": 24,
+   "scopeFace": {
+    "services/itemMenuService.ts": 5
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "openInPreviewWindow": {
+   "line": [
+    4699,
+    4717
+   ],
+   "size": 18,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "copyAsProperity": {
+   "line": [
+    4718,
+    4741
+   ],
+   "size": 23,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "copyAsFolderPath": {
+   "line": [
+    4742,
+    4766
+   ],
+   "size": 24,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "copyAsThumbnail": {
+   "line": [
+    4767,
+    4788
+   ],
+   "size": 21,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "copyAsBase64": {
+   "line": [
+    4789,
+    4828
+   ],
+   "size": 39,
+   "scopeFace": {
+    "services/itemMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "onSidebarResize": {
+   "line": [
+    4829,
+    4915
+   ],
+   "size": 86,
+   "scopeFace": {
+    "components/shell/BodyBindings.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleSelectFolder": {
+   "line": [
+    4916,
+    4927
+   ],
+   "size": 11,
+   "scopeFace": {
+    "services/folderMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleCurrentLevelFolders": {
+   "line": [
+    4928,
+    4942
+   ],
+   "size": 14,
+   "scopeFace": {
+    "services/folderMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleAllFolderExpand": {
+   "line": [
+    4943,
+    4966
+   ],
+   "size": 23,
+   "scopeFace": {
+    "services/folderMenuService.ts": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  },
+  "toggleSelectSmartFolder": {
+   "line": [
+    4967,
+    4978
+   ],
+   "size": 11,
+   "scopeFace": {
+    "services/miscMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "toggleCurrentLevelSmartFolders": {
+   "line": [
+    4979,
+    4993
+   ],
+   "size": 14,
+   "scopeFace": {
+    "services/miscMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "toggleAllSmartFolderExpand": {
+   "line": [
+    4994,
+    5017
+   ],
+   "size": 23,
+   "scopeFace": {
+    "services/miscMenuService.ts": 1
+   },
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "toggleAllFolders": {
+   "line": [
+    5018,
+    5032
+   ],
+   "size": 14,
+   "dualMachinery": true,
+   "dualMachineryExport": false
+  },
+  "openFolderExpandContextMenu": {
+   "line": [
+    5033,
+    5101
+   ],
+   "size": 68,
+   "scopeFace": {
+    "components/sidebar/Sidebar.tsx": 1
+   },
+   "dualMachinery": false,
+   "dualMachineryExport": false
+  }
+ }
+}

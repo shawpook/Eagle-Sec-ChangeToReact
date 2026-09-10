@@ -1,0 +1,31 @@
+PASS fsp-hosts
+PASS fsp-old-blocks-gone
+PASS fsp-root-rendered
+PASS fsp-open
+PASS fsp-item-rendered-selected
+PASS fsp-click-toggled-off
+PASS fsp-esc-closed
+PASS fsp-onchanged-dataplane
+PASS fsp-reopen
+PASS fsp-create-item-shown
+PASS fsp-swal-open
+PASS fsp-created-dataplane
+PASS fsp-created-selected
+PASS fsp-closed-after-create
+PASS nsm-open
+PASS nsm-create-mode-header
+PASS nsm-tags-input-shown
+PASS gtp-open-via-nsm
+PASS nsm-tags-written-back
+PASS nsm-preview-count
+PASS nsm-folders-input-shown
+PASS fsp-open-via-folders-input
+PASS nsm-folders-written-back
+PASS nsm-closed
+PASS nsm-save-dataplane
+PASS nsm-edit-open
+PASS nsm-edit-name-filled
+PASS nsm-edit-save-dataplane
+PASS screenshot-saved test-run/react-stage7d1c2-panel.png
+
+STAGE7D1C2 SMOKE OK

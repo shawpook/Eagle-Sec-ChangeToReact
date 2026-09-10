@@ -1,0 +1,10 @@
+PASS dblclick-opens-detail
+PASS exit-message-leaves-detail
+PASS enter-key-opens-detail
+PASS item-context-menu-nonempty
+PASS list-contextmenu-opens-order-panel
+PASS ctrl-wheel-zoom-changes-grid-size
+PASS hover-zero-reference-errors
+PASS z-key-shows-hover-preview
+PASS z-keyup-hides-hover-preview
+UI_INTERACTIONS_CLOSED_LOOP_OK {"checks":9}

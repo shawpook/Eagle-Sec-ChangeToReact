@@ -1,0 +1,10 @@
+PASS mousetrap-zero-dead-keys
+PASS scope-delegates-migrated-fields-to-store
+PASS folder-row-located
+PASS folder-click-opens-folder
+PASS smart-folder-click-opens
+PASS box-located
+PASS rating-key-sets-star
+PASS rating-key-0-clears-star
+PASS zero-console-errors
+RESIDUE_CLOSED_LOOP OK {"failures":[]}

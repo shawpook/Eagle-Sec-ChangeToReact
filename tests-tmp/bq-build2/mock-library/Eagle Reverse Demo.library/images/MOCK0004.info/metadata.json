@@ -1,0 +1,42 @@
+{
+  "id": "MOCK0004",
+  "name": "Tutorial",
+  "ext": "png",
+  "width": 1280,
+  "height": 720,
+  "size": 114819,
+  "url": "https://docs-cn.eagle.cool",
+  "website": "docs-cn.eagle.cool",
+  "annotation": "教程插图，可复用为收藏图。",
+  "tags": [
+    "教程",
+    "帮助",
+    "UI"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-WELCOME"
+  ],
+  "star": 4,
+  "palettes": [
+    {
+      "color": [
+        245,
+        246,
+        248
+      ]
+    },
+    {
+      "color": [
+        88,
+        101,
+        242
+      ]
+    }
+  ],
+  "modificationTime": 1785407083020,
+  "lastModified": 1785407083020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

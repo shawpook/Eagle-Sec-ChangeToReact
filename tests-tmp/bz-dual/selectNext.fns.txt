@@ -1,0 +1,62 @@
+  fns["selectNext"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event) {
+
+            if (s.isCropMode) {
+                s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 1, vertical: 0 });
+                return;
+            }
+
+            var selection = s.getSelection();
+            var __lv_start = selection.start;
+            var end = selection.end + 1;
+
+            if (s.isDetailMode) {
+                s.rememberScrollTops(s.current);
+            }
+
+            if (!s.allData[end]) {
+                $("#is-last-item").show();
+                setTimeout(() => { $("#is-last-item").hide(); }, 500);
+                return;
+            }
+            else {
+                detailZoom()?.cleanBitmapViewer();
+            }
+
+            s.selected = [s.allData[end]];
+            syncInspectorFromScope();
+            s.selectedFolderMappings = {};
+            syncListFromScope();
+            s.$root.currentFocus = "content";
+
+            if (s.isDetailMode) {
+                $timeout.cancel(__lv_nextTimeout);
+                s.forceFitImageSize(s.selected[0], true);
+                s.current = s.selected[0];
+                syncDetailFromScope();
+                syncInspectorFromScope();
+                s.isGifReady = false;
+                syncDetailFromScope();
+            }
+
+            s.autoScroll(end);
+
+            if (s.current) {
+                detailZoom()?.updateNavigator( $bodyScope.current);
+                if (!s.lastZoom()) {
+                    s.zoom();
+                }
+                __lv_nextTimeout = $timeout(function () {
+                    if (!s.lastZoom()) {
+                        s.zoom();
+                    }
+                    var nextImage = s.allData[end + 1];
+                    s.preloadImage("next");
+                }, 100);
+                s.addToRecentFile(s.current);
+            }
+        }).apply(null, args);
+  };

@@ -1,0 +1,10 @@
+STEP boot-start
+STEP boot-done
+STEP main-ready
+STEP delay-done
+=== exceptions/errors: 2
+EXC: ReferenceError: _req is not defined
+    at http://127.0.0.1:12279/src/app/react/services/mediaService.ts:152:66 @ http://127.0.0.1:12279/src/app/react/services/mediaService.ts : 151
+EXC: TypeError: n.process.listenerCount is not a function
+    at window.onerror (node:electron/js2c/renderer_init:2:33076) @ node:electron/js2c/renderer_init : 1
+STATE: {"eagle":"object","eagleShim":"undefined","coreFns":"undefined","coreState":"undefined","bodyScopeKeys":-1}

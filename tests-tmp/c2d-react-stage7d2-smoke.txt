@@ -1,0 +1,24 @@
+PASS br-hosts
+PASS br-old-blocks-gone
+PASS br-modal-resident
+PASS br-image-open
+PASS br-image-header-count
+PASS br-image-preview-markup
+PASS br-image-closed
+PASS br-image-dataplane
+PASS br-image-lastname-saved
+PASS br-folder-open
+PASS br-folder-preview-markup
+PASS br-folder-closed
+PASS br-folder-dataplane
+PASS br-folder-history-saved
+PASS br-empty-guard
+PASS art-open
+PASS art-url-focused
+PASS art-url-error-shown
+PASS art-folder-panel-open
+PASS art-folders-written-back
+PASS art-closed
+PASS screenshot-saved test-run/react-stage7d2-artstation.png
+
+STAGE7D2 SMOKE OK

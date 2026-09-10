@@ -1,0 +1,42 @@
+{
+  "id": "MOCK0010",
+  "name": "MCP Intro",
+  "ext": "png",
+  "width": 1600,
+  "height": 900,
+  "size": 79779,
+  "url": "https://developer.eagle.cool/plugin-api",
+  "website": "developer.eagle.cool",
+  "annotation": "MCP 插件介绍素材。",
+  "tags": [
+    "插件",
+    "MCP",
+    "开发"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-PLUGIN"
+  ],
+  "star": 5,
+  "palettes": [
+    {
+      "color": [
+        250,
+        251,
+        253
+      ]
+    },
+    {
+      "color": [
+        73,
+        111,
+        255
+      ]
+    }
+  ],
+  "modificationTime": 1784888683020,
+  "lastModified": 1784888683020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

@@ -1,0 +1,30 @@
+PASS qs-host-and-panel
+PASS qs-old-island-gone
+PASS qs-closed-initially
+PASS qs-open-focused
+PASS qs-body-keyword-cleared
+PASS qs-folders-default-mode
+PASS qs-tab-count-spans-hidden
+PASS qs-tabs-order
+PASS qs-arrow-down-active
+PASS qs-filter-first-result
+PASS qs-filter-first-active
+PASS qs-enter-closes
+PASS qs-enter-current-folder
+PASS qs-history-saved
+PASS qs-tab-tags-active
+PASS qs-tags-rendered
+PASS qs-tags-ungrouped-no-parent
+FAIL qs-tag-open-viewmode
+PASS qs-tag-open-closed
+PASS qs-items-active
+PASS qs-items-rendered
+PASS qs-items-meta-folder-link
+PASS qs-esc-closes-focus-content
+PASS qs-overlay-closes
+PASS qs-smartfolder-tab
+PASS qs-smartfolder-empty-state
+PASS screenshot-saved test-run/react-stage7c2-quicksearch.png
+
+STAGE7C2 SMOKE FAILED: 1 assertion(s): qs-tag-open-viewmode
+ACTIVE HANDLES: ["Socket","Socket","ChildProcess(C:\\Program Files\\nodejs\\node.exe)","Socket","Socket","ChildProcess(C:\\Program Files\\nodejs\\node.exe)","Socket","Socket","ChildProcess(H:\\dev\\Eagle-Sec-development - 副本\\node_modules\\electron\\dist\\electron.exe)","Socket(127.0.0.1:12004)"]

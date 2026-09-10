@@ -1,0 +1,186 @@
+X [ERROR] Expected ";" but found ")"
+
+    <stdin>:149:51:
+      149 │ ... s.page = 1; machineryReload(s)); s.calculateFilterCounts && m...
+          │                                   ^
+          ╵                                   ;
+
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: H:\dev\Eagle-Sec-development - 副本\node_modules\@esbuild\win32-x64\esbuild.exe --loader=tsx --log-level=error
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (H:\dev\Eagle-Sec-development - 副本\node_modules\esbuild\bin\esbuild:219:28)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 52112,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.22.2
+X [ERROR] Expected ";" but found ")"
+
+    <stdin>:133:51:
+      133 │     runSeq([(s) => { s.page = 1; machineryReload(s)); }]);
+          │                                                    ^
+          ╵                                                    ;
+
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: H:\dev\Eagle-Sec-development - 副本\node_modules\@esbuild\win32-x64\esbuild.exe --loader=tsx --log-level=error
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (H:\dev\Eagle-Sec-development - 副本\node_modules\esbuild\bin\esbuild:219:28)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 39564,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.22.2
+X [ERROR] Expected ";" but found ")"
+
+    <stdin>:853:34:
+      853 │                 machineryReload(s));
+          │                                   ^
+          ╵                                   ;
+
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: H:\dev\Eagle-Sec-development - 副本\node_modules\@esbuild\win32-x64\esbuild.exe --loader=ts --log-level=error
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (H:\dev\Eagle-Sec-development - 副本\node_modules\esbuild\bin\esbuild:219:28)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 30976,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.22.2
+X [ERROR] Expected ";" but found ")"
+
+    <stdin>:222:26:
+      222 │         machineryReload(s));
+          │                           ^
+          ╵                           ;
+
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: H:\dev\Eagle-Sec-development - 副本\node_modules\@esbuild\win32-x64\esbuild.exe --loader=ts --log-level=error
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (H:\dev\Eagle-Sec-development - 副本\node_modules\esbuild\bin\esbuild:219:28)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 15440,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.22.2
+X [ERROR] Expected ";" but found ")"
+
+    <stdin>:135:42:
+      135 │                         machineryReload(s));
+          │                                           ^
+          ╵                                           ;
+
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: H:\dev\Eagle-Sec-development - 副本\node_modules\@esbuild\win32-x64\esbuild.exe --loader=ts --log-level=error
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (H:\dev\Eagle-Sec-development - 副本\node_modules\esbuild\bin\esbuild:219:28)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 32208,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.22.2
+X [ERROR] Expected ";" but found ")"
+
+    <stdin>:71:22:
+      71 │     machineryReload(s));
+         │                       ^
+         ╵                       ;
+
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: H:\dev\Eagle-Sec-development - 副本\node_modules\@esbuild\win32-x64\esbuild.exe --loader=ts --log-level=error
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (H:\dev\Eagle-Sec-development - 副本\node_modules\esbuild\bin\esbuild:219:28)
+    at Module._compile (node:internal/modules/cjs/loader:1705:14)
+    at Object..js (node:internal/modules/cjs/loader:1838:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 26444,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.22.2

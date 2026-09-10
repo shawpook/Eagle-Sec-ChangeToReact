@@ -1,0 +1,13 @@
+PASS pc-host
+PASS pc-old-element-gone
+PASS pc-root-rendered-closed
+PASS pc-open
+PASS pc-categories
+PASS pc-empty-reload-state
+PASS pc-sort-dropdown-open
+PASS pc-sort-dropdown-closed
+PASS pc-refresh-ok
+PASS pc-closed
+WARN screenshot failed: screenshot timeout (5000ms)
+
+STAGE7D5B SMOKE OK

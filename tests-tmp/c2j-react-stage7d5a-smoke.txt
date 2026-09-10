@@ -1,0 +1,15 @@
+PASS pf-hosts
+PASS pf-old-elements-gone
+PASS pf-roots-rendered
+PASS pp-open
+PASS pp-empty-state
+PASS pp-function-list
+PASS pp-tab-switch
+PASS pp-esc-closed
+PASS pc-open
+PASS pc-name-focused
+PASS pc-type-checked
+PASS pc-closed
+WARN screenshot failed: screenshot timeout (5000ms)
+
+STAGE7D5A SMOKE OK

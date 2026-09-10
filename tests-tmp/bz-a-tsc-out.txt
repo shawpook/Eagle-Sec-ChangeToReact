@@ -1,0 +1,792 @@
+src/app/react/components/grid/gridDirectives.ts(16,19): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(21,26): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/app/react/components/grid/gridDirectives.ts(23,20): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/app/react/components/grid/gridDirectives.ts(27,48): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(27,55): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(30,22): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(30,45): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(31,29): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(31,49): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(32,30): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(39,25): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(48,93): error TS2304: Cannot find name 'isElementInViewport'.
+src/app/react/components/grid/gridDirectives.ts(53,58): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/components/grid/gridDirectives.ts(62,26): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/app/react/components/grid/gridDirectives.ts(63,20): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/app/react/components/grid/gridDirectives.ts(69,9): error TS7034: Variable 'destroyHandlers' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(70,34): error TS7006: Parameter 'name' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(70,40): error TS7006: Parameter 'fn' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(71,30): error TS7006: Parameter 'fn' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(71,34): error TS7006: Parameter 'ms' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(81,17): error TS7034: Variable 'observer' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(82,17): error TS7034: Variable '$target' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(83,17): error TS7034: Variable '$container' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(116,29): error TS7005: Variable '$target' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(119,47): error TS7005: Variable '$container' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(121,33): error TS7005: Variable '$target' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(136,21): error TS7034: Variable 'scrollTimeout' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(137,17): error TS7005: Variable '$container' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(138,34): error TS7005: Variable 'scrollTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(141,43): error TS7005: Variable '$container' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(143,29): error TS7005: Variable '$target' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(145,29): error TS7005: Variable '$target' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(153,21): error TS7005: Variable 'observer' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(156,17): error TS7005: Variable '$container' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(161,24): error TS7005: Variable 'destroyHandlers' implicitly has an 'any[]' type.
+src/app/react/components/grid/gridDirectives.ts(165,26): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/app/react/components/grid/gridDirectives.ts(166,20): error TS2339: Property 'jQuery' does not exist on type 'Window & typeof globalThis'.
+src/app/react/components/grid/gridDirectives.ts(167,9): error TS7034: Variable 'destroyHandlers' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(168,34): error TS7006: Parameter 'name' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(168,40): error TS7006: Parameter 'fn' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(245,38): error TS7006: Parameter 'func' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(255,36): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(262,22): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(266,27): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(267,30): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(277,26): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(278,25): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(279,25): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(284,38): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(284,62): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(303,26): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(304,25): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(305,25): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(307,43): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(308,43): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(337,17): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(338,17): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+src/app/react/components/grid/gridDirectives.ts(341,40): error TS7006: Parameter 'total' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(348,43): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/app/react/components/grid/gridDirectives.ts(355,17): error TS7034: Variable 'updateThumbPositionAnimateTimeout' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(358,17): error TS7034: Variable 'updateThumbPositionTimeout' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(361,42): error TS7006: Parameter 'to' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(361,46): error TS7006: Parameter 'total' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(361,53): error TS7006: Parameter 'decimal' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(401,43): error TS7006: Parameter 'callback' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(419,60): error TS2345: Argument of type 'number' is not assignable to parameter of type 'never'.
+src/app/react/components/grid/gridDirectives.ts(523,17): error TS7034: Variable 'goToPageTimeout' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(525,31): error TS7006: Parameter 'targetPage' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(525,45): error TS7031: Binding element 'updatePosition' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(525,61): error TS7031: Binding element 'scrollPercentage' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(528,34): error TS7005: Variable 'goToPageTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(535,29): error TS2304: Cannot find name 'resetNgGridLayoutData'.
+src/app/react/components/grid/gridDirectives.ts(564,29): error TS2304: Cannot find name 'resetNgGridLayoutData'.
+src/app/react/components/grid/gridDirectives.ts(587,49): error TS7006: Parameter 'page' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(587,55): error TS7006: Parameter 'decimalPart' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(591,26): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(591,33): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(591,47): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(593,34): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(618,17): error TS7034: Variable 'scrollAnimationFrame' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(619,58): error TS7006: Parameter 'page' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(619,64): error TS7006: Parameter 'decimalPart' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(620,22): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(620,29): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(620,43): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(622,30): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(653,37): error TS7006: Parameter 'element' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(653,46): error TS7006: Parameter 'targetPosition' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(653,62): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(655,21): error TS7005: Variable 'scrollAnimationFrame' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(670,39): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(674,34): error TS7006: Parameter 'currentTime' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(693,51): error TS7006: Parameter 'scrollPos' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(693,62): error TS7006: Parameter 'groups' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(693,70): error TS7006: Parameter 'totalPages' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(793,17): error TS7034: Variable 'pageChangeTimeout' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(801,17): error TS7034: Variable 'subFolderContainerCache' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(805,17): error TS7034: Variable 'draggableInstance' implicitly has type 'any' in some locations where its type cannot be determined.
+src/app/react/components/grid/gridDirectives.ts(821,38): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(874,37): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(897,37): error TS7006: Parameter 'top' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(926,26): error TS7005: Variable 'subFolderContainerCache' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(937,34): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(971,38): error TS7005: Variable 'pageChangeTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(979,37): error TS7005: Variable 'scrollAnimationFrame' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(983,40): error TS2304: Cannot find name 'HoverPreview'.
+src/app/react/components/grid/gridDirectives.ts(988,37): error TS2304: Cannot find name 'resetNgGridLayoutData'.
+src/app/react/components/grid/gridDirectives.ts(995,36): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1007,34): error TS7005: Variable 'pageChangeTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1018,29): error TS7005: Variable 'scrollAnimationFrame' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1022,32): error TS2304: Cannot find name 'HoverPreview'.
+src/app/react/components/grid/gridDirectives.ts(1026,29): error TS2304: Cannot find name 'resetNgGridLayoutData'.
+src/app/react/components/grid/gridDirectives.ts(1053,71): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1067,47): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1097,21): error TS7005: Variable 'scrollAnimationFrame' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1105,25): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(1105,31): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(1105,44): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(1105,63): error TS2304: Cannot find name 'ig'.
+src/app/react/components/grid/gridDirectives.ts(1111,29): error TS2304: Cannot find name 'resetNgGridLayoutData'.
+src/app/react/components/grid/gridDirectives.ts(1118,25): error TS2304: Cannot find name 'resetNgGridLayoutData'.
+src/app/react/components/grid/gridDirectives.ts(1126,30): error TS7005: Variable 'updateThumbPositionAnimateTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1127,30): error TS7005: Variable 'updateThumbPositionTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1128,30): error TS7005: Variable 'goToPageTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1129,30): error TS7005: Variable 'pageChangeTimeout' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1130,21): error TS7005: Variable 'scrollAnimationFrame' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1134,21): error TS7005: Variable 'draggableInstance' implicitly has an 'any' type.
+src/app/react/components/grid/gridDirectives.ts(1144,24): error TS7005: Variable 'destroyHandlers' implicitly has an 'any[]' type.
+src/app/react/core/bundleGlobals.ts(1979,23): error TS2554: Expected 4 arguments, but got 2.
+src/app/react/core/bundleGlobals.ts(1979,57): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1979,60): error TS7006: Parameter 'currentTime' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1982,29): error TS2554: Expected 4 arguments, but got 2.
+src/app/react/core/bundleGlobals.ts(1982,63): error TS7006: Parameter 'vs' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1982,67): error TS7006: Parameter 'currentTime' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1983,22): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1991,31): error TS7006: Parameter 'number' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1991,39): error TS7006: Parameter 'total' implicitly has an 'any' type.
+src/app/react/core/bundleGlobals.ts(1993,31): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'null' is not assignable to parameter of type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'null' is not assignable to parameter of type 'string | number'.
+src/app/react/core/dataMachinery.ts(76,10): error TS2300: Duplicate identifier 'syncFilterFromScope'.
+src/app/react/core/dataMachinery.ts(77,10): error TS2300: Duplicate identifier 'syncFilterFromScope'.
+src/app/react/core/dialog.ts(516,7): error TS18046: 'btn' is of type 'unknown'.
+src/app/react/core/dialog.ts(522,5): error TS18047: 'container' is possibly 'null'.
+src/app/react/core/dialog.ts(522,15): error TS2339: Property 'onclick' does not exist on type 'Element'.
+src/app/react/core/dialog.ts(629,5): error TS2531: Object is possibly 'null'.
+src/app/react/core/fileUrlHelper.ts(31,32): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(38,27): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(46,33): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(66,32): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(73,39): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(83,26): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(91,21): error TS7006: Parameter 'imagesDir' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(91,32): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(91,39): error TS7006: Parameter 'force' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(106,27): error TS7006: Parameter 'imagesDir' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(106,38): error TS7006: Parameter 'image' implicitly has an 'any' type.
+src/app/react/core/fileUrlHelper.ts(109,16): error TS2554: Expected 3 arguments, but got 2.
+src/app/react/core/filterDomain.ts(219,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(229,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(247,62): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(248,114): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(249,74): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(250,75): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(251,75): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(252,76): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(257,31): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(269,44): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(270,74): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(271,56): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(272,57): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(273,57): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(274,58): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(280,30): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(281,30): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(283,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(287,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/filterDomain.ts(294,23): error TS7006: Parameter 'data' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(305,27): error TS2304: Cannot find name 'i18n'.
+src/app/react/core/filterDomain.ts(312,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(312,68): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(312,76): error TS7006: Parameter 'parent' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(312,84): error TS7006: Parameter 'depth' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(319,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[data: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(326,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(328,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(335,22): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(385,33): error TS2304: Cannot find name 'RecentFileManager'.
+src/app/react/core/filterDomain.ts(396,37): error TS2304: Cannot find name 'isInFolder'.
+src/app/react/core/filterDomain.ts(404,33): error TS2304: Cannot find name 'isInFolder'.
+src/app/react/core/filterDomain.ts(419,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_image: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(426,23): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(427,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(428,24): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(431,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(432,24): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(435,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(436,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/filterDomain.ts(441,13): error TS2304: Cannot find name 'analytics'.
+src/app/react/core/filterDomain.ts(442,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[folder: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(449,22): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(455,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/filterDomain.ts(456,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[type: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(463,22): error TS7006: Parameter 'color' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(463,29): error TS7006: Parameter 'ignoreHistory' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(465,27): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(466,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(467,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(471,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(472,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(476,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(477,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(478,43): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(478,84): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(478,125): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(485,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(492,36): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(492,76): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(493,34): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(493,81): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(494,17): error TS2304: Cannot find name 'UrlStateService'.
+src/app/react/core/filterDomain.ts(507,13): error TS2304: Cannot find name 'analytics'.
+src/app/react/core/filterDomain.ts(508,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[color: any, ignoreHistory: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(515,23): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(517,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(522,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(523,24): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(526,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(527,24): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(530,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(531,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(533,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/filterDomain.ts(538,13): error TS2304: Cannot find name 'analytics'.
+src/app/react/core/filterDomain.ts(539,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[folder: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(546,22): error TS7006: Parameter 'hex' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(558,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[hex: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(565,23): error TS7006: Parameter 'type' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(567,21): error TS7034: Variable 'arr' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/core/filterDomain.ts(568,29): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(571,32): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(574,24): error TS7005: Variable 'arr' implicitly has an 'any[]' type.
+src/app/react/core/filterDomain.ts(579,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[type: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(586,22): error TS7006: Parameter 'hex' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(586,27): error TS7006: Parameter 'alpha' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(591,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[hex: any, alpha: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(598,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(600,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(608,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(610,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(613,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(620,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(621,13): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(623,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/filterDomain.ts(627,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/filterDomain.ts(647,49): error TS7006: Parameter 'kw' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(658,56): error TS7006: Parameter 'kw' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(664,53): error TS2304: Cannot find name 'chineseConvert'.
+src/app/react/core/filterDomain.ts(671,49): error TS2304: Cannot find name 'chineseConvert'.
+src/app/react/core/filterDomain.ts(676,56): error TS7006: Parameter 'kw' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(681,53): error TS2304: Cannot find name 'chineseConvert'.
+src/app/react/core/filterDomain.ts(687,49): error TS2304: Cannot find name 'chineseConvert'.
+src/app/react/core/filterDomain.ts(700,21): error TS2304: Cannot find name 'updateSuggestions'.
+src/app/react/core/filterDomain.ts(711,25): error TS2304: Cannot find name 'analytics'.
+src/app/react/core/filterDomain.ts(715,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/filterDomain.ts(729,17): error TS2304: Cannot find name 'rectSelecting'.
+src/app/react/core/filterDomain.ts(730,13): error TS2304: Cannot find name 'updateSuggestions'.
+src/app/react/core/filterDomain.ts(733,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/filterDomain.ts(740,23): error TS7006: Parameter '__lv_ext' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(741,20): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(742,18): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(743,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(746,24): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(748,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_ext: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(755,23): error TS7006: Parameter '__lv_ext' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(756,20): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(757,18): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(758,17): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(761,24): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(763,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_ext: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(770,23): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(770,35): error TS7006: Parameter 'inc' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(770,40): error TS7006: Parameter '__lv_now' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(779,21): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(780,21): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(783,21): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(789,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(790,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(791,30): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(792,29): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(793,29): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(793,70): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(798,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(806,29): error TS2304: Cannot find name 'installedFonts'.
+src/app/react/core/filterDomain.ts(807,29): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(810,29): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(819,21): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(822,21): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(834,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(843,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(847,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(851,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(855,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(859,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(863,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/filterDomain.ts(870,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_image: any, inc: any, __lv_now: any]'.
+  Target requires 3 element(s) but source may have fewer.
+src/app/react/core/filterDomain.ts(873,37): error TS7006: Parameter 'keywordStr' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(875,43): error TS7006: Parameter 'str' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(877,35): error TS7006: Parameter 'input' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(940,42): error TS7006: Parameter 'tokens' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(943,30): error TS7023: 'parseOr' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+src/app/react/core/filterDomain.ts(944,29): error TS7022: 'left' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+src/app/react/core/filterDomain.ts(955,30): error TS7023: 'parseAnd' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+src/app/react/core/filterDomain.ts(961,37): error TS7022: 'expr' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in its own initializer.
+src/app/react/core/filterDomain.ts(985,40): error TS7006: Parameter 'expr' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(992,25): error TS7034: Variable 'orTerms' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/core/filterDomain.ts(993,45): error TS7006: Parameter 'node' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(1001,33): error TS7034: Variable 'andTerms' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/core/filterDomain.ts(1002,51): error TS7006: Parameter 'child' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(1007,42): error TS7005: Variable 'andTerms' implicitly has an 'any[]' type.
+src/app/react/core/filterDomain.ts(1011,29): error TS7005: Variable 'orTerms' implicitly has an 'any[]' type.
+src/app/react/core/filterDomain.ts(1013,25): error TS7034: Variable '__lv_result' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/core/filterDomain.ts(1014,43): error TS7006: Parameter 'child' implicitly has an 'any' type.
+src/app/react/core/filterDomain.ts(1016,39): error TS7005: Variable '__lv_result' implicitly has an 'any[]' type.
+src/app/react/core/filterDomain.ts(1018,28): error TS7005: Variable '__lv_result' implicitly has an 'any[]' type.
+src/app/react/core/flatpickrLite.ts(103,3): error TS2564: Property 'now' has no initializer and is not definitely assigned in the constructor.
+src/app/react/core/flatpickrLite.ts(104,3): error TS2564: Property 'currentYear' has no initializer and is not definitely assigned in the constructor.
+src/app/react/core/flatpickrLite.ts(105,3): error TS2564: Property 'currentMonth' has no initializer and is not definitely assigned in the constructor.
+src/app/react/core/itemDomain.ts(24,10): error TS2440: Import declaration conflicts with local declaration of 'IPCHelper'.
+src/app/react/core/itemDomain.ts(864,21): error TS2304: Cannot find name 'machineryGetFilter'.
+src/app/react/core/itemDomain.ts(889,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/itemDomain.ts(893,13): error TS2304: Cannot find name 'RecentFileManager'.
+src/app/react/core/itemDomain.ts(894,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[file: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(901,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(901,30): error TS7006: Parameter 'items' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(904,37): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(904,43): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(920,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, items: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(927,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(930,42): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(930,48): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(945,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(952,23): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(958,71): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(973,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[folder: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(982,31): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(983,30): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(987,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(996,30): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(1001,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1013,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1022,28): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(1026,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1029,17): error TS7023: 'getRawPath' implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+src/app/react/core/itemDomain.ts(1033,13): error TS7024: Function implicitly has return type 'any' because it does not have a return type annotation and is referenced directly or indirectly in one of its return expressions.
+src/app/react/core/itemDomain.ts(1033,23): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1041,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_image: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(1048,23): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1050,26): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(1052,26): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(1054,17): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/core/itemDomain.ts(1054,48): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/core/itemDomain.ts(1055,38): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/core/itemDomain.ts(1058,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_image: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(1071,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1082,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1105,24): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(1107,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1114,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1114,29): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1118,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[item: any, folder: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(1122,10): error TS2304: Cannot find name '__cc_openWithOther'.
+src/app/react/core/itemDomain.ts(1123,7): error TS2304: Cannot find name '__cc_openWithOther'.
+src/app/react/core/itemDomain.ts(1127,55): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/core/itemDomain.ts(1131,12): error TS2304: Cannot find name '__cc_openWithOther'.
+src/app/react/core/itemDomain.ts(1135,10): error TS2304: Cannot find name '__cc_openInFinder'.
+src/app/react/core/itemDomain.ts(1136,7): error TS2304: Cannot find name '__cc_openInFinder'.
+src/app/react/core/itemDomain.ts(1142,50): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1142,56): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1144,42): error TS2304: Cannot find name 'path'.
+src/app/react/core/itemDomain.ts(1145,39): error TS2304: Cannot find name 'path'.
+src/app/react/core/itemDomain.ts(1165,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/itemDomain.ts(1178,17): error TS2304: Cannot find name 'swal'.
+src/app/react/core/itemDomain.ts(1191,47): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1200,35): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1216,12): error TS2304: Cannot find name '__cc_openInFinder'.
+src/app/react/core/itemDomain.ts(1220,10): error TS2304: Cannot find name '__cc_openFilesWithDefault'.
+src/app/react/core/itemDomain.ts(1221,7): error TS2304: Cannot find name '__cc_openFilesWithDefault'.
+src/app/react/core/itemDomain.ts(1224,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/itemDomain.ts(1226,37): error TS7006: Parameter 'file' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1226,43): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1234,13): error TS2304: Cannot find name 'RecentFileManager'.
+src/app/react/core/itemDomain.ts(1238,12): error TS2304: Cannot find name '__cc_openFilesWithDefault'.
+src/app/react/core/itemDomain.ts(1247,53): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1248,66): error TS2304: Cannot find name 'pluginModule'.
+src/app/react/core/itemDomain.ts(1251,17): error TS2304: Cannot find name 'openInNewWindow'.
+src/app/react/core/itemDomain.ts(1252,17): error TS2304: Cannot find name 'analytics'.
+src/app/react/core/itemDomain.ts(1253,17): error TS2304: Cannot find name 'RecentFileManager'.
+src/app/react/core/itemDomain.ts(1256,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1263,23): error TS7006: Parameter 'properity' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1266,38): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1266,44): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1279,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[properity: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(1286,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1289,38): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1289,44): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1290,30): error TS2304: Cannot find name 'path'.
+src/app/react/core/itemDomain.ts(1303,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/itemDomain.ts(1324,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1333,26): error TS2304: Cannot find name 'path'.
+src/app/react/core/itemDomain.ts(1334,23): error TS2304: Cannot find name 'path'.
+src/app/react/core/itemDomain.ts(1335,25): error TS2304: Cannot find name 'path'.
+src/app/react/core/itemDomain.ts(1342,17): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ jpg: boolean; jfif: boolean; insp: boolean; png: boolean; webp: boolean; gif: boolean; }'.
+src/app/react/core/itemDomain.ts(1343,24): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ gif: string; jpg: string; png: string; jpeg: string; jfif: string; jpe: string; insp: string; webp: string; }'.
+src/app/react/core/itemDomain.ts(1358,46): error TS18046: 'err' is of type 'unknown'.
+src/app/react/core/itemDomain.ts(1360,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/itemDomain.ts(1363,29): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1363,41): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1384,25): error TS2304: Cannot find name 'eagle'.
+src/app/react/core/itemDomain.ts(1384,86): error TS7006: Parameter 'child' implicitly has an 'any' type.
+src/app/react/core/itemDomain.ts(1384,93): error TS7006: Parameter 'parent' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(36,15): error TS2451: Cannot redeclare block-scoped variable 'remote'.
+src/app/react/core/miscDomain.ts(1051,7): error TS2451: Cannot redeclare block-scoped variable 'remote'.
+src/app/react/core/miscDomain.ts(1072,23): error TS7006: Parameter 'orderBy' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1085,37): error TS2304: Cannot find name 'i18n'.
+src/app/react/core/miscDomain.ts(1094,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[orderBy: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/miscDomain.ts(1101,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1103,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/miscDomain.ts(1110,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1112,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/miscDomain.ts(1119,22): error TS7006: Parameter '$event' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1121,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/miscDomain.ts(1132,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1139,22): error TS7006: Parameter '$event' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1140,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/miscDomain.ts(1141,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/miscDomain.ts(1142,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/miscDomain.ts(1161,26): error TS2304: Cannot find name 'AnnotationPreview'.
+src/app/react/core/miscDomain.ts(1162,18): error TS2304: Cannot find name 'AnnotationPreview'.
+src/app/react/core/miscDomain.ts(1175,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/core/miscDomain.ts(1207,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/miscDomain.ts(1208,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/core/miscDomain.ts(1236,23): error TS2304: Cannot find name 'initMousetrap'.
+src/app/react/core/miscDomain.ts(1239,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1263,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1274,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1286,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1300,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1312,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1324,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1334,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/core/miscDomain.ts(1375,89): error TS7006: Parameter 'word' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1378,28): error TS2304: Cannot find name 'fuzzy_match'.
+src/app/react/core/miscDomain.ts(1383,17): error TS7034: Variable 'suggestions' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/core/miscDomain.ts(1386,17): error TS7034: Variable 'currPageTags' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/core/miscDomain.ts(1387,28): error TS2304: Cannot find name '$bodyScope'.
+src/app/react/core/miscDomain.ts(1388,58): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1423,50): error TS7005: Variable 'suggestions' implicitly has an 'any[]' type.
+src/app/react/core/miscDomain.ts(1425,95): error TS7006: Parameter 'suggestion' implicitly has an 'any' type.
+src/app/react/core/miscDomain.ts(1434,24): error TS7005: Variable 'currPageTags' implicitly has an 'any[]' type.
+src/app/react/core/miscDomain.ts(1437,41): error TS2304: Cannot find name 'chineseConvert'.
+src/app/react/core/miscDomain.ts(1438,41): error TS2304: Cannot find name 'chineseConvert'.
+src/app/react/core/miscDomain.ts(1466,11): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+src/app/react/core/miscDomain.ts(1478,19): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+src/app/react/core/miscDomain.ts(1479,15): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{}'.
+src/app/react/services/lockService.ts(25,11): error TS2304: Cannot find name 'initLinkVars'.
+src/app/react/services/lockService.ts(30,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(32,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(34,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(37,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/lockService.ts(41,11): error TS2304: Cannot find name 'initLinkVars'.
+src/app/react/services/lockService.ts(46,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(48,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/lockService.ts(52,11): error TS2304: Cannot find name 'initLinkVars'.
+src/app/react/services/lockService.ts(55,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/lockService.ts(58,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/lockService.ts(62,11): error TS2304: Cannot find name 'initLinkVars'.
+src/app/react/services/lockService.ts(65,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/lockService.ts(69,34): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(78,25): error TS2304: Cannot find name 'Registration'.
+src/app/react/services/lockService.ts(78,41): error TS2304: Cannot find name 'Registration'.
+src/app/react/services/lockService.ts(78,102): error TS2304: Cannot find name 'Registration'.
+src/app/react/services/lockService.ts(81,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(82,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(86,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(88,29): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(93,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/lockService.ts(97,11): error TS2304: Cannot find name 'initLinkVars'.
+src/app/react/services/lockService.ts(100,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/lockService.ts(110,21): error TS2304: Cannot find name 'Registration'.
+src/app/react/services/lockService.ts(110,37): error TS2304: Cannot find name 'Registration'.
+src/app/react/services/lockService.ts(110,102): error TS2304: Cannot find name 'Registration'.
+src/app/react/services/lockService.ts(125,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(127,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/lockService.ts(131,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/mediaService.ts(227,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/mediaService.ts(237,35): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/mediaService.ts(247,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/mediaService.ts(254,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/mediaService.ts(265,35): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/mediaService.ts(279,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/mediaService.ts(300,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/mediaService.ts(302,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/mediaService.ts(305,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/mediaService.ts(318,28): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/mediaService.ts(340,17): error TS2531: Object is possibly 'null'.
+src/app/react/services/mediaService.ts(342,30): error TS2304: Cannot find name 'decodeBase64Image'.
+src/app/react/services/mediaService.ts(345,35): error TS2304: Cannot find name 'EAGLE_THUMBNAIL_TEMP_PATH'.
+src/app/react/services/mediaService.ts(345,69): error TS2304: Cannot find name 'guid'.
+src/app/react/services/mediaService.ts(368,50): error TS18046: 'err' is of type 'unknown'.
+src/app/react/services/mediaService.ts(373,23): error TS2554: Expected 3 arguments, but got 2.
+src/app/react/services/mediaService.ts(378,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/mediaService.ts(394,18): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/app/react/services/mediaService.ts(398,29): error TS2304: Cannot find name 'path'.
+src/app/react/services/mediaService.ts(399,33): error TS2304: Cannot find name 'FileUrlHelper'.
+src/app/react/services/mediaService.ts(400,34): error TS2304: Cannot find name 'path'.
+src/app/react/services/mediaService.ts(403,54): error TS7006: Parameter 'err' implicitly has an 'any' type.
+src/app/react/services/mediaService.ts(408,39): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/mediaService.ts(418,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/selectionService.ts(48,46): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string | undefined'.
+src/app/react/services/selectionService.ts(73,52): error TS2345: Argument of type 'null' is not assignable to parameter of type 'string | undefined'.
+src/app/react/services/selectionService.ts(85,32): error TS2304: Cannot find name 'debounce'.
+src/app/react/services/selectionService.ts(96,29): error TS2304: Cannot find name 'remainingFilenameLength'.
+src/app/react/services/selectionService.ts(97,14): error TS2304: Cannot find name 'sanitize'.
+src/app/react/services/selectionService.ts(99,7): error TS2304: Cannot find name 'eagle'.
+src/app/react/services/selectionService.ts(101,11): error TS2304: Cannot find name 'emojiRegex'.
+src/app/react/services/selectionService.ts(102,29): error TS2304: Cannot find name 'emojiRegex'.
+src/app/react/services/selectionService.ts(103,9): error TS2304: Cannot find name 'eagle'.
+src/app/react/services/selectionService.ts(113,7): error TS2304: Cannot find name 'ayncsImagesChange'.
+src/app/react/services/selectionService.ts(114,7): error TS2304: Cannot find name 'hiddenByCurrentFilter'.
+src/app/react/services/selectionService.ts(116,13): error TS2304: Cannot find name 'electronLog'.
+src/app/react/services/selectionService.ts(116,28): error TS2304: Cannot find name 'electronLog'.
+src/app/react/services/selectionService.ts(167,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, image: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/selectionService.ts(185,21): error TS2304: Cannot find name 'openInNewWindow'.
+src/app/react/services/selectionService.ts(204,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, item: any, isName: any, $element: any]'.
+  Target requires 4 element(s) but source may have fewer.
+src/app/react/services/selectionService.ts(211,22): error TS7006: Parameter '$event' implicitly has an 'any' type.
+src/app/react/services/selectionService.ts(211,30): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/services/selectionService.ts(215,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$event: any, __lv_image: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/selectionService.ts(222,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/selectionService.ts(222,29): error TS7006: Parameter '__lv_image' implicitly has an 'any' type.
+src/app/react/services/selectionService.ts(235,7): error TS2304: Cannot find name 'openInNewWindow'.
+src/app/react/services/selectionService.ts(236,25): error TS2304: Cannot find name 'RecentFileManager'.
+src/app/react/services/selectionService.ts(237,22): error TS2304: Cannot find name 'analytics'.
+src/app/react/services/selectionService.ts(247,17): error TS2304: Cannot find name 'HoverPreview'.
+src/app/react/services/selectionService.ts(248,17): error TS2304: Cannot find name 'HoverPreview'.
+src/app/react/services/selectionService.ts(250,17): error TS2304: Cannot find name 'HoverPreview'.
+src/app/react/services/selectionService.ts(263,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/selectionService.ts(264,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/selectionService.ts(272,13): error TS2531: Object is possibly 'null'.
+src/app/react/services/selectionService.ts(373,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, __lv_image: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(283,23): error TS7006: Parameter 'node' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(294,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[node: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(301,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(301,30): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(308,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, folder: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(315,23): error TS7006: Parameter 'node' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(322,17): error TS1117: An object literal cannot have multiple properties with the same name.
+src/app/react/services/sidebarService.ts(332,13): error TS7053: Element implicitly has an 'any' type because expression of type '`depth-${any}`' can't be used to index type '{ 'active active-item': any; locked: any; collapsed: boolean; editable: any; selected: any; 'empty-node': any; 'show-badge': boolean; close: any; 'show-lock-icon': any; 'show-unlock-icon': any; 'has-childred': any; first: any; last: any; }'.
+src/app/react/services/sidebarService.ts(333,13): error TS7053: Element implicitly has an 'any' type because expression of type '`icon-${any}`' can't be used to index type '{ 'active active-item': any; locked: any; collapsed: boolean; editable: any; selected: any; 'empty-node': any; 'show-badge': boolean; close: any; 'show-lock-icon': any; 'show-unlock-icon': any; 'has-childred': any; first: any; last: any; }'.
+src/app/react/services/sidebarService.ts(334,13): error TS7053: Element implicitly has an 'any' type because expression of type '`color-${any}`' can't be used to index type '{ 'active active-item': any; locked: any; collapsed: boolean; editable: any; selected: any; 'empty-node': any; 'show-badge': boolean; close: any; 'show-lock-icon': any; 'show-unlock-icon': any; 'has-childred': any; first: any; last: any; }'.
+src/app/react/services/sidebarService.ts(337,5): error TS7053: Element implicitly has an 'any' type because expression of type '`parent-color-${any}`' can't be used to index type '{ 'active active-item': any; locked: any; collapsed: boolean; editable: any; selected: any; 'empty-node': any; 'show-badge': boolean; close: any; 'show-lock-icon': any; 'show-unlock-icon': any; 'has-childred': any; first: any; last: any; }'.
+src/app/react/services/sidebarService.ts(340,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[node: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(347,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(379,13): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ 'active active-item': boolean; locked: any; collapsed: boolean; selected: any; editable: any; 'empty-node': any; 'color-red': boolean; 'color-orange': boolean; 'color-yellow': boolean; 'color-green': boolean; ... 8 more ...; 'has-childred': any; }'.
+  No index signature with a parameter of type 'string' was found on type '{ 'active active-item': boolean; locked: any; collapsed: boolean; selected: any; editable: any; 'empty-node': any; 'color-red': boolean; 'color-orange': boolean; 'color-yellow': boolean; 'color-green': boolean; ... 8 more ...; 'has-childred': any; }'.
+src/app/react/services/sidebarService.ts(381,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[item: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(388,23): error TS7006: Parameter 'smartFolder' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(408,13): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ editable: any; selected: any; collapsed: boolean; 'active active-item': any; 'color-red': boolean; 'color-orange': boolean; 'color-yellow': boolean; 'color-green': boolean; 'color-aqua': boolean; 'color-blue': boolean; ... 5 more ...; last: any; }'.
+  No index signature with a parameter of type 'string' was found on type '{ editable: any; selected: any; collapsed: boolean; 'active active-item': any; 'color-red': boolean; 'color-orange': boolean; 'color-yellow': boolean; 'color-green': boolean; 'color-aqua': boolean; 'color-blue': boolean; ... 5 more ...; last: any; }'.
+src/app/react/services/sidebarService.ts(411,5): error TS7053: Element implicitly has an 'any' type because expression of type '`parent-color-${any}`' can't be used to index type '{ editable: any; selected: any; collapsed: boolean; 'active active-item': any; 'color-red': boolean; 'color-orange': boolean; 'color-yellow': boolean; 'color-green': boolean; 'color-aqua': boolean; 'color-blue': boolean; ... 5 more ...; last: any; }'.
+src/app/react/services/sidebarService.ts(414,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[smartFolder: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(421,23): error TS7006: Parameter '$event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(423,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/sidebarService.ts(424,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/sidebarService.ts(426,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/sidebarService.ts(429,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(436,23): error TS7006: Parameter '$event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(439,22): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/sidebarService.ts(440,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/sidebarService.ts(441,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/sidebarService.ts(444,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(451,22): error TS7006: Parameter '$event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(454,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(461,22): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(461,25): error TS7006: Parameter 'ui' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(476,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[e: any, ui: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(482,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(482,30): error TS7006: Parameter 'folderArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(487,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, folderArg: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(493,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(493,30): error TS7006: Parameter 'folderArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(501,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, folderArg: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(507,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(507,30): error TS7006: Parameter 'folderArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(521,9): error TS2304: Cannot find name 'toggleAllFolders'.
+src/app/react/services/sidebarService.ts(524,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, folderArg: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(530,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(530,30): error TS7006: Parameter 'smartFolderArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(534,7): error TS2304: Cannot find name 'toggleCurrentLevelSmartFolders'.
+src/app/react/services/sidebarService.ts(535,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, smartFolderArg: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(541,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(541,30): error TS7006: Parameter 'smartFolderArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(555,9): error TS2304: Cannot find name 'toggleAllSmartFolders'.
+src/app/react/services/sidebarService.ts(558,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, smartFolderArg: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/sidebarService.ts(564,23): error TS7006: Parameter 'eventArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(564,33): error TS7006: Parameter 'folderArg' implicitly has an 'any' type.
+src/app/react/services/sidebarService.ts(570,20): error TS2304: Cannot find name 'i18n'.
+src/app/react/services/sidebarService.ts(578,20): error TS2304: Cannot find name 'i18n'.
+src/app/react/services/sidebarService.ts(586,20): error TS2304: Cannot find name 'i18n'.
+src/app/react/services/sidebarService.ts(606,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[eventArg: any, folderArg: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/uploadService.ts(42,21): error TS2304: Cannot find name 'machineryGetFilter'.
+src/app/react/services/uploadService.ts(99,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/uploadService.ts(100,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/uploadService.ts(101,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/uploadService.ts(108,23): error TS7006: Parameter 'currentFolder' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(112,21): error TS7006: Parameter '__lv_result' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(115,45): error TS7006: Parameter 'p' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(127,25): error TS2304: Cannot find name 'uploadFolderToSidebar'.
+src/app/react/services/uploadService.ts(131,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[currentFolder: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/uploadService.ts(138,22): error TS7006: Parameter '$__lv_files' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(138,35): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(157,41): error TS2304: Cannot find name 'guid'.
+src/app/react/services/uploadService.ts(171,51): error TS2339: Property 'cutMode' does not exist on type '{ id: any; name: any; path: any; type: any; size: any; tags: any; url: any; annotation: any; lastModified: any; modificationTime: any; folders: any; star: any; }'.
+src/app/react/services/uploadService.ts(172,50): error TS2339: Property 'merged' does not exist on type '{ id: any; name: any; path: any; type: any; size: any; tags: any; url: any; annotation: any; lastModified: any; modificationTime: any; folders: any; star: any; }'.
+src/app/react/services/uploadService.ts(180,61): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(200,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/uploadService.ts(201,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/uploadService.ts(202,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[$__lv_files: any, folder: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/uploadService.ts(209,22): error TS7006: Parameter 'urls' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(209,28): error TS7006: Parameter '__lv_fds' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(209,38): error TS7006: Parameter 'params' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(211,17): error TS7034: Variable 'extendTags' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/services/uploadService.ts(214,50): error TS7006: Parameter 'fd' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(219,30): error TS7006: Parameter 'folder' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(221,48): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(227,38): error TS7005: Variable 'extendTags' implicitly has an 'any[]' type.
+src/app/react/services/uploadService.ts(229,48): error TS7006: Parameter 'url' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(229,53): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/app/react/services/uploadService.ts(233,21): error TS7034: Variable '__lv_tags' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/app/react/services/uploadService.ts(241,41): error TS7005: Variable '__lv_tags' implicitly has an 'any[]' type.
+src/app/react/services/uploadService.ts(265,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[urls: any, __lv_fds: any, params: any]'.
+  Target requires 3 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(38,28): error TS2304: Cannot find name 'saveListHeightTimeout'.
+src/app/react/services/viewOpsService.ts(39,15): error TS2304: Cannot find name 'saveListHeightTimeout'.
+src/app/react/services/viewOpsService.ts(69,23): error TS7006: Parameter 'ratio' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(74,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[ratio: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(81,23): error TS7006: Parameter 'ratio' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(86,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[ratio: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(101,38): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/app/react/services/viewOpsService.ts(107,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/viewOpsService.ts(114,22): error TS7006: Parameter '__lv_target' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(114,35): error TS7006: Parameter 'forceMode' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(118,30): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(126,34): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(127,35): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(131,34): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(142,13): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(158,38): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/app/react/services/viewOpsService.ts(172,24): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/app/react/services/viewOpsService.ts(173,24): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/app/react/services/viewOpsService.ts(183,21): error TS2304: Cannot find name 'getImagePixelDensity'.
+src/app/react/services/viewOpsService.ts(184,30): error TS2304: Cannot find name 'getImagePixelDensity'.
+src/app/react/services/viewOpsService.ts(197,26): error TS2304: Cannot find name 'isMobileResolution'.
+src/app/react/services/viewOpsService.ts(198,36): error TS2304: Cannot find name 'isMobileResolution'.
+src/app/react/services/viewOpsService.ts(211,26): error TS2304: Cannot find name 'isMobileWidth'.
+src/app/react/services/viewOpsService.ts(212,29): error TS2304: Cannot find name 'isMobileWidth'.
+src/app/react/services/viewOpsService.ts(223,36): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(240,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[__lv_target: any, forceMode: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(251,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/viewOpsService.ts(262,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/viewOpsService.ts(273,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/viewOpsService.ts(284,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/viewOpsService.ts(291,22): error TS7006: Parameter 'ratio' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(291,29): error TS7006: Parameter '__lv_x' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(291,37): error TS7006: Parameter '__lv_y' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(291,45): error TS7006: Parameter 'hasTransition' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(299,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(299,40): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(303,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(304,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(309,17): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(311,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(321,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[ratio: any, __lv_x: any, __lv_y: any, hasTransition: any]'.
+  Target requires 4 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(341,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.
+src/app/react/services/viewOpsService.ts(348,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(348,29): error TS7006: Parameter 'noAnimation' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(364,37): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(369,43): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(384,21): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(386,25): error TS2592: Cannot find name '$'. Do you need to install type definitions for jQuery? Try `npm i --save-dev @types/jquery` and then add 'jquery' to the types field in your tsconfig.
+src/app/react/services/viewOpsService.ts(392,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any, noAnimation: any]'.
+  Target requires 2 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(399,22): error TS7006: Parameter 'event' implicitly has an 'any' type.
+src/app/react/services/viewOpsService.ts(413,24): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[event: any]'.
+  Target requires 1 element(s) but source may have fewer.
+src/app/react/services/viewOpsService.ts(425,20): error TS2345: Argument of type 'any[]' is not assignable to parameter of type '[]'.
+  Target allows only 0 element(s) but source may have more.

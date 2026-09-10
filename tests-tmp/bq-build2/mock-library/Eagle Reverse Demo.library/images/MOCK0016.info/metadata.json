@@ -1,0 +1,41 @@
+{
+  "id": "MOCK0016",
+  "name": "Lock Screen",
+  "ext": "png",
+  "width": 1280,
+  "height": 800,
+  "size": 108080,
+  "url": "",
+  "website": "",
+  "annotation": "锁定屏视觉素材。",
+  "tags": [
+    "锁定",
+    "UI"
+  ],
+  "folders": [
+    "FOLDER-ROOT",
+    "FOLDER-WELCOME"
+  ],
+  "star": 3,
+  "palettes": [
+    {
+      "color": [
+        28,
+        30,
+        35
+      ]
+    },
+    {
+      "color": [
+        255,
+        255,
+        255
+      ]
+    }
+  ],
+  "modificationTime": 1784370283020,
+  "lastModified": 1784370283020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

@@ -1,0 +1,149 @@
+        $scope.updateSelection = function() {
+
+            $timeout.cancel(updateSelectionTimeout);
+            updateSelectionTimeout = $timeout(function() {
+
+                var selected = $scope.selected;
+                if (selected.length > 1) {
+                    $scope.inspector.newNamePlaceholder = i18n.__("inspector.names.multipleTitles");
+                    $scope.inspector.newUrlPlaceholder = i18n.__("inspector.names.multipleUrls");
+                    $scope.inspector.newName = eagle.inspector.calculateName(selected);
+                    $scope.inspector.newUrl = eagle.inspector.calculateUrl(selected);
+                    $scope.inspector.newTags = eagle.inspector.calculateTags(selected);
+                    $scope.inspector.newAnnotation = eagle.inspector.calculateAnnotation(selected);
+                    $scope.inspector.folders = eagle.inspector.calculateFolders(selected);
+                    $scope.inspector.star = eagle.inspector.calculateStar(selected);
+                    $scope.inspector.size = eagle.inspector.calculateFileSize(selected);
+                    $scope.inspector.activeTab = "ITEM";
+                } else if (selected.length == 1) {
+                    if (selected[0]) {
+                        $scope.inspector.newNamePlaceholder = $filter('i18n')("title");
+                        $scope.inspector.newUrlPlaceholder = "http://";
+                        $scope.inspector.newName = selected[0].name || "";
+                        $scope.inspector.newUrl = selected[0].url || "";
+                        $scope.inspector.newTags = selected[0].tags;
+                        $scope.inspector.newAnnotation = selected[0].annotation || "";
+                        $scope.inspector.folders = [];
+                        $scope.inspector.star = selected[0].star || 0;
+                        $scope.inspector.activeTab = "ITEM";
+                    }
+                }
+                else {
+                    $scope.inspector.activeTab = "SIDEBAR";
+                    switch ($scope.viewMode) {
+                        case "all":
+                            $scope.inspector.category = {
+                                newName: i18n.__('inspector.names.all'),
+                                newDescription: "",
+                                createDate: undefined,
+                                imageCount: $bodyScope.all.length,
+                                fileSize: eagle.inspector.calculateFileSize($bodyScope.all),
+                                exportable: false,
+                                editable: false
+                            };
+                            break;
+                        case "unfiled":
+                            $scope.inspector.category = {
+                                newName: i18n.__('inspector.names.unfiled'),
+                                newDescription: "",
+                                createDate: undefined,
+                                imageCount: $bodyScope.unfiledCount,
+                                fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                exportable: false,
+                                editable: false
+                            };
+                            break;
+                        case "untagged":
+                            $scope.inspector.category = {
+                                newName: i18n.__('inspector.names.untagged'),
+                                newDescription: "",
+                                createDate: undefined,
+                                imageCount: $bodyScope.untaggedCount,
+                                fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                exportable: false,
+                                editable: false
+                            };
+                            break;
+                        case "trash":
+                            $scope.inspector.category = {
+                                newName: i18n.__('inspector.names.trash'),
+                                newDescription: "",
+                                createDate: undefined,
+                                imageCount: $bodyScope.allData.length,
+                                fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                exportable: false,
+                                editable: false
+                            };
+                            break;
+                        case "duplicate":
+                            $scope.inspector.category = {
+                                newName: $filter('i18n')('inspector.names.duplicate'),
+                                newDescription: "",
+                                createDate: undefined,
+                                imageCount: $bodyScope.allData.length,
+                                fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                exportable: false,
+                                editable: false
+                            };
+                            break;
+                        default:
+                            if ($rootScope.selectedFolders.length > 0) {
+                                $scope.inspector.category = {
+                                    newName: i18n.__('inspector.names.multipleTitles'),
+                                    newDescription: "",
+                                    createDate: undefined,
+                                    imageCount: $bodyScope.allData.length,
+                                    fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                    exportable: false,
+                                    editable: false
+                                };
+                            }
+                            else if ($scope.selectedFolderMappings && Object.keys($scope.selectedFolderMappings).length >= 1) {
+                                var selectedFolders = Object.keys($scope.selectedFolderMappings).map(function(key) {
+                                    return key;
+                                });
+                                if (selectedFolders[0] && $scope.folderMappings[selectedFolders[0]]) {
+                                    eagle.inspector.inspectorFolder = $scope.folderMappings[selectedFolders[0]];
+                                    $scope.inspector.category = {
+                                        newName: eagle.inspector.inspectorFolder.name,
+                                        newDescription: eagle.inspector.inspectorFolder.description || "",
+                                        createDate: eagle.inspector.inspectorFolder.modificationTime,
+                                        imageCount: eagle.inspector.inspectorFolder.imageCount,
+                                        fileSize: undefined,
+                                        exportable: !(eagle.inspector.inspectorFolder.password && !eagle.inspector.inspectorFolder.isUnLock),
+                                        editable: !(eagle.inspector.inspectorFolder.password && !eagle.inspector.inspectorFolder.isUnLock)
+                                    };
+                                }
+                            }
+                            else if ($scope.currentFolder) {
+                                eagle.inspector.inspectorFolder = $scope.currentFolder;
+                                $scope.inspector.category = {
+                                    newName: eagle.inspector.inspectorFolder.name,
+                                    newDescription: eagle.inspector.inspectorFolder.description || "",
+                                    createDate: eagle.inspector.inspectorFolder.modificationTime,
+                                    imageCount: $bodyScope.allData.length,
+                                    fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                    exportable: true,
+                                    editable: true
+                                };
+                            }
+                            else if ($scope.currentSmartFolder) {
+                                $scope.inspector.category = {
+                                    newName: $scope.currentSmartFolder.name,
+                                    newDescription: $scope.currentSmartFolder.description || "",
+                                    createDate: $scope.currentSmartFolder.modificationTime,
+                                    imageCount: $bodyScope.allData.length,
+                                    fileSize: eagle.inspector.calculateFileSize($bodyScope.allData),
+                                    exportable: true,
+                                    editable: true
+                                };
+                            }
+                    }
+                }
+
+                // 排序標籤，優先使用群組順序排，皆者使用字母順序排
+                if ($scope.inspector.newTags.length > 0) {
+                    $scope.inspector.newTags = sortTags($scope.inspector.newTags);
+                }
+            }, 30);
+        };

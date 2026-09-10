@@ -1,0 +1,22 @@
+  fns["calculateFilterCounts"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            
+            clearTimeout(__lv_calculateFilterCountsTimeout);
+            __lv_calculateFilterCountsTimeout = setTimeout(function () {
+                console.time("calculateFilterCounts");
+                eagle.filter.resetFilterCounts();
+                let __lv_now = Date.now();
+                for (let i = 0; i < s.allData.length; i++) {
+                    const __lv_image = s.allData[i];
+                    s.updateFilterCounts(__lv_image, 1, __lv_now);
+                }
+                console.timeEnd("calculateFilterCounts");
+                s.$evalAsync();
+            }, 500);
+
+        }).apply(null, args);
+  };
+

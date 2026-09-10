@@ -48,6 +48,8 @@ interface BodyState {
   vibrancyEnabled: boolean;
   sidebarWidth: number;
   inspectorWidth: number;
+  isCleaningTrash: boolean;
+  removeProgress: number;
 }
 
 export const useBodyState = create<BodyState>(() => ({
@@ -87,6 +89,8 @@ export const useBodyState = create<BodyState>(() => ({
   vibrancyEnabled: false,
   sidebarWidth: 220,
   inspectorWidth: 300,
+  isCleaningTrash: false,
+  removeProgress: 0,
 }));
 
 // b1-9az：彻底化 R1 首批源翻转——bodyState 20 个顶层同名字段以本 store 为唯一状态源
@@ -99,6 +103,7 @@ const MIGRATED_SCOPE_FIELDS: ReadonlyArray<keyof BodyState> = [
   'isWin11', 'isDetailMode', 'isInlineMode', 'isCommentMode', 'isGrayscaleMode',
   'isHideNavigator', 'smoothZoomDone', 'layout', 'isCropMode', 'isMaximize',
   'isHideSidebar', 'isSlideshowMode', 'vibrancyEnabled',
+  'isCleaningTrash', 'removeProgress',
 ];
 for (const fieldName of MIGRATED_SCOPE_FIELDS) {
   migrateScopeFieldToStore(

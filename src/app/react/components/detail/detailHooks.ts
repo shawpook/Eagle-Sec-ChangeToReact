@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import { ipcRenderer } from '../../global/eagleGlobals';
 import { updateZoomRatio } from '../../services/detailService';
 import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../services/mediaService';
-import { syncDetailFromScope } from '../../store/detailState';
+import { syncDetailFromScope, useDetailState } from '../../store/detailState';
+import { useBodyState } from '../../store/bodyState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryLeaveDetailMode } from '../../core/dataMachinery';
 import { onDetailClick } from '../../services/selectionService';
@@ -1016,20 +1017,27 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
 
     applyMpvTheme(bodyScope?.theme || 'dark');
 
-    const unwatchTheme = $bodyScope?.$watch('theme', function (newTheme: string, oldTheme: string) {
-      if (newTheme !== oldTheme) {
-        applyMpvTheme(newTheme);
+    // b1-9bz-C-4：$watch('theme') → bodyState 订阅（theme 已源翻转，watcher 归零）
+    let lastTheme = bodyScope?.theme;
+    const unwatchTheme = useBodyState.subscribe((state: any) => {
+      if (state.theme !== lastTheme) {
+        lastTheme = state.theme;
+        applyMpvTheme(state.theme);
       }
     });
 
     // ===== 監聽 current 變化 - 切換影片時重設為原生播放器 =====
-    const unwatchCurrent = getBodyScope()?.$watch('current.id', function (newId: string, oldId: string) {
-      if (newId !== oldId && oldId !== undefined) {
-        scopeApply(getBodyScope(), function (s) {
+    // b1-9bz-C-4：$watch('current.id') → detailState 订阅（DetailViewer 传 snapshot.current?.id）
+    let lastCurrentId: string | undefined = useDetailState.getState().snapshot.current?.id;
+    const unwatchCurrent = useDetailState.subscribe((state: any) => {
+      const id = state.snapshot.current?.id;
+      if (id !== lastCurrentId && lastCurrentId !== undefined) {
+        scopeApply(getBodyScope(), function (s: any) {
           s.useMpvPlayer = false;
           syncDetailFromScope();
         });
       }
+      lastCurrentId = id;
     });
 
     // ===== $destroy 清理 =====

@@ -1,0 +1,14 @@
+PASS pf8d-shortcuts-panel-init
+PASS pf8d-old-blocks-removed
+PASS pf8d-groups-rendered
+PASS pf8d-known-row-value
+PASS pf8d-key-capture-dataplane
+PASS pf8d-conflict-keeps-model
+PASS pf8d-conflict-auto-clear
+PASS pf8d-restore-wiring
+PASS pf8d-search-filters-groups
+PASS pf8d-search-empty-hides-restore
+PASS pf8d-search-clear-restores
+PASS screenshot-saved test-run/react-stage8d-shortcuts.png
+
+STAGE8D SMOKE OK

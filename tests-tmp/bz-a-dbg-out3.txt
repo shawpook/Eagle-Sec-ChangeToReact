@@ -1,0 +1,17 @@
+STEP boot-start
+STEP boot-done
+STEP main-ready
+STEP delay-done
+=== exceptions/errors: 4
+EXC: TypeError: ipcRenderer is not a function
+    at takeoverItemDomain (http://127.0.0.1:12001/src/app/react/core/itemDomain.ts:199:15)
+    at bridgeWhenReady (http://127.0.0.1:12001/src/app/react/main.tsx:512:5)
+    at http://127.0.0.1:12001/src/app/react/main.tsx:524:1 @ http://127.0.0.1:12001/src/app/react/core/itemDomain.ts : 198
+EXC: TypeError: n.process.listenerCount is not a function
+    at window.onerror (node:electron/js2c/renderer_init:2:33076) @ node:electron/js2c/renderer_init : 1
+CONSOLE-ERR: TypeError: Cannot read properties of undefined (reading 'number')
+    at http://127.0.0.1:12001/src/app/react/components/stage7/BatchRenameArtstationModals.tsx:831:18
+    at ngSafe (http://127.0.0.1:12001/src/app/react/components/stage7/BatchRenameArtstationModals.tsx:22:5)
+    at http://127.0.0.1:1 @ http://127.0.0.1:12001/src/app/react/components/stage7/BatchRenameArtstationModals.tsx
+CONSOLE-ERR: The tag <%s> is unrecognized in this browser. If you meant to render a React component, start its name with an uppercase letter. key @ http://127.0.0.1:12001/node_modules/.vite/deps/react-dom_client.js?v=06945208
+STATE: {"eagle":"object","eagleShim":"boolean","coreFns":"object","coreState":"object","bodyScopeKeys":16}

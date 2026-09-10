@@ -1,0 +1,33 @@
+NAME                         ROUTE      DETAIL
+cancelCrop                   MACHINERY  () => machineryCancelCrop(s);
+cropImage                    NONE       无供给 → 保留 scope 面回退
+flipImage                    TABLE_ONLY src/app/react/services/imageOpsService.ts
+flipVideo                    TABLE_ONLY src/app/react/core/controllerFns.ts
+leaveDetailMode              MACHINERY  DUAL(machinery 覆盖表) () => machineryLeaveDetailMode(s);
+maximize                     TABLE_ONLY src/app/react/core/controllerFns.ts
+nextGifFrame                 MACHINERY  (amount: any) => machineryNextGifFrame(s, amount);
+openFileWithDefault          TABLE_ONLY src/app/react/core/controllerFns.ts
+openGifContextMenu           NONE       无供给 → 保留 scope 面回退
+openItemContextMenu          TABLE_ONLY src/app/react/core/controllerFns.ts
+openPluginPanel              MACHINERY  (event: any) => machineryOpenPluginPanel(s, event);
+openRatioContextMenu         TABLE_ONLY src/app/react/services/miscMenuService.ts
+openSidebarMenu              NONE       无供给 → 保留 scope 面回退
+prevGifFrame                 MACHINERY  (amount: any) => machineryPrevGifFrame(s, amount);
+rotateImage                  TABLE_ONLY src/app/react/services/imageOpsService.ts
+rotateVideo                  TABLE_ONLY src/app/react/core/controllerFns.ts
+saveCrop                     TABLE_ONLY src/app/react/services/imageOpsService.ts
+selectNext                   MACHINERY  (event: any) => machinerySelectNext(s, event);
+selectPrev                   MACHINERY  (event: any) => machinerySelectPrev(s, event);
+toggleAll                    MACHINERY  ($event: any) => machineryToggleAll(s, $event);
+toggleCommentMode            MACHINERY  (event: any) => machineryToggleCommentMode(s, event);
+toggleGifPlay                TABLE_ONLY src/app/react/core/controllerFns.ts
+toggleGifPlayerMode          NONE       无供给 → 保留 scope 面回退
+toggleRatioContextMenu       NONE       无供给 → 保留 scope 面回退
+toggleZoom                   MACHINERY  (event: any) => machineryToggleZoom(s, event);
+zoomActual                   MACHINERY  (event: any) => machineryZoomActual(s, event);
+onDragEnterContainer         NONE       无供给 → 保留 scope 面回退
+onDragLeaveContainer         NONE       无供给 → 保留 scope 面回退
+onDragOverContainer          NONE       无供给 → 保留 scope 面回退
+onDropContainer              MACHINERY  (event: any) => machineryOnDropContainer(s, event);
+onMouseMoveContainer         NONE       无供给 → 保留 scope 面回退
+openFileListContextMenu      TABLE_ONLY src/app/react/services/miscMenuService.ts

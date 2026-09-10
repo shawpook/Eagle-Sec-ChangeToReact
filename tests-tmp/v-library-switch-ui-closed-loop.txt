@@ -1,0 +1,1 @@
+LIBRARY_SWITCH_UI_OK {"first":"C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\eagle-library-switch-ui-RIEIQh\\libraries\\Switch UI A.library","second":"C:\\Users\\ADMINI~1\\AppData\\Local\\Temp\\eagle-library-switch-ui-RIEIQh\\libraries\\Switch UI B.library"}

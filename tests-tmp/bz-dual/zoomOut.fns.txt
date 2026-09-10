@@ -1,0 +1,30 @@
+  fns["zoomOut"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function(event) {
+            event && event.preventDefault && event.preventDefault();
+            if (!s.isDetailMode) {
+                s.adjustLayoutWidth(1);
+                __lv_saveListHeight(s.imageSize.height);
+                s.checkListItemsLessThanContainer();
+            } else {
+                var ratio = Math.floor(s.imageSize.zoomRatio / 5) * 5;
+                var ratioExp = s.getRatioExp(ratio);
+                if (ratioExp <= 10) { ratioExp = 5; } else if (ratioExp <= 25) { ratioExp = 10; } else if (ratioExp <= 50) { ratioExp = 25; } else if (ratioExp <= 100) { ratioExp = 50; } else if (ratioExp <= 200) { ratioExp = 100; } else if (ratioExp <= 400) { ratioExp = 200; } else if (ratioExp <= 800) { ratioExp = 400; }
+                s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
+                s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+                s.updateZoomRatio(undefined, undefined, undefined, true);
+            }
+        }).apply(null, args);
+  };
+
+  // ── b1-9w：openItemContextMenu 点击路径缺口补端口（33 个；bundle 逐字 +
+  // 机械替换 $scope→s / $rootScope→s.$root / $bodyScope→getBodyScope()；
+  // _.throttle/_.debounce 实例语义 = 控制器期一次性创建 → __cc_* 惰性单例）──
+
+  // copyTags（bundle 30228-30234；eagle.inspector.copyTags() 无参 = 拷贝检查器 newTags）
+  let __cc_copyTags: any = null;
+
+
+  // duplicateItem（bundle 30220-30226；'duplicate-file' 通道 main 进程无 handler——bundle 时代即空放，保真）

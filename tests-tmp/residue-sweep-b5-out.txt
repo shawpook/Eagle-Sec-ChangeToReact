@@ -1,0 +1,8 @@
+SWEEP_B5_STEP {"name":"W1-mousetrap-dead-keys","outcome":"FAIL","detail":{"total":67,"dead":["0:undefined","1:undefined","2:undefined","3:undefined","4:undefined"],"aliveCount":62}}
+SWEEP_B5_STEP {"name":"W2-clicknode-event-props","outcome":"FAIL","detail":{"w2":{"clickNode":[{"btn":0,"ctrl":false,"shift":false,"type":"click","folderId":"FOLDER-T8GN2B9F"}],"openFolder":0,"multipleOpenFolder":0,"reload":0},"hash":"#!/?view=all","boxes":3,"cf":null,"selFolders":0,"err":[]}}
+SWEEP_B5_STEP {"name":"W3-toggle-all-hit-test","outcome":"PASS","detail":{"hit":{"target":"DIV.","isSelfOrChild":false},"viaCdp":0,"post":{"calls":["called"],"hide":true,"err":0},"restored":true}}
+SWEEP_B5_STEP {"name":"W4-rating-isolated","outcome":"FAIL","detail":{"before":{"name":"SweepB 3","star":0,"hasFn":"undefined"},"starAfter":null,"errNow":["Uncaught TypeError: func is not a function"]}}
+SWEEP_B5_STEP {"name":"W5-toggle-filter","outcome":"PASS","detail":{"btnCount":4,"visBefore":0,"clicked":{"btn":{"cls":"ic-btn filter-btn no-padding","r":{"x":893,"y":24,"w":24}},"visBefore":0,"visAfter":17}}}
+SWEEP_B5_ERRORS ["Uncaught TypeError: func is not a function"]
+SWEEP_B5_SUMMARY {"steps":5,"failed":3,"names":["W1-mousetrap-dead-keys:FAIL","W2-clicknode-event-props:FAIL","W3-toggle-all-hit-test:PASS","W4-rating-isolated:FAIL","W5-toggle-filter:PASS"]}
+SWEEP_B5_OK

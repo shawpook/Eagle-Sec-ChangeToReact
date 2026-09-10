@@ -1,0 +1,25 @@
+{
+  "applicationVersion": "4.0.0",
+  "folders": [
+    "FOLDER-ROOT"
+  ],
+  "smartFolders": [
+    "SMART-STAR",
+    "SMART-UI"
+  ],
+  "quickAccess": [
+    {
+      "type": "folder",
+      "id": "FOLDER-ROOT"
+    },
+    {
+      "type": "smartFolder",
+      "id": "SMART-STAR"
+    }
+  ],
+  "tagsGroups": [
+    "TAGGROUP-DESIGN",
+    "TAGGROUP-WORKFLOW"
+  ],
+  "modificationTime": 1785746345947
+}

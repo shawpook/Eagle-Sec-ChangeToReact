@@ -1,0 +1,22 @@
+  fns["gotoBottom"] = function (...args) {
+    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+            if (s.allData.length < s.options.page) {
+                var $boxContainer = $("#box-container");
+                var __lv_offset = $boxContainer[0].scrollHeight;
+                $boxContainer.scrollTop(__lv_offset);
+            }
+            else {
+                var endCursor = Math.ceil(s.allData.length / s.options.page) - 1 || 0;
+                resetNgGridLayoutData(s.allData, endCursor);
+                var $boxContainer = $("#box-container");
+                var times = [100, 400];
+                var __lv_offset = $boxContainer[0].scrollHeight;
+                for (var i = times[0]; i < times[1]; i+=100) {
+                    s.gotoBottomTimeout = setTimeout(function () { $boxContainer.scrollTop(1000000); }, i);
+                }
+            }
+        }).apply(null, args);
+  };

@@ -1,0 +1,88 @@
+{
+  "missing": [
+    {
+      "file": "src/app/react/core/filterDomain.ts",
+      "ident": "i18n",
+      "orig": "const i18n: any = (window as any).i18n;",
+      "consumers": [
+        "calculateDateFilter",
+        "calcuteContainFolders"
+      ]
+    },
+    {
+      "file": "src/app/react/core/miscDomain.ts",
+      "ident": "i18n",
+      "orig": "const i18n: any = (window as any).i18n;",
+      "consumers": [
+        "changeOrderBy"
+      ]
+    },
+    {
+      "file": "src/app/react/services/sidebarService.ts",
+      "ident": "i18n",
+      "orig": "const i18n: any = (window as any).i18n;",
+      "consumers": [
+        "changeSidebarIndex",
+        "dblclickSidebarSmartFolderGroup",
+        "getNodeClass",
+        "getQuickAccessClass",
+        "getSmartFolderClass",
+        "hoverHideSidebar"
+      ]
+    }
+  ],
+  "drift": [
+    {
+      "file": "src/app/react/core/filterDomain.ts",
+      "ident": "isInFolder",
+      "old": "export function isInFolder (__lv_image, folder) {",
+      "new": "import",
+      "consumers": [
+        "calculateDateFilter",
+        "calcuteContainFolders",
+        "closeQuickSearch",
+        "contentFilter"
+      ]
+    },
+    {
+      "file": "src/app/react/core/filterDomain.ts",
+      "ident": "updateSuggestions",
+      "old": "export function updateSuggestions() {",
+      "new": "import",
+      "consumers": [
+        "calculateDateFilter",
+        "calcuteContainFolders",
+        "closeQuickSearch",
+        "contentFilter",
+        "excludeWithFolder",
+        "filterContent"
+      ]
+    },
+    {
+      "file": "src/app/react/services/folderCoreService.ts",
+      "ident": "dialog",
+      "old": "const dialog: any = _req('')?.dialog;",
+      "new": "const dialog: any = remote?.dialog;",
+      "consumers": [
+        "getLibraryHistory",
+        "openFolder",
+        "openSmartFolder",
+        "openUnfiled",
+        "smartFolderCount",
+        "switchLibrary"
+      ]
+    },
+    {
+      "file": "src/app/react/services/imageOpsService.ts",
+      "ident": "dialog",
+      "old": "const dialog: any = _req('')?.dialog;",
+      "new": "const dialog: any = remote?.dialog;",
+      "consumers": [
+        "installImageOpsFns",
+        "flipHandler",
+        "rotateHandler",
+        "setCustomThumbnail"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "MOCK0013",
+  "name": "Register Remain",
+  "ext": "png",
+  "width": 800,
+  "height": 500,
+  "size": 11318,
+  "url": "",
+  "website": "",
+  "annotation": "注册/试用剩余天数插画。",
+  "tags": [
+    "授权",
+    "注册",
+    "UI"
+  ],
+  "folders": [
+    "FOLDER-ROOT"
+  ],
+  "star": 2,
+  "palettes": [
+    {
+      "color": [
+        248,
+        249,
+        251
+      ]
+    },
+    {
+      "color": [
+        255,
+        214,
+        102
+      ]
+    }
+  ],
+  "modificationTime": 1784629483020,
+  "lastModified": 1784629483020,
+  "noThumbnail": false,
+  "isDeleted": false,
+  "comments": []
+}

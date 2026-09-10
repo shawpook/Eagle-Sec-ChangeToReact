@@ -1,0 +1,135 @@
+var devicesMetrics = [
+// 竖屏
+	{ w: 270, h: 480 },
+	{ w: 288, h: 480 },
+	// { w: 300, h: 480 },
+	// { w: 320, h: 480 },
+	{ w: 320, h: 504 },
+	{ w: 320, h: 550 },
+	{ w: 320, h: 568 },
+	{ w: 320, h: 569 },
+	{ w: 329, h: 584 },
+	{ w: 329, h: 585 },
+	// { w: 360, h: 640 },
+	{ w: 360, h: 720 },
+	{ w: 360, h: 740 },
+	{ w: 360, h: 753 },
+	{ w: 360, h: 755 },
+	{ w: 360, h: 780 },
+	{ w: 360, h: 1112 },
+	{ w: 375, h: 667 },
+	{ w: 375, h: 612 },
+	{ w: 375, h: 603 },
+	{ w: 375, h: 812 },
+	{ w: 384, h: 640 },
+	{ w: 384, h: 667 },
+	{ w: 384, h: 667 },
+	{ w: 390, h: 844 },
+	{ w: 392, h: 696 },
+	{ w: 400, h: 533 },
+	{ w: 400, h: 692 },
+	{ w: 400, h: 711 },
+	{ w: 411, h: 731 },
+	{ w: 412, h: 732 },
+	{ w: 414, h: 736 },
+	{ w: 414, h: 896 },
+	{ w: 428, h: 926 },
+	{ w: 430, h: 932 },
+	{ w: 434, h: 640 },
+	{ w: 450, h: 800 },
+	{ w: 480, h: 853 },
+	{ w: 480, h: 854 },
+	{ w: 540, h: 1066 },
+	{ w: 680, h: 360 },
+	{ w: 720, h: 360 },
+	{ w: 768, h: 1024 },
+	{ w: 780, h: 360 },
+	{ w: 750, h: 1333 },
+    { w: 834, h: 1112 },
+// 横屏
+	{ h: 270, w: 480 },
+	{ h: 288, w: 480 },
+	// { h: 300, w: 480 },
+	// { h: 320, w: 480 },
+	{ h: 320, w: 504 },
+	{ h: 320, w: 550 },
+	{ h: 320, w: 568 },
+	{ h: 320, w: 569 },
+	{ h: 329, w: 584 },
+	{ h: 329, w: 585 },
+	// { h: 360, w: 640 },
+	{ h: 360, w: 720 },
+	{ h: 360, w: 740 },
+	{ h: 360, w: 753 },
+	{ h: 360, w: 755 },
+	{ h: 360, w: 780 },
+	{ h: 360, w: 1112 },
+	{ h: 375, w: 667 },
+	{ h: 375, w: 612 },
+	{ h: 375, w: 603 },
+	{ h: 375, w: 812 },
+	{ h: 384, w: 640 },
+	{ h: 384, w: 667 },
+	{ h: 384, w: 667 },
+	{ h: 390, w: 844 },
+	{ h: 392, w: 696 },
+	{ h: 400, w: 533 },
+	{ h: 400, w: 692 },
+	{ h: 400, w: 711 },
+	{ h: 411, w: 731 },
+	{ h: 412, w: 732 },
+	{ h: 414, w: 736 },
+	{ h: 414, w: 896 },
+	{ h: 428, w: 926 },
+	{ h: 434, w: 640 },
+	{ h: 450, w: 800 },
+	{ h: 480, w: 853 },
+	{ h: 480, w: 854 },
+	{ h: 540, w: 1066 },
+	{ h: 680, w: 360 },
+	{ h: 720, w: 360 },
+	{ h: 768, w: 1024 },
+	{ h: 780, w: 360 },
+	{ h: 750, w: 1333 },
+    { h: 834, w: 1112 },
+];
+
+function isMobileResolution(w, h) {
+	if (w === h) return false;
+	for (var i = 0; i < devicesMetrics.length; i++) {
+		var size = devicesMetrics[i];
+		var remainderW = w % size.w;
+		var remainderH = h % size.h;
+		var multipleW = w / size.w;
+		var multipleH = h / size.h;
+		if (remainderW == 0 && remainderH == 0 && multipleW === multipleH) {
+			if (w / size.w <= 3) {
+				return size.h;
+			}
+		}
+	}
+	return false;
+}
+
+function getImagePixelDensity(image) {
+	if (image && image.name) {
+		if (image.name.endsWith("@2x")) {
+			return 50;
+		}
+		else if (image.name.endsWith("@3x")) {
+			return 33.33;
+		}
+		else if (image.name.endsWith("@1.5x")) {
+			return 66.66;
+		}
+		else if (image.name.endsWith("@0.5x")) {
+			return 200;
+		}
+	}
+	return 100;
+}
+
+function isMobileWidth(w) {
+	if (w % 375 === 0 && w <= 1125) { return 375; }
+	return false;
+}

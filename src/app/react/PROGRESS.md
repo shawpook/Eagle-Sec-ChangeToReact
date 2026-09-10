@@ -1813,6 +1813,22 @@
 >   才是已导入的那个）。收敛侧明确 = machinery，单源化顺带修掉这个死调用。
 >
 > **哨兵**：`getBodyScope` 838（+3，3 个转发体各一次），基线已吸收。
+>
+> **已单源化 14 个**：`toggleSlideshow` / `focusAppUnlockPassword` / `changeSidebarIndex` /
+> `openQuickSearch` / `lastZoom` / `toggleSelectSmartFolder` / `zoom` / `zoomIn` /
+> `smartFolderCount` / `toggleAllSmartFolderExpand` / `undo` / `updateZoomRatio` /
+> `zoomFit` / `openUnfiled`。`zoom` 系（`zoom`/`zoomIn`/`zoomFit`）的 machinery 委托
+> `gridZoom*` / `detailUpdateZoomRatio`，经 diff 确认与 c3 实现**逐行等价**。
+>
+> **B 档剩余 4 个**：`contentFilter`（90 行，diff 仅 `__lv_image`→`image` 变量名，等价）、
+> `leaveDetailMode`（63 行，唯一实质差异是 initMousetrap —— c3 只调全局并 catch 忽略，
+> machinery 为 `w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s)`，更健壮）、
+> `updateFilterCounts`（106 行）、`smartZoom`（132 行）。
+>
+> **测试可靠性提示（重要）**：`main-ui-workflow-closed-loop` 的
+> `multi inspector persistence` 是**时序敏感**断言，单次结果不稳定（同一代码状态曾出现
+> 连 2 次 PASS → 1 次 FAIL → 再 PASS）。**判回归前必须先连跑 2–3 次**，否则会把抖动
+> 误判成改动的因果 —— 本批曾据此错误归因到 `zoomFit`，恢复原实现后仍失败才确认是抖动。
 > | **B6** | 改写 4 个 spy 契约，解锁 EXCLUDE 白名单 | 125 处 | 无 | stage1m1 + 全套件 |
 > | **B7** | 双键单源化（B 18 + C 21，同类作业） | 39 个 | B6 | 逐个体检 + 全套件 |
 > | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |

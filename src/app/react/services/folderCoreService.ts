@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -961,47 +961,11 @@ export function openSmartFolder(...args: any[]) {
   }
 
 export function openUnfiled(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function(ignoreHistory) {
-
-            if (s.viewMode === 'unfiled' && s.allData.length > 0 && eagle.filter.filterRules.color.value == undefined) {
-                if (s.isDetailMode) {
-                    machineryLeaveDetailMode(s);
-                }
-                return;
-            }
-
-            ScrollbarSaver.saveScrollPosition();
-            s.viewMode = 'unfiled';
-            s.$root.currentFocus = "sidebar";
-            machineryResetPage(s);
-
-            $timeout.cancel(__lv_openUnfiledTimeout);
-            __lv_openUnfiledTimeout = $timeout(function() {
-                if (!ignoreHistory) {
-                    UrlStateService.setState({ view: 'unfiled', folder: null, smartfolder: null, tag: null, color: null });
-                }
-                s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.unfiled") || 150;
-                syncToolbarFromScope();
-                syncBodyFromScope();
-                syncDetailFromScope();
-                syncInspectorFromScope();
-                s.imageSize.height = parseInt(s.imageSize.height);
-                syncToolbarFromScope();
-                syncBodyFromScope();
-                syncDetailFromScope();
-                syncInspectorFromScope();
-                __lv_setLastFolder(undefined);
-                __lv_updateListHeight(s.imageSize.height);
-                ScrollbarSaver.restoreScrollPosition();
-                $("#sidebar-item-container").scrollTop(0);
-                machineryReload(s);
-                analytics.screenView('Unfiled');
-            }, 50);
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（s.leaveDetailMode/resetPage/reload 挂载即 machinery 版）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryOpenUnfiled(s, args[0]);
+}
 
 export function smartFolderCount(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。

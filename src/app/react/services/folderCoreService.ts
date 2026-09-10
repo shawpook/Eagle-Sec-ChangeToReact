@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -1004,27 +1004,11 @@ export function openUnfiled(...args: any[]) {
   }
 
 export function smartFolderCount(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (smartFolder) {
-            if (smartFolder) {
-
-            	if (smartFolder.conditions.length === 0) return 0;
-                // console.time("计算智能文件夹图片数量");
-                var images = [];
-                images = s.raw.filter(function (__lv_image) {
-                    if (__lv_image.isDeleted) return false;
-                    return machineryExistInSmartFilter(s, smartFolder, __lv_image);
-                });
-                if (Object.keys(s.lockedImages).length > 0) {
-                    images = images.filter(s.lockImageFilter);
-                }
-                // console.timeEnd("计算智能文件夹图片数量");
-                return images.length;
-            }
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySmartFolderCount(s, args[0]);
+}
 
 export function switchLibrary(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

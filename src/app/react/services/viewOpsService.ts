@@ -9,7 +9,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoomFit, machineryZoomFitEdge } from '../core/dataMachinery';
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -309,24 +309,11 @@ export function updateZoomRatio(...args: any[]) {
   }
 
 export function zoom(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-            if (!s.isDetailMode) return;
-            if (s.lastZoomMode === "edge") {
-                if (s.current && !s.VIDEO_TYPES[s.current.ext]) {
-                    machineryZoomFitEdge(s);
-                }
-                else {
-                    machineryZoomFit(s);
-                }
-            }
-            else {
-                machinerySmartZoom(s);
-            }
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryZoom(s);
+}
 
 export function zoomFit(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
@@ -380,25 +367,11 @@ export function zoomFit(...args: any[]) {
   }
 
 export function zoomIn(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function(event) {
-            event && event.preventDefault && event.preventDefault();
-            if (!s.isDetailMode) {
-                machineryAdjustLayoutWidth(s, -1);
-                __lv_saveListHeight(s.imageSize.height);
-            } else {
-                var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
-                var ratioExp = s.getRatioExp(ratio);
-                if (ratioExp >= 400) { ratioExp = 800; } else if (ratioExp >= 200) { ratioExp = 400; } else if (ratioExp >= 100) { ratioExp = 200; } else if (ratioExp >= 50) { ratioExp = 100; } else if (ratioExp >= 25) { ratioExp = 50; } else if (ratioExp >= 10) { ratioExp = 25; } else if (ratioExp >= 5) { ratioExp = 10; } else { ratioExp = 5; }
-                if (ratioExp > 800) ratioExp = 800;
-                s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
-                s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-                machineryUpdateZoomRatio(s, undefined, undefined, undefined, true);
-            }
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryZoomIn(s, args[0]);
+}
 
 export function getNext(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

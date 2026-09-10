@@ -18,7 +18,7 @@ import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncFilterFromScope } from '../store/filterState';
-import { machineryCalcuteContainFolders } from '../core/dataMachinery';
+import { machineryCalcuteContainFolders, machineryOpenQuickSearch } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 // b1-9bz-A 收口：迁移体 contentFilter/search/searchFocus 消费的原 controllerFns 闭包符号
@@ -608,13 +608,11 @@ export function hexToRGB(...args: any[]) {
   }
 
 export function openQuickSearch(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (event) {
-            s.$root.$broadcast('OPEN_QUICK_SEARCH_MODAL');
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryOpenQuickSearch(s);
+}
 
 export function resetFilter(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

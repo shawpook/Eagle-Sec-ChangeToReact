@@ -9,7 +9,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoomFit, machineryZoomFitEdge } from '../core/dataMachinery';
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoomFit, machineryZoomFitEdge } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -88,25 +88,11 @@ export function getRatioNonExp(...args: any[]) {
   }
 
 export function lastZoom(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-            if (s.lastZoomMode === "edge") return false;
-            if (s.$root.preferences.habits.rememberLastZoom === "off") return false;
-            if (!s.current) return false;
-            if (s.isInlineMode) return false;
-            var state = s.lastItemStates[s.current.id];
-            if (state && state.data && state.data.tX !== undefined) {
-                detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
-                var ratio = parseInt(state.data.rA * 100);
-                s.imageSize.zoomRatio = s.getRatioNonExp(ratio);
-                s.imageSize.zoomRatioExp = ratio;
-                return true;
-            }
-            return false;
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryLastZoom(s);
+}
 
 export function smartZoom(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

@@ -11,7 +11,7 @@
  * 本模块是**组件侧唯一入口**（Sidebar.tsx 此前 ~30 处 scopeApply 绕道）。
  * 菜单族（openFolderContextMenu 等）归 S5 菜单竖切；DnD（onDropFolder 族）归 bh。
  */
-import { machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryToggleSelectSmartFolder, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
+import { machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryToggleSelectSmartFolder, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
@@ -525,27 +525,11 @@ export function toggleSelectSmartFolder(...args: any[]) {
 }
 
 export function toggleAllSmartFolderExpand(...args: any[]) {
-    const s2 = getScope();
-    if (!s2) return;
-    return (function (event, smartFolderArg) {
-      var smartFolder = smartFolderArg || s2.currentSmartFolder;
-      if (s2.smartFolders && s2.smartFolders.length > 0) {
-        var expand = !s2.smartFolders[0].isExpand;
-        if (smartFolder) {
-          setTimeout(function () { s2.changeSidebarIndex(smartFolder); s2.$evalAsync(); }, 100);
-          if (smartFolder.parent) {
-            var parent = s2.smartFolderMappings[smartFolder.parent];
-            if (parent) {
-              expand = !parent.isExpand;
-            }
-          }
-        }
-        if (!expand) s2.sidebarIndex = 0;
-        toggleAllSmartFolders(s2.smartFolders, expand);
-        s2.updateSidebarList();
-      }
-    }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 收敛到 machinery（c3 体调了未定义的 toggleAllSmartFolders）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryToggleAllSmartFolderExpand(s, args[0], args[1]);
+}
 
 export function openFolderExpandContextMenu(...args: any[]) {
     const s2 = getScope();

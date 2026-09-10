@@ -272,41 +272,11 @@ export function switchSquareLayout(...args: any[]) {
   }
 
 export function updateZoomRatio(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function(ratio, __lv_x, __lv_y, hasTransition) {
-            var pageX, pageY;
-
-            if (ratio) {
-                s.imageSize.zoomRatio = ratio;
-                s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-            }
-
-            if ($.isNumeric(__lv_x) && $.isNumeric(__lv_y)) {
-                pageX = __lv_x;
-                pageY = __lv_y;
-            } else {
-                pageX = $(window).width() / 2;
-                pageY = $(window).height() / 2;
-            }
-
-            if (hasTransition) {
-                clearTimeout(__lv_updateZoomRatioTimeout);
-                $("#detail-container").addClass("zooming");
-                __lv_updateZoomRatioTimeout = setTimeout(function () {
-                    $("#detail-container").removeClass("zooming");
-                }, 300);
-            }
-            
-            detailZoom()?.focusTo( {
-                zoom: s.imageSize.zoomRatioExp,
-                pageX: pageX,
-                pageY: pageY,
-                speed: 0
-            });
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（beginZoomingTransition 与 c3 的 hasTransition 分支逐行一致）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUpdateZoomRatio(s, args[0], args[1], args[2], args[3]);
+}
 
 export function zoom(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。

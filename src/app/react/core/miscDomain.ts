@@ -34,7 +34,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryMoveToFolders, machineryNewSmartFolder, machineryOpenAll, machineryPausePalette, machineryPrependFolder, machineryQuickOpenFolder, machineryRememberScrollTops, machineryRememberVideoCurrentTime, machineryResumePalette, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryMoveToFolders, machineryNewSmartFolder, machineryOpenAll, machineryPausePalette, machineryPrependFolder, machineryQuickOpenFolder, machineryRememberScrollTops, machineryRememberVideoCurrentTime, machineryResumePalette, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
@@ -1339,14 +1339,11 @@ export function toggleSmartFolderVisible(...args: any[]) {
   }
 
 export function undo(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function() {
-            s.$root.undo();
-            s.$root.closeAll();
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 收敛到 machinery（machinery 带 typeof 守卫 + cgNotifyServiceCloseAll 兜底）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUndo(s);
+}
 
 export function updateCurrentOrderAndIncrease () {
         	var orderBy;

@@ -18,7 +18,7 @@ import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncFilterFromScope } from '../store/filterState';
-import { machineryCalcuteContainFolders, machineryOpenQuickSearch } from '../core/dataMachinery';
+import { machineryCalcuteContainFolders, machineryOpenQuickSearch, machineryUpdateFilterCounts } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 // b1-9bz-A 收口：迁移体 contentFilter/search/searchFocus 消费的原 controllerFns 闭包符号
@@ -778,111 +778,12 @@ export function toggleExtFilterExclude(...args: any[]) {
   }
 
 export function updateFilterCounts(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (__lv_image, inc, __lv_now) {
-
-            if (!__lv_image) return;
-
-            try {
-
-                var type = __lv_image.medium || __lv_image.ext;
-                var shape;
-
-                if (eagle.filter.filterCounts['type'][type] === undefined) {
-                    eagle.filter.filterCounts['type'][type] = 1;
-                }
-                else {
-                    eagle.filter.filterCounts['type'][type]+=inc;
-                }
-
-                if (__lv_image.rawMetas) {
-
-                    var camera = __lv_image.rawMetas.camera;
-                    if (eagle.filter.filterCounts['camera'][camera] === undefined) {
-                        eagle.filter.filterCounts['camera'][camera] = 1;
-                        if (!eagle.filter.filterCamerasMapping[camera]) {
-                            eagle.filter.filterCamerasMapping[camera] = true;
-                            eagle.filter.filterCameras = Object.keys(eagle.filter.filterCamerasMapping);
-                            syncFilterFromScope();
-                        }
-                    }
-                    else {
-                        eagle.filter.filterCounts['camera'][camera]+=inc;
-                    }
-                }
-
-                if (__lv_image.fontMetas) {
-                    try {
-                        var key = Object.keys(__lv_image.fontMetas.postScriptName)[0];
-                        var postScriptName = __lv_image.fontMetas.postScriptName && __lv_image.fontMetas.postScriptName[key];
-                        if (installedFonts[`${postScriptName}_.${__lv_image.ext}`]) {
-                            eagle.filter.filterCounts['fontActivated']['activated']+=inc;
-                        }
-                        else {
-                            eagle.filter.filterCounts['fontActivated']['deactivated']+=inc;
-                        }
-                    }
-                    catch (err) {
-
-                    }
-                }
-
-                if (__lv_image.star) {
-                    eagle.filter.filterCounts['rating'][__lv_image.star]+=inc;
-                }
-                else {
-                    eagle.filter.filterCounts['rating']['0']+=inc;
-                }
-
-                // 形状筛选，只需要针对图片格式进行
-                if (__lv_image.width && !AUDIO_TYPES[__lv_image.ext] && !FONT_TYPES[__lv_image.ext] ) {
-                    if (__lv_image.width > __lv_image.height) {
-                        if (__lv_image.width / __lv_image.height >= 2.5) {
-                            shape = "panoramic-landscape";
-                        }
-                        else {
-                            shape = "landscape";
-                        }
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                    else if (__lv_image.width < __lv_image.height) {
-                        if (__lv_image.height / __lv_image.width >= 2.5) {
-                            shape = "panoramic-portrait";
-                        }
-                        else {
-                            shape = "portrait";
-                        }
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                    else if (__lv_image.width === __lv_image.height) {
-                        shape = "square";
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                    if (__lv_image.width / __lv_image.height === 4 / 3) {
-                        shape = "4:3";
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                    else if (__lv_image.width / __lv_image.height === 3 / 4) {
-                        shape = "3:4";
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                    else if (__lv_image.width / __lv_image.height === 16 / 9) {
-                        shape = "16:9";
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                    else if (__lv_image.width / __lv_image.height === 9 / 16) {
-                        shape = "9:16";
-                        eagle.filter.filterCounts['shape'][shape] += inc;
-                    }
-                }
-
-        	}
-        	catch (err) {
-        	}
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（diff 仅参数名 __lv_image/image
+  // 与 eagle → w.eagle）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUpdateFilterCounts(s, args[0], args[1], args[2]);
+}
 
 export function parseKeywordsWithOR(keywordStr) {
             // 先處理括號表達式

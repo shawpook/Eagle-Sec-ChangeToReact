@@ -15,6 +15,7 @@ import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
 import { machineryChangeMetaItems, machineryCurrentIndex, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
+import { saveFolderChannel } from '../global/bus';
 
 let done = false;
 
@@ -231,7 +232,7 @@ export function takeoverSelectionViewDomain(): void {
   });
 
   diag.listenersRemoved['SAVE_FOLDER'] = removeScopeListener(s0, 'SAVE_FOLDER');
-  s0.$on('SAVE_FOLDER', function (_e: any) {
+  saveFolderChannel.on(function () {
     const s: any = getBodyScope();
     if (!s) return;
     machinerySaveFolder(s);

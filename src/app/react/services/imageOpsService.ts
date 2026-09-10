@@ -28,6 +28,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
 import { flipVideo, rotateVideo } from './mediaService';
 import { uploadFiles } from './uploadService';
+import { updateInspectorChannel } from '../global/bus';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -426,7 +427,7 @@ export function updateSelection(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function() {
-            s.$broadcast("UPDATE_INSPECTOR");
+            updateInspectorChannel.emit();
         }).apply(null, args);
 }
 

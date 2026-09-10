@@ -28,7 +28,7 @@ import { addToFolders, addToLastUsedFolder, copyTags, exportSelectedAsEaglepack,
 import { newFolderWidthSelection } from './folderCoreService';
 import { activateFonts, changeFontDefaultLang, deactivateFonts, isFontActivate, renameFontsWithFullName } from './fontTagService';
 import { regenerateThumbnail, replaceFile } from './imageOpsService';
-import { addToLibraryChannel } from '../global/bus';
+import { addToLibraryChannel, webpConvertStartChannel } from '../global/bus';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -986,14 +986,14 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 visible: item.ext === 'webp',
                                 label: "PNG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert png 轉換`,
-                                click: () => { s.$root.$broadcast('WEBP_CONVERT_START', { images: s.selected, format: "png" }); s.$evalAsync(); }
+                                click: () => { s.webpConvertStartChannel.emit({ images: s.selected, format: "png" }); s.$evalAsync(); }
                             },
                             // JPG
                             {
                                 visible: item.ext === 'webp',
                                 label: "JPG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert jpg 轉換`,
-                                click: () => { s.$root.$broadcast('WEBP_CONVERT_START', { images: s.selected, format: "jpg" }); s.$evalAsync(); }
+                                click: () => { s.webpConvertStartChannel.emit({ images: s.selected, format: "jpg" }); s.$evalAsync(); }
                             },
                         ]
                     }

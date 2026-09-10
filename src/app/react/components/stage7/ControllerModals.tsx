@@ -14,6 +14,7 @@ import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { machineryToggleAll } from '../../core/dataMachinery';
 import { uploadFiles } from '../../services/uploadService';
+import { openUrlInPanelChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
@@ -440,7 +441,7 @@ export function WebsitePanel() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN_URL_IN_PANEL', (e: any, url: any) => {
+    const off = openUrlInPanelChannel.on((url: any) => {
       currentUrlRef.current = url;
       const webview = (document.querySelector('#website-panel webview') as any) || webviewRef.current;
       if (webview && String(webview.src || '').indexOf('community-') === -1) {

@@ -1,5 +1,5 @@
 import { detailZoom } from '../../core/smoothZoomEngine';
-import { contextMenuOpenChannel, refreshVideoCommentsChannel, setFolderPasswordChannel } from '../../global/bus';
+import { contextMenuOpenChannel, refreshVideoCommentsChannel, setFolderPasswordChannel, updateInspectorChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
@@ -881,7 +881,7 @@ export function bindInspectorEvents(): () => void {
   if (scope) {
     // b1-9ba：INSPECTOR_SAVE_CHANGES / PLUGIN_UNINSTALL 兩頻道全樹無發送者（原發送面在
     // bundle，摘除後死亡）——死監聽移除；UPDATE_INSPECTOR 仍有活發送面，保留。
-    const offUpdate = scope.$on('UPDATE_INSPECTOR', () => {
+    const offUpdate = updateInspectorChannel.on(() => {
       updateSelection();
     });
     offs.push(() => {

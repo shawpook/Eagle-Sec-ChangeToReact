@@ -6,6 +6,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { saveFolderChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1c-1：tagsInput + generalTagSelectPanel + AutoTaggingController 接管。
@@ -978,7 +979,7 @@ export function AutoTaggingModal() {
 
     // 有更动才需要更新
     if (needUpdateFolder || needUpdateTags) {
-      rootScope.$broadcast('SAVE_FOLDER');
+      saveFolderChannel.emit();
       rootScope.$broadcast('CALCULATE_IMAGE_BINDING');
       rootScope.$broadcast('UPDATE_SELECTION');
       try {

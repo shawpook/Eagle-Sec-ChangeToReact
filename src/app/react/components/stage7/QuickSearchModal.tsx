@@ -12,6 +12,7 @@ import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
+import { openQuickSearchModalChannel } from '../../global/bus';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -545,7 +546,7 @@ export function QuickSearchModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const offOpen = scope.$on('OPEN_QUICK_SEARCH_MODAL', () => {
+    const offOpen = openQuickSearchModalChannel.on(() => {
       const body = getBodyScope();
       if (body) body.keyword = '';
       setView((prev) => ({ ...prev, open: true, active: prev.active || 0 }));

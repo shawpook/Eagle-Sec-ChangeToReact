@@ -25,7 +25,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
-import { addToLibraryChannel, setFolderPasswordChannel } from '../global/bus';
+import { addToLibraryChannel, newSmartFolderChannel, setFolderPasswordChannel } from '../global/bus';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -1537,7 +1537,7 @@ export function newChildSmartFolder(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
-      s.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: smartFolder || s.currentSmartFolder, parent: smartFolder });
+      s.newSmartFolderChannel.emit({ smartFolder: smartFolder || s.currentSmartFolder, parent: smartFolder });
     }).apply(null, args);
 }
 

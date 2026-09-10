@@ -6,7 +6,7 @@ import { getIpc, req } from '../detail/detailHooks';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
 import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
-import { addToLibraryChannel } from '../../global/bus';
+import { addToLibraryChannel, webpConvertStartChannel } from '../../global/bus';
 
 /**
  * 阶段7d-6a：进度对话框族（第一部分）接管。
@@ -1371,7 +1371,7 @@ export function WebpConvertProgress() {
       bumpAll();
     };
 
-    const offStart = body.$on('WEBP_CONVERT_START', onStart);
+    const offStart = webpConvertStartChannel.on(onStart);
     ngSafe(() => {
       ipc && ipc.on && ipc.on('webp.converted', onConverted);
     });

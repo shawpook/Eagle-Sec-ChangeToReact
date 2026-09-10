@@ -88,6 +88,7 @@ import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
+import { inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openQuickSearchModalChannel, openUrlInPanelChannel, updateInspectorChannel } from '../global/bus';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -2849,7 +2850,7 @@ export function machineryUpdateSelection(s: any): void {
   const w = window as any;
   // shim 世界保留桥：React inspector 面板经 UPDATE_INSPECTOR 刷新（bundle 54678 版无此广播，
   // 其 UI 直接双向绑定 scope.inspector.*——适配注明）
-  s.$broadcast("UPDATE_INSPECTOR");
+  updateInspectorChannel.emit();
 
   /* bundle 54678-54826 完整版逐字（双赋值怪癖：34662 简版被本版覆盖——此前只移植了被覆盖的
      简版；inspector 字段派生（newTags/newName/newUrl/newAnnotation/folders/star/size/
@@ -5781,7 +5782,7 @@ export function machinerySetFolderCover(s: any): void {
 
 /* openQuickSearch（bundle 32512-32514 逐字） */
 export function machineryOpenQuickSearch(s: any, event: any): void {
-  s.$root.$broadcast('OPEN_QUICK_SEARCH_MODAL');
+  s.openQuickSearchModalChannel.emit();
 }
 
 /* openActionsPanel（bundle 43279-43282 逐字；eagle.action 经 window） */
@@ -5793,7 +5794,7 @@ export function machineryOpenActionsPanel(s: any, event: any): void {
    其他 controller 的 $bodyScope 委派壳） */
 export function machineryOpenInspectorTagSelectPanel(s: any): void {
   if (s.selected.length === 0) return;
-  s.$broadcast('INSPECTOR.TAG.SELECT.PANEL.OPEN');
+  inspectorTagSelectPanelOpenChannel.emit();
 }
 
 /* openInspectorFolderSelectPanel（bundle 43288-43448 逐字：FolderSelectPanel.open 参数组
@@ -6728,7 +6729,7 @@ export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
     "ja_JP": "jp"
   };
   let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
-  s.$root.$broadcast("OPEN_URL_IN_PANEL", `${baseUrl}`);
+  s.openUrlInPanelChannel.emit(`${baseUrl}`);
   w.$bodyScope.leaveDetailMode();
 }
 
@@ -9859,7 +9860,7 @@ export function machineryFocusSeach(s: any): void {
 /* newSmartFolder（bundle 39944-39946 逐字：$rootScope.$broadcast → s.$root（shim $root
    同体语义）） */
 export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): void {
-  s.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: smartFolder, parent: undefined });
+  s.newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
 }
 
 /* prependFolder（bundle 39968-39979 逐字：unshift + folderMappings 登记 + updateSidebarList

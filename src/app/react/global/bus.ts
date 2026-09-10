@@ -31,6 +31,12 @@ class EventBus {
     };
   }
 
+  /** 订阅数（诊断/测试面：与 ipc.listenerCount 对称，用于验证频道已接线）。 */
+  listenerCount(channel: string): number {
+    const set = this.channels.get(channel);
+    return set ? set.size : 0;
+  }
+
   /** 单次订阅：触发一次后自动退订。 */
   once(channel: string, handler: BusHandler): () => void {
     const off = this.on(channel, (...args) => {
@@ -101,3 +107,12 @@ export const refreshVideoCommentsChannel = defineChannel<void>('REFRESH_VIDEO_CO
 export const addToLibraryChannel = defineChannel<any>('ADD_TO_LIBRARY');
 export const openDuplicateScanPanelChannel = defineChannel<any>('OPEN_DUPLICATE_SCAN_PANEL');
 export const openDuplicateChannel = defineChannel<any>('OPEN_DUPLICATE');
+
+// ── b1-9bz-C-2 频道迁移 ──
+export const webpConvertStartChannel = defineChannel<any>('WEBP_CONVERT_START');
+export const updateInspectorChannel = defineChannel<any>('UPDATE_INSPECTOR');
+export const newSmartFolderChannel = defineChannel<any>('NEW.SMART.FOLDER');
+export const inspectorTagSelectPanelOpenChannel = defineChannel<any>('INSPECTOR.TAG.SELECT.PANEL.OPEN');
+export const saveFolderChannel = defineChannel<any>('SAVE_FOLDER');
+export const openQuickSearchModalChannel = defineChannel<any>('OPEN_QUICK_SEARCH_MODAL');
+export const openUrlInPanelChannel = defineChannel<any>('OPEN_URL_IN_PANEL');

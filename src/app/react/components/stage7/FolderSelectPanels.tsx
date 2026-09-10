@@ -11,6 +11,7 @@ import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
 import { openSmartFolder } from '../../services/folderCoreService';
+import { newSmartFolderChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
@@ -1054,7 +1055,7 @@ export function NewSmartFolderModal() {
     if (!body) return;
 
     // $scope.$on("NEW.SMART.FOLDER")（74387-74414 逐字）
-    const offNew = body.$on('NEW.SMART.FOLDER', (e: any, { smartFolder, parent }: any) => {
+    const offNew = newSmartFolderChannel.on(({ smartFolder, parent }: any) => {
       init();
       parentRef.current = undefined;
       setIsOpen(true);

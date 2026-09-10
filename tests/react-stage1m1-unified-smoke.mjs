@@ -128,11 +128,12 @@ try {
     const a1 = L && I && F && S && M;
     // b1-9o：mock 总线上同通道被 shims/组件/域多方监听（DIAG 实测 app-status-loading=4、
     // image.changed=2、jieba-extract-done=2）——接线契约用 ≥1；REBIND_REFRESH /
-    // UPDATE_SELECTION / SAVE_FOLDER 是 $on 作用域广播（__bus），不是 ipc 通道。
+    // UPDATE_SELECTION 是 $on 作用域广播（__bus），不是 ipc 通道；SAVE_FOLDER 已于 b1-9bz-C-2
+    // 迁到 eagleBus，故改查 window.__eagleBus.listenerCount。
     const a2 = L.takenOver === true && lc('app-status-loading') >= 1 && lc('app-status-library-loaded') >= 1 && lc('preload-library') >= 1;
     const a3 = I.takenOver === true && lc('image.added') >= 1 && lc('image.changed') >= 1 && lc('file-uploaded') >= 1 && lc('thumbnail-generated') >= 1;
     const a4 = F.takenOver === true && lc('keyword-suggestion') >= 1 && lc('show-and-search') >= 1 && (s.__bus['REBIND_REFRESH'] || []).length >= 1;
-    const a5 = S.takenOver === true && (s.__bus['UPDATE_SELECTION'] || []).length >= 1 && (s.__bus['SAVE_FOLDER'] || []).length >= 1;
+    const a5 = S.takenOver === true && (s.__bus['UPDATE_SELECTION'] || []).length >= 1 && window.__eagleBus.listenerCount('SAVE_FOLDER') >= 1;
     const a6 = M.takenOver === true && lc('before-quit') >= 1 && lc('window.maximize') >= 1 && lc('change.current.theme') >= 1 && lc('jieba-extract-done') >= 1;
     // b1-9bi：12 个 eagle.filter 字符串 watcher 退役为 filterService 订阅——契约 = scope 零 watcher + 订阅在
     const a7 = filterMinTotal === 0 && F.ruleSubscribed === true;

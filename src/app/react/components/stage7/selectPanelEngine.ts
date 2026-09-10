@@ -1,6 +1,6 @@
 import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
-import { contextMenuOpenChannel } from '../../global/bus';
+import { contextMenuOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { createFolder } from '../../services/folderCoreService';
 
@@ -506,7 +506,7 @@ export class TagSelectPanel extends SelectPanel {
   static open(params: any) {
     const rootScope = (window as any).angular?.element('html')?.scope?.();
     if (rootScope) {
-      rootScope.$broadcast('INSPECTOR.TAG.SELECT.PANEL.OPEN', params);
+      inspectorTagSelectPanelOpenChannel.emit(params);
     }
   }
 

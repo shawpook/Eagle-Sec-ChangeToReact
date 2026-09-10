@@ -8,6 +8,7 @@ import { TagSelectPanel } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVsGridRepeat, themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
+import { inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 
 /**
  * 阶段7d-3a：inspectorTagSelectPanel 指令接管（bundle 57911-58122 + inspector-tag-select-panel.html）。
@@ -173,7 +174,7 @@ export function InspectorTagSelectPanel() {
       offs.push(offSelected);
 
       // $on('INSPECTOR.TAG.SELECT.PANEL.OPEN')（57945-57982 逐字）
-      const offOpen = body.$on('INSPECTOR.TAG.SELECT.PANEL.OPEN', (event: any, params: any) => {
+      const offOpen = inspectorTagSelectPanelOpenChannel.on((params: any) => {
         void params;
         body.TagManager.getSuggestTags(body.selected);
         const originSelected = (window as any).eagle.inspector.newTags.reduce(

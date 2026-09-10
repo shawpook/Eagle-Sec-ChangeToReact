@@ -7,6 +7,7 @@
  */
 
 import { mouseState } from './controller';
+import { notifyController } from './controller';
 
 const $: any = (...args: any[]) => (window as any).jQuery(...args);
 
@@ -271,40 +272,40 @@ export class SelectPanel {
       onChange: () => {
         this.listData.searchKeyword = this.searchInput.$input.val();
         this.keywordChanged();
-        this.scope.$evalAsync();
+        notifyController();
       },
       onEnterKey: (event: any) => {
         const item = this.listData?.items?.[this.listData.currentIndex];
         this.openItem(event, item);
-        this.scope.$evalAsync();
+        notifyController();
       },
       onEscKey: () => {
         this.close();
-        this.scope.$evalAsync();
+        notifyController();
       },
       onTabKey: (event: any) => {
         this.onTabKey(event);
-        this.scope.$evalAsync();
+        notifyController();
       },
       onUpKey: (event: any) => {
         this.selectUp(event);
-        this.scope.$evalAsync();
+        notifyController();
       },
       onDownKey: (event: any) => {
         this.selectDown(event);
-        this.scope.$evalAsync();
+        notifyController();
       },
       onLeftKey: (event: any) => {
         this.selectLeft(event);
-        this.scope.$evalAsync();
+        notifyController();
       },
       onRightKey: (event: any) => {
         this.selectRight(event);
-        this.scope.$evalAsync();
+        notifyController();
       },
       onPaste: (event: any) => {
         this.onPaste(event);
-        this.scope.$evalAsync();
+        notifyController();
       },
     });
   }

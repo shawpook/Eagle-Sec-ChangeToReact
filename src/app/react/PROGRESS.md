@@ -1833,8 +1833,20 @@
 > 后的转发体不再触发它；虽然 `__lv_*` 变量事后已无引用，但不排除有未静态可见的
 > 依赖）。若后续要做，需先定位这条链路。
 >
-> **C 档 21 个（install 家族注册）未开始** —— 与 B 档是同类作业（两份体比对），
-> 只是注册位置在 `installXXXFns(fns, getScope)` 体内。
+> **C 档 21 个完成 13 个**：`currentIndex` / `getSelectedTags` / `newSmartFolder` /
+> `prependFolder` / `getSelectedItemElements` / `batchRenameFolders` /
+> `batchRenameSmartFolders` / `renameFolder` / `renameSmartFolder` / `setFolderOrder` /
+> `setSmartFolderOrder` / `checkOperationSafety2` / `changeStar`。
+>
+> **C 档剩余 7 个**：
+> - `updateItemView`（222 行，22 段 diff）/ `calculateImageBinding`（292 行）——
+>   体量大，且本批两个大函数（`contentFilter`/`leaveDetailMode`）都踩了回归，**暂缓**；
+> - `refreshSubfolderList` —— machinery 版**缺 `if (s.subFolderSortableOptions)` 守卫**
+>   （c3 更健壮），暂缓；
+> - `removeFolder` / `removeSelectedFolders` / `removeSmartFolder` /
+>   `removeSelectedSmartFolders` —— 以**匿名闭包**形式注册
+>   （`fns["X"] = function (...args) {...}`），需先用 lift-all 提升为具名导出再单源化；
+> - `updateSelection` —— 在 EXCLUDE 白名单内（测试 spy 契约），不可单源化。
 >
 > **测试可靠性提示（重要）**：`main-ui-workflow-closed-loop` 的
 > `multi inspector persistence` 是**时序敏感**断言，单次结果不稳定（同一代码状态曾出现

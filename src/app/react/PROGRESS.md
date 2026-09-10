@@ -1713,13 +1713,18 @@
 >
 > | 档 | 个数 | 形态 | 单源化风险 |
 > |---|---|---|---|
-> | **A 转发面** | 15 | c3 落点体内含打 machinery 的调用；其中 4 个是纯同名转发（`updateSidebarList` 4 行 / `updateZoomRatio` 141 行 / `zoom` 104 行 / `smartZoom` 318 行） | 纯转发的 4 个**零风险**（表项本就是 machinery 的转发）；其余 11 个是「调别的 machinery」的独立体，需逐个看 |
-> | **B 独立移植体** | 4 | `toggleAllSmartFolderExpand` 71 行 / `toggleSelectSmartFolder` 82 行（sidebarService）、`undo` 180 行（miscDomain）、`updateFilterCounts` 265 行（filterDomain） | **高风险**：与 machinery 版是两份独立实现，必须逐行比对后决定收敛侧 |
+> | **A 纯转发** | **1** | `updateSidebarList`：4 行，`getBodyScope()` + `machineryUpdateSidebarList(s)` | **已等价于单源**（表项本就是 machinery 转发），无需作业 |
+> | **B 独立移植体** | 18 | c3 落点是独立实现，8–132 行。短体：`undo` 9 / `toggleSelectSmartFolder` 10 / `toggleSlideshow` 12 / `focusAppUnlockPassword` 15 / `changeSidebarIndex` 17；长体：`smartZoom` 132 / `updateFilterCounts` 106 / `contentFilter` 90 / `leaveDetailMode` 63 | **高风险**：与 machinery 版是两份独立实现，必须逐个体检后决定收敛侧 |
 > | **C install 注册** | 21 | 在 `installXXXFns(fns, getScope)` 家族体内注册（folderMenu / imageOps 等），**不在** controllerFns.ts 直接出现 | 拆除面覆盖 install 家族 + fns 表 + shimFnsBridge + 测试契约，是一条完整链路 |
 >
-> **结论**：双键单源化不能按「逐函数比对 43 个」一把梭 —— A/B/C 三条路径的作业方式与
-> 风险完全不同，必须拆成独立批次：① A 档 4 个纯转发先摘（零风险）；② C 档先厘清 install
-> 家族与 shimFnsBridge 的耦合；③ B 档 4 个大函数是最后的人工比对作业。
+> **v1 分类的两个误判（已修正，勿重蹈）**：① 函数体提取用 `^}` 截断导致行数失真
+> （`smartZoom` 318 行实为 132 行）；② 同名转发用子串匹配，把 `machineryZoomFit(`
+> 误判成 `machineryZoom(`，**凭空多出 3 个"纯转发"**。现用括号配对 + `\bmachineryXxx\s*\(`
+> 精确匹配。
+>
+> **结论**：双键单源化**没有任何零风险可摘的部分** —— A 档那 1 个已等价单源，剩下
+> **39 个全部需要逐个体检**。建议顺序：① B 档 5 个短体（9–17 行，体检成本最低）；
+> ② C 档 21 个先厘清 install 家族与 shimFnsBridge 的耦合；③ B 档 4 个长体最后人工比对。
 >
 > 在此之前 **shimFnsBridge / `__eagleCoreFns` 摘除不具备条件**：EXCLUDE 白名单 7 名的调用
 > 仍走 scope 面，bundle 缺席时需要 fns 表补缺口；且 `stage1c3` 契约抽查的 41 个名字里含

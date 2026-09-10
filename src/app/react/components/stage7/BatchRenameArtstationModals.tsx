@@ -15,6 +15,7 @@ import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openFolder } from '../../services/folderCoreService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
+import { openRenameChannel } from '../../global/bus';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -1568,7 +1569,7 @@ export function BatchRenameModal() {
     const body = getBodyScope();
     if (!body) return;
 
-    const off = body.$on('OPEN_RENAME', (e: any, params: any) => {
+    const off = openRenameChannel.on((params: any) => {
       ngSafe(() => {
       typeRef.current = params.type;
       switch (typeRef.current) {

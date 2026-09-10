@@ -9,7 +9,7 @@
  * - openWithApplicationPath：bundleGlobals 若缺的等价兜底（正常路径 window 供给）
  */
 // @ts-nocheck
-import { contextMenuOpenChannel, contextMenuCloseChannel } from '../global/bus';
+import { contextMenuCloseChannel, contextMenuOpenChannel, openRenameChannel } from '../global/bus';
 import { getBodyScope } from './appCore';
 
 // URL_MODULE（bundle 顶层 const；fileUrlHelper.ts 同款惰性解析）
@@ -40,7 +40,7 @@ export function renameImages() {
   const s: any = getBodyScope();
   if (!s) return;
   if (s.selected.length > 1) {
-    s.$root.$broadcast('OPEN_RENAME', {
+    s.openRenameChannel.emit({
       type: 'IMAGE',
       images: s.selected,
     });

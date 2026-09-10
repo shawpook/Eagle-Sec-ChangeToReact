@@ -18,6 +18,7 @@ import { machineryRebindRefresh } from '../../core/dataMachinery';
 import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
+import { setFolderPasswordChannel } from '../../global/bus';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -629,7 +630,7 @@ export function FolderPasswordModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('SET-FOLDER-PASSWORD', (e: any, params: any) => {
+    const off = setFolderPasswordChannel.on((params: any) => {
       setFolder(params.folder);
       setMode(params.mode);
       setOpen(true);

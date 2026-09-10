@@ -88,6 +88,7 @@ import { getRatioExp } from '../services/viewOpsService';
 import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
+import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -4245,7 +4246,7 @@ export function machinerySelectNext(s: any, event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (s.isCropMode) {
-    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 1, vertical: 0 });
+    s.moveCropToolChannel.emit({ horizontal: 1, vertical: 0 });
     return;
   }
 
@@ -4306,7 +4307,7 @@ export function machinerySelectPrev(s: any, event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (s.isCropMode) {
-    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: -1, vertical: 0 });
+    s.moveCropToolChannel.emit({ horizontal: -1, vertical: 0 });
     return;
   }
 
@@ -4375,7 +4376,7 @@ export function machinerySelectPrev(s: any, event: any): void {
 /* multipleSelectUp（bundle 35898-35906 逐字：ListLayout 委派 multipleSelectPrev） */
 export function machineryMultipleSelectUp(s: any, event: any): void {
   if (s.isCropMode) {
-    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: -10 });
+    s.moveCropToolChannel.emit({ horizontal: 0, vertical: -10 });
     return;
   }
   if (s.layout === "ListLayout") {
@@ -4386,7 +4387,7 @@ export function machineryMultipleSelectUp(s: any, event: any): void {
 /* multipleSelectDown（bundle 35964-35972 逐字：ListLayout 委派 multipleSelectNext） */
 export function machineryMultipleSelectDown(s: any, event: any): void {
   if (s.isCropMode) {
-    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: 10 });
+    s.moveCropToolChannel.emit({ horizontal: 0, vertical: 10 });
     return;
   }
   if (s.layout === "ListLayout") {
@@ -4399,7 +4400,7 @@ export function machineryMultipleSelectDown(s: any, event: any): void {
 export function machineryMultipleSelectNext(s: any, event: any): void {
   if (s.$root.currentFocus == 'sidebar') return;
   if (s.isCropMode) {
-    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 10, vertical: 0 });
+    s.moveCropToolChannel.emit({ horizontal: 10, vertical: 0 });
     return;
   }
   if (s.isDetailMode) return;
@@ -4430,7 +4431,7 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
 export function machineryMultipleSelectPrev(s: any, event: any): void {
   if (s.$root.currentFocus == 'sidebar') return;
   if (s.isCropMode) {
-    s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: -10, vertical: 0 });
+    s.moveCropToolChannel.emit({ horizontal: -10, vertical: 0 });
     return;
   }
   if (s.isDetailMode) return;
@@ -4917,7 +4918,7 @@ export function machineryKeyRightHandler(s: any, event: any): void {
 export function machineryModUpHandler(s: any, event: any): void {
   if (s.isCropMode) {
     event && event.preventDefault();
-    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+    s.resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: -1
     });
@@ -4931,7 +4932,7 @@ export function machineryModUpHandler(s: any, event: any): void {
 export function machineryModDownHandler(s: any, event: any): void {
   if (s.isCropMode) {
     event && event.preventDefault();
-    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+    s.resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: 1
     });
@@ -4946,7 +4947,7 @@ export function machineryModLeftHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isDetailMode) {
     if (s.isCropMode) {
-      s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      s.resizeCropToolChannel.emit({
         horizontal: -1,
         vertical: 0
       });
@@ -4962,7 +4963,7 @@ export function machineryModRightHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isDetailMode) {
     if (s.isCropMode) {
-      s.$root.$broadcast("RESIZE-CROP-TOOL", {
+      s.resizeCropToolChannel.emit({
         horizontal: 1,
         vertical: 0
       });
@@ -4977,7 +4978,7 @@ export function machineryModRightHandler(s: any, event: any): void {
 export function machineryModShiftUpHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+    s.resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: -10
     });
@@ -4988,7 +4989,7 @@ export function machineryModShiftUpHandler(s: any, event: any): void {
 export function machineryModShiftDownHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+    s.resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: 10
     });
@@ -4999,7 +5000,7 @@ export function machineryModShiftDownHandler(s: any, event: any): void {
 export function machineryModShiftLeftHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+    s.resizeCropToolChannel.emit({
       horizontal: -10,
       vertical: 0
     });
@@ -5010,7 +5011,7 @@ export function machineryModShiftLeftHandler(s: any, event: any): void {
 export function machineryModShiftRightHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (s.isCropMode) {
-    s.$root.$broadcast("RESIZE-CROP-TOOL", {
+    s.resizeCropToolChannel.emit({
       horizontal: 10,
       vertical: 0
     });
@@ -5127,7 +5128,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
   if (s.$root.currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
-        s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: -1 });
+        s.moveCropToolChannel.emit({ horizontal: 0, vertical: -1 });
         return;
       }
       else {
@@ -5249,7 +5250,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
   if (s.$root.currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
-        s.$root.$broadcast("MOVE-CROP-TOOL", { horizontal: 0, vertical: 1 });
+        s.moveCropToolChannel.emit({ horizontal: 0, vertical: 1 });
         return;
       }
       else {
@@ -10168,7 +10169,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
 export function machineryRenameImages(s: any): void {
   const w = window as any;
   if (s.selected.length > 1) {
-    s.$root.$broadcast("OPEN_RENAME", {
+    s.openRenameChannel.emit({
       type: "IMAGE",
       images: s.selected
     });
@@ -10189,7 +10190,7 @@ export function machineryBatchRenameFolders(s: any): void {
   var selectedFolders = s.$root.selectedFolders;
   if (selectedFolders.length === 0) return;
 
-  s.$root.$broadcast("OPEN_RENAME", {
+  s.openRenameChannel.emit({
     type: "FOLDER",
     folders: selectedFolders
   });
@@ -10199,7 +10200,7 @@ export function machineryBatchRenameSmartFolders(s: any): void {
   var selectedSmartFolders = s.$root.selectedSmartFolders;
   if (selectedSmartFolders.length === 0) return;
 
-  s.$root.$broadcast("OPEN_RENAME", {
+  s.openRenameChannel.emit({
     type: "SMART_FOLDER",
     folders: selectedSmartFolders
   });
@@ -10462,7 +10463,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
           return !!s.selectedTags[tag.name];
         });
 
-        s.$root.$broadcast("OPEN_RENAME", {
+        s.openRenameChannel.emit({
           type: "TAGS",
           tags: selectedTags.slice()
         });

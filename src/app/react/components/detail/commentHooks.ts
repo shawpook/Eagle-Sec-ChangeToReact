@@ -6,6 +6,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
 import { getRawPath } from '../../core/itemDomain';
+import { moveCropToolChannel, resizeCropToolChannel } from '../../global/bus';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -581,11 +582,11 @@ export function useCropImage(
     applyZoom(zoomRatio);
 
     // MOVE-CROP-TOOL / RESIZE-CROP-TOOL
-    const offMove = getBodyScope()?.$on('MOVE-CROP-TOOL', function (event: any, params: any) {
+    const offMove = moveCropToolChannel.on(function (params: any) {
       if (!params) return;
       moveCropper(params.horizontal, params.vertical);
     });
-    const offResize = getBodyScope()?.$on('RESIZE-CROP-TOOL', function (event: any, params: any) {
+    const offResize = resizeCropToolChannel.on(function (params: any) {
       if (!params) return;
       resizeCropper(params.horizontal, params.vertical);
     });

@@ -1,5 +1,5 @@
 import { detailZoom } from '../../core/smoothZoomEngine';
-import { contextMenuOpenChannel } from '../../global/bus';
+import { contextMenuOpenChannel, setFolderPasswordChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
@@ -466,17 +466,17 @@ export function newUrlKeyup(event: any) {
 
 export function setFolderPassword(folder: any) {
   if (!folder) return;
-  getRootScope()?.$broadcast('SET-FOLDER-PASSWORD', { folder: folder, mode: 'new' });
+  setFolderPasswordChannel.emit({ folder: folder, mode: 'new' });
 }
 
 export function changeFolderPassword(folder: any) {
   if (!folder) return;
-  getRootScope()?.$broadcast('SET-FOLDER-PASSWORD', { folder: folder, mode: 'change' });
+  setFolderPasswordChannel.emit({ folder: folder, mode: 'change' });
 }
 
 export function resetFolderPassword(folder: any) {
   if (!folder) return;
-  getRootScope()?.$broadcast('SET-FOLDER-PASSWORD', { folder: folder, mode: 'reset' });
+  setFolderPasswordChannel.emit({ folder: folder, mode: 'reset' });
 }
 
 export function rgbToHex(r: number, g: number, b: number): string | false {

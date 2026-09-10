@@ -86,3 +86,12 @@ export function defineChannel<P = void>(name: string) {
 // （items/width/showSearch/persistents/onOpened/onClosed…）；CLOSE 无载荷。
 export const contextMenuOpenChannel = defineChannel<any>('CONTEXTMENU.OPEN');
 export const contextMenuCloseChannel = defineChannel<void>('CONTEXTMENU.CLOSE');
+
+// ── b1-9bz-C-2：裁剪工具 / 文件夹密码 / 批量重命名的频道迁移 ──
+// 载荷沿用原广播：MOVE/RESIZE-CROP-TOOL = { horizontal, vertical }；
+// SET-FOLDER-PASSWORD = { folder, mode: 'new' | 'change' | 'reset' }；
+// OPEN_RENAME = { type, images, ... }（原 $on 的 params）。
+export const moveCropToolChannel = defineChannel<any>('MOVE-CROP-TOOL');
+export const resizeCropToolChannel = defineChannel<any>('RESIZE-CROP-TOOL');
+export const setFolderPasswordChannel = defineChannel<any>('SET-FOLDER-PASSWORD');
+export const openRenameChannel = defineChannel<any>('OPEN_RENAME');

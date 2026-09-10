@@ -25,6 +25,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
+import { setFolderPasswordChannel } from '../global/bus';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -134,7 +135,7 @@ export function setFolderPassword(...args: any[]) {
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
-      s.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: f, mode: 'new' });
+      s.setFolderPasswordChannel.emit({ folder: f, mode: 'new' });
     }).apply(null, args);
 }
 
@@ -144,7 +145,7 @@ export function changeFolderPassword(...args: any[]) {
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
-      s.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: f, mode: 'change' });
+      s.setFolderPasswordChannel.emit({ folder: f, mode: 'change' });
     }).apply(null, args);
 }
 
@@ -154,7 +155,7 @@ export function resetFolderPassword(...args: any[]) {
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
-      s.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: f, mode: 'reset' });
+      s.setFolderPasswordChannel.emit({ folder: f, mode: 'reset' });
     }).apply(null, args);
 }
 

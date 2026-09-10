@@ -1759,6 +1759,26 @@
 > | 批次 | 内容 | 处/个 | 依赖 | 验收 |
 > |---|---|---|---|---|
 > | **B5** | dataMachinery 定义侧直调化 | 372 处 | 无 | esbuild 0 错 + 全套件 55/55 |
+>
+> **B5 首轮实测：失败，已回退（负面结果，务必先读）**。「形参 s 恒等于 bodyScope」的静态
+> 验证成立（`hooks.ts:63` 传 `getBodyScope`、各 domain 内 `const getScope = getBodyScope`、
+> `shimFnsBridge` 传 shim 代理），据此放开定义侧改造 334 处后 —— esbuild / import / 遮蔽
+> / export 四项校验**全部通过**，但 `react-stage-smoke` 挂在
+> `types filter opens exclusively`。
+>
+> 定位过程（工具 `tests-tmp/bz-b-diagF.mjs`，带 fixture 复现）：
+> - `types .open` = true、`openCount` = 1 —— 互斥逻辑正常；失败真因是 **`.check-item` = 0**
+>   （渲染条件为 `snapshot.counts.type[typeItem] > 0`）；
+> - 根因是 **`s.allData.length = 0`**（对照 B4 基线 = 2）→ counts 无从计算；
+> - **关键判别**：页面内手动 `s.$apply(() => s.rebindRefresh())` 后 `allData` 立刻变 2 ——
+>   **函数本身完好，是自动触发链没有跑**；
+> - 挂载块只被改到 2 处且均等价（`s.updateSidebarList()` → `machineryUpdateSidebarList(s)`
+>   等），不是挂载块的问题。
+>
+> **结论**：定义侧 372 处**不能机械改造**——静态可证的「s 等价」不足以保证行为不变，
+> 必定还有依赖 `s.xxx()` **经 scope 派发**这一事实的环节（典型如 $watch 触发链、
+> 或 bundle 侧同名方法在 scope 面上的覆盖）。若要做，必须改为「逐函数改造 + 单测」
+> 而非批量。**B5 暂缓，本批保留 B4 状态。**
 > | **B6** | 改写 4 个 spy 契约，解锁 EXCLUDE 白名单 | 125 处 | 无 | stage1m1 + 全套件 |
 > | **B7** | 双键单源化（B 18 + C 21，同类作业） | 39 个 | B6 | 逐个体检 + 全套件 |
 > | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |

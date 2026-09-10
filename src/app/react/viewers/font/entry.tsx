@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { fontI18nStrings, fontTranslation, buildAlphabetHTML } from './fontContent';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 // HTML 内联 throttle 逐字（滚轮缩放用）
 function throttle(fn: any, delay: number, immediate: boolean, isDebounce: boolean) {
@@ -96,11 +97,11 @@ function FontViewer() {
 
   const parentCall = (fn: string, ...args: any[]) => {
     if ($parentScope && typeof $parentScope[fn] === 'function') $parentScope[fn](...args);
-    if ($parentScope && typeof $parentScope.$evalAsync === 'function') $parentScope.$evalAsync();
+    if ($parentScope && typeof $parentScope.$evalAsync === 'function') scopeEvalAsync();
   };
   // 原实现 `$parentScope.$eavlAsync()`（拼写 bug no-op）——语义为触发 parent 刷新
   const parentEval = () => {
-    if ($parentScope && typeof $parentScope.$evalAsync === 'function') $parentScope.$evalAsync();
+    if ($parentScope && typeof $parentScope.$evalAsync === 'function') scopeEvalAsync();
   };
 
   const applyZoom = (next: number) => {

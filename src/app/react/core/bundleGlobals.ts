@@ -29,6 +29,7 @@ import { installArtstation } from './artstation';
 import { installFlatpickr } from './flatpickrLite';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 declare const Buffer: any;
 
@@ -414,7 +415,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
           bs.$broadcast("gl:removeItems", hiddenElements);
           if (bs.currentSmartFolder) {
             bs.currentSmartFolder.imageCount = bs.smartFolderCount(bs.currentSmartFolder);
-            bs.$evalAsync();
+            scopeEvalAsync();
           }
         }
       }
@@ -961,7 +962,7 @@ function _buildSlowNotify(): any {
     show: function () {
       const bodyScope = getBodyScope();
       bodyScope.showSlowNotify = true;
-      bodyScope.$evalAsync(function () {
+      scopeEvalAsync(function () {
         setTimeout(function () {
           w.$("#library-warning").addClass("show active");
           setTimeout(function () {

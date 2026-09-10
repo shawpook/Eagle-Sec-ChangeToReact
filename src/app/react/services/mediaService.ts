@@ -3,6 +3,7 @@ import { machineryCalcRotateDegree, machineryEnterSlideshowMode, machineryGetVid
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 import { refreshVideoCommentsChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -69,7 +70,7 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
     })
     refreshVideoCommentsChannel.emit();
     machineryUpdateItemView(s, video);
-    s.$evalAsync();
+    scopeEvalAsync();
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
     ipc.send('image-change', s.current);
@@ -290,13 +291,13 @@ export function toggleGifPlay(...args: any[]) {
                     s.gifPlayer.pause();
                     s.gifViewer.playing = false;
                     syncDetailFromScope();
-                    s.$evalAsync();
+                    scopeEvalAsync();
                 }
                 else {
                     s.gifPlayer.play();
                     s.gifViewer.playing = true;
                     syncDetailFromScope();
-                    s.$evalAsync();
+                    scopeEvalAsync();
                 }
                 $(".gif-viewer").css("opacity", 0.8);
                 setTimeout(function () {

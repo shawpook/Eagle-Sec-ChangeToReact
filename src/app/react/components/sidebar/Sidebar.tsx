@@ -12,6 +12,7 @@ import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder,
 import { newFolder } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
+import { scopeEvalAsync } from '../../global/scopeShim';
 /**
  * 阶段2：侧栏接管。
  *
@@ -238,7 +239,7 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
           const impl = typeof fnEntry === 'function' ? fnEntry : bodyScope[fnEntry];
           if (typeof impl !== 'function') return;
           impl(dragged, target, ...(asSiblingBelow ? [true] : []));
-          bodyScope.$evalAsync();
+          scopeEvalAsync();
         }
       };
       zone.addEventListener('dragover', onOver);

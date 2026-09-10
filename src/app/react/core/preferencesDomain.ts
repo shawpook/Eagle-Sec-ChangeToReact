@@ -13,6 +13,7 @@
 import { amputateChannel, getBodyScope } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { refreshTouchID } from '../store/lockState';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 function checkCanUseTouchID(): boolean {
   try {
@@ -45,7 +46,7 @@ export function takeoverPreferencesDomain(): void {
       const s = getBodyScope();
       if (s) {
         s.canUseTouchID = checkCanUseTouchID();
-        if (typeof s.$evalAsync === 'function') s.$evalAsync();
+        if (typeof s.$evalAsync === 'function') scopeEvalAsync();
       }
       refreshTouchID();
     });

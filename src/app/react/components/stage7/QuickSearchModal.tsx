@@ -13,6 +13,7 @@ import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
 import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -606,7 +607,7 @@ export function QuickSearchModal() {
       setTimeout(() => {
         scopeApply(getBodyScope(), (s: any) => {
           machineryChangeSidebarIndex(s, target);
-          if (typeof s.$evalAsync === 'function') s.$evalAsync();
+          if (typeof s.$evalAsync === 'function') scopeEvalAsync();
         });
       }, 200);
     } else if (mode === 'TAGS') {
@@ -628,7 +629,7 @@ export function QuickSearchModal() {
       setTimeout(() => {
         scopeApply(getBodyScope(), (s: any) => {
           machineryChangeSidebarIndex(s, target);
-          if (typeof s.$evalAsync === 'function') s.$evalAsync();
+          if (typeof s.$evalAsync === 'function') scopeEvalAsync();
         });
       }, 200);
     }

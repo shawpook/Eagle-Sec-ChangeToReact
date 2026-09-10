@@ -21,6 +21,7 @@ import { getBodyScope } from './appCore';
 import { toggleGifPlay } from '../services/mediaService';
 import { getLibraryHistory } from '../services/folderCoreService';
 import { addToLibraryChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -359,7 +360,7 @@ export function machineryBuildTagManager(s: any): any {
 			}
 			else {
 				TagManager.removeTag(tag);
-				s.$evalAsync();
+				scopeEvalAsync();
 			}
 
             if (!TagManager.historyTags) TagManager.historyTags = [];
@@ -540,7 +541,7 @@ export function machineryBuildTagManager(s: any): any {
                 w.electronLog.info(`[app] Empty history tags: ${JSON.stringify(TagManager.historyTags)}`);
                 TagManager.historyTags = [];
                 s.availableHistoryTags = [];
-                s.$evalAsync();
+                scopeEvalAsync();
                 TagManager.save();
             });
         };
@@ -1584,7 +1585,7 @@ export function machineryBuildTagManager(s: any): any {
                                 library: history
                             });
 
-                            s.$evalAsync();
+                            scopeEvalAsync();
                         }
                     }
                 }
@@ -1599,7 +1600,7 @@ export function machineryBuildTagManager(s: any): any {
                         icon: 'ic-tag-filter.svg',
                         click: () => {
                             TagManager.filterWithTags(tagGroup.tags, false);
-                            s.$evalAsync();
+                            scopeEvalAsync();
                         }
                     },
                     { role: 'separator' },
@@ -1611,7 +1612,7 @@ export function machineryBuildTagManager(s: any): any {
                         accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${process.platform}`],
                         click: () => {
                             machineryRenameTagGroup(s, tagGroup);
-                            s.$evalAsync();
+                            scopeEvalAsync();
                         }
                     },
                     // 刪除群組
@@ -1622,7 +1623,7 @@ export function machineryBuildTagManager(s: any): any {
                         accelerator: (process.platform === 'win32')? 'Del' : '⌘+⌫',
                         click: () => {
                             machineryRemoveTagGroup(s, tagGroup);
-                            s.$evalAsync();
+                            scopeEvalAsync();
                         }
                     },
                     // 添加至其它資源庫
@@ -1639,7 +1640,7 @@ export function machineryBuildTagManager(s: any): any {
                         role: 'color',
                         click: ( color: any) => {
                             s.changeTagGroupColor(event, tagGroup, color);
-                            s.$evalAsync();
+                            scopeEvalAsync();
                         }
                     }
                 ],
@@ -1727,12 +1728,12 @@ export function machineryBuildTagManager(s: any): any {
                     cancelButtonText: w.i18n.__("general.cancel"),
                 }).then(function () {
                     remove(group);
-                    s.$evalAsync();
+                    scopeEvalAsync();
                 });
             }
             else {
                 remove(group);
-                s.$evalAsync();
+                scopeEvalAsync();
             }
         };
 
@@ -1842,7 +1843,7 @@ export function machineryBuildTagManager(s: any): any {
                 catch (err: any) {}
                 return 0;
             });
-            s.$evalAsync();
+            scopeEvalAsync();
         });
 
         // GIF Viewer
@@ -1901,7 +1902,7 @@ export function machineryBuildTagManager(s: any): any {
                 if (!s.gifPlayer) return;
                 s.gifViewer.speed = speed;
                 syncDetailFromScope();
-                s.$evalAsync();
+                scopeEvalAsync();
                 s.gifPlayer.set_speed(speed);
                 w.$(".gif-toolbar-btn.speed span").text(`${speed}x`);
             },
@@ -1919,7 +1920,7 @@ export function machineryBuildTagManager(s: any): any {
                 // 判断是点击或是拖拽
                 if (Date.now() - s.gifViewer.mousedownTime < 333 && Math.abs(s.gifViewer.mousedownX - event.clientX) < 5 && Math.abs(s.gifViewer.mousedownY - event.clientY) < 5)  {
                     toggleGifPlay();
-                    s.$evalAsync();
+                    scopeEvalAsync();
                 }
             },
             cancelRange: function () {
@@ -1971,7 +1972,7 @@ export function machineryBuildTagManager(s: any): any {
                     syncDetailFromScope();
                     s.gifPlayer = undefined;
                     syncDetailFromScope();
-                    s.$evalAsync();
+                    scopeEvalAsync();
                 }
                 updateGifProgressbar(progress);
                 w.$(".gif-toolbar .message span").text(`${parseInt((progress * 100) as any)}%`)
@@ -1988,7 +1989,7 @@ export function machineryBuildTagManager(s: any): any {
                 s.gifViewer.playing = result.playing;
                 syncDetailFromScope();
                 s.gifViewer.setSpeed(1);
-                s.$evalAsync();
+                scopeEvalAsync();
                 var $resizableBar = w.$(".gif-toolbar .resize-bar");
                 w.$(".gif-toolbar .total-frame").text(`/ ${s.gifViewer.frames.length}`);
 

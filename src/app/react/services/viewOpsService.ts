@@ -10,6 +10,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -108,7 +109,7 @@ export function switchGridLayout(...args: any[]) {
     if (!s) return;
     return (function () {
             machinerySwitchLayout(s, "GridLayout");
-            s.$evalAsync();
+            scopeEvalAsync();
             machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "GridLayout");
         }).apply(null, args);
   }
@@ -119,7 +120,7 @@ export function switchJustifiedLayout(...args: any[]) {
     if (!s) return;
     return (function () {
             machinerySwitchLayout(s, "JustifiedLayout");
-            s.$evalAsync();
+            scopeEvalAsync();
             machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
         }).apply(null, args);
   }
@@ -130,7 +131,7 @@ export function switchListLayout(...args: any[]) {
     if (!s) return;
     return (function () {
             machinerySwitchLayout(s, "ListLayout");
-            s.$evalAsync();
+            scopeEvalAsync();
             machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "ListLayout");
         }).apply(null, args);
   }
@@ -141,7 +142,7 @@ export function switchSquareLayout(...args: any[]) {
     if (!s) return;
     return (function () {
             machinerySwitchLayout(s, "SquareLayout");
-            s.$evalAsync();
+            scopeEvalAsync();
             machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "SquareLayout");
         }).apply(null, args);
   }

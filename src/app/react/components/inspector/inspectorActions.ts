@@ -9,6 +9,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { machineryEnterDetailMode } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
@@ -304,7 +305,7 @@ export function inspectorNameChange() {
   const isAudio = (window as any).AUDIO_TYPES?.[ext];
   if (bodyScope?.isDetailMode && (isVideo || isAudio)) {
     (window as any).eagle.inspector.isRenaming = true;
-    bodyScope.$evalAsync();
+    scopeEvalAsync();
     setTimeout(() => {
       imagesChange();
       setTimeout(() => {
@@ -630,7 +631,7 @@ export function editVideoComment(event: any, image: any, comment: any) {
     getIpc().send('image-change', image);
     refreshVideoCommentsChannel.emit();
     getBodyScope().updateItemView(video);
-    getBodyScope().$evalAsync();
+    scopeEvalAsync();
   });
 }
 
@@ -678,7 +679,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           icon: 'ic-tag-filter.svg',
           click: () => {
             getBodyScope().TagManager.filterWithTags([tag]);
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
           },
         },
         { role: 'separator' },
@@ -687,7 +688,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           icon: 'ic-rename.svg',
           click: () => {
             getBodyScope().editTag(getBodyScope().TagManager.tagMappings[tag]);
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
           },
         },
         {
@@ -700,7 +701,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
               message: t('Context.Tag.Copy.Success'),
               duration: 750,
             });
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
           },
         },
         {
@@ -739,7 +740,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           accelerator: (window as any).preferences.shortcuts.keybinds['organize.tag.clear'],
           click: () => {
             getBodyScope().clearAllTags();
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
           },
         },
       ];
@@ -867,7 +868,7 @@ export function bindInspectorEvents(): () => void {
 
   const onPluginInstalled = () => {
     (window as any).eagle.inspector.initPlugins();
-    scope?.$evalAsync();
+    scopeEvalAsync();
   };
   ipc?.on?.('plugin-installed', onPluginInstalled);
   ipc?.on?.('plugin-reloaded', onPluginInstalled);
@@ -898,10 +899,10 @@ export function bindInspectorEvents(): () => void {
     if (!inspectorEl || !inspectorEl.contains(target)) return;
     if (button === 1) {
       getBodyScope().openPluginPanel();
-      getBodyScope().$evalAsync();
+      scopeEvalAsync();
     } else if (button !== 0) {
       openItemContextMenu(event, getBodyScope()?.selected?.[0]);
-      getBodyScope().$evalAsync();
+      scopeEvalAsync();
     }
   };
   document.addEventListener('mouseup', onMouseUp);

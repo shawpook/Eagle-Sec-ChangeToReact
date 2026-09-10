@@ -29,6 +29,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { debounce } from '../utils/func';
 import { getFolderFullPath } from '../core/itemDomain';
 import { addToRecentFolders } from './batchOpsService';
+import { scopeEvalAsync } from '../global/scopeShim';
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const remote: any = _req('@electron/remote');
@@ -213,14 +214,14 @@ export function newFolder(...args: any[]) {
 			
             setTimeout(function() { 
                 machineryChangeSidebarIndex(s, folder); 
-                s.$evalAsync();
+                scopeEvalAsync();
                 setTimeout(function() { $("#folder-input-" + folder.id).focus().select(); }, 100);
                 setTimeout(function() { $("#folder-input-" + folder.id).focus().select(); }, 200);
             }, 150);
 
             setTimeout(function() { 
                 machineryChangeSidebarIndex(s, folder); 
-                s.$evalAsync();
+                scopeEvalAsync();
                 setTimeout(function() { 
                     if ($("#folder-input-" + folder.id + ":focus").length === 0) {
                         $("#folder-input-" + folder.id).focus().select(); 
@@ -665,7 +666,7 @@ export function emptyRestore(...args: any[]) {
                     machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                         machineryRebindRefresh(s);
                         machineryUpdateSelection(s);
-                        s.$evalAsync();
+                        scopeEvalAsync();
                     });
                 });
             }
@@ -679,7 +680,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 const FixUtils: any = {};
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
 // 同款注释）。本落点此前只有调用形态 → openSmartFolder/openUnfiled 的

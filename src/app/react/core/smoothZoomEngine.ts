@@ -14,6 +14,7 @@ import { BitmapViewer } from './bitmapViewer';
 import { syncDetailFromScope } from '../store/detailState';
 import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 
 	/*****************************************************************************
@@ -1867,7 +1868,7 @@ if (!self._mousedown) return;
 			// console.log($scope.imageSize.zoomRatio)
 			// clearTimeout(mousewheelTimeout);
 			// mousewheelTimeout = setTimeout(function () {
-				$scope.$evalAsync();
+				scopeEvalAsync();
 			// }, 50);
 
 			return false;
@@ -2752,7 +2753,7 @@ if (!self._mousedown) return;
 					if ($("#detail-image").attr("src") !== rawURL) {
 						$("#detail-image").attr("src", rawURL);
 					}
-					$rootScope.$evalAsync();
+					scopeEvalAsync();
 					self.Animate(true);
 					return;
 				}
@@ -2781,7 +2782,7 @@ if (!self._mousedown) return;
 								syncDetailFromScope();
 								$("#detail-image").attr("src", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC");
 							}
-							$rootScope.$evalAsync();
+							scopeEvalAsync();
 							self.Animate(true);
 						} catch (e) {
 							self.bitmapViewer.clear();
@@ -2796,7 +2797,7 @@ if (!self._mousedown) return;
 				syncDetailFromScope();
 				$rootScope.supportRotate = false;
 				syncDetailFromScope();
-				$rootScope.$evalAsync();
+				scopeEvalAsync();
 				self.bitmapViewer.clear();
 			}
 		},

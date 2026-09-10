@@ -11,6 +11,7 @@ import { machineryLeaveDetailMode } from '../../core/dataMachinery';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -221,7 +222,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         return (window as any).throttle(function (event: any) {
           event && event.preventDefault();
           func(event);
-          bodyScope.$evalAsync();
+          scopeEvalAsync();
         }, 24);
       }
 
@@ -832,7 +833,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         machineryLeaveDetailMode(s);
       } else {
         getBodyScope().toggleFullScreen();
-        getBodyScope().$evalAsync();
+        scopeEvalAsync();
       }
     });
 
@@ -1184,7 +1185,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         getBodyScope().leaveDetailMode();
       } else {
         getBodyScope().toggleFullScreen();
-        getBodyScope().$evalAsync();
+        scopeEvalAsync();
       }
     };
     $()(video).on('dblclick', onDblClick);
@@ -1320,7 +1321,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         return (window as any).throttle(function (event: any) {
           event && event.preventDefault();
           func(event);
-          getBodyScope().$evalAsync();
+          scopeEvalAsync();
         }, 24);
       }
 
@@ -1607,7 +1608,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         return (window as any).throttle(function (event: any) {
           event && event.preventDefault();
           func(event);
-          bodyScope.$evalAsync();
+          scopeEvalAsync();
         }, 24);
       }
 

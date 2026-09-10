@@ -4,6 +4,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
 import { machineryEnterDetailMode, machineryGetSelection, machineryOpenPluginPanel, machineryUpdateSelection } from '../core/dataMachinery';
 import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
+import { scopeEvalAsync } from '../global/scopeShim';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -114,7 +115,7 @@ function enableImageNameEditable(event: any, $name: any) {
       console.log(`${originalName} > ${name}`);
       ayncsImagesChange([image]);
       hiddenByCurrentFilter([image]);
-      $scope.$evalAsync();
+      scopeEvalAsync();
       try { electronLog && electronLog.info(`[app] Change list item's name: ${originalName}(${image.id}) > ${newName}`); } catch (err) {}
     }
   }, 200, true));
@@ -201,7 +202,7 @@ export function onBoxListDblClick(...args: any[]) {
                     // 使用预设软体开启
                     openFileWithDefault(item);
                 }
-                s.$evalAsync();
+                scopeEvalAsync();
             }
     }).apply(null, args);
   }

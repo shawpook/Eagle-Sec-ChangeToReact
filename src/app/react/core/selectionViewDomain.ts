@@ -16,12 +16,13 @@ import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
 import { machineryChangeMetaItems, machineryCurrentIndex, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { s.$apply(); } catch (err) { /* noop */ } }
+    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
 }
 

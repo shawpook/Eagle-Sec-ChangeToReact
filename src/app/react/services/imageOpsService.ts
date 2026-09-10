@@ -29,6 +29,7 @@ import { getBodyScope } from '../core/appCore';
 import { flipVideo, rotateVideo } from './mediaService';
 import { uploadFiles } from './uploadService';
 import { updateInspectorChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -68,7 +69,7 @@ const $filter: any = (name: string) => {
 };
 // $timeout 语义 = 延时执行 + digest（controllerFns 同源）
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
 // 同款注释）。本落点此前只有调用形态 → __lv_calculateImageBindingTimeout 取消点
@@ -197,7 +198,7 @@ export function rotateImage(...args: any[]) {
                         delete rotatedImage.orientation;
                         machineryUpdateItemView(s, rotatedImage);
                         ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
-                        s.$evalAsync();
+                        scopeEvalAsync();
                         
                         try { 
                             electronLog && electronLog.info(`[app] Rotate image: ${rotatedImage.name}(${rotatedImage.id})`); 
@@ -217,7 +218,7 @@ export function rotateImage(...args: any[]) {
                         alert(err.message || "Image rotation failed.");
                         
                         electronLog && electronLog.error(err.stack || err);
-                        s.$evalAsync();
+                        scopeEvalAsync();
                     }
                 }
                 else {
@@ -344,7 +345,7 @@ export function saveCrop(...args: any[]) {
                                 s.isCropMode = false;
                                 syncDetailFromScope();
                                 machineryLeaveDetailMode(s);
-                                s.$evalAsync();
+                                scopeEvalAsync();
                             });
                             return;
                         }
@@ -384,7 +385,7 @@ export function saveCrop(...args: any[]) {
 
                                             machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
                                             machineryRelayout(s);
-                                            s.$evalAsync();
+                                            scopeEvalAsync();
                                         }
                                         else {
                                             fse.copySync(imagePath + ".bk", imagePath, { preserveTimestamps: true });
@@ -392,7 +393,7 @@ export function saveCrop(...args: any[]) {
                                         }
                                         s.isCropMode = false;
                                         syncDetailFromScope();
-                                        s.$evalAsync();
+                                        scopeEvalAsync();
                                     });
                             });
                         }, 200);
@@ -902,7 +903,7 @@ export function replaceFile(...args: any[]) {
 
 
                     // Step 5: 更新 UI
-                    getBodyScope().$evalAsync();
+                    scopeEvalAsync();
 
                     // Step 6: 刪除備份文件
                     fs.unlink(backupFilePath, function(unlinkErr) {
@@ -1095,7 +1096,7 @@ export function resetCustomThumbnail(...args: any[]) {
     return (function () {
         delete s.selected[0].customThumbnail;
         s.regenerateThumbnailQueue.push(s.selected[0]);
-        s.$evalAsync();
+        scopeEvalAsync();
         ayncsImagesGenerateThumbnail([s.selected[0]]);
     }).apply(null, args);
   }

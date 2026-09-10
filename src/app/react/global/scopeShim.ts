@@ -37,6 +37,29 @@ export function getMigratedScopeFieldNames(): string[] {
   return Array.from(migratedFields.keys());
 }
 
+// b1-9bz-C-3：脱 scope 面的 flush 入口。shim 的 $evalAsync/$apply 语义都是
+// 「执行 fn（若有）+ flushWatchers()」；watcher 另有 200ms 定时轮询兜底（ensureFlushTimer）。
+// 把该语义以模块级函数暴露后，全树 `s.$evalAsync(...)` 可改名调用，调用面不再经 scope 对象。
+let bodyFlushWatchers: (() => void) | null = null;
+
+export function flushScopeWatchers(): void {
+  if (bodyFlushWatchers) bodyFlushWatchers();
+}
+
+export function scopeEvalAsync(fn?: any): void {
+  try {
+    if (typeof fn === 'function') fn();
+  } catch (err) {
+    console.error('[scopeShim] scopeEvalAsync fn failed', err);
+  }
+  flushScopeWatchers();
+}
+
+/** 是否有 watcher 在用（诊断：watcher 归零后 flush 即 no-op，届时可删调用点）。 */
+export function hasScopeWatchers(): boolean {
+  return bodyFlushWatchers !== null;
+}
+
 export function createBodyScopeShim(): any {
   const watchers: any[] = [];
   let flushTimer: any = null;
@@ -81,6 +104,8 @@ export function createBodyScopeShim(): any {
       flushWatchers();
     }, 200);
   }
+
+  bodyFlushWatchers = flushWatchers;
 
   const SHIM_UNSET = Symbol('shim-unset');
 

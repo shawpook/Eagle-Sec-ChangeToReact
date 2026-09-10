@@ -13,6 +13,7 @@ import { getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryFilterContent, machineryReload, machineryUpdateContainerHieght } from '../../core/dataMachinery';
 import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
+import { scopeEvalAsync } from '../../global/scopeShim';
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
 const num0 = (value: number | undefined | null): string => {
@@ -581,7 +582,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
       s.filterImportDateMonths = getDateFilterCountsArray('date');
       syncFilterFromScope();
       s.filterModifyDateMonths = getDateFilterCountsArray('mtime');
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   };
 
@@ -1068,7 +1069,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={t('Filter.Lock')}
             style={snapshot.filterBadge > 0 || snapshot.keyword ? undefined : { display: 'none' }}
-            onClick={() => { if (filter()) filter().isLock = !filter().isLock; runSeq([(s) => s.$evalAsync && s.$evalAsync()]); }}
+            onClick={() => { if (filter()) filter().isLock = !filter().isLock; runSeq([(s) => s.$evalAsync && scopeEvalAsync()]); }}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-lock.svg`} />
           </div>

@@ -28,12 +28,13 @@ import { isInFolder } from './itemDomain';
 import { updateSuggestions } from './miscDomain';
 import { machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFilterContent, machineryRebindRefresh, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
 import { calculateImageBindingChannel, closeQuickSearchModalChannel, rebindRefreshChannel, resetFilterChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { s.$apply(); } catch (err) { /* noop */ } }
+    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
 }
 
@@ -99,14 +100,14 @@ export function takeoverFilterDomain(): void {
       currentWindow.focus();
     }
     machinerySearchInAll(s);
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // filter-folder（23712）
   ipc.on('filter-folder', function (_event: any) {
     const s: any = getBodyScope();
     if (!s) return;
-    s.$evalAsync(function () {
+    scopeEvalAsync(function () {
       w.$("#folder-search").focus();
     });
   });
@@ -199,7 +200,7 @@ const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function 
 const FONT_TYPES: any = {}; (EagleConfig.FONT_FORMATS || []).forEach(function (ext: string) { FONT_TYPES[ext] = true; });
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态，被 60+ 处移植代码
 // 消费（__lv_keywordModelTimeout / __lv_nextTimeout / __lv_calculateImageBindingTimeout …）。
@@ -468,7 +469,7 @@ export function filterContent(...args: any[]) {
             // 重新计算画面图片列表
             s.shuffle = [];
             machineryRebindRefresh(s, undefined, s.contentFilterCache);
-            s.$evalAsync();
+            scopeEvalAsync();
             $("#box-container").scrollTop(0);
         }).apply(null, args);
   }

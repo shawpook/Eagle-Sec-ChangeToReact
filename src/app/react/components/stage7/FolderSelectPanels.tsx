@@ -12,6 +12,7 @@ import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
@@ -1043,7 +1044,7 @@ export function NewSmartFolderModal() {
     isEditModeRef.current = undefined;
     setIsOpen(false);
     body.rebindRefresh();
-    body.$evalAsync();
+    scopeEvalAsync();
   };
 
   useEffect(() => {

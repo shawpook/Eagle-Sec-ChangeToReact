@@ -48,6 +48,7 @@ import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryE
 import { filterWithColor } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { closeTagsPopupChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -98,7 +99,7 @@ function domainAyncsUpdateSmartFoldersCount(s: any, smartFolders: any, callback:
         }
       }
 
-      s.$evalAsync();
+      scopeEvalAsync();
 
       loop();
     }
@@ -144,7 +145,7 @@ function domainDigestDurationTest(s: any): void {
       }
       w.angular.element(document).injector().invoke(function ($rootScope: any) {
         const a = performance.now();
-        $rootScope.$apply();
+        scopeEvalAsync();
         console.log(`$digest duration: ${performance.now() - a}`);
       });
     } catch (err) { clearInterval(interval); }
@@ -246,18 +247,18 @@ export function takeoverLibraryDomain(): void {
               }
             }
           }
-        } finally { try { s.$apply(); } catch (err) { /* noop */ } }
+        } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
       }, 1000);
     }
     s.$root.initMenu();
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── app-status-welcome（22631 逐字）──
   ipc.on('app-status-welcome', function (_e: any, _params: any) {
     const s: any = getBodyScope();
     if (!s) return;
-    s.$evalAsync(function () {
+    scopeEvalAsync(function () {
       s.libraryPath = "";
       syncSidebarFromScope();
       s.isLoading = false;
@@ -270,7 +271,7 @@ export function takeoverLibraryDomain(): void {
     const s: any = getBodyScope();
     if (!s) return;
     s.isLoading = true;
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── app-status-library-cache-loaded（22758 逐字）──
@@ -278,7 +279,7 @@ export function takeoverLibraryDomain(): void {
     const s: any = getBodyScope();
     if (!s) return;
     s.isLoading = true;
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── library.changed（23535 逐字；parent = window.parent，原码行为保留）──
@@ -325,7 +326,7 @@ export function takeoverLibraryDomain(): void {
     machineryUpdateSidebarList(s);
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s);
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   });
 
@@ -433,7 +434,7 @@ export function takeoverLibraryDomain(): void {
     s.isLoading = false;
     s.startCursor = 0;
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
-    s.$evalAsync();
+    scopeEvalAsync();
 
     clearInterval(w.heartbeatInterval);
     if (domainHeartbeatInterval) { clearInterval(domainHeartbeatInterval); domainHeartbeatInterval = null; }
@@ -786,7 +787,7 @@ export function takeoverLibraryDomain(): void {
                 s.selected = [lastItem];
                 syncInspectorFromScope();
                 scrollToSelectedItem();
-                s.$evalAsync();
+                scopeEvalAsync();
               }
             }, 100);
           }
@@ -802,7 +803,7 @@ export function takeoverLibraryDomain(): void {
                 s.selected = [lastItem];
                 syncInspectorFromScope();
                 scrollToSelectedItem();
-                s.$evalAsync();
+                scopeEvalAsync();
               }
             }, 100);
           }
@@ -815,7 +816,7 @@ export function takeoverLibraryDomain(): void {
                 s.selected = [lastItem];
                 syncInspectorFromScope();
                 scrollToSelectedItem();
-                s.$evalAsync();
+                scopeEvalAsync();
               }
             }, 100);
           });
@@ -937,7 +938,7 @@ export function takeoverLibraryDomain(): void {
       domainAyncsUpdateSmartFoldersCount(s, s.smartFolderList, () => { /* noop */ });
 
       setTimeout(function () { machineryUpdateContainerHieght(s); }, 300);
-      s.$evalAsync();
+      scopeEvalAsync();
 
     }, 1000);
 
@@ -1062,7 +1063,7 @@ export function takeoverLibraryDomain(): void {
       }).fail(function () {
         if (s.localhostError !== true) {
           s.localhostError = true;
-          s.$evalAsync();
+          scopeEvalAsync();
         }
         electronLog.error(`[app] Local server: disabled`);
         electronLog.error("---------------------------------------");
@@ -1134,6 +1135,6 @@ export function takeoverLibraryDomain(): void {
     electronLog.info(`[app] Library loaded`);
     // 保险 digest 排程：bundle 原处理器依赖后续应用活动触发 $timeout 派工；React 域在
     // 事件驱动的测试/静默场景下补一次 $evalAsync，保证 binding 派工即时可flush
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 }

@@ -9,6 +9,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段7d-5a：pluginPanel + pluginCreator 接管（pluginCenter 见 7d-5b）。
@@ -513,7 +514,7 @@ export function PluginPanel() {
           label: `${t('modal.pluginPanel.contextMenu.install')} (${newPlugin?.lasteVersion?.version})`,
           click: () => {
             openPluginCenter('update');
-            getRootScope()?.$evalAsync();
+            scopeEvalAsync();
           },
         },
         {
@@ -526,7 +527,7 @@ export function PluginPanel() {
           click: () => {
             closeRef.current();
             openPluginCenterDetailChannel.emit(item.plugin.manifest.id);
-            getRootScope()?.$evalAsync();
+            scopeEvalAsync();
           },
         },
         {
@@ -589,7 +590,7 @@ export function PluginPanel() {
           icon: 'ic-folder-new-folder.svg',
           click: () => {
             openPluginCreatorChannel.emit();
-            getRootScope()?.$evalAsync();
+            scopeEvalAsync();
           },
         },
         {

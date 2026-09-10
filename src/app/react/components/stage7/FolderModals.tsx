@@ -14,6 +14,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -180,7 +181,7 @@ export function hiddenByCurrentFilter(items: any[]) {
           getBodyScope().$broadcast('gl:removeItems', hiddenElements);
           if (getBodyScope().currentSmartFolder) {
             getBodyScope().currentSmartFolder.imageCount = getBodyScope().smartFolderCount(getBodyScope().currentSmartFolder);
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
           }
         }
       }
@@ -1829,7 +1830,7 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder);
         cancel();
-        if (typeof body.$evalAsync === 'function') body.$evalAsync();
+        if (typeof body.$evalAsync === 'function') scopeEvalAsync();
       }
     });
   };
@@ -1855,7 +1856,7 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersToFolder(viewRef.current.selectedFolders, folder);
         cancel();
-        if (typeof body.$evalAsync === 'function') body.$evalAsync();
+        if (typeof body.$evalAsync === 'function') scopeEvalAsync();
       }
       focusSeach();
     });
@@ -1883,7 +1884,7 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder, true);
         cancel();
-        if (typeof body.$evalAsync === 'function') body.$evalAsync();
+        if (typeof body.$evalAsync === 'function') scopeEvalAsync();
       }
     });
   };

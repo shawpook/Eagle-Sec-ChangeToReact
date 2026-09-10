@@ -207,6 +207,9 @@ export function getRootScope(): any {
 /** 在 Angular 作用域上下文中执行表达式（等价 ng-click 的 $apply 语义，digest 期内安全跳过）。 */
 export function scopeApply(scope: any, fn: (scope: any) => void): void {
   if (!scope) return;
+  // b1-9bz-C-3 实测：直调化（去掉 $$phase 分叉与 $apply 间接）会让 stage-smoke 的
+  // 「theme switch」稳定失败 —— 原版在 scope 无 $apply 时抛错被 catch（fn 不执行），
+  // 直调则执行了 fn，属于行为差异。**保持原实现**，本项留给 C-6（删 scopeShim 时统一处置）。
   if (scope.$$phase || scope.$root.$$phase) {
     try {
       fn(scope);

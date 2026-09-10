@@ -34,6 +34,7 @@ import { checkDiskSpace, exportFolder } from './folderCoreService';
 import { select } from './selectionService';
 import { addImagesToFolder } from './folderCoreService';
 import { cleanAllErrorChannel, openAddFolderModalChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -68,7 +69,7 @@ const $filter: any = (name: string) => {
 };
 // $timeout 语义 = 延时执行 + digest（controllerFns 同源）
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
 }, ms || 0);
 
 /* b1-9bz-B：ToastAlerts 的「清空全部错误」此前只能经 callScope 字符串路由命中（条目在
@@ -485,7 +486,7 @@ export function scrollToSelectedItem(...args: any[]) {
                                 $("#box-container").css("visibility", "initial");
                             }, 50);
                         }, 200);
-                        s.$evalAsync();
+                        scopeEvalAsync();
                         break;
                     }
                 }

@@ -17,6 +17,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from './appCore';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }
@@ -105,7 +106,7 @@ class Inspector {
         this.isHideInspector = !this.isHideInspector;
         setTimeout(() => {
             getBodyScope().whenLayoutChange();
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
         }, 100);
         if (eagle.inspector.isHideInspector) { electronLog && electronLog.info("[app] Inspector: OFF"); }
         else { electronLog && electronLog.info("[app] Inspector: ON"); }
@@ -1134,7 +1135,7 @@ class AISearch {
                 ipcRenderer.send('open.preferences', {
                     panel: "ai-search"
                 });
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
 
@@ -1143,7 +1144,7 @@ class AISearch {
                 this.isInstalled = false;
                 this.isReady = false;
                 this.stopWatching();
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
     }
@@ -1437,7 +1438,7 @@ class AISearch {
                 isError: this.isError,
                 status: this.status
             });
-            getBodyScope().$evalAsync();
+            scopeEvalAsync();
         }
     }
 
@@ -1522,7 +1523,7 @@ class AISearch {
 
                 this.isStarting = false;
                 this.isReady = false;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
                 
                 // 顯示錯誤訊息
                 swal({
@@ -1894,14 +1895,14 @@ class CustomExport {
         ipcRenderer.on('plugin-installed', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
 
         ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
     }
@@ -1928,14 +1929,14 @@ class CombineImages {
         ipcRenderer.on('plugin-installed', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
 
         ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
     }
@@ -1968,14 +1969,14 @@ class AIAction {
         ipcRenderer.on('plugin-installed', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
 
         ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
-                getBodyScope().$evalAsync();
+                scopeEvalAsync();
             }
         });
     }
@@ -2010,7 +2011,7 @@ class AIAction {
                     if (!fs.existsSync(this.#configPath)) return;
                     this.#loadActions();
                     getBodyScope().$root.initMenu();
-                    getBodyScope().$evalAsync();
+                    scopeEvalAsync();
                 });
             }
         } catch (err) {}

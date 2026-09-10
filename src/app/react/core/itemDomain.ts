@@ -27,6 +27,7 @@ import { getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBindi
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { openDuplicateChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -40,7 +41,7 @@ let domainMuteRebind: any = null;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { s.$apply(); } catch (err) { /* noop */ } }
+    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
 }
 
@@ -302,7 +303,7 @@ export function takeoverItemDomain(): void {
         machineryUpdateSelection(s);
       });
     }
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── image.removed（23602 逐字）──
@@ -326,7 +327,7 @@ export function takeoverItemDomain(): void {
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s, true);
       machineryUpdateSelection(s);
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   });
 
@@ -353,7 +354,7 @@ export function takeoverItemDomain(): void {
       return;
     }
 
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── image.changed.mute（23651 逐字）──
@@ -369,7 +370,7 @@ export function takeoverItemDomain(): void {
     else {
       machineryUpdateItemView(s, newImage);
     }
-    s.$evalAsync();
+    scopeEvalAsync();
 
     const img = s.itemMappings[newImage.id];
     if (img) {
@@ -415,7 +416,7 @@ export function takeoverItemDomain(): void {
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s, true);
       machineryUpdateSelection(s);
-      s.$evalAsync();
+      scopeEvalAsync();
     });
     void hashID;
   });
@@ -544,12 +545,12 @@ export function takeoverItemDomain(): void {
     // 仅更新包含此图片的列表
     if (s.finishQueue.length === s.uploadQueue.length) {
       machineryCalculateImageBinding(s, {}, function () {
-        s.$evalAsync();
+        scopeEvalAsync();
       });
     }
     else {
       domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
-        s.$evalAsync();
+        scopeEvalAsync();
       });
     }
   });
@@ -599,7 +600,7 @@ export function takeoverItemDomain(): void {
       else {
         ipc.send("file-uploaded-end", generated);
       }
-      s.$evalAsync();
+      scopeEvalAsync();
     }
   });
 
@@ -611,7 +612,7 @@ export function takeoverItemDomain(): void {
     if (item) {
       item.text = params.text;
       machineryUpdateTxtItem(s, item);
-      s.$evalAsync();
+      scopeEvalAsync();
     }
   });
 
@@ -623,7 +624,7 @@ export function takeoverItemDomain(): void {
     if (converted && s.itemMappings[converted.id]) {
       domainUpdateItemListView(s, converted);
     }
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── calculateImageBinding（30549 逐字）──
@@ -634,7 +635,7 @@ export function takeoverItemDomain(): void {
       ensureMuteRebind(s) && ensureMuteRebind(s)();
       machineryUpdateSelection(s);
     });
-    s.$evalAsync();
+    scopeEvalAsync();
   });
 
   // ── new-folders（30560 逐字）──
@@ -649,7 +650,7 @@ export function takeoverItemDomain(): void {
 
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s);
-      s.$evalAsync();
+      scopeEvalAsync();
       machinerySaveFolder(s);
     });
 

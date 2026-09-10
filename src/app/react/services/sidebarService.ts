@@ -19,6 +19,7 @@ import { contextMenuOpenChannel } from '../global/bus';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { openFolder, openSmartFolder } from './folderCoreService';
+import { scopeEvalAsync } from '../global/scopeShim';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
@@ -256,7 +257,7 @@ const electronSettings: any = (window as any).electronSettings;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { getBodyScope().$apply(); } catch (err) { /* noop */ } }
+  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
 // 同款注释）——本落点当前无 cancel 消费面，但移植体与社会面共享同一 shim 语义，补平以防后续
@@ -502,7 +503,7 @@ export function toggleAllFolderExpand(...args: any[]) {
       if (s2.folders && s2.folders.length > 0) {
         var expand = !s2.folders[0].isExpand;
         if (folder) {
-          setTimeout(function () { s2.changeSidebarIndex(folder); s2.$evalAsync(); }, 100);
+          setTimeout(function () { s2.changeSidebarIndex(folder); scopeEvalAsync(); }, 100);
           if (folder.parent) {
             var parent = s2.folderMappings[folder.parent];
             if (parent) {
@@ -544,7 +545,7 @@ export function openFolderExpandContextMenu(...args: any[]) {
             icon: 'ic-expand.svg',
             click: () => {
               toggleSelectFolder(eventArg, folderArg);
-              s2.$evalAsync();
+              scopeEvalAsync();
             }
           },
           {
@@ -552,7 +553,7 @@ export function openFolderExpandContextMenu(...args: any[]) {
             icon: 'ic-expand-same.svg',
             click: () => {
               toggleCurrentLevelFolders(eventArg, folderArg);
-              s2.$evalAsync();
+              scopeEvalAsync();
             }
           },
           {
@@ -560,7 +561,7 @@ export function openFolderExpandContextMenu(...args: any[]) {
             icon: 'ic-expand-all.svg',
             click: () => {
               toggleAllFolderExpand(eventArg, folderArg);
-              s2.$evalAsync();
+              scopeEvalAsync();
             }
           },
         ],
@@ -568,12 +569,12 @@ export function openFolderExpandContextMenu(...args: any[]) {
         onOpened: () => {
           folderArg.isSelected = true;
           try { folderEl && folderEl.classList && folderEl.classList.add('context-activate'); } catch (err) { /* 委托元素缺席不阻塞 */ }
-          s2.$evalAsync();
+          scopeEvalAsync();
         },
         onClosed: () => {
           folderArg.isSelected = false;
           try { folderEl && folderEl.classList && folderEl.classList.remove('context-activate'); } catch (err2) { /* 同上 */ }
-          s2.$evalAsync();
+          scopeEvalAsync();
         }
       });
     }).apply(null, args);

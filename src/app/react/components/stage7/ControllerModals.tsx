@@ -15,6 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { machineryToggleAll } from '../../core/dataMachinery';
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
@@ -138,7 +139,7 @@ export function ErrorModal() {
               Object.assign(item, error.modifiedData);
               body.updateItemView(item);
               updateSelection();
-              if (typeof body.$evalAsync === 'function') body.$evalAsync();
+              if (typeof body.$evalAsync === 'function') scopeEvalAsync();
               ayncsImagesChange([item]);
             }
           }
@@ -203,7 +204,7 @@ export function ErrorModal() {
       syncErrorCount(errorListRef.current);
       close();
       const body = getBodyScope();
-      if (body && typeof body.$evalAsync === 'function') body.$evalAsync();
+      if (body && typeof body.$evalAsync === 'function') scopeEvalAsync();
       bump((v) => v + 1);
     });
   };

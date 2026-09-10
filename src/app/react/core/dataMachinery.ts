@@ -89,6 +89,7 @@ import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
 import { autoscrollChannel, calculateImageBindingChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
+import { scopeEvalAsync } from '../global/scopeShim';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -258,7 +259,7 @@ export function getTimeout(): any {
           try { if (typeof fn === 'function') fn(); } catch (err) { console.error('[shimTimeout] fn failed', err); }
           try {
             const s = getBodyScope();
-            if (s && typeof s.$evalAsync === 'function') s.$evalAsync();
+            if (s && typeof s.$evalAsync === 'function') scopeEvalAsync();
           } catch (err) { /* noop */ }
         }, ms || 0);
         return id;
@@ -971,7 +972,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   if (w.HoverPreview.isShow) {
     w.HoverPreview.hide();
   }
-  s.$evalAsync();
+  scopeEvalAsync();
 }
 
 /* rebindRefreshLazy（bundle 27007-27013 逐字；1000ms 防抖，rebindRefreshLazyTimeout 域内自管） */
@@ -1100,7 +1101,7 @@ function machineryResetImageData(s: any, images: any[]): void {
   const w = window as any;
   if (s.viewMode == "all" || (s.currentFolder && images[0].folders[0] && images[0].folders.indexOf(s.currentFolder.id) > -1) || (images[0].folders && images[0].folders.length === 0 && s.viewMode == "unfiled")) {
     w.resetNgGridLayoutData(s.allData, 0);
-    s.$evalAsync();
+    scopeEvalAsync();
   }
 }
 
@@ -3205,7 +3206,7 @@ export function machineryCalculateFilterCounts(s: any): void {
       machineryUpdateFilterCounts(s, image, 1, now);
     }
     console.timeEnd("calculateFilterCounts");
-    s.$evalAsync();
+    scopeEvalAsync();
   }, 500);
 }
 
@@ -3427,7 +3428,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
   // shim 世界的 body 类走 watcher flush → store → React effect，若不在此显式 flush，
   // 初始化会赶在类名之前跑，#bitmap-viewer 高度为 0 → BitmapViewer 不建 canvas、
   // 无瓦片 → 详情原图交付闸门超时（m1 detail original delivery）。
-  s.$evalAsync();
+  scopeEvalAsync();
 
   $timeout.cancel(zoomInitTimeout);
   zoomInitTimeout = $timeout(function () {
@@ -3819,7 +3820,7 @@ export function machineryInitMousetrap(s: any): void {
   const applyWrapper = function (func: any) {
     return w.throttle(function (e: any) {
       func(e);
-      s.$evalAsync();
+      scopeEvalAsync();
     }, 25);
   };
   for (var key in s.mousetrap) {
@@ -4529,7 +4530,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
         confirmButtonText: w.i18n.__('dialog.permanentlyDelay.button'),
         cancelButtonText: w.i18n.__("general.cancel"),
       }).then(function () {
-        s.$evalAsync(function () {
+        scopeEvalAsync(function () {
           machineryRemovePermanently(s);
         });
       });
@@ -4581,7 +4582,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
               var isForceToTrash = (result === '2');
               lastMoveToTrashCheckbox = result;
               machineryRemoveFolderContents(s, { isForceToTrash: isForceToTrash });
-              s.$evalAsync();
+              scopeEvalAsync();
             }, function () { });
           }
           else {
@@ -5757,7 +5758,7 @@ export function machineryOpenParentFolder(s: any): void {
 export function machineryCreateTxtFileFromTemplate(s: any, event: any): void {
   event && event.preventDefault();
   machineryNewFileFromTemplate(s, "txt");
-  s.$evalAsync();
+  scopeEvalAsync();
 }
 
 /* setFolderCover（bundle 41438-41454 逐字；FileUrlHelper 经 window、getFilter() 复刻
@@ -6442,7 +6443,7 @@ export function machineryFilterContent(s: any, type?: any): void {
   // 重新计算画面图片列表
   s.shuffle = [];
   machineryRebindRefresh(s, undefined, s.contentFilterCache);
-  s.$evalAsync();
+  scopeEvalAsync();
   w.$("#box-container").scrollTop(0);
   void type;
 }
@@ -6459,7 +6460,7 @@ export function machineryNextGifFrame(s: any, amount: any = 1): void {
     var idx = curr + amount;
     if (idx > total) idx = total - 1;
     s.gifPlayer.move_to(idx);
-    s.$evalAsync();
+    scopeEvalAsync();
   }
 }
 
@@ -6472,7 +6473,7 @@ export function machineryPrevGifFrame(s: any, amount: any = 1): void {
     var idx = curr - amount;
     if (idx < 0) idx = 0;
     s.gifPlayer.move_to(idx);
-    s.$evalAsync();
+    scopeEvalAsync();
   }
 }
 
@@ -7554,7 +7555,7 @@ export function machineryCheckOperationSafety(s: any, callback: any, amount: any
         allowEnterKey: false,
       }).then(function (result: any) {
         callback && callback();
-        s.$evalAsync();
+        scopeEvalAsync();
       });
     }
     else {
@@ -7591,7 +7592,7 @@ export function machineryCheckOperationSafety2(s: any, count: any, callback: any
         cancelButtonText: w.i18n.__("general.cancel"),
       }).then(function (result: any) {
         callback && callback();
-        s.$evalAsync();
+        scopeEvalAsync();
       });
     }
     else {
@@ -7754,7 +7755,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
       machineryUpdateSidebarList(s);
       openSmartFolder(smartFolder);
       s.saveFolderDebounce && machinerySaveFolderDebounce(s);
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   }
 }
@@ -7799,7 +7800,7 @@ export function machineryRemoveFolder(s: any, folder: any, params: any = {}): vo
         machineryCheckOperationSafety2(s, folder.descendantImageCount, function () {
           _p.isDeleteImages = (result == 1);
           machineryRemoveFolderInner(s, folder, _p);
-          s.$evalAsync();
+          scopeEvalAsync();
         }, 50);
       }, function () { });
     }, 100);
@@ -7918,7 +7919,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
   // 移除记录
   delete s.folderMappings[folder.id];
   machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-    s.$evalAsync();
+    scopeEvalAsync();
     s.saveFolderDebounce && machinerySaveFolderDebounce(s);
     if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
@@ -7953,7 +7954,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
         w.electronLog && w.electronLog.info(`[app] Resotre deleted folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`);
       });
 
-      s.$evalAsync();
+      scopeEvalAsync();
       machineryUpdateSidebarList(s);
       s.saveFolderDebounce && machinerySaveFolderDebounce(s);
       w.ayncsImagesChange(originalImages);
@@ -8313,12 +8314,12 @@ export function machineryRemoveTagGroup(s: any, group: any): void {
       cancelButtonText: w.i18n.__("general.cancel"),
     }).then(function () {
       remove(group);
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   }
   else {
     remove(group);
-    s.$evalAsync();
+    scopeEvalAsync();
   }
 }
 
@@ -8616,7 +8617,7 @@ export function machineryOpenDuplicate(s: any, options: any = {}): void {
           return !item.isDeleted;
         });
         syncInspectorFromScope();
-        s.$evalAsync();
+        scopeEvalAsync();
       },
     });
   }
@@ -8682,7 +8683,7 @@ export function machineryToggleAllSmartFolderExpand(s: any, event: any, selected
   if (s.smartFolders && s.smartFolders.length > 0) {
     var expand = !s.smartFolders[0].isExpand;
     if (smartFolder) {
-      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); s.$evalAsync(); }, 100);
+      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); scopeEvalAsync(); }, 100);
       if (smartFolder.parent) {
         var parent = s.smartFolderMappings[smartFolder.parent];
         if (parent) {
@@ -8796,7 +8797,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
   }
   setTimeout(function () {
     machineryChangeSidebarIndex(s, folder);
-    s.$evalAsync();
+    scopeEvalAsync();
   }, 200);
   // 自动定位
   if (target) {
@@ -8818,7 +8819,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
               w.$("#box-container").css("visibility", "initial");
             }, 100);
           }, 500);
-          s.$evalAsync();
+          scopeEvalAsync();
         }
       }
     }, 200);
@@ -8987,7 +8988,7 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
       machineryUpdateSelection(s);
       s.isLoading = false;
       s.unlockPassword = "";
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   } catch (err) {
     // 驗證失敗或用戶取消
@@ -9424,7 +9425,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
             uploadFiles(fds, folder);
             if (folder) { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to ${folder.name}(${folder.id})(Center), path: ${fds[0].path}`); }
             else { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to All(Center), path: ${fds[0].path}`); }
-            s.$evalAsync();
+            scopeEvalAsync();
         }
         console.timeEnd("拖曳档案事件");
     }
@@ -9481,7 +9482,7 @@ export function machineryShowUploadQueue(s: any): void {
   w.$("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
   addImageTimeLeftInterval = setInterval(function () {
     machineryCalcuteAddImageTimeLeft(s);
-    s.$evalAsync();
+    scopeEvalAsync();
   }, 1000);
 }
 
@@ -10037,7 +10038,7 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
       w.ayncsImagesChange([image]);
       w.hiddenByCurrentFilter([image]);
       // TagManager.getSuggestTags([image]);
-      $scope.$evalAsync();
+      scopeEvalAsync();
       try { w.electronLog && w.electronLog.info(`[app] Change list item's name: ${originalName}(${image.id}) > ${newName}`); } catch (err) { }
     }
   }, 200, true));
@@ -10140,7 +10141,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
       $name.html(`${name}`);
       folder.name = name;
       $scope.saveFolder();
-      $scope.$evalAsync();
+      scopeEvalAsync();
       try { w.electronLog && w.electronLog.info(`[app] Change sub-folder name: ${originalName}(${folder.id}) > ${newName}`); } catch (err) { }
     }
   }, 500, true));

@@ -19,6 +19,7 @@ import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
 import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, openNotificationChannel, setFolderPasswordChannel } from '../../global/bus';
+import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -556,7 +557,7 @@ export function NewVersionModal() {
       setSize(process.platform === 'darwin' ? updateResult.file?.size || 0 : updateResult.windows?.size || 0);
       setResult(updateResult);
       setOpen(true);
-      getBodyScope()?.$evalAsync();
+      scopeEvalAsync();
       void pjson;
     };
     ipc?.on?.('show-update-message', handler);
@@ -969,19 +970,19 @@ export function WelcomePage() {
       } else {
         setTimeout(() => setStep(1), 500);
       }
-      getBodyScope()?.$evalAsync();
+      scopeEvalAsync();
     };
     const onDirsLoaded = () => {
       document.body.classList.remove('is-welcome-page');
       win?.setMinimumSize?.(500, 375);
       setOpen(false);
-      getBodyScope()?.$evalAsync();
+      scopeEvalAsync();
     };
     const onCacheLoaded = () => {
       document.body.classList.remove('is-welcome-page');
       win?.setMinimumSize?.(500, 375);
       setOpen(false);
-      getBodyScope()?.$evalAsync();
+      scopeEvalAsync();
     };
     ipc?.on?.('app-status-welcome', onWelcome);
     ipc?.on?.('app-status-library-dirs-loaded', onDirsLoaded);

@@ -1,5 +1,6 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
 import { detailZoom, ensureDetailZoom } from '../core/smoothZoomEngine';
+import { scopeEvalAsync } from '../global/scopeShim';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -685,7 +686,7 @@ scope.openRatioContextMenu = function () {
       checked: parseInt(String(scope.imageSize.zoomRatio)) === value,
       click: function () {
         scope.updateZoomRatio(value, undefined, undefined, true);
-        scope.$evalAsync();
+        scopeEvalAsync();
       },
     });
   contextMenu.append(ratioItem('5%', 5));
@@ -1353,7 +1354,7 @@ scope.openContextMenu = function (event: any) {
     accelerator: 'CmdOrCtrl+C',
     click: function () {
       scope.copyImage();
-      scope.$evalAsync();
+      scopeEvalAsync();
     },
   });
 
@@ -1364,7 +1365,7 @@ scope.openContextMenu = function (event: any) {
     checked: scope.isGrayscaleMode,
     click: function (event: any) {
       scope.toggleGrayscale(event);
-      scope.$evalAsync();
+      scopeEvalAsync();
     },
   });
   const rotateItem = new MenuItem({
@@ -1401,7 +1402,7 @@ scope.openContextMenu = function (event: any) {
       accelerator: scope.preferences?.shortcuts?.keybinds?.['edit.copy.path'],
       click: function () {
         scope.copyAsPath();
-        scope.$evalAsync();
+        scopeEvalAsync();
       },
     })
   );
@@ -1410,7 +1411,7 @@ scope.openContextMenu = function (event: any) {
       label: (window as any).i18n.__('appmenu.edit>copyAsLink'),
       click: function () {
         scope.copyAsLink();
-        scope.$evalAsync();
+        scopeEvalAsync();
       },
     })
   );
@@ -1447,7 +1448,7 @@ scope.openContextMenu = function (event: any) {
       click: function () {
         scope.isHideNavigator = !scope.isHideNavigator;
         localStorage['isHideNavigator_Viewer'] = scope.isHideNavigator;
-        scope.$evalAsync();
+        scopeEvalAsync();
       },
     })
   );
@@ -1537,7 +1538,7 @@ scope.gifViewer = {
   },
   setSpeed: function (speed = 1) {
     scope.gifViewer.speed = speed;
-    scope.$evalAsync();
+    scopeEvalAsync();
     scope.gifPlayer.set_speed(speed);
     (window as any).$('.gif-toolbar-btn.speed span').text(`${speed}x`);
   },
@@ -1555,7 +1556,7 @@ scope.gifViewer = {
       Math.abs(scope.gifViewer.mousedownY - event.clientY) < 5
     ) {
       scope.toggleGifPlay();
-      scope.$evalAsync();
+      scopeEvalAsync();
     }
   },
   cancelRange: function () {
@@ -1598,7 +1599,7 @@ scope.gifViewer = {
       scope.gifViewer.mousedownY = 0;
       scope.gifViewer.range = undefined;
       scope.gifPlayer = undefined;
-      scope.$evalAsync();
+      scopeEvalAsync();
     }
     updateGifProgressbar(progress);
     (window as any).$('.gif-toolbar .message span').text(`${parseInt(String(progress * 100))}%`);
@@ -1610,7 +1611,7 @@ scope.gifViewer = {
     scope.gifViewer.frames = result.frames;
     scope.gifViewer.playing = result.playing;
     scope.gifViewer.setSpeed(1);
-    scope.$evalAsync();
+    scopeEvalAsync();
     const $resizableBar = (window as any).$('.gif-toolbar .resize-bar');
     (window as any).$('.gif-toolbar .total-frame').text(`/ ${scope.gifViewer.frames.length}`);
 
@@ -1735,11 +1736,11 @@ scope.toggleGifPlay = function () {
     if (scope.gifViewer.playing) {
       scope.gifPlayer.pause();
       scope.gifViewer.playing = false;
-      scope.$evalAsync();
+      scopeEvalAsync();
     } else {
       scope.gifPlayer.play();
       scope.gifViewer.playing = true;
-      scope.$evalAsync();
+      scopeEvalAsync();
     }
     (window as any).$('.gif-viewer').css('opacity', 0.8);
     setTimeout(function () {
@@ -1757,7 +1758,7 @@ scope.nextGifFrame = function (amount = 1) {
     let idx = curr + amount;
     if (idx > total) idx = total - 1;
     scope.gifPlayer.move_to(idx);
-    scope.$evalAsync();
+    scopeEvalAsync();
   }
 };
 
@@ -1769,7 +1770,7 @@ scope.prevGifFrame = function (amount = 1) {
     let idx = curr - amount;
     if (idx < 0) idx = 0;
     scope.gifPlayer.move_to(idx);
-    scope.$evalAsync();
+    scopeEvalAsync();
   }
 };
 
@@ -1786,7 +1787,7 @@ scope.openGifContextMenu = function (event: any) {
       label: (window as any).i18n.__('context.gifViewer.setThumbnail'),
       click: () => {
         scope.gifViewer.setThumbnail();
-        scope.$evalAsync();
+        scopeEvalAsync();
       },
     })
   );
@@ -1796,7 +1797,7 @@ scope.openGifContextMenu = function (event: any) {
       label: (window as any).i18n.__('context.gifViewer.cancelRange'),
       click: () => {
         scope.gifViewer.cancelRange();
-        scope.$evalAsync();
+        scopeEvalAsync();
       },
     })
   );
@@ -2053,12 +2054,12 @@ scope.runInitSequence = runInitSequence;
       } else {
         scope.theme = theme.css || 'gray';
       }
-      scope.$evalAsync();
+      scopeEvalAsync();
     });
 
     ipcRenderer.on('update-preferences', function () {
       scope.preferences = electronSettings.getPreferences();
-      scope.$evalAsync();
+      scopeEvalAsync();
     });
 
     ipcRenderer.send('get.viewer.image', scope.imageId);
@@ -2167,7 +2168,7 @@ function initShellBehaviors() {
               setTimeout(function () {
                 scope.zoom();
               }, 200);
-              scope.$evalAsync();
+              scopeEvalAsync();
             }
           },
           16

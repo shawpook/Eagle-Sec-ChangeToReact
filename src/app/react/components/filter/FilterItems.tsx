@@ -11,6 +11,7 @@ import { machineryCalculateFilterCounts, machineryFilterContent, machineryReload
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';
+import { scopeEvalAsync } from '../../global/scopeShim';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
 export const KIND_COMPONENTS: Record<string, React.ComponentType<{ snapshot: FilterSnapshot }>> = {};
@@ -165,11 +166,11 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
       if (root?.currentColor) {
         root.currentColor.$setViewValue(color);
         root.currentColor.$render();
-        s.$evalAsync();
+        scopeEvalAsync();
       } else if (s) {
         s.hexColor = color;
         filterWithColor(hexToRGB(color));
-        s.$evalAsync();
+        scopeEvalAsync();
       }
     }, 33);
     const valueInput = document.getElementById('colors-picker-value') as HTMLInputElement | null;
@@ -372,7 +373,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
       } else {
         calcuteContainFolders(s.allData);
       }
-      s.$evalAsync();
+      scopeEvalAsync();
     });
   };
 

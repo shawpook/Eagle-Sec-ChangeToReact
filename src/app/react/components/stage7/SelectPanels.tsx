@@ -6,7 +6,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
 import { getBodyScope, getRootScope } from '../../core/appCore';
-import { folderSettingsChannel, generalTagSelectPanelOpenChannel, saveFolderChannel } from '../../global/bus';
+import { calculateImageBindingChannel, folderSettingsChannel, generalTagSelectPanelOpenChannel, saveFolderChannel, updateSelectionChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1c-1：tagsInput + generalTagSelectPanel + AutoTaggingController 接管。
@@ -980,8 +980,8 @@ export function AutoTaggingModal() {
     // 有更动才需要更新
     if (needUpdateFolder || needUpdateTags) {
       saveFolderChannel.emit();
-      rootScope.$broadcast('CALCULATE_IMAGE_BINDING');
-      rootScope.$broadcast('UPDATE_SELECTION');
+      calculateImageBindingChannel.emit();
+      updateSelectionChannel.emit();
       try {
         if ((window as any).electronLog) (window as any).electronLog.info(`[app] Change folder auto-tags: ${folder.name}(${folder.id}) tags: ${JSON.stringify(folderTagsRef.current)}`);
       } catch (err) {}

@@ -27,7 +27,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { isInFolder } from './itemDomain';
 import { updateSuggestions } from './miscDomain';
 import { machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFilterContent, machineryRebindRefresh, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
-import { closeQuickSearchModalChannel, resetFilterChannel } from '../global/bus';
+import { calculateImageBindingChannel, closeQuickSearchModalChannel, rebindRefreshChannel, resetFilterChannel } from '../global/bus';
 
 let done = false;
 
@@ -163,14 +163,14 @@ export function takeoverFilterDomain(): void {
   // ── $on 广播处理器（摘 bundle → 域内重挂；发送方仍在 bundle 未移植路径）──
   if (s0 && typeof s0.$on === 'function') {
     diag.listenersRemoved['CALCULATE_IMAGE_BINDING'] = removeScopeListener(s0, 'CALCULATE_IMAGE_BINDING');
-    s0.$on('CALCULATE_IMAGE_BINDING', function (_e: any, params: any) {
+    calculateImageBindingChannel.on(function (params: any) {
       const s: any = getBodyScope();
       if (!s) return;
       machineryCalculateImageBinding(s, params);
     });
 
     diag.listenersRemoved['REBIND_REFRESH'] = removeScopeListener(s0, 'REBIND_REFRESH');
-    s0.$on('REBIND_REFRESH', function (_e: any, mute: any) {
+    rebindRefreshChannel.on(function (mute: any) {
       const s: any = getBodyScope();
       if (!s) return;
       domainTimeout(s, function () {

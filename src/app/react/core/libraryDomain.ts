@@ -47,6 +47,7 @@ import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenTrialModal, machineryOpenUnfiled, machineryOpenUntagged, machineryRebindRefresh, machineryShowTutorial, machinerySmartFolderCount, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateSidebarList } from './dataMachinery';
 import { filterWithColor } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
+import { closeTagsPopupChannel } from '../global/bus';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -426,7 +427,7 @@ export function takeoverLibraryDomain(): void {
     s.isUILoaded = false;
     syncSidebarFromScope();
     s.isItemBindCalculated = false;
-    if (s.$root && s.$root.$broadcast) s.$root.$broadcast("CLOSE-TAGS-POPUP");
+    closeTagsPopupChannel.emit();
     s.allData = [];
     syncListFromScope();
     s.isLoading = false;

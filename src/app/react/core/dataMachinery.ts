@@ -88,7 +88,7 @@ import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
-import { autoscrollChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, updateInspectorChannel } from '../global/bus';
+import { autoscrollChannel, calculateImageBindingChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -5956,9 +5956,9 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
               s.current = origin[0];
               syncDetailFromScope();
               syncInspectorFromScope();
-              s.$root.$broadcast("CALCULATE_IMAGE_BINDING");
-              s.$root.$broadcast("REBIND_REFRESH", true);
-              s.$root.$broadcast("UPDATE_SELECTION");
+              calculateImageBindingChannel.emit();
+              rebindRefreshChannel.emit(true);
+              updateSelectionChannel.emit();
             });
 
             w.electronLog && w.electronLog.info(`[app] Categorize ${selectedItems.length} files to ${selectedFolders.length} folders`);
@@ -8609,7 +8609,7 @@ export function machineryRemoveFromDuplicateMapping(s: any, image: any): void {
    OPEN_DUPLICATE_SCAN_PANEL 广播，selected 档含合并回调过滤 isDeleted） */
 export function machineryOpenDuplicate(s: any, options: any = {}): void {
   if (options?.selected) {
-    s.$root.$broadcast("OPEN_DUPLICATE_SCAN_PANEL", {
+    openDuplicateScanPanelChannel.emit({
       items: [...s.selected],
       onMergedCallback: () => {
         s.selected = s.selected.filter((item: any) => {
@@ -8621,12 +8621,12 @@ export function machineryOpenDuplicate(s: any, options: any = {}): void {
     });
   }
   else if (options?.currentPage) {
-    s.$root.$broadcast("OPEN_DUPLICATE_SCAN_PANEL", {
+    openDuplicateScanPanelChannel.emit({
       items: [...s.allData],
     });
   }
   else {
-    s.$root.$broadcast("OPEN_DUPLICATE_SCAN_PANEL", {
+    openDuplicateScanPanelChannel.emit({
       items: [...s.all],
     });
   }

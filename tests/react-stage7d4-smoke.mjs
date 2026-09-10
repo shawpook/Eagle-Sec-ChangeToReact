@@ -191,7 +191,7 @@ try {
       mappings[hashID] = body.raw[0];
 
       window.__calcBindings = 0;
-      body.$root.$on('CALCULATE_IMAGE_BINDING', () => { window.__calcBindings++; });
+      window.__eagleBus.on('CALCULATE_IMAGE_BINDING', () => { window.__calcBindings++; });
 
       window.__eagleBus.emit('OPEN_DUPLICATE', {
         currentFolder: undefined,

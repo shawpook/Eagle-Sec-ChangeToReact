@@ -18,7 +18,7 @@ import { machineryRebindRefresh } from '../../core/dataMachinery';
 import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
-import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, setFolderPasswordChannel } from '../../global/bus';
+import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, openNotificationChannel, setFolderPasswordChannel } from '../../global/bus';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -479,7 +479,7 @@ export function NotificationModal() {
   useEffect(() => {
     const scope = getBodyScope();
     if (!scope) return;
-    const off = scope.$on('OPEN_NOTIFICATION', () => setOpen(true));
+    const off = openNotificationChannel.on(() => setOpen(true));
     return () => off();
   }, []);
 

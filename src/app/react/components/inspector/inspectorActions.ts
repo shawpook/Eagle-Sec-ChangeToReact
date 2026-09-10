@@ -1,5 +1,5 @@
 import { detailZoom } from '../../core/smoothZoomEngine';
-import { contextMenuOpenChannel, openAboutPanelChannel, refreshVideoCommentsChannel, setFolderPasswordChannel, updateInspectorChannel } from '../../global/bus';
+import { contextMenuOpenChannel, openAboutPanelChannel, rebindRefreshChannel, refreshVideoCommentsChannel, setFolderPasswordChannel, updateInspectorChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
@@ -550,7 +550,7 @@ export function removeImageComment(item: any, index: number) {
   const ipc = getIpc();
 
   item.comments.splice(index, 1);
-  getRootScope()?.$broadcast('REBIND_REFRESH', true);
+  rebindRefreshChannel.emit(true);
   ipc.send('image-change', item);
 
   (window as any).electronLog && (window as any).electronLog.info(`[app] Remove image annotation: ${item.name}(${item.id})`);
@@ -558,7 +558,7 @@ export function removeImageComment(item: any, index: number) {
   const message = t('notify.annotation.remove');
   getRootScope()?.notify({ message: message, duration: 4000 }, () => {
     item.comments = originComments;
-    getRootScope()?.$broadcast('REBIND_REFRESH', true);
+    rebindRefreshChannel.emit(true);
     ipc.send('image-change', item);
   });
   (window as any).AnnotationPreview.blur();
@@ -645,7 +645,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
       video.comments.splice(idx, 1);
       ipc.send('image-change', video);
       getBodyScope().updateItemView(video);
-      getRootScope()?.$broadcast('REBIND_REFRESH', true);
+      rebindRefreshChannel.emit(true);
       refreshVideoCommentsChannel.emit();
 
       (window as any).electronLog && (window as any).electronLog.info(`[app] Remove video annotation: ${video.name}(${video.id})`);
@@ -653,7 +653,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
       const message = t('notify.annotation.remove');
       getRootScope()?.notify({ message: message, duration: 4000 }, function () {
         video.comments = originComments;
-        getRootScope()?.$broadcast('REBIND_REFRESH', true);
+        rebindRefreshChannel.emit(true);
         refreshVideoCommentsChannel.emit();
         getBodyScope().updateItemView(video);
         ipc.send('image-change', video);

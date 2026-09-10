@@ -15,7 +15,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
-import { openDuplicateChannel, openDuplicateScanPanelChannel } from '../../global/bus';
+import { calculateImageBindingChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
@@ -1560,8 +1560,8 @@ export function DuplicateModal() {
       }
       rootRef.current.duplicates.splice(0, 1);
       const rootScopeB = getRootScope();
-      rootScopeB?.$broadcast('CALCULATE_IMAGE_BINDING');
-      rootScopeB?.$broadcast('REBIND_REFRESH', false);
+      calculateImageBindingChannel.emit();
+      rebindRefreshChannel.emit(false);
 
       ipc.send('palette-resume');
 
@@ -1626,8 +1626,8 @@ export function DuplicateModal() {
 
     rootRef.current.duplicates = [];
     const rootScopeB = getRootScope();
-    rootScopeB?.$broadcast('CALCULATE_IMAGE_BINDING');
-    rootScopeB?.$broadcast('REBIND_REFRESH', false);
+    calculateImageBindingChannel.emit();
+    rebindRefreshChannel.emit(false);
     ipc.send('palette-resume');
     close();
   };
@@ -1674,8 +1674,8 @@ export function DuplicateModal() {
     ipc.send('empty-trash', imageIdString);
     rootRef.current.duplicates = [];
     const rootScopeB = getRootScope();
-    rootScopeB?.$broadcast('CALCULATE_IMAGE_BINDING');
-    rootScopeB?.$broadcast('REBIND_REFRESH', false);
+    calculateImageBindingChannel.emit();
+    rebindRefreshChannel.emit(false);
     rootScopeB?.$broadcast('gl:reset', rootScope.allData);
     close();
   };

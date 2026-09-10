@@ -13,7 +13,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
-import { openAddFolderModalChannel, openMoveFolderModalChannel } from '../../global/bus';
+import { calculateImageBindingChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1140,9 +1140,9 @@ export function AddToFolderModal() {
       if (w.ig && typeof w.ig.layout === 'function') w.ig.layout(false);
     }
 
-    rootScope.$broadcast('CALCULATE_IMAGE_BINDING');
-    rootScope.$broadcast('REBIND_REFRESH', true);
-    rootScope.$broadcast('UPDATE_SELECTION');
+    calculateImageBindingChannel.emit();
+    rebindRefreshChannel.emit(true);
+    updateSelectionChannel.emit();
 
     // 记录最近使用的文件夹
     recentMoveFoldersRef.current = recentMoveFoldersRef.current.slice(0, 50);
@@ -1184,9 +1184,9 @@ export function AddToFolderModal() {
           getBodyScope().current = origin[0];
           syncDetailFromScope();
           syncInspectorFromScope();
-          rootScope.$broadcast('CALCULATE_IMAGE_BINDING');
-          rootScope.$broadcast('REBIND_REFRESH', true);
-          rootScope.$broadcast('UPDATE_SELECTION');
+          calculateImageBindingChannel.emit();
+          rebindRefreshChannel.emit(true);
+          updateSelectionChannel.emit();
         }
       );
     }

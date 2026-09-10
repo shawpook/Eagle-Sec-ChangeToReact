@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openFolder } from '../../services/folderCoreService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
-import { importArtstationChannel, importImagesChannel, openRenameChannel } from '../../global/bus';
+import { calculateImageBindingChannel, importArtstationChannel, importImagesChannel, openRenameChannel } from '../../global/bus';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -1286,7 +1286,7 @@ export function BatchRenameModal() {
         originNames[item.id] = originName;
       });
       saveFolder();
-      getRootScope()?.$broadcast('CALCULATE_IMAGE_BINDING');
+      calculateImageBindingChannel.emit();
     }
 
     // 取代字串
@@ -1307,7 +1307,7 @@ export function BatchRenameModal() {
         originNames[item.id] = originName;
       });
       saveFolder();
-      getRootScope()?.$broadcast('CALCULATE_IMAGE_BINDING');
+      calculateImageBindingChannel.emit();
 
       // 儲存搜尋歷史
       saveFindStringHistory(typeRef.current, findStringRef.current);
@@ -1336,7 +1336,7 @@ export function BatchRenameModal() {
             }
           });
           saveFolder();
-          getRootScope()?.$broadcast('CALCULATE_IMAGE_BINDING');
+          calculateImageBindingChannel.emit();
         }
       );
     }

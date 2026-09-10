@@ -6,7 +6,7 @@ import { $, getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
-import { openPluginCenterChannel, openPluginCenterDetailChannel } from '../../global/bus';
+import { openPluginCenterChannel, openPluginCenterDetailChannel, refreshPluginCenterChannel } from '../../global/bus';
 
 /**
  * 阶段7d-5b：pluginCenter 接管（bundle 62140-62723 附近；镜像 js/directives/plugin-center.js
@@ -658,7 +658,7 @@ export function PluginCenter() {
 
     // b1-9ba：应用侧发送面随 bundle 摘除死亡，但 7d5b 契约（广播不崩、面板保持）
     // 仍锁定本监听——保留，插件竖切时归位。
-    const offRefresh = body.$on('REFRESH_PLUGIN_CENTER', async (event: any, categoryId: any) => {
+    const offRefresh = refreshPluginCenterChannel.on(async (categoryId: any) => {
       void categoryId;
       calculateListRef.current();
       calculateNeedUpdateRef.current();

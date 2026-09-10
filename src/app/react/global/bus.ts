@@ -138,3 +138,13 @@ export const editSmartFolderChannel = defineChannel<any>('EDIT.SMART.FOLDER');
 export const closeQuickSearchModalChannel = defineChannel<any>('CLOSE_QUICK_SEARCH_MODAL');
 export const cleanAllErrorChannel = defineChannel<any>('CLEAN_ALL_ERROR');
 export const autoscrollChannel = defineChannel<any>('AutoScroll');
+
+// ── b1-9bz-C-2 频道迁移 ──
+export const refreshPluginCenterChannel = defineChannel<any>('REFRESH_PLUGIN_CENTER');
+export const openNotificationChannel = defineChannel<any>('OPEN_NOTIFICATION');
+export const closeTagsPopupChannel = defineChannel<any>('CLOSE-TAGS-POPUP');
+
+// ── b1-9bz-C-2 频道迁移 ──
+export const rebindRefreshChannel = defineChannel<any>('REBIND_REFRESH');
+export const calculateImageBindingChannel = defineChannel<any>('CALCULATE_IMAGE_BINDING');
+export const updateSelectionChannel = defineChannel<any>('UPDATE_SELECTION');

@@ -132,8 +132,8 @@ try {
     // 迁到 eagleBus，故改查 window.__eagleBus.listenerCount。
     const a2 = L.takenOver === true && lc('app-status-loading') >= 1 && lc('app-status-library-loaded') >= 1 && lc('preload-library') >= 1;
     const a3 = I.takenOver === true && lc('image.added') >= 1 && lc('image.changed') >= 1 && lc('file-uploaded') >= 1 && lc('thumbnail-generated') >= 1;
-    const a4 = F.takenOver === true && lc('keyword-suggestion') >= 1 && lc('show-and-search') >= 1 && (s.__bus['REBIND_REFRESH'] || []).length >= 1;
-    const a5 = S.takenOver === true && (s.__bus['UPDATE_SELECTION'] || []).length >= 1 && window.__eagleBus.listenerCount('SAVE_FOLDER') >= 1;
+    const a4 = F.takenOver === true && lc('keyword-suggestion') >= 1 && lc('show-and-search') >= 1 && window.__eagleBus.listenerCount('REBIND_REFRESH') >= 1;
+    const a5 = S.takenOver === true && window.__eagleBus.listenerCount('UPDATE_SELECTION') >= 1 && window.__eagleBus.listenerCount('SAVE_FOLDER') >= 1;
     const a6 = M.takenOver === true && lc('before-quit') >= 1 && lc('window.maximize') >= 1 && lc('change.current.theme') >= 1 && lc('jieba-extract-done') >= 1;
     // b1-9bi：12 个 eagle.filter 字符串 watcher 退役为 filterService 订阅——契约 = scope 零 watcher + 订阅在
     const a7 = filterMinTotal === 0 && F.ruleSubscribed === true;
@@ -445,7 +445,7 @@ try {
     const orig = s.rebindRefresh;
     s.rebindRefresh = function () { n++; return orig.apply(s, arguments); };
     window.__m1rr = () => n;
-    s.$root.$broadcast('REBIND_REFRESH', true);
+    window.__eagleBus.emit('REBIND_REFRESH', true);
     return true;
   })()`);
   await delay(900);
@@ -472,7 +472,7 @@ try {
   await evalNow(`(() => {
     const s = window.$bodyScope;
     window.__m1us2 = window.__m1us();
-    s.$root.$broadcast('UPDATE_SELECTION');
+    window.__eagleBus.emit('UPDATE_SELECTION');
     return true;
   })()`);
   await delay(400);

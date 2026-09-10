@@ -6,7 +6,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
 import { getRawPath } from '../../core/itemDomain';
-import { moveCropToolChannel, resizeCropToolChannel } from '../../global/bus';
+import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from '../../global/bus';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -24,7 +24,7 @@ export function removeComment(index: number) {
   const originComments = JSON.parse(JSON.stringify(image.comments));
 
   image.comments.splice(index, 1);
-  $bodyScope.$root.$broadcast('REBIND_REFRESH', true);
+  rebindRefreshChannel.emit(true);
   ipc.send('image-change', image);
 
   (window as any).electronLog && (window as any).electronLog.info(`[app] Remove image annotation: ${image.name}(${image.id})`);
@@ -39,7 +39,7 @@ export function removeComment(index: number) {
       },
       function () {
         image.comments = originComments;
-        s.$root.$broadcast('REBIND_REFRESH', true);
+        rebindRefreshChannel.emit(true);
         getIpc().send('image-change', image);
       }
     );
@@ -143,7 +143,7 @@ export function useRectComment(enabled: boolean) {
             sc.current.comments = [];
           }
           sc.current.comments.push(comment);
-          sc.$root.$broadcast('REBIND_REFRESH', true);
+          rebindRefreshChannel.emit(true);
           $()(window).trigger('resize.comments');
           setTimeout(function () {
             (window as any).AnnotationPreview.lastElem = $()('#comment-' + comment.id)[0];

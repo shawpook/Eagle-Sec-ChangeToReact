@@ -246,7 +246,7 @@ try {
   );
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_URL_IN_PANEL', 'about:blank?eagle-test=1');
+      window.__eagleBus.emit('OPEN_URL_IN_PANEL', 'about:blank?eagle-test=1');
       return true;
     })()`,
     returnByValue: true,

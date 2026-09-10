@@ -270,7 +270,7 @@ try {
   // ── NewSmartFolder：NEW.SMART.FOLDER 广播 → 弹窗 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: undefined, parent: undefined });
+      window.__eagleBus.emit('NEW.SMART.FOLDER', { smartFolder: undefined, parent: undefined });
       return true;
     })()`,
     returnByValue: true,

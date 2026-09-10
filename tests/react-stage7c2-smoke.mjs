@@ -104,7 +104,7 @@ try {
 
   const openQuickSearch = async () => {
     await page.send('Runtime.evaluate', {
-      expression: `(() => { window.$bodyScope.$root.$broadcast('OPEN_QUICK_SEARCH_MODAL'); return true; })()`,
+      expression: `(() => { window.__eagleBus.emit('OPEN_QUICK_SEARCH_MODAL'); return true; })()`,
       returnByValue: true,
     });
     await waitFor(async () => (await waitExpr(`document.getElementById('quick-search-panel').classList.contains('open')`)).result.value, 'quick-search open', 8000);

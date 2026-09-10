@@ -125,7 +125,7 @@ try {
   // ── webp：广播 + swal 确认 + converted 队列 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('WEBP_CONVERT_START', {
+      window.__eagleBus.emit('WEBP_CONVERT_START', {
         images: [{ ext: 'webp', id: 'w1' }, { ext: 'webp', id: 'w2' }, { ext: 'jpg', id: 'j1' }],
         format: 'webp',
       });
@@ -180,7 +180,7 @@ try {
   );
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('WEBP_CONVERT_START', {
+      window.__eagleBus.emit('WEBP_CONVERT_START', {
         images: [{ ext: 'webp', id: 'w3' }],
         format: 'webp',
       });

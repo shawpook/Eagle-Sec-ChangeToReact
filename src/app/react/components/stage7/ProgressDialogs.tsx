@@ -1318,7 +1318,7 @@ export function WebpConvertProgress() {
     };
     rootRef.current.cancel = cancelWebpConvert;
 
-    const onStart = (e: any, params: any) => {
+    const onStart = (params: any) => {
       ngSafe(() => {
         const images = params && params.images;
         const format = params && params.format;

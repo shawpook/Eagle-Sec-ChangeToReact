@@ -152,7 +152,7 @@ try {
     body.TagManager.getSuggestTags(body.selected);
     return JSON.stringify({ newTags: window.eagle.inspector.newTags, tagManagerType: typeof body.TagManager });
   })()`));
-  console.log('itp-open:', await ev(`(() => { window.$bodyScope.$broadcast('INSPECTOR.TAG.SELECT.PANEL.OPEN'); return 'ok'; })()`));
+  console.log('itp-open:', await ev(`(() => { window.__eagleBus.emit('INSPECTOR.TAG.SELECT.PANEL.OPEN'); return 'ok'; })()`));
   await delay(700);
   console.log('itp-state:', await ev(`(() => {
     const p = window.__eagleInspectorTagSelectPanel;

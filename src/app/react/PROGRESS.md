@@ -2129,6 +2129,36 @@
 > | **b1-9bz-C-4** | `$watch` / `$watchCollection` → store 订阅（**须先于 C-3**） | 16 处 | C-2 | watcher 清点归零 + 定向测试 |
 > | **b1-9bz-C-3** | `$evalAsync` / `scopeApply` / `$apply` 退役 | 356 处 + 235 | C-4 | flush 变为 no-op 后才可删 |
 >
+> **【C-4 / C-3 实测结论（2026-09-10）】**
+>
+> **C-4：4 / 16 迁移，12 处为明确终态。**
+> 已迁：`isCleaningTrash`、`removeProgress`（入 bodyState + 源翻转，EmptyTrashProgress 改订阅）、
+> `theme`（→ useBodyState.subscribe）、`current.id`（→ useDetailState.subscribe）。
+> 保留 12 处及理由：
+> - `selected` ×3（InspectorTagSelectPanel 1 + selectionViewDomain 2）—— 检测的是 body scope
+>   的 `selected` 数组深变化，迁移需先把 selected 入 store 并重构 machinery 的选中写入路径；
+> - `imageSize.height` / `imageSize.zoomRatio` / `listMetaType` ×3 —— 由 machinery 多处写入
+>   （每字段 3–4 个写入点），迁移需在写入点直调，属 C-6（machinery 归位）范围；
+> - ProgressDialogs 的 3 处 `$watch(read, sync)` —— read 读的是 machinery 内部派生值
+>   （`finishGenerateQueue.length` / `debugReportStatus` / `fixUtils`），均不在 store。
+> - itemDomain 的 `finishQueue` ×1 同上。
+> **这些 watcher 不阻塞 C-3**：实测 `$watch` 注册时会启动 **200ms 定时轮询**
+> （`scopeShim.ensureFlushTimer`），`$evalAsync/$apply` 只是把 flush「提前到立即」，
+> 不是唯一途径。
+>
+> **C-3：scope 面调用已清零（392 处改名 `scopeEvalAsync`），scopeApply 直调化实测失败并回退。**
+> - 改名 392 处（40 文件）：`X.$evalAsync(...)` / `X.$apply(...)` → `scopeEvalAsync(...)`；
+>   `scopeEvalAsync` 定义在 scopeShim，实现与原 `$evalAsync` 逐字相同（执行 fn + flushWatchers），
+>   属纯改名 + 调用面脱离 scope 对象。新增 `flushScopeWatchers` / `hasScopeWatchers` 导出。
+> - **踩坑（与 C-2 同型的 `$root` 问题）**：替换正则把 `s.$root.$evalAsync()` 改成
+>   `s.scopeEvalAsync()`（`$root` 被当标识符、`s.` 前缀残留）→ 运行期 TypeError，11 处已修。
+> - **`scopeApply` 直调化失败并回退**：去掉 `$$phase` 分叉与 `$apply` 间接后，stage-smoke 的
+>   「theme switch to light」**稳定失败**。真因：原版在 scope 无 `$apply` 时**抛错被 catch**
+>   （fn 不执行），直调则执行了 fn —— 是真实行为差异而非等价改造。**保留原实现**，
+>   该 1 处内部 `$apply` 留给 C-6（删 scopeShim）统一处置。
+> - 结论：`s.$evalAsync` / `s.$apply` 调用面全树归零；唯一残留是 `scopeApply` 实现内部的
+>   `$apply` 间接层（1 处，非调用面），属 C-6 范围。
+>
 > **⚠️ 顺序修正（2026-09-10，实证）**：原计划 C-3 → C-4 是**错的**。
 > 读 `global/scopeShim.ts` 的实现后发现：
 > ```js

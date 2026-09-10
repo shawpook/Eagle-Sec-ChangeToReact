@@ -1928,25 +1928,35 @@
 > `multi inspector persistence` 是**时序敏感**断言，单次结果不稳定（同一代码状态曾出现
 > 连 2 次 PASS → 1 次 FAIL → 再 PASS）。**判回归前必须先连跑 2–3 次**，否则会把抖动
 > 误判成改动的因果 —— 本批曾据此错误归因到 `zoomFit`，恢复原实现后仍失败才确认是抖动。
-> | **B6** | 改写 4 个 spy 契约，解锁 EXCLUDE 白名单 | 125 处 | 无 | stage1m1 + 全套件 |
-> | **B7** | 双键单源化（B 18 + C 21，同类作业） | 39 个 | B6 | 逐个体检 + 全套件 |
-> | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |
+> | **B6** | ✅ 已完成 —— EXCLUDE 解锁（153→6 处） | 198 处 | 无 | stage1m1 + 全套件 |
+> | **B7** | ✅ 已完成 —— 双键单源化 30/40 | 39 个 | B6 | 逐个体检 + 全套件 |
+> | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | 待做 | B6 + B7 | stage1c3 契约改写 + 全套件 |
 >
-> - **B6 的作业面**：`stage1m1` 的 4 个断言（`m1-D-filter-watch-fires` /
->   `m1-D-rebind-broadcast` / `m1-E-selected-watch` / `m1-E-update-selection-broadcast`）
->   靠替换 `s.NAME` 做 spy 断言 $watch/$broadcast 桥接。给 `filterContent` /
->   `rebindRefresh` / `updateSelection` / `calculateImageBinding` 提供服务面可观察钩子
->   （参照既有 `window.__eagleFilterService` 范式），改写后把这 4 名移出 EXCLUDE。
-> - **B8 的阻塞点**：EXCLUDE 解锁前，scope 面仍需 fns 表补缺口；`stage1c3` 契约抽查的
->   41 名含 `updateSidebarList` / `zoomFit` / `undo` / `smartZoom` / `zoomIn` 等双键。
+> **B8 前置 1/3 已完成**：`search` 解锁（EXCLUDE 残留 **9 → 6**，只剩 5 个契约观测派发点
+> + preferences 的 `restoreDefaultShortcuts`）。`search` 是 TABLE 判档（无 machinery 挂载），
+> 落点为 filterDomain 的 `search`（与表项同一符号），3 处调用点直调化并去掉与新落点耦合的
+> 旧守卫 `typeof s.search === 'function'`。
 >
-> **不列入计划的第三堆 122 处**：无供给保留回退 76 名、预绑带参 4 名、外部注入 `notify`
-> 25 处、动态键 1 处、需先提升的 TABLE 3 名（约 5 处）——属合理终态，随 P4-ca 删 scopeShim
-> 或后续批次处置。
+> **B8 实测工作清单（本轮逐项量化，全部为「仅 fns 表供给」的调用点）**：
 >
-> 在此之前 **shimFnsBridge / `__eagleCoreFns` 摘除不具备条件**：EXCLUDE 白名单 7 名的调用
-> 仍走 scope 面，bundle 缺席时需要 fns 表补缺口；且 `stage1c3` 契约抽查的 41 个名字里含
-> `updateSidebarList` / `zoomFit` / `undo` / `smartZoom` / `zoomIn` 等双键。
+> | # | 项 | 量 | 说明 |
+> |---|---|---|---|
+> | 1 | `Toolbar.tsx` 字符串式派发 | **33 处**（`call('X')` / `callSeq([['X',arg]])`，实现为 `scope[fn](...)`） | 其中 5 个名字**仅表供给**：`openFolder` / `openSmartFolder` / `openApplicationContextMenu` / `openOrderMenu` / `resetFilter`；13 个已挂载；15 个不在判定图（在 shim 世界本就是 silent no-op —— 属**既有缺口**，非 B8 引入） |
+> | 2 | 其余动态下标派发 `scope[fn](...)` | **15 处** / 11 文件 | Sidebar / DetailViewer / Inspector / ListRegion / SmallPanels / TagManager / detailState / artstation / panels8e / preview-window —— 需逐个查 `fn` 的实际取值，判断是否命中表供给名 |
+> | 3 | `folderMenuService` 的 3 个匿名 install 表项 | **5 处**调用 | `reorderFolderByTitle` / `reorderAllFolderByTitle` / `refreshSmartFolderCount` —— 表内以 `fns["X"] = function(...){...}` 注册，依赖 install 局部闭包 `reorderFolderByTitleClosure`（1979 行内）与 `ayncsUpdateSmartFoldersCount`（2367 行内），需**先提升为模块级具名导出**再转换 |
+> | 4 | `ProgressDialogs.tsx` 的 `cancelEmptyTrash` | 1–2 处 | 本地 `const cancelEmptyTrash = () => {…}` **遮蔽**同名 import → 直调即自我递归，须人工改（改名或显式引用模块导出） |
+> | 5 | `__eagleCoreFns` + `stage1c3` 契约 | — | `hooks.ts:57-74` 的 `makeControllerFns`/`getCoreFns`/`window.__eagleCoreFns` 整块摘除；`tests/react-stage1c3-smoke.mjs:123` 的 `Object.keys(c).length === 236` 抽查改为服务面口径。`probe-filter-toggle.mjs` 也引用了它 |
+> | 6 | 摘除本体 | — | `main.tsx:232` 的 `attachCoreFnsToShim(scope)` 调用、删除 `core/shimFnsBridge.ts`、退役 `core/controllerFns.ts`（`makeControllerFns` 仅剩这两个消费方） |
+>
+> **结论**：B8 是**全有或全无**的作业 —— 表在位时 5 个仅表供给的名字由它兜底；一旦摘表，
+> 上述 1/2/3/4 的每一个调用点都会在运行时变成 `undefined`（`typeof scope[fn] === 'function'`
+> 守卫只会**静默跳过**，不会报错，因此必须静态清干净再做）。工作量与 B4 同量级（50+ 个
+> 调用点的「字符串名 → 直接引用」改造 + 闭包提升 + 契约改写），需独立成批推进，不可与
+> B5/B6 合并。**当前状态：B5/B6 已交付并全绿；B8 已完成前置 1/3 与完整工作清单量化。**
+>
+> **不列入 B8 的残留（合理终态）**：① 其它窗口的 scope（`preview-window` / `collect-window` /
+> `preferences` —— 与 bodyScope 无关，`s` 是各自的控制器 scope）；② PREBIND 预绑实例 47 处
+> （`reload` 等 6 名，见 B5 节）；③ `notify` 外部注入 25 处；④ 5 个契约观测派发点。
 >
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**

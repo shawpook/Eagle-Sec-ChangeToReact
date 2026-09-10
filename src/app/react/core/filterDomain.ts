@@ -153,7 +153,7 @@ export function takeoverFilterDomain(): void {
     useListState.subscribe((state: any, prev: any) => {
       if (state && prev && state.keyword !== prev.keyword) {
         const s: any = getBodyScope();
-        if (s && typeof s.search === 'function') s.search(state.keyword);
+        if (s) search(state.keyword);
       }
     });
     diag.keywordSubscribed = true;

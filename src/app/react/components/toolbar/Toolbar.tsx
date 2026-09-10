@@ -10,7 +10,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { searchFocus } from '../../core/filterDomain';
+import { search, searchFocus } from '../../core/filterDomain';
 
 /**
  * 阶段3a：工具栏接管。
@@ -166,7 +166,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
             debounceRef.current = setTimeout(() => {
               scopeApply(getBodyScope(), (s) => {
                 s.keyword = value;
-                if (typeof s.search === 'function') s.search(value);
+                search(value);
               });
             }, 200);
           } else {
@@ -183,7 +183,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
             clearTimeout(debounceRef.current);
             scopeApply(getBodyScope(), (s) => {
               s.keyword = draft;
-              if (typeof s.search === 'function') s.search(draft);
+              search(draft);
             });
           }
           call('searchBlur')(e);

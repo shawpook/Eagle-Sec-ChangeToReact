@@ -15,6 +15,9 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
 import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
 import { machineryRebindRefresh } from '../../core/dataMachinery';
+import { showListSubfolderContent } from '../../services/folderMenuService';
+import { openApplicationContextMenu } from '../../services/miscMenuService';
+import { switchLibrary } from '../../services/folderCoreService';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -30,9 +33,10 @@ import { machineryRebindRefresh } from '../../core/dataMachinery';
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
-const call = (fn: string, ...preArgs: any[]) => (e?: any) =>
+const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
-    if (typeof scope[fn] === 'function') scope[fn](...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    const target = typeof fn === 'function' ? fn : scope[fn];
+    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
 
 /** global.js 的 moveToCursorPosition（const，window 上不可达，按原文转写）。 */
@@ -148,16 +152,16 @@ export function LayoutPanel() {
       s.layout = layout;
       switch (layout) {
         case 'GridLayout':
-          if (typeof s.switchGridLayout === 'function') switchGridLayout();
+          switchGridLayout();
           break;
         case 'JustifiedLayout':
-          if (typeof s.switchJustifiedLayout === 'function') switchJustifiedLayout();
+          switchJustifiedLayout();
           break;
         case 'SquareLayout':
-          if (typeof s.switchSquareLayout === 'function') switchSquareLayout();
+          switchSquareLayout();
           break;
         case 'ListLayout':
-          if (typeof s.switchListLayout === 'function') switchListLayout();
+          switchListLayout();
           break;
       }
     });
@@ -170,7 +174,7 @@ export function LayoutPanel() {
       } else if (s[model]) {
         s[model].orderBy = value === 'DEFAULT' ? '' : value;
       }
-      if (typeof s.changeOrderBy === 'function') changeOrderBy(value === 'DEFAULT' ? '' : value);
+      changeOrderBy(value === 'DEFAULT' ? '' : value);
     });
   };
 
@@ -424,7 +428,7 @@ export function LayoutPanel() {
                 <Toggle checked={snapshot.showAnnotation} />
               </div>
             </div>
-            <div className="panel-item" onClick={() => call('showListSubfolderContent')()}>
+            <div className="panel-item" onClick={() => call(showListSubfolderContent)()}>
               <div className="label">{t('layoutPanel.label.showSubFolder')}</div>
               <div className="value">
                 <Toggle checked={snapshot.showSubfolderContent} />
@@ -1012,7 +1016,7 @@ export function WelcomePage() {
     ? createPortal(
         <div id="welcome-page" className="welcome-page" style={!isOpen ? { display: 'none' } : undefined} ref={tippyRef}>
           <div className="welcome-page-header">
-            <div className="icon-btn application-menu-btn fixed" onClick={(e) => call('openApplicationContextMenu', e.nativeEvent)(e)}>
+            <div className="icon-btn application-menu-btn fixed" onClick={(e) => call(openApplicationContextMenu, e.nativeEvent)(e)}>
               <img src={iconSrc(theme, 'ic-app-menu.svg')} />
             </div>
             <div className="drag-area" />
@@ -1214,7 +1218,7 @@ export function WelcomePage() {
                   <div className="button button-primary" onClick={call('refresh')}>
                     {t('libraryMissing.refresh')}
                   </div>
-                  <div className="button button-grey" onClick={(e) => call('switchLibrary', e.nativeEvent)(e)}>
+                  <div className="button button-grey" onClick={(e) => call(switchLibrary, e.nativeEvent)(e)}>
                     {t('libraryMissing.reimport')}
                   </div>
                 </div>

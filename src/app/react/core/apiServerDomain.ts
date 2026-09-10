@@ -20,6 +20,8 @@
 
 import { syncUploadFromScope } from '../store/uploadState';
 import { getBodyScope } from './appCore';
+import { addToRecentFolders } from '../services/batchOpsService';
+import { uploadFiles, uploadUrls } from '../services/uploadService';
 
 let installed = false;
 
@@ -542,7 +544,7 @@ function machineryCreateFolder(params: any): Promise<any> {
       }
       bs.folderMappings[folder.id] = folder;
       bs.updateSidebarList();
-      bs.addToRecentFolders([folder.id]);
+      addToRecentFolders([folder.id]);
       bs.saveFolder();
       w.electronLog.info(`[api] create folder: ${folderName}(${folder.id})`);
       resolve(folder);
@@ -645,13 +647,13 @@ function machineryAddPath(filePath: any, id: any, name: any, websiteUrl: any, ta
       cutMode: cutMode ?? false,
     }];
   }
-  bs.uploadFiles(fds);
+  uploadFiles(fds);
 }
 
 /* addURLs（bundle 18270-18296 逐字） */
 function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: any, annotations: any, stars: any, modificationTimes: any, headers: any, folderIds: any): void {
   const bs: any = getBodyScope();
-  bs.uploadUrls(imageUrls, folderIds, {
+  uploadUrls(imageUrls, folderIds, {
     names: names,
     urls: websiteUrls,
     tags: tags,
@@ -670,7 +672,7 @@ function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: 
   }
 
   if (folderIds && folderIds.length > 0) {
-    bs.addToRecentFolders(folderIds);
+    addToRecentFolders(folderIds);
   }
 }
 

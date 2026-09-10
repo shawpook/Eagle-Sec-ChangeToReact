@@ -23,7 +23,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
-import { getLibraryHistory, openFolder, openSmartFolder } from './folderCoreService';
+import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -570,7 +570,7 @@ export function folderExportAsFolder(...args: any[]) {
           }
         }
       };
-      s.exportFolder(function (savePath: any) {
+      exportFolder(function (savePath: any) {
         folders.forEach(function (folder2: any) {
           exportFolder(folder2, savePath);
         });
@@ -849,7 +849,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: 'folder dir new create 資料夾 文件夾 新建 建立 新增 ',
             icon: 'ic-folder-new-folder.svg',
             click: () => {
-              s.newFolder(folder, false, true);
+              newFolder(folder, false, true);
               s.$evalAsync();
             }
           },
@@ -861,7 +861,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: 'sub folder dir new create 資料夾 文件夾 新建 建立 新增 子資料夾',
             icon: 'ic-folder-new-sub-folder.svg',
             click: () => {
-              s.newFolder(folder, true);
+              newFolder(folder, true);
               s.$evalAsync();
             }
           },
@@ -994,7 +994,7 @@ export function openFolderContextMenu(...args: any[]) {
                   keywords: i18n.__('context.folder.sortByTitle'),
                   click: () => {
                     let folders = (folder.parent) ? s.folderMappings[folder.parent].children : s.folders;
-                    s.reorderFolderByTitle(folders);
+                    reorderFolderByTitle(folders);
                   }
                 },
                 {
@@ -1002,21 +1002,21 @@ export function openFolderContextMenu(...args: any[]) {
                   keywords: i18n.__('context.folder.sortByTitle'),
                   click: () => {
                     let folders = (folder.parent) ? s.folderMappings[folder.parent].children : s.folders;
-                    s.reorderFolderByTitle(folders, true);
+                    reorderFolderByTitle(folders, true);
                   }
                 },
                 {
                   label: i18n.__('context.folder.sortByTitle>title') + `(${i18n.__('context.folder.sortByAllLevel')}) (A→Z)`,
                   keywords: i18n.__('context.folder.sortByTitle'),
                   click: () => {
-                    s.reorderAllFolderByTitle();
+                    reorderAllFolderByTitle();
                   }
                 },
                 {
                   label: i18n.__('context.folder.sortByTitle>title') + `(${i18n.__('context.folder.sortByAllLevel')}) (Z→A)`,
                   keywords: i18n.__('context.folder.sortByTitle'),
                   click: () => {
-                    s.reorderAllFolderByTitle(true);
+                    reorderAllFolderByTitle(true);
                   }
                 },
               ]
@@ -1447,7 +1447,7 @@ export function smartFolderExportAsFolder(...args: any[]) {
         }
       };
 
-      s.exportFolder(function (savePath: any) {
+      exportFolder(function (savePath: any) {
         var f: any = {};
         var folderId = guid();
         var images: any[] = [];
@@ -1850,7 +1850,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '刷新 重新載入 refresh reload',
             icon: 'ic-refresh.svg',
             click: () => {
-              s.refreshSmartFolderCount(event);
+              refreshSmartFolderCount(event);
               s.$evalAsync();
             }
           },
@@ -1971,28 +1971,137 @@ export function openSmartFolderContextMenu(...args: any[]) {
     }).apply(null, args);
 }
 
+/* ── b1-9bz-B-8：以下 3 个函数由 installFolderMenuFns 的匿名表项提升为模块级具名导出 ──
+   原形为 `fns["X"] = function (...args) {…}`，依赖 install 内局部闭包，而调用点
+   （openFolderContextMenu / openSmartFolderContextMenu）在**模块级函数**内，
+   无法用局部 const 替代，故连同依赖闭包一并提升（bundle 41765-41781 / 41782-41829 /
+   26287-26290 / 26301-26331 逐字）。 */
+
+function reorderFolderByTitleClosure(folders: any, reverse: any) {
+  folders = folders.sort(function (a: any, b: any) {
+    try {
+      var na = a.name.toLowerCase();
+      var nb = b.name.toLowerCase();
+      if (na && nb) {
+        return na.localeCompare(nb, (window as any).languageBCP, { numeric: true });
+      }
+    }
+    catch (err) {}
+  });
+
+  if (reverse) {
+    folders = folders.reverse();
+  }
+}
+
+function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
+  const s = getScope();
+  if (!smartFolders || smartFolders.length === 0) return;
+  setTimeout(() => {
+    let total = smartFolders.length;
+    let once = 3;
+    let loopCount = total / once;
+    let countOfSend = 0;
+
+    function send() {
+      var start = countOfSend * once;
+      var arr = smartFolders.slice(start, start + once);
+      countOfSend += 1;
+
+      for (let i = 0; i < arr.length; i++) {
+        arr[i].imageCount = machinerySmartFolderCount(s, arr[i]);
+        if (!arr[i].pinyin) {
+          arr[i].pinyin = (window as any).tinyPinyin.convertToPinyin(arr[i].name);
+        }
+      }
+
+      s.$evalAsync();
+
+      loop();
+    }
+
+    function loop() {
+      if (countOfSend < loopCount) {
+        window.requestAnimationFrame(send);
+      }
+      else {
+        callback && callback();
+      }
+    }
+    loop();
+  }, 30);
+}
+
+export function reorderFolderByTitle(...args: any[]) {
+  const s = getScope();
+  if (!s) return;
+  return (function (folders: any, reverse: any) {
+    swal({
+      html: `
+                  <div class="alert">
+                      <div class="alert-icon warning"></div>
+                      <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
+                  </div>
+              `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: 'alert-box',
+      cancelButtonColor: '#777777',
+      confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
+      cancelButtonText: i18n.__('general.cancel'),
+    }).then(function () {
+      reorderFolderByTitleClosure(folders, reverse);
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
+      s.$evalAsync();
+      try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
+    });
+  }).apply(null, args);
+};
+
+export function reorderAllFolderByTitle(...args: any[]) {
+  const s = getScope();
+  if (!s) return;
+  return (function (reverse: any) {
+    swal({
+      html: `
+                  <div class="alert">
+                      <div class="alert-icon warning"></div>
+                      <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
+                  </div>
+              `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: 'alert-box',
+      cancelButtonColor: '#777777',
+      confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
+      cancelButtonText: i18n.__('general.cancel'),
+    }).then(function () {
+      reorderFolderByTitleClosure(s.folders, reverse);
+      treeWalkSafe(s.folders, 'children', function (folder: any, parent: any) {
+        reorderFolderByTitleClosure(folder.children, reverse);
+      });
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
+      s.$evalAsync();
+      try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}
+    });
+  }).apply(null, args);
+};
+
+export function refreshSmartFolderCount(...args: any[]) {
+  const s = getScope();
+  if (!s) return;
+  return (function () {
+    ayncsUpdateSmartFoldersCount(s.smartFolderList, () => {});
+  }).apply(null, args);
+};
+
 export function installFolderMenuFns(fns: any, getScope: any): void {
   // ── b1-9ap：台账⑨主菜单第一批——openFolderContextMenu 及其依赖面（bundle 39012-39549
   //    + 依赖 fns 逐字移植；$scope→s、$rootScope.$broadcast→s.$root 广播总线语义、
   //    angular.copy/extend→JSON 深拷/Object.assign、eagle.utils.tree.walk→treeWalkSafe）──
 
-  // controller 闭包函数 reorderFolderByTitle（bundle 41765-41781 逐字）
-  function reorderFolderByTitleClosure(folders: any, reverse: any) {
-    folders = folders.sort(function (a: any, b: any) {
-      try {
-        var na = a.name.toLowerCase();
-        var nb = b.name.toLowerCase();
-        if (na && nb) {
-          return na.localeCompare(nb, (window as any).languageBCP, { numeric: true });
-        }
-      }
-      catch (err) {}
-    });
-
-    if (reverse) {
-      folders = folders.reverse();
-    }
-  }
 
   // controller 闭包函数 removeFolder（bundle 42050-42205 逐字；angular.copy→JSON 深拷）
   function removeFolderClosure(folder: any, { isDeleteImages, ignoreSelectNext, ignoreRestore }: any) {
@@ -2179,62 +2288,9 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
   fns["batchRenameFolders"] = batchRenameFolders;
 
   // reorderFolderByTitle / reorderAllFolderByTitle（bundle 41782-41829 逐字）
-  fns["reorderFolderByTitle"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (folders: any, reverse: any) {
-      swal({
-        html: `
-                    <div class="alert">
-                        <div class="alert-icon warning"></div>
-                        <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
-                    </div>
-                `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: 'alert-box',
-        cancelButtonColor: '#777777',
-        confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
-        cancelButtonText: i18n.__('general.cancel'),
-      }).then(function () {
-        reorderFolderByTitleClosure(folders, reverse);
-        machineryUpdateSidebarList(s);
-        machinerySaveFolder(s);
-        s.$evalAsync();
-        try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
-      });
-    }).apply(null, args);
-  };
+  fns["reorderFolderByTitle"] = reorderFolderByTitle;
 
-  fns["reorderAllFolderByTitle"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (reverse: any) {
-      swal({
-        html: `
-                    <div class="alert">
-                        <div class="alert-icon warning"></div>
-                        <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
-                    </div>
-                `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: 'alert-box',
-        cancelButtonColor: '#777777',
-        confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
-        cancelButtonText: i18n.__('general.cancel'),
-      }).then(function () {
-        reorderFolderByTitleClosure(s.folders, reverse);
-        treeWalkSafe(s.folders, 'children', function (folder: any, parent: any) {
-          reorderFolderByTitleClosure(folder.children, reverse);
-        });
-        machineryUpdateSidebarList(s);
-        machinerySaveFolder(s);
-        s.$evalAsync();
-        try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}
-      });
-    }).apply(null, args);
-  };
+  fns["reorderAllFolderByTitle"] = reorderAllFolderByTitle;
 
   // cloneFolder（bundle 41720-41763 逐字；angular.copy→JSON 深拷）
   fns["cloneFolder"] = cloneFolder;
@@ -2363,53 +2419,9 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
   // ── b1-9aq：台账⑨第三批——openSmartFolderContextMenu 主菜单 + 依赖面（bundle 39550-40105
   //    + 41395-41440/41652-41719/41831-42049/26287-26331/40267-40430 逐字）──
 
-  // controller 闭包函数 ayncsUpdateSmartFoldersCount（bundle 26301-26331 逐字）
-  function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
-    const s = getScope();
-    if (!smartFolders || smartFolders.length === 0) return;
-    setTimeout(() => {
-      let total = smartFolders.length;
-      let once = 3;
-      let loopCount = total / once;
-      let countOfSend = 0;
-
-      function send() {
-        var start = countOfSend * once;
-        var arr = smartFolders.slice(start, start + once);
-        countOfSend += 1;
-
-        for (let i = 0; i < arr.length; i++) {
-          arr[i].imageCount = machinerySmartFolderCount(s, arr[i]);
-          if (!arr[i].pinyin) {
-            arr[i].pinyin = (window as any).tinyPinyin.convertToPinyin(arr[i].name);
-          }
-        }
-
-        s.$evalAsync();
-
-        loop();
-      }
-
-      function loop() {
-        if (countOfSend < loopCount) {
-          window.requestAnimationFrame(send);
-        }
-        else {
-          callback && callback();
-        }
-      }
-      loop();
-    }, 30);
-  }
 
   // refreshSmartFolderCount（bundle 26287-26290 逐字）
-  fns["refreshSmartFolderCount"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-      ayncsUpdateSmartFoldersCount(s.smartFolderList, () => {});
-    }).apply(null, args);
-  };
+  fns["refreshSmartFolderCount"] = refreshSmartFolderCount;
 
   // setSmartFoldersOrder + setSmartFolderOrder（bundle 41395-41422 逐字）
   fns["setSmartFoldersOrder"] = setSmartFoldersOrder;

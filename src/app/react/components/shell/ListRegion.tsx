@@ -7,6 +7,10 @@ import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } fr
 import { getBodyScope } from '../../core/appCore';
 import { openFileListContextMenu } from '../../services/miscMenuService';
 import { machineryOnDropContainer } from '../../core/dataMachinery';
+import { importFolders } from '../../services/uploadService';
+import { showListSubfolderContent } from '../../services/folderMenuService';
+import { cleanSelected } from '../../services/batchOpsService';
+import { openFolder } from '../../services/folderCoreService';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。
@@ -33,12 +37,14 @@ function useHost(id: string): HTMLElement | null {
 }
 
 /** scope 函数调用（e 为原生事件或合成事件，取 nativeEvent 最接近原 $event 语义）。 */
-function scopeFn(fn: string, ...args: any[]) {
+function scopeFn(fn: string | ((...a: any[]) => any), ...args: any[]) {
   return (e?: any) => {
     const scope = getBodyScope();
-    if (!scope || typeof scope[fn] !== 'function') return;
+    if (!scope) return;
+    const target = typeof fn === 'function' ? fn : scope[fn];
+    if (typeof target !== 'function') return;
     const ev = e && e.nativeEvent ? e.nativeEvent : e;
-    scope[fn](...(args.length ? args : [ev]));
+    target(...(args.length ? args : [ev]));
   };
 }
 
@@ -65,7 +71,7 @@ export function DropAreas() {
               <h2>{t('empty.all.title')}</h2>
               <p>{t('empty.all.desc')}</p>
               <div className="buttons">
-                <div className="button button-xs button-grey" onClick={() => scopeFn('importFolders')()}>{t('dialog.importLocalFolder.title')}</div>
+                <div className="button button-xs button-grey" onClick={() => scopeFn(importFolders)()}>{t('dialog.importLocalFolder.title')}</div>
                 <a className="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank" rel="noreferrer">{t('appmenu.help>installExtension')}</a>
               </div>
             </div>
@@ -76,7 +82,7 @@ export function DropAreas() {
               <h2>{t('empty.folder.title')}</h2>
               <p>{t('empty.all.desc')}</p>
               <div className="buttons">
-                <div className="button button-xs button-grey" onClick={() => { const s = getBodyScope(); if (s) scopeFn('importFolders', s.currentFolder)(); }}>{t('dialog.importLocalFolder.title')}</div>
+                <div className="button button-xs button-grey" onClick={() => { const s = getBodyScope(); if (s) scopeFn(importFolders, s.currentFolder)(); }}>{t('dialog.importLocalFolder.title')}</div>
                 <a className="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank" rel="noreferrer">{t('appmenu.help>installExtension')}</a>
               </div>
             </div>
@@ -220,7 +226,7 @@ export function SubFolderSection() {
               <img src={`assets/images/${tp}/icons/ic-arrow-right.svg`} />
             </div>
           </div>
-          <div className="toggle-subfolder-content-btn" onClick={() => scopeFn('showListSubfolderContent')()}>
+          <div className="toggle-subfolder-content-btn" onClick={() => scopeFn(showListSubfolderContent)()}>
             <div className={`checkbox${l.showSubfolderContent ? ' checked' : ''}`} />
             {t('subFolderList.showSubFolderContentLabel')}
           </div>
@@ -231,7 +237,7 @@ export function SubFolderSection() {
           ref={listRef}
           className="sub-folder-list"
           onMouseDown={(e) => e.stopPropagation()}
-          onClick={(e) => scopeFn('cleanSelected')(e)}
+          onClick={(e) => scopeFn(cleanSelected)(e)}
         >
           {l.subFolders.map((folder: any, index: number) => (
             <div
@@ -241,7 +247,7 @@ export function SubFolderSection() {
               onDragOver={(e) => scopeFn('onDragOverSubFolder')(e)}
               onDragLeave={(e) => scopeFn('onDragEndSubFolder')(e)}
               onClick={(e) => { e.stopPropagation(); scopeFn('selectFolder', folder)(e); }}
-              onDoubleClick={() => scopeFn('openFolder', folder, undefined, undefined, undefined, 'content')()}
+              onDoubleClick={() => scopeFn(openFolder, folder, undefined, undefined, undefined, 'content')()}
               onContextMenu={(e) => { e.preventDefault(); scopeFn('openSubFolderContextMenu', folder)(e); }}
             >
               <div

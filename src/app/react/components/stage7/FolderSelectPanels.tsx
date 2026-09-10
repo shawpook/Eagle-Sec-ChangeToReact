@@ -10,6 +10,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
+import { openSmartFolder } from '../../services/folderCoreService';
 
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
@@ -986,7 +987,7 @@ export function NewSmartFolderModal() {
       smartFolder.imageCount = body.smartFolderCount(smartFolder);
       body.smartFolderMappings[smartFolder.id] = smartFolder;
       updateSidebarList();
-      body.openSmartFolder(smartFolder);
+      openSmartFolder(smartFolder);
       setTimeout(() => {
         body.changeSidebarIndex(smartFolder);
       }, 400);
@@ -1002,7 +1003,7 @@ export function NewSmartFolderModal() {
       smartFolderRef.current.imageCount = body.smartFolderCount(smartFolderRef.current);
       if (smartFolderRef.current) {
         updateSidebarList();
-        body.openSmartFolder(smartFolderRef.current);
+        openSmartFolder(smartFolderRef.current);
         setTimeout(() => {
           body.changeSidebarIndex(smartFolderRef.current);
         }, 400);

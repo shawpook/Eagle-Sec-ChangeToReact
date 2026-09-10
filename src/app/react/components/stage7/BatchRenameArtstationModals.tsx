@@ -12,6 +12,9 @@ import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { openFolder } from '../../services/folderCoreService';
+import { addToRecentFolders } from '../../services/batchOpsService';
+import { uploadUrls } from '../../services/uploadService';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -409,11 +412,11 @@ export function ArtstationImportModal() {
       }
 
       if (selectedFolderIds[0]) {
-        getBodyScope().openFolder(getBodyScope().folderMappings[selectedFolderIds[0]]);
+        openFolder(getBodyScope().folderMappings[selectedFolderIds[0]]);
       }
 
-      getBodyScope().addToRecentFolders(selectedFolderIds);
-      getBodyScope().uploadUrls(imageUrls, selectedFolderIds, {
+      addToRecentFolders(selectedFolderIds);
+      uploadUrls(imageUrls, selectedFolderIds, {
         names: names,
         urls: originals,
         tags: tags,

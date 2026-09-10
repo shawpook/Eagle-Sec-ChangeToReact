@@ -3,12 +3,13 @@
  *
  * 运行：node tests/react-stage1c3-smoke.mjs
  * 断言点：
- *  1. 契约：__eagleCoreFns 14 函数在位
- *  2. 路由证明：哨兵替换 scope.cancelAllTasks → callScope('cancelAllTasks') 不触哨兵但
- *     队列清空（core 命中）+ ipc 'cancel.all' spy
+ *  1. 契约（b1-9bz-B-8 改写）：fns 表 / shimFnsBridge 已退役（__eagleCoreFns 与
+ *     __eagleShimFnsBridge 均不再存在），machinery 挂载面承接 scope 函数供给，
+ *     测试观测改走窄口径钩子 __eaglePorts（同对象引用，无运行期供给语义）
+ *  2. 直调证明：__eaglePorts.cancelAllTasks() 清空队列 + ipc 'cancel.all' spy
  *  3. 功能：core cancelAllTasks 清空 uploadQueue/finishQueue；changeOrderBy('NAME') 写
  *     orderBy/orderByName；switchGridLayout 写 layout
- *  4. bundle 后备：未移植函数（如 clickNode）经 callScope 仍走 scope
+ *  4. 表退役终态：TABLE-only 名（如 clickNode）不再由 scope 面供给
  *  5. 截图留档
  */
 import fs from 'node:fs';
@@ -107,20 +108,18 @@ try {
   //    openTrashContextMenu）255→258；b1-9au 网格交互层（openFileWithDefault/
   //    openFileListContextMenu/openOrderMenu/onBoxMouseup/onBoxListDblClick）258→263）──
   await assertExpr('c3-contract', `(() => {
-    const c = window.__eagleCoreFns;
-    if (!c) return false;
-    const spot = ['cancelAllTasks','uploadFiles','changeOrderBy','switchGridLayout',
-      'cleanSelected','select','search','resetFilter','clickNode','smartZoom',
-      'openFolder','updateSidebarList','getThumbnailUrl','zoomFit','undo',
-      'copyTags','pasteTags','removeFromFolder','exportSelectedToCsv','openInFinder',
-      'regenerateThumbnail','newFolderWidthSelection','addToLastUsedFolder','copyAsBase64',
-      'toggleSelectFolder','toggleAllFolderExpand','toggleSelectSmartFolder',
-      'toggleAllSmartFolderExpand','openFolderExpandContextMenu',
-      'openFolderContextMenu','openSmartFolderContextMenu','cloneSmartFolder',
-      'smartFolderExportAsPack','removeSelectedSmartFolders','emptyTrash',
-      'emptyRestore','openTrashContextMenu','openFileWithDefault',
-      'openFileListContextMenu','openOrderMenu','onBoxMouseup','onBoxListDblClick'];
-    return Object.keys(c).length === 236 && spot.every(k => typeof c[k] === 'function');
+    // b1-9bz-B-8 终态：controllerFns fns 表与 shimFnsBridge 退役，消费面全部直 import。
+    //   ① 表 / 桥的全局痕迹必须消失；
+    //   ② 窄口径观测钩子 __eaglePorts 在位（同对象引用，无运行期供给语义）；
+    //   ③ machinery 挂载面承接 scope 函数供给（applyDataMachineryScope 写入的名字仍在）。
+    const ports = window.__eaglePorts;
+    const need = ['cancelAllTasks', 'changeOrderBy', 'switchGridLayout', 'cleanSelected'];
+    return window.__eagleCoreFns === undefined
+      && window.__eagleShimFnsBridge === undefined
+      && !!ports && need.every((k) => typeof ports[k] === 'function')
+      && typeof window.$bodyScope.calculateImageBinding === 'function'
+      && typeof window.$bodyScope.rebindRefresh === 'function'
+      && typeof window.$bodyScope.updateSidebarList === 'function';
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);
@@ -139,7 +138,7 @@ try {
     return true;
   })()`);
   await evalNow(`(() => {
-    window.__eagleCoreFns.cancelAllTasks();
+    window.__eaglePorts.cancelAllTasks();
     return true;
   })()`);
   await assertExpr('c3-cancel-core-routed', `(() => {
@@ -159,7 +158,7 @@ try {
 
   // ── 功能（changeOrderBy / switchGridLayout）──
   await evalNow(`(() => {
-    try { window.__eagleCoreFns.changeOrderBy('NAME'); window.__c3err = null; }
+    try { window.__eaglePorts.changeOrderBy('NAME'); window.__c3err = null; }
     catch (e) { window.__c3err = String((e && e.stack) || e).slice(0, 400); }
     return true;
   })()`);
@@ -169,7 +168,7 @@ try {
   }
   await assertExpr('c3-change-order-by', `window.$bodyScope.orderBy === 'NAME'`);
   await evalNow(`(() => {
-    try { window.__eagleCoreFns.switchGridLayout(); window.__c3err2 = null; }
+    try { window.__eaglePorts.switchGridLayout(); window.__c3err2 = null; }
     catch (e) { window.__c3err2 = String((e && e.stack) || e).slice(0, 400); }
     return true;
   })()`);
@@ -187,8 +186,8 @@ try {
       b.selectedMappings = {};
       if (b.selected[0]) b.selectedMappings[b.selected[0].id] = true;
       window.__beforeLen = b.selected ? b.selected.length : -1;
-      window.__hasCore = typeof window.__eagleCoreFns.cleanSelected;
-      window.__eagleCoreFns.cleanSelected({ metaKey: false, ctrlKey: false, preventDefault() {}, stopPropagation() {} });
+      window.__hasCore = typeof window.__eaglePorts.cleanSelected;
+      window.__eaglePorts.cleanSelected({ metaKey: false, ctrlKey: false, preventDefault() {}, stopPropagation() {} });
       window.__afterLen = b.selected ? b.selected.length : -1;
       window.__c3err3 = null;
     } catch (e) { window.__c3err3 = String((e && e.stack) || e).slice(0, 300); }
@@ -202,7 +201,9 @@ try {
   await assertExpr('c3-clean-selected', `window.__c3err3 === null && window.__hasCore === 'function'`);
 
   // ── bundle 后备（未移植函数照旧走 scope）──
-  await assertExpr('c3-fallback-path', `typeof window.$bodyScope.clickNode === 'function'`);
+  // b1-9bz-B-8 终态：clickNode 属 TABLE-only（无 machinery 挂载），表退役后不再由
+  // scope 面供给；组件侧已改为直 import（Sidebar.tsx:6）。
+  await assertExpr('c3-table-retired', `typeof window.$bodyScope.clickNode !== 'function'`);
 
   await delay(600);
   await screenshotTo('test-run/react-stage1c3-smoke.png', 5000);

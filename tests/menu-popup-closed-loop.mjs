@@ -76,8 +76,8 @@ try {
       try {
         const s = window.$bodyScope;
         if (!s) return { ok: false, reason: 'no $bodyScope' };
-        if (typeof s.openApplicationContextMenu !== 'function') return { ok: false, reason: 'fn missing: ' + typeof s.openApplicationContextMenu };
-        s.openApplicationContextMenu();
+        if (typeof window.__eaglePorts.openApplicationContextMenu !== 'function') return { ok: false, reason: 'fn missing: ' + typeof window.__eaglePorts.openApplicationContextMenu };
+        window.__eaglePorts.openApplicationContextMenu();
         return { ok: true };
       } catch (err) { return { ok: false, reason: 'throw: ' + err.message }; }
     })()`,
@@ -99,10 +99,9 @@ try {
   if (!appLabels.includes('View') || !appLabels.includes('Help')) throw new Error(`application menu template incomplete: ${JSON.stringify(appLabels)}`);
   console.log(`MENU_POPUP application-menu OK labels=${JSON.stringify(appLabels)}`);
 
-  // ── 站点 1/3：主窗静态接线审计（b1-9bn：shareMenu 构造随 builder 迁 itemMenuService）──
-  const fnsSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'controllerFns.ts'), 'utf8');
-  const menuSource = fnsSource
-    + fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'services', 'itemMenuService.ts'), 'utf8')
+  // ── 站点 1/3：主窗静态接线审计（b1-9bn：shareMenu 构造随 builder 迁 itemMenuService；
+  //    b1-9bz-B-8：controllerFns.ts 已退役，源审计范围收敛到落点文件）──
+  const menuSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'services', 'itemMenuService.ts'), 'utf8')
     + fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'contextMenuDomain.ts'), 'utf8');
   if (!menuSource.includes('new remote.ShareMenu(')) throw new Error('shareMenu ShareMenu construction missing');
   if (!menuSource.includes('shareMenu.popup()')) throw new Error('shareMenu popup call missing');
@@ -135,13 +134,13 @@ try {
     expression: `(function () {
       try {
         const s = window.$bodyScope;
-        if (typeof s.openFolderExpandContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
+        if (typeof window.__eaglePorts.openFolderExpandContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
         const folder = (s.folders || [])[0];
         if (!folder) return { ok: false, reason: 'no folder in sidebar' };
         let captured = null;
         const off = window.__eagleBus.on('CONTEXTMENU.OPEN', (options) => { captured = options; });
         const syntheticEvent = { stopPropagation() {}, currentTarget: null };
-        s.openFolderExpandContextMenu(syntheticEvent, folder);
+        window.__eaglePorts.openFolderExpandContextMenu(syntheticEvent, folder);
         off();
         if (!captured) return { ok: false, reason: 'no CONTEXTMENU.OPEN captured' };
         const labels = (captured.items || []).map((it) => it.label);
@@ -169,12 +168,12 @@ try {
     expression: `(function () {
       try {
         const s = window.$bodyScope;
-        if (typeof s.openFolderContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
+        if (typeof window.__eaglePorts.openFolderContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
         const folder = (s.folders || [])[0];
         if (!folder) return { ok: false, reason: 'no folder' };
         let captured = null;
         const off = window.__eagleBus.on('CONTEXTMENU.OPEN', (options) => { captured = options; });
-        s.openFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, folder);
+        window.__eaglePorts.openFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, folder);
         off();
         if (!captured) return { ok: false, reason: 'no broadcast captured' };
         const labels = (captured.items || []).filter((it) => it.label).map((it) => it.label);
@@ -207,12 +206,12 @@ try {
     expression: `(function () {
       try {
         const s = window.$bodyScope;
-        if (typeof s.openSmartFolderContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
+        if (typeof window.__eaglePorts.openSmartFolderContextMenu !== 'function') return { ok: false, reason: 'fn missing' };
         const smartFolder = (s.smartFolders || [])[0];
         if (!smartFolder) return { ok: false, reason: 'no smart folder in sidebar' };
         let captured = null;
         const off = window.__eagleBus.on('CONTEXTMENU.OPEN', (options) => { captured = options; });
-        s.openSmartFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, smartFolder);
+        window.__eaglePorts.openSmartFolderContextMenu({ stopPropagation() {}, target: { tagName: 'DIV' }, currentTarget: null }, smartFolder);
         off();
         if (!captured) return { ok: false, reason: 'no broadcast captured' };
         const labelCount = (captured.items || []).filter((it) => it.label).length;

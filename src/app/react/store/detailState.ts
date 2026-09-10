@@ -5,6 +5,9 @@ import { useListState } from './listState';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
 import { machineryCurrentIndex } from '../core/dataMachinery';
+import { getGIFPath, getModelPath, getNativeViewerPath, getPDFPath, getRawPath, getRawUrl, getRawViewerPath, getTxtPath, getURLSrc } from '../core/itemDomain';
+import { getThumbnailUrl } from '../services/imageOpsService';
+import { getFontPath } from '../services/fontTagService';
 
 /**
  * 阶段5：详情模式与查看器状态 —— 快照自 EagleController scope。
@@ -172,10 +175,11 @@ export const useDetailState = create<{ snapshot: DetailSnapshot }>(() => ({ snap
 const setSnapshot = (snapshot: DetailSnapshot) => useDetailState.setState({ snapshot });
 
 /** 安全调用 scope 上的纯函数 getter（不可用時返回空串）。 */
-function callGetter(scope: any, name: string, arg?: any): string {
+function callGetter(scope: any, name: string | ((...a: any[]) => any), arg?: any): string {
   try {
-    if (typeof scope[name] !== 'function') return '';
-    const value = arg !== undefined ? scope[name](arg) : scope[name]();
+    const fn = typeof name === 'function' ? name : scope[name];
+    if (typeof fn !== 'function') return '';
+    const value = arg !== undefined ? fn(arg) : fn();
     return value == null ? '' : String(value);
   } catch (err) {
     return '';
@@ -256,18 +260,18 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
         inspectorRenaming: !!inspector.isRenaming,
         inspectorWidth: inspector.width || 0,
         current: currentSnap,
-        rawUrl: current ? callGetter(scope, 'getRawUrl', current) : '',
-        thumbnailUrl: current ? callGetter(scope, 'getThumbnailUrl', current) : '',
+        rawUrl: current ? callGetter(scope, getRawUrl, current) : '',
+        thumbnailUrl: current ? callGetter(scope, getThumbnailUrl, current) : '',
         lastestThumbnailUrl: current ? callGetter(scope, 'getLastestThumbnailPath', current) : '',
-        rawPath: current ? callGetter(scope, 'getRawPath', current) : '',
-        pdfPath: current ? callGetter(scope, 'getPDFPath') : '',
-        gifPath: current ? callGetter(scope, 'getGIFPath') : '',
-        nativeViewerPath: current ? callGetter(scope, 'getNativeViewerPath') : '',
-        urlSrc: current ? callGetter(scope, 'getURLSrc') : '',
-        rawViewerPath: current ? callGetter(scope, 'getRawViewerPath') : '',
-        fontPath: current ? callGetter(scope, 'getFontPath') : '',
-        txtPath: current ? callGetter(scope, 'getTxtPath') : '',
-        modelPath: current ? callGetter(scope, 'getModelPath') : '',
+        rawPath: current ? callGetter(scope, getRawPath, current) : '',
+        pdfPath: current ? callGetter(scope, getPDFPath) : '',
+        gifPath: current ? callGetter(scope, getGIFPath) : '',
+        nativeViewerPath: current ? callGetter(scope, getNativeViewerPath) : '',
+        urlSrc: current ? callGetter(scope, getURLSrc) : '',
+        rawViewerPath: current ? callGetter(scope, getRawViewerPath) : '',
+        fontPath: current ? callGetter(scope, getFontPath) : '',
+        txtPath: current ? callGetter(scope, getTxtPath) : '',
+        modelPath: current ? callGetter(scope, getModelPath) : '',
         pluginExt,
         pluginAllowZoom,
         pluginViewerUrl,

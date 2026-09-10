@@ -5,6 +5,7 @@ import { $, getIpc, req } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
+import { getRawPath } from '../../core/itemDomain';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -1238,7 +1239,7 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         $parent.find('canvas').remove();
       }
       const filePath = getBodyScope()?.getRawPath
-        ? String(getBodyScope().getRawPath(s.current) || '').replace('file://', '')
+        ? String(getRawPath(s.current) || '').replace('file://', '')
         : '';
       const filePath2 = FileUrlHelper.getRawPath(s.current);
       try {

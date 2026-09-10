@@ -1,4 +1,5 @@
 import { getBodyScope } from '../../core/appCore';
+import { scrollToSelectedItem } from '../../services/batchOpsService';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -36,7 +37,7 @@ export function initAutoScroll() {
                 if (!box || box.length === 0) {
                     console.log("项目不再当前画面中，自动重新定位")
                     if ($scope.viewMode !== 'random' && $scope.viewMode !== 'duplicate') {
-                        $bodyScope.scrollToSelectedItem();
+                        scrollToSelectedItem();
                     }
                     return;
                 }

@@ -13,6 +13,7 @@ import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { machineryToggleAll } from '../../core/dataMachinery';
+import { uploadFiles } from '../../services/uploadService';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
@@ -149,7 +150,7 @@ export function ErrorModal() {
     }
 
     if (localFiles.length > 0) {
-      body.uploadFiles(localFiles);
+      uploadFiles(localFiles);
     }
 
     errorListRef.current.length = 0;

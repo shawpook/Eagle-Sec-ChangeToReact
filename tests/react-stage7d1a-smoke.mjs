@@ -113,7 +113,7 @@ try {
     expression: `(() => {
       const s = window.$bodyScope;
       s.selected = [s.allData[0]];
-      s.addToFolders();
+      window.__eaglePorts.addToFolders();
       return true;
     })()`,
     returnByValue: true,
@@ -176,7 +176,7 @@ try {
 
   // 重新打开 → 最近使用行 + 过滤 + createFolder 行
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.addToFolders(); return true; })()`,
+    expression: `(() => { window.__eaglePorts.addToFolders(); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(
@@ -225,7 +225,7 @@ try {
 
   // isRemoveFromOriginal 持久化
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.addToFolders(); return true; })()`,
+    expression: `(() => { window.__eaglePorts.addToFolders(); return true; })()`,
     returnByValue: true,
   });
   await assertExpr('atf-reopen2', `document.querySelector('#eagle-add-to-folder-host .move-folder-modal').classList.contains('open')`);
@@ -310,7 +310,7 @@ try {
 
   // ── 截图留档（重新打开 AddToFolder） ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.addToFolders(); return true; })()`,
+    expression: `(() => { window.__eaglePorts.addToFolders(); return true; })()`,
     returnByValue: true,
   });
   await delay(400);

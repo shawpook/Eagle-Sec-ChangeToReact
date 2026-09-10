@@ -167,13 +167,13 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   excluded={!!excludes[typeItem]}
                   onClick={() => {
                     focusInput(rootRef.current);
-                    scopeApply(bodyScope(), (s) => s.toggleExtFilter && toggleExtFilter(typeItem));
+                    scopeApply(bodyScope(), (s) => toggleExtFilter(typeItem));
                     runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
                     setTypesKeyword('');
                   }}
                   onContextMenu={(e) => {
                     focusInput(rootRef.current);
-                    scopeApply(bodyScope(), (s) => s.toggleExtFilterExclude && toggleExtFilterExclude(typeItem));
+                    scopeApply(bodyScope(), (s) => toggleExtFilterExclude(typeItem));
                     runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
                     setTypesKeyword('');
                   }}
@@ -577,10 +577,10 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
 
   const onOpen = () => {
     scopeApply(bodyScope(), (s) => {
-      s.calculateDateFilter && calculateDateFilter();
-      s.filterImportDateMonths = s.getDateFilterCountsArray && getDateFilterCountsArray('date');
+      calculateDateFilter();
+      s.filterImportDateMonths = getDateFilterCountsArray('date');
       syncFilterFromScope();
-      s.filterModifyDateMonths = s.getDateFilterCountsArray && getDateFilterCountsArray('mtime');
+      s.filterModifyDateMonths = getDateFilterCountsArray('mtime');
       s.$evalAsync();
     });
   };
@@ -1035,7 +1035,7 @@ export function FilterPanel() {
             const v = e.target.value;
             scopeApply(bodyScope(), (s) => {
               s.hexColor = v.toUpperCase();
-              s.filterWithColor && filterWithColor(s.hexToRGB && hexToRGB(s.hexColor));
+              filterWithColor(hexToRGB(s.hexColor));
             });
           }}
         />
@@ -1044,7 +1044,7 @@ export function FilterPanel() {
             const Comp = KIND_COMPONENTS[type];
             return Comp ? <Comp key={`${type}-${index}`} snapshot={snapshot} /> : null;
           })}
-          <div className="ic-btn filter-add-btn" onClick={() => scopeApply(bodyScope(), (s) => s.openFilterAddContextMenu && openFilterAddContextMenu())}>
+          <div className="ic-btn filter-add-btn" onClick={() => scopeApply(bodyScope(), (s) => openFilterAddContextMenu())}>
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-add.svg`} />
           </div>
         </div>
@@ -1078,7 +1078,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={`${t('Filter.Reset')}${shortcuts(shortcutsWrapper(snapshot.keybinds['find.filter.reset'] || ''))}`}
             style={snapshot.filterBadge > 0 || snapshot.keyword ? undefined : { display: 'none' }}
-            onClick={() => runSeq([(s) => { s.resetFilter && resetFilter(); s.filterContent && machineryFilterContent(s); }])}
+            onClick={() => runSeq([(s) => { resetFilter(); s.filterContent && machineryFilterContent(s); }])}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-reset.svg`} />
           </div>

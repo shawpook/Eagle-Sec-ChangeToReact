@@ -13,6 +13,8 @@ import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { scrollToSelectedItem } from '../../services/batchOpsService';
+import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
@@ -1468,7 +1470,7 @@ export function DuplicateModal() {
     setTimeout(() => {
       body.selected = [item];
       syncInspectorFromScope();
-      body.scrollToSelectedItem();
+      scrollToSelectedItem();
     }, 500);
   };
 
@@ -1712,7 +1714,7 @@ export function DuplicateModal() {
           {item.orientation && item.orientation !== 1 && (
             <iframe src={body?.getExifPath(isNew ? rootRef.current.left : item)} frameBorder={0} />
           )}
-          {!(item.orientation && item.orientation !== 1) && <img src={body?.getThumbnailUrl(item)} alt="" />}
+          {!(item.orientation && item.orientation !== 1) && <img src={getThumbnailUrlImpl(item)} alt="" />}
           {!!item.noPreview && <ExtIcon itemId={item.id} />}
           <div className={`label${isNew ? ' new' : ''}`}>{isNew ? t('modal.duplicate.now') : t('modal.duplicate.exist')}</div>
         </div>

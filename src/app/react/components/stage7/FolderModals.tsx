@@ -12,6 +12,7 @@ import { smartZoom } from '../../services/detailService';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1825,7 +1826,7 @@ export function MoveFolderModal() {
       const folder = body.folderMappings[node.id];
       focusSeach();
       if (folder) {
-        body.moveFoldersAsSibling(viewRef.current.selectedFolders, folder);
+        moveFoldersAsSibling(viewRef.current.selectedFolders, folder);
         cancel();
         if (typeof body.$evalAsync === 'function') body.$evalAsync();
       }
@@ -1851,7 +1852,7 @@ export function MoveFolderModal() {
       const body = getBodyScope();
       const folder = body.folderMappings[node.id];
       if (folder) {
-        body.moveFoldersToFolder(viewRef.current.selectedFolders, folder);
+        moveFoldersToFolder(viewRef.current.selectedFolders, folder);
         cancel();
         if (typeof body.$evalAsync === 'function') body.$evalAsync();
       }
@@ -1879,7 +1880,7 @@ export function MoveFolderModal() {
       focusSeach();
       const folder = body.folderMappings[node.id];
       if (folder) {
-        body.moveFoldersAsSibling(viewRef.current.selectedFolders, folder, true);
+        moveFoldersAsSibling(viewRef.current.selectedFolders, folder, true);
         cancel();
         if (typeof body.$evalAsync === 'function') body.$evalAsync();
       }

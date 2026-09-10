@@ -10,7 +10,10 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { search, searchFocus } from '../../core/filterDomain';
+import { maximize } from '../../core/miscDomain';
+import { resetFilter, search, searchFocus } from '../../core/filterDomain';
+import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
+import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 
 /**
  * 阶段3a：工具栏接管。
@@ -26,16 +29,18 @@ function themePathOf(theme: string): string {
 
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
-const call = (fn: string, ...preArgs: any[]) => (e?: any) =>
+const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
-    if (typeof scope[fn] === 'function') scope[fn](...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    const target = typeof fn === 'function' ? fn : scope[fn];
+    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
 
 /** 多语句 ng-click 的逐字转写（如 resetKeyword(); resetFilter(); filterContent(); openAll()）。 */
-const callSeq = (...fns: Array<[string, any?]>) => (e: any) =>
+const callSeq = (...fns: Array<[string | ((...a: any[]) => any), any?]>) => (e: any) =>
   scopeApply(getBodyScope(), (scope) => {
     for (const [fn, arg] of fns) {
-      if (typeof scope[fn] === 'function') scope[fn](...(arg !== undefined ? [arg] : [e]));
+      const target = typeof fn === 'function' ? fn : scope[fn];
+      if (typeof target === 'function') target(...(arg !== undefined ? [arg] : [e]));
     }
   });
 
@@ -131,7 +136,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
   const onFocus = (e: any) => {
     scopeApply(getBodyScope(), (s) => {
       s.$root.currentFocus = 'content';
-      if (typeof s.searchFocus === 'function') searchFocus(e);
+      searchFocus(e);
     });
   };
 
@@ -210,7 +215,7 @@ export function Toolbar() {
     if (!host) return;
     const visible = !snapshot.isDetailMode || snapshot.isInlineMode;
     host.style.display = visible ? '' : 'none';
-    const onDblClick = (e: MouseEvent) => scopeApply(getBodyScope(), (s) => s.maximize(e));
+    const onDblClick = (e: MouseEvent) => scopeApply(getBodyScope(), () => maximize(e));
     host.addEventListener('dblclick', onDblClick);
     return () => host.removeEventListener('dblclick', onDblClick);
   }, [toolbarHost, snapshot.isDetailMode, snapshot.isInlineMode]);
@@ -262,7 +267,7 @@ export function Toolbar() {
       {/* 麵包削 */}
       <div className="breadcrumbs" onDoubleClick={(e) => e.stopPropagation()}>
         {snapshot.isHideSidebar ? (
-          <div className="ic-btn application-menu-btn" ng-click="openApplicationContextMenu($event)" onClick={call('openApplicationContextMenu')}>
+          <div className="ic-btn application-menu-btn" ng-click="openApplicationContextMenu($event)" onClick={call(openApplicationContextMenu)}>
             <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
           </div>
         ) : null}
@@ -291,10 +296,10 @@ export function Toolbar() {
         </div>
 
         <ul>
-          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'], ['openAll'])}>{t('general.pages.all')}</li>
-          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'], ['openUnfiled'])}>{t('general.pages.unfiled')}</li>
-          <li style={viewMode === 'untagged' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'], ['openUntagged'])}>{t('general.pages.untagged')}</li>
-          <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'], ['openRecent'])}>{t('general.pages.recent')}</li>
+          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openAll'])}>{t('general.pages.all')}</li>
+          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openUnfiled'])}>{t('general.pages.unfiled')}</li>
+          <li style={viewMode === 'untagged' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openUntagged'])}>{t('general.pages.untagged')}</li>
+          <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openRecent'])}>{t('general.pages.recent')}</li>
 
           {viewMode === 'alltags' || snapshot.hasCurrentTag ? (
             <li ng-click="openAllTags()" onClick={call('openAllTags')}>
@@ -306,8 +311,8 @@ export function Toolbar() {
             </li>
           ) : null}
 
-          <li style={viewMode === 'random' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'])}>{t('general.pages.random')}</li>
-          <li style={viewMode === 'trash' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'], ['openTrash'])}>{t('general.pages.trash')}</li>
+          <li style={viewMode === 'random' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'])}>{t('general.pages.random')}</li>
+          <li style={viewMode === 'trash' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openTrash'])}>{t('general.pages.trash')}</li>
           <li style={!viewMode && snapshot.selectedFoldersCount > 0 ? undefined : { display: 'none' }}>{t('toolbar.breadcumbs.selected')} {snapshot.selectedFoldersCount} {t('toolbar.breadcumbs.folders')}</li>
           <li style={!viewMode && snapshot.selectedSmartFoldersCount > 0 ? undefined : { display: 'none' }}>{t('toolbar.breadcumbs.selected')} {snapshot.selectedSmartFoldersCount} {t('toolbar.breadcumbs.smartFolders')}</li>
 
@@ -316,7 +321,7 @@ export function Toolbar() {
               className={snapshot.currentFolder.parent ? 'has-parent' : ''}
               ng-click="openFolder(currentFolder)"
               title={snapshot.currentFolderPath}
-              onClick={callSeq(['resetKeyword'], ['resetFilter'], ['filterContent'], ['openFolder', liveCurrentFolder()], ['changeSidebarIndex', liveCurrentFolder()])}
+              onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [openFolder, liveCurrentFolder()], ['changeSidebarIndex', liveCurrentFolder()])}
               onContextMenu={(e) => call('openFolderFullPathContextMenu', liveCurrentFolder())(e)}
             >
               {snapshot.currentFolder.name}
@@ -324,7 +329,7 @@ export function Toolbar() {
           ) : null}
 
           {!viewMode && snapshot.currentSmartFolder && snapshot.selectedSmartFoldersCount === 0 ? (
-            <li ng-click="openSmartFolder(currentSmartFolder)" onClick={() => call('openSmartFolder', liveCurrentSmartFolder())()}>
+            <li ng-click="openSmartFolder(currentSmartFolder)" onClick={() => call(openSmartFolder, liveCurrentSmartFolder())()}>
               {snapshot.currentSmartFolder.name}
             </li>
           ) : null}
@@ -453,7 +458,7 @@ export function Toolbar() {
           tippy-content={shortcuts(t('context.order.orderBy'))}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="openOrderMenu($event)"
-          onClick={call('openOrderMenu')}
+          onClick={call(openOrderMenu)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-layout.svg')} />
         </div>

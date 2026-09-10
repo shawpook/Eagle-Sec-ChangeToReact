@@ -8,6 +8,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryLeaveDetailMode } from '../../core/dataMachinery';
 import { onDetailClick } from '../../services/selectionService';
+import { openItemContextMenu } from '../../services/itemMenuService';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -1296,7 +1297,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
           }
         },
         'player.thumbnail.set': function () {
-          getBodyScope().setAsVideoThumbnail();
+          setAsVideoThumbnail();
         },
         'player.thumbnail.copy': function () {
           videoScreenShot(true);
@@ -1971,7 +1972,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
             });
           } else {
             scopeApply(s, function (sc) {
-              sc.openItemContextMenu(event, sc.current);
+              openItemContextMenu(event, sc.current);
               sc.$evalAsync?.();
             });
           }
@@ -2033,7 +2034,7 @@ export function useDetailContainerBehaviors(
     const host = detailContainer();
     if (!host) return;
     const onClick = (event: MouseEvent) => {
-      scopeApply(getBodyScope(), (s) => s.onDetailClick && onDetailClick(event));
+      scopeApply(getBodyScope(), (s) => onDetailClick(event));
     };
     host.addEventListener('click', onClick);
     return () => host.removeEventListener('click', onClick);

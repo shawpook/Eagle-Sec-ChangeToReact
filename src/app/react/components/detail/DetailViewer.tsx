@@ -22,6 +22,7 @@ import {
 } from './commentHooks';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryLeaveDetailMode, machinerySelectNext, machinerySelectPrev, machineryToggleSlideshow } from '../../core/dataMachinery';
+import { openItemContextMenu } from '../../services/itemMenuService';
 
 /**
  * 阶段5：#detail-container 内部（index.html 646-924 行逐字转写）。
@@ -32,9 +33,10 @@ import { machineryLeaveDetailMode, machinerySelectNext, machinerySelectPrev, mac
 
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 
-const call = (fn: string, ...preArgs: any[]) => (e?: any) =>
+const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
-    if (typeof scope[fn] === 'function') scope[fn](...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    const target = typeof fn === 'function' ? fn : scope[fn];
+    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
 
 const VIDEO_EXTS = 'ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v'.split('|');
@@ -616,7 +618,7 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
               <div
                 className="button button-xs button-grey"
                 onDoubleClick={(e) => e.stopPropagation()}
-                onClick={(e) => call('openItemContextMenu', e, current)(e)}
+                onClick={(e) => call(openItemContextMenu, e, current)(e)}
               >
                 <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/context-menu/ic-open-other.svg`} />
                 {t('pages.tooBigPreview.button')}

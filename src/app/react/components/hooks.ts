@@ -51,30 +51,12 @@ export function useSelectAll(ref: React.RefObject<HTMLElement | null>) {
   }, []);
 }
 
-// c3：React 侧已移植的 controller 函数表（逐字，操作同一 scope）——b1-9bz-A 起为指针注册表
-// （fns["NAME"] = 落点导出），b1-9bz-B 起消费方全部直 import，本表仅剩 shim 挂载 +
-// 测试契约；cZ 状态迁入 AppCore 后随 bz-C 一并删除。
-import { makeControllerFns } from '../core/controllerFns';
-import { getBodyScope } from '../core/appCore';
-let coreFnsCache: Record<string, any> | null = null;
-function getCoreFns(): Record<string, any> {
-  if (coreFnsCache === null) {
-    try {
-      coreFnsCache = makeControllerFns(getBodyScope);
-    } catch (err) {
-      console.error('[core-fns] init failed', err);
-      coreFnsCache = {};
-    }
-  }
-  return coreFnsCache!;
-}
-// c3 测试契约：闭环测试经此直接访问已移植函数表（Routing 证明用）。
-try {
-  (window as any).__eagleCoreFns = getCoreFns();
-} catch (err) { /* scope 未就绪时静默跳过；表本身不依赖 scope，makeControllerFns 只吃 getBodyScope 注入 */ }
+/* b1-9bz-B-8：controllerFns fns 表与 callScope 派发均已退役。
+   表体归位（b1-9bz-A）后消费面全部直 import，本文件不再持有任何函数表镜像；
+   测试观测钩子移至 core/portsProbe.ts。 */
 
 /* b1-9bz-B：callScope 字符串派发退役——20 个消费点（BodyBindings 3 / LockScreens 7 /
    ProgressBars 1 / ToastAlerts 4 / BoxList callFn 4 名 + 派发器本身）已全部改为落点导出
    直 import + scopeApply（表项本就是这些导出的指针，同对象调用，零行为变化）。
-   摘除后本文件只剩测试契约用的 __eagleCoreFns（stage1c3/probe-filter-toggle 的「表在位」
-   证明随 bz-C 一起改写）。 */
+   b1-9bz-B-8：测试契约用的 __eagleCoreFns 亦已随 fns 表退役，观测钩子移至
+   core/portsProbe.ts（窄口径、无运行期供给语义）。 */

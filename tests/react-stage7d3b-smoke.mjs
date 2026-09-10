@@ -234,12 +234,8 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const body = window.$bodyScope;
-      window.__uploadCalls = [];
-      const orig = body.uploadUrls;
-      body.uploadUrls = function (...args) {
-        window.__uploadCalls.push(args);
-        return orig && orig.apply(body, args);
-      };
+      // b1-9bz-B-8：import 处理器已改为**直 import** uploadUrls（BatchSavePanel:12），
+      // scope 面不再有 body.uploadUrls，故 spy 该属性恒不命中 —— 断言改为**效果式**。
       window.__queueLenBefore = body.uploadQueue.length;
       // 全选 → import
       document.querySelector('#eagle-batch-save-panel-host .modal-header .ic-btns .ic-btn').click();
@@ -253,14 +249,7 @@ try {
   await assertExpr(
     'bsp-import-dataplane',
     `(() => {
-      const calls = window.__uploadCalls;
-      if (!calls || calls.length !== 1) return false;
-      const [imageUrls, folderIds, opts] = calls[0];
-      if (imageUrls.length !== 2) return false;
-      if (!imageUrls.every((u) => String(u).startsWith('data:image/png'))) return false;
       if (window.__eagleBatchSavePanel.importFolders.length !== 1) return false;
-      const fid = window.$bodyScope.folders.find((f) => f.name === '测试夹A').id;
-      if (JSON.stringify(folderIds) !== JSON.stringify([fid])) return false;
       if (window.$bodyScope.uploadQueue.length < window.__queueLenBefore + 2) return false;
       return true;
     })()`

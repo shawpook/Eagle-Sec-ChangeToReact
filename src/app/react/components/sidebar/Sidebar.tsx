@@ -8,7 +8,7 @@ import { syncSidebarFromScope } from '../../store/sidebarState';
 import { findLiveNode, getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryOpenQuickSearch, machineryToggleAll } from '../../core/dataMachinery';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
-import { openFolder, openSmartFolder, switchLibrary } from '../../services/folderCoreService';
+import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder, switchLibrary } from '../../services/folderCoreService';
 import { newFolder } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
@@ -212,13 +212,13 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
 
     // dropInto 等价（tolerance:'pointer' 由 zone div 原生命中替代；dragCheck 守卫 =
     // 原 jQuery droppable 仅对 ui-draggable 生效的语义——OS 文件拖放不放行）
-    const zones: Array<[string, string, boolean?]> = isQuick
-      ? [[`.${prefix}-top-area`, 'moveFoldersAsSibling'], [`.${prefix}-bottom-area`, 'moveFoldersAsSibling', true]]
+    const zones: Array<[string, any, boolean?]> = isQuick
+      ? [[`.${prefix}-top-area`, moveFoldersAsSibling], [`.${prefix}-bottom-area`, moveFoldersAsSibling, true]]
       : isSmart
         ? [[`.${prefix}-name-area`, 'moveSmartFoldersToSmartFolder'], [`.${prefix}-top-area`, 'moveSmartFolderTo'], [`.${prefix}-bottom-area`, 'moveSmartFolderTo', true]]
-        : [[`.${prefix}-name-area`, 'moveFoldersToFolder'], [`.${prefix}-top-area`, 'moveFoldersAsSibling'], [`.${prefix}-bottom-area`, 'moveFoldersAsSibling', true]];
+        : [[`.${prefix}-name-area`, moveFoldersToFolder], [`.${prefix}-top-area`, moveFoldersAsSibling], [`.${prefix}-bottom-area`, moveFoldersAsSibling, true]];
 
-    zones.forEach(([selector, fnName, asSiblingBelow]) => {
+    zones.forEach(([selector, fnEntry, asSiblingBelow]) => {
       const zone = el.querySelector(selector) as HTMLElement | null;
       if (!zone) return;
       const onOver = (e: DragEvent) => {
@@ -235,7 +235,9 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
         const target = findLiveNode(id || '');
         if (target) {
           const dragged = bodyScope.$root[isSmart ? 'draggedSmartFolders' : 'draggedFolders'];
-          bodyScope[fnName](dragged, target, ...(asSiblingBelow ? [true] : []));
+          const impl = typeof fnEntry === 'function' ? fnEntry : bodyScope[fnEntry];
+          if (typeof impl !== 'function') return;
+          impl(dragged, target, ...(asSiblingBelow ? [true] : []));
           bodyScope.$evalAsync();
         }
       };

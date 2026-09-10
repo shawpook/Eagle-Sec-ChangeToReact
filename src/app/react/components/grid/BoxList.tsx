@@ -58,11 +58,11 @@ export function BoxList() {
           scopeApply(getBodyScope(), (s) => {
             const id = boxEl.getAttribute('data-box-id');
             const item = id && s.itemMappings ? s.itemMappings[id] : null;
-            if (item && typeof s.select === 'function') select(e, item);
+            if (item) select(e, item);
           });
           return;
         }
-        scopeApply(getBodyScope(), (s) => s.cleanSelected && cleanSelected(e));
+        scopeApply(getBodyScope(), (s) => cleanSelected(e));
       };
 
       const boxFrom = (target: EventTarget | null) =>

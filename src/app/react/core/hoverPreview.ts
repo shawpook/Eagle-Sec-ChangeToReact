@@ -11,6 +11,7 @@
  * if-absent 重复定义随本批退役；install 由 bundleGlobals 在 _throttle 挂载后同步调用。
  */
 // @ts-nocheck
+import { getRawUrl } from './itemDomain';
 
 const _w: any = window as any;
 
@@ -416,7 +417,7 @@ var HoverPreview = {
         var loadRaw = function () {
             clearTimeout(HoverPreview.loadRawTimeout);
             HoverPreview.loadRawTimeout = setTimeout(function () {
-                var rawPath = _w.$bodyScope.getRawUrl(image);
+                var rawPath = getRawUrl(image);
                 var img = new Image();
                 img.onload = function() {
                     $hoverImage.attr("src", rawPath);
@@ -625,7 +626,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
         console.log(muted);
         var video = $('<video/>', {
             id: 'video',
-            src: _w.$bodyScope.getRawUrl(image),
+            src: getRawUrl(image),
             type: 'video/mp4',
             controls: false,
             autoplay: true,
@@ -802,7 +803,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
                 // 建立 <mpv-video> 元素（不設定 controls，不顯示 control bar）
                 var mpvElement = document.createElement("mpv-video");
-                mpvElement.src = _w.$bodyScope.getRawUrl(image);
+                mpvElement.src = getRawUrl(image);
                 mpvElement.autoplay = true;
                 mpvElement.muted = muted;
                 mpvElement.loop = true;
@@ -1008,7 +1009,7 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
         var $progressbarCurosr = $(`<div class="audio-progress-bar-cursor"></div>`);
         var audio = $('<audio/>', {
             id: 'audio',
-            src: _w.$bodyScope.getRawUrl(image),
+            src: getRawUrl(image),
             type: 'audio/' + image.ext,
             controls: false,
             autoplay: autoplay,

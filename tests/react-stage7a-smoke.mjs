@@ -100,7 +100,7 @@ try {
       const rect = box.getBoundingClientRect();
       window.$bodyScope.$apply(() => {
         window.$bodyScope.selected = [window.$bodyScope.allData[0]];
-        window.$bodyScope.openItemContextMenu({
+        window.__eaglePorts.openItemContextMenu({
           pageX: rect.left + 40, pageY: rect.top + 40, clientX: rect.left + 40, clientY: rect.top + 40,
           target: box, preventDefault() {}, stopPropagation() {}, button: 2,
         }, window.$bodyScope.allData[0]);
@@ -305,7 +305,7 @@ try {
       const rect = box.getBoundingClientRect();
       window.$bodyScope.$apply(() => {
         window.$bodyScope.selected = [window.$bodyScope.allData[0]];
-        window.$bodyScope.openItemContextMenu({
+        window.__eaglePorts.openItemContextMenu({
           pageX: rect.left + 40, pageY: rect.top + 40, clientX: rect.left + 40, clientY: rect.top + 40,
           target: box, preventDefault() {}, stopPropagation() {}, button: 2,
         }, window.$bodyScope.allData[0]);

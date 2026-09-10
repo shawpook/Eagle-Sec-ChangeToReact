@@ -20,7 +20,7 @@ import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machin
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { copyAsBase64, copyAsFolderPath, copyAsLink, copyAsPath, copyAsProperity, copyAsThumbnail, openFilesWithDefault, openInFinder, openInPreviewWindow, openItemLocation, openWithOther } from '../core/itemDomain';
-import { duplicateItem } from './folderCoreService';
+import { duplicateItem, getLibraryHistory } from './folderCoreService';
 import { changeImagesBackground, resetCustomThumbnail, setCustomThumbnail, setCustomThumbnailFromClipboard } from './imageOpsService';
 import { loadSubtitles, setAsVideoThumbnail } from './mediaService';
 import { getNext } from './viewOpsService';
@@ -96,7 +96,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
 
         // 添加到其它資源庫
         let historyLibraryMenu = {};
-        historyLibraryMenu.items = $bodyScope.getLibraryHistory().filter((history) => {
+        historyLibraryMenu.items = getLibraryHistory().filter((history) => {
             var isCurrent = false;
             if ($bodyScope.libraryPath) {
                 isCurrent = path.normalize(history.path) == path.normalize($bodyScope.libraryPath);

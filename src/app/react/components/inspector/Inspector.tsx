@@ -42,6 +42,8 @@ import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { filterWithColor } from '../../core/filterDomain';
+import { removeFromFolder } from '../../services/batchOpsService';
+import { getRawUrl } from '../../core/itemDomain';
 
 /**
  * 阶段6：检查器接管。
@@ -55,9 +57,10 @@ import { filterWithColor } from '../../core/filterDomain';
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
-const call = (fn: string, ...preArgs: any[]) => (e?: any) =>
+const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
-    if (typeof scope[fn] === 'function') scope[fn](...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    const target = typeof fn === 'function' ? fn : scope[fn];
+    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
 
 /** Angular number 过滤器（分组）。 */
@@ -129,7 +132,7 @@ function useCommentVideo(videoRef: React.RefObject<HTMLVideoElement | null>, com
     const onHover = () => {
       if (!isLoadRef.current) {
         isLoadRef.current = true;
-        video.src = getBodyScope().getRawUrl(getBodyScope().selected[0]);
+        video.src = getRawUrl(getBodyScope().selected[0]);
         const onLoaded = () => {
           if (duration) {
             video.currentTime = duration;
@@ -386,7 +389,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
         className="ic-btn label-item-remove-btn"
         onClick={(e) => {
           e.stopPropagation();
-          call('removeFromFolder', e.nativeEvent, folderId)(e);
+          call(removeFromFolder, e.nativeEvent, folderId)(e);
         }}
       >
         <img src={iconSrc(theme, 'ic-inspector-remove-label.svg')} />
@@ -1291,7 +1294,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
                     const hex = rgbToHex(palette.color[0], palette.color[1], palette.color[2]);
                     if (typeof hex === 'string') s.$body?.hexColor !== undefined && (s.$body.hexColor = hex);
                     s.hexColor = hex;
-                    if (typeof s.filterWithColor === 'function') filterWithColor(palette.color);
+                    filterWithColor(palette.color);
                   });
                 }}
               >

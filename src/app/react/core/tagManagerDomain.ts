@@ -19,6 +19,7 @@ import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from './appCore';
 import { toggleGifPlay } from '../services/mediaService';
+import { getLibraryHistory } from '../services/folderCoreService';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -1561,7 +1562,7 @@ export function machineryBuildTagManager(s: any): any {
         s.openTagGroupContextMenu = (event, tagGroup: any) => {
 
             let historyLibraryMenu = {};
-            historyLibraryMenu.items = $bodyScope.getLibraryHistory().filter(( history: any) => {
+            historyLibraryMenu.items = getLibraryHistory().filter(( history: any) => {
                 var isCurrent = false;
                 if ($bodyScope.libraryPath) {
                     isCurrent = w.path.normalize(history.path) == w.path.normalize($bodyScope.libraryPath);

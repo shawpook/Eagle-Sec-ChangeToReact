@@ -7,6 +7,7 @@
  * 留 bl-B 预览窗切换时一并退役。
  */
 // @ts-nocheck
+import { getRawUrl } from './itemDomain';
 
 export class BitmapViewer {
 	#zoomer;
@@ -202,7 +203,7 @@ export class BitmapViewer {
 
 	preload(item) {
 		if (!this.isSupportFormat(item.ext)) return;
-		const url = $bodyScope.getRawUrl(item);
+		const url = getRawUrl(item);
 
 		if (this.#preloadBitmapWorker) {
 			this.#preloadBitmapWorker.terminate();

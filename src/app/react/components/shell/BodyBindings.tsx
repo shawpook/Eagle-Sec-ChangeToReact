@@ -161,7 +161,7 @@ export function HoverShowSidebar() {
     const $el = $(el);
     $el.hoverIntent(function ($event: any) {
       scopeApply(scope, (s: any) => {
-        if (typeof s.hoverShowSidebar === 'function') hoverShowSidebar($event);
+        hoverShowSidebar($event);
       });
     });
     return () => {
@@ -192,7 +192,7 @@ export function SidebarResizable() {
       handles: 'e',
       resize: function (event: any, ui: any) {
         scopeApply(scope, (s: any) => {
-          if (typeof s.onSidebarResize === 'function') onSidebarResize(event, ui);
+          onSidebarResize(event, ui);
         });
       },
     });

@@ -543,7 +543,7 @@ export function openFolderExpandContextMenu(...args: any[]) {
             label: i18n.__('Context.Expand.Folder'),
             icon: 'ic-expand.svg',
             click: () => {
-              s2.toggleSelectFolder(eventArg, folderArg);
+              toggleSelectFolder(eventArg, folderArg);
               s2.$evalAsync();
             }
           },
@@ -551,7 +551,7 @@ export function openFolderExpandContextMenu(...args: any[]) {
             label: i18n.__('Context.Expand.SameLevel.Folders'),
             icon: 'ic-expand-same.svg',
             click: () => {
-              s2.toggleCurrentLevelFolders(eventArg, folderArg);
+              toggleCurrentLevelFolders(eventArg, folderArg);
               s2.$evalAsync();
             }
           },
@@ -559,7 +559,7 @@ export function openFolderExpandContextMenu(...args: any[]) {
             label: i18n.__('Context.Expand.All.Folders'),
             icon: 'ic-expand-all.svg',
             click: () => {
-              s2.toggleAllFolderExpand(eventArg, folderArg);
+              toggleAllFolderExpand(eventArg, folderArg);
               s2.$evalAsync();
             }
           },

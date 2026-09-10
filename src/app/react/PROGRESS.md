@@ -1930,29 +1930,101 @@
 > 误判成改动的因果 —— 本批曾据此错误归因到 `zoomFit`，恢复原实现后仍失败才确认是抖动。
 > | **B6** | ✅ 已完成 —— EXCLUDE 解锁（153→6 处） | 198 处 | 无 | stage1m1 + 全套件 |
 > | **B7** | ✅ 已完成 —— 双键单源化 30/40 | 39 个 | B6 | 逐个体检 + 全套件 |
-> | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | 待做 | B6 + B7 | stage1c3 契约改写 + 全套件 |
+> | **B8** | ✅ 已完成 —— 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |
 >
-> **B8 前置 1/3 已完成**：`search` 解锁（EXCLUDE 残留 **9 → 6**，只剩 5 个契约观测派发点
-> + preferences 的 `restoreDefaultShortcuts`）。`search` 是 TABLE 判档（无 machinery 挂载），
-> 落点为 filterDomain 的 `search`（与表项同一符号），3 处调用点直调化并去掉与新落点耦合的
-> 旧守卫 `typeof s.search === 'function'`。
+> **【b1-9bz-B-8：fns 表 / shimFnsBridge 退役】**（b1-9bz-B 的终点）
 >
-> **B8 实测工作清单（本轮逐项量化，全部为「仅 fns 表供给」的调用点）**：
+> **动作**：`main.tsx` 摘 `attachCoreFnsToShim(scope)`；删除 `core/shimFnsBridge.ts` 与
+> `core/controllerFns.ts`；`hooks.ts` 的 `makeControllerFns`/`getCoreFns`/`window.__eagleCoreFns`
+> 整块摘除；新增 `core/portsProbe.ts` 作为**窄口径测试观测钩子**（`window.__eaglePorts`，
+> 4 个名字的同对象引用、无任何运行期供给语义，注释已标退役条件）。
 >
-> | # | 项 | 量 | 说明 |
-> |---|---|---|---|
-> | 1 | `Toolbar.tsx` 字符串式派发 | **33 处**（`call('X')` / `callSeq([['X',arg]])`，实现为 `scope[fn](...)`） | 其中 5 个名字**仅表供给**：`openFolder` / `openSmartFolder` / `openApplicationContextMenu` / `openOrderMenu` / `resetFilter`；13 个已挂载；15 个不在判定图（在 shim 世界本就是 silent no-op —— 属**既有缺口**，非 B8 引入） |
-> | 2 | 其余动态下标派发 `scope[fn](...)` | **15 处** / 11 文件 | Sidebar / DetailViewer / Inspector / ListRegion / SmallPanels / TagManager / detailState / artstation / panels8e / preview-window —— 需逐个查 `fn` 的实际取值，判断是否命中表供给名 |
-> | 3 | `folderMenuService` 的 3 个匿名 install 表项 | **5 处**调用 | `reorderFolderByTitle` / `reorderAllFolderByTitle` / `refreshSmartFolderCount` —— 表内以 `fns["X"] = function(...){...}` 注册，依赖 install 局部闭包 `reorderFolderByTitleClosure`（1979 行内）与 `ayncsUpdateSmartFoldersCount`（2367 行内），需**先提升为模块级具名导出**再转换 |
-> | 4 | `ProgressDialogs.tsx` 的 `cancelEmptyTrash` | 1–2 处 | 本地 `const cancelEmptyTrash = () => {…}` **遮蔽**同名 import → 直调即自我递归，须人工改（改名或显式引用模块导出） |
-> | 5 | `__eagleCoreFns` + `stage1c3` 契约 | — | `hooks.ts:57-74` 的 `makeControllerFns`/`getCoreFns`/`window.__eagleCoreFns` 整块摘除；`tests/react-stage1c3-smoke.mjs:123` 的 `Object.keys(c).length === 236` 抽查改为服务面口径。`probe-filter-toggle.mjs` 也引用了它 |
-> | 6 | 摘除本体 | — | `main.tsx:232` 的 `attachCoreFnsToShim(scope)` 调用、删除 `core/shimFnsBridge.ts`、退役 `core/controllerFns.ts`（`makeControllerFns` 仅剩这两个消费方） |
+> **四波清理（顺序即依赖）**：
 >
-> **结论**：B8 是**全有或全无**的作业 —— 表在位时 5 个仅表供给的名字由它兜底；一旦摘表，
-> 上述 1/2/3/4 的每一个调用点都会在运行时变成 `undefined`（`typeof scope[fn] === 'function'`
-> 守卫只会**静默跳过**，不会报错，因此必须静态清干净再做）。工作量与 B4 同量级（50+ 个
-> 调用点的「字符串名 → 直接引用」改造 + 闭包提升 + 契约改写），需独立成批推进，不可与
-> B5/B6 合并。**当前状态：B5/B6 已交付并全绿；B8 已完成前置 1/3 与完整工作清单量化。**
+> 1. **静态站点 18 处**：`foldermenuService` 3 个匿名 install 表项（`reorderFolderByTitle` /
+>    `reorderAllFolderByTitle` / `refreshSmartFolderCount` —— 连同依赖闭包
+>    `reorderFolderByTitleClosure`、`ayncsUpdateSmartFoldersCount` 一并**提升为模块级具名导出**，
+>    表项改指针）＋ `ProgressDialogs` 2 处（`cancelEmptyTrash`/`cancelRegenerateThumbnail`
+>    本地 const 与 import 同名 → 用 `as xxxAction` 别名）＋ `Toolbar` 的 `maximize`。
+> 2. **字符串式动态派发 22 处**：各文件的 `scope[fn](...)` 辅助器（`call`/`callSeq`/`scopeFn`/
+>    `callGetter`）改为**接受 `string | Function`**，再把命中「表供给名」的调用点换成标识符引用。
+>    涉及 Toolbar(11) / ListRegion(5) / SmallPanels(3) / DetailViewer / Inspector / TagManager /
+>    Sidebar(zones 表) / store/detailState(11 个 getter)。
+> 3. **存在性守卫 44 处**：`s.X && X(...)` 与 `typeof s.X === 'function'` —— 表退役后这类守卫
+>    **恒假、静默短路**掉紧随的直调。全部去掉守卫（直 import 恒可用）。
+>    这批是首轮 stage-smoke 回归（`type check drives rules + badge + breadcrumb`）的真因：
+>    `scopeApply(bodyScope(), (s) => s.toggleExtFilter && toggleExtFilter(typeItem))` 守卫恒假
+>    → 规则从未写入。
+> 4. **`$bodyScope.` 限定形态 12 处**：`smoothZoomEngine`（`getRawUrl`/`getThumbnailUrl`/`startDrag`）、
+>    `bitmapViewer`、`hoverPreview`×4、`dataMachinery`、`tagManagerDomain`、`itemMenuService`、
+>    `gridDirectives`。**首轮扫描器漏掉了这一形态**（负向断言把 `$` 前缀排除了），
+>    实证来自探针抓到的 `TypeError: $bodyScope.getRawUrl is not a function
+>    at Zoomer.updateNavigator (smoothZoomEngine.ts)` —— 它使详情画布永不落帧，
+>    进而 `detail-delivery-released` 稳定超时（stage5）。
+>
+> **契约改写（stage1c3）**：`c3-contract` 从「`__eagleCoreFns` 236 键 + 41 名抽查」改为
+> **B8 终态断言** —— `__eagleCoreFns` / `__eagleShimFnsBridge` 均须 `undefined`、
+> `__eaglePorts` 4 名在位、machinery 挂载面仍活（`calculateImageBinding`/`rebindRefresh`/
+> `updateSidebarList`）。原「bundle 后备」断言 `typeof $bodyScope.clickNode === 'function'`
+> 反转为 `c3-table-retired`（TABLE-only 名不再由 scope 面供给）。
+>
+> **工具与教训（★ 三个扫描器盲区，全部踩过，务必先读）**：
+> 1. **负向断言把 `$` 前缀排除了** → `$bodyScope.X(` / `w.$bodyScope.X(` 整类漏掉（**9 处**）。
+>    实证：探针抓到 `TypeError: $bodyScope.getRawUrl is not a function at
+>    Zoomer.updateNavigator (smoothZoomEngine.ts)` —— 它让详情画布永不落帧，进而
+>    `detail-delivery-released` 稳定超时（stage5）。
+> 2. **只认「简单标识符.NAME(」** → 漏掉两类接收者：
+>    · **捕获别名**（`$on` 处理器里 `body.` / `bs.` / `sc.` / `s2.`，**14 处**）——
+>      `FolderSelectPanels.tsx` 的 `body.openSmartFolder` 等；`sidebarService.ts` 的
+>      `s2.toggleSelectFolder` 等（菜单项 click 回调）。
+>    · **调用表达式接收者**（`getBodyScope().NAME(` / `getBodyScope()?.NAME(`，**14 处**）——
+>      `selectPanelEngine.ts` 的 `getBodyScope().createFolder({...})`（新建文件夹）、
+>      `DuplicateFamily.tsx` JSX 里的 `body?.getThumbnailUrl(item)`。
+>    **最终做法：穷尽式白名单** —— 任何 `.NAME(` 都视为潜在 scope 引用，只排除已知非 scope 对象
+>    （`FileUrlHelper` / `reverseEl` / `currentWindow` / `el` / `input` / `this` 等）。
+>    这套已固化进 `tests-tmp/bz-b8-final-check.py`。
+> 3. **WRITTEN（我方写入 scope 的名字）必须排除其它窗口目录** —— `preview-window/controller.ts`
+>    的 `scope.getRawUrl = …` 会把 bodyScope 侧的表供给名误判成「已写入」，**漏掉全部
+>    `getRawUrl` 站点**（正是本轮踩的坑）。
+>
+> **★ 新发现的合法供给需求：子窗口**。`viewers/font`、`viewers/text-editor` 是**独立窗口**，
+> 经 `parent.$bodyScope.X()` 驱动父窗 —— 跨窗口无法直 import，必须由 **scope 面**供给。
+> 原先依赖 fns 表的 if-absent 挂载（表退役后即 undefined）。枚举（`tests-tmp/bz-b8-viewers.py`）
+> 得 4 名：`activateFont` / `deactivateFont` / `isFontActivate`（fontTagService）、
+> `escHandler`（miscDomain）—— 已在 `applyDataMachineryScope` 内**显式挂载**（该块本就是
+> scope 面供给层）。
+>
+> **测试侧契约改写**（3 类）：
+> 1. **驱动入口**：`stage7a`（`openItemContextMenu`）、`stage7d1a`（`addToFolders`）、
+>    `menu-popup-closed-loop`（4 个 `open*ContextMenu`）原以 `$bodyScope.X()` 作驱动入口，
+>    改为 `window.__eaglePorts.X()`（portsProbe 已扩到 10 名）。
+> 2. **源码审计**：`menu-popup` 原读取 `core/controllerFns.ts` 源文件做静态接线审计，
+>    文件退役后收敛到落点文件（`itemMenuService` + `contextMenuDomain`）。
+> 3. **spy 断言 → 效果断言**：`stage7d3b` 的 `bsp-import-dataplane` 原 spy `body.uploadUrls`
+>    （B8 后 import 处理器走直 import，spy 恒不命中），改为效果式断言
+>    （`importFolders` 数据面 + `uploadQueue` 增长）。
+>
+> **验收**：esbuild 0 错 / import·遮蔽·未解析 三项校验 0 / B8 终态校验 0 残留 / 子窗需求 0 缺口 /
+> `stage-smoke`·`stage5`·`stage1c3`·`stage1m1`·`stage7a`·`stage7d1a`·`stage7d1c2`·`stage7d3b`·
+> `stage7d4`·`menu-popup` 全过 / 哨兵 `SENTINEL_OK`（getBodyScope 850→837）/
+> **全套件 54/55**。
+>
+> **★ 已知遗留（下一会话优先）：`main-ui-workflow-closed-loop` 回归**。
+> B6 时该测试 OK；B8 后稳定失败在驱动的 `original main scope` 等待（`electron/main.cjs:1701-1706`
+> 要求 `$bodyScope.raw` 为数组且 **`listDone` 为真**，25s 超时）。`listDone = true` 的唯一写入点是
+> `dataMachinery.ts:1175`（`machineryReload` 链）。
+> 已排查（均为**否**）：① 非 portsProbe 引入（临时摘除后同样失败）；
+> ② 非「驱动 6 名挂载」引入（临时摘除后同样失败）；
+> ③ 驱动脚本经 scope 调用的 6 个 TABLE-only 名（`select`/`startDrag`/`getRawUrl`/`getRawPath`/
+> `copyAsPath`/`addImagesToFolder`）已在挂载块显式供给 —— 修掉了驱动更早抛的
+> `TypeError: scope.select is not a function`，失败点因此后移到 `listDone`。
+> **下一步方向**：对照 B6↔B8 在 `machineryReload` / `listDone` 链上的差异；重点怀疑
+> B8 新增的 dataMachinery 静态 import（`folderCoreService`/`selectionService`/`imageOpsService`/
+> `fontTagService`/`miscDomain`）造成的**模块初始化顺序变化**（`dataMachinery ⇄ 这些模块`
+> 双向循环，函数声明虽提升，但若对端有模块级 `const` 读取 dataMachinery 导出即可能拿到 undefined）。
+> 验证手法：把这 5 条 import 改为**调用期内联 require/惰性取用**（或临时逐条回退）后跑 main-ui。
+> **B8 完成后 bz-B 收官**：scope 函数面直调化（B4 618 + B5 319 + B6 198 + B8 96 处）、
+> `callScope` 与 `controllerFns` 双双退役、`shimFnsBridge` 摘除。
 >
 > **不列入 B8 的残留（合理终态）**：① 其它窗口的 scope（`preview-window` / `collect-window` /
 > `preferences` —— 与 bodyScope 无关，`s` 是各自的控制器 scope）；② PREBIND 预绑实例 47 处

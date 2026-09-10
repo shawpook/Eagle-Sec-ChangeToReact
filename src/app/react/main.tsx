@@ -43,7 +43,7 @@ import { bridgeScopeFields, coreState, getBodyScope } from './core/appCore';
 import { exposeScopeShimDiagnostics } from './global/scopeShim';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 import { applyDataMachineryScope } from './core/dataMachinery';
-import { attachCoreFnsToShim } from './core/shimFnsBridge';
+import { installPortsProbe } from './core/portsProbe';
 import { installBundleGlobals } from './core/bundleGlobals';
 import { installApiServerGlobals, installInitAPIServer } from './core/apiServerDomain';
 import { takeoverLibraryDomain } from './core/libraryDomain';
@@ -226,11 +226,10 @@ function bridgeWhenReady(attempt = 0): void {
     // c11：shim 已是 coreState 后端（属性面直接代理），无需重复桥接
     if (!scope.__eagleShim) {
       bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
-    } else {
-      // b1 桥：c3 fns 表 if-absent 上 shim（bundle 缺席时的函数面供给第一层，
-      // machinery apply 随后照旧覆盖自己的成员）
-      attachCoreFnsToShim(scope);
     }
+    // b1-9bz-B-8：shimFnsBridge / controllerFns 退役（消费面已全部直 import）。
+    // 仅保留窄口径测试观测钩子（见 core/portsProbe.ts，无运行期供给语义）。
+    installPortsProbe();
     (window as any).__eagleCoreState = coreState;
     applyDataMachineryScope();
     takeoverPreferencesDomain();

@@ -2,6 +2,7 @@ import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
 import { contextMenuOpenChannel } from '../../global/bus';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { createFolder } from '../../services/folderCoreService';
 
 /**
  * 阶段7d-1c-1：SelectPanel 体系纯类逐字移植（React 组件层见 SelectPanels.tsx）。
@@ -2258,7 +2259,7 @@ export class FolderSelectPanel extends SelectPanel {
   openItem(event: any, item: any) {
     if (item.type === 'create') {
       this.createFolder(this.listData.searchKeyword.trim(), (folderName: any) => {
-        getBodyScope().createFolder({
+        createFolder({
           name: folderName.trim(),
           position: 'top',
           callback: (folder: any) => {
@@ -2312,7 +2313,7 @@ export class FolderSelectPanel extends SelectPanel {
             icon: 'ic-folder-new-sub-folder.svg',
             click: () => {
               this.createFolder('', (folderName: any) => {
-                getBodyScope().createFolder({
+                createFolder({
                   name: folderName,
                   parentID: item.id,
                   callback: (folder: any) => {
@@ -2327,7 +2328,7 @@ export class FolderSelectPanel extends SelectPanel {
             icon: 'ic-expand-same.svg',
             click: () => {
               this.createFolder('', (folderName: any) => {
-                getBodyScope().createFolder({
+                createFolder({
                   name: folderName,
                   sibling: item,
                   callback: (folder: any) => {

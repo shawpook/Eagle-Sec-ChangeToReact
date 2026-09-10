@@ -168,7 +168,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
         s.$evalAsync();
       } else if (s) {
         s.hexColor = color;
-        s.filterWithColor && filterWithColor(hexToRGB(color));
+        filterWithColor(hexToRGB(color));
         s.$evalAsync();
       }
     }, 33);
@@ -222,18 +222,18 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   <div
                     className={`palette none${!gray && !activeHex ? ' active' : ''}`}
                     style={{ backgroundColor: '#ccc' }}
-                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithColor && filterWithColor()); }}
+                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => filterWithColor()); }}
                   />
                   <div
                     className="palette gray"
-                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor('gray')); }}
+                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => filterWithHexColor('gray')); }}
                   />
                   {COLOR_PALETTES.map(([hex]) => (
                     <div
                       key={hex}
                       className={`palette${hex === activeHex ? ' active' : ''}`}
                       style={{ backgroundColor: hex }}
-                      onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor(hex)); }}
+                      onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => filterWithHexColor(hex)); }}
                     />
                   ))}
                 </div>
@@ -249,7 +249,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onChange={(e) => {
                       setHexDraft(e.target.value);
                       scopeApply(bodyScope(), (s) => { s.hexColor = e.target.value; });
-                      scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor(e.target.value));
+                      scopeApply(bodyScope(), (s) => filterWithHexColor(e.target.value));
                     }}
                   />
                   <div className="fake-color-input" onClick={openColorPicker} style={{ backgroundColor: hexDraft }} />
@@ -272,7 +272,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onChange={(e) => {
                       const v = Number(e.target.value);
                       scopeApply(bodyScope(), (s) => { s.eagle.filter.filterRules.color.accuracy = v; });
-                      scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor(s.hexColor));
+                      scopeApply(bodyScope(), (s) => filterWithHexColor(s.hexColor));
                     }}
                   />
                 </div>
@@ -368,9 +368,9 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const onOpen = () => {
     scopeApply(bodyScope(), (s) => {
       if (s.eagle.filter.folderFilterLogic === 'OR') {
-        s.calcuteContainFolders && calcuteContainFolders(s.preelaborations);
+        calcuteContainFolders(s.preelaborations);
       } else {
-        s.calcuteContainFolders && calcuteContainFolders(s.allData);
+        calcuteContainFolders(s.allData);
       }
       s.$evalAsync();
     });
@@ -474,14 +474,14 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   onClick={(e) => {
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
-                    scopeApply(bodyScope(), (s) => s.filterWithFolder && filterWithFolder(live));
+                    scopeApply(bodyScope(), (s) => filterWithFolder(live));
                     runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
                   }}
                   onContextMenu={(e) => {
                     e.stopPropagation();
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
-                    scopeApply(bodyScope(), (s) => s.excludeWithFolder && excludeWithFolder(live));
+                    scopeApply(bodyScope(), (s) => excludeWithFolder(live));
                     runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
                   }}
                   nameHtml={substring(fuzzyName(folder.name), 0, 200)}
@@ -736,14 +736,14 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onClick={() => {
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      scopeApply(bodyScope(), (s) => s.filterWithTag && filterWithTag(live));
+                      scopeApply(bodyScope(), (s) => filterWithTag(live));
                       runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
                     }}
                     onContextMenu={(e) => {
                       e.stopPropagation();
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      scopeApply(bodyScope(), (s) => s.excludeWithTag && excludeWithTag(live));
+                      scopeApply(bodyScope(), (s) => excludeWithTag(live));
                       runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
                     }}
                     nameHtml={substring(fuzzyName(tag.name), 0, 200)}

@@ -57,11 +57,14 @@
 import { detailZoom, ensureDetailZoom } from './smoothZoomEngine';
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { FolderSelectPanel } from '../components/stage7/selectPanelEngine';
-import { updateCurrentOrderAndIncrease } from './miscDomain';
+import { copyAsPath, getRawPath, getRawUrl, escHandler, updateCurrentOrderAndIncrease } from './miscDomain';
 import { isInFolder } from './itemDomain';
 import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 import { detailUpdateZoomRatio, detailSmartZoom, detailToggleDetailMode, beginZoomingTransition } from '../services/detailService';
 import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot, toggleGifPlay } from '../services/mediaService';
+import { activateFont, deactivateFont, isFontActivate } from '../services/fontTagService';
+import { addImagesToFolder } from '../services/folderCoreService';
+import { select } from '../services/selectionService';
 // b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
@@ -86,7 +89,7 @@ import { uploadFiles } from '../services/uploadService';
 import { getRatioExp } from '../services/viewOpsService';
 import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
-import { saveCrop } from '../services/imageOpsService';
+import { saveCrop, startDrag } from '../services/imageOpsService';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -7114,7 +7117,7 @@ export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: a
     });
   if (usingThumbnail) {
     if (image.animated || (image.orientation && image.orientation !== 1)) {
-      w.$("img#detail-image").attr("src", w.$bodyScope.getRawUrl(image));
+      w.$("img#detail-image").attr("src", getRawUrl(image));
     }
     else {
       w.$("img#detail-image").attr("src", w.FileUrlHelper.getThumbnailUrl(image));
@@ -11485,6 +11488,25 @@ export function applyDataMachineryScope(): void {
   s.getAncestorSmartFolders = (folder: any, folders: any[]) => machineryGetAncestorSmartFolders(s, folder, folders);
   s.toggleAllFolders = (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand);
   s.toggleAllSmartFolders = (smartFolders: any, isExpand: any) => machineryToggleAllSmartFoldersInner(s, smartFolders, isExpand);
+
+  // b1-9bz-B-8：**子窗口**（viewers/font、viewers/text-editor）经  驱动的
+  // 名字 —— 跨窗口无法直 import，必须由 scope 面供给。原先依赖 controllerFns fns 表的
+  // if-absent 挂载（表退役后即 undefined），故在此**显式挂载**（本块就是 scope 面供给层）。
+  // 清单来自 tests-tmp/bz-b8-viewers.py 的枚举（子窗引用 ∩ 表供给且未挂载）。
+  s.activateFont = (...args: any[]) => activateFont(...args);
+  s.deactivateFont = (...args: any[]) => deactivateFont(...args);
+  s.isFontActivate = (...args: any[]) => isFontActivate(...args);
+  s.escHandler = (...args: any[]) => escHandler(...args);
+
+  // b1-9bz-B-8：原版主 UI 工作流驱动脚本（electron/main.cjs 的 selectItems / 等）经 scope
+  // 面调用的名字 —— 与子窗口同款需求（脚本在页面主世界驱动 scope，无法直 import）。
+  // 原由 fns 表 if-absent 供给，表退役后改为显式挂载。
+  s.addImagesToFolder = (...args: any[]) => addImagesToFolder(...args);
+  s.copyAsPath = (...args: any[]) => copyAsPath(...args);
+  s.getRawPath = (...args: any[]) => getRawPath(...args);
+  s.getRawUrl = (...args: any[]) => getRawUrl(...args);
+  s.select = (...args: any[]) => select(...args);
+  s.startDrag = (...args: any[]) => startDrag(...args);
 
   // b1-9av：启动期键盘绑定。原链 = update-menu/update-preferences IPC → initMousetrap
   // （bundle 22399/22408），该两通道 React 世界无发送方无桥（PROGRESS 曾登记"暂留"）——

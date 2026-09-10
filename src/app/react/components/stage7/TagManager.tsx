@@ -12,6 +12,7 @@ import { syncTagManagerFromScope } from '../../store/tagManagerState';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../../services/fontTagService';
+import { openTag } from '../../services/batchOpsService';
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *
@@ -23,9 +24,10 @@ import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
-const call = (fn: string, ...preArgs: any[]) => (e?: any) =>
+const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
-    if (typeof scope[fn] === 'function') scope[fn](...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    const target = typeof fn === 'function' ? fn : scope[fn];
+    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
 
 /* ---------------- tag-select 指令（72799-73001 逐字） ---------------- */
@@ -262,7 +264,7 @@ export function TagManagerPanel() {
       handles: 'e',
       resize: (event: any, ui: any) => {
         scopeApply(getBodyScope(), (s) => {
-          if (typeof s.onTagSidebarResize === 'function') onTagSidebarResize(event, ui);
+          onTagSidebarResize(event, ui);
           s.$evalAsync?.();
         });
       },
@@ -397,7 +399,7 @@ export function TagManagerPanel() {
                 const live = liveMapping(tag);
                 if (live) call('selectTag', e.nativeEvent, live)(e);
               }}
-              onDoubleClick={(e) => call('openTag', mapping.name || tag)(e)}
+              onDoubleClick={(e) => call(openTag, mapping.name || tag)(e)}
               onContextMenu={(e) => {
                 const live = liveMapping(tag);
                 if (live) call('openTagContextMenu', e.nativeEvent, live)(e);

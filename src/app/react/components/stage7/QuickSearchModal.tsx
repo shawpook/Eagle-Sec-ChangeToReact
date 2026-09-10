@@ -11,6 +11,7 @@ import { machineryChangeSidebarIndex } from '../../core/dataMachinery';
 import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
+import { closeQuickSearch } from '../../core/filterDomain';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -747,7 +748,7 @@ export function QuickSearchModal() {
 
   const closeViaScope = () => {
     const s = getBodyScope();
-    if (s && typeof s.closeQuickSearch === 'function') scopeApply(s, (sc: any) => sc.closeQuickSearch());
+    if (s) scopeApply(s, () => closeQuickSearch());
     else close();
   };
 

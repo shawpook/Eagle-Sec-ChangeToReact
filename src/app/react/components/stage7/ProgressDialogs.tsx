@@ -4,6 +4,8 @@ import { t } from '../../global/eagleGlobals';
 import { second2time } from '../../app/filters';
 import { getIpc, req } from '../detail/detailHooks';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
+import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
 
 /**
  * 阶段7d-6a：进度对话框族（第一部分）接管。
@@ -81,7 +83,7 @@ export function EmptyTrashProgress() {
 
   const cancelEmptyTrash = () => {
     // ng-click 等价：$apply 包裹（digest 触发 $watch 桥接 → isCleaningTrash=false → 关闭）
-    scopeApply(getBodyScope(), (s: any) => s.cancelEmptyTrash && s.cancelEmptyTrash());
+    scopeApply(getBodyScope(), () => cancelEmptyTrashAction());
   };
 
   return createPortal(
@@ -729,7 +731,7 @@ export function FileThumbnailProgress() {
 
   const isOpen = lengths.total > 0;
   const cancelRegenerateThumbnail = () => {
-    scopeApply(getBodyScope(), (s: any) => s.cancelRegenerateThumbnail && s.cancelRegenerateThumbnail());
+    scopeApply(getBodyScope(), () => cancelRegenerateThumbnailAction());
   };
 
   return createPortal(

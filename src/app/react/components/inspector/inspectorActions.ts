@@ -7,6 +7,8 @@ import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { machineryEnterDetailMode } from '../../core/dataMachinery';
+import { copyTags, pasteTags } from '../../services/batchOpsService';
+import { openItemContextMenu } from '../../services/itemMenuService';
 
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
@@ -706,7 +708,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           label: t('context.tagInput.pasteTag'),
           icon: 'ic-tag-paste.svg',
           click: () => {
-            getBodyScope().pasteTags();
+            pasteTags();
           },
         },
       ];
@@ -718,7 +720,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           icon: 'ic-tag-copy.svg',
           accelerator: (window as any).preferences.shortcuts.keybinds['organize.tag.copy'],
           click: () => {
-            getBodyScope().copyTags();
+            copyTags();
           },
         },
         {
@@ -727,7 +729,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           icon: 'ic-tag-paste.svg',
           accelerator: (window as any).preferences.shortcuts.keybinds['organize.tag.paste'],
           click: () => {
-            getBodyScope().pasteTags();
+            pasteTags();
           },
         },
         { role: 'separator' },
@@ -898,7 +900,7 @@ export function bindInspectorEvents(): () => void {
       getBodyScope().openPluginPanel();
       getBodyScope().$evalAsync();
     } else if (button !== 0) {
-      getBodyScope().openItemContextMenu(event, getBodyScope()?.selected?.[0]);
+      openItemContextMenu(event, getBodyScope()?.selected?.[0]);
       getBodyScope().$evalAsync();
     }
   };

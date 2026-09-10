@@ -217,7 +217,7 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
         folderName[id] = folderMappings[id]?.name;
         folderColor[id] = folderMappings[id]?.iconColor;
         try {
-          folderFullPath[id] = typeof scope.getFolderFullPath === 'function' ? String(getFolderFullPath(folderMappings[id]) || '') : '';
+          folderFullPath[id] = String(getFolderFullPath(folderMappings[id]) || '');
         } catch (err) {
           folderFullPath[id] = '';
         }

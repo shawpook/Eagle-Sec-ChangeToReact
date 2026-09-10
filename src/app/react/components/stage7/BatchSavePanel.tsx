@@ -9,6 +9,8 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope } from '../../core/appCore';
+import { uploadUrls } from '../../services/uploadService';
+import { addToRecentFolders } from '../../services/batchOpsService';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -984,13 +986,13 @@ export function BatchSavePanel() {
     const folderIds = importFoldersRef.current.map((fd: any) => fd.id);
     const tags = tagsRef.current;
 
-    body.uploadUrls(imageUrls, folderIds, {
+    uploadUrls(imageUrls, folderIds, {
       names: names,
       urls: websiteUrls,
       tags: tags,
     });
 
-    body.addToRecentFolders(folderIds);
+    addToRecentFolders(folderIds);
     close();
     bumpAll();
   };

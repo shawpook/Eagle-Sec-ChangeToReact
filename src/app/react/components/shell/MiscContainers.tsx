@@ -46,9 +46,7 @@ export function ColorsPicker() {
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
           scopeApply(getBodyScope(), (s: any) => {
-            if (typeof s.filterWithColor === 'function' && typeof s.hexToRGB === 'function') {
-              filterWithColor(hexToRGB(value));
-            }
+            filterWithColor(hexToRGB(value));
           });
         }, 200);
       }}

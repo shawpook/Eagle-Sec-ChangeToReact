@@ -12,6 +12,8 @@
 import { FileUrlHelper } from './fileUrlHelper';
 import { BitmapViewer } from './bitmapViewer';
 import { syncDetailFromScope } from '../store/detailState';
+import { getRawUrl } from './itemDomain';
+import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
 
 
 	/*****************************************************************************
@@ -1444,7 +1446,7 @@ import { syncDetailFromScope } from '../store/detailState';
         	}
 
         	if (e && e.button === 0 && (e.ctrlKey || e.metaKey)) {
-        		$bodyScope.startDrag && $bodyScope.startDrag();
+        		startDrag();
         		return;
         	}
 
@@ -2733,8 +2735,8 @@ if (!self._mousedown) return;
 
 			const $injector = { get: function (name) { return name === '$rootScope' ? (window.$bodyScope && window.$bodyScope.$root) : undefined; } };
 			const $rootScope = $injector.get('$rootScope');
-			const rawURL = $bodyScope.getRawUrl(image);
-			const thumbnailURL = $bodyScope.getThumbnailUrl(image);
+			const rawURL = getRawUrl(image);
+			const thumbnailURL = getThumbnailUrl(image);
 			
 			if (self.bitmapViewer.isSupportFormat(image.ext)) {
 				$("#detail-image").css("opacity", 1);

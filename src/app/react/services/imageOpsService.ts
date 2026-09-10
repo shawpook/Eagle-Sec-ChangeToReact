@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryCancelCrop, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView, machineryVideoScreenShot } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCancelCrop, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView, machineryVideoScreenShot } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -406,71 +406,11 @@ export function saveCrop(...args: any[]) {
 }
 
 export function changeStar(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (star, showNotify, force) {
-            if (s.selected.length === 0) return;
-            if (!star && s.selected.length === 1 && !s.selected[0].star) {
-            	return;
-            }
-
-            machineryCheckOperationSafety(s, function () {
-
-                let changedItems = [];
-
-                // 刪除星星
-                if (star === undefined || (eagle.inspector.star === star && !force)) {
-                    for (var i = 0; i < s.selected.length; i++) {
-                        let __lv_image = s.selected[i];
-                        if (__lv_image.star) {
-                            eagle.filter.filterCounts['rating']['0']++;
-                            eagle.filter.filterCounts['rating']['' + __lv_image.star]--;
-                            delete __lv_image.star;
-                            changedItems.push(__lv_image);
-                        }
-                    }
-                    delete eagle.inspector.star;
-                    if (showNotify) {
-                        s.notify({
-                            message: $filter('i18n')('appmenu.tag>removeRating'),
-                            duration: 750
-                        });
-                    }
-                    electronLog && electronLog.info(`[app] Remove rating, total: ${changedItems.length} files`);
-                    analytics.event('Rating', 'Remove');
-                }
-                else {
-                    for (var i = 0; i < s.selected.length; i++) {
-                        let __lv_image = s.selected[i];
-                        if (__lv_image.star !== star) {
-                            eagle.filter.filterCounts['rating']['' + __lv_image.star]--;
-                            __lv_image.star = star;
-                            eagle.filter.filterCounts['rating']['' + star]++;
-                            eagle.filter.filterCounts['rating']['0']--;
-                            changedItems.push(__lv_image);
-                        }
-                    }
-                    eagle.inspector.star = star;
-                    var message = $filter('i18n')("notify.setStar.msg", [
-                        { "property": "star", "value": star }
-                    ]);
-                    if (showNotify) {
-                        s.notify({
-                            message: message,
-                            duration: 750
-                        });
-                    }
-                    electronLog && electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
-                    analytics.event('Rating', 'Set', star);
-                }
-                machineryUpdateItemsView(s, s.selected);
-                if (changedItems.length > 0) {
-                    ayncsImagesChange(changedItems);
-                    hiddenByCurrentFilter(changedItems);
-                }
-            });
-        }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（diff 仅 __lv_image→image、
+  // eagle→w.eagle，且 s.checkOperationSafety 挂载即 machinery 版）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryChangeStar(s, args[0], args[1], args[2]);
 }
 
 export function updateItemView(...args: any[]) {

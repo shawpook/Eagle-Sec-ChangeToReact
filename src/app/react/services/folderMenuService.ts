@@ -82,42 +82,10 @@ function wQueryFocusFolderInput(folderId: any) {
 
 /* b1-9ap/b1-9aq 台账区 + 三 builder（逐字；fns/getScope 为闭包注入） */
 export function checkOperationSafety2(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return ((count: any, callback: any, amount: any = 100) => {
-      try {
-        if (count >= amount) {
-          var html = $filter('i18n')('Dialog.BulkAction.Descript', [
-            { property: 'count', value: count },
-          ]);
-          swal({
-            html: `
-                            <div class="alert">
-                                <div class="alert-icon warning"></div>
-                                <h4 class="alert-title">${i18n.__('Dialog.BulkAction.Title')}</h4>
-                                <p class="alert-desc">${html}</p>
-                            </div>
-                        `,
-            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
-            allowEnterKey: false,
-            width: 400,
-            customClass: 'alert-box',
-            cancelButtonColor: '#777777',
-            confirmButtonText: i18n.__('Dialog.BulkAction.Button'),
-            cancelButtonText: i18n.__('general.cancel'),
-          }).then(function (result: any) {
-            callback && callback();
-            s.$evalAsync();
-          });
-        }
-        else {
-          callback && callback();
-        }
-      }
-      catch (err) {
-        callback && callback();
-      }
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（$filter→getFilter()、swal/i18n→w.*）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryCheckOperationSafety2(s, args[0], args[1], args[2]);
 }
 
 export function refreshSubfolderList(...args: any[]) {
@@ -204,25 +172,10 @@ export function setFoldersOrder(...args: any[]) {
 }
 
 export function setFolderOrder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (folder: any, orderBy: any, ignoreReload: any) {
-      if (!folder) return;
-      if (!orderBy) {
-        delete folder.orderBy;
-        delete folder.sortIncrease;
-      }
-      else {
-        folder.orderBy = orderBy;
-        if (folder.sortIncrease === undefined) {
-          folder.sortIncrease = true;
-        }
-      }
-      if (s.currentFolder === folder && !ignoreReload) {
-        machineryReload(s);
-      }
-      machinerySaveFolder(s);
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySetFolderOrder(s, args[0], args[1], args[2]);
 }
 
 export function setFoldersSortIncrease(...args: any[]) {
@@ -297,37 +250,17 @@ export function settingFolder(...args: any[]) {
 }
 
 export function renameFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (event: any, folder: any) {
-      s.viewMode = undefined;
-      s.currentFolder = folder;
-      syncPanelFromScope();
-      syncFolderLock();
-      syncListFromScope();
-      folder.editable = true;
-      folder.newFolderName = folder.name;
-      setTimeout(function () {
-        wQueryFocusFolderInput(folder.id);
-      }, 100);
-      setTimeout(function () {
-        wQueryFocusFolderInput(folder.id);
-      }, 200);
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryRenameFolder(s, args[0], args[1]);
 }
 
 export function batchRenameFolders(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function () {
-      var selectedFolders = s.$root.selectedFolders;
-      if (selectedFolders.length === 0) return;
-
-      s.$root.$broadcast('OPEN_RENAME', {
-        type: 'FOLDER',
-        folders: selectedFolders
-      });
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryBatchRenameFolders(s);
 }
 
 export function cloneFolder(...args: any[]) {
@@ -1252,25 +1185,10 @@ export function setSmartFoldersOrder(...args: any[]) {
 }
 
 export function setSmartFolderOrder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (folder: any, orderBy: any) {
-      if (!folder) return;
-      if (!orderBy) {
-        delete folder.orderBy;
-        delete folder.sortIncrease;
-      }
-      else {
-        folder.orderBy = orderBy;
-        if (folder.sortIncrease === undefined) {
-          folder.sortIncrease = true;
-        }
-      }
-      if (s.currentSmartFolder === folder) {
-        machineryReload(s);
-      }
-      machinerySaveFolder(s);
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySetSmartFolderOrder(s, args[0], args[1], args[2]);
 }
 
 export function setSmartFoldersSortIncrease(...args: any[]) {
@@ -1297,17 +1215,10 @@ export function setSmartFolderSortIncrease(...args: any[]) {
 }
 
 export function batchRenameSmartFolders(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function () {
-      var selectedSmartFolders = s.$root.selectedSmartFolders;
-      if (selectedSmartFolders.length === 0) return;
-
-      s.$root.$broadcast('OPEN_RENAME', {
-        type: 'SMART_FOLDER',
-        folders: selectedSmartFolders
-      });
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryBatchRenameSmartFolders(s);
 }
 
 export function changeSmartFolderIcon(...args: any[]) {
@@ -1423,22 +1334,10 @@ export function cloneSmartFolder(...args: any[]) {
 }
 
 export function renameSmartFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (event: any, smartFolder: any) {
-      s.viewMode = undefined;
-      s.currentSmartFolder = smartFolder;
-      syncPanelFromScope();
-      syncListFromScope();
-      smartFolder.editable = true;
-      smartFolder.newFolderName = smartFolder.name;
-      setTimeout(function () {
-        wQueryFocusFolderInput(smartFolder.id);
-      }, 100);
-      setTimeout(function () {
-        wQueryFocusFolderInput(smartFolder.id);
-      }, 200);
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryRenameSmartFolder(s, args[0], args[1]);
 }
 
 export function copySmartFolderLink(...args: any[]) {

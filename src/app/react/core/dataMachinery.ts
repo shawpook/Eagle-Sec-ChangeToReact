@@ -3372,6 +3372,8 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
     syncDetailFromScope();
     syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
+    // b1-9bz-C-4：原 $watch("imageSize.height") 在 flush 时触发 —— 改为写入点直调
+    machineryOnImageSizeHeightChanged(s);
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
@@ -3998,6 +4000,7 @@ export function machineryZoomActual(s: any, event: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
+    machineryOnImageSizeHeightChanged(s);
     machineryChangeListHeight(s);
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
       machineryAdjustLayoutWidth(s, 0);
@@ -9203,6 +9206,66 @@ export function machineryGetFolderList(s: any): any[] {
 /* updateListSlider（bundle 31350-31352：**函数体为空——no-op 原样**） */
 export function machineryUpdateListSlider(s: any, size: any): void {
 
+}
+
+/* ── b1-9bz-C-4：缩略图放大/还原（自 selectionViewDomain 迁入；原 domainEnlarge/ShrinkThumbnails
+   随 imageSize.height watcher 退役改为写入点直调，故实现迁到本模块 —— 本模块不能被域反向
+   import（循环），而域可以 import 本模块） ── */
+let machineryEnlargeThumbnailsTimeout: any = null;
+export function machineryEnlargeThumbnails(): void {
+  const $: any = (window as any).$;
+  clearTimeout(machineryEnlargeThumbnailsTimeout);
+  machineryEnlargeThumbnailsTimeout = setTimeout(() => {
+    console.time("enlargeThumbnails");
+    const $boxs = $(".box.show.jpg, .box.show.png, .box.show.webp, .box.show.bmp, .box.show.jfif").not(".enlarge-thumbnail");
+    const $imgs = $boxs.find(".thumbnail img");
+
+    $imgs.each(function (this: any) {
+      const $self = $(this);
+      const $box = $self.parent().parent();
+      const rawsrc = $self.attr('raw');
+      if (rawsrc) {
+        $self.attr('src', rawsrc);
+        $box.addClass("enlarge-thumbnail");
+      }
+    });
+    console.timeEnd("enlargeThumbnails");
+  }, 600);
+}
+
+let machineryShrinkThumbnailsTimeout: any = null;
+export function machineryShrinkThumbnails(): void {
+  const $: any = (window as any).$;
+  clearTimeout(machineryShrinkThumbnailsTimeout);
+  machineryShrinkThumbnailsTimeout = setTimeout(() => {
+    console.time("shrinkThumbnails");
+    const $boxs = $(".box.enlarge-thumbnail.jpg, .box.enlarge-thumbnail.png, .box.enlarge-thumbnail.webp, .box.enlarge-thumbnail.bmp, .box.enlarge-thumbnail.jfif");
+    const $imgs = $boxs.find(".thumbnail img");
+
+    $imgs.each(function (this: any) {
+      const $self = $(this);
+      const $box = $self.parent().parent();
+      const lsrc = $self.attr('lsrc');
+      if (lsrc) {
+        $self.attr('src', lsrc);
+        $box.removeClass("enlarge-thumbnail");
+      }
+    });
+    console.timeEnd("shrinkThumbnails");
+  }, 600);
+}
+
+/** imageSize.height 变化后的统一处理（原 $watch("imageSize.height") 的 listener）。 */
+export function machineryOnImageSizeHeightChanged(s: any): void {
+  if (!s || !s.imageSize) return;
+  machineryUpdateSubFolderWidth(s);
+  machineryUpdateListSlider(s, s.imageSize.height);
+  if (s.imageSize.height > 600 && s.showOriginalImageWhenLarge) {
+    machineryEnlargeThumbnails();
+  }
+  else {
+    machineryShrinkThumbnails();
+  }
 }
 
 /* changeMetaItems（bundle 37273-37278 逐字） */

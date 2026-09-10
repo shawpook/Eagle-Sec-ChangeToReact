@@ -40,51 +40,6 @@ function removeScopeListener(s: any, evt: string): number {
 }
 
 /* enlargeThumbnails（20324 逐字；timeout 局部域内自管） */
-let domainEnlargeThumbnailsTimeout: any = null;
-function domainEnlargeThumbnails(): void {
-  const $: any = (window as any).$;
-  clearTimeout(domainEnlargeThumbnailsTimeout);
-  domainEnlargeThumbnailsTimeout = setTimeout(() => {
-    console.time("enlargeThumbnails");
-    const $boxs = $(".box.show.jpg, .box.show.png, .box.show.webp, .box.show.bmp, .box.show.jfif").not(".enlarge-thumbnail");
-    const $imgs = $boxs.find(".thumbnail img");
-
-    $imgs.each(function (this: any) {
-      const $self = $(this);
-      const $box = $self.parent().parent();
-      const rawsrc = $self.attr('raw');
-      if (rawsrc) {
-        $self.attr('src', rawsrc);
-        $box.addClass("enlarge-thumbnail");
-      }
-    });
-    console.timeEnd("enlargeThumbnails");
-  }, 600);
-}
-
-/* shrinkThumbnails（20345 逐字） */
-let domainShrinkThumbnailsTimeout: any = null;
-function domainShrinkThumbnails(): void {
-  const $: any = (window as any).$;
-  clearTimeout(domainShrinkThumbnailsTimeout);
-  domainShrinkThumbnailsTimeout = setTimeout(() => {
-    console.time("shrinkThumbnails");
-    const $boxs = $(".box.enlarge-thumbnail.jpg, .box.enlarge-thumbnail.png, .box.enlarge-thumbnail.webp, .box.enlarge-thumbnail.bmp, .box.enlarge-thumbnail.jfif");
-    const $imgs = $boxs.find(".thumbnail img");
-
-    $imgs.each(function (this: any) {
-      const $self = $(this);
-      const $box = $self.parent().parent();
-      const lsrc = $self.attr('lsrc');
-      if (lsrc) {
-        $self.attr('src', lsrc);
-        $box.removeClass("enlarge-thumbnail");
-      }
-    });
-    console.timeEnd("shrinkThumbnails");
-  }, 600);
-}
-
 export function takeoverSelectionViewDomain(): void {
   if (done) return;
   done = true;
@@ -189,21 +144,18 @@ export function takeoverSelectionViewDomain(): void {
     }, 300, true));
   }
 
-  // ── imageSize.height（34200 逐字）──
-  const hFn1 = function (newValue: any) {
+  // ── imageSize.height（34200 逐字）── b1-9bz-C-4：$watch → 写入点直调
+  // 实现（enlarge/shrink）已迁到 dataMachinery 的 machineryEnlarge/ShrinkThumbnails，
+  // 由 machineryOnImageSizeHeightChanged 统一入口在写入点调用（Toolbar 滑条 / openAll /
+  // zoomActual）。保留 Angular $watch「注册即触发一次」的语义。
+  {
     const s: any = getBodyScope();
-    if (!s) return;
-    machineryUpdateSubFolderWidth(s);
-    machineryUpdateListSlider(s, newValue);
-    if (s.imageSize.height > 600 && s.showOriginalImageWhenLarge) {
-      domainEnlargeThumbnails();
+    if (s) {
+      // 原 watcher 首次触发发生在 flush（域接管之后、scope 已就绪）；此处为同步接管路径，
+      // 直接调用可能早于 scope 就绪 —— 用 try/catch 兜住，避免中断后续通道注册。
+      try { machineryOnImageSizeHeightChanged(s); } catch (err) { /* noop */ }
     }
-    else {
-      domainShrinkThumbnails();
-    }
-  };
-  s0.$watch("imageSize.height", hFn1);
-  sweepForeignWatchers(s0, 'imageSize.height', [hFn1], 'enlargeThumbnails');
+  }
 
   // ── imageSize.zoomRatio（34211 逐字）──
   const zFn1 = function (newValue: any) {
@@ -221,7 +173,9 @@ export function takeoverSelectionViewDomain(): void {
   // 另：Angular $watch 注册时会以 (当前值, 当前值) 立即触发一次 listener —— 保留该语义。
   {
     const s: any = getBodyScope();
-    if (s) machineryChangeMetaItems(s, s.listMetaType);
+    if (s) {
+      try { machineryChangeMetaItems(s, s.listMetaType); } catch (err) { /* noop */ }
+    }
   }
 
   // ── $on UPDATE_SELECTION / SAVE_FOLDER（42379/42383 逐字）──

@@ -14,6 +14,7 @@ import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
 import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
+import { machineryOnImageSizeHeightChanged } from '../../core/dataMachinery';
 
 /**
  * 阶段3a：工具栏接管。
@@ -374,7 +375,10 @@ export function Toolbar() {
               value={snapshot.imageSizeHeight}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                scopeApply(getBodyScope(), (s) => { s.imageSize.height = v; });
+                scopeApply(getBodyScope(), (s) => {
+                  s.imageSize.height = v;
+                  machineryOnImageSizeHeightChanged(s);
+                });
                 syncToolbarFromScope();
                 syncBodyFromScope();
                 syncDetailFromScope();

@@ -2047,6 +2047,53 @@
 > `preferences` —— 与 bodyScope 无关，`s` 是各自的控制器 scope）；② PREBIND 预绑实例 47 处
 > （`reload` 等 6 名，见 B5 节）；③ `notify` 外部注入 25 处；④ 5 个契约观测派发点。
 >
+>
+> **【b1-9bz-C 排期定稿：digest 面退役（C-0 → C-6）——2026-09-10】**
+>
+> bz-B 收官后，scope **函数面**已直调化且 fns 表退役；剩余的是 **digest / 事件面**——
+> 即 Angular 运行时的最后载体。实测基线（工具 `tests-tmp/bz-plan-scan.py` /
+> `bz-plan-digest.py`，可重跑）：
+>
+> | 面 | 计数 | 形态 |
+> |---|---|---|
+> | `$evalAsync` | **452** | 接收者 `s` 295 / `scope` 32 / `body` 11 / `sc` 8 / `s2` 6 / `bodyScope` 5 |
+> | `scopeApply` | **235** | 包装 `getBodyScope()` 后再 `$apply` |
+> | `$broadcast` | **130** | **41 频道**；接收者 `$root` 70 / `rootScope` 13 |
+> | `$on` | **94** | **41 频道**；接收者 `scope` 34 / `body` 19 / `$scope` 5 / `s0` 5 |
+> | `$timeout` | 164 | — |
+> | `$watch` + `$watchCollection` | 35 + 16 | 接收者 `body` / `s0` / `s` / `shim` |
+> | `$apply` | 35 | — |
+> | `getBodyScope` | 941 | 供给入口，随上面各面收敛而下降 |
+> | `coreState` / `scopeShim` / `scopeBridge` | 31 / 23 / 11 | 收官删除目标 |
+> | 三窗口 `s.X(` | 133 | preview-window 100 / preferences 18 / collect-window 15 |
+>
+> 目录分布：core 228 / components 212 / services 210 / preview-window 45 / global 23 /
+> store 14 / collect-window 13 / preferences 9 / viewers 8。
+>
+> `global/bus.ts`（b1-9ba 建的 `$broadcast/$on` 替代物）**已就绪但仅 5 处引用** —— 频道
+> 迁移尚未开始，这是 C-2 的现成落点。
+>
+> **阶段编号与顺序**（依赖递进，前一项是后一项的前提）：
+>
+> | 编号 | 内容 | 量 | 依赖 | 验收 |
+> |---|---|---|---|---|
+> | **b1-9bz-C-0** | 清零 B8 遗留：定位 `main-ui` 的 `listDone` 超时 | 1 处 | 无 | 全套件 55/55 |
+> | **b1-9bz-C-1** | machinery 守卫补齐（B7 反向待办）：`removeSound` / `saveFolderDebounce` / `$root.notify` / `subFolderSortableOptions` | 4 处 | 无 | 解锁 B7 剩余 5 个（删除族 4 + refreshSubfolderList） |
+> | **b1-9bz-C-2** | `$broadcast`/`$on` → `bus.ts` 频道迁移 | 41 频道 / 224 处 | C-0 | 逐频道迁移 + 定向测试；先处置 3+3 个死频道 |
+> | **b1-9bz-C-3** | `$evalAsync` / `scopeApply` / `$apply` 退役 | 722 处 | C-2 | 按「跨帧必要 / 纯通知可直调」分类 |
+> | **b1-9bz-C-4** | `$watch` / `$watchCollection` → store 订阅 | 51 处 | C-3 | watch 依赖 digest 触发，必须在其后 |
+> | **b1-9bz-C-5** | 三窗口面收口（preview / preferences / collect） | 133 处 | C-3 | 各自 scope，独立门禁 |
+> | **b1-9bz-C-6** | `scopeShim` / `scopeBridge` / `coreState` 删除 + 永久哨兵扩面 + 收官审计 | 65 处 | C-2…C-5 全部 | REWRITE-PLAN v2 的 P4 终点 |
+>
+> **排序理由**：C-0 是唯一红项且由本轮引入，越晚排查成本越高；C-1 量小收益明确（解锁
+> B7 剩余 5 个）；C-2 的落点（bus.ts）已就绪且能把「事件面」与 digest 解耦，是 C-3 的
+> 前提；C-4 的 `$watch` 依赖 digest 触发故必须排在 C-3 后；C-5 与其它面无耦合可插空；
+> C-6 是 P4 终点，必须全部清完才能删壳。
+>
+> **已知风险**：C-3 是最大一块且**不可机械改造** —— B5 已实证「静态可证等价不足以保证
+> 行为不变」（`s.reload()` 工厂式挂载那次）。`$evalAsync` 承载了跨帧调度语义，需按调用点
+> 逐个判定是「必要延迟」还是「迁移期残留」，建议先做形态分类再动手。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

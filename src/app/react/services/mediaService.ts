@@ -1,5 +1,5 @@
 import { getBodyScope } from '../core/appCore';
-import { machineryCalcRotateDegree, machineryEnterSlideshowMode, machineryGetVideoPlayer, machineryLeaveSlideshowMode, machineryUpdateItemView } from '../core/dataMachinery';
+import { machineryCalcRotateDegree, machineryEnterSlideshowMode, machineryGetVideoPlayer, machineryLeaveSlideshowMode, machineryToggleSlideshow, machineryUpdateItemView } from '../core/dataMachinery';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 /**
@@ -306,17 +306,11 @@ export function toggleGifPlay(...args: any[]) {
   }
 
 export function toggleSlideshow(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-                if (!s.isSlideshowMode) {
-                    machineryEnterSlideshowMode(s);
-                } else {
-                    machineryLeaveSlideshowMode(s);
-                }
-            }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价，统一转发消除重复实现。
+    const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryToggleSlideshow(s);
+}
 
 export function setAsVideoThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

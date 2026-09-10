@@ -1779,6 +1779,40 @@
 > 必定还有依赖 `s.xxx()` **经 scope 派发**这一事实的环节（典型如 $watch 触发链、
 > 或 bundle 侧同名方法在 scope 面上的覆盖）。若要做，必须改为「逐函数改造 + 单测」
 > 而非批量。**B5 暂缓，本批保留 B4 状态。**
+>
+>
+> **【b1-9bz-B-5：双键单源化首批 —— 3 个等价对（B7 起步）】**
+>
+> 单源化的正确动作**不是删 c3 体**（`focusAppUnlockPassword` 被 `LockScreens.tsx` 直接
+> import，`changeSidebarIndex` 仍被 `FolderSelectPanels`/`Toolbar` 经 scope 面调用），
+> 而是**把 c3 实现改成转发 machinery**，两份逻辑收敛为一份。
+>
+> 本批完成：`toggleSlideshow`（mediaService）/ `focusAppUnlockPassword`（lockService）/
+> `changeSidebarIndex`（sidebarService）—— 均为体检确认等价的对。
+>
+> **踩坑（已修，务必记住）**：第一版转发写成 `machineryXxx(getBodyScope(), ...)`，
+> 丢掉了原 c3 体的 `if (!s) return;` 守卫 —— scope 未就绪时 `s.folderMappings` 直接
+> TypeError，破坏 React 渲染，表现为 `stage7a` 的 `cm-keepopen-checked-toggle` 与
+> `stage7d6a` 的 `ei-cancel-closed` 挂（这两个测试与所改函数**毫无业务关系**，极易
+> 误判成环境抖动）。转发体必须逐字保留原守卫：
+> ```ts
+> export function changeSidebarIndex(...args: any[]) {
+>   const s = getBodyScope();
+>   if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+>   machineryChangeSidebarIndex(s, args[0]);
+> }
+> ```
+>
+> **新增体检结论**（工具 `bz-b-dual-diff.py`，支持传名字参数）：
+> - `openQuickSearch` **等价**（两边都只 `$broadcast('OPEN_QUICK_SEARCH_MODAL')`）
+> - `lastZoom` **等价**（逐行一致，仅 `s.getRatioNonExp` vs `machineryGetRatioNonExp`）
+> - `zoom` **等价**（c3 调 `machineryZoomFitEdge/ZoomFit/SmartZoom`；machinery 走
+>   `s.zoomFitEdge()` 等挂载，挂载即 machinery 版）
+> - `toggleSelectSmartFolder` —— **c3 体是坏的**：它调 `toggleCurrentLevelSmartFolders(...)`
+>   而该函数在 sidebarService **既未定义也未 import**（`machineryToggleCurrentLevelSmartFoldersInner`
+>   才是已导入的那个）。收敛侧明确 = machinery，单源化顺带修掉这个死调用。
+>
+> **哨兵**：`getBodyScope` 838（+3，3 个转发体各一次），基线已吸收。
 > | **B6** | 改写 4 个 spy 契约，解锁 EXCLUDE 白名单 | 125 处 | 无 | stage1m1 + 全套件 |
 > | **B7** | 双键单源化（B 18 + C 21，同类作业） | 39 个 | B6 | 逐个体检 + 全套件 |
 > | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |

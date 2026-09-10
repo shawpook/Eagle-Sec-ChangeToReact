@@ -531,7 +531,7 @@ export function filterWithFolder(...args: any[]) {
     return (function (folder) {
 
             if (eagle.filter.filterRules.folder.excludes[folder.id]) {
-                s.excludeWithFolder(folder);
+                excludeWithFolder(folder);
                 return;
             }
 
@@ -565,11 +565,11 @@ export function filterWithHexColor(...args: any[]) {
                 s.hexColor = hex;
             }
             if (hex && hex.length == 7) {
-                var rgb = s.hexToRGB(hex);
-                s.filterWithColor(rgb);
+                var rgb = hexToRGB(hex);
+                filterWithColor(rgb);
             }
             else if (hex && hex == "gray") {
-                s.filterWithColor("gray");
+                filterWithColor("gray");
             }
         }).apply(null, args);
   }

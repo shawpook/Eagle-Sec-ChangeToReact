@@ -6,7 +6,7 @@
 import { getBodyScope } from '../core/appCore';
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
-import { machineryReload, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { machineryFocusAppUnlockPassword, machineryReload, machineryUpdateSidebarList } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -39,20 +39,11 @@ const initLinkVars = () => {
 const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function focusAppUnlockPassword(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-            setTimeout(() => {
-                $("#app-lock-password-input").focus();
-            }, 24);
-            $("#app-lock-password-input").on("blur", () => {
-                setTimeout(() => {
-                    $("#app-lock-password-input").focus();
-                }, 24);
-            });
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价，统一转发消除重复实现。
+    const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryFocusAppUnlockPassword(s);
+}
 
 export function focusUnlockPassword(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

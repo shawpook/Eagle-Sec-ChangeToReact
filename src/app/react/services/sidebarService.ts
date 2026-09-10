@@ -11,11 +11,10 @@
  * 本模块是**组件侧唯一入口**（Sidebar.tsx 此前 ~30 处 scopeApply 绕道）。
  * 菜单族（openFolderContextMenu 等）归 S5 菜单竖切；DnD（onDropFolder 族）归 bh。
  */
-import { machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
+import { machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
-import { machineryFilterSidebarItem } from '../core/dataMachinery';
 import { contextMenuOpenChannel } from '../global/bus';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
@@ -281,22 +280,12 @@ const initLinkVars = () => {
 const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function changeSidebarIndex(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
-    return (function (node) {
-            const folder = s.folderMappings[node?.id];
-            const __lv_idx = s.sidebarList.indexOf(folder);
-            if (__lv_idx !== -1) {
-                s.sidebarIndex = -1;
-                syncSidebarFromScope();
-                $timeout(function () {
-                    s.sidebarIndex = __lv_idx; 
-                    syncSidebarFromScope();
-                }, 1);
-            }
-        }).apply(null, args);
-  }
+  // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价（仅 $timeout 取法与
+  // 局部变量名不同），统一转发消除重复实现。
+    const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  machineryChangeSidebarIndex(s, args[0]);
+}
 
 export function dblclickSidebarSmartFolderGroup(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

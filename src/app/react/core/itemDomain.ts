@@ -561,7 +561,7 @@ export function takeoverItemDomain(): void {
     if (s.selected && s.selected[0] && generated.id === s.selected[0].id) {
       const $detailImage = $("img#detail-image");
       if ($detailImage.length) {
-        const rawURL = s.getRawUrl(generated);
+        const rawURL = getRawUrl(generated);
         $detailImage.css({
           "transform": `rotate(0deg)`,
           "transition": "none",

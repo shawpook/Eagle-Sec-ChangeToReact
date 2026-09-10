@@ -912,7 +912,7 @@ export function takeoverMiscDomain(): void {
     if (s.errorList.length === 1) {
       if (s.$root.preferences.notification.soundEffect.enable != 'false') {
         s.errorSound.play();
-        s.openErrorModal();
+        openErrorModal();
       }
       setTimeout(() => {
         ipc.send('show-inactive');

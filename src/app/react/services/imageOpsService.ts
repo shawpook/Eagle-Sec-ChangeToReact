@@ -19,13 +19,15 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCancelCrop, machineryCheckOperationSafety, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView, machineryVideoScreenShot } from '../core/dataMachinery';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
+import { flipVideo, rotateVideo } from './mediaService';
+import { uploadFiles } from './uploadService';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -183,8 +185,8 @@ export function rotateImage(...args: any[]) {
                                 if (newWidth && newHeight) {
                                     rotatedImage.width = newWidth;
                                     rotatedImage.height = newHeight;
-                                    s.updateItemView(rotatedImage);
-                                    s.relayout();
+                                    machineryUpdateItemView(s, rotatedImage);
+                                    machineryRelayout(s);
                                 }
                             }
                         });
@@ -192,7 +194,7 @@ export function rotateImage(...args: any[]) {
                         // 旋轉成功
                         s.isRotating = false;
                         delete rotatedImage.orientation;
-                        s.updateItemView(rotatedImage);
+                        machineryUpdateItemView(s, rotatedImage);
                         ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
                         s.$evalAsync();
                         
@@ -310,7 +312,7 @@ export function saveCrop(...args: any[]) {
             electronLog.info(`[app] Crop image: ${imagePath}`);
 
             if (!fs.existsSync(imagePath)) {
-                s.cancelCrop();
+                machineryCancelCrop(s);
                 electronLog.error(`[app] Image file does not exist`);
                 return;
             }
@@ -337,10 +339,10 @@ export function saveCrop(...args: any[]) {
                                     star: croppedImage.star,
                                     merged: true
                                 };
-                                s.uploadFiles([newFile]);
+                                uploadFiles([newFile]);
                                 s.isCropMode = false;
                                 syncDetailFromScope();
-                                s.leaveDetailMode();
+                                machineryLeaveDetailMode(s);
                                 s.$evalAsync();
                             });
                             return;
@@ -370,17 +372,17 @@ export function saveCrop(...args: any[]) {
                                             fse.removeSync(imagePath + ".bk");
                                             ipcRenderer.send('regenerate-thumbnail', [croppedImage]);
                                             [croppedImage.width, croppedImage.height] = [__lv_width, __lv_height];
-                                            s.updateItemView(croppedImage);
+                                            machineryUpdateItemView(s, croppedImage);
 
                                             // 强制更新相关 folder 封面
                                             if (croppedImage.folders) {
                                                 croppedImage.folders.forEach(function (fid) {
-                                                    s.resetFolderCover(s.folderMappings[fid]);
+                                                    machineryResetFolderCover(s, s.folderMappings[fid]);
                                                 });
                                             }
 
                                             s.calculateImageBinding({ ignoreSort: true }, function () {});
-                                            s.relayout();
+                                            machineryRelayout(s);
                                             s.$evalAsync();
                                         }
                                         else {
@@ -403,10 +405,9 @@ export function saveCrop(...args: any[]) {
         }).apply(null, args);
 }
 
-export function installImageOpsFns(fns: any, getScope: any): void {
-  fns["changeStar"] = function (...args) {
+export function changeStar(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (star, showNotify, force) {
             if (s.selected.length === 0) return;
@@ -414,7 +415,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
             	return;
             }
 
-            s.checkOperationSafety(function () {
+            machineryCheckOperationSafety(s, function () {
 
                 let changedItems = [];
 
@@ -463,18 +464,18 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                     electronLog && electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
                     analytics.event('Rating', 'Set', star);
                 }
-                s.updateItemsView(s.selected);
+                machineryUpdateItemsView(s, s.selected);
                 if (changedItems.length > 0) {
                     ayncsImagesChange(changedItems);
                     hiddenByCurrentFilter(changedItems);
                 }
             });
         }).apply(null, args);
-  };
+}
 
-  fns["updateItemView"] = function (...args) {
+export function updateItemView(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (item) {
 
@@ -693,20 +694,20 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                 console.error(err);
             }
         }).apply(null, args);
-  };
+}
 
-  fns["updateSelection"] = function (...args) {
+export function updateSelection(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function() {
             s.$broadcast("UPDATE_INSPECTOR");
         }).apply(null, args);
-  };
+}
 
-  fns["startDrag"] = function (...args) {
+export function startDrag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (event) {
             if (s.current) {
@@ -714,71 +715,69 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                 ipcRenderer.send('ondragstart', { images: __lv_transformsJSON, target: s.current, resize: 120 });
             }
         }).apply(null, args);
-  };
+}
 
-  fns["copeVideoFrame"] = function (...args) {
+export function copeVideoFrame(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
-        	s.videoScreenShot(true);
+        	machineryVideoScreenShot(s, true);
         }).apply(null, args);
-  };
+}
 
-  fns["saveVideoFrame"] = function (...args) {
+export function saveVideoFrame(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
-        	s.videoScreenShot();
+        	machineryVideoScreenShot(s);
         }).apply(null, args);
-  };
+}
 
-  fns["cancelRegenerateThumbnail"] = function (...args) {
+export function cancelRegenerateThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
             IPCHelper.send('cancel.generate.thumbnail');
             s.regenerateThumbnailQueue = [];
     }).apply(null, args);
-  };
+}
 
-  fns["getThumbnailPath"] = function (...args) {
+export function getThumbnailPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (__lv_image) {
             if (!s.imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
         }).apply(null, args);
-  };
+}
 
-  fns["getThumbnailUrl"] = function (...args) {
+export function getThumbnailUrl(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (__lv_image) {
             if (!s.imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
         }).apply(null, args);
-  };
+}
 
-  fns["currentIndex"] = function (...args) {
+export function currentIndex(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function() {
             if (!s.allData) return undefined;
             return s.allData.indexOf(s.selected[0]) + 1;
         }).apply(null, args);
-  };
+}
 
-  // regenerateThumbnail（bundle 33325-33332；ayncsImagesGenerateThumbnail →
-  // w.ayncsImagesGenerateThumbnail（b1-9w bundleGlobals 供给））
-  fns["regenerateThumbnail"] = function (...args) {
+export function regenerateThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         s.selected.forEach(function(image) {
@@ -786,11 +785,11 @@ export function installImageOpsFns(fns: any, getScope: any): void {
         });
         ayncsImagesGenerateThumbnail(s.selected);
     }).apply(null, args);
-  };
+}
 
-  fns["calculateImageBinding"] = function (...args) {
+export function calculateImageBinding(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(params = { ignoreSort : false }, callback) {
 
@@ -810,7 +809,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                     if (!s.raw) return;
 
                     if (!params.ignoreSort) {
-                        s.sortRawData(s.orderBy);
+                        machinerySortRawData(s, s.orderBy);
                     }
 
                     console.time("calculateImageBinding");
@@ -865,13 +864,13 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                             });
                         }
 
-                        ancestorsCache[folder.id] = s.getAncestorFolders(folder, [folder]);
+                        ancestorsCache[folder.id] = machineryGetAncestorFolders(s, folder, [folder]);
 
                         s.folderMappings[folder.id] = folder;
                     });
 
                     eagle.utils.tree.walk(s.folders, 'children', function(folder, parent) {
-                        folder.extendTags = s.getExtendTags(folder, []);
+                        folder.extendTags = machineryGetExtendTags(s, folder, []);
 						folder.covers = [];
                     });
 
@@ -908,7 +907,7 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                                         }
 
                                         // 祖先们也都 + 1 , 记录在其他栏位上
-                                        var ancestors = ancestorsCache[folder.id] || s.getAncestorFolders(folder, [folder]);
+                                        var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(s, folder, [folder]);
                                         ancestors.forEach(function (ancestor) {
                                             // 避免重复加总
                                             if (increaseAncestors[ancestor.id]) {
@@ -1079,18 +1078,11 @@ export function installImageOpsFns(fns: any, getScope: any): void {
                 }
             }, duration);
         }).apply(null, args);
-  };
+}
 
-  fns["rotateImage"] = rotateImage;
-
-  fns["flipImage"] = flipImage;
-
-  fns["saveCrop"] = saveCrop;
-
-  // replaceFile（bundle 33333-33456 全体，含 executeFileReplacement/handleError 内层）
-  fns["replaceFile"] = function (...args) {
+export function replaceFile(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         // 檢查是否只選擇了一個檔案
@@ -1216,7 +1208,43 @@ export function installImageOpsFns(fns: any, getScope: any): void {
             });
         }
     }).apply(null, args);
-  };
+}
+
+export function installImageOpsFns(fns: any, getScope: any): void {
+  fns["changeStar"] = changeStar;
+
+  fns["updateItemView"] = updateItemView;
+
+  fns["updateSelection"] = updateSelection;
+
+  fns["startDrag"] = startDrag;
+
+  fns["copeVideoFrame"] = copeVideoFrame;
+
+  fns["saveVideoFrame"] = saveVideoFrame;
+
+  fns["cancelRegenerateThumbnail"] = cancelRegenerateThumbnail;
+
+  fns["getThumbnailPath"] = getThumbnailPath;
+
+  fns["getThumbnailUrl"] = getThumbnailUrl;
+
+  fns["currentIndex"] = currentIndex;
+
+  // regenerateThumbnail（bundle 33325-33332；ayncsImagesGenerateThumbnail →
+  // w.ayncsImagesGenerateThumbnail（b1-9w bundleGlobals 供给））
+  fns["regenerateThumbnail"] = regenerateThumbnail;
+
+  fns["calculateImageBinding"] = calculateImageBinding;
+
+  fns["rotateImage"] = rotateImage;
+
+  fns["flipImage"] = flipImage;
+
+  fns["saveCrop"] = saveCrop;
+
+  // replaceFile（bundle 33333-33456 全体，含 executeFileReplacement/handleError 内层）
+  fns["replaceFile"] = replaceFile;
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -1238,7 +1266,7 @@ export function flipHandler(...args: any[]) {
     if (!s) return;
     return (function ($event) {
         	if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
-        		s.flipVideo($event, s.current);
+        		flipVideo($event, s.current);
         	}
         	else {
         		s.flipImage($event, s.current, true);
@@ -1252,7 +1280,7 @@ export function rotateHandler(...args: any[]) {
     if (!s) return;
     return (function ($event) {
         	if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
-        		s.rotateVideo($event, s.current);
+        		rotateVideo($event, s.current);
         	}
         	else {
         		s.rotateImage($event, s.current);
@@ -1402,7 +1430,7 @@ export function changeImagesBackground(...args: any[]) {
             }
         }
         ayncsImagesChange(images);
-        s.updateItemsView(s.selected);
+        machineryUpdateItemsView(s, s.selected);
         try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
     }).apply(null, args);
   }

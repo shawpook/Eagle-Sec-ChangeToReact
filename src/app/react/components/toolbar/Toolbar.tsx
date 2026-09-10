@@ -10,6 +10,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { searchFocus } from '../../core/filterDomain';
 
 /**
  * 阶段3a：工具栏接管。
@@ -130,7 +131,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
   const onFocus = (e: any) => {
     scopeApply(getBodyScope(), (s) => {
       s.$root.currentFocus = 'content';
-      if (typeof s.searchFocus === 'function') s.searchFocus(e);
+      if (typeof s.searchFocus === 'function') searchFocus(e);
     });
   };
 

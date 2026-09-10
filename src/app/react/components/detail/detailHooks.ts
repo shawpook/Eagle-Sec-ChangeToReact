@@ -3,9 +3,11 @@ import { detailZoom } from '../../core/smoothZoomEngine';
 import { useEffect } from 'react';
 import { ipcRenderer } from '../../global/eagleGlobals';
 import { updateZoomRatio } from '../../services/detailService';
-import { addVideoComment, videoScreenShot } from '../../services/mediaService';
+import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../services/mediaService';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { machineryLeaveDetailMode } from '../../core/dataMachinery';
+import { onDetailClick } from '../../services/selectionService';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -202,7 +204,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           }
         },
         'player.thumbnail.set': () => {
-          bodyScope.setAsVideoThumbnail();
+          setAsVideoThumbnail();
         },
         'player.thumbnail.copy': () => {
           videoScreenShot(true);
@@ -824,7 +826,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     element.on('dblclick', function () {
       if (!isInPreviewWindow) {
         const s = getBodyScope();
-        s.leaveDetailMode();
+        machineryLeaveDetailMode(s);
       } else {
         getBodyScope().toggleFullScreen();
         getBodyScope().$evalAsync();
@@ -1638,7 +1640,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 
     element.on('dblclick', function () {
       const s = getBodyScope();
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     });
 
     let direction: string = '';
@@ -2031,7 +2033,7 @@ export function useDetailContainerBehaviors(
     const host = detailContainer();
     if (!host) return;
     const onClick = (event: MouseEvent) => {
-      scopeApply(getBodyScope(), (s) => s.onDetailClick && s.onDetailClick(event));
+      scopeApply(getBodyScope(), (s) => s.onDetailClick && onDetailClick(event));
     };
     host.addEventListener('click', onClick);
     return () => host.removeEventListener('click', onClick);

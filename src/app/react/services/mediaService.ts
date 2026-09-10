@@ -1,5 +1,5 @@
 import { getBodyScope } from '../core/appCore';
-import { machineryCalcRotateDegree, machineryGetVideoPlayer } from '../core/dataMachinery';
+import { machineryCalcRotateDegree, machineryEnterSlideshowMode, machineryGetVideoPlayer, machineryLeaveSlideshowMode, machineryUpdateItemView } from '../core/dataMachinery';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 /**
@@ -67,7 +67,7 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
       return 0;
     })
     s.$root.$broadcast("REFRESH_VIDEO_COMMENTS");
-    s.updateItemView(video);
+    machineryUpdateItemView(s, video);
     s.$evalAsync();
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
@@ -311,9 +311,9 @@ export function toggleSlideshow(...args: any[]) {
     if (!s) return;
     return (function () {
                 if (!s.isSlideshowMode) {
-                    s.enterSlideshowMode();
+                    machineryEnterSlideshowMode(s);
                 } else {
-                    s.leaveSlideshowMode();
+                    machineryLeaveSlideshowMode(s);
                 }
             }).apply(null, args);
   }
@@ -325,7 +325,7 @@ export function setAsVideoThumbnail(...args: any[]) {
     return (async function() {
         if (!s.current) return;
 
-        var player = s.getVideoPlayer();
+        var player = machineryGetVideoPlayer(s);
         if (!player) return;
 
         var currentTime = player.el.currentTime;

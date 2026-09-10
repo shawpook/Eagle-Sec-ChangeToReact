@@ -11,7 +11,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { syncTagManagerFromScope } from '../../store/tagManagerState';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-
+import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../../services/fontTagService';
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *
@@ -262,7 +262,7 @@ export function TagManagerPanel() {
       handles: 'e',
       resize: (event: any, ui: any) => {
         scopeApply(getBodyScope(), (s) => {
-          if (typeof s.onTagSidebarResize === 'function') s.onTagSidebarResize(event, ui);
+          if (typeof s.onTagSidebarResize === 'function') onTagSidebarResize(event, ui);
           s.$evalAsync?.();
         });
       },
@@ -529,14 +529,14 @@ export function TagManagerPanel() {
                           scopeApply(getBodyScope(), (s) => {
                             s.newGroupName = (e.target as HTMLInputElement).value;
                             syncTagManagerFromScope();
-                            if (typeof s.renameTagGroupKeyup === 'function') s.renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), s.newGroupName);
+                            if (typeof s.renameTagGroupKeyup === 'function') renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), s.newGroupName);
                           });
                         }}
                         onBlur={(e) => {
                           scopeApply(getBodyScope(), (s) => {
                             s.newGroupName = (e.target as HTMLInputElement).value;
                             syncTagManagerFromScope();
-                            if (typeof s.renameTagGroupBlur === 'function') s.renameTagGroupBlur(liveGroup(group.id), s.newGroupName);
+                            if (typeof s.renameTagGroupBlur === 'function') renameTagGroupBlur(liveGroup(group.id), s.newGroupName);
                           });
                         }}
                         onMouseDown={(e) => e.stopPropagation()}

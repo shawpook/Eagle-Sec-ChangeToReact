@@ -4,7 +4,7 @@ import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-
+import { saveCrop } from '../../services/imageOpsService';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -696,7 +696,7 @@ export function useCropImage(
 
     const onDblClick = () => {
       const s = getBodyScope();
-      s.saveCrop();
+      saveCrop();
     };
     $cropArea.on('dblclick', onDblClick);
 

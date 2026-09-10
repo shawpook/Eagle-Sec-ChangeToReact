@@ -14,6 +14,7 @@
 import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
+import { machineryChangeMetaItems, machineryCurrentIndex, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSubFolderWidth } from './dataMachinery';
 
 let done = false;
 
@@ -142,7 +143,7 @@ export function takeoverSelectionViewDomain(): void {
       // 為 false，#detail-image 尚未渲染，這些 DOM 操作無意義，且 updateNavigator 會在
       // enterDetailMode 的 $timeout 中重做。）
       s.showLargeImage = false;
-      s.rememberVideoCurrentTime(oldValue[0]);
+      machineryRememberVideoCurrentTime(s, oldValue[0]);
       if (w.AnnotationPreview) w.AnnotationPreview.hide();
       w.$("#detail-image").data("degree", 0);
       w.$("#detail-image").css({
@@ -155,7 +156,7 @@ export function takeoverSelectionViewDomain(): void {
     }
 
     if (s.selected.length === 1) {
-      s.lastSelectedIndex = s.currentIndex() - 1;
+      s.lastSelectedIndex = machineryCurrentIndex(s) - 1;
     }
 
     // 全选
@@ -190,8 +191,8 @@ export function takeoverSelectionViewDomain(): void {
   const hFn1 = function (newValue: any) {
     const s: any = getBodyScope();
     if (!s) return;
-    s.updateSubFolderWidth();
-    s.updateListSlider(newValue);
+    machineryUpdateSubFolderWidth(s);
+    machineryUpdateListSlider(s, newValue);
     if (s.imageSize.height > 600 && s.showOriginalImageWhenLarge) {
       domainEnlargeThumbnails();
     }
@@ -216,7 +217,7 @@ export function takeoverSelectionViewDomain(): void {
   const lFn1 = function (type: any) {
     const s: any = getBodyScope();
     if (!s) return;
-    s.changeMetaItems(type);
+    machineryChangeMetaItems(s, type);
   };
   s0.$watch("listMetaType", lFn1);
   sweepForeignWatchers(s0, 'listMetaType', [lFn1], 'changeMetaItems');
@@ -233,6 +234,6 @@ export function takeoverSelectionViewDomain(): void {
   s0.$on('SAVE_FOLDER', function (_e: any) {
     const s: any = getBodyScope();
     if (!s) return;
-    s.saveFolder();
+    machinerySaveFolder(s);
   });
 }

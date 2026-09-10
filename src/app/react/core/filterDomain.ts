@@ -26,6 +26,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 // 运行期 ReferenceError（与 initLinkVars 缺失同款的静默-catch 陷阱），补齐解析。
 import { isInFolder } from './itemDomain';
 import { updateSuggestions } from './miscDomain';
+import { machineryCalculateFilterCounts, machineryExistInSmartFilter, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
 
 let done = false;
 
@@ -96,7 +97,7 @@ export function takeoverFilterDomain(): void {
       currentWindow.show();
       currentWindow.focus();
     }
-    s.searchInAll();
+    machinerySearchInAll(s);
     s.$evalAsync();
   });
 
@@ -122,7 +123,7 @@ export function takeoverFilterDomain(): void {
       if (!w.eagle.filter.isOpen) {
         w.$("[filter-item].open").removeClass("open");
       }
-      s.updateContainerHieght(true);
+      machineryUpdateContainerHieght(s, true);
       if (w.eagle.filter.isOpen) { w.electronLog && w.electronLog.info("[app] Filter: ON"); }
       else { w.electronLog && w.electronLog.info("[app] Filter: OFF"); }
     };
@@ -353,7 +354,7 @@ export function contentFilter(...args: any[]) {
                     if (__lv_image.isDeleted) return false;
                     for (let i = 0; i < s.$root.selectedSmartFolders.length; i++) {
                         let smartFolder = s.$root.selectedSmartFolders[i];
-                		if (s.existInSmartFilter(smartFolder, __lv_image)) {
+                		if (machineryExistInSmartFilter(s, smartFolder, __lv_image)) {
                             return true;
                         }
                     }
@@ -367,14 +368,14 @@ export function contentFilter(...args: any[]) {
                 	else if (s.currentSmartFolder.children && s.currentSmartFolder.children.length > 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
                 		for (let i = 0; i < s.currentSmartFolder.children.length; i++) {
     	                    let smartFolder = s.currentSmartFolder.children[i];
-    	            		if (s.existInSmartFilter(smartFolder, __lv_image)) {
+    	            		if (machineryExistInSmartFilter(s, smartFolder, __lv_image)) {
     	                        return true;
     	                    }
     	                }
     	                return false;
                 	}
                 	else {
-                		return s.existInSmartFilter(s.currentSmartFolder, __lv_image);
+                		return machineryExistInSmartFilter(s, s.currentSmartFolder, __lv_image);
                 	}
                 }
                 switch (s.viewMode) {
@@ -452,7 +453,7 @@ export function excludeWithFolder(...args: any[]) {
             }
 
             s.filterContent();
-            s.calculateFilterCounts();
+            machineryCalculateFilterCounts(s);
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
   }
@@ -490,7 +491,7 @@ export function filterWithColor(...args: any[]) {
             else {
                 eagle.filter.filterRules.color.gray = false;
                 eagle.filter.filterRules.color.value = color;
-                var hexColor = s.rgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2]);
+                var hexColor = machineryRgbToHex(s, eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2]);
                 // b1-9bj：原 ColorPickerSetColor 随 vendor 退役——自研 picker 经 props 从
                 // rules.color.value 派生，此处写面即外部同步
                 if (hexColor.length > 6) {
@@ -500,7 +501,7 @@ export function filterWithColor(...args: any[]) {
             eagle.filter.isOpen = true;
             syncFilterFromScope();
             s.isDetailMode = false;
-            s.updateContainerHieght();
+            machineryUpdateContainerHieght(s);
             s.page = 1;
 
             // Add URL state management for color filtering
@@ -517,7 +518,7 @@ export function filterWithColor(...args: any[]) {
 
             $timeout(function () {
                 s.filterContent();
-                s.calculateFilterCounts();
+                machineryCalculateFilterCounts(s);
             }, 50);
             analytics.event('Filter', 'Color');
         }).apply(null, args);
@@ -549,7 +550,7 @@ export function filterWithFolder(...args: any[]) {
             }
 
             s.filterContent();
-            s.calculateFilterCounts();
+            machineryCalculateFilterCounts(s);
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
   }
@@ -638,7 +639,7 @@ export function resetFilter(...args: any[]) {
             $("[filter-item].open").removeClass("open");
             s.startCursor = 0;
             s.$root.$broadcast("Reset_Filter");
-            s.calculateFilterCounts();
+            machineryCalculateFilterCounts(s);
         }).apply(null, args);
   }
 
@@ -715,7 +716,7 @@ export function search(...args: any[]) {
                     updateSuggestions();
                     s.startCursor = 0;
                     s.filterContent();
-                    s.calculateFilterCounts();
+                    machineryCalculateFilterCounts(s);
                 }
                 else {
                     s.TagManager.renderTagsResult();

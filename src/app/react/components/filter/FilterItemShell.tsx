@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { machineryUpdateContainerHieght } from '../../core/dataMachinery';
 
 /**
  * filterItem 基础指令移植（bundle:67305-67559，attribute 指令）。
@@ -76,7 +77,7 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
       document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
     }
     setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && s.updateContainerHieght());
+      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
     }, 50);
     scopeApply(getBodyScope(), (s) => {
       s.$root.currentFocus = 'content';
@@ -156,7 +157,7 @@ export function closeShell(elem: HTMLElement | null) {
     document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
   }
   setTimeout(() => {
-    scopeApply(getBodyScope(), (s) => s.updateContainerHieght && s.updateContainerHieght());
+    scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
   }, 50);
 }
 

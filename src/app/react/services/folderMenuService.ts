@@ -17,12 +17,14 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryGetFolderImages, machineryNewSmartFolder, machineryOpenAll, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
+import { getLibraryHistory, openFolder, openSmartFolder } from './folderCoreService';
+import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -79,180 +81,8 @@ function wQueryFocusFolderInput(folderId: any) {
 }
 
 /* b1-9ap/b1-9aq 台账区 + 三 builder（逐字；fns/getScope 为闭包注入） */
-export function installFolderMenuFns(fns: any, getScope: any): void {
-  // ── b1-9ap：台账⑨主菜单第一批——openFolderContextMenu 及其依赖面（bundle 39012-39549
-  //    + 依赖 fns 逐字移植；$scope→s、$rootScope.$broadcast→s.$root 广播总线语义、
-  //    angular.copy/extend→JSON 深拷/Object.assign、eagle.utils.tree.walk→treeWalkSafe）──
-
-  // controller 闭包函数 reorderFolderByTitle（bundle 41765-41781 逐字）
-  function reorderFolderByTitleClosure(folders: any, reverse: any) {
-    folders = folders.sort(function (a: any, b: any) {
-      try {
-        var na = a.name.toLowerCase();
-        var nb = b.name.toLowerCase();
-        if (na && nb) {
-          return na.localeCompare(nb, (window as any).languageBCP, { numeric: true });
-        }
-      }
-      catch (err) {}
-    });
-
-    if (reverse) {
-      folders = folders.reverse();
-    }
-  }
-
-  // controller 闭包函数 removeFolder（bundle 42050-42205 逐字；angular.copy→JSON 深拷）
-  function removeFolderClosure(folder: any, { isDeleteImages, ignoreSelectNext, ignoreRestore }: any) {
-    const s = getScope();
-    const w = window as any;
-
-    // 支持復原文件夾
-    var originalFolders: any[] = [];
-    var originalImages: any[] = [];
-    var originalImageFolders: any[] = [];
-    var folderId = folder.id;
-    if (!ignoreRestore) {
-      w.cloneTree(originalFolders, s.folders, true);
-    }
-
-    // 找到包含 folder 的 list
-    var parent = s.folderMappings[folder.parent];
-    var children = (parent) ? parent.children : s.folders;
-    if (!Array.isArray(children)) return;
-
-    var index = children.indexOf(folder);
-    if (index === -1) return;
-
-    // 移除 folder
-    children.splice(index, 1);
-
-    // 删除包含 folder.id 的图片
-    if (s.raw && s.raw.length > 0) {
-      var changed: any[] = [];
-      for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
-        var image = s.raw[rindex];
-        if (image.folders) {
-          var idx = image.folders.indexOf(folder.id);
-          if (idx > -1) {
-            if (isDeleteImages) {
-              // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
-              if (image.folders && image.folders.length === 1) {
-                image.isDeleted = true;
-              }
-            }
-            originalImageFolders.push(JSON.parse(JSON.stringify(image.folders)));
-            image.folders.splice(idx, 1);
-            changed.push(image);
-            originalImages.push(image);
-          }
-        }
-      }
-      w.ayncsImagesChange(changed);
-      w.hiddenByCurrentFilter(changed);
-    }
-
-    // 同时删除子文件夹图片
-    if (folder.children) {
-      treeWalkSafe(folder.children, 'children', function (child: any, parent2: any) {
-        if (s.raw && s.raw.length > 0) {
-          var changed2: any[] = [];
-          for (var rindex2 = s.raw.length - 1; rindex2 >= 0; rindex2--) {
-            var image2 = s.raw[rindex2];
-            if (image2.folders) {
-              var idx2 = image2.folders.indexOf(child.id);
-              if (idx2 > -1) {
-                if (isDeleteImages) {
-                  // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
-                  if (image2.folders && image2.folders.length === 1) {
-                    image2.isDeleted = true;
-                  }
-                }
-                originalImageFolders.push(JSON.parse(JSON.stringify(image2.folders)));
-                image2.folders.splice(idx2, 1);
-                changed2.push(image2);
-                originalImages.push(image2);
-              }
-            }
-          }
-          w.ayncsImagesChange(changed2);
-          w.hiddenByCurrentFilter(changed2);
-        }
-      });
-    }
-
-    // 开启下一个文件夹（优先兄弟 → 父 → All）
-    if (!ignoreSelectNext) {
-      if (children.length > 0) {
-        var next = children[index] || children[index - 1] || children[0];
-        s.openFolder(next);
-      } else if (parent) {
-        s.openFolder(parent);
-      } else {
-        s.openAll();
-      }
-    }
-    else {
-      s.rebindRefresh();
-    }
-
-    // 播放删除音效
-    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
-      s.removeSound && s.removeSound.play && s.removeSound.play();
-    }
-
-    w.QuickAccessManager.remove('folder', folder);
-    if (folder.children && s.quickAccess.length > 0) {
-      treeWalkSafe(folder.children, 'children', function (child: any, parent3: any) {
-        w.QuickAccessManager.remove('folder', child);
-      });
-    }
-    s.updateSidebarList();
-
-    // 移除记录
-    delete s.folderMappings[folder.id];
-    void folderId;
-    s.calculateImageBinding({ ignoreSort: true }, function () {
-      s.$evalAsync();
-      s.saveFolderDebounce && s.saveFolderDebounce();
-      if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
-      else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
-    });
-
-    if (!ignoreRestore) {
-      var message = $filter('i18n')('notify.folder.remove', [
-        { property: 'folder', value: folder.name },
-      ]);
-      (s.$root.notify || s.notify).call(s.$root, {
-        message: message,
-        duration: 7000,
-      }, function () {
-        s.folders = originalFolders;
-
-        treeWalkSafe(s.folders, 'children', function (folder3: any, parent3: any) {
-          if (!folder3.children) { folder3.children = []; }
-          if (folder3 && parent3) { folder3.parent = parent3.id; }
-          s.folderMappings[folder3.id] = folder3;
-        });
-
-        for (var i = originalImages.length - 1; i >= 0; i--) {
-          var image3 = originalImages[i];
-          var imageOriginalFolders = originalImageFolders[i];
-          if (image3.isDeleted && imageOriginalFolders && imageOriginalFolders.length > 0) {
-            image3.isDeleted = false;
-          }
-          image3.folders = JSON.parse(JSON.stringify(imageOriginalFolders));
-        }
-        s.updateSidebarList();
-        s.rebindRefresh();
-        w.ayncsImagesChange(originalImages);
-      });
-    }
-  }
-
-  // checkOperationSafety2（bundle 26824-26852 逐字）
-  fns["checkOperationSafety2"] = function (...args) {
-    const s = getScope();
+export function checkOperationSafety2(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return ((count: any, callback: any, amount: any = 100) => {
       try {
@@ -288,12 +118,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         callback && callback();
       }
     }).apply(null, args);
-  };
+}
 
-  // refreshSubfolderList（bundle 27462-27490 逐字）——b1-9al 摘除 bundle 后悬空供给
-  //（newFolder/removeFolder 回调消费），本批补移植
-  fns["refreshSubfolderList"] = function (...args) {
-    const s = getScope();
+export function refreshSubfolderList(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
       // 过滤子文件夹
@@ -330,55 +158,53 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         syncListFromScope();
       }
     }).apply(null, args);
-  };
+}
 
-  // setFolderPassword / changeFolderPassword / resetFolderPassword（bundle 41324-41349 逐字）
-  fns["setFolderPassword"] = function (...args) {
-    const s = getScope();
+export function setFolderPassword(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
       s.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: f, mode: 'new' });
     }).apply(null, args);
-  };
+}
 
-  fns["changeFolderPassword"] = function (...args) {
-    const s = getScope();
+export function changeFolderPassword(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
       s.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: f, mode: 'change' });
     }).apply(null, args);
-  };
+}
 
-  fns["resetFolderPassword"] = function (...args) {
-    const s = getScope();
+export function resetFolderPassword(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
       var f = folder || s.currentFolder;
       if (!f) return;
       s.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: f, mode: 'reset' });
     }).apply(null, args);
-  };
+}
 
-  // setFoldersOrder + setFolderOrder（bundle 41351-41377 逐字）
-  fns["setFoldersOrder"] = function (...args) {
-    const s = getScope();
+export function setFoldersOrder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folders: any, orderBy: any, ignoreReload: any) {
       folders.forEach(function (folder: any) {
-        s.setFolderOrder(folder, orderBy);
+        machinerySetFolderOrder(s, folder, orderBy);
       });
-      s.sortRawData(orderBy);
+      machinerySortRawData(s, orderBy);
       s.rebindRefresh();
       s.$evalAsync();
     }).apply(null, args);
-  };
+}
 
-  fns["setFolderOrder"] = function (...args) {
-    const s = getScope();
+export function setFolderOrder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any, orderBy: any, ignoreReload: any) {
       if (!folder) return;
@@ -393,39 +219,37 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       }
       if (s.currentFolder === folder && !ignoreReload) {
-        s.reload();
+        machineryReload(s);
       }
-      s.saveFolder();
+      machinerySaveFolder(s);
     }).apply(null, args);
-  };
+}
 
-  // setFoldersSortIncrease + setFolderSortIncrease（bundle 41379-41395 逐字）
-  fns["setFoldersSortIncrease"] = function (...args) {
-    const s = getScope();
+export function setFoldersSortIncrease(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folders: any, sortIncrease: any, ignoreReload: any) {
       folders.forEach(function (folder: any) {
         s.setFolderSortIncrease(folder, sortIncrease);
       });
     }).apply(null, args);
-  };
+}
 
-  fns["setFolderSortIncrease"] = function (...args) {
-    const s = getScope();
+export function setFolderSortIncrease(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any, sortIncrease: any, ignoreReload: any) {
       if (!folder) return;
       folder.sortIncrease = !!sortIncrease;
       if (s.currentFolder === folder && !ignoreReload) {
-        s.reload();
+        machineryReload(s);
       }
-      s.saveFolder();
+      machinerySaveFolder(s);
     }).apply(null, args);
-  };
+}
 
-  // lockFolder（bundle 41465-41478 逐字）
-  fns["lockFolder"] = function (...args) {
-    const s = getScope();
+export function lockFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, f: any) {
       var folder = f || s.currentFolder;
@@ -435,18 +259,17 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       s.isLoading = true;
       s.selected = [];
       syncInspectorFromScope();
-      s.updateSidebarList();
+      machineryUpdateSidebarList(s);
       s.calculateImageBinding({ ignoreSort: true }, function () {
         s.rebindRefresh();
         s.updateSelection();
         s.isLoading = false;
       });
     }).apply(null, args);
-  };
+}
 
-  // settingFolder（bundle 41571-41593 逐字）
-  fns["settingFolder"] = function (...args) {
-    const s = getScope();
+export function settingFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       var f = folder;
@@ -471,11 +294,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         s.$root.$broadcast('FOLDER_SETTINGS', f);
       }
     }).apply(null, args);
-  };
+}
 
-  // renameFolder（bundle 41617-41629 逐字）
-  fns["renameFolder"] = function (...args) {
-    const s = getScope();
+export function renameFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       s.viewMode = undefined;
@@ -492,11 +314,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         wQueryFocusFolderInput(folder.id);
       }, 200);
     }).apply(null, args);
-  };
+}
 
-  // batchRenameFolders（bundle 41631-41641 逐字）
-  fns["batchRenameFolders"] = function (...args) {
-    const s = getScope();
+export function batchRenameFolders(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
       var selectedFolders = s.$root.selectedFolders;
@@ -507,69 +328,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         folders: selectedFolders
       });
     }).apply(null, args);
-  };
+}
 
-  // reorderFolderByTitle / reorderAllFolderByTitle（bundle 41782-41829 逐字）
-  fns["reorderFolderByTitle"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (folders: any, reverse: any) {
-      swal({
-        html: `
-                    <div class="alert">
-                        <div class="alert-icon warning"></div>
-                        <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
-                    </div>
-                `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: 'alert-box',
-        cancelButtonColor: '#777777',
-        confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
-        cancelButtonText: i18n.__('general.cancel'),
-      }).then(function () {
-        reorderFolderByTitleClosure(folders, reverse);
-        s.updateSidebarList();
-        s.saveFolder();
-        s.$evalAsync();
-        try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
-      });
-    }).apply(null, args);
-  };
-
-  fns["reorderAllFolderByTitle"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (reverse: any) {
-      swal({
-        html: `
-                    <div class="alert">
-                        <div class="alert-icon warning"></div>
-                        <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
-                    </div>
-                `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: 'alert-box',
-        cancelButtonColor: '#777777',
-        confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
-        cancelButtonText: i18n.__('general.cancel'),
-      }).then(function () {
-        reorderFolderByTitleClosure(s.folders, reverse);
-        treeWalkSafe(s.folders, 'children', function (folder: any, parent: any) {
-          reorderFolderByTitleClosure(folder.children, reverse);
-        });
-        s.updateSidebarList();
-        s.saveFolder();
-        s.$evalAsync();
-        try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}
-      });
-    }).apply(null, args);
-  };
-
-  // cloneFolder（bundle 41720-41763 逐字；angular.copy→JSON 深拷）
-  fns["cloneFolder"] = function (...args) {
-    const s = getScope();
+export function cloneFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       var resetFolder = function (fd: any) {
@@ -609,18 +371,16 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       if (idx > -1) {
         children.splice(idx + 1, 0, newFolder);
         s.folderMappings[newFolder.id] = newFolder;
-        s.updateSidebarList();
-        s.saveFolder();
+        machineryUpdateSidebarList(s);
+        machinerySaveFolder(s);
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
       s.calculateImageBinding({ ignoreSort: true }, function () {});
     }).apply(null, args);
-  };
+}
 
-
-  // changeFolderIcon / changeSelectedFoldersIcon（bundle 39981-40006 逐字）
-  fns["changeFolderIcon"] = function (...args) {
-    const s = getScope();
+export function changeFolderIcon(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any, icon: any) {
       const w = window as any;
@@ -630,14 +390,14 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       else {
         folder.icon = icon;
       }
-      s.saveFolder();
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
     }).apply(null, args);
-  };
+}
 
-  fns["changeSelectedFoldersIcon"] = function (...args) {
-    const s = getScope();
+export function changeSelectedFoldersIcon(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, icon: any) {
       const w = window as any;
@@ -650,15 +410,14 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           folder.icon = icon;
         }
       });
-      s.saveFolder();
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedFolders.length} folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
     }).apply(null, args);
-  };
+}
 
-  // changeFolderColor / changeSelectedFoldersColor（bundle 40040-40067 逐字）
-  fns["changeFolderColor"] = function (...args) {
-    const s = getScope();
+export function changeFolderColor(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any, color: any) {
       const w = window as any;
@@ -668,15 +427,15 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       else {
         folder.iconColor = color;
       }
-      s.updateSidebarList();
-      s.saveFolder();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
     }).apply(null, args);
-  };
+}
 
-  fns["changeSelectedFoldersColor"] = function (...args) {
-    const s = getScope();
+export function changeSelectedFoldersColor(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, color: any) {
       const w = window as any;
@@ -689,16 +448,15 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           folder.iconColor = color;
         }
       });
-      s.updateSidebarList();
-      s.saveFolder();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedFolders.length} folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
     }).apply(null, args);
-  };
+}
 
-  // folderExportAsPack（bundle 40085-40134 逐字；angular.extend→Object.assign）
-  fns["folderExportAsPack"] = function (...args) {
-    const s = getScope();
+export function folderExportAsPack(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
@@ -751,11 +509,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       });
     }).apply(null, args);
-  };
+}
 
-  // folderExportAsFolder（bundle 40136-40430 逐字）
-  fns["folderExportAsFolder"] = function (...args) {
-    const s = getScope();
+export function folderExportAsFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
@@ -886,11 +643,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         });
       });
     }).apply(null, args);
-  };
+}
 
-  // moveFolders（bundle 40431-40440 逐字）
-  fns["moveFolders"] = function (...args) {
-    const s = getScope();
+export function moveFolders(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (selectedFolders: any, node: any) {
       var selected = (selectedFolders && selectedFolders.length > 0) ? selectedFolders : [node];
@@ -902,104 +658,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         });
       }
     }).apply(null, args);
-  };
+}
 
-  // removeFolder / removeSelectedFolders（bundle 41935-42019 逐字；递归引用闭包版）
-  fns["removeFolder"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (folder: any, params: any = {}) {
-      if (folder.password && !folder.isUnLock) return;
-
-      // 如果圖片或子文件夾超過數量，就需要顯示詢問視窗
-      if (folder.images && folder.imageCount > 0 || folder && folder.children.length > 0) {
-        setTimeout(function () {
-          var removeConfirmMsg = $filter('i18n')('dialog.removeFolder.desc', [
-            { property: 'folder', value: folder.name },
-          ]);
-          swal({
-            html: `
-                            <div class="alert">
-                                <div class="alert-icon warning"></div>
-                                <h4 class="alert-title">${$filter('i18n')('dialog.removeFolder.title')}</h4>
-                                <p class="alert-desc">${removeConfirmMsg}</p>
-                            </div>
-                        `,
-            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-            width: 400,
-            customClass: 'alert-box',
-            cancelButtonColor: '#777777',
-            input: 'checkbox',
-            inputValue: 1,
-            inputValidator: function (result: any) {
-              return new Promise(function (resolve, reject) {
-                resolve(result);
-              });
-            },
-            inputPlaceholder: $filter('i18n')('dialog.removeFolder.checkbox'),
-            confirmButtonText: $filter('i18n')('dialog.removeFolder.button'),
-            cancelButtonText: $filter('i18n')('general.cancel'),
-          }).then(function (result: any) {
-            s.checkOperationSafety2(folder.descendantImageCount, function () {
-              params.isDeleteImages = (result == 1);
-              removeFolderClosure(folder, params);
-              s.$evalAsync();
-            }, 50);
-          }, function () {});
-        }, 100);
-      }
-      else {
-        removeFolderClosure(folder, params);
-      }
-    }).apply(null, args);
-  };
-
-  fns["removeSelectedFolders"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-      if (s.$root.selectedFolders.length === 0) return;
-
-      var removeConfirmMsg = $filter('i18n')('dialog.removeFolder.descMultiple', [
-        { property: 'count', value: s.$root.selectedFolders.length },
-      ]);
-      swal({
-        html: `
-                        <div class="alert">
-                            <div class="alert-icon warning"></div>
-                            <h4 class="alert-title">${$filter('i18n')('dialog.removeFolder.title')}</h4>
-                            <p class="alert-desc">${removeConfirmMsg}</p>
-                        </div>
-                    `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: 'alert-box',
-        cancelButtonColor: '#777777',
-        input: 'checkbox',
-        inputValue: 1,
-        inputValidator: function (result: any) {
-          return new Promise(function (resolve, reject) {
-            resolve(result);
-          });
-        },
-        inputPlaceholder: $filter('i18n')('dialog.removeFolder.checkbox'),
-        confirmButtonText: $filter('i18n')('dialog.removeFolder.button'),
-        cancelButtonText: $filter('i18n')('general.cancel'),
-      }).then(function (result: any) {
-        s.checkOperationSafety2(s.$root.selectedFolders.length, function () {
-          var isDeleteImages = (result == 1);
-          s.$root.selectedFolders.forEach(function (folder: any) {
-            if (folder.password && !folder.isUnLock) return;
-            removeFolderClosure(folder, { isDeleteImages: isDeleteImages, ignoreRestore: true });
-          });
-        }, 1);
-      }, function () {});
-    }).apply(null, args);
-  };
-
-  // copyFolderLink（bundle 46606-46615 逐字）
-  fns["copyFolderLink"] = function (...args) {
-    const s = getScope();
+export function copyFolderLink(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       if (folder && folder.id) {
@@ -1010,11 +672,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         });
       }
     }).apply(null, args);
-  };
+}
 
-  // showListSubfolderContent（bundle 45351-45364 逐字）
-  fns["showListSubfolderContent"] = function (...args) {
-    const s = getScope();
+export function showListSubfolderContent(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
       const w = window as any;
@@ -1032,11 +693,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       if (s.showSubfolderContent) { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: ON'); }
       else { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: OFF'); }
     }).apply(null, args);
-  };
-  // openFolderContextMenu（bundle 39012-39549 逐字；ContextMenu.open → 模块常量广播；
-  // $(event.delegateTarget) → React synthetic currentTarget classList）
-  fns["openFolderContextMenu"] = function (...args) {
-    const s = getScope();
+}
+
+export function openFolderContextMenu(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
@@ -1052,7 +712,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       let items: any = null;
       let historyLibraryMenu: any = {};
 
-      historyLibraryMenu.items = s.getLibraryHistory().filter((history: any) => {
+      historyLibraryMenu.items = getLibraryHistory().filter((history: any) => {
         var isCurrent = false;
         if (s.libraryPath) {
           isCurrent = w.path.normalize(history.path) == w.path.normalize(s.libraryPath);
@@ -1065,7 +725,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           accelerator: history.dir,
           icon: 'ic-library-logo.svg',
           click: () => {
-            const items2 = s.getFolderImages(folder, true);
+            const items2 = machineryGetFolderImages(s, folder, true);
             s.$root.$broadcast('ADD_TO_LIBRARY', {
               folder: folder,
               items: items2,
@@ -1174,7 +834,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              s.batchRenameFolders(event);
+              machineryBatchRenameFolders(s, event);
               s.$evalAsync();
             }
           },
@@ -1241,7 +901,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '資料夾 文件夾 刪除 移除 remove delete folder dir',
             icon: 'ic-folder-remove.svg',
             click: () => {
-              s.removeSelectedFolders();
+              machineryRemoveSelectedFolders(s);
               s.$evalAsync();
             }
           },
@@ -1319,7 +979,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              s.renameFolder(event, folder);
+              machineryRenameFolder(s, event, folder);
               s.$evalAsync();
             }
           },
@@ -1436,7 +1096,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             label: i18n.__('Context.Expand.Folder'),
             icon: 'ic-expand.svg',
             click: () => {
-              s.toggleSelectFolder(event, folder);
+              toggleSelectFolder(event, folder);
               s.$evalAsync();
             }
           },
@@ -1444,7 +1104,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             label: i18n.__('Context.Expand.SameLevel.Folders'),
             icon: 'ic-expand-same.svg',
             click: () => {
-              s.toggleCurrentLevelFolders(event, folder);
+              toggleCurrentLevelFolders(event, folder);
               s.$evalAsync();
             }
           },
@@ -1453,7 +1113,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             label: i18n.__('Context.Expand.All.Folders'),
             icon: 'ic-expand-all.svg',
             click: () => {
-              s.toggleAllFolderExpand(event, folder);
+              toggleAllFolderExpand(event, folder);
               s.$evalAsync();
             }
           },
@@ -1558,7 +1218,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '資料夾 文件夾 刪除 移除 remove delete folder dir',
             icon: 'ic-folder-remove.svg',
             click: () => {
-              s.removeFolder(folder);
+              machineryRemoveFolder(s, folder);
               s.$evalAsync();
             }
           },
@@ -1576,74 +1236,23 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       });
     }).apply(null, args);
-  };
-  // ── b1-9aq：台账⑨第三批——openSmartFolderContextMenu 主菜单 + 依赖面（bundle 39550-40105
-  //    + 41395-41440/41652-41719/41831-42049/26287-26331/40267-40430 逐字）──
+}
 
-  // controller 闭包函数 ayncsUpdateSmartFoldersCount（bundle 26301-26331 逐字）
-  function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
-    const s = getScope();
-    if (!smartFolders || smartFolders.length === 0) return;
-    setTimeout(() => {
-      let total = smartFolders.length;
-      let once = 3;
-      let loopCount = total / once;
-      let countOfSend = 0;
-
-      function send() {
-        var start = countOfSend * once;
-        var arr = smartFolders.slice(start, start + once);
-        countOfSend += 1;
-
-        for (let i = 0; i < arr.length; i++) {
-          arr[i].imageCount = s.smartFolderCount(arr[i]);
-          if (!arr[i].pinyin) {
-            arr[i].pinyin = (window as any).tinyPinyin.convertToPinyin(arr[i].name);
-          }
-        }
-
-        s.$evalAsync();
-
-        loop();
-      }
-
-      function loop() {
-        if (countOfSend < loopCount) {
-          window.requestAnimationFrame(send);
-        }
-        else {
-          callback && callback();
-        }
-      }
-      loop();
-    }, 30);
-  }
-
-  // refreshSmartFolderCount（bundle 26287-26290 逐字）
-  fns["refreshSmartFolderCount"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-      ayncsUpdateSmartFoldersCount(s.smartFolderList, () => {});
-    }).apply(null, args);
-  };
-
-  // setSmartFoldersOrder + setSmartFolderOrder（bundle 41395-41422 逐字）
-  fns["setSmartFoldersOrder"] = function (...args) {
-    const s = getScope();
+export function setSmartFoldersOrder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (smartFolders: any, orderBy: any, ignoreReload: any) {
       smartFolders.forEach(function (folder: any) {
-        s.setSmartFolderOrder(folder, orderBy);
+        machinerySetSmartFolderOrder(s, folder, orderBy);
       });
-      s.sortRawData(orderBy);
+      machinerySortRawData(s, orderBy);
       s.rebindRefresh();
       s.$evalAsync();
     }).apply(null, args);
-  };
+}
 
-  fns["setSmartFolderOrder"] = function (...args) {
-    const s = getScope();
+export function setSmartFolderOrder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any, orderBy: any) {
       if (!folder) return;
@@ -1658,39 +1267,37 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       }
       if (s.currentSmartFolder === folder) {
-        s.reload();
+        machineryReload(s);
       }
-      s.saveFolder();
+      machinerySaveFolder(s);
     }).apply(null, args);
-  };
+}
 
-  // setSmartFoldersSortIncrease + setSmartFolderSortIncrease（bundle 41423-41440 逐字）
-  fns["setSmartFoldersSortIncrease"] = function (...args) {
-    const s = getScope();
+export function setSmartFoldersSortIncrease(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (smartFolders: any, sortIncrease: any, ignoreReload: any) {
       smartFolders.forEach(function (folder: any) {
         s.setSmartFolderSortIncrease(folder, sortIncrease);
       });
     }).apply(null, args);
-  };
+}
 
-  fns["setSmartFolderSortIncrease"] = function (...args) {
-    const s = getScope();
+export function setSmartFolderSortIncrease(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any, sortIncrease: any) {
       if (!folder) return;
       folder.sortIncrease = !!sortIncrease;
       if (s.currentSmartFolder === folder) {
-        s.reload();
+        machineryReload(s);
       }
-      s.saveFolder();
+      machinerySaveFolder(s);
     }).apply(null, args);
-  };
+}
 
-  // batchRenameSmartFolders（bundle 41654-41662 逐字）
-  fns["batchRenameSmartFolders"] = function (...args) {
-    const s = getScope();
+export function batchRenameSmartFolders(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
       var selectedSmartFolders = s.$root.selectedSmartFolders;
@@ -1701,11 +1308,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         folders: selectedSmartFolders
       });
     }).apply(null, args);
-  };
+}
 
-  // changeSmartFolderIcon / changeSmartFolderColor（bundle 41664-41687 逐字）
-  fns["changeSmartFolderIcon"] = function (...args) {
-    const s = getScope();
+export function changeSmartFolderIcon(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any, icon: any) {
       const w = window as any;
@@ -1715,14 +1321,14 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       else {
         smartFolder.icon = icon;
       }
-      s.saveFolder();
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${smartFolder.name}(${smartFolder.id}) icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
     }).apply(null, args);
-  };
+}
 
-  fns["changeSmartFolderColor"] = function (...args) {
-    const s = getScope();
+export function changeSmartFolderColor(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any, color: any) {
       const w = window as any;
@@ -1732,16 +1338,15 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       else {
         smartFolder.iconColor = color;
       }
-      s.updateSidebarList();
-      s.saveFolder();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change smart-folder: ${smartFolder.name}(${smartFolder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
     }).apply(null, args);
-  };
+}
 
-  // changeSelectedSmartFoldersIcon / changeSelectedSmartFoldersColor（bundle 40022-40084 逐字）
-  fns["changeSelectedSmartFoldersIcon"] = function (...args) {
-    const s = getScope();
+export function changeSelectedSmartFoldersIcon(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, icon: any) {
       const w = window as any;
@@ -1754,15 +1359,15 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           smartFolder.icon = icon;
         }
       });
-      s.updateSidebarList();
-      s.saveFolder();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedSmartFolders.length} smart-folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
     }).apply(null, args);
-  };
+}
 
-  fns["changeSelectedSmartFoldersColor"] = function (...args) {
-    const s = getScope();
+export function changeSelectedSmartFoldersColor(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, color: any) {
       const w = window as any;
@@ -1775,16 +1380,15 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
           smartFolder.iconColor = color;
         }
       });
-      s.updateSidebarList();
-      s.saveFolder();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
       try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedSmartFolders.length} smart-folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
     }).apply(null, args);
-  };
+}
 
-  // cloneSmartFolder（bundle 41689-41718 逐字；angular.copy→JSON 深拷）
-  fns["cloneSmartFolder"] = function (...args) {
-    const s = getScope();
+export function cloneSmartFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
@@ -1811,16 +1415,15 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       if (idx > -1) {
         children.splice(idx, 0, newFolder);
         s.smartFolderMappings[newFolder.id] = newFolder;
-        s.updateSidebarList();
-        s.saveFolder();
+        machineryUpdateSidebarList(s);
+        machinerySaveFolder(s);
         try { w.electronLog && w.electronLog.info(`[app] Clone smart-folder: ${smartFolder.name}(${smartFolder.id}), new smart-folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
     }).apply(null, args);
-  };
+}
 
-  // renameSmartFolder（bundle 41652-41662 邻接定义逐字）
-  fns["renameSmartFolder"] = function (...args) {
-    const s = getScope();
+export function renameSmartFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       s.viewMode = undefined;
@@ -1836,11 +1439,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         wQueryFocusFolderInput(smartFolder.id);
       }, 200);
     }).apply(null, args);
-  };
+}
 
-  // copySmartFolderLink（bundle 46617-46626 逐字）
-  fns["copySmartFolderLink"] = function (...args) {
-    const s = getScope();
+export function copySmartFolderLink(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       if (smartFolder && smartFolder.id) {
@@ -1851,159 +1453,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         });
       }
     }).apply(null, args);
-  };
+}
 
-  // controller 闭包函数 removeSmartFolder（bundle 41851-41934 逐字；angular.copy→JSON 深拷）
-  function removeSmartFolderClosure(smartFolder: any, { ignoreSelectNext, ignoreRestore }: any) {
-    const s = getScope();
-    const w = window as any;
-
-    var message = $filter('i18n')('notify.folder.remove', [
-      { property: 'folder', value: smartFolder.name },
-    ]);
-
-    var children = s.smartFolders;
-    if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
-      let parent = s.smartFolderMappings[smartFolder.parent];
-      children = parent.children;
-    }
-    var origin = JSON.parse(JSON.stringify(children));
-    var idx = children.indexOf(smartFolder);
-
-    if (idx === -1) return;
-
-    children.splice(idx, 1);
-    delete s.smartFolderMappings[smartFolder.id];
-    w.QuickAccessManager.remove('smartFolder', smartFolder);
-
-    // 如果已經沒有資料夾
-    if (idx === 0) {
-      if (children[idx]) {
-        s.openSmartFolder(children[idx]);
-      } else {
-        s.currentSmartFolder = undefined;
-        syncPanelFromScope();
-        syncListFromScope();
-        s.openAll();
-      }
-    }
-    // 如果還有資料夾
-    else {
-      if (children[idx]) {
-        s.openSmartFolder(children[idx]);
-      } else {
-        if (children[idx - 1]) {
-          s.openSmartFolder(children[idx - 1]);
-        } else {
-          s.currentSmartFolder = undefined;
-          syncPanelFromScope();
-          syncListFromScope();
-          s.openAll();
-        }
-      }
-    }
-
-    // 如果声音效果是开启的
-    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
-      s.removeSound && s.removeSound.play && s.removeSound.play();
-    }
-    s.updateSidebarList();
-
-    $timeout(function () {
-      s.saveFolderDebounce && s.saveFolderDebounce();
-    }, 1000);
-
-    w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
-
-    if (!ignoreRestore) {
-      (s.$root.notify || s.notify).call(s.$root, {
-        message: message,
-        duration: 5000,
-      }, function () {
-        if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
-          let parent = s.smartFolderMappings[smartFolder.parent];
-          parent.children = origin;
-        }
-        else {
-          s.smartFolders = origin;
-        }
-        s.smartFolderMappings[smartFolder.id] = smartFolder;
-        treeWalkSafe(s.smartFolders, 'children', function (sf: any, parent: any, depth: any) {
-          s.smartFolderMappings[sf.id] = sf;
-        });
-        s.updateSidebarList();
-        s.openSmartFolder(smartFolder);
-        s.saveFolderDebounce && s.saveFolderDebounce();
-        s.$evalAsync();
-      });
-    }
-  }
-
-  // removeSmartFolder / removeSelectedSmartFolders（bundle 41831-42049 逐字）
-  fns["removeSmartFolder"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function (smartFolder: any) {
-      setTimeout(function () {
-        var removeConfirmMsg = $filter('i18n')('dialog.removeSmartFolder.desc', [
-          { property: 'folder', value: smartFolder.name },
-        ]);
-        swal({
-          html: `
-                        <div class="alert">
-                            <div class="alert-icon warning"></div>
-                            <h4 class="alert-title">${i18n.__('dialog.removeSmartFolder.title')}</h4>
-                            <p class="alert-desc">${removeConfirmMsg}</p>
-                        </div>
-                    `,
-          showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-          width: 400,
-          customClass: 'alert-box',
-          cancelButtonColor: '#777777',
-          confirmButtonText: i18n.__('dialog.removeSmartFolder.button'),
-          cancelButtonText: i18n.__('general.cancel'),
-        }).then(function () {
-          removeSmartFolderClosure(smartFolder, {});
-        });
-      }, 100);
-    }).apply(null, args);
-  };
-
-  fns["removeSelectedSmartFolders"] = function (...args) {
-    const s = getScope();
-    if (!s) return;
-    return (function () {
-      if (s.$root.selectedSmartFolders.length === 0) return;
-
-      var removeConfirmMsg = $filter('i18n')('dialog.removeSmartFolder.descMultiple', [
-        { property: 'count', value: s.$root.selectedSmartFolders.length },
-      ]);
-      swal({
-        html: `
-                        <div class="alert">
-                            <div class="alert-icon warning"></div>
-                            <h4 class="alert-title">${$filter('i18n')('dialog.removeSmartFolder.title')}</h4>
-                            <p class="alert-desc">${removeConfirmMsg}</p>
-                        </div>
-                    `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: 'alert-box',
-        cancelButtonColor: '#777777',
-        confirmButtonText: $filter('i18n')('dialog.removeSmartFolder.button'),
-        cancelButtonText: $filter('i18n')('general.cancel'),
-      }).then(function (result: any) {
-        s.$root.selectedSmartFolders.forEach(function (smartFolder: any) {
-          removeSmartFolderClosure(smartFolder, { ignoreRestore: true });
-        });
-        s.$root.selectedSmartFolders = [];
-      }, function () {});
-    }).apply(null, args);
-  };
-
-  // smartFolderExportAsPack（bundle 40267-40331 逐字；angular.extend→Object.assign）
-  fns["smartFolderExportAsPack"] = function (...args) {
-    const s = getScope();
+export function smartFolderExportAsPack(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
@@ -2014,14 +1467,14 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         else if (sf.children && sf.children.length > 0 && sf.conditions && sf.conditions.length === 0) {
           for (let i = 0; i < sf.children.length; i++) {
             let smartFolder = sf.children[i];
-            if (s.existInSmartFilter(smartFolder, image)) {
+            if (machineryExistInSmartFilter(s, smartFolder, image)) {
               return true;
             }
           }
           return false;
         }
         else {
-          return s.existInSmartFilter(s.currentSmartFolder, image);
+          return machineryExistInSmartFilter(s, s.currentSmartFolder, image);
         }
       };
 
@@ -2070,11 +1523,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       });
     }).apply(null, args);
-  };
+}
 
-  // smartFolderExportAsFolder（bundle 40333-40430 逐字）
-  fns["smartFolderExportAsFolder"] = function (...args) {
-    const s = getScope();
+export function smartFolderExportAsFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
@@ -2085,14 +1537,14 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         else if (sf.children && sf.children.length > 0 && sf.conditions && sf.conditions.length === 0) {
           for (let i = 0; i < sf.children.length; i++) {
             let smartFolder = sf.children[i];
-            if (s.existInSmartFilter(smartFolder, image)) {
+            if (machineryExistInSmartFilter(s, smartFolder, image)) {
               return true;
             }
           }
           return false;
         }
         else {
-          return s.existInSmartFilter(s.currentSmartFolder, image);
+          return machineryExistInSmartFilter(s, s.currentSmartFolder, image);
         }
       };
 
@@ -2172,27 +1624,26 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       });
     }).apply(null, args);
-  };
+}
 
-  // newSmartFolder / newChildSmartFolder / newSmartFolderGroup / prependFolder（bundle 39866-39910 逐字）
-  fns["newSmartFolder"] = function (...args) {
-    const s = getScope();
+export function newSmartFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       s.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: smartFolder, parent: undefined });
     }).apply(null, args);
-  };
+}
 
-  fns["newChildSmartFolder"] = function (...args) {
-    const s = getScope();
+export function newChildSmartFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       s.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: smartFolder || s.currentSmartFolder, parent: smartFolder });
     }).apply(null, args);
-  };
+}
 
-  fns["newSmartFolderGroup"] = function (...args) {
-    const s = getScope();
+export function newSmartFolderGroup(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any) {
       const w = window as any;
@@ -2205,30 +1656,30 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         icon: 'grid'
       };
       s.smartFolders.push(smartFolderGroup);
-      s.updateSidebarList();
-      s.saveFolder();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolder(s);
       w.analytics.event('SmartFolder', 'CreateGroup');
       return smartFolderGroup;
     }).apply(null, args);
-  };
+}
 
-  fns["prependFolder"] = function (...args) {
-    const s = getScope();
+export function prependFolder(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
       s.folders.unshift(folder);
       s.folderMappings[folder.id] = folder;
-      s.updateSidebarList();
+      machineryUpdateSidebarList(s);
       setTimeout(function () {
         s.calculateImageBinding({ ignoreSort: true }, function () {
-          s.saveFolder();
+          machinerySaveFolder(s);
         });
       }, 1000);
     }).apply(null, args);
-  };
-  // openNewSmartFolderContextMenu（bundle 39878-39910 逐字）
-  fns["openNewSmartFolderContextMenu"] = function (...args) {
-    const s = getScope();
+}
+
+export function openNewSmartFolderContextMenu(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any) {
       ContextMenu.open({
@@ -2238,7 +1689,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             icon: 'ic-smart-folder-new.svg',
             accelerator: preferences.shortcuts.keybinds['file.create.smartfolder'],
             click: () => {
-              s.newSmartFolder(event);
+              machineryNewSmartFolder(s, event);
               s.$evalAsync();
             }
           },
@@ -2247,9 +1698,9 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             icon: 'ic-smart-folder-new-group.svg',
             click: () => {
               var smartFolderGroup = s.newSmartFolderGroup(event);
-              s.openSmartFolder(smartFolderGroup);
+              openSmartFolder(smartFolderGroup);
               $timeout(function () {
-                s.renameSmartFolder(event, smartFolderGroup);
+                machineryRenameSmartFolder(s, event, smartFolderGroup);
               }, 150);
               s.$evalAsync();
             }
@@ -2258,9 +1709,10 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         showSearch: false,
       });
     }).apply(null, args);
-  };
-  fns["openSmartFolderContextMenu"] = function (...args) {
-    const s = getScope();
+}
+
+export function openSmartFolderContextMenu(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
@@ -2275,7 +1727,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
       let items: any = null;
       let historyLibraryMenu: any = {};
 
-      historyLibraryMenu.items = s.getLibraryHistory().filter((history: any) => {
+      historyLibraryMenu.items = getLibraryHistory().filter((history: any) => {
         var isCurrent = false;
         if (s.libraryPath) {
           isCurrent = w.path.normalize(history.path) == w.path.normalize(s.libraryPath);
@@ -2393,7 +1845,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              s.batchRenameSmartFolders(event);
+              machineryBatchRenameSmartFolders(s, event);
               s.$evalAsync();
             }
           },
@@ -2432,7 +1884,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '資料夾 文件夾 刪除 移除 remove delete smart folder dir',
             icon: 'ic-smart-folder-remove.svg',
             click: () => {
-              s.removeSelectedSmartFolders();
+              machineryRemoveSelectedSmartFolders(s);
               s.$evalAsync();
             }
           },
@@ -2446,7 +1898,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '資料夾 文件夾 新建 建立 新增 智能 智慧 new create smart',
             icon: 'ic-smart-folder-new.svg',
             click: function () {
-              s.newSmartFolder(event, smartFolder);
+              machineryNewSmartFolder(s, event, smartFolder);
               s.$evalAsync();
             }
           },
@@ -2467,7 +1919,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              s.renameSmartFolder(event, smartFolder);
+              machineryRenameSmartFolder(s, event, smartFolder);
               s.$evalAsync();
             }
           },
@@ -2608,7 +2060,7 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
             keywords: '資料夾 文件夾 刪除 移除 remove delete smart folder dir',
             icon: 'ic-smart-folder-remove.svg',
             click: () => {
-              s.removeSmartFolder(smartFolder);
+              machineryRemoveSmartFolder(s, smartFolder);
               s.$evalAsync();
             }
           },
@@ -2627,5 +2079,643 @@ export function installFolderMenuFns(fns: any, getScope: any): void {
         }
       });
     }).apply(null, args);
+}
+
+export function installFolderMenuFns(fns: any, getScope: any): void {
+  // ── b1-9ap：台账⑨主菜单第一批——openFolderContextMenu 及其依赖面（bundle 39012-39549
+  //    + 依赖 fns 逐字移植；$scope→s、$rootScope.$broadcast→s.$root 广播总线语义、
+  //    angular.copy/extend→JSON 深拷/Object.assign、eagle.utils.tree.walk→treeWalkSafe）──
+
+  // controller 闭包函数 reorderFolderByTitle（bundle 41765-41781 逐字）
+  function reorderFolderByTitleClosure(folders: any, reverse: any) {
+    folders = folders.sort(function (a: any, b: any) {
+      try {
+        var na = a.name.toLowerCase();
+        var nb = b.name.toLowerCase();
+        if (na && nb) {
+          return na.localeCompare(nb, (window as any).languageBCP, { numeric: true });
+        }
+      }
+      catch (err) {}
+    });
+
+    if (reverse) {
+      folders = folders.reverse();
+    }
+  }
+
+  // controller 闭包函数 removeFolder（bundle 42050-42205 逐字；angular.copy→JSON 深拷）
+  function removeFolderClosure(folder: any, { isDeleteImages, ignoreSelectNext, ignoreRestore }: any) {
+    const s = getScope();
+    const w = window as any;
+
+    // 支持復原文件夾
+    var originalFolders: any[] = [];
+    var originalImages: any[] = [];
+    var originalImageFolders: any[] = [];
+    var folderId = folder.id;
+    if (!ignoreRestore) {
+      w.cloneTree(originalFolders, s.folders, true);
+    }
+
+    // 找到包含 folder 的 list
+    var parent = s.folderMappings[folder.parent];
+    var children = (parent) ? parent.children : s.folders;
+    if (!Array.isArray(children)) return;
+
+    var index = children.indexOf(folder);
+    if (index === -1) return;
+
+    // 移除 folder
+    children.splice(index, 1);
+
+    // 删除包含 folder.id 的图片
+    if (s.raw && s.raw.length > 0) {
+      var changed: any[] = [];
+      for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+        var image = s.raw[rindex];
+        if (image.folders) {
+          var idx = image.folders.indexOf(folder.id);
+          if (idx > -1) {
+            if (isDeleteImages) {
+              // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
+              if (image.folders && image.folders.length === 1) {
+                image.isDeleted = true;
+              }
+            }
+            originalImageFolders.push(JSON.parse(JSON.stringify(image.folders)));
+            image.folders.splice(idx, 1);
+            changed.push(image);
+            originalImages.push(image);
+          }
+        }
+      }
+      w.ayncsImagesChange(changed);
+      w.hiddenByCurrentFilter(changed);
+    }
+
+    // 同时删除子文件夹图片
+    if (folder.children) {
+      treeWalkSafe(folder.children, 'children', function (child: any, parent2: any) {
+        if (s.raw && s.raw.length > 0) {
+          var changed2: any[] = [];
+          for (var rindex2 = s.raw.length - 1; rindex2 >= 0; rindex2--) {
+            var image2 = s.raw[rindex2];
+            if (image2.folders) {
+              var idx2 = image2.folders.indexOf(child.id);
+              if (idx2 > -1) {
+                if (isDeleteImages) {
+                  // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
+                  if (image2.folders && image2.folders.length === 1) {
+                    image2.isDeleted = true;
+                  }
+                }
+                originalImageFolders.push(JSON.parse(JSON.stringify(image2.folders)));
+                image2.folders.splice(idx2, 1);
+                changed2.push(image2);
+                originalImages.push(image2);
+              }
+            }
+          }
+          w.ayncsImagesChange(changed2);
+          w.hiddenByCurrentFilter(changed2);
+        }
+      });
+    }
+
+    // 开启下一个文件夹（优先兄弟 → 父 → All）
+    if (!ignoreSelectNext) {
+      if (children.length > 0) {
+        var next = children[index] || children[index - 1] || children[0];
+        openFolder(next);
+      } else if (parent) {
+        openFolder(parent);
+      } else {
+        machineryOpenAll(s);
+      }
+    }
+    else {
+      s.rebindRefresh();
+    }
+
+    // 播放删除音效
+    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+      s.removeSound && s.removeSound.play && s.removeSound.play();
+    }
+
+    w.QuickAccessManager.remove('folder', folder);
+    if (folder.children && s.quickAccess.length > 0) {
+      treeWalkSafe(folder.children, 'children', function (child: any, parent3: any) {
+        w.QuickAccessManager.remove('folder', child);
+      });
+    }
+    machineryUpdateSidebarList(s);
+
+    // 移除记录
+    delete s.folderMappings[folder.id];
+    void folderId;
+    s.calculateImageBinding({ ignoreSort: true }, function () {
+      s.$evalAsync();
+      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+      if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
+      else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
+    });
+
+    if (!ignoreRestore) {
+      var message = $filter('i18n')('notify.folder.remove', [
+        { property: 'folder', value: folder.name },
+      ]);
+      (s.$root.notify || s.notify).call(s.$root, {
+        message: message,
+        duration: 7000,
+      }, function () {
+        s.folders = originalFolders;
+
+        treeWalkSafe(s.folders, 'children', function (folder3: any, parent3: any) {
+          if (!folder3.children) { folder3.children = []; }
+          if (folder3 && parent3) { folder3.parent = parent3.id; }
+          s.folderMappings[folder3.id] = folder3;
+        });
+
+        for (var i = originalImages.length - 1; i >= 0; i--) {
+          var image3 = originalImages[i];
+          var imageOriginalFolders = originalImageFolders[i];
+          if (image3.isDeleted && imageOriginalFolders && imageOriginalFolders.length > 0) {
+            image3.isDeleted = false;
+          }
+          image3.folders = JSON.parse(JSON.stringify(imageOriginalFolders));
+        }
+        machineryUpdateSidebarList(s);
+        s.rebindRefresh();
+        w.ayncsImagesChange(originalImages);
+      });
+    }
+  }
+
+  // checkOperationSafety2（bundle 26824-26852 逐字）
+  fns["checkOperationSafety2"] = checkOperationSafety2;
+
+  // refreshSubfolderList（bundle 27462-27490 逐字）——b1-9al 摘除 bundle 后悬空供给
+  //（newFolder/removeFolder 回调消费），本批补移植
+  fns["refreshSubfolderList"] = refreshSubfolderList;
+
+  // setFolderPassword / changeFolderPassword / resetFolderPassword（bundle 41324-41349 逐字）
+  fns["setFolderPassword"] = setFolderPassword;
+
+  fns["changeFolderPassword"] = changeFolderPassword;
+
+  fns["resetFolderPassword"] = resetFolderPassword;
+
+  // setFoldersOrder + setFolderOrder（bundle 41351-41377 逐字）
+  fns["setFoldersOrder"] = setFoldersOrder;
+
+  fns["setFolderOrder"] = setFolderOrder;
+
+  // setFoldersSortIncrease + setFolderSortIncrease（bundle 41379-41395 逐字）
+  fns["setFoldersSortIncrease"] = setFoldersSortIncrease;
+
+  fns["setFolderSortIncrease"] = setFolderSortIncrease;
+
+  // lockFolder（bundle 41465-41478 逐字）
+  fns["lockFolder"] = lockFolder;
+
+  // settingFolder（bundle 41571-41593 逐字）
+  fns["settingFolder"] = settingFolder;
+
+  // renameFolder（bundle 41617-41629 逐字）
+  fns["renameFolder"] = renameFolder;
+
+  // batchRenameFolders（bundle 41631-41641 逐字）
+  fns["batchRenameFolders"] = batchRenameFolders;
+
+  // reorderFolderByTitle / reorderAllFolderByTitle（bundle 41782-41829 逐字）
+  fns["reorderFolderByTitle"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (folders: any, reverse: any) {
+      swal({
+        html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
+                    </div>
+                `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: 'alert-box',
+        cancelButtonColor: '#777777',
+        confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
+        cancelButtonText: i18n.__('general.cancel'),
+      }).then(function () {
+        reorderFolderByTitleClosure(folders, reverse);
+        machineryUpdateSidebarList(s);
+        machinerySaveFolder(s);
+        s.$evalAsync();
+        try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
+      });
+    }).apply(null, args);
   };
+
+  fns["reorderAllFolderByTitle"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (reverse: any) {
+      swal({
+        html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${i18n.__('dialog.reorderFolder.title')}</h4>
+                    </div>
+                `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: 'alert-box',
+        cancelButtonColor: '#777777',
+        confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
+        cancelButtonText: i18n.__('general.cancel'),
+      }).then(function () {
+        reorderFolderByTitleClosure(s.folders, reverse);
+        treeWalkSafe(s.folders, 'children', function (folder: any, parent: any) {
+          reorderFolderByTitleClosure(folder.children, reverse);
+        });
+        machineryUpdateSidebarList(s);
+        machinerySaveFolder(s);
+        s.$evalAsync();
+        try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}
+      });
+    }).apply(null, args);
+  };
+
+  // cloneFolder（bundle 41720-41763 逐字；angular.copy→JSON 深拷）
+  fns["cloneFolder"] = cloneFolder;
+
+
+  // changeFolderIcon / changeSelectedFoldersIcon（bundle 39981-40006 逐字）
+  fns["changeFolderIcon"] = changeFolderIcon;
+
+  fns["changeSelectedFoldersIcon"] = changeSelectedFoldersIcon;
+
+  // changeFolderColor / changeSelectedFoldersColor（bundle 40040-40067 逐字）
+  fns["changeFolderColor"] = changeFolderColor;
+
+  fns["changeSelectedFoldersColor"] = changeSelectedFoldersColor;
+
+  // folderExportAsPack（bundle 40085-40134 逐字；angular.extend→Object.assign）
+  fns["folderExportAsPack"] = folderExportAsPack;
+
+  // folderExportAsFolder（bundle 40136-40430 逐字）
+  fns["folderExportAsFolder"] = folderExportAsFolder;
+
+  // moveFolders（bundle 40431-40440 逐字）
+  fns["moveFolders"] = moveFolders;
+
+  // removeFolder / removeSelectedFolders（bundle 41935-42019 逐字；递归引用闭包版）
+  fns["removeFolder"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (folder: any, params: any = {}) {
+      if (folder.password && !folder.isUnLock) return;
+
+      // 如果圖片或子文件夾超過數量，就需要顯示詢問視窗
+      if (folder.images && folder.imageCount > 0 || folder && folder.children.length > 0) {
+        setTimeout(function () {
+          var removeConfirmMsg = $filter('i18n')('dialog.removeFolder.desc', [
+            { property: 'folder', value: folder.name },
+          ]);
+          swal({
+            html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${$filter('i18n')('dialog.removeFolder.title')}</h4>
+                                <p class="alert-desc">${removeConfirmMsg}</p>
+                            </div>
+                        `,
+            showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+            width: 400,
+            customClass: 'alert-box',
+            cancelButtonColor: '#777777',
+            input: 'checkbox',
+            inputValue: 1,
+            inputValidator: function (result: any) {
+              return new Promise(function (resolve, reject) {
+                resolve(result);
+              });
+            },
+            inputPlaceholder: $filter('i18n')('dialog.removeFolder.checkbox'),
+            confirmButtonText: $filter('i18n')('dialog.removeFolder.button'),
+            cancelButtonText: $filter('i18n')('general.cancel'),
+          }).then(function (result: any) {
+            machineryCheckOperationSafety2(s, folder.descendantImageCount, function () {
+              params.isDeleteImages = (result == 1);
+              removeFolderClosure(folder, params);
+              s.$evalAsync();
+            }, 50);
+          }, function () {});
+        }, 100);
+      }
+      else {
+        removeFolderClosure(folder, params);
+      }
+    }).apply(null, args);
+  };
+
+  fns["removeSelectedFolders"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+      if (s.$root.selectedFolders.length === 0) return;
+
+      var removeConfirmMsg = $filter('i18n')('dialog.removeFolder.descMultiple', [
+        { property: 'count', value: s.$root.selectedFolders.length },
+      ]);
+      swal({
+        html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${$filter('i18n')('dialog.removeFolder.title')}</h4>
+                            <p class="alert-desc">${removeConfirmMsg}</p>
+                        </div>
+                    `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: 'alert-box',
+        cancelButtonColor: '#777777',
+        input: 'checkbox',
+        inputValue: 1,
+        inputValidator: function (result: any) {
+          return new Promise(function (resolve, reject) {
+            resolve(result);
+          });
+        },
+        inputPlaceholder: $filter('i18n')('dialog.removeFolder.checkbox'),
+        confirmButtonText: $filter('i18n')('dialog.removeFolder.button'),
+        cancelButtonText: $filter('i18n')('general.cancel'),
+      }).then(function (result: any) {
+        machineryCheckOperationSafety2(s, s.$root.selectedFolders.length, function () {
+          var isDeleteImages = (result == 1);
+          s.$root.selectedFolders.forEach(function (folder: any) {
+            if (folder.password && !folder.isUnLock) return;
+            removeFolderClosure(folder, { isDeleteImages: isDeleteImages, ignoreRestore: true });
+          });
+        }, 1);
+      }, function () {});
+    }).apply(null, args);
+  };
+
+  // copyFolderLink（bundle 46606-46615 逐字）
+  fns["copyFolderLink"] = copyFolderLink;
+
+  // showListSubfolderContent（bundle 45351-45364 逐字）
+  fns["showListSubfolderContent"] = showListSubfolderContent;
+  // openFolderContextMenu（bundle 39012-39549 逐字；ContextMenu.open → 模块常量广播；
+  // $(event.delegateTarget) → React synthetic currentTarget classList）
+  fns["openFolderContextMenu"] = openFolderContextMenu;
+  // ── b1-9aq：台账⑨第三批——openSmartFolderContextMenu 主菜单 + 依赖面（bundle 39550-40105
+  //    + 41395-41440/41652-41719/41831-42049/26287-26331/40267-40430 逐字）──
+
+  // controller 闭包函数 ayncsUpdateSmartFoldersCount（bundle 26301-26331 逐字）
+  function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
+    const s = getScope();
+    if (!smartFolders || smartFolders.length === 0) return;
+    setTimeout(() => {
+      let total = smartFolders.length;
+      let once = 3;
+      let loopCount = total / once;
+      let countOfSend = 0;
+
+      function send() {
+        var start = countOfSend * once;
+        var arr = smartFolders.slice(start, start + once);
+        countOfSend += 1;
+
+        for (let i = 0; i < arr.length; i++) {
+          arr[i].imageCount = machinerySmartFolderCount(s, arr[i]);
+          if (!arr[i].pinyin) {
+            arr[i].pinyin = (window as any).tinyPinyin.convertToPinyin(arr[i].name);
+          }
+        }
+
+        s.$evalAsync();
+
+        loop();
+      }
+
+      function loop() {
+        if (countOfSend < loopCount) {
+          window.requestAnimationFrame(send);
+        }
+        else {
+          callback && callback();
+        }
+      }
+      loop();
+    }, 30);
+  }
+
+  // refreshSmartFolderCount（bundle 26287-26290 逐字）
+  fns["refreshSmartFolderCount"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+      ayncsUpdateSmartFoldersCount(s.smartFolderList, () => {});
+    }).apply(null, args);
+  };
+
+  // setSmartFoldersOrder + setSmartFolderOrder（bundle 41395-41422 逐字）
+  fns["setSmartFoldersOrder"] = setSmartFoldersOrder;
+
+  fns["setSmartFolderOrder"] = setSmartFolderOrder;
+
+  // setSmartFoldersSortIncrease + setSmartFolderSortIncrease（bundle 41423-41440 逐字）
+  fns["setSmartFoldersSortIncrease"] = setSmartFoldersSortIncrease;
+
+  fns["setSmartFolderSortIncrease"] = setSmartFolderSortIncrease;
+
+  // batchRenameSmartFolders（bundle 41654-41662 逐字）
+  fns["batchRenameSmartFolders"] = batchRenameSmartFolders;
+
+  // changeSmartFolderIcon / changeSmartFolderColor（bundle 41664-41687 逐字）
+  fns["changeSmartFolderIcon"] = changeSmartFolderIcon;
+
+  fns["changeSmartFolderColor"] = changeSmartFolderColor;
+
+  // changeSelectedSmartFoldersIcon / changeSelectedSmartFoldersColor（bundle 40022-40084 逐字）
+  fns["changeSelectedSmartFoldersIcon"] = changeSelectedSmartFoldersIcon;
+
+  fns["changeSelectedSmartFoldersColor"] = changeSelectedSmartFoldersColor;
+
+  // cloneSmartFolder（bundle 41689-41718 逐字；angular.copy→JSON 深拷）
+  fns["cloneSmartFolder"] = cloneSmartFolder;
+
+  // renameSmartFolder（bundle 41652-41662 邻接定义逐字）
+  fns["renameSmartFolder"] = renameSmartFolder;
+
+  // copySmartFolderLink（bundle 46617-46626 逐字）
+  fns["copySmartFolderLink"] = copySmartFolderLink;
+
+  // controller 闭包函数 removeSmartFolder（bundle 41851-41934 逐字；angular.copy→JSON 深拷）
+  function removeSmartFolderClosure(smartFolder: any, { ignoreSelectNext, ignoreRestore }: any) {
+    const s = getScope();
+    const w = window as any;
+
+    var message = $filter('i18n')('notify.folder.remove', [
+      { property: 'folder', value: smartFolder.name },
+    ]);
+
+    var children = s.smartFolders;
+    if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
+      let parent = s.smartFolderMappings[smartFolder.parent];
+      children = parent.children;
+    }
+    var origin = JSON.parse(JSON.stringify(children));
+    var idx = children.indexOf(smartFolder);
+
+    if (idx === -1) return;
+
+    children.splice(idx, 1);
+    delete s.smartFolderMappings[smartFolder.id];
+    w.QuickAccessManager.remove('smartFolder', smartFolder);
+
+    // 如果已經沒有資料夾
+    if (idx === 0) {
+      if (children[idx]) {
+        openSmartFolder(children[idx]);
+      } else {
+        s.currentSmartFolder = undefined;
+        syncPanelFromScope();
+        syncListFromScope();
+        machineryOpenAll(s);
+      }
+    }
+    // 如果還有資料夾
+    else {
+      if (children[idx]) {
+        openSmartFolder(children[idx]);
+      } else {
+        if (children[idx - 1]) {
+          openSmartFolder(children[idx - 1]);
+        } else {
+          s.currentSmartFolder = undefined;
+          syncPanelFromScope();
+          syncListFromScope();
+          machineryOpenAll(s);
+        }
+      }
+    }
+
+    // 如果声音效果是开启的
+    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+      s.removeSound && s.removeSound.play && s.removeSound.play();
+    }
+    machineryUpdateSidebarList(s);
+
+    $timeout(function () {
+      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+    }, 1000);
+
+    w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
+
+    if (!ignoreRestore) {
+      (s.$root.notify || s.notify).call(s.$root, {
+        message: message,
+        duration: 5000,
+      }, function () {
+        if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
+          let parent = s.smartFolderMappings[smartFolder.parent];
+          parent.children = origin;
+        }
+        else {
+          s.smartFolders = origin;
+        }
+        s.smartFolderMappings[smartFolder.id] = smartFolder;
+        treeWalkSafe(s.smartFolders, 'children', function (sf: any, parent: any, depth: any) {
+          s.smartFolderMappings[sf.id] = sf;
+        });
+        machineryUpdateSidebarList(s);
+        openSmartFolder(smartFolder);
+        s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+        s.$evalAsync();
+      });
+    }
+  }
+
+  // removeSmartFolder / removeSelectedSmartFolders（bundle 41831-42049 逐字）
+  fns["removeSmartFolder"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function (smartFolder: any) {
+      setTimeout(function () {
+        var removeConfirmMsg = $filter('i18n')('dialog.removeSmartFolder.desc', [
+          { property: 'folder', value: smartFolder.name },
+        ]);
+        swal({
+          html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${i18n.__('dialog.removeSmartFolder.title')}</h4>
+                            <p class="alert-desc">${removeConfirmMsg}</p>
+                        </div>
+                    `,
+          showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+          width: 400,
+          customClass: 'alert-box',
+          cancelButtonColor: '#777777',
+          confirmButtonText: i18n.__('dialog.removeSmartFolder.button'),
+          cancelButtonText: i18n.__('general.cancel'),
+        }).then(function () {
+          removeSmartFolderClosure(smartFolder, {});
+        });
+      }, 100);
+    }).apply(null, args);
+  };
+
+  fns["removeSelectedSmartFolders"] = function (...args) {
+    const s = getScope();
+    if (!s) return;
+    return (function () {
+      if (s.$root.selectedSmartFolders.length === 0) return;
+
+      var removeConfirmMsg = $filter('i18n')('dialog.removeSmartFolder.descMultiple', [
+        { property: 'count', value: s.$root.selectedSmartFolders.length },
+      ]);
+      swal({
+        html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${$filter('i18n')('dialog.removeSmartFolder.title')}</h4>
+                            <p class="alert-desc">${removeConfirmMsg}</p>
+                        </div>
+                    `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: 'alert-box',
+        cancelButtonColor: '#777777',
+        confirmButtonText: $filter('i18n')('dialog.removeSmartFolder.button'),
+        cancelButtonText: $filter('i18n')('general.cancel'),
+      }).then(function (result: any) {
+        s.$root.selectedSmartFolders.forEach(function (smartFolder: any) {
+          removeSmartFolderClosure(smartFolder, { ignoreRestore: true });
+        });
+        s.$root.selectedSmartFolders = [];
+      }, function () {});
+    }).apply(null, args);
+  };
+
+  // smartFolderExportAsPack（bundle 40267-40331 逐字；angular.extend→Object.assign）
+  fns["smartFolderExportAsPack"] = smartFolderExportAsPack;
+
+  // smartFolderExportAsFolder（bundle 40333-40430 逐字）
+  fns["smartFolderExportAsFolder"] = smartFolderExportAsFolder;
+
+  // newSmartFolder / newChildSmartFolder / newSmartFolderGroup / prependFolder（bundle 39866-39910 逐字）
+  fns["newSmartFolder"] = newSmartFolder;
+
+  fns["newChildSmartFolder"] = newChildSmartFolder;
+
+  fns["newSmartFolderGroup"] = newSmartFolderGroup;
+
+  fns["prependFolder"] = prependFolder;
+  // openNewSmartFolderContextMenu（bundle 39878-39910 逐字）
+  fns["openNewSmartFolderContextMenu"] = openNewSmartFolderContextMenu;
+  fns["openSmartFolderContextMenu"] = openSmartFolderContextMenu;
 }

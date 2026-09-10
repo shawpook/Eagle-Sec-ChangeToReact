@@ -5,6 +5,7 @@ import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
+import { getFolderFullPath } from '../core/itemDomain';
 
 /**
  * 阶段6：检查器状态 —— 快照自 EagleController scope + eagle.inspector 全局对象。
@@ -216,7 +217,7 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
         folderName[id] = folderMappings[id]?.name;
         folderColor[id] = folderMappings[id]?.iconColor;
         try {
-          folderFullPath[id] = typeof scope.getFolderFullPath === 'function' ? String(scope.getFolderFullPath(folderMappings[id]) || '') : '';
+          folderFullPath[id] = typeof scope.getFolderFullPath === 'function' ? String(getFolderFullPath(folderMappings[id]) || '') : '';
         } catch (err) {
           folderFullPath[id] = '';
         }

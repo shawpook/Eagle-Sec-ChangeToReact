@@ -7,7 +7,10 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
 import { max, uniq } from '../../utils/lang';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-
+import { machineryChangeSidebarIndex } from '../../core/dataMachinery';
+import { openItemLocation } from '../../core/itemDomain';
+import { openFolder, openSmartFolder } from '../../services/folderCoreService';
+import { openTag } from '../../services/batchOpsService';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -596,18 +599,18 @@ export function QuickSearchModal() {
     const mode = modeRef.current;
     if (!body) return;
     if (mode === 'FOLDERS') {
-      scopeApply(body, (s: any) => s.openFolder(target));
+      scopeApply(body, (s: any) => openFolder(target));
       addQuickSearchFolderHistory(target.id);
       setTimeout(() => {
         scopeApply(getBodyScope(), (s: any) => {
-          s.changeSidebarIndex(target);
+          machineryChangeSidebarIndex(s, target);
           if (typeof s.$evalAsync === 'function') s.$evalAsync();
         });
       }, 200);
     } else if (mode === 'TAGS') {
       scopeApply(body, (s: any) => {
         s.viewMode = undefined;
-        s.openTag(target.name);
+        openTag(target.name);
       });
     } else if (mode === 'ITEMS') {
       scopeApply(body, (s: any) => {
@@ -615,14 +618,14 @@ export function QuickSearchModal() {
         if (target.folders && target.folders[0]) {
           folder = s.folderMappings[target.folders[0]];
         }
-        s.openItemLocation(target, folder);
+        openItemLocation(target, folder);
       });
     } else {
-      scopeApply(body, (s: any) => s.openSmartFolder(target));
+      scopeApply(body, (s: any) => openSmartFolder(target));
       addQuickSearchSmartFolderHistory(target.id);
       setTimeout(() => {
         scopeApply(getBodyScope(), (s: any) => {
-          s.changeSidebarIndex(target);
+          machineryChangeSidebarIndex(s, target);
           if (typeof s.$evalAsync === 'function') s.$evalAsync();
         });
       }, 200);
@@ -781,7 +784,7 @@ export function QuickSearchModal() {
               onClick={(e) => {
                 e.stopPropagation();
                 scopeApply(getBodyScope(), (s: any) =>
-                  kind === 'folder' ? s.openFolder(s.folderMappings[folder.parent]) : s.openSmartFolder(s.smartFolderMappings[folder.parent])
+                  kind === 'folder' ? openFolder(s.folderMappings[folder.parent]) : openSmartFolder(s.smartFolderMappings[folder.parent])
                 );
                 closeViaScope();
               }}
@@ -837,7 +840,7 @@ export function QuickSearchModal() {
             <span
               key={fi}
               className="parent"
-              onClick={() => scopeApply(getBodyScope(), (s: any) => s.openItemLocation(item, s.folderMappings[folderId]))}
+              onClick={() => scopeApply(getBodyScope(), (s: any) => openItemLocation(item, s.folderMappings[folderId]))}
             >
               <a>{iv(body?.folderMappings?.[folderId]?.name)} </a>
             </span>

@@ -15,6 +15,8 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCheckListItemsLessThanContainer, machineryRelayout, machineryScrollToCurrentItem, machinerySmartZoom, machineryUpdateZoomRatio } from '../core/dataMachinery';
+import { getRatioExp, getRatioNonExp } from './viewOpsService';
 
 let saveListHeightTimeout: any = null;
 
@@ -87,9 +89,9 @@ export function gridAdjustLayoutWidth(s: any, increases: any): void {
     w.$("#box-container").attr("box-size", height);
     var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
     if (margin === Infinity) margin = 10;
-    s.relayout(margin);
+    machineryRelayout(s, margin);
 
-    s.scrollToCurrentItem();
+    machineryScrollToCurrentItem(s);
   }
 }
 
@@ -104,9 +106,9 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.changeListHeight();
+    machineryChangeListHeight(s);
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      s.adjustLayoutWidth(0);
+      machineryAdjustLayoutWidth(s, 0);
       gridSaveListHeight(s, s.imageSize.height);
     }
   } else {
@@ -129,7 +131,7 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
     syncDetailFromScope();
     localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
     s.imageSize.zoomRatio = 100;
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
+    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
 
     if (!noAnimation) {
       w.$("#detail-container").addClass("zooming");
@@ -138,7 +140,7 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
       }, 300);
     }
 
-    s.smartZoom(undefined, true);
+    machinerySmartZoom(s, undefined, true);
   }
 }
 
@@ -148,32 +150,32 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
 export function gridZoomIn(s: any, event: any): void {
   event && event.preventDefault && event.preventDefault();
   if (!s.isDetailMode) {
-    s.adjustLayoutWidth(-1);
+    machineryAdjustLayoutWidth(s, -1);
     gridSaveListHeight(s, s.imageSize.height);
   } else {
     var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
-    var ratioExp = s.getRatioExp(ratio);
+    var ratioExp = getRatioExp(ratio);
     if (ratioExp >= 400) { ratioExp = 800; } else if (ratioExp >= 200) { ratioExp = 400; } else if (ratioExp >= 100) { ratioExp = 200; } else if (ratioExp >= 50) { ratioExp = 100; } else if (ratioExp >= 25) { ratioExp = 50; } else if (ratioExp >= 10) { ratioExp = 25; } else if (ratioExp >= 5) { ratioExp = 10; } else { ratioExp = 5; }
     if (ratioExp > 800) ratioExp = 800;
-    s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-    s.updateZoomRatio(undefined, undefined, undefined, true);
+    s.imageSize.zoomRatio = getRatioNonExp(ratioExp);
+    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
+    machineryUpdateZoomRatio(s, undefined, undefined, undefined, true);
   }
 }
 
 export function gridZoomOut(s: any, event: any): void {
   event && event.preventDefault && event.preventDefault();
   if (!s.isDetailMode) {
-    s.adjustLayoutWidth(1);
+    machineryAdjustLayoutWidth(s, 1);
     gridSaveListHeight(s, s.imageSize.height);
-    s.checkListItemsLessThanContainer();
+    machineryCheckListItemsLessThanContainer(s);
   } else {
     var ratio = Math.floor(s.imageSize.zoomRatio / 5) * 5;
-    var ratioExp = s.getRatioExp(ratio);
+    var ratioExp = getRatioExp(ratio);
     if (ratioExp <= 10) { ratioExp = 5; } else if (ratioExp <= 25) { ratioExp = 10; } else if (ratioExp <= 50) { ratioExp = 25; } else if (ratioExp <= 100) { ratioExp = 50; } else if (ratioExp <= 200) { ratioExp = 100; } else if (ratioExp <= 400) { ratioExp = 200; } else if (ratioExp <= 800) { ratioExp = 400; }
-    s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-    s.updateZoomRatio(undefined, undefined, undefined, true);
+    s.imageSize.zoomRatio = getRatioNonExp(ratioExp);
+    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
+    machineryUpdateZoomRatio(s, undefined, undefined, undefined, true);
   }
 }
 
@@ -201,7 +203,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "GridLayout";
       $container.removeClass(allLayout).addClass("grid-layout");
-      s.relayout();
+      machineryRelayout(s);
       // $scope.adjustLayoutWidth(0);
       w.electronLog && w.electronLog.info("[app] Layout: Waterfall");
       break;
@@ -212,7 +214,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "SquareLayout";
       $container.removeClass(allLayout).addClass("grid-layout");
-      s.relayout();
+      machineryRelayout(s);
       // $scope.adjustLayoutWidth(0);
       w.electronLog && w.electronLog.info("[app] Layout: Grid");
       break;
@@ -223,7 +225,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "ListLayout";
       $container.removeClass(allLayout).addClass("list-layout");
-      s.relayout();
+      machineryRelayout(s);
       w.electronLog && w.electronLog.info("[app] Layout: List");
       break;
     default:
@@ -232,7 +234,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "JustifiedLayout";
       $container.removeClass(allLayout).addClass("justified-layout");
-      s.relayout();
+      machineryRelayout(s);
       w.electronLog && w.electronLog.info("[app] Layout: Justified");
   }
 

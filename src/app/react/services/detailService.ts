@@ -8,10 +8,11 @@
  * detailHooks 的 updateZoomRatio ×1 改直调。
  */
 import { detailZoom } from '../core/smoothZoomEngine';
-import { machineryGetRatioExp, machineryGetRatioNonExp } from '../core/dataMachinery';
+import { machineryEnterDetailMode, machineryGetRatioExp, machineryGetRatioNonExp, machineryLeaveDetailMode, machineryRenameCurrentFolder } from '../core/dataMachinery';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
-
+import { openFolder } from './folderCoreService';
+import { saveCrop } from './imageOpsService';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;
@@ -194,7 +195,7 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
   const w = window as any;
   if (w.$(".swal2-container").length > 0) return;
   if (s.isCropMode) {
-    s.saveCrop();
+    saveCrop();
     return;
   }
   if (isInline !== undefined) {
@@ -205,21 +206,21 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
     }
   }
   if (s.$root.currentFocus == "sidebar" || s.$root.currentFocus == "tags") {
-    s.renameCurrentFolder($event);
+    machineryRenameCurrentFolder(s, $event);
   }
   else {
     if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
       var folderId = Object.keys(s.selectedFolderMappings)[0];
       if (s.folderMappings[folderId]) {
-        s.openFolder(s.folderMappings[folderId]);
+        openFolder(s.folderMappings[folderId]);
       }
     }
     else {
       if (s.isDetailMode) {
-        s.leaveDetailMode($event);
+        machineryLeaveDetailMode(s, $event);
       }
       else {
-        s.enterDetailMode($event, null);
+        machineryEnterDetailMode(s, $event, null);
       }
     }
   }

@@ -14,12 +14,12 @@
  * - $filter → 双轨 shim；ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateFilterCounts, machineryCheckOperationSafety, machineryRelayout, machineryUpdateItemsView, machineryUpdateSliderPosition } from '../core/dataMachinery';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncBodyFromScope } from '../store/bodyState';
 import { getBodyScope } from '../core/appCore';
-
+import { excludeWithTag } from './batchOpsService';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -51,10 +51,9 @@ const $filter: any = (name: string) => {
 };
 
 /* 12 fns（逐字；fns/getScope 为闭包注入） */
-export function installFontTagFns(fns: any, getScope: any): void {
-  fns["deactivateFont"] = function (...args) {
+export function deactivateFont(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (font, {showNotify, updateView}) {
             if (!font) return;
@@ -74,7 +73,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
                     eagle.filter.filterCounts['fontActivated']['deactivated']++;
                 }
                 if (updateView) {
-                    s.updateItemsView([font]);
+                    machineryUpdateItemsView(s, [font]);
                 }
             }
             else {
@@ -87,7 +86,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
                     fontExt: font.ext
                 });
                 font.deactivating = true;
-                s.updateItemsView([font]);
+                machineryUpdateItemsView(s, [font]);
             }
 
             ipcRenderer.send('electron-info', `[app] Unstall font: ${rawPath}`);
@@ -102,11 +101,11 @@ export function installFontTagFns(fns: any, getScope: any): void {
                 });
             }
         }).apply(null, args);
-  };
+}
 
-  fns["activateFont"] = function (...args) {
+export function activateFont(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (font, {showNotify, updateView}) {
             if (!font) return;
@@ -126,7 +125,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
                     eagle.filter.filterCounts['fontActivated']['deactivated']--;
                 }
                 if (updateView) {
-                    s.updateItemsView([font]);
+                    machineryUpdateItemsView(s, [font]);
                 }
             }
             else {
@@ -139,7 +138,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
                     fontPath: rawPath
                 });
                 font.activating = true;
-                s.updateItemsView([font]);
+                machineryUpdateItemsView(s, [font]);
             }
 
             ipcRenderer.send('electron-info', `[app] Install font: ${rawPath}`);
@@ -154,16 +153,15 @@ export function installFontTagFns(fns: any, getScope: any): void {
                 });
             }
         }).apply(null, args);
-  };
+}
 
-  // renameFontsWithFullName（bundle 32885-32927）
-  fns["renameFontsWithFullName"] = function (...args) {
+export function renameFontsWithFullName(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (items) {
         if (items && items.length > 0) {
-            s.checkOperationSafety(function () {
+            machineryCheckOperationSafety(s, function () {
                 var updates = [];
                 var lng = s.$root.preferences.general.language;
                 var preferLng = 'en';
@@ -196,7 +194,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
                 });
                 ayncsImagesChange(updates);
                 hiddenByCurrentFilter(updates);
-                s.updateItemsView(items);
+                machineryUpdateItemsView(s, items);
                 s.calculateImageBinding({}, function () {
                     s.rebindRefresh(true);
                     s.updateSelection();
@@ -204,12 +202,11 @@ export function installFontTagFns(fns: any, getScope: any): void {
             }, 10);
         }
     }).apply(null, args);
-  };
+}
 
-  // activateFonts（bundle 32929-32947；activateFont 单数版已在 fns 表 346）
-  fns["activateFonts"] = function (...args) {
+export function activateFonts(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (items) {
         if (!items || items.length === 0) return;
@@ -220,7 +217,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
             s.activateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
-            s.updateItemsView(items);
+            machineryUpdateItemsView(s, items);
         }
         s.notify({
             message: $filter('i18n')("notify.fonts.activate", [
@@ -230,12 +227,11 @@ export function installFontTagFns(fns: any, getScope: any): void {
         });
         analytics.event("Font", "Install");
     }).apply(null, args);
-  };
+}
 
-  // deactivateFonts（bundle 32996-33012；deactivateFont 单数版已在 fns 表 2755）
-  fns["deactivateFonts"] = function (...args) {
+export function deactivateFonts(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (items) {
         if (!fs.existsSync(fontFolder)) { return; }
@@ -243,7 +239,7 @@ export function installFontTagFns(fns: any, getScope: any): void {
             s.deactivateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
-            s.updateItemsView(items);
+            machineryUpdateItemsView(s, items);
         }
 
         s.notify({
@@ -254,16 +250,15 @@ export function installFontTagFns(fns: any, getScope: any): void {
         });
         analytics.event("Font", "Uninstall");
     }).apply(null, args);
-  };
+}
 
-  // changeFontDefaultLang（bundle 32874-32883）
-  fns["changeFontDefaultLang"] = function (...args) {
+export function changeFontDefaultLang(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (items, lang) {
         if (items && items.length > 0) {
-            s.checkOperationSafety(function () {
+            machineryCheckOperationSafety(s, function () {
                 items.forEach(function (item) {
                     item.fontMetas.preferLng = lang;
                 });
@@ -271,11 +266,11 @@ export function installFontTagFns(fns: any, getScope: any): void {
             }, 10);
         }
     }).apply(null, args);
-  };
+}
 
-  fns["isFontActivate"] = function (...args) {
+export function isFontActivate(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (item) {
             try {
@@ -287,27 +282,27 @@ export function installFontTagFns(fns: any, getScope: any): void {
                 return false;
             }
         }).apply(null, args);
-  };
+}
 
-  fns["getFontPath"] = function (...args) {
+export function getFontPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function() {
             if (s.current) {
                 return `./font-viewer/font-viewer.html?id=${s.current.id}&theme=${s.theme}&language=${s.language}`;
             }
         }).apply(null, args);
-  };
+}
 
-  fns["filterWithTag"] = function (...args) {
+export function filterWithTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (tag) {
 
             if (tag.isExcluded) {
-                s.excludeWithTag(tag);
+                excludeWithTag(tag);
                 return;
             }
 
@@ -344,13 +339,13 @@ export function installFontTagFns(fns: any, getScope: any): void {
             }
 
             s.filterContent();
-            s.calculateFilterCounts();
+            machineryCalculateFilterCounts(s);
         }).apply(null, args);
-  };
+}
 
-  fns["renameTagGroupKeyup"] = function (...args) {
+export function renameTagGroupKeyup(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (event, __lv_group, newName) {
             event.stopPropagation();
@@ -365,11 +360,11 @@ export function installFontTagFns(fns: any, getScope: any): void {
             }
             return false;
         }).apply(null, args);
-  };
+}
 
-  fns["renameTagGroupBlur"] = function (...args) {
+export function renameTagGroupBlur(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (__lv_group, newName) {
             if (newName) {
@@ -377,11 +372,11 @@ export function installFontTagFns(fns: any, getScope: any): void {
                 delete __lv_group.editable;
             }
         }).apply(null, args);
-  };
+}
 
-  fns["onTagSidebarResize"] = function (...args) {
+export function onTagSidebarResize(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(e, ui) {
             if (ui && ui.size.width >= 200) {
@@ -390,14 +385,43 @@ export function installFontTagFns(fns: any, getScope: any): void {
                 syncSidebarFromScope();
                 syncTagManagerFromScope();
                 s.$root.$broadcast('$$rebind::refreshContainSize');
-                // s.updateSliderPosition();
+                // machineryUpdateSliderPosition(s);
                 clearTimeout(__lv_onTagSidebarResizeTimeout);
                 __lv_onTagSidebarResizeTimeout = setTimeout(function () {
-                    // s.relayout();
+                    // machineryRelayout(s);
                     // s.offsetScrollbar(30);
                     localStorage.setItem("eagle.containerSize.tagSidebar", ui.size.width);
                 }, 500);
             }
         }).apply(null, args);
-  };
+}
+
+export function installFontTagFns(fns: any, getScope: any): void {
+  fns["deactivateFont"] = deactivateFont;
+
+  fns["activateFont"] = activateFont;
+
+  // renameFontsWithFullName（bundle 32885-32927）
+  fns["renameFontsWithFullName"] = renameFontsWithFullName;
+
+  // activateFonts（bundle 32929-32947；activateFont 单数版已在 fns 表 346）
+  fns["activateFonts"] = activateFonts;
+
+  // deactivateFonts（bundle 32996-33012；deactivateFont 单数版已在 fns 表 2755）
+  fns["deactivateFonts"] = deactivateFonts;
+
+  // changeFontDefaultLang（bundle 32874-32883）
+  fns["changeFontDefaultLang"] = changeFontDefaultLang;
+
+  fns["isFontActivate"] = isFontActivate;
+
+  fns["getFontPath"] = getFontPath;
+
+  fns["filterWithTag"] = filterWithTag;
+
+  fns["renameTagGroupKeyup"] = renameTagGroupKeyup;
+
+  fns["renameTagGroupBlur"] = renameTagGroupBlur;
+
+  fns["onTagSidebarResize"] = onTagSidebarResize;
 }

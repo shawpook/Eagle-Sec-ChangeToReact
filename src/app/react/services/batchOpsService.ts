@@ -20,7 +20,7 @@
  */
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCheckOperationSafety, machineryFindDupclipate, machineryForceFitImageSize, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelection, machineryLeaveDetailMode, machineryRelayout, machineryResetPage, machineryZoom } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
@@ -30,7 +30,9 @@ import { syncFilterFromScope } from '../store/filterState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
-
+import { checkDiskSpace, exportFolder } from './folderCoreService';
+import { select } from './selectionService';
+import { addImagesToFolder } from './folderCoreService';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -84,10 +86,9 @@ export function cleanAllError(...args: any[]) {
 }
 
 /* 19 fns（逐字；fns/getScope 为闭包注入） */
-export function installBatchOpsFns(fns: any, getScope: any): void {
-  fns["cancelEmptyTrash"] = function (...args) {
+export function cancelEmptyTrash(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
             s.isCleaningTrash = false;
@@ -97,10 +98,10 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             IPCHelper.send('palette-resume');
             IPCHelper.sendTo((window as any).backgroundWindowID, 'cancel-empty-trash');
     }).apply(null, args);
-  };
+}
 
-  fns["emptyTrash"] = function (...args) {
-    const s = getScope();
+export function emptyTrash(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
             if (s.trash && s.trash.length > 0) {
@@ -148,7 +149,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                     syncListFromScope();
                     s.updateSelection();
                     s.rebindRefresh();
-                    s.findDupclipate(undefined);
+                    machineryFindDupclipate(s, undefined);
 
                     // 更新進度
                     s.removeProgress = 0;
@@ -166,11 +167,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 });
             }
     }).apply(null, args);
-  };
+}
 
-  fns["addToFolders"] = function (...args) {
+export function addToFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (e) {
             if (s.selected.length > 0) {
@@ -182,11 +183,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 });
             }
     }).apply(null, args);
-  };
+}
 
-  fns["addToRecentFolders"] = function (...args) {
+export function addToRecentFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (folderIDs) {
             if (!folderIDs || folderIDs.length == 0 ) return;
@@ -205,26 +206,25 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
 
             localStorage.setItem("recentMoveFolders", JSON.stringify(recentMoveFolders));
         }).apply(null, args);
-  };
+}
 
-  // addToLastUsedFolder（bundle 43211-43251 全体）
-  fns["addToLastUsedFolder"] = function (...args) {
+export function addToLastUsedFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
-        s.checkOperationSafety(function () {
-            var recentFolders = s.getRecentFolders();
+        machineryCheckOperationSafety(s, function () {
+            var recentFolders = machineryGetRecentFolders(s);
             if (!recentFolders || recentFolders.length === 0) return;
             if (!recentFolders[0] || !s.selected[0]) return;
             var folder = recentFolders[0];
             s.addToRecentFolders([folder.id]);
-            s.addImagesToFolder(s.selected, folder);
+            addImagesToFolder(s.selected, folder);
             if (s.viewMode === 'unfiled') {
-                var itemElements = s.getSelectedItemElements();
+                var itemElements = machineryGetSelectedItemElements(s);
                 s.$root.$broadcast("gl:removeItems", itemElements);
                 // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-                s.lastIndex = s.getSelection().start;
+                s.lastIndex = machineryGetSelection(s).start;
                 var next = s.allData[s.lastIndex + s.selected.length];
                 var prev = s.allData[s.lastIndex - 1];
                 if (next) {
@@ -244,18 +244,16 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 else {
                     s.selected = [];
                     syncInspectorFromScope();
-                    s.leaveDetailMode();
+                    machineryLeaveDetailMode(s);
                 }
             }
         });
     }).apply(null, args);
-  };
+}
 
-  fns["cleanAllError"] = cleanAllError;
-
-  fns["cleanSelected"] = function (...args) {
+export function cleanSelected(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(event) {
             // 忽略事件传送
@@ -274,12 +272,12 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 s.updateSelection();
             }, 100);
         }).apply(null, args);
-  };
+}
 
-  fns["copyTags"] = function (...args) {
+export function copyTags(...args: any[]) {
     if (!__cc_copyTags) {
       __cc_copyTags = throttle(function () {
-        const s = getScope();
+        const s = getBodyScope();
         if (!s) return;
         eagle.inspector.copyTags();
         s.notify({
@@ -289,12 +287,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
       }, 500);
     }
     return __cc_copyTags(...args);
-  };
+}
 
-  // pasteTags（bundle 30236-30253）
-  fns["pasteTags"] = function (...args) {
+export function pasteTags(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(event) {
         event && event.preventDefault();
@@ -314,12 +311,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${s.selected.length} files`);
         }
     }).apply(null, args);
-  };
+}
 
-  // removeFromFolder（bundle 30074-30176 全体）
-  fns["removeFromFolder"] = function (...args) {
+export function removeFromFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(event, folderId) {
 
@@ -355,7 +351,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
 
         // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
         if (s.currentFolder && s.currentFolder.id === folderId) {
-            s.lastIndex = s.getSelection().start;
+            s.lastIndex = machineryGetSelection(s).start;
             var next = s.allData[s.lastIndex + s.selected.length];
             var prev = s.allData[s.lastIndex - 1];
             if (next) {
@@ -377,18 +373,18 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             } else {
                 s.selected = [];
                 syncInspectorFromScope();
-                s.leaveDetailMode();
+                machineryLeaveDetailMode(s);
             }
 
             if (s.isDetailMode) {
                 $timeout(function() {
-                    s.forceFitImageSize(s.current);
-                    s.zoom();
+                    machineryForceFitImageSize(s, s.current);
+                    machineryZoom(s);
                 }, 100);
             }
             ScrollbarSaver.saveScrollPosition();
 
-            var itemElements = s.getSelectedItemElements();
+            var itemElements = machineryGetSelectedItemElements(s);
             s.$root.$broadcast("gl:removeItems", itemElements);
         }
 
@@ -426,24 +422,24 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             ayncsImagesChange(origins);
         });
     }).apply(null, args);
-  };
+}
 
-  fns["getSelectedTags"] = function (...args) {
+export function getSelectedTags(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
             if (!s.selectedTags) return [];
             return Object.keys(s.selectedTags);
         }).apply(null, args);
-  };
+}
 
-  fns["getSelectedItemElements"] = function (...args) {
+export function getSelectedItemElements(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
-            var items = s.getSelectedItems();
+            var items = machineryGetSelectedItems(s);
             items = items.map(function (item) {
                 // if (!item.el) {
                 //     item.el = $(item.content)[0];
@@ -453,11 +449,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             });
             return items;
         }).apply(null, args);
-  };
+}
 
-  fns["scrollToSelectedItem"] = function (...args) {
+export function scrollToSelectedItem(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function() {
             var __lv_target = s.selected[0];
@@ -486,7 +482,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                         // 東西不在畫面上，強制更新畫面然後定位
                         if ($(`#box-${__lv_target.id}`).length === 0 || startPage !== s.startCursor) {
                             s.rebindRefresh(undefined, undefined, startPage);
-                            s.relayout();    
+                            machineryRelayout(s);    
                         }
                         $("#box-container").css("visibility", "hidden");
                         s.startCursor = startPage;
@@ -494,9 +490,9 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                         $timeout(function () {
                             // s.selected = originSelected;
                             s.selected.forEach(function (item) {
-                                s.select(undefined, item);
+                                select(undefined, item);
                             })
-                            s.autoScroll();
+                            machineryAutoScroll(s);
                             setTimeout(function () {
                                 $("#box-container").css("visibility", "initial");
                             }, 50);
@@ -507,11 +503,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 }
             }
         }).apply(null, args);
-  };
+}
 
-  fns["excludeWithTag"] = function (...args) {
+export function excludeWithTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (tag) {
             // 已存在
@@ -545,14 +541,14 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             syncFilterFromScope();
             s.filterContent();
         }).apply(null, args);
-  };
+}
 
-  fns["openTag"] = function (...args) {
+export function openTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(tag, ignoreHistory) {
-            s.resetPage();
+            machineryResetPage(s);
             s.$root.currentFocus = "content";
             s.currentFolder = undefined;
             syncPanelFromScope();
@@ -561,16 +557,15 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             s.currentFolderChildren = undefined;
             __lv_TagManager.filterWithTags([tag], ignoreHistory);
         }).apply(null, args);
-  };
+}
 
-  // exportSelectedAsFolder（bundle 26364-26449）
-  fns["exportSelectedAsFolder"] = function (...args) {
+export function exportSelectedAsFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         if (s.selected.length === 0) return;
-        s.exportFolder(function (savePath) {
+        exportFolder(function (savePath) {
             if (savePath) {
                 var imageNames = {};
                 for (var i = 0; i < s.selected.length; i++) {
@@ -579,7 +574,7 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
                 }
 
                 var needSpace = eagle.inspector.calculateFileSize(s.selected);
-                s.checkDiskSpace(savePath, needSpace, function () {
+                checkDiskSpace(savePath, needSpace, function () {
 
                     fs.readdir(savePath, function(err, files) {
 
@@ -654,12 +649,11 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             }
         });
     }).apply(null, args);
-  };
+}
 
-  // exportSelectedAsEaglepack（bundle 26589-26613）
-  fns["exportSelectedAsEaglepack"] = function (...args) {
+export function exportSelectedAsEaglepack(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         if (s.selected.length === 0) return;
@@ -686,24 +680,21 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             }
         });
     }).apply(null, args);
-  };
+}
 
-  // exportSelectedAsFormat（bundle 26633-26636）
-  fns["exportSelectedAsFormat"] = function (...args) {
+export function exportSelectedAsFormat(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         if (s.selected.length === 0) return;
         eagle.customExport.open(s.selected);
     }).apply(null, args);
-  };
+}
 
-  // exportSelectedToCsv（bundle 26638-26730；bundle 体内局部 const fs = require('fs')
-  // 与模块级 fs 同物，收编）
-  fns["exportSelectedToCsv"] = function (...args) {
+export function exportSelectedToCsv(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         if (s.selected.length === 0) return;
@@ -796,5 +787,52 @@ export function installBatchOpsFns(fns: any, getScope: any): void {
             electronLog.error('[App] Export CSV failed:', error);
         }
     }).apply(null, args);
-  };
+}
+
+export function installBatchOpsFns(fns: any, getScope: any): void {
+  fns["cancelEmptyTrash"] = cancelEmptyTrash;
+
+  fns["emptyTrash"] = emptyTrash;
+
+  fns["addToFolders"] = addToFolders;
+
+  fns["addToRecentFolders"] = addToRecentFolders;
+
+  // addToLastUsedFolder（bundle 43211-43251 全体）
+  fns["addToLastUsedFolder"] = addToLastUsedFolder;
+
+  fns["cleanAllError"] = cleanAllError;
+
+  fns["cleanSelected"] = cleanSelected;
+
+  fns["copyTags"] = copyTags;
+
+  // pasteTags（bundle 30236-30253）
+  fns["pasteTags"] = pasteTags;
+
+  // removeFromFolder（bundle 30074-30176 全体）
+  fns["removeFromFolder"] = removeFromFolder;
+
+  fns["getSelectedTags"] = getSelectedTags;
+
+  fns["getSelectedItemElements"] = getSelectedItemElements;
+
+  fns["scrollToSelectedItem"] = scrollToSelectedItem;
+
+  fns["excludeWithTag"] = excludeWithTag;
+
+  fns["openTag"] = openTag;
+
+  // exportSelectedAsFolder（bundle 26364-26449）
+  fns["exportSelectedAsFolder"] = exportSelectedAsFolder;
+
+  // exportSelectedAsEaglepack（bundle 26589-26613）
+  fns["exportSelectedAsEaglepack"] = exportSelectedAsEaglepack;
+
+  // exportSelectedAsFormat（bundle 26633-26636）
+  fns["exportSelectedAsFormat"] = exportSelectedAsFormat;
+
+  // exportSelectedToCsv（bundle 26638-26730；bundle 体内局部 const fs = require('fs')
+  // 与模块级 fs 同物，收编）
+  fns["exportSelectedToCsv"] = exportSelectedToCsv;
 }

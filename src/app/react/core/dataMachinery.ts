@@ -8475,7 +8475,7 @@ export function machineryToggleFilterByType(s: any): any {
 
 /* getChildFoldersMaps/Map（bundle 31890/31901 逐字，controller 闭包——供 multipleOpenFolder
    与 fns 表裸引用后备） */
-function machineryGetChildFoldersMaps(s: any, folders: any): any {
+export function machineryGetChildFoldersMaps(s: any, folders: any): any {
   const w = window as any;
   var childs: any = {};
   for (var i = 0; i < folders.length; i++) {
@@ -8487,7 +8487,7 @@ function machineryGetChildFoldersMaps(s: any, folders: any): any {
   return childs;
 }
 
-function machineryGetChildFoldersMap(s: any, folder: any): any {
+export function machineryGetChildFoldersMap(s: any, folder: any): any {
   const w = window as any;
   var childs: any = {};
   w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {

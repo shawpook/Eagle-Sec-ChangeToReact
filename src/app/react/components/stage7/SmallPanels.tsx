@@ -12,6 +12,8 @@ import { CornerBtns } from '../toolbar/Toolbar';
 import { $, getIpc, getCurrentWindow, req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { changeOrderBy } from '../../core/miscDomain';
+import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -145,16 +147,16 @@ export function LayoutPanel() {
       s.layout = layout;
       switch (layout) {
         case 'GridLayout':
-          if (typeof s.switchGridLayout === 'function') s.switchGridLayout();
+          if (typeof s.switchGridLayout === 'function') switchGridLayout();
           break;
         case 'JustifiedLayout':
-          if (typeof s.switchJustifiedLayout === 'function') s.switchJustifiedLayout();
+          if (typeof s.switchJustifiedLayout === 'function') switchJustifiedLayout();
           break;
         case 'SquareLayout':
-          if (typeof s.switchSquareLayout === 'function') s.switchSquareLayout();
+          if (typeof s.switchSquareLayout === 'function') switchSquareLayout();
           break;
         case 'ListLayout':
-          if (typeof s.switchListLayout === 'function') s.switchListLayout();
+          if (typeof s.switchListLayout === 'function') switchListLayout();
           break;
       }
     });
@@ -167,7 +169,7 @@ export function LayoutPanel() {
       } else if (s[model]) {
         s[model].orderBy = value === 'DEFAULT' ? '' : value;
       }
-      if (typeof s.changeOrderBy === 'function') s.changeOrderBy(value === 'DEFAULT' ? '' : value);
+      if (typeof s.changeOrderBy === 'function') changeOrderBy(value === 'DEFAULT' ? '' : value);
     });
   };
 

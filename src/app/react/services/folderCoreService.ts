@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryGetFolderParentChilder } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -27,7 +27,8 @@ import { syncFolderLock } from '../store/lockState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { debounce } from '../utils/func';
-
+import { getFolderFullPath } from '../core/itemDomain';
+import { addToRecentFolders } from './batchOpsService';
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const remote: any = _req('@electron/remote');
@@ -43,10 +44,9 @@ const $filter: any = (name: string) => {
 };
 
 /* 7 fns（逐字；fns/getScope 为闭包注入） */
-export function installFolderCoreFns(fns: any, getScope: any): void {
-  fns["createFolder"] = function (...args) {
+export function createFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function ({ name, parentID, sibling, position = "top", callback }) {
 
@@ -101,11 +101,11 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             }
 
             s.folderMappings[folder.id] = folder;
-            s.addToRecentFolders([folder.id]);
-            s.updateSidebarList();
+            addToRecentFolders([folder.id]);
+            machineryUpdateSidebarList(s);
             s.calculateImageBinding({ ignoreSort: true }, function() {
-                s.refreshSubfolderList();
-                s.saveFolder();
+                machineryRefreshSubfolderList(s);
+                machinerySaveFolder(s);
                 if (callback) callback(folder);
                 if (folder.parent) {
                     electronLog && electronLog.info(`[app] New sub-folder: ${folder.id}, parent: ${folder.parent}`);
@@ -116,11 +116,11 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 analytics.event('Folder', 'Create');
             });
     }).apply(null, args);
-  };
+}
 
-  fns["newFolder"] = function (...args) {
+export function newFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(parent, isSubFolder, isSiblingFolder, ignoreAutoOpen) {
 
@@ -209,17 +209,17 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             }
 
             s.folderMappings[folder.id] = folder;
-			s.addToRecentFolders([folder.id]);
+			addToRecentFolders([folder.id]);
 			
             setTimeout(function() { 
-                s.changeSidebarIndex(folder); 
+                machineryChangeSidebarIndex(s, folder); 
                 s.$evalAsync();
                 setTimeout(function() { $("#folder-input-" + folder.id).focus().select(); }, 100);
                 setTimeout(function() { $("#folder-input-" + folder.id).focus().select(); }, 200);
             }, 150);
 
             setTimeout(function() { 
-                s.changeSidebarIndex(folder); 
+                machineryChangeSidebarIndex(s, folder); 
                 s.$evalAsync();
                 setTimeout(function() { 
                     if ($("#folder-input-" + folder.id + ":focus").length === 0) {
@@ -228,7 +228,7 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 }, 100);
             }, 250);
 
-            s.updateSidebarList();
+            machineryUpdateSidebarList(s);
 
             // Note: 如果用戶當前選擇多個文件，表示正在分類，這時候不要跳轉是比較好的選擇
             if (s.selected.length === 0 && !ignoreAutoOpen) {
@@ -236,8 +236,8 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             }
             setTimeout(function() {
                 s.calculateImageBinding({ ignoreSort: true }, function() {
-                    s.refreshSubfolderList();
-                    s.saveFolder();
+                    machineryRefreshSubfolderList(s);
+                    machinerySaveFolder(s);
                     if (folder.parent) {
                         electronLog && electronLog.info(`[app] New sub-folder: ${folder.id}, parent: ${folder.parent}`);
                     }
@@ -248,12 +248,11 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 });
             }, 300);
         }).apply(null, args);
-  };
+}
 
-  // newFolderWidthSelection（bundle 40442-40531 全体，含 sanitizeFolderName 内层）
-  fns["newFolderWidthSelection"] = function (...args) {
+export function newFolderWidthSelection(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
         swal({
@@ -324,8 +323,8 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             };
             s.folders.splice(s.folders.length, 0, folder);
             s.folderMappings[folder.id] = folder;
-            s.updateSidebarList();
-            s.addToRecentFolders([folder.id]);
+            machineryUpdateSidebarList(s);
+            addToRecentFolders([folder.id]);
 
             // 添加圖片
             s.selected.forEach(function(image) {
@@ -339,17 +338,17 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             });
             s.openFolder(folder);
             setTimeout(function() {
-                s.saveFolder();
+                machinerySaveFolder(s);
             }, 1000);
             electronLog && electronLog.info(`[app] Create new folder ${folder.name}(${folder.id}) with ${s.selected.length} files`);
             analytics.event('Folder', 'Create-With-Images', folder.name);
         });
     }).apply(null, args);
-  };
+}
 
-  fns["addImagesToFolder"] = function (...args) {
+export function addImagesToFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (images, folder) {
 
@@ -419,11 +418,11 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             electronLog && electronLog.info(`[app] Categorize ${images.length} files to ${folder.name}(${folder.id})`);
             analytics.event('File', 'Categorize', 'Context');
         }).apply(null, args);
-  };
+}
 
-  fns["moveFoldersAsSibling"] = function (...args) {
+export function moveFoldersAsSibling(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (folders, folder, isBottom) {
 
@@ -433,7 +432,7 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             if (folders.indexOf(folder) > -1) return;
             
             // 避免老爸拖拽到子孙
-            var ancestors = s.getAncestorFolders(folder, []);
+            var ancestors = machineryGetAncestorFolders(s, folder, []);
             for (let i = 0; i < folders.length; i++) {
                 const ancestor = folders[i];
                 if (ancestors.indexOf(ancestor) > -1) {
@@ -517,8 +516,8 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                         }
                     }
                 }
-                s.updateSidebarList();
-                s.saveFolder();
+                machineryUpdateSidebarList(s);
+                machinerySaveFolder(s);
                 try {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) sibling`);
                 } catch (err) {};
@@ -528,11 +527,11 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 electronLog && electronLog.error(err.stack || err);
             }
         }).apply(null, args);
-  };
+}
 
-  fns["moveFoldersToFolder"] = function (...args) {
+export function moveFoldersToFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (folders, folder) {
 
@@ -542,7 +541,7 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
             if (folders.indexOf(folder) > -1) return;
 
             // 避免老爸拖拽到子孙
-            var ancestors = s.getAncestorFolders(folder, []);
+            var ancestors = machineryGetAncestorFolders(s, folder, []);
             for (let i = 0; i < folders.length; i++) {
                 const ancestor = folders[i];
                 if (ancestors.indexOf(ancestor) > -1) {
@@ -614,8 +613,8 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 }
 
                 folder.isExpand = true;
-                s.updateSidebarList();
-                s.saveFolder();
+                machineryUpdateSidebarList(s);
+                machinerySaveFolder(s);
                 try {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) children`);
                 } catch (err) {};
@@ -625,10 +624,10 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 electronLog && electronLog.error(err.stack || err);
             }
         }).apply(null, args);
-  };
+}
 
-  fns["emptyRestore"] = function (...args) {
-    const s = getScope();
+export function emptyRestore(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
             if (s.trash && s.trash.length > 0) {
@@ -652,7 +651,7 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                     s.trash.forEach(function(image: any) {
                         image.isDeleted = false;
                         changes.push(image);
-                        s.updateFilterCounts(image, -1, now);
+                        machineryUpdateFilterCounts(s, image, -1, now);
                         // ipcRenderer.send('image-change', image);
                     });
                     if (changes.length > 0) {
@@ -671,7 +670,23 @@ export function installFolderCoreFns(fns: any, getScope: any): void {
                 });
             }
     }).apply(null, args);
-  };
+}
+
+export function installFolderCoreFns(fns: any, getScope: any): void {
+  fns["createFolder"] = createFolder;
+
+  fns["newFolder"] = newFolder;
+
+  // newFolderWidthSelection（bundle 40442-40531 全体，含 sanitizeFolderName 内层）
+  fns["newFolderWidthSelection"] = newFolderWidthSelection;
+
+  fns["addImagesToFolder"] = addImagesToFolder;
+
+  fns["moveFoldersAsSibling"] = moveFoldersAsSibling;
+
+  fns["moveFoldersToFolder"] = moveFoldersToFolder;
+
+  fns["emptyRestore"] = emptyRestore;
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -774,7 +789,7 @@ export function openFolder(...args: any[]) {
                 eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
             ) {
                 if (s.isDetailMode) {
-                    s.leaveDetailMode();
+                    machineryLeaveDetailMode(s);
                 }
                 return;
             }
@@ -785,31 +800,31 @@ export function openFolder(...args: any[]) {
             syncPanelFromScope();
             syncListFromScope();
             s.$root.currentFocus = focus || "sidebar";
-            s.resetPage();
+            machineryResetPage(s);
             s.viewMode = undefined;
             s.currentId = currentId || "folder-" + folder.id;
             syncSidebarFromScope();
-            s.currentFolderPath = s.getFolderFullPath(folder);
+            s.currentFolderPath = getFolderFullPath(folder);
             syncToolbarFromScope();
             if (s.currentFolder != folder) {
                 s.currentFolder = folder;
                 syncPanelFromScope();
                 syncFolderLock();
                 syncListFromScope();
-                s.currentFolderChildren = s.getChildFoldersMap(folder);
+                s.currentFolderChildren = machineryGetChildFoldersMap(s, folder);
             }
 
 			if (localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
                 if (s.layout !== localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
-                    s.switchLayout(localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
+                    machinerySwitchLayout(s, localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
                 }
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
-	            var ancestors = s.getAncestorFolders(folder, []);
+	            var ancestors = machineryGetAncestorFolders(s, folder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
-	                    s.expandFolder(ancestors[i]);
+	                    machineryExpandFolder(s, ancestors[i]);
 	                }
 	            }
             }
@@ -835,7 +850,7 @@ export function openFolder(...args: any[]) {
             __lv_updateListHeight(s.imageSize.height);
             if (!ignoreReload) {
                 ScrollbarSaver.restoreScrollPosition();
-                s.reload();
+                machineryReload(s);
             }
             else {
                 s.rebindRefresh();
@@ -851,7 +866,7 @@ export function openFolder(...args: any[]) {
                 if (s.canUseTouchID) {
                     // 延遲一下以確保 UI 已渲染
                     $timeout(function () {
-                        s.unlockFolderWithTouchID();
+                        machineryUnlockFolderWithTouchID(s);
                     }, 500);
                 }
             }
@@ -868,7 +883,7 @@ export function openSmartFolder(...args: any[]) {
                 eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
             ) {
                 if (s.isDetailMode) {
-                    s.leaveDetailMode();
+                    machineryLeaveDetailMode(s);
                 }
                 return;
             }
@@ -887,7 +902,7 @@ export function openSmartFolder(...args: any[]) {
             s.$root.selectedSmartFoldersMappings = {};
             s.$root.selectedSmartFolders = [];
             s.$root.currentFocus = "sidebar";
-            s.resetPage();
+            machineryResetPage(s);
             s.viewMode = undefined;
             s.currentId = currentId || "smart-folder-" + smartFolder.id;
             syncSidebarFromScope();
@@ -899,14 +914,14 @@ export function openSmartFolder(...args: any[]) {
             }
 
 			if (localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]) {
-				s.switchLayout(localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
+				machinerySwitchLayout(s, localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
 	            var ancestors = machineryGetAncestorSmartFolders(s, smartFolder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
-	                    s.expandSmartFolder(ancestors[i]);
+	                    machineryExpandSmartFolder(s, ancestors[i]);
 	                }
 	            }
             }
@@ -934,7 +949,7 @@ export function openSmartFolder(...args: any[]) {
                 syncInspectorFromScope();
                 __lv_updateListHeight(s.imageSize.height);
                 ScrollbarSaver.restoreScrollPosition();
-                s.reload();
+                machineryReload(s);
                 analytics.screenView('SmartFolder');
 
                 if (s.currentSmartFolder) {
@@ -953,7 +968,7 @@ export function openUnfiled(...args: any[]) {
 
             if (s.viewMode === 'unfiled' && s.allData.length > 0 && eagle.filter.filterRules.color.value == undefined) {
                 if (s.isDetailMode) {
-                    s.leaveDetailMode();
+                    machineryLeaveDetailMode(s);
                 }
                 return;
             }
@@ -961,7 +976,7 @@ export function openUnfiled(...args: any[]) {
             ScrollbarSaver.saveScrollPosition();
             s.viewMode = 'unfiled';
             s.$root.currentFocus = "sidebar";
-            s.resetPage();
+            machineryResetPage(s);
 
             $timeout.cancel(__lv_openUnfiledTimeout);
             __lv_openUnfiledTimeout = $timeout(function() {
@@ -982,7 +997,7 @@ export function openUnfiled(...args: any[]) {
                 __lv_updateListHeight(s.imageSize.height);
                 ScrollbarSaver.restoreScrollPosition();
                 $("#sidebar-item-container").scrollTop(0);
-                s.reload();
+                machineryReload(s);
                 analytics.screenView('Unfiled');
             }, 50);
         }).apply(null, args);
@@ -1000,7 +1015,7 @@ export function smartFolderCount(...args: any[]) {
                 var images = [];
                 images = s.raw.filter(function (__lv_image) {
                     if (__lv_image.isDeleted) return false;
-                    return s.existInSmartFilter(smartFolder, __lv_image);
+                    return machineryExistInSmartFilter(s, smartFolder, __lv_image);
                 });
                 if (Object.keys(s.lockedImages).length > 0) {
                     images = images.filter(s.lockImageFilter);

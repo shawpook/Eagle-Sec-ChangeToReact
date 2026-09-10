@@ -31,7 +31,13 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { detailZoom } from '../core/smoothZoomEngine';
-
+import { openFolder, openSmartFolder } from '../services/folderCoreService';
+import { select } from '../services/selectionService';
+import { importFolders } from '../services/uploadService';
+import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryMoveToFolders, machineryNewSmartFolder, machineryOpenAll, machineryPausePalette, machineryPrependFolder, machineryQuickOpenFolder, machineryRememberScrollTops, machineryRememberVideoCurrentTime, machineryResumePalette, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUpdateSidebarList } from './dataMachinery';
+import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
+import { newFolder } from '../services/folderCoreService';
+import { activateFont, deactivateFont } from '../services/fontTagService';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -284,7 +290,7 @@ export function takeoverMiscDomain(): void {
       return;
     }
     try {
-      s.findDupclipate(undefined);
+      machineryFindDupclipate(s, undefined);
       const duplicatesItemsMap: Record<string, boolean> = {};
       items.forEach(function (item: any) {
         if (isDuplicateImage(item)) {
@@ -311,7 +317,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('lock-now', function () {
     const s = sNow();
     if (!s) return;
-    s.lockApp();
+    machineryLockApp(s);
     s.$root.$evalAsync();
   });
 
@@ -511,7 +517,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('move-to-folders', function (event: any) {
     const s = sNow();
     if (!s) return;
-    s.moveToFolders(event);
+    machineryMoveToFolders(s, event);
     s.$evalAsync();
   });
 
@@ -519,7 +525,7 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     s.rebindRefresh();
-    s.scrollToSelectedItem();
+    scrollToSelectedItem();
   });
 
   ipc.on('open-item', function (_e: any, itemId: any) {
@@ -530,18 +536,18 @@ export function takeoverMiscDomain(): void {
       const folders = item.folders;
       if (folders && folders.length > 0) {
         const firstFolder = s.folderMappings[folders[0]];
-        s.openFolder(firstFolder);
-        setTimeout(function () { s.changeSidebarIndex(firstFolder); s.$evalAsync(); }, 200);
+        openFolder(firstFolder);
+        setTimeout(function () { machineryChangeSidebarIndex(s, firstFolder); s.$evalAsync(); }, 200);
       }
       else {
-        s.openAll();
+        machineryOpenAll(s);
       }
       s.selected = [];
       syncInspectorFromScope();
       domainTimeout(s, function () {
-        s.select(undefined, item);
-        s.enterDetailMode(undefined, item);
-        s.scrollToSelectedItem();
+        select(undefined, item);
+        machineryEnterDetailMode(s, undefined, item);
+        scrollToSelectedItem();
       }, 250);
       s.$evalAsync();
       const cw = currentWindow();
@@ -557,8 +563,8 @@ export function takeoverMiscDomain(): void {
     if (!s) return;
     const folder = s.folderMappings[folderId];
     if (folder) {
-      s.openFolder(folder);
-      setTimeout(function () { s.changeSidebarIndex(folder); s.$evalAsync(); }, 200);
+      openFolder(folder);
+      setTimeout(function () { machineryChangeSidebarIndex(s, folder); s.$evalAsync(); }, 200);
       s.$evalAsync();
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
@@ -573,8 +579,8 @@ export function takeoverMiscDomain(): void {
     if (!s) return;
     const smartFolder = s.smartFolderMappings[smartFolderId];
     if (smartFolder) {
-      s.openSmartFolder(smartFolder);
-      setTimeout(function () { s.changeSidebarIndex(smartFolder); s.$evalAsync(); }, 200);
+      openSmartFolder(smartFolder);
+      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); s.$evalAsync(); }, 200);
       s.$evalAsync();
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
@@ -611,19 +617,19 @@ export function takeoverMiscDomain(): void {
   ipc.on('prepend-folder', function (_e: any, folder: any) {
     const s = sNow();
     if (!s) return;
-    s.prependFolder(folder);
+    machineryPrependFolder(s, folder);
     s.$evalAsync();
   });
   ipc.on('new-folder', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.newFolder();
+    newFolder();
     s.$evalAsync();
   });
   ipc.on('new-smart-folder', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.newSmartFolder();
+    machineryNewSmartFolder(s);
     s.$evalAsync();
   });
 
@@ -632,7 +638,7 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     if (s.uploadQueue.length === 0) {
-      s.hideUploadQueue();
+      machineryHideUploadQueue(s);
       s.$evalAsync();
     }
   });
@@ -644,28 +650,28 @@ export function takeoverMiscDomain(): void {
       const image = s.lastestAddItem;
       const folders = s.lastestAddItem.folders;
       if (folders && folders.length > 0 && folders[0] && s.folderMappings[folders[0]]) {
-        s.openFolder(s.folderMappings[folders[0]]);
+        openFolder(s.folderMappings[folders[0]]);
         s.selected = [];
         syncInspectorFromScope();
         domainTimeout(s, function () {
-          s.select(undefined, image);
-          s.scrollToSelectedItem();
+          select(undefined, image);
+          scrollToSelectedItem();
         }, 500);
       }
       else {
-        s.openAll();
+        machineryOpenAll(s);
         s.selected = [];
         syncInspectorFromScope();
         domainTimeout(s, function () {
-          s.select(undefined, image);
-          s.scrollToSelectedItem();
+          select(undefined, image);
+          scrollToSelectedItem();
         }, 500);
       }
     }
     else {
       s.selected = [];
       syncInspectorFromScope();
-      s.openAll();
+      machineryOpenAll(s);
     }
     s.$evalAsync();
   });
@@ -711,7 +717,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('toggle-slideshow', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.toggleSlideshow();
+    machineryToggleSlideshow(s);
     s.$evalAsync();
   });
 
@@ -744,20 +750,20 @@ export function takeoverMiscDomain(): void {
   ipc.on('import-folders', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.importFolders();
+    importFolders();
     s.$evalAsync();
   });
 
   ipc.on('activate-font', function (_e: any, item: any) {
     const s = sNow();
     if (!s) return;
-    s.activateFont(item, { showNotify: false, updateView: true });
+    activateFont(item, { showNotify: false, updateView: true });
   });
 
   ipc.on('deactivate-font', function (_e: any, item: any) {
     const s = sNow();
     if (!s) return;
-    s.deactivateFont(item, { showNotify: false, updateView: true });
+    deactivateFont(item, { showNotify: false, updateView: true });
   });
 
   ipc.on('reveal-in-eagle', function (_e: any, it: any) {
@@ -769,7 +775,7 @@ export function takeoverMiscDomain(): void {
     if (item.folders && item.folders.length > 0) {
       folder = s.folderMappings[item.folders[0]];
     }
-    s.quickOpenFolder(folder, item);
+    machineryQuickOpenFolder(s, folder, item);
     s.$evalAsync();
   });
 
@@ -877,14 +883,14 @@ export function takeoverMiscDomain(): void {
   ipc.on('get-recent-folders', function (_event: any) {
     const s = sNow();
     if (!s) return;
-    const recentFolders = s.getRecentFolders();
+    const recentFolders = machineryGetRecentFolders(s);
     ipc.send("get-recent-folders", recentFolders);
   });
 
   ipc.on('add-recent-folders', function (_event: any, folders: any) {
     const s = sNow();
     if (!s) return;
-    s.addToRecentFolders(folders);
+    addToRecentFolders(folders);
   });
 
   // ── image-processing-error（30402 逐字）──
@@ -1079,11 +1085,11 @@ export function changeOrderBy(...args: any[]) {
     if (!s) return;
     return (function (orderBy) {
             if (s.currentFolder) {
-                s.setFolderOrder(s.currentFolder, orderBy);
+                machinerySetFolderOrder(s, s.currentFolder, orderBy);
                 try { electronLog && electronLog.info(`[app] Change folder order to “${s.currentFolder.name}(${s.currentFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else if (s.currentSmartFolder) {
-                s.setSmartFolderOrder(s.currentSmartFolder, orderBy);
+                machinerySetSmartFolderOrder(s, s.currentSmartFolder, orderBy);
                 try { electronLog && electronLog.info(`[app] Change smart-folder order to “${s.currentSmartFolder.name}(${s.currentSmartFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else {
@@ -1092,7 +1098,7 @@ export function changeOrderBy(...args: any[]) {
                     syncBodyFromScope();
                     s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
                     localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
-                    s.sortRawData(s.orderBy);
+                    machinerySortRawData(s, s.orderBy);
                     s.rebindRefresh();
                     s.$evalAsync();
                     try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
@@ -1135,7 +1141,7 @@ export function dblclickContentPanel(...args: any[]) {
     if (!s) return;
     return (function () {
             if (!s.isCropMode) {
-                s.leaveDetailMode();
+                machineryLeaveDetailMode(s);
             }    
         }).apply(null, args);
   }
@@ -1158,7 +1164,7 @@ export function escHandler(...args: any[]) {
             }
             if (!s.isDetailMode) {
                 if (document.activeElement?.tagName !== "INPUT") {
-                    s.cleanSelected($event);
+                    cleanSelected($event);
                 }
             } 
             else {
@@ -1170,7 +1176,7 @@ export function escHandler(...args: any[]) {
                 	AnnotationPreview.hide();
                 }
                 else {
-                    s.leaveDetailMode();
+                    machineryLeaveDetailMode(s);
                 }
             }
             if (s.isPreviewing) {
@@ -1195,7 +1201,7 @@ export function leaveDetailMode(...args: any[]) {
             syncDetailFromScope();
             if (s.isDetailMode) {
                 
-                s.rememberScrollTops(s.current);
+                machineryRememberScrollTops(s, s.current);
 
                 s.isDetailMode = false;
                 s.showDetailImage = false;
@@ -1205,7 +1211,7 @@ export function leaveDetailMode(...args: any[]) {
                 s.commentRect = undefined;
                 syncDetailFromScope();
                 // 記住上次播放位置
-                s.rememberVideoCurrentTime(s.current); s.current = undefined;
+                machineryRememberVideoCurrentTime(s, s.current); s.current = undefined;
                 syncDetailFromScope();
                 syncInspectorFromScope();
                 $timeout.cancel(__lv_zoomInitTimeout);
@@ -1217,7 +1223,7 @@ export function leaveDetailMode(...args: any[]) {
                 }, 50);
 
                 s.isInlineMode = false;
-                s.fadeOutDetailMode();
+                machineryFadeOutDetailMode(s);
                 detailZoom()?.cleanBitmapViewer();
                 detailZoom()?.clearPreloadData();
                 
@@ -1290,7 +1296,7 @@ export function toggleFolderVisible(...args: any[]) {
             s.isExpandFolder = !s.isExpandFolder;
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.folder.expand", s.isExpandFolder);
-            s.updateSidebarList();
+            machineryUpdateSidebarList(s);
         }).apply(null, args);
   }
 
@@ -1300,10 +1306,10 @@ export function togglePaletteProcessing(...args: any[]) {
     if (!s) return;
     return (function () {
             if (s.paletteQueuePaused) {
-                s.resumePalette();
+                machineryResumePalette(s);
             }
             else {
-                s.pausePalette();
+                machineryPausePalette(s);
             }
         }).apply(null, args);
   }
@@ -1316,7 +1322,7 @@ export function toggleQuickAccessVisible(...args: any[]) {
             s.isExpandQuickAccess = !s.isExpandQuickAccess;
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.quickAccess.expand", s.isExpandQuickAccess);
-            s.updateSidebarList();
+            machineryUpdateSidebarList(s);
         }).apply(null, args);
   }
 
@@ -1328,7 +1334,7 @@ export function toggleSmartFolderVisible(...args: any[]) {
             s.isExpandSmartFolder = !s.isExpandSmartFolder;
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.smartFolder.expand", s.isExpandSmartFolder);
-            s.updateSidebarList();
+            machineryUpdateSidebarList(s);
         }).apply(null, args);
   }
 

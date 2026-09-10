@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { getBodyScope } from '../../core/appCore';
+import { getRawUrl } from '../../core/itemDomain';
 
 /**
  * b1-9be2：box 条目 JSX —— ng-grid-layout 模板（bundle:66524-66963）逐字 JSX 化。
@@ -144,10 +145,10 @@ function buildTemplateData(item: any): any {
     templateData.src = lastThumbnailPath;
     const supportLargeThumb: Record<string, boolean> = { jpg: true, png: true, webp: true, bmp: true, jfif: true };
     if (supportLargeThumb[item.ext] && (!item.orientation || item.orientation === 1)) {
-      templateData.rawPath = scope.getRawUrl(item);
+      templateData.rawPath = getRawUrl(item);
     }
     if ((item?.animated || item.ext === 'gif') && scope.preferences.habits.alwaysPlayGIF === 'on') {
-      const rawPath = scope.getRawUrl(item);
+      const rawPath = getRawUrl(item);
       templateData.rawPath = rawPath;
       templateData.thumbnailPath = rawPath;
       templateData.src = rawPath;
@@ -316,7 +317,7 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
       img.setAttribute('lazysrc', data.thumbnailPath || '');
       const supportLargeThumb: Record<string, boolean> = { jpg: true, png: true, webp: true, bmp: true };
       if (supportLargeThumb[item.ext] && (!item.orientation || item.orientation === 1) && scope) {
-        img.setAttribute('raw', scope.getRawUrl(item));
+        img.setAttribute('raw', getRawUrl(item));
       }
       const lazysrc = img.getAttribute('lazysrc');
       if (lazysrc && lazysrc !== 'undefined') {

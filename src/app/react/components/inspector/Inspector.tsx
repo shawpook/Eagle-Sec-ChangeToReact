@@ -41,6 +41,7 @@ import { req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { filterWithColor } from '../../core/filterDomain';
 
 /**
  * 阶段6：检查器接管。
@@ -1290,7 +1291,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
                     const hex = rgbToHex(palette.color[0], palette.color[1], palette.color[2]);
                     if (typeof hex === 'string') s.$body?.hexColor !== undefined && (s.$body.hexColor = hex);
                     s.hexColor = hex;
-                    if (typeof s.filterWithColor === 'function') s.filterWithColor(palette.color);
+                    if (typeof s.filterWithColor === 'function') filterWithColor(palette.color);
                   });
                 }}
               >

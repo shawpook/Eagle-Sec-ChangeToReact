@@ -1,4 +1,5 @@
 import { getBodyScope } from '../core/appCore';
+import { machinerySaveFolder } from '../core/dataMachinery';
 /**
  * b1-9bb：文件夹服务 —— saveFolder 热点收编。
  *
@@ -11,5 +12,5 @@ import { getBodyScope } from '../core/appCore';
 
 export function saveFolder(): void {
   const s = getBodyScope();
-  if (s && typeof s.saveFolder === 'function') s.saveFolder();
+  if (s && typeof s.saveFolder === 'function') machinerySaveFolder(s);
 }

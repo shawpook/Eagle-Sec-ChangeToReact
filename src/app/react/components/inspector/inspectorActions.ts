@@ -6,6 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { machineryEnterDetailMode } from '../../core/dataMachinery';
 
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
@@ -498,7 +499,7 @@ export function copyComment(event: any, image: any, comment: any) {
 export function openComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
   if (!bodyScope?.isDetailMode) {
-    bodyScope.enterDetailMode(event, image);
+    machineryEnterDetailMode(bodyScope, event, image);
     setTimeout(function () {
       openComment(event, image, comment);
     }, 500);
@@ -565,7 +566,7 @@ export function removeImageComment(item: any, index: number) {
 export function openVideoComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
   if (!bodyScope?.isDetailMode) {
-    bodyScope.enterDetailMode(event, image);
+    machineryEnterDetailMode(bodyScope, event, image);
     setTimeout(function () {
       openVideoComment(event, image, comment);
     }, 500);
@@ -585,7 +586,7 @@ export function openVideoComment(event: any, image: any, comment: any) {
 export function editVideoComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
   if (!bodyScope?.isDetailMode) {
-    bodyScope.enterDetailMode(event, image);
+    machineryEnterDetailMode(bodyScope, event, image);
     setTimeout(function () {
       editVideoComment(event, image, comment);
     }, 500);

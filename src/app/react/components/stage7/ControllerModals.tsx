@@ -12,6 +12,7 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { machineryToggleAll } from '../../core/dataMachinery';
 
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
@@ -479,7 +480,7 @@ export function WebsitePanel() {
 
   const toggleAll = (event: any) => {
     scopeApply(getBodyScope(), (s: any) => {
-      if (typeof s.toggleAll === 'function') s.toggleAll(event);
+      if (typeof s.toggleAll === 'function') machineryToggleAll(s, event);
     });
   };
 

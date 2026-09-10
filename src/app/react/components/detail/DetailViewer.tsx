@@ -21,6 +21,7 @@ import {
   recomputeCommentRatio,
 } from './commentHooks';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { machineryLeaveDetailMode, machinerySelectNext, machinerySelectPrev, machineryToggleSlideshow } from '../../core/dataMachinery';
 
 /**
  * 阶段5：#detail-container 内部（index.html 646-924 行逐字转写）。
@@ -294,7 +295,7 @@ function WebViewBranch({ snapshot }: { snapshot: DetailSnapshot }) {
           webview.executeJavaScript(`document.exitFullscreen();`);
         }
         scopeApply(getBodyScope(), (s) => {
-          if (typeof s.toggleSlideshow === 'function') s.toggleSlideshow();
+          if (typeof s.toggleSlideshow === 'function') machineryToggleSlideshow(s);
           s.$evalAsync?.();
         });
       });
@@ -508,13 +509,13 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
     function onMessage(e: any) {
       scopeApply(getBodyScope(), (s) => {
         if (e.data === 'Exit' || e.message === 'Exit') {
-          if (typeof s.leaveDetailMode === 'function') s.leaveDetailMode();
+          if (typeof s.leaveDetailMode === 'function') machineryLeaveDetailMode(s);
           s.$evalAsync?.();
         } else if (e.data === 'Prev' || e.message === 'Prev') {
-          if (typeof s.selectPrev === 'function') s.selectPrev();
+          if (typeof s.selectPrev === 'function') machinerySelectPrev(s);
           s.$evalAsync?.();
         } else if (e.data === 'Next' || e.message === 'Next') {
-          if (typeof s.selectNext === 'function') s.selectNext();
+          if (typeof s.selectNext === 'function') machinerySelectNext(s);
           s.$evalAsync?.();
         }
       });

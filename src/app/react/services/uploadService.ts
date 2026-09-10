@@ -6,6 +6,7 @@
 import { getBodyScope } from '../core/appCore';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncUploadFromScope } from '../store/uploadState';
+import { machineryHideUploadQueue, machineryShowUploadQueue } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -138,7 +139,7 @@ export function uploadFiles(...args: any[]) {
     return (function($__lv_files, folder) {
 
             if ($__lv_files.length === 0) {
-                s.hideUploadQueue();
+                machineryHideUploadQueue(s);
                 return;
             }
 
@@ -259,7 +260,7 @@ export function uploadUrls(...args: any[]) {
                 }
             });
             if (__lv_files.length > 0) {
-                s.showUploadQueue();
+                machineryShowUploadQueue(s);
             }
             ipcRenderer.send('upload-urls', __lv_files);
         }).apply(null, args);

@@ -4,6 +4,7 @@ import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
+import { machineryCurrentIndex } from '../core/dataMachinery';
 
 /**
  * 阶段5：详情模式与查看器状态 —— 快照自 EagleController scope。
@@ -220,7 +221,7 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
       }
 
       let currentIndex = 0;
-      try { currentIndex = typeof scope.currentIndex === 'function' ? (scope.currentIndex() || 0) : 0; } catch (err) {}
+      try { currentIndex = typeof scope.currentIndex === 'function' ? (machineryCurrentIndex(scope) || 0) : 0; } catch (err) {}
 
       let rect: DetailSnapshot['commentRect'] = null;
       if (scope.commentRect && typeof scope.commentRect === 'object') {

@@ -2,6 +2,8 @@ import { getBodyScope } from '../core/appCore';
 import { cancelCleanSelectedTimeout } from '../services/batchOpsService';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
+import { machineryEnterDetailMode, machineryGetSelection, machineryOpenPluginPanel } from '../core/dataMachinery';
+import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -188,16 +190,16 @@ export function onBoxListDblClick(...args: any[]) {
                 return;
             }
             else if (event.altKey) {
-                s.openFilesWithDefault([item]);
+                openFilesWithDefault([item]);
                 return;
             }
             else {
                 if (s.$root.preferences.habits.doubleclick !== 'external') {
-                    s.enterDetailMode(event, item);
+                    machineryEnterDetailMode(s, event, item);
                 }
                 else {
                     // 使用预设软体开启
-                    s.openFileWithDefault(item);
+                    openFileWithDefault(item);
                 }
                 s.$evalAsync();
             }
@@ -239,7 +241,7 @@ export function select(...args: any[]) {
                 }
 				else if (s.$root.preferences.habits.middleBtn === "openPluginPanel") {
 					event && event.preventDefault();
-					s.openPluginPanel();
+					machineryOpenPluginPanel(s);
 				}
                 return;
             }
@@ -315,7 +317,7 @@ export function select(...args: any[]) {
                 s.selected.push(__lv_image);
                 syncInspectorFromScope();
                 s.selectedMappings[__lv_image.id] = true;
-                var selection = s.getSelection();
+                var selection = machineryGetSelection(s);
 
                 var __lv_start = selection.start;
                 var end = selection.end;

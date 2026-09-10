@@ -9,6 +9,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoomFit, machineryZoomFitEdge } from '../core/dataMachinery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -245,9 +246,9 @@ export function switchGridLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            s.switchLayout("GridLayout");
+            machinerySwitchLayout(s, "GridLayout");
             s.$evalAsync();
-            s.saveLayout(s.currentFolder || s.currentSmartFolder, "GridLayout");
+            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "GridLayout");
         }).apply(null, args);
   }
 
@@ -256,9 +257,9 @@ export function switchJustifiedLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            s.switchLayout("JustifiedLayout");
+            machinerySwitchLayout(s, "JustifiedLayout");
             s.$evalAsync();
-            s.saveLayout(s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
+            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
         }).apply(null, args);
   }
 
@@ -267,9 +268,9 @@ export function switchListLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            s.switchLayout("ListLayout");
+            machinerySwitchLayout(s, "ListLayout");
             s.$evalAsync();
-            s.saveLayout(s.currentFolder || s.currentSmartFolder, "ListLayout");
+            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "ListLayout");
         }).apply(null, args);
   }
 
@@ -278,9 +279,9 @@ export function switchSquareLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            s.switchLayout("SquareLayout");
+            machinerySwitchLayout(s, "SquareLayout");
             s.$evalAsync();
-            s.saveLayout(s.currentFolder || s.currentSmartFolder, "SquareLayout");
+            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "SquareLayout");
         }).apply(null, args);
   }
 
@@ -329,14 +330,14 @@ export function zoom(...args: any[]) {
             if (!s.isDetailMode) return;
             if (s.lastZoomMode === "edge") {
                 if (s.current && !s.VIDEO_TYPES[s.current.ext]) {
-                    s.zoomFitEdge();
+                    machineryZoomFitEdge(s);
                 }
                 else {
-                    s.zoomFit();
+                    machineryZoomFit(s);
                 }
             }
             else {
-                s.smartZoom();
+                machinerySmartZoom(s);
             }
         }).apply(null, args);
   }
@@ -353,9 +354,9 @@ export function zoomFit(...args: any[]) {
                 syncBodyFromScope();
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                s.changeListHeight();
+                machineryChangeListHeight(s);
                 if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
-                    s.adjustLayoutWidth(0);
+                    machineryAdjustLayoutWidth(s, 0);
                     __lv_saveListHeight(s.imageSize.height);
                 }
             } else {
@@ -387,7 +388,7 @@ export function zoomFit(...args: any[]) {
                     }, 300);
                 }
 
-                s.smartZoom(undefined, true);
+                machinerySmartZoom(s, undefined, true);
             }
         }).apply(null, args);
   }
@@ -399,7 +400,7 @@ export function zoomIn(...args: any[]) {
     return (function(event) {
             event && event.preventDefault && event.preventDefault();
             if (!s.isDetailMode) {
-                s.adjustLayoutWidth(-1);
+                machineryAdjustLayoutWidth(s, -1);
                 __lv_saveListHeight(s.imageSize.height);
             } else {
                 var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
@@ -408,7 +409,7 @@ export function zoomIn(...args: any[]) {
                 if (ratioExp > 800) ratioExp = 800;
                 s.imageSize.zoomRatio = s.getRatioNonExp(ratioExp);
                 s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-                s.updateZoomRatio(undefined, undefined, undefined, true);
+                machineryUpdateZoomRatio(s, undefined, undefined, undefined, true);
             }
         }).apply(null, args);
   }
@@ -418,7 +419,7 @@ export function getNext(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-        var selection = s.getSelection();
+        var selection = machineryGetSelection(s);
         var start = selection.start;
         var end = selection.end;
         return s.allData[end + 1] || s.allData[end - 1];

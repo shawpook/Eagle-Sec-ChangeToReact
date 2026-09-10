@@ -18,13 +18,16 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryImportLinks, machineryNewFileFromTemplate, machineryNewSmartFolder, machineryOpenArtstation, machineryOpenDuplicate, machineryOpenFilter, machineryOpenHuaban, machineryOpenPinterest, machineryToggleAllSmartFolderExpand, machineryToggleCurrentLevelSmartFolders, machineryToggleSelectSmartFolder, machineryUpdateContainerHieght, machineryUpdateZoomRatio, machineryZoomActual, machineryZoomFit } from '../core/dataMachinery';
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
-
+import { importFolders } from './uploadService';
+import { getRatioNonExp } from './viewOpsService';
+import { emptyTrash } from './batchOpsService';
+import { emptyRestore, newFolder } from './folderCoreService';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -93,29 +96,28 @@ export function openRatioContextMenu(...args: any[]) {
     return (function() {
             ContextMenu.open({
                 items: [
-                    { label: '5%', checked: parseInt(s.imageSize.zoomRatioExp) == 5, click: () => { s.updateZoomRatio(s.getRatioNonExp(5), undefined, undefined, true); s.imageSize.zoomRatioExp = 5; s.$evalAsync(); } },
-                    { label: '10%', checked: parseInt(s.imageSize.zoomRatioExp) == 10, click: () => { s.updateZoomRatio(s.getRatioNonExp(10), undefined, undefined, true); s.imageSize.zoomRatioExp = 10; s.$evalAsync(); } },
-                    { label: '25%', checked: parseInt(s.imageSize.zoomRatioExp) == 25, click: () => { s.updateZoomRatio(s.getRatioNonExp(25), undefined, undefined, true); s.imageSize.zoomRatioExp = 25; s.$evalAsync(); } },
-                    { label: '50%', checked: parseInt(s.imageSize.zoomRatioExp) == 50, click: () => { s.updateZoomRatio(s.getRatioNonExp(50), undefined, undefined, true); s.imageSize.zoomRatioExp = 50; s.$evalAsync(); } },
-                    { label: '100%', checked: parseInt(s.imageSize.zoomRatioExp) == 100, click: () => { s.updateZoomRatio(s.getRatioNonExp(100), undefined, undefined, true); s.imageSize.zoomRatioExp = 100; s.$evalAsync(); } },
-                    { label: '125%', checked: parseInt(s.imageSize.zoomRatioExp) == 125, click: () => { s.updateZoomRatio(s.getRatioNonExp(125), undefined, undefined, true); s.imageSize.zoomRatioExp = 125; s.$evalAsync(); } },
-                    { label: '150%', checked: parseInt(s.imageSize.zoomRatioExp) == 150, click: () => { s.updateZoomRatio(s.getRatioNonExp(150), undefined, undefined, true); s.imageSize.zoomRatioExp = 150; s.$evalAsync(); } },
-                    { label: '200%', checked: parseInt(s.imageSize.zoomRatioExp) == 200, click: () => { s.updateZoomRatio(s.getRatioNonExp(200), undefined, undefined, true); s.imageSize.zoomRatioExp = 200; s.$evalAsync(); } },
-                    { label: '300%', checked: parseInt(s.imageSize.zoomRatioExp) == 300, click: () => { s.updateZoomRatio(s.getRatioNonExp(300), undefined, undefined, true); s.imageSize.zoomRatioExp = 300; s.$evalAsync(); } },
-                    { label: '400%', checked: parseInt(s.imageSize.zoomRatioExp) == 400, click: () => { s.updateZoomRatio(s.getRatioNonExp(400), undefined, undefined, true); s.imageSize.zoomRatioExp = 400; s.$evalAsync(); } },
-                    { label: '800%', checked: parseInt(s.imageSize.zoomRatioExp) == 800, click: () => { s.updateZoomRatio(s.getRatioNonExp(800), undefined, undefined, true); s.imageSize.zoomRatioExp = 800; s.$evalAsync(); } },
+                    { label: '5%', checked: parseInt(s.imageSize.zoomRatioExp) == 5, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(5), undefined, undefined, true); s.imageSize.zoomRatioExp = 5; s.$evalAsync(); } },
+                    { label: '10%', checked: parseInt(s.imageSize.zoomRatioExp) == 10, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(10), undefined, undefined, true); s.imageSize.zoomRatioExp = 10; s.$evalAsync(); } },
+                    { label: '25%', checked: parseInt(s.imageSize.zoomRatioExp) == 25, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(25), undefined, undefined, true); s.imageSize.zoomRatioExp = 25; s.$evalAsync(); } },
+                    { label: '50%', checked: parseInt(s.imageSize.zoomRatioExp) == 50, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(50), undefined, undefined, true); s.imageSize.zoomRatioExp = 50; s.$evalAsync(); } },
+                    { label: '100%', checked: parseInt(s.imageSize.zoomRatioExp) == 100, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(100), undefined, undefined, true); s.imageSize.zoomRatioExp = 100; s.$evalAsync(); } },
+                    { label: '125%', checked: parseInt(s.imageSize.zoomRatioExp) == 125, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(125), undefined, undefined, true); s.imageSize.zoomRatioExp = 125; s.$evalAsync(); } },
+                    { label: '150%', checked: parseInt(s.imageSize.zoomRatioExp) == 150, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(150), undefined, undefined, true); s.imageSize.zoomRatioExp = 150; s.$evalAsync(); } },
+                    { label: '200%', checked: parseInt(s.imageSize.zoomRatioExp) == 200, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(200), undefined, undefined, true); s.imageSize.zoomRatioExp = 200; s.$evalAsync(); } },
+                    { label: '300%', checked: parseInt(s.imageSize.zoomRatioExp) == 300, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(300), undefined, undefined, true); s.imageSize.zoomRatioExp = 300; s.$evalAsync(); } },
+                    { label: '400%', checked: parseInt(s.imageSize.zoomRatioExp) == 400, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(400), undefined, undefined, true); s.imageSize.zoomRatioExp = 400; s.$evalAsync(); } },
+                    { label: '800%', checked: parseInt(s.imageSize.zoomRatioExp) == 800, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(800), undefined, undefined, true); s.imageSize.zoomRatioExp = 800; s.$evalAsync(); } },
                     { role: 'separator' },
-                    { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { s.zoomActual(); s.$evalAsync(); } },
-                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { s.zoomFit(); s.$evalAsync(); } },
+                    { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { machineryZoomActual(s); s.$evalAsync(); } },
+                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { machineryZoomFit(s); s.$evalAsync(); } },
                 ],
                 showSearch: false,
             });            
         }).apply(null, args);
 }
 
-export function installMiscMenuFns(fns: any, getScope: any): void {
-  fns["openTrashContextMenu"] = function (...args) {
-    const s = getScope();
+export function openTrashContextMenu(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any) {
 
@@ -129,14 +131,14 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: i18n.__('context.emptyTrash.empty'),
                         keywords: `empty delete remove trash`,
                         icon: 'ic-trash-empty.svg',
-                        click: () => { s.$evalAsync(() => { s.emptyTrash(); }); }
+                        click: () => { s.$evalAsync(() => { emptyTrash(); }); }
                     },
                     {
                         disabled: disabled,
                         label: $filter('i18n')('context.emptyTrash.restoreAll'),
                         keywords: `restore`,
                         icon: 'ic-trash-restore.svg',
-                        click: () => { s.$evalAsync(() => { s.emptyRestore(); }); }
+                        click: () => { s.$evalAsync(() => { emptyRestore(); }); }
                     }
                 ],
                 showSearch: false,
@@ -148,39 +150,35 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                 }
             });
     }).apply(null, args);
-  };
+}
 
-  fns["openFileListContextMenu"] = openFileListContextMenu;
-
-  fns["openOrderMenu"] = function (...args) {
-    const s = getScope();
+export function openOrderMenu(...args: any[]) {
+    const s = getBodyScope();
     if (!s) return;
     return (function (event: any) {
             event && event.stopPropagation();
             s.$root.$broadcast("OPEN_LAYOUT_PANEL");
             updateCurrentOrderAndIncrease();
     }).apply(null, args);
-  };
+}
 
-  fns["openApplicationContextMenu"] = openApplicationContextMenu;
-
-  fns["openFilterAddContextMenu"] = function (...args) {
+export function openFilterAddContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
-            s.openFilter();
+            machineryOpenFilter(s);
             $("#filter-toolbar-overlay").click();
 
             const pinFilter = (id, pinned) => {
                 eagle.filter.pinned[id] = pinned;
                 eagle.filter.savePinned();
-                setTimeout(function () { s.updateContainerHieght(); }, 50);
+                setTimeout(function () { machineryUpdateContainerHieght(s); }, 50);
             };
 
             const openFilter = (id) => {
                 $(`#${id}-filter-item`).click();
-                setTimeout(function () { s.updateContainerHieght(); }, 50);
+                setTimeout(function () { machineryUpdateContainerHieght(s); }, 50);
             }
 
             let items = [
@@ -492,11 +490,11 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                 }
             });
         }).apply(null, args);
-  };
+}
 
-  fns["openNewContextMenu"] = function (...args) {
+export function openNewContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function() {
             ContextMenu.open({
@@ -507,7 +505,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: i18n.__('context.import.createFolder'),
                         keywords: 'folder dir new create 資料夾 文件夾 新建 建立 新增 ',
                         icon: 'ic-folder-new-folder.svg',
-                        click: function() { s.newFolder(); }
+                        click: function() { newFolder(); }
                     },
                     // 建立智能资料夹
                     {
@@ -516,7 +514,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         keywords: 'smart folder dir new create 資料夾 文件夾 新建 建立 新增 智能 智慧',
                         icon: 'ic-smart-folder-new.svg',
                         click: function() {
-                            s.newSmartFolder();
+                            machineryNewSmartFolder(s);
                             s.$evalAsync();
                         }
                     },
@@ -530,7 +528,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         keywords: 'import folder dir 資料夾 文件夾 導入 local 本地 本機 本机 匯入 导入',
                         icon: 'ic-import-local.svg',
                         click: function() {
-                            s.importFolders();
+                            importFolders();
                         }
                     },
                     // 導入連結
@@ -540,7 +538,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         keywords: '',
                         icon: 'ic-import-links.svg',
                         click: function() {
-                            s.importLinks();
+                            machineryImportLinks(s);
                         }
                     },
                     // 導入 eaglepack
@@ -601,7 +599,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                                     label: i18n.__("context.import.findDuplicate>all"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
-                                        s.openDuplicate();
+                                        machineryOpenDuplicate(s);
                                         s.$evalAsync();
                                     }
                                 },
@@ -610,7 +608,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                                     label: i18n.__("context.import.findDuplicate>currentList"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
-                                        s.openDuplicate({
+                                        machineryOpenDuplicate(s, {
                                             currentPage: true
                                         });
                                         s.$evalAsync();
@@ -621,7 +619,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                                     label: i18n.__("context.import.findDuplicate>selected"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
-                                        s.openDuplicate({
+                                        machineryOpenDuplicate(s, {
                                             selected: true
                                         });
                                         s.$evalAsync();
@@ -639,25 +637,25 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: "Sketch " + i18n.__("general.document"),
                         keywords: 'template 模板 file',
                         icon: '/templates/ic-sketch.png',
-                        click: function() { s.newFileFromTemplate("sketch"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "sketch"); s.$evalAsync(); }
                     },
                     {
                         label: "Photoshop " + i18n.__("general.document"),
                         icon: '/templates/ic-photoshop.png',
                         keywords: 'template 模板 file adobe psd photoshop',
-                        click: function() { s.newFileFromTemplate("psd"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "psd"); s.$evalAsync(); }
                     },
                     {
                         label: "Illustrator " + i18n.__("general.document"),
                         icon: '/templates/ic-illustration.png',
                         keywords: 'template 模板 file adobe ai illustrator',
-                        click: function() { s.newFileFromTemplate("ai"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "ai"); s.$evalAsync(); }
                     },
                     {
                         label: "XD " + i18n.__("general.document"),
                         icon: '/templates/ic-xd.png',
                         keywords: 'template 模板 file adobe xd',
-                        click: function() { s.newFileFromTemplate("xd"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "xd"); s.$evalAsync(); }
                     },
                     {
                         role: 'separator'
@@ -668,60 +666,60 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: i18n.__("general.txtDocument"),
                         icon: '/templates/ic-txt.png',
                         keywords: 'template 模板 file note txt text',
-                        click: function() { s.newFileFromTemplate("txt"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "txt"); s.$evalAsync(); }
                     },
                     {
                         label: "Word " + i18n.__("general.document"),
                         icon: '/templates/ic-word.png',
                         keywords: 'template 模板 file office microsoft doc docx word',
-                        click: function() { s.newFileFromTemplate("docx"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "docx"); s.$evalAsync(); }
                     },
                     {
                         label: "PowerPoint " + i18n.__("general.document"),
                         icon: '/templates/ic-powerpoint.png',
                         keywords: 'template 模板 file office microsoft ppt pptx powerpoint',
-                        click: function() { s.newFileFromTemplate("pptx"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "pptx"); s.$evalAsync(); }
                     },
                     {
                         label: "Excel " + i18n.__("general.document"),
                         icon: '/templates/ic-excel.png',
                         keywords: 'template 模板 file office microsoft xls xlsx csv excel',
-                        click: function() { s.newFileFromTemplate("xlsx"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "xlsx"); s.$evalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Keynote " + i18n.__("general.document"),
                         icon: '/templates/ic-keynote.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { s.newFileFromTemplate("key"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "key"); s.$evalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Pages " + i18n.__("general.document"),
                         icon: '/templates/ic-pages.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { s.newFileFromTemplate("pages"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "pages"); s.$evalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Numbers " + i18n.__("general.document"),
                         icon: '/templates/ic-numbers.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { s.newFileFromTemplate("numbers"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "numbers"); s.$evalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin' && installedApplications["mindnode"].isInstalled,
                         label: "MindNode " + i18n.__("general.document"),
                         icon: '/templates/ic-mindnode.png',
                         keywords: 'template 模板 file mind 脑图 心智图',
-                        click: function() { s.newFileFromTemplate("mindnode"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "mindnode"); s.$evalAsync(); }
                     },
                     {
                         visible: (process.platform == 'darwin')? installedApplications["xmind"].isInstalled : true,
                         label: "XMind " + i18n.__("general.document"),
                         icon: '/templates/ic-xmind.png',
                         keywords: 'template 模板 file mind 脑图 心智图',
-                        click: function() { s.newFileFromTemplate("xmind"); s.$evalAsync(); }
+                        click: function() { machineryNewFileFromTemplate(s, "xmind"); s.$evalAsync(); }
                     },
                     {
                         role: 'separator'
@@ -730,30 +728,30 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         accelerator: s.$root.preferences.shortcuts.keybinds['file.import.pinterest'],
                         label: "Pinterest",
                         icon: '/templates/ic-pinterest.png',
-                        click: function() { s.openPinterest(); }
+                        click: function() { machineryOpenPinterest(s); }
                     },
                     {
                         label: i18n.__('context.import.others>artstation'),
                         icon: '/templates/ic-artstation.png',
                         accelerator: preferences.shortcuts.keybinds['file.import.artstation'] || 'Ctrl+Alt+Shift+S',
-                        click: function() { s.openArtstation(); }
+                        click: function() { machineryOpenArtstation(s); }
                     },
                     {
                         visible: preferences?.general?.language === "zh_CN",
                         label: i18n.__('context.import.others>huaban'),
                         keywords: 'huaban 花瓣',
                         icon: '/templates/ic-huaban.png',
-                        click: function() { s.openHuaban(); }
+                        click: function() { machineryOpenHuaban(s); }
                     }
                 ],
                 showSearch: true,
             })
         }).apply(null, args);
-  };
+}
 
-  fns["openQuickAccessContextMenu"] = function (...args) {
+export function openQuickAccessContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function (event, item) {
             const $__lv_target = $(event.delegateTarget);
@@ -780,13 +778,11 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                 }
             });
         }).apply(null, args);
-  };
+}
 
-  fns["openRatioContextMenu"] = openRatioContextMenu;
-
-  fns["openSidebarVisibleContextMenu"] = function (...args) {
+export function openSidebarVisibleContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function () {
             const $__lv_target = $(".sidebar-item-container .item").has(event.target);
@@ -900,11 +896,11 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                 }
             });
         }).apply(null, args);
-  };
+}
 
-  fns["openSmartFolderExpandContextMenu"] = function (...args) {
+export function openSmartFolderExpandContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
+    const s = getBodyScope();
     if (!s) return;
     return (function(event, smartFolder) {
             event.stopPropagation();
@@ -914,7 +910,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: i18n.__("Context.Expand.Folder"),
                         icon: 'ic-expand.svg',
                         click: () => {
-                            s.toggleSelectSmartFolder(event, smartFolder);
+                            machineryToggleSelectSmartFolder(s, event, smartFolder);
                             s.$evalAsync();
                         }
                     },
@@ -922,7 +918,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: i18n.__("Context.Expand.SameLevel.Folders"),
                         icon: 'ic-expand-same.svg',
                         click: () => {
-                            s.toggleCurrentLevelSmartFolders(event, smartFolder);
+                            machineryToggleCurrentLevelSmartFolders(s, event, smartFolder);
                             s.$evalAsync();
                         }
                     },
@@ -930,7 +926,7 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                         label: i18n.__("Context.Expand.All.Folders"),
                         icon: 'ic-expand-all.svg',
                         click: () => {
-                            s.toggleAllSmartFolderExpand(event, smartFolder);
+                            machineryToggleAllSmartFolderExpand(s, event, smartFolder);
                             s.$evalAsync();
                         }
                     },
@@ -946,5 +942,26 @@ export function installMiscMenuFns(fns: any, getScope: any): void {
                 }
             });
         }).apply(null, args);
-  };
+}
+
+export function installMiscMenuFns(fns: any, getScope: any): void {
+  fns["openTrashContextMenu"] = openTrashContextMenu;
+
+  fns["openFileListContextMenu"] = openFileListContextMenu;
+
+  fns["openOrderMenu"] = openOrderMenu;
+
+  fns["openApplicationContextMenu"] = openApplicationContextMenu;
+
+  fns["openFilterAddContextMenu"] = openFilterAddContextMenu;
+
+  fns["openNewContextMenu"] = openNewContextMenu;
+
+  fns["openQuickAccessContextMenu"] = openQuickAccessContextMenu;
+
+  fns["openRatioContextMenu"] = openRatioContextMenu;
+
+  fns["openSidebarVisibleContextMenu"] = openSidebarVisibleContextMenu;
+
+  fns["openSmartFolderExpandContextMenu"] = openSmartFolderExpandContextMenu;
 }

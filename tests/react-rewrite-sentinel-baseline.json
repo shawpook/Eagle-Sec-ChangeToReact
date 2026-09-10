@@ -1,21 +1,21 @@
 {
-  "generated": "b1-9bz-B-2",
-  "counts": {
-    "evalAsync": 385,
-    "apply": 16,
-    "watch": 20,
-    "watchCollection": 8,
-    "broadcast": 122,
-    "on": 73,
-    "scopeApply": 201,
-    "callScope": 11,
-    "getBodyScope": 734,
-    "jQuery": 78,
-    "rootAccess": 464,
-    "coreState": 31,
-    "lodashWindow": 0,
-    "lodashBind": 0,
-    "lodashBare": 20,
-    "vendorScriptTags": 2
-  }
+ "generated": "b1-9bz-B",
+ "counts": {
+  "evalAsync": 385,
+  "apply": 16,
+  "watch": 20,
+  "watchCollection": 8,
+  "broadcast": 122,
+  "on": 73,
+  "scopeApply": 201,
+  "callScope": 0,
+  "getBodyScope": 835,
+  "jQuery": 78,
+  "rootAccess": 464,
+  "coreState": 31,
+  "lodashWindow": 0,
+  "lodashBind": 0,
+  "lodashBare": 20,
+  "vendorScriptTags": 2
+ }
 }

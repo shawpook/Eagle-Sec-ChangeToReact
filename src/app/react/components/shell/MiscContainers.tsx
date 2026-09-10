@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { filterWithColor, hexToRGB } from '../../core/filterDomain';
 
 /**
  * 11-pre a7：colors-picker 与 annotation-preview-container 接管（index.html 原块逐字）。
@@ -46,7 +47,7 @@ export function ColorsPicker() {
         debounceRef.current = setTimeout(() => {
           scopeApply(getBodyScope(), (s: any) => {
             if (typeof s.filterWithColor === 'function' && typeof s.hexToRGB === 'function') {
-              s.filterWithColor(s.hexToRGB(value));
+              filterWithColor(hexToRGB(value));
             }
           });
         }, 200);

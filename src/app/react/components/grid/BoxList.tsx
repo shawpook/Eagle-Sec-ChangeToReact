@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MasonryInfiniteGrid, JustifiedInfiniteGrid } from '@egjs/react-infinitegrid';
 // b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
-import { onBoxMouseup, onBoxListDblClick } from '../../services/selectionService';
+import { onBoxListDblClick, onBoxMouseup, select } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { openFileListContextMenu } from '../../services/miscMenuService';
 import {
@@ -15,7 +15,7 @@ import {
 import { BoxItem } from './boxItem';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-
+import { cleanSelected } from '../../services/batchOpsService';
 /**
  * b1-9be2：#box-list 接管 —— @egjs/react-infinitegrid v4 renderer。
  *
@@ -58,11 +58,11 @@ export function BoxList() {
           scopeApply(getBodyScope(), (s) => {
             const id = boxEl.getAttribute('data-box-id');
             const item = id && s.itemMappings ? s.itemMappings[id] : null;
-            if (item && typeof s.select === 'function') s.select(e, item);
+            if (item && typeof s.select === 'function') select(e, item);
           });
           return;
         }
-        scopeApply(getBodyScope(), (s) => s.cleanSelected && s.cleanSelected(e));
+        scopeApply(getBodyScope(), (s) => s.cleanSelected && cleanSelected(e));
       };
 
       const boxFrom = (target: EventTarget | null) =>

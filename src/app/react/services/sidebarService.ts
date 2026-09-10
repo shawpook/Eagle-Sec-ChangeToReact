@@ -11,12 +11,7 @@
  * 本模块是**组件侧唯一入口**（Sidebar.tsx 此前 ~30 处 scopeApply 绕道）。
  * 菜单族（openFolderContextMenu 等）归 S5 菜单竖切；DnD（onDropFolder 族）归 bh。
  */
-import {
-  machineryToggleAllFolders,
-  machineryToggleCurrentLevelFolders,
-  machineryToggleAllSmartFoldersInner,
-  machineryToggleCurrentLevelSmartFoldersInner,
-} from '../core/dataMachinery';
+import { machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
@@ -24,6 +19,7 @@ import { machineryFilterSidebarItem } from '../core/dataMachinery';
 import { contextMenuOpenChannel } from '../global/bus';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
+import { openFolder, openSmartFolder } from './folderCoreService';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
@@ -43,7 +39,7 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
       }
       s.$root.selectedFoldersMappings[s.currentFolder.id] = s.currentFolder;
     }
-    s.multipleOpenFolder(folder, true);
+    machineryMultipleOpenFolder(s, folder, true);
   }
   else if (event.shiftKey) {
 
@@ -71,11 +67,11 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
         }
       }
     }
-    s.currentFolderChildren = s.getChildFoldersMaps(s.$root.selectedFolders);
-    s.reload();
+    s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
+    machineryReload(s);
   }
   else {
-    s.openFolder(folder, false, 'folder-' + folder.id);
+    openFolder(folder, false, 'folder-' + folder.id);
   }
 }
 
@@ -93,7 +89,7 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
       }
       s.$root.selectedSmartFoldersMappings[s.currentSmartFolder.id] = s.currentSmartFolder;
     }
-    s.multipleOpenSmartFolder(smartFolder, true);
+    machineryMultipleOpenSmartFolder(s, smartFolder, true);
   }
   else if (event.shiftKey) {
 
@@ -118,10 +114,10 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
         s.$root.selectedSmartFoldersMappings[item.id] = item;
       }
     }
-    s.reload();
+    machineryReload(s);
   }
   else {
-    s.openSmartFolder(smartFolder, false, 'smart-folder-' + smartFolder.id);
+    openSmartFolder(smartFolder, false, 'smart-folder-' + smartFolder.id);
   }
 }
 
@@ -156,7 +152,7 @@ export function sidebarToggleFolderExpand(s: any, event: any, folder: any): void
     folder.isExpand = !folder.isExpand;
     localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, folder.isExpand);
   }
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 }
 
 /* toggleSmartFolderExpand（bundle 42270 邻域逐字：toggleFolderExpand 的 smartFolder 对称版） */
@@ -191,7 +187,7 @@ export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: 
     localStorage.setItem("eagle.sidebar.smartFolder.expand." + smartFolder.id, smartFolder.isExpand);
   }
 
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 }
 
 /* dblclickSidebarFolder（bundle 23420 邻域逐字：偏好分流 collapse / rename） */
@@ -200,7 +196,7 @@ export function sidebarDblclickFolder(s: any, event: any, folder: any): void {
     s.toggleFolderExpand(event, folder);
   }
   else {
-    s.renameFolder(event, folder);
+    machineryRenameFolder(s, event, folder);
   }
 }
 
@@ -215,7 +211,7 @@ export function sidebarPreventMiddleClick(event: any): void {
    s.sidebarList；S2-bh/bf 评估把主体迁入）── */
 export function updateSidebarList(): void {
   const s = getBodyScope();
-  if (s && typeof s.updateSidebarList === 'function') s.updateSidebarList();
+  if (s && typeof s.updateSidebarList === 'function') machineryUpdateSidebarList(s);
 }
 
 /* ── React 直调便捷面（无 scope 参数版本）——Sidebar.tsx 事件处理直调不绕 scopeApply。 */
@@ -311,7 +307,7 @@ export function dblclickSidebarSmartFolderGroup(...args: any[]) {
         		s.toggleSmartFolderExpand(event, folder);
         	}
         	else {
-        		s.renameSmartFolder(event, folder);
+        		machineryRenameSmartFolder(s, event, folder);
         	}
         }).apply(null, args);
   }
@@ -473,10 +469,10 @@ export function onSidebarResize(...args: any[]) {
             syncSidebarFromScope();
             syncTagManagerFromScope();
             s.$root.$broadcast('$$rebind::refreshContainSize');
-            s.updateSliderPosition();
+            machineryUpdateSliderPosition(s);
             clearTimeout(__lv_onSidebarResizeTimeout);
             __lv_onSidebarResizeTimeout = setTimeout(function () {
-                s.relayout();
+                machineryRelayout(s);
                 s.offsetScrollbar(30);
                 localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
             }, 500);

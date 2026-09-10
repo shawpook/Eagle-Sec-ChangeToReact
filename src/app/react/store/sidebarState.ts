@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
 import { classObjectToString, getBodyScope } from '../core/appCore';
+import { getNodeClass, getQuickAccessClass, getSmartFolderClass } from '../services/sidebarService';
 
 /**
  * 阶段2：侧栏状态 —— 快照自 EagleController scope（规范 app.bundle.js:20197+）。
@@ -170,12 +171,12 @@ function buildSnapshot(scope: any): SidebarSnapshot {
     };
     // 类名走 scope 原函数，保证与旧版逐字一致（bundle:38244/38271/38307）。
     try {
-      if (raw.vstype === 'folder') node.cls = classObjectToString(scope.getNodeClass(raw));
-      else if (raw.vstype === 'smartFolder') node.cls = classObjectToString(scope.getSmartFolderClass(raw));
+      if (raw.vstype === 'folder') node.cls = classObjectToString(getNodeClass(raw));
+      else if (raw.vstype === 'smartFolder') node.cls = classObjectToString(getSmartFolderClass(raw));
       else if (raw.vstype === 'quickAccess' && raw.type === 'folder')
-        node.cls = classObjectToString(scope.getQuickAccessClass(raw) || {});
+        node.cls = classObjectToString(getQuickAccessClass(raw) || {});
       else if (raw.vstype === 'quickAccess' && raw.type === 'smartFolder')
-        node.cls = classObjectToString(scope.getQuickAccessClass(raw) || {});
+        node.cls = classObjectToString(getQuickAccessClass(raw) || {});
     } catch (err) {
       node.cls = '';
     }

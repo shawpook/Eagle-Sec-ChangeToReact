@@ -16,10 +16,18 @@
  */
 // @ts-nocheck
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCheckOperationSafety, machineryCopyImages, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow, machineryVideoScreenShot } from '../core/dataMachinery';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
-
+import { copyAsBase64, copyAsFolderPath, copyAsLink, copyAsPath, copyAsProperity, copyAsThumbnail, openFilesWithDefault, openInFinder, openInPreviewWindow, openItemLocation, openWithOther } from '../core/itemDomain';
+import { duplicateItem } from './folderCoreService';
+import { changeImagesBackground, resetCustomThumbnail, setCustomThumbnail, setCustomThumbnailFromClipboard } from './imageOpsService';
+import { loadSubtitles, setAsVideoThumbnail } from './mediaService';
+import { getNext } from './viewOpsService';
+import { addToFolders, addToLastUsedFolder, copyTags, exportSelectedAsEaglepack, exportSelectedAsFolder, exportSelectedAsFormat, exportSelectedToCsv, pasteTags, removeFromFolder, scrollToSelectedItem } from './batchOpsService';
+import { newFolderWidthSelection } from './folderCoreService';
+import { activateFonts, changeFontDefaultLang, deactivateFonts, isFontActivate, renameFontsWithFullName } from './fontTagService';
+import { regenerateThumbnail, replaceFile } from './imageOpsService';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -68,7 +76,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 label: folder.name,
                 keywords: 'open 打開 location 位置 eagle',
                 click: () => {
-                    s.openItemLocation(s.selected[0], folder);
+                    openItemLocation(s.selected[0], folder);
                     s.$evalAsync();
                 }
             });
@@ -151,7 +159,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 label: i18n.__('context.image.openInOthers'),
                 icon: 'ic-open-other.svg',
                 click: () => {
-                    s.openWithOther();
+                    openWithOther();
                 }
             }
         }
@@ -223,7 +231,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         s.calculateImageBinding({ ignoreSort: true }, () => {
                             s.rebindRefresh(true);
                         });
-                        const itemElements = s.getSelectedItemElements();
+                        const itemElements = machineryGetSelectedItemElements(s);
                         s.$root.$broadcast("gl:removeItems", itemElements);
                         ayncsImagesChange(items);
                         try { electronLog && electronLog.info(`[app] Restore ${items.length} files from trash`); } catch (err) {};
@@ -237,21 +245,21 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 },
                 // 启用字型 (字體）
                 {
-                    disabled: !(!s.isFontActivate(item) && !item.activating && !item.deactivating),
+                    disabled: !(!isFontActivate(item) && !item.activating && !item.deactivating),
                     visible: !!FONT_TYPES[item.ext],
                     label: i18n.__('Context.Image.Font.Activate'),
                     keywords: 'font activate enable 啟用 啟動 字型 字體',
                     icon: 'ic-font-activate.svg',
-                    click: () => { s.activateFonts(items); },
+                    click: () => { activateFonts(items); },
                 },
                 // 停用字型 (字體）
                 {
-                    disabled: (!s.isFontActivate(item) && !item.activating && !item.deactivating),
+                    disabled: (!isFontActivate(item) && !item.activating && !item.deactivating),
                     visible: !!FONT_TYPES[item.ext],
                     label: i18n.__('Context.Image.Font.Deactivate'),
                     keywords: 'font deactivate disable 停用 停止 字型 字體',
                     icon: 'ic-font-deactivate.svg',
-                    click: () => { s.deactivateFonts(items); },
+                    click: () => { deactivateFonts(items); },
                 },
                 // --- (字體）
                 {
@@ -266,7 +274,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'cover thumbnail 封面',
                     icon: 'ic-video-update-thumbnail.svg',
                     click: () => {
-                        s.setAsVideoThumbnail();
+                        setAsVideoThumbnail();
                     },
                 },
                 // 拷贝当前画面（視頻）
@@ -277,7 +285,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'cover thumbnail 封面 copy 複製',
                     icon: 'ic-video-copy-frame.svg',
                     click: () => {
-                        s.videoScreenShot(true);
+                        machineryVideoScreenShot(s, true);
                     },
                 },
                 // 保存当前画面（視頻）
@@ -288,7 +296,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'cover thumbnail 封面 save 儲存 保存',
                     icon: 'ic-video-save-frame.svg',
                     click: () => {
-                        s.videoScreenShot();
+                        machineryVideoScreenShot(s);
                     },
                 },
                 // 保存当前画面（視頻）
@@ -298,7 +306,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'srt subtitle 字幕',
                     icon: 'ic-video-load-subtitle.svg',
                     click: () => {
-                        s.loadSubtitles();
+                        loadSubtitles();
                     },
                 },
                 // ---（視頻）
@@ -314,7 +322,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'open new window 開啟 打開 新視窗 新窗口',
                     icon: 'ic-open-new-window.svg',
                     click: () => {
-                        s.openInPreviewWindow();
+                        openInPreviewWindow();
                     },
                 },
                 // 在默认应用打开
@@ -324,7 +332,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'open default application 開啟 打開 默認 預設 應用',
                     icon: 'ic-open-default.svg',
                     click: () => {
-                        s.openFilesWithDefault(s.selected);
+                        openFilesWithDefault(s.selected);
                         s.$evalAsync();
                     },
                 },
@@ -337,7 +345,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'open finder explorer 開啟 打開 資源管理器 資源管理員 文件管理器',
                     icon: (process.platform === 'darwin')? 'ic-open-finder.svg': 'ic-open-explorer.svg',
                     click: () => {
-                        s.openInFinder();
+                        openInFinder();
                     },
                 },
                 // 打开文件所在的位置(單選)
@@ -350,7 +358,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             label: i18n.__("appmenu.view>all"),
                             keywords: `${i18n.__("context.image.openItemLocation")} open eagle 打開 location 位置`,
                             click: () => {
-                                s.openItemLocation(item, null);
+                                openItemLocation(item, null);
                                 s.$evalAsync();
                             }
                         }, ...openInFolderMenuItems],
@@ -376,13 +384,13 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 // 添加到上一次使用的文件夾
                 // addToLastUsedFolder
                 {
-                    disabled: s.getRecentFolders().length === 0,
+                    disabled: machineryGetRecentFolders(s).length === 0,
                     label: i18n.__('appmenu.find>addToLastFolder'),
                     keywords: 'add to last used folder 添加至上次使用的文件夾',
                     icon: 'ic-folder-last-used.svg',
                     accelerator: preferences.shortcuts.keybinds['organize.folder.addLast'],
                     click: () => {
-                        s.addToLastUsedFolder();
+                        addToLastUsedFolder();
                         s.$evalAsync();
                     },
                 },
@@ -393,7 +401,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'add to folder 添加至文件夾 添加到資料夾',
                     icon: 'ic-folder-add-to.svg',
                     click: () => {
-                        s.addToFolders();
+                        addToFolders();
                         s.$evalAsync();
                     },
                 },
@@ -417,7 +425,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-export-eaglepack.svg',
                                 accelerator:  preferences.shortcuts.keybinds['file.export.item.eaglepack'],
                                 click: () => {
-                                    s.exportSelectedAsEaglepack();
+                                    exportSelectedAsEaglepack();
                                 }
                             },
                             {
@@ -426,7 +434,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-export-computer.svg',
                                 accelerator:  preferences.shortcuts.keybinds['file.export.item.computer'],
                                 click: () => {
-                                    s.exportSelectedAsFolder();
+                                    exportSelectedAsFolder();
                                 }
                             },
                             {
@@ -435,7 +443,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: `${i18n.__("context.image.export")} export as format 匯出 導出 格式`,
                                 accelerator:  preferences.shortcuts.keybinds['file.export.item.as'],
                                 click: () => {
-                                    s.exportSelectedAsFormat();
+                                    exportSelectedAsFormat();
                                     s.$evalAsync();
                                 }
                             },
@@ -445,7 +453,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: 'export csv 導出 匯出',
                                 accelerator:  preferences.shortcuts.keybinds['file.export.csv'],
                                 click: () => {
-                                    s.exportSelectedToCsv();
+                                    exportSelectedToCsv();
                                     s.$evalAsync();
                                 }
                             }
@@ -479,7 +487,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     icon: 'ic-pin.svg',
                     click: () => {
                         // TODO 需重構獨立成 function
-                        s.checkOperationSafety(() => {
+                        machineryCheckOperationSafety(s, () => {
                             var now = Date.now();
                             s.selected.forEach((item, index) => {
                                 if (!item.pinned) { item.pinned = {} };
@@ -505,7 +513,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 duration: 1500
                             });
                             s.rebindRefresh();
-                            // s.scrollToSelectedItem();
+                            // scrollToSelectedItem();
                             s.$evalAsync();
                         });
                     },
@@ -518,7 +526,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     icon: 'ic-unpin.svg',
                     click: () => {
                         // TODO 需重構獨立成 function
-                        s.checkOperationSafety(() => {
+                        machineryCheckOperationSafety(s, () => {
                             var now = Date.now();
                             s.selected.forEach((item, index) => {
                                 if (!item.pinned) return;
@@ -546,10 +554,10 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 message: message,
                                 duration: 1500
                             });
-                            s.selected = [s.getNext()];
+                            s.selected = [getNext()];
                             syncInspectorFromScope();
                             s.rebindRefresh();
-                            // s.scrollToSelectedItem();
+                            // scrollToSelectedItem();
                             s.$evalAsync();
                         });
                     },
@@ -567,7 +575,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'set as cover 設為封面',
                     icon: 'ic-folder-set-cover.svg',
                     click: () => {
-                        s.setFolderCover();
+                        machinerySetFolderCover(s);
                         s.$evalAsync();
                     },
                 },
@@ -585,7 +593,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'folder selection new',
                     icon: 'ic-folder-new-with-selection.svg',
                     click: () => {
-                        s.newFolderWidthSelection();
+                        newFolderWidthSelection();
                     },
                 },
                 // 重命名(多選)
@@ -619,7 +627,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'copy file 複製 文件',
                     icon: 'ic-file-copy.svg',
                     click: () => {
-                        s.copyImages(event);
+                        machineryCopyImages(s, event);
                         s.$evalAsync();
                     },
                 },
@@ -630,7 +638,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'copy path 複製 路徑',
                     icon: 'ic-file-copy-path.svg',
                     click: () => {
-                        s.copyAsPath();
+                        copyAsPath();
                         s.$evalAsync();
                     },
                 },
@@ -648,7 +656,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: `${i18n.__("context.image.copy")} copy link 拷貝 複製 鏈接 連結`,
                                 icon: '',
                                 click: () => {
-                                    s.copyAsLink(undefined, items);
+                                    copyAsLink(undefined, items);
                                     s.$evalAsync();
                                 },
                             },
@@ -659,7 +667,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: `${i18n.__("context.image.copy")} copy folder path 拷貝 複製 文件夾 資料夾 路徑`,
                                 icon: '',
                                 click: () => {
-                                    s.copyAsFolderPath();
+                                    copyAsFolderPath();
                                     s.$evalAsync();
                                 },
                             },
@@ -670,7 +678,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: `${i18n.__("context.image.copy")} copy thumbnail 拷貝 複製 縮略圖`,
                                 icon: '',
                                 click: () => {
-                                    s.copyAsThumbnail();
+                                    copyAsThumbnail();
                                     s.$evalAsync();
                                 },
                             },
@@ -682,7 +690,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: `${i18n.__("context.image.copy")} copy 拷貝 複製`,
                                 icon: '',
                                 click: () => {
-                                    s.copyAsBase64();
+                                    copyAsBase64();
                                     s.$evalAsync();
                                 },
                             },
@@ -693,7 +701,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: `${i18n.__("context.image.copy")} copy name 拷貝 複製 名稱`,
                                 icon: '',
                                 click: () => {
-                                    s.copyAsProperity("name");
+                                    copyAsProperity("name");
                                     s.$evalAsync();
                                 },
                             },
@@ -708,7 +716,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'copy tag 複製 標籤',
                     icon: 'ic-tag-copy.svg',
                     click: () => {
-                        s.copyTags();
+                        copyTags();
                     },
                 },
                 // 粘贴标签
@@ -719,7 +727,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'paste tag 粘貼 標籤 貼上',
                     icon: 'ic-tag-paste.svg',
                     click: () => {
-                        s.pasteTags();
+                        pasteTags();
                     },
                 },
                 // ---
@@ -746,7 +754,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'clone duplicate 複製 副本',
                     icon: 'ic-copy-duplicate.svg',
                     click: () => {
-                        s.duplicateItem();
+                        duplicateItem();
                         s.$evalAsync();
                     },
                 },
@@ -761,8 +769,8 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 //     keywords: 'search by image',
                 //     icon: 'ic-search-by-image.svg',
                 //     click: () => {
-                //         s.openAll();
-                //         s.openFilter();
+                //         machineryOpenAll(s);
+                //         machineryOpenFilter(s);
                 //         s.$broadcast('OPEN_IMAGE_FILTER', { itemId: item.id });
                 //     },
                 // },
@@ -865,7 +873,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'enter slide show presentation 簡報 演示 進入',
                     icon: 'ic-slideshow-on.svg',
                     click: () => {
-                        s.toggleSlideshow();
+                        machineryToggleSlideshow(s);
                     }
                 },
                 // 離開全螢幕
@@ -906,7 +914,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-transparent-grid-none.svg',
                                 label: i18n.__('context.image.thumbnailBG>none'),
                                 keywords: `${i18n.__('context.image.thumbnailBG')} thumbnail background transparent grid none 縮略圖 背景 無`,
-                                click: () => { s.changeImagesBackground(items, undefined); }
+                                click: () => { changeImagesBackground(items, undefined); }
                             },
                             // ---
                             {
@@ -918,7 +926,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-transparent-grid-black.svg',
                                 label: i18n.__('context.image.thumbnailBG>dark'),
                                 keywords: `${i18n.__('context.image.thumbnailBG')} thumbnail background transparent grid dark black 縮略圖 背景 黑 #000`,
-                                click: () => { s.changeImagesBackground(items, 'dark'); }
+                                click: () => { changeImagesBackground(items, 'dark'); }
                             },
                             // 灰
                             {
@@ -926,7 +934,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-transparent-grid-gray.svg',
                                 label: i18n.__('context.image.thumbnailBG>gray'),
                                 keywords: `${i18n.__('context.image.thumbnailBG')} thumbnail background transparent grid gray grey 縮略圖 背景 灰 #777`,
-                                click: () => { s.changeImagesBackground(items, 'gray'); }
+                                click: () => { changeImagesBackground(items, 'gray'); }
                             },
                             // 白
                             {
@@ -934,7 +942,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-transparent-grid-white.svg',
                                 label: i18n.__('context.image.thumbnailBG>light'),
                                 keywords: `${i18n.__('context.image.thumbnailBG')} thumbnail background transparent grid light white 縮略圖 背景 白 #fff`,
-                                click: () => { s.changeImagesBackground(items, 'light'); }
+                                click: () => { changeImagesBackground(items, 'light'); }
                             },
                             // 網格
                             {
@@ -942,7 +950,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 icon: 'ic-transparent-grid.svg',
                                 label: i18n.__('context.image.thumbnailBG>grid'),
                                 keywords: `${i18n.__('context.image.thumbnailBG')} thumbnail background transparent grid 縮略圖 背景 網格 透明`,
-                                click: () => { s.changeImagesBackground(items, 'grid'); }
+                                click: () => { changeImagesBackground(items, 'grid'); }
                             },
                         ]
                     }
@@ -1004,7 +1012,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: 'more thumbnail custom 更多 自定義 縮略圖 縮圖',
                                 icon: '',
                                 click: () => {
-                                    s.setCustomThumbnail();
+                                    setCustomThumbnail();
                                 },
                             },
                             // 自定义缩略图（从剪切板）
@@ -1015,7 +1023,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: 'more thumbnail custom clipboard 更多 自定義 縮略圖 縮圖 剪貼簿 剪切板',
                                 icon: '',
                                 click: () => {
-                                    s.setCustomThumbnailFromClipboard();
+                                    setCustomThumbnailFromClipboard();
                                 },
                             },
                             // 重置缩略图
@@ -1026,7 +1034,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: 'more thumbnail custom reset 更多 自定義 縮略圖 縮圖 重置',
                                 icon: '',
                                 click: () => {
-                                    s.resetCustomThumbnail();
+                                    resetCustomThumbnail();
                                 }
                             },
                             // ---
@@ -1041,7 +1049,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: 'more thumbnail update refresh 更多 縮略圖 縮圖 刷新 更新',
                                 icon: '',
                                 click: () => {
-                                    s.regenerateThumbnail();
+                                    regenerateThumbnail();
 					                    s.$evalAsync();
                                 },
                             },
@@ -1061,7 +1069,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 keywords: 'more replace substitute 覆蓋 覆写 替换',
                                 icon: '',
                                 click: () => {
-                                    s.replaceFile();
+                                    replaceFile();
                                 },
                             },
                             // ---（字體）
@@ -1075,7 +1083,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 label: i18n.__('Context.Image.Font.Rename'),
                                 keywords: 'font rename 字體 字型 重命名',
                                 click: () => {
-                                    s.renameFontsWithFullName(items);
+                                    renameFontsWithFullName(items);
                                 }
                             },
                             // 設置字體預設語言（字體）
@@ -1089,7 +1097,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 label: "English",
                                 keywords: 'font english en us 字體 字型 英文',
                                 click: () => {
-                                    s.changeFontDefaultLang(items, 'en');
+                                    changeFontDefaultLang(items, 'en');
                                     s.$evalAsync();
                                 }
                             },
@@ -1098,7 +1106,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 label: "日本語",
                                 keywords: 'font japanese jp 字體 字型 日文',
                                 click: () => {
-                                    s.changeFontDefaultLang(items, 'jp');
+                                    changeFontDefaultLang(items, 'jp');
                                     s.$evalAsync();
                                 }
                             },
@@ -1107,7 +1115,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 label: "한국어",
                                 keywords: 'font korean kr 字體 字型 韓文',
                                 click: () => {
-                                    s.changeFontDefaultLang(items, 'kr');
+                                    changeFontDefaultLang(items, 'kr');
                                     s.$evalAsync();
                                 }
                             },
@@ -1116,7 +1124,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 label: "Chinese(Simplified)",
                                 keywords: 'font chinese simplified zh_CN 字體 字型 簡體中文',
                                 click: () => {
-                                    s.changeFontDefaultLang(items, 'zh_CN');
+                                    changeFontDefaultLang(items, 'zh_CN');
                                     s.$evalAsync();
                                 }
                             },
@@ -1125,7 +1133,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 label: "Chinese(Traditional)",
                                 keywords: 'font chinese traditional zh_TW 字體 字型 繁體中文',
                                 click: () => {
-                                    s.changeFontDefaultLang(items, 'zh_TW');
+                                    changeFontDefaultLang(items, 'zh_TW');
                                     s.$evalAsync();
                                 }
                             },
@@ -1144,7 +1152,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'remove from folder delete 從文件夾中移除 從資料夾中移除',
                     icon: 'ic-file-remove-folder.svg',
                     click: () => {
-                        s.removeFromFolder(event, s.currentFolder.id);
+                        removeFromFolder(event, s.currentFolder.id);
                         s.$evalAsync();
                     },
                 },
@@ -1156,7 +1164,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'move to trash remove delete 丟到回收站 垃圾桶',
                     icon: 'ic-file-move-trash.svg',
                     click: () => {
-                        s.removeSelected();
+                        machineryRemoveSelected(s);
                         s.$evalAsync();
                     },
                 },
@@ -1183,7 +1191,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             cancelButtonText: i18n.__("general.cancel"),
                         }).then(() => {
                             s.$evalAsync(() => {
-                                s.removePermanently();
+                                machineryRemovePermanently(s);
                                 if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
                                     s.removeSound.play();
                                 }

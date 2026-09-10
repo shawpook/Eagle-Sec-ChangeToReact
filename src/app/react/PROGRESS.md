@@ -1649,6 +1649,62 @@
 > **对排期的影响**：scopeFace 必须按目录拆成多笔（建议 services→core→components 各一笔，
 > 笔内再按判档分刀：单源先走、双键留到「43 双键单源化」逐函数比对后再动）。
 >
+>
+> **【b1-9bz-B-4：scopeFace 消费面直调化 618 处（45 文件）——2026-09-09/10】**
+>
+> 工具链（均在 `tests-tmp/`，可重跑）：
+> 1. `bz-b-lift-all.py` —— 把 install 家族的匿名 `fns["X"] = function(...)` 提升为具名
+>    `export function X(...)`，使 197 个 TABLE 落点获得可 import 的符号（101 条成功，
+>    7 条因依赖 install 局部闭包**正确跳过**）；
+> 2. `bz-b-scope-direct.py --map` —— 从 dataMachinery 的 `s.NAME = (a)=>machineryX(s,a)`
+>    挂载体解析落点，按形态可还原性判档 MACH / DUAL / TABLE / **PREBIND**（`s.X=machineryX(s)`
+>    预绑实例，仅零参调用可还原）/ SKIP（外部注入，如 `s.notify = notifyFn`）；
+> 3. `bz-b-scope-direct.py --apply DIR` —— 逐域替换并自动补 import；
+> 4. `bz-b-fiximports.py` / `bz-b-export-fix.py` / `bz-b-shadow.py` —— 后置校验与修补。
+>
+> **落点规则**：MACH/DUAL/PREBIND → `machineryXxx(var, …)`（**沿用原变量名**，见下）；
+> TABLE → `xxx(…)`（**不传 s**，与已落地的 DetailToolbar/ListRegion 同口径）；
+> NONE/SKIP → 保留 `s.xxx()` 回退。
+>
+> **改造规模**：45 文件 / +1790 −1521，**618 处直调**（services 356 / core 149 /
+> components 106 / store 7）。消费面 `s.xxx()` 由 910 处降到 **247 处**（另 372 处是
+> dataMachinery 自身，见「定义侧排除」）。
+>
+> **四个必须记住的坑**（本轮全部踩过，均已修正在工具里）：
+> 1. **沿用原变量名**：`scope.currentIndex()` 若替换成 `machineryCurrentIndex(s)`，
+>    在该作用域只有 `scope` 时会抛 ReferenceError——而 detailState 的 try/catch 把它
+>    静默吞成 `currentIndex = 0`，表现为 toolbar counter 显示 "0 / 2"（stage5
+>    `detail-toolbar-counter` 挂）。现按 `CALL_RE` 捕获变量部分并原样回填。
+> 2. **局部同名遮蔽**：`ProgressDialogs.tsx` 里 `const cancelEmptyTrash = () => {…}`
+>    会遮蔽同名 import，直调后变成**自我递归**（stage7d6a/b 的 `*-cancel-closed` 挂）。
+>    现改造前用 `local_decls()`（含形参）检查，命中即保留 scope 面。
+> 3. **测试 spy 契约**：测试通过替换 `s.NAME` 做 spy 来断言 $watch/$broadcast 桥接，
+>    直调化会绕过 scope 面使 spy 失效。7 个名字进 `EXCLUDE` 白名单保留 scope 面：
+>    `updateSelection` / `rebindRefresh` / `filterContent` / `calculateImageBinding` /
+>    `restoreDefaultShortcuts` / `copyApiToken` / `search`（P4-ca 删 scopeShim 时统一处置）。
+> 4. **dataMachinery 缺 export**：`machineryGetChildFoldersMap(s)` 两个函数存在但没写
+>    `export`，被引用后 vite 直接 500 → 全链崩（表现为 `window.eagle timeout`）。
+>    现由 `bz-b-export-fix.py` 按"外部引用 − 现有导出"补 `export`。
+>
+> **定义侧排除（重要）**：`core/dataMachinery.ts` 自身的 372 处 `s.xxx()` **不改造**——
+> 它是挂载体定义处，其函数体的 `s` 形参可能来自任意 scope（body / preview /
+> preferences 三套），`s.xxx()` 未必等价 `machineryXxx(s)`。只改造 `s` 明确来自
+> `getBodyScope()` 的**消费面**文件。
+>
+> **哨兵基线吸收**：`callScope 11 → 0`（本批达成，全树归零）；`getBodyScope 734 → 835`
+> （+101，来自 101 条 install 条目提升后由闭包 `getScope` 改为显式 `getBodyScope()`，
+> 语义等价——install 注入的 getScope 本就是 body scope）。基线已更新为 `b1-9bz-B`。
+>
+> **门禁**：esbuild 语法检 0 错；`bz-b-imports.py` 750 条相对 import 全部可解析
+> （此前 `table_import_of` 对 install 家族返回项目根相对路径，被写成裸绝对路径
+> `from "src/app/react/…"`，vite 无法解析 → dataMachinery 500 → 全链崩，已修）；
+> `bz-b-shadow.py` 同名遮蔽 0；哨兵 SENTINEL_OK；**套件 55/55 ALL GREEN**。
+>
+> **剩余 247 处消费面**：EXCLUDE 白名单 7 名（spy 契约）+ KEEP-无供给 76 名
+> （machinery 与 fns 表都无供给，保留回退）+ PREBIND 带参 4 名 + TABLE 需提升 3 名
+> （依赖 install 局部闭包）+ 动态键 1 处。另 `dataMachinery.ts` 372 处为定义侧，
+> 与 43 双键单源化一并留给后续批次。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

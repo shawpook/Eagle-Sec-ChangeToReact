@@ -9,6 +9,7 @@ import { contentFocus, dblclickContentPanel } from '../../core/miscDomain';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { hoverShowSidebar, onSidebarResize } from '../../services/sidebarService';
 
 /**
  * 11-pre a8：body 绑定层 React 等价（C 模式直写静态壳节点）。
@@ -160,7 +161,7 @@ export function HoverShowSidebar() {
     const $el = $(el);
     $el.hoverIntent(function ($event: any) {
       scopeApply(scope, (s: any) => {
-        if (typeof s.hoverShowSidebar === 'function') s.hoverShowSidebar($event);
+        if (typeof s.hoverShowSidebar === 'function') hoverShowSidebar($event);
       });
     });
     return () => {
@@ -191,7 +192,7 @@ export function SidebarResizable() {
       handles: 'e',
       resize: function (event: any, ui: any) {
         scopeApply(scope, (s: any) => {
-          if (typeof s.onSidebarResize === 'function') s.onSidebarResize(event, ui);
+          if (typeof s.onSidebarResize === 'function') onSidebarResize(event, ui);
         });
       },
     });

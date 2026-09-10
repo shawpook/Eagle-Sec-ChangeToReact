@@ -7,7 +7,10 @@ import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterI
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-
+import { machineryCalculateFilterCounts, machineryReload, machineryUpdateContainerHieght } from '../../core/dataMachinery';
+import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
+import { excludeWithTag } from '../../services/batchOpsService';
+import { filterWithTag } from '../../services/fontTagService';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
 export const KIND_COMPONENTS: Record<string, React.ComponentType<{ snapshot: FilterSnapshot }>> = {};
@@ -36,7 +39,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && s.updateContainerHieght());
+      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -143,7 +146,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.color.value = undefined;
     f.filterRules.color.gray = false;
-    runSeq([(s) => { s.page = 1; s.reload(); s.calculateFilterCounts && s.calculateFilterCounts(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); s.calculateFilterCounts && machineryCalculateFilterCounts(s); }]);
   };
 
   const activeHex = rgbToHexFn(value?.[0], value?.[1], value?.[2]);
@@ -165,7 +168,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
         s.$evalAsync();
       } else if (s) {
         s.hexColor = color;
-        s.filterWithColor && s.filterWithColor(s.hexToRGB(color));
+        s.filterWithColor && filterWithColor(hexToRGB(color));
         s.$evalAsync();
       }
     }, 33);
@@ -219,18 +222,18 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   <div
                     className={`palette none${!gray && !activeHex ? ' active' : ''}`}
                     style={{ backgroundColor: '#ccc' }}
-                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithColor && s.filterWithColor()); }}
+                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithColor && filterWithColor()); }}
                   />
                   <div
                     className="palette gray"
-                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithHexColor && s.filterWithHexColor('gray')); }}
+                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor('gray')); }}
                   />
                   {COLOR_PALETTES.map(([hex]) => (
                     <div
                       key={hex}
                       className={`palette${hex === activeHex ? ' active' : ''}`}
                       style={{ backgroundColor: hex }}
-                      onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithHexColor && s.filterWithHexColor(hex)); }}
+                      onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor(hex)); }}
                     />
                   ))}
                 </div>
@@ -246,7 +249,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onChange={(e) => {
                       setHexDraft(e.target.value);
                       scopeApply(bodyScope(), (s) => { s.hexColor = e.target.value; });
-                      scopeApply(bodyScope(), (s) => s.filterWithHexColor && s.filterWithHexColor(e.target.value));
+                      scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor(e.target.value));
                     }}
                   />
                   <div className="fake-color-input" onClick={openColorPicker} style={{ backgroundColor: hexDraft }} />
@@ -269,7 +272,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onChange={(e) => {
                       const v = Number(e.target.value);
                       scopeApply(bodyScope(), (s) => { s.eagle.filter.filterRules.color.accuracy = v; });
-                      scopeApply(bodyScope(), (s) => s.filterWithHexColor && s.filterWithHexColor(s.hexColor));
+                      scopeApply(bodyScope(), (s) => s.filterWithHexColor && filterWithHexColor(s.hexColor));
                     }}
                   />
                 </div>
@@ -365,9 +368,9 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const onOpen = () => {
     scopeApply(bodyScope(), (s) => {
       if (s.eagle.filter.folderFilterLogic === 'OR') {
-        s.calcuteContainFolders && s.calcuteContainFolders(s.preelaborations);
+        s.calcuteContainFolders && calcuteContainFolders(s.preelaborations);
       } else {
-        s.calcuteContainFolders && s.calcuteContainFolders(s.allData);
+        s.calcuteContainFolders && calcuteContainFolders(s.allData);
       }
       s.$evalAsync();
     });
@@ -378,7 +381,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.folder.includes = {};
     f.filterRules.folder.excludes = {};
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   const changeRule = (rule: string) => {
@@ -471,14 +474,14 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   onClick={(e) => {
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
-                    scopeApply(bodyScope(), (s) => s.filterWithFolder && s.filterWithFolder(live));
+                    scopeApply(bodyScope(), (s) => s.filterWithFolder && filterWithFolder(live));
                     runSeq([(s) => { s.page = 1; s.filterContent && s.filterContent(); }]);
                   }}
                   onContextMenu={(e) => {
                     e.stopPropagation();
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
-                    scopeApply(bodyScope(), (s) => s.excludeWithFolder && s.excludeWithFolder(live));
+                    scopeApply(bodyScope(), (s) => s.excludeWithFolder && excludeWithFolder(live));
                     runSeq([(s) => { s.page = 1; s.filterContent && s.filterContent(); }]);
                   }}
                   nameHtml={substring(fuzzyName(folder.name), 0, 200)}
@@ -605,7 +608,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
     f.filterRules.tag.includes.length = 0;
     f.filterRules.tag.excludes.length = 0;
     f.filterRules.tag.no = false;
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   const changeRule = (rule: string) => {
@@ -733,14 +736,14 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onClick={() => {
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      scopeApply(bodyScope(), (s) => s.filterWithTag && s.filterWithTag(live));
+                      scopeApply(bodyScope(), (s) => s.filterWithTag && filterWithTag(live));
                       runSeq([(s) => { s.page = 1; s.filterContent && s.filterContent(); }]);
                     }}
                     onContextMenu={(e) => {
                       e.stopPropagation();
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      scopeApply(bodyScope(), (s) => s.excludeWithTag && s.excludeWithTag(live));
+                      scopeApply(bodyScope(), (s) => s.excludeWithTag && excludeWithTag(live));
                       runSeq([(s) => { s.page = 1; s.filterContent && s.filterContent(); }]);
                     }}
                     nameHtml={substring(fuzzyName(tag.name), 0, 200)}
@@ -769,7 +772,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                       }
                       s.eagle.filter.filterRules.tag.includes = [...new Set(s.eagle.filter.filterRules.tag.includes)];
                       s.filterContent && s.filterContent();
-                      s.calculateFilterCounts && s.calculateFilterCounts();
+                      s.calculateFilterCounts && machineryCalculateFilterCounts(s);
                     });
                   }}
                   name={t('filter.tags>selectAll')}

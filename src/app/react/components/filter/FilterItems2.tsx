@@ -10,7 +10,9 @@ import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-
+import { machineryReload, machineryUpdateContainerHieght } from '../../core/dataMachinery';
+import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
+import { openFilterAddContextMenu } from '../../services/miscMenuService';
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
 const num0 = (value: number | undefined | null): string => {
@@ -31,7 +33,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && s.updateContainerHieght());
+      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -128,7 +130,7 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.type.includes = {};
     f.filterRules.type.excludes = {};
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   return (
@@ -165,13 +167,13 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   excluded={!!excludes[typeItem]}
                   onClick={() => {
                     focusInput(rootRef.current);
-                    scopeApply(bodyScope(), (s) => s.toggleExtFilter && s.toggleExtFilter(typeItem));
+                    scopeApply(bodyScope(), (s) => s.toggleExtFilter && toggleExtFilter(typeItem));
                     runSeq([(s) => { s.page = 1; s.filterContent && s.filterContent(); }]);
                     setTypesKeyword('');
                   }}
                   onContextMenu={(e) => {
                     focusInput(rootRef.current);
-                    scopeApply(bodyScope(), (s) => s.toggleExtFilterExclude && s.toggleExtFilterExclude(typeItem));
+                    scopeApply(bodyScope(), (s) => s.toggleExtFilterExclude && toggleExtFilterExclude(typeItem));
                     runSeq([(s) => { s.page = 1; s.filterContent && s.filterContent(); }]);
                     setTypesKeyword('');
                   }}
@@ -336,7 +338,7 @@ function RatingItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     const r = filter().filterRules.rating;
     RATING_ITEMS.forEach((k) => { r[k] = false; });
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   const stars = (filled: number) => (
@@ -415,7 +417,7 @@ function FontsItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter().filterRules.font;
     f.activated = false;
     f.deactivated = false;
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   const counts = snapshot.counts?.fontActivated || {};
@@ -495,7 +497,7 @@ function CameraItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const clearCamera = (e: React.MouseEvent) => {
     e && e.stopPropagation();
     filter().filterRules.camera = {};
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   return (
@@ -575,10 +577,10 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
 
   const onOpen = () => {
     scopeApply(bodyScope(), (s) => {
-      s.calculateDateFilter && s.calculateDateFilter();
-      s.filterImportDateMonths = s.getDateFilterCountsArray && s.getDateFilterCountsArray('date');
+      s.calculateDateFilter && calculateDateFilter();
+      s.filterImportDateMonths = s.getDateFilterCountsArray && getDateFilterCountsArray('date');
       syncFilterFromScope();
-      s.filterModifyDateMonths = s.getDateFilterCountsArray && s.getDateFilterCountsArray('mtime');
+      s.filterModifyDateMonths = s.getDateFilterCountsArray && getDateFilterCountsArray('mtime');
       s.$evalAsync();
     });
   };
@@ -592,7 +594,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
     runSeq([(s) => {
       s.page = 1;
       if (isImport && s.filterContent) s.filterContent();
-      s.reload && s.reload();
+      s.reload && machineryReload(s);
       if (isImport) { s.filterImportDateMonths = []; s.filterModifyDateMonths = []; }
       syncFilterFromScope();
     }]);
@@ -696,7 +698,7 @@ function DurationItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     setFilterRule('duration', 'min', undefined);
     setFilterRule('duration', 'max', undefined);
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
   return (
     <FilterItemShell id="duration-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['duration']} onContextMenu={clear} onClear={clear}>
@@ -749,7 +751,7 @@ function BpmItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     setFilterRule('bpm', 'min', undefined);
     setFilterRule('bpm', 'max', undefined);
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
   return (
     <FilterItemShell id="bpm-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['bpm']} onContextMenu={clear} onClear={clear}>
@@ -788,7 +790,7 @@ function SizeItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     setFilterRule('file', 'min', undefined);
     setFilterRule('file', 'max', undefined);
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
   return (
     <FilterItemShell id="size-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['size']} onContextMenu={clear} onClear={clear}>
@@ -859,7 +861,7 @@ function ResolutionItem({ snapshot }: { snapshot: FilterSnapshot }) {
     setFilterRule('resolution', 'maxW', undefined);
     setFilterRule('resolution', 'minH', undefined);
     setFilterRule('resolution', 'maxH', undefined);
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
   return (
     <FilterItemShell id="resolution-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['resolution']} onContextMenu={clear} onClear={clear}>
@@ -930,7 +932,7 @@ function KeywordFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind:
     const r = filter().filterRules[kind];
     r.has = r.no = false;
     r.keywords = undefined;
-    runSeq([(s) => { s.page = 1; s.reload(); }]);
+    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
   };
 
   return (
@@ -1033,7 +1035,7 @@ export function FilterPanel() {
             const v = e.target.value;
             scopeApply(bodyScope(), (s) => {
               s.hexColor = v.toUpperCase();
-              s.filterWithColor && s.filterWithColor(s.hexToRGB && s.hexToRGB(s.hexColor));
+              s.filterWithColor && filterWithColor(s.hexToRGB && hexToRGB(s.hexColor));
             });
           }}
         />
@@ -1042,7 +1044,7 @@ export function FilterPanel() {
             const Comp = KIND_COMPONENTS[type];
             return Comp ? <Comp key={`${type}-${index}`} snapshot={snapshot} /> : null;
           })}
-          <div className="ic-btn filter-add-btn" onClick={() => scopeApply(bodyScope(), (s) => s.openFilterAddContextMenu && s.openFilterAddContextMenu())}>
+          <div className="ic-btn filter-add-btn" onClick={() => scopeApply(bodyScope(), (s) => s.openFilterAddContextMenu && openFilterAddContextMenu())}>
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-add.svg`} />
           </div>
         </div>
@@ -1076,7 +1078,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={`${t('Filter.Reset')}${shortcuts(shortcutsWrapper(snapshot.keybinds['find.filter.reset'] || ''))}`}
             style={snapshot.filterBadge > 0 || snapshot.keyword ? undefined : { display: 'none' }}
-            onClick={() => runSeq([(s) => { s.resetFilter && s.resetFilter(); s.filterContent && s.filterContent(); }])}
+            onClick={() => runSeq([(s) => { s.resetFilter && resetFilter(); s.filterContent && s.filterContent(); }])}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-reset.svg`} />
           </div>

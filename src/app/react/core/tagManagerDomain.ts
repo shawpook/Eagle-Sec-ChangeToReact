@@ -12,12 +12,13 @@
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
-import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout } from './dataMachinery';
+import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout, machineryCalcuteContainTags, machineryCheckOperationSafety2, machineryOpenAll, machineryOpenTagAllGroup, machineryRemoveTagGroup, machineryRenameTagGroup, machinerySaveFolder, machineryUpdateItemsView } from './dataMachinery';
 import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from './appCore';
+import { toggleGifPlay } from '../services/mediaService';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -313,7 +314,7 @@ export function machineryBuildTagManager(s: any): any {
         };
 
         TagManager.saveGroup = function () {
-            s.saveFolder();
+            machinerySaveFolder(s);
         };
 
         TagManager.isSelected = function (tag: any) {
@@ -403,9 +404,9 @@ export function machineryBuildTagManager(s: any): any {
             s.TagManager.isDirty = true;
             syncFilterFromScope();
             syncTagManagerFromScope();
-            s.calcuteContainTags(s.filtereds);
+            machineryCalcuteContainTags(s, s.filtereds);
             s.updateSelection();
-            s.updateItemsView(s.selected);
+            machineryUpdateItemsView(s, s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -449,11 +450,11 @@ export function machineryBuildTagManager(s: any): any {
             syncFilterFromScope();
             syncTagManagerFromScope();
 
-            s.calcuteContainTags(s.filtereds);
+            machineryCalcuteContainTags(s, s.filtereds);
             TagManager.addHistoryTag(tag);
             s.updateSelection();
 
-            s.updateItemsView(s.selected);
+            machineryUpdateItemsView(s, s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -502,9 +503,9 @@ export function machineryBuildTagManager(s: any): any {
                 });
             }
 
-			s.calcuteContainTags(s.filtereds);
+			machineryCalcuteContainTags(s, s.filtereds);
 			s.updateSelection();
-			s.updateItemsView(s.selected);
+			machineryUpdateItemsView(s, s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -680,7 +681,7 @@ export function machineryBuildTagManager(s: any): any {
                     return false;
                 });
                 var total = images.length;
-                var folderTags = s.calcuteContainTags(images).containTags || [];
+                var folderTags = machineryCalcuteContainTags(s, images).containTags || [];
                 folderTags.forEach(function (tag: any) {
                     tag.ratio = tag.imageCount / total;
                     result.push(tag);
@@ -709,7 +710,7 @@ export function machineryBuildTagManager(s: any): any {
                 return match == tags.length;
             });
             var total = images.length - 1;
-            var result = s.calcuteContainTags(images).containTags;
+            var result = machineryCalcuteContainTags(s, images).containTags;
             result = result.filter(function (tag: any) {
                 for (var i = 0; i < tags.length; i++) {
                     if (tags[i] === tag.name) {
@@ -1298,7 +1299,7 @@ export function machineryBuildTagManager(s: any): any {
             if (tags?.length === 0) return;
             var group = TagManager.groupMappings[groupID];
             if (!group) return;
-            s.checkOperationSafety2(tags.length, function () {
+            machineryCheckOperationSafety2(s, tags.length, function () {
                 tags.forEach(function (tag: any) {
                     var idx = group.tags.indexOf(tag);
                     if (idx !== -1) {
@@ -1321,7 +1322,7 @@ export function machineryBuildTagManager(s: any): any {
 
         TagManager.filterWithTags = function (tags: any, ignoreHistory: any) {
             s.viewMode = '';
-            s.openAll(false, function () {
+            machineryOpenAll(s, false, function () {
                 getTimeout()(function () {
                     w.eagle.filter.isOpen = true;
                     syncFilterFromScope();
@@ -1409,7 +1410,7 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             s.currentTagGroup = newGroup;
             syncTagManagerFromScope();
-            s.renameTagGroup(newGroup);
+            machineryRenameTagGroup(s, newGroup);
             s.selectedTags = {};
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
@@ -1607,7 +1608,7 @@ export function machineryBuildTagManager(s: any): any {
                         icon: 'ic-rename.svg',
                         accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${process.platform}`],
                         click: () => {
-                            s.renameTagGroup(tagGroup);
+                            machineryRenameTagGroup(s, tagGroup);
                             s.$evalAsync();
                         }
                     },
@@ -1618,7 +1619,7 @@ export function machineryBuildTagManager(s: any): any {
                         icon: 'ic-tag-remove.svg',
                         accelerator: (process.platform === 'win32')? 'Del' : '⌘+⌫',
                         click: () => {
-                            s.removeTagGroup(tagGroup);
+                            machineryRemoveTagGroup(s, tagGroup);
                             s.$evalAsync();
                         }
                     },
@@ -1703,7 +1704,7 @@ export function machineryBuildTagManager(s: any): any {
                     syncTagManagerFromScope();
                 }
                 else {
-                    s.openTagAllGroup();
+                    machineryOpenTagAllGroup(s);
                 }
             };
 
@@ -1915,7 +1916,7 @@ export function machineryBuildTagManager(s: any): any {
                 if (event.button !== 0) return;
                 // 判断是点击或是拖拽
                 if (Date.now() - s.gifViewer.mousedownTime < 333 && Math.abs(s.gifViewer.mousedownX - event.clientX) < 5 && Math.abs(s.gifViewer.mousedownY - event.clientY) < 5)  {
-                    s.toggleGifPlay();
+                    toggleGifPlay();
                     s.$evalAsync();
                 }
             },

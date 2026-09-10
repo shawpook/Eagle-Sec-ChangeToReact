@@ -1740,6 +1740,41 @@
 > 动作统一为：表项改为指向 machinery 版（表项签名不传 s，需保留薄转发体），或删 c3 体并让
 > 表项指向 machinery 的具名导出。
 >
+>
+> **【b1-9bz-B 收官计划：B5 → B6 → B7 → B8】**
+>
+> 两项可行性验证（本批完成）改变了剩余量的性质判断：
+>
+> **验证 1 —— 定义侧 372 处可改**（推翻此前「定义侧不可改」的结论）。全树
+> `machineryXxx(...)` 调用点首参来源已逐处核实（工具 `tests-tmp/bz-b-argcheck.py`）：
+> `hooks.ts:63` 传 `getBodyScope`；各 domain/service 内 `const getScope = getBodyScope;`；
+> `shimFnsBridge.ts:13` 传 `() => shim`（shim 即 bodyScope 代理）。**形参 s 恒等于
+> bodyScope**。此前改造 dataMachinery 内部失败的真因是「沿用原变量名」与「局部遮蔽」
+> 两个 bug（均已修进工具），**不是**定义侧语义问题。
+>
+> **验证 2 —— C 档 21 个与 B 档 18 个是同类作业**。`installImageOpsFns` 等体内是
+> `fns["updateSelection"] = updateSelection;`，指向同文件具名导出（即 lift-all 提升出来的），
+> 与 controllerFns 直接注册的 B 档一样都是「两份体比对」，仅注册位置不同。
+>
+> | 批次 | 内容 | 处/个 | 依赖 | 验收 |
+> |---|---|---|---|---|
+> | **B5** | dataMachinery 定义侧直调化 | 372 处 | 无 | esbuild 0 错 + 全套件 55/55 |
+> | **B6** | 改写 4 个 spy 契约，解锁 EXCLUDE 白名单 | 125 处 | 无 | stage1m1 + 全套件 |
+> | **B7** | 双键单源化（B 18 + C 21，同类作业） | 39 个 | B6 | 逐个体检 + 全套件 |
+> | **B8** | 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |
+>
+> - **B6 的作业面**：`stage1m1` 的 4 个断言（`m1-D-filter-watch-fires` /
+>   `m1-D-rebind-broadcast` / `m1-E-selected-watch` / `m1-E-update-selection-broadcast`）
+>   靠替换 `s.NAME` 做 spy 断言 $watch/$broadcast 桥接。给 `filterContent` /
+>   `rebindRefresh` / `updateSelection` / `calculateImageBinding` 提供服务面可观察钩子
+>   （参照既有 `window.__eagleFilterService` 范式），改写后把这 4 名移出 EXCLUDE。
+> - **B8 的阻塞点**：EXCLUDE 解锁前，scope 面仍需 fns 表补缺口；`stage1c3` 契约抽查的
+>   41 名含 `updateSidebarList` / `zoomFit` / `undo` / `smartZoom` / `zoomIn` 等双键。
+>
+> **不列入计划的第三堆 122 处**：无供给保留回退 76 名、预绑带参 4 名、外部注入 `notify`
+> 25 处、动态键 1 处、需先提升的 TABLE 3 名（约 5 处）——属合理终态，随 P4-ca 删 scopeShim
+> 或后续批次处置。
+>
 > 在此之前 **shimFnsBridge / `__eagleCoreFns` 摘除不具备条件**：EXCLUDE 白名单 7 名的调用
 > 仍走 scope 面，bundle 缺席时需要 fns 表补缺口；且 `stage1c3` 契约抽查的 41 个名字里含
 > `updateSidebarList` / `zoomFit` / `undo` / `smartZoom` / `zoomIn` 等双键。

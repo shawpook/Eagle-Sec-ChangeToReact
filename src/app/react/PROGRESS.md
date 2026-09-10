@@ -1930,7 +1930,7 @@
 > 误判成改动的因果 —— 本批曾据此错误归因到 `zoomFit`，恢复原实现后仍失败才确认是抖动。
 > | **B6** | ✅ 已完成 —— EXCLUDE 解锁（153→6 处） | 198 处 | 无 | stage1m1 + 全套件 |
 > | **B7** | ✅ 已完成 —— 双键单源化 30/40 | 39 个 | B6 | 逐个体检 + 全套件 |
-> | **B8** | ✅ 已完成 —— 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 |
+> | **B8** | ✅ 主体完成（1 处遗留：`main-ui` 驱动 `listDone` 超时）—— 摘 shimFnsBridge / `__eagleCoreFns` + controllerFns 退役 | — | B6 + B7 | stage1c3 契约改写 + 全套件 54/55 |
 >
 > **【b1-9bz-B-8：fns 表 / shimFnsBridge 退役】**（b1-9bz-B 的终点）
 >
@@ -2023,6 +2023,23 @@
 > `fontTagService`/`miscDomain`）造成的**模块初始化顺序变化**（`dataMachinery ⇄ 这些模块`
 > 双向循环，函数声明虽提升，但若对端有模块级 `const` 读取 dataMachinery 导出即可能拿到 undefined）。
 > 验证手法：把这 5 条 import 改为**调用期内联 require/惰性取用**（或临时逐条回退）后跑 main-ui。
+>
+> **【b1-9bz-B 收官账目】**
+>
+> | 批次 | 内容 | 量 | 状态 |
+> |---|---|---|---|
+> | **B4** | scopeFace 消费面直调化（callScope 全树归零） | 618 处 / 45 文件 | ✅ |
+> | **B5** | dataMachinery 定义侧直调化（+ 修 PREBIND 工厂式挂载语义错误，回修 B4 遗留 20 处） | 319 处 | ✅ |
+> | **B6** | EXCLUDE 解锁（153→9；仅留 4 个契约观测派发点） | 198 处 | ✅ |
+> | **B7** | 双键单源化 | 30/40（10 个逐条定性不可做） | ✅ |
+> | **B8** | fns 表 / shimFnsBridge / controllerFns 退役 | 123 处 + 挂载/契约 | ✅ 主体（1 处遗留） |
+>
+> **架构终态**：scope 函数面供给层收敛为**两处显式边界** —— ① `applyDataMachineryScope`
+> 的挂载块（含子窗口与主驱动脚本所需的 10 个名字）；② 测试用窄口径 `window.__eaglePorts`。
+> 其余全部直 import。`callScope` / `controllerFns` / `shimFnsBridge` 三者均已退役。
+>
+> **遗留 1 处**：`main-ui-workflow-closed-loop`（驱动 `original main scope` 等待 `listDone`）。
+> 除该项外全套件 54/55 全绿，且该失败**不影响**其它 54 项与所有 React 侧闭环。
 > **B8 完成后 bz-B 收官**：scope 函数面直调化（B4 618 + B5 319 + B6 198 + B8 96 处）、
 > `callScope` 与 `controllerFns` 双双退役、`shimFnsBridge` 摘除。
 >

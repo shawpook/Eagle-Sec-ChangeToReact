@@ -1839,8 +1839,11 @@
 > `setSmartFolderOrder` / `checkOperationSafety2` / `changeStar`。
 >
 > **C 档剩余 7 个**：
-> - `updateItemView`（222 行，22 段 diff）/ `calculateImageBinding`（292 行）——
->   体量大，且本批两个大函数（`contentFilter`/`leaveDetailMode`）都踩了回归，**暂缓**；
+> - `updateItemView`（222 行）—— **已完成**：22 段 diff 全是 `__lv_*` 变量名与全局→`w.*`
+>   （`$bodyScope`→`s`、`VIDEO_TYPES`→`w.VIDEO_TYPES`、`fileSize`→`w.fileSize` 等），
+>   且 machinery 还多了一层 `fs && fs.existsSync` 守卫，略优；
+> - `calculateImageBinding`（292 行）—— **不可做**：在 EXCLUDE 白名单内（测试 spy 契约）。
+>   这也解释了 dataMachinery 内部那 17 处 `DUAL+EXCLUDE` 调用为何保留；
 > - `refreshSubfolderList` —— machinery 版**缺 `if (s.subFolderSortableOptions)` 守卫**
 >   （c3 更健壮），暂缓；
 > - `removeFolder` / `removeSelectedFolders` / `removeSmartFolder` /

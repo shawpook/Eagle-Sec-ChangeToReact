@@ -2,7 +2,6 @@ import { FileUrlHelper } from '../core/fileUrlHelper';
 import { useEffect } from 'react';
 import { controllerScope, applyController } from './controller';
 import { getBodyScope } from '../core/appCore';
-import { scopeEvalAsync } from '../global/scopeShim';
 
 /**
  * 阶段9a：preview-window.js 特有指令的逐字移植（与阶段5 detailHooks 同风格）。
@@ -219,7 +218,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
             ratio = 800;
           }
           controllerScope.updateZoomRatio(ratio, originData.x, originData.y);
-          scopeEvalAsync();
+          controllerScope.$evalAsync();
         } else {
           updateGestureVisual(event.pageX, event.pageY);
         }
@@ -242,10 +241,10 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
           if (Date.now() - downTime <= 333) {
             if (endPoint.x > startPoint.x) {
               controllerScope.selectNext();
-              scopeEvalAsync();
+              controllerScope.$evalAsync();
             } else {
               controllerScope.selectPrev();
-              scopeEvalAsync();
+              controllerScope.$evalAsync();
             }
           }
         } else if (!isZooming && Math.abs(endPoint.x - startPoint.x) < 2 && Math.abs(endPoint.y - startPoint.y) < 2) {
@@ -374,11 +373,11 @@ export function usePreviewMousetrap() {
       return throttle
         ? throttle(function (e: any) {
             func(e);
-            scopeEvalAsync();
+            controllerScope.$evalAsync();
           }, 50)
         : function (e: any) {
             func(e);
-            scopeEvalAsync();
+            controllerScope.$evalAsync();
           };
     }
 

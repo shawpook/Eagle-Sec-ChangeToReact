@@ -16,7 +16,6 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { scopeEvalAsync } from '../../global/scopeShim';
 
 // HTML 内联 debounce 逐字（func, wait, immediate）
 function debounce(func: any, wait: number, immediate?: boolean) {
@@ -329,7 +328,7 @@ function TextEditor() {
   const parentCall = (fn: string) => {
     const p = (window.parent as any).$bodyScope;
     if (p && typeof p[fn] === 'function') p[fn]();
-    if (p && typeof p.$evalAsync === 'function') scopeEvalAsync();
+    if (p && typeof p.$evalAsync === 'function') p.$evalAsync();
   };
 
   // ── 键盘（wMousetrap 绑定表 + preventEnter + selectall 指令）──

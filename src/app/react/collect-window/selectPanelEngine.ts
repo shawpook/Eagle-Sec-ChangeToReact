@@ -7,7 +7,6 @@
  */
 
 import { mouseState } from './controller';
-import { scopeEvalAsync } from '../global/scopeShim';
 
 const $: any = (...args: any[]) => (window as any).jQuery(...args);
 
@@ -272,40 +271,40 @@ export class SelectPanel {
       onChange: () => {
         this.listData.searchKeyword = this.searchInput.$input.val();
         this.keywordChanged();
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onEnterKey: (event: any) => {
         const item = this.listData?.items?.[this.listData.currentIndex];
         this.openItem(event, item);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onEscKey: () => {
         this.close();
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onTabKey: (event: any) => {
         this.onTabKey(event);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onUpKey: (event: any) => {
         this.selectUp(event);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onDownKey: (event: any) => {
         this.selectDown(event);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onLeftKey: (event: any) => {
         this.selectLeft(event);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onRightKey: (event: any) => {
         this.selectRight(event);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
       onPaste: (event: any) => {
         this.onPaste(event);
-        scopeEvalAsync();
+        this.scope.$evalAsync();
       },
     });
   }

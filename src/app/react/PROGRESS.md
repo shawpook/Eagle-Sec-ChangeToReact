@@ -2080,6 +2080,26 @@
 > | **b1-9bz-C-0** | 清零 B8 遗留：定位 `main-ui` 的 `listDone` 超时 | 1 处 | 无 | 全套件 55/55 |
 > | **b1-9bz-C-1** | machinery 守卫补齐（B7 反向待办）：`removeSound` / `saveFolderDebounce` / `$root.notify` / `subFolderSortableOptions` | 4 处 | 无 | 解锁 B7 剩余 5 个（删除族 4 + refreshSubfolderList） |
 > | **b1-9bz-C-2** | `$broadcast`/`$on` → `bus.ts` 频道迁移 | 41 频道 / 224 处 | C-0 | 逐频道迁移 + 定向测试；先处置 3+3 个死频道 |
+>
+> **【C-2 进度：15 / 41 频道已完成，全套件 55/55 ALL GREEN（2026-09-10）】**
+>
+> 已完成 15 个频道 / 68 处：MOVE-CROP-TOOL、RESIZE-CROP-TOOL、SET-FOLDER-PASSWORD、
+> OPEN_RENAME、REFRESH_VIDEO_COMMENTS、ADD_TO_LIBRARY、OPEN_DUPLICATE_SCAN_PANEL、
+> OPEN_DUPLICATE、WEBP_CONVERT_START、UPDATE_INSPECTOR、NEW.SMART.FOLDER、
+> INSPECTOR.TAG.SELECT.PANEL.OPEN、SAVE_FOLDER、OPEN_QUICK_SEARCH_MODAL、OPEN_URL_IN_PANEL。
+> 剩余 emit 51 / on 27（27 个频道）：REBIND_REFRESH、CALCULATE_IMAGE_BINDING、
+> UPDATE_SELECTION 分别与 B6 契约观测点、EXCLUDE spy 名单耦合，须先解耦；其余为低频频道。
+>
+> **三个必记的坑**（都已固化进工具/复查）：
+> 1. **bus import 路径按目录深度算**（`components/xx/` 是 `../../global/bus`）——写死路径
+>    会导致 vite 加载失败、**启动加载链整条断**（与 C-0 同症状）。通用迁移器
+>    `tests-tmp/bz-c2-migrate.py` 自动计算。
+> 2. **handler 签名必须同步改**：Angular `(event, params)` → bus `(params)`，否则 payload
+>    被当成 event。含解构形态 `(e, { smartFolder, parent })` 与**具名 handler**
+>    （`const onStart = (e, params) =>` 挂在 `channel.on(onStart)` 上最容易漏）。
+> 3. **测试侧驱动要跟着改**：频道迁走后 `$root.$broadcast` / `scope.$broadcast` 无人接收
+>    → 改 `window.__eagleBus.emit(...)`；`scope.__bus['CH']` 断言改
+>    `window.__eagleBus.listenerCount('CH')`（bus.ts 为此新增该方法，与 ipc.listenerCount 对称）。
 > | **b1-9bz-C-3** | `$evalAsync` / `scopeApply` / `$apply` 退役 | 722 处 | C-2 | 按「跨帧必要 / 纯通知可直调」分类 |
 > | **b1-9bz-C-4** | `$watch` / `$watchCollection` → store 订阅 | 51 处 | C-3 | watch 依赖 digest 触发，必须在其后 |
 > | **b1-9bz-C-5** | 三窗口面收口（preview / preferences / collect） | 133 处 | C-3 | 各自 scope，独立门禁 |

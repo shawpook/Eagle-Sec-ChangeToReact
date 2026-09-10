@@ -1844,9 +1844,25 @@
 > - `refreshSubfolderList` —— machinery 版**缺 `if (s.subFolderSortableOptions)` 守卫**
 >   （c3 更健壮），暂缓；
 > - `removeFolder` / `removeSelectedFolders` / `removeSmartFolder` /
->   `removeSelectedSmartFolders` —— 以**匿名闭包**形式注册
->   （`fns["X"] = function (...args) {...}`），需先用 lift-all 提升为具名导出再单源化；
+>   `removeSelectedSmartFolders` —— **不做**，理由见下；
 > - `updateSelection` —— 在 EXCLUDE 白名单内（测试 spy 契约），不可单源化。
+>
+> **删除族 4 个不做单源化的理由（machinery 版缺守卫，且是破坏性操作）**：
+> 逐行 diff `removeFolderClosure`(146 行) ↔ `machineryRemoveFolderInner`(151 行) 与
+> `removeSmartFolderClosure`(84) ↔ `machineryRemoveSmartFolderInner`(84)，除变量名与等价
+> API 替换（`JSON.parse(JSON.stringify(x))`→`structuredClone(x)`、`treeWalkSafe`→
+> `w.eagle.utils.tree.walk`、`openFolder(x)`→`s.openFolder(x)`）外，**machinery 版去掉了
+> 三处守卫**：
+>
+> | 位置 | c3 | machinery |
+> |---|---|---|
+> | 音效 | `s.removeSound && s.removeSound.play && s.removeSound.play()` | `s.removeSound.play()` |
+> | 保存 | `s.saveFolderDebounce && machinerySaveFolderDebounce(s)` | `s.saveFolderDebounce()` |
+> | 通知 | `(s.$root.notify \|\| s.notify).call(s.$root, {...})` | `s.$root.notify({...})` |
+>
+> 删除文件夹是**破坏性操作**，中途抛错会留下不一致状态甚至丢数据。收敛到 machinery
+> 在此处是**退步**，故保持 c3 实现。建议反向动作：给 machinery 版补回这三处守卫
+> （属 P4 收尾的健壮性修补，非 bz-B 范围）。
 >
 > **测试可靠性提示（重要）**：`main-ui-workflow-closed-loop` 的
 > `multi inspector persistence` 是**时序敏感**断言，单次结果不稳定（同一代码状态曾出现

@@ -4602,7 +4602,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
           ]);
           if (s.selected.length === 1) { message = message.replace("images", "image"); }
 
-          s.$root.notify({
+          (s.$root.notify || s.notify).call(s.$root, {
             message: message,
             duration: 4000,
           }, function () {
@@ -4638,7 +4638,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
           }
 
           if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
-            s.removeSound.play();
+            s.removeSound && s.removeSound.play && s.removeSound.play();
           }
           w.ayncsImagesChange(s.selected);
           w.hiddenByCurrentFilter(s.selected);
@@ -7724,18 +7724,18 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
 
   // 如果声音效果是开启的
   if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
-    s.removeSound.play();
+    s.removeSound && s.removeSound.play && s.removeSound.play();
   }
   machineryUpdateSidebarList(s);
 
   $timeout(function () {
-    machinerySaveFolderDebounce(s);
+    s.saveFolderDebounce && machinerySaveFolderDebounce(s);
   }, 1000);
 
   w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
 
   if (!ignoreRestore) {
-    s.$root.notify({
+    (s.$root.notify || s.notify).call(s.$root, {
       message: message,
       duration: 5000,
     }, function () {
@@ -7752,7 +7752,7 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
       });
       machineryUpdateSidebarList(s);
       openSmartFolder(smartFolder);
-      machinerySaveFolderDebounce(s);
+      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
       s.$evalAsync();
     });
   }
@@ -7903,7 +7903,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
 
   // 播放删除音效
   if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
-    s.removeSound.play();
+    s.removeSound && s.removeSound.play && s.removeSound.play();
   }
 
   w.QuickAccessManager.remove("folder", folder);
@@ -7918,7 +7918,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
   delete s.folderMappings[folder.id];
   machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
     s.$evalAsync();
-    machinerySaveFolderDebounce(s);
+    s.saveFolderDebounce && machinerySaveFolderDebounce(s);
     if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
   });
@@ -7927,7 +7927,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
     var message = getFilter()('i18n')("notify.folder.remove", [
       { "property": "folder", "value": folder.name },
     ]);
-    s.$root.notify({
+    (s.$root.notify || s.notify).call(s.$root, {
       message: message,
       duration: 7000,
     }, function () {
@@ -7954,7 +7954,7 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
 
       s.$evalAsync();
       machineryUpdateSidebarList(s);
-      machinerySaveFolderDebounce(s);
+      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
       w.ayncsImagesChange(originalImages);
     });
   }
@@ -8081,7 +8081,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   machineryAutoScroll(s, undefined);
 
   if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
-    s.removeSound.play();
+    s.removeSound && s.removeSound.play && s.removeSound.play();
   }
 
   var message = getFilter()('i18n')("notify.image.remove", [
@@ -8089,7 +8089,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   ]);
   if (s.selected.length === 1) { message = message.replace("images", "image"); }
 
-  s.$root.notify({
+  (s.$root.notify || s.notify).call(s.$root, {
     message: message,
     duration: 4000,
   }, function () {
@@ -9819,12 +9819,12 @@ export function machineryRefreshSubfolderList(s: any): void {
     if (s.showSubfolderContent) {
       s.subFolders = machineryGetAllChildFolder(s, s.currentFolder);
       syncListFromScope();
-      s.subFolderSortableOptions.disabled = true;
+      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
     }
     else {
       s.subFolders = s.currentFolder.children;
       syncListFromScope();
-      s.subFolderSortableOptions.disabled = false;
+      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = false;
     }
     if (s.keyword) {
       s.subFolders = s.subFolders.filter(function (folder: any) {
@@ -9839,7 +9839,7 @@ export function machineryRefreshSubfolderList(s: any): void {
         }
       });
       syncListFromScope();
-      s.subFolderSortableOptions.disabled = true;
+      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
     }
   }
   else {

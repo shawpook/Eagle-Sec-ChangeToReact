@@ -932,43 +932,6 @@ export function replaceFile(...args: any[]) {
     }).apply(null, args);
 }
 
-export function installImageOpsFns(fns: any, getScope: any): void {
-  fns["changeStar"] = changeStar;
-
-  fns["updateItemView"] = updateItemView;
-
-  fns["updateSelection"] = updateSelection;
-
-  fns["startDrag"] = startDrag;
-
-  fns["copeVideoFrame"] = copeVideoFrame;
-
-  fns["saveVideoFrame"] = saveVideoFrame;
-
-  fns["cancelRegenerateThumbnail"] = cancelRegenerateThumbnail;
-
-  fns["getThumbnailPath"] = getThumbnailPath;
-
-  fns["getThumbnailUrl"] = getThumbnailUrl;
-
-  fns["currentIndex"] = currentIndex;
-
-  // regenerateThumbnail（bundle 33325-33332；ayncsImagesGenerateThumbnail →
-  // w.ayncsImagesGenerateThumbnail（b1-9w bundleGlobals 供给））
-  fns["regenerateThumbnail"] = regenerateThumbnail;
-
-  fns["calculateImageBinding"] = calculateImageBinding;
-
-  fns["rotateImage"] = rotateImage;
-
-  fns["flipImage"] = flipImage;
-
-  fns["saveCrop"] = saveCrop;
-
-  // replaceFile（bundle 33333-33456 全体，含 executeFileReplacement/handleError 内层）
-  fns["replaceFile"] = replaceFile;
-}
-
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const EagleConfig: any = (window as any).EagleConfig || {};

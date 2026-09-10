@@ -672,23 +672,6 @@ export function emptyRestore(...args: any[]) {
     }).apply(null, args);
 }
 
-export function installFolderCoreFns(fns: any, getScope: any): void {
-  fns["createFolder"] = createFolder;
-
-  fns["newFolder"] = newFolder;
-
-  // newFolderWidthSelection（bundle 40442-40531 全体，含 sanitizeFolderName 内层）
-  fns["newFolderWidthSelection"] = newFolderWidthSelection;
-
-  fns["addImagesToFolder"] = addImagesToFolder;
-
-  fns["moveFoldersAsSibling"] = moveFoldersAsSibling;
-
-  fns["moveFoldersToFolder"] = moveFoldersToFolder;
-
-  fns["emptyRestore"] = emptyRestore;
-}
-
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();

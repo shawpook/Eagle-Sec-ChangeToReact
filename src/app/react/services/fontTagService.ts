@@ -395,33 +395,3 @@ export function onTagSidebarResize(...args: any[]) {
             }
         }).apply(null, args);
 }
-
-export function installFontTagFns(fns: any, getScope: any): void {
-  fns["deactivateFont"] = deactivateFont;
-
-  fns["activateFont"] = activateFont;
-
-  // renameFontsWithFullName（bundle 32885-32927）
-  fns["renameFontsWithFullName"] = renameFontsWithFullName;
-
-  // activateFonts（bundle 32929-32947；activateFont 单数版已在 fns 表 346）
-  fns["activateFonts"] = activateFonts;
-
-  // deactivateFonts（bundle 32996-33012；deactivateFont 单数版已在 fns 表 2755）
-  fns["deactivateFonts"] = deactivateFonts;
-
-  // changeFontDefaultLang（bundle 32874-32883）
-  fns["changeFontDefaultLang"] = changeFontDefaultLang;
-
-  fns["isFontActivate"] = isFontActivate;
-
-  fns["getFontPath"] = getFontPath;
-
-  fns["filterWithTag"] = filterWithTag;
-
-  fns["renameTagGroupKeyup"] = renameTagGroupKeyup;
-
-  fns["renameTagGroupBlur"] = renameTagGroupBlur;
-
-  fns["onTagSidebarResize"] = onTagSidebarResize;
-}

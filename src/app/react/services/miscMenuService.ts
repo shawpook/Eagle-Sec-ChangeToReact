@@ -943,25 +943,3 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
             });
         }).apply(null, args);
 }
-
-export function installMiscMenuFns(fns: any, getScope: any): void {
-  fns["openTrashContextMenu"] = openTrashContextMenu;
-
-  fns["openFileListContextMenu"] = openFileListContextMenu;
-
-  fns["openOrderMenu"] = openOrderMenu;
-
-  fns["openApplicationContextMenu"] = openApplicationContextMenu;
-
-  fns["openFilterAddContextMenu"] = openFilterAddContextMenu;
-
-  fns["openNewContextMenu"] = openNewContextMenu;
-
-  fns["openQuickAccessContextMenu"] = openQuickAccessContextMenu;
-
-  fns["openRatioContextMenu"] = openRatioContextMenu;
-
-  fns["openSidebarVisibleContextMenu"] = openSidebarVisibleContextMenu;
-
-  fns["openSmartFolderExpandContextMenu"] = openSmartFolderExpandContextMenu;
-}

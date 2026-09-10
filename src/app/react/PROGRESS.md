@@ -2094,6 +2094,35 @@
 > 行为不变」（`s.reload()` 工厂式挂载那次）。`$evalAsync` 承载了跨帧调度语义，需按调用点
 > 逐个判定是「必要延迟」还是「迁移期残留」，建议先做形态分类再动手。
 >
+>
+> **【C 之后仍未结束：b1-9bz-D 排期（DoD 收尾）——2026-09-10】**
+>
+> 对照 `REWRITE-PLAN.md` 四、收尾 DoD 六项逐条核，**C-6 完成只满足其中 2 项**：
+>
+> | DoD | 内容 | C-6 后状态 |
+> |---|---|---|
+> | 1 | 六项删除 grep-zero：scopeShim / scopeBridge / shimFnsBridge / controllerFns / **dataMachinery** / appCore.coreState | ⚠️ 前 4 项达成；**`dataMachinery` 仍在** |
+> | 2 | 永久哨兵（无 Angular 语义与 jQuery；eagleBus 唯一事件通道） | ⚠️ C-6 扩面达成，但 **jQuery 188 处**未清 |
+> | 3 | index.html vendor 清零 | ❌ vendor 仍 3 文件 + `frontend/public/shims.js` |
+> | 4 | 套件 53 → **65+** | ❌ 现 **55**，差 10 项 |
+> | 5 | 收官文档（架构前后对照 + 已知行为差异清单） | ❌ 未写 |
+>
+> **关键量**：`core/dataMachinery.ts` = **11764 行 / 238 个导出函数 / 被 47 个文件引用**，
+> 是全树最大文件（第二名 `smoothZoomEngine` 仅 3155 行）。**jQuery 188 处里 175 处
+> （`w.$(`）就在这个文件内** —— 即 DoD 1 的 `dataMachinery` 一项同时是 DoD 2 的主力。
+> 「删除」的语义是**归位**（函数体按域迁回各 domain / service，文件消失），与 bz-A 的
+> 表体归位同思路，不是删除功能。
+>
+> | 编号 | 内容 | 量 | 依赖 |
+> |---|---|---|---|
+> | **b1-9bz-D-1** | dataMachinery 归位（按域拆子批，参考 P1 竖切 7 面） | 11764 行 / 238 导出 / 47 引用文件 | C-3、C-6（挂载块须先无 digest 依赖） |
+> | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
+> | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
+> | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |
+>
+> **结论**：C 阶段结束 = Angular **运行时**（函数面 + digest 面）全部退役；
+> 但**整个彻底化任务要等 D 阶段**：D-1 是全程最大单批，D-2/D-3 可与之并行，D-4 收尾。
+>
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**
 >

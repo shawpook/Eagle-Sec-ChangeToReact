@@ -127,7 +127,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const item = window.$bodyScope.raw[0];
-      window.$bodyScope.$root.$broadcast('OPEN_RENAME', { type: 'IMAGE', images: [item] });
+      window.__eagleBus.emit('OPEN_RENAME', { type: 'IMAGE', images: [item] });
       return true;
     })()`,
     returnByValue: true,
@@ -197,7 +197,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const folders = window.$bodyScope.folders.filter((f) => f.name === '测试夹A' || f.name === '测试夹B');
-      window.$bodyScope.$root.$broadcast('OPEN_RENAME', { type: 'FOLDER', folders });
+      window.__eagleBus.emit('OPEN_RENAME', { type: 'FOLDER', folders });
       return true;
     })()`,
     returnByValue: true,
@@ -272,7 +272,7 @@ try {
   // ── OPEN_RENAME 空集合守卫 ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('OPEN_RENAME', { type: 'FOLDER', folders: [] });
+      window.__eagleBus.emit('OPEN_RENAME', { type: 'FOLDER', folders: [] });
       return true;
     })()`,
     returnByValue: true,

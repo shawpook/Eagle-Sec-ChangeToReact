@@ -110,7 +110,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const body = window.$bodyScope;
-      body.$root.$broadcast('OPEN_DUPLICATE_SCAN_PANEL', { items: [body.raw[0]], onMergedCallback: () => {} });
+      window.__eagleBus.emit('OPEN_DUPLICATE_SCAN_PANEL', { items: [body.raw[0]], onMergedCallback: () => {} });
       return true;
     })()`,
     returnByValue: true,
@@ -152,7 +152,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       const body = window.$bodyScope;
-      body.$root.$broadcast('OPEN_DUPLICATE_SCAN_PANEL', { items: [body.raw[0]], onMergedCallback: () => {} });
+      window.__eagleBus.emit('OPEN_DUPLICATE_SCAN_PANEL', { items: [body.raw[0]], onMergedCallback: () => {} });
       return true;
     })()`,
     returnByValue: true,
@@ -193,7 +193,7 @@ try {
       window.__calcBindings = 0;
       body.$root.$on('CALCULATE_IMAGE_BINDING', () => { window.__calcBindings++; });
 
-      body.$root.$broadcast('OPEN_DUPLICATE', {
+      window.__eagleBus.emit('OPEN_DUPLICATE', {
         currentFolder: undefined,
         mappings: mappings,
         duplicates: [item],
@@ -258,7 +258,7 @@ try {
       item.name = 's7d4-重复2';
       const mappings = {};
       mappings[window.getHashID(item)] = body.raw[0];
-      body.$root.$broadcast('OPEN_DUPLICATE', { currentFolder: undefined, mappings, duplicates: [item] });
+      window.__eagleBus.emit('OPEN_DUPLICATE', { currentFolder: undefined, mappings, duplicates: [item] });
       return true;
     })()`,
     returnByValue: true,
@@ -290,7 +290,7 @@ try {
       item.id = item.id + '-dup3';
       const mappings = {};
       mappings[window.getHashID(item)] = body.raw[0];
-      body.$root.$broadcast('OPEN_DUPLICATE', { currentFolder: undefined, mappings, duplicates: [item] });
+      window.__eagleBus.emit('OPEN_DUPLICATE', { currentFolder: undefined, mappings, duplicates: [item] });
       return true;
     })()`,
     returnByValue: true,

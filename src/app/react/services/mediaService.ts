@@ -2,6 +2,7 @@ import { getBodyScope } from '../core/appCore';
 import { machineryCalcRotateDegree, machineryEnterSlideshowMode, machineryGetVideoPlayer, machineryLeaveSlideshowMode, machineryToggleSlideshow, machineryUpdateItemView } from '../core/dataMachinery';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
+import { refreshVideoCommentsChannel } from '../global/bus';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -66,7 +67,7 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
       if (da < db) return -1;
       return 0;
     })
-    s.$root.$broadcast("REFRESH_VIDEO_COMMENTS");
+    s.refreshVideoCommentsChannel.emit();
     machineryUpdateItemView(s, video);
     s.$evalAsync();
 

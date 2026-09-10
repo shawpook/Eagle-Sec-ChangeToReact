@@ -11,6 +11,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope } from '../../core/appCore';
 import { uploadUrls } from '../../services/uploadService';
 import { addToRecentFolders } from '../../services/batchOpsService';
+import { openDuplicateChannel } from '../../global/bus';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -1037,7 +1038,7 @@ export function BatchSavePanel() {
     }
 
     // auto-focus 指令（OPEN_DUPLICATE → $timeout(100) → click + focus + select）
-    const offDuplicate = body.$on('OPEN_DUPLICATE', () => {
+    const offDuplicate = openDuplicateChannel.on(() => {
       setTimeout(() => {
         const el = hiddenInputRef.current;
         if (el) {

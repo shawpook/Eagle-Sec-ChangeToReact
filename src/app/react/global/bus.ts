@@ -95,3 +95,9 @@ export const moveCropToolChannel = defineChannel<any>('MOVE-CROP-TOOL');
 export const resizeCropToolChannel = defineChannel<any>('RESIZE-CROP-TOOL');
 export const setFolderPasswordChannel = defineChannel<any>('SET-FOLDER-PASSWORD');
 export const openRenameChannel = defineChannel<any>('OPEN_RENAME');
+
+// ── b1-9bz-C-2 第二批 ──
+export const refreshVideoCommentsChannel = defineChannel<void>('REFRESH_VIDEO_COMMENTS');
+export const addToLibraryChannel = defineChannel<any>('ADD_TO_LIBRARY');
+export const openDuplicateScanPanelChannel = defineChannel<any>('OPEN_DUPLICATE_SCAN_PANEL');
+export const openDuplicateChannel = defineChannel<any>('OPEN_DUPLICATE');

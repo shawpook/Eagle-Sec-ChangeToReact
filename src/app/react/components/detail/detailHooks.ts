@@ -9,6 +9,7 @@ import { getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryLeaveDetailMode } from '../../core/dataMachinery';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
+import { refreshVideoCommentsChannel } from '../../global/bus';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -235,7 +236,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       }
     }
 
-    const offRefresh = scope.$on('REFRESH_VIDEO_COMMENTS', function () {
+    const offRefresh = refreshVideoCommentsChannel.on(function () {
       initComments();
     });
     cleanups.push(() => offRefresh());
@@ -1127,7 +1128,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     cleanups.push(() => video.removeEventListener('ended', onEnded));
 
     // ===== 筆記更新事件 =====
-    const unwatchComments = getBodyScope()?.$on('REFRESH_VIDEO_COMMENTS', function () {
+    const unwatchComments = refreshVideoCommentsChannel.on(function () {
       const noteManager = video.plugins ? video.plugins.get('eagle-notes') : null;
       if (noteManager && getBodyScope()?.current) {
         noteManager.setComments(getBodyScope().current.comments || [], video.duration);

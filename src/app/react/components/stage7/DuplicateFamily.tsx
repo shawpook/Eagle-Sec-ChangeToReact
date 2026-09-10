@@ -15,6 +15,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
+import { openDuplicateChannel, openDuplicateScanPanelChannel } from '../../global/bus';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
@@ -517,7 +518,7 @@ export function DuplicateScanPanel() {
   useEffect(() => {
     const body = getBodyScope();
     if (!body) return;
-    const off = body.$on('OPEN_DUPLICATE_SCAN_PANEL', (event: any, params: any) => {
+    const off = openDuplicateScanPanelChannel.on((params: any) => {
       // $scope.init(options)（镜像 11-18；原版 `[...options.items] || []` 右侧为死代码）
       rootRef.current.isOpen = true;
       rootRef.current.items = [...params.items];
@@ -1382,7 +1383,7 @@ export function DuplicateModal() {
     }
 
     // $on("OPEN_DUPLICATE")（镜像 26-41 逐字）
-    const offOpen = body.$on('OPEN_DUPLICATE', (e: any, params: any) => {
+    const offOpen = openDuplicateChannel.on((params: any) => {
       ipc.send('show');
       rootRef.current.currentFolder = params.currentFolder;
       rootRef.current.mappings = params.mappings;
@@ -1418,7 +1419,7 @@ export function DuplicateModal() {
     }
 
     // auto-focus 指令（OPEN_DUPLICATE → $timeout(100) → click + focus + select）
-    const offAutoFocus = body.$on('OPEN_DUPLICATE', () => {
+    const offAutoFocus = openDuplicateChannel.on(() => {
       setTimeout(() => {
         const el = document.getElementById('duplicate-input') as HTMLInputElement | null;
         if (el) {

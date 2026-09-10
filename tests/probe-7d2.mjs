@@ -141,6 +141,35 @@ try {
   await delay(300);
   console.log('art-closed:', await ev(`!document.querySelector('#eagle-artstation-import-host .import-modal.open')`));
 
+  // ── 7d-3a 探查 ──
+  console.log('itp-select:', await ev(`(() => {
+    const body = window.$bodyScope;
+    body.selected = [body.raw[0]];
+    return JSON.stringify({ selected: body.selected.length, tags: body.raw[0].tags });
+  })()`));
+  console.log('itp-suggest:', await ev(`(() => {
+    const body = window.$bodyScope;
+    body.TagManager.getSuggestTags(body.selected);
+    return JSON.stringify({ newTags: window.eagle.inspector.newTags, tagManagerType: typeof body.TagManager });
+  })()`));
+  console.log('itp-open:', await ev(`(() => { window.$bodyScope.$broadcast('INSPECTOR.TAG.SELECT.PANEL.OPEN'); return 'ok'; })()`));
+  await delay(700);
+  console.log('itp-state:', await ev(`(() => {
+    const p = window.__eagleInspectorTagSelectPanel;
+    if (!p) return 'missing';
+    return JSON.stringify({ groups: p.listData.groups && p.listData.groups.length, items: p.listData.items && p.listData.items.length, newTags: window.eagle.inspector.newTags, selectedTags: p.listData.selectedTags, isInit: p.isInit });
+  })()`));
+  console.log('itp-dom:', await ev(`(() => {
+    const items = Array.from(document.querySelectorAll('inspector-tag-select-panel .grid-item .list-item .name')).map((n) => n.textContent);
+    return JSON.stringify(items.slice(0, 5));
+  })()`));
+  console.log('itp-tm:', await ev(`(() => {
+    const body = window.$bodyScope;
+    const tm = body.TagManager;
+    return JSON.stringify({ suggest: typeof tm.getSuggestTags, tagsLen: tm.tags && tm.tags.length, tags: (tm.tags || []).map((t) => t.name).slice(0, 5), groups: tm.groups && tm.groups.length });
+  })()`));
+  console.log('itp-errors:', await ev(`(window.__errors || []).slice(0, 5)`));
+
 
   console.log('reactErr-after:', await ev(`window.__reactErr || 'none'`));
   console.log('consoleErrors:', JSON.stringify(await ev(`(window.__errors || []).slice(0, 6)`)));

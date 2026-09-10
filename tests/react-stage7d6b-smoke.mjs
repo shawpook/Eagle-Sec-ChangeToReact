@@ -324,7 +324,7 @@ try {
   // ── add-library：ADD_TO_LIBRARY 单项（库不存在 → error-box，弹窗保持 open） ──
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('ADD_TO_LIBRARY', {
+      window.__eagleBus.emit('ADD_TO_LIBRARY', {
         library: { name: 'DemoLib', path: '/nonexistent-lib-path' },
         items: [{}],
       });
@@ -362,7 +362,7 @@ try {
   // 多项 → swal BulkAction 确认 → addToLibrary
   await page.send('Runtime.evaluate', {
     expression: `(() => {
-      window.$bodyScope.$root.$broadcast('ADD_TO_LIBRARY', {
+      window.__eagleBus.emit('ADD_TO_LIBRARY', {
         library: { name: 'DemoLib2', path: '/nonexistent-lib-path' },
         items: [{}, {}],
       });

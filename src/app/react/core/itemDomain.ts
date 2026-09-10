@@ -26,6 +26,7 @@ import { debounce } from '../utils/func';
 import { getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
+import { openDuplicateChannel } from '../global/bus';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -718,7 +719,7 @@ export function takeoverItemDomain(): void {
         // 判斷是否有重複的圖片
         if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
           if (s.duplicateQueue.length > 0) {
-            s.$root.$broadcast("OPEN_DUPLICATE", {
+            s.openDuplicateChannel.emit({
               currentFolder: s.currentFolder,
               mappings: s.duplicateMappings,
               duplicates: s.duplicateQueue

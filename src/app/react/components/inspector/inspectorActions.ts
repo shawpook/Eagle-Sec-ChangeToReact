@@ -1,5 +1,5 @@
 import { detailZoom } from '../../core/smoothZoomEngine';
-import { contextMenuOpenChannel, setFolderPasswordChannel } from '../../global/bus';
+import { contextMenuOpenChannel, refreshVideoCommentsChannel, setFolderPasswordChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
@@ -628,7 +628,7 @@ export function editVideoComment(event: any, image: any, comment: any) {
     if (!result) return;
     comment.annotation = result;
     getIpc().send('image-change', image);
-    getRootScope()?.$broadcast('REFRESH_VIDEO_COMMENTS');
+    refreshVideoCommentsChannel.emit();
     getBodyScope().updateItemView(video);
     getBodyScope().$evalAsync();
   });
@@ -646,7 +646,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
       ipc.send('image-change', video);
       getBodyScope().updateItemView(video);
       getRootScope()?.$broadcast('REBIND_REFRESH', true);
-      getRootScope()?.$broadcast('REFRESH_VIDEO_COMMENTS');
+      refreshVideoCommentsChannel.emit();
 
       (window as any).electronLog && (window as any).electronLog.info(`[app] Remove video annotation: ${video.name}(${video.id})`);
 
@@ -654,7 +654,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
       getRootScope()?.notify({ message: message, duration: 4000 }, function () {
         video.comments = originComments;
         getRootScope()?.$broadcast('REBIND_REFRESH', true);
-        getRootScope()?.$broadcast('REFRESH_VIDEO_COMMENTS');
+        refreshVideoCommentsChannel.emit();
         getBodyScope().updateItemView(video);
         ipc.send('image-change', video);
       });

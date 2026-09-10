@@ -20,6 +20,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from './appCore';
 import { toggleGifPlay } from '../services/mediaService';
 import { getLibraryHistory } from '../services/folderCoreService';
+import { addToLibraryChannel } from '../global/bus';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -1577,7 +1578,7 @@ export function machineryBuildTagManager(s: any): any {
                     click: () => {
                         if (!tagGroup || !history) return;
                         if (w.fs.existsSync(history.path)) {
-                            s.$root.$broadcast("ADD_TO_LIBRARY", {
+                            s.addToLibraryChannel.emit({
                                 tagGroup, tagGroup,
                                 items: [],
                                 library: history

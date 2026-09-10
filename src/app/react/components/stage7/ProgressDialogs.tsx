@@ -6,6 +6,7 @@ import { getIpc, req } from '../detail/detailHooks';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
 import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
+import { addToLibraryChannel } from '../../global/bus';
 
 /**
  * 阶段7d-6a：进度对话框族（第一部分）接管。
@@ -1187,7 +1188,7 @@ export function FileAddLibraryProgress() {
     };
     rootRef.current.cancel = cancel;
 
-    const onAddToLibrary = (e: any, params: any) => {
+    const onAddToLibrary = (params: any) => {
       ngSafe(() => {
         if (!params.library || !params.items) return;
         if (params.smartFolder || params.tagGroup) {
@@ -1222,7 +1223,7 @@ export function FileAddLibraryProgress() {
       });
     };
 
-    const off = body.$on('ADD_TO_LIBRARY', onAddToLibrary);
+    const off = addToLibraryChannel.on(onAddToLibrary);
 
     return () => {
       off();

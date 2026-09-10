@@ -148,7 +148,7 @@ try {
   await page.send('Runtime.evaluate', {
     expression: `(() => {
       window.__fpFolder = { id: 'FOLDER-TEST', name: 'Secret', password: window.btoa('oldpass'), isUnlock: false };
-      window.$bodyScope.$root.$broadcast('SET-FOLDER-PASSWORD', { folder: window.__fpFolder, mode: 'change' });
+      window.__eagleBus.emit('SET-FOLDER-PASSWORD', { folder: window.__fpFolder, mode: 'change' });
       return true;
     })()`,
     returnByValue: true,

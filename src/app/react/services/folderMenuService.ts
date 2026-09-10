@@ -25,7 +25,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
-import { setFolderPasswordChannel } from '../global/bus';
+import { addToLibraryChannel, setFolderPasswordChannel } from '../global/bus';
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
@@ -660,7 +660,7 @@ export function openFolderContextMenu(...args: any[]) {
           icon: 'ic-library-logo.svg',
           click: () => {
             const items2 = machineryGetFolderImages(s, folder, true);
-            s.$root.$broadcast('ADD_TO_LIBRARY', {
+            s.addToLibraryChannel.emit({
               folder: folder,
               items: items2,
               library: history
@@ -1631,7 +1631,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           accelerator: history.dir,
           icon: 'ic-library-logo.svg',
           click: () => {
-            s.$root.$broadcast('ADD_TO_LIBRARY', {
+            s.addToLibraryChannel.emit({
               smartFolder: smartFolder,
               items: [],
               library: history

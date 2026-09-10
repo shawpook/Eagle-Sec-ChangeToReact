@@ -215,14 +215,14 @@ export function takeoverSelectionViewDomain(): void {
   s0.$watch("imageSize.zoomRatio", zFn1);
   sweepForeignWatchers(s0, 'imageSize.zoomRatio', [zFn1], 'sliderZoomRatio');
 
-  // ── listMetaType（37269 逐字）──
-  const lFn1 = function (type: any) {
+  // ── listMetaType（37269 逐字）── b1-9bz-C-4：$watch → 显式调用
+  // 原 $watch 的语义是「外部写 s.listMetaType 后触发 changeMetaItems」；唯一外部写入点
+  // （SmallPanels 的元信息下拉）已改为直接调 machineryChangeMetaItems。
+  // 另：Angular $watch 注册时会以 (当前值, 当前值) 立即触发一次 listener —— 保留该语义。
+  {
     const s: any = getBodyScope();
-    if (!s) return;
-    machineryChangeMetaItems(s, type);
-  };
-  s0.$watch("listMetaType", lFn1);
-  sweepForeignWatchers(s0, 'listMetaType', [lFn1], 'changeMetaItems');
+    if (s) machineryChangeMetaItems(s, s.listMetaType);
+  }
 
   // ── $on UPDATE_SELECTION / SAVE_FOLDER（42379/42383 逐字）──
   diag.listenersRemoved['UPDATE_SELECTION'] = removeScopeListener(s0, 'UPDATE_SELECTION');

@@ -10,6 +10,7 @@ import { filesize } from '../../app/filters';
 import { useTippy } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { $, getIpc, getCurrentWindow, req } from '../detail/detailHooks';
+import { machineryChangeMetaItems } from '../../core/dataMachinery';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
@@ -391,8 +392,9 @@ export function LayoutPanel() {
                     value={snapshot.listMetaType}
                     onChange={(e) =>
                       scopeApply(getBodyScope(), (s) => {
-                        s.listMetaType = e.target.value;
-                        syncPanelFromScope();
+                        // b1-9bz-C-4：原经 $watch("listMetaType") 间接触发 —— 改显式调用
+                        // machineryChangeMetaItems（其内部本身就写 s.listMetaType）。
+                        machineryChangeMetaItems(s, e.target.value);
                       })
                     }
                   >

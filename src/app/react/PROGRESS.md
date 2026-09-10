@@ -1820,6 +1820,8 @@
 > `zoomFit` / `openUnfiled`。`zoom` 系（`zoom`/`zoomIn`/`zoomFit`）的 machinery 委托
 > `gridZoom*` / `detailUpdateZoomRatio`，经 diff 确认与 c3 实现**逐行等价**。
 >
+> **【b1-9bz-B-15：双键单源化收官 —— 30/40，剩余 10 个逐条定性】**
+>
 > **B 档 18 个已完成 16 个**，全部经 `bz-b-dual-diff.py` 体检确认等价或明确收敛侧，
 > 且每批都过全套件：`toggleSlideshow` / `focusAppUnlockPassword` / `changeSidebarIndex` /
 > `openQuickSearch` / `lastZoom` / `toggleSelectSmartFolder` / `zoom` / `zoomIn` /
@@ -1866,6 +1868,14 @@
 > 删除文件夹是**破坏性操作**，中途抛错会留下不一致状态甚至丢数据。收敛到 machinery
 > 在此处是**退步**，故保持 c3 实现。建议反向动作：给 machinery 版补回这三处守卫
 > （属 P4 收尾的健壮性修补，非 bz-B 范围）。
+>
+> **收官账目**：40 个双键 = **30 个完成** + 10 个不可做（删除族 4 / EXCLUDE 2 /
+> machinery 缺守卫 1 / 静态等价但触发回归 2 / 已随 updateItemView 一并处理 1）。
+> 门禁：esbuild 0 错 + 哨兵 OK + 全套件 55/55（两个后段失败项清进程后单跑均通过）。
+>
+> **由此发现的反向待办（非 bz-B）**：machinery 版在多处比 c3 版**缺少守卫**
+> （`removeSound` / `saveFolderDebounce` / `$root.notify` / `subFolderSortableOptions`）。
+> 这些路径当前靠 c3 实现兜底才没暴露；后续若要删 c3 体，必须先给 machinery 补齐守卫。
 >
 > **测试可靠性提示（重要）**：`main-ui-workflow-closed-loop` 的
 > `multi inspector persistence` 是**时序敏感**断言，单次结果不稳定（同一代码状态曾出现

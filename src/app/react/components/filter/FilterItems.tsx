@@ -146,7 +146,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.color.value = undefined;
     f.filterRules.color.gray = false;
-    runSeq([(s) => { s.page = 1; machineryReload(s); s.calculateFilterCounts && machineryCalculateFilterCounts(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); s.calculateFilterCounts && machineryCalculateFilterCounts(s); }]);
   };
 
   const activeHex = rgbToHexFn(value?.[0], value?.[1], value?.[2]);
@@ -381,7 +381,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.folder.includes = {};
     f.filterRules.folder.excludes = {};
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   const changeRule = (rule: string) => {
@@ -608,7 +608,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
     f.filterRules.tag.includes.length = 0;
     f.filterRules.tag.excludes.length = 0;
     f.filterRules.tag.no = false;
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   const changeRule = (rule: string) => {

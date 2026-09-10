@@ -850,7 +850,7 @@ export function openFolder(...args: any[]) {
             __lv_updateListHeight(s.imageSize.height);
             if (!ignoreReload) {
                 ScrollbarSaver.restoreScrollPosition();
-                machineryReload(s);
+                s.reload();
             }
             else {
                 s.rebindRefresh();
@@ -949,7 +949,7 @@ export function openSmartFolder(...args: any[]) {
                 syncInspectorFromScope();
                 __lv_updateListHeight(s.imageSize.height);
                 ScrollbarSaver.restoreScrollPosition();
-                machineryReload(s);
+                s.reload();
                 analytics.screenView('SmartFolder');
 
                 if (s.currentSmartFolder) {

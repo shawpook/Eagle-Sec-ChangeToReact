@@ -61,7 +61,7 @@ import { updateCurrentOrderAndIncrease } from './miscDomain';
 import { isInFolder } from './itemDomain';
 import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 import { detailUpdateZoomRatio, detailSmartZoom, detailToggleDetailMode, beginZoomingTransition } from '../services/detailService';
-import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot } from '../services/mediaService';
+import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot, toggleGifPlay } from '../services/mediaService';
 // b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
@@ -80,7 +80,13 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from './appCore';
-
+import { openFolder, openSmartFolder } from '../services/folderCoreService';
+import { select } from '../services/selectionService';
+import { uploadFiles } from '../services/uploadService';
+import { getRatioExp } from '../services/viewOpsService';
+import { resetFilter } from './filterDomain';
+import { addToRecentFolders } from '../services/batchOpsService';
+import { saveCrop } from '../services/imageOpsService';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
@@ -436,7 +442,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       if (!s.raw) return;
 
       if (!params.ignoreSort) {
-        s.sortRawData(s.orderBy);
+        machinerySortRawData(s, s.orderBy);
       }
 
       console.time("calculateImageBinding");
@@ -875,16 +881,16 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   var data: any[] = [];
 
   console.time("calcuteFilterResult");
-  data = await s.calcuteFilterResult(data, contentFilterCache);
+  data = await machineryCalcuteFilterResult(s, data, contentFilterCache);
   console.timeEnd("calcuteFilterResult");
 
 
   // 计算这批图片里面出现的标签
   if (w.eagle.filter.tagFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "EQUAL") {
-    s.calcuteContainTags(s.preelaborations);
+    machineryCalcuteContainTags(s, s.preelaborations);
   }
   else if (w.eagle.filter.tagFilterLogic === "AND") {
-    s.calcuteContainTags(data);
+    machineryCalcuteContainTags(s, data);
   }
 
   // 计算 Filter Badge 数量
@@ -929,7 +935,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   s.filtereds = s.allData.slice(0, s.len * s.page);
   syncListFromScope();
 
-  s.refreshSubfolderList();
+  machineryRefreshSubfolderList(s);
 
   // 減少重複計算，將原先計算智能文件夾數量功能，放在這裡
   if (s.$root.selectedSmartFolders.length === 0 && s.currentSmartFolder) {
@@ -958,7 +964,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
     if (w.eagle.filter.filterBadge > 0) s.startCursor = 0;
     w.resetNgGridLayoutData(s.allData, startCursor || s.startCursor);
   }
-  s.updateItemsView(s.selected);
+  machineryUpdateItemsView(s, s.selected);
   w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
   if (w.HoverPreview.isShow) {
     w.HoverPreview.hide();
@@ -992,9 +998,9 @@ export function machineryUpdateSidebarList(s: any): void {
     var communityItem = { vstype: 'community', size: 27 };
     var allTagsItem = { vstype: 'allTags', size: 27 };
     var trashItem = { vstype: 'trash', size: 27 };
-    var folders = s.getFolderList();
-    var smartFolders = s.getSmartFolderList();
-    var quickAccess = s.getQuickAccessList();
+    var folders = machineryGetFolderList(s);
+    var smartFolders = machineryGetSmartFolderList(s);
+    var quickAccess = machineryGetQuickAccessList(s);
     var quickAccessLabel = { vstype: 'label-qucik-access', size: 25 };
     var smartFolderLabel = { vstype: 'label-smart-folder', size: 25 };
     var folderLabel = { vstype: 'label-folder', size: 25 };
@@ -1077,7 +1083,7 @@ export function machineryUpdateItemsView(s: any, items: any[]): void {
   w.$(".box.selected").removeClass("selected");
   for (var i = items.length - 1; i >= 0; i--) {
     var item = items[i];
-    s.updateItemView(item);
+    machineryUpdateItemView(s, item);
   }
 }
 
@@ -1140,7 +1146,7 @@ export function machineryReload(s: any): any {
 
     if (!keepDetailMode) {
       if (s.isDetailMode) {
-        s.leaveDetailMode();
+        machineryLeaveDetailMode(s);
       }
 
       if (s.selected.length > 0) {
@@ -1153,15 +1159,15 @@ export function machineryReload(s: any): any {
     s.lastImageHeight = s.imageSize.height;
     s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
     s.rebindRefresh();
-    s.relayout();
+    machineryRelayout(s);
     s.updateSelection();
-    s.calculateFilterCounts();
-    s.updateSubFolderWidth();
+    machineryCalculateFilterCounts(s);
+    machineryUpdateSubFolderWidth(s);
     w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
 
     machineryAutoResizeTagFilter(s);
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      s.adjustLayoutWidth(0);
+      machineryAdjustLayoutWidth(s, 0);
     }
     s.listDone = true;
 
@@ -1206,9 +1212,9 @@ export function machineryUpdateZoomRatio(s: any, ratio: any, x: any, y: any, has
 /* toggleSlideshow（bundle 23816-23823 逐字；enter/leaveSlideshowMode 经 scope 解析） */
 export function machineryToggleSlideshow(s: any): void {
   if (!s.isSlideshowMode) {
-    s.enterSlideshowMode();
+    machineryEnterSlideshowMode(s);
   } else {
-    s.leaveSlideshowMode();
+    machineryLeaveSlideshowMode(s);
   }
 }
 
@@ -1220,7 +1226,7 @@ export function machinerySmartFolderCount(s: any, smartFolder: any): any {
     var images: any[] = [];
     images = s.raw.filter(function (image: any) {
       if (image.isDeleted) return false;
-      return s.existInSmartFilter(smartFolder, image);
+      return machineryExistInSmartFilter(s, smartFolder, image);
     });
     if (Object.keys(s.lockedImages).length > 0) {
       images = images.filter(s.lockImageFilter);
@@ -2419,7 +2425,7 @@ async function machineryFilterDataPart3(s: any, w: any, data: any[]): Promise<an
   // 文件夹有自己的排序方式
   if (!s.$root.selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
     if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
-      data = s.sortData(data, s.currentFolder.orderBy);
+      data = machinerySortData(s, data, s.currentFolder.orderBy);
     }
     if (!s.currentFolder.sortIncrease) {
       data = data.reverse();
@@ -2429,7 +2435,7 @@ async function machineryFilterDataPart3(s: any, w: any, data: any[]): Promise<an
   // 智能文件夹有自己的排序方式
   else if (s.currentSmartFolder && s.currentSmartFolder.orderBy) {
     if (s.currentSmartFolder.orderBy !== s.orderBy || s.currentSmartFolder.orderBy === "RANDOM") {
-      data = s.sortData(data, s.currentSmartFolder.orderBy);
+      data = machinerySortData(s, data, s.currentSmartFolder.orderBy);
     }
     if (!s.currentSmartFolder.sortIncrease) {
       data = data.reverse();
@@ -3069,14 +3075,14 @@ export function machineryZoom(s: any): void {
   if (!s.isDetailMode) return;
   if (s.lastZoomMode === "edge") {
     if (s.current && !w.VIDEO_TYPES[s.current.ext]) {
-      s.zoomFitEdge();
+      machineryZoomFitEdge(s);
     }
     else {
-      s.zoomFit();
+      machineryZoomFit(s);
     }
   }
   else {
-    s.smartZoom();
+    machinerySmartZoom(s);
   }
 }
 
@@ -3171,14 +3177,14 @@ export function machineryResetPage(s: any): void {
   s.layout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
 
   if (!w.eagle.filter.isLock) {
-    s.resetFilter();
+    resetFilter();
     s.keyword = undefined;
   }
   w.$("#image-drop-area").hide();
 
   if (s.duplicateTarget) {
     s.duplicateTarget = undefined;
-    s.findDupclipate(undefined);
+    machineryFindDupclipate(s, undefined);
   }
 }
 
@@ -3194,7 +3200,7 @@ export function machineryCalculateFilterCounts(s: any): void {
     let now = Date.now();
     for (let i = 0; i < s.allData.length; i++) {
       const image = s.allData[i];
-      s.updateFilterCounts(image, 1, now);
+      machineryUpdateFilterCounts(s, image, 1, now);
     }
     console.timeEnd("calculateFilterCounts");
     s.$evalAsync();
@@ -3341,7 +3347,7 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
       callback();
     }
     if (s.isDetailMode) {
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     }
     return;
   }
@@ -3350,7 +3356,7 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
 
   s.viewMode = 'all';
   s.$root.currentFocus = "sidebar";
-  s.resetPage();
+  machineryResetPage(s);
 
   $timeout.cancel(openAllTimeout);
   openAllTimeout = $timeout(function () {
@@ -3448,8 +3454,8 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
             syncDetailFromScope();
             s.smoothZoomDone = true;
             syncDetailFromScope();
-            if (!s.lastZoom()) {
-              s.zoom(image);
+            if (!machineryLastZoom(s)) {
+              machineryZoom(s, image);
             }
             detailZoom()?.updateNavigator( s.current);
 
@@ -3470,15 +3476,15 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
       syncDetailFromScope();
       detailZoom()?.updateNavigator( s.current);
       w.$(window).trigger("orientationchange");
-      if (!s.lastZoom()) {
-        s.zoom(image);
+      if (!machineryLastZoom(s)) {
+        machineryZoom(s, image);
       }
       w.$("#detail-container").css("opacity", 1);
       setTimeout(function () {
-        s.preloadImage("next");
+        machineryPreloadImage(s, "next");
       }, 200);
     }
-    s.addToRecentFile(s.current);
+    machineryAddToRecentFile(s, s.current);
     w.removePlayingAudios();
     w.HoverPreview.hide();
   }, duration);
@@ -3497,7 +3503,7 @@ export function machineryLeaveDetailMode(s: any): void {
   syncDetailFromScope();
   if (s.isDetailMode) {
 
-    s.rememberScrollTops(s.current);
+    machineryRememberScrollTops(s, s.current);
 
     s.isDetailMode = false;
     s.showDetailImage = false;
@@ -3507,7 +3513,7 @@ export function machineryLeaveDetailMode(s: any): void {
     s.commentRect = undefined;
     syncDetailFromScope();
     // 記住上次播放位置
-    s.rememberVideoCurrentTime(s.current); s.current = undefined;
+    machineryRememberVideoCurrentTime(s, s.current); s.current = undefined;
     syncDetailFromScope();
     syncInspectorFromScope();
     $timeout.cancel(zoomInitTimeout);
@@ -3519,7 +3525,7 @@ export function machineryLeaveDetailMode(s: any): void {
     }, 50);
 
     s.isInlineMode = false;
-    s.fadeOutDetailMode();
+    machineryFadeOutDetailMode(s);
     detailZoom()?.cleanBitmapViewer();
     detailZoom()?.clearPreloadData();
 
@@ -3653,19 +3659,19 @@ export function machineryBuildMousetrap(s: any): any {
   // 建立快捷鍵名稱到處理函數的映射
   const shortcutHandlerMap: any = {
     'player.playAndPause': () => {
-      s.quicklook();
+      machineryQuicklook(s);
     },
     'player.prev1frame': () => {
-      s.prevGifFrame(1);
+      machineryPrevGifFrame(s, 1);
     },
     'player.next1frame': () => {
-      s.nextGifFrame(1);
+      machineryNextGifFrame(s, 1);
     },
     'player.prev10frame': () => {
-      s.prevGifFrame(10);
+      machineryPrevGifFrame(s, 10);
     },
     'player.next10frame': () => {
-      s.nextGifFrame(10);
+      machineryNextGifFrame(s, 10);
     },
     'player.speed.up': () => {
       let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
@@ -3989,15 +3995,15 @@ export function machineryZoomActual(s: any, event: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.changeListHeight();
+    machineryChangeListHeight(s);
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      s.adjustLayoutWidth(0);
+      machineryAdjustLayoutWidth(s, 0);
       machinerySaveListHeight(s, s.imageSize.height);
     }
   } else {
     s.imageSize.zoomRatio = 100;
-    s.imageSize.zoomRatioExp = s.getRatioExp(s.imageSize.zoomRatio);
-    s.updateZoomRatio(100, undefined, undefined, true);
+    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
+    machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
 
     // 如果是視頻格式，尽可能使用视频原来尺寸
     var mpvPlayer = w.$(".detail-wrap mpv-video")[0];
@@ -4025,13 +4031,13 @@ export function machineryToggleZoom(s: any, event: any): void {
   if (!s.isDetailMode) return;
   if (s.VIDEO_TYPES[s.current.ext]) {
     if (s.lastZoomMode !== "edge") {
-      s.zoomFit(event);
+      machineryZoomFit(s, event);
       s.lastZoomMode = "edge";
       syncDetailFromScope();
       s.zoomFitSize = s.imageSize.zoomRatioExp;
     }
     else {
-      s.zoomActual(event);
+      machineryZoomActual(s, event);
       s.lastZoomMode = "fit";
       syncDetailFromScope();
       s.zoomFitSize = 0;
@@ -4039,12 +4045,12 @@ export function machineryToggleZoom(s: any, event: any): void {
   }
   else {
     if (s.lastZoomMode !== "edge") {
-      s.zoomFitEdge(event, true);
+      machineryZoomFitEdge(s, event, true);
       s.lastZoomMode = "edge";
       syncDetailFromScope();
     }
     else {
-      s.zoomFit(event);
+      machineryZoomFit(s, event);
       s.lastZoomMode = "fit";
       syncDetailFromScope();
     }
@@ -4185,10 +4191,10 @@ export function machineryPrevHistory(s: any): void {
 /* back（bundle 30889-30896 逐字） */
 export function machineryBack(s: any): void {
   if (!s.isDetailMode) {
-    s.prevHistory();
+    machineryPrevHistory(s);
   }
   else {
-    s.leaveDetailMode();
+    machineryLeaveDetailMode(s);
   }
 }
 
@@ -4242,12 +4248,12 @@ export function machinerySelectNext(s: any, event: any): void {
     return;
   }
 
-  var selection = s.getSelection();
+  var selection = machineryGetSelection(s);
   var start = selection.start;
   var end = selection.end + 1;
 
   if (s.isDetailMode) {
-    s.rememberScrollTops(s.current);
+    machineryRememberScrollTops(s, s.current);
   }
 
   if (!s.allData[end]) {
@@ -4267,7 +4273,7 @@ export function machinerySelectNext(s: any, event: any): void {
 
   if (s.isDetailMode) {
     $timeout.cancel(nextTimeout);
-    s.forceFitImageSize(s.selected[0], true);
+    machineryForceFitImageSize(s, s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
@@ -4275,21 +4281,21 @@ export function machinerySelectNext(s: any, event: any): void {
     syncDetailFromScope();
   }
 
-  s.autoScroll(end);
+  machineryAutoScroll(s, end);
 
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
-    if (!s.lastZoom()) {
-      s.zoom();
+    if (!machineryLastZoom(s)) {
+      machineryZoom(s);
     }
     nextTimeout = $timeout(function () {
-      if (!s.lastZoom()) {
-        s.zoom();
+      if (!machineryLastZoom(s)) {
+        machineryZoom(s);
       }
       var nextImage = s.allData[end + 1];
-      s.preloadImage("next");
+      machineryPreloadImage(s, "next");
     }, 100);
-    s.addToRecentFile(s.current);
+    machineryAddToRecentFile(s, s.current);
   }
 }
 
@@ -4303,7 +4309,7 @@ export function machinerySelectPrev(s: any, event: any): void {
     return;
   }
 
-  var selection = s.getSelection();
+  var selection = machineryGetSelection(s);
   var start = selection.start;
   var end = selection.end + 1;
 
@@ -4316,7 +4322,7 @@ export function machinerySelectPrev(s: any, event: any): void {
 
   if (s.isDetailMode) {
     detailZoom()?.cleanBitmapViewer();
-    s.rememberScrollTops(s.current);
+    machineryRememberScrollTops(s, s.current);
     s.isGifReady = false;
     syncDetailFromScope();
   }
@@ -4327,39 +4333,39 @@ export function machinerySelectPrev(s: any, event: any): void {
     s.selected.push(s.allData[start - 1]);
     syncInspectorFromScope();
     if (s.isDetailMode) {
-      s.forceFitImageSize(s.selected[0], true);
+      machineryForceFitImageSize(s, s.selected[0], true);
       s.current = s.selected[0];
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    s.autoScroll(start - 1);
+    machineryAutoScroll(s, start - 1);
   } else {
     s.selected = [];
     syncInspectorFromScope();
     s.selected.push(s.allData[0]);
     syncInspectorFromScope();
-    s.forceFitImageSize(s.selected[0], true);
+    machineryForceFitImageSize(s, s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.autoScroll(0);
+    machineryAutoScroll(s, 0);
   }
   s.selectedFolderMappings = {};
   syncListFromScope();
   s.$root.currentFocus = "content";
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
-    if (!s.lastZoom()) {
-      s.zoom();
+    if (!machineryLastZoom(s)) {
+      machineryZoom(s);
     }
     $timeout.cancel(prevTimeout);
     prevTimeout = $timeout(function () {
-      if (!s.lastZoom()) {
-        s.zoom();
+      if (!machineryLastZoom(s)) {
+        machineryZoom(s);
       }
-      s.preloadImage("prev");
+      machineryPreloadImage(s, "prev");
     }, 100);
-    s.addToRecentFile(s.current);
+    machineryAddToRecentFile(s, s.current);
   }
 }
 
@@ -4372,7 +4378,7 @@ export function machineryMultipleSelectUp(s: any, event: any): void {
     return;
   }
   if (s.layout === "ListLayout") {
-    s.multipleSelectPrev(event);
+    machineryMultipleSelectPrev(s, event);
   }
 }
 
@@ -4383,7 +4389,7 @@ export function machineryMultipleSelectDown(s: any, event: any): void {
     return;
   }
   if (s.layout === "ListLayout") {
-    s.multipleSelectNext(event);
+    machineryMultipleSelectNext(s, event);
   }
 }
 
@@ -4396,7 +4402,7 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
     return;
   }
   if (s.isDetailMode) return;
-  var selection = s.getSelection();
+  var selection = machineryGetSelection(s);
   var start = selection.start;
   var end = selection.end + 1;
 
@@ -4406,14 +4412,14 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
     if (idx !== -1) {
       s.selected.splice(idx, 1);
       syncInspectorFromScope();
-      s.autoScroll(s.lastSelectedIndex);
+      machineryAutoScroll(s, s.lastSelectedIndex);
     }
   }
   else {
     if (s.allData[end]) {
       s.selected.push(s.allData[end]);
       syncInspectorFromScope();
-      s.autoScroll(end);
+      machineryAutoScroll(s, end);
     }
   }
 }
@@ -4427,7 +4433,7 @@ export function machineryMultipleSelectPrev(s: any, event: any): void {
     return;
   }
   if (s.isDetailMode) return;
-  var selection = s.getSelection();
+  var selection = machineryGetSelection(s);
   var start = selection.start;
   var end = selection.end;
 
@@ -4437,14 +4443,14 @@ export function machineryMultipleSelectPrev(s: any, event: any): void {
     if (idx !== -1) {
       s.selected.splice(idx, 1);
       syncInspectorFromScope();
-      s.autoScroll(s.lastSelectedIndex);
+      machineryAutoScroll(s, s.lastSelectedIndex);
     }
   }
   else {
     if (s.allData[start - 1]) {
       s.selected.push(s.allData[start - 1]);
       syncInspectorFromScope();
-      s.autoScroll(start - 1);
+      machineryAutoScroll(s, start - 1);
     }
   }
 }
@@ -4467,20 +4473,20 @@ export function machineryRemoveSelected(s: any, event: any): void {
 
   if (s.$root.currentFocus == 'sidebar') {
     if (s.$root.selectedFolders.length > 0) {
-      s.removeSelectedFolders();
+      machineryRemoveSelectedFolders(s);
     }
     else if (s.$root.selectedSmartFolders.length > 0) {
-      s.removeSelectedSmartFolders();
+      machineryRemoveSelectedSmartFolders(s);
     }
     else if (s.currentFolder) {
-      s.removeFolder(s.currentFolder);
+      machineryRemoveFolder(s, s.currentFolder);
     } else if (s.currentSmartFolder) {
-      s.removeSmartFolder(s.currentSmartFolder);
+      machineryRemoveSmartFolder(s, s.currentSmartFolder);
     }
   }
   else if (s.$root.currentFocus == 'tags') {
     if (s.currentTagGroup) {
-      s.removeTagGroup(s.currentTagGroup);
+      machineryRemoveTagGroup(s, s.currentTagGroup);
     }
   }
   else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
@@ -4489,13 +4495,13 @@ export function machineryRemoveSelected(s: any, event: any): void {
     });
     var folderId = selectedFolders[0];
     if (folderId && s.folderMappings[folderId]) {
-      s.removeFolder(s.folderMappings[folderId], {
+      machineryRemoveFolder(s, s.folderMappings[folderId], {
         ignoreSelectNext: true
       });
     }
   }
   else if (s.viewMode === 'alltags' && s.currentTagGroup) {
-    var selectedTags = s.getSelectedTags();
+    var selectedTags = machineryGetSelectedTags(s);
     if (selectedTags && selectedTags.length > 0) {
       s.TagManager.removeTagsFromGroup(s.currentTagGroup.id, selectedTags);
     }
@@ -4522,18 +4528,18 @@ export function machineryRemoveSelected(s: any, event: any): void {
         cancelButtonText: w.i18n.__("general.cancel"),
       }).then(function () {
         s.$evalAsync(function () {
-          s.removePermanently();
+          machineryRemovePermanently(s);
         });
       });
     }
     else {
-      s.checkOperationSafety(function () {
-        s.lastIndex = s.getSelection().start;
+      machineryCheckOperationSafety(s, function () {
+        s.lastIndex = machineryGetSelection(s).start;
 
         if (s.currentFolder) {
 
           // 强制重置该文件夹及祖先封面
-          s.resetFolderCover(s.currentFolder);
+          machineryResetFolderCover(s, s.currentFolder);
 
           var containsMultipleFolder = false;
           for (var i = 0; i < s.selected.length; i++) {
@@ -4572,12 +4578,12 @@ export function machineryRemoveSelected(s: any, event: any): void {
             }).then(function (result: any) {
               var isForceToTrash = (result === '2');
               lastMoveToTrashCheckbox = result;
-              s.removeFolderContents({ isForceToTrash: isForceToTrash });
+              machineryRemoveFolderContents(s, { isForceToTrash: isForceToTrash });
               s.$evalAsync();
             }, function () { });
           }
           else {
-            s.removeFolderContents({ isForceToTrash: true });
+            machineryRemoveFolderContents(s, { isForceToTrash: true });
           }
         } else if (s.currentTag || s.currentSmartFolder || s.viewMode === 'all' || s.viewMode === 'unfiled' || s.viewMode === 'untagged' || s.viewMode === 'recent' || s.viewMode === 'random') {
 
@@ -4587,7 +4593,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
             image.isDeleted = true;
             image.deletedTime = Date.now();
             origin.push(image);
-            s.updateFilterCounts(image, -1, now);
+            machineryUpdateFilterCounts(s, image, -1, now);
           });
 
           var message = getFilter()('i18n')("notify.image.remove", [
@@ -4603,7 +4609,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
             origin.forEach(function (image: any) {
               image.isDeleted = false;
               delete image.deletedTime;
-              s.updateFilterCounts(image, 1, now);
+              machineryUpdateFilterCounts(s, image, 1, now);
             });
             s.selected = origin;
             syncInspectorFromScope();
@@ -4626,7 +4632,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
 
           if (s.isDetailMode) {
             $timeout(function () {
-              s.zoom();
+              machineryZoom(s);
             }, 100)
           }
 
@@ -4637,7 +4643,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
           w.hiddenByCurrentFilter(s.selected);
 
           // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-          s.lastIndex = s.getSelection().start;
+          s.lastIndex = machineryGetSelection(s).start;
           var next = s.allData[s.lastIndex + s.selected.length];
           var prev = s.allData[s.lastIndex - 1];
 
@@ -4661,22 +4667,22 @@ export function machineryRemoveSelected(s: any, event: any): void {
             s.selected = [];
             syncInspectorFromScope();
             if (s.isDetailMode) {
-              s.leaveDetailMode();
+              machineryLeaveDetailMode(s);
             }
           }
 
           $timeout(function () {
-            s.forceFitImageSize(s.current);
-            s.zoom();
+            machineryForceFitImageSize(s, s.current);
+            machineryZoom(s);
           }, 100);
 
           w.ScrollbarSaver.saveScrollPosition();
 
-          var itemElements = s.getSelectedItemElements();
+          var itemElements = machineryGetSelectedItemElements(s);
           s.$root.$broadcast("gl:removeItems", itemElements);
 
-          s.lastSelectedIndex = s.currentIndex() - 1;
-          s.autoScroll();
+          s.lastSelectedIndex = machineryCurrentIndex(s) - 1;
+          machineryAutoScroll(s);
 
           s.calculateImageBinding({ ignoreSort: true }, function () {
             if (
@@ -4717,7 +4723,7 @@ export function machineryQuicklook(s: any, event: any): void {
   // }
   // else
   if (s.isDetailMode && !s.isInlineMode && (s.current.ext == 'gif')) {
-    s.toggleGifPlay();
+    toggleGifPlay();
   }
   else {
     // 如果用户设定是预览
@@ -4727,7 +4733,7 @@ export function machineryQuicklook(s: any, event: any): void {
         setTimeout(function () {
           w.$(".content-panel.detail-mode").addClass("open");
         }, 30);
-        s.toggleDetailMode(event, true);
+        machineryToggleDetailMode(s, event, true);
         w.analytics.event('QuickLook', 'Open');
       }
     }
@@ -4751,7 +4757,7 @@ export function machineryQuicklook(s: any, event: any): void {
 export function machineryCopyImages(s: any, event: any): void {
   const w = window as any;
   if (s.viewMode === 'alltags') {
-    var selectedTags = s.getSelectedTags();
+    var selectedTags = machineryGetSelectedTags(s);
     if (selectedTags && selectedTags.length > 0) {
       w.electron.clipboard.writeText(selectedTags.join(","));
       s.notify({
@@ -4809,12 +4815,12 @@ export function machineryCopyImages(s: any, event: any): void {
 export function machineryKeyCHandler(s: any, event: any): void {
   if (s.isInlineMode) return;
   if (s.isDetailMode) {
-    s.toggleCommentMode(event);
+    machineryToggleCommentMode(s, event);
   }
 }
 
 export function machineryKeyPHandler(s: any, event: any): void {
-  s.openPluginPanel(event);
+  machineryOpenPluginPanel(s, event);
 }
 
 /* keyLeftHandler（bundle 35107-35146 逐字：swal 容器守卫 + content→selectPrev(machinery 版) +
@@ -4825,7 +4831,7 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (w.$(".swal2-container").length > 0) return;
   if (s.$root.currentFocus == "content") {
-    s.selectPrev(event);
+    machinerySelectPrev(s, event);
   }
   else if (s.$root.currentFocus == "tags") {
     s.$root.currentFocus = "sidebar";
@@ -4840,27 +4846,27 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
           }
         }
       });
-      s.updateSidebarList();
+      machineryUpdateSidebarList(s);
     }
     else if (s.currentFolder) {
       if (!s.currentFolder.children || s.currentFolder.children.length == 0) {
         s.currentFolder.isExpand = true;
-        s.updateSidebarList();
+        machineryUpdateSidebarList(s);
       }
       else {
         s.currentFolder.isExpand = false;
-        s.updateSidebarList();
+        machineryUpdateSidebarList(s);
       }
       w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, false);
     }
     else if (s.currentSmartFolder) {
       if (!s.currentSmartFolder.children || s.currentSmartFolder.children.length == 0) {
         s.currentSmartFolder.isExpand = true;
-        s.updateSidebarList();
+        machineryUpdateSidebarList(s);
       }
       else {
         s.currentSmartFolder.isExpand = false;
-        s.updateSidebarList();
+        machineryUpdateSidebarList(s);
       }
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, false);
     }
@@ -4874,7 +4880,7 @@ export function machineryKeyRightHandler(s: any, event: any): void {
   event && event.preventDefault();
   if (w.$(".swal2-container").length > 0) return;
   if (s.$root.currentFocus == "content") {
-    s.selectNext(event);
+    machinerySelectNext(s, event);
   }
   else {
     if (s.$root.selectedFolders.length > 1) {
@@ -4886,16 +4892,16 @@ export function machineryKeyRightHandler(s: any, event: any): void {
           }
         }
       });
-      s.updateSidebarList();
+      machineryUpdateSidebarList(s);
     }
     else if (s.currentFolder) {
       s.currentFolder.isExpand = true;
-      s.updateSidebarList();
+      machineryUpdateSidebarList(s);
       w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, true);
     }
     else if (s.currentSmartFolder) {
       s.currentSmartFolder.isExpand = true;
-      s.updateSidebarList();
+      machineryUpdateSidebarList(s);
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, true);
     }
     else if (s.viewMode == "alltags") {
@@ -4917,7 +4923,7 @@ export function machineryModUpHandler(s: any, event: any): void {
     return;
   }
   else {
-    s.homeHandler(event);
+    machineryHomeHandler(s, event);
   }
 }
 
@@ -4931,7 +4937,7 @@ export function machineryModDownHandler(s: any, event: any): void {
     return;
   }
   else {
-    s.endHandler(event);
+    machineryEndHandler(s, event);
   }
 }
 
@@ -4947,7 +4953,7 @@ export function machineryModLeftHandler(s: any, event: any): void {
     }
   }
   else {
-    s.prevHistory(event);
+    machineryPrevHistory(s, event);
   }
 }
 
@@ -4963,7 +4969,7 @@ export function machineryModRightHandler(s: any, event: any): void {
     }
   }
   else {
-    s.nextHistory(event);
+    machineryNextHistory(s, event);
   }
 }
 
@@ -5026,7 +5032,7 @@ function machineryOpenPrevQuickAccess(s: any): void {
     $quickAccessItems.eq(currentIndex - 1).click();
   }
   else {
-    s.openTrash();
+    machineryOpenTrash(s);
   }
 }
 
@@ -5048,10 +5054,10 @@ function machineryOpenNextQuickAccess(s: any): void {
       return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
     });
     if (smartFolders.length > 0 && smartFolders[0]) {
-      s.openSmartFolder(smartFolders[0]);
+      openSmartFolder(smartFolders[0]);
     }
     else if (folders.length > 0 && folders[0]) {
-      s.openFolder(folders[0]);
+      openFolder(folders[0]);
     }
   }
 }
@@ -5062,22 +5068,22 @@ function machineryOpenPrevGroup(s: any): void {
     return;
   }
   else if (s.tagViewMode === "UNFILED") {
-    s.openTagAllGroup();
+    machineryOpenTagAllGroup(s);
   }
   else if (s.tagViewMode === "STARRED") {
-    s.openUnfiledGroup();
+    machineryOpenUnfiledGroup(s);
   }
   else {
     var $visibleGroups = w.$(".tag-manager-sidebar .group-item:visible");
     var $currentGroup = w.$(".tag-manager-sidebar .group-item.active");
     var currentIndex = $visibleGroups.index($currentGroup);
     if (currentIndex === 0) {
-      s.openStarredGroup();
+      machineryOpenStarredGroup(s);
     }
     else if (currentIndex > 0) {
       var prev = s.TagManager.groups[currentIndex - 1];
       if (prev) {
-        s.openTagGroup(prev);
+        machineryOpenTagGroup(s, prev);
       }
     }
   }
@@ -5086,14 +5092,14 @@ function machineryOpenPrevGroup(s: any): void {
 function machineryOpenNextGroup(s: any): void {
   const w = window as any;
   if (s.tagViewMode === "ALL") {
-    s.openUnfiledGroup();
+    machineryOpenUnfiledGroup(s);
   }
   else if (s.tagViewMode === "UNFILED") {
-    s.openStarredGroup();
+    machineryOpenStarredGroup(s);
   }
   else if (s.tagViewMode === "STARRED") {
     if (s.TagManager.groups[0]) {
-      s.openTagGroup(s.TagManager.groups[0]);
+      machineryOpenTagGroup(s, s.TagManager.groups[0]);
     }
   }
   else if (s.TagManager.groups.length > 0) {
@@ -5102,7 +5108,7 @@ function machineryOpenNextGroup(s: any): void {
     var currentIndex = $visibleGroups.index($currentGroup);
     var next = s.TagManager.groups[currentIndex + 1];
     if (next) {
-      s.openTagGroup(next);
+      machineryOpenTagGroup(s, next);
     }
   }
 }
@@ -5127,7 +5133,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         detailZoom()?.moveY( -150);
       }
     } else {
-      s.selectUp(event);
+      machinerySelectUp(s, event);
     }
   }
   else if (s.$root.currentFocus == "sidebar") {
@@ -5136,90 +5142,90 @@ export function machineryKeyUpHandler(s: any, event: any): void {
     s.$root.selectedFoldersMappings = {};
     s.$root.selectedSmartFoldersMappings = {};
     s.$root.selectedSmartFolders = [];
-    if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { s.openAll() }
+    if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { machineryOpenAll(s) }
       else if (s.viewMode == "untagged") {
         if (s.$root.preferences.sidebar.unfiled != 'false') {
-          s.openUnfiled();
+          machineryOpenUnfiled(s);
         }
         else {
-          s.openAll();
+          machineryOpenAll(s);
         }
       }
       else if (s.viewMode == "recent") {
         if (s.$root.preferences.sidebar.untagged != 'false') {
-          s.openUntagged();
+          machineryOpenUntagged(s);
         }
         else if (s.$root.preferences.sidebar.unfiled != 'false') {
-          s.openUnfiled();
+          machineryOpenUnfiled(s);
         }
         else {
-          s.openAll();
+          machineryOpenAll(s);
         }
       }
       else if (s.viewMode == "random") {
         if (s.$root.preferences.sidebar.recent != 'false') {
-          s.openRecent();
+          machineryOpenRecent(s);
         }
         else if (s.$root.preferences.sidebar.untagged != 'false') {
-          s.openUntagged();
+          machineryOpenUntagged(s);
         }
         else if (s.$root.preferences.sidebar.unfiled != 'false') {
-          s.openUnfiled();
+          machineryOpenUnfiled(s);
         }
         else {
-          s.openAll();
+          machineryOpenAll(s);
         }
       }
       else if (s.viewMode == "community") {
         if (s.$root.preferences.sidebar.random != 'false') {
-          s.openRandom();
+          machineryOpenRandom(s);
         }
         else if (s.$root.preferences.sidebar.recent != 'false') {
-          s.openRecent();
+          machineryOpenRecent(s);
         }
         else if (s.$root.preferences.sidebar.untagged != 'false') {
-          s.openUntagged();
+          machineryOpenUntagged(s);
         }
         else if (s.$root.preferences.sidebar.unfiled != 'false') {
-          s.openUnfiled();
+          machineryOpenUnfiled(s);
         }
         else {
-          s.openAll();
+          machineryOpenAll(s);
         }
       }
       else if (s.viewMode == "alltags") {
         if (s.$root.preferences.sidebar.community2 != 'false') {
-          s.openCommunity();
+          machineryOpenCommunity(s);
         }
         else if (s.$root.preferences.sidebar.random != 'false') {
-          s.openRandom();
+          machineryOpenRandom(s);
         }
         else if (s.$root.preferences.sidebar.recent != 'false') {
-          s.openRecent();
+          machineryOpenRecent(s);
         }
         else if (s.$root.preferences.sidebar.untagged != 'false') {
-          s.openUntagged();
+          machineryOpenUntagged(s);
         }
         else if (s.$root.preferences.sidebar.unfiled != 'false') {
-          s.openUnfiled();
+          machineryOpenUnfiled(s);
         }
         else {
-          s.openAll();
+          machineryOpenAll(s);
         }
       }
       else if (s.viewMode == "trash") {
-        s.openAllTags()
+        machineryOpenAllTags(s)
       }
       else {
         if (s.currentId) {
           if (s.currentId.indexOf("smart-folder") > -1) {
-            s.openPrevSmartFolder();
+            machineryOpenPrevSmartFolder(s);
           }
           else if (s.currentId.indexOf("quick") > -1) {
             machineryOpenPrevQuickAccess(s);
           }
           else if (s.currentId.indexOf("folder") > -1) {
-            s.openPrevFolder();
+            machineryOpenPrevFolder(s);
           }
         }
       }
@@ -5249,7 +5255,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         detailZoom()?.moveY( 150);
       }
     } else {
-      s.selectDown(event);
+      machinerySelectDown(s, event);
     }
   }
   else if (s.$root.currentFocus == "sidebar") {
@@ -5260,78 +5266,78 @@ export function machineryKeyDownHandler(s: any, event: any): void {
     s.$root.selectedSmartFolders = [];
     if (s.viewMode == "all") {
       if (s.$root.preferences.sidebar.unfiled != 'false') {
-        s.openUnfiled();
+        machineryOpenUnfiled(s);
       }
       else if (s.$root.preferences.sidebar.untagged != 'false') {
-        s.openUntagged();
+        machineryOpenUntagged(s);
       }
       else if (s.$root.preferences.sidebar.recent != 'false') {
-        s.openRecent();
+        machineryOpenRecent(s);
       }
       else if (s.$root.preferences.sidebar.random != 'false') {
-        s.openRandom();
+        machineryOpenRandom(s);
       }
       else if (s.$root.preferences.sidebar.community2 != 'false') {
-        s.openCommunity();
+        machineryOpenCommunity(s);
       }
       else {
-        s.openAllTags();
+        machineryOpenAllTags(s);
       }
     }
     else if (s.viewMode == "unfiled") {
       if (s.$root.preferences.sidebar.untagged != 'false') {
-        s.openUntagged();
+        machineryOpenUntagged(s);
       }
       else if (s.$root.preferences.sidebar.recent != 'false') {
-        s.openRecent();
+        machineryOpenRecent(s);
       }
       else if (s.$root.preferences.sidebar.random != 'false') {
-        s.openRandom();
+        machineryOpenRandom(s);
       }
       else if (s.$root.preferences.sidebar.community2 != 'false') {
-        s.openCommunity();
+        machineryOpenCommunity(s);
       }
       else {
-        s.openAllTags();
+        machineryOpenAllTags(s);
       }
     }
     else if (s.viewMode == "untagged") {
       if (s.$root.preferences.sidebar.recent != 'false') {
-        s.openRecent();
+        machineryOpenRecent(s);
       }
       else if (s.$root.preferences.sidebar.random != 'false') {
-        s.openRandom();
+        machineryOpenRandom(s);
       }
       else if (s.$root.preferences.sidebar.community2 != 'false') {
-        s.openCommunity();
+        machineryOpenCommunity(s);
       }
       else {
-        s.openAllTags();
+        machineryOpenAllTags(s);
       }
     }
     else if (s.viewMode == "recent") {
       if (s.$root.preferences.sidebar.random != 'false') {
-        s.openRandom();
+        machineryOpenRandom(s);
       }
       else if (s.$root.preferences.sidebar.community2 != 'false') {
-        s.openCommunity();
+        machineryOpenCommunity(s);
       }
       else {
-        s.openAllTags();
+        machineryOpenAllTags(s);
       }
     }
     else if (s.viewMode == "random") {
       if (s.$root.preferences.sidebar.community2 != 'false') {
-        s.openCommunity();
+        machineryOpenCommunity(s);
       }
       else {
-        s.openAllTags();
+        machineryOpenAllTags(s);
       }
     }
     else if (s.viewMode == "community") {
-      s.openAllTags();
+      machineryOpenAllTags(s);
     }
-    else if (s.viewMode == "alltags") { s.openTrash() } else if (s.viewMode == "trash") {
+    else if (s.viewMode == "alltags") { machineryOpenTrash(s) } else if (s.viewMode == "trash") {
 
       var listItems = s.sidebarList;
       var folders = listItems.filter(function (item: any) {
@@ -5347,21 +5353,21 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         w.$("#quick-access-" + quickAccessItems[0].id).click();
       }
       else if (smartFolders.length > 0 && smartFolders[0]) {
-        s.openSmartFolder(smartFolders[0]);
+        openSmartFolder(smartFolders[0]);
       }
       else if (folders.length > 0 && folders[0]) {
-        s.openFolder(folders[0]);
+        openFolder(folders[0]);
       }
     }
     else {
       if (s.currentId.indexOf("smart-folder") > -1) {
-        s.openNextSmartFolder();
+        machineryOpenNextSmartFolder(s);
       }
       else if (s.currentId.indexOf("quick") > -1) {
         machineryOpenNextQuickAccess(s);
       }
       else if (s.currentId.indexOf("folder") > -1) {
-        s.openNextFolder();
+        machineryOpenNextFolder(s);
       }
     }
   }
@@ -5451,7 +5457,7 @@ export function machinerySelectUp(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
 
-  var selection = s.getSelection();
+  var selection = machineryGetSelection(s);
   var start = selection.start;
   var $box = w.$(".box.selected").eq(0);
   var boxOffest = $box.offset();
@@ -5486,7 +5492,7 @@ export function machinerySelectUp(s: any, event: any): void {
     }
   });
   if (target) {
-    var image = s.getItemByElement(target[0]);
+    var image = machineryGetItemByElement(s, target[0]);
     s.selected = [image];
     syncInspectorFromScope();
     s.selectedFolderMappings = {};
@@ -5496,18 +5502,18 @@ export function machinerySelectUp(s: any, event: any): void {
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    s.autoScroll(target);
+    machineryAutoScroll(s, target);
   }
   if (s.isDetailMode) {
-    s.forceFitImageSize(s.selected[0], true);
+    machineryForceFitImageSize(s, s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
     s.isGifReady = false;
     syncDetailFromScope();
     detailZoom()?.updateNavigator( s.current);
-    if (!s.lastZoom()) {
-      s.zoom();
+    if (!machineryLastZoom(s)) {
+      machineryZoom(s);
     }
   }
 }
@@ -5515,7 +5521,7 @@ export function machinerySelectUp(s: any, event: any): void {
 export function machinerySelectDown(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
-  var selection = s.getSelection();
+  var selection = machineryGetSelection(s);
   var end = selection.end || 0;
   var $arround = machineryGetArroundBox(s, end);
   var $box = w.$(".box.selected").last();
@@ -5550,7 +5556,7 @@ export function machinerySelectDown(s: any, event: any): void {
     }
   });
   if (target) {
-    var image = s.getItemByElement(target[0]);
+    var image = machineryGetItemByElement(s, target[0]);
     s.selected = [image];
     syncInspectorFromScope();
     s.selectedFolderMappings = {};
@@ -5560,18 +5566,18 @@ export function machinerySelectDown(s: any, event: any): void {
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    s.autoScroll(target);
+    machineryAutoScroll(s, target);
   }
   if (s.isDetailMode) {
-    s.forceFitImageSize(s.selected[0], true);
+    machineryForceFitImageSize(s, s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
     s.isGifReady = false;
     syncDetailFromScope();
     detailZoom()?.updateNavigator( s.current);
-    if (!s.lastZoom()) {
-      s.zoom();
+    if (!machineryLastZoom(s)) {
+      machineryZoom(s);
     }
   }
 }
@@ -5581,34 +5587,34 @@ export function machinerySelectDown(s: any, event: any): void {
 /* changeTo5Star（bundle 30316-30319 逐字；changeStar 为 bundle scope 函数经 scope 解析） */
 export function machineryChangeTo5Star(s: any, event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  s.changeStar(5, true, true);
+  machineryChangeStar(s, 5, true, true);
 }
 
 /* removeStar/changeTo1Star…changeTo4Star（bundle 30292-30314 逐字补齐——b1-9ay：c18f-1 批
    此前仅落了 changeTo5Star，mousetrap '0'-'4' 五键绑定期读到 undefined，按键即
    TypeError: func is not a function（sweep B5/B6 实锤）） */
 export function machineryRemoveStar(s: any): void {
-  s.changeStar(undefined, true);
+  machineryChangeStar(s, undefined, true);
 }
 
 export function machineryChangeTo1Star(s: any, event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  s.changeStar(1, true, true);
+  machineryChangeStar(s, 1, true, true);
 }
 
 export function machineryChangeTo2Star(s: any, event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  s.changeStar(2, true, true);
+  machineryChangeStar(s, 2, true, true);
 }
 
 export function machineryChangeTo3Star(s: any, event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  s.changeStar(3, true, true);
+  machineryChangeStar(s, 3, true, true);
 }
 
 export function machineryChangeTo4Star(s: any, event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  s.changeStar(4, true, true);
+  machineryChangeStar(s, 4, true, true);
 }
 
 /* closeWindowHandler（bundle 30802-30812 逐字；**bundle 原版怪癖：参数名为 $event 但体内
@@ -5636,7 +5642,7 @@ export function machineryNHandler(s: any, $event: any): void {
   if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
     var video = w.$(".detail-wrap video")[0] || w.$(".detail-wrap mpv-video")[0];
     if (video) {
-      s.addVideoComment(s.current, video);
+      machineryAddVideoComment(s, s.current, video);
     }
   }
 }
@@ -5675,13 +5681,13 @@ export function machineryToggleAll(s: any, $event: any): void {
     w.$(window).trigger("orientationchange");
     s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
     s.boxContianerHeight = w.$("#box-container").height() || s.boxContianerHeight;
-    s.relayout();
+    machineryRelayout(s);
     s.offsetScrollbar(30);
     if (s.isDetailMode) {
       s.$root.currentFocus = "content";
     }
     if (s.isDetailMode && s.lastZoomMode === "edge") {
-      s.zoomFitEdge(w.event);
+      machineryZoomFitEdge(s, w.event);
     }
     // if ($scope.layout === "GridLayout" || $scope.layout === "SquareLayout") {
     //     var currentColumn = ig._layout._columnLength;
@@ -5711,7 +5717,7 @@ export function machineryZoomOut(s: any, event: any): void {
 export function machinerySaveHandler(s: any): void {
   if (s.isRotating) return;
   if (s.isCropMode) {
-    s.saveCrop();
+    saveCrop();
   }
 }
 
@@ -5740,7 +5746,7 @@ export function machineryRefreshRandom(s: any): void {
 /* openParentFolder（bundle 38384-38388 逐字；openFolder 经 scope 解析） */
 export function machineryOpenParentFolder(s: any): void {
   if (s.currentFolder && s.currentFolder.parent) {
-    s.openFolder(s.folderMappings[s.currentFolder.parent]);
+    openFolder(s.folderMappings[s.currentFolder.parent]);
   }
 }
 
@@ -5748,7 +5754,7 @@ export function machineryOpenParentFolder(s: any): void {
    函数经 scope 解析——文件创建域后续独立切片） */
 export function machineryCreateTxtFileFromTemplate(s: any, event: any): void {
   event && event.preventDefault();
-  s.newFileFromTemplate("txt");
+  machineryNewFileFromTemplate(s, "txt");
   s.$evalAsync();
 }
 
@@ -5767,7 +5773,7 @@ export function machinerySetFolderCover(s: any): void {
     message: message,
     duration: 750
   });
-  s.saveFolder();
+  machinerySaveFolder(s);
 }
 
 /* ── c18f-3：inspector 面板/快捷搜索打开器 ───────────────────────────── */
@@ -5819,7 +5825,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
       if (!result?.isDirty) return;
 
       const { selectedFolderIds, deselectedFolderIds } = result;
-      s.checkOperationSafety(() => {
+      machineryCheckOperationSafety(s, () => {
         try {
           let selectedFolders: any[] = [];
           let folderIds: any[] = [];
@@ -5836,7 +5842,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
             }
           });
 
-          s.addToRecentFolders(folderIds);
+          addToRecentFolders(folderIds);
 
           let origin: any[] = [];
           let originFolders: any[] = [];
@@ -5891,7 +5897,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
                     s.currentFolder.imagesMappings[item.id] = false;
                   }
                   item.folders.splice(idx2, 1);
-                  s.updateFilterCounts(item, -1);
+                  machineryUpdateFilterCounts(s, item, -1);
                   item.isDeleted = false;
                   hasChanged = true;
                   changedItems.push(item);
@@ -5987,7 +5993,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
     return;
   }
 
-  s.checkOperationSafety(function () {
+  machineryCheckOperationSafety(s, function () {
 
     let changedItems: any[] = [];
 
@@ -6036,7 +6042,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
       w.electronLog && w.electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
       w.analytics.event('Rating', 'Set', star);
     }
-    s.updateItemsView(s.selected);
+    machineryUpdateItemsView(s, s.selected);
     if (changedItems.length > 0) {
       w.ayncsImagesChange(changedItems);
       w.hiddenByCurrentFilter(changedItems);
@@ -6506,8 +6512,8 @@ export function machineryNewFileFromTemplate(s: any, ext: any): void {
         file.tags = [...new Set(file.tags)];
       }
     }
-    s.uploadFiles([file]);
-    s.showUploadQueue();
+    uploadFiles([file]);
+    machineryShowUploadQueue(s);
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
     ipc.send('electron-info', `[app] Create file from [Untitled.${ext}]`);
@@ -6540,13 +6546,13 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
       callback();
     }
     if (s.isDetailMode) {
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     }
     return;
   }
 
   s.viewMode = 'random';
-  s.resetPage();
+  machineryResetPage(s);
   s.$root.currentFocus = "sidebar";
 
   w.$("#image-drop-area").hide();
@@ -6583,7 +6589,7 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
 
   if (s.viewMode === 'unfiled' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (s.isDetailMode) {
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     }
     return;
   }
@@ -6591,7 +6597,7 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'unfiled';
   s.$root.currentFocus = "sidebar";
-  s.resetPage();
+  machineryResetPage(s);
 
   $timeout.cancel(openUnfiledTimeout);
   openUnfiledTimeout = $timeout(function () {
@@ -6624,7 +6630,7 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
 
   if (s.viewMode === 'untagged' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (s.isDetailMode) {
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     }
     return;
   }
@@ -6632,7 +6638,7 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'untagged';
   s.$root.currentFocus = "sidebar";
-  s.resetPage();
+  machineryResetPage(s);
 
   $timeout.cancel(openUntaggedTimeout);
   openUntaggedTimeout = $timeout(function () {
@@ -6665,7 +6671,7 @@ export function machineryOpenRecent(s: any, ignoreHistory: any): void {
 
   if (s.viewMode === 'recent' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (s.isDetailMode) {
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     }
     return;
   }
@@ -6673,7 +6679,7 @@ export function machineryOpenRecent(s: any, ignoreHistory: any): void {
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'recent';
   s.$root.currentFocus = "sidebar";
-  s.resetPage();
+  machineryResetPage(s);
 
   $timeout.cancel(openRecentTimeout);
   openRecentTimeout = $timeout(function () {
@@ -6706,7 +6712,7 @@ export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'community';
   s.$root.currentFocus = "sidebar";
-  s.resetPage();
+  machineryResetPage(s);
   s.images = [];
   s.isDetailMode = false;
   s.selected = [];
@@ -6737,7 +6743,7 @@ export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
 
   s.viewMode = 'alltags';
   s.$root.currentFocus = "sidebar";
-  s.resetPage();
+  machineryResetPage(s);
   s.images = [];
   s.isDetailMode = false;
   s.selected = [];
@@ -6760,14 +6766,14 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
   const $timeout = getTimeout();
   if (s.viewMode === 'trash' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (s.isDetailMode) {
-      s.leaveDetailMode();
+      machineryLeaveDetailMode(s);
     }
     return;
   }
   w.ScrollbarSaver.saveScrollPosition();
 
   s.viewMode = 'trash';
-  s.resetPage();
+  machineryResetPage(s);
   s.$root.currentFocus = "sidebar";
 
   w.$("#image-drop-area").hide();
@@ -6809,8 +6815,8 @@ export function machineryOpenNextFolder(s: any): void {
   nextFolder = folders[idx + 1];
 
   if (nextFolder) {
-    s.openFolder(nextFolder);
-    s.changeSidebarIndex(nextFolder);
+    openFolder(nextFolder);
+    machineryChangeSidebarIndex(s, nextFolder);
   }
 }
 
@@ -6828,8 +6834,8 @@ export function machineryOpenPrevFolder(s: any): void {
   prevFolder = folders[idx - 1];
 
   if (prevFolder) {
-    s.openFolder(prevFolder);
-    s.changeSidebarIndex(prevFolder);
+    openFolder(prevFolder);
+    machineryChangeSidebarIndex(s, prevFolder);
   }
   else {
     var quickAccessItems = listItems.filter(function (item: any) {
@@ -6839,14 +6845,14 @@ export function machineryOpenPrevFolder(s: any): void {
       return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
     });
     if (smartFolders.length > 0 && smartFolders[smartFolders.length - 1]) {
-      s.openSmartFolder(smartFolders[smartFolders.length - 1]);
-      s.changeSidebarIndex(smartFolders[smartFolders.length - 1]);
+      openSmartFolder(smartFolders[smartFolders.length - 1]);
+      machineryChangeSidebarIndex(s, smartFolders[smartFolders.length - 1]);
     }
     else if (quickAccessItems.length > 0 && quickAccessItems[quickAccessItems.length - 1]) {
       w.$("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id).click();
     }
     else {
-      s.openTrash();
+      machineryOpenTrash(s);
     }
   }
 }
@@ -6862,16 +6868,16 @@ export function machineryOpenNextSmartFolder(s: any): void {
   var idx = smartFolders.indexOf(s.currentSmartFolder);
   nextSmartFolder = smartFolders[idx + 1];
   if (nextSmartFolder) {
-    s.openSmartFolder(nextSmartFolder);
-    s.changeSidebarIndex(nextSmartFolder);
+    openSmartFolder(nextSmartFolder);
+    machineryChangeSidebarIndex(s, nextSmartFolder);
   }
   else {
     var folders = listItems.filter(function (item: any) {
       return item.vstype === 'folder';
     });
     if (folders.length > 0) {
-      s.openFolder(folders[0]);
-      s.changeSidebarIndex(folders[0]);
+      openFolder(folders[0]);
+      machineryChangeSidebarIndex(s, folders[0]);
     }
   }
 }
@@ -6888,8 +6894,8 @@ export function machineryOpenPrevSmartFolder(s: any): void {
   var idx = smartFolders.indexOf(s.currentSmartFolder);
   prevSmartFolder = smartFolders[idx - 1];
   if (prevSmartFolder) {
-    s.openSmartFolder(prevSmartFolder);
-    s.changeSidebarIndex(prevSmartFolder);
+    openSmartFolder(prevSmartFolder);
+    machineryChangeSidebarIndex(s, prevSmartFolder);
   } else {
     // 如果有 quick access 就进入 quick access 若无，进入 Trash
     if (s.$root.preferences.sidebar.quickAccess != 'false') {
@@ -6900,11 +6906,11 @@ export function machineryOpenPrevSmartFolder(s: any): void {
         w.$("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id).click();
       }
       else {
-        s.openTrash();
+        machineryOpenTrash(s);
       }
     }
     else {
-      s.openTrash();
+      machineryOpenTrash(s);
     }
   }
 }
@@ -7072,7 +7078,7 @@ export function machineryChangeListHeight(s: any, height: any): void {
     }, 500);
 
     w.$("#box-container").attr("box-size", height as any);
-    s.relayout();
+    machineryRelayout(s);
 
     machineryScrollToCurrentItem(s);
   }
@@ -7291,7 +7297,7 @@ export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any
       }
     }
   }, delay || 1);
-  s.updateContainerHieght();
+  machineryUpdateContainerHieght(s);
 }
 
 /* offsetScrollbar（bundle 34168-34170 逐字）——_.debounce(100, leading) 实例 apply 时
@@ -7500,7 +7506,7 @@ export function machineryHomeHandler(s: any, event: any): void {
     detailZoom()?.goToY( 40);
   }
   else {
-    s.gotoTop();
+    machineryGotoTop(s);
   }
 }
 
@@ -7514,7 +7520,7 @@ export function machineryEndHandler(s: any, event: any): void {
     detailZoom()?.moveY( -window.outerHeight + 60);
   }
   else {
-    s.gotoBottom();
+    machineryGotoBottom(s);
   }
 }
 
@@ -7691,26 +7697,26 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
   // 如果已經沒有資料夾
   if (idx === 0) {
     if (children[idx]) {
-      s.openSmartFolder(children[idx]);
+      openSmartFolder(children[idx]);
     } else {
       s.currentSmartFolder = undefined;
       syncPanelFromScope();
       syncListFromScope();
-      s.openAll();
+      machineryOpenAll(s);
     }
   }
   // 如果還有資料夾
   else {
     if (children[idx]) {
-      s.openSmartFolder(children[idx]);
+      openSmartFolder(children[idx]);
     } else {
       if (children[idx - 1]) {
-        s.openSmartFolder(children[idx - 1]);
+        openSmartFolder(children[idx - 1]);
       } else {
         s.currentSmartFolder = undefined;
         syncPanelFromScope();
         syncListFromScope();
-        s.openAll();
+        machineryOpenAll(s);
       }
     }
   }
@@ -7719,10 +7725,10 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
   if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
     s.removeSound.play();
   }
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 
   $timeout(function () {
-    s.saveFolderDebounce();
+    machinerySaveFolderDebounce(s);
   }, 1000);
 
   w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
@@ -7743,9 +7749,9 @@ function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelec
       w.eagle.utils.tree.walk(s.smartFolders, 'children', function (sf: any, parent: any, depth: any) {
         s.smartFolderMappings[sf.id] = sf;
       });
-      s.updateSidebarList();
-      s.openSmartFolder(smartFolder);
-      s.saveFolderDebounce();
+      machineryUpdateSidebarList(s);
+      openSmartFolder(smartFolder);
+      machinerySaveFolderDebounce(s);
       s.$evalAsync();
     });
   }
@@ -7883,11 +7889,11 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
   if (!ignoreSelectNext) {
     if (children.length > 0) {
       var next = children[index] || children[index - 1] || children[0];
-      s.openFolder(next);
+      openFolder(next);
     } else if (parent) {
-      s.openFolder(parent);
+      openFolder(parent);
     } else {
-      s.openAll();
+      machineryOpenAll(s);
     }
   }
   else {
@@ -7905,13 +7911,13 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
       w.QuickAccessManager.remove("folder", child);
     });
   }
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 
   // 移除记录
   delete s.folderMappings[folder.id];
   s.calculateImageBinding({ ignoreSort: true }, function () {
     s.$evalAsync();
-    s.saveFolderDebounce();
+    machinerySaveFolderDebounce(s);
     if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
   });
@@ -7941,13 +7947,13 @@ function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignor
       }
 
       s.calculateImageBinding({ ignoreSort: true }, function () {
-        s.openFolder(s.folderMappings[folder.id]);
+        openFolder(s.folderMappings[folder.id]);
         w.electronLog && w.electronLog.info(`[app] Resotre deleted folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`);
       });
 
       s.$evalAsync();
-      s.updateSidebarList();
-      s.saveFolderDebounce();
+      machineryUpdateSidebarList(s);
+      machinerySaveFolderDebounce(s);
       w.ayncsImagesChange(originalImages);
     });
   }
@@ -8104,7 +8110,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
       s.rebindRefresh();
       w.ScrollbarSaver.restoreScrollPosition();
     });
-    s.zoom();
+    machineryZoom(s);
     w.ayncsImagesChange(origin);
   });
 
@@ -8112,7 +8118,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   w.hiddenByCurrentFilter(s.selected);
 
   // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-  s.lastIndex = s.getSelection().start;
+  s.lastIndex = machineryGetSelection(s).start;
   var next = s.allData[s.lastIndex + s.selected.length];
   var prev = s.allData[s.lastIndex - 1];
   if (next) {
@@ -8134,11 +8140,11 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   } else {
     s.selected = [];
     syncInspectorFromScope();
-    s.leaveDetailMode();
+    machineryLeaveDetailMode(s);
   }
   $timeout(function () {
     machineryForceFitImageSize(s, s.current, undefined);
-    s.zoom();
+    machineryZoom(s);
   }, 100);
   w.ScrollbarSaver.saveScrollPosition();
 
@@ -8190,7 +8196,7 @@ export function machinerySaveFolderDebounce(s: any): void {
   s.isLibrarySaving = true;
   clearTimeout(s.saveFolderDebounceTimeout);
   s.saveFolderDebounceTimeout = setTimeout(() => {
-    s.saveFolder();
+    machinerySaveFolder(s);
     s.isLibrarySaving = false;
   }, 1000);
 }
@@ -8325,13 +8331,13 @@ export function machineryEnterSlideshowMode(s: any): void {
   const duration = (w.process.platform === 'darwin') ? 300 : 100;
   if ((!s.selected.length as any) === 0) return;
   w.currentWindow.setFullScreen(true);
-  s.enterDetailMode(null, s.selected[0]);
+  machineryEnterDetailMode(s, null, s.selected[0]);
   s.isSlideshowMode = true;
   $timeout(function () {
     w.$(window).trigger("orientationchange");
     w.$(window).trigger("resize");
     $timeout(function () {
-      s.zoom(undefined);
+      machineryZoom(s, undefined);
     }, duration);
   }, 700);
   w.electronLog && w.electronLog.info(`[app] Enter slideshow mode.`);
@@ -8349,7 +8355,7 @@ export function machineryLeaveSlideshowMode(s: any): void {
     w.$(window).trigger("orientationchange");
     w.$(window).trigger("resize");
     $timeout(function () {
-      s.zoom(undefined);
+      machineryZoom(s, undefined);
     }, duration);
   }, 700);
   w.electronLog && w.electronLog.info(`[app] Leave slideshow mode.`);
@@ -8450,7 +8456,7 @@ export function machineryOpenFilter(s: any): void {
   if (!w.eagle.filter.isOpen) {
     w.eagle.filter.isOpen = true;
     syncFilterFromScope();
-    s.updateContainerHieght(true);
+    machineryUpdateContainerHieght(s, true);
   }
 }
 
@@ -8500,7 +8506,7 @@ export function machineryGetChildFoldersMap(s: any, folder: any): any {
    needReload reload）+ currentFolderChildren getChildFoldersMaps） */
 export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any): void {
   const w = window as any;
-  s.resetFilter();
+  resetFilter();
   s.keyword = "";
   s.$root.currentFocus = "sidebar";
   s.viewMode = undefined;
@@ -8549,7 +8555,7 @@ export function machineryExpandFolder(s: any, folder: any): void {
   const w = window as any;
   if (!folder) return;
   folder.isExpand = true;
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
   w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, true);
 }
 
@@ -8557,14 +8563,14 @@ export function machineryExpandSmartFolder(s: any, smartFolder: any): void {
   const w = window as any;
   if (!smartFolder) return;
   smartFolder.isExpand = true;
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
   w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + smartFolder.id, true);
 }
 
 /* searchInAll（bundle 29201-29205 逐字：openAll(true) + focusSeach **typo 逐字**） */
 export function machinerySearchInAll(s: any): void {
-  s.openAll(true, function () {
-    s.focusSeach();
+  machineryOpenAll(s, true, function () {
+    machineryFocusSeach(s);
   });
 }
 
@@ -8634,7 +8640,7 @@ export function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolder
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
     }
   });
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 }
 
 export function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
@@ -8645,7 +8651,7 @@ export function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, i
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
     }
   });
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 }
 
 /* toggleSelectSmartFolder/toggleCurrentLevelSmartFolders/toggleAllSmartFolderExpand
@@ -8674,7 +8680,7 @@ export function machineryToggleAllSmartFolderExpand(s: any, event: any, selected
   if (s.smartFolders && s.smartFolders.length > 0) {
     var expand = !s.smartFolders[0].isExpand;
     if (smartFolder) {
-      setTimeout(function () { s.changeSidebarIndex(smartFolder); s.$evalAsync(); }, 100);
+      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); s.$evalAsync(); }, 100);
       if (smartFolder.parent) {
         var parent = s.smartFolderMappings[smartFolder.parent];
         if (parent) {
@@ -8685,7 +8691,7 @@ export function machineryToggleAllSmartFolderExpand(s: any, event: any, selected
     if (!expand) s.sidebarIndex = 0;
     syncSidebarFromScope();
     machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
-    s.updateSidebarList();
+    machineryUpdateSidebarList(s);
   }
 }
 
@@ -8707,7 +8713,7 @@ export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignor
   if (s.currentFolder === folder && !ignoreReload) {
     s.reload();
   }
-  s.saveFolder();
+  machinerySaveFolder(s);
 }
 
 export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any): void {
@@ -8726,7 +8732,7 @@ export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any):
   if (s.currentSmartFolder === folder) {
     s.reload();
   }
-  s.saveFolder();
+  machinerySaveFolder(s);
 }
 
 /* updateTxtItem（bundle 34478-34489 逐字：txt 盒内容 HTML 重绘 + **selected.length === 0
@@ -8781,13 +8787,13 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
   const $timeout = getTimeout();
   var target = t || s.selected[0];
   if (folder) {
-    s.openFolder(folder, undefined, undefined, true);
+    openFolder(folder, undefined, undefined, true);
   }
   else {
-    s.openAll();
+    machineryOpenAll(s);
   }
   setTimeout(function () {
-    s.changeSidebarIndex(folder);
+    machineryChangeSidebarIndex(s, folder);
     s.$evalAsync();
   }, 200);
   // 自动定位
@@ -8804,7 +8810,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
           s.selected = [];
           syncInspectorFromScope();
           $timeout(function () {
-            s.select(undefined, target);
+            select(undefined, target);
             machineryAutoScroll(s, undefined);
             setTimeout(function () {
               w.$("#box-container").css("visibility", "initial");
@@ -8820,7 +8826,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
 /* multipleOpenSmartFolder（bundle 38172-38197 逐字：与 multipleOpenFolder 对称
    （smartFolder 多选态切换，currentFolder 清空）） */
 export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needReload: any): void {
-  s.resetFilter();
+  resetFilter();
   s.keyword = "";
   s.$root.currentFocus = "sidebar";
   s.viewMode = undefined;
@@ -8973,7 +8979,7 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
     syncFolderLock();
     syncListFromScope();
     s.isLoading = true;
-    s.updateSidebarList();
+    machineryUpdateSidebarList(s);
     s.calculateImageBinding({ ignoreSort: true }, function () {
       s.reload();
       s.updateSelection();
@@ -9202,7 +9208,7 @@ export function machineryChangeMetaItems(s: any, type: any): void {
   s.listMetaType = type;
   syncPanelFromScope();
   w.localStorage.setItem("eagle.list.meta.type", s.listMetaType);
-  s.updateItemsView(s.allData);
+  machineryUpdateItemsView(s, s.allData);
   w.electronLog && w.electronLog.info(`[app] Change list display info: ${s.listMetaType}`);
 }
 
@@ -9324,7 +9330,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
         }
 
         console.time("拖曳档案事件");
-        s.showUploadQueue();
+        machineryShowUploadQueue(s);
 
         var fds = [];
         var notSupportFiles = [];   // 不支持添加的文件
@@ -9386,7 +9392,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
                     });
                 }
                 else {
-                    s.hideUploadQueue();
+                    machineryHideUploadQueue(s);
                 }
             }
             else {
@@ -9396,7 +9402,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
         }
 
         if (fds.length == 0 && files.length == 1 && notSupportFiles.length > 0) {
-            s.hideUploadQueue();
+            machineryHideUploadQueue(s);
         }
         else {
             // let reason = (w.process.platform === 'darwin')? w.i18n.__("Dialog.NotSupport.Format.Descript.Mac") :  w.i18n.__("Dialog.NotSupport.Format.Descript.Windows");
@@ -9413,7 +9419,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
             console.log("收到 Drop，準備添加");
             // Windows 拖拽顺序无法对应当前 explorer，所以这里自己做了排序
             if (w.process.platform === 'win32') { w.sortByAZ(fds); }
-            s.uploadFiles(fds, folder);
+            uploadFiles(fds, folder);
             if (folder) { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to ${folder.name}(${folder.id})(Center), path: ${fds[0].path}`); }
             else { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to All(Center), path: ${fds[0].path}`); }
             s.$evalAsync();
@@ -9422,13 +9428,13 @@ export function machineryOnDropContainer(s: any, event: any): void {
     }
     // else if (!w.dragging && dragFile) {
     //     s.uploadDraggingBoard(folder, dragUrl);
-    //     s.showUploadQueue();
+    //     machineryShowUploadQueue(s);
     //     console.log("上传记忆体内的图片");
     // }
     else if (!w.dragging && dragUrl) {
         if (w.is.url(dragUrl)) {
         // if (w.is.url(dragUrl) && dragUrl.indexOf("data:image" !== -1)) {
-            s.showUploadQueue();
+            machineryShowUploadQueue(s);
         }
         if (w.is.url(dragUrl)) {
             s.uploadUrl(dragUrl, folder);
@@ -9444,7 +9450,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
         else {
             var $filter = getFilter();
             var html = (w.process.platform === 'darwin')? $filter('i18n')("Dialog.NotSupport.Format.Descript.Mac") :  $filter('i18n')("Dialog.NotSupport.Format.Descript.Windows");
-            s.hideUploadQueue();
+            machineryHideUploadQueue(s);
             w.swal({
                 title: w.i18n.__("Dialog.NotSupport.Format.Title"),
                 html: html,
@@ -9748,7 +9754,7 @@ export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo
   }
   else {
 
-    var images = s.getFolderImages(currentFolder, s.showSubfolderContent);
+    var images = machineryGetFolderImages(s, currentFolder, s.showSubfolderContent);
     for (var rindex2 = images.length - 1; rindex2 >= 0; rindex2--) {
 
       var image2 = images[rindex2];
@@ -9860,10 +9866,10 @@ export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): v
 export function machineryPrependFolder(s: any, folder: any): void {
   s.folders.unshift(folder);
   s.folderMappings[folder.id] = folder;
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
   setTimeout(function () {
     s.calculateImageBinding({ ignoreSort: true }, function () {
-      s.saveFolder();
+      machinerySaveFolder(s);
     });
   }, 1000);
 }
@@ -10061,7 +10067,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
   if ($name.hasClass("editable")) return;
   if (!$name || $name.length === 0) return;
 
-  s.selectFolder(event, folder);
+  machinerySelectFolder(s, event, folder);
 
   var originalName = $name.text().trim();
   $name.attr("contenteditable", "true");
@@ -10369,7 +10375,7 @@ export function machineryEditTag(s: any, tag: any): void {
       text: newName
     });
 
-    s.saveFolder();
+    machinerySaveFolder(s);
 
     tag.name = newName;
     tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
@@ -10416,28 +10422,28 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
     e.target = $name[0];
     let folderId = Object.keys(s.selectedFolderMappings)[0];
     let folder = s.folderMappings[folderId];
-    s.enableSubFolderNameEditable(e, folder);
+    machineryEnableSubFolderNameEditable(s, e, folder);
   }
   else if (!s.isDetailMode && s.currentFolder && s.$root.currentFocus === 'sidebar') {
     event && event.preventDefault();
     if (s.$root.selectedFolders.length > 1) {
-      s.batchRenameFolders();
+      machineryBatchRenameFolders(s);
     }
     else {
-      s.renameFolder(event, s.currentFolder);
+      machineryRenameFolder(s, event, s.currentFolder);
     }
   } else if (!s.isDetailMode && s.currentSmartFolder && s.$root.currentFocus === 'sidebar') {
     event && event.preventDefault();
     if (s.$root.selectedSmartFolders.length > 1) {
-      s.batchRenameSmartFolders();
+      machineryBatchRenameSmartFolders(s);
     }
     else {
-      s.renameSmartFolder(event, s.currentSmartFolder);
+      machineryRenameSmartFolder(s, event, s.currentSmartFolder);
     }
   } else if (!s.isDetailMode && s.currentTagGroup) {
 
     // 先檢查是否有選中的標籤
-    var selectedTagKeys = s.getSelectedTags();
+    var selectedTagKeys = machineryGetSelectedTags(s);
     if (selectedTagKeys.length > 0) {
       // 有選中標籤時，重命名標籤
       if (selectedTagKeys.length === 1) {
@@ -10446,7 +10452,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
         var tag = s.tags.find(function (t: any) { return t.name === tagName; });
 
         if (tag) {
-          s.editTag(tag);
+          machineryEditTag(s, tag);
         }
 
       } else {
@@ -10464,7 +10470,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
       // 沒有選中標籤時，重命名標籤群組
       const $timeout = getTimeout();
       $timeout && $timeout(function () {
-        s.renameTagGroup(s.currentTagGroup);
+        machineryRenameTagGroup(s, s.currentTagGroup);
       }, 50);
     }
   }
@@ -10584,7 +10590,7 @@ export function machineryToggleAllFolders(s: any, folders: any, isExpand: any): 
       w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
     }
   });
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 }
 
 export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpand: any): void {
@@ -10595,7 +10601,7 @@ export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpan
       w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
     }
   });
-  s.updateSidebarList();
+  machineryUpdateSidebarList(s);
 }
 
 /* controller init 状态面（bundle 21242-21619 逐字——$scope→s / $rootScope→s.$root 机械替换；
@@ -11171,10 +11177,10 @@ export function applyDataMachineryScope(): void {
       tolerance: "pointer",
       helper: 'clone',
       update: function (e: any, ui: any) {
-        s.updateSidebarList();
+        machineryUpdateSidebarList(s);
         const $timeout = getTimeout();
         $timeout && $timeout(function () {
-          s.saveFolder();
+          machinerySaveFolder(s);
         }, 500);
       },
     };

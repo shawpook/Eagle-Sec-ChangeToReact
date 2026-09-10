@@ -67,7 +67,7 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
       }
     }
     s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
-    machineryReload(s);
+    s.reload();
   }
   else {
     openFolder(folder, false, 'folder-' + folder.id);
@@ -113,7 +113,7 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
         s.$root.selectedSmartFoldersMappings[item.id] = item;
       }
     }
-    machineryReload(s);
+    s.reload();
   }
   else {
     openSmartFolder(smartFolder, false, 'smart-folder-' + smartFolder.id);

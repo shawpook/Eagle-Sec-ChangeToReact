@@ -130,7 +130,7 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.type.includes = {};
     f.filterRules.type.excludes = {};
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   return (
@@ -338,7 +338,7 @@ function RatingItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     const r = filter().filterRules.rating;
     RATING_ITEMS.forEach((k) => { r[k] = false; });
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   const stars = (filled: number) => (
@@ -417,7 +417,7 @@ function FontsItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter().filterRules.font;
     f.activated = false;
     f.deactivated = false;
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   const counts = snapshot.counts?.fontActivated || {};
@@ -497,7 +497,7 @@ function CameraItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const clearCamera = (e: React.MouseEvent) => {
     e && e.stopPropagation();
     filter().filterRules.camera = {};
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   return (
@@ -594,7 +594,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
     runSeq([(s) => {
       s.page = 1;
       if (isImport && s.filterContent) s.filterContent();
-      s.reload && machineryReload(s);
+      s.reload && s.reload();
       if (isImport) { s.filterImportDateMonths = []; s.filterModifyDateMonths = []; }
       syncFilterFromScope();
     }]);
@@ -698,7 +698,7 @@ function DurationItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     setFilterRule('duration', 'min', undefined);
     setFilterRule('duration', 'max', undefined);
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
     <FilterItemShell id="duration-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['duration']} onContextMenu={clear} onClear={clear}>
@@ -751,7 +751,7 @@ function BpmItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     setFilterRule('bpm', 'min', undefined);
     setFilterRule('bpm', 'max', undefined);
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
     <FilterItemShell id="bpm-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['bpm']} onContextMenu={clear} onClear={clear}>
@@ -790,7 +790,7 @@ function SizeItem({ snapshot }: { snapshot: FilterSnapshot }) {
     e && e.stopPropagation();
     setFilterRule('file', 'min', undefined);
     setFilterRule('file', 'max', undefined);
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
     <FilterItemShell id="size-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['size']} onContextMenu={clear} onClear={clear}>
@@ -861,7 +861,7 @@ function ResolutionItem({ snapshot }: { snapshot: FilterSnapshot }) {
     setFilterRule('resolution', 'maxW', undefined);
     setFilterRule('resolution', 'minH', undefined);
     setFilterRule('resolution', 'maxH', undefined);
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
   return (
     <FilterItemShell id="resolution-filter-item" active={isEnabled} hideFilter={!isEnabled && !snapshot.pinned['resolution']} onContextMenu={clear} onClear={clear}>
@@ -932,7 +932,7 @@ function KeywordFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind:
     const r = filter().filterRules[kind];
     r.has = r.no = false;
     r.keywords = undefined;
-    runSeq([(s) => { s.page = 1; machineryReload(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); }]);
   };
 
   return (

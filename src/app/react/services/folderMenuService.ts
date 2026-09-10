@@ -195,7 +195,7 @@ export function setFolderSortIncrease(...args: any[]) {
       if (!folder) return;
       folder.sortIncrease = !!sortIncrease;
       if (s.currentFolder === folder && !ignoreReload) {
-        machineryReload(s);
+        s.reload();
       }
       machinerySaveFolder(s);
     }).apply(null, args);
@@ -1208,7 +1208,7 @@ export function setSmartFolderSortIncrease(...args: any[]) {
       if (!folder) return;
       folder.sortIncrease = !!sortIncrease;
       if (s.currentSmartFolder === folder) {
-        machineryReload(s);
+        s.reload();
       }
       machinerySaveFolder(s);
     }).apply(null, args);

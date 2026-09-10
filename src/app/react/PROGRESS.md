@@ -1760,25 +1760,35 @@
 > |---|---|---|---|---|
 > | **B5** | dataMachinery 定义侧直调化 | 372 处 | 无 | esbuild 0 错 + 全套件 55/55 |
 >
-> **B5 首轮实测：失败，已回退（负面结果，务必先读）**。「形参 s 恒等于 bodyScope」的静态
-> 验证成立（`hooks.ts:63` 传 `getBodyScope`、各 domain 内 `const getScope = getBodyScope`、
-> `shimFnsBridge` 传 shim 代理），据此放开定义侧改造 334 处后 —— esbuild / import / 遮蔽
-> / export 四项校验**全部通过**，但 `react-stage-smoke` 挂在
-> `types filter opens exclusively`。
+> **B5 已完成：定义侧直调化 319 处（MACH 191 / DUAL 99 / TABLE 29），保留 83 处。**
 >
-> 定位过程（工具 `tests-tmp/bz-b-diagF.mjs`，带 fixture 复现）：
-> - `types .open` = true、`openCount` = 1 —— 互斥逻辑正常；失败真因是 **`.check-item` = 0**
->   （渲染条件为 `snapshot.counts.type[typeItem] > 0`）；
-> - 根因是 **`s.allData.length = 0`**（对照 B4 基线 = 2）→ counts 无从计算；
-> - **关键判别**：页面内手动 `s.$apply(() => s.rebindRefresh())` 后 `allData` 立刻变 2 ——
->   **函数本身完好，是自动触发链没有跑**；
-> - 挂载块只被改到 2 处且均等价（`s.updateSidebarList()` → `machineryUpdateSidebarList(s)`
->   等），不是挂载块的问题。
+> **首轮曾失败，真因已查明并修掉（本轮最重要的结论）**：挂载表存在一类**工厂式挂载**
+> —— `s.X = machineryY(s)`，其中 `machineryY` 返回 debounce/throttle **实例**，
+> 该实例才是 `s.X`。机械替换把 `s.X()` 写成 `machineryY(s)` 只是**新建一个实例并丢弃**，
+> 函数体永不执行。首轮 334 处里 `s.reload()`（15 处调用点）被这样改掉 →
+> `machineryReload` 造出的防抖实例从未被调用 → 数据加载链断裂 → `allData = 0`
+> → `types filter opens exclusively` 挂。
 >
-> **结论**：定义侧 372 处**不能机械改造**——静态可证的「s 等价」不足以保证行为不变，
-> 必定还有依赖 `s.xxx()` **经 scope 派发**这一事实的环节（典型如 $watch 触发链、
-> 或 bundle 侧同名方法在 scope 面上的覆盖）。若要做，必须改为「逐函数改造 + 单测」
-> 而非批量。**B5 暂缓，本批保留 B4 状态。**
+> **定位方法（可复用）**：
+> 1. 快速探针 `tests-tmp/probe-b5-load.mjs`（44s，只判 `allData` 是否自动加载，
+>    健康态 = fixture 数）；
+> 2. 把「新旧文件的**行级 opcode 差**」编号，用 `tests-tmp/bz-b5-subset.py <N>`
+>    只应用前 N 块重建文件 → **二分**最小断裂前缀（9 轮收敛）。
+>    结论：第 28 块 = `s.reload()` → `machineryReload(s)`，且单调（单一元凶）。
+>
+> **工厂式挂载全清单 6 个（永不直调，必须保留 `s.X(...)`）**：
+> `reload`、`pageDownHandler`、`pageUpHandler`、`offsetScrollbar`、`toggleFilterByType`
+> （均 `= machineryY(s)` 返回 debounce/throttle 实例）、`mousetrap`（`= machineryBuildMousetrap(s)`）。
+> 该规则已固化进工具（PREBIND 判档改为**永不转换**）。
+>
+> **连带修复 B4 遗留缺陷**：B4 消费面同样按 PREBIND 规则误改了 **20 处**
+> （FilterItems/FilterItems2 各 13/3 处、folderCoreService/folderMenuService/lockService/
+> sidebarService），全部回修为 `s.X(...)` —— 这些调用此前**从未真正触发过防抖实例**，
+> 属 B4 已提交的潜在功能缺陷（工具 `tests-tmp/bz-b5-prebind-fix.py`）。
+>
+> **验收**：esbuild 0 错 / import·遮蔽·export 校验全过 / `stage-smoke`、`stage5`、`1m1`
+> 全过 / 哨兵 `SENTINEL_OK`（evalAsync 385→383、broadcast 122→118、rootAccess 464→453，
+> 三项均改善）。
 >
 >
 > **【b1-9bz-B-5：双键单源化首批 —— 3 个等价对（B7 起步）】**

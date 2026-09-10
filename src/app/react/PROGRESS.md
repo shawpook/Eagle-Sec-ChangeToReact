@@ -2126,8 +2126,30 @@
 > 3. **测试侧驱动要跟着改**：频道迁走后 `$root.$broadcast` / `scope.$broadcast` 无人接收
 >    → 改 `window.__eagleBus.emit(...)`；`scope.__bus['CH']` 断言改
 >    `window.__eagleBus.listenerCount('CH')`（bus.ts 为此新增该方法，与 ipc.listenerCount 对称）。
-> | **b1-9bz-C-3** | `$evalAsync` / `scopeApply` / `$apply` 退役 | 722 处 | C-2 | 按「跨帧必要 / 纯通知可直调」分类 |
-> | **b1-9bz-C-4** | `$watch` / `$watchCollection` → store 订阅 | 51 处 | C-3 | watch 依赖 digest 触发，必须在其后 |
+> | **b1-9bz-C-4** | `$watch` / `$watchCollection` → store 订阅（**须先于 C-3**） | 16 处 | C-2 | watcher 清点归零 + 定向测试 |
+> | **b1-9bz-C-3** | `$evalAsync` / `scopeApply` / `$apply` 退役 | 356 处 + 235 | C-4 | flush 变为 no-op 后才可删 |
+>
+> **⚠️ 顺序修正（2026-09-10，实证）**：原计划 C-3 → C-4 是**错的**。
+> 读 `global/scopeShim.ts` 的实现后发现：
+> ```js
+> $evalAsync(fn?) { if (fn) fn(); flushWatchers(); }   // ← 不是「残留断言」
+> $apply(fn?)     { if (fn) fn(); flushWatchers(); }
+> ```
+> 即 **355 处无参 `s.$evalAsync()` 的真实作用 = 触发一轮 watcher 检查**（load-bearing），
+> 不是无意义的 digest 触发。**watcher 一天不迁走，这 355 处就一天不能删** ——
+> 所以 C-4 必须先做。修正后的量：
+> - `$watch`/`$watchCollection` **实际只 16 处**（此前记的 51 是全树正则含 shim 自身定义
+>   与注释）：detailHooks 2（theme / current.id）、InspectorTagSelectPanel 1（selected）、
+>   ProgressDialogs 5（isCleaningTrash / removeProgress / 3× `$watch(read, sync)`）、
+>   itemDomain 1（finishQueue）、selectionViewDomain 5（selected×2 / imageSize.height /
+>   imageSize.zoomRatio / listMetaType）。**其中 selectionViewDomain:125 是 B6 契约观测点**。
+> - `$evalAsync`：无参 355（=flush）+ 带参 12（真延后，可直接调用或 microtask）。
+> - `scopeApply` 235：实现 = 「digest 期保护下执行 fn + flush」；watcher 清空后可退化为直调。
+> - `$timeout` 164：bundle 时代等价物（`dataMachinery.ts:247` 注释有说明），另行评估。
+>
+> **另一条实证**：`src/app/index.html` 已**不再引入 angular.min.js**（只剩 jQuery 系 +
+> eagle-api + lazy-load-manager + shortcut-manager）——Angular 运行态确已不存在，
+> scopeShim 是「Angular 语义」的唯一载体，故上述判断无运行态歧义。
 > | **b1-9bz-C-5** | 三窗口面收口（preview / preferences / collect） | 133 处 | C-3 | 各自 scope，独立门禁 |
 > | **b1-9bz-C-6** | `scopeShim` / `scopeBridge` / `coreState` 删除 + 永久哨兵扩面 + 收官审计 | 65 处 | C-2…C-5 全部 | REWRITE-PLAN v2 的 P4 终点 |
 >

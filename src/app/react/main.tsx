@@ -242,6 +242,14 @@ function bridgeWhenReady(attempt = 0): void {
   }
   if (attempt < 100) setTimeout(() => bridgeWhenReady(attempt + 1), 200);
 }
+// b1-9bz-C-0：跨窗口 / 驱动脚本的 scope 面供给走**延迟注册**。
+// 静态 import 会让这些 service 在 dataMachinery 完成求值前执行（见 core/externalSupply.ts
+// 的说明），打断启动加载链；这里立即发起动态 import（不进入静态依赖图），bridge 成功时
+// 再 await 就绪，保证挂载点在任何子窗口 / 驱动调用前可用。
+void import('./core/externalSupplyRegistrar')
+  .then(() => { (window as any).__eagleSupplyState = 'ok'; })
+  .catch((e: any) => { (window as any).__eagleSupplyState = 'err:' + String(e && e.message); });
+
 installBundleGlobals();
 installApiServerGlobals();
 installInitAPIServer();

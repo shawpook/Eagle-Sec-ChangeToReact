@@ -1703,7 +1703,27 @@
 > **剩余 247 处消费面**：EXCLUDE 白名单 7 名（spy 契约）+ KEEP-无供给 76 名
 > （machinery 与 fns 表都无供给，保留回退）+ PREBIND 带参 4 名 + TABLE 需提升 3 名
 > （依赖 install 局部闭包）+ 动态键 1 处。另 `dataMachinery.ts` 372 处为定义侧，
-> 与 43 双键单源化一并留给后续批次。
+> 与双键单源化一并留给后续批次（见下）。
+>
+>
+> **【b1-9bz 双键考据：40 个 DUAL 落点三分类（`tests-tmp/bz-b-dual-class.py`）】**
+>
+> 交接地记的「43 双键单源化」实为 **40 个 DUAL**（`route=DUAL`，即 machinery 有挂载
+> 且 fns 表也有同名项）。按落点形态分三档，**不是同一件事**：
+>
+> | 档 | 个数 | 形态 | 单源化风险 |
+> |---|---|---|---|
+> | **A 转发面** | 15 | c3 落点体内含打 machinery 的调用；其中 4 个是纯同名转发（`updateSidebarList` 4 行 / `updateZoomRatio` 141 行 / `zoom` 104 行 / `smartZoom` 318 行） | 纯转发的 4 个**零风险**（表项本就是 machinery 的转发）；其余 11 个是「调别的 machinery」的独立体，需逐个看 |
+> | **B 独立移植体** | 4 | `toggleAllSmartFolderExpand` 71 行 / `toggleSelectSmartFolder` 82 行（sidebarService）、`undo` 180 行（miscDomain）、`updateFilterCounts` 265 行（filterDomain） | **高风险**：与 machinery 版是两份独立实现，必须逐行比对后决定收敛侧 |
+> | **C install 注册** | 21 | 在 `installXXXFns(fns, getScope)` 家族体内注册（folderMenu / imageOps 等），**不在** controllerFns.ts 直接出现 | 拆除面覆盖 install 家族 + fns 表 + shimFnsBridge + 测试契约，是一条完整链路 |
+>
+> **结论**：双键单源化不能按「逐函数比对 43 个」一把梭 —— A/B/C 三条路径的作业方式与
+> 风险完全不同，必须拆成独立批次：① A 档 4 个纯转发先摘（零风险）；② C 档先厘清 install
+> 家族与 shimFnsBridge 的耦合；③ B 档 4 个大函数是最后的人工比对作业。
+>
+> 在此之前 **shimFnsBridge / `__eagleCoreFns` 摘除不具备条件**：EXCLUDE 白名单 7 名的调用
+> 仍走 scope 面，bundle 缺席时需要 fns 表补缺口；且 `stage1c3` 契约抽查的 41 个名字里含
+> `updateSidebarList` / `zoomFit` / `undo` / `smartZoom` / `zoomIn` 等双键。
 >
 
 > **b1-9be2-B：S1 收官清扫——v3 UMD 退役（2026-09-08）**

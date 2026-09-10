@@ -1820,10 +1820,21 @@
 > `zoomFit` / `openUnfiled`。`zoom` 系（`zoom`/`zoomIn`/`zoomFit`）的 machinery 委托
 > `gridZoom*` / `detailUpdateZoomRatio`，经 diff 确认与 c3 实现**逐行等价**。
 >
-> **B 档剩余 4 个**：`contentFilter`（90 行，diff 仅 `__lv_image`→`image` 变量名，等价）、
-> `leaveDetailMode`（63 行，唯一实质差异是 initMousetrap —— c3 只调全局并 catch 忽略，
-> machinery 为 `w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s)`，更健壮）、
-> `updateFilterCounts`（106 行）、`smartZoom`（132 行）。
+> **B 档 18 个已完成 16 个**，全部经 `bz-b-dual-diff.py` 体检确认等价或明确收敛侧，
+> 且每批都过全套件：`toggleSlideshow` / `focusAppUnlockPassword` / `changeSidebarIndex` /
+> `openQuickSearch` / `lastZoom` / `toggleSelectSmartFolder` / `zoom` / `zoomIn` /
+> `smartFolderCount` / `toggleAllSmartFolderExpand` / `undo` / `updateZoomRatio` / `zoomFit` /
+> `openUnfiled` / `updateFilterCounts` / `smartZoom`。
+>
+> **2 个暂缓（重要）**：`contentFilter`（filterDomain，90 行）与 `leaveDetailMode`
+> （miscDomain，63 行）—— 静态 diff 都判定等价，但单源化后
+> `main-ui-workflow-closed-loop` 的 `multi inspector persistence` **连跑 2 次均失败**，
+> 回退后恢复。**暂缓，原因待查**（提示：这两处 c3 体都调用 `initLinkVars()`，而变化
+> 后的转发体不再触发它；虽然 `__lv_*` 变量事后已无引用，但不排除有未静态可见的
+> 依赖）。若后续要做，需先定位这条链路。
+>
+> **C 档 21 个（install 家族注册）未开始** —— 与 B 档是同类作业（两份体比对），
+> 只是注册位置在 `installXXXFns(fns, getScope)` 体内。
 >
 > **测试可靠性提示（重要）**：`main-ui-workflow-closed-loop` 的
 > `multi inspector persistence` 是**时序敏感**断言，单次结果不稳定（同一代码状态曾出现

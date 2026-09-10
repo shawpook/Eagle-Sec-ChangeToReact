@@ -2189,7 +2189,25 @@
 > eagle-api + lazy-load-manager + shortcut-manager）——Angular 运行态确已不存在，
 > scopeShim 是「Angular 语义」的唯一载体，故上述判断无运行态歧义。
 > | **b1-9bz-C-5** | 三窗口面收口（preview / preferences / collect） | 133 处 | C-3 | 各自 scope，独立门禁 |
-> | **b1-9bz-C-6** | `scopeShim` / `scopeBridge` / `coreState` 删除 + 永久哨兵扩面 + 收官审计 | 65 处 | C-2…C-5 全部 | REWRITE-PLAN v2 的 P4 终点 |
+> | **b1-9bz-C-6** | `scopeShim` / `scopeBridge` / `coreState` 删除 + 永久哨兵扩面 + 收官审计 | 65 处 | C-2…C-5 全部 | REWRITE-PLAN v2 的 P4 终慹 |
+>
+> **【C-5 ✅ 完成（2026-09-11，提交 `b8fef1b`，全套件 55/55 ALL GREEN）】**
+>
+> 实测三窗口的 controllerScope 是**各自的普通对象**：preview 有 `$evalAsync` 门面（= notify），
+> **collect 没有**（原调用即 TypeError）。C-3 曾把它们改成全局 `scopeEvalAsync()`，在独立窗口
+> 进程里 bodyScope shim 不存在 → flush 成 no-op → stage9b1 的搜索过滤与 create 行不再出现。
+>
+> 正确收口：改用**各窗口自己的 `notifyController()`**（源码注释本就写着「$evalAsync 等价」，
+> 实现 = `notify()`）。`preview/controller` 19 + `preview/detailHooks` 5 +
+> `collect/selectPanelEngine` 9 = **33 处**，三窗口 `$evalAsync` 清零。
+>
+> **刻意保留的 3 处 scope 面**（属 C-6）：`scope.$root = scope`、`scope.$$phase = false`、
+> `s.$root?.removeComment`。原因：`scopeApply` 内部读 `scope.$$phase || scope.$root.$$phase`，
+> 删掉 `$root` 会让 `scope.$root.$$phase` 抛 TypeError → **fn 不执行** —— 与 C-3 scopeApply
+> 失败是同型的「失败路径差异」。
+>
+> C-5 的 $evalAsync 面已收口；watcher 面（`selected`/`imageSize`/`listMetaType`/`finishQueue`
+> 共 12 处）仍是 C-6 的前置，需在 machinery 归位时一并处理。
 >
 > **排序理由**：C-0 是唯一红项且由本轮引入，越晚排查成本越高；C-1 量小收益明确（解锁
 > B7 剩余 5 个）；C-2 的落点（bus.ts）已就绪且能把「事件面」与 digest 解耦，是 C-3 的

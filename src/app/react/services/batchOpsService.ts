@@ -20,7 +20,7 @@
  */
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCheckOperationSafety, machineryFindDupclipate, machineryForceFitImageSize, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelection, machineryLeaveDetailMode, machineryRelayout, machineryResetPage, machineryZoom } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCheckOperationSafety, machineryFindDupclipate, machineryForceFitImageSize, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryRelayout, machineryResetPage, machineryZoom } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
@@ -425,30 +425,17 @@ export function removeFromFolder(...args: any[]) {
 }
 
 export function getSelectedTags(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
-    return (function () {
-            if (!s.selectedTags) return [];
-            return Object.keys(s.selectedTags);
-        }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryGetSelectedTags(s);
 }
 
 export function getSelectedItemElements(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
-    return (function () {
-            var items = machineryGetSelectedItems(s);
-            items = items.map(function (item) {
-                // if (!item.el) {
-                //     item.el = $(item.content)[0];
-                //     console.log(item.el);
-                // }
-                return item.el;
-            });
-            return items;
-        }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryGetSelectedItemElements(s);
 }
 
 export function scrollToSelectedItem(...args: any[]) {

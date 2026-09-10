@@ -17,7 +17,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryGetFolderImages, machineryNewSmartFolder, machineryOpenAll, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryGetFolderImages, machineryNewSmartFolder, machineryOpenAll, machineryPrependFolder, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
@@ -1627,11 +1627,10 @@ export function smartFolderExportAsFolder(...args: any[]) {
 }
 
 export function newSmartFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (event: any, smartFolder: any) {
-      s.$root.$broadcast('NEW.SMART.FOLDER', { smartFolder: smartFolder, parent: undefined });
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryNewSmartFolder(s, args[0], args[1]);
 }
 
 export function newChildSmartFolder(...args: any[]) {
@@ -1664,18 +1663,10 @@ export function newSmartFolderGroup(...args: any[]) {
 }
 
 export function prependFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
-    return (function (folder: any) {
-      s.folders.unshift(folder);
-      s.folderMappings[folder.id] = folder;
-      machineryUpdateSidebarList(s);
-      setTimeout(function () {
-        s.calculateImageBinding({ ignoreSort: true }, function () {
-          machinerySaveFolder(s);
-        });
-      }, 1000);
-    }).apply(null, args);
+  // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
+  const s = getBodyScope();
+  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryPrependFolder(s, args[0]);
 }
 
 export function openNewSmartFolderContextMenu(...args: any[]) {

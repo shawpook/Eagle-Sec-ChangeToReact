@@ -12,7 +12,7 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryToggleAll } from '../../core/dataMachinery';
+import { machineryToggleAll, machineryUpdateItemView } from '../../core/dataMachinery';
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -137,7 +137,7 @@ export function ErrorModal() {
             const item = body.itemMappings[error.modifiedData.id];
             if (item) {
               Object.assign(item, error.modifiedData);
-              body.updateItemView(item);
+              machineryUpdateItemView(body, item);
               updateSelection();
               if (typeof body.$evalAsync === 'function') scopeEvalAsync();
               ayncsImagesChange([item]);

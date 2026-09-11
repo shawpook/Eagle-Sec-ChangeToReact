@@ -11288,7 +11288,6 @@ export function applyDataMachineryScope(): void {
   s.getRecentFolders = (length: any) => machineryGetRecentFolders(s, length);
   // c9e：updateItemView（updateItemsView 循环体；bundle 侧 $bodyScope.updateItemView 19688-19751
   // 与 ipc 路径 21234/23632+ 全部改走移植版）
-  s.updateItemView = (item: any) => machineryUpdateItemView(s, item);
   // c13：relayout（ig/eg 经 window 解析）
   s.relayout = (margin: any) => machineryRelayout(s, margin);
   // c14：existInSmartFilter（26 规则函数经 window + MATCH_FUNCTION 表）
@@ -11322,7 +11321,6 @@ export function applyDataMachineryScope(): void {
   s.$root.notify = notifyFn;
   s.notify = notifyFn;
   // c18a：smartZoom/lastZoom
-  s.smartZoom = (target: any, forceMode: any) => machinerySmartZoom(s, target, forceMode);
   s.lastZoom = () => machineryLastZoom(s);
   // c18b：zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght
   s.zoomActual = (event: any) => machineryZoomActual(s, event);
@@ -11353,7 +11351,6 @@ export function applyDataMachineryScope(): void {
   // c18f-3：inspector 面板/快捷搜索打开器
   s.openQuickSearch = (event: any) => machineryOpenQuickSearch(s, event);
   // c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
-  s.getItemByElement = (element: any) => machineryGetItemByElement(s, element);
   s.changeStar = (star: any, showNotify: any, force: any) => machineryChangeStar(s, star, showNotify, force);
   s.nextGifFrame = (amount: any) => machineryNextGifFrame(s, amount);
   s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);

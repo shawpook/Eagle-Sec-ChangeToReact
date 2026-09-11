@@ -6,7 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode } from '../../core/dataMachinery';
+import { machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryUpdateItemView } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -271,7 +271,7 @@ export function imagesChange() {
 
     if (hasChanged) {
       changedItems.push(cloneImage);
-      getBodyScope().updateItemView(cloneImage);
+      machineryUpdateItemView(getBodyScope(), cloneImage);
 
       if (!getBodyScope().modifiedMappings[image.id]) {
         getBodyScope().modifiedMappings[image.id] = 1;
@@ -360,7 +360,7 @@ export function urlChange() {
       const cloneImage = JSON.parse(JSON.stringify(image));
       if (hasChanged) {
         changedItems.push(cloneImage);
-        getBodyScope().updateItemView(cloneImage);
+        machineryUpdateItemView(getBodyScope(), cloneImage);
 
         if (!getBodyScope().modifiedMappings[image.id]) {
           getBodyScope().modifiedMappings[image.id] = 1;
@@ -630,7 +630,7 @@ export function editVideoComment(event: any, image: any, comment: any) {
     comment.annotation = result;
     getIpc().send('image-change', image);
     refreshVideoCommentsChannel.emit();
-    getBodyScope().updateItemView(video);
+    machineryUpdateItemView(getBodyScope(), video);
     scopeEvalAsync();
   });
 }
@@ -645,7 +645,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
 
       video.comments.splice(idx, 1);
       ipc.send('image-change', video);
-      getBodyScope().updateItemView(video);
+      machineryUpdateItemView(getBodyScope(), video);
       rebindRefreshChannel.emit(true);
       refreshVideoCommentsChannel.emit();
 
@@ -656,7 +656,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
         video.comments = originComments;
         rebindRefreshChannel.emit(true);
         refreshVideoCommentsChannel.emit();
-        getBodyScope().updateItemView(video);
+        machineryUpdateItemView(getBodyScope(), video);
         ipc.send('image-change', video);
       });
     }

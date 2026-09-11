@@ -12,6 +12,7 @@
  */
 // @ts-nocheck
 import { getRawUrl } from './itemDomain';
+import { machineryGetItemByElement } from '../core/dataMachinery';
 
 const _w: any = window as any;
 
@@ -129,7 +130,7 @@ function removeBoxAudioPlayer (event) {
     var $scope = _w.$bodyScope || angular.element("body").scope();
     var $box = $(".box").has(event.target);
     disarmHoverSentinel($box);
-    var image = $scope.getItemByElement($box[0]);
+    var image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
 
@@ -586,7 +587,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = $(".box").has(this);
-    var image = $scope.getItemByElement($box[0]);
+    var image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
     if (image.noPreview) return;
@@ -932,7 +933,7 @@ function removeBoxVideoPlayer(event) {
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = $(".box").has(this);
     disarmHoverSentinel($box);
-    var image = $scope.getItemByElement($box[0]);
+    var image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
 
@@ -971,7 +972,7 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
 
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = $(".box").has(this);
-    var image = $scope.getItemByElement($box[0]);
+    var image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
     if (image.noPreview) return;
@@ -1211,7 +1212,7 @@ $("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(eve
 
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = $(".box").has(this);
-    let image = $scope.getItemByElement($box[0]);
+    let image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
 
@@ -1413,7 +1414,7 @@ $("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(eve
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = $(".box").has(this);
     disarmHoverSentinel($box);
-    let image = $scope.getItemByElement($box[0]);
+    let image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
 
@@ -1506,7 +1507,7 @@ $("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event
 
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = $(".box").has(this);
-    let image = $scope.getItemByElement($box[0]);
+    let image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
 
@@ -1707,7 +1708,7 @@ $("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(event
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = $(".box").has(this);
     disarmHoverSentinel($box);
-    let image = $scope.getItemByElement($box[0]);
+    let image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
 

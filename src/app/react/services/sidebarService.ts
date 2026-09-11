@@ -503,7 +503,7 @@ export function toggleAllFolderExpand(...args: any[]) {
       if (s2.folders && s2.folders.length > 0) {
         var expand = !s2.folders[0].isExpand;
         if (folder) {
-          setTimeout(function () { s2.changeSidebarIndex(folder); scopeEvalAsync(); }, 100);
+          setTimeout(function () { machineryChangeSidebarIndex(s2, folder); scopeEvalAsync(); }, 100);
           if (folder.parent) {
             var parent = s2.folderMappings[folder.parent];
             if (parent) {

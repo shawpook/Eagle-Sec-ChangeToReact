@@ -10,6 +10,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
+import { machineryChangeSidebarIndex } from '../../core/dataMachinery';
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -991,7 +992,7 @@ export function NewSmartFolderModal() {
       updateSidebarList();
       openSmartFolder(smartFolder);
       setTimeout(() => {
-        body.changeSidebarIndex(smartFolder);
+        machineryChangeSidebarIndex(body, smartFolder);
       }, 400);
       try {
         if (w().electronLog) w().electronLog.info(`[app] Create new smart-folder: ${smartFolder.name}(${smartFolder.id})`);
@@ -1007,7 +1008,7 @@ export function NewSmartFolderModal() {
         updateSidebarList();
         openSmartFolder(smartFolderRef.current);
         setTimeout(() => {
-          body.changeSidebarIndex(smartFolderRef.current);
+          machineryChangeSidebarIndex(body, smartFolderRef.current);
         }, 400);
         try {
           if (w().electronLog) w().electronLog.info(`[app] Edit smart-folder: ${smartFolderRef.current.name}(${smartFolderRef.current.id})`);

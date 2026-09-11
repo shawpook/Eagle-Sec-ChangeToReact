@@ -204,6 +204,19 @@ export function getRootScope(): any {
   return scope ? scope.$root : null;
 }
 
+/** D-1 A-1：动态分发点传「需要 body scope 作首参」的 handler 时的标记。
+ *
+ * call/callSeq/scopeFn 等 helper 内部已持有 scope，见到本标记即以 scope 为首参调用；
+ * 这样把 machinery 函数（签名 (s, ...args)）当引用传递时，无需在各调用点新增 scope 取用。
+ * 待 scopeShim 退役时随 helper 一并收敛。 */
+export const SCOPED_HANDLER = Symbol('eagleScopedHandler');
+
+export function scoped<A extends any[], R>(fn: (s: any, ...args: A) => R): (...args: A) => R {
+  const wrapped = (...args: A): R => (fn as any)(...args);
+  (wrapped as any)[SCOPED_HANDLER] = true;
+  return wrapped;
+}
+
 /** 在 Angular 作用域上下文中执行表达式（等价 ng-click 的 $apply 语义，digest 期内安全跳过）。 */
 export function scopeApply(scope: any, fn: (scope: any) => void): void {
   if (!scope) return;

@@ -2325,6 +2325,30 @@
 > 目标必须是真实导出 / 引号内与注释行）。
 >
 
+> **【D-1 批次 7（Track A / A-1）✅：scoped 调用机制 + 首批 6 项字符串分发挂载退役（2026-09-11）】**
+>
+> **新增机制**：`appCore.scoped(fn)` + `SCOPED_HANDLER` 符号。动态分发点
+> （Toolbar `call`/`callSeq`、Inspector `call`）传 machinery 引用时，由 helper 以 scope
+> 为首参调用 —— 无需在各调用点新增 scope 取用（哨兵 `getBodyScope` 计数全批 **flat**）。
+>
+> **退役 6 项**：`openAll` / `openUnfiled` / `changeSidebarIndex` / `openPluginPanel` /
+> `changeStar` / `autoScroll`；挂载 67 → **61**。改造点：Toolbar callSeq（openAll/openUnfiled/
+> changeSidebarIndex）、Toolbar call（openPluginPanel）、Sidebar `SIMPLE_OPEN_DIRECT`（openAll/
+> openUnfiled）、Inspector（changeStar/autoScroll）、DuplicateFamily、FolderSelectPanels、
+> sidebarService、inspectorActions、detailHooks。
+>
+> **关键发现（修正先前分类）**：str-dyn 清单多含**跨窗口/引擎误报** —— preview-window 自有
+> controllerScope 的 `zoom/zoomActual/toggleZoom/selectNext/selectPrev/nextGifFrame/prevGifFrame`、
+> smoothZoomEngine 内部状态串（`'zoomIn'`/`'zoomOut'`）、`document.execCommand('undo')`、
+> `console.time('calculateImageBinding')` 等，均非主窗口 body scope 分发。真实主窗口字符串分发
+> 仅少数（本批 6 项已清）。**另发现更高杠杆**：`hardcodedShortcuts` 映射表把
+> `toggleAll/zoomIn/zoomOut/toggleZoom/undo/openQuickSearch/mHandler` 等当**值**裸引用
+> （`'tab': s.toggleAll`）——这是下一批（A-3 裸引用）的首要目标。
+>
+> **门禁**：`bz-export-check` 无问题 + probe `LOAD_OK allData=1` + `stage-smoke` / `1m1` /
+> `stage6` / `stage8c` 全绿 + 哨兵 `SENTINEL_OK`（全指标 flat）。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

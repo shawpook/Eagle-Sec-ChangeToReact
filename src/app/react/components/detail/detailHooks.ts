@@ -7,7 +7,7 @@ import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../ser
 import { syncDetailFromScope, useDetailState } from '../../store/detailState';
 import { useBodyState } from '../../store/bodyState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryLeaveDetailMode } from '../../core/dataMachinery';
+import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/dataMachinery';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
@@ -1978,7 +1978,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         } else if (!state.isZooming && Math.abs(endPoint.x - startPoint.x) < 2 && Math.abs(endPoint.y - startPoint.y) < 2) {
           if (event && event.button === 1) {
             scopeApply(s, function (sc) {
-              sc.openPluginPanel();
+              machineryOpenPluginPanel(sc, undefined);
             });
           } else {
             scopeApply(s, function (sc) {

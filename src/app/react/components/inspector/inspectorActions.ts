@@ -6,7 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryUpdateItemView } from '../../core/dataMachinery';
+import { machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryUpdateItemView, machineryOpenPluginPanel } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -898,7 +898,7 @@ export function bindInspectorEvents(): () => void {
     const inspectorEl = document.querySelector('.inspector');
     if (!inspectorEl || !inspectorEl.contains(target)) return;
     if (button === 1) {
-      getBodyScope().openPluginPanel();
+      machineryOpenPluginPanel(getBodyScope(), undefined);
       scopeEvalAsync();
     } else if (button !== 0) {
       openItemContextMenu(event, getBodyScope()?.selected?.[0]);

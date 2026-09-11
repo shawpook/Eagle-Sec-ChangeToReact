@@ -11306,10 +11306,8 @@ export function applyDataMachineryScope(): void {
   // c15b：adjustLayoutWidth/zoomFit
   s.zoomFit = (event: any, noAnimation: any) => machineryZoomFit(s, event, noAnimation);
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
-  s.changeSidebarIndex = (node: any) => machineryChangeSidebarIndex(s, node);
   s.calculateFilterCounts = () => machineryCalculateFilterCounts(s);
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
-  s.openAll = (ignoreHistory: any, callback: any) => machineryOpenAll(s, ignoreHistory, callback);
   if (!w2.ScrollbarSaver) w2.ScrollbarSaver = buildScrollbarSaver();
   // c16a：enterDetailMode/leaveDetailMode
   s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode(s, $event, image);
@@ -11351,14 +11349,11 @@ export function applyDataMachineryScope(): void {
   // c18f-3：inspector 面板/快捷搜索打开器
   s.openQuickSearch = (event: any) => machineryOpenQuickSearch(s, event);
   // c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
-  s.changeStar = (star: any, showNotify: any, force: any) => machineryChangeStar(s, star, showNotify, force);
   s.nextGifFrame = (amount: any) => machineryNextGifFrame(s, amount);
   s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);
   // c18g-2：视图开启器族
-  s.openUnfiled = (ignoreHistory: any) => machineryOpenUnfiled(s, ignoreHistory);
   // b1-3：侧栏 prev/next 导航四向
   // b1-4a：滚动/列表辅助族第一批
-  s.autoScroll = (index: any) => machineryAutoScroll(s, index);
   s.currentIndex = () => machineryCurrentIndex(s);
   // b1-4b：sortData/offsetScrollbar/updateFilterCounts
   s.offsetScrollbar = machineryOffsetScrollbar(s);
@@ -11370,7 +11365,6 @@ export function applyDataMachineryScope(): void {
   // b1-6b：删除族第二批
   // b1-6c：removeFolderContents
   // b1-7a：小件批
-  s.openPluginPanel = (event: any) => machineryOpenPluginPanel(s, event);
   // b1-7b：幻灯片/锁屏/调色板/布局/过滤入口/多开
   s.lockApp = () => machineryLockApp(s);
   s.toggleFilterByType = machineryToggleFilterByType(s);

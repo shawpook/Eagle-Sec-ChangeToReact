@@ -6,7 +6,7 @@ import { shortcuts, shortcutsWrapper, longTitle } from '../../app/filters';
 import { clickNode, clickSmartNode, dblclickSidebarFolder, dblclickSidebarSmartFolderGroup, hoverHideSidebar, openFolderExpandContextMenu, preventMiddleClick, sidebarFocus, toggleFolderExpand, toggleSmartFolderExpand } from '../../services/sidebarService';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { findLiveNode, getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryOpenQuickSearch, machineryToggleAll } from '../../core/dataMachinery';
+import { machineryOpenQuickSearch, machineryToggleAll, machineryOpenAll, machineryOpenUnfiled } from '../../core/dataMachinery';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
 import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder, switchLibrary } from '../../services/folderCoreService';
 import { newFolder } from '../../services/folderCoreService';
@@ -571,7 +571,11 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
         <div
           className={`item depth-0${viewMode === activeView ? ' active active-item' : ''}`}
           style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
-          onClick={(e) => scopeApply(getBodyScope(), (s) => s[meta.open] && s[meta.open]())}
+          onClick={(e) => scopeApply(getBodyScope(), (s) => {
+            const direct = SIMPLE_OPEN_DIRECT[meta.open];
+            if (direct) direct(s);
+            else s[meta.open] && s[meta.open]();
+          })}
           onContextMenu={(e) => scopeApply(getBodyScope(), (s) => openSidebarVisibleContextMenu(e))}
           onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
         >
@@ -604,6 +608,12 @@ const SIMPLE_META: Record<string, { open: string; mask: string; labelKey: string
   community: { open: 'openCommunity', mask: 'ic_community.png', labelKey: 'preferencesWindow.sidebar.community' },
   allTags: { open: 'openAllTags', mask: 'ic_alltags.png', labelKey: 'general.pages.allTags' },
   trash: { open: 'openTrash', mask: 'ic_trashbin.png', labelKey: 'general.pages.trash' },
+};
+
+/** D-1 A-1：已直调化的 open 名字（其余仍走 scope 动态下标）。 */
+const SIMPLE_OPEN_DIRECT: Record<string, (s: any) => void> = {
+  openAll: (s) => machineryOpenAll(s, undefined, undefined),
+  openUnfiled: (s) => machineryOpenUnfiled(s, undefined),
 };
 
 /* ============ 侧栏头部（index.html 81-133） ============ */

@@ -40,7 +40,8 @@ import {
 import { req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { machineryAutoScroll, machineryChangeStar } from '../../core/dataMachinery';
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
 import { getRawUrl } from '../../core/itemDomain';
@@ -60,7 +61,11 @@ const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(th
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
-    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    if (typeof target !== 'function') return;
+    const args = preArgs.length ? preArgs : e === undefined ? [] : [e];
+    // scoped(fn)：见 appCore.SCOPED_HANDLER——machinery 函数需以 scope 为首参。
+    if (typeof fn === 'function' && (fn as any)[SCOPED_HANDLER]) target(scope, ...args);
+    else target(...args);
   });
 
 /** Angular number 过滤器（分组）。 */
@@ -193,7 +198,7 @@ function PreviewImage({
       onDragEnd={(e) => (window as any).onDragEndContainer(e.nativeEvent)}
       onDragStart={(e) => (window as any).onDragStartContainer(e.nativeEvent)}
       onDrop={(e) => (window as any).onDropInspector(e.nativeEvent)}
-      onClick={() => call('autoScroll')()}
+      onClick={() => call(scoped(machineryAutoScroll))()}
     >
       {isSvg && <div className="svg" style={{ backgroundImage: `url('${image.lastThumbnailUrl}')` }} />}
       {isTxt && (
@@ -680,7 +685,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
 
   if (!single && !multi) return null;
 
-  const changeStar = (star: number) => (e: any) => call('changeStar', star)(e);
+  const changeStar = (star: number) => (e: any) => call(scoped(machineryChangeStar), star)(e);
   const resHide =
     single && item && (!item.width || item.ext === 'txt' || (window as any).FONT_TYPES?.[item.ext] || (window as any).AUDIO_TYPES?.[item.ext]);
   const resShow = single && item && !((window as any).VIDEO_TYPES?.[item.ext] || !item.width || item.ext === 'txt' || (window as any).FONT_TYPES?.[item.ext] || (window as any).AUDIO_TYPES?.[item.ext]);

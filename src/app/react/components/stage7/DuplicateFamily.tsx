@@ -13,6 +13,7 @@ import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { machineryOpenUnfiled } from '../../core/dataMachinery';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
 import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
@@ -1467,7 +1468,7 @@ export function DuplicateModal() {
 
   const revealInUnfiled = (item: any) => {
     const body = getBodyScope();
-    body.openUnfiled();
+    machineryOpenUnfiled(body, undefined);
     setTimeout(() => {
       body.selected = [item];
       syncInspectorFromScope();

@@ -9,12 +9,12 @@ import { syncBodyFromScope } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
 import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
 import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
-import { machineryOnImageSizeHeightChanged } from '../../core/dataMachinery';
+import { machineryOnImageSizeHeightChanged, machineryOpenAll, machineryOpenUnfiled, machineryChangeSidebarIndex, machineryOpenPluginPanel } from '../../core/dataMachinery';
 
 /**
  * 阶段3a：工具栏接管。
@@ -33,7 +33,11 @@ const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(th
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
   scopeApply(getBodyScope(), (scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
-    if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
+    if (typeof target !== 'function') return;
+    const args = preArgs.length ? preArgs : e === undefined ? [] : [e];
+    // scoped(fn)：见 appCore.SCOPED_HANDLER——machinery 函数需以 scope 为首参。
+    if (typeof fn === 'function' && (fn as any)[SCOPED_HANDLER]) target(scope, ...args);
+    else target(...args);
   });
 
 /** 多语句 ng-click 的逐字转写（如 resetKeyword(); resetFilter(); filterContent(); openAll()）。 */
@@ -41,7 +45,10 @@ const callSeq = (...fns: Array<[string | ((...a: any[]) => any), any?]>) => (e: 
   scopeApply(getBodyScope(), (scope) => {
     for (const [fn, arg] of fns) {
       const target = typeof fn === 'function' ? fn : scope[fn];
-      if (typeof target === 'function') target(...(arg !== undefined ? [arg] : [e]));
+      if (typeof target !== 'function') continue;
+      const args = arg !== undefined ? [arg] : [e];
+      if (typeof fn === 'function' && (fn as any)[SCOPED_HANDLER]) target(scope, ...args);
+      else target(...args);
     }
   });
 
@@ -297,8 +304,8 @@ export function Toolbar() {
         </div>
 
         <ul>
-          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openAll'])}>{t('general.pages.all')}</li>
-          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openUnfiled'])}>{t('general.pages.unfiled')}</li>
+          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [scoped(machineryOpenAll)])}>{t('general.pages.all')}</li>
+          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [scoped(machineryOpenUnfiled)])}>{t('general.pages.unfiled')}</li>
           <li style={viewMode === 'untagged' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openUntagged'])}>{t('general.pages.untagged')}</li>
           <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openRecent'])}>{t('general.pages.recent')}</li>
 
@@ -322,7 +329,7 @@ export function Toolbar() {
               className={snapshot.currentFolder.parent ? 'has-parent' : ''}
               ng-click="openFolder(currentFolder)"
               title={snapshot.currentFolderPath}
-              onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [openFolder, liveCurrentFolder()], ['changeSidebarIndex', liveCurrentFolder()])}
+              onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [openFolder, liveCurrentFolder()], [scoped(machineryChangeSidebarIndex), liveCurrentFolder()])}
               onContextMenu={(e) => call('openFolderFullPathContextMenu', liveCurrentFolder())(e)}
             >
               {snapshot.currentFolder.name}
@@ -426,7 +433,7 @@ export function Toolbar() {
           tippy-content={`${t('general.plugin')} <key>P</key>`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="openPluginPanel($event)"
-          onClick={call('openPluginPanel')}
+          onClick={call(scoped(machineryOpenPluginPanel))}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-plugin.svg')} />
           <div style={snapshot.needUpdatePluginCount > 0 ? undefined : { display: 'none' }} className="badge-count" />

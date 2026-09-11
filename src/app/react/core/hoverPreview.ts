@@ -13,6 +13,7 @@
 // @ts-nocheck
 import { getRawUrl } from './itemDomain';
 import { machineryGetItemByElement } from '../core/dataMachinery';
+import { dom } from '../utils/domLite';
 
 const _w: any = window as any;
 
@@ -29,9 +30,9 @@ var hoverPreviewObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
         if (!entry.isIntersecting) {
             var sentinelEl = entry.target;
-            var $box = $(sentinelEl).closest('.box');
+            var $box = dom(sentinelEl).closest('.box');
             if (!$box.length && sentinelEl._hoverBox) {
-                $box = $(sentinelEl._hoverBox);
+                $box = dom(sentinelEl._hoverBox);
             }
             // box 還在被 hover 時不由 observer 清理，避免 cleanup→mouseenter 循環
             if ($box.length && $box.is(':hover')) return;
@@ -57,7 +58,7 @@ function cleanupBoxHoverPreview($box) {
     // Video — pause 停渲染 → remove 脫離 DOM → 清 src 釋放資源
     $thumbnail.find('video').each(function () {
         try { this.pause(); } catch (e) {}
-        $(this).remove();
+        dom(this).remove();
         try { this.src = ''; this.load(); } catch (e) {}
     });
 
@@ -74,7 +75,7 @@ function cleanupBoxHoverPreview($box) {
 
     // Iframe (YouTube/Vimeo)
     $thumbnail.find('.iframe-wrap').each(function () {
-        try { $(this).find('iframe')[0].src = ''; } catch (e) {}
+        try { dom(this).find('iframe')[0].src = ''; } catch (e) {}
     }).remove();
 
     // 停用 iframe postMessage 狀態，避免 stale message handler 繼續更新已移除的 UI
@@ -94,7 +95,7 @@ function cleanupBoxHoverPreview($box) {
 function startHoverPreviewWatch($box) {
     $box.find('.hover-sentinel').each(function () {
         hoverPreviewObserver.unobserve(this);
-        $(this).remove();
+        dom(this).remove();
     });
     $box.addClass('hover-active');
     var sentinel = document.createElement('div');
@@ -108,8 +109,8 @@ function startHoverPreviewWatch($box) {
 
 
 function removePlayingAudios () {
-    $('#box-container .box.hover-active').each(function () {
-        cleanupBoxHoverPreview($(this));
+    dom('#box-container .box.hover-active').each(function () {
+        cleanupBoxHoverPreview(dom(this));
     });
 };
 
@@ -128,7 +129,7 @@ function removeBoxAudioPlayer (event) {
     // b1-9d：去 Angular 后 window.angular 缺席；_w.$bodyScope 即 bundle 世界同对象
     // （同 egjs-infinitegrid.umd.js 内 Eagle 自有写法），bundle 在世时语义零改变。
     var $scope = _w.$bodyScope || angular.element("body").scope();
-    var $box = $(".box").has(event.target);
+    var $box = dom(".box").has(event.target);
     disarmHoverSentinel($box);
     var image = machineryGetItemByElement($scope, $box[0]);
 
@@ -151,7 +152,7 @@ function removeBoxAudioPlayer (event) {
         _w.playingAudiosElements.forEach(function (audio) {
             audio.pause();
             audio.src = "";
-            $(audio).remove();
+            dom(audio).remove();
         });
         _w.playingAudiosElements = [];
     }
@@ -165,13 +166,13 @@ var HoverPreview = {
     zoomBtnTimeout: undefined,
     loadRawTimeout: undefined,
     showTimeout: undefined,
-    $container: $("#hover-preview-container"),
+    $container: dom("#hover-preview-container"),
     // 預設延遲時間（毫秒）
     defaultDelay: 200,
     // 獲取元素對應的延遲時間
     // 優先檢查元素的 data-hover-delay 屬性，如果沒有則使用預設值
     getDelay: function(element) {
-        var $element = $(element);
+        var $element = dom(element);
         // 先檢查元素本身或其父元素是否有 data-hover-delay 屬性
         var delayAttr = $element.attr('data-hover-delay') || $element.closest('[data-hover-delay]').attr('data-hover-delay');
         if (delayAttr) {
@@ -185,7 +186,7 @@ var HoverPreview = {
     show: function (event) {
         if (!HoverPreview.lastElem) return;
         if (HoverPreview.isShow) return;
-        if ($("input:focus").length > 0) { return; }
+        if (dom("input:focus").length > 0) { return; }
         HoverPreview.isShow = true;
         clearTimeout(HoverPreview.loadRawTimeout);
         clearTimeout(HoverPreview.showTimeout);
@@ -194,15 +195,15 @@ var HoverPreview = {
         var image = machineryGetItemByElement(_w.$bodyScope, HoverPreview.lastElem.parentElement);
         if (image.noPreview) return;
         var thumbnailPath = FileUrlHelper.getLastestThumbnailUrl(image);
-        var offset = $(HoverPreview.lastElem).offset();
+        var offset = dom(HoverPreview.lastElem).offset();
         var x = offset.left;
         var y = offset.top;
         var width = Math.min(480, image.width);
         var height = Math.min(480, image.height);
-        var boxWidth = $(HoverPreview.lastElem).width();
-        var windowWidth = $(window).width() - 20;
-        var windowHeight = $(window).height() - 20;
-        var boxHeight = Math.min($(HoverPreview.lastElem).height(), windowHeight);
+        var boxWidth = dom(HoverPreview.lastElem).width();
+        var windowWidth = dom(window).width() - 20;
+        var windowHeight = dom(window).height() - 20;
+        var boxHeight = Math.min(dom(HoverPreview.lastElem).height(), windowHeight);
         var imageX = 0;
         var imageY = 0;
         var imageWidth = 0;
@@ -470,10 +471,10 @@ var HoverPreview = {
 //     HoverPreview.lastElem = undefined;
 // });
 
-$("body").on('mouseover', '.box', throttle(function(event) {
+dom("body").on('mouseover', '.box', throttle(function(event) {
     event.stopPropagation();
     clearTimeout(HoverPreview.keyupTimeout);
-    let thumbnail = $(this).find(".thumbnail")[0];
+    let thumbnail = dom(this).find(".thumbnail")[0];
     HoverPreview.lastElem = thumbnail;
     if (_w.HoverPreviewKeydown) {
         HoverPreview.show();
@@ -481,7 +482,7 @@ $("body").on('mouseover', '.box', throttle(function(event) {
     }
 }, 200, true));
 
-$("body").on('mouseleave', '.box', throttle(function(event) {
+dom("body").on('mouseleave', '.box', throttle(function(event) {
     event.stopPropagation();
     if (HoverPreview.lastElem) {
         HoverPreview.hide();
@@ -490,12 +491,12 @@ $("body").on('mouseleave', '.box', throttle(function(event) {
 }, 200, true));
 
 
-$("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
+dom("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
     if (_w.$bodyScope.preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         
         // 找到包含 data-box-id 的父元素（處理不同 DOM 結構）
-        var $box = $(this).closest('.box[data-box-id]');
+        var $box = dom(this).closest('.box[data-box-id]');
         HoverPreview.lastElem = ($box.length > 0 ? $box.find(".thumbnail")[0] : null) || this.parentElement;
         
         // 根據元素所在場景獲取對應的延遲時間
@@ -507,7 +508,7 @@ $("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
     }
 });
 
-$("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
+dom("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
     if (_w.$bodyScope.preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         if (HoverPreview.lastElem) {
@@ -521,7 +522,7 @@ $("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
 
 // ── b1-9bu-A：Z 键监听回填（js/hover-preview.js 361-387 逐字；b1-9am 提取片缺失段，
 // Z 键悬停预览自 React 切换起死——本段即复活路径；$bodyScope/HoverPreviewKeydown → _w）──
-$(window).on("keydown.hover-preview", function (event) {
+dom(window).on("keydown.hover-preview", function (event) {
     if (_w.HoverPreviewKeydown || event.ctrlKey || event.metaKey || event.shiftKey) return;
 
     // Check the currently focused element
@@ -541,7 +542,7 @@ $(window).on("keydown.hover-preview", function (event) {
     }
 });
 
-$(window).on("keyup.hover-preview", function (event) {
+dom(window).on("keyup.hover-preview", function (event) {
     if (event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.keyCode === 90) {
         _w.HoverPreviewKeydown = false;
@@ -565,7 +566,7 @@ function disarmHoverSentinel($box) {
     $box.removeClass('hover-active');
     $box.find('.hover-sentinel').each(function () {
         hoverPreviewObserver.unobserve(this);
-        $(this).remove();
+        dom(this).remove();
     });
 }
 
@@ -577,7 +578,7 @@ var updateVideoCursorInterval;
 var videoHoverSelector = EagleConfig.VIDEO_FORMATS.map(function(ext) {
     return '.box.ext-' + ext + ' .thumbnail';
 }).join(', ');
-$("#box-container").on('mouseenter', videoHoverSelector, function(event) {
+dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
     event.stopPropagation();
 
     // 避免拖拽时重复触发又在背景无限播放
@@ -586,7 +587,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
     if (_w.$bodyScope.preferences.video.hoverPlay === "false") return;
 
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
-    var $box = $(".box").has(this);
+    var $box = dom(".box").has(this);
     var image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
@@ -614,9 +615,9 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
         }
         var $image = $box.find("img");
         $box.find(".video-progress-bar").remove();
-        var $progressbar = $('<div class="video-progress-bar"><div class="current"></div></div>')
-        var $currentTime = $(`<div class="current-time">00:00</div>`);
-        var $muteToggle = $('<div class="mute-toggle"></div>');
+        var $progressbar = dom('<div class="video-progress-bar"><div class="current"></div></div>')
+        var $currentTime = dom(`<div class="current-time">00:00</div>`);
+        var $muteToggle = dom('<div class="mute-toggle"></div>');
         var muted = localStorage["eagle.list.video.muted"] != 'false';
         if (muted) {
             $muteToggle.addClass("muted");
@@ -625,7 +626,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
             $muteToggle.removeClass("muted");
         }
         console.log(muted);
-        var video = $('<video/>', {
+        var video = dom('<video/>', {
             id: 'video',
             src: getRawUrl(image),
             type: 'video/mp4',
@@ -636,7 +637,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
             loop: true
         });
 
-        var $controls = $('<div class="controls"></div>');
+        var $controls = dom('<div class="controls"></div>');
         $controls.append($currentTime);
         $controls.append($muteToggle);
         $controls.hide();
@@ -735,7 +736,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 localStorage.setItem("eagle.list.video.muted", muted);
             });
 
-            var $spinner = $('<div class="video-loading-spinner"></div>');
+            var $spinner = dom('<div class="video-loading-spinner"></div>');
             var spinnerTimeout = setTimeout(function () {
                 $box.find(".thumbnail").prepend($spinner);
             }, 500);
@@ -800,7 +801,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                     nativeVideoEl.pause();
                     nativeVideoEl.src = "";
                 } catch (err) {}
-                $(nativeVideoEl).remove();
+                dom(nativeVideoEl).remove();
 
                 // 建立 <mpv-video> 元素（不設定 controls，不顯示 control bar）
                 var mpvElement = document.createElement("mpv-video");
@@ -811,7 +812,7 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 mpvElement.volume = parseInt(volume) / 100;
 
                 // 尺寸與原生 video 相同
-                var $mpv = $(mpvElement);
+                var $mpv = dom(mpvElement);
                 var ratio = image.width / image.height;
                 var ratio2 = $image.width() / $image.height();
                 if (ratio > ratio2) {
@@ -926,12 +927,12 @@ $("#box-container").on('mouseenter', videoHoverSelector, function(event) {
     }, 250);
 });
 
-$("#box-container").on('mouseleave', videoHoverSelector, removeBoxVideoPlayer);
+dom("#box-container").on('mouseleave', videoHoverSelector, removeBoxVideoPlayer);
 
 function removeBoxVideoPlayer(event) {
     event.stopPropagation();
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
-    var $box = $(".box").has(this);
+    var $box = dom(".box").has(this);
     disarmHoverSentinel($box);
     var image = machineryGetItemByElement($scope, $box[0]);
 
@@ -963,7 +964,7 @@ function removeBoxVideoPlayer(event) {
 }
 
 // ── audio 悬停播放（audio-hover-preview.js 7-167/169 逐字）──
-$("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', function(event) {
+dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', function(event) {
     event.stopPropagation();
 
     // if (dragging) return;
@@ -971,7 +972,7 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
     if (event.which === 1) return;
 
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
-    var $box = $(".box").has(this);
+    var $box = dom(".box").has(this);
     var image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
@@ -989,7 +990,7 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
         }
         var $image = $box.find("img");
 
-        var $autoPlayBtn = $('<div class="autoplay-toggle"></div>');
+        var $autoPlayBtn = dom('<div class="autoplay-toggle"></div>');
         var autoplay = localStorage["listAudioAutoPlay"] != 'false';
         if (autoplay) {
             $autoPlayBtn.addClass("pause");
@@ -1005,10 +1006,10 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
         var imageDir = `${_w.$bodyScope.libraryPath.replace(/#/g, '%23')}/images/`
         $box.find(".audio-progress-bar").remove();
         $box.find(".current-time").remove();
-        var $progressbar = $(`<div class="audio-progress-bar"><img src="${src}" style="height: ${imageHeight}px !important; width: ${imageWidth}px !important;"/></div>`);
-        var $currentTime = $(`<div class="current-time">00:00</div>`);
-        var $progressbarCurosr = $(`<div class="audio-progress-bar-cursor"></div>`);
-        var audio = $('<audio/>', {
+        var $progressbar = dom(`<div class="audio-progress-bar"><img src="${src}" style="height: ${imageHeight}px !important; width: ${imageWidth}px !important;"/></div>`);
+        var $currentTime = dom(`<div class="current-time">00:00</div>`);
+        var $progressbarCurosr = dom(`<div class="audio-progress-bar-cursor"></div>`);
+        var audio = dom('<audio/>', {
             id: 'audio',
             src: getRawUrl(image),
             type: 'audio/' + image.ext,
@@ -1019,7 +1020,7 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
             loop: false
         });
 
-        var $controls = $('<div class="controls"></div>');
+        var $controls = dom('<div class="controls"></div>');
         $controls.append($currentTime);
         $controls.append($autoPlayBtn);
         
@@ -1122,8 +1123,8 @@ $("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, 
     }, 200);
 });
 
-$("#box-container").on('mouseleave', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', removeBoxAudioPlayer);
-$("#box-container").on('dragstart', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', removeBoxAudioPlayer);
+dom("#box-container").on('mouseleave', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', removeBoxAudioPlayer);
+dom("#box-container").on('dragstart', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', removeBoxAudioPlayer);
 
 currentWindow.on('hide', removePlayingAudios);   // b1-9bu-B：窗口隐藏即停播（audio-hover-preview.js 169 逐字）
 
@@ -1204,14 +1205,14 @@ function _onYouTubeMessage(event) {
 
 window.addEventListener('message', _onYouTubeMessage);
 
-$("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(event) {
+dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(event) {
     event.stopPropagation();
 
     if (rectSelecting) return;
     if (_w.$bodyScope.preferences.video.hoverPlay === "false") return;
 
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
-    let $box = $(".box").has(this);
+    let $box = dom(".box").has(this);
     let image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
@@ -1229,11 +1230,11 @@ $("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(eve
 
         var $image = $box.find("img");
         $box.find(".video-progress-bar").remove();
-        var $progressbar = $('<div class="video-progress-bar"><div class="current"></div><div class="current-time"></div></div>');
+        var $progressbar = dom('<div class="video-progress-bar"><div class="current"></div><div class="current-time"></div></div>');
         var $currentTime = $progressbar.find(".current-time");
-        var $muteToggle = $('<div class="mute-toggle"></div>');
+        var $muteToggle = dom('<div class="mute-toggle"></div>');
 
-        var $controls = $('<div class="controls"></div>');
+        var $controls = dom('<div class="controls"></div>');
         $controls.append($currentTime);
         $controls.append($muteToggle);
         $controls.hide();
@@ -1257,10 +1258,10 @@ $("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(eve
         var mute = (muted) ? "1" : "0";
         // 加入 enablejsapi=1 啟用 postMessage API
         var src = `https://www.youtube-nocookie.com/embed/${image.videoID}?enablejsapi=1&autoplay=1&hd=1&vq=${vq}&controls=0&cc_load_policy=0&modestbranding=1&mute=${mute}`;
-        var $iframeWrap = $(`<div class="iframe-wrap hide"><iframe src="${src}"></iframe></div>`);
+        var $iframeWrap = dom(`<div class="iframe-wrap hide"><iframe src="${src}"></iframe></div>`);
         var $iframe = $iframeWrap.find("iframe");
         var iframe = $iframe[0];
-        var $spinner = $('<div class="video-loading-spinner"></div>');
+        var $spinner = dom('<div class="video-loading-spinner"></div>');
 
         // 初始化 postMessage 狀態
         _ytPlayerState = {
@@ -1409,10 +1410,10 @@ $("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(eve
     }, 200);
 });
 
-$("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(event) {
+dom("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(event) {
     event.stopPropagation();
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
-    let $box = $(".box").has(this);
+    let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
     let image = machineryGetItemByElement($scope, $box[0]);
 
@@ -1499,14 +1500,14 @@ function _onVimeoMessage(event) {
 
 window.addEventListener('message', _onVimeoMessage);
 
-$("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event) {
+dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event) {
     event.stopPropagation();
 
     if (rectSelecting) return;
     if (_w.$bodyScope.preferences.video.hoverPlay === "false") return;
 
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
-    let $box = $(".box").has(this);
+    let $box = dom(".box").has(this);
     let image = machineryGetItemByElement($scope, $box[0]);
 
     if (!image) return;
@@ -1524,11 +1525,11 @@ $("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event
 
         var $image = $box.find("img");
         $box.find(".video-progress-bar").remove();
-        var $progressbar = $('<div class="video-progress-bar"><div class="current"></div><div class="current-time"></div></div>');
+        var $progressbar = dom('<div class="video-progress-bar"><div class="current"></div><div class="current-time"></div></div>');
         var $currentTime = $progressbar.find(".current-time");
-        var $muteToggle = $('<div class="mute-toggle"></div>');
+        var $muteToggle = dom('<div class="mute-toggle"></div>');
 
-        var $controls = $('<div class="controls"></div>');
+        var $controls = dom('<div class="controls"></div>');
         $controls.append($currentTime);
         $controls.append($muteToggle);
         $controls.hide();
@@ -1551,10 +1552,10 @@ $("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event
         // 加入 api=1 以啟用 postMessage API，使用 player_id 識別播放器
         var playerId = 'vimeo-hover-' + image.videoID;
         var src = `https://player.vimeo.com/video/${image.videoID}?api=1&player_id=${playerId}&autoplay=1&controls=0&muted=${mute}&quality=${quality}&title=0`;
-        var $iframeWrap = $(`<div class="iframe-wrap hide"><iframe src="${src}" id="${playerId}"></iframe></div>`);
+        var $iframeWrap = dom(`<div class="iframe-wrap hide"><iframe src="${src}" id="${playerId}"></iframe></div>`);
         var $iframe = $iframeWrap.find("iframe");
         var iframe = $iframe[0];
-        var $spinner = $('<div class="video-loading-spinner"></div>');
+        var $spinner = dom('<div class="video-loading-spinner"></div>');
 
         // 初始化 postMessage 狀態
         _vimeoPlayerState = {
@@ -1703,10 +1704,10 @@ $("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event
     }, 200);
 });
 
-$("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(event) {
+dom("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(event) {
     event.stopPropagation();
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
-    let $box = $(".box").has(this);
+    let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
     let image = machineryGetItemByElement($scope, $box[0]);
 

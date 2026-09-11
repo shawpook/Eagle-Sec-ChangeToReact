@@ -17,6 +17,7 @@ import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { machineryGetRatioNonExp } from '../core/dataMachinery';
 import { makeDraggable } from '../components/interactions/draggable';
+import { dom } from '../utils/domLite';
 
 
 	/*****************************************************************************
@@ -97,7 +98,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 	function Zoomer($elem, params) {
 
 		var self = this,
-		op = $.extend({}, defaults, params);
+		op = Object.assign({}, defaults, params);
 		this.$elem = $elem;
 		this.hasTouch = this.checkTouchSupport ();
 
@@ -306,7 +307,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 				img.height = this.image_height;
 			}
 			img.src = this.image_url;
-			this.$image = $(img).appendTo($elem);
+			this.$image = dom(img).appendTo($elem);
 		}
 
 
@@ -344,9 +345,9 @@ import { makeDraggable } from '../components/interactions/draggable';
 			{loaded: false, src: this.image_url == ''? this.$image.attr('src') : this.image_url} // Main image
 		];
 
-		$.each(this.imgList, function (i){
+		this.imgList.forEach(function (_item, i){
 			var _img = new Image();
-			$(_img) .bind('load', {id:i, self: self}, self.loadComplete)
+			dom(_img) .bind('load', {id:i, self: self}, self.loadComplete)
 					.bind('error', {id:i, self: self}, self.loadComplete); //Allow initiation even if image is not there :(
 			_img.src = self.imgList[i].src;
 		});
@@ -965,14 +966,14 @@ import { makeDraggable } from '../components/interactions/draggable';
 			// 	}
 			// }
 
-			$(document).bind('touchend'+ '.sz' + self.id, {self: self}, self.mouseUp);
-			$(document).bind('mouseup'+ '.sz' + self.id, {self: self}, self.mouseUp);
+			dom(document).bind('touchend'+ '.sz' + self.id, {self: self}, self.mouseUp);
+			dom(document).bind('mouseup'+ '.sz' + self.id, {self: self}, self.mouseUp);
 
 			self.$holder.bind('touchstart'+ '.sz', {self: self}, self.mouseDown);
 			self.$holder.bind('mousedown'+ '.sz', {self: self}, self.mouseDown);
 
-			$(document).bind('touchmove'+ '.sz' + self.id, {self: self}, self.mouseDrag);
-			$(document).bind('mousemove'+ '.sz' + self.id, {self: self}, self.mouseDrag);
+			dom(document).bind('touchmove'+ '.sz' + self.id, {self: self}, self.mouseDrag);
+			dom(document).bind('mousemove'+ '.sz' + self.id, {self: self}, self.mouseDrag);
 
 			// if ((self.mouse_drag && !self.hasTouch) || (self.touch_drag && self.hasTouch)) {
 			// 	self.$holder.bind(self.event_down, {self: self}, self.mouseDown);
@@ -1104,7 +1105,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 
 			} else {
 				if (self.image_url == ''){
-					$holder = $('#'+self.container);
+					$holder = dom('#'+self.container);
 				} else {
 					$holder = self.$elem;
 				}
@@ -1118,7 +1119,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 					self.allow_scale = checkBoolean(self.$loc_cont.data('allow-scale'));
 					self.allow_drag = checkBoolean(self.$loc_cont.data('allow-drag'));
 					locs.each(function () {
-						self.setLocation($(this));
+						self.setLocation(dom(this));
 					});
 				}
 			}
@@ -1139,12 +1140,12 @@ import { makeDraggable } from '../components/interactions/draggable';
 				'background-repeat': 'no-repeat'
 			})
 
-			self.$hitArea = $('<div style="position: absolute; z-index: 1; top: 0px; left: 0px; width: 100%; height: 100%;" ></div>').appendTo($holder);
+			self.$hitArea = dom('<div style="position: absolute; z-index: 1; top: 0px; left: 0px; width: 100%; height: 100%;" ></div>').appendTo($holder);
 
 			self.getContainerSize(self.sW, self.sH, $holder, self.w_max, self.h_max);
 
 			// if (self.responsive) {
-			$(window).bind("orientationchange.sz" + self.id+" resize.sz" + self.id, {self: self}, self.resize);
+			dom(window).bind("orientationchange.sz" + self.id+" resize.sz" + self.id, {self: self}, self.resize);
 			// $(window).on("resize.zoomPlugin", {self: self}, self.resize);
 			// }
 			var sW = self.sW;
@@ -1170,26 +1171,26 @@ import { makeDraggable } from '../components/interactions/draggable';
 				</div>`);
 
 			self.scrollbar = {
-				horizontal: $(".smooth_zoom_scrollbar.horizontal .smooth_zoom_scrollbar_thumbnail"),
-				vertical: $(".smooth_zoom_scrollbar.vertical .smooth_zoom_scrollbar_thumbnail"),
-				navigator: $(".smooth_zoom_navigator"),
-				navigatorViewport: $(".smooth_zoom_navigator .viewport"),
+				horizontal: dom(".smooth_zoom_scrollbar.horizontal .smooth_zoom_scrollbar_thumbnail"),
+				vertical: dom(".smooth_zoom_scrollbar.vertical .smooth_zoom_scrollbar_thumbnail"),
+				navigator: dom(".smooth_zoom_navigator"),
+				navigatorViewport: dom(".smooth_zoom_navigator .viewport"),
 			}
 
 			//Add border if needed
 			if (bord_size > 0) {
-				border[0] = $('<div style="position: absolute;	width: ' + bord_size + 'px; height: ' + sH + 'px;	top: 0px; left: 0px; z-index: 3; background-color: ' + self.bord_color + ';"></div>').css('opacity', self.bord_alpha);
-				border[1] = $('<div style="position: absolute;	width: ' + bord_size + 'px; height: ' + sH + 'px;	top: 0px; left: ' + (sW - bord_size) + 'px; z-index: 4; background-color: ' + self.bord_color + ';"></div>').css('opacity', self.bord_alpha);
-				border[2] = $('<div style="position: absolute;	width: ' + (sW - (bord_size * 2)) + 'px; height: ' + bord_size + 'px; top: 0px; left: ' + bord_size + 'px; z-index: 5; background-color: ' + self.bord_color + '; line-height: 1px;"></div>').css('opacity', self.bord_alpha);
-				border[3] = $('<div style="position: absolute;	width: ' + (sW - (bord_size * 2)) + 'px; height: ' + bord_size + 'px; top: ' + (sH - bord_size) + 'px; left: ' + bord_size + 'px; z-index: 6; background-color: ' + self.bord_color + '; line-height: 1px;"></div>').css('opacity', self.bord_alpha);
+				border[0] = dom('<div style="position: absolute;	width: ' + bord_size + 'px; height: ' + sH + 'px;	top: 0px; left: 0px; z-index: 3; background-color: ' + self.bord_color + ';"></div>').css('opacity', self.bord_alpha);
+				border[1] = dom('<div style="position: absolute;	width: ' + bord_size + 'px; height: ' + sH + 'px;	top: 0px; left: ' + (sW - bord_size) + 'px; z-index: 4; background-color: ' + self.bord_color + ';"></div>').css('opacity', self.bord_alpha);
+				border[2] = dom('<div style="position: absolute;	width: ' + (sW - (bord_size * 2)) + 'px; height: ' + bord_size + 'px; top: 0px; left: ' + bord_size + 'px; z-index: 5; background-color: ' + self.bord_color + '; line-height: 1px;"></div>').css('opacity', self.bord_alpha);
+				border[3] = dom('<div style="position: absolute;	width: ' + (sW - (bord_size * 2)) + 'px; height: ' + bord_size + 'px; top: ' + (sH - bord_size) + 'px; left: ' + bord_size + 'px; z-index: 6; background-color: ' + self.bord_color + '; line-height: 1px;"></div>').css('opacity', self.bord_alpha);
 				$holder.append(border[0], border[1], border[2], border[3]);
 			}
 
 			//Get Image maps if exists
 			if ($image.attr('usemap') != undefined) {
-				self.mapAreas = $("map[name='" + ($image.attr('usemap').split('#').join('')) + "']").children('area');
+				self.mapAreas = dom("map[name='" + ($image.attr('usemap').split('#').join('')) + "']").children('area');
 				self.mapAreas.each(function (i) {
-					var area = $(this);
+					var area = dom(this);
 					area.css('cursor', 'pointer');
 					if (self.mouse_drag) {
 						area.bind(self.event_down, {self: self}, self.mouseDown);
@@ -1201,7 +1202,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 				});
 			}
 
-			const $bitmapViewerContainer = $(`<div id="bitmap-viewer"></div>`)
+			const $bitmapViewerContainer = dom(`<div id="bitmap-viewer"></div>`)
 			self.bitmapViewer = new BitmapViewer($bitmapViewerContainer[0], self);
 			$holder.append($bitmapViewerContainer);
 
@@ -1294,7 +1295,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 
 			if (ob.hasClass('mark')) {
 				var imgw = ob.find('img').css('vertical-align', 'bottom').width();
-				$(ob.children()[0]).css({
+				dom(ob.children()[0]).css({
 					'position': 'absolute',
 					'left': (-ob.width()/2),
 					'bottom': parseInt(ob.css('padding-bottom'))*2
@@ -1318,7 +1319,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 			} else if (ob.hasClass('lable')){
 				var bg = ob.data('bg-color'),
 					opacity = ob.data('bg-opacity'),
-					cont = $(ob.eq(0).children()[0])
+					cont = dom(ob.eq(0).children()[0])
 							.css({
 							'position': 'absolute',
 							'z-index': 2,
@@ -1346,7 +1347,7 @@ import { makeDraggable } from '../components/interactions/draggable';
 						bg = "#000000";
 						opacity = .7;
 					}
-					var bgob = $('<div style="position: absolute; left: ' + (-w2)+'px; top: ' + (-h2)+'px; width: ' + ((w2-parseInt(cont.css('padding-left'))) * 2) + 'px; height:' + ((h2-parseInt(cont.css('padding-top'))) * 2) + 'px; background-color: ' + bg + ';"></div>').appendTo(ob);
+					var bgob = dom('<div style="position: absolute; left: ' + (-w2)+'px; top: ' + (-h2)+'px; width: ' + ((w2-parseInt(cont.css('padding-left'))) * 2) + 'px; height:' + ((h2-parseInt(cont.css('padding-top'))) * 2) + 'px; background-color: ' + bg + ';"></div>').appendTo(ob);
 					if (opacity) {
 						bgob.css('opacity', opacity);
 					}
@@ -2469,7 +2470,7 @@ if (!self._mousedown) return;
 									.animate({
 										opacity: 0
 									}, 0, function() {
-										$(this).hide();
+										dom(this).hide();
 									});
 							} else {
 								loc[p].ob.hide();
@@ -2484,7 +2485,7 @@ if (!self._mousedown) return;
 								.animate({
 									opacity: 0
 								}, 0, function() {
-									$(this).hide();
+									dom(this).hide();
 								});
 						} else {
 							loc[p].ob.hide();
@@ -2513,7 +2514,7 @@ if (!self._mousedown) return;
 		roundBG: function (el, _name, _w, _h, _r, _p, _c, _i, _z, _yoff) {
 			var w = 50 / 2;
 
-			el.append($(
+			el.append(dom(
 				'<div class="bgi' + _name + '" style="background-position:' + (-(_p - _r)) + 'px ' + (-(w - _r) - _yoff) + 'px"></div>\
 				<div class="bgh' + _name + '"></div>\
 				<div class="bgi' + _name + '" style="background-position:' + (-_p) + 'px ' + (-(w - _r) - _yoff) + 'px; left:' + (_w - _r) + 'px"></div>\
@@ -2522,7 +2523,7 @@ if (!self._mousedown) return;
 				<div class="bgi' + _name + '" style="background-position:' + (-_p) + 'px ' + (-w - _yoff) + 'px; top:' + (_h - _r) + 'px; left:' + (_w - _r) + 'px"></div>\
 				<div class="bgc' + _name + '"></div>'
 			));
-			$('.bgi' + _name).css({
+			dom('.bgi' + _name).css({
 				position: 'absolute',
 				width: _r,
 				height: _r,
@@ -2532,14 +2533,14 @@ if (!self._mousedown) return;
 				'filter': 'progid:DXImageTransform.Microsoft.gradient(startColorstr=#00FFFFFF,endColorstr=#00FFFFFF)',
 				'zoom': 1
 			});
-			$('.bgh' + _name).css({
+			dom('.bgh' + _name).css({
 				position: 'absolute',
 				width: _w - _r * 2,
 				height: _r,
 				'background-color': _c,
 				left: _r
 			});
-			$('.bgc' + _name).css({
+			dom('.bgc' + _name).css({
 				position: 'absolute',
 				width: _w,
 				height: _h - _r * 2,
@@ -2570,7 +2571,7 @@ if (!self._mousedown) return;
 					new_vals[i] = self.map_coordinates[mapId][i] * self._sc;
 				}
 				new_vals = new_vals.join(",");
-				$(this).attr('coords', new_vals);
+				dom(this).attr('coords', new_vals);
 				mapId++;
 			});
 		},
@@ -2604,8 +2605,8 @@ if (!self._mousedown) return;
 				// 	}
 				// }
 				clearTimeout(self.auto_timer);
-				$(document).unbind('.sz' + self.id);
-				$(window).unbind('.sz' + self.id);
+				dom(document).unbind('.sz' + self.id);
+				dom(window).unbind('.sz' + self.id);
 				self.$holder.unbind('.sz');
 				self.$controls = undefined;
 			} else {
@@ -2681,7 +2682,7 @@ if (!self._mousedown) return;
 			await this.bitmapViewer.hideThumbnail();
 			await this.bitmapViewer.rotate(angle);
 			this.focusTo({
-				x: $("#detail-container").width() / 2,
+				x: dom("#detail-container").width() / 2,
 				y: item.height / 2 + 24,
 				speed: 0
 			});
@@ -2739,7 +2740,7 @@ if (!self._mousedown) return;
 			const thumbnailURL = getThumbnailUrl(image);
 			
 			if (self.bitmapViewer.isSupportFormat(image.ext)) {
-				$("#detail-image").css("opacity", 1);
+				dom("#detail-image").css("opacity", 1);
 
 				// 已知動畫圖片直接使用 img 標籤，跳過 worker 避免延遲導致動畫重播
 				if (image.animated) {
@@ -2749,8 +2750,8 @@ if (!self._mousedown) return;
 					$rootScope.supportRotate = false;
 					syncDetailFromScope();
 					self.bitmapViewer.clear();
-					if ($("#detail-image").attr("src") !== rawURL) {
-						$("#detail-image").attr("src", rawURL);
+					if (dom("#detail-image").attr("src") !== rawURL) {
+						dom("#detail-image").attr("src", rawURL);
 					}
 					scopeEvalAsync();
 					self.Animate(true);
@@ -2769,17 +2770,17 @@ if (!self._mousedown) return;
 								$rootScope.supportRotate = false;
 								syncDetailFromScope();
 								self.bitmapViewer.clear();
-								if ($("#detail-image").attr("src") !== rawURL) {
-									$("#detail-image").attr("src", rawURL);
+								if (dom("#detail-image").attr("src") !== rawURL) {
+									dom("#detail-image").attr("src", rawURL);
 								}
-								$("#detail-image").css("opacity", 1);
+								dom("#detail-image").css("opacity", 1);
 							}
 							else {
 								$rootScope.supportCrop = true;
 								syncDetailFromScope();
 								$rootScope.supportRotate = true;
 								syncDetailFromScope();
-								$("#detail-image").attr("src", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC");
+								dom("#detail-image").attr("src", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC");
 							}
 							scopeEvalAsync();
 							self.Animate(true);
@@ -3006,7 +3007,7 @@ if (!self._mousedown) return;
 				var total = loc.length;
 
 				for (var i=0; i<total; i++) {
-					var $loc = $(loc[i]);
+					var $loc = dom(loc[i]);
 					this.$loc_cont.append($loc);
 					this.setLocation($loc);
 				}
@@ -3021,7 +3022,7 @@ if (!self._mousedown) return;
 			if (this.$loc_cont){
 				var total = loc.length;
 				for (var i=0; i<total; i++) {
-					this.setLocation( loc[i] instanceof jQuery ? loc[i] : $('#'+loc[i]));
+					this.setLocation( loc[i] instanceof jQuery ? loc[i] : dom('#'+loc[i]));
 				}
 				if (total>0) {
 					this.updateLocations(this._x, this._y, this._sc, this.locations);
@@ -3065,7 +3066,7 @@ if (!self._mousedown) return;
 			for (var i=0; i<self.locations.length; i++) {
 				var exists = false;
 				locs.each(function () {
-					if (self.locations[i].ob[0] == $(this)[0]) {
+					if (self.locations[i].ob[0] == dom(this)[0]) {
 						exists = true;
 					}
 				});
@@ -3079,13 +3080,13 @@ if (!self._mousedown) return;
 			locs.each(function () {
 				var exists = false;
 				for (var i=0; i<self.locations.length; i++) {
-					if (self.locations[i].ob[0] == $(this)[0]) {
+					if (self.locations[i].ob[0] == dom(this)[0]) {
 						exists = true;
 						break;
 					}
 				}
 				if (!exists) {
-					self.setLocation($(this));
+					self.setLocation(dom(this));
 				}
 
 			});
@@ -3132,7 +3133,7 @@ if (!self._mousedown) return;
 		const elem = document.getElementById('detail-container');
 		if (!elem) return instance;
 		if (!instance) {
-			instance = new Zoomer((window as any).$(elem), params);
+			instance = new Zoomer(dom(elem), params);
 		}
 		return instance;
 	}

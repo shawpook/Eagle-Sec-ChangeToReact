@@ -17,6 +17,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { machineryChangeMetaItems, machineryCurrentIndex, machineryOnZoomRatioChanged, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { onSelectedChanged } from './selectionNotify';
 
 let done = false;
 
@@ -78,8 +79,7 @@ export function takeoverSelectionViewDomain(): void {
       }
     });
   };
-  s0.$watchCollection("selected", function (newValue: any, oldValue: any) {
-    const s: any = getBodyScope();
+  onSelectedChanged(function (s: any, oldValue: any) {
     if (!s) return;
 
     s.selectedMappings = {};
@@ -133,8 +133,7 @@ export function takeoverSelectionViewDomain(): void {
 
   // ── darwin quicklook watch（34265；平台守卫内注册，与 bundle 一致）──
   if (w.process.platform == 'darwin') {
-    s0.$watchCollection("selected", w.debounce(function () {
-      const s: any = getBodyScope();
+    onSelectedChanged(w.debounce(function (s: any) {
       if (!s) return;
       // 如果当前是预览视窗开启状态，切换内容时要自动在开启预览视窗
       if (s.selected.length === 1 && s.isPreviewing) {

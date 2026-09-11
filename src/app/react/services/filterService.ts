@@ -1,5 +1,6 @@
 import { getBodyScope } from '../core/appCore';
-import { machineryFilterContent } from '../core/dataMachinery';
+
+import { machineryFilterContent } from '../core/filterDomain';
 /**
  * b1-9bi：筛选服务 —— filterRules 数值规则写面 + 订阅中心。
  *

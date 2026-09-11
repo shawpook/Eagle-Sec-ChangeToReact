@@ -7445,3 +7445,34 @@ selectionView 簇，随该簇搬迁；否则跨模块写 ESM 导入绑定非法�
 
 **门禁**：`bz-export-check` 无问题（2178 处）；`probe LOAD_OK`；哨兵 `SENTINEL_OK`；
 定向 `main-ui-workflow`/`txt-update`/`drag-start`/`stage7d6a` 全绿。
+
+---
+
+## D-1 / Track B / B-11 记录（2026-09-11）
+
+**目标**：`filterDomain` 域簇整体归位 → `core/filterDomain.ts`（**23 个 / 1289 行**）。
+
+**范围**：`getFilter`（核心 `$filter` 等价物）+ `filterCache`/`shimFilterInst` 私有缓存
+`machineryFilterData`/`FilterDataPart1`/`Part2` `machineryContentFilter` `machineryCalcuteFilterResult`
+`machineryCalcuteFilterBadge` `machineryCalculateFilterCounts` `calculateFilterCountsTimeout`
+`machineryExistInSmartFilter` `machineryIsMatchCondition` `getMatchFunctionTable` `FILTER_ID_MAP`
+`machineryColorFilter`/`GrayColorFilter` `machineryFilterContent` `machineryUpdateFilterCounts`
+`machineryOpenFilter` `machineryToggleFilterByType` `machinerySearchInAll` `machineryFocusSeach`。
+
+**刻意排除**：`semanticSearchController`（私有 `let`，写方 `machineryFilterDataPart3` 属阻塞簇，
+跨模块写导入绑定非法——与 B-10 的 `imageSearchController` 同类）。`machineryFilterDataPart3`/
+`machinerySearchFilter`/`getToggleFilterByTypeFn` 因私有依赖暂留。
+
+**新增检查工具**：`tests-tmp/bz-state-check.py`（manifest 声明是否写入未随迁的模块级 let/var）。
+
+**踩坑**：`getFilter` 是全局依赖名，dataMachinery 不再导出后，8 个文件的
+`from '../core/dataMachinery'` 导入失配 → 新增 `bz-repoint-getfilter.py` 统一改道 filterDomain
+（保留 `as machineryGetFilter` 别名）；`libraryDomain`/`miscDomain` 自带的本地 `getFilter`/
+`filterCache` 重复实现被脚本误加导入（TS2459），已剔除。
+
+**核数**：`dataMachinery.ts` **7418 → 6129 行**（-1289）；顶层声明 **155 → 132**。
+`tsc` **585 → 512**（-73：搬迁后一批未声明全局转显式 import/declare，净修）。
+
+**门禁**：`bz-export-check` 无问题（2202 处）；`probe LOAD_OK`；哨兵 `SENTINEL_OK`；
+定向 `stage7a`/`ui-interactions`/`main-ui-workflow` 全绿（main-ui-workflow 首跑 inspector
+超时属已知 flake，复跑通过）。

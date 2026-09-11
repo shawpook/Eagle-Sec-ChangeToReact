@@ -1,6 +1,7 @@
 import { getBodyScope } from '../core/appCore';
 
 import { machineryCalculateImageBinding } from '../core/itemDomain';
+import { getFilter } from '../core/filterDomain';
 /**
  * b1-9bb：网格索引绑定服务 —— calculateImageBinding 热点收编。
  *

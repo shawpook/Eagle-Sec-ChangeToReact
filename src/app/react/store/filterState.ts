@@ -3,6 +3,7 @@ import { useBodyState } from './bodyState';
 import { useListState } from './listState';
 import { getBodyScope } from '../core/appCore';
 
+import { machineryFilterContent } from '../core/filterDomain';
 /**
  * 阶段3b：筛选面板状态 —— 快照自 EagleController scope + eagle.filter（bundle:312-606 ItemFilter）。
  * filterRules 的变更由各 item 的 click 序列产生（改规则 → page=1 → filterContent → digest → 深比较触发同步）。

@@ -31,11 +31,12 @@ import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { glRemoveitemsChannel } from '../global/bus';
-import { machineryContentFilter, machineryFilterData } from '../core/dataMachinery';
+
 import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';
 
 import { machinerySmartZoom } from '../services/viewOpsService';
 import { machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
+import { machineryContentFilter, machineryFilterData } from './filterDomain';
 declare const Buffer: any;
 
 let installed = false;

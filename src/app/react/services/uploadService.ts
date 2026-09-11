@@ -6,11 +6,12 @@
 import { getBodyScope } from '../core/appCore';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncUploadFromScope } from '../store/uploadState';
-import { getFilter } from '../core/dataMachinery';
+
 import { q, findEl, removeClass, setHtmlEl, setWidthEl } from '../utils/domQuery';
 
 
 import { machineryHideUploadQueue, machineryShowUploadQueue } from '../core/itemDomain';
+import { getFilter } from '../core/filterDomain';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };

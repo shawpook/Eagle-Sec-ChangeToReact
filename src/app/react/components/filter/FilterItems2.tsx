@@ -10,11 +10,12 @@ import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryFilterContent, machineryReload } from '../../core/dataMachinery';
+import { machineryReload } from '../../core/dataMachinery';
 import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
+import { machineryFilterContent } from '../../core/filterDomain';
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
 const num0 = (value: number | undefined | null): string => {

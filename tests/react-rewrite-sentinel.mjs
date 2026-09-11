@@ -111,6 +111,47 @@ for (const tag of retiredVendorTags) {
   if (indexHtml.includes(`src="js/vendors/${tag}"`)) failures.push(`retired vendor script present in index.html: ${tag}`);
 }
 
+// ── b1-9bz-C 永久禁项：主窗口 scope 面 digest / 事件调用清零 ──
+// C-2 把 $broadcast/$on 迁到 eagleBus，C-3 把 $evalAsync/$apply 改名为 scopeEvalAsync，
+// C-4 把 $watch/$watchCollection 改为各域自建轮询。此后主窗口不得再出现任何
+// `X.$xxx()` 形态的调用（三窗口/子窗口例外：其 controllerScope 是各自的普通对象或
+// 主窗口 scope 的跨窗口引用，见 PROGRESS b1-9bz-C-3/C-5 节）。
+const scopedOut = (file) => /[\\/]viewers[\\/]|[\\/]global[\\/]scopeShim\.ts$|[\\/]preview-window[\\/]|[\\/]collect-window[\\/]|[\\/]preferences[\\/]/.test(file);
+const cForbidden = [
+  ['scope 面 $evalAsync', /\.\$evalAsync\s*\(/],
+  ['scope 面 $apply', /\.\$apply\s*\(/],
+  ['scope 面 $watch', /\.\$watch\s*\(/],
+  ['scope 面 $watchCollection', /\.\$watchCollection\s*\(/],
+  ['scope 面 $broadcast', /\.\$broadcast\s*\(/],
+  ['scope 面 $on', /\.\$on\s*\(/],
+];
+// 已知遗留（行级白名单，均需在 C-6 后续批次处置，见 PROGRESS b1-9bz-C-6 节）：
+// 1) appCore.scopeApply 内部的 scope.$apply —— 直调化会改变失败路径语义（C-3 实测），
+//    待 C-6 删 scopeShim 时随 scopeApply 一起处置；
+// 2) gridDirectives 的 scope.$on('$destroy') —— Angular 生命周期残留，无发送方；
+// 3) FilterItemShell / Sidebar 的**动态事件名** $on（eventName / autoFocusEvent 变量），
+//    非静态频道，无法用 defineChannel 迁移。
+const cAllowed = [
+  /scope\.\$apply\(/,                 // 1
+  /\$on\('\$\w+',/,                    // 2（'$destroy' 等 Angular 内部事件名）
+  /\$on\(\s*(eventName|autoFocusEvent)\b/, // 3
+];
+for (const [label, re] of cForbidden) {
+  for (const { file, text } of contents) {
+    if (scopedOut(file)) continue;
+    for (const line of text.split('\n')) {
+      const m = line.match(re);
+      if (!m) continue;
+      const trimmed = line.trim();
+      // 块注释行（JSDoc）与行注释后的内容均不计入
+      if (trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+      if (line.slice(0, m.index).indexOf('//') !== -1) continue;
+      if (cAllowed.some((ok) => ok.test(line))) continue;
+      failures.push(`C-6 禁项: ${label} @ ${path.relative(projectRoot, file)}: ${trimmed.slice(0, 70)}`);
+    }
+  }
+}
+
 if (!baseline) {
   fs.writeFileSync(baselinePath, JSON.stringify({ generated: 'b1-9ba', counts }, null, 2) + '\n');
   console.log('baseline missing — seeded tests/react-rewrite-sentinel-baseline.json (commit it)');

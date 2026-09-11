@@ -33,7 +33,7 @@ import { getBodyScope } from '../core/appCore';
 import { checkDiskSpace, exportFolder } from './folderCoreService';
 import { select } from './selectionService';
 import { addImagesToFolder } from './folderCoreService';
-import { cleanAllErrorChannel, openAddFolderModalChannel } from '../global/bus';
+import { cleanAllErrorChannel, glRemoveitemsChannel, openAddFolderModalChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
@@ -224,7 +224,7 @@ export function addToLastUsedFolder(...args: any[]) {
             addImagesToFolder(s.selected, folder);
             if (s.viewMode === 'unfiled') {
                 var itemElements = machineryGetSelectedItemElements(s);
-                s.$root.$broadcast("gl:removeItems", itemElements);
+                glRemoveitemsChannel.emit(itemElements);
                 // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
                 s.lastIndex = machineryGetSelection(s).start;
                 var next = s.allData[s.lastIndex + s.selected.length];
@@ -387,7 +387,7 @@ export function removeFromFolder(...args: any[]) {
             ScrollbarSaver.saveScrollPosition();
 
             var itemElements = machineryGetSelectedItemElements(s);
-            s.$root.$broadcast("gl:removeItems", itemElements);
+            glRemoveitemsChannel.emit(itemElements);
         }
 
         if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {

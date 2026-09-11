@@ -88,7 +88,7 @@ import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
-import { autoscrollChannel, calculateImageBindingChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
+import { autoscrollChannel, calculateImageBindingChannel, glRemoveitemsChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let pinyinCache: Record<string, string> = {};
@@ -4688,7 +4688,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
           w.ScrollbarSaver.saveScrollPosition();
 
           var itemElements = machineryGetSelectedItemElements(s);
-          s.$root.$broadcast("gl:removeItems", itemElements);
+          glRemoveitemsChannel.emit(itemElements);
 
           s.lastSelectedIndex = machineryCurrentIndex(s) - 1;
           machineryAutoScroll(s);
@@ -5922,7 +5922,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
             if (w.$bodyScope.viewMode === 'unfiled') {
-              s.$root.$broadcast("gl:removeItems", w.$bodyScope.getSelectedItemElements());
+              glRemoveitemsChannel.emit(w.$bodyScope.getSelectedItemElements());
             }
 
             w.$bodyScope.calculateImageBinding({ ignoreSort: true }, () => {
@@ -7639,7 +7639,7 @@ export function machineryRemovePermanently(s: any): void {
   w.ayncsImagesRemove(images);
 
   var itemElements = machineryGetSelectedItemElements(s);
-  s.$root.$broadcast("gl:removeItems", itemElements);
+  glRemoveitemsChannel.emit(itemElements);
   s.selected = [];
   syncInspectorFromScope();
   machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
@@ -8158,7 +8158,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   w.ScrollbarSaver.saveScrollPosition();
 
   var itemElements = machineryGetSelectedItemElements(s);
-  s.$root.$broadcast("gl:removeItems", itemElements);
+  glRemoveitemsChannel.emit(itemElements);
 
   machineryAutoScroll(s, undefined);
 

@@ -30,6 +30,7 @@ import { installFlatpickr } from './flatpickrLite';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { glRemoveitemsChannel } from '../global/bus';
 
 declare const Buffer: any;
 
@@ -412,7 +413,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
         syncListFromScope();
 
         if (hiddenElements.length > 0) {
-          bs.$broadcast("gl:removeItems", hiddenElements);
+          glRemoveitemsChannel.emit(hiddenElements);
           if (bs.currentSmartFolder) {
             bs.currentSmartFolder.imageCount = bs.smartFolderCount(bs.currentSmartFolder);
             scopeEvalAsync();

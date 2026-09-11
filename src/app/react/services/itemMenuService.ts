@@ -28,7 +28,7 @@ import { addToFolders, addToLastUsedFolder, copyTags, exportSelectedAsEaglepack,
 import { newFolderWidthSelection } from './folderCoreService';
 import { activateFonts, changeFontDefaultLang, deactivateFonts, isFontActivate, renameFontsWithFullName } from './fontTagService';
 import { regenerateThumbnail, replaceFile } from './imageOpsService';
-import { addToLibraryChannel, webpConvertStartChannel } from '../global/bus';
+import { addToLibraryChannel, glRemoveitemsChannel, webpConvertStartChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
@@ -234,7 +234,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             machineryRebindRefresh(s, true);
                         });
                         const itemElements = machineryGetSelectedItemElements(s);
-                        s.$root.$broadcast("gl:removeItems", itemElements);
+                        glRemoveitemsChannel.emit(itemElements);
                         ayncsImagesChange(items);
                         try { electronLog && electronLog.info(`[app] Restore ${items.length} files from trash`); } catch (err) {};
                         scopeEvalAsync();

@@ -1,4 +1,5 @@
 import { getBodyScope } from '../../core/appCore';
+import { glRemoveitemsChannel, glResetChannel, glScrolltotopChannel } from '../../global/bus';
 /**
  * b1-9be2：内容网格引擎 —— @egjs/react-infinitegrid v4 renderer 交换（v3 vanilla 退役）。
  *
@@ -234,11 +235,11 @@ export function installBoxGrid(): () => void {
   const attach = () => {
     const scope = getBodyScope();
     if (!scope) return false;
-    scopeEventsDereg.push(scope.$on('gl:reset', (_e: unknown, nextItems: any[], cursor?: number) => {
+    scopeEventsDereg.push(glResetChannel.on((_e: unknown, nextItems: any[], cursor?: number) => {
       applyReset(nextItems, cursor);
     }));
-    scopeEventsDereg.push(scope.$on('gl:scrollToTop', () => applyReset(state.items, state.startCursor)));
-    scopeEventsDereg.push(scope.$on('gl:removeItems', (_e: unknown, itemElements: any[]) => {
+    scopeEventsDereg.push(glScrolltotopChannel.on(() => applyReset(state.items, state.startCursor)));
+    scopeEventsDereg.push(glRemoveitemsChannel.on((_e: unknown, itemElements: any[]) => {
       (itemElements || []).forEach((item) => facadeRemove(item));
     }));
     return true;

@@ -13,7 +13,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
-import { calculateImageBindingChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
+import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
 
 /**
@@ -178,7 +178,7 @@ export function hiddenByCurrentFilter(items: any[]) {
         });
 
         if (hiddenElements.length > 0) {
-          getBodyScope().$broadcast('gl:removeItems', hiddenElements);
+          glRemoveitemsChannel.emit(hiddenElements);
           if (getBodyScope().currentSmartFolder) {
             getBodyScope().currentSmartFolder.imageCount = getBodyScope().smartFolderCount(getBodyScope().currentSmartFolder);
             scopeEvalAsync();
@@ -1136,7 +1136,7 @@ export function AddToFolderModal() {
 
     if (body.viewMode === 'unfiled') {
       const itemElements = body.getSelectedItemElements();
-      rootScope.$broadcast('gl:removeItems', itemElements);
+      glRemoveitemsChannel.emit(itemElements);
     } else {
       if (w.ig && typeof w.ig.layout === 'function') w.ig.layout(false);
     }

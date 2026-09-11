@@ -20,6 +20,7 @@ import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncBodyFromScope } from '../store/bodyState';
 import { getBodyScope } from '../core/appCore';
 import { excludeWithTag } from './batchOpsService';
+import { rebindRefreshcontainsizeChannel } from '../global/bus';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -384,7 +385,7 @@ export function onTagSidebarResize(...args: any[]) {
                 syncBodyFromScope();
                 syncSidebarFromScope();
                 syncTagManagerFromScope();
-                s.$root.$broadcast('$$rebind::refreshContainSize');
+                rebindRefreshcontainsizeChannel.emit();
                 // machineryUpdateSliderPosition(s);
                 clearTimeout(__lv_onTagSidebarResizeTimeout);
                 __lv_onTagSidebarResizeTimeout = setTimeout(function () {

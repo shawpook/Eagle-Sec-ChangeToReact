@@ -26,7 +26,7 @@ import { debounce } from '../utils/func';
 import { getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
-import { openDuplicateChannel } from '../global/bus';
+import { glRemoveitemsChannel, openDuplicateChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 declare const IPCHelper: any;
 declare const remote: any;
@@ -365,7 +365,7 @@ export function takeoverItemDomain(): void {
 
     const item = $("#box-" + newImage.id)[0];
     if (item && newImage.isDeleted) {
-      s.$root.$broadcast("gl:removeItems", [item]);
+      glRemoveitemsChannel.emit([item]);
     }
     else {
       machineryUpdateItemView(s, newImage);
@@ -395,7 +395,7 @@ export function takeoverItemDomain(): void {
 
     const item = $("#box-" + newImage.id)[0];
     if (item && newImage.isDeleted) {
-      s.$root.$broadcast("gl:removeItems", [item]);
+      glRemoveitemsChannel.emit([item]);
     }
     else {
       machineryUpdateItemView(s, newImage);

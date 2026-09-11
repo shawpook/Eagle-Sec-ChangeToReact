@@ -148,3 +148,9 @@ export const closeTagsPopupChannel = defineChannel<any>('CLOSE-TAGS-POPUP');
 export const rebindRefreshChannel = defineChannel<any>('REBIND_REFRESH');
 export const calculateImageBindingChannel = defineChannel<any>('CALCULATE_IMAGE_BINDING');
 export const updateSelectionChannel = defineChannel<any>('UPDATE_SELECTION');
+
+// ── b1-9bz-C-2 频道迁移 ──
+export const glResetChannel = defineChannel<any>('gl:reset');
+export const glRemoveitemsChannel = defineChannel<any>('gl:removeItems');
+export const glScrolltotopChannel = defineChannel<any>('gl:scrollToTop');
+export const rebindRefreshcontainsizeChannel = defineChannel<any>('$$rebind::refreshContainSize');

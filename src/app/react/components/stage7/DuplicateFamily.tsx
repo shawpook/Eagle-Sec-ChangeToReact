@@ -15,7 +15,7 @@ import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
-import { calculateImageBindingChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
+import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
 
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
@@ -1676,7 +1676,7 @@ export function DuplicateModal() {
     const rootScopeB = getRootScope();
     calculateImageBindingChannel.emit();
     rebindRefreshChannel.emit(false);
-    rootScopeB?.$broadcast('gl:reset', rootScope.allData);
+    glResetChannel.emit(rootScope.allData);
     close();
   };
 

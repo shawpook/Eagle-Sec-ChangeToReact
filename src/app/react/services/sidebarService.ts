@@ -15,7 +15,7 @@ import { machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetCh
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
-import { contextMenuOpenChannel } from '../global/bus';
+import { contextMenuOpenChannel, rebindRefreshcontainsizeChannel } from '../global/bus';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { openFolder, openSmartFolder } from './folderCoreService';
@@ -458,7 +458,7 @@ export function onSidebarResize(...args: any[]) {
             syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
-            s.$root.$broadcast('$$rebind::refreshContainSize');
+            rebindRefreshcontainsizeChannel.emit();
             machineryUpdateSliderPosition(s);
             clearTimeout(__lv_onSidebarResizeTimeout);
             __lv_onSidebarResizeTimeout = setTimeout(function () {

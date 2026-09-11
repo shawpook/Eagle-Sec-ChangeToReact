@@ -54,15 +54,16 @@ import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addCla
 import { machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight } from '../services/gridService';
 import { machinerySetViewMode, machineryZoom, machineryCheckOperationSafety2 } from '../services/viewOpsService';
 import { callExternal } from './externalSupply';
-import { machineryAutoScroll, machineryLeaveDetailMode, machineryResetPage, getTimeout } from './dataMachinery';
+import { machineryAutoScroll, machineryResetPage, getTimeout } from './dataMachinery';
 import { setScrollTop, clickEl, hide } from '../utils/domQuery';
 import { glRemoveitemsChannel } from '../global/bus';
 import { debounce } from '../utils/func';
 import { machineryCalculateImageBinding, machineryFilterSidebarItem, machineryFindDupclipate, machineryForceFitImageSize, machineryRebindRefresh, machineryRenameImages, rebindRefreshLazyTimeout } from './itemDomain';
-import { machineryExistInSmartFilter, machineryUpdateFilterCounts } from './filterDomain';
+import { getFilter, machineryExistInSmartFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryEditTag, machineryEnableSubFolderNameEditable, machineryOpenAllTags, machineryOpenUntagged, machineryRenameTagGroup } from './tagManagerDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom } from '../services/folderCoreService';
+import { machineryLeaveDetailMode } from './miscDomain';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -79,17 +80,9 @@ let domainLazyLoadManager: any = null;
 let domainUpdateTimer: any = null;
 let domainHeartbeatInterval: any = null;
 
-let filterCache: any = null;
-function getFilter(): any {
-  if (filterCache) return filterCache;
-  try {
-    const ang = (window as any).angular;
-    if (ang && ang.element && ang.element(document).injector) {
-      filterCache = ang.element(document).injector().get('$filter');
-    }
-  } catch (err) { /* noop */ }
-  return filterCache;
-}
+// b1-9bz-D-1 B-15：删除本域旧的无 shim 兜底 getFilter 副本，统一用 canonic 版
+// （filterDomain.getFilter 含 angular + shim 双路径；B-9 随迁函数大量 getFilter()(...) 调用）
+
 
 /* ayncsUpdateSmartFoldersCount（bundle 26291 逐字；controller 闭包内函数 → 域内移植） */
 function domainAyncsUpdateSmartFoldersCount(s: any, smartFolders: any, callback: any): void {

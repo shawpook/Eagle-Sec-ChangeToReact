@@ -41,9 +41,10 @@ import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize } from
 import { getFilter } from './filterDomain';
 import { machineryRebindRefresh } from './itemDomain';
 import { machineryGetAllChildFolder, machinerySetLastFolder } from './libraryDomain';
-import { machineryLeaveDetailMode, machineryResetPage } from './dataMachinery';
+import { machineryResetPage } from './dataMachinery';
 import { machinerySelectFolder, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryOpenAll } from '../services/folderCoreService';
+import { machineryLeaveDetailMode } from './miscDomain';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 

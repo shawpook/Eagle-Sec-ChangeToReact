@@ -7,7 +7,7 @@ import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../ser
 import { syncDetailFromScope, useDetailState } from '../../store/detailState';
 import { useBodyState } from '../../store/bodyState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/dataMachinery';
+
 import { makeResizable } from '../interactions/resizable';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
@@ -16,6 +16,7 @@ import { scopeEvalAsync } from '../../global/scopeShim';
 import { q, qa, widthOf, heightOf, offsetOf, setCssEl, cssSet, addClass, removeClass, onEl, offEl, offAllEl, createEl, setHtml, show, hide } from '../../utils/domQuery';
 
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
+import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）

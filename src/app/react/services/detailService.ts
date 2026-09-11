@@ -8,7 +8,7 @@
  * detailHooks 的 updateZoomRatio ×1 改直调。
  */
 import { detailZoom } from '../core/smoothZoomEngine';
-import { machineryEnterDetailMode, machineryLeaveDetailMode } from '../core/dataMachinery';
+
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
 import { openFolder } from './folderCoreService';
@@ -17,6 +17,7 @@ import { q, qa, widthOf, heightOf, addClass, removeClass, cssSet } from '../util
 import { isNumeric } from '../utils/lang';
 import { machineryGetRatioExp, machineryGetRatioNonExp, machineryOnZoomRatioChanged } from './viewOpsService';
 import { machineryRenameCurrentFolder } from '../core/libraryDomain';
+import { machineryEnterDetailMode, machineryLeaveDetailMode } from '../core/miscDomain';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;

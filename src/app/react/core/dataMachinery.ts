@@ -104,6 +104,7 @@ import { machineryGetSelectedItemElements, machineryMultipleSelectDown, machiner
 import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openAllTimeout } from '../services/folderCoreService';
 import { machineryChangeStar, machineryChangeTo1Star, machineryChangeTo2Star, machineryChangeTo3Star, machineryChangeTo4Star, machineryChangeTo5Star, machineryRemoveStar } from '../services/imageOpsService';
 import { machineryOnDropContainer } from '../services/uploadService';
+import { cgNotifyServiceCloseAll, getLanguageBCP, machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryOpenPluginPanel, machineryQuicklook, machineryToggleDetailMode, machineryToggleSlideshow } from './miscDomain';
 let timeoutCache: any = null;
 let shimTimeoutInst: any = null;
 // b1-9k 导出：tagManagerDomain 的裸 getTimeout（1307/1379/1654/1670）此前是死标识符
@@ -143,15 +144,6 @@ export function getTimeout(): any {
   return timeoutCache;
 }
 
-/* languageBCP 重算（bundle 20053 逐字；初值 "en"） */
-function getLanguageBCP(s: any): string {
-  try {
-    const lang = s.language ?? s.$root?.language ?? 'en';
-    return String(lang).replace('_', '-');
-  } catch (err) {
-    return 'en';
-  }
-}
 
 
 
@@ -345,14 +337,6 @@ export function machineryReload(s: any): any {
 /* updateZoomRatio（bundle 31391-31418 逐字；smoothZoom = vendor jQuery 插件；
    updateZoomRatioTimeout 域内自管） */
 
-/* toggleSlideshow（bundle 23816-23823 逐字；enter/leaveSlideshowMode 经 scope 解析） */
-export function machineryToggleSlideshow(s: any): void {
-  if (!s.isSlideshowMode) {
-    machineryEnterSlideshowMode(s);
-  } else {
-    machineryLeaveSlideshowMode(s);
-  }
-}
 
 
 
@@ -364,21 +348,6 @@ export function machineryToggleSlideshow(s: any): void {
 /* checkTouchIDSupport（bundle 29002-29010 逐字；systemPreferences 经 @electron/remote。
    原码 quirk 逐字保留：非 darwin 平台不写 canUseTouchID（无 else 分支）。bundle 29014/29109
    调用点与 React lockState 流共用本实现） */
-export function machineryCheckTouchIDSupport(s: any): void {
-  const w = window as any;
-  let systemPreferences: any = null;
-  try {
-    systemPreferences = w.require && w.require('@electron/remote').systemPreferences;
-  } catch (err) { /* noop */ }
-  if (w.process && w.process.platform === 'darwin' && systemPreferences && systemPreferences.canPromptTouchID) {
-    try {
-      s.canUseTouchID = systemPreferences.canPromptTouchID();
-    } catch (err) {
-      console.error('檢查 Touch ID 支援時發生錯誤:', err);
-      s.canUseTouchID = false;
-    }
-  }
-}
 
 /* relayout（bundle 27329-27364 逐字；be2 起 ig = window.ig facade（v4 引擎），布局选项
    经 setLayout(label, opts) 通知 facade——v4 sizeRange/gap 由 BoxList 渲染时从 scope 派生） */
@@ -818,170 +787,15 @@ export function machineryResetPage(s: any): void {
 
 /* ── c16a：详情模式进出 ──────────────────────────────────────────────── */
 
-// ── c16a 域内自管（原 controller 闭包 var：zoomInitTimeout，31586）──
-let zoomInitTimeout: any = null;
 
 /* enterDetailMode（bundle 31587-31664 逐字；smoothZoom = vendor jQuery 插件；
    lastZoom/preloadImage/addToRecentFile 经 scope 解析；removePlayingAudios/HoverPreview
    经 window（bundle 顶层——b1 后随 hover-preview 字节提取片供给）；initDetailMode/
    smoothZoomDone 为 scope 字段） */
-export function machineryEnterDetailMode(s: any, $event: any, image: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-  cssSet("#detail-container", { opacity: 0 });
-
-  var duration = 100;
-  if (s.isInlineMode) {
-    duration = 50;
-  }
-
-  if (s.selected.length <= 0) return;
-  image = image || s.selected[s.selected.length - 1];
-  s.isDetailMode = true;
-  s.current = image;
-  syncDetailFromScope();
-  syncInspectorFromScope();
-  s.selected = [image];
-  syncInspectorFromScope();
-  s.showDetailImage = true;
-  syncDetailFromScope();
-  // 移除 $scope.zoom(image) — 此時 Angular 尚未跑 digest，
-  // body 還沒有 is-detail-mode class，$(".content-panel").width() 讀到的是列表模式尺寸，
-  // 算出的 zoom 一定是錯的。正確的 zoom 會在下方 $timeout 回調中執行。
-  w.eagle.inspector.activeTab = "ITEM";
-  s.smoothZoomDone = false;
-  syncDetailFromScope();
-  // bundle 依赖 Angular digest：ng-click 处理器返回后本轮 digest 立即把 body 的
-  // is-detail-mode 落到 DOM，100ms 后的 smoothZoom 初始化才量得到详情面板尺寸。
-  // shim 世界的 body 类走 watcher flush → store → React effect，若不在此显式 flush，
-  // 初始化会赶在类名之前跑，#bitmap-viewer 高度为 0 → BitmapViewer 不建 canvas、
-  // 无瓦片 → 详情原图交付闸门超时（m1 detail original delivery）。
-  scopeEvalAsync();
-
-  $timeout.cancel(zoomInitTimeout);
-  zoomInitTimeout = $timeout(function () {
-    if (!s.initDetailMode) {
-      s.initDetailMode = true;
-      syncDetailFromScope();
-      ensureDetailZoom({
-        width: '100%',
-        height: '100%',
-        responsive: true,
-        mouse_WHEEL: true,
-        mouse_DOUBLE_CLICK: false,
-        zoom_BUTTONS_SHOW: false,
-        pan_BUTTONS_SHOW: false,
-        background_COLOR: 'transparent',
-        border_SIZE: 0,
-        animation_SMOOTHNESS: 0,
-        animation_SPEED_ZOOM: 0,
-        animation_SPEED_PAN: 0,
-        zoom_MAX: 800,
-        zoom_MIN: 5,
-        on_IMAGE_LOAD: function () {
-          $timeout(function () {
-            window.dispatchEvent(new Event("orientationchange"));
-            s.showDetailImage = true;
-            syncDetailFromScope();
-            s.smoothZoomDone = true;
-            syncDetailFromScope();
-            if (!machineryLastZoom(s)) {
-              machineryZoom(s, image);
-            }
-            detailZoom()?.updateNavigator( s.current);
-
-            cssSet("#detail-container", { opacity: 1 });
-            show(".smooth_zoom_preloader");
-
-            // 如果用户没有设置过 mousewheel 偏好
-            if (!s.$root.preferences.habits.scrollBehaviorTour) {
-              q(".smooth_zoom_preloader")?.addEventListener("wheel", function () {
-                openMousewheelPreferenceWindowChannel.emit();
-              }, { once: true });
-            }
-          }, 100);
-        }
-      });
-    } else {
-      s.smoothZoomDone = true;
-      syncDetailFromScope();
-      detailZoom()?.updateNavigator( s.current);
-      window.dispatchEvent(new Event("orientationchange"));
-      if (!machineryLastZoom(s)) {
-        machineryZoom(s, image);
-      }
-      cssSet("#detail-container", { opacity: 1 });
-      setTimeout(function () {
-        machineryPreloadImage(s, "next");
-      }, 200);
-    }
-    machineryAddToRecentFile(s, s.current);
-    w.removePlayingAudios();
-    w.HoverPreview.hide();
-  }, duration);
-}
 
 /* leaveDetailMode（bundle 31680-31726 逐字；rememberScrollTops/rememberVideoCurrentTime/
    fadeOutDetailMode/initMousetrap 经 window/scope 解析——initMousetrap 归键盘域后续片；
    gifUpadteInterval 原码 typo 逐字保留） */
-export function machineryLeaveDetailMode(s: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-
-  s.isCropMode = false;
-  syncDetailFromScope();
-  s.usingGifPlayer = false;
-  syncDetailFromScope();
-  if (s.isDetailMode) {
-
-    machineryRememberScrollTops(s, s.current);
-
-    s.isDetailMode = false;
-    s.showDetailImage = false;
-    syncDetailFromScope();
-    s.smoothZoomDone = false;
-    syncDetailFromScope();
-    s.commentRect = undefined;
-    syncDetailFromScope();
-    // 記住上次播放位置
-    machineryRememberVideoCurrentTime(s, s.current); s.current = undefined;
-    syncDetailFromScope();
-    syncInspectorFromScope();
-    $timeout.cancel(zoomInitTimeout);
-
-    setTimeout(function () {
-      if (s.isDetailMode) return;
-      removeClass(".content-panel.detail-mode", "inline-mode open");
-      setScrollLeft(".smooth_zoom_preloader", 0);
-    }, 50);
-
-    s.isInlineMode = false;
-    machineryFadeOutDetailMode(s);
-    detailZoom()?.cleanBitmapViewer();
-    detailZoom()?.clearPreloadData();
-
-    if (s.isGifReady === true) {
-      s.isGifReady = false;
-      syncDetailFromScope();
-      delete s.gifViewer.frames;
-      s.gifViewer.frames = [];
-      syncDetailFromScope();
-      s.gifViewer.mousedownTime = 0;
-      syncDetailFromScope();
-      s.gifViewer.mousedownX = 0;
-      syncDetailFromScope();
-      s.gifViewer.mousedownY = 0;
-      syncDetailFromScope();
-      s.gifViewer.range = undefined;
-      syncDetailFromScope();
-      s.gifPlayer = undefined;
-      syncDetailFromScope();
-    }
-
-    w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s);
-    clearInterval(s.gifUpadteInterval);
-  }
-}
 
 /* ── c16c：saveFolder ────────────────────────────────────────────────── */
 
@@ -1161,147 +975,17 @@ export function machineryInitMousetrap(s: any): void {
 
 /* ── c17b：notify（cgNotify 服务等价移植）────────────────────────────── */
 
-// ── c17b 域内自管（cgNotify 闭包状态 f/g/h/l/m/n + undoTimeout 20255 邻域）──
-const cgStack: any[] = [];        // m：已附加的消息元素栈
-const cgScopes: any[] = [];       // n：scope 桩栈
-const CG_START_TOP = 10;          // f
-const CG_SPACING = 15;            // g
-let undoTimeout: any = null;
+export let undoTimeout: any = null;
 
 /* angular-notify.html 模板（bundle 16724 templateCache 逐字；ng-class/ng-style/ng-show/
    ng-click 以具体值物化） */
-function cgBuildTemplate(position: string, classes: string, centerMargin: string | null, message: string, messageTemplate: string | undefined, onClose: () => void): string {
-  const posClass = position === 'center' ? 'cg-notify-message-center' : (position === 'left' ? 'cg-notify-message-left' : (position === 'right' ? 'cg-notify-message-right' : ''));
-  const ngClass = `[${classes ? `'${classes}', ` : ''}'${posClass}']`.replace(/'/g, '"');
-  const styleAttr = centerMargin !== null ? ` style="margin-left: ${centerMargin};"` : '';
-  const messageDiv = messageTemplate !== undefined
-    ? `    <div style="display: none;">\n    </div>\n\n    <div class="cg-notify-message-template">\n    </div>`
-    : `    <div>\n        ${message}\n    </div>\n\n    <div style="display: none;" class="cg-notify-message-template">\n        \n    </div>`;
-  return `<div class="${[classes, posClass].filter(Boolean).join(' ')}"${styleAttr}>` +
-    messageDiv +
-    `    <button type="button" class="cg-notify-close">` +
-    `        <span aria-hidden="true">&times;</span>` +
-    `        <span class="cg-notify-sr-only">Close</span>` +
-    `    </button>` +
-    `</div>`;
-}
 
-/* cgNotify restack（bundle 16724 内 i() 逐字：startTop 10 / spacing 15 / closing +20） */
-function cgRestack(): void {
-  let b = CG_START_TOP;
-  for (let c = cgStack.length - 1; c >= 0; c--) {
-    const d = 10;
-    const e: any = cgStack[c];
-    const h = e.offsetHeight;
-    let i = b + h + d;
-    if (e.getAttribute('data-closing')) i += 20; else b += h + CG_SPACING;
-    e.style.top = i + 'px';
-    e.style.marginTop = '-' + (h + d) + 'px';
-    e.style.visibility = 'visible';
-  }
-}
 
 /* notify（$rootScope.notify 20157-20191 + cgNotify 服务核心 16724 等价移植。
    ng-click="closeAll();undo();" 以委托 click 复刻（undo = $rootScope.undo 桩，duration+5000
    后置空，undoTimeout 域内自管）；templateUrl '' → bundle 走 $http 缓存缺省模板，本移植直接
    物化同一模板 DOM） */
-export function machineryNotify(s: any, params: any, restoreCallbackk: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
 
-  if (!params.message) return;
-
-  const i18nUndo = getFilter()('i18n')("notify.button.undo");
-  let messageTemplate = `<span><icon class="${params.status || ''}"></icon>` + params.message;
-  if (restoreCallbackk) {
-    messageTemplate = messageTemplate + ' <a style="margin-left: 10px;" data-cg-undo="true">' + i18nUndo + '</a></span>';
-  } else {
-    messageTemplate = messageTemplate + '</span>';
-  }
-
-  cgNotifyServiceCloseAll();
-
-  $timeout(function () {
-    var duration = params.duration || 4000;
-
-    // ── cgNotify 服务核心（16724 逐字语义）──
-    const message = params.message;
-    const classes = params.classes || '';
-    const position = params.position || 'center';
-    const useTemplate = true; // $rootScope.notify 恒传 messageTemplate
-
-    const holder = document.createElement('div');
-    holder.innerHTML = cgBuildTemplate(position, classes, null, message, messageTemplate, () => { });
-    const element: any = holder.firstElementChild;
-    // undo 锚点：ng-click="closeAll();undo();" 等价委托
-    element.addEventListener('click', function (ev: any) {
-      const t = ev.target as Element;
-      if (!t || !t.closest('[data-cg-undo]')) return;
-      cgNotifyServiceCloseAll();
-      const undo = s.$root.undo;
-      if (typeof undo === 'function') undo();
-    });
-    // 关闭按钮：ng-click="$close()" 等价委托
-    element.addEventListener('click', function (ev: any) {
-      const t = ev.target as Element;
-      if (!t || !t.closest('.cg-notify-close')) return;
-      element.style.opacity = 0;
-      element.setAttribute('data-closing', 'true');
-      cgRestack();
-    });
-    // transitionend（opacity）→ remove + 出栈 + restack（bundle 16724 同语义）
-    element.addEventListener('transitionend', function (a: any) {
-      if (a.propertyName === 'opacity' || element.style.opacity === '0' || (a.originalEvent && 'opacity' === a.originalEvent.propertyName)) {
-        element.remove();
-        const mi = cgStack.indexOf(element);
-        if (mi > -1) cgStack.splice(mi, 1);
-        cgRestack();
-      }
-    });
-    // messageTemplate 注入 .cg-notify-message-template
-    const tpl = element.querySelector('.cg-notify-message-template');
-    if (tpl) {
-      const span = document.createElement('span');
-      span.innerHTML = messageTemplate;
-      while (span.firstChild) tpl.appendChild(span.firstChild);
-    }
-    document.body.appendChild(element);
-    cgStack.push(element);
-    if (position === 'center') {
-      $timeout(function () {
-        element.style.marginLeft = '-' + element.offsetWidth / 2 + 'px';
-      });
-    }
-    const closeSelf = function () {
-      element.style.opacity = 0;
-      element.setAttribute('data-closing', 'true');
-      cgRestack();
-    };
-    $timeout(function () { cgRestack(); });
-    if (params.duration !== 0 && (params.duration || 10000) > 0) {
-      $timeout(closeSelf, params.duration || 10000);
-    }
-
-    if (restoreCallbackk) {
-      s.$root.undo = restoreCallbackk;
-    } else {
-      s.$root.undo = function () { };
-    }
-    // 如果使用者超過時間沒有點擊反悔，就把 callback 移除，避免發生錯亂
-    clearTimeout(undoTimeout);
-    undoTimeout = setTimeout(function () {
-      s.$root.undo = function () { };
-    }, duration + 5000);
-
-  }, 10);
-}
-
-/* cgNotify closeAll（bundle 16724 o.closeAll 逐字：全栈 opacity 0） */
-function cgNotifyServiceCloseAll(): void {
-  for (let a = cgStack.length - 1; a >= 0; a--) {
-    cgStack[a].style.opacity = 0;
-  }
-}
 
 /* ── c18a：smartZoom/lastZoom（详情智能缩放）──────────────────────────── */
 
@@ -1357,9 +1041,6 @@ export function machineryBack(s: any): void {
 
 /* toggleDetailMode（bundle 31005-31029 逐字；saveCrop/renameCurrentFolder/openFolder
    经 scope 解析） */
-export function machineryToggleDetailMode(s: any, $event: any, isInline: any): void {
-  detailToggleDetailMode(s, $event, isInline);
-}
 
 /* ── c18e-1：选择导航（selectNext/selectPrev）────────────────────────── */
 
@@ -1394,49 +1075,6 @@ export function machineryToggleDetailMode(s: any, $event: any, isInline: any): v
 /* quicklook（bundle 33542-33580 逐字；toggleGifPlay/toggleDetailMode/pageDownHandler 经
    scope 解析；IPCHelper 为脚本级词法绑定（c17a if-absent 接装）经 window；analytics 顶层
    var（105501）/process/swal 容器经 window） */
-export function machineryQuicklook(s: any, event: any): void {
-  const w = window as any;
-  if (qa(".swal2-container").length > 0) {
-    return;
-  }
-  if (s.isCropMode) return;
-  event && event.preventDefault();
-  // if ($scope.isDetailMode && !$scope.isInlineMode && VIDEO_TYPES[$scope.current.ext]) {
-  //     $scope.toggleVideoPlay();
-  // }
-  // else if ($scope.isDetailMode && !$scope.isInlineMode && AUDIO_TYPES[$scope.current.ext]) {
-  //     $scope.toggleVideoPlay();
-  // }
-  // else
-  if (s.isDetailMode && !s.isInlineMode && (s.current.ext == 'gif')) {
-    toggleGifPlay();
-  }
-  else {
-    // 如果用户设定是预览
-    if (s.$root.preferences.habits.keyspace === "preview") {
-      if (s.selected.length > 0) {
-        addClass(".content-panel.detail-mode", "inline-mode");
-        setTimeout(function () {
-          addClass(".content-panel.detail-mode", "open");
-        }, 30);
-        machineryToggleDetailMode(s, event, true);
-        w.analytics.event('QuickLook', 'Open');
-      }
-    }
-    else if (s.$root.preferences.habits.keyspace === "preview-native") {
-      if (s.selected.length > 0) {
-        if (w.process.platform == 'darwin' && !s.isDetailMode) {
-          s.isPreviewing = !s.isPreviewing;
-          w.IPCHelper.send('quicklook', s.selected[0]);
-        }
-      }
-    }
-    // 如果用户设定是滚动页面
-    else {
-      getPageDownHandlerFn(s)(event);
-    }
-  }
-}
 
 /* copyImages（bundle 31747-31795 逐字；clipboard 为 renderer 全局（controllerFns 同款裸引）；
    ipcRenderer 统一表达式；RecentFileManager if-absent 接装经 window；notify 走 machinery 版） */
@@ -2418,20 +2056,7 @@ export function machineryEndHandler(s: any, event: any): void {
 /* ── b1-7a：小件批（注释模式/详情淡出/插件面板/存库防抖/标签群组四向/删群组）── */
 
 
-/* fadeOutDetailMode（bundle 31672-31678 逐字：selected 首盒 popdown 100ms） */
-export function machineryFadeOutDetailMode(s: any): void {
-  var $box = q(".box.selected");
-  if ($box) $box.classList.add("popdown");
-  setTimeout(function () {
-    if ($box) $box.classList.remove("popdown");
-  }, 100);
-}
 
-/* openPluginPanel（bundle 37324 逐字：OPEN_PLUGIN_PANEL 广播，含 // return 注释逐字） */
-export function machineryOpenPluginPanel(s: any, event: any): void {
-  // return;
-  openPluginPanelChannel.emit();
-}
 
 /* saveFolderDebounce（bundle 42390-42396 逐字：isLibrarySaving 指示 + saveFolder 防抖 1s；
    timeout 存 scope 字段（bundle 原样 $scope.saveFolderDebounceTimeout）） */
@@ -2452,65 +2077,11 @@ export function machineryOpenPluginPanel(s: any, event: any): void {
 
 /* enterSlideshowMode（bundle 23824-23839 逐字：**!selected.length === 0 双重否定怪癖
    逐字保留**（实际效果为空选才能进入）+ 全屏 + enterDetailMode + 700/300ms 双层延迟缩放） */
-export function machineryEnterSlideshowMode(s: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-  if (s.isSlideshowMode) return;
-  const duration = (w.process.platform === 'darwin') ? 300 : 100;
-  if ((!s.selected.length as any) === 0) return;
-  w.currentWindow.setFullScreen(true);
-  machineryEnterDetailMode(s, null, s.selected[0]);
-  s.isSlideshowMode = true;
-  $timeout(function () {
-    window.dispatchEvent(new Event("orientationchange"));
-    window.dispatchEvent(new Event("resize"));
-    $timeout(function () {
-      machineryZoom(s, undefined);
-    }, duration);
-  }, 700);
-  w.electronLog && w.electronLog.info(`[app] Enter slideshow mode.`);
-}
 
-/* leaveSlideshowMode（bundle 23841-23856 逐字：**setFullScreen(false) 双写——bundle 原样**） */
-export function machineryLeaveSlideshowMode(s: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-  const duration = (w.process.platform === 'darwin') ? 300 : 100;
-  w.currentWindow.setFullScreen(false);
-  s.isSlideshowMode = false;
-  w.currentWindow.setFullScreen(false);
-  $timeout(function () {
-    window.dispatchEvent(new Event("orientationchange"));
-    window.dispatchEvent(new Event("resize"));
-    $timeout(function () {
-      machineryZoom(s, undefined);
-    }, duration);
-  }, 700);
-  w.electronLog && w.electronLog.info(`[app] Leave slideshow mode.`);
-}
 
 /* rgbToHex（bundle 28976-28981 逐字）—— D-1 B-2 已归位 utils/color.ts */
 
-/* lockApp（bundle 29016-29023 逐字）+ focusAppUnlockPassword（29025-29034 逐字） */
-export function machineryLockApp(s: any): void {
-  const w = window as any;
-  s.$root.isAppLocked = true;
-  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
-  setTimeout(function () {
-    machineryFocusAppUnlockPassword(s);
-  }, 100);
-}
 
-export function machineryFocusAppUnlockPassword(s: any): void {
-  setTimeout(() => {
-    focusEl("#app-lock-password-input");
-  }, 24);
-  q("#app-lock-password-input")?.addEventListener("blur", () => {
-    setTimeout(() => {
-      focusEl("#app-lock-password-input");
-    }, 24);
-  });
-}
 
 /* pausePalette/resumePalette（bundle 37201/37207 逐字；change-palette-pause 通道 typo
    原样；IPCHelper c17a 接装经 window） */

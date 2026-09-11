@@ -7556,3 +7556,34 @@ libraryDomain/gridService/dataMachinery 各若干）。
 
 **门禁**：`bz-export-check` 无问题（2313 处）；`bz-free-check` 四目标全 OK；`probe LOAD_OK`；
 哨兵 `SENTINEL_OK`；定向 `empty-trash`/`main-ui-workflow`/`drag-start` 全绿。
+
+---
+
+## D-1 / Track B / B-15 记录（2026-09-11）
+
+**目标**：`miscDomain` 域簇整体归位（**22 个 / 419 行**：18 可搬 + 3 阻塞项 + `zoomInitTimeout`）。
+
+**范围**：`getLanguageBCP` `machineryCheckTouchIDSupport` `machineryEnterDetailMode`
+`machineryLeaveDetailMode` `machineryFadeOutDetailMode` `machineryToggleDetailMode`
+`machineryQuicklook` `machineryNotify` + cg* 通知栈（`cgStack` `cgScopes` `CG_START_TOP`
+`CG_SPACING` `cgBuildTemplate` `cgRestack` `cgNotifyServiceCloseAll`）`machineryToggleSlideshow`
+`machineryEnter/LeaveSlideshowMode` `machineryLockApp` `machineryFocusAppUnlockPassword`
+`machineryOpenPluginPanel` + `zoomInitTimeout`。
+
+**两处 state 归属修正**：
+1. `undoTimeout` 名为 navHistory、实为 `machineryNotify` 独占写入 → 改为 miscDomain 本地声明
+   （原 `export let` 留在 dataMachinery 亦无引用）。
+2. **重大 latent bug（B-9 起潜伏，本批暴露）**：`miscDomain`/`libraryDomain` 各有一份**旧的无
+   shim 兜底 `getFilter` 副本**，而 dataMachinery 的 canonic `getFilter`（现 filterDomain）含
+   angular+shim 双路径。B-9/B-15 随迁函数调用 `getFilter()('i18n')` 在 shim 世界拿到 null →
+   `TypeError: getFilter(...) is not a function`（main-ui-workflow 抓到）。已删两份副本，
+   统一 `import { getFilter } from './filterDomain'`。
+
+**核数**：`dataMachinery.ts` **3735 → 3305 行**（-430）；顶层声明 **69 → 47**。
+`tsc` **508 → 508**。
+
+**门禁**：`bz-export-check` 无问题（2332 处）；`bz-free-check` OK；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `empty-trash`/`menu-popup`/`stage7b`/`main-ui-workflow`（含复跑）全绿。
+
+> **流程强化**：`bz-state-check.py` 必须在 manifest 最终定稿后运行（本批 3 个阻塞项是后加的，
+> 早跑漏检 undoTimeout）。

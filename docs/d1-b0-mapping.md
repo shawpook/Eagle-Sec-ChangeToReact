@@ -4,9 +4,9 @@
 
 ## 0. 总量
 
-- 文件：`src/app/react/core/dataMachinery.ts`，**3735 行**
-- 顶层声明：**69**（exported **49** / 私有 **20**）
-- import 面：**48** 条
+- 文件：`src/app/react/core/dataMachinery.ts`，**3306 行**
+- 顶层声明：**47**（exported **37** / 私有 **10**）
+- import 面：**49** 条
 - 引用文件：**30**（`from .../dataMachinery`）
 
 ## 1. 域聚类（批次候选）
@@ -16,132 +16,93 @@
 | MOUNT-INFRA（最后一批/或留共享） | 9 | 1025 | 4 |
 | core/keymap | 20 | 627 | 20 |
 | filterDomain | 4 | 420 | 2 |
-| miscDomain | 21 | 419 | 13 |
 | itemDomain | 3 | 146 | 2 |
 | stage/grid | 4 | 91 | 4 |
-| core/navHistory | 7 | 62 | 4 |
-| services/viewOpsService | 1 | 1 | 0 |
+| core/navHistory | 7 | 62 | 5 |
 
 ### MOUNT-INFRA（最后一批/或留共享）（9 项 / 1025 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `timeoutCache` |  | 107-107 | 1 | - |
-| `shimTimeoutInst` |  | 108-108 | 1 | - |
-| `getTimeout` | Y | 110-144 | 35 | `shimTimeoutInst`, `timeoutCache` |
-| `singletonByScope` |  | 2734-2734 | 1 | - |
-| `scopeSingleton` |  | 2735-2740 | 6 | `singletonByScope` |
-| `machineryCalls` | Y | 2749-2749 | 1 | - |
-| `machinerySeedControllerState` | Y | 2754-3269 | 516 | - |
-| `applied` |  | 3271-3271 | 1 | - |
-| `applyDataMachineryScope` | Y | 3272-3734 | 463 | `applied`, `getTimeout`, `machineryCalls`, `machineryEnterDetailMode`, `machineryInitMousetrap`, `machineryLeaveDetailMode`, `machineryNotify`, `machineryReload` … |
+| `timeoutCache` |  | 108-108 | 1 | - |
+| `shimTimeoutInst` |  | 109-109 | 1 | - |
+| `getTimeout` | Y | 111-145 | 35 | `shimTimeoutInst`, `timeoutCache` |
+| `singletonByScope` |  | 2305-2305 | 1 | - |
+| `scopeSingleton` |  | 2306-2311 | 6 | `singletonByScope` |
+| `machineryCalls` | Y | 2320-2320 | 1 | - |
+| `machinerySeedControllerState` | Y | 2325-2840 | 516 | - |
+| `applied` |  | 2842-2842 | 1 | - |
+| `applyDataMachineryScope` | Y | 2843-3305 | 463 | `applied`, `getTimeout`, `machineryCalls`, `machineryInitMousetrap`, `machineryReload`, `machinerySeedControllerState`, `machinerySortRawData`, `machineryToggleAll` |
 
 ### core/keymap（20 项 / 627 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryBuildMousetrap` | Y | 997-1135 | 139 | `getPageUpHandlerFn`, `machineryBack`, `machineryKeyCHandler`, `machineryKeyDownHandler`, `machineryKeyLeftHandler`, `machineryKeyPHandler`, `machineryKeyRightHandler`, `machineryKeyUpHandler` … |
-| `machineryInitMousetrap` | Y | 1139-1160 | 22 | `machineryBuildMousetrap` |
-| `machineryKeyCHandler` | Y | 1447-1452 | 6 | - |
-| `machineryKeyPHandler` | Y | 1454-1456 | 3 | `machineryOpenPluginPanel` |
-| `machineryKeyLeftHandler` | Y | 1461-1506 | 46 | - |
-| `machineryKeyRightHandler` | Y | 1510-1543 | 34 | - |
-| `machineryModUpHandler` | Y | 1548-1560 | 13 | `machineryHomeHandler` |
-| `machineryModDownHandler` | Y | 1562-1574 | 13 | `machineryEndHandler` |
-| `machineryModLeftHandler` | Y | 1576-1590 | 15 | `machineryPrevHistory` |
-| `machineryModRightHandler` | Y | 1592-1606 | 15 | `machineryNextHistory` |
-| `machineryKeyUpHandler` | Y | 1659-1773 | 115 | `machineryOpenPrevQuickAccess` |
-| `machineryKeyDownHandler` | Y | 1781-1914 | 134 | `machineryOpenNextQuickAccess` |
-| `machineryPageDownHandler` | Y | 1931-1943 | 13 | - |
-| `machineryPageUpHandler` | Y | 1946-1963 | 18 | - |
-| `machineryNHandler` | Y | 1987-1998 | 12 | - |
-| `machinerySaveHandler` | Y | 2050-2055 | 6 | - |
-| `machineryHomeHandler` | Y | 2355-2364 | 10 | - |
-| `machineryEndHandler` | Y | 2368-2378 | 11 | - |
-| `getPageUpHandlerFn` | Y | 2742-2742 | 1 | `machineryPageUpHandler`, `scopeSingleton` |
-| `getPageDownHandlerFn` | Y | 2743-2743 | 1 | `machineryPageDownHandler`, `scopeSingleton` |
+| `machineryBuildMousetrap` | Y | 811-949 | 139 | `getPageUpHandlerFn`, `machineryBack`, `machineryKeyCHandler`, `machineryKeyDownHandler`, `machineryKeyLeftHandler`, `machineryKeyPHandler`, `machineryKeyRightHandler`, `machineryKeyUpHandler` … |
+| `machineryInitMousetrap` | Y | 953-974 | 22 | `machineryBuildMousetrap` |
+| `machineryKeyCHandler` | Y | 1085-1090 | 6 | - |
+| `machineryKeyPHandler` | Y | 1092-1094 | 3 | - |
+| `machineryKeyLeftHandler` | Y | 1099-1144 | 46 | - |
+| `machineryKeyRightHandler` | Y | 1148-1181 | 34 | - |
+| `machineryModUpHandler` | Y | 1186-1198 | 13 | `machineryHomeHandler` |
+| `machineryModDownHandler` | Y | 1200-1212 | 13 | `machineryEndHandler` |
+| `machineryModLeftHandler` | Y | 1214-1228 | 15 | `machineryPrevHistory` |
+| `machineryModRightHandler` | Y | 1230-1244 | 15 | `machineryNextHistory` |
+| `machineryKeyUpHandler` | Y | 1297-1411 | 115 | `machineryOpenPrevQuickAccess` |
+| `machineryKeyDownHandler` | Y | 1419-1552 | 134 | `machineryOpenNextQuickAccess` |
+| `machineryPageDownHandler` | Y | 1569-1581 | 13 | - |
+| `machineryPageUpHandler` | Y | 1584-1601 | 18 | - |
+| `machineryNHandler` | Y | 1625-1636 | 12 | - |
+| `machinerySaveHandler` | Y | 1688-1693 | 6 | - |
+| `machineryHomeHandler` | Y | 1993-2002 | 10 | - |
+| `machineryEndHandler` | Y | 2006-2016 | 11 | - |
+| `getPageUpHandlerFn` | Y | 2313-2313 | 1 | `machineryPageUpHandler`, `scopeSingleton` |
+| `getPageDownHandlerFn` | Y | 2314-2314 | 1 | `machineryPageDownHandler`, `scopeSingleton` |
 
 ### filterDomain（4 项 / 420 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `semanticSearchController` |  | 397-397 | 1 | - |
-| `machineryFilterDataPart3` | Y | 411-727 | 317 | `imageSearchController`, `semanticSearchController` |
-| `machinerySearchFilter` |  | 2103-2203 | 101 | - |
-| `getToggleFilterByTypeFn` | Y | 2744-2744 | 1 | `scopeSingleton` |
-
-### miscDomain（21 项 / 419 行）
-
-| 名称 | exp | 行区间 | 行数 | 同文件依赖 |
-|---|---|---:|---:|---|
-| `getLanguageBCP` |  | 147-154 | 8 | - |
-| `machineryToggleSlideshow` | Y | 349-355 | 7 | `machineryEnterSlideshowMode`, `machineryLeaveSlideshowMode` |
-| `machineryCheckTouchIDSupport` | Y | 367-381 | 15 | - |
-| `machineryEnterDetailMode` | Y | 828-922 | 95 | `getTimeout`, `zoomInitTimeout` |
-| `machineryLeaveDetailMode` | Y | 927-984 | 58 | `getTimeout`, `machineryFadeOutDetailMode`, `machineryInitMousetrap`, `zoomInitTimeout` |
-| `cgStack` |  | 1165-1165 | 1 | - |
-| `cgScopes` |  | 1166-1166 | 1 | - |
-| `CG_START_TOP` |  | 1167-1167 | 1 | - |
-| `CG_SPACING` |  | 1168-1168 | 1 | - |
-| `cgBuildTemplate` |  | 1173-1187 | 15 | - |
-| `cgRestack` |  | 1190-1202 | 13 | `CG_SPACING`, `CG_START_TOP`, `cgStack` |
-| `machineryNotify` | Y | 1208-1297 | 90 | `cgBuildTemplate`, `cgNotifyServiceCloseAll`, `cgRestack`, `cgStack`, `getTimeout`, `undoTimeout` |
-| `cgNotifyServiceCloseAll` |  | 1300-1304 | 5 | `cgStack` |
-| `machineryToggleDetailMode` | Y | 1360-1362 | 3 | - |
-| `machineryQuicklook` | Y | 1397-1439 | 43 | `getPageDownHandlerFn`, `machineryToggleDetailMode` |
-| `machineryFadeOutDetailMode` | Y | 2422-2428 | 7 | - |
-| `machineryOpenPluginPanel` | Y | 2431-2434 | 4 | - |
-| `machineryEnterSlideshowMode` | Y | 2455-2472 | 18 | `getTimeout`, `machineryEnterDetailMode` |
-| `machineryLeaveSlideshowMode` | Y | 2475-2490 | 16 | `getTimeout` |
-| `machineryLockApp` | Y | 2495-2502 | 8 | `machineryFocusAppUnlockPassword` |
-| `machineryFocusAppUnlockPassword` | Y | 2504-2513 | 10 | - |
+| `semanticSearchController` |  | 366-366 | 1 | - |
+| `machineryFilterDataPart3` | Y | 380-696 | 317 | `imageSearchController`, `semanticSearchController` |
+| `machinerySearchFilter` |  | 1741-1841 | 101 | - |
+| `getToggleFilterByTypeFn` | Y | 2315-2315 | 1 | `scopeSingleton` |
 
 ### itemDomain（3 项 / 146 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machinerySortRawData` | Y | 159-257 | 99 | `getLanguageBCP` |
-| `machineryReload` | Y | 294-339 | 46 | `machineryLeaveDetailMode` |
-| `imageSearchController` |  | 396-396 | 1 | - |
+| `machinerySortRawData` | Y | 151-249 | 99 | - |
+| `machineryReload` | Y | 286-331 | 46 | - |
+| `imageSearchController` |  | 365-365 | 1 | - |
 
 ### stage/grid（4 项 / 91 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryResetPage` | Y | 758-801 | 44 | - |
-| `machineryToggleAll` | Y | 2004-2043 | 40 | `getOffsetScrollbarFn`, `getTimeout` |
-| `machineryAutoScroll` | Y | 2270-2275 | 6 | `getTimeout` |
-| `getOffsetScrollbarFn` | Y | 2741-2741 | 1 | `scopeSingleton` |
+| `machineryResetPage` | Y | 727-770 | 44 | - |
+| `machineryToggleAll` | Y | 1642-1681 | 40 | `getOffsetScrollbarFn`, `getTimeout` |
+| `machineryAutoScroll` | Y | 1908-1913 | 6 | `getTimeout` |
+| `getOffsetScrollbarFn` | Y | 2312-2312 | 1 | `scopeSingleton` |
 
 ### core/navHistory（7 项 / 62 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `undoTimeout` |  | 1169-1169 | 1 | - |
-| `machineryUndo` | Y | 1322-1326 | 5 | `cgNotifyServiceCloseAll` |
-| `machineryNextHistory` | Y | 1330-1335 | 6 | - |
-| `machineryPrevHistory` | Y | 1337-1342 | 6 | - |
-| `machineryBack` | Y | 1345-1352 | 8 | `machineryLeaveDetailMode`, `machineryPrevHistory` |
-| `machineryOpenPrevQuickAccess` |  | 1613-1624 | 12 | - |
-| `machineryOpenNextQuickAccess` |  | 1626-1649 | 24 | - |
-
-### services/viewOpsService（1 项 / 1 行）
-
-| 名称 | exp | 行区间 | 行数 | 同文件依赖 |
-|---|---|---:|---:|---|
-| `zoomInitTimeout` |  | 822-822 | 1 | - |
+| `undoTimeout` | Y | 978-978 | 1 | - |
+| `machineryUndo` | Y | 1006-1010 | 5 | - |
+| `machineryNextHistory` | Y | 1014-1019 | 6 | - |
+| `machineryPrevHistory` | Y | 1021-1026 | 6 | - |
+| `machineryBack` | Y | 1029-1036 | 8 | `machineryPrevHistory` |
+| `machineryOpenPrevQuickAccess` |  | 1251-1262 | 12 | - |
+| `machineryOpenNextQuickAccess` |  | 1264-1287 | 24 | - |
 
 ## 2. 跨域共享顶层名（≥2 域引用 —— 最后搬或抽共享模块）
 
-- `machineryLeaveDetailMode`：MOUNT-INFRA（最后一批/或留共享）、core/navHistory、itemDomain
-- `getTimeout`：MOUNT-INFRA（最后一批/或留共享）、miscDomain、stage/grid
 - `scopeSingleton`：core/keymap、filterDomain、stage/grid
-- `machineryInitMousetrap`：MOUNT-INFRA（最后一批/或留共享）、miscDomain
 - `machineryPrevHistory`：core/keymap、core/navHistory
 - `machineryToggleAll`：MOUNT-INFRA（最后一批/或留共享）、core/keymap
-- `machineryToggleDetailMode`：core/keymap、miscDomain
-- `cgNotifyServiceCloseAll`：core/navHistory、miscDomain
-- `machineryEnterDetailMode`：MOUNT-INFRA（最后一批/或留共享）、miscDomain
+- `getTimeout`：MOUNT-INFRA（最后一批/或留共享）、stage/grid
 
 ## 3. import 依赖面
 
@@ -195,6 +156,7 @@
 | `../services/folderCoreService` | { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openAllTimeout  |
 | `../services/imageOpsService` | { machineryChangeStar, machineryChangeTo1Star, machineryChangeTo2Star, machinery |
 | `../services/uploadService` | { machineryOnDropContainer } |
+| `./miscDomain` | { cgNotifyServiceCloseAll, getLanguageBCP, machineryEnterDetailMode, machineryLe |
 
 ## 4. 建议批次顺序（按依赖自底向上）
 

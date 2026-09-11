@@ -21,10 +21,11 @@ import {
   recomputeCommentRatio,
 } from './commentHooks';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryLeaveDetailMode, machineryToggleSlideshow } from '../../core/dataMachinery';
+
 import { openItemContextMenu } from '../../services/itemMenuService';
 
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
+import { machineryLeaveDetailMode, machineryToggleSlideshow } from '../../core/miscDomain';
 /**
  * 阶段5：#detail-container 内部（index.html 646-924 行逐字转写）。
  * 壳 #detail-container 保留在 index.html（元素身份永不重建，smoothZoom 包裹关系不破坏）；

@@ -2450,6 +2450,28 @@
 > `ui-interactions`/`stage6` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 13（Track A / A-2 样板）✅：`window.__eagleMachinery` 诊断面；箭头面 37 → 35（2026-09-11）】**
+>
+> **A-2 方向（用户裁定）**：契约从「scope 挂载存在性（`typeof s.xxx === 'function'`）」改为
+> 「machinery 导出已就位」。新增 `window.__eagleMachinery` 诊断面（23 个函数：colorFilter/
+> grayColorFilter/calculateImageBinding/sortRawData/rebindRefresh/rebindRefreshLazy/updateSidebarList/
+> updateItemsView/switchLayout/prependImages/getRatioExp/getRatioNonExp/updateZoomRatio/toggleSlideshow/
+> smartFolderCount/getRecentFolders/filterData/calcuteFilterResult/relayout/existInSmartFilter/
+> contentFilter/updateSelection/filterContent）。**代码内部仍 import 直调，本表不做运行时分发**。
+>
+> **本批样板**：`b1-9ad-colorfilter-pipeline` 改为经 `__eagleMachinery.colorFilter(s,img)` /
+> `.grayColorFilter(img)` 直调；`machineryColorFilter`/`machineryGrayColorFilter` 由本地 function
+> 改 `export`；`machineryFilterContent` 内 `data.filter(s.colorFilter)` → 直调；退役两项挂载。
+>
+> **后续 A-2 待办**：m1-A3（`typeof s.calculateImageBinding/rebindRefresh/updateSidebarList`）、
+> m1-D（**spy `s.rebindRefresh` 需改效果断言或改为经 `__eagleMachinery` 间接驱动**）、
+> m1-A8-relayout / m1-A9-smart-filter / m1-A10-calcuteFilterResult、m1-E（`s.updateSelection`）、
+> stage5 detail-*（enterDetailMode/leaveDetailMode）、`filterContent`（1m1 spy）、`contentFilter` 谓词。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

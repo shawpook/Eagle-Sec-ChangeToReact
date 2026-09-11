@@ -330,13 +330,15 @@ try {
         return ok;
       } catch (err) { return false; }
     })()`],
-    // b1-9ad：颜色筛选管线——s.colorFilter/s.grayColorFilter 已由 dataMachinery seeds 赋值；
-    // 正向断言覆盖精确命中（colorDistancesMap=0.01）/ DeltaE 距离命中 / 不命中 / 黑白四态，
-    // 规则值先存后还（纯函数调用不过 filterContent，无 rebindRefresh 副作用）
+    // b1-9ad：颜色筛选管线——D-1 A-2：挂载退役后经 __eagleMachinery 诊断面直调
+    // （machineryColorFilter(s,image) / machineryGrayColorFilter(image)），契约从 scope 面
+    // 改为「machinery 导出已就位」；正向断言覆盖精确命中（colorDistancesMap=0.01）/
+    // DeltaE 距离命中 / 不命中 / 黑白四态，规则值先存后还（纯函数调用不过 filterContent）
     ['b1-9ad-colorfilter-pipeline', `(() => {
       try {
         const s = window.$bodyScope;
-        if (!s || typeof s.colorFilter !== 'function' || typeof s.grayColorFilter !== 'function') return false;
+        const M = window.__eagleMachinery;
+        if (!s || !M || typeof M.colorFilter !== 'function' || typeof M.grayColorFilter !== 'function') return false;
         const rules = window.eagle.filter.filterRules.color;
         const prevValue = rules.value, prevAcc = rules.accuracy;
         try {
@@ -345,12 +347,12 @@ try {
           const imgExact = { id: 'b1-9ad-match', palettes: [{ ratio: 40, color: [255, 0, 0] }] };
           const imgNear = { id: 'b1-9ad-dist', palettes: [{ ratio: 40, color: [250, 10, 10] }] };
           const imgFar = { id: 'b1-9ad-miss', palettes: [{ ratio: 40, color: [0, 0, 255] }] };
-          const t1 = s.colorFilter(imgExact) === true && s.colorDistancesMap['b1-9ad-match'] === 0.01;
-          const t2 = s.colorFilter(imgNear) === true && typeof s.colorDistancesMap['b1-9ad-dist'] === 'number';
-          const t3 = s.colorFilter(imgFar) === false;
-          const g1 = s.grayColorFilter({ id: 'g1', palettes: [{ ratio: 0.5, color: [100, 100, 100] }] }) === true;
-          const g2 = s.grayColorFilter({ id: 'g2', palettes: [{ ratio: 0.5, color: [200, 100, 100] }] }) === false;
-          const g3 = s.grayColorFilter({ id: 'g3' }) === false;
+          const t1 = M.colorFilter(s, imgExact) === true && s.colorDistancesMap['b1-9ad-match'] === 0.01;
+          const t2 = M.colorFilter(s, imgNear) === true && typeof s.colorDistancesMap['b1-9ad-dist'] === 'number';
+          const t3 = M.colorFilter(s, imgFar) === false;
+          const g1 = M.grayColorFilter({ id: 'g1', palettes: [{ ratio: 0.5, color: [100, 100, 100] }] }) === true;
+          const g2 = M.grayColorFilter({ id: 'g2', palettes: [{ ratio: 0.5, color: [200, 100, 100] }] }) === false;
+          const g3 = M.grayColorFilter({ id: 'g3' }) === false;
           return t1 && t2 && t3 && g1 && g2 && g3;
         } finally {
           rules.value = prevValue; rules.accuracy = prevAcc;

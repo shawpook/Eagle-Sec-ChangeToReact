@@ -2134,13 +2134,13 @@ function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
 
   // 颜色筛选
   if (w.eagle.filter.filterRules.color.value) {
-    data = data.filter(s.colorFilter);
+    data = data.filter((x: any) => machineryColorFilter(s, x));
   }
 
   // 黑白图片过滤
   if (w.eagle.filter.filterRules.color.gray) {
     console.time("grayColorFilter");
-    data = data.filter(s.grayColorFilter);
+    data = data.filter((x: any) => machineryGrayColorFilter(x));
     console.timeEnd("grayColorFilter");
   }
 
@@ -6326,7 +6326,7 @@ function machineryColorSimilarityDistance(color1: any, color2: any): any {
 }
 
 /* colorFilter（bundle 32689-32781 逐字） */
-function machineryColorFilter(s: any, image: any): boolean {
+export function machineryColorFilter(s: any, image: any): boolean {
     const w = window as any;
     try {
         // 防呆
@@ -6420,7 +6420,7 @@ function machineryColorFilter(s: any, image: any): boolean {
 }
 
 /* grayColorFilter（bundle 32797-32813 逐字；零依赖） */
-function machineryGrayColorFilter(image: any): boolean {
+export function machineryGrayColorFilter(image: any): boolean {
     if (image && image.palettes) {
         for (var i = image.palettes.length - 1; i >= 0; i--) {
             var palette = image.palettes[i];
@@ -11107,11 +11107,7 @@ export function machinerySeedControllerState(s: any): void {
         // b1-9ab：searchFilter 管线（bundle 32182 逐字；machineryFilterContent 的
         // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
         // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
-        // data.filter(s.colorFilter)/data.filter(s.grayColorFilter) 消费面）
-        // 注：b1-9ad-colorfilter-pipeline 契约锚定 typeof s.colorFilter/grayColorFilter
-        // === 'function' 且直接调用 → 本对挂载留待 A-2 契约重设计后再退。
-        s.colorFilter = (image: any) => machineryColorFilter(s, image);
-        s.grayColorFilter = (image: any) => machineryGrayColorFilter(image);
+        // data.filter(...) 消费面已改直调 machineryColorFilter/machineryGrayColorFilter）
         w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
         s.showSubfolderContent = w.preferences.showSubfolderContent;
 
@@ -11413,6 +11409,34 @@ export function applyDataMachineryScope(): void {
   } catch (err: any) {
     console.error('[data-machinery] keyboard init failed', err);
   }
+
+  // D-1 A-2：测试诊断面 —— 把契约需要的 machinery 函数挂到 window，供测试从「scope 挂载
+  // 存在性」改为「machinery 导出已就位」。代码内部一律 import 直调，本表不做运行时分发。
+  (window as any).__eagleMachinery = {
+    colorFilter: machineryColorFilter,
+    grayColorFilter: machineryGrayColorFilter,
+    calculateImageBinding: machineryCalculateImageBinding,
+    sortRawData: machinerySortRawData,
+    rebindRefresh: machineryRebindRefresh,
+    rebindRefreshLazy: machineryRebindRefreshLazy,
+    updateSidebarList: machineryUpdateSidebarList,
+    updateItemsView: machineryUpdateItemsView,
+    switchLayout: machinerySwitchLayout,
+    prependImages: machineryPrependImages,
+    getRatioExp: machineryGetRatioExp,
+    getRatioNonExp: machineryGetRatioNonExp,
+    updateZoomRatio: machineryUpdateZoomRatio,
+    toggleSlideshow: machineryToggleSlideshow,
+    smartFolderCount: machinerySmartFolderCount,
+    getRecentFolders: machineryGetRecentFolders,
+    filterData: machineryFilterData,
+    calcuteFilterResult: machineryCalcuteFilterResult,
+    relayout: machineryRelayout,
+    existInSmartFilter: machineryExistInSmartFilter,
+    contentFilter: machineryContentFilter,
+    updateSelection: machineryUpdateSelection,
+    filterContent: machineryFilterContent,
+  };
 
   (window as any).__eagleDataMachinery = {
     version: 50,

@@ -14,13 +14,14 @@
 import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
-import { machineryChangeMetaItems, machineryCurrentIndex, machineryOnZoomRatioChanged, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
+import { machineryChangeMetaItems, machineryCurrentIndex, machineryOnZoomRatioChanged, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { onSelectedChanged } from './selectionNotify';
 import { addClass, removeClass, cssSet, q, dataSet } from '../utils/domQuery';
 
+import { machinerySaveFolder } from './libraryDomain';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {

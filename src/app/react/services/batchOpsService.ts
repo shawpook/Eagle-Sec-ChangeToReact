@@ -20,7 +20,7 @@
  */
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryFilterContent, machineryFindDupclipate, machineryForceFitImageSize, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryRebindRefresh, machineryRelayout, machineryResetPage, machineryUpdateSelection, machineryZoom } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryAutoScroll, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryFilterContent, machineryFindDupclipate, machineryForceFitImageSize, machineryGetSelectedItemElements, machineryGetSelectedItems, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryRebindRefresh, machineryRelayout, machineryResetPage, machineryUpdateSelection, machineryZoom } from '../core/dataMachinery';
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
@@ -36,6 +36,7 @@ import { addImagesToFolder } from './folderCoreService';
 import { cleanAllErrorChannel, glRemoveitemsChannel, openAddFolderModalChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, qa, cssSet, outerWidthOf } from '../utils/domQuery';
+import { machineryGetRecentFolders } from '../core/libraryDomain';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行

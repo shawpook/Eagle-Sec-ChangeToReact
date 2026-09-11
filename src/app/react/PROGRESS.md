@@ -7266,3 +7266,42 @@ miscDomain +`addClass`。
 「搬迁 + dataMachinery 回引」或与消费方同批），70 个 `no_external_use`（多为域内 helper/死代码，
 随 B-cycle 域簇整搬）。建议 B-6 起转入**按域整簇搬迁**（先低耦合域 `stage/grid` / `core/keymap` /
 `core/navHistory`），每域一次 循环分析 + 全量验证。
+
+---
+
+## D-1 / Track B / B-6 记录（2026-09-11）
+
+**目标**：`needs_back`（rev>0）批次首次实践「搬迁 + dataMachinery 回引」机制——批量搬
+`libraryDomain` 域簇（10 个 / 241 行），验证反向依赖边新增后 ESM 求值顺序无回归。
+
+**归位表（10 个 / 241 行 → `core/libraryDomain.ts`）**
+
+`machineryGetAncestorFolders` `machineryGetRecentFolders` `machinerySaveFolder`
+`machineryRefreshRandom` `machineryGetChildFoldersMaps` `machineryRenameFolder`
+`machineryRenameSmartFolder` `machineryGetFolderImages` `machineryBatchRenameFolders`
+`machineryBatchRenameSmartFolders`
+
+**机制要点**：本批全部 `rev>0`，故 `dataMachinery.ts` 必须**回引**这 10 个名（新增
+`dataMachinery → libraryDomain` 边，与既有 dataMachinery↔mediaService/gridService/viewOpsService
+等环同构；两侧均为函数声明，提升后跨环可用，无 TDZ）。14 个引用文件自动改道到 libraryDomain
+（selectPanelEngine/Toolbar/apiServerDomain/itemDomain/miscDomain/selectionViewDomain/
+tagManagerDomain/batchOpsService/folderCoreService/folderMenuService/folderService/
+imageOpsService/itemMenuService/sidebarService）。
+
+**目标域补装**：libraryDomain +`addClass`/`removeClass`/`focusEl`/`selectEl`（domQuery）、
++`openRenameChannel`（bus）。
+
+**踩坑**：`apiServerDomain.ts` 自带同名局部 `function machineryRenameFolder(params)`
+（API-server handler，与 UI 机制函数同名不同物）——脚本按名匹配误加 import，触发 TS2440；
+已手工从该 import 剔除（仅保留 `machinerySaveFolder`）。**后续批次须先扫目标文件同名局部声明**。
+
+**核数**：`dataMachinery.ts` **11152 → 10911 行**（-241）；顶层声明 **285 → 275**。
+
+**门禁（轻量批次口径，2026-09-11 策略调整）**：`bz-export-check` 无问题（2037 处）；
+`tsc --noEmit` 619 → 619（零新增，逐条签名 diff 校验）；`probe-b5-load` `LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向闭环 `menu-popup` / `library-switch-ui` / `stage7c` /
+`s2-sidebar-dnd` 全绿；全量套件中途全绿至 stage7d4（约 60% 无 FAIL，余下按新策略并入
+Track B 收官统一跑）。
+
+> **策略调整（用户指令）**：非必要不再每批跑全套；改为每批「export-check + tsc 零新增 +
+> probe + 定向闭环」，**整个大项（D-1 Track B）完成后**再跑一次完整 55 项 + 哨兵收口。

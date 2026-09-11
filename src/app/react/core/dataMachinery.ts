@@ -91,6 +91,7 @@ import { scopeEvalAsync } from '../global/scopeShim';
 import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize, pinyinCache } from '../utils/normalize';
 import { machineryColorSimilarityDistance, machineryRgbToHex } from '../utils/color';
 import { machineryCloseWindowHandler, machineryDestoryMousetrap, machineryMHandler, machineryModShiftDownHandler, machineryModShiftLeftHandler, machineryModShiftRightHandler, machineryModShiftUpHandler, machineryOpenActionsPanel, machineryOpenQuickSearch } from './keymapActions';
+import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetAncestorFolders, machineryGetChildFoldersMaps, machineryGetFolderImages, machineryGetRecentFolders, machineryRefreshRandom, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder } from './libraryDomain';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let calculateImageBindingTimeout: any = null;
 // ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
@@ -283,25 +284,6 @@ function getLanguageBCP(s: any): string {
   }
 }
 
-/* 取得文件夹祖先们（bundle 42508 逐字） */
-export function machineryGetAncestorFolders(s: any, folder: any, folders: any[]): any[] {
-  try {
-    if (folder.parent && s.folderMappings[folder.parent]) {
-      const parent = s.folderMappings[folder.parent];
-      if (parent.id != folder.id) {
-        folders.push(parent);
-        return machineryGetAncestorFolders(s, parent, folders);
-      }
-    }
-    folders = [...new Set(folders)];
-    return folders;
-  } catch (err: any) {
-    const w = window as any;
-    w.electronLog && w.electronLog.error(err.stack || err);
-    folders = [...new Set(folders)];
-    return folders;
-  }
-}
 
 /* 取得继承炼的标签（bundle 32028 逐字；tags.unique() 为 bundle Array 原型扩展，保留原调用） */
 export function machineryGetExtendTags(s: any, folder: any, tags: any[]): any[] {
@@ -1240,30 +1222,6 @@ export function machinerySmartFolderCount(s: any, smartFolder: any): any {
   }
 }
 
-/* getRecentFolders（bundle 31969-31988 逐字） */
-export function machineryGetRecentFolders(s: any, length: any): any[] {
-  var len = length;
-  if (!length) len = 8;
-  var recentMoveFolders: any = localStorage.getItem("recentMoveFolders");
-  if (recentMoveFolders) {
-    recentMoveFolders = JSON.parse(recentMoveFolders);
-    recentMoveFolders = recentMoveFolders.slice(0, len);
-  }
-  else {
-    return [];
-  }
-
-  recentMoveFolders = recentMoveFolders.filter(function (folderId: any) {
-    return !!s.folderMappings[folderId];
-  });
-
-  var recentFolders = recentMoveFolders.map(function (folderId: any) {
-    return s.folderMappings[folderId];
-  });
-
-  recentFolders = [...new Set(recentFolders)];
-  return recentFolders;
-}
 
 /* updateItemView（bundle 34847-35063 逐字；单条目 DOM 更新机——updateItemsView 循环体。
    依赖：window.* 全局（$/FileUrlHelper/fileSize/fontFolder/sanitize/installedFonts/i18n/
@@ -3567,95 +3525,6 @@ export function machineryLeaveDetailMode(s: any): void {
 /* saveFolder（bundle 42399-42467 逐字；cloneTree 经 window（c10a-2）、IPCHelper 经
    window（shims 顶层词法上 window，libraryDomain 同一消费模式）、appRoot.path = app-root-path
    模块的 path 属性、TagManager 经 scope） */
-export function machinerySaveFolder(s: any): void {
-  const w = window as any;
-  console.time("$scope.saveFolder");
-
-  // 保存時進行日文濁音正規化
-  const unrom = w.require(w.appRoot.path + '/app/js/utils/unorm.js');
-  const nfc = (text: any) => {
-    try {
-      return unrom.nfc(text);
-    }
-    catch (err) {
-      return text;
-    }
-  };
-
-  var folders: any[] = [];
-  w.cloneTree(folders, s.folders);
-
-  w.eagle.utils.tree.walk(folders, 'children', function (folder: any, parent: any, depth: any) {
-    folder.name = nfc(folder.name);
-  });
-
-  const smartFolders = s.smartFolders.map(function (smartFolder: any) {
-    var clone: any = {
-      id: smartFolder.id,
-      icon: smartFolder.icon,
-      iconColor: smartFolder.iconColor,
-      name: smartFolder.name,
-      description: smartFolder.description || "",
-      modificationTime: smartFolder.modificationTime,
-      conditions: smartFolder.conditions,
-    };
-    if (smartFolder.children) {
-      clone.children = smartFolder.children;
-    }
-    if (smartFolder.orderBy) {
-      clone.orderBy = smartFolder.orderBy;
-      clone.sortIncrease = smartFolder.sortIncrease;
-    }
-    return clone;
-  });
-
-  w.eagle.utils.tree.walk(smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
-    smartFolder.name = nfc(smartFolder.name);
-  });
-
-  const groups = s.TagManager.groups.map(function (group: any) {
-    var g: any = {
-      id: group.id,
-      name: nfc(group.name),
-      tags: group.tags
-    };
-    if (group.color) {
-      g.color = group.color;
-    }
-    if (group.description !== undefined) {
-      g.description = group.description;
-    }
-    return g;
-  });
-
-  const quickAccess = s.quickAccess.map(function (item: any) {
-    return {
-      type: item.type,
-      id: item.id
-    };
-  });
-
-  const libraryPath = s.libraryPath;
-
-    // IPCHelper（bundle 3471 const = 脚本级词法绑定，window/ESM 均不可达）——send 语义等价
-  // 复刻（bundle 3473-3482：ipcRenderer.send + electronLog + try/catch 静默）
-  try {
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-    ipc.send('folders-change', {
-      // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
-      libraryDir: libraryPath,
-      folders: folders,
-      smartFolders: smartFolders,
-      quickAccess: quickAccess,
-      tagsGroups: groups,
-    });
-    w.electronLog && w.electronLog.info('[ipc] folders-change');
-  }
-  catch (err) {
-  }
-
-  console.timeEnd("$scope.saveFolder");
-}
 
 /* ── c16d：键盘域（buildMousetrap/destoryMousetrap/initMousetrap）──────── */
 
@@ -5669,23 +5538,6 @@ export function machinerySaveHandler(s: any): void {
 
 /* refreshRandom（bundle 42824-42837 逐字：random 视图/RANDOM 排序守卫 + shuffle 清空 +
    refresh-random active 闪烁 50ms + reload（machinery 版经 scope）） */
-export function machineryRefreshRandom(s: any): void {
-  const w = window as any;
-  if (s.isDetailMode) return;
-
-  if (
-    s.viewMode === 'random' ||
-    (s.currentFolder && s.currentFolder.orderBy === "RANDOM") ||
-    (s.currentSmartFolder && s.currentSmartFolder.orderBy === "RANDOM")
-  ) {
-    s.shuffle = [];
-    addClass("#refresh-random", "active");
-    setTimeout(function () {
-      removeClass("#refresh-random", "active");
-    }, 50);
-    s.reload();
-  }
-}
 
 /* ── c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover ── */
 
@@ -8296,17 +8148,6 @@ export function machineryToggleFilterByType(s: any): any {
 
 /* getChildFoldersMaps/Map（bundle 31890/31901 逐字，controller 闭包——供 multipleOpenFolder
    与 fns 表裸引用后备） */
-export function machineryGetChildFoldersMaps(s: any, folders: any): any {
-  const w = window as any;
-  var childs: any = {};
-  for (var i = 0; i < folders.length; i++) {
-    var folder = folders[i];
-    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
-      childs[child.id] = true;
-    });
-  }
-  return childs;
-}
 
 
 /* multipleOpenFolder（bundle 38128-38162 逐字：resetFilter + 多选态切换（indexOf 增删 +
@@ -8558,43 +8399,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
 
 /* renameFolder/renameSmartFolder（bundle 38163 邻域/38168 邻域逐字：editable + newFolderName
    + 双 100/200ms focus select——bundle 原样双写） */
-export function machineryRenameFolder(s: any, event: any, folder: any): void {
-  const w = window as any;
-  // if (folder.password && !folder.isUnLock) return;
-  s.viewMode = undefined;
-  s.currentFolder = folder;
-  syncPanelFromScope();
-  syncFolderLock();
-  syncListFromScope();
-  folder.editable = true;
-  folder.newFolderName = folder.name;
-  setTimeout(function () {
-    focusEl("#folder-input-" + folder.id);
-    selectEl("#folder-input-" + folder.id);
-  }, 100);
-  setTimeout(function () {
-    focusEl("#folder-input-" + folder.id);
-    selectEl("#folder-input-" + folder.id);
-  }, 200);
-}
 
-export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any): void {
-  const w = window as any;
-  s.viewMode = undefined;
-  s.currentSmartFolder = smartFolder;
-  syncPanelFromScope();
-  syncListFromScope();
-  smartFolder.editable = true;
-  smartFolder.newFolderName = smartFolder.name;
-  setTimeout(function () {
-    focusEl("#folder-input-" + smartFolder.id);
-    selectEl("#folder-input-" + smartFolder.id);
-  }, 100);
-  setTimeout(function () {
-    focusEl("#folder-input-" + smartFolder.id);
-    selectEl("#folder-input-" + smartFolder.id);
-  }, 200);
-}
 
 /* showTutorial（bundle 37xxx 逐字：空库+单历史+无文件夹 && 教程未看过守卫 + themePath
    filter（getFilter()）+ swal 四语 open 文档跳转） */
@@ -9256,32 +9061,6 @@ export function machineryHideUploadQueue(s: any): void {
 /* getFolderImages（bundle 42841-42865 逐字：倒序扫描 raw + folders 归属判定；
    includeSubFolder 时 eagle.utils.tree.walk 子树命中即含（回调 return 原样）；
    try/catch 吞错原样） */
-export function machineryGetFolderImages(s: any, folder: any, includeSubFolder: any): any[] {
-  const w = window as any;
-  var images: any[] = [];
-  for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
-    try {
-      var image = s.raw[rindex];
-      if (image.isDeleted) continue;
-      var isContain = image.folders.indexOf(folder.id) > -1;
-      if (includeSubFolder) {
-        if (!isContain) {
-          w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
-            if (image.folders.indexOf(child.id) > -1) {
-              isContain = true;
-              return;
-            }
-          });
-        }
-      }
-      if (isContain) {
-        images.push(image);
-      }
-    }
-    catch (err) { }
-  }
-  return images;
-}
 
 /* findDupclipate（bundle 28507-28868 逐字，typo 唯一：全局查重主表 + filterExtensions/
    filterCameras 建表副产物（currentFolder 空分支）+ duplicateGroupings 主动扫描（hasColorInfo
@@ -9805,26 +9584,7 @@ export function machineryRenameImages(s: any): void {
   }
 }
 
-/* batchRenameFolders（bundle 41631-41639）/ batchRenameSmartFolders（41654-41662）逐字 */
-export function machineryBatchRenameFolders(s: any): void {
-  var selectedFolders = s.$root.selectedFolders;
-  if (selectedFolders.length === 0) return;
 
-  openRenameChannel.emit({
-    type: "FOLDER",
-    folders: selectedFolders
-  });
-}
-
-export function machineryBatchRenameSmartFolders(s: any): void {
-  var selectedSmartFolders = s.$root.selectedSmartFolders;
-  if (selectedSmartFolders.length === 0) return;
-
-  openRenameChannel.emit({
-    type: "SMART_FOLDER",
-    folders: selectedSmartFolders
-  });
-}
 
 /* renameTagGroup（bundle 48582-48592 逐字：双 100/200ms focus 双写原样） */
 export function machineryRenameTagGroup(s: any, group: any): void {

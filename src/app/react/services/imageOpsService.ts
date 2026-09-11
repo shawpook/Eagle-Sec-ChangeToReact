@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
 import { machineryVideoScreenShot } from './mediaService';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
@@ -33,6 +33,7 @@ import { updateInspectorChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, dataGet, dataSet, setCssEl, cssGet, widthOf, heightOf } from '../utils/domQuery';
 
+import { machineryGetAncestorFolders } from '../core/libraryDomain';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。

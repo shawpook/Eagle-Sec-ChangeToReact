@@ -2,10 +2,11 @@ import { q, hasClass, widthOf, heightOf, setCssEl, onEl } from '../../utils/domQ
 import { t } from '../../global/eagleGlobals';
 import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { getBodyScope, getRootScope } from '../../core/appCore';
-import { machineryGetRecentFolders } from '../../core/dataMachinery';
+
 import { createFolder } from '../../services/folderCoreService';
 import { scopeEvalAsync } from '../../global/scopeShim';
 
+import { machineryGetRecentFolders } from '../../core/libraryDomain';
 /**
  * 阶段7d-1c-1：SelectPanel 体系纯类逐字移植（React 组件层见 SelectPanels.tsx）。
  *

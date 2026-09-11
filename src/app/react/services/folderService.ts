@@ -1,5 +1,6 @@
 import { getBodyScope } from '../core/appCore';
-import { machinerySaveFolder } from '../core/dataMachinery';
+
+import { machinerySaveFolder } from '../core/libraryDomain';
 /**
  * b1-9bb：文件夹服务 —— saveFolder 热点收编。
  *

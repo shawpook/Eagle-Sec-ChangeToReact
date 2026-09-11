@@ -17,7 +17,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryCalculateImageBinding, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryGetFolderImages, machineryOpenAll, machineryPrependFolder, machineryRebindRefresh, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCheckOperationSafety2, machineryExistInSmartFilter, machineryOpenAll, machineryPrependFolder, machineryRebindRefresh, machineryReload, machineryRemoveFolder, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryRemoveSmartFolder, machinerySaveFolderDebounce, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machinerySortRawData, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
@@ -29,6 +29,7 @@ import { addToLibraryChannel, editSmartFolderChannel, folderSettingsChannel, new
 import { scopeEvalAsync } from '../global/scopeShim';
 
 import { machineryNewSmartFolder } from '../core/libraryDomain';
+import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetFolderImages, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder } from '../core/libraryDomain';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

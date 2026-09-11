@@ -23,13 +23,14 @@ import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
-import { getOffsetScrollbarFn, getFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList } from './dataMachinery';
+import { getOffsetScrollbarFn, getFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryHideUploadQueue, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { glRemoveitemsChannel, openDuplicateChannel, openDuplicateScanPanelChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setHtml, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
+import { machineryGetAncestorFolders, machinerySaveFolder } from './libraryDomain';
 declare const IPCHelper: any;
 declare const remote: any;
 

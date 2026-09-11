@@ -48,9 +48,9 @@ import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenUnfiled, machineryOpenUntagged, machineryRebindRefresh, machineryShowTutorial, machinerySmartFolderCount, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateSidebarList } from './dataMachinery';
 import { filterWithColor, resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
-import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel } from '../global/bus';
+import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel, openRenameChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl } from '../utils/domQuery';
+import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addClass, removeClass, focusEl, selectEl } from '../utils/domQuery';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -1345,4 +1345,257 @@ export function machineryOpenTrialModal(s: any, trialRemain: any): void {
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
     ipc.send('open-trial-modal', trialRemain);
   }
+}
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* batchRenameFolders（bundle 41631-41639）/ batchRenameSmartFolders（41654-41662）逐字 */
+export function machineryBatchRenameFolders(s: any): void {
+  var selectedFolders = s.$root.selectedFolders;
+  if (selectedFolders.length === 0) return;
+
+  openRenameChannel.emit({
+    type: "FOLDER",
+    folders: selectedFolders
+  });
+}
+
+export function machineryBatchRenameSmartFolders(s: any): void {
+  var selectedSmartFolders = s.$root.selectedSmartFolders;
+  if (selectedSmartFolders.length === 0) return;
+
+  openRenameChannel.emit({
+    type: "SMART_FOLDER",
+    folders: selectedSmartFolders
+  });
+}
+
+/* 取得文件夹祖先们（bundle 42508 逐字） */
+export function machineryGetAncestorFolders(s: any, folder: any, folders: any[]): any[] {
+  try {
+    if (folder.parent && s.folderMappings[folder.parent]) {
+      const parent = s.folderMappings[folder.parent];
+      if (parent.id != folder.id) {
+        folders.push(parent);
+        return machineryGetAncestorFolders(s, parent, folders);
+      }
+    }
+    folders = [...new Set(folders)];
+    return folders;
+  } catch (err: any) {
+    const w = window as any;
+    w.electronLog && w.electronLog.error(err.stack || err);
+    folders = [...new Set(folders)];
+    return folders;
+  }
+}
+
+export function machineryGetChildFoldersMaps(s: any, folders: any): any {
+  const w = window as any;
+  var childs: any = {};
+  for (var i = 0; i < folders.length; i++) {
+    var folder = folders[i];
+    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+      childs[child.id] = true;
+    });
+  }
+  return childs;
+}
+
+export function machineryGetFolderImages(s: any, folder: any, includeSubFolder: any): any[] {
+  const w = window as any;
+  var images: any[] = [];
+  for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+    try {
+      var image = s.raw[rindex];
+      if (image.isDeleted) continue;
+      var isContain = image.folders.indexOf(folder.id) > -1;
+      if (includeSubFolder) {
+        if (!isContain) {
+          w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+            if (image.folders.indexOf(child.id) > -1) {
+              isContain = true;
+              return;
+            }
+          });
+        }
+      }
+      if (isContain) {
+        images.push(image);
+      }
+    }
+    catch (err) { }
+  }
+  return images;
+}
+
+/* getRecentFolders（bundle 31969-31988 逐字） */
+export function machineryGetRecentFolders(s: any, length: any): any[] {
+  var len = length;
+  if (!length) len = 8;
+  var recentMoveFolders: any = localStorage.getItem("recentMoveFolders");
+  if (recentMoveFolders) {
+    recentMoveFolders = JSON.parse(recentMoveFolders);
+    recentMoveFolders = recentMoveFolders.slice(0, len);
+  }
+  else {
+    return [];
+  }
+
+  recentMoveFolders = recentMoveFolders.filter(function (folderId: any) {
+    return !!s.folderMappings[folderId];
+  });
+
+  var recentFolders = recentMoveFolders.map(function (folderId: any) {
+    return s.folderMappings[folderId];
+  });
+
+  recentFolders = [...new Set(recentFolders)];
+  return recentFolders;
+}
+
+export function machineryRefreshRandom(s: any): void {
+  const w = window as any;
+  if (s.isDetailMode) return;
+
+  if (
+    s.viewMode === 'random' ||
+    (s.currentFolder && s.currentFolder.orderBy === "RANDOM") ||
+    (s.currentSmartFolder && s.currentSmartFolder.orderBy === "RANDOM")
+  ) {
+    s.shuffle = [];
+    addClass("#refresh-random", "active");
+    setTimeout(function () {
+      removeClass("#refresh-random", "active");
+    }, 50);
+    s.reload();
+  }
+}
+
+export function machineryRenameFolder(s: any, event: any, folder: any): void {
+  const w = window as any;
+  // if (folder.password && !folder.isUnLock) return;
+  s.viewMode = undefined;
+  s.currentFolder = folder;
+  syncPanelFromScope();
+  syncFolderLock();
+  syncListFromScope();
+  folder.editable = true;
+  folder.newFolderName = folder.name;
+  setTimeout(function () {
+    focusEl("#folder-input-" + folder.id);
+    selectEl("#folder-input-" + folder.id);
+  }, 100);
+  setTimeout(function () {
+    focusEl("#folder-input-" + folder.id);
+    selectEl("#folder-input-" + folder.id);
+  }, 200);
+}
+
+export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any): void {
+  const w = window as any;
+  s.viewMode = undefined;
+  s.currentSmartFolder = smartFolder;
+  syncPanelFromScope();
+  syncListFromScope();
+  smartFolder.editable = true;
+  smartFolder.newFolderName = smartFolder.name;
+  setTimeout(function () {
+    focusEl("#folder-input-" + smartFolder.id);
+    selectEl("#folder-input-" + smartFolder.id);
+  }, 100);
+  setTimeout(function () {
+    focusEl("#folder-input-" + smartFolder.id);
+    selectEl("#folder-input-" + smartFolder.id);
+  }, 200);
+}
+
+export function machinerySaveFolder(s: any): void {
+  const w = window as any;
+  console.time("$scope.saveFolder");
+
+  // 保存時進行日文濁音正規化
+  const unrom = w.require(w.appRoot.path + '/app/js/utils/unorm.js');
+  const nfc = (text: any) => {
+    try {
+      return unrom.nfc(text);
+    }
+    catch (err) {
+      return text;
+    }
+  };
+
+  var folders: any[] = [];
+  w.cloneTree(folders, s.folders);
+
+  w.eagle.utils.tree.walk(folders, 'children', function (folder: any, parent: any, depth: any) {
+    folder.name = nfc(folder.name);
+  });
+
+  const smartFolders = s.smartFolders.map(function (smartFolder: any) {
+    var clone: any = {
+      id: smartFolder.id,
+      icon: smartFolder.icon,
+      iconColor: smartFolder.iconColor,
+      name: smartFolder.name,
+      description: smartFolder.description || "",
+      modificationTime: smartFolder.modificationTime,
+      conditions: smartFolder.conditions,
+    };
+    if (smartFolder.children) {
+      clone.children = smartFolder.children;
+    }
+    if (smartFolder.orderBy) {
+      clone.orderBy = smartFolder.orderBy;
+      clone.sortIncrease = smartFolder.sortIncrease;
+    }
+    return clone;
+  });
+
+  w.eagle.utils.tree.walk(smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+    smartFolder.name = nfc(smartFolder.name);
+  });
+
+  const groups = s.TagManager.groups.map(function (group: any) {
+    var g: any = {
+      id: group.id,
+      name: nfc(group.name),
+      tags: group.tags
+    };
+    if (group.color) {
+      g.color = group.color;
+    }
+    if (group.description !== undefined) {
+      g.description = group.description;
+    }
+    return g;
+  });
+
+  const quickAccess = s.quickAccess.map(function (item: any) {
+    return {
+      type: item.type,
+      id: item.id
+    };
+  });
+
+  const libraryPath = s.libraryPath;
+
+    // IPCHelper（bundle 3471 const = 脚本级词法绑定，window/ESM 均不可达）——send 语义等价
+  // 复刻（bundle 3473-3482：ipcRenderer.send + electronLog + try/catch 静默）
+  try {
+    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    ipc.send('folders-change', {
+      // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
+      libraryDir: libraryPath,
+      folders: folders,
+      smartFolders: smartFolders,
+      quickAccess: quickAccess,
+      tagsGroups: groups,
+    });
+    w.electronLog && w.electronLog.info('[ipc] folders-change');
+  }
+  catch (err) {
+  }
+
+  console.timeEnd("$scope.saveFolder");
 }

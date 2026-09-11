@@ -7,7 +7,7 @@ import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../ser
 import { syncDetailFromScope, useDetailState } from '../../store/detailState';
 import { useBodyState } from '../../store/bodyState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/dataMachinery';
+import { machineryLeaveDetailMode, machineryOpenPluginPanel, machinerySelectNext, machinerySelectPrev } from '../../core/dataMachinery';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
@@ -1965,12 +1965,12 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
           if (Date.now() - downTime.value <= 1000 && Math.abs(endPoint.x - startPoint.x) > (maxDistanceX * 2) / 3) {
             if (endPoint.x > startPoint.x) {
               scopeApply(s, function (sc) {
-                sc.selectNext();
+                machinerySelectNext(sc, undefined);
                 sc.$evalAsync?.();
               });
             } else {
               scopeApply(s, function (sc) {
-                sc.selectPrev();
+                machinerySelectPrev(sc, undefined);
                 sc.$evalAsync?.();
               });
             }

@@ -11321,14 +11321,11 @@ export function applyDataMachineryScope(): void {
   // c18a：smartZoom/lastZoom
   s.lastZoom = () => machineryLastZoom(s);
   // c18b：zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght
-  s.zoomActual = (event: any) => machineryZoomActual(s, event);
   s.zoomFitEdge = (event: any, hasTransition: any) => machineryZoomFitEdge(s, event, hasTransition);
   s.updateContainerHieght = (hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimation, delay);
   // c18c：undo/nextHistory/prevHistory/back
   // c18d：selectAll/toggleDetailMode
   // c18e-1：selectNext/selectPrev
-  s.selectNext = (event: any) => machinerySelectNext(s, event);
-  s.selectPrev = (event: any) => machinerySelectPrev(s, event);
   // c18e-2：multipleSelect 四件套
   // c18e-2b：removeSelected
   // c18e-3：quicklook/copyImages
@@ -11342,8 +11339,6 @@ export function applyDataMachineryScope(): void {
   // c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover
   // c18f-3：inspector 面板/快捷搜索打开器
   // c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
-  s.nextGifFrame = (amount: any) => machineryNextGifFrame(s, amount);
-  s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);
   // c18g-2：视图开启器族
   // b1-3：侧栏 prev/next 导航四向
   // b1-4a：滚动/列表辅助族第一批
@@ -11359,14 +11354,12 @@ export function applyDataMachineryScope(): void {
   // b1-6c：removeFolderContents
   // b1-7a：小件批
   // b1-7b：幻灯片/锁屏/调色板/布局/过滤入口/多开
-  s.lockApp = () => machineryLockApp(s);
   s.toggleFilterByType = machineryToggleFilterByType(s);
   // b1-7c：展开族/重复图/排序/搜索全览
   // b1-7d-1：外部站点/教程/试用/多开/重命名入口/TouchID
   s.quickOpenFolder = (folder: any, t: any) => machineryQuickOpenFolder(s, folder, t);
   // b1-7d-2：侧栏树渲染核心
   // b1-7d-3：列表滑条/元信息/移入文件夹/上传队列/链接导入/截屏
-  s.moveToFolders = (e: any) => machineryMoveToFolders(s, e);
   s.showUploadQueue = () => machineryShowUploadQueue(s);
   // b1-9d 收口：onDropContainer（bundle 顶层 function → 同 window live binding 语义）。
   // 三处消费面都要命中：① smoke/CDP 直接调全局 onDropContainer(...)；② ListRegion
@@ -11377,8 +11370,6 @@ export function applyDataMachineryScope(): void {
   if (s.__eagleShim && !(window as any).onDropContainer) (window as any).onDropContainer = s.onDropContainer;
   // b1-7e：全局查重（getFolderImages/findDupclipate）+ 子文件夹列表 + 搜索聚焦 +
   // 新建智能文件夹/前置插入 + 列表滚顶/滚底
-  s.newSmartFolder = (event: any, smartFolder: any) => machineryNewSmartFolder(s, event, smartFolder);
-  s.prependFolder = (folder: any) => machineryPrependFolder(s, folder);
   // b1-8：rename 域（路由 + 图片/子文件夹行内编辑 + 批量 + 标签/群组 + selectFolder）
   // b1-8 裸引用审计修复：controllerFns fns 表内闭包裸调改走 scope 解析——闭包三件
   // （getExtendTags/getChildFoldersMaps/getChildFoldersMap）+ setViewMode 闭包 debounce

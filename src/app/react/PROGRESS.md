@@ -2381,6 +2381,25 @@
 > `residue`/`ui-interactions` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788（无新增）。
 >
 
+> **【D-1 批次 9（Track A）✅：直调化余量清理；挂载 54 → 45（2026-09-11）】**
+>
+> 退役 **9** 项：
+> - 改写器自动：`lockApp` `newSmartFolder` `prependFolder` `moveToFolders`（无调用面/orphan）。
+> - 手工：`selectNext` `selectPrev`（主窗口真实调用者仅 `components/detail/detailHooks.ts` 的
+>   `sc.selectNext()`/`sc.selectPrev()`，已改直调）；`zoomActual` `nextGifFrame` `prevGifFrame`
+>   （字符串引用全在 preview-window 自有 controllerScope，主窗口为 orphan）。
+> - `detailHooks` 两处直调补 `undefined`（machinery 签名 2 参），tsc 保持 788。
+>
+> **改写器两个盲区记录**（供后续批次避坑）：
+> ① 字符串检查把 CROSS 文件（preview/collect/viewers/preferences）也算在内 → preview 自有 scope 的
+>    `call('selectNext')` 会把主窗口同名挂载误判为「有字符串动态调用」而跳过；
+> ② 计数含「匹配但被引号/注释守卫跳过」的站点，报「1 处」不等于真的改了 1 处
+>    （本批 4 个 orphan 报 1 处但 diff 仅删挂载）——须以 `grep` 残留引用 + 探针为准。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `$bodyScope` 漏网扫描仅剩注释占位 +
+> `stage-smoke`/`1m1`/`residue`/`ui-interactions` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

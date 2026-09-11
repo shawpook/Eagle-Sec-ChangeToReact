@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
-import { machineryFilterData, machineryGetSelectedItemElements, machineryGetSelection, machineryLeaveDetailMode, machinerySmartFolderCount, machinerySmartZoom, machineryUpdateFilterCounts } from '../../core/dataMachinery';
+import { machineryContentFilter, machineryFilterData, machineryGetSelectedItemElements, machineryGetSelection, machineryLeaveDetailMode, machinerySmartFolderCount, machinerySmartZoom, machineryUpdateFilterCounts } from '../../core/dataMachinery';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -149,7 +149,7 @@ export function hiddenByCurrentFilter(items: any[]) {
       if (!willSendItems || willSendItems.length === 0) return;
       console.log('第 %d 更新，目前進度 %d / %d', countOfSend, willSendItems.length + (countOfSend - 1) * once, total);
       let keepItems = await machineryFilterData(getBodyScope(), willSendItems);
-      keepItems = keepItems.filter(getBodyScope().contentFilter);
+      keepItems = keepItems.filter((x: any) => machineryContentFilter(getBodyScope(), x));
       const keetItemsMap: any = {};
       keepItems.forEach((item: any) => {
         keetItemsMap[item.id] = true;

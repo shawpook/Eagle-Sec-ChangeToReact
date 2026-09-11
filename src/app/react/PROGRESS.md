@@ -2544,6 +2544,23 @@
 > `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 17（Track A）✅：toggleSlideshow + contentFilter 退役；箭头面 16 → 14（2026-09-11）】**
+>
+> - `toggleSlideshow`：主窗口无真实调用面（`DetailViewer` 原为 `typeof s.toggleSlideshow` 守卫 +
+>   直调，已去守卫；`miscDomain`/`itemMenuService`/`mediaService` 早已 import 直调；
+>   preview-window 为其自有 controllerScope）。退役挂载。
+> - `contentFilter`：3 处谓词位置改直调包装（`FolderModals`/`bundleGlobals`/`FolderSelectPanels`
+>   的 `.filter(bs.contentFilter)` → `.filter((x) => machineryContentFilter(bs, x))`），并删除挂载。
+> - **LOAD_BROKEN 定位**：首次 probe `allData=0`（印证交接文档「批次 4 试改 contentFilter →
+>   LOAD_BROKEN」）。根因是 **`dataMachinery.ts:2547` 内部 boot 路径
+>   `s.raw.filter(s.contentFilter)`** 也消费挂载（`machineryCalcuteFilterResult`），
+>   改直调后 `LOAD_OK`。**教训：谓词类挂载除外部位置外，必须扫同文件内部消费面。**
+> - 箭头面挂载 **16 → 14**。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

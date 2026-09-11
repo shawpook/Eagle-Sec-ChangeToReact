@@ -10,7 +10,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
-import { machineryChangeSidebarIndex, machineryRebindRefresh, machinerySmartFolderCount } from '../../core/dataMachinery';
+import { machineryChangeSidebarIndex, machineryContentFilter, machineryRebindRefresh, machinerySmartFolderCount } from '../../core/dataMachinery';
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -920,7 +920,7 @@ export function NewSmartFolderModal() {
       body.currentSmartFolder.parent = smartFolderRef.current.parent;
     }
     // $filter('filter')(raw, contentFilter)——contentFilter 为函数谓词，等价 raw.filter
-    const result = body.raw.filter(body.contentFilter);
+    const result = body.raw.filter((x: any) => machineryContentFilter(body, x));
     const count = result.length;
     setTotalCount(count);
     machineryRebindRefresh(body, undefined, undefined, undefined);

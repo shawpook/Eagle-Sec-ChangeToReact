@@ -2544,7 +2544,7 @@ export async function machineryCalcuteFilterResult(s: any, data: any[], contentF
         result = contentFilterCache.slice(0);
       }
       else {
-        result = s.raw.filter(s.contentFilter);
+        result = s.raw.filter((x: any) => machineryContentFilter(s, x));
         s.contentFilterCache = result.slice(0);
       }
       const filtered = await machineryFilterData(s, result);
@@ -11292,7 +11292,7 @@ export function applyDataMachineryScope(): void {
   s.reload = machineryReload(s);
   // c9d：缩放/放映/计数/最近文件夹（getRatioExp/getRatioNonExp 纯函数被 updateZoomRatio
   // 与 React 域 24 处调用面共用）
-  s.toggleSlideshow = () => machineryToggleSlideshow(s);
+  // D-1 A-2：toggleSlideshow 挂载已退役（DetailViewer/miscDomain/itemMenuService/mediaService 均 import 直调）
   // c9e：updateItemView（updateItemsView 循环体；bundle 侧 $bodyScope.updateItemView 19688-19751
   // 与 ipc 路径 21234/23632+ 全部改走移植版）
   // c13：relayout（ig/eg 经 window 解析）
@@ -11300,7 +11300,7 @@ export function applyDataMachineryScope(): void {
   // c14b：筛选引擎（filterData/calcuteFilterResult scope 替换——rebindRefresh 的
   // await s.calcuteFilterResult 即走移植实现）
   // c14c：contentFilter/calcuteContainTags + RecentFileManager（if-absent）
-  s.contentFilter = (image: any) => machineryContentFilter(s, image);
+  // D-1 A-2：contentFilter 挂载已退役（FolderModals/bundleGlobals/FolderSelectPanels 谓词位置改直调包装）
   const w2 = window as any;
   if (!w2.RecentFileManager) w2.RecentFileManager = buildRecentFileManager();
   // c15：updateSelection/zoom

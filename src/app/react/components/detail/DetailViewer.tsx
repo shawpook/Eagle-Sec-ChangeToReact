@@ -297,7 +297,7 @@ function WebViewBranch({ snapshot }: { snapshot: DetailSnapshot }) {
           webview.executeJavaScript(`document.exitFullscreen();`);
         }
         scopeApply(getBodyScope(), (s) => {
-          if (typeof s.toggleSlideshow === 'function') machineryToggleSlideshow(s);
+          machineryToggleSlideshow(s);
           s.$evalAsync?.();
         });
       });

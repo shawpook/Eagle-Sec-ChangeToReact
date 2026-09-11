@@ -124,13 +124,22 @@ try {
   await assertExpr('a4-trash-empty-closed', `document.querySelectorAll('#eagle-drop-areas-host .drop-area').length === 0`);
 
   // ── a4：keyword 空结果 + box-container empty class ──
-  await evalNow(`(() => { const b = window.$bodyScope; b.keyword = 'zzz-no-hit'; b.filtereds = []; b.$evalAsync(); return true; })()`);
+  // b1-9by-A 退役 scope 轮询 watcher 后，快照字段改为写入点直调 store——测试直接驱动 zustand store。
+  await evalNow(`(() => {
+    window.__eagleBodyState.setState({ keyword: 'zzz-no-hit' });
+    window.__eagleListState.setState({ keyword: 'zzz-no-hit', filteredsCount: 0, isLoading: false });
+    return true;
+  })()`);
   await assertExpr('a4-search-none', `(() => {
     const box = document.getElementById('box-container');
     const areas = document.querySelectorAll('#eagle-drop-areas-host .drop-area');
     return box.classList.contains('empty') && areas.length === 1;
   })()`);
-  await evalNow(`(() => { const b = window.$bodyScope; b.keyword = ''; b.$evalAsync(); return true; })()`);
+  await evalNow(`(() => {
+    window.__eagleBodyState.setState({ keyword: '' });
+    window.__eagleListState.setState({ keyword: '', filteredsCount: 1, isLoading: false });
+    return true;
+  })()`);
   await assertExpr('a4-search-none-closed', `(() => {
     const box = document.getElementById('box-container');
     return !box.classList.contains('empty') && document.querySelectorAll('#eagle-drop-areas-host .drop-area').length === 0;

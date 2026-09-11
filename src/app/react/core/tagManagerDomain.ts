@@ -1424,7 +1424,7 @@ export function machineryBuildTagManager(s: any): any {
 
         s.openTagAllGroup = function () {
             if (s.tagViewMode === "ALL") return;
-            tagRectSelecting = false;
+            (window as any).tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "ALL";
             syncTagManagerFromScope();
@@ -1440,7 +1440,7 @@ export function machineryBuildTagManager(s: any): any {
 
         s.openUnfiledGroup = function () {
             if (s.tagViewMode === "UNFILED") return;
-            tagRectSelecting = false;
+            (window as any).tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "UNFILED";
             syncTagManagerFromScope();
@@ -1456,7 +1456,7 @@ export function machineryBuildTagManager(s: any): any {
 
         s.openStarredGroup = function () {
             if (s.tagViewMode === "STARRED") return;
-            tagRectSelecting = false;
+            (window as any).tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "STARRED";
             syncTagManagerFromScope();
@@ -1471,7 +1471,7 @@ export function machineryBuildTagManager(s: any): any {
         };
 
         s.openTagGroup = function (group: any) {
-            tagRectSelecting = false;
+            (window as any).tagRectSelecting = false;
             s.keyword = "";
             s.tagViewMode = "GROUP";
             syncTagManagerFromScope();

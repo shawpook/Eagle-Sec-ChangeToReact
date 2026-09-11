@@ -10,7 +10,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
-import { machineryChangeSidebarIndex } from '../../core/dataMachinery';
+import { machineryChangeSidebarIndex, machinerySmartFolderCount } from '../../core/dataMachinery';
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -987,7 +987,7 @@ export function NewSmartFolderModal() {
       }
 
       children.splice(idx, 0, smartFolder);
-      smartFolder.imageCount = body.smartFolderCount(smartFolder);
+      smartFolder.imageCount = machinerySmartFolderCount(body, smartFolder);
       body.smartFolderMappings[smartFolder.id] = smartFolder;
       updateSidebarList();
       openSmartFolder(smartFolder);
@@ -1003,7 +1003,7 @@ export function NewSmartFolderModal() {
       smartFolderRef.current.name = folderNameRef.current;
       smartFolderRef.current.conditions = conditionsRef.current;
       smartFolderRef.current.modificationTime = Date.now();
-      smartFolderRef.current.imageCount = body.smartFolderCount(smartFolderRef.current);
+      smartFolderRef.current.imageCount = machinerySmartFolderCount(body, smartFolderRef.current);
       if (smartFolderRef.current) {
         updateSidebarList();
         openSmartFolder(smartFolderRef.current);
@@ -1020,7 +1020,7 @@ export function NewSmartFolderModal() {
         setTimeout(() => {
           // 原版 $scope.smartFolderCount 经 scope 原型链解析到 body.smartFolderCount
           w().eagle.utils.tree.walk(smartFolderRef.current.children, 'children', (csf: any, parent: any, depth: any) => {
-            csf.imageCount = body.smartFolderCount(csf);
+            csf.imageCount = machinerySmartFolderCount(body, csf);
           });
           bumpAll();
         }, 200);

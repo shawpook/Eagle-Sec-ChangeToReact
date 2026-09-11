@@ -15,6 +15,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { machineryGetRatioNonExp } from '../core/dataMachinery';
 
 
 	/*****************************************************************************
@@ -1858,7 +1859,7 @@ if (!self._mousedown) return;
 			}
 
 			$scope.imageSize.zoomRatioExp = self.rA * 100;
-			$scope.imageSize.zoomRatio = $scope.getRatioNonExp($scope.imageSize.zoomRatioExp);
+			$scope.imageSize.zoomRatio = machineryGetRatioNonExp($scope, $scope.imageSize.zoomRatioExp);
 
 			if ($scope.updateDetailSlider) {
 				$scope.updateDetailSlider($scope.imageSize.zoomRatioExp);

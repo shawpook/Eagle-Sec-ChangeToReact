@@ -2472,6 +2472,34 @@
 > `ui-interactions`/`stage6`/`stage8c` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 14（Track A / A-2 主批）✅：契约改经 `__eagleMachinery`；箭头面 35 → 19（2026-09-11）】**
+>
+> **1m1 契约改写**（scope 挂载面 → machinery 导出面）：
+> - `m1-A3-c9-machinery`：3 个 `typeof s.*` → `typeof M.*`（M=`window.__eagleMachinery`）。
+> - `m1-A8-relayout-machinery`：`typeof $bodyScope.relayout` → `M.relayout`。
+> - `m1-A9-smart-filter`：`s.existInSmartFilter(folder,img)` → `M.existInSmartFilter(s,folder,img)`。
+> - `m1-A10-filter-engine`：`typeof $bodyScope.filterData/calcuteFilterResult` → `M.*`。
+> - 驱动面 `s.calculateImageBinding({},cb)` → `window.__eagleMachinery.calculateImageBinding(s,{},cb)`。
+>
+> **退役 16 项**：`calculateImageBinding` `sortRawData` `rebindRefreshLazy` `updateSidebarList`
+> `updateItemsView` `switchLayout` `prependImages` `getRatioExp` `getRatioNonExp` `updateZoomRatio`
+> `getRecentFolders` `filterData` `relayout` `existInSmartFilter` `calcuteFilterResult` `smartFolderCount`。
+>
+> **残留调用面修复**（rewriter 盲区，逐个查证后直调）：`apiServerDomain`（`bs.updateSidebarList`×3 /
+> `bs.calculateImageBinding`）、`bundleGlobals`（`s().updateSidebarList()`×5 / `bs.smartFolderCount`）、
+> `sidebarService`（`s2.updateSidebarList` + 2 处存在性守卫）、`selectPanelEngine`（`getBodyScope().getRecentFolders()`）、
+> `FolderModals`/`FolderSelectPanels`（`body.smartFolderCount`×4）。
+>
+> **保留（spy 锚定，需效果断言另批）**：`rebindRefresh`（m1-D spy）、`updateSelection`（m1-E spy）、
+> `filterContent`（1m1 spy）、`toggleSlideshow`（miscDomain 截肢签名串）、`reload`（单例 + tests）。
+>
+> **rewriter 盲区补充**：① `s().name()`（调用式接收者）；② `.name()` 方法链；③ `$scope.name()`
+> 嵌在更长字符串内（引号检查漏）；④ 输出 dangling `, )`（1 参调用产物，需补 `undefined`）。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

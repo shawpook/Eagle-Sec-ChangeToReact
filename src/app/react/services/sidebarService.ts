@@ -211,7 +211,7 @@ export function sidebarPreventMiddleClick(event: any): void {
    s.sidebarList；S2-bh/bf 评估把主体迁入）── */
 export function updateSidebarList(): void {
   const s = getBodyScope();
-  if (s && typeof s.updateSidebarList === 'function') machineryUpdateSidebarList(s);
+  if (s) machineryUpdateSidebarList(s);
 }
 
 /* ── React 直调便捷面（无 scope 参数版本）——Sidebar.tsx 事件处理直调不绕 scopeApply。 */
@@ -513,7 +513,7 @@ export function toggleAllFolderExpand(...args: any[]) {
         }
         if (!expand) s2.sidebarIndex = 0;
         toggleAllFolders(s2.folders, expand);
-        s2.updateSidebarList();
+        machineryUpdateSidebarList(s2);
       }
     }).apply(null, args);
   }

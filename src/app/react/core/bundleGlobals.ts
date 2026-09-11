@@ -31,6 +31,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { glRemoveitemsChannel } from '../global/bus';
+import { machineryFilterData, machinerySmartFolderCount, machineryUpdateSidebarList } from '../core/dataMachinery';
 
 declare const Buffer: any;
 
@@ -383,7 +384,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
     try {
       if (!willSendItems || willSendItems.length === 0) return;
       console.log("第 %d 更新，目前進度 %d / %d", countOfSend, willSendItems.length + (countOfSend - 1) * once, total);
-      var keepItems = await bs.filterData(willSendItems);
+      var keepItems = await machineryFilterData(bs, willSendItems);
       keepItems = keepItems.filter(bs.contentFilter);
       var keetItemsMap: any = {};
       keepItems.forEach(function (item: any) {
@@ -415,7 +416,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
         if (hiddenElements.length > 0) {
           glRemoveitemsChannel.emit(hiddenElements);
           if (bs.currentSmartFolder) {
-            bs.currentSmartFolder.imageCount = bs.smartFolderCount(bs.currentSmartFolder);
+            bs.currentSmartFolder.imageCount = machinerySmartFolderCount(bs, bs.currentSmartFolder);
             scopeEvalAsync();
           }
         }
@@ -739,7 +740,7 @@ function _attachQuickAccessManager(qam: any): void {
       type: type,
       id: object.id
     });
-    s().updateSidebarList();
+    machineryUpdateSidebarList(s());
     qam.save();
     w.electronLog.info(`[app] Add ${type}(${object.id}) to quick access`);
     w.analytics.event('QuickAccess', 'Add', type);
@@ -757,7 +758,7 @@ function _attachQuickAccessManager(qam: any): void {
         w.analytics.event('QuickAccess', 'Add', type);
       }
     });
-    s().updateSidebarList();
+    machineryUpdateSidebarList(s());
     qam.save();
   };
 
@@ -765,7 +766,7 @@ function _attachQuickAccessManager(qam: any): void {
     var idx = qam.indexOf(object);
     if (idx > -1) {
       s().quickAccess.splice(idx, 1);
-      s().updateSidebarList();
+      machineryUpdateSidebarList(s());
       qam.save();
       w.electronLog.info(`[app] Remove ${type}(${object.id}) from quick access`);
       w.analytics.event('QuickAccess', 'Remove', type);
@@ -782,7 +783,7 @@ function _attachQuickAccessManager(qam: any): void {
         w.analytics.event('QuickAccess', 'Remove', type);
       }
     });
-    s().updateSidebarList();
+    machineryUpdateSidebarList(s());
     qam.save();
   };
 
@@ -790,7 +791,7 @@ function _attachQuickAccessManager(qam: any): void {
     if (idx > -1) {
       var object = s().quickAccess[idx];
       s().quickAccess.splice(idx, 1);
-      s().updateSidebarList();
+      machineryUpdateSidebarList(s());
       qam.save();
       w.electronLog.info(`[app] Remove ${object.type}(${object.id}) from quick access`);
       w.analytics.event('QuickAccess', 'Remove', object.type);

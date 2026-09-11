@@ -176,15 +176,16 @@ try {
   await assertExpr('m1-A3-c9-machinery', `(() => {
     const m = window.__eagleDataMachinery;
     const s = window.$bodyScope;
-    if (!m || !m.applied || m.version < 2) return false;
+    const M = window.__eagleMachinery;
+    if (!m || !m.applied || m.version < 2 || !M) return false;
     return ['calculateImageBinding', 'sortRawData', 'rebindRefresh', 'rebindRefreshLazy',
       'updateSidebarList', 'updateItemsView', 'switchLayout', 'prependImages', 'reload',
       'getRatioExp', 'getRatioNonExp', 'updateZoomRatio', 'toggleSlideshow',
       'smartFolderCount', 'getRecentFolders']
       .every((k) => m[k] === 'machinery')
-      && typeof s.calculateImageBinding === 'function'
-      && typeof s.rebindRefresh === 'function'
-      && typeof s.updateSidebarList === 'function';
+      && typeof M.calculateImageBinding === 'function'
+      && typeof M.rebindRefresh === 'function'
+      && typeof M.updateSidebarList === 'function';
   })()`);
 
   // ═══ A4. c10 bundle 全局接管（if-absent 共存 + 关键全局在位）═══
@@ -264,28 +265,30 @@ try {
   })()`);
   await assertExpr('m1-A8-relayout-machinery', `(() => {
     const m = window.__eagleDataMachinery;
+    const M = window.__eagleMachinery;
     return m && m.version >= 7 && m.relayout === 'machinery'
-      && typeof window.$bodyScope.relayout === 'function';
+      && M && typeof M.relayout === 'function';
   })()`);
 
   // ═══ A9. c14 智能文件夹规则匹配（26 规则函数在位 + existInSmartFilter 实调）═══
   await evalNow(`(() => {
     const w = window;
     const s = w.$bodyScope;
+    const M = w.__eagleMachinery;
     const ruleFnsOk = typeof w.isMatchNameRule === 'function' && typeof w.isMatchTypeRule === 'function'
       && typeof w.isMatchColorRule === 'function' && typeof w.isMatchFontActivatedRule === 'function';
-    // 实调：name contains 规则 + type equal 规则
+    // 实调：name contains 规则 + type equal 规则（D-1 A-2：经 __eagleMachinery 直调）
     const folder = { conditions: [{ match: 'AND', rules: [
       { property: 'name', method: 'contain', value: 'Alpha' },
     ] }] };
     const img = { name: 'Alpha One', ext: 'png', tags: [], folders: [], width: 100, height: 50, size: 1, modificationTime: Date.now() };
     let r1 = null, r2 = null, r3 = null;
-    try { r1 = s.existInSmartFilter(folder, img); } catch (err) { r1 = 'err:' + err.message; }
+    try { r1 = M.existInSmartFilter(s, folder, img); } catch (err) { r1 = 'err:' + err.message; }
     folder.conditions[0].rules[0].value = 'Zeta';
-    try { r2 = s.existInSmartFilter(folder, img); } catch (err) { r2 = 'err:' + err.message; }
+    try { r2 = M.existInSmartFilter(s, folder, img); } catch (err) { r2 = 'err:' + err.message; }
     folder.conditions[0].rules[0] = { property: 'type', method: 'equal', value: 'png' };
-    try { r3 = s.existInSmartFilter(folder, img); } catch (err) { r3 = 'err:' + err.message; }
-    window.__a9 = (ruleFnsOk && r1 === true && r2 === false && r3 === true) ? 'ok' : 'fail:' + [ruleFnsOk, r1, r2, r3].join(',');
+    try { r3 = M.existInSmartFilter(s, folder, img); } catch (err) { r3 = 'err:' + err.message; }
+    window.__a9 = (M && ruleFnsOk && r1 === true && r2 === false && r3 === true) ? 'ok' : 'fail:' + [ruleFnsOk, r1, r2, r3].join(',');
     return true;
   })()`);
   await assertExpr('m1-A9-smart-filter', `window.__a9 === 'ok'`);
@@ -293,10 +296,11 @@ try {
   // ═══ A10. c14b 筛选引擎契约（filterData/calcuteFilterResult machinery 标记）═══
   await assertExpr('m1-A10-filter-engine', `(() => {
     const m = window.__eagleDataMachinery;
+    const M = window.__eagleMachinery;
     return m && m.version >= 9 && m.filterData === 'machinery'
       && m.calcuteFilterResult === 'machinery'
-      && typeof window.$bodyScope.filterData === 'function'
-      && typeof window.$bodyScope.calcuteFilterResult === 'function';
+      && M && typeof M.filterData === 'function'
+      && typeof M.calcuteFilterResult === 'function';
   })()`);
 
   // ═══ B. cZ-3b 启动重管线 ═══
@@ -341,7 +345,7 @@ try {
   console.log('DIAG-B', bDiag.result && bDiag.result.value);
   await evalNow(`(() => {
     const s = window.$bodyScope;
-    try { s.calculateImageBinding({}, function () { window.__m1cb = (window.__m1cb || 0) + 1; }); }
+    try { window.__eagleMachinery.calculateImageBinding(s, {}, function () { window.__m1cb = (window.__m1cb || 0) + 1; }); }
     catch (e) { window.__m1cbErr = String((e && e.stack) || e).slice(0, 300); }
     return true;
   })()`);

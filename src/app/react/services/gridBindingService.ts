@@ -12,5 +12,5 @@ import { machineryCalculateImageBinding } from '../core/dataMachinery';
 
 export function calculateImageBinding(params?: any, callback?: () => void): void {
   const s = getBodyScope();
-  if (s && typeof s.calculateImageBinding === 'function') machineryCalculateImageBinding(s, params, callback);
+  if (s) machineryCalculateImageBinding(s, params, callback);
 }

@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
-import { machineryGetSelectedItemElements, machineryGetSelection, machinerySmartZoom, machineryUpdateFilterCounts } from '../../core/dataMachinery';
+import { machineryFilterData, machineryGetSelectedItemElements, machineryGetSelection, machinerySmartFolderCount, machinerySmartZoom, machineryUpdateFilterCounts } from '../../core/dataMachinery';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -148,7 +148,7 @@ export function hiddenByCurrentFilter(items: any[]) {
     try {
       if (!willSendItems || willSendItems.length === 0) return;
       console.log('第 %d 更新，目前進度 %d / %d', countOfSend, willSendItems.length + (countOfSend - 1) * once, total);
-      let keepItems = await getBodyScope().filterData(willSendItems);
+      let keepItems = await machineryFilterData(getBodyScope(), willSendItems);
       keepItems = keepItems.filter(getBodyScope().contentFilter);
       const keetItemsMap: any = {};
       keepItems.forEach((item: any) => {
@@ -181,7 +181,7 @@ export function hiddenByCurrentFilter(items: any[]) {
         if (hiddenElements.length > 0) {
           glRemoveitemsChannel.emit(hiddenElements);
           if (getBodyScope().currentSmartFolder) {
-            getBodyScope().currentSmartFolder.imageCount = getBodyScope().smartFolderCount(getBodyScope().currentSmartFolder);
+            getBodyScope().currentSmartFolder.imageCount = machinerySmartFolderCount(getBodyScope(), getBodyScope().currentSmartFolder);
             scopeEvalAsync();
           }
         }

@@ -23,7 +23,7 @@ import { getBodyScope } from './appCore';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { machinerySaveFolder, machinerySortData, machineryUpdateFilterCounts } from '../core/dataMachinery';
+import { machineryCalculateImageBinding, machineryExistInSmartFilter, machinerySaveFolder, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
 
 let installed = false;
 
@@ -545,7 +545,7 @@ function machineryCreateFolder(params: any): Promise<any> {
         bs.folders.splice(bs.folders.length, 0, folder);
       }
       bs.folderMappings[folder.id] = folder;
-      bs.updateSidebarList();
+      machineryUpdateSidebarList(bs);
       addToRecentFolders([folder.id]);
       machinerySaveFolder(bs, );
       w.electronLog.info(`[api] create folder: ${folderName}(${folder.id})`);
@@ -568,7 +568,7 @@ function machineryRenameFolder(params: any): Promise<any> {
     else {
       let originName = folder.name;
       bs.changeFolderName(folder, newName);
-      bs.updateSidebarList();
+      machineryUpdateSidebarList(bs);
       machinerySaveFolder(bs, );
       w.electronLog.info(`[api] rename folder: ${originName} to ${newName}`);
       resolve(folder);
@@ -608,7 +608,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
       if (newDescription) {
         folder.description = newDescription;
       }
-      bs.updateSidebarList();
+      machineryUpdateSidebarList(bs);
       machinerySaveFolder(bs, );
       resolve(folder);
     }
@@ -805,7 +805,7 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
 
     w.ayncsImagesChange(items);
     w.hiddenByCurrentFilter(items);
-    bs.calculateImageBinding({ ignoreSort: true }, function () {
+    machineryCalculateImageBinding(bs, { ignoreSort: true }, function () {
       bs.rebindRefresh(true);
       bs.updateSelection();
     });
@@ -1232,7 +1232,7 @@ function machineryListImages(params: any): Promise<any> {
         }
 
         items = items.filter(function (item: any) {
-          return bs.existInSmartFilter(smartFolder, item);
+          return machineryExistInSmartFilter(bs, smartFolder, item);
         });
       }
 

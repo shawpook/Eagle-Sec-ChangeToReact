@@ -11277,38 +11277,22 @@ export function applyDataMachineryScope(): void {
   // scope 函数替换：此后 bundle 侧全部 $scope.calculateImageBinding 调用面（muteCalcuteImageBinding/
   // library.changed 等）即走移植实现（绞杀内部机器）。c9b：rebindRefresh/rebindRefreshLazy/
   // updateSidebarList 一并替换（React 域 10+ 处调用面 + bundle 18203/18438/$broadcast 路径）。
-  s.calculateImageBinding = (params: any, callback: any) => machineryCalculateImageBinding(s, params, callback);
-  s.sortRawData = (orderBy: any) => machinerySortRawData(s, orderBy);
   s.rebindRefresh = (muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRefresh(s, muteMode, contentFilterCache, startCursor);
-  s.rebindRefreshLazy = () => machineryRebindRefreshLazy(s);
   // filterContent（bundle 32583-32589 逐字；b1-9p 补端口——keyword/筛选规则 watcher 的
   // 重算入口；rebindRefresh 已移植，此函数本体会随 eagle 种子（evalPath 可解析）一起激活）
   s.filterContent = (type?: any) => machineryFilterContent(s, type);
-  s.updateSidebarList = () => machineryUpdateSidebarList(s);
   // c9c：updateItemsView/switchLayout/prependImages/reload（reload = 一次性创建的 leading-edge
   // 防抖实例，与 bundle controller init 同语义）
-  s.updateItemsView = (items: any[]) => machineryUpdateItemsView(s, items);
-  s.switchLayout = (layout: any, forceLayout: any) => machinerySwitchLayout(s, layout, forceLayout);
-  s.prependImages = (images: any[], updateView: any) => machineryPrependImages(s, images, updateView);
   s.reload = machineryReload(s);
   // c9d：缩放/放映/计数/最近文件夹（getRatioExp/getRatioNonExp 纯函数被 updateZoomRatio
   // 与 React 域 24 处调用面共用）
-  s.getRatioExp = (ratio: any) => machineryGetRatioExp(ratio);
-  s.getRatioNonExp = (ratio: any) => machineryGetRatioNonExp(ratio);
-  s.updateZoomRatio = (ratio: any, x: any, y: any, hasTransition: any) => machineryUpdateZoomRatio(s, ratio, x, y, hasTransition);
   s.toggleSlideshow = () => machineryToggleSlideshow(s);
-  s.smartFolderCount = (smartFolder: any) => machinerySmartFolderCount(s, smartFolder);
-  s.getRecentFolders = (length: any) => machineryGetRecentFolders(s, length);
   // c9e：updateItemView（updateItemsView 循环体；bundle 侧 $bodyScope.updateItemView 19688-19751
   // 与 ipc 路径 21234/23632+ 全部改走移植版）
   // c13：relayout（ig/eg 经 window 解析）
-  s.relayout = (margin: any) => machineryRelayout(s, margin);
   // c14：existInSmartFilter（26 规则函数经 window + MATCH_FUNCTION 表）
-  s.existInSmartFilter = (smartFolder: any, image: any) => machineryExistInSmartFilter(s, smartFolder, image);
   // c14b：筛选引擎（filterData/calcuteFilterResult scope 替换——rebindRefresh 的
   // await s.calcuteFilterResult 即走移植实现）
-  s.filterData = (data: any[]) => machineryFilterData(s, data);
-  s.calcuteFilterResult = (data: any[], contentFilterCache: any) => machineryCalcuteFilterResult(s, data, contentFilterCache);
   // c14c：contentFilter/calcuteContainTags + RecentFileManager（if-absent）
   s.contentFilter = (image: any) => machineryContentFilter(s, image);
   const w2 = window as any;

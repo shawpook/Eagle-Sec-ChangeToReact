@@ -2,6 +2,7 @@ import { $ } from '../detail/detailHooks';
 import { t } from '../../global/eagleGlobals';
 import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { getBodyScope, getRootScope } from '../../core/appCore';
+import { machineryGetRecentFolders } from '../../core/dataMachinery';
 import { createFolder } from '../../services/folderCoreService';
 import { scopeEvalAsync } from '../../global/scopeShim';
 
@@ -1931,8 +1932,7 @@ export class FolderSelectPanel extends SelectPanel {
     };
 
     let recentFolderIdx = 0;
-    const recentFolderIds = getBodyScope()
-      .getRecentFolders()
+    const recentFolderIds = machineryGetRecentFolders(getBodyScope(), undefined)
       .reduce((acc: any, cur: any) => {
         acc[cur.id] = recentFolderIdx++;
         return acc;

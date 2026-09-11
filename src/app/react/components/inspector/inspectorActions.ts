@@ -6,7 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { getOffsetScrollbarFn, machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryUpdateItemView, machineryOpenPluginPanel } from '../../core/dataMachinery';
+import { getOffsetScrollbarFn, machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryOpenPluginPanel, machineryRelayout, machineryUpdateItemView } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -853,7 +853,7 @@ export function onInspectorResize(event: any, ui: any) {
     clearTimeout((window as any).__eagleInspectorResizeTimeout);
     (window as any).eagle.inspector.width = ui.size.width;
     (window as any).__eagleInspectorResizeTimeout = setTimeout(() => {
-      getBodyScope().relayout();
+      machineryRelayout(getBodyScope(), undefined);
       getOffsetScrollbarFn(getBodyScope())(30);
     }, 500);
   }

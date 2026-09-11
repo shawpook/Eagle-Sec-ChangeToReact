@@ -91,8 +91,8 @@ import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
 import { autoscrollChannel, calculateImageBindingChannel, glRemoveitemsChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize, pinyinCache } from '../utils/normalize';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
-let pinyinCache: Record<string, string> = {};
 let calculateImageBindingTimeout: any = null;
 // ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
 //    rebindRefreshLazyTimeout）──
@@ -6080,9 +6080,6 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
 // 在非空关键词时抛 TypeError，被 $timeout shim 的 try 吞掉 → 关键词搜索静默失效
 // （11a49 的非空用例期望空结果，崩了也空，断言空洞通过）。scopeShim get 无 fns 回退，
 // 故走 machinery 赋值面（colorFilter/grayColorFilter 同类缺口另批处理）。
-function escapeRegex(str: any): any {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 function machineryConvertToRegexGroup(keywords: any, keywords_cn: any, keywords_tw: any): any {
     const regexGroup: any = {
@@ -9998,27 +9995,8 @@ export function machineryGotoBottom(s: any): void {
 }
 
 /* ── b1-8 rename 域 ──
-   emojiRegex（bundle 19014 顶层 const → 词法绑定不可达，域内同字面移植；**g 标志 lastIndex
-   状态跨调用共享与 bundle 顶层单例同语义**）、remainingFilenameLength（19018 require）与
-   sanitize（22746 函数内 require(appRoot + ...)——**无 .path 后缀，bundle 原样**）为惰性
-   require 缓存（bundle 为顶层即时，machinery 首用 —— 调用面语义同）。 */
-const emojiRegex = /\p{Emoji_Presentation}|\p{Extended_Pictographic}|([0-9]\u{FE0F}\u{20E3})|([\*#\u{1F51F}]\u{FE0F}\u{20E3})/gmu;
-let remainingFilenameLengthCache: any = null;
-function getRemainingFilenameLength(): any {
-  const w = window as any;
-  if (!remainingFilenameLengthCache) {
-    remainingFilenameLengthCache = w.require(w.appRoot.path + '/app/js/utils/remainingFilenameLength.js');
-  }
-  return remainingFilenameLengthCache;
-}
-let sanitizeCache: any = null;
-function getSanitize(): any {
-  const w = window as any;
-  if (!sanitizeCache) {
-    sanitizeCache = w.require(w.appRoot + '/my_modules/sanitize-filename');
-  }
-  return sanitizeCache;
-}
+   emojiRegex / remainingFilenameLength / sanitize / escapeRegex / pinyinCache 已随
+   D-1 B-1 归位 `utils/normalize.ts`（本域仅剩业务函数）。 */
 
 /* selectFolder（bundle 34666-34676 逐字：文件夹单项选中重置面） */
 export function machinerySelectFolder(s: any, event: any, folder: any): void {

@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryGetAncestorFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySaveFolder, machinerySetViewMode, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -720,7 +720,7 @@ const initLinkVars = () => {
                   localStorage.removeItem(`eagle.lastFolder.${getBodyScope().rootDir}`);
               }
               else {
-              	getBodyScope().setViewMode("all");
+              	machinerySetViewMode(getBodyScope(), "all");
                   localStorage.setItem(`eagle.lastFolder.${getBodyScope().rootDir}`, folderId);
               }
           }, 500);

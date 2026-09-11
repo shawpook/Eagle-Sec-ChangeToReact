@@ -3219,7 +3219,7 @@ let updateListHeightTimeout: any = null;
 /* setViewMode（bundle 38475-38479 逐字；_.debounce 500——防抖实例为模块级单例，与 bundle
    controller init 同语义） */
 let setViewModeDebounced: any = null;
-function machinerySetViewMode(s: any, viewMode: any): void {
+export function machinerySetViewMode(s: any, viewMode: any): void {
   const w = window as any;
   if (!viewMode) return;
   if (!setViewModeDebounced) {
@@ -11356,8 +11356,6 @@ export function applyDataMachineryScope(): void {
   // b1-4b：sortData/offsetScrollbar/updateFilterCounts（offsetScrollbar 实例经 getOffsetScrollbarFn 单例缓存）
   // b1-5：记忆/预载族
   // b1-5b：homeHandler/endHandler
-  s.homeHandler = (event: any) => machineryHomeHandler(s, event);
-  s.endHandler = (event: any) => machineryEndHandler(s, event);
   // b1-6a：删除族第一批
   // b1-6b：删除族第二批
   // b1-6c：removeFolderContents
@@ -11381,8 +11379,7 @@ export function applyDataMachineryScope(): void {
   // b1-8：rename 域（路由 + 图片/子文件夹行内编辑 + 批量 + 标签/群组 + selectFolder）
   // b1-8 裸引用审计修复：controllerFns fns 表内闭包裸调改走 scope 解析——闭包三件
   // （getExtendTags/getChildFoldersMaps/getChildFoldersMap）+ setViewMode 闭包 debounce
-  // 经 apply 接装后可解析（machinery 版本均已存在）
-  s.setViewMode = (viewMode: any) => machinerySetViewMode(s, viewMode);
+  // 经 apply 接装后可解析（machinery 版本均已存在；setViewMode 现为 export 直调）
   // b1-8 续：闭包供给面的非碰撞 scope 接装（calcuteContainFolders/toggleCurrentLevel{Folders,
   // SmartFolders} 与 bundle $scope 同名——**不可接装**，controllerFns 经 import 直调）
 

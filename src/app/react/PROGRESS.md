@@ -2437,6 +2437,19 @@
 > `ui-interactions`/`stage6`/`stage8c` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 12（Track A）✅：home/endHandler + setViewMode 直调化；箭头面 40 → 37（2026-09-11）】**
+>
+> - `homeHandler`/`endHandler`：主窗口无消费面（`machineryModUp/DownHandler` 内部已直调
+>   `machineryHome/EndHandler`；`scope.home*` 值为 preview-window 自有 scope）→ 退役两项。
+> - `setViewMode`：目标为**未导出**的本地 `machinerySetViewMode`（含模块级 debounce 单例）；
+>   改为 `export`，唯一调用点 `folderCoreService.ts` 的 `getBodyScope().setViewMode("all")`
+>   → `machinerySetViewMode(getBodyScope(), "all")` → 退役挂载。
+> - 箭头面挂载 **40 → 37**。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

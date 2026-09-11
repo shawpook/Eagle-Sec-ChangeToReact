@@ -6737,7 +6737,7 @@ export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
   };
   let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
   openUrlInPanelChannel.emit(`${baseUrl}`);
-  w.$bodyScope.leaveDetailMode();
+  machineryLeaveDetailMode(w.$bodyScope);
 }
 
 /* openAllTags（bundle 36889-36911 逐字：同视图有色早退 + ScrollbarSaver 存 + rebindRefresh +
@@ -11304,7 +11304,9 @@ export function applyDataMachineryScope(): void {
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
   if (!w2.ScrollbarSaver) w2.ScrollbarSaver = buildScrollbarSaver();
-  // c16a：enterDetailMode/leaveDetailMode
+  // c16a：enterDetailMode/leaveDetailMode（**保留挂载**：frontend/public/shims.js 以 25ms 轮询
+  // 包装 scope.enterDetailMode/leaveDetailMode 实现详情原图交付门控——属全局消费面，
+  // D-2 退役 shims.js 前不可删；应用内真实入口已走 import 直调。）
   s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode(s, $event, image);
   s.leaveDetailMode = () => machineryLeaveDetailMode(s);
   // c16c：saveFolder
@@ -11420,6 +11422,9 @@ export function applyDataMachineryScope(): void {
     contentFilter: machineryContentFilter,
     updateSelection: machineryUpdateSelection,
     filterContent: machineryFilterContent,
+    enterDetailMode: machineryEnterDetailMode,
+    leaveDetailMode: machineryLeaveDetailMode,
+    toggleAll: machineryToggleAll,
   };
 
   (window as any).__eagleDataMachinery = {

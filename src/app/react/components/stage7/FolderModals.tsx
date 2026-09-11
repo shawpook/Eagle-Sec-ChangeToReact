@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
-import { machineryFilterData, machineryGetSelectedItemElements, machineryGetSelection, machinerySmartFolderCount, machinerySmartZoom, machineryUpdateFilterCounts } from '../../core/dataMachinery';
+import { machineryFilterData, machineryGetSelectedItemElements, machineryGetSelection, machineryLeaveDetailMode, machinerySmartFolderCount, machinerySmartZoom, machineryUpdateFilterCounts } from '../../core/dataMachinery';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1126,7 +1126,7 @@ export function AddToFolderModal() {
       } else {
         body.selected = [];
         syncInspectorFromScope();
-        body.leaveDetailMode();
+        machineryLeaveDetailMode(body);
       }
     }
 

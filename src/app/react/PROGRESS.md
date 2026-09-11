@@ -2500,6 +2500,27 @@
 > `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 15（Track A / A-2）⚠️ 回退 + 修复：shims.js 全局锚定面（2026-09-11）】**
+>
+> **重要发现：`frontend/public/shims.js` 是独立的「全局消费面」（8 类存活面之外）**：
+> - 以 **25ms 轮询**包装 `scope.enterDetailMode` / `scope.leaveDetailMode`（详情原图交付门控
+>   `__eagleDetailDeliveryState.releasedAt` / `eagle-detail-awaiting-original`）——挂载缺失则门控
+>   永不安装 → `stage5` 的 `detail-delivery-released` 挂。
+> - `autoCollapseSidebar()` 调 `scope.toggleAll()`（文档工作区进入时折叠左栏）。
+>
+> **本批动作**：
+> - 回退 `enterDetailMode`/`leaveDetailMode` 挂载退役（**保留**，注释标明 shims 锚定，D-2 退役
+>   shims.js 前不可删；应用内真实入口早已走 import 直调）。`stage5` 测试驱动相应回退。
+> - 修复批次 8 遗留回归：`shims.js:autoCollapseSidebar` 的 `scope.toggleAll()` → 
+>   `window.__eagleMachinery.toggleAll(scope)`（surface 增补 `toggleAll`）——恢复文档工作区折叠。
+> - `leaveDetailMode` 三处真实调用面改直调（detailHooks / FolderModals / dataMachinery 内部）。
+>
+> **净挂载变化：0**（退 2 / 回 2）。箭头面维持 19。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

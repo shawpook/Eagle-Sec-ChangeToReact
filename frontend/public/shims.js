@@ -431,8 +431,9 @@
     try {
       if (document.body.classList.contains('hide-sidebar')) return;
       const scope = window.$bodyScope;
-      if (scope && typeof scope.toggleAll === 'function') {
-        scope.toggleAll();
+      const M = window.__eagleMachinery;
+      if (scope && M && typeof M.toggleAll === 'function') {
+        M.toggleAll(scope);
       }
     } catch (err) {
       console.warn('[eagle-shim] document auto-collapse sidebar failed', err);

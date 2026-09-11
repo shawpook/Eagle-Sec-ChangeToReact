@@ -1182,7 +1182,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     // ===== 雙擊處理 =====
     const onDblClick = function () {
       if (!isInPreviewWindow) {
-        getBodyScope().leaveDetailMode();
+        machineryLeaveDetailMode(getBodyScope());
       } else {
         getBodyScope().toggleFullScreen();
         scopeEvalAsync();

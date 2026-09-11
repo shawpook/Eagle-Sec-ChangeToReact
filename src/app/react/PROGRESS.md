@@ -2644,6 +2644,39 @@
 > (a) 单独作为子项目原生重写（或引入等价自研交互层）；(b) 本轮**留任 jquery-ui**，
 > 只清 `w.$()`/jQuery 核心查询面，`index.html` 保留 jquery-ui 并记录理由。
 > 其余 5 步（D-2a~e、g）与 (b) 不冲突，可先行推进。
+>
+> **【D-2f 决策（用户裁定）：方向 (a) 原生重写 / 自研交互层】** 逐处清单与重写顺序如下。
+>
+> **归一化**：`.sortable/.resizable/.draggable` 实测 48 处，其中 `smoothZoomEngine`
+> 的 3 处 `self.scrollbar.*.draggable(...)` 是**引擎自有 scrollbar API**（非 jQuery UI）→
+> **真实 jQuery-UI 站点 45 处**。
+>
+> | 特性 | 站点 | 回调依赖 `ui.*` | 备注 |
+> |---|---|---|---|
+> | **resizable** | 19（含 8 处 `'destroy'`） | `ui.size/position/element/helper` | 宿主 10：commentHooks(`$el` 无参 / `$cropArea` handles)、detailHooks(`$resizableBar`, e/w, containment)、Inspector(e/w? 实为 w)、BodyBindings(e)、TagManager(e)、tagManagerDomain(gif bar e/w)、preview-window/controller(gif bar e/w)、SelectPanels/InspectorTagSelectPanel/collect-window/tagPanel(8 手柄) |
+> | **sortable** | 23（含 destroy/disabled/`toArray({attribute})`） | `update/stop` + `sortable('toArray')` | 宿主 7：DetailToolbar、Inspector(comments/inspector)、TagManager、ContextMenu、ListRegion、Toolbar、collect-window/contextMenu |
+> | **draggable** | 3 | `start/stop` + `ui.helper.outerWidth/Height` | 3 个浮动面板（SelectPanels / InspectorTagSelectPanel / collect-window tagPanel），与 resizable 成对 |
+>
+> **关键难点**：回调普遍消费 jQuery-UI 的 `ui` 形状（`ui.size.width`/`ui.position.left`/
+> `ui.element.css('left')`/`ui.element.width()`/`ui.helper.outerWidth()`）——自研层须**合成兼容的 `ui`
+> 参数**并提供 jQuery 风格的元素包装（`.css/.width/.height/.offset/.outerWidth` 的最小实现），
+> 否则要逐个改写回调体（风险更高）。这是一条独立的交互层子项目。
+>
+> **设计**（`src/app/react/components/interactions/`）：
+> - `elementHandle(el)`：原生元素的最小 jQuery 风格包装（`css/width/height/outerWidth/outerHeight/offset`）。
+> - `makeResizable(el, {handles, minWidth/minHeight, maxWidth/maxHeight, containment, start/resize/stop})`
+>   —— pointer 事件驱动，8 手柄，回调收到 `{ element, helper, position:{left,top}, size:{width,height} }`。
+> - `makeSortable(el, {handle, items, attribute, update/stop, disabled})` + `sortableToArray(el, attribute)`
+>   —— HTML5 drag 或 pointer 复刻排序 + 占位。
+> - `makeDraggable(el, {distance, containment, start/stop})` —— 面板拖拽。
+>
+> **重写顺序（每步独立提交 + 定向测试）**：
+> 1. **D-2f-1**：建 `interactions/` 层 + `elementHandle`，先接 1 个最简单宿主（`commentHooks $el.resizable()` 无参）验证 `ui` 兼容形状。
+> 2. **D-2f-2**：resizable 宿主逐个（Inspector → BodyBindings → TagManager → SelectPanels/InspectorTagSelectPanel/tagPanel → commentHooks `$cropArea` → detailHooks/tagManagerDomain/preview gif bar）。
+> 3. **D-2f-3**：`makeSortable` + `sortableToArray`；迁移 7 个 sortable 宿主。
+> 4. **D-2f-4**：`makeDraggable`；迁移 3 个浮动面板。
+> 5. **D-2f-5**：`index.html` 摘 `jquery-ui.min.js` + `css/jquery-ui.min.css`；移除 `jQuery.fn.{draggable,resizable,sortable}` 守卫（缺失时不再静默降级）。
+>
 
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |

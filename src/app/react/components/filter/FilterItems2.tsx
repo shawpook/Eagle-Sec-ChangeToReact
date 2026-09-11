@@ -34,7 +34,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
+      scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);

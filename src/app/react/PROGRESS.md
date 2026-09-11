@@ -2419,6 +2419,24 @@
 > `ui-interactions`/`stage6`/`stage8c` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 11（Track A / A-3 收尾）✅：谓词/存在性守卫清理；箭头面 45 → 40（2026-09-11）】**
+>
+> 退役 **5** 项，均为「存在性守卫」或「主窗口 orphan」：
+> - `updateContainerHieght`：4 处 `s.updateContainerHieght && machineryUpdateContainerHieght(s)`
+>   守卫 → 去守卫直调（FilterItemShell×2 / FilterItems / FilterItems2）。
+> - `calculateFilterCounts`：2 处 `s.calculateFilterCounts && machineryCalculateFilterCounts(s)` →
+>   去守卫直调（FilterItems×2）。
+> - `zoomFit` / `zoomFitEdge` / `lastZoom`：主窗口无消费面（`.zoomFit(`/`.zoomFitEdge(` 仅在
+>   preview-window 自有 controllerScope；`lastZoom` 仅 dev probe 读取），主窗口为 orphan。
+>
+> **试改回退记录**：同批试改 `colorFilter`/`grayColorFilter`（`data.filter(s.colorFilter)` →
+> 直调机器函数）→ `stage-smoke` 的 **`b1-9ad-colorfilter-pipeline` 契约挂**（该断言
+> `typeof s.colorFilter === 'function'` 并直接调用）；已回退，两项留待 A-2 契约重设计。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

@@ -11108,9 +11108,10 @@ export function machinerySeedControllerState(s: any): void {
         // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
         // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
         // data.filter(s.colorFilter)/data.filter(s.grayColorFilter) 消费面）
+        // 注：b1-9ad-colorfilter-pipeline 契约锚定 typeof s.colorFilter/grayColorFilter
+        // === 'function' 且直接调用 → 本对挂载留待 A-2 契约重设计后再退。
         s.colorFilter = (image: any) => machineryColorFilter(s, image);
         s.grayColorFilter = (image: any) => machineryGrayColorFilter(image);
-
         w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
         s.showSubfolderContent = w.preferences.showSubfolderContent;
 
@@ -11320,9 +11321,7 @@ export function applyDataMachineryScope(): void {
   s.updateSelection = () => machineryUpdateSelection(s);
   s.zoom = () => machineryZoom(s);
   // c15b：adjustLayoutWidth/zoomFit
-  s.zoomFit = (event: any, noAnimation: any) => machineryZoomFit(s, event, noAnimation);
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
-  s.calculateFilterCounts = () => machineryCalculateFilterCounts(s);
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
   if (!w2.ScrollbarSaver) w2.ScrollbarSaver = buildScrollbarSaver();
   // c16a：enterDetailMode/leaveDetailMode
@@ -11335,10 +11334,7 @@ export function applyDataMachineryScope(): void {
   s.$root.notify = notifyFn;
   s.notify = notifyFn;
   // c18a：smartZoom/lastZoom
-  s.lastZoom = () => machineryLastZoom(s);
   // c18b：zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght
-  s.zoomFitEdge = (event: any, hasTransition: any) => machineryZoomFitEdge(s, event, hasTransition);
-  s.updateContainerHieght = (hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimation, delay);
   // c18c：undo/nextHistory/prevHistory/back
   // c18d：selectAll/toggleDetailMode
   // c18e-1：selectNext/selectPrev

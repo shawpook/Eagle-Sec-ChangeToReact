@@ -77,7 +77,7 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
       document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
     }
     setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
+      scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
     }, 50);
     scopeApply(getBodyScope(), (s) => {
       s.$root.currentFocus = 'content';

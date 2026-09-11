@@ -11341,8 +11341,6 @@ export function applyDataMachineryScope(): void {
   // c18e-4：方向键/修饰键 handler 族（第一批）
   // c18e-5：keyUp/keyDown（侧栏导航级联 + QuickAccess/Group 闭包域内移植）
   // c18e-6：selectUp/Down + pageUp/pageDown（throttle 实例 apply 时一次性创建）
-  s.selectUp = (event: any) => machinerySelectUp(s, event);
-  s.selectDown = (event: any) => machinerySelectDown(s, event);
   s.pageDownHandler = machineryPageDownHandler(s);
   s.pageUpHandler = machineryPageUpHandler(s);
   // c18f-1：小 handler 批
@@ -11393,7 +11391,6 @@ export function applyDataMachineryScope(): void {
   // if-absent 零改变。
   s.onDropContainer = (event: any) => machineryOnDropContainer(s, event);
   if (s.__eagleShim && !(window as any).onDropContainer) (window as any).onDropContainer = s.onDropContainer;
-  s.videoScreenShot = (copyMode: any) => machineryVideoScreenShot(s, copyMode);
   // b1-7e：全局查重（getFolderImages/findDupclipate）+ 子文件夹列表 + 搜索聚焦 +
   // 新建智能文件夹/前置插入 + 列表滚顶/滚底
   s.newSmartFolder = (event: any, smartFolder: any) => machineryNewSmartFolder(s, event, smartFolder);

@@ -19,7 +19,6 @@
     <link rel="stylesheet" type="text/css" href="css/website.css">
     <link rel="stylesheet" type="text/css" href="css/embed.css">
     <script type="text/javascript" src="../libs/o3dv.website.min.js"></script>
-	<script src="../../js/vendors/jquery-1.8.0.min.js"></script>
 	<script>
 		function trimCanvas(c) {
 			var ctx = c.getContext('2d'),
@@ -82,8 +81,8 @@
     <!-- plugins end -->
     <!-- analytics start -->
     <script type="text/javascript">
-		jQuery(document).ready(function () {
-			jQuery(window).on("keyup", function (e) {
+		document.addEventListener('DOMContentLoaded', function () {
+			window.addEventListener('keyup', function (e) {
 				if (e.keyCode === 27) {
 					parent.postMessage("Exit", "*")
 				}
@@ -94,7 +93,7 @@
 					parent.postMessage("Next", "*")
 				}
 			});
-		})
+		});
         OV.SetWebsiteEventHandler ((eventName, eventLabel, eventParams) => {
             console.log ({
                 eventName : eventName,
@@ -105,12 +104,12 @@
 			switch(eventName) {
 				case "theme_on_load":
 					setTimeout(() => {
-						// $("body").css("--ov_background_color", "trasparent");
 						// show grid
-						// $(".ov_toggle.ov_sidebar_parameter_toggle").first().not(".on").click();
 						// dark mode
-						$(".ov_toggle.ov_sidebar_parameter_toggle").last().not(".on").click();
-						$("body").addClass("show");
+						var toggles = document.querySelectorAll(".ov_toggle.ov_sidebar_parameter_toggle");
+						var lastToggle = toggles[toggles.length - 1];
+						if (lastToggle && !lastToggle.classList.contains("on")) lastToggle.click();
+						document.body.classList.add("show");
 					}, 50);
 					break;
 				case "edge_display_changed":
@@ -122,7 +121,9 @@
 					if (parent[CALLBACK_FUN_NAME]) parent[CALLBACK_FUN_NAME](eventParams?.error_message);
 					break;
 				case "model_loaded":
-					$(".ov_sidebar_parameter:contains(Background Image)").hide();
+					document.querySelectorAll(".ov_sidebar_parameter").forEach(function (el) {
+						if (el.textContent.indexOf("Background Image") !== -1) el.style.display = "none";
+					});
 					if (window.frameElement) {
 						
 						setTimeout(() => {

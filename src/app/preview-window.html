@@ -42,15 +42,14 @@
     <!-- b1-9bx-A：tippy.min.js 退役——自研 tippyLite（react/core/tippyLite.ts），
          preview bundle 不走 installBundleGlobals，由 preview-window/entry.tsx 模块求值期
          installTippy() 供给 window.tippy（shell 的 useTippy 消费面，契约见 PROGRESS P3-bx）。 -->
-    <script src="js/vendors/jquery-1.8.0.min.js"></script>
-    <script src="js/vendors/jquery-ui.min.js"></script>
+    <!-- b1-9bz-D-2g：jquery/jquery-ui 退役（React 树 + controller.ts 全量 domLite/domQuery
+         原生；jquery-ui.min.js 已于 D-2f git rm，此前的 script/css 引用为残留 404）。 -->
     <script src="js/global.js"></script>
     <script src="js/devices.js"></script>
     <!-- b1-9bv-A：mousetrap.min.js（v1.6.3）退役——自研 keymap（react/core/keymap.ts），
          preview bundle 不走 installBundleGlobals，由 preview-window/entry.tsx 模块求值期
          installKeymap() 供给 window.Mousetrap（usePreviewMousetrap 消费面，契约见
          PROGRESS P2-bv）。 -->
-    <link rel="stylesheet" href="css/jquery-ui.min.css">
     <link href="js/vendors/videojs/video-js.css" rel="stylesheet">
     <script src="js/vendors/videojs/video.js"></script>
     <script src="js/vendors/videojs/lang/en.js"></script>

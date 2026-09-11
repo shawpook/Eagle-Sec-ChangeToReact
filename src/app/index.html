@@ -198,7 +198,9 @@
          经 installBundleGlobals 供给（tippy(el,opts) 构造 + destroy；css 1289B 逐字运行时注入；
          [tippy]/[tippy-content]/[tippy-placement] 标记属性契约与 useTippy 消费面零改动，
          考据见 PROGRESS P3-bx）。 -->
-    <script src="js/vendors/jquery-1.8.0.min.js"></script>
+    <!-- b1-9bz-D-2g：jquery-1.8.0 退役——React 树全量原生化（utils/domQuery 元素级助手 +
+         utils/domLite 集合层），已加载脚本（lazy-load-manager）与内联脚本零 jQuery 消费，
+         vendor 脚本与 js/vendors/jquery-1.8.0.min.js 一并摘除。 -->
     <!-- b1-9bz-D-2f：jQuery UI（resizable/sortable/draggable）退役——React 侧 48 处调用点
          （含 smoothZoomEngine 的 scrollbar 拖拽）全部迁至自研交互层
          src/app/react/components/interactions/{resizable,sortable,draggable}.ts；

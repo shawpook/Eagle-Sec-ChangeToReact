@@ -399,7 +399,8 @@
                             box.removeAttribute('loading');
                             const dummy = img.parentElement;
                             if (dummy) {
-                                $(dummy).removeClass('dummy').prop('title', '');
+                                dummy.classList.remove('dummy');
+                                dummy.title = '';
                             }
                             resolve();
                         });

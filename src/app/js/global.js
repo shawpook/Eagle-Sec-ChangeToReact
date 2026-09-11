@@ -13,10 +13,11 @@ try {
 } catch (err) {}
 
 const moveToCursorPosition = ($elem) => {
-    const windowWidth = $(window).width();
-    const windowHeight = $(window).height();
-    const containerWidth = $elem.width();
-    const containerHeight = $elem.height();
+    const el = $elem && $elem.jquery ? $elem[0] : $elem;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = el ? el.offsetWidth : 0;
+    const containerHeight = el ? el.offsetHeight : 0;
     let x = windowMouseX + 10;
     let y = windowMouseY - 10;
 
@@ -423,8 +424,7 @@ function debounce(func, wait, immediate) {
 function isElementInViewport(el, offset) {
     if (!el) return false;
     var offset = offset || 0;
-    //special bonus for those using jQuery
-    if (typeof jQuery === "function" && el instanceof jQuery) {
+    if (el.length && !el.getBoundingClientRect) {
         el = el[0];
     }
     if (!el) {
@@ -688,8 +688,6 @@ String.prototype.localeLength = function () {
     }
     return inputLength;
 }
-
-jQuery.fn.reverse = [].reverse;
 
 var videoHelper = {
     // 这是个很白痴的设定，浏览器默认会使用 throttle 功能，如果短时间疯狂修改 currentTime 画面不会立即更新，以列方式是加大更新 currentTime 的时间差，骗过浏览器的节流功能
@@ -955,29 +953,34 @@ async function getClipboardImage() {
             }
             
             if (fileurl) {
-                $(`<div>${fileurl}</div>`).find("plist").find("string").each(function () {
-                    files.push($(this).text());
-                })
+                var holder = document.createElement('div');
+                holder.innerHTML = fileurl;
+                holder.querySelectorAll('plist string').forEach(function (node) {
+                    files.push(node.textContent);
+                });
             }
 
             let text = clipboard.readText();
 
             if (is.url(text)) {
-                $.ajax({
-                    type: "HEAD",
-                    url: text,
-                    timeout: 10000,
-                    complete: function (xhr, textStatus) {
-                        let contentType = xhr.getResponseHeader('Content-Type') || "";
-                        if (contentType.indexOf("image") > -1) {
-                            url = text;
-                        }
-                        return resolve({
-                            image: image,
-                            url: url,
-                            files: files
-                        });
+                var finish = function (contentType) {
+                    if (contentType.indexOf("image") > -1) {
+                        url = text;
                     }
+                    return resolve({
+                        image: image,
+                        url: url,
+                        files: files
+                    });
+                };
+                var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+                var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 10000);
+                fetch(text, { method: 'HEAD', signal: ctrl ? ctrl.signal : undefined }).then(function (res) {
+                    clearTimeout(timer);
+                    finish(res.headers.get('Content-Type') || "");
+                }).catch(function () {
+                    clearTimeout(timer);
+                    finish("");
                 });
             }
             else {

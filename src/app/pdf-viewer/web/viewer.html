@@ -31,10 +31,9 @@ See https://github.com/adobe-type-tools/cmap-resources
 
 <!-- This snippet is used in production (included from viewer.html) -->
 <link rel="resource" type="application/l10n" href="locale/locale.properties">
-<script src="../../js/vendors/jquery-1.8.0.min.js"></script>
     <script>
-    jQuery(document).ready(function () {
-      jQuery(window).on("keyup", function (e) {
+    document.addEventListener('DOMContentLoaded', function () {
+      window.addEventListener("keyup", function (e) {
         if (e.keyCode === 27) {
           parent.postMessage("Exit", "*")
         }
@@ -47,11 +46,15 @@ See https://github.com/adobe-type-tools/cmap-resources
       });
 	  
       // 所有帶有 target _blank 的連結都會使用預設瀏覽器開啟
-      jQuery("#mainContainer").on('click', 'a', function(event) {
-          event && event.preventDefault();
-          var link = this.href;
-          window.parent.shell.openExternal(link);
-      });
+      var mainContainer = document.getElementById('mainContainer');
+      if (mainContainer) {
+        mainContainer.addEventListener('click', function (event) {
+          var a = event.target && event.target.closest ? event.target.closest('a') : null;
+          if (!a || !mainContainer.contains(a)) return;
+          event.preventDefault();
+          window.parent.shell.openExternal(a.href);
+        });
+      }
     })
     </script>
 <script src="../build/pdf.js"></script>

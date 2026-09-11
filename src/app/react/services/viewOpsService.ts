@@ -9,7 +9,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { machineryGetSelection } from '../core/dataMachinery';
+
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, qa, cssSet, addClass, removeClass, widthOf, heightOf } from '../utils/domQuery';
 import { debounce } from '../utils/func';
@@ -19,6 +19,7 @@ import { detailUpdateZoomRatio, detailSmartZoom } from './detailService';
 import { machineryAdjustLayoutWidth, machineryChangeListHeight, machinerySwitchLayout, machinerySaveListHeight, gridZoomFit, gridZoomIn, gridZoomOut } from './gridService';
 import { machineryOnImageSizeHeightChanged } from '../core/itemDomain';
 import { getFilter } from '../core/filterDomain';
+import { machineryGetSelection } from '../core/selectionViewDomain';
 // 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
 let saveListHeightTimeout: any = null;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══

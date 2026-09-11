@@ -54,13 +54,14 @@ import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addCla
 import { machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight } from '../services/gridService';
 import { machinerySetViewMode, machineryZoom, machineryCheckOperationSafety2 } from '../services/viewOpsService';
 import { callExternal } from './externalSupply';
-import { machineryAutoScroll, machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryResetPage, machineryUpdateSelection, getTimeout } from './dataMachinery';
+import { machineryAutoScroll, machineryLeaveDetailMode, machineryResetPage, getTimeout } from './dataMachinery';
 import { setScrollTop, clickEl, hide } from '../utils/domQuery';
 import { glRemoveitemsChannel } from '../global/bus';
 import { debounce } from '../utils/func';
 import { machineryCalculateImageBinding, machineryFilterSidebarItem, machineryFindDupclipate, machineryForceFitImageSize, machineryRebindRefresh, machineryRenameImages, rebindRefreshLazyTimeout } from './itemDomain';
 import { machineryExistInSmartFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryEditTag, machineryEnableSubFolderNameEditable, machineryOpenAllTags, machineryOpenUntagged, machineryRenameTagGroup } from './tagManagerDomain';
+import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from './selectionViewDomain';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;

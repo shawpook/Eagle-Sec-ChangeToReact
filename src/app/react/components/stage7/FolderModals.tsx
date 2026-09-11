@@ -15,10 +15,11 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
-import { machineryGetSelectedItemElements, machineryGetSelection, machineryLeaveDetailMode } from '../../core/dataMachinery';
+import { machineryLeaveDetailMode } from '../../core/dataMachinery';
 
 import { machinerySmartFolderCount } from '../../core/libraryDomain';
 import { machineryContentFilter, machineryFilterData, machineryUpdateFilterCounts } from '../../core/filterDomain';
+import { machineryGetSelectedItemElements, machineryGetSelection } from '../../core/selectionViewDomain';
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
  * （bundle 75637-76134）接管，模板 = index.html 411-617 逐字转写。

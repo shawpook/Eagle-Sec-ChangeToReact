@@ -7506,3 +7506,26 @@ libraryDomain/gridService/dataMachinery 各若干）。
 
 **门禁**：`bz-export-check` 无问题（2239 处）；`bz-free-check` OK；`probe LOAD_OK`；
 哨兵 `SENTINEL_OK`；定向 `stage7a`/`stage7b`/`menu-popup`/`ui-interactions` 全绿。
+
+---
+
+## D-1 / Track B / B-13 记录（2026-09-11）
+
+**目标**：`selectionViewDomain` 域簇整体归位 → `core/selectionViewDomain.ts`
+（**27 个 / 1126 行**：21 可搬 + 3 阻塞项 + 3 私有状态）。
+
+**范围**：`machineryGetSelection` `machineryUpdateSelection` `machinerySelectAll/Down/Up/Next/Prev`
+`machineryMultipleSelectDown/Up/Next/Prev` `machinerySelectFolder` `machineryGetSelectedItems`
+`machineryGetSelectedItemElements` `machineryGetSelectedTags` `machineryRemoveSelected`
+`machineryRemoveSelectedFolders/SmartFolders` `machineryOpenInspectorFolder/TagSelectPanel`
+`machineryToggleSelectSmartFolder` `sortTagsForSelection` + 私有状态 `updateSelectionTimeout`
+`prevTimeout` `nextTimeout` `lastMoveToTrashCheckbox` `cleanSelectedTimeout`。
+
+**踩坑**：`inspectorActions.ts` 自带同名局部 `let updateSelectionTimeout`（独立实现），脚本
+按名误加 `from '../../core/selectionViewDomain'` 导入 → TS2459；已剔除该导入。
+
+**核数**：`dataMachinery.ts` **5306 → 4180 行**（-1126）；顶层声明 **110 → 83**。
+`tsc` **510 → 510**（零新增，零净修）。
+
+**门禁**：`bz-export-check` 无问题（2293 处）；`bz-free-check` OK；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `main-ui-workflow`/`stage7a`/`ui-interactions` 全绿。

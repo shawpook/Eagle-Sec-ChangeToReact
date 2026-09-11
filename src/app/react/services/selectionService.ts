@@ -2,10 +2,11 @@ import { getBodyScope } from '../core/appCore';
 import { cancelCleanSelectedTimeout } from '../services/batchOpsService';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
-import { machineryEnterDetailMode, machineryGetSelection, machineryOpenPluginPanel, machineryUpdateSelection } from '../core/dataMachinery';
+import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../core/dataMachinery';
 import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, hasClass, textEl, setAttrEl, addClassEl, removeClassEl, setHtmlEl, focusOn, selectText, onEl, offAllEl, blurEl } from '../utils/domQuery';
+import { machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *

@@ -14,7 +14,7 @@
  * - $filter → 双轨 shim；ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { machineryUpdateSelection } from '../core/dataMachinery';
+
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncBodyFromScope } from '../store/bodyState';
@@ -28,6 +28,7 @@ import { machineryCheckOperationSafety } from './viewOpsService';
 import { machineryCalculateImageBinding, machineryRebindRefresh, machineryUpdateItemsView } from '../core/itemDomain';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
+import { machineryUpdateSelection } from '../core/selectionViewDomain';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行

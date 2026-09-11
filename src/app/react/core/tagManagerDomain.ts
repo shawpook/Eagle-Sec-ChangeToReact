@@ -13,7 +13,7 @@
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
-import { getTimeout as machineryGetTimeout, machineryOpenAll, machineryUpdateSelection } from './dataMachinery';
+import { getTimeout as machineryGetTimeout, machineryOpenAll } from './dataMachinery';
 import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
@@ -41,7 +41,8 @@ import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize } from
 import { getFilter } from './filterDomain';
 import { machineryRebindRefresh } from './itemDomain';
 import { machineryGetAllChildFolder, machinerySetLastFolder } from './libraryDomain';
-import { machineryLeaveDetailMode, machineryResetPage, machinerySelectFolder } from './dataMachinery';
+import { machineryLeaveDetailMode, machineryResetPage } from './dataMachinery';
+import { machinerySelectFolder, machineryUpdateSelection } from './selectionViewDomain';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 

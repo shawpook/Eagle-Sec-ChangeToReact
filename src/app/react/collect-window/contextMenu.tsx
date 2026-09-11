@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { ct } from './controller';
+import { getSortable, makeSortable } from '../components/interactions/sortable';
 
 const $: any = (...args: any[]) => (window as any).jQuery(...args);
 const treeUtil = (window as any).eagle.utils.tree;
@@ -382,15 +383,15 @@ function createEngine(forceUpdate: () => void) {
     bindSortable(el: any, menu: any) {
       if (sortableEl === el) return;
       if (sortableEl) {
-        try {
-          $(sortableEl).sortable('destroy');
-        } catch (err) {}
+        const s0 = getSortable(sortableEl);
+        if (s0) s0.destroy();
         sortableEl = null;
       }
       if (el && menu.sortable) {
         sortableEl = el;
         sortableMenu = menu;
-        $(el).sortable({
+        // D-2f：jQuery-UI sortable → 自研
+        makeSortable(el, {
           distance: 10,
           animation: 200,
           handle: menu.sortableHelper ? '.drag-helper' : undefined,
@@ -590,11 +591,11 @@ function createEngine(forceUpdate: () => void) {
       if (!scope.displayMenu.showSearch) return;
       if (scope.searchKeyword !== '') {
         scope.displayMenu = getSearchResultMenu();
-        if (sortableEl) $(sortableEl).sortable({ disabled: true });
+        if (sortableEl) { const s0 = getSortable(sortableEl); if (s0) s0.setDisabled(true); }
       } else {
         scope.displayMenu = originalMenu;
         scope.displayMenu.currentIndex = -1;
-        if (sortableEl) $(sortableEl).sortable({ disabled: false });
+        if (sortableEl) { const s0 = getSortable(sortableEl); if (s0) s0.setDisabled(false); }
       }
       scope.activeMenu = scope.displayMenu;
       forceUpdate();

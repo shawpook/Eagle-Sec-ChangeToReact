@@ -5,6 +5,7 @@ import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
 import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } from '../grid/gridDirectives';
 import { getBodyScope } from '../../core/appCore';
+import { getSortable, makeSortable } from '../interactions/sortable';
 import { openFileListContextMenu } from '../../services/miscMenuService';
 import { machineryOnDropContainer } from '../../core/dataMachinery';
 import { importFolders } from '../../services/uploadService';
@@ -198,17 +199,17 @@ export function SubFolderSection() {
 
   useEffect(() => {
     if (!ngIf || !listRef.current) return;
-    const $ = (window as any).jQuery;
     const scope = getBodyScope();
-    if (!$ || !scope || !$.fn.sortable) return;
-    const $list = $(listRef.current);
+    if (!scope) return;
+    // D-2f：jQuery-UI sortable → 自研（按 options 装配；disabled 用 setDisabled 切换）
+    const listEl = listRef.current;
     const options = scope.subFolderSortableOptions || {};
-    if (!$list.data('ui-sortable') && !$list.data('sortable')) {
-      $list.sortable({ ...options });
-    }
-    $list.sortable('option', 'disabled', !!options.disabled);
+    let sortable = getSortable(listEl);
+    if (!sortable) sortable = makeSortable(listEl, { ...options });
+    sortable.setDisabled(!!options.disabled);
     return () => {
-      try { if ($list.data('ui-sortable') || $list.data('sortable')) $list.sortable('destroy'); } catch { /* noop */ }
+      const s2 = getSortable(listEl);
+      if (s2) s2.destroy();
     };
   });
 

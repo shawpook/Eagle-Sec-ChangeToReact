@@ -39,6 +39,7 @@ import {
 } from './inspectorActions';
 import { req } from '../detail/detailHooks';
 import { makeResizable } from '../interactions/resizable';
+import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
@@ -616,9 +617,8 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
     // ui-sortable（imageCommentsSortableOptions）：拖拽结束按 DOM 顺序回写 selected[0].comments
     const el = containerRef.current;
     if (!el) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    jQuery(el).sortable({
+    // D-2f：jQuery-UI sortable → 自研
+    const sortable = makeSortable(el, {
       distance: 5,
       tolerance: 'pointer',
       disabled: false,
@@ -627,7 +627,7 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
         scopeApply(getBodyScope(), (s) => {
           const item = s.selected?.[0];
           if (!item) return;
-          const order = jQuery(el).sortable('toArray', { attribute: 'data-comment-index' }).map(Number);
+          const order = sortableToArray(el, 'data-comment-index').map(Number);
           item.comments = order.map((i: number) => item.comments[i]).filter(Boolean);
           (window as any).ayncsImagesChange([item]);
           try {
@@ -637,9 +637,7 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
       },
     });
     return () => {
-      try {
-        jQuery(el).sortable('destroy');
-      } catch (err) {}
+      sortable.destroy();
     };
   }, [comments.length]);
 
@@ -1062,12 +1060,11 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   useEffect(() => {
     const el = itemsRef.current;
     if (!el) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    jQuery(el).sortable({
+    // D-2f：jQuery-UI sortable → 自研
+    const sortable = makeSortable(el, {
       update: () => {
         scopeApply(getBodyScope(), (s) => {
-          const order = jQuery(el).sortable('toArray', { attribute: 'data-item-id' });
+          const order = sortableToArray(el, 'data-item-id');
           const items = s.inspector.inspectorItems || [];
           s.inspector.inspectorItems = order.map((id: string) => items.find((i: any) => String(i.id) === id)).filter(Boolean);
           syncInspectorFromScope();
@@ -1075,9 +1072,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
       },
     });
     return () => {
-      try {
-        jQuery(el).sortable('destroy');
-      } catch (err) {}
+      sortable.destroy();
     };
   }, [snapshot.items.length]);
 

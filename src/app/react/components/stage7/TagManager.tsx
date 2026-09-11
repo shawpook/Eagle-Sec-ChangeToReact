@@ -6,6 +6,7 @@ import { t } from '../../global/eagleGlobals';
 import { useTippy } from '../hooks';
 import { ContentEditable } from '../inspector/ContentEditable';
 import { makeResizable } from '../interactions/resizable';
+import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { $ } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
@@ -273,20 +274,18 @@ export function TagManagerPanel() {
     };
   }, [host]);
 
-  // ui-sortable（tagGroupSortableOptions：动画/距离/克隆 + stop 侧效）
+  // ui-sortable（tagGroupSortableOptions：动画/距离/克隆 + stop 侧效）——D-2f：自研
   useEffect(() => {
     const el = groupsRef.current;
     if (!el) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    jQuery(el).sortable({
+    const sortable = makeSortable(el, {
       animation: 200,
       distance: 10,
       disabled: false,
       helper: 'clone',
       stop: () => {
         scopeApply(getBodyScope(), (s) => {
-          const order = jQuery(el).sortable('toArray', { attribute: 'data-group-id' });
+          const order = sortableToArray(el, 'data-group-id');
           const groups = s.TagManager.groups || [];
           s.TagManager.groups = order.map((id: string) => groups.find((g: any) => g.id === id)).filter(Boolean);
           syncFilterFromScope();
@@ -305,9 +304,7 @@ export function TagManagerPanel() {
       },
     });
     return () => {
-      try {
-        jQuery(el).sortable('destroy');
-      } catch (err) {}
+      sortable.destroy();
     };
   }, [snapshot.groups.length, host]);
 

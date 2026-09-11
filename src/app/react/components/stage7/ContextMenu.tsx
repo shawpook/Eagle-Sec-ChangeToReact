@@ -6,6 +6,7 @@ import { shortcuts } from '../../app/filters';
 import { useToolbarState } from '../../store/toolbarState';
 import { $ } from '../detail/detailHooks';
 import { max } from '../../utils/lang';
+import { makeSortable } from '../interactions/sortable';
 
 /**
  * 阶段7a：contextMenu 模块接管。
@@ -243,10 +244,9 @@ function MenuItems({
   useEffect(() => {
     const el = itemsRef.current;
     if (!el || !menu?.sortable) return;
-    const jQuery = $();
-    if (!jQuery) return;
     const opts = stateRef.current.sortableOptions || {};
-    jQuery(el).sortable({
+    // D-2f：jQuery-UI sortable → 自研
+    const sortable = makeSortable(el, {
       distance: opts.distance ?? 10,
       animation: opts.animation ?? 200,
       handle: opts.handle,
@@ -260,9 +260,7 @@ function MenuItems({
       },
     });
     return () => {
-      try {
-        jQuery(el).sortable('destroy');
-      } catch (err) {}
+      sortable.destroy();
     };
   }, [menu?.sortable, menu?.items?.length, ctx.tick]);
 

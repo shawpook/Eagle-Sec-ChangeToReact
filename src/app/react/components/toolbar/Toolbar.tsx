@@ -10,6 +10,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { makeSortable } from '../interactions/sortable';
 import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
 import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
@@ -258,11 +259,11 @@ export function Toolbar() {
         }
       });
     };
-    $(el).sortable({
+    const sortable = makeSortable(el, {
       ...(options || {}),
-      update: (e: unknown, ui: unknown) => { options?.update?.(e, ui); setTimeout(syncModel, 1); },
+      update: (e: unknown) => { options?.update?.(e, undefined); setTimeout(syncModel, 1); },
     });
-    return () => { try { $(el).sortable('destroy'); } catch {} };
+    return () => { sortable.destroy(); };
   }, [snapshot.pinnedPlugins.length, snapshot.ready, toolbarHost]);
 
   if (!toolbarHost) return null;

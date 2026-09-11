@@ -11,6 +11,7 @@ import { useMouseGesture } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
+import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { flipImage, rotateImage, saveCrop } from '../../services/imageOpsService';
 import { flipVideo, rotateVideo, toggleGifPlay } from '../../services/mediaService';
 import { maximize } from '../../core/miscDomain';
@@ -217,12 +218,11 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
     // pinned-plugins ui-sortable（angular-ui-sortable 语义：拖拽结束后按 DOM 顺序回写 model）
     const el = pinnedRef.current;
     if (!el) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    jQuery(el).sortable({
+    // D-2f：jQuery-UI sortable → 自研
+    const sortable = makeSortable(el, {
       update: () => {
         scopeApply(getBodyScope(), (s) => {
-          const order = jQuery(el).sortable('toArray', { attribute: 'data-plugin-index' }).map(Number);
+          const order = sortableToArray(el, 'data-plugin-index').map(Number);
           const plugins = s.pluginModule.pinnedPlugins || [];
           s.pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
           syncToolbarFromScope();
@@ -230,9 +230,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
       },
     });
     return () => {
-      try {
-        jQuery(el).sortable('destroy');
-      } catch {}
+      sortable.destroy();
     };
   }, [pinnedPlugins.length]);
 

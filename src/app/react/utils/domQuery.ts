@@ -183,6 +183,22 @@ export function offEl(el: HTMLElement | null, type: string): void {
   if (old) { el.removeEventListener(type, old); m!.delete(type); }
 }
 
+/** 移除该元素上所有经 onEl 注册的监听（jQuery `.off()` 语义）。 */
+export function offAllEl(el: HTMLElement | null): void {
+  if (!el) return;
+  const m = elHandlers.get(el);
+  if (!m) return;
+  m.forEach((fn, type) => el.removeEventListener(type, fn));
+  m.clear();
+}
+
+/** 由 HTML 字符串创建元素（jQuery `$('<div ...>')` 语义；取首个元素节点）。 */
+export function createEl(html: string): HTMLElement | null {
+  const holder = document.createElement('div');
+  holder.innerHTML = html.trim();
+  return holder.firstElementChild as HTMLElement | null;
+}
+
 function classesOf(v: string): string[] {
   return String(v).split(/\s+/).filter(Boolean);
 }

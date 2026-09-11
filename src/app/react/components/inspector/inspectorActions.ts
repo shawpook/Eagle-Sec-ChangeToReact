@@ -2,7 +2,7 @@ import { detailZoom } from '../../core/smoothZoomEngine';
 import { contextMenuOpenChannel, openAboutPanelChannel, rebindRefreshChannel, refreshVideoCommentsChannel, setFolderPasswordChannel, updateInspectorChannel } from '../../global/bus';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
-import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
+import { $, safeZoomData, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
@@ -513,7 +513,7 @@ export function openComment(event: any, image: any, comment: any) {
     const $commentElem = $()(`#comment-${comment.id}`);
     if ($commentElem.length > 0 && !(window as any).isElementInViewport($commentElem[0])) {
       const offsetY = -200;
-      $()('#detail-container').safeZoomData();
+      safeZoomData();
       detailZoom()?.goToY( -(comment.y + offsetY) * (bodyScope.imageSize.zoomRatio || 100) / 100);
       setTimeout(function () {
         (window as any).AnnotationPreview.show();

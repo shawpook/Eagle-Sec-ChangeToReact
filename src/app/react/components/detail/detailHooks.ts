@@ -13,6 +13,7 @@ import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { q, qa, widthOf, heightOf, offsetOf, setCssEl, cssSet, addClass, removeClass, onEl, offEl, offAllEl, createEl, setHtml, show, hide } from '../../utils/domQuery';
 
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
@@ -27,22 +28,18 @@ import { scopeEvalAsync } from '../../global/scopeShim';
  * - React 卸载等价旧 scope.$on('$destroy')；element.remove() 不做（节点归 React 管）。
  */
 
-export const $: any = () => {
-  const jQuery = (window as any).jQuery;
-  // safeZoomData：smoothZoom('getZoomData') 的容错包装（插件未初始化时按 1:1 兜底，
-  // 旧指令在未初始化时此处会抛错中断，兜底仅覆盖该异常路径）。
-  if (jQuery && !jQuery.fn.safeZoomData) {
-    jQuery.fn.safeZoomData = function (this: any) {
-      try {
-        return detailZoom()?.getZoomData();
-      } catch (err) {
-        return { ratio: 1, scaledX: 0, scaledY: 0 };
-      }
-    };
-  }
-  return jQuery;
-};
+export const $: any = () => (window as any).jQuery;
 export const jq = $;
+
+/** safeZoomData：smoothZoom('getZoomData') 的容错包装（插件未初始化时按 1:1 兜底，
+ *  旧指令在未初始化时此处会抛错中断，兜底仅覆盖该异常路径）。D-2h：去 jQuery.fn 插件壳。 */
+export function safeZoomData(): any {
+  try {
+    return detailZoom()?.getZoomData();
+  } catch (err) {
+    return { ratio: 1, scaledX: 0, scaledY: 0 };
+  }
+}
 export const videojs = () => (window as any).videojs;
 
 export const req = (name: string): any => (window as any).require?.(name);
@@ -72,12 +69,12 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
   useEffect(() => {
     const video = videoRef.current as HTMLVideoElement;
     if (!videoRef.current) return;
-    const isInPreviewWindow = $()('#preview-window').length > 0;
+    const isInPreviewWindow = qa('#preview-window').length > 0;
     const ipc = getIpc();
     const scope = getBodyScope();
     const $parentScope = getBodyScope();
     let player: any;
-    const element = $()(video);
+    const element = video;
 
     const volume = localStorage.getItem('eagle.videoPlayer.volume') || '100';
     video.volume = parseInt(volume) / 100;
@@ -85,8 +82,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     let minCurrentTime: number | undefined;
     let maxCurrentTime: number | undefined;
 
-    if ($()('div.video-js').length > 0) {
-      videojs()($()('div.video-js')[0]).dispose();
+    if (qa('div.video-js').length > 0) {
+      videojs()(q('div.video-js') as HTMLElement).dispose();
       return;
     }
 
@@ -95,11 +92,11 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     // 原 scope.$on('$destroy', ...)
     cleanups.push(() => {
       try {
-        videojs()(element[0]).dispose();
+        videojs()(element).dispose();
 
-        const videos = [element[0]];
-        element.find('video').each(function (this: any, index: number, v: HTMLVideoElement) {
-          videos.push(v);
+        const videos: HTMLVideoElement[] = [element as HTMLVideoElement];
+        element.querySelectorAll('video').forEach(function (v) {
+          videos.push(v as HTMLVideoElement);
         });
 
         videos.forEach(function (v: HTMLVideoElement) {
@@ -107,11 +104,11 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           v.load();
         });
 
-        element.off();
+        offAllEl(element as HTMLElement);
         // element.remove() 不做：节点由 React 管理
         clearVideopreviewListeners();
-        if ($()('#not-support-preview').length > 0) {
-          $()('#not-support-preview').css('display', '');
+        if (qa('#not-support-preview').length > 0) {
+          setCssEl(q('#not-support-preview'), { display: '' });
         }
       } catch (err) {}
     });
@@ -136,21 +133,22 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     }
 
     function initComments() {
-      $()('.vjs-progress-control .video-comments').empty();
+      const _vc = q('.vjs-progress-control .video-comments');
+      if (_vc) _vc.innerHTML = '';
       const current = getBodyScope()?.current;
       if (current && current.comments && current.comments.length > 0) {
-        const $container = $()('.vjs-progress-control');
-        const $comments = $()(`<div class="video-comments"></div>`);
+        const container = q('.vjs-progress-control');
+        const comments = createEl(`<div class="video-comments"></div>`);
 
         current.comments.forEach(function (comment: any) {
           const leftP = (comment.duration / video.duration) * 100;
-          const $comment = $()(
+          const commentEl = createEl(
             `<div comment-id="${comment.id}" class="video-comment" style="left: ${leftP}%;"><div class="annotation"><div>${comment.annotation}</div></div></div>`
           );
-          $comments.append($comment);
+          if (comments && commentEl) comments.appendChild(commentEl);
         });
 
-        $container.append($comments);
+        if (container && comments) container.appendChild(comments);
       }
     }
 
@@ -244,17 +242,17 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     });
     cleanups.push(() => offRefresh());
 
-    element.bind(
+    video.addEventListener(
       'error',
       (window as any).debounce(function (event: any) {
         try {
           console.log('[mediaElement] Video playback error:', event.target.error);
-          const oldPath = element[0].currentSrc;
+          const oldPath = video.currentSrc;
           const current = getBodyScope()?.current;
           const newPath = current ? FileUrlHelper.getRawUrl(current) : '';
           if (oldPath !== newPath) {
             setTimeout(function () {
-              element.attr('src', newPath);
+              video.setAttribute('src', newPath);
             }, 200);
             return;
           }
@@ -358,7 +356,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       }, 1500);
       cleanups.push(() => clearTimeout(frameCheckTimeout));
 
-      element.find('~ .not-support-preview').hide();
+      const nsp = video.parentElement?.querySelector('.not-support-preview') as HTMLElement | null;
+      if (nsp) nsp.style.display = 'none';
 
       minCurrentTime = 0;
       maxCurrentTime = video.duration;
@@ -367,7 +366,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       video.volume = parseInt(volume2) / 100;
 
       if (video.videoHeight) {
-        $()(video).css({
+        setCssEl(video, {
           'max-width': video.videoWidth,
           'max-height': video.videoHeight,
         });
@@ -402,15 +401,15 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         }
 
         if (!zoomFill) {
-          $()(video).addClass('fit');
+          video.classList.add('fit');
         } else {
-          $()(video).removeClass('fit');
+          video.classList.remove('fit');
         }
 
         if ((video as any).customizeLoop) {
-          $()('.vjs-icon-loop').addClass('enabled');
+          addClass('.vjs-icon-loop', 'enabled');
         } else {
-          $()('.vjs-icon-loop').removeClass('enabled');
+          removeClass('.vjs-icon-loop', 'enabled');
         }
 
         initTrack();
@@ -423,12 +422,11 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       }
 
       function initResizer() {
-        const $container = $()('.vjs-progress-control');
+        const container = q('.vjs-progress-control');
         const resizableBar = document.createElement('div');
         resizableBar.className = 'resize-bar';
         resizableBar.innerHTML = '<div class="bar"></div>';
-        const $resizableBar = $()(resizableBar);
-        $resizableBar.css({
+        setCssEl(resizableBar, {
           left: 0,
           width: 'auto',
         });
@@ -440,18 +438,18 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           start: function () {
             minCurrentTime = 0;
             maxCurrentTime = video.duration;
-            $()('.vjs-progress-holder').css('pointer-events', 'none');
+            cssSet('.vjs-progress-holder', { 'pointer-events': 'none' });
           },
           stop: function (event: any, ui: any) {
-            $()('.vjs-progress-holder').css('pointer-events', 'initial');
+            cssSet('.vjs-progress-holder', { 'pointer-events': 'initial' });
 
             const resizerLeft = ui.position.left;
             const resizerWidth = ui.size.width;
-            const progressWith = $()('.vjs-progress-holder').width();
+            const progressWith = widthOf(q('.vjs-progress-holder'));
             const resizerLeftP = (resizerLeft / progressWith) * 100;
             const resizerWidthP = (resizerWidth / progressWith) * 100;
 
-            $resizableBar.css({
+            setCssEl(resizableBar, {
               left: `${resizerLeftP}%`,
               width: `${resizerWidthP}%`,
             });
@@ -462,7 +460,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             minCurrentTime = Number((minCurrentTime as number).toFixed(2));
           },
         });
-        $container.append($resizableBar);
+        if (container) container.appendChild(resizableBar);
       }
 
       function initTrack() {
@@ -470,7 +468,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         existsTracks.forEach(function (track: any) {
           player.textTracks().removeTrack(track);
         });
-        element.find('track').remove();
+        element.querySelectorAll('track').forEach((t) => t.remove());
 
         // 載入字幕
         const current = getBodyScope()?.current;
@@ -515,18 +513,17 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
 
       clearVideopreviewListeners();
       function initThumbnailPewivew() {
-        const $container = $()('.vjs-progress-holder.vjs-slider.vjs-slider-horizontal');
-        const $thumbnailVideo = $()('<video/>', {
-          id: 'video-preview-thumb',
-          src: src,
-          controls: false,
-          autoplay: false,
-          muted: true,
-        });
-        const $progressbar = $container.find('.vjs-slider-bar');
-        $container.find('video').off().remove();
-        $container.append($thumbnailVideo);
-        const videoWidth = $thumbnailVideo.width();
+        const containerEl = q('.vjs-progress-holder.vjs-slider.vjs-slider-horizontal') as HTMLElement;
+        const thumbVideoEl = document.createElement('video');
+        thumbVideoEl.id = 'video-preview-thumb';
+        thumbVideoEl.setAttribute('src', src);
+        thumbVideoEl.controls = false;
+        thumbVideoEl.autoplay = false;
+        thumbVideoEl.muted = true;
+        const progressBarEl = containerEl.querySelector('.vjs-slider-bar') as HTMLElement;
+        containerEl.querySelectorAll('video').forEach((v) => v.remove());
+        containerEl.appendChild(thumbVideoEl);
+        const videoWidth = widthOf(thumbVideoEl);
         let updatePreviewTimeout: any;
         let startX: number | undefined;
         let offsetX: number | undefined;
@@ -534,9 +531,6 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         let isMouseDown = false;
         // b1-9bm：jQuery 命名空间事件 → 原生监听（清理注册表：dispose 与重挂时统一摘除；
         // pageX/offsetX/buttons 均为 MouseEvent 原生字段，语义零改动）
-        const containerEl = $container[0] as HTMLElement;
-        const progressBarEl = $progressbar[0] as HTMLElement;
-        const thumbVideoEl = $thumbnailVideo[0] as HTMLElement;
         const onVp = (el: HTMLElement, type: 'mousedown' | 'mousemove' | 'mouseup', fn: (e: MouseEvent) => void) => {
           el.addEventListener(type, fn as EventListener);
           videopreviewCleanups.push(() => el.removeEventListener(type, fn as EventListener));
@@ -572,7 +566,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             // clearTimeout(updatePreviewTimeout);
             const diff = event.pageX - (startX as number);
             let mouseX = (offsetX as number) + diff;
-            const cw = $container.width();
+            const cw = widthOf(containerEl);
 
             let mouseTime: number = duration;
             if (mouseTime > cw) mouseTime = cw;
@@ -585,17 +579,17 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             if (left < 0) left = 0;
 
             if (mouseTime >= 0) {
-              $thumbnailVideo.css('left', `${left}%`);
+              thumbVideoEl.style.left = `${left}%`;
               if ((event.buttons === 1 || (event.buttons === undefined && event.which === 1)) && isMouseDown) {
-                (window as any).videoHelper.setVideosCurrentTime([video, $thumbnailVideo[0]], Math.round(mouseTime));
-                $progressbar.css('width', `${left}%`);
+                (window as any).videoHelper.setVideosCurrentTime([video, thumbVideoEl], Math.round(mouseTime));
+                progressBarEl.style.width = `${left}%`;
                 if (Math.round(mouseTime) === 0 && left < 0.2) {
-                  (window as any).videoHelper.setVideosCurrentTime([video, $thumbnailVideo[0]], Math.round(mouseTime));
-                  $thumbnailVideo.css('left', `0%`);
-                  $progressbar.css('width', `0%`);
+                  (window as any).videoHelper.setVideosCurrentTime([video, thumbVideoEl], Math.round(mouseTime));
+                  thumbVideoEl.style.left = `0%`;
+                  progressBarEl.style.width = `0%`;
                 }
               } else {
-                (window as any).videoHelper.setCurrentTime($thumbnailVideo[0], mouseTime);
+                (window as any).videoHelper.setCurrentTime(thumbVideoEl, mouseTime);
               }
             }
           } catch (err) {}
@@ -648,17 +642,17 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         }
         player = this;
         // Videojs bug，滑桿不會自動更新
-        $()(player.el()).find('.vjs-volume-level').css('width', video.volume * 100 + '%');
-        const $video = $()(video);
-        const $playButton = $()(player.controlBar.playToggle.el_);
+        (() => { const vl = player.el().querySelector('.vjs-volume-level') as HTMLElement | null; if (vl) vl.style.width = video.volume * 100 + '%'; })();
+        const playButtonEl = player.controlBar.playToggle.el_ as HTMLElement;
         const fullScreenButton = player.controlBar.fullscreenToggle.el_;
-        const $fullScreenButton = $()(fullScreenButton).detach();
+        const fullScreenButtonEl = fullScreenButton as HTMLElement;
+        fullScreenButtonEl.remove();
         const loopBtn = player.controlBar.addChild('button');
 
         if (!zoomFill) {
-          $video.addClass('fit');
+          video.classList.add('fit');
         } else {
-          $video.removeClass('fit');
+          video.classList.remove('fit');
         }
 
         loopBtn.controlText(player.localize('Loop'));
@@ -668,7 +662,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           localStorage.setItem('eagle.videoPlayer.loop', (video as any).customizeLoop);
           updateLoopButton();
         });
-        $fullScreenButton.insertAfter(loopBtn.el_);
+        loopBtn.el_.parentNode.insertBefore(fullScreenButtonEl, loopBtn.el_.nextSibling);
 
         // 笔记按钮
         if (!isInPreviewWindow) {
@@ -679,8 +673,9 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             video.pause();
             addVideoComment(getBodyScope()?.current, video);
           });
-          const $noteBtn = $()(noteBtn.el_).detach();
-          $noteBtn.insertBefore($fullScreenButton);
+          const noteBtnEl = noteBtn.el_ as HTMLElement;
+          noteBtnEl.remove();
+          (fullScreenButtonEl.parentNode as Node).insertBefore(noteBtnEl, fullScreenButtonEl);
         }
 
         // 快進退按鈕，壓住不放會持續觸發
@@ -702,7 +697,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           forwardInterval = setInterval(forwardStep, 100);
         });
         const clearForward = () => clearInterval(forwardInterval);
-        $(document).on('mouseup mouseleave', clearForward);
+        document.addEventListener('mouseup', clearForward);
+        document.addEventListener('mouseleave', clearForward);
         cleanups.push(clearForward);
 
         const backwardBtn = player.controlBar.addChild('button');
@@ -723,26 +719,29 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           backwardInterval = setInterval(backwardStep, 100);
         });
         const clearBackward = () => clearInterval(backwardInterval);
-        $(document).on('mouseup mouseleave', clearBackward);
+        document.addEventListener('mouseup', clearBackward);
+        document.addEventListener('mouseleave', clearBackward);
         cleanups.push(clearBackward);
 
-        const $forwardBtn = $()(forwardBtn.el_).detach();
-        const $backwardBtn = $()(backwardBtn.el_).detach();
+        const forwardBtnEl = forwardBtn.el_ as HTMLElement;
+        const backwardBtnEl = backwardBtn.el_ as HTMLElement;
+        forwardBtnEl.remove();
+        backwardBtnEl.remove();
 
-        $forwardBtn.insertAfter($playButton);
-        $backwardBtn.insertAfter($playButton);
+        (playButtonEl.parentNode as Node).insertBefore(forwardBtnEl, playButtonEl.nextSibling);
+        (playButtonEl.parentNode as Node).insertBefore(backwardBtnEl, playButtonEl.nextSibling);
 
         player.el_.addEventListener('mousewheel', function (event: any) {
           doScroll(event, player);
         }, false);
-        const old_element = $()('.vjs-fullscreen-control')[0];
+        const old_element = q('.vjs-fullscreen-control');
         if (!old_element) {
           video.pause();
           return;
         }
         const new_element = old_element.cloneNode(true);
-        old_element.parentNode.replaceChild(new_element, old_element);
-        $()('.vjs-fullscreen-control').eq(0).on('click', function (event: any) {
+        (old_element.parentNode as Node).replaceChild(new_element, old_element);
+        onEl(q('.vjs-fullscreen-control'), 'click', function (event: any) {
           event.preventDefault();
           if (!isInPreviewWindow) {
             ipc.send('toggle-slideshow');
@@ -760,9 +759,9 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
 
         function updateLoopButton() {
           if (!(video as any).customizeLoop) {
-            $()(loopBtn.el_).removeClass('enabled');
+            loopBtn.el_.classList.remove('enabled');
           } else {
-            $()(loopBtn.el_).addClass('enabled');
+            loopBtn.el_.classList.add('enabled');
           }
         }
 
@@ -819,17 +818,17 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         iconClass = 'vol-3';
       }
       value = (value as any) + '%';
-      $()('#video-player-tips').removeClass('vol-0 vol-1 vol-2 vol-3').addClass(iconClass);
-      $()('#video-player-tips .value').html(value);
-      $()('#video-player-tips').show();
+      removeClass('#video-player-tips', 'vol-0 vol-1 vol-2 vol-3'); addClass('#video-player-tips', iconClass);
+      setHtml('#video-player-tips .value', value);
+      show('#video-player-tips');
       localStorage.setItem('eagle.videoPlayer.volume', value);
       clearTimeout(volumeTimeout);
       volumeTimeout = setTimeout(function () {
-        $()('#video-player-tips').hide();
+        hide('#video-player-tips');
       }, 1000);
     };
 
-    element.on('dblclick', function () {
+    video.addEventListener('dblclick', function () {
       if (!isInPreviewWindow) {
         const s = getBodyScope();
         machineryLeaveDetailMode(s);
@@ -897,8 +896,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         }
         player.currentTime(newTime);
         const progress = (newTime / video.duration) * 100;
-        const $progressbar = $()('.vjs-play-progress.vjs-slider-bar');
-        $progressbar.css('width', `${progress}%`);
+        cssSet('.vjs-play-progress.vjs-slider-bar', { width: `${progress}%` });
       } else if (direction == 'vertical' && Math.abs(e.deltaY) > 7) {
         clearTimeout(directionTimeout);
         if (deltaY == 1) {
@@ -994,7 +992,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
   useEffect(() => {
     const video = videoRef.current as any;
     if (!videoRef.current) return;
-    const isInPreviewWindow = $()('#preview-window').length > 0;
+    const isInPreviewWindow = qa('#preview-window').length > 0;
     const $bodyScope = getBodyScope();
     const bodyScope = getBodyScope();
 
@@ -1055,7 +1053,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         if (current && video.currentTime) {
           localStorage.setItem('eagle.videoPlayer.currentTime.' + current.id, video.currentTime);
         }
-        $()(video).off();
+        offAllEl(video);
         video.destroy?.();
 
         scopeApply(getBodyScope(), function (s) {
@@ -1161,12 +1159,12 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
       } else if (value < 100) {
         iconClass = 'vol-2';
       }
-      $()('#video-player-tips').removeClass('vol-0 vol-1 vol-2 vol-3').addClass(iconClass);
-      $()('#video-player-tips .value').html(value + '%');
-      $()('#video-player-tips').show();
+      removeClass('#video-player-tips', 'vol-0 vol-1 vol-2 vol-3'); addClass('#video-player-tips', iconClass);
+      setHtml('#video-player-tips .value', value + '%');
+      show('#video-player-tips');
       clearTimeout(volumeTimeout);
       volumeTimeout = setTimeout(function () {
-        $()('#video-player-tips').hide();
+        hide('#video-player-tips');
       }, 1000);
     };
     video.addEventListener('volumechange', onVolumeChange);
@@ -1175,7 +1173,8 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     // ===== 錯誤處理 =====
     const onError = (window as any).debounce(function () {
       try {
-        $()(video).find('~ .not-support-preview').show();
+        const nsp2 = video.parentElement?.querySelector('.not-support-preview') as HTMLElement | null;
+        if (nsp2) nsp2.style.display = '';
       } catch (err) {}
     }, 100, true);
     video.addEventListener('error', onError);
@@ -1190,7 +1189,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         scopeEvalAsync();
       }
     };
-    $()(video).on('dblclick', onDblClick);
+    onEl(video, 'dblclick', onDblClick);
 
     // ===== 滑鼠滾輪處理 =====
     let direction: string = '';
@@ -1359,13 +1358,13 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
     let wavesurferInterval: any;
     const cleanups: Array<() => void> = [];
 
-    if ($()('div.video-js').length > 0) {
-      videojs()($()('div.video-js')[0]).dispose();
+    if (qa('div.video-js').length > 0) {
+      videojs()(q('div.video-js') as HTMLElement).dispose();
       return;
     }
 
     const ipc = getIpc();
-    const element = $()(video);
+    const element = video;
     const $parentScope = getBodyScope();
 
     const volume = localStorage.getItem('eagle.videoPlayer.volume') || '100';
@@ -1373,27 +1372,27 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 
     // 播放器初始化（原 scope.$on('$destroy')）
     cleanups.push(() => {
-      if (element[0] && element[0].removeAllListeners) {
-        element[0].removeAllListeners();
+      if (video && (video as any).removeAllListeners) {
+        (video as any).removeAllListeners();
       }
       video.src = '';
       try {
-        videojs()(element[0]).dispose();
+        videojs()(element).dispose();
       } catch (err) {}
-      element.off();
+      offAllEl(video);
       if (wavesurfer) {
         wavesurfer.destroy();
       }
       clearInterval(wavesurferInterval);
     });
 
-    element.bind(
+    video.addEventListener(
       'error',
       (window as any)._?.debounce(function () {
         try {
           const current = getBodyScope()?.current;
           const newPath = current ? FileUrlHelper.getRawUrl(current) : '';
-          element.attr('src', newPath);
+          video.setAttribute('src', newPath);
           console.log('视频名称更新，重新定位新图片位置: ' + newPath);
         } catch (err) {}
       }, 333, true)
@@ -1431,9 +1430,9 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         }
 
         if ((video as any).customizeLoop) {
-          $()('.vjs-icon-loop').addClass('enabled');
+          addClass('.vjs-icon-loop', 'enabled');
         } else {
-          $()('.vjs-icon-loop').removeClass('enabled');
+          removeClass('.vjs-icon-loop', 'enabled');
         }
 
         initWaveform();
@@ -1455,9 +1454,10 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         }
         const player = this;
         // Videojs bug，滑桿不會自動更新
-        $()(player.el()).find('.vjs-volume-level').css('width', video.volume * 100 + '%');
+        (() => { const vl = player.el().querySelector('.vjs-volume-level') as HTMLElement | null; if (vl) vl.style.width = video.volume * 100 + '%'; })();
         const fullScreenButton = player.controlBar.fullscreenToggle.el_;
-        const $fullScreenButton = $()(fullScreenButton).detach();
+        const fullScreenButtonEl = fullScreenButton as HTMLElement;
+        fullScreenButtonEl.remove();
         const loopBtn = player.controlBar.addChild('button');
         loopBtn.controlText(player.localize('Loop'));
         loopBtn.addClass('vjs-icon-loop');
@@ -1466,19 +1466,19 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
           localStorage.setItem('eagle.videoPlayer.loop', (video as any).customizeLoop);
           updateLoopButton();
         });
-        $fullScreenButton.insertAfter(loopBtn.el_);
+        loopBtn.el_.parentNode.insertBefore(fullScreenButtonEl, loopBtn.el_.nextSibling);
 
         player.el_.addEventListener('mousewheel', function (event: any) {
           doScroll(event, player);
         }, false);
-        const old_element = $()('.vjs-fullscreen-control')[0];
+        const old_element = q('.vjs-fullscreen-control');
         if (!old_element) {
           video.pause();
           return;
         }
         const new_element = old_element.cloneNode(true);
-        old_element.parentNode.replaceChild(new_element, old_element);
-        $()('.vjs-fullscreen-control').eq(0).on('click', function (event: any) {
+        (old_element.parentNode as Node).replaceChild(new_element, old_element);
+        onEl(q('.vjs-fullscreen-control'), 'click', function (event: any) {
           event.preventDefault();
           ipc.send('toggle-slideshow');
         });
@@ -1487,9 +1487,9 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 
         function updateLoopButton() {
           if (!(video as any).customizeLoop) {
-            $()(loopBtn.el_).removeClass('enabled');
+            loopBtn.el_.classList.remove('enabled');
           } else {
-            $()(loopBtn.el_).addClass('enabled');
+            loopBtn.el_.classList.add('enabled');
           }
         }
 
@@ -1510,9 +1510,9 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
       const WaveSurfer = req((window as any).appRoot.path + '/app/js/vendors/wavesurfer.min.js');
       if (wavesurfer) {
         wavesurfer.destroy();
-        $()(video).off('pause');
-        $()(video).off('play');
-        $()(video).off('timeupdate');
+        offEl(video, 'pause');
+        offEl(video, 'play');
+        offEl(video, 'timeupdate');
         clearInterval(wavesurferInterval);
       }
       wavesurfer = WaveSurfer.create({
@@ -1641,17 +1641,17 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         iconClass = 'vol-3';
       }
       value = (value as any) + '%';
-      $()('#video-player-tips').removeClass('vol-0 vol-1 vol-2 vol-3').addClass(iconClass);
-      $()('#video-player-tips .value').html(value);
-      $()('#video-player-tips').show();
+      removeClass('#video-player-tips', 'vol-0 vol-1 vol-2 vol-3'); addClass('#video-player-tips', iconClass);
+      setHtml('#video-player-tips .value', value);
+      show('#video-player-tips');
       localStorage.setItem('eagle.videoPlayer.volume', value);
       clearTimeout(volumeTimeout);
       volumeTimeout = setTimeout(function () {
-        $()('#video-player-tips').hide();
+        hide('#video-player-tips');
       }, 1000);
     };
 
-    element.on('dblclick', function () {
+    video.addEventListener('dblclick', function () {
       const s = getBodyScope();
       machineryLeaveDetailMode(s);
     });
@@ -1743,7 +1743,6 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 
 export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, selector?: string) {
   useEffect(() => {
-    const $w = $();
     const element = ref.current;
     if (!element) return;
 
@@ -1753,23 +1752,30 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
     let endPoint = { x: 0, y: 0 };
     let maxDistanceX = 0;
     let originData = { x: undefined as number | undefined, y: undefined as number | undefined, ratio: 100 };
-    let $container = $()(element);
+    let containerEl: HTMLElement | null = element;
     if (selector) {
-      $container = $()(selector);
+      containerEl = q(selector);
     }
 
     // 視覺反饋元件
-    let $gestureCanvas: any = null;
+    let gestureCanvas: HTMLElement | null = null;
     let gestureContext: any = null;
     const gestureThreshold = 20;
     let animationFrame: number | null = null;
     let trailPoints: Array<{ x: number; y: number }> = [];
     const maxTrailLength = 30;
 
+    const onGestureResize = function () {
+      if (gestureCanvas) {
+        (gestureCanvas as HTMLCanvasElement).width = window.innerWidth;
+        (gestureCanvas as HTMLCanvasElement).height = window.innerHeight;
+      }
+    };
+
     function createGestureCanvas() {
-      if (!$gestureCanvas) {
-        $gestureCanvas = $()(`<canvas class="gesture-canvas"></canvas>`);
-        $gestureCanvas.css({
+      if (!gestureCanvas) {
+        gestureCanvas = createEl(`<canvas class="gesture-canvas"></canvas>`);
+        setCssEl(gestureCanvas, {
           position: 'fixed',
           top: 0,
           left: 0,
@@ -1780,21 +1786,16 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
           display: 'none',
         });
 
-        $()('body').append($gestureCanvas);
+        if (gestureCanvas) document.body.appendChild(gestureCanvas);
 
-        $gestureCanvas[0].width = window.innerWidth;
-        $gestureCanvas[0].height = window.innerHeight;
+        (gestureCanvas as HTMLCanvasElement).width = window.innerWidth;
+        (gestureCanvas as HTMLCanvasElement).height = window.innerHeight;
 
-        gestureContext = $gestureCanvas[0].getContext('2d');
+        gestureContext = (gestureCanvas as HTMLCanvasElement).getContext('2d');
 
-        $()(window).on('resize.gestureCanvas', function () {
-          if ($gestureCanvas) {
-            $gestureCanvas[0].width = window.innerWidth;
-            $gestureCanvas[0].height = window.innerHeight;
-          }
-        });
+        window.addEventListener('resize', onGestureResize);
       }
-      return $gestureCanvas;
+      return gestureCanvas;
     }
 
     function drawTrail(ctx: any, distance: number) {
@@ -1832,7 +1833,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         return;
       }
 
-      gestureContext.clearRect(0, 0, $gestureCanvas[0].width, $gestureCanvas[0].height);
+      gestureContext.clearRect(0, 0, (gestureCanvas as HTMLCanvasElement).width, (gestureCanvas as HTMLCanvasElement).height);
 
       if (trailPoints.length === 0 && startPoint.y) {
         for (let i = 0; i < maxTrailLength; i++) {
@@ -1873,7 +1874,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
     }
 
     function updateGestureVisual(mouseX: number, mouseY: number) {
-      if (!$gestureCanvas) {
+      if (!gestureCanvas) {
         createGestureCanvas();
       }
 
@@ -1884,7 +1885,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
       const absDistance = Math.abs(distanceX);
 
       if (absDistance > gestureThreshold && !state.isZooming) {
-        $gestureCanvas.css('display', 'block');
+        setCssEl(gestureCanvas, { display: 'block' });
 
         if (!animationFrame) {
           animateGesture();
@@ -1895,8 +1896,8 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
     }
 
     function hideGestureVisual() {
-      if ($gestureCanvas) {
-        $gestureCanvas.css('display', 'none');
+      if (gestureCanvas) {
+        setCssEl(gestureCanvas, { display: 'none' });
       }
 
       if (animationFrame) {
@@ -1907,7 +1908,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
       trailPoints = [];
 
       if (gestureContext) {
-        gestureContext.clearRect(0, 0, $gestureCanvas[0].width, $gestureCanvas[0].height);
+        gestureContext.clearRect(0, 0, (gestureCanvas as HTMLCanvasElement).width, (gestureCanvas as HTMLCanvasElement).height);
       }
     }
 
@@ -1925,7 +1926,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         hideGestureVisual();
       }
     };
-    $container.on('mousedown.mouseGesture', onMouseDown);
+    onEl(containerEl, 'mousedown', onMouseDown);
 
     const onMouseMove = (event: any) => {
       if (startPoint.y) {
@@ -1952,7 +1953,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         maxDistanceX = Math.abs(startPoint.x - event.pageX);
       }
     };
-    $()(window).on('mousemove.mouseGesture', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove);
 
     const onMouseUp = (event: any) => {
       if (event.button === 2 || event.button === 1) {
@@ -1996,18 +1997,17 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
       endPoint = { x: 0, y: 0 };
       originData = { x: undefined, y: undefined, ratio: 100 };
     };
-    $()(window).on('mouseup.mouseGesture', onMouseUp);
+    window.addEventListener('mouseup', onMouseUp);
 
-    void $w;
     return () => {
-      $container.off('mousedown.mouseGesture');
-      $()(window).off('mousemove.mouseGesture');
-      $()(window).off('mouseup.mouseGesture');
-      $()(window).off('resize.gestureCanvas');
+      offEl(containerEl, 'mousedown');
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('resize', onGestureResize);
 
-      if ($gestureCanvas) {
-        $gestureCanvas.remove();
-        $gestureCanvas = null;
+      if (gestureCanvas) {
+        gestureCanvas.remove();
+        gestureCanvas = null;
         gestureContext = null;
       }
 
@@ -2067,19 +2067,20 @@ export function useRectSelect() {
     w.rectSelecting = false;
     let startX = 0;
     let startY = 0;
-    let offset = $()(element).offset();
-    const $rect = $()(`<div class="rect""></div>`).hide();
+    let offset = offsetOf(element) as { left: number; top: number };
+    const rectEl = createEl(`<div class="rect"></div>`) as HTMLElement;
+    rectEl.style.display = 'none';
     let gridItems: any[] = [];
     const originSelectedMappings: Record<string, boolean> = {};
     let isMultipleSelecting = false;
     let windowHeight = 0;
-    const $container = $()('#box-container');
+    const containerEl = element;
 
-    $container.prepend($rect);
+    containerEl.prepend(rectEl);
 
     const onMouseDown = function (e: any) {
       const s = getBodyScope();
-      if (e && $container.outerWidth() <= e.offsetX + 10) {
+      if (e && containerEl.offsetWidth <= e.offsetX + 10) {
         e.stopPropagation();
         return;
       }
@@ -2087,9 +2088,9 @@ export function useRectSelect() {
       if (e.which != 1 || s?.isDetailMode) return;
       isMultipleSelecting = e.metaKey || e.ctrlKey;
 
-      offset = $()(element).offset();
+      offset = offsetOf(element) as { left: number; top: number };
       gridItems = w.ig.getItems(true);
-      windowHeight = $()(window).height();
+      windowHeight = window.innerHeight;
 
       if (e.metaKey || e.shiftKey || e.ctrlKey) {
         //
@@ -2112,20 +2113,20 @@ export function useRectSelect() {
       Object.assign(originSelectedMappings, JSON.parse(JSON.stringify(s?.selectedMappings || {})));
 
       w.rectSelection.startX = startX = e.pageX - offset.left;
-      w.rectSelection.startY = startY = e.pageY - offset.top + $()(element).scrollTop();
+      w.rectSelection.startY = startY = e.pageY - offset.top + element.scrollTop;
       w.rectSelecting = true;
 
-      if ($()('#box-container .rect').length == 0) {
-        $container.prepend($rect);
+      if (qa('#box-container .rect').length == 0) {
+        containerEl.prepend(rectEl);
       }
 
-      $rect.css({
+      setCssEl(rectEl, {
         transform: 'none',
         top: w.rectSelection.startY,
         left: w.rectSelection.startX,
       });
 
-      $rect.show();
+      rectEl.style.display = '';
       scopeApply(s, function (sc) {
         sc.$root.currentFocus = 'content';
       });
@@ -2142,7 +2143,7 @@ export function useRectSelect() {
       w.rectSelection = {};
       w.rectSelecting = false;
 
-      $rect.css({
+      setCssEl(rectEl, {
         top: 0,
         left: 0,
         width: 0,
@@ -2158,14 +2159,14 @@ export function useRectSelect() {
         sc.$evalAsync?.();
       });
     };
-    $()(window).on('mouseup.rectSelect', onMouseUp);
+    window.addEventListener('mouseup', onMouseUp);
 
     const onMouseMove = function (e: any) {
       isMultipleSelecting = e.metaKey || e.ctrlKey;
 
       if (w.rectSelecting) {
         const s = getBodyScope();
-        const scrollTop = $()(element).scrollTop();
+        const scrollTop = element.scrollTop;
         const flipX = startX > e.pageX - offset.left;
         const flipY = startY > e.pageY - offset.top + scrollTop;
 
@@ -2185,7 +2186,7 @@ export function useRectSelect() {
           element.scrollTop = scrollTop + 48;
         }
 
-        $rect.css({
+        setCssEl(rectEl, {
           transform: 'none',
           top: w.rectSelection.startY,
           left: w.rectSelection.startX,
@@ -2236,7 +2237,7 @@ export function useRectSelect() {
         }
       }
     };
-    $()(window).on('mousemove.rectSelect', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove);
 
     function contain(gridItem: any) {
       const s = getBodyScope();
@@ -2269,7 +2270,7 @@ export function useRectSelect() {
 
       a.y += offsetY;
 
-      const subFolderHeight = $()('#sub-folder-container').height();
+      const subFolderHeight = heightOf(q('#sub-folder-container'));
       if (subFolderHeight) {
         a.y += subFolderHeight + 20;
       }
@@ -2284,10 +2285,10 @@ export function useRectSelect() {
 
     return () => {
       element.removeEventListener('mousedown', onMouseDown);
-      $()(window).off('mouseup.rectSelect');
-      $()(window).off('mousemove.rectSelect');
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
       try {
-        $rect.remove();
+        rectEl.remove();
       } catch (err) {}
     };
   }, []);

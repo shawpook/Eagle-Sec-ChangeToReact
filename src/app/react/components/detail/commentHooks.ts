@@ -1,7 +1,7 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { useEffect, useRef } from 'react';
 import { t } from '../../global/eagleGlobals';
-import { $, getIpc, req } from './detailHooks';
+import { $, safeZoomData, getIpc, req } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
@@ -85,7 +85,7 @@ export function useRectComment(enabled: boolean) {
         e.stopPropagation();
         return;
       }
-      const zoomData = $()(element).safeZoomData();
+      const zoomData = safeZoomData();
       const zoomRatio = zoomData.ratio;
 
       const offset = $()(element).offset();
@@ -123,7 +123,7 @@ export function useRectComment(enabled: boolean) {
         void offsetTop;
         const image = $()('#detail-image').get(0);
         const ratio = sc.current ? sc.current.width / image.clientWidth : 0;
-        const zoomData = $()(element).safeZoomData();
+        const zoomData = safeZoomData();
         const zoomRatio = zoomData.ratio;
 
         sc.dragging = false;
@@ -163,7 +163,7 @@ export function useRectComment(enabled: boolean) {
       const s = getBodyScope();
       if (!enabledRef.current) return;
       if (!draggingRef.current) return;
-      const zoomData = $()(element).safeZoomData();
+      const zoomData = safeZoomData();
       const zoomRatio = zoomData.ratio;
       if (!s?.commentRect) return;
 
@@ -303,7 +303,7 @@ export function useCommentItem(
     const onResizeStart = function () {
       const s = getBodyScope();
       if (!s?.isCommentMode) return;
-      zoomData = $()('#detail-container').safeZoomData();
+      zoomData = safeZoomData();
       zoomRatio = zoomData.ratio;
     };
 
@@ -348,7 +348,7 @@ export function useCommentItem(
       if (resizing) return;
       if (!s?.isCommentMode) return;
       dragging = true;
-      zoomData = $()('#detail-container').safeZoomData();
+      zoomData = safeZoomData();
       const comment = s?.current?.comments?.[commentIndex];
       originTop = comment ? comment.y : 0;
       originLeft = comment ? comment.x : 0;
@@ -699,7 +699,7 @@ export function useCropImage(
 
       $cropSize.show();
 
-      zoomData = $()('#detail-container').safeZoomData();
+      zoomData = safeZoomData();
       zoomRatioLocal = zoomData.ratio;
 
       const targetClass = event.originalEvent.target.classList.value;
@@ -757,7 +757,7 @@ export function useCropImage(
         left: `${event.pageX}px`,
       });
 
-      zoomData = $()('#detail-container').safeZoomData();
+      zoomData = safeZoomData();
       const offsetCanvasX = parseInt(String((originalCanvasX - zoomData.scaledX) / zoomRatioLocal));
       const offsetCanvasY = parseInt(String((originalCanvasY - zoomData.scaledY) / zoomRatioLocal));
 
@@ -1002,7 +1002,7 @@ export function useCropImage(
       e.preventDefault();
       if (cropResizing) return;
       draggingCropArea = true;
-      zoomData = $()('#detail-container').safeZoomData();
+      zoomData = safeZoomData();
 
       const of = $cropArea.position();
       const zr = zoomData.ratio;
@@ -1042,7 +1042,7 @@ export function useCropImage(
 
       const currentX = e.pageX;
       const currentY = e.pageY;
-      zoomData = $()('#detail-container').safeZoomData();
+      zoomData = safeZoomData();
       const zr = zoomData.ratio;
 
       const offsetX = (startX - currentX) / zr;

@@ -392,7 +392,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
       const selectedCount = (s.containFolders || []).filter((f: any) => f && f.isSelected).length;
       if (selectedCount > 0) {
         s.page = 1;
-        s.filterContent && machineryFilterContent(s);
+        machineryFilterContent(s);
       }
     });
     focusInput(rootRef.current);
@@ -476,14 +476,14 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
                     scopeApply(bodyScope(), (s) => filterWithFolder(live));
-                    runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
+                    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                   }}
                   onContextMenu={(e) => {
                     e.stopPropagation();
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
                     scopeApply(bodyScope(), (s) => excludeWithFolder(live));
-                    runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
+                    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                   }}
                   nameHtml={substring(fuzzyName(folder.name), 0, 200)}
                   badge={num0(folder.imageCount)}
@@ -619,7 +619,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
       const sel = (s.containTags || []).filter((tg: any) => tg && (tg.isSelected || tg.isExcluded)).length;
       if (sel > 0) {
         s.page = 1;
-        s.filterContent && machineryFilterContent(s);
+        machineryFilterContent(s);
       }
     });
     focusInput(rootRef.current);
@@ -738,14 +738,14 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
                       scopeApply(bodyScope(), (s) => filterWithTag(live));
-                      runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
+                      runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                     }}
                     onContextMenu={(e) => {
                       e.stopPropagation();
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
                       scopeApply(bodyScope(), (s) => excludeWithTag(live));
-                      runSeq([(s) => { s.page = 1; s.filterContent && machineryFilterContent(s); }]);
+                      runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                     }}
                     nameHtml={substring(fuzzyName(tag.name), 0, 200)}
                     badge={num0(tag.imageCount)}
@@ -772,7 +772,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                         });
                       }
                       s.eagle.filter.filterRules.tag.includes = [...new Set(s.eagle.filter.filterRules.tag.includes)];
-                      s.filterContent && machineryFilterContent(s);
+                      machineryFilterContent(s);
                       machineryCalculateFilterCounts(s);
                     });
                   }}

@@ -1884,9 +1884,10 @@
   if (desktopApi && typeof desktopApi.onRebindRefresh === 'function') {
     desktopApi.onRebindRefresh(() => {
       const scope = typeof window !== 'undefined' ? window.$bodyScope : null;
-      if (scope && typeof scope.rebindRefresh === 'function') {
+      const M = window.__eagleMachinery;
+      if (scope && M && typeof M.rebindRefresh === 'function') {
         try {
-          scope.rebindRefresh();
+          M.rebindRefresh(scope, undefined, undefined, undefined);
           if (typeof scope.scrollToSelectedItem === 'function') scope.scrollToSelectedItem();
         } catch (err) { /* 重载失败不阻塞通知链 */ }
       }

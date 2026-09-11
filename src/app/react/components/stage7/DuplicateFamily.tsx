@@ -13,7 +13,7 @@ import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
-import { machineryOpenUnfiled } from '../../core/dataMachinery';
+import { machineryOpenUnfiled, machineryRebindRefresh } from '../../core/dataMachinery';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
 import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
@@ -309,7 +309,7 @@ function MergeEditor({
           message: t('notify.removeDuplicate.successMsg'),
           duration: 750,
         });
-        body.rebindRefresh();
+        machineryRebindRefresh(body, undefined, undefined, undefined);
         updateSelection();
         stateRef.current.isMerging = false;
         onMerged({

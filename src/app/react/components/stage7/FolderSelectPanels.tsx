@@ -10,7 +10,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
-import { machineryChangeSidebarIndex, machinerySmartFolderCount } from '../../core/dataMachinery';
+import { machineryChangeSidebarIndex, machineryRebindRefresh, machinerySmartFolderCount } from '../../core/dataMachinery';
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -923,7 +923,7 @@ export function NewSmartFolderModal() {
     const result = body.raw.filter(body.contentFilter);
     const count = result.length;
     setTotalCount(count);
-    body.rebindRefresh();
+    machineryRebindRefresh(body, undefined, undefined, undefined);
     // digest 等价：强制重渲染展示 conditions/rules 的原地变更
     bumpAll();
   };
@@ -1044,7 +1044,7 @@ export function NewSmartFolderModal() {
     }
     isEditModeRef.current = undefined;
     setIsOpen(false);
-    body.rebindRefresh();
+    machineryRebindRefresh(body, undefined, undefined, undefined);
     scopeEvalAsync();
   };
 

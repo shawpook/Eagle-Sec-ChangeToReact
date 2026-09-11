@@ -17,7 +17,7 @@ import { scopeEvalAsync } from '../global/scopeShim';
 
 export function updateSelection(): void {
   const s = getBodyScope();
-  if (s && typeof s.updateSelection === 'function') machineryUpdateSelection(s);
+  if (s) machineryUpdateSelection(s);
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══

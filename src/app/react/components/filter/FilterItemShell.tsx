@@ -157,7 +157,7 @@ export function closeShell(elem: HTMLElement | null) {
     document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
   }
   setTimeout(() => {
-    scopeApply(getBodyScope(), (s) => s.updateContainerHieght && machineryUpdateContainerHieght(s));
+    scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
   }, 50);
 }
 

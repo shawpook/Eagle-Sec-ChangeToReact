@@ -142,10 +142,10 @@ export function takeoverFilterDomain(): void {
     if (!s) return;
     if (group === 'shape') {
       const shape = w.eagle.filter.filterRules.shape || {};
-      if (shape.width && shape.height) s.filterContent();
+      if (shape.width && shape.height) machineryFilterContent(s);
       return;
     }
-    s.filterContent();
+    machineryFilterContent(s);
   });
   diag.ruleSubscribed = true;
 
@@ -175,7 +175,7 @@ export function takeoverFilterDomain(): void {
       const s: any = getBodyScope();
       if (!s) return;
       domainTimeout(s, function () {
-        s.rebindRefresh(mute);
+        machineryRebindRefresh(s, mute, undefined, undefined);
       }, 500);
     });
   }

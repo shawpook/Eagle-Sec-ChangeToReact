@@ -2521,6 +2521,29 @@
 > `ui-interactions`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 16（Track A / A-2 收尾）✅：3 个 spy 锚定挂载退役 + 调用计数诊断；箭头面 19 → 16（2026-09-11）】**
+>
+> **退役 3 项**：`rebindRefresh` / `updateSelection` / `filterContent`（原以 scope spy 观测调用）。
+> **替代机制**：新增导出 `machineryCalls`（`{rebindRefresh,updateSelection,filterContent}`），在三个
+> 函数入口自增，并挂到 `window.__eagleMachinery.calls`；测试改为断言计数（**不再是 spy**）。
+> `m1-D-filter-watch-fires` / `m1-D-rebind-broadcast` / `m1-E-selected-watch` /
+> `m1-E-update-selection-broadcast` 四条契约同步改写。
+>
+> **真实调用面直调化**（含存在性守卫清理，共 ~30 处）：`filterDomain`（onFilterRuleChange /
+> rebindRefreshChannel.on）、`selectionViewDomain`（selected 订阅 + updateSelectionChannel.on）、
+> `apiServerDomain`、`dataMachinery` 内部（calculateImageBinding 回调链，含批次 14 漏网的
+> `w.$bodyScope.calculateImageBinding`）、`inspectorActions`、`DuplicateFamily`、`FolderSelectPanels`、
+> `FilterItems`/`FilterItems2`（`s.filterContent && machineryFilterContent(s)` 守卫族）、
+> `FilterItemShell`、`filterService`、`selectionService`。
+>
+> **shims.js 第二个锚定点**：`desktopApi.onRebindRefresh` 回调原调 `scope.rebindRefresh()`——改为
+> `window.__eagleMachinery.rebindRefresh(scope,…)`。至此 shims.js 的 scope 函数锚定面为：
+> `enterDetailMode`/`leaveDetailMode`（**保留挂载**）、`rebindRefresh`/`toggleAll`（已改走 surface）。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

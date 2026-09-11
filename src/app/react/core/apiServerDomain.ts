@@ -23,7 +23,7 @@ import { getBodyScope } from './appCore';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { machineryCalculateImageBinding, machineryExistInSmartFilter, machinerySaveFolder, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryRebindRefresh, machinerySaveFolder, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 
 let installed = false;
 
@@ -806,8 +806,8 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
     w.ayncsImagesChange(items);
     w.hiddenByCurrentFilter(items);
     machineryCalculateImageBinding(bs, { ignoreSort: true }, function () {
-      bs.rebindRefresh(true);
-      bs.updateSelection();
+      machineryRebindRefresh(bs, true, undefined, undefined);
+      machineryUpdateSelection(bs);
     });
 
     resolve(undefined);

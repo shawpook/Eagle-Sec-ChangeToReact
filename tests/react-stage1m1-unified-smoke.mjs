@@ -427,12 +427,8 @@ try {
   })()`);
 
   await evalNow(`(() => {
-    const s = window.$bodyScope;
-    let n = 0;
-    const orig = s.filterContent;
-    s.filterContent = function () { n++; return orig.apply(s, arguments); };
-    window.__m1fc = () => n;
-    s.eagle_filter_probe = true;
+    window.__eagleMachinery.calls.filterContent = 0;
+    window.$bodyScope.eagle_filter_probe = true;
     // 触发订阅：写 filterRules.file.min（b1-9bi 起 setFilterRule 是唯一写路径——
     // 原 scopeShim 轮询 watcher 已退役为 filterService 显式订阅）
     setTimeout(() => {
@@ -441,27 +437,21 @@ try {
     return true;
   })()`);
   await delay(900);
-  await assertExpr('m1-D-filter-watch-fires', `window.__m1fc() >= 1 && window.__eagleFilterService.listenerCount() >= 1`);
+  // D-1 A-2：挂载退役后不再 spy s.filterContent，改为读 machinery 调用计数（__eagleMachinery.calls）
+  await assertExpr('m1-D-filter-watch-fires', `window.__eagleMachinery.calls.filterContent >= 1 && window.__eagleFilterService.listenerCount() >= 1`);
 
   await evalNow(`(() => {
-    const s = window.$bodyScope;
-    let n = 0;
-    const orig = s.rebindRefresh;
-    s.rebindRefresh = function () { n++; return orig.apply(s, arguments); };
-    window.__m1rr = () => n;
+    window.__eagleMachinery.calls.rebindRefresh = 0;
     window.__eagleBus.emit('REBIND_REFRESH', true);
     return true;
   })()`);
   await delay(900);
-  await assertExpr('m1-D-rebind-broadcast', `window.__m1rr() >= 1`);
+  await assertExpr('m1-D-rebind-broadcast', `window.__eagleMachinery.calls.rebindRefresh >= 1`);
 
   // ═══ E. cZ-6 选择/视图 ═══
   await evalNow(`(() => {
     const s = window.$bodyScope;
-    let n = 0;
-    const orig = s.updateSelection;
-    s.updateSelection = function () { n++; return orig.apply(s, arguments); };
-    window.__m1us = () => n;
+    window.__eagleMachinery.calls.updateSelection = 0;
     s.$apply(function () {
       s.selected = [s.raw[0]];
     });
@@ -470,17 +460,16 @@ try {
   await delay(500);
   await assertExpr('m1-E-selected-watch', `(() => {
     const s = window.$bodyScope;
-    return s.selectedMappings && s.selectedMappings[s.raw[0].id] === true && window.__m1us() >= 1;
+    return s.selectedMappings && s.selectedMappings[s.raw[0].id] === true && window.__eagleMachinery.calls.updateSelection >= 1;
   })()`);
 
   await evalNow(`(() => {
-    const s = window.$bodyScope;
-    window.__m1us2 = window.__m1us();
+    window.__m1us2 = window.__eagleMachinery.calls.updateSelection;
     window.__eagleBus.emit('UPDATE_SELECTION');
     return true;
   })()`);
   await delay(400);
-  await assertExpr('m1-E-update-selection-broadcast', `window.__m1us() > window.__m1us2`);
+  await assertExpr('m1-E-update-selection-broadcast', `window.__eagleMachinery.calls.updateSelection > window.__m1us2`);
 
   // ═══ F. cZ-7a 杂项 ═══
   await evalNow(`(() => {

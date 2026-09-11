@@ -92,7 +92,7 @@ export function takeoverSelectionViewDomain(): void {
     });
 
     if (s.selected.length > 0) {
-      s.updateSelection();
+      machineryUpdateSelection(s);
     }
 
     if (s.isDetailMode && s.smoothZoomDone) {
@@ -182,7 +182,7 @@ export function takeoverSelectionViewDomain(): void {
   updateSelectionChannel.on(function () {
     const s: any = getBodyScope();
     if (!s) return;
-    s.updateSelection();
+    machineryUpdateSelection(s);
   });
 
   diag.listenersRemoved['SAVE_FOLDER'] = removeScopeListener(s0, 'SAVE_FOLDER');

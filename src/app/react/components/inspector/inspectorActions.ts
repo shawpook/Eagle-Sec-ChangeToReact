@@ -6,7 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { getOffsetScrollbarFn, machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryOpenPluginPanel, machineryRelayout, machineryUpdateItemView } from '../../core/dataMachinery';
+import { getOffsetScrollbarFn, machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryOpenPluginPanel, machineryRebindRefresh, machineryRelayout, machineryUpdateItemView } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -294,7 +294,7 @@ export function imagesChange() {
         $()('iframe#font-viewer').contents().find('.font-name span').text(eagleIns.newName);
       }
     }
-    getBodyScope().rebindRefresh(true);
+    machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
   }
 }
 
@@ -331,7 +331,7 @@ export function annotationChange() {
     });
     (window as any).ayncsImagesChange(items);
     (window as any).hiddenByCurrentFilter(items);
-    getBodyScope().rebindRefresh(true);
+    machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
     (window as any).electronLog.info(`[app] Change file comemnt, total: ${items.length} files`);
   });
 }
@@ -382,7 +382,7 @@ export function urlChange() {
           $()('iframe#font-viewer').contents().find('.font-name span').text(eagleIns.newName);
         }
       }
-      getBodyScope().rebindRefresh(true);
+      machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
     }
   });
 }

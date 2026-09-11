@@ -876,6 +876,7 @@ export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] 
    resetNgGridLayoutData = ngGridLayout 指令 66970 隐式全局赋值（window.*）；HoverPreview
    顶层 var（51689）→ window.*；calcuteFilterBadge 为域内移植版） */
 export async function machineryRebindRefresh(s: any, muteMode: any, contentFilterCache: any, startCursor: any): Promise<void> {
+  machineryCalls.rebindRefresh++;
   const w = window as any;
 
   if (!s.isItemBindCalculated) return;
@@ -2848,6 +2849,7 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
 let updateSelectionTimeout: any = null;
 
 export function machineryUpdateSelection(s: any): void {
+  machineryCalls.updateSelection++;
   const w = window as any;
   // shim 世界保留桥：React inspector 面板经 UPDATE_INSPECTOR 刷新（bundle 54678 版无此广播，
   // 其 UI 直接双向绑定 scope.inspector.*——适配注明）
@@ -5925,9 +5927,9 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
               glRemoveitemsChannel.emit(w.$bodyScope.getSelectedItemElements());
             }
 
-            w.$bodyScope.calculateImageBinding({ ignoreSort: true }, () => {
-              w.$bodyScope.rebindRefresh(true);
-              w.$bodyScope.updateSelection();
+            machineryCalculateImageBinding(w.$bodyScope, { ignoreSort: true }, () => {
+              machineryRebindRefresh(w.$bodyScope, true, undefined, undefined);
+              machineryUpdateSelection(w.$bodyScope);
             });
 
             var message = getFilter()('i18n')("notify.image.moveToFolders", [
@@ -6442,6 +6444,7 @@ export function machineryGrayColorFilter(image: any): boolean {
    列表的统一入口：keyword watcher / eagle.filter 规则 watcher / 显示隐藏切换都汇聚到它，
    本体只是「清 shuffle + rebindRefresh(contentFilterCache) + 滚动归零」的编排） */
 export function machineryFilterContent(s: any, type?: any): void {
+  machineryCalls.filterContent++;
   const w = window as any;
   // b1-9by-B：规则流汇聚点——eagle.filter 规则深变异经本函数收口后直推 filter 快照
   syncFilterFromScope();
@@ -10696,6 +10699,11 @@ export function getPageUpHandlerFn(s: any): any { return scopeSingleton(s, 'page
 export function getPageDownHandlerFn(s: any): any { return scopeSingleton(s, 'pageDownHandler', () => machineryPageDownHandler(s)); }
 export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType(s)); }
 
+/* D-1 A-2：测试诊断计数（`window.__eagleMachinery.calls`）——替代 scope 挂载 spy
+ * （m1-D-filter-watch / m1-D-rebind-broadcast / m1-E-selected-watch）。
+ * 仅在函数入口自增，无任何行为影响。 */
+export const machineryCalls: Record<string, number> = { rebindRefresh: 0, updateSelection: 0, filterContent: 0 };
+
 /* controller init 状态面（bundle 21242-21619 逐字——$scope→s / $rootScope→s.$root 机械替换；
    initEvent/var allTags/var updateTimer 略去：React 组件自有事件面 + 闭包死变量；
    仅 shim 世界调用（bundle 在世时状态由 controller init 填充，零调用零改变）） */
@@ -11277,10 +11285,8 @@ export function applyDataMachineryScope(): void {
   // scope 函数替换：此后 bundle 侧全部 $scope.calculateImageBinding 调用面（muteCalcuteImageBinding/
   // library.changed 等）即走移植实现（绞杀内部机器）。c9b：rebindRefresh/rebindRefreshLazy/
   // updateSidebarList 一并替换（React 域 10+ 处调用面 + bundle 18203/18438/$broadcast 路径）。
-  s.rebindRefresh = (muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRefresh(s, muteMode, contentFilterCache, startCursor);
-  // filterContent（bundle 32583-32589 逐字；b1-9p 补端口——keyword/筛选规则 watcher 的
-  // 重算入口；rebindRefresh 已移植，此函数本体会随 eagle 种子（evalPath 可解析）一起激活）
-  s.filterContent = (type?: any) => machineryFilterContent(s, type);
+  // D-1 A-2：rebindRefresh/filterContent 挂载已退役——filterDomain 域内监听 / filterService
+  // 写入点 / 各组件均已 import 直调；调用观测改用 __eagleMachinery.calls 计数。
   // c9c：updateItemsView/switchLayout/prependImages/reload（reload = 一次性创建的 leading-edge
   // 防抖实例，与 bundle controller init 同语义）
   s.reload = machineryReload(s);
@@ -11298,7 +11304,7 @@ export function applyDataMachineryScope(): void {
   const w2 = window as any;
   if (!w2.RecentFileManager) w2.RecentFileManager = buildRecentFileManager();
   // c15：updateSelection/zoom
-  s.updateSelection = () => machineryUpdateSelection(s);
+  // D-1 A-2：updateSelection 挂载已退役（selectionViewDomain 域内订阅 / apiServerDomain 均 import 直调）
   s.zoom = () => machineryZoom(s);
   // c15b：adjustLayoutWidth/zoomFit
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
@@ -11425,6 +11431,7 @@ export function applyDataMachineryScope(): void {
     enterDetailMode: machineryEnterDetailMode,
     leaveDetailMode: machineryLeaveDetailMode,
     toggleAll: machineryToggleAll,
+    calls: machineryCalls,
   };
 
   (window as any).__eagleDataMachinery = {

@@ -7176,3 +7176,53 @@ D-2（jQuery/vendor 清零）首次全量回归（`node tests/run-react-suite.mj
 `machinerySaveHandler` 因 `saveCrop`（imageOpsService→dataMachinery）会新增环，暂留；`machineryNHandler` 依赖 `machineryAddVideoComment`，非零依赖不搬。
 
 **门禁**：`bz-export-check` 无问题（2025 命名导入/144 文件）；tsc **619**（未升）；probe LOAD_OK；**全套 55 项 ALL GREEN**。dataMachinery 11,651 → **11,508 行**。
+
+---
+
+## D 阶段任务看板（状态复核 2026-09-11）
+
+**当前 HEAD**：`20fb1e0`（分支 `react-in-place`）。实测数字：`dataMachinery.ts` **11,508 行 / 238 个导出（原 255）**；
+**45 个文件** import 它；`run-react-suite` **55 项**；哨兵 `jQuery 0 / vendorScriptTags 0`。
+
+### 主线（关键路径）
+
+| 编号 | 任务 | 状态 | 现状 / 判据 |
+|---|---|---|---|
+| **D-1-A** | 挂载面退役（原 67 个 machinery 箭头/调用式） | ✅ 完成 | 余 9 处均为跨边界 scope 面（`electron/main.cjs`、子窗、ListRegion） |
+| **D-1-B0** | 映射表（247 导出 → 目标域 + 依赖闭包） | ✅ 完成 | `docs/d1-b0-mapping.md`（331 顶层声明 / 域聚类 / 共享名） |
+| **D-1-B1~B4** | 零反向依赖声明归位（rename 工具 / 颜色 / 键盘动作 / 媒体族） | ✅ 完成 | 3 个新叶子模块 + 1 个既有域文件；17 声明归位 |
+| **D-1-B5…B-k** | 余下 **142 个零依赖声明 / 2,859 行** 继续归位 | ⏳ 进行中 | 沿用「叶子模块」安全模式；⚠️ **对 45 个 import 文件逐一改道** |
+| **D-1-B-cycle** | **非零依赖**域簇归位（selectionView/item/tagManager/filter/library/misc/services） | ⛔ 未开始 | 必进既有域文件 → dataMachinery 回边成环，需逐域循环分析 + 全量验证 |
+| **D-1-B-final** | 删 `dataMachinery.ts` + `grep-zero` + 哨兵扩面（禁 dataMachinery 引用） | ⛔ 未开始 | 依赖 B5~B-cycle 全部完成 |
+| **D-2** | jQuery 清零 + vendor 清零 | ✅ 完成 | 见下「D-2 收官」；全量 55 项 ALL GREEN |
+| **D-2-遗留** | `frontend/public/shims.js` 退役（3996 行） | ⛔ 阻塞于 B-final | `dataMachinery.ts:11316` 明载 shims 25ms 轮询依赖；须待挂载/scope 面归位 |
+| **D-3** | `run-react-suite` 55 → **65+**（每竖切 ≥1 闭环项） | ⛔ 未开始 | 需先盘点 55 项覆盖矩阵；可并行，但净增 10 个 UI 闭环脚本 |
+| **D-4** | 收官文档 + `REWRITE-PLAN` 归档 + DoD 六项核对 | ⛔ 未开始 | 依赖 D-1/D-2/D-3 全绿 |
+
+### DoD 六项现状（plan §4）
+
+| DoD | 现状 |
+|---|---|
+| ① 六项删除 `grep-zero`：`scopeShim`/`scopeBridge`/`shimFnsBridge`/`controllerFns`/`dataMachinery`/`appCore.coreState` | ❌ **未达**：`dataMachinery.ts` 仍在（238 导出）、`global/scopeShim.ts` 仍在（49 处引用）、`appCore` 内 `coreState` 仍在；`scopeBridge`/`shimFnsBridge`/`controllerFns` 文件已删（仅剩注释提及） |
+| ② 永久哨兵（无 Angular 语义 + jQuery；eagleBus 唯一通道） | ❌ **未达**：jQuery 0 ✅，但 Angular-ism 计数仍为 watch 19 / on 26 / scopeApply 200 / getBodyScope 794 … |
+| ③ `index.html` vendor 清零 | ✅ **已达**（`vendorScriptTags 0`） |
+| ④ 套件 ≥65 全绿 | ❌ **未达**：55 项全绿，差 10 项 |
+| ⑤ 收官文档 + 归档 | ⛔ 未开始 |
+
+### 关键依赖链
+
+```
+D-1-B5…B-k（零依赖叶子） ─┐
+                          ├─→ D-1-B-final（删 dataMachinery）─┐
+D-1-B-cycle（成环域簇） ──┘                                   │
+                                                              ├─→ scopeShim / coreState 删除（DoD ①）
+                                                              ├─→ shims.js 退役（D-2 遗留）
+                                                              └─→ D-4（DoD 全项）
+D-3（套件 65+，可并行） ─────────────────────────────────────────────┘
+```
+
+### 其它已确认遗留（不阻塞主线）
+
+1. `src/app/collect-window/` 自带 `js/vendors/jquery-1.8.0.min.js` + `js/lib/api/{env,swal-dialog}.js` 仍消费 jQuery —— 采集窗是独立 HTML/API 层，与主窗共享路径无关，随采集窗 API 迁移另行推进。
+2. `main.cjs` 在 **preview 窗口** 侧直调 `scope.copyImage/openWithDefault/openWithFinder/startDrag` —— 由 `preview-window/controller.ts` 供给，无需迁到 body scope。
+3. `tagRectSelecting` 存在两份实现（`dataMachinery` 本地 `let` 与 `TagManager.tsx` 的 `window.tagRectSelecting`），B-3 已修 UI 侧 ReferenceError，去重留 Track B 域归并。

@@ -2255,6 +2255,31 @@
 >
 > | 编号 | 内容 | 量 | 依赖 |
 > |---|---|---|---|
+> **【D-1 摸底完成（2026-09-11）：结构、分类、路径与实测教训】**
+>
+> **结构**：247 个导出**全部存活**（0 死导出 —— 去注释后内外均有真实引用）；
+> `s.xxx = ...` 赋值共 576 处，其中 **247 处是 machinery 函数挂载**
+> （`s.xxx = (…) => machineryYyy(s, …)`），集中在 `machinerySeedControllerState`（:10686 起）。
+>
+> **分类**（bz-d1-mountclass.py / bz-d1-mountverify.py）：
+> - 156 处：纯箭头 + 无任何调用面（外部调用/测试/内部/动态下标/HTML/存在性检查皆无）
+> - 74 处：纯箭头但有调用面（外部或测试引用）
+> - 15 处：右侧是**调用**（`s.reload = machineryReload(s)`）—— 删除即丢副作用，须保留调用
+> - 311 处：其它形态（普通赋值等）
+>
+> **实测教训（两次失败）**：
+> - 整批删 156 → **LOAD_BROKEN**。说明存在静态分析覆盖不到的存活面
+>   （裸引用 `s.xxx` 作值传递 —— 实测 24 个此类名字；以及 coreState 键遍历类依赖）。
+> - 小批删 10 → LOAD_OK，但 **1m1 `m1-A10-filter-engine` 挂** —— 契约**明确锚定**
+>   `typeof window.$bodyScope.calcuteFilterResult === 'function'`，且 `m1-A3-c9-machinery`
+>   按 15 个名字检查 `window.__eagleDataMachinery[k] === 'machinery'`。
+>
+> **结论：D-1 的挂载面退役必须「三位一体」逐批做**：
+> ① 调用方从 `s.xxx()` 改为 import 直调 machineryYyy；② 删除挂载项；
+> ③ 同步改契约（m1-A3 的标记表与 typeof 断言、m1-A10 等）——
+> 且每批必须过 probe + 全套，不可整批推进。
+>
+
 > | **b1-9bz-D-1** | dataMachinery 归位（按域拆子批，参考 P1 竖切 7 面） | 11764 行 / 238 导出 / 47 引用文件 | C-3、C-6（挂载块须先无 digest 依赖） |
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |

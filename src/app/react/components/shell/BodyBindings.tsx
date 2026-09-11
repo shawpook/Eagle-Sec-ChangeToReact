@@ -10,6 +10,7 @@ import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { hoverShowSidebar, onSidebarResize } from '../../services/sidebarService';
+import { makeResizable } from '../interactions/resizable';
 
 /**
  * 11-pre a8：body 绑定层 React 等价（C 模式直写静态壳节点）。
@@ -181,12 +182,10 @@ export function HoverShowSidebar() {
 export function SidebarResizable() {
   useEffect(() => {
     const el = document.getElementById('sidebar');
-    const $ = (window as any).jQuery;
     const scope = getBodyScope();
-    if (!el || !$ || !scope || typeof $.fn.resizable !== 'function') return;
-    const $el = $(el);
-    if ($el.hasClass('ui-resizable')) return;
-    $el.resizable({
+    if (!el || !scope) return;
+    // D-2f：jQuery-UI → 自研 makeResizable（原 `$.fn.resizable` 缺失即静默降级的守卫一并移除）
+    const r = makeResizable(el, {
       maxWidth: 600,
       minWidth: 200,
       handles: 'e',
@@ -197,7 +196,7 @@ export function SidebarResizable() {
       },
     });
     return () => {
-      try { $el.resizable('destroy'); } catch { /* noop */ }
+      r.destroy();
     };
   }, []);
   return null;

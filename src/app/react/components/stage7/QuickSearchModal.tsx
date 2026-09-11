@@ -7,13 +7,14 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
 import { max, uniq } from '../../utils/lang';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryChangeSidebarIndex } from '../../core/dataMachinery';
+
 import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
 import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { machineryChangeSidebarIndex } from '../../core/libraryDomain';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *

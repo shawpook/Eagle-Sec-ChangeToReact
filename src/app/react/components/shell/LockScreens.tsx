@@ -7,10 +7,11 @@ import { useToolbarState } from '../../store/toolbarState';
 import { t } from '../../global/eagleGlobals';
 // b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
 import { focusAppUnlockPassword, focusUnlockPassword, unlockAppPasswordKeydown, unlockAppPasswordKeyup, unlockPasswordKeyup } from '../../services/lockService';
-import { machineryUnlockFolderWithTouchID } from '../../core/dataMachinery';
+
 import { CornerBtns } from '../toolbar/Toolbar';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 
+import { machineryUnlockFolderWithTouchID } from '../../core/libraryDomain';
 /**
  * 11-pre a3：文件夹密码锁 + 应用锁屏（index.html 156-170 / 424-444 逐字）。
  *

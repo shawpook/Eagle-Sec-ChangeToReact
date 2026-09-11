@@ -23,10 +23,11 @@ import { getBodyScope } from './appCore';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryRebindRefresh, machineryShowUploadQueue, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryRebindRefresh, machineryShowUploadQueue, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSelection } from '../core/dataMachinery';
 import { isNumeric } from '../utils/lang';
 
 import { machinerySaveFolder } from './libraryDomain';
+import { machineryUpdateSidebarList } from './libraryDomain';
 let installed = false;
 
 /* ── 支撑工具（bundle 顶层逐字；if-absent 接装 window）────────────────── */

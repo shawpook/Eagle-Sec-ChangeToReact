@@ -13,11 +13,12 @@ import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
-import { machineryOpenUnfiled, machineryQuickOpenFolder, machineryRebindRefresh } from '../../core/dataMachinery';
+import { machineryRebindRefresh } from '../../core/dataMachinery';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
 import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
 
+import { machineryOpenUnfiled, machineryQuickOpenFolder } from '../../core/libraryDomain';
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
  *

@@ -34,7 +34,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryOpenAll, machineryPrependFolder, machineryQuickOpenFolder, machineryRebindRefresh, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryOpenAll, machineryRebindRefresh, machinerySortRawData, machineryToggleSlideshow, machineryUndo } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
@@ -45,6 +45,7 @@ import { q, qaNot, widthOf, heightOf, hasClass, addClass, removeClass, cssSet, s
 import { machineryNewSmartFolder } from './libraryDomain';
 import { machineryGetRecentFolders } from './libraryDomain';
 import { machineryRememberScrollTops } from '../services/gridService';
+import { machineryChangeSidebarIndex, machineryPrependFolder, machineryQuickOpenFolder, machinerySetFolderOrder, machinerySetSmartFolderOrder, machineryUpdateSidebarList } from './libraryDomain';
 declare const IPCHelper: any;
 declare const remote: any;
 

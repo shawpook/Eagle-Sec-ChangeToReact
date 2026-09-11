@@ -45,13 +45,19 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
-import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenUnfiled, machineryOpenUntagged, machineryRebindRefresh, machineryShowTutorial, machinerySmartFolderCount, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenUntagged, machineryRebindRefresh } from './dataMachinery';
 import { filterWithColor, resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel, openRenameChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addClass, removeClass, focusEl, selectEl } from '../utils/domQuery';
-import { machinerySwitchLayout, machineryUpdateContainerHieght } from '../services/gridService';
+import { machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight } from '../services/gridService';
+import { machinerySetViewMode, machineryZoom, machineryCheckOperationSafety2 } from '../services/viewOpsService';
+import { callExternal } from './externalSupply';
+import { machineryAutoScroll, machineryEditTag, machineryEnableSubFolderNameEditable, machineryFilterSidebarItem, machineryForceFitImageSize, machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryLeaveDetailMode, machineryRenameImages, machineryRenameTagGroup, machineryResetPage, machineryUpdateFilterCounts, machineryUpdateSelection, getTimeout } from './dataMachinery';
+import { setScrollTop, clickEl, hide } from '../utils/domQuery';
+import { glRemoveitemsChannel } from '../global/bus';
+import { debounce } from '../utils/func';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -1600,3 +1606,1555 @@ export function machinerySaveFolder(s: any): void {
 
   console.timeEnd("$scope.saveFolder");
 }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* RecentFileManager（bundle 52307-52390 逐字；save = w.throttle(1000, immediate)） */
+export function buildRecentFileManager(): any {
+  const w = window as any;
+  const RecentFileManager: any = {
+    libraryName: "",
+    recentFiles: [],
+    recentFilesOrder: {},
+    maxHistory: 5000,
+    init: function (libraryName: any) {
+      RecentFileManager.libraryName = libraryName;
+      let json = (window as any).localStorage[`eagle.recentFiles.${RecentFileManager.libraryName}`];
+      if (json) {
+        try {
+          RecentFileManager.recentFiles = JSON.parse(json);
+          RecentFileManager.calOrders();
+        }
+        catch (err) {
+          RecentFileManager.recentFiles = [];
+        }
+      }
+    },
+    calOrders: function () {
+      try {
+        for (var i = 0; i < RecentFileManager.recentFiles.length; i++) {
+          let itemId = RecentFileManager.recentFiles[i];
+          RecentFileManager.recentFilesOrder[itemId] = i + 1;
+        }
+      }
+      catch (err) { /* noop */ }
+    },
+    isExists: function (item: any) {
+      if (!item || !item.id) return false;
+      return RecentFileManager.recentFilesOrder[item.id];
+    },
+    addFile: function (item: any) {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        if (!item || !item.id) return;
+        RecentFileManager.recentFiles.unshift(item.id);
+        RecentFileManager.calOrders();
+        RecentFileManager.save();
+      }
+      catch (err) { /* noop */ }
+    },
+    addFiles: function (items: any) {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        if (!items) return;
+        if (items.length >= 20) return;
+        items.reverse().forEach(function (item: any) {
+          if (!item || !item.id) return;
+          RecentFileManager.recentFiles.unshift(item.id);
+          RecentFileManager.calOrders();
+        });
+        RecentFileManager.save();
+      }
+      catch (err) { /* noop */ }
+    },
+    clean: function () {
+      RecentFileManager.recentFiles = [];
+      RecentFileManager.recentFilesOrder = {};
+      RecentFileManager.save();
+    },
+    save: w.throttle(function () {
+      try {
+        if (!RecentFileManager.libraryName) {
+          console.error("RecentFileManager.libraryName is empty");
+          return;
+        }
+        // 最多保存 5000 個
+        RecentFileManager.recentFiles = [...new Set(RecentFileManager.recentFiles)];
+        if (RecentFileManager.recentFiles.length > RecentFileManager.maxHistory) {
+          RecentFileManager.recentFiles.length = RecentFileManager.maxHistory;
+        }
+        let json = JSON.stringify(RecentFileManager.recentFiles);
+        (window as any).localStorage[`eagle.recentFiles.${RecentFileManager.libraryName}`] = json;
+      }
+      catch (err) { /* noop */ }
+    }, 1000, true),
+  };
+  return RecentFileManager;
+}
+
+export function machineryAddToRecentFile(s: any, item: any): void {
+  const w = window as any;
+  // 記錄在最近使用
+  setTimeout(function () {
+    if (s.current !== item) {
+      console.log("已換人，無須記錄")
+    }
+    else {
+      console.log(`添加 ${item.id} 至最近使用`)
+      w.RecentFileManager.addFile(item);
+    }
+  }, 1000);
+}
+
+/* changeSidebarIndex（bundle 36656-36665 逐字） */
+export function machineryChangeSidebarIndex(s: any, node: any): void {
+  const $timeout = getTimeout();
+  const folder = s.folderMappings[node?.id];
+  const idx = s.sidebarList.indexOf(folder);
+  if (idx !== -1) {
+    s.sidebarIndex = -1;
+    syncSidebarFromScope();
+    $timeout(function () {
+      s.sidebarIndex = idx;
+      syncSidebarFromScope();
+    }, 1);
+  }
+}
+
+export function machineryExpandFolder(s: any, folder: any): void {
+  const w = window as any;
+  if (!folder) return;
+  folder.isExpand = true;
+  machineryUpdateSidebarList(s);
+  w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, true);
+}
+
+export function machineryExpandSmartFolder(s: any, smartFolder: any): void {
+  const w = window as any;
+  if (!smartFolder) return;
+  smartFolder.isExpand = true;
+  machineryUpdateSidebarList(s);
+  w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + smartFolder.id, true);
+}
+
+/* getAllChildFolder（bundle 42498-42505 逐字：tree.walk 全子树收集 + Set 去重） */
+export function machineryGetAllChildFolder(s: any, fd: any): any[] {
+  const w = window as any;
+  let folders: any[] = [];
+  w.eagle.utils.tree.walk(fd.children, 'children', function (folder: any, parent: any, depth: any) {
+    folders.push(folder);
+  });
+  folders = [...new Set(folders)];
+  return folders;
+}
+
+export function machineryGetFolderList(s: any): any[] {
+  const w = window as any;
+  let list: any[] = [];
+  let isFiltering = !!s.folderKeyword;
+  let guidelinesMap: any = {};
+
+  w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any, depth: any) {
+
+    // 計算 guidelines 顏色及數量
+    let guidelines: any[] = [];
+    if (parent && guidelinesMap[parent.id]) {
+      const parentGuidelines = guidelinesMap[parent.id];
+      guidelines = [...parentGuidelines, folder.iconColor || 'normal'];
+    }
+    else {
+      guidelines = [folder.iconColor || 'normal'];
+    }
+    guidelinesMap[folder.id] = guidelines;
+
+    var idx;
+    folder.size = 27;
+    folder.vstype = 'folder';
+    folder.guidelines = guidelines.slice(0, guidelines.length - 1);
+    folder.styles = {
+      depth: depth,
+      first: false,
+      last: false
+    };
+
+    if (parent) {
+      if (parent.password) {
+        folder.isVisible = folder.isExpand && parent.isVisible && !!parent.isUnLock;
+      }
+      else {
+        folder.isVisible = folder.isExpand && parent.isVisible;
+      }
+    }
+    else {
+      folder.isVisible = folder.isExpand;
+    }
+
+    if (depth !== 0 && parent && parent.children) {
+      idx = parent.children.indexOf(folder);
+      if (idx === 0 && parent.children.length > 1) {
+        folder.styles.first = true;
+        folder.styles.last = false;
+      }
+      else if (idx === 0 && parent.children.length === 1) {
+        folder.styles.first = false;
+        folder.styles.last = true;
+      }
+      else if (idx === parent.children.length - 1) {
+        folder.styles.first = false;
+        folder.styles.last = true;
+      }
+      else {
+        folder.styles.first = false;
+        folder.styles.last = false;
+      }
+    }
+    if (folder && folder.isExpand && folder.children.length > 0) {
+      folder.styles.last = true;
+    }
+
+    // 决定是否要在画面上显示
+    if (!parent) {
+      list.push(folder);
+    }
+    else if (isFiltering) {
+      list.push(folder);
+    }
+    else {
+      if (parent.password) {
+        if (folder && parent.isVisible && !!parent.isUnLock) {
+          list.push(folder);
+        }
+      }
+      else {
+        if (folder && parent.isVisible) {
+          list.push(folder);
+        }
+      }
+    }
+  });
+  return list;
+}
+
+/* getQuickAccessList（bundle 42634-42643 逐字：quickAccess 逐项 size=27 + vstype 标记） */
+export function machineryGetQuickAccessList(s: any): any[] {
+  var list: any[] = [];
+  s.quickAccess.forEach(function (item: any) {
+    item.size = 27;
+    item.vstype = 'quickAccess';
+    list.push(item);
+  });
+  return list;
+}
+
+export function machineryGetSmartFolderList(s: any): any[] {
+  const w = window as any;
+  let list: any[] = [];
+  let isFiltering = !!s.folderKeyword;
+  let guidelinesMap: any = {};
+
+  s.smartFolderList = [];
+  syncSidebarFromScope();
+
+  w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+
+    // 計算 guidelines 顏色及數量
+    let guidelines: any[] = [];
+    if (parent && guidelinesMap[parent.id]) {
+      const parentGuidelines = guidelinesMap[parent.id];
+      guidelines = [...parentGuidelines, smartFolder.iconColor || 'normal'];
+    }
+    else {
+      guidelines = [smartFolder.iconColor || 'normal'];
+    }
+    guidelinesMap[smartFolder.id] = guidelines;
+
+    var idx;
+    var isVisible = false;
+
+    if (parent) {
+      smartFolder.parent = parent.id;;
+    }
+    else {
+      delete smartFolder.parent;
+    }
+
+    // 列表版本 SmartFolders
+    s.smartFolderList.push(smartFolder);
+    syncSidebarFromScope();
+
+    s.smartFolderMappings[smartFolder.id] = smartFolder;
+
+    smartFolder.depth = depth;
+    smartFolder.size = 27;
+    smartFolder.vstype = 'smartFolder';
+    smartFolder.guidelines = guidelines.slice(0, guidelines.length - 1);
+    smartFolder.styles = {
+      depth: depth,
+      first: false,
+      last: false
+    };
+
+    if (parent) {
+      smartFolder.isVisible = smartFolder.isExpand && parent.isVisible;
+    }
+    else {
+      smartFolder.isVisible = smartFolder.isExpand;
+    }
+
+    if (depth !== 0 && parent && parent.children) {
+      idx = parent.children.indexOf(smartFolder);
+      if (idx === 0 && parent.children.length > 1) {
+        smartFolder.styles.first = true;
+        smartFolder.styles.last = false;
+      }
+      else if (idx === 0 && parent.children.length === 1) {
+        smartFolder.styles.first = false;
+        smartFolder.styles.last = true;
+      }
+      else if (idx === parent.children.length - 1) {
+        smartFolder.styles.first = false;
+        smartFolder.styles.last = true;
+      }
+      else {
+        smartFolder.styles.first = false;
+        smartFolder.styles.last = false;
+      }
+    }
+    if (smartFolder && smartFolder.isExpand && smartFolder.children && smartFolder.children.length > 0) {
+      smartFolder.styles.last = true;
+    }
+
+    // 决定是否要在画面上显示
+    if (!parent) {
+      list.push(smartFolder);
+    }
+    else if (isFiltering) {
+      list.push(smartFolder);
+    }
+    else {
+      if (smartFolder && parent.isVisible) {
+        list.push(smartFolder);
+      }
+    }
+
+  });
+
+  return list;
+}
+
+export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any): void {
+  const w = window as any;
+  resetFilter();
+  s.keyword = "";
+  s.$root.currentFocus = "sidebar";
+  s.viewMode = undefined;
+  s.currentTag = undefined;
+  syncToolbarFromScope();
+  s.startCursor = 0;
+  s.currentSmartFolder = undefined;
+  syncPanelFromScope();
+  syncListFromScope();
+  s.$root.selectedSmartFolders = [];
+  s.$root.selectedSmartFoldersMappings = {};
+  var idx = s.$root.selectedFolders.indexOf(folder);
+  if (idx === -1) {
+    s.$root.selectedFolders.push(folder);
+    syncListFromScope();
+    s.$root.selectedFoldersMappings[folder.id] = folder;
+    if (needReload) {
+      s.startCursor = 0;
+      s.reload();
+    }
+    s.currentId = 'folder-' + folder.id;
+    syncSidebarFromScope();
+  }
+  else {
+    if (s.$root.selectedFolders.length > 1) {
+      s.$root.selectedFolders.splice(idx, 1);
+      syncListFromScope();
+      delete s.$root.selectedFoldersMappings[folder.id];
+      if (needReload) {
+        s.startCursor = 0;
+        s.reload();
+      }
+    }
+    else {
+      return;
+    }
+  }
+  s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
+}
+
+export function machineryOpenNextFolder(s: any): void {
+  var nextFolder;
+  var listItems = s.sidebarList;
+  var folders = listItems.filter(function (item: any) {
+    return item.vstype === 'folder';
+  });
+  var idx = folders.indexOf(s.currentFolder);
+  nextFolder = folders[idx + 1];
+
+  if (nextFolder) {
+    openFolder(nextFolder);
+    machineryChangeSidebarIndex(s, nextFolder);
+  }
+}
+
+export function machineryOpenNextSmartFolder(s: any): void {
+  var nextSmartFolder;
+  var listItems = s.sidebarList;
+  var smartFolders = listItems.filter(function (item: any) {
+    return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+  });
+  var idx = smartFolders.indexOf(s.currentSmartFolder);
+  nextSmartFolder = smartFolders[idx + 1];
+  if (nextSmartFolder) {
+    openSmartFolder(nextSmartFolder);
+    machineryChangeSidebarIndex(s, nextSmartFolder);
+  }
+  else {
+    var folders = listItems.filter(function (item: any) {
+      return item.vstype === 'folder';
+    });
+    if (folders.length > 0) {
+      openFolder(folders[0]);
+      machineryChangeSidebarIndex(s, folders[0]);
+    }
+  }
+}
+
+/* openParentFolder（bundle 38384-38388 逐字；openFolder 经 scope 解析） */
+export function machineryOpenParentFolder(s: any): void {
+  if (s.currentFolder && s.currentFolder.parent) {
+    openFolder(s.folderMappings[s.currentFolder.parent]);
+  }
+}
+
+export function machineryOpenPrevFolder(s: any): void {
+  const w = window as any;
+
+  var prevFolder;
+  var listItems = s.sidebarList;
+  var folders = listItems.filter(function (item: any) {
+    return item.vstype === 'folder';
+  });
+  var idx = folders.indexOf(s.currentFolder);
+  prevFolder = folders[idx - 1];
+
+  if (prevFolder) {
+    openFolder(prevFolder);
+    machineryChangeSidebarIndex(s, prevFolder);
+  }
+  else {
+    var quickAccessItems = listItems.filter(function (item: any) {
+      return item.vstype === 'quickAccess';
+    });
+    var smartFolders = listItems.filter(function (item: any) {
+      return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+    });
+    if (smartFolders.length > 0 && smartFolders[smartFolders.length - 1]) {
+      openSmartFolder(smartFolders[smartFolders.length - 1]);
+      machineryChangeSidebarIndex(s, smartFolders[smartFolders.length - 1]);
+    }
+    else if (quickAccessItems.length > 0 && quickAccessItems[quickAccessItems.length - 1]) {
+      clickEl("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id);
+    }
+    else {
+      machineryOpenTrash(s);
+    }
+  }
+}
+
+export function machineryOpenPrevSmartFolder(s: any): void {
+  const w = window as any;
+  var prevSmartFolder;
+  var listItems = s.sidebarList;
+  var smartFolders = listItems.filter(function (item: any) {
+    return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+  });
+  var idx = smartFolders.indexOf(s.currentSmartFolder);
+  prevSmartFolder = smartFolders[idx - 1];
+  if (prevSmartFolder) {
+    openSmartFolder(prevSmartFolder);
+    machineryChangeSidebarIndex(s, prevSmartFolder);
+  } else {
+    // 如果有 quick access 就进入 quick access 若无，进入 Trash
+    if (s.$root.preferences.sidebar.quickAccess != 'false') {
+      var quickAccessItems = listItems.filter(function (item: any) {
+        return item.vstype === 'quickAccess';
+      });
+      if (quickAccessItems.length > 0) {
+        clickEl("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id);
+      }
+      else {
+        machineryOpenTrash(s);
+      }
+    }
+    else {
+      machineryOpenTrash(s);
+    }
+  }
+}
+
+/* openRecent（bundle 36836-36864 逐字：同 openUnfiled 模板，recent 键） */
+export function machineryOpenRecent(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'recent' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      machineryLeaveDetailMode(s);
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'recent';
+  s.$root.currentFocus = "sidebar";
+  machineryResetPage(s);
+
+  $timeout.cancel(openRecentTimeout);
+  openRecentTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'recent', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.recent") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    setScrollTop("#sidebar-item-container", 0);
+    s.reload();
+    w.analytics.screenView('Recent');
+  }, 50);
+}
+
+export function machineryOpenTrash(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.viewMode === 'trash' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      machineryLeaveDetailMode(s);
+    }
+    return;
+  }
+  w.ScrollbarSaver.saveScrollPosition();
+
+  s.viewMode = 'trash';
+  machineryResetPage(s);
+  s.$root.currentFocus = "sidebar";
+
+  hide("#image-drop-area");
+  $timeout.cancel(openTrashTimeout);
+  openTrashTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'trash', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.trash") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    setScrollTop("#sidebar-item-container", 0);
+    s.reload();
+    w.analytics.screenView('Trash');
+  }, 50);
+}
+
+export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'unfiled' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      machineryLeaveDetailMode(s);
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'unfiled';
+  s.$root.currentFocus = "sidebar";
+  machineryResetPage(s);
+
+  $timeout.cancel(openUnfiledTimeout);
+  openUnfiledTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'unfiled', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.unfiled") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    setScrollTop("#sidebar-item-container", 0);
+    s.reload();
+    w.analytics.screenView('Unfiled');
+  }, 50);
+}
+
+export function machineryPrependFolder(s: any, folder: any): void {
+  s.folders.unshift(folder);
+  s.folderMappings[folder.id] = folder;
+  machineryUpdateSidebarList(s);
+  setTimeout(function () {
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machinerySaveFolder(s);
+    });
+  }, 1000);
+}
+
+export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  var target = t || s.selected[0];
+  if (folder) {
+    openFolder(folder, undefined, undefined, true);
+  }
+  else {
+    machineryOpenAll(s);
+  }
+  setTimeout(function () {
+    machineryChangeSidebarIndex(s, folder);
+    scopeEvalAsync();
+  }, 200);
+  // 自动定位
+  if (target) {
+    setTimeout(function () {
+      for (var i = s.allData.length - 1; i >= 0; i--) {
+        var image = s.allData[i];
+        if (target === image) {
+          var startPage = parseInt(i / 60 as any);
+          console.log(`目标在第 ${startPage} 页`);
+          s.startCursor = startPage;
+          cssSet("#box-container", { visibility: "hidden" });
+          s.reload();
+          s.selected = [];
+          syncInspectorFromScope();
+          $timeout(function () {
+            callExternal('select', undefined, target);
+            machineryAutoScroll(s, undefined);
+            setTimeout(function () {
+              cssSet("#box-container", { visibility: "initial" });
+            }, 100);
+          }, 500);
+          scopeEvalAsync();
+        }
+      }
+    }, 200);
+  }
+}
+
+export function machineryRemoveFolder(s: any, folder: any, params: any = {}): void {
+  const w = window as any;
+  const _p: any = { isDeleteImages: params.isDeleteImages, ignoreSelectNext: params.ignoreSelectNext, ignoreRestore: params.ignoreRestore };
+
+  if (folder.password && !folder.isUnLock) return;
+
+  // 如果圖片或子文件夾超過數量，就需要顯示詢問視窗
+  if (folder.images && folder.imageCount > 0 || folder && folder.children.length > 0) {
+    setTimeout(function () {
+      var removeConfirmMsg = getFilter()('i18n')("dialog.removeFolder.desc", [
+        { "property": "folder", "value": folder.name },
+      ]);
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${getFilter()('i18n')('dialog.removeFolder.title')}</h4>
+                                <p class="alert-desc">${removeConfirmMsg}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        input: 'checkbox',
+        inputValue: 1,
+        inputValidator: function (result: any) {
+          return new Promise(function (resolve: any, reject: any) {
+            resolve(result);
+          })
+        },
+        inputPlaceholder: getFilter()('i18n')('dialog.removeFolder.checkbox'),
+        confirmButtonText: getFilter()('i18n')('dialog.removeFolder.button'),
+        cancelButtonText: getFilter()('i18n')("general.cancel"),
+      }).then(function (result: any) {
+        machineryCheckOperationSafety2(s, folder.descendantImageCount, function () {
+          _p.isDeleteImages = (result == 1);
+          machineryRemoveFolderInner(s, folder, _p);
+          scopeEvalAsync();
+        }, 50);
+      }, function () { });
+    }, 100);
+  }
+  else {
+    machineryRemoveFolderInner(s, folder, _p);
+  }
+}
+
+export function machineryRemoveFolderContents(s: any, params: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  var origin: any[] = [];
+  var originFolders: any[] = [];
+  var isForceToTrash = params.isForceToTrash;
+  let now = Date.now();
+  s.selected.forEach(function (image: any) {
+    origin.push(image);
+    originFolders.push(structuredClone(image.folders));
+    s.currentFolder.imagesMappings[image.id] = false;
+    if (s.currentFolder.parent) {
+      if (s.folderMappings[s.currentFolder.parent].imagesMappings) {
+        s.folderMappings[s.currentFolder.parent].imagesMappings[image.id] = false;
+      }
+    }
+
+    // 遍歷所有子資料夾，移除子資料夾也出現這張圖的索引
+    if (s.currentFolder.children) {
+      s.currentFolder.children.forEach(function (child: any) {
+        child.imagesMappings[image.id] = false;
+      });
+    }
+
+    // 如果图片包含多个文件夹
+    if (!isForceToTrash && image.folders && image.folders.length > 1) {
+      var idx = image.folders.indexOf(s.currentFolder.id);
+      if (idx > -1) {
+        image.folders.splice(idx, 1);
+      }
+    }
+    else {
+      image.isDeleted = true;
+      image.deletedTime = now;
+    }
+    machineryUpdateFilterCounts(s, image, -1, now);
+  });
+
+  machineryAutoScroll(s, undefined);
+
+  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+    s.removeSound && s.removeSound.play && s.removeSound.play();
+  }
+
+  var message = getFilter()('i18n')("notify.image.remove", [
+    { "property": "count", "value": s.selected.length },
+  ]);
+  if (s.selected.length === 1) { message = message.replace("images", "image"); }
+
+  (s.$root.notify || s.notify).call(s.$root, {
+    message: message,
+    duration: 4000,
+  }, function () {
+    let now = Date.now();
+    origin.forEach(function (image: any, index: any) {
+      image.isDeleted = false;
+      image.folders = originFolders[index];
+      delete image.deletedTime;
+      machineryUpdateFilterCounts(s, image, 1, now);
+    });
+    s.selected = origin;
+    syncInspectorFromScope();
+    if (s.isDetailMode) {
+      s.current = origin[0];
+      syncDetailFromScope();
+      syncInspectorFromScope();
+    }
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machineryRebindRefresh(s);
+      w.ScrollbarSaver.restoreScrollPosition();
+    });
+    machineryZoom(s);
+    w.ayncsImagesChange(origin);
+  });
+
+  w.ayncsImagesChange(s.selected);
+  w.hiddenByCurrentFilter(s.selected);
+
+  // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
+  s.lastIndex = machineryGetSelection(s).start;
+  var next = s.allData[s.lastIndex + s.selected.length];
+  var prev = s.allData[s.lastIndex - 1];
+  if (next) {
+    s.selected = [next];
+    syncInspectorFromScope();
+    if (s.isDetailMode) {
+      s.current = next;
+      syncDetailFromScope();
+      syncInspectorFromScope();
+    }
+  } else if (prev) {
+    s.selected = [prev];
+    syncInspectorFromScope();
+    if (s.isDetailMode) {
+      s.current = prev;
+      syncDetailFromScope();
+      syncInspectorFromScope();
+    }
+  } else {
+    s.selected = [];
+    syncInspectorFromScope();
+    machineryLeaveDetailMode(s);
+  }
+  $timeout(function () {
+    machineryForceFitImageSize(s, s.current, undefined);
+    machineryZoom(s);
+  }, 100);
+  w.ScrollbarSaver.saveScrollPosition();
+
+  var itemElements = machineryGetSelectedItemElements(s);
+  glRemoveitemsChannel.emit(itemElements);
+
+  machineryAutoScroll(s, undefined);
+
+  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+    if (s.currentFolder && s.currentFolder.orderBy === "RANDOM") { }
+    else {
+      machineryRebindRefresh(s, true);
+    }
+    machineryUpdateSelection(s);
+    if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+    else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+  });
+}
+
+export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages, ignoreSelectNext, ignoreRestore }: any = {}): void {
+  const w = window as any;
+
+  // 支持復原文件夾
+  var originalFolders: any[] = [];
+  var originalImages: any[] = [];
+  var originalImageFolders: any[] = [];
+  var folderId = folder.id;
+  if (!ignoreRestore) {
+    w.cloneTree(originalFolders, s.folders, true);
+  }
+
+  // 找到包含 folder 的 list
+  var parent = s.folderMappings[folder.parent];
+  var children = (parent) ? parent.children : s.folders;
+  if (!Array.isArray(children)) return;
+
+  var index = children.indexOf(folder);
+  if (index === -1) return;
+
+  // 移除 folder
+  children.splice(index, 1);
+
+  // 删除包含 folder.id 的图片
+  if (s.raw && s.raw.length > 0) {
+    var changed: any[] = [];
+    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+      var image = s.raw[rindex];
+      if (image.folders) {
+        var idx = image.folders.indexOf(folder.id);
+        if (idx > -1) {
+          if (isDeleteImages) {
+            // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
+            if (image.folders && image.folders.length === 1) {
+              image.isDeleted = true;
+            }
+          }
+          originalImageFolders.push(structuredClone(image.folders));
+          image.folders.splice(idx, 1);
+          changed.push(image);
+          originalImages.push(image);
+        }
+      }
+    }
+    w.ayncsImagesChange(changed);
+    w.hiddenByCurrentFilter(changed);
+  }
+
+  // 同时删除子文件夹图片
+  if (folder.children) {
+    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+      if (s.raw && s.raw.length > 0) {
+        var changed: any[] = [];
+        for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+          var image = s.raw[rindex];
+          if (image.folders) {
+            var idx = image.folders.indexOf(child.id);
+            if (idx > -1) {
+              if (isDeleteImages) {
+                // 如果圖片還存在於其它文件夾，就不丟到垃圾桶
+                if (image.folders && image.folders.length === 1) {
+                  image.isDeleted = true;
+                }
+              }
+              originalImageFolders.push(structuredClone(image.folders));
+              image.folders.splice(idx, 1);
+              changed.push(image);
+              originalImages.push(image);
+            }
+          }
+        }
+        w.ayncsImagesChange(changed);
+        w.hiddenByCurrentFilter(changed);
+      }
+    });
+  }
+
+  // 开启下一个文件夹
+  // 优先开启兄弟，若兄弟皆亡，找老爸，老爸亡，找 All
+  if (!ignoreSelectNext) {
+    if (children.length > 0) {
+      var next = children[index] || children[index - 1] || children[0];
+      openFolder(next);
+    } else if (parent) {
+      openFolder(parent);
+    } else {
+      machineryOpenAll(s);
+    }
+  }
+  else {
+    machineryRebindRefresh(s);
+  }
+
+  // 播放删除音效
+  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+    s.removeSound && s.removeSound.play && s.removeSound.play();
+  }
+
+  w.QuickAccessManager.remove("folder", folder);
+  if (folder.children && s.quickAccess.length > 0) {
+    w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+      w.QuickAccessManager.remove("folder", child);
+    });
+  }
+  machineryUpdateSidebarList(s);
+
+  // 移除记录
+  delete s.folderMappings[folder.id];
+  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+    scopeEvalAsync();
+    s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+    if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
+    else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
+  });
+
+  if (!ignoreRestore) {
+    var message = getFilter()('i18n')("notify.folder.remove", [
+      { "property": "folder", "value": folder.name },
+    ]);
+    (s.$root.notify || s.notify).call(s.$root, {
+      message: message,
+      duration: 7000,
+    }, function () {
+      s.folders = originalFolders;
+
+      w.eagle.utils.tree.walk(s.folders, 'children', function (folder2: any, parent: any) {
+        if (!folder2.children) { folder2.children = []; }
+        if (folder2 && parent) { folder2.parent = parent.id; }
+        s.folderMappings[folder2.id] = folder2;
+      });
+
+      for (var i = originalImages.length - 1; i >= 0; i--) {
+        var img = originalImages[i];
+        if (!img) continue;
+        img.folders = originalImageFolders[i];
+        img.folders = [...new Set(img.folders)];
+        delete img.isDeleted;
+      }
+
+      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+        openFolder(s.folderMappings[folder.id]);
+        w.electronLog && w.electronLog.info(`[app] Resotre deleted folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`);
+      });
+
+      scopeEvalAsync();
+      machineryUpdateSidebarList(s);
+      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+      w.ayncsImagesChange(originalImages);
+    });
+  }
+}
+
+export function machineryRemoveSmartFolder(s: any, smartFolder: any, _p: any = {}): void {
+  const w = window as any;
+  setTimeout(function () {
+    var removeConfirmMsg = getFilter()('i18n')("dialog.removeSmartFolder.desc", [
+      { "property": "folder", "value": smartFolder.name },
+    ]);
+    w.swal({
+      html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${w.i18n.__('dialog.removeSmartFolder.title')}</h4>
+                            <p class="alert-desc">${removeConfirmMsg}</p>
+                        </div>
+                    `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: "alert-box",
+      cancelButtonColor: "#777777",
+      confirmButtonText: w.i18n.__('dialog.removeSmartFolder.button'),
+      cancelButtonText: w.i18n.__("general.cancel"),
+    }).then(function () {
+      machineryRemoveSmartFolderInner(s, smartFolder, {});
+    });
+  }, 100);
+}
+
+export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { ignoreSelectNext, ignoreRestore }: any = {}): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  var message = getFilter()('i18n')("notify.folder.remove", [
+    { "property": "folder", "value": smartFolder.name },
+  ]);
+
+  var children = s.smartFolders;
+  if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
+    let parent = s.smartFolderMappings[smartFolder.parent];
+    children = parent.children;
+  }
+  var origin = structuredClone(children);
+  var idx = children.indexOf(smartFolder);
+
+  if (idx === -1) return;
+
+  children.splice(idx, 1);
+  delete s.smartFolderMappings[smartFolder.id];
+  w.QuickAccessManager.remove("smartFolder", smartFolder);
+
+  // 如果已經沒有資料夾
+  if (idx === 0) {
+    if (children[idx]) {
+      openSmartFolder(children[idx]);
+    } else {
+      s.currentSmartFolder = undefined;
+      syncPanelFromScope();
+      syncListFromScope();
+      machineryOpenAll(s);
+    }
+  }
+  // 如果還有資料夾
+  else {
+    if (children[idx]) {
+      openSmartFolder(children[idx]);
+    } else {
+      if (children[idx - 1]) {
+        openSmartFolder(children[idx - 1]);
+      } else {
+        s.currentSmartFolder = undefined;
+        syncPanelFromScope();
+        syncListFromScope();
+        machineryOpenAll(s);
+      }
+    }
+  }
+
+  // 如果声音效果是开启的
+  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+    s.removeSound && s.removeSound.play && s.removeSound.play();
+  }
+  machineryUpdateSidebarList(s);
+
+  $timeout(function () {
+    s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+  }, 1000);
+
+  w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
+
+  if (!ignoreRestore) {
+    (s.$root.notify || s.notify).call(s.$root, {
+      message: message,
+      duration: 5000,
+    }, function () {
+      if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
+        let parent = s.smartFolderMappings[smartFolder.parent];
+        parent.children = origin;
+      }
+      else {
+        s.smartFolders = origin;
+      }
+      s.smartFolderMappings[smartFolder.id] = smartFolder;
+      w.eagle.utils.tree.walk(s.smartFolders, 'children', function (sf: any, parent: any, depth: any) {
+        s.smartFolderMappings[sf.id] = sf;
+      });
+      machineryUpdateSidebarList(s);
+      openSmartFolder(smartFolder);
+      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+      scopeEvalAsync();
+    });
+  }
+}
+
+export function machineryRenameCurrentFolder(s: any, event: any): void {
+  const w = window as any;
+  if (s.selected.length > 0 && s.$root.currentFocus !== "sidebar") {
+    if (!s.isDetailMode) {
+      machineryRenameImages(s);
+    }
+    else {
+      focusEl("#inspector-name");
+      setTimeout(() => {
+        document.execCommand('selectAll', false, null as any);
+      }, 100);
+    }
+  }
+  else if (s.$root.currentFocus !== "sidebar" && s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
+    var nameEl = q(".sub-folder.selected .name");
+    if (!nameEl) return;
+    var e: any = { target: nameEl, preventDefault: function () { }, stopPropagation: function () { }, stopImmediatePropagation: function () { } };
+    let folderId = Object.keys(s.selectedFolderMappings)[0];
+    let folder = s.folderMappings[folderId];
+    machineryEnableSubFolderNameEditable(s, e, folder);
+  }
+  else if (!s.isDetailMode && s.currentFolder && s.$root.currentFocus === 'sidebar') {
+    event && event.preventDefault();
+    if (s.$root.selectedFolders.length > 1) {
+      machineryBatchRenameFolders(s);
+    }
+    else {
+      machineryRenameFolder(s, event, s.currentFolder);
+    }
+  } else if (!s.isDetailMode && s.currentSmartFolder && s.$root.currentFocus === 'sidebar') {
+    event && event.preventDefault();
+    if (s.$root.selectedSmartFolders.length > 1) {
+      machineryBatchRenameSmartFolders(s);
+    }
+    else {
+      machineryRenameSmartFolder(s, event, s.currentSmartFolder);
+    }
+  } else if (!s.isDetailMode && s.currentTagGroup) {
+
+    // 先檢查是否有選中的標籤
+    var selectedTagKeys = machineryGetSelectedTags(s);
+    if (selectedTagKeys.length > 0) {
+      // 有選中標籤時，重命名標籤
+      if (selectedTagKeys.length === 1) {
+        // 單個標籤：直接編輯
+        var tagName = selectedTagKeys[0];
+        var tag = s.tags.find(function (t: any) { return t.name === tagName; });
+
+        if (tag) {
+          machineryEditTag(s, tag);
+        }
+
+      } else {
+        // 多個標籤：批次重命名
+        var selectedTags = s.tags.filter(function (tag: any) {
+          return !!s.selectedTags[tag.name];
+        });
+
+        openRenameChannel.emit({
+          type: "TAGS",
+          tags: selectedTags.slice()
+        });
+      }
+    } else {
+      // 沒有選中標籤時，重命名標籤群組
+      const $timeout = getTimeout();
+      $timeout && $timeout(function () {
+        machineryRenameTagGroup(s, s.currentTagGroup);
+      }, 50);
+    }
+  }
+
+}
+
+export function machineryResetFolderCover(s: any, folder: any): void {
+  if (!folder) return;
+  var ancestors = machineryGetAncestorFolders(s, folder, [folder]);
+  ancestors.push(folder);
+  ancestors.forEach(function (f: any) {
+    f.covers = [];
+  });
+}
+
+export function machinerySaveFolderDebounce(s: any): void {
+  const w = window as any;
+  s.isLibrarySaving = true;
+  clearTimeout(s.saveFolderDebounceTimeout);
+  s.saveFolderDebounceTimeout = setTimeout(() => {
+    machinerySaveFolder(s);
+    s.isLibrarySaving = false;
+  }, 1000);
+}
+
+export function machinerySetFolderCover(s: any): void {
+  const item = s.selected[0];
+  if (!s.currentFolder || !item) return;
+  s.currentFolder.coverId = item.id;
+  var thumbnailUrl = (window as any).FileUrlHelper.getThumbnailUrl(item);
+  s.currentFolder.covers[0] = `<img class="sub-folder-cover" src="${thumbnailUrl}" style="aspect-ratio: ${s.selected[0].width / s.selected[0].height};">`;
+  var message = getFilter()('i18n')("notify.folder.setAsCover", [
+    { "property": "folderName", "value": s.currentFolder.name }
+  ]);
+  s.notify({
+    message: message,
+    duration: 750
+  });
+  machinerySaveFolder(s);
+}
+
+export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignoreReload: any): void {
+  var folder = folder;
+  if (!folder) return;
+  if (!orderBy) {
+    delete folder.orderBy;
+    delete folder.sortIncrease;
+  }
+  else {
+    folder.orderBy = orderBy;
+    if (folder.sortIncrease === undefined) {
+      folder.sortIncrease = true;
+    }
+  }
+  if (s.currentFolder === folder && !ignoreReload) {
+    s.reload();
+  }
+  machinerySaveFolder(s);
+}
+
+export function machinerySetLastFolder(s: any, folderId: any): void {
+  const w = window as any;
+  if (!setLastFolderDebounced) {
+    setLastFolderDebounced = debounce(function (fid: any) {
+      if (!fid) {
+        localStorage.removeItem(`eagle.lastFolder.${s.rootDir}`);
+      }
+      else {
+        machinerySetViewMode(s, "all");
+        localStorage.setItem(`eagle.lastFolder.${s.rootDir}`, fid);
+      }
+    }, 500);
+  }
+  setLastFolderDebounced(folderId);
+}
+
+export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any): void {
+  var folder = folder;
+  if (!folder) return;
+  if (!orderBy) {
+    delete folder.orderBy;
+    delete folder.sortIncrease;
+  }
+  else {
+    folder.orderBy = orderBy;
+    if (folder.sortIncrease === undefined) {
+      folder.sortIncrease = true;
+    }
+  }
+  if (s.currentSmartFolder === folder) {
+    s.reload();
+  }
+  machinerySaveFolder(s);
+}
+
+export function machineryShowTutorial(s: any): void {
+  const w = window as any;
+  if (s.all.length === 0 && s.libraryHistory.length === 1 && s.folders.length === 0) {
+    if (w.localStorage["eagle.show.tutorial"] !== "true") {
+      const theme = getFilter()('themePath')(s.theme);
+
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-image">
+                                    <img width="384" height="216" src="assets/images/${theme}/illustrations/illustration-tutorial-${s.platform}.png" style="width: calc(100% + 32px);margin-bottom: 12px;aspect-ratio: 768/432;margin-left: -16px;margin-right: -16px;margin-top: -16px;">
+                                </div>
+                                <h4 class="alert-title">${w.i18n.__('dialog.tutorial.title')}</h4>
+                                <p class="alert-desc">${w.i18n.__('dialog.tutorial.desc')}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "tutorial-modal",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__('dialog.tutorial.open'),
+        cancelButtonText: w.i18n.__('dialog.tutorial.later'),
+      }).then(function (result: any) {
+        w.localStorage.setItem("eagle.show.tutorial", "true");
+        switch (w.preferences.general.language) {
+          case 'zh_CN':
+            w.electron.shell.openExternal('https://docs-cn.eagle.cool/article/167-tutorial-1-overview-of-library-and-interface')
+            break;
+          case 'zh_TW':
+            w.electron.shell.openExternal('https://docs-tw.eagle.cool/article/288-tutorial-1-overview-of-library-and-interface')
+            break;
+          case 'ja_JP':
+            w.electron.shell.openExternal('https://docs-jp.eagle.cool/article/1043-tutorial-1-overview-of-library-and-interface')
+            break;
+          default:
+            w.electron.shell.openExternal('https://docs-en.eagle.cool/article/266-tutorial-1-overview-of-library-and-interface')
+        }
+      });
+
+    }
+  }
+}
+
+/* smartFolderCount（bundle 46646-46661 逐字；existInSmartFilter/lockImageFilter 经 scope 解析） */
+export function machinerySmartFolderCount(s: any, smartFolder: any): any {
+  if (smartFolder) {
+    if (smartFolder.conditions.length === 0) return 0;
+    // console.time("计算智能文件夹图片数量");
+    var images: any[] = [];
+    images = s.raw.filter(function (image: any) {
+      if (image.isDeleted) return false;
+      return machineryExistInSmartFilter(s, smartFolder, image);
+    });
+    if (Object.keys(s.lockedImages).length > 0) {
+      images = images.filter(s.lockImageFilter);
+    }
+    // console.timeEnd("计算智能文件夹图片数量");
+    return images.length;
+  }
+}
+
+export function machineryToggleAllFolders(s: any, folders: any, isExpand: any): void {
+  const w = window as any;
+  w.eagle.utils.tree.walk(folders, 'children', function (f: any, parent: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
+    }
+  });
+  machineryUpdateSidebarList(s);
+}
+
+export function machineryToggleAllSmartFolderExpand(s: any, event: any, selectedSmartFolder: any): void {
+  const w = window as any;
+  var smartFolder = selectedSmartFolder || s.currentSmartFolder;
+  if (s.smartFolders && s.smartFolders.length > 0) {
+    var expand = !s.smartFolders[0].isExpand;
+    if (smartFolder) {
+      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); scopeEvalAsync(); }, 100);
+      if (smartFolder.parent) {
+        var parent = s.smartFolderMappings[smartFolder.parent];
+        if (parent) {
+          expand = !parent.isExpand;
+        }
+      }
+    }
+    if (!expand) s.sidebarIndex = 0;
+    syncSidebarFromScope();
+    machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
+    machineryUpdateSidebarList(s);
+  }
+}
+
+export function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+  const w = window as any;
+  w.eagle.utils.tree.walk(smartFolders, 'children', function (f: any, parent: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+    }
+  });
+  machineryUpdateSidebarList(s);
+}
+
+export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpand: any): void {
+  const w = window as any;
+  folders.forEach(function (f: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
+    }
+  });
+  machineryUpdateSidebarList(s);
+}
+
+export function machineryToggleCurrentLevelSmartFolders(s: any, event: any, smartFolder: any): void {
+  var expand = !smartFolder.isExpand;
+  var parent = s.smartFolderMappings[smartFolder.parent];
+  var smartFolders = s.smartFolders;
+  if (parent && parent.children) {
+    smartFolders = parent.children;
+  }
+  machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+}
+
+export function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+  const w = window as any;
+  smartFolders.forEach(function (f: any) {
+    if (f.isExpand !== isExpand) {
+      f.isExpand = isExpand;
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
+    }
+  });
+  machineryUpdateSidebarList(s);
+}
+
+export async function machineryUnlockFolderWithTouchID(s: any, event: any): Promise<void> {
+  const w = window as any;
+  // 防止事件冒泡
+  if (event) {
+    event.stopPropagation();
+  }
+
+  // 檢查設備支援
+  if (!s.canUseTouchID) {
+    return;
+  }
+
+  try {
+    await w.require('@electron/remote').systemPreferences.promptTouchID(w.i18n.__('unlock.folder.touchid.prompt') || '驗證以解鎖文件夾');
+    // 驗證成功，解鎖文件夾
+    s.currentFolder.isUnLock = true;
+    syncFolderLock();
+    syncListFromScope();
+    s.isLoading = true;
+    machineryUpdateSidebarList(s);
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      s.reload();
+      machineryUpdateSelection(s);
+      s.isLoading = false;
+      s.unlockPassword = "";
+      scopeEvalAsync();
+    });
+  } catch (err) {
+    // 驗證失敗或用戶取消
+    console.log('Touch ID 驗證失敗:', err);
+
+    // 顯示錯誤動畫
+    addClass(".touchid-btn-inline", "animation--shake-horizontal");
+    setTimeout(() => {
+      removeClass(".touchid-btn-inline", "animation--shake-horizontal");
+    }, 500);
+
+    // 焦點回到密碼輸入框
+    setTimeout(() => {
+      focusEl("#lock-password-input");
+    }, 100);
+  }
+}
+
+export function machineryUpdateSidebarList(s: any): void {
+  const $timeout = getTimeout();
+  $timeout.cancel(updateSidebarListTimeout);
+  updateSidebarListTimeout = $timeout(function () {
+    // console.time("$scope.updateSidebarList");
+    var list: any[] = [];
+    var allItem = { vstype: 'all', size: 27 };
+    var unfiledItem = { vstype: 'unfiled', size: 27 };
+    var untaggedItem = { vstype: 'untagged', size: 27 };
+    var randomItem = { vstype: 'random', size: 27 };
+    var recentItem = { vstype: 'recent', size: 27 };
+    var communityItem = { vstype: 'community', size: 27 };
+    var allTagsItem = { vstype: 'allTags', size: 27 };
+    var trashItem = { vstype: 'trash', size: 27 };
+    var folders = machineryGetFolderList(s);
+    var smartFolders = machineryGetSmartFolderList(s);
+    var quickAccess = machineryGetQuickAccessList(s);
+    var quickAccessLabel = { vstype: 'label-qucik-access', size: 25 };
+    var smartFolderLabel = { vstype: 'label-smart-folder', size: 25 };
+    var folderLabel = { vstype: 'label-folder', size: 25 };
+
+    folders = machineryFilterSidebarItem(folders, s.folderKeyword);
+    smartFolders = machineryFilterSidebarItem(smartFolders, s.folderKeyword);
+
+    list.push(allItem);
+    if (s.$root.preferences.sidebar.unfiled != 'false') {
+      list.push(unfiledItem);
+    }
+    if (s.$root.preferences.sidebar.untagged != 'false') {
+      list.push(untaggedItem);
+    }
+    if (s.$root.preferences.sidebar.recent != 'false') {
+      list.push(recentItem);
+    }
+    if (s.$root.preferences.sidebar.random != 'false') {
+      list.push(randomItem);
+    }
+    if (s.$root.preferences.sidebar.community2 != 'false') {
+      list.push(communityItem);
+    }
+    list.push(allTagsItem);
+    list.push(trashItem);
+
+    if (s.quickAccess.length > 0 && s.$root.preferences.sidebar.quickAccess != 'false') {
+      list.push({ vstype: 'separator', size: 14 });
+      list.push(quickAccessLabel);
+      if (s.isExpandQuickAccess && s.quickAccess.length > 0) {
+        list = list.concat(quickAccess);
+        list.push({ vstype: 'separator', size: 14 });
+      }
+    }
+    else {
+      list.push({ vstype: 'separator', size: 14 });
+    }
+
+    if (s.$root.preferences.sidebar.smartFolder != 'false') {
+      if (!s.folderKeyword) {
+        list.push(smartFolderLabel);
+      }
+      else if (smartFolders.length > 0) {
+        list.push(smartFolderLabel);
+      }
+      if (smartFolders.length > 0) {
+        if (s.isExpandSmartFolder) {
+          list = list.concat(smartFolders);
+          list.push({ vstype: 'separator', size: 14 });
+        }
+      }
+    }
+
+    if (s.$root.preferences.sidebar.folder != 'false') {
+      if (!s.folderKeyword) {
+        list.push(folderLabel);
+      }
+      else if (folders.length > 0) {
+        list.push(folderLabel);
+      }
+      if (s.isExpandFolder) {
+        list = list.concat(folders);
+      }
+    }
+
+    list.forEach(function (node: any, index: number) {
+      node.index = index;
+    });
+
+    s.sidebarList = list;
+    syncSidebarFromScope();
+  }, 20);
+}
+
+export let openRecentTimeout: any = null;
+
+export let openTrashTimeout: any = null;
+
+export let openUnfiledTimeout: any = null;
+
+/* setLastFolder（bundle 38480-38488 逐字；_.debounce 500 单实例语义同上） */
+let setLastFolderDebounced: any = null;
+
+// ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
+//    rebindRefreshLazyTimeout）──
+export let updateSidebarListTimeout: any = null;

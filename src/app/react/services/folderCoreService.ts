@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySmartFolderCount, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryLeaveDetailMode, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machineryUpdateFilterCounts, machineryUpdateSelection } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -35,6 +35,7 @@ import { machineryGetAncestorSmartFolders, machineryGetChildFoldersMap, machiner
 import { machineryGetAncestorFolders, machinerySaveFolder } from '../core/libraryDomain';
 import { machinerySwitchLayout } from './gridService';
 import { machinerySetViewMode } from './viewOpsService';
+import { machineryChangeSidebarIndex, machineryExpandFolder, machineryExpandSmartFolder, machineryOpenUnfiled, machinerySmartFolderCount, machineryUnlockFolderWithTouchID, machineryUpdateSidebarList } from '../core/libraryDomain';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;

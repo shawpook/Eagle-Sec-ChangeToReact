@@ -15,10 +15,11 @@ import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
 import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
-import { machineryOnImageSizeHeightChanged, machineryOpenAll, machineryOpenUnfiled, machineryChangeSidebarIndex, machineryOpenPluginPanel, machineryToggleAll, machineryPrevHistory, machineryNextHistory } from '../../core/dataMachinery';
+import { machineryOnImageSizeHeightChanged, machineryOpenAll, machineryOpenPluginPanel, machineryToggleAll, machineryPrevHistory, machineryNextHistory } from '../../core/dataMachinery';
 import { machineryOpenActionsPanel } from '../../core/keymapActions';
 
 import { machineryRefreshRandom } from '../../core/libraryDomain';
+import { machineryChangeSidebarIndex, machineryOpenUnfiled } from '../../core/libraryDomain';
 /**
  * 阶段3a：工具栏接管。
  *

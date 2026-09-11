@@ -7370,3 +7370,43 @@ boxGridEngine/gridDirectives/inspectorActions/detailState 等）。
 
 **门禁**：`bz-export-check` 无问题（2077 处）；`tsc` 619 → **617（零新增，净修 2）**；
 `probe LOAD_OK`；哨兵 `SENTINEL_OK`；定向 `stage7d1a`/`preview-delivery`/`ui-interactions` 全绿。
+
+---
+
+## D-1 / Track B / B-9 记录（2026-09-11）
+
+**目标**：`libraryDomain` 域簇整体归位 → `core/libraryDomain.ts`（**47 个 / 1503 行**，单批最大）。
+
+**范围**：`updateSidebarListTimeout` `machineryUpdateSidebarList` `machinerySmartFolderCount`
+`buildRecentFileManager` `machineryChangeSidebarIndex` `setLastFolderDebounced`
+`machinerySetLastFolder` `machineryOpenParentFolder` `machinerySetFolderCover` `openUnfiledTimeout`
+`openRecentTimeout` `openTrashTimeout` `machineryOpenUnfiled` `machineryOpenRecent`
+`machineryOpenTrash` `machineryOpenNext/PrevFolder` `machineryOpenNext/PrevSmartFolder`
+`machineryGetQuickAccessList` `machineryAddToRecentFile` `machineryResetFolderCover`
+`machineryRemoveSmartFolder(Inner)` `machineryRemoveFolder(Inner/Contents)` `machinerySaveFolderDebounce`
+`machineryMultipleOpenFolder` `machineryExpand(Smart)Folder` `machineryToggle*SmartFolders*`
+`machinerySet(Smart)FolderOrder` `machineryQuickOpenFolder` `machineryShowTutorial`
+`machineryUnlockFolderWithTouchID` `machineryGet(Smart)FolderList` `machineryGetAllChildFolder`
+`machineryPrependFolder` `machineryRenameCurrentFolder` `machineryToggleAll/CurrentLevelFolders`。
+
+**刻意排除**：`lastMoveToTrashCheckbox`（私有 `let`，写方 `machineryRemoveSelected` 属
+selectionView 簇，随该簇搬迁；否则跨模块写 ESM 导入绑定非法）。
+
+**脚本增强**：新增「4.5 自动补 export」——凡剪出后 `dataMachinery` 仍引用的私有声明
+（`buildRecentFileManager`/`machineryRemoveFolderInner`/`machineryRemoveSmartFolderInner`/
+`machinerySetLastFolder`/`openRecent|Trash|UnfiledTimeout`/`updateSidebarListTimeout` 共 8 个）
+在目标域自动加 `export`，解决「私有依赖被剪出后回引不可达」。
+
+**机制要点 / 踩坑**：`getTimeout` 虽属 MOUNT-INFRA 私有，但**已导出**（dataMachinery:241），
+故 libraryDomain 可直接回引；其余 15 个缺失符号（`machineryLeaveDetailMode`/`ResetPage`/
+`AutoScroll`/`UpdateSelection`/`UpdateFilterCounts`/`FilterSidebarItem`/`RenameTagGroup`/
+`RenameImages`/`GetSelection`/`GetSelectedTags`/`GetSelectedItemElements`/`ForceFitImageSize`/
+`EnableSubFolderNameEditable`/`EditTag`/`callExternal`）+ `machineryUpdateListHeight`
+（gridService）+ `machinerySetViewMode`/`Zoom`/`CheckOperationSafety2`（viewOpsService）+
+`setScrollTop`/`clickEl`/`hide`（domQuery）+ `glRemoveitemsChannel`（bus）+ `debounce`（func）
+均已补装。
+
+**核数**：`dataMachinery.ts` **10307 → 8804 行**（-1503）；顶层声明 **239 → 192**。
+
+**门禁**：`bz-export-check` 无问题（2121 处）；`tsc` **617 → 617 零新增**；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `library-switch`/`empty-trash`/`main-ui-workflow`/`s2-sidebar-dnd` 全绿。

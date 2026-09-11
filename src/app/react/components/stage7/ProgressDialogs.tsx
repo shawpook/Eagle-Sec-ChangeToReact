@@ -705,9 +705,17 @@ export function FileThumbnailProgress() {
       });
       bumpAll();
     };
-    const off = body.$watch(read, sync);
+    // b1-9bz-C-4：$watch(read, sync) → 组件内轮询（200ms，与原 shim watcher 同频）。
+    // 轮询在本组件内、不依赖 scopeShim 的 watcher —— 删 shim 后仍工作。
+    let lastReadVal = read();
+    const pollTimer = setInterval(() => {
+      const v = read();
+      if (v === lastReadVal) return;
+      lastReadVal = v;
+      sync();
+    }, 200);
     sync();
-    return () => off();
+    return () => clearInterval(pollTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [host]);
 
@@ -881,9 +889,17 @@ export function DebugReportProgress() {
       setSt({ isExporting: !!s.isExporting, progress: Number(s.progress) || 0 });
       bumpAll();
     };
-    const off = body.$watch(read, sync);
+    // b1-9bz-C-4：$watch(read, sync) → 组件内轮询（200ms，与原 shim watcher 同频）。
+    // 轮询在本组件内、不依赖 scopeShim 的 watcher —— 删 shim 后仍工作。
+    let lastReadVal = read();
+    const pollTimer = setInterval(() => {
+      const v = read();
+      if (v === lastReadVal) return;
+      lastReadVal = v;
+      sync();
+    }, 200);
     sync();
-    return () => off();
+    return () => clearInterval(pollTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [host]);
 
@@ -1422,9 +1438,17 @@ function useFixUtilsBridge(fields: string[]) {
       setValues(fields.map((f) => (fu[f] === undefined ? 0 : fu[f])));
       bumpAllRef.current();
     };
-    const off = body.$watch(read, sync);
+    // b1-9bz-C-4：$watch(read, sync) → 组件内轮询（200ms，与原 shim watcher 同频）。
+    // 轮询在本组件内、不依赖 scopeShim 的 watcher —— 删 shim 后仍工作。
+    let lastReadVal = read();
+    const pollTimer = setInterval(() => {
+      const v = read();
+      if (v === lastReadVal) return;
+      lastReadVal = v;
+      sync();
+    }, 200);
     sync();
-    return () => off();
+    return () => clearInterval(pollTimer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return values;

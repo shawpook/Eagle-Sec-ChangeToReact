@@ -166,11 +166,20 @@ export function InspectorTagSelectPanel() {
     const offs: any[] = [];
     if (body) {
       // $watchCollection("selected")（57938-57942 逐字；selected 为 body scope 同名属性）
-      const offSelected = body.$watchCollection('selected', () => {
+      // b1-9bz-C-4：$watchCollection('selected') → 组件内 200ms 轮询（与原 shim watcher
+      // 同频）。轮询在本组件内，不依赖 scopeShim 的 watcher —— 删 shim 后仍工作。
+      let prevSel: any[] = (body.selected || []).slice();
+      const selPoll = setInterval(() => {
+        const cur: any[] = body.selected || [];
+        const changed = cur.length !== prevSel.length
+          || cur.some((it: any, i: number) => (it && it.id) !== (prevSel[i] && prevSel[i].id));
+        if (!changed) return;
+        prevSel = cur.slice();
         if (panel.isPined) {
           updateSelected();
         }
-      });
+      }, 200);
+      const offSelected = () => clearInterval(selPoll);
       offs.push(offSelected);
 
       // $on('INSPECTOR.TAG.SELECT.PANEL.OPEN')（57945-57982 逐字）

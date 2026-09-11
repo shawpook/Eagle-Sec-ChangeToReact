@@ -673,160 +673,22 @@ export function takeoverItemDomain(): void {
        2. `$scope.finishQueue.length > 2` 在上一行 finishQueue 已置 [] 后恒假（bundle 原
           bug），逐字保留（remote/currentWindow 仅在该死分支内被读取）。 */
   // 惰性挂载：bodyScope 就绪时机晚于本域接管，故重试至可注册为止（同 boxGridEngine attach 模式）
+  // b1-9bz-C-4：finishQueue 检测改由本域自建 200ms 轮询驱动（与 shim watcher 同频），
+  // handler 体原样保留为 handleFinishQueueChanged。不改写入点 —— 此前「push 后直调」
+  // 的改法会因触发时机与 flush 不一致导致 1m1 挂 7 个断言。
+  let finishQueuePoll: any = null;
   const attachFinishQueueWatch = () => {
     const s: any = sNow();
-    const w: any = window as any;
-    if (!s || typeof s.$watchCollection !== 'function') return false;
-    if (w.angular) return true; // bundle 在世：其 finishQueue watcher 仍独占，避免双处理
-    s.$watchCollection(() => s.finishQueue, function (newValue: any, oldValue: any) {
-      if (newValue === oldValue) return;
-
-      if (!s.raw || s.raw.length === 0) {
-        if (s.finishQueue.length > 0 && s.finishQueue.length === s.uploadQueue.length) {
-          s.finishQueue = [];
-          syncUploadFromScope();
-          s.uploadQueue = [];
-          syncUploadFromScope();
-          machineryHideUploadQueue(s);
-        }
-        return;
-      }
-
-      if (s.finishQueue.length > 0 && s.finishQueue.length >= s.uploadQueue.length) {
-        // 清除倒数计时工具
-        s.addImageStartTime = undefined;
-        clearInterval(domainAddImageTimeLeftInterval);
-
-        var total = s.uploadQueue.length;
-        // 以队列最后一张图判断，是否要刷新使用者当前查看的列表
-        var lastImage = s.finishQueue[s.finishQueue.length - 1];
-
-        // 自动选择新增的图片
-        var newItems: any[] = [];
-        s.finishQueue.forEach(function (image: any) {
-          if (image && image.id) {
-            newItems.push(image);
-          }
-        });
-
-        s.finishQueue = [];
-        syncUploadFromScope();
-        s.uploadQueue = [];
-        syncUploadFromScope();
-        $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
-        $("#upload-queue-progress").find(".current").width(s.finishQueue.length / s.uploadQueue.length * 100 + "%");
-        machineryHideUploadQueue(s);
-
-        // 判斷是否有重複的圖片
-        if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
-          if (s.duplicateQueue.length > 0) {
-            openDuplicateChannel.emit({
-              currentFolder: s.currentFolder,
-              mappings: s.duplicateMappings,
-              duplicates: s.duplicateQueue
-            });
-            if (s.$root.preferences.notification.soundEffect.enable != 'false') {
-              s.duplicateSound && s.duplicateSound.play();
-            }
-            s.duplicateQueue = [];
-          }
-        }
-        // 如果沒有啟動重複通知，一律圖片直接添加上來
-        else {
-          s.duplicateQueue.forEach(function (img: any) {
-            machineryAddToDuplicateMapping(s, img);
-            if (s.raw) { s.raw.unshift(img); }
-            syncListFromScope();
-          });
-          s.duplicateQueue = [];
-        }
-
-        function autoSelectUploadedItems() {
-          if (s.isDetailMode) return;
-
-          if (s.$root.preferences.general.autoSelect !== 'true') {
-            if (newItems.length === 1) {
-              domainTimeout(s, function () {
-                scrollToSelectedItem();
-              }, 120);
-            }
-            return;
-          }
-
-          // 避免几百几千个？
-          if (s.viewMode !== 'random') {
-            var MAX_AUTO_SELECT = 1000;
-            if (newItems && newItems.length <= MAX_AUTO_SELECT) {
-              s.selected = newItems;
-              syncInspectorFromScope();
-              var targetSelectedIndex = s.allData.indexOf(s.selected[0]);
-              s.lastSelectedIndex = targetSelectedIndex;
-              s.$root.currentFocus = "content";
-              if (newItems.length === 1) {
-                domainTimeout(s, function () {
-                  scrollToSelectedItem();
-                }, 120);
-              }
-            }
-          }
-        }
-
-        machineryCalculateImageBinding(s, {}, function () {
-          // NOTE: 图片添加完成后，如果添加的图片不是使用者正在查看的文件夹，不需要刷新画面
-          if (s.currentFolder) {
-            try {
-              if (!lastImage || !lastImage.folders) {
-                s.reload(true);
-                autoSelectUploadedItems();
-                return;
-              }
-              const needReload = isInFolder(lastImage, s.currentFolder);
-              if (needReload) {
-                s.startCursor = 0;
-                s.reload(true);
-                autoSelectUploadedItems();
-              }
-            }
-            catch (err: any) {
-              s.reload(true);
-              autoSelectUploadedItems();
-              electronLog && electronLog.error(err.stack || err);
-            }
-          }
-          else if (s.currentSmartFolder) {
-            s.reload(true);
-          }
-          // 如果来自全部图片、未归类、未分类，一律进行刷新
-          else if (s.viewMode == "all" || s.viewMode == "unfiled" || s.viewMode == "untagged") {
-            s.startCursor = 0;
-            s.reload(true);
-            autoSelectUploadedItems();
-          }
-        });
-
-        try {
-          if (s.finishQueue.length > 2) {
-            if (w.process.platform == 'darwin') {
-              window.setTimeout(function () { w.remote.app.dock.bounce("critical"); }, 1000);
-            } else {
-              window.setTimeout(function () {
-                if (!document.hasFocus()) {
-                  w.currentWindow.flashFrame(true);
-                }
-              }, 1000);
-            }
-          }
-        }
-        catch (err: any) {
-          electronLog && electronLog.error(err.stack || err);
-        }
-
-        // 讓 Palette Queue 繼續
-        w.IPCHelper && w.IPCHelper.send('palette-resume', undefined, true);
-        console.log("添加 %s 張圖片完成", total);
-        console.timeEnd("添加圖片耗費時間");
-      }
-    });
+    if (!s) return false;
+    let prevFinishQueue: any[] = (s.finishQueue || []).slice();
+    if (finishQueuePoll) clearInterval(finishQueuePoll);
+    finishQueuePoll = setInterval(() => {
+      const cur: any[] = (s.finishQueue || []).slice();
+      if (cur.length === prevFinishQueue.length) return;
+      const oldValue = prevFinishQueue;
+      prevFinishQueue = cur;
+      try { handleFinishQueueChanged(s, cur, oldValue); } catch (err) { /* noop */ }
+    }, 200);
     return true;
   };
   if (!attachFinishQueueWatch()) {
@@ -1399,3 +1261,154 @@ export function isInFolder (__lv_image, folder) {
                 return false;
             }
         }
+
+/* b1-9bz-C-4：finishQueue 变更处理（原 $watchCollection 的 handler，原样提取） */
+function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
+  const w: any = window as any;
+
+    if (!s.raw || s.raw.length === 0) {
+      if (s.finishQueue.length > 0 && s.finishQueue.length === s.uploadQueue.length) {
+        s.finishQueue = [];
+        syncUploadFromScope();
+        s.uploadQueue = [];
+        syncUploadFromScope();
+        machineryHideUploadQueue(s);
+      }
+      return;
+    }
+
+    if (s.finishQueue.length > 0 && s.finishQueue.length >= s.uploadQueue.length) {
+      // 清除倒数计时工具
+      s.addImageStartTime = undefined;
+      clearInterval(domainAddImageTimeLeftInterval);
+
+      var total = s.uploadQueue.length;
+      // 以队列最后一张图判断，是否要刷新使用者当前查看的列表
+      var lastImage = s.finishQueue[s.finishQueue.length - 1];
+
+      // 自动选择新增的图片
+      var newItems: any[] = [];
+      s.finishQueue.forEach(function (image: any) {
+        if (image && image.id) {
+          newItems.push(image);
+        }
+      });
+
+      s.finishQueue = [];
+      syncUploadFromScope();
+      s.uploadQueue = [];
+      syncUploadFromScope();
+      $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
+      $("#upload-queue-progress").find(".current").width(s.finishQueue.length / s.uploadQueue.length * 100 + "%");
+      machineryHideUploadQueue(s);
+
+      // 判斷是否有重複的圖片
+      if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
+        if (s.duplicateQueue.length > 0) {
+          openDuplicateChannel.emit({
+            currentFolder: s.currentFolder,
+            mappings: s.duplicateMappings,
+            duplicates: s.duplicateQueue
+          });
+          if (s.$root.preferences.notification.soundEffect.enable != 'false') {
+            s.duplicateSound && s.duplicateSound.play();
+          }
+          s.duplicateQueue = [];
+        }
+      }
+      // 如果沒有啟動重複通知，一律圖片直接添加上來
+      else {
+        s.duplicateQueue.forEach(function (img: any) {
+          machineryAddToDuplicateMapping(s, img);
+          if (s.raw) { s.raw.unshift(img); }
+          syncListFromScope();
+        });
+        s.duplicateQueue = [];
+      }
+
+      function autoSelectUploadedItems() {
+        if (s.isDetailMode) return;
+
+        if (s.$root.preferences.general.autoSelect !== 'true') {
+          if (newItems.length === 1) {
+            domainTimeout(s, function () {
+              scrollToSelectedItem();
+            }, 120);
+          }
+          return;
+        }
+
+        // 避免几百几千个？
+        if (s.viewMode !== 'random') {
+          var MAX_AUTO_SELECT = 1000;
+          if (newItems && newItems.length <= MAX_AUTO_SELECT) {
+            s.selected = newItems;
+            syncInspectorFromScope();
+            var targetSelectedIndex = s.allData.indexOf(s.selected[0]);
+            s.lastSelectedIndex = targetSelectedIndex;
+            s.$root.currentFocus = "content";
+            if (newItems.length === 1) {
+              domainTimeout(s, function () {
+                scrollToSelectedItem();
+              }, 120);
+            }
+          }
+        }
+      }
+
+      machineryCalculateImageBinding(s, {}, function () {
+        // NOTE: 图片添加完成后，如果添加的图片不是使用者正在查看的文件夹，不需要刷新画面
+        if (s.currentFolder) {
+          try {
+            if (!lastImage || !lastImage.folders) {
+              s.reload(true);
+              autoSelectUploadedItems();
+              return;
+            }
+            const needReload = isInFolder(lastImage, s.currentFolder);
+            if (needReload) {
+              s.startCursor = 0;
+              s.reload(true);
+              autoSelectUploadedItems();
+            }
+          }
+          catch (err: any) {
+            s.reload(true);
+            autoSelectUploadedItems();
+            electronLog && electronLog.error(err.stack || err);
+          }
+        }
+        else if (s.currentSmartFolder) {
+          s.reload(true);
+        }
+        // 如果来自全部图片、未归类、未分类，一律进行刷新
+        else if (s.viewMode == "all" || s.viewMode == "unfiled" || s.viewMode == "untagged") {
+          s.startCursor = 0;
+          s.reload(true);
+          autoSelectUploadedItems();
+        }
+      });
+
+      try {
+        if (s.finishQueue.length > 2) {
+          if (w.process.platform == 'darwin') {
+            window.setTimeout(function () { w.remote.app.dock.bounce("critical"); }, 1000);
+          } else {
+            window.setTimeout(function () {
+              if (!document.hasFocus()) {
+                w.currentWindow.flashFrame(true);
+              }
+            }, 1000);
+          }
+        }
+      }
+      catch (err: any) {
+        electronLog && electronLog.error(err.stack || err);
+      }
+
+      // 讓 Palette Queue 繼續
+      w.IPCHelper && w.IPCHelper.send('palette-resume', undefined, true);
+      console.log("添加 %s 張圖片完成", total);
+      console.timeEnd("添加圖片耗費時間");
+    }
+}

@@ -1,5 +1,5 @@
 /**
- * React 全量回归套件（55 项，顺序隔离执行）。
+ * React 全量回归套件（65 项，顺序隔离执行）。
  * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
  */
@@ -61,6 +61,17 @@ const tests = [
   'tests/native-preview-closed-loop.mjs',
   'tests/ui-interactions-closed-loop.mjs',
   'tests/residue-closed-loop.mjs',
+  // ── b1-9bz-D-3：10 项 React 状态→渲染闭环（store/scope 驱动 + 实测 DOM 断言）──
+  'tests/d3-boot-render-closed-loop.mjs',
+  'tests/d3-viewmode-closed-loop.mjs',
+  'tests/d3-search-empty-closed-loop.mjs',
+  'tests/d3-alltags-view-closed-loop.mjs',
+  'tests/d3-detail-mode-closed-loop.mjs',
+  'tests/d3-theme-closed-loop.mjs',
+  'tests/d3-loading-closed-loop.mjs',
+  'tests/d3-selection-closed-loop.mjs',
+  'tests/d3-focus-closed-loop.mjs',
+  'tests/d3-store-roundtrip-closed-loop.mjs',
 ];
 
 const failed = [];

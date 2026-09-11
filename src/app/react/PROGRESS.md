@@ -7667,3 +7667,28 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
 
 累计成果：`dataMachinery.ts` **11509 行 / 306 声明 → 删除**；`tsc` **788（D 前基线）
 → 508**；`jQuery 0 / vendorScriptTags 0`；55 项全绿。
+
+---
+
+## D-3 记录（2026-09-11）—— 套件 55 → **65** 全绿
+
+**新增**：`tests/closed-loop-common.mjs`（共用引导：库+图片 fixture、`ev`/`waitFor` 封装、
+`finish` 收尾）+ 10 个 React 状态→渲染闭环：
+
+| 测试 | 断言（经 d3-diag 实测校准） |
+|---|---|
+| `d3-boot-render` | 2 图 → `#box-list .box`=2、scope.allData=2、`box-container` 非 empty、`all-view` |
+| `d3-viewmode` | `viewMode='trash'` → body `trash-view` + drop-area=1；`'all'` → `all-view` + 0 |
+| `d3-search-empty` | keyword 无命中 → `#box-container.empty` + drop-area=1；复位 → 非空 + 0 |
+| `d3-alltags-view` | `viewMode='alltags'` → `#tag-manager` 可见 + sidebar-item≥3；复位 → `all-view` |
+| `d3-detail-mode` | bodyState.isDetailMode true/false → body `is-detail-mode` 加/除 |
+| `d3-theme` | bodyState.theme light/dark 往返 |
+| `d3-loading` | bodyState.isLoading 往返 + boxes 不丢 |
+| `d3-selection` | scope.selected 0 → `$apply` 置 1 |
+| `d3-focus` | bodyState.currentFocus → body `current-focus-sidebar` |
+| `d3-store-roundtrip` | viewMode/layout/keyword/currentFocus 四字段 store 往返 + DOM 不变式 |
+
+**工具**：`tests-tmp/d3-diag.mjs`（一次性 DOM 反应诊断，用于选取可靠选择器；诊断发现
+`ListLayout` 类名不稳定 → 该项改为 alltags-view 闭环）。
+
+**结果**：`run-react-suite.mjs` 列表 **55 → 65**，头部注释同步；10 项单独运行全绿。

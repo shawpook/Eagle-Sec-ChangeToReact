@@ -11,6 +11,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, addClass, removeClass } from '../utils/domQuery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -181,15 +182,12 @@ export function zoomFit(...args: any[]) {
             } else {
                 if (s.VIDEO_TYPES[s.current.ext]) {
                     // 如果是視頻格式，撐滿畫面
-                    var mpvPlayer = $(".detail-wrap mpv-video")[0];
+                    var mpvPlayer = q(".detail-wrap mpv-video");
                     if (mpvPlayer) {
                         mpvPlayer.scaleMode = 'fit';
                     }
                     else {
-                        var $__lv_video = $(".detail-wrap video");
-                        if ($__lv_video.length > 0) {
-                            $__lv_video.removeClass("fit");
-                        }
+                        removeClass(".detail-wrap video", "fit");
                     }
                     return;
                 }
@@ -201,9 +199,9 @@ export function zoomFit(...args: any[]) {
                 s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
 
                 if (!noAnimation) {
-                    $("#detail-container").addClass("zooming");
+                    addClass("#detail-container", "zooming");
                     setTimeout(function () {
-                        $("#detail-container").removeClass("zooming");
+                        removeClass("#detail-container", "zooming");
                     }, 300);
                 }
 

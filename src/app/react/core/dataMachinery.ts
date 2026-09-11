@@ -67,7 +67,7 @@ import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
 import { debounce, throttle } from '../utils/func';
 import { get, isString, max, uniq, unescape, isNumeric } from '../utils/lang';
-import { q, qa, qaVisible, widthOf, heightOf, addClass, removeClass, setAttr, cssSet, hide, show, setHtml, hasClass, setHtmlEl, textEl, triggerEl, selectText, onEl, offEl, trigger, clickEl, focusEl, blurEl, selectEl, scrollTopValue, setScrollTop, setScrollLeft, offsetOf, offsetTopOf, outerHeightOf } from '../utils/domQuery';
+import { q, qa, qaVisible, widthOf, heightOf, addClass, removeClass, setAttr, cssSet, hide, show, setHtml, hasClass, setHtmlEl, textEl, triggerEl, selectText, onEl, offEl, trigger, clickEl, focusEl, blurEl, selectEl, scrollTopValue, setScrollTop, setScrollLeft, offsetOf, offsetTopOf, outerHeightOf, getAttr, setAttrEl, addClassEl, removeClassEl } from '../utils/domQuery';
 import { syncFolderLock } from '../store/lockState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncListFromScope } from '../store/listState';
@@ -9226,20 +9226,19 @@ export function machineryUpdateListSlider(s: any, size: any): void {
    import（循环），而域可以 import 本模块） ── */
 let machineryEnlargeThumbnailsTimeout: any = null;
 export function machineryEnlargeThumbnails(): void {
-  const $: any = (window as any).$;
   clearTimeout(machineryEnlargeThumbnailsTimeout);
   machineryEnlargeThumbnailsTimeout = setTimeout(() => {
     console.time("enlargeThumbnails");
-    const $boxs = $(".box.show.jpg, .box.show.png, .box.show.webp, .box.show.bmp, .box.show.jfif").not(".enlarge-thumbnail");
-    const $imgs = $boxs.find(".thumbnail img");
+    const boxes = qa(".box.show.jpg, .box.show.png, .box.show.webp, .box.show.bmp, .box.show.jfif")
+      .filter((e) => !e.classList.contains("enlarge-thumbnail"));
+    const imgs = boxes.flatMap((b) => Array.from(b.querySelectorAll(".thumbnail img")) as HTMLElement[]);
 
-    $imgs.each(function (this: any) {
-      const $self = $(this);
-      const $box = $self.parent().parent();
-      const rawsrc = $self.attr('raw');
+    imgs.forEach((img) => {
+      const box = img.parentElement?.parentElement as HTMLElement | null;
+      const rawsrc = getAttr(img, 'raw');
       if (rawsrc) {
-        $self.attr('src', rawsrc);
-        $box.addClass("enlarge-thumbnail");
+        setAttrEl(img, 'src', rawsrc);
+        if (box) addClassEl(box, "enlarge-thumbnail");
       }
     });
     console.timeEnd("enlargeThumbnails");
@@ -9248,20 +9247,18 @@ export function machineryEnlargeThumbnails(): void {
 
 let machineryShrinkThumbnailsTimeout: any = null;
 export function machineryShrinkThumbnails(): void {
-  const $: any = (window as any).$;
   clearTimeout(machineryShrinkThumbnailsTimeout);
   machineryShrinkThumbnailsTimeout = setTimeout(() => {
     console.time("shrinkThumbnails");
-    const $boxs = $(".box.enlarge-thumbnail.jpg, .box.enlarge-thumbnail.png, .box.enlarge-thumbnail.webp, .box.enlarge-thumbnail.bmp, .box.enlarge-thumbnail.jfif");
-    const $imgs = $boxs.find(".thumbnail img");
+    const boxes = qa(".box.enlarge-thumbnail.jpg, .box.enlarge-thumbnail.png, .box.enlarge-thumbnail.webp, .box.enlarge-thumbnail.bmp, .box.enlarge-thumbnail.jfif");
+    const imgs = boxes.flatMap((b) => Array.from(b.querySelectorAll(".thumbnail img")) as HTMLElement[]);
 
-    $imgs.each(function (this: any) {
-      const $self = $(this);
-      const $box = $self.parent().parent();
-      const lsrc = $self.attr('lsrc');
+    imgs.forEach((img) => {
+      const box = img.parentElement?.parentElement as HTMLElement | null;
+      const lsrc = getAttr(img, 'lsrc');
       if (lsrc) {
-        $self.attr('src', lsrc);
-        $box.removeClass("enlarge-thumbnail");
+        setAttrEl(img, 'src', lsrc);
+        if (box) removeClassEl(box, "enlarge-thumbnail");
       }
     });
     console.timeEnd("shrinkThumbnails");

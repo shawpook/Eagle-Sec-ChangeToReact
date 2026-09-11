@@ -29,6 +29,7 @@ import { updateSuggestions } from './miscDomain';
 import { machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFilterContent, machineryRebindRefresh, machineryRgbToHex, machinerySearchInAll, machineryUpdateContainerHieght } from './dataMachinery';
 import { calculateImageBindingChannel, closeQuickSearchModalChannel, rebindRefreshChannel, resetFilterChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { setScrollTop, removeClass } from '../utils/domQuery';
 
 let done = false;
 
@@ -451,7 +452,7 @@ export function excludeWithFolder(...args: any[]) {
             }
 
             if (eagle.filter.folderFilterLogic === "AND") {
-                $("#filter-folder-list").scrollTop(0);
+                setScrollTop("#filter-folder-list", 0);
             }
 
             machineryFilterContent(s);
@@ -470,7 +471,7 @@ export function filterContent(...args: any[]) {
             s.shuffle = [];
             machineryRebindRefresh(s, undefined, s.contentFilterCache);
             scopeEvalAsync();
-            $("#box-container").scrollTop(0);
+            setScrollTop("#box-container", 0);
         }).apply(null, args);
   }
 
@@ -548,7 +549,7 @@ export function filterWithFolder(...args: any[]) {
             if (eagle.filter.folderFilterLogic === "AND") {
                 eagle.filter.filterFolderKeyword = "";
                 syncFilterFromScope();
-                $("#filter-folder-list").scrollTop(0);
+                setScrollTop("#filter-folder-list", 0);
             }
 
             machineryFilterContent(s);
@@ -636,7 +637,7 @@ export function resetFilter(...args: any[]) {
             eagle.filter.filterRules.import.selectedMonths = {};
             eagle.filter.filterRules.mtime.selectedMonths = {};
 
-            $("[filter-item].open").removeClass("open");
+            removeClass("[filter-item].open", "open");
             s.startCursor = 0;
             resetFilterChannel.emit();
             machineryCalculateFilterCounts(s);

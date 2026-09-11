@@ -30,6 +30,7 @@ import { flipVideo, rotateVideo } from './mediaService';
 import { uploadFiles } from './uploadService';
 import { updateInspectorChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, dataGet, dataSet, setCssEl, cssGet, widthOf, heightOf } from '../utils/domQuery';
 
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -97,7 +98,7 @@ export function rotateImage(...args: any[]) {
                 clearTimeout(__lv_rotateImageSaveTimeout);
             }
 
-            if ($("canvas#detail-image").length > 0) {
+            if (q("canvas#detail-image")) {
                 alert("Not support apng file format.");
                 return;
             }
@@ -110,7 +111,7 @@ export function rotateImage(...args: any[]) {
                 [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
             }
             
-            var degree = $("#detail-image").data("degree") || 0;
+            var degree = dataGet(q("#detail-image"), "degree") || 0;
             
             // 鼠标点击
             if (event.type === "click") {
@@ -128,8 +129,8 @@ export function rotateImage(...args: any[]) {
                 detailZoom()?.rotate( {angle: -90, item: rotatedImage});
             }
 
-            $("#detail-image").data("degree", degree);
-            $("#detail-image").css({
+            dataSet(q("#detail-image"), "degree", degree);
+            setCssEl(q("#detail-image"), {
                 "transform": `rotate(${degree}deg) scaleX(1) scaleY(1)`,
                 "transition": "transform 100ms ease-in-out"
             });
@@ -154,7 +155,7 @@ export function rotateImage(...args: any[]) {
                         s.isRotating = false;
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
-                        $("#detail-image").css({
+                        setCssEl(q("#detail-image"), {
                             "transform": `none`,
                             "transition": "none"
                         });
@@ -209,7 +210,7 @@ export function rotateImage(...args: any[]) {
                         s.isRotating = false;
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
-                        $("#detail-image").css({
+                        setCssEl(q("#detail-image"), {
                             "transform": `none`,
                             "transition": "none"
                         });
@@ -305,9 +306,9 @@ export function saveCrop(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (saveAsNewFile) {
-            var $cropArea = $("#crop-image-tool .crop-area");
-            var [top, left] = [$cropArea.css("top").replace("px", ""), $cropArea.css("left").replace("px", "")];
-            var [__lv_width, __lv_height] = [$cropArea.width(), $cropArea.height()];
+            var cropAreaEl = q("#crop-image-tool .crop-area");
+            var [top, left] = [cssGet(cropAreaEl, "top").replace("px", ""), cssGet(cropAreaEl, "left").replace("px", "")];
+            var [__lv_width, __lv_height] = [widthOf(cropAreaEl), heightOf(cropAreaEl)];
             var croppedImage = s.current;
             var imagePath = FileUrlHelper.getRawPath(croppedImage);
 

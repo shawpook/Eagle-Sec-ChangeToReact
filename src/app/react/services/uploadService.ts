@@ -7,6 +7,7 @@ import { getBodyScope } from '../core/appCore';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncUploadFromScope } from '../store/uploadState';
 import { getFilter, machineryHideUploadQueue, machineryShowUploadQueue } from '../core/dataMachinery';
+import { q, findEl, removeClass, setHtmlEl, setWidthEl } from '../utils/domQuery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -97,8 +98,8 @@ export function cancelAllTasks(...args: any[]) {
                     currentWindow.setProgressBar(-1);
                 }
             }, 1000);
-            $("#upload-queue-progress").removeClass("open");
-            $("body").removeClass("is-uploading");
+            removeClass("#upload-queue-progress", "open");
+            removeClass("body", "is-uploading");
         }).apply(null, args);
   }
 
@@ -198,8 +199,8 @@ export function uploadFiles(...args: any[]) {
             });
 
             console.timeEnd("s.uploadFiles.ipcRenderer.send");
-            $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
-            $("#upload-queue-progress").find(".current").width(s.finishQueue.length/s.uploadQueue.length*100 + "%");
+            setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
+            setWidthEl(findEl(q("#upload-queue-progress"), ".current"), s.finishQueue.length/s.uploadQueue.length*100 + "%");
         }).apply(null, args);
   }
 

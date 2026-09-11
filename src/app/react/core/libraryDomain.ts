@@ -49,6 +49,7 @@ import { filterWithColor } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { closeTagsPopupChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl } from '../utils/domQuery';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -185,7 +186,6 @@ export function takeoverLibraryDomain(): void {
   ]);
 
   const electronLog: any = w.electronLog || console;
-  const $: any = w.$;
 
   // ── initial（22664 逐字）──
   ipc.on('initial', function (_e: any, params: any) {
@@ -212,12 +212,10 @@ export function takeoverLibraryDomain(): void {
     if (params.Registration && params.Registration.activated) {
       try { ga4track.setUserProperty('paid_user', 'yes'); } catch (err) { /* noop */ }
       w.customDimesion1 = "已激活";
-      if ($) {
-        $("body").css({
-          "pointer-events": "",
-          "opacity": ""
-        });
-      }
+      cssSet("body", {
+        "pointer-events": "",
+        "opacity": ""
+      });
     }
     else {
       w.customDimesion1 = "未激活";
@@ -949,8 +947,8 @@ export function takeoverLibraryDomain(): void {
     s.navigationHistory = [];
     s.navigationHistoryIndex = 0;
 
-    const $savingProgressbar = $("#saving-progress-bar");
-    const $savingProgressbarMessage = $("#saving-progress-bar .message");
+    const savingProgressbarEl = q("#saving-progress-bar");
+    const savingProgressbarMessageEl = q("#saving-progress-bar .message");
 
     if (!w.APIServer) {
       if (typeof w.initAPIServer === 'function') w.initAPIServer();
@@ -1004,31 +1002,31 @@ export function takeoverLibraryDomain(): void {
               ]);
             } catch (err) { /* noop */ }
           }
-          $savingProgressbarMessage.text(savingLabel);
-          $savingProgressbar.addClass("open");
+          setTextEl(savingProgressbarMessageEl, savingLabel);
+          addClassEl(savingProgressbarEl, "open");
         }
         else {
-          $savingProgressbar.removeClass("open");
+          removeClassEl(savingProgressbarEl, "open");
         }
 
-        const $backgroundStateComponent = $("#background-state-spinner");
-        const $backgroundStateSpinnerIcon = $("#background-state-spinner .pause-icon");
-        const $backgroundStateSpinner = $("#background-state-spinner .sm-spiner");
+        const backgroundStateComponentEl = q("#background-state-spinner");
+        const backgroundStateSpinnerIconEl = q("#background-state-spinner .pause-icon");
+        const backgroundStateSpinnerEl = q("#background-state-spinner .sm-spiner");
         if (s.currentProcessCount > 0) {
-          $backgroundStateComponent.show();
+          showEl(backgroundStateComponentEl);
         }
         else {
-          $backgroundStateComponent.hide();
+          hideEl(backgroundStateComponentEl);
         }
         s.paletteQueuePaused = state.paletteQueuePaused;
         syncSidebarFromScope();
         if (!s.paletteQueuePaused) {
-          $backgroundStateSpinner.addClass("has-animation");
-          $backgroundStateSpinnerIcon.show();
+          addClassEl(backgroundStateSpinnerEl, "has-animation");
+          showEl(backgroundStateSpinnerIconEl);
         }
         else {
-          $backgroundStateSpinner.removeClass("has-animation");
-          $backgroundStateSpinnerIcon.hide();
+          removeClassEl(backgroundStateSpinnerEl, "has-animation");
+          hideEl(backgroundStateSpinnerIconEl);
         }
 
         s.lastProcessCount = s.currentProcessCount;

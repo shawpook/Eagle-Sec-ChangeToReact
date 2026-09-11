@@ -5,6 +5,7 @@ import { syncListFromScope } from '../store/listState';
 import { machineryEnterDetailMode, machineryGetSelection, machineryOpenPluginPanel, machineryUpdateSelection } from '../core/dataMachinery';
 import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, hasClass, textEl, setAttrEl, addClassEl, removeClassEl, setHtmlEl, focusOn, selectText, onEl, offAllEl, blurEl } from '../utils/domQuery';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -38,35 +39,35 @@ let preferences: any = (window as any).electronSettings?.getPreferences?.() || {
 
 const remote: any = _req('@electron/remote');
 
-function enableImageNameEditable(event: any, $name: any) {
-  if (!$name) return;
-  if ($name.hasClass('editable')) return;
-  var originalName = $name.text().trim();
-  $name.attr('contenteditable', 'true');
-  $name.addClass('editable');
-  $name.focus();
+function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
+  if (!nameEl) return;
+  if (hasClass(nameEl, 'editable')) return;
+  var originalName = textEl(nameEl).trim();
+  setAttrEl(nameEl, 'contenteditable', 'true');
+  addClassEl(nameEl, 'editable');
+  focusOn(nameEl);
   setTimeout(function () {
-    $name.focus();
-    $name.select();
+    focusOn(nameEl);
+    selectText(nameEl);
     document.execCommand('selectAll', false, null);
   }, 50);
 
-  $name.off('mousedown').on('mousedown', function (event: any) {
+  onEl(nameEl, 'mousedown', function (event: any) {
     event.stopPropagation();
   });
 
-  $name.off('keydown').on('keydown', function (event: any) {
+  onEl(nameEl, 'keydown', function (event: any) {
     var keyCode = event.keyCode;
     switch (keyCode) {
       case 13:
         event.preventDefault();
         event.stopPropagation();
-        $name.trigger('blur');
+        nameEl.blur();
         break;
       case 27:
         event.preventDefault();
         event.stopPropagation();
-        $name.html(`<span>${originalName}</span>`);
+        setHtmlEl(nameEl, `<span>${originalName}</span>`);
         exitEditable();
         break;
       case 65:
@@ -79,18 +80,18 @@ function enableImageNameEditable(event: any, $name: any) {
     }
   });
 
-  $name.off('paste').on('paste', function (e: any) {
+  onEl(nameEl, 'paste', function (e: any) {
     e.preventDefault();
     var text = (e.originalEvent || e).clipboardData.getData('text/plain');
     document.execCommand('insertHTML', false, text);
   });
 
-  $name.off('blur').on('blur', debounce(function () {
+  onEl(nameEl, 'blur', debounce(function () {
     exitEditable();
     var $scope = getBodyScope();
-    var newName = $name.text();
+    var newName = textEl(nameEl);
     if (!newName || !newName.trim()) {
-      $name.html(`<span>${originalName}</span>`);
+      setHtmlEl(nameEl, `<span>${originalName}</span>`);
       return;
     }
     if (newName !== originalName && $scope && $scope.selected[0]) {
@@ -111,7 +112,7 @@ function enableImageNameEditable(event: any, $name: any) {
         image.name = name;
         image.newName = name;
       }
-      $name.html(`<span>${name}</span>`);
+      setHtmlEl(nameEl, `<span>${name}</span>`);
       console.log(`${originalName} > ${name}`);
       ayncsImagesChange([image]);
       hiddenByCurrentFilter([image]);
@@ -121,10 +122,10 @@ function enableImageNameEditable(event: any, $name: any) {
   }, 200, true));
 
   function exitEditable() {
-    $name.attr('contenteditable', 'false');
-    $name.removeClass('editable');
-    $name.off('blur').off('keydown').off('paste').off('mousedown');
-    $name.blur();
+    setAttrEl(nameEl, 'contenteditable', 'false');
+    removeClassEl(nameEl, 'editable');
+    offAllEl(nameEl);
+    nameEl.blur();
   }
 }
 
@@ -263,8 +264,8 @@ export function select(...args: any[]) {
             s.selectedFolderMappings = {};
             syncListFromScope();
 
-            $("input:focus").blur();
-            $("[contenteditable]:focus").blur();
+            blurEl("input:focus");
+            blurEl("[contenteditable]:focus");
 
             cancelCleanSelectedTimeout();
 

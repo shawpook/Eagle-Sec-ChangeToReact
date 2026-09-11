@@ -30,6 +30,7 @@ import { emptyTrash } from './batchOpsService';
 import { emptyRestore, newFolder } from './folderCoreService';
 import { openLayoutPanelChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { clickEl, qaHasEl, addClassEl, removeClassEl } from '../utils/domQuery';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -124,7 +125,7 @@ export function openTrashContextMenu(...args: any[]) {
     return (function (event: any) {
 
             const disabled = s.trash.length === 0;
-            const $trash = $(event.delegateTarget);
+            const trashEl = event.delegateTarget as HTMLElement;
 
             ContextMenu.open({
                 items: [
@@ -145,10 +146,10 @@ export function openTrashContextMenu(...args: any[]) {
                 ],
                 showSearch: false,
                 onOpened: () => {
-                    $trash.addClass("context-activate");
+                    addClassEl(trashEl, "context-activate");
                 },
                 onClosed: () => {
-                    $trash.removeClass("context-activate");
+                    removeClassEl(trashEl, "context-activate");
                 }
             });
     }).apply(null, args);
@@ -170,7 +171,7 @@ export function openFilterAddContextMenu(...args: any[]) {
     if (!s) return;
     return (function () {
             machineryOpenFilter(s);
-            $("#filter-toolbar-overlay").click();
+            clickEl("#filter-toolbar-overlay");
 
             const pinFilter = (id, pinned) => {
                 eagle.filter.pinned[id] = pinned;
@@ -179,7 +180,7 @@ export function openFilterAddContextMenu(...args: any[]) {
             };
 
             const openFilter = (id) => {
-                $(`#${id}-filter-item`).click();
+                clickEl(`#${id}-filter-item`);
                 setTimeout(function () { machineryUpdateContainerHieght(s); }, 50);
             }
 
@@ -756,7 +757,7 @@ export function openQuickAccessContextMenu(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (event, item) {
-            const $__lv_target = $(event.delegateTarget);
+            const targetEl = event.delegateTarget as HTMLElement;
             ContextMenu.open({
                 items: [
                     {
@@ -773,10 +774,10 @@ export function openQuickAccessContextMenu(...args: any[]) {
                 ],
                 showSearch: false,
                 onOpened: () => {
-                    $__lv_target.addClass("context-activate");
+                    addClassEl(targetEl, "context-activate");
                 },
                 onClosed: () => {
-                    $__lv_target.removeClass("context-activate");
+                    removeClassEl(targetEl, "context-activate");
                 }
             });
         }).apply(null, args);
@@ -787,7 +788,7 @@ export function openSidebarVisibleContextMenu(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-            const $__lv_target = $(".sidebar-item-container .item").has(event.target);
+            const targetEl = qaHasEl(".sidebar-item-container .item", event.target);
             ContextMenu.open({
                 items: [
                     {
@@ -891,10 +892,10 @@ export function openSidebarVisibleContextMenu(...args: any[]) {
                 ],
                 showSearch: false,
                 onOpened: () => {
-                    $__lv_target.addClass("context-activate");
+                    addClassEl(targetEl, "context-activate");
                 },
                 onClosed: () => {
-                    $__lv_target.removeClass("context-activate");
+                    removeClassEl(targetEl, "context-activate");
                 }
             });
         }).apply(null, args);

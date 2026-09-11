@@ -3,7 +3,7 @@ import { contextMenuOpenChannel, openAboutPanelChannel, rebindRefreshChannel, re
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, safeZoomData, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
-import { q } from '../../utils/domQuery';
+import { q, blurOn, selectText } from '../../utils/domQuery';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
@@ -451,7 +451,7 @@ export function inspectorCategoryDescriptionChange() {
 export function preventEnter(event: any) {
   if (event.keyCode === 13) {
     event.preventDefault();
-    $(event.target).trigger('blur');
+    blurOn(event.target as HTMLElement);
   } else if (event.keyCode === 27) {
     event.preventDefault();
     event.stopPropagation();
@@ -460,7 +460,7 @@ export function preventEnter(event: any) {
 
 export function selectLinkInput($event: any) {
   if ($event && $event.target) {
-    $($event.target).trigger('select');
+    selectText($event.target as HTMLElement);
   }
 }
 

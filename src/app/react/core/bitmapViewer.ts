@@ -8,6 +8,7 @@
  */
 // @ts-nocheck
 import { getRawUrl } from './itemDomain';
+import { q, getAttr, setAttrEl, setCssEl, widthOf, heightOf } from '../utils/domQuery';
 
 export class BitmapViewer {
 	#zoomer;
@@ -273,8 +274,8 @@ export class BitmapViewer {
 
 	hideThumbnail() {
 		const transparentImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC";
-		if ($("#detail-image").attr("src") !== transparentImage) {
-			$("#detail-image").attr("src", transparentImage);
+		if (getAttr(q("#detail-image"), "src") !== transparentImage) {
+			setAttrEl(q("#detail-image"), "src", transparentImage);
 		}
 	}
 
@@ -360,8 +361,8 @@ export class BitmapViewer {
 				const currentVersion = ++this.#requestVersion;
 
 				const thumbnailURL = FileUrlHelper.getLastestThumbnailUrl(item);
-				if ($("#detail-image").attr("src") === "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC") {
-					$("#detail-image").attr("src", thumbnailURL);
+				if (getAttr(q("#detail-image"), "src") === "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC") {
+					setAttrEl(q("#detail-image"), "src", thumbnailURL);
 				}
 
 				// 修改後版本 - 傳入版本號
@@ -452,7 +453,7 @@ export class BitmapViewer {
 			this.#container.appendChild(this.#canvas);
 		}
 
-		$(this.#container).css({
+		setCssEl(this.#container, {
 			position: 'absolute',
 			width: '100%',
 			height: '100%',
@@ -469,7 +470,7 @@ export class BitmapViewer {
 		});
 
 		this.#dpr = window.devicePixelRatio;
-		$(this.#canvas).css({
+		setCssEl(this.#canvas, {
 			position: 'absolute',
 			top: '0',
 			left: '0',
@@ -483,9 +484,9 @@ export class BitmapViewer {
 	}
 
 	update(viewport) {
-		const $container = $(this.#container);
-        if ($container.length === 0 || !this.#canvas || !viewport?.id) return;
-		const parentRect = { height: $container.height(), width: $container.width() };
+		const containerEl = this.#container;
+        if (!containerEl || !this.#canvas || !viewport?.id) return;
+		const parentRect = { height: heightOf(containerEl), width: widthOf(containerEl) };
 		viewport = {url: this.url, ...viewport};
 		
 		if (window.devicePixelRatio !== this.#dpr) {

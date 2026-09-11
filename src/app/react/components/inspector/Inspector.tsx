@@ -8,8 +8,7 @@ import { filesize, duration, longTitle, substring, sortHSL, shortcuts } from '..
 import { useTippy, useSelectAll } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { ContentEditable } from './ContentEditable';
-import { $ } from '../detail/detailHooks';
-import { q } from '../../utils/domQuery';
+import { q, onEl, offEl, setHeightEl } from '../../utils/domQuery';
 import {
   updateSelection,
   imagesChange,
@@ -135,7 +134,7 @@ function useCommentVideo(videoRef: React.RefObject<HTMLVideoElement | null>, com
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const $comment = $(video).parent();
+    const commentEl = video.parentElement;
 
     const onHover = () => {
       if (!isLoadRef.current) {
@@ -149,13 +148,13 @@ function useCommentVideo(videoRef: React.RefObject<HTMLVideoElement | null>, com
         const onError = () => {
           video.style.display = 'none';
         };
-        $(video).on('loadedmetadata', onLoaded);
-        $(video).on('error', onError);
+        video.addEventListener('loadedmetadata', onLoaded);
+        video.addEventListener('error', onError);
       }
     };
-    $comment.on('hover.comment', onHover);
+    onEl(commentEl, 'hover.comment', onHover);
     return () => {
-      $comment.off('hover.comment');
+      offEl(commentEl, 'hover.comment');
     };
   }, [duration]);
 }
@@ -1001,13 +1000,13 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
           try {
             const hiddenMap = JSON.parse(localStorage['eagle.inspector.hidePluginMap'] || '{}');
             if (hiddenMap[plugin.id]) {
-              $(webview).height(height);
+              setHeightEl(webview, height);
               return;
             }
             webview.executeJavaScript(`document.body.scrollHeight;`).then((h: number) => {
               if (st.lastPluginHeight === h) return;
               st.lastPluginHeight = h;
-              $(webview).height(h);
+              setHeightEl(webview, h);
             });
           } catch (err) {}
         }, 100);

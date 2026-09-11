@@ -8,6 +8,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
 import { machineryCalculateImageBinding, machineryFocusAppUnlockPassword, machineryReload, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, focusOn, valOf, setValEl, addClass, removeClass, offEl } from '../utils/domQuery';
 
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -52,7 +53,7 @@ export function focusUnlockPassword(...args: any[]) {
     if (!s) return;
     return (function () {
             setTimeout(() => {
-                $("#lock-password-input").focus();
+                focusOn(q("#lock-password-input"));
             }, 24);
         }).apply(null, args);
   }
@@ -75,7 +76,7 @@ export function unlockAppPasswordKeyup(...args: any[]) {
 
             var keyCode = event.keyCode;
             var password = s.$root.preferences.privacy.password;
-            var typingPassword = $("#app-lock-password-input").val();
+            var typingPassword = valOf(q("#app-lock-password-input"));
             var currentPassword = window.atob(password);
 
             if (keyCode === 13) {
@@ -87,14 +88,14 @@ export function unlockAppPasswordKeyup(...args: any[]) {
                         Registration && Registration.license && typingPassword && typingPassword === Registration.license.code
                     ) {
                         s.$root.isAppLocked = false;
-                        $("#app-lock-password-input").val("");
-                        $("#app-lock-password-input").off("blur"); // 移除 blur 事件監聽
+                        setValEl(q("#app-lock-password-input"), "");
+                        offEl(q("#app-lock-password-input"), "blur"); // 移除 blur 事件監聽
                         s.$root.initMenu();
                     }
                     else {
-                        $("#app-lock-password-input").addClass("animation--shake-horizontal constant");
+                        addClass("#app-lock-password-input", "animation--shake-horizontal constant");
                         setTimeout(function () {
-                            $("#app-lock-password-input").removeClass("animation--shake-horizontal constant");
+                            removeClass("#app-lock-password-input", "animation--shake-horizontal constant");
                         }, 350);
                     }
                 }, 10);
@@ -131,9 +132,9 @@ export function unlockPasswordKeyup(...args: any[]) {
                     });
                 }
                 else {
-                    $("#lock-password-input").addClass("animation--shake-horizontal constant");
+                    addClass("#lock-password-input", "animation--shake-horizontal constant");
                     setTimeout(function () {
-                        $("#lock-password-input").removeClass("animation--shake-horizontal constant");
+                        removeClass("#lock-password-input", "animation--shake-horizontal constant");
                     }, 350);
                 }
             }

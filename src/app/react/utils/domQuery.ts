@@ -58,6 +58,27 @@ export function show(sel: string): void {
   qa(sel).forEach((e) => { e.style.display = ''; });
 }
 
+/** jQuery `.hide()` 元素版。 */
+export function hideEl(el: HTMLElement | null): void {
+  if (el) el.style.display = 'none';
+}
+
+/** jQuery `.show()` 元素版。 */
+export function showEl(el: HTMLElement | null): void {
+  if (el) el.style.display = '';
+}
+
+/** jQuery `$(sel).has(node)`：命中集合中是否含包 node 的元素。 */
+export function qaHas(sel: string, node: Node | null): boolean {
+  return !!node && qa(sel).some((e) => e.contains(node));
+}
+
+/** jQuery `$(sel).has(node)` 命中元素（无则 null；用于后续 addClass 等）。 */
+export function qaHasEl(sel: string, node: Node | null): HTMLElement | null {
+  if (!node) return null;
+  return qa(sel).find((e) => e.contains(node)) || null;
+}
+
 /** jQuery `.text()` 读取首个匹配元素的 textContent。 */
 export function textOf(sel: string): string {
   return q(sel)?.textContent || '';
@@ -162,6 +183,11 @@ export function triggerEl(el: HTMLElement | null, type: string): void {
 
 export function focusOn(el: HTMLElement | null): void {
   el?.focus();
+}
+
+/** jQuery `.trigger('blur')` / `.blur()` 元素版（真实失焦）。 */
+export function blurOn(el: HTMLElement | null): void {
+  el?.blur();
 }
 
 export function selectText(el: HTMLElement | null): void {

@@ -20,6 +20,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { openFolder, openSmartFolder } from './folderCoreService';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, hasClass, addClass, removeClass } from '../utils/domQuery';
 
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
@@ -414,10 +415,10 @@ export function hoverHideSidebar(...args: any[]) {
     if (!s) return;
     return (function ($event) {
             $event && $event.stopPropagation();
-            if ($("#sidebar").hasClass("hover-show")) {
-                $("#sidebar").removeClass("hover-show");
+            if (hasClass(q("#sidebar"), "hover-show")) {
+                removeClass("#sidebar", "hover-show");
                 setTimeout(() => {
-                    $("#sidebar").removeClass("slide-in");
+                    removeClass("#sidebar", "slide-in");
                 }, 300);
             }
         }).apply(null, args);
@@ -430,9 +431,9 @@ export function hoverShowSidebar(...args: any[]) {
     return (function ($event) {
             $event && $event.stopPropagation();
             if (s.isHideSidebar) {
-                if (!$("#sidebar").hasClass("hover-show")) {
-                    $("#sidebar").addClass("slide-in");
-                    $("#sidebar").addClass("hover-show");
+                if (!hasClass(q("#sidebar"), "hover-show")) {
+                    addClass("#sidebar", "slide-in");
+                    addClass("#sidebar", "hover-show");
                 }
             }
         }).apply(null, args);

@@ -21,6 +21,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { getBodyScope } from '../core/appCore';
 import { excludeWithTag } from './batchOpsService';
 import { rebindRefreshcontainsizeChannel } from '../global/bus';
+import { setScrollTop } from '../utils/domQuery';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -336,7 +337,7 @@ export function filterWithTag(...args: any[]) {
 
             if (eagle.filter.tagFilterLogic === "AND") {
                 // s.tagKeyword = "";
-                $("#filter-panel .tags-container").scrollTop(0);
+                setScrollTop("#filter-panel .tags-container", 0);
             }
 
             machineryFilterContent(s);

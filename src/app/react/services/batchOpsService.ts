@@ -35,6 +35,7 @@ import { select } from './selectionService';
 import { addImagesToFolder } from './folderCoreService';
 import { cleanAllErrorChannel, glRemoveitemsChannel, openAddFolderModalChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, qa, cssSet, outerWidthOf } from '../utils/domQuery';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -259,7 +260,7 @@ export function cleanSelected(...args: any[]) {
     if (!s) return;
     return (function(event) {
             // 忽略事件传送
-            if (event && $("#box-container").outerWidth() <= event.offsetX + 10) {
+            if (event && outerWidthOf(q("#box-container")) <= event.offsetX + 10) {
                 event.stopPropagation();
                 return;
             }
@@ -450,8 +451,8 @@ export function scrollToSelectedItem(...args: any[]) {
             if (__lv_target) {
 
                 if (__lv_target.id) {
-                    var $box =$(`#box-${__lv_target.id}`);
-                    if ($box.length > 0 && isElementVisible($box[0]) ) {
+                    var boxEl = q(`#box-${__lv_target.id}`);
+                    if (boxEl && isElementVisible(boxEl) ) {
                         console.log("无须滚动");
                         return;
                     }
@@ -467,13 +468,13 @@ export function scrollToSelectedItem(...args: any[]) {
                     if (__lv_target && __lv_target === __lv_image) {
                         var startPage = parseInt(i / 60);
                         console.log(`目标在第 ${startPage} 页`);
-                        console.log($(`#box-${__lv_target.id}`).length);
+                        console.log(qa(`#box-${__lv_target.id}`).length);
                         // 東西不在畫面上，強制更新畫面然後定位
-                        if ($(`#box-${__lv_target.id}`).length === 0 || startPage !== s.startCursor) {
+                        if (!q(`#box-${__lv_target.id}`) || startPage !== s.startCursor) {
                             machineryRebindRefresh(s, undefined, undefined, startPage);
                             machineryRelayout(s);    
                         }
-                        $("#box-container").css("visibility", "hidden");
+                        cssSet("#box-container", { visibility: "hidden" });
                         s.startCursor = startPage;
                         s.$root.currentFocus = "content";
                         $timeout(function () {
@@ -483,7 +484,7 @@ export function scrollToSelectedItem(...args: any[]) {
                             })
                             machineryAutoScroll(s);
                             setTimeout(function () {
-                                $("#box-container").css("visibility", "initial");
+                                cssSet("#box-container", { visibility: "initial" });
                             }, 50);
                         }, 200);
                         scopeEvalAsync();

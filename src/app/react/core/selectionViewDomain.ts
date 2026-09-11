@@ -18,7 +18,7 @@ import { machineryChangeMetaItems, machineryCurrentIndex, machineryOnZoomRatioCh
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { onSelectedChanged } from './selectionNotify';
-import { addClass, removeClass, cssSet } from '../utils/domQuery';
+import { addClass, removeClass, cssSet, q, dataSet } from '../utils/domQuery';
 
 let done = false;
 
@@ -101,7 +101,7 @@ export function takeoverSelectionViewDomain(): void {
       s.showLargeImage = false;
       machineryRememberVideoCurrentTime(s, oldValue[0]);
       if (w.AnnotationPreview) w.AnnotationPreview.hide();
-      w.$("#detail-image").data("degree", 0);
+      dataSet(q("#detail-image"), "degree", 0);
       cssSet("#detail-image", {
         "transform": ``,
       });

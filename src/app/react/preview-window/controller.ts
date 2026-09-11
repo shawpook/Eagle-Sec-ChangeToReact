@@ -1,6 +1,7 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
 import { detailZoom, ensureDetailZoom } from '../core/smoothZoomEngine';
 import { getResizable, makeResizable } from '../components/interactions/resizable';
+import { q, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -837,10 +838,9 @@ scope.rotateHandler = function ($event: any) {
 };
 
 scope.rotateVideo = function (event: any) {
-  const video = (window as any).$('.detail-wrap video')[0];
+  const video = q('.detail-wrap video');
   if (video) {
-    const $video = (window as any).$(video);
-    let degree = $video.data('degree') || 0;
+    let degree = dataGet(video, 'degree') || 0;
     if (event.type === 'click') {
       if (!event.shiftKey) {
         degree = degree - 90;
@@ -856,9 +856,9 @@ scope.rotateVideo = function (event: any) {
       degree += 360;
     }
 
-    $video.data('degree', degree);
-    $video.removeClass('r90 r180 r270');
-    $video.addClass(`r${degree}`);
+    dataSet(video, 'degree', degree);
+    removeClassEl(video, 'r90 r180 r270');
+    addClassEl(video, `r${degree}`);
   }
 };
 
@@ -868,7 +868,7 @@ scope.rotateImage = function (event: any, image: any, writeToFile = false) {
   const [originalWidth, originalHeight] = [rotatedImage.width, rotatedImage.height];
   [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
 
-  let degree = (window as any).$('#detail-image').data('degree') || 0;
+  let degree = dataGet(q('#detail-image'), 'degree') || 0;
   let rotationDegree;
 
   if (event.type === 'click') {
@@ -887,8 +887,9 @@ scope.rotateImage = function (event: any, image: any, writeToFile = false) {
     detailZoom()?.rotate( { angle: -90, item: rotatedImage });
   }
 
-  (window as any).$('#detail-image').data('degree', degree);
-  (window as any).$('#detail-image').css({
+  const detailImageEl = q('#detail-image');
+  dataSet(detailImageEl, 'degree', degree);
+  setCssEl(detailImageEl, {
     transform: `rotate(${degree}deg) scaleX(1) scaleY(1)`,
     transition: 'transform 100ms ease-in-out',
   });
@@ -978,17 +979,16 @@ scope.flipImage = function (event: any, image: any, writeToFile = false) {
 };
 
 scope.flipVideo = function (event: any) {
-  const video = (window as any).$('.detail-wrap video')[0];
+  const video = q('.detail-wrap video');
   if (video) {
-    const $video = (window as any).$(video);
-    let flip = $video.data('flip') || 1;
+    let flip = dataGet(video, 'flip') || 1;
     flip = flip * -1;
     if (flip === 1) {
-      $video.removeClass('flip');
+      removeClassEl(video, 'flip');
     } else {
-      $video.addClass('flip');
+      addClassEl(video, 'flip');
     }
-    $video.data('flip', flip);
+    dataSet(video, 'flip', flip);
   }
 };
 

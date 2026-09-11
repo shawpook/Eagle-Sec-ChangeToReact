@@ -46,6 +46,7 @@ const ngSafe = (fn: () => void) => {
 
 export { pfT } from './controller';
 import { pfT } from './controller';
+import { qa, dataSet } from '../utils/domQuery';
 
 const req = (name: string): any => (window as any).require?.(name);
 
@@ -1511,11 +1512,9 @@ export function PreferencesPanels() {
 
   // updateKeybinds 的 $('.shortcut-input').data('search-active', isSearching) 等价（原样写 jQuery data）
   useEffect(() => {
-    const $ = (window as any).jQuery;
-    if (!$) return;
     ngSafe(() => {
-      $('.shortcut-input').each(function (this: HTMLElement) {
-        $(this).data('search-active', !!snap.shortcutKeyword);
+      qa('.shortcut-input').forEach((el) => {
+        dataSet(el, 'search-active', !!snap.shortcutKeyword);
       });
     });
   }, [snap.shortcutKeyword, snap.panel]);

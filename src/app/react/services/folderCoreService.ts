@@ -30,6 +30,7 @@ import { debounce } from '../utils/func';
 import { getFolderFullPath } from '../core/itemDomain';
 import { addToRecentFolders } from './batchOpsService';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, focusOn, selectText, offsetTopOf, setAttr } from '../utils/domQuery';
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const remote: any = _req('@electron/remote');
@@ -215,16 +216,16 @@ export function newFolder(...args: any[]) {
             setTimeout(function() { 
                 machineryChangeSidebarIndex(s, folder); 
                 scopeEvalAsync();
-                setTimeout(function() { $("#folder-input-" + folder.id).focus().select(); }, 100);
-                setTimeout(function() { $("#folder-input-" + folder.id).focus().select(); }, 200);
+                setTimeout(function() { const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el); }, 100);
+                setTimeout(function() { const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el); }, 200);
             }, 150);
 
             setTimeout(function() { 
                 machineryChangeSidebarIndex(s, folder); 
                 scopeEvalAsync();
                 setTimeout(function() { 
-                    if ($("#folder-input-" + folder.id + ":focus").length === 0) {
-                        $("#folder-input-" + folder.id).focus().select(); 
+                    if (!q("#folder-input-" + folder.id + ":focus")) {
+                        const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el);
                     }
                 }, 100);
             }, 250);
@@ -458,8 +459,8 @@ export function moveFoldersAsSibling(...args: any[]) {
             // 重新排序资料夹（依据视觉顺序）
             folders.sort(function (a, b) {
                 try {
-                    var aIdx = $("#folder-" + a.id).offset().top;
-                    var bIdx = $("#folder-" + b.id).offset().top;
+                    var aIdx = offsetTopOf(q("#folder-" + a.id));
+                    var bIdx = offsetTopOf(q("#folder-" + b.id));
                     if (aIdx < bIdx)
                     return -1;
                     if (aIdx > bIdx)
@@ -564,8 +565,8 @@ export function moveFoldersToFolder(...args: any[]) {
             // 重新排序资料夹（依据视觉顺序）
             folders.sort(function (a, b) {
                 try {
-                    var aIdx = $("#folder-" + a.id).offset().top;
-                    var bIdx = $("#folder-" + b.id).offset().top;
+                    var aIdx = offsetTopOf(q("#folder-" + a.id));
+                    var bIdx = offsetTopOf(q("#folder-" + b.id));
                     if (aIdx < bIdx)
                     return -1;
                     if (aIdx > bIdx)
@@ -711,7 +712,7 @@ const initLinkVars = () => {
         __lv_updateListHeight = function (height: any) {
               clearTimeout(updateListHeightTimeout);
               updateListHeightTimeout = setTimeout(function () {
-                  $("#box-container").attr("box-size", height);
+                  setAttr("#box-container", "box-size", height);
               }, 50);
           };
   // __lv_setLastFolder（原 initLinkVars 逐字）

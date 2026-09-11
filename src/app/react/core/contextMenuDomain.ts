@@ -11,6 +11,7 @@
 // @ts-nocheck
 import { contextMenuCloseChannel, contextMenuOpenChannel, openRenameChannel } from '../global/bus';
 import { getBodyScope } from './appCore';
+import { q, findEl } from '../utils/domQuery';
 
 // URL_MODULE（bundle 顶层 const；fileUrlHelper.ts 同款惰性解析）
 export const URL_MODULE: any = (() => {
@@ -47,10 +48,10 @@ export function renameImages() {
   }
   else {
     var imageId = s.selected[0].id;
-    var $box = $(`#box-${imageId}`);
-    if ($box.length > 0) {
+    var boxEl = q(`#box-${imageId}`);
+    if (boxEl) {
       setTimeout(() => {
-        enableImageNameEditable(event, $box.find('.name'));
+        enableImageNameEditable(event, findEl(boxEl, '.name'));
       }, 50);
     }
   }

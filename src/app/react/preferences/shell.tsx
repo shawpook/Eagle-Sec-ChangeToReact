@@ -7,6 +7,7 @@ import {
   subscribeController,
 } from './controller';
 import { PreferencesPanels } from './panels';
+import { qaVisible } from '../utils/domQuery';
 
 /**
  * 阶段8e-2：偏好窗口 React 壳——接管 Angular 残余（sidebar/header/footer/panel-empty/
@@ -248,14 +249,11 @@ function PreferencesShell() {
       return;
     }
     const timer = setTimeout(() => {
-      const $ = (window as any).jQuery;
       let count = 0;
-      if ($) {
-        try {
-          count = $('.content').find('.panel-content :visible').length;
-        } catch (err) {
-          count = 0;
-        }
+      try {
+        count = qaVisible('.content .panel-content *').length;
+      } catch (err) {
+        count = 0;
       }
       const next = count === 0 && !!controllerScope.keyword;
       if (controllerScope.showSearchEmpty !== next) {

@@ -4,6 +4,7 @@ import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 import { refreshVideoCommentsChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, cssSet, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -236,14 +237,14 @@ export function flipVideo(...args: any[]) {
                 mpv.flip(flip);
             }
             else {
-                var $__lv_video = $(player.el);
-                var flip = ($__lv_video.data("flip") || 1) * -1;
-                $__lv_video.data("flip", flip);
+                var videoEl = player.el;
+                var flip = (dataGet(videoEl, "flip") || 1) * -1;
+                dataSet(videoEl, "flip", flip);
                 if (flip === 1) {
-                    $__lv_video.removeClass("flip");
+                    removeClassEl(videoEl, "flip");
                 }
                 else {
-                    $__lv_video.addClass("flip");
+                    addClassEl(videoEl, "flip");
                 }
             }
         }).apply(null, args);
@@ -264,18 +265,17 @@ export function rotateVideo(...args: any[]) {
             }
             else {
                 var __lv_video = player.el;
-                var $__lv_video = $(__lv_video);
-                var degree = machineryCalcRotateDegree($__lv_video.data("degree") || 0, event);
+                var degree = machineryCalcRotateDegree(dataGet(__lv_video, "degree") || 0, event);
 
-                $__lv_video.data("degree", degree);
-                $__lv_video.removeClass("r90 r180 r270");
-                if (degree) $__lv_video.addClass(`r${degree}`);
+                dataSet(__lv_video, "degree", degree);
+                removeClassEl(__lv_video, "r90 r180 r270");
+                if (degree) addClassEl(__lv_video, `r${degree}`);
 
                 if (degree === 90 || degree === 270) {
                     __lv_video.style.setProperty('max-height', `calc(${__lv_video.videoHeight / __lv_video.videoWidth * 100}% - 24px)`, 'important');
                 }
                 else {
-                    $__lv_video.css({ "max-height": "" });
+                    setCssEl(__lv_video, { "max-height": "" });
                 }
             }
         }).apply(null, args);
@@ -299,9 +299,9 @@ export function toggleGifPlay(...args: any[]) {
                     syncDetailFromScope();
                     scopeEvalAsync();
                 }
-                $(".gif-viewer").css("opacity", 0.8);
+                cssSet(".gif-viewer", { opacity: 0.8 });
                 setTimeout(function () {
-                    $(".gif-viewer").css("opacity", 1);
+                    cssSet(".gif-viewer", { opacity: 1 });
                 }, 100);
             }
         }).apply(null, args);
@@ -401,7 +401,7 @@ export function loadSubtitles(...args: any[]) {
                         alert("An error ocurred updating the file" + err.message);
                     }
                     else {
-                        const video = $(".detail-wrap video")[0];
+                        const video = q(".detail-wrap video") as HTMLVideoElement | null;
                         if (video) {
                             const src = video.src;
                             const newSrc = src.replace(/v=\d+/, `v=${Date.now()}`);

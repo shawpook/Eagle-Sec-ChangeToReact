@@ -9,7 +9,7 @@ import { contentFocus, dblclickContentPanel } from '../../core/miscDomain';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { hoverShowSidebar, onSidebarResize } from '../../services/sidebarService';
+import { onSidebarResize } from '../../services/sidebarService';
 import { makeResizable } from '../interactions/resizable';
 
 /**
@@ -152,23 +152,12 @@ export function AppMenuButton() {
   );
 }
 
-/** hover-show-sidebar（ng-hover-intent → hoverShowSidebar；jQuery hoverIntent 插件 C 模式挂载）。 */
+/**
+ * hover-show-sidebar（ng-hover-intent → hoverShowSidebar）。原实现依赖 jQuery hoverIntent 插件，
+ * 该插件从未进入 vendors（`$.fn.hoverIntent` 长期为 undefined），guard 使接线始终短路 —— 无效果面。
+ * D-2j：去 jQuery 引用后保留同语义空实现，不引入新行为。
+ */
 export function HoverShowSidebar() {
-  useEffect(() => {
-    const el = document.querySelector('.hover-show-sidebar');
-    const $ = (window as any).jQuery;
-    const scope = getBodyScope();
-    if (!el || !$ || !scope || typeof $.fn.hoverIntent !== 'function') return;
-    const $el = $(el);
-    $el.hoverIntent(function ($event: any) {
-      scopeApply(scope, (s: any) => {
-        hoverShowSidebar($event);
-      });
-    });
-    return () => {
-      try { $el.off('mouseenter.hoverIntent mouseleave.hoverIntent'); } catch { /* noop */ }
-    };
-  }, []);
   return null;
 }
 

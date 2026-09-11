@@ -7116,3 +7116,30 @@ offset/position/ready/click），布尔属性按 jQuery `boolHook`（false 删�
 
 </details>
 
+
+---
+
+**b1-9bz-D-1 Track A 复核 + Track B B-0 映射表（2026-09-11，同会话续批）**
+
+**Track A 现状核数（`tests-tmp/bz-d1-rest.py` 实测）**：`dataMachinery.ts` 内 `s.xxx = ...`
+赋值 350 处，其中 `single` 340 处均为普通字段赋值（`s.raw.sort(...)`/`s.all = []` 等，**非**
+D-1 目标）；真正的箭头/调用式挂载仅剩 **9 处**，且**全部是跨边界 scope 面供给层**
+（`dataMachinery.ts:11377-11391` 有明确注释）：
+
+| 挂载 | 消费面（实测） |
+|---|---|
+| `enterDetailMode` / `leaveDetailMode` | `electron/main.cjs`（`scope.enterDetailMode/leaveDetailMode`） |
+| `copyAsPath` / `getRawPath` / `getRawUrl` / `select` | `electron/main.cjs` 驱动脚本 + preview 子窗 |
+| `activateFont` / `deactivateFont` / `escHandler` | 子窗口（font/text-editor）与 preferences 控制器经 scope 面 |
+| `onDropContainer` | `ListRegion.tsx` `scopeFn('onDropContainer')` + smoke/CDP 直接调全局 |
+
+> **重要更正**：`bz-d1-rest.py` 的 `orphan` 分类（leaveDetailMode/copyAsPath/getRawUrl）
+> **不可信** —— 它只扫 `src/app/react`，漏掉 `electron/main.cjs` 与子窗口。经全消费面复核，
+> 这三者均被 main.cjs 实调，**不可删**。Track A 的 67→9 已是「React 内部函数面清零」，
+> 余下 9 处是计划 `str-dyn` 类「合理 scope 面」（外部无法直 import）。
+
+**Track B / B-0 完成**：产出 `docs/d1-b0-mapping.md`（生成器 `tests-tmp/bz-d1-b0-map.py`，
+只读分析，`// @ts-nocheck` 无关）。dataMachinery 实况 **11679 行 / 331 顶层声明
+（255 export + 76 私有）/ 36 import 边 / 30 引用文件**；按目标域聚类全部落桶
+（UNCLASSIFIED 归 0），并列出跨域共享顶层名（B-final 前必须收口）与建议批次顺序。
+下一步 = B-1 起按域分批搬迁（≤30 导出/≤1500 行/批，每批 probe + 定向测试 + 提交）。

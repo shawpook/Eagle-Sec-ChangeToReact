@@ -16,12 +16,13 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
 import { detailZoom } from '../core/smoothZoomEngine';
-import { getOffsetScrollbarFn, machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem } from '../core/dataMachinery';
+import { getOffsetScrollbarFn } from '../core/dataMachinery';
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
 import { q, qa, cssSet, widthOf, heightOf, addClass, removeClass, setAttr, setScrollTop, scrollTopValue, outerHeightOf, offsetTopOf } from '../utils/domQuery';
 import { debounce } from '../utils/func';
 
 import { machinerySmartZoom, machineryUpdateZoomRatio, machineryZoomIn } from './viewOpsService';
+import { machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem } from '../core/itemDomain';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */

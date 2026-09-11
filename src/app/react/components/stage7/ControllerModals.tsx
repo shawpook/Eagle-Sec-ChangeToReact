@@ -12,11 +12,12 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryToggleAll, machineryUpdateItemView } from '../../core/dataMachinery';
+import { machineryToggleAll } from '../../core/dataMachinery';
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
 
+import { machineryUpdateItemView } from '../../core/itemDomain';
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
  * （bundle 74094-74144，含 websitePanelWebview 指令 74147-74189）接管。

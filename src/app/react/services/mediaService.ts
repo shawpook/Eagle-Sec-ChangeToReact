@@ -1,10 +1,11 @@
 import { getBodyScope } from '../core/appCore';
-import { machineryEnterSlideshowMode, machineryLeaveSlideshowMode, machineryToggleSlideshow, machineryUpdateItemView } from '../core/dataMachinery';
+import { machineryEnterSlideshowMode, machineryLeaveSlideshowMode, machineryToggleSlideshow } from '../core/dataMachinery';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 import { refreshVideoCommentsChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, cssSet, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
+import { machineryUpdateItemView } from '../core/itemDomain';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、

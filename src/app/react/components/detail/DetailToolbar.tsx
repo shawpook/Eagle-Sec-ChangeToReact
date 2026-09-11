@@ -18,11 +18,12 @@ import { maximize } from '../../core/miscDomain';
 import { openFileWithDefault } from '../../core/itemDomain';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { openRatioContextMenu } from '../../services/miscMenuService';
-import { machineryLeaveDetailMode, machineryOpenPluginPanel, machinerySelectNext, machinerySelectPrev, machineryToggleAll, machineryToggleCommentMode } from '../../core/dataMachinery';
+import { machineryLeaveDetailMode, machineryOpenPluginPanel, machinerySelectNext, machinerySelectPrev, machineryToggleAll } from '../../core/dataMachinery';
 import { machineryNextGifFrame, machineryPrevGifFrame } from '../../services/mediaService';
 
 import { machineryCancelCrop } from '../../services/imageOpsService';
 import { machineryToggleZoom, machineryZoomActual } from '../../services/viewOpsService';
+import { machineryToggleCommentMode } from '../../core/itemDomain';
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
  * （面包屑、缩放滑条、webview-toolbar、裁切工具列、插件工具列、通用工具列、

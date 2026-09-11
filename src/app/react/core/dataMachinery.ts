@@ -95,12 +95,8 @@ import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machiner
 import { buildScrollbarSaver, machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCurrentIndex, machineryGetArroundBox, machineryGotoBottom, machineryGotoTop, machineryOffsetScrollbar, machineryRelayout, machineryRememberScrollTops, machinerySaveListHeight, machineryScrollbarTo, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight, machineryUpdateListSlider } from '../services/gridService';
 import { machineryCheckOperationSafety, machineryCheckOperationSafety2, machineryGetRatioExp, machineryGetRatioNonExp, machineryLastZoom, machinerySetViewMode, machineryToggleZoom, machineryUpdateZoomRatio, machineryZoom, machineryZoomFitEdge, machineryZoomIn, machineryZoomOut } from '../services/viewOpsService';
 import { buildRecentFileManager, machineryAddToRecentFile, machineryGetAllChildFolder, machineryOpenNextFolder, machineryOpenNextSmartFolder, machineryOpenParentFolder, machineryOpenPrevFolder, machineryOpenPrevSmartFolder, machineryOpenRecent, machineryOpenTrash, machineryOpenUnfiled, machineryRemoveFolder, machineryRemoveFolderContents, machineryRemoveFolderInner, machineryRemoveSmartFolder, machineryRemoveSmartFolderInner, machineryResetFolderCover, machinerySetFolderCover, machinerySetLastFolder, machinerySmartFolderCount, machineryToggleAllFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryUpdateSidebarList, openRecentTimeout, openTrashTimeout, openUnfiledTimeout, updateSidebarListTimeout } from './libraryDomain';
-// ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
-let calculateImageBindingTimeout: any = null;
-let rebindRefreshLazyTimeout: any = null;
-// ── c9c 域内自管（原 controller 闭包 var：prependImagesTimeout，30519 邻域）──
-let prependImagesTimeout: any = null;
 
+import { calculateImageBindingTimeout, machineryCalculateImageBinding, machineryCopyImages, machineryCreateTxtFileFromTemplate, machineryFindDupclipate, machineryForceFitImageSize, machineryGetItemByElement, machineryHideUploadQueue, machineryOnImageSizeHeightChanged, machineryPreloadImage, machineryPrependImages, machineryRebindRefresh, machineryRebindRefreshLazy, machineryShowUploadQueue, machinerySortData, machineryToggleCommentMode, machineryUpdateItemsView, prependImagesTimeout, rebindRefreshLazyTimeout } from './itemDomain';
 let filterCache: any = null;
 let shimFilterInst: any = null;
 export function getFilter(): any {
@@ -407,294 +403,6 @@ export function machinerySortRawData(s: any, orderBy: any): void {
   console.timeEnd("sortRawData");
 }
 
-/* calculateImageBinding（bundle 28684-28965 逐字） */
-export function machineryCalculateImageBinding(s: any, params: any, callback: any): void {
-  const w = window as any;
-  var duration = 50;
-  if (calculateImageBindingTimeout) {
-    duration = 50;
-  } else {
-    duration = 1;
-  }
-  const TagManager = s.TagManager;
-  if (TagManager && TagManager.azGroups) {
-    const $timeout = getTimeout();
-    $timeout && $timeout.cancel(calculateImageBindingTimeout);
-  }
-  const $timeout = getTimeout();
-  calculateImageBindingTimeout = $timeout(function () {
-    try {
-      if (!s.raw) return;
-
-      if (!params.ignoreSort) {
-        machinerySortRawData(s, s.orderBy);
-      }
-
-      console.time("calculateImageBinding");
-      /* var path = require('path');（原文未使用，略去——无副作用） */
-      var tags: any = {};
-      var exts: any = {};
-      s.all = [];
-      syncSidebarFromScope();
-      s.untagged = [];
-      s.unfiledCount = 0;
-      s.untaggedCount = 0;
-      s.trash = [];
-      syncSidebarFromScope();
-      syncListFromScope();
-      s.folderMappings = {};
-      s.tagsSuggestion = [];
-      s.folderList = [];
-      syncSidebarFromScope();
-      s.lockedImages = {};
-
-      const ancestorsCache: any = {};
-      const defaultFolderCoverIdMap: any = {};
-
-      w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any, depth: any) {
-        if (folder && parent) {
-          folder.parent = parent.id;
-        }
-
-        // 列表版本 Folders
-        s.folderList.push(folder);
-        syncSidebarFromScope();
-
-        // 去除重複的資料夾
-        const $filter = getFilter();
-        folder.children = $filter('unique')(folder.children, 'id');
-        folder.imagesMappings = {};
-        folder.images = [];
-        folder.imageCount = 0;
-        folder.depth = depth;
-        folder.descendantImageCount = 0;
-
-        if (!folder.pinyin && typeof folder.name === "string") {
-          folder.pinyin = w.tinyPinyin.convertToPinyin(folder.name);
-        }
-
-        if (folder.tags && folder.tags.length > 0) {
-          folder.tags.forEach(function(tag: any) {
-            s.tagsSuggestion.push({
-              value: tag,
-              text: tag
-            });
-          });
-        }
-
-        ancestorsCache[folder.id] = machineryGetAncestorFolders(s, folder, [folder]);
-
-        s.folderMappings[folder.id] = folder;
-      });
-
-      w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any) {
-        folder.extendTags = machineryGetExtendTags(s, folder, []);
-        folder.covers = [];
-      });
-
-
-      w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
-        s.smartFolderMappings[smartFolder.id] = smartFolder;
-      });
-
-      // 重新建立圖片關係
-      for (var rindex = 0; rindex < s.raw.length; rindex++) {
-        var image = s.raw[rindex];
-
-        if (!s.itemMappings[image.id]) {
-          s.itemMappings[image.id] = image;
-        }
-
-        if (image.isDeleted) {
-          s.trash.push(image);
-          syncSidebarFromScope();
-          syncListFromScope();
-        }
-        else {
-
-          // 計算資料夾圖片總數
-          if (image.folders && image.folders.length > 0) {
-            var increaseAncestors: any = {};
-            image.folders.forEach(function(folderId: any) {
-              var folder = s.folderMappings[folderId];
-              if (folder) {
-                folder.imageCount++;
-
-                if (folder.password && !folder.isUnLock) {
-                  s.lockedImages[image.id] = true;
-                }
-
-                // 祖先们也都 + 1 , 记录在其他栏位上
-                var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(s, folder, [folder]);
-                ancestors.forEach(function (ancestor: any) {
-                  // 避免重复加总
-                  if (increaseAncestors[ancestor.id]) {
-                    return;
-                  }
-                  if (!ancestor.descendantImageCount) ancestor.descendantImageCount = 0;
-                  ancestor.descendantImageCount++;
-                  increaseAncestors[ancestor.id] = true;
-
-                  if (ancestor.password && !ancestor.isUnLock) {
-                    s.lockedImages[image.id] = true;
-                  }
-                });
-              }
-            });
-          }
-
-          if (!s.lockedImages[image.id]) {
-            s.all.push(image);
-            syncSidebarFromScope();
-            exts[image.ext] = true;
-            if (image.tags && image.tags.length == 0) {
-              s.untaggedCount++;
-            }
-
-            if (!image.folders) {
-              s.unfiledCount++;
-            }
-            else if (image.folders.length === 0) {
-              s.unfiledCount++;
-            }
-            else {
-              // 修复异常 folders
-              if (image.folders.length === 1 && !s.folderMappings[image.folders[0]]) {
-                if (s.libraryModificationTime && image.lastModified && image.lastModified < s.libraryModificationTime) {
-                  image.folders = [];
-                  s.unfiledCount++;
-                }
-              }
-              else if (image.folders[0] === null || image.folders[1] === null) {
-                image.folders = [...new Set(image.folders)].filter(function (obj: any) { return obj != null; });
-                if (image.folders.length === 0) {
-                  s.unfiledCount++;
-                  try {
-                    w.electronLog && w.electronLog.error(`[app] ${image.id} 's folder properity is incorrect[2], move to Uncategorized`);
-                  } catch (err) { /* noop */ }
-                }
-              }
-            }
-          }
-
-          if (!image.tags) {
-            image.tags = [];
-          }
-        }
-
-
-        if (!image.isDeleted && image.tags && image.tags.length > 0) {
-          if (!s.lockedImages[image.id]) {
-            image.tags.forEach(function(tag: any) {
-              var tagName = tag;
-              if (!tagName || tagName.length > 500) return;
-              var tempTag = tags[tagName];
-              if (!tempTag) {
-                tags[tagName] = {
-                  name: tag,
-                  imageCount: 0,
-                  groups: []
-                };
-                tempTag = tags[tagName];
-              }
-              tempTag.imageCount++;
-            });
-          }
-        }
-
-        if (image.folders && image.folders.length > 0) {
-          for (var i = 0; i < image.folders.length; i++) {
-            if (image.isDeleted) continue;
-            if (image.noPreview) continue;
-            if (s.lockedImages[image.id]) continue;
-            // txt 不支持做为封面
-            if (image.ext === 'txt') continue;
-            var folderId = image.folders[i];
-            var folder = s.folderMappings[folderId];
-            if (folder) {
-              if (!defaultFolderCoverIdMap[folderId]) {
-                defaultFolderCoverIdMap[folderId] = image.id;
-              }
-            }
-          }
-        }
-      }
-
-      // 計算當前資料有哪些檔案類型
-      var extList: any[] = [];
-      Object.keys(exts).map(function(key: any) {
-        extList.push(key);
-      });
-
-      extList = extList.sort();
-      w.eagle.filter.filterTypes = [...extList, ...w.eagle.filter.buildInTypes];
-      syncFilterFromScope();
-      w.eagle.filter.filterTypes = [...new Set(w.eagle.filter.filterTypes)];
-      syncFilterFromScope();
-
-      // 如果祖先门没有封面，补上封面
-      w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any) {
-        try {
-          let converId = folder.coverId || defaultFolderCoverIdMap[folder.id];
-          if (!folder.covers) folder.covers = [];
-          if (converId && s.itemMappings[converId]) {
-            var coverImage = s.itemMappings[converId];
-            var thumbnailPath = w.FileUrlHelper.getThumbnailUrl(coverImage);
-            let pos = "";
-            if (coverImage.fontMetas) {
-              pos = `center`;
-            }
-            else if (w.AUDIO_TYPES[coverImage.ext]) {
-              pos = `audio center;`;
-            }
-            folder.covers[0] = `<img class="sub-folder-cover ${pos}" src="${thumbnailPath}" style="aspect-ratio: ${coverImage.width / coverImage.height};">`;
-            if (!parent?.covers?.length) {
-              parent.covers = [`<img class="sub-folder-cover ${pos}" src="${thumbnailPath}" style="aspect-ratio: ${coverImage.width / coverImage.height};">`];
-            }
-          }
-          if (folder.covers.length == 0) {
-            folder.children.forEach(function (child: any) {
-              Array.prototype.push.apply(folder.covers, child.covers);
-              if (folder.covers.length > 3) return;
-            });
-          }
-        }
-        catch (err) { /* noop */ }
-      });
-
-      // 初始化 Tags
-      TagManager.rawdata = [];
-      Object.keys(tags).forEach(function(key: any) {
-        if (!pinyinCache[key]) {
-          if (isString(tags[key].name)) {
-            pinyinCache[key] = w.tinyPinyin.convertToPinyin(tags[key].name);
-          }
-        }
-        tags[key].pinyin = pinyinCache[key];
-        if (key) {
-          TagManager.rawdata.push(tags[key]);
-        }
-      });
-
-      TagManager.calculateTags();
-      s.tags = TagManager.rawdata;
-      syncSidebarFromScope();
-
-      if (!s.tags) {
-        s.tags = [];
-        syncSidebarFromScope();
-      }
-
-      console.timeEnd("calculateImageBinding");
-      if (callback) {
-        callback();
-      }
-    }
-    catch (err: any) {
-      w.electronLog && w.electronLog.error(err.stack || err);
-    }
-  }, duration);
-}
 
 /* ── c9b：rebindRefresh 域 ───────────────────────────────────────────── */
 
@@ -814,158 +522,12 @@ export function machineryCalcuteFilterBadge(): void {
 /* filterSidebarItem（bundle 37967-38001 逐字；controller 闭包函数 → 域内移植。
    依赖 chineseConvert/cartesianProduct/pinyinlite（re-require 十行成员，window.* live binding）、
    _.uniq/_.max（vendor 全局）、String.prototype.score（bundle 2621 原型扩展）） */
-export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] {
-  const w = window as any;
-  if (!keyword) return folders;
-  var keyword_cn = w.chineseConvert.tw2cn(keyword).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/\ /g, '').toLowerCase();
-
-  var folderSearchItems = folders.map((folder: any) => {
-    var folderNameCN = w.chineseConvert.tw2cn(folder.name).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (keyword.length >= 30 || folder.name.length >= 30) {
-      return {
-        folder: folder,
-        name: folderNameCN,
-        search: [folderNameCN]
-      };
-    }
-    return {
-      folder: folder,
-      name: folderNameCN,
-      search: [folderNameCN, ...uniq(
-        w.cartesianProduct(w.pinyinlite(folderNameCN, { keepUnrecognized: true }).filter((p: any) => p.length > 0))
-          .map((item: any) => item.join(' '))
-      )],
-    };
-  });
-
-  var scores = folderSearchItems.map((item: any) => {
-    return {
-      item: item,
-      name: item.name,
-      score: max(item.search.map((pinyin: any) => pinyin.score(keyword_cn))),
-    };
-  });
-
-  var result = scores.filter((i: any) => i.score > 0).map(function (i: any) {
-    return i.item.folder;
-  });
-
-  return result;
-}
 
 /* rebindRefresh（bundle 27366-27454 逐字；async。calcuteFilterResult/calcuteContainTags/
    refreshSubfolderList/updateItemsView/getFolderList 等仍由 bundle 承载，经 scope 解析；
    resetNgGridLayoutData = ngGridLayout 指令 66970 隐式全局赋值（window.*）；HoverPreview
    顶层 var（51689）→ window.*；calcuteFilterBadge 为域内移植版） */
-export async function machineryRebindRefresh(s: any, muteMode: any, contentFilterCache: any, startCursor: any): Promise<void> {
-  machineryCalls.rebindRefresh++;
-  const w = window as any;
 
-  if (!s.isItemBindCalculated) return;
-  if (!s.raw) return;
-  console.time("rebindRefresh");
-  var data: any[] = [];
-
-  console.time("calcuteFilterResult");
-  data = await machineryCalcuteFilterResult(s, data, contentFilterCache);
-  console.timeEnd("calcuteFilterResult");
-
-
-  // 计算这批图片里面出现的标签
-  if (w.eagle.filter.tagFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "EQUAL") {
-    machineryCalcuteContainTags(s, s.preelaborations);
-  }
-  else if (w.eagle.filter.tagFilterLogic === "AND") {
-    machineryCalcuteContainTags(s, data);
-  }
-
-  // 计算 Filter Badge 数量
-  machineryCalcuteFilterBadge();
-
-  // 置顶排序
-  console.time("sort:置顶");
-  if (s.currentFolder && s.currentFolder.orderBy !== "RANDOM") {
-    let currentFolderId = s.currentFolder.id;
-    // 原码 comparator 在 ta/tb 皆空时隐式返回 undefined（quirk 逐字保留），故 return 标注 any
-    data = data.sort(function (a: any, b: any): any {
-      var ta = a.pinned ? a.pinned[currentFolderId] : undefined;
-      var tb = b.pinned ? b.pinned[currentFolderId] : undefined;
-      if (ta || tb) {
-        try {
-          if (ta && !tb) return -1;
-          if (!ta && tb) return 1;
-          if (ta > tb) return -1;
-          if (ta < tb) return 1;
-          return 0;
-        } catch (err) {
-          return 0;
-        }
-      }
-    });
-  }
-  console.timeEnd("sort:置顶");
-
-  s.allData = data;
-  syncListFromScope();
-
-  // Note: 2019/08/05 避免拖拽順序使用 $scope.itemMappings 獲取的內容跟真實內容不一致，造成拖拽無法使用
-  // 這段代碼主要用來刷新頁面上出現元件的有效性
-  if (s.currentFolder) {
-    try {
-      for (let i = 0; i < s.allData.length; i++) {
-        s.itemMappings[s.allData[i].id] = s.allData[i];
-      }
-    } catch (err) { /* noop */ }
-  }
-
-  s.filtereds = s.allData.slice(0, s.len * s.page);
-  syncListFromScope();
-
-  machineryRefreshSubfolderList(s);
-
-  // 減少重複計算，將原先計算智能文件夾數量功能，放在這裡
-  if (s.$root.selectedSmartFolders.length === 0 && s.currentSmartFolder) {
-    if (s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length > 0) {
-      s.currentSmartFolder.imageCount = s.allData.length;
-    }
-  }
-
-  let currentViewDataLength = s.allData.length;
-  if (currentViewDataLength < 200) {
-    s.keywordDebounce = 50;
-  }
-  else if (currentViewDataLength < 50000) {
-    s.keywordDebounce = 200;
-  }
-  else if (currentViewDataLength < 100000) {
-    s.keywordDebounce = 250;
-  }
-  else {
-    s.keywordDebounce = 300;
-  }
-
-  console.timeEnd("rebindRefresh");
-
-  if (!muteMode) {
-    if (w.eagle.filter.filterBadge > 0) s.startCursor = 0;
-    w.resetNgGridLayoutData(s.allData, startCursor || s.startCursor);
-  }
-  machineryUpdateItemsView(s, s.selected);
-  trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
-  if (w.HoverPreview.isShow) {
-    w.HoverPreview.hide();
-  }
-  scopeEvalAsync();
-}
-
-/* rebindRefreshLazy（bundle 27007-27013 逐字；1000ms 防抖，rebindRefreshLazyTimeout 域内自管） */
-export function machineryRebindRefreshLazy(s: any): void {
-  const $timeout = getTimeout();
-  $timeout.cancel(rebindRefreshLazyTimeout);
-  rebindRefreshLazyTimeout = $timeout(function () {
-    machineryRebindRefresh(s);
-  }, 1000);
-}
 
 /* updateSidebarList（bundle 42545-42617 逐字；20ms 防抖，updateSidebarListTimeout 域内自管。
    getFolderList/getSmartFolderList/getQuickAccessList 仍由 bundle 承载经 scope 解析；
@@ -973,44 +535,13 @@ export function machineryRebindRefreshLazy(s: any): void {
 
 /* ── c9c：视图/加载域 ───────────────────────────────────────────────── */
 
-/* updateItemsView（bundle 35065-35072 逐字；updateItemView 仍由 bundle 承载经 scope 解析） */
-export function machineryUpdateItemsView(s: any, items: any[]): void {
-  const w = window as any;
-  removeClass(".box.selected", "selected");
-  for (var i = items.length - 1; i >= 0; i--) {
-    var item = items[i];
-    machineryUpdateItemView(s, item);
-  }
-}
 
 /* b1-9be：switchLayout 实现体归位 services/gridService.ts（body class 四分支 +
    relayout/offsetScrollbar/initMenu 仍经 scope 解析） */
 
-/* resetImageData（bundle 30540-30548 逐字；controller 闭包函数 → 域内移植） */
-function machineryResetImageData(s: any, images: any[]): void {
-  const w = window as any;
-  if (s.viewMode == "all" || (s.currentFolder && images[0].folders[0] && images[0].folders.indexOf(s.currentFolder.id) > -1) || (images[0].folders && images[0].folders.length === 0 && s.viewMode == "unfiled")) {
-    w.resetNgGridLayoutData(s.allData, 0);
-    scopeEvalAsync();
-  }
-}
 
 /* prependImages（bundle 30524-30538 逐字；prependImagesTimeout 域内自管。
    原码 updateView 参数未使用，逐字保留签名） */
-export function machineryPrependImages(s: any, images: any[], updateView: any): void {
-  for (var i = 0; i < images.length; i++) {
-    s.itemMappings[images[i].id] = images[i];
-  }
-
-  if (images[0].id) {
-    s.allData.unshift(images[0]);
-    syncListFromScope();
-    clearTimeout(prependImagesTimeout);
-    prependImagesTimeout = setTimeout(function () {
-      machineryResetImageData(s, images);
-    }, 500);
-  }
-}
 
 /* autoResizeTagFilter（bundle 43119-43128 逐字；controller 闭包函数 → 域内移植） */
 function machineryAutoResizeTagFilter(s: any): void {
@@ -1100,229 +631,6 @@ export function machineryToggleSlideshow(s: any): void {
    依赖：window.* 全局（$/FileUrlHelper/fileSize/fontFolder/sanitize/installedFonts/i18n/
    VIDEO_TYPES/AUDIO_TYPES/FONT_TYPES/SPECIAL_TYPES）、$filter 经 injector（duration/domainName/
    date）、fs 经 window.require('fs')、TagManager/listMetaType 经 scope 字段） */
-export function machineryUpdateItemView(s: any, item: any): void {
-  const w = window as any;
-  const fs = w.require && w.require('fs');
-
-  if (!item) return;
-  try {
-    var id = item.id;
-    var $element = q("#box-" + id) as HTMLElement | null;
-    if (!$element) return;
-    const findEl = (sel: string) => $element!.querySelector(sel) as HTMLElement | null;
-    var $name = findEl(".name span");
-    var $iconName = findEl(".ext-icon-name");
-    var $metas = findEl(".metas");
-    var $propTags = findEl(".prop.tags");
-    var $propResolution = findEl(".prop.resolution");
-    var $propRating = findEl(".prop.rating");
-    var $propSize = findEl(".prop.size");
-    var isSelected = s.selectedMappings[id];
-    var tags = item.tags || [];
-    var isTagged = tags.length > 0;
-    var $annotationCount = findEl(".annotation-count");
-    var ratingStrings: any = {
-      "undefined": "★★★★★",
-      "0": "★★★★★",
-      "1": "<y>★</y>★★★★",
-      "2": "<y>★★</y>★★★",
-      "3": "<y>★★★</y>★★",
-      "4": "<y>★★★★</y>★",
-      "5": "<y>★★★★★</y>",
-    };
-    var tagsFormated = "-";
-    if (item.tags && item.tags.length) {
-      var tags2 = item.tags.map(function (tag: any) {
-        try {
-          return `<div class="tag color-${s.TagManager.tagMappings[tag].color}">${tag}</div>`;
-        } catch (err) { /* noop */ }
-      });
-      tagsFormated = tags2.join("");
-    }
-
-    $element.setAttribute("data-height", item.height);
-    $element.setAttribute("data-width", item.width);
-
-    if (textEl($name) !== item.name) {
-      if (!s.modifiedMappings[item.id]) s.modifiedMappings[item.id] = 0;
-      s.modifiedMappings[item.id]++;
-      let src = w.FileUrlHelper.getLastestThumbnailUrl(item);
-      var $img = findEl(".thumbnail img");
-      if ($img) {
-        $img.setAttribute("lazysrc", "");
-        $img.setAttribute("lsrc", src);
-        $img.setAttribute("raw", src);
-      }
-      // 確保不是在編輯模式
-      if (!$name?.parentElement?.classList.contains('editable')) {
-        if ($name) $name.textContent = item.name;
-        if ($iconName) $iconName.textContent = item.name;
-      }
-    }
-
-    if (item.comments && item.comments.length > 0) {
-      $element.classList.add("has-annotation");
-      if ($annotationCount) $annotationCount.textContent = String(item.comments.length);
-    }
-    else {
-      $element.classList.remove("has-annotation");
-    }
-
-    $element.classList.remove("bg-light", "bg-dark", "bg-gray", "bg-grid");
-    if (item.background) {
-      $element.classList.add(`bg-${item.background}`);
-    }
-
-    var metas = '';
-    const $filter = getFilter();
-    switch (s.listMetaType) {
-      case 'RESOLUTION':
-        if (item.duration && w.VIDEO_TYPES[item.ext]) {
-          metas = $filter('duration')(item.duration);
-        }
-        else if (item.duration && w.AUDIO_TYPES[item.ext]) {
-          metas = $filter('duration')(item.duration);
-        }
-        else if (item.fontMetas && w.FONT_TYPES[item.ext]) {
-          metas = item.fontMetas.weight;
-        }
-        else if (item.noPreview) {
-          metas = `${w.fileSize(item.size, 1)}`;
-        }
-        else if (w.SPECIAL_TYPES[item.ext]) {
-          metas = `${w.fileSize(item.size, 1)}`;
-        }
-        else if (item.ext === "url") {
-          if (item.duration) {
-            metas = $filter('duration')(item.duration);
-          }
-          else {
-            metas = $filter('domainName')(item.url);
-          }
-        }
-        else {
-          metas = item.width + " x " + item.height;
-        }
-        if (item.ext === "txt") {
-          var paragraphs = item.text.split("\n");
-          var paragraphsHTML = "";
-          paragraphsHTML += `<h4>${item.name.trim()}</h4>`;
-          paragraphs.forEach(function (paragraph: any) {
-            paragraphsHTML += `<p>${paragraph.trim()}</p>`;
-          });
-          setHtml("#box-" + item.id + " .txt-content div", paragraphsHTML);
-        }
-        break;
-      case 'FILESIZE':
-        metas = `${w.fileSize(item.size, 1)}`;
-        break;
-      case 'TYPE':
-        metas = item.ext && item.ext.toUpperCase();
-        break;
-      case 'MTIME':
-        var mtime = item.mtime || item.modificationTime;
-        metas = $filter("date")(item.mtime || item.modificationTime, "yyyy/MM/dd HH:mm");
-        break;
-      case 'BTIME':
-        var btime = item.btime || item.modificationTime;
-        metas = $filter("date")(item.btime || item.modificationTime, "yyyy/MM/dd HH:mm");
-        break;
-      case 'TAGS':
-        metas = tagsFormated;
-        break;
-      case 'RATING':
-        metas = `<span class="small star">${ratingStrings[item.star]}</span>`;
-        break;
-    }
-    if ($metas) $metas.innerHTML = metas;
-
-    if ($propTags) $propTags.innerHTML = tagsFormated;
-    if (item.width) {
-      if ($propResolution) $propResolution.innerHTML = `${item.width} x ${item.height}`;
-    }
-    else {
-      if ($propResolution) $propResolution.innerHTML = `-`;
-    }
-    if ($propRating) $propRating.innerHTML = `<span class="small star">${ratingStrings[item.star]}</span>`;
-    if ($propSize) $propSize.innerHTML = `${w.fileSize(item.size, 1)}`;
-
-    if (isSelected) {
-      $element.classList.add("selected");
-    }
-    else {
-      $element.classList.remove("selected");
-    }
-
-    if (isTagged) {
-      $element.classList.add("tagged");
-    }
-    else {
-      $element.classList.remove("tagged");
-    }
-
-    const imgs = Array.from($element.querySelectorAll("img"));
-    imgs.forEach((im) => im.classList.remove("r2", "r3", "r4", "r5", "r6", "r7", "r8"));
-    if (item.orientation && !item.noThumbnail) {
-      if (item.orientation === 8) {
-        imgs.forEach((im) => im.classList.add("r8"));
-      }
-      else if (item.orientation === 7) {
-        imgs.forEach((im) => im.classList.add("r7"));
-      }
-      else if (item.orientation === 6) {
-        imgs.forEach((im) => im.classList.add("r6"));
-      }
-      else if (item.orientation === 5) {
-        imgs.forEach((im) => im.classList.add("r5"));
-      }
-      else if (item.orientation === 4) {
-        imgs.forEach((im) => im.classList.add("r4"));
-      }
-      else if (item.orientation === 3) {
-        imgs.forEach((im) => im.classList.add("r3"));
-      }
-      else if (item.orientation === 2) {
-        imgs.forEach((im) => im.classList.add("r2"));
-      }
-
-      if (item.orientation > 4) {
-        if (item.width < item.height) {
-          imgs.forEach((im) => { (im as HTMLElement).style.minWidth = `${item.height / item.width * 100}%`; });
-        }
-        else {
-          imgs.forEach((im) => { (im as HTMLElement).style.width = `${item.height / item.width * 100}%`; });
-        }
-      }
-    }
-
-    if (item.fontMetas && item.fontMetas.postScriptName) {
-      var key = Object.keys(item.fontMetas.postScriptName)[0];
-      var postScriptName = item.fontMetas.postScriptName && item.fontMetas.postScriptName[key];
-      var fontPath = `${w.fontFolder}/${w.sanitize(postScriptName)}.${item.ext}`;
-      var activatedLabel = w.i18n.__("Context.Image.Font.Activate");
-      var deactivatedLabel = w.i18n.__("Context.Image.Font.Deactivate");
-      // 添加正在启用、正在停用状态
-      if (item.activating || item.deactivating) {
-        $element.classList.add("activating");
-      }
-      else if (fs && fs.existsSync(fontPath)) {
-        w.installedFonts[`${postScriptName}_.${item.ext}`] = true;
-        $element.classList.remove("activating");
-        $element.classList.add("activated");
-        findEl(".activate-btn")?.setAttribute("title", deactivatedLabel);
-      }
-      else {
-        w.installedFonts[`${postScriptName}_.${item.ext}`] = false;
-        $element.classList.remove("activating");
-        $element.classList.remove("activated");
-        findEl(".activate-btn")?.setAttribute("title", activatedLabel);
-      }
-    }
-  }
-  catch (err) {
-    console.error(err);
-  }
-}
 
 /* checkTouchIDSupport（bundle 29002-29010 逐字；systemPreferences 经 @electron/remote。
    原码 quirk 逐字保留：非 darwin 平台不写 canUseTouchID（无 else 分支）。bundle 29014/29109
@@ -4032,60 +3340,6 @@ export function machineryQuicklook(s: any, event: any): void {
 
 /* copyImages（bundle 31747-31795 逐字；clipboard 为 renderer 全局（controllerFns 同款裸引）；
    ipcRenderer 统一表达式；RecentFileManager if-absent 接装经 window；notify 走 machinery 版） */
-export function machineryCopyImages(s: any, event: any): void {
-  const w = window as any;
-  if (s.viewMode === 'alltags') {
-    var selectedTags = machineryGetSelectedTags(s);
-    if (selectedTags && selectedTags.length > 0) {
-      w.electron.clipboard.writeText(selectedTags.join(","));
-      s.notify({
-        message: getFilter()('i18n')("Context.Tag.Copy.Success"),
-        duration: 1000
-      });
-    }
-  }
-  else {
-    if (s.$root.currentFocus == "sidebar") {
-      if (s.$root.selectedFolders.length > 0) {
-        let copyText = "";
-        s.$root.selectedFolders.forEach(function (folder: any, index: any) {
-          copyText += folder.name;
-          if (index < s.$root.selectedFolders.length - 1) {
-            copyText += "\n";
-          }
-        });
-        w.electron.clipboard.writeText(copyText);
-      }
-      else if (s.$root.selectedSmartFolders.length > 0) {
-        let copyText = "";
-        s.$root.selectedSmartFolders.forEach(function (folder: any, index: any) {
-          copyText += folder.name;
-          if (index < s.$root.selectedSmartFolders.length - 1) {
-            copyText += "\n";
-          }
-        });
-        w.electron.clipboard.writeText(copyText);
-      }
-      else if (s.currentSmartFolder) {
-        w.electron.clipboard.writeText(s.currentSmartFolder.name);
-      }
-      else if (s.currentFolder) {
-        w.electron.clipboard.writeText(s.currentFolder.name);
-      }
-    }
-    else if (s.selected.length > 0) {
-      const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-      ipc.sendTo(w.backgroundWindowID, 'copy-images', s.selected);
-      w.RecentFileManager.addFiles(s.selected);
-      setTimeout(function () {
-        s.notify({
-          message: getFilter()('i18n')("previewWindow.copied"),
-          duration: 1000
-        });
-      }, 150);
-    }
-  }
-}
 
 /* ── c18e-4：方向键/修饰键 handler 族（第一批）───────────────────────── */
 
@@ -4906,11 +4160,6 @@ export function machinerySaveHandler(s: any): void {
 
 /* createTxtFileFromTemplate（bundle 37329-37334 逐字；newFileFromTemplate 为 bundle scope
    函数经 scope 解析——文件创建域后续独立切片） */
-export function machineryCreateTxtFileFromTemplate(s: any, event: any): void {
-  event && event.preventDefault();
-  machineryNewFileFromTemplate(s, "txt");
-  scopeEvalAsync();
-}
 
 /* setFolderCover（bundle 41438-41454 逐字；FileUrlHelper 经 window、getFilter() 复刻
    $filter('i18n')、notify/saveFolder 走 machinery 版） */
@@ -5104,12 +4353,6 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
 
 /* getItemByElement（bundle 21834-21839 逐字：data-box-id 属性 → itemMappings；含
    element.id.replace("box-") 旧实现注释逐字保留） */
-export function machineryGetItemByElement(s: any, element: any): any {
-  if (!element) return "";
-  // var id = element.id.replace("box-", "");
-  var id = element.getAttribute("data-box-id");
-  return s.itemMappings[id];
-}
 
 /* changeStar（bundle 30320-30381 逐字：空选守卫 + 零星单选无星守卫 + checkOperationSafety
    包装两分支——刪除星星（filterCounts rating 0/原星数增减 + delete image.star）与设置星星
@@ -5568,43 +4811,6 @@ export function machineryFilterContent(s: any, type?: any): void {
 /* newFileFromTemplate（bundle 37336-37374 逐字：resourcesPath/EAGLE_THUMBNAIL_TEMP_PATH 为
    bundle 顶层 var 经 window、fs/path 经 window.require、i18n/FileUrlHelper 经 window、
    uploadFiles/showUploadQueue 经 scope 解析、electronLog 兜底 catch） */
-export function machineryNewFileFromTemplate(s: any, ext: any): void {
-  const w = window as any;
-  const fs = w.require('fs');
-  const path = w.require('path');
-
-  const templatePath = path.normalize(`${w.resourcesPath}/templates/Untitled.${ext}`);
-  if (!fs.existsSync(templatePath)) return;
-
-  const newFilePath = `${w.EAGLE_THUMBNAIL_TEMP_PATH}/Untitled.${ext}`;
-  const filePath = newFilePath;
-  try {
-    const templateContent = fs.readFileSync(templatePath);
-    fs.writeFileSync(newFilePath, templateContent);
-
-    const file: any = {
-      name: w.i18n.__("general.untitled.title"),
-      path: filePath,
-      lastModified: Date.now()
-    };
-
-    if (s.currentFolder && s.currentFolder.id) {
-      file.folders = [s.currentFolder.id];
-      if (s.currentFolder.extendTags) {
-        file.tags = s.currentFolder.extendTags;
-        file.tags = [...new Set(file.tags)];
-      }
-    }
-    uploadFiles([file]);
-    machineryShowUploadQueue(s);
-
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-    ipc.send('electron-info', `[app] Create file from [Untitled.${ext}]`);
-  }
-  catch (err: any) {
-    w.electronLog && w.electronLog.error(err.stack || err);
-  }
-}
 
 /* ── c18g-2：视图开启器族（random/unfiled/untagged/recent/community/allTags/trash）── */
 
@@ -5824,30 +5030,9 @@ export function machineryGetSelectedTags(s: any): string[] {
 }
 
 
-// ── b1-4a 域内自管（原 controller 闭包 var：checkListItemsLessThanContainerTimeout 33661
-//    邻域 / changeListHeightTimeout 33745 邻域）──
-let checkListItemsLessThanContainerTimeout: any = null;
 
 /* checkListItemsLessThanContainer（bundle 33658-33674 逐字：<180 项时 500ms 后量
    box-list 高度不足一屏则 ig.trigger("append") 一次載入兩頁） */
-export function machineryCheckListItemsLessThanContainer(s: any): void {
-  const w = window as any;
-  if (!w.ig) return;
-  if (w.ig.getItems().length < 180) {
-    clearTimeout(checkListItemsLessThanContainerTimeout);
-    checkListItemsLessThanContainerTimeout = setTimeout(function () {
-      console.log("checkListItemsLessThanContainer");
-      // 如果列表尺寸很小，一次載入兩頁
-      var boxList = q("#box-container .box-list") as HTMLElement | null;
-      if (boxList && boxList.style) {
-        var boxListHeight = parseInt(boxList.style.height);
-        if (boxListHeight < heightOf(q("#box-container"))) {
-          w.ig.trigger("append");
-        }
-      }
-    }, 500);
-  }
-}
 
 /* updateSubFolderWidth（bundle 33676-33688 逐字：容器宽 → 列数 → 38+10col 修正 →
    5 取整 → 下限 90 → MAX_LIST_WIDTH 封顶 → imageSize.subfolderWidth） */
@@ -5872,42 +5057,9 @@ export function machineryUpdateSubFolderWidth(s: any): void {
    thumbSize 键持久化（currentFolder/smartFolder/tag/viewMode 九分支键逐字）+ 即时
    box-size 属性 + relayout + scrollToCurrentItem（machinery 版）） */
 
-/* scrollToCurrentItem（bundle 34118-34130 逐字：selected 末盒 posy 属性 → 容器居中定位） */
-export function machineryScrollToCurrentItem(s: any): void {
-  const w = window as any;
-  if (s.selected.length > 0) {
-    var $lastItem = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
-    if ($lastItem) {
-      let y = $lastItem.getAttribute("posy");
-      if (y != null) {
-        let offsetTop = heightOf(q("#box-container")) / 2 - heightOf($lastItem) / 2;
-        setScrollTop("#box-container", parseInt(y as any) - offsetTop);
-      }
-    }
-  }
-}
 
 /* forceFitImageSize（bundle 36481-36497 逐字：详情模式限定 + detail-image 尺寸直设 +
    usingThumbnail 分支（animated/orientation → getRawUrl，否则 thumbnail URL）） */
-export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: any): void {
-  const w = window as any;
-  if (!image) return;
-  if (!s.isDetailMode) return;
-  if (qa("#detail-image").length === 0) return;
-  cssSet("#detail-image", {
-    width: image.width,
-    height: image.height,
-    transition: 'none'
-  });
-  if (usingThumbnail) {
-    if (image.animated || (image.orientation && image.orientation !== 1)) {
-      setAttr("img#detail-image", "src", callExternal('getRawUrl', image));
-    }
-    else {
-      setAttr("img#detail-image", "src", w.FileUrlHelper.getThumbnailUrl(image));
-    }
-  }
-}
 
 /* ── b1-4b：sortData/offsetScrollbar/updateFilterCounts ──────────────── */
 
@@ -5932,119 +5084,6 @@ if (!(Array.prototype as any).shuffle) {
    FILESIZE/RATING/DURATION/MANUAL（orderMappings 预登记 20x 优化 + folderId 取
    currentFolder.id）/BTIME/MTIME（降序无相等分支）/RANDOM（shuffle 原型扩展）/TAGS
    （首标签 collator）/default modificationTime 降序；languageBCP 经 window） */
-export function machinerySortData(s: any, data: any, orderBy: any): any {
-  const w = window as any;
-  let clone = data.slice();
-  console.time("sortRawData");
-  switch (orderBy) {
-    case 'NAME':
-      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
-      clone.sort(function (a: any, b: any) {
-        return collator.compare(a.name, b.name);
-      });
-      break;
-    case 'EXT':
-      var collator2 = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
-      clone.sort(function (a: any, b: any) {
-        return collator2.compare(a.ext, b.ext);
-      });
-      break;
-    case 'RESOLUTION':
-      clone.sort(function (a: any, b: any) {
-        var ra = a.width * a.height;
-        var rb = b.width * b.height;
-        if (ra > rb) return 1;
-        if (ra < rb) return -1;
-        return 0;
-      });
-      break;
-    case 'FILESIZE':
-      clone.sort(function (a: any, b: any) {
-        var sizeA = parseInt(a.size);
-        var sizeB = parseInt(b.size);
-        if (sizeA > sizeB) return 1;
-        if (sizeA < sizeB) return -1;
-        return 0;
-      });
-      break;
-    case 'RATING':
-      clone.sort(function (a: any, b: any) {
-        var starA = parseInt(a.star) || 0;
-        var starB = parseInt(b.star) || 0;
-        if (starA > starB) return 1;
-        if (starA < starB) return -1;
-        return 0;
-      });
-      break;
-    case 'DURATION':
-      clone.sort(function (a: any, b: any) {
-        var durationA = parseInt(a.duration) || 0;
-        var durationB = parseInt(b.duration) || 0;
-        if (durationA > durationB) return 1;
-        if (durationA < durationB) return -1;
-        return 0;
-      });
-      break;
-    case 'MANUAL':
-      console.time("MANUAL");
-      // Note: 使用 mapping 先记录 order 数据，在 sort 函式就不需要使用 _.get 来获取，这样能提升 20x 性能
-      var orderMappings: any = {};
-      var folderId = s.currentFolder.id;
-      for (var i = 0; i < data.length; i++) {
-        var item = data[i];
-        if (item.order && item.order[folderId]) { orderMappings[item.id] = item.order[folderId] }
-        else { orderMappings[item.id] = item.modificationTime + ''; }
-      }
-
-      clone.sort(function (a: any, b: any) {
-        var aTime = orderMappings[a.id];
-        var bTime = orderMappings[b.id];
-        if (aTime > bTime) return -1;
-        else if (aTime < bTime) return 1;
-        else { return 0; }
-      });
-
-      console.timeEnd("MANUAL");
-      break;
-    case 'BTIME':
-      clone.sort(function (a: any, b: any) {
-        var btimeA = a.btime || a.modificationTime;
-        var btimeB = b.btime || b.modificationTime;
-        if (btimeA > btimeB) return -1;
-        if (btimeA < btimeB) return 1;
-      });
-      break;
-    case 'MTIME':
-      clone.sort(function (a: any, b: any) {
-        var mtimeA = a.mtime || a.modificationTime;
-        var mtimeB = b.mtime || b.modificationTime;
-        if (mtimeA > mtimeB) return -1;
-        if (mtimeA < mtimeB) return 1;
-      });
-      break;
-    case 'RANDOM':
-      clone.shuffle();
-      break;
-    case 'TAGS':
-      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator3 = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
-      clone.sort(function (a: any, b: any) {
-        const aTag1 = a?.tags?.[0] ?? '';
-        const bTag1 = b?.tags?.[0] ?? '';
-        return collator3.compare(aTag1, bTag1);
-      });
-      break;
-    default:
-      clone.sort(function (a: any, b: any) {
-        if (a.modificationTime > b.modificationTime) return -1;
-        else if (a.modificationTime < b.modificationTime) return 1;
-        return 0;
-      });
-  }
-  console.timeEnd("sortRawData");
-  return clone;
-}
 
 /* offsetScrollbarImm（bundle 34140-34166 逐字：delay||1 后 selected 末盒居中 scrollTo；
    无选中时防越界（末盒 transform Y 与 scrollTop 比较）+ updateContainerHieght（machinery
@@ -6171,42 +5210,9 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
 /* addToRecentFile（bundle 36435-36443 逐字：1s 后 current 换人则不记（已換人 console）→
    RecentFileManager.addFile（c14c 版经 window if-absent）） */
 
-// ── b1-5 域内自管（原 controller 闭包 var：preloadImageTimeout 36447 邻域）──
-let preloadImageTimeout: any = null;
 
 /* preloadImage（bundle 36449-36481 逐字：supportFoamts **typo 逐字保留** + currentIndex()
    + next 为 idx / prev 为 idx-2 + smoothZoom('preload') 100ms 防抖） */
-export function machineryPreloadImage(s: any, mode: any): void {
-  const w = window as any;
-  const supportFoamts: any = {
-    "jpg": true,
-    "jpeg": true,
-    "png": true,
-    "webp": true,
-    "avif": true,
-    "insp": true,
-    "jfif": true,
-    "jpe": true,
-    "jxl": true,
-    "bmp": true,
-  };
-  clearTimeout(preloadImageTimeout);
-  preloadImageTimeout = setTimeout(function () {
-    const idx = machineryCurrentIndex(s);
-    const nextImage = s.allData[idx];
-    const preImage = s.allData[idx - 2];
-    if (mode === "next") {
-      if (nextImage && supportFoamts[nextImage?.ext]) {
-        detailZoom()?.preload( nextImage);
-      }
-    }
-    else {
-      if (preImage && supportFoamts[preImage?.ext]) {
-        detailZoom()?.preload( preImage);
-      }
-    }
-  }, 100);
-}
 
 /* ── b1-5b：homeHandler/endHandler（mod 上下委派目标）─────────────────── */
 
@@ -6368,12 +5374,6 @@ export function machineryRemoveSelectedSmartFolders(s: any): void {
 
 /* ── b1-7a：小件批（注释模式/详情淡出/插件面板/存库防抖/标签群组四向/删群组）── */
 
-/* toggleCommentMode（bundle 21166-21169 逐字） */
-export function machineryToggleCommentMode(s: any, event: any): void {
-  event.preventDefault();
-  s.isCommentMode = !s.isCommentMode;
-  syncDetailFromScope();
-}
 
 /* fadeOutDetailMode（bundle 31672-31678 逐字：selected 首盒 popdown 100ms） */
 export function machineryFadeOutDetailMode(s: any): void {
@@ -6659,11 +5659,6 @@ export function machinerySearchInAll(s: any): void {
    30591 逐字：svg/tif/tiff 排除 + getHashID（Tier-2）+ 垃圾桶排除） */
 
 
-export function machineryRemoveFromDuplicateMapping(s: any, image: any): void {
-  const w = window as any;
-  var hashID = w.getHashID(image);
-  delete s.duplicateMappings[hashID];
-}
 
 /* openDuplicate（bundle 36944-36974 逐字：selected/currentPage/all 三档
    OPEN_DUPLICATE_SCAN_PANEL 广播，selected 档含合并回调过滤 isDeleted） */
@@ -6734,97 +5729,19 @@ export function machineryToggleSelectSmartFolder(s: any, event: any, smartFolder
 /* ── b1-9bz-C-4：缩略图放大/还原（自 selectionViewDomain 迁入；原 domainEnlarge/ShrinkThumbnails
    随 imageSize.height watcher 退役改为写入点直调，故实现迁到本模块 —— 本模块不能被域反向
    import（循环），而域可以 import 本模块） ── */
-let machineryEnlargeThumbnailsTimeout: any = null;
-export function machineryEnlargeThumbnails(): void {
-  clearTimeout(machineryEnlargeThumbnailsTimeout);
-  machineryEnlargeThumbnailsTimeout = setTimeout(() => {
-    console.time("enlargeThumbnails");
-    const boxes = qa(".box.show.jpg, .box.show.png, .box.show.webp, .box.show.bmp, .box.show.jfif")
-      .filter((e) => !e.classList.contains("enlarge-thumbnail"));
-    const imgs = boxes.flatMap((b) => Array.from(b.querySelectorAll(".thumbnail img")) as HTMLElement[]);
-
-    imgs.forEach((img) => {
-      const box = img.parentElement?.parentElement as HTMLElement | null;
-      const rawsrc = getAttr(img, 'raw');
-      if (rawsrc) {
-        setAttrEl(img, 'src', rawsrc);
-        if (box) addClassEl(box, "enlarge-thumbnail");
-      }
-    });
-    console.timeEnd("enlargeThumbnails");
-  }, 600);
-}
-
-let machineryShrinkThumbnailsTimeout: any = null;
-export function machineryShrinkThumbnails(): void {
-  clearTimeout(machineryShrinkThumbnailsTimeout);
-  machineryShrinkThumbnailsTimeout = setTimeout(() => {
-    console.time("shrinkThumbnails");
-    const boxes = qa(".box.enlarge-thumbnail.jpg, .box.enlarge-thumbnail.png, .box.enlarge-thumbnail.webp, .box.enlarge-thumbnail.bmp, .box.enlarge-thumbnail.jfif");
-    const imgs = boxes.flatMap((b) => Array.from(b.querySelectorAll(".thumbnail img")) as HTMLElement[]);
-
-    imgs.forEach((img) => {
-      const box = img.parentElement?.parentElement as HTMLElement | null;
-      const lsrc = getAttr(img, 'lsrc');
-      if (lsrc) {
-        setAttrEl(img, 'src', lsrc);
-        if (box) removeClassEl(box, "enlarge-thumbnail");
-      }
-    });
-    console.timeEnd("shrinkThumbnails");
-  }, 600);
-}
-
-/** imageSize.height 变化后的统一处理（原 $watch("imageSize.height") 的 listener）。 */
-export function machineryOnImageSizeHeightChanged(s: any): void {
-  if (!s || !s.imageSize) return;
-  machineryUpdateSubFolderWidth(s);
-  machineryUpdateListSlider(s, s.imageSize.height);
-  if (s.imageSize.height > 600 && s.showOriginalImageWhenLarge) {
-    machineryEnlargeThumbnails();
-  }
-  else {
-    machineryShrinkThumbnails();
-  }
-}
 
 
-/* changeMetaItems（bundle 37273-37278 逐字） */
-export function machineryChangeMetaItems(s: any, type: any): void {
-  const w = window as any;
-  s.listMetaType = type;
-  syncPanelFromScope();
-  w.localStorage.setItem("eagle.list.meta.type", s.listMetaType);
-  machineryUpdateItemsView(s, s.allData);
-  w.electronLog && w.electronLog.info(`[app] Change list display info: ${s.listMetaType}`);
-}
+
+
 
 /* moveToFolders（bundle 43242-43251 逐字：MOVE_TO_FOLDER 广播（folderList 活对象））
    b1-9ba：该频道全树无 $on 接收者（原接收者随 bundle 摘除退役，js/directives 侧文件
    从未挂载）——广播体移除，函数保形（快捷键 'move-to-folders' 入口与 s.moveToFolders
    挂载面不变；移动到文件夹竖切时按 React 语义归位）。 */
 
-// ── b1-7d-3 域内自管（原 controller 闭包 var：addImageTimeLeftInterval 45319 邻域）──
-let addImageTimeLeftInterval: any = null;
 
 /* calcuteAddImageTimeLeft（bundle 45326-45338 逐字闭包：**is.number——is.min.js 为孤儿
    文件（index.html 未加载），bundle 同引用同样潜在崩——w.is 镜像同语义**） */
-function machineryCalcuteAddImageTimeLeft(s: any): void {
-  const w = window as any;
-  if (s.uploadQueue.length > 0) {
-    if (!s.addImageStartTime) {
-      s.addImageStartTime = Date.now();
-    }
-    var elapsedTime = (new Date().getTime()) - s.addImageStartTime;
-    var chunksPerTime = s.finishQueue.length / elapsedTime;
-    var estimatedTotalTime = s.uploadQueue.length / chunksPerTime;
-    var remain = parseInt((estimatedTotalTime - elapsedTime) / 1000 as any);
-    if (w.is.number(remain)) {
-      s.addImageTimeLeftInSeconds = remain;
-      syncUploadFromScope();
-    }
-  }
-}
 
 /* onDropContainer（bundle 52717-52928 逐字；controller 顶层函数 → 域内移植）
    裸标识符 → window：dragging（bundle 顶层 var，读写均落 window live binding）/
@@ -7059,29 +5976,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
    1s 剩余时间轮询）+ hideUploadQueue（45343-45351 逐字：空队列收面板 +
    updateWindowProgressBar（bundle 49810 **顶层 var throttle 单例 → window 可达**，w.* 直连
    保留原节流实例语义）） */
-export function machineryShowUploadQueue(s: any): void {
-  const w = window as any;
-  if (!s.addImageStartTime) {
-    s.addImageStartTime = Date.now();
-  }
-  addClass("body", "is-uploading");
-  addClass("#upload-queue-progress", "open");
-  removeClass("#upload-queue-progress .progressbar", "ng-hide");
-  setHtml("#upload-queue-progress .message .percentage", s.finishQueue.length + "/" + s.uploadQueue.length);
-  addImageTimeLeftInterval = setInterval(function () {
-    machineryCalcuteAddImageTimeLeft(s);
-    scopeEvalAsync();
-  }, 1000);
-}
 
-export function machineryHideUploadQueue(s: any): void {
-  const w = window as any;
-  if (s.uploadQueue.length === 0) {
-    removeClass("#upload-queue-progress", "open");
-    removeClass("body", "is-uploading");
-    w.updateWindowProgressBar(-1);
-  }
-}
 
 /* importLinks（bundle 26906-26994 逐字：剪贴板 http 预读（**clipboard 裸引 →
    w.electron.clipboard**；is.url → w.is 镜像）+ textarea 校验 swal → 逐链 HEAD 探测分流
@@ -7098,170 +5993,6 @@ export function machineryHideUploadQueue(s: any): void {
    filterCameras 建表副产物（currentFolder 空分支）+ duplicateGroupings 主动扫描（hasColorInfo
    才分组、>1 才成组）；getHashID 为 bundle 2127 顶层函数（w.* 直连，双参）；第二段循环
    var rindex/image/hashID 与首段同名 → *2 后缀（TS 语义同 var 重声明）） */
-export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo: any): void {
-  const w = window as any;
-  var duplicates: any[] = [];
-  var pushedMapping: any = {};
-  var duplicateMappings: any = {};
-
-  s.duplicates = [];
-  s.duplicateGroupings = {};
-
-  if (!s.raw) return;
-
-  if (!hasColorInfo) {
-    duplicateMappings = s.duplicateMappings;
-  }
-  else {
-    duplicateMappings = {};
-  }
-
-  s.duplicateTarget = currentFolder;
-
-  // 全部圖片
-  if (!currentFolder) {
-    // 建立查詢表
-    w.eagle.filter.filterExtensions = {};
-    w.eagle.filter.filterCamerasMapping = {};
-    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
-      var image = s.raw[rindex];
-
-      // Note: 这部分原来放在 rebindRefresh 中，因为不需要重复计算，故放在这里
-      if (w.VIDEO_TYPES[image.ext]) {
-        w.eagle.filter.filterExtensions['video'] = true;
-      } else if (w.AUDIO_TYPES[image.ext]) {
-        w.eagle.filter.filterExtensions[image.ext] = true;
-        w.eagle.filter.filterExtensions['audio'] = true;
-      } else if (w.FONT_TYPES[image.ext]) {
-        w.eagle.filter.filterExtensions['font'] = true;
-      } else {
-        switch (image.ext) {
-          case 'ppt':
-          case 'pptx':
-          case 'potx':
-            w.eagle.filter.filterExtensions['powerpoint'] = true;
-            break;
-          case 'doc':
-          case 'docx':
-            w.eagle.filter.filterExtensions['word'] = true;
-            break;
-          case 'xls':
-          case 'xlsx':
-            w.eagle.filter.filterExtensions['excel'] = true;
-            break;
-          case 'arw':
-          case 'cr2':
-          case 'cr3':
-          case 'crw':
-          case 'dng':
-          case 'erf':
-          case 'nef':
-          case 'nrw':
-          case 'mrw':
-          case 'orf':
-          case 'pef':
-          case 'raf':
-          case 'raw':
-          case 'rw2':
-          case 'sr2':
-          case 'srw':
-          case 'x3f':
-            w.eagle.filter.filterExtensions['raw'] = true;
-            w.eagle.filter.filterExtensions[image.ext] = true;
-            break;
-          default:
-            w.eagle.filter.filterExtensions[image.ext] = true;
-        }
-      }
-
-      if (image.rawMetas) {
-        w.eagle.filter.filterCamerasMapping[image.rawMetas.camera] = true;
-      }
-
-      var hashID = w.getHashID(image, hasColorInfo);
-      if (!hashID) continue;
-      if (image.ext === 'svg') continue;
-      if (image.ext === 'tif') continue;
-      if (image.ext === 'tiff') continue;
-      if (image.isDeleted) continue;
-
-      // NOTE: 如果是用户主动扫描，才计算图片去重复
-      if (hasColorInfo) {
-        if (!s.duplicateGroupings[hashID]) {
-          s.duplicateGroupings[hashID] = [];
-        }
-        s.duplicateGroupings[hashID].push(image);
-      }
-
-      // 如果有東西，裡面的東西跟自己都是那個重複者
-      if (!duplicateMappings[hashID]) {
-        duplicateMappings[hashID] = image;
-      } else {
-        // Note: 下面注解的代码严重影响效能
-        // 优化版
-        if (!pushedMapping[hashID]) {
-          duplicates.push(duplicateMappings[hashID]);
-        }
-        pushedMapping[hashID] = true;
-        duplicates.push(image);
-      }
-    }
-
-    if (Object.keys(w.eagle.filter.filterCamerasMapping).length > 0) {
-      w.eagle.filter.filterCameras = Object.keys(w.eagle.filter.filterCamerasMapping);
-      syncFilterFromScope();
-      w.eagle.filter.filterCameras = w.eagle.filter.filterCameras.sort(function (a: any, b: any) {
-        if (a > b) return 1;
-        if (a < b) return -1;
-        return 0;
-      });
-      syncFilterFromScope();
-    }
-  }
-  else {
-
-    var images = machineryGetFolderImages(s, currentFolder, s.showSubfolderContent);
-    for (var rindex2 = images.length - 1; rindex2 >= 0; rindex2--) {
-
-      var image2 = images[rindex2];
-      var hashID2 = w.getHashID(image2, hasColorInfo);
-      if (!hashID2) continue;
-      if (image2.ext === 'svg') continue;
-      if (image2.ext === 'tif') continue;
-      if (image2.ext === 'tiff') continue;
-      if (image2.isDeleted) continue;
-
-      if (hasColorInfo) {
-        if (!s.duplicateGroupings[hashID2]) {
-          s.duplicateGroupings[hashID2] = [];
-        }
-        s.duplicateGroupings[hashID2].push(image2);
-      }
-
-      // 如果有東西，裡面的東西跟自己都是那個重複者
-      if (!duplicateMappings[hashID2]) {
-        duplicateMappings[hashID2] = image2;
-      } else {
-        // 优化版
-        if (!pushedMapping[hashID2]) {
-          duplicates.push(duplicateMappings[hashID2]);
-        }
-        pushedMapping[hashID2] = true;
-        duplicates.push(image2);
-      }
-    }
-  }
-
-  s.duplicates = duplicates;
-
-  if (hasColorInfo) {
-    var duplicateGroupings = Object.keys(s.duplicateGroupings).map(function (key: any) { return s.duplicateGroupings[key]; });
-    duplicateGroupings = duplicateGroupings.filter(function (group: any) {
-      return group.length > 1;
-    });
-    s.duplicateGroupings = duplicateGroupings;
-  }
-}
 
 
 /* refreshSubfolderList（bundle 27462-27492 逐字：showSubfolderContent 分流 subFolders +
@@ -7347,105 +6078,6 @@ export function machinerySelectFolder(s: any, event: any, folder: any): void {
    w.debounce 直连，200ms immediate）；blur 内 angular.element("body").scope() → getBodyScope()
    （同双轨解析）；重命名数据面 ayncsImagesChange/hiddenByCurrentFilter 为 bundle 顶层函数
    （49667/49600）→ w.* 直连（b1 终审 vendor 提取清单登记）。 */
-export function machineryEnableImageNameEditable(s: any, event: any, $name: any): void {
-  const w = window as any;
-  const el = (($name as any) instanceof HTMLElement ? $name : ($name && $name[0])) as HTMLElement;
-  if (!el) return;
-  if (hasClass(el, "editable")) return;
-  var originalName = textEl(el).trim();
-  el.setAttribute("contenteditable", "true");
-  el.classList.add("editable");
-  el.focus();
-  setTimeout(function () {
-    el.focus();
-    selectText(el);
-    document.execCommand('selectAll', false, null as any);
-  }, 50);
-
-  onEl(el, "mousedown", function (event: any) {
-    event.stopPropagation();
-  });
-
-  onEl(el, "keydown", function (event: any) {
-    var keyCode = event.keyCode;
-    switch (keyCode) {
-      case 13:
-        event.preventDefault();
-        event.stopPropagation();
-        triggerEl(el, "blur");
-        break;
-      case 27:
-        event.preventDefault();
-        event.stopPropagation();
-        setHtmlEl(el, `<span>${originalName}</span>`);
-        exitEditable();
-        break;
-      case 65:
-        if (event.metaKey || event.ctrlKey) {
-          event.preventDefault();
-          event.stopPropagation();
-          document.execCommand('selectAll', false, null as any);
-        }
-        break;
-    }
-  });
-
-  onEl(el, "paste", function (e: any) {
-    e.preventDefault();
-    var text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
-    document.execCommand("insertHTML", false, text);
-  });
-
-  onEl(el, "blur", w.debounce(function () {
-    exitEditable();
-    var $scope = getBodyScope();
-    var newName = textEl(el);
-    if (!newName || !newName.trim()) {
-      setHtmlEl(el, `<span>${originalName}</span>`);
-      return;
-    }
-    if (newName !== originalName && $scope && $scope.selected[0]) {
-
-      var name = newName;
-      var image = $scope.selected[0];
-
-      name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
-      name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
-      name = unescape(name);
-      w.eagle.inspector.newName = name;
-
-      if (emojiRegex.test(name)) {
-        name = name.replace(emojiRegex, '');
-        w.eagle.inspector.newName = name;
-      }
-
-      if (name) {
-        image.oldName = originalName;
-        image.name = name;
-        image.newName = name;
-      }
-      setHtmlEl(el, `<span>${name}</span>`);
-      console.log(`${originalName} > ${name}`);
-      w.ayncsImagesChange([image]);
-      w.hiddenByCurrentFilter([image]);
-      // TagManager.getSuggestTags([image]);
-      scopeEvalAsync();
-      try { w.electronLog && w.electronLog.info(`[app] Change list item's name: ${originalName}(${image.id}) > ${newName}`); } catch (err) { }
-    }
-  }, 200, true));
-
-  function exitEditable() {
-    el.style.whiteSpace = "normal";
-    el.setAttribute("contenteditable", "false");
-    el.classList.remove("editable");
-    offEl(el, "keyup");
-    offEl(el, "keydown");
-    offEl(el, "mousedown");
-    setTimeout(function () {
-      el.style.whiteSpace = "";
-    }, 33);
-  }
-}
 
 /* enableSubFolderNameEditable（bundle 22077-22175 逐字）：子文件夹行内重命名——keydown 27
    还原**无 span 包裹**（与图片版差异原样）+ blur debounce 500ms immediate + selectFolder
@@ -7550,25 +6182,6 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
 /* renameImages（bundle 41480-41496 逐字；controller 闭包函数）：多选 OPEN_RENAME 广播 /
    单选 50ms 后 enableImageNameEditable——**bundle 裸 event 引用（41492）→ w.event**
    （$timeout/setTimeout 回调期 window.event，同 bundle 语义） */
-export function machineryRenameImages(s: any): void {
-  const w = window as any;
-  if (s.selected.length > 1) {
-    openRenameChannel.emit({
-      type: "IMAGE",
-      images: s.selected
-    });
-  }
-  else {
-    var imageId = s.selected[0].id;
-    var $box = q(`#box-${imageId}`);
-    if ($box) {
-      const boxEl = $box;
-      setTimeout(() => {
-        machineryEnableImageNameEditable(s, w.event, boxEl.querySelector(".name"));
-      }, 50);
-    }
-  }
-}
 
 
 

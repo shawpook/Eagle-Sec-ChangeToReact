@@ -18,7 +18,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getToggleFilterByTypeFn, getFilter as machineryGetFilter, machineryNewFileFromTemplate, machineryOpenFilter, machineryToggleSelectSmartFolder } from '../core/dataMachinery';
+import { getToggleFilterByTypeFn, getFilter as machineryGetFilter, machineryOpenFilter, machineryToggleSelectSmartFolder } from '../core/dataMachinery';
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
@@ -36,6 +36,7 @@ import { machineryImportLinks, machineryNewSmartFolder, machineryOpenArtstation,
 import { machineryUpdateContainerHieght } from './gridService';
 import { machineryUpdateZoomRatio, machineryZoomActual, machineryZoomFit } from './viewOpsService';
 import { machineryToggleAllSmartFolderExpand, machineryToggleCurrentLevelSmartFolders } from '../core/libraryDomain';
+import { machineryNewFileFromTemplate } from '../core/itemDomain';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

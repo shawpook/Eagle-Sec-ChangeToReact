@@ -27,13 +27,14 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 // 运行期 ReferenceError（与 initLinkVars 缺失同款的静默-catch 陷阱），补齐解析。
 import { isInFolder } from './itemDomain';
 import { updateSuggestions } from './miscDomain';
-import { machineryCalculateFilterCounts, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryFilterContent, machineryRebindRefresh, machinerySearchInAll } from './dataMachinery';
+import { machineryCalculateFilterCounts, machineryExistInSmartFilter, machineryFilterContent, machinerySearchInAll } from './dataMachinery';
 import { machineryRgbToHex } from '../utils/color';
 import { calculateImageBindingChannel, closeQuickSearchModalChannel, rebindRefreshChannel, resetFilterChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { setScrollTop, removeClass } from '../utils/domQuery';
 
 import { machineryUpdateContainerHieght } from '../services/gridService';
+import { machineryCalculateImageBinding, machineryRebindRefresh } from './itemDomain';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {

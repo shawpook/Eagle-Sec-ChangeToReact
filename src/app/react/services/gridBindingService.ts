@@ -1,5 +1,6 @@
 import { getBodyScope } from '../core/appCore';
-import { machineryCalculateImageBinding } from '../core/dataMachinery';
+
+import { machineryCalculateImageBinding } from '../core/itemDomain';
 /**
  * b1-9bb：网格索引绑定服务 —— calculateImageBinding 热点收编。
  *

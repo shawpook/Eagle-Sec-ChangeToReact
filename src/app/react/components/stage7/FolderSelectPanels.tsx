@@ -10,12 +10,13 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
-import { machineryContentFilter, machineryRebindRefresh } from '../../core/dataMachinery';
+import { machineryContentFilter } from '../../core/dataMachinery';
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
 
 import { machineryChangeSidebarIndex, machinerySmartFolderCount } from '../../core/libraryDomain';
+import { machineryRebindRefresh } from '../../core/itemDomain';
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
  *

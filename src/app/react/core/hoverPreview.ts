@@ -12,9 +12,10 @@
  */
 // @ts-nocheck
 import { getRawUrl } from './itemDomain';
-import { machineryGetItemByElement } from '../core/dataMachinery';
+
 import { dom } from '../utils/domLite';
 
+import { machineryGetItemByElement } from './itemDomain';
 const _w: any = window as any;
 
 let installed = false;

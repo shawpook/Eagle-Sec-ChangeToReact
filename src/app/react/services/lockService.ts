@@ -6,12 +6,13 @@
 import { getBodyScope } from '../core/appCore';
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
-import { machineryCalculateImageBinding, machineryFocusAppUnlockPassword, machineryReload, machineryUpdateSelection } from '../core/dataMachinery';
+import { machineryFocusAppUnlockPassword, machineryReload, machineryUpdateSelection } from '../core/dataMachinery';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, focusOn, valOf, setValEl, addClass, removeClass, offEl } from '../utils/domQuery';
 
 
 import { machineryUpdateSidebarList } from '../core/libraryDomain';
+import { machineryCalculateImageBinding } from '../core/itemDomain';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const electronSettings: any = (window as any).electronSettings;

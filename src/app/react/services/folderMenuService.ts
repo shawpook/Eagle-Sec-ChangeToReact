@@ -17,7 +17,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryExistInSmartFilter, machineryOpenAll, machineryRebindRefresh, machineryReload, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machinerySortRawData, machineryUpdateSelection } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryExistInSmartFilter, machineryOpenAll, machineryReload, machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machinerySortRawData, machineryUpdateSelection } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
@@ -32,6 +32,7 @@ import { machineryNewSmartFolder } from '../core/libraryDomain';
 import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetFolderImages, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder } from '../core/libraryDomain';
 import { machineryCheckOperationSafety2 } from './viewOpsService';
 import { machineryPrependFolder, machineryRemoveFolder, machineryRemoveSmartFolder, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySmartFolderCount, machineryUpdateSidebarList } from '../core/libraryDomain';
+import { machineryCalculateImageBinding, machineryRebindRefresh } from '../core/itemDomain';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

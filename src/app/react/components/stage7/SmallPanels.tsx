@@ -10,12 +10,12 @@ import { filesize } from '../../app/filters';
 import { useTippy } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { getIpc, getCurrentWindow, req } from '../detail/detailHooks';
-import { machineryChangeMetaItems } from '../../core/dataMachinery';
+
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
 import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
-import { machineryRebindRefresh } from '../../core/dataMachinery';
+
 import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
@@ -23,6 +23,7 @@ import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreference
 import { scopeEvalAsync } from '../../global/scopeShim';
 import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../../utils/domQuery';
 
+import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';
 /**
  * 阶段7c-1：小弹窗族接管。
  *

@@ -7410,3 +7410,38 @@ selectionView 簇，随该簇搬迁；否则跨模块写 ESM 导入绑定非法�
 
 **门禁**：`bz-export-check` 无问题（2121 处）；`tsc` **617 → 617 零新增**；`probe LOAD_OK`；
 哨兵 `SENTINEL_OK`；定向 `library-switch`/`empty-trash`/`main-ui-workflow`/`s2-sidebar-dnd` 全绿。
+
+---
+
+## D-1 / Track B / B-10 记录（2026-09-11）
+
+**目标**：`itemDomain` 域簇整体归位 → `core/itemDomain.ts`（**37 个 / 1388 行**）。
+
+**范围（37）**：`machineryCalculateImageBinding`（核心重建机）`machineryUpdateItemView`
+`machineryUpdateItemsView` `machineryPrependImages` `machineryRebindRefresh(Lazy)`
+`machineryResetImageData` `machinerySortData` `machineryFindDupclipate`
+`machineryGetItemByElement` `machineryChangeMetaItems` `machineryToggleCommentMode`
+`machineryForceFitImageSize` `machineryOnImageSizeHeightChanged` `machineryCopyImages`
+`machineryCreateTxtFileFromTemplate` `machineryNewFileFromTemplate`
+`machineryEnableImageNameEditable` `machineryRenameImages` `machineryEnlarge/ShrinkThumbnails`
+`machineryPreloadImage` `machineryShow/HideUploadQueue` `machineryScrollToCurrentItem`
+`machineryCheckListItemsLessThanContainer` `machineryCalcuteAddImageTimeLeft`
+`machineryRemoveFromDuplicateMapping` `machineryFilterSidebarItem` + 私有 timeout 状态
+（`calculateImageBindingTimeout` `rebindRefreshLazyTimeout` `prependImagesTimeout`
+`preloadImageTimeout` `checkListItemsLessThanContainerTimeout` `machineryEnlarge/ShrinkThumbnailsTimeout`
+`addImageTimeLeftInterval`）。
+
+**刻意排除**（写方在域外，跨模块写 ESM 导入绑定非法）：`imageSearchController`（写方
+`machineryFilterDataPart2` 属 filterDomain 簇）、`machinerySortRawData`（依赖私有 `getLanguageBCP`）、
+`machineryReload`（依赖私有 `machineryAutoResizeTagFilter`）。
+
+**新工具**：`tests-tmp/bz-fix-imports.py`——按 `dataMachinery` 的 import 面 / 顶层声明面，
+对 tsc TS2304 缺失名自动分流补装（同模块导入 / dataMachinery 导出导入 / 私有补 export 后导入 /
+全局 `declare const`）。本批一次性补齐 ~50 个符号；`FileUrlHelper` 改从 `./fileUrlHelper` 导入。
+
+**核数**：`dataMachinery.ts` **8805 → 7417 行**（-1388）；顶层声明 **192 → 155**。
+`tsc` **617 → 585**（-32：搬迁后把原 dataMachinery 内一批未声明全局改为显式 import/declare，
+属净修）。
+
+**门禁**：`bz-export-check` 无问题（2178 处）；`probe LOAD_OK`；哨兵 `SENTINEL_OK`；
+定向 `main-ui-workflow`/`txt-update`/`drag-start`/`stage7d6a` 全绿。

@@ -2561,6 +2561,22 @@
 > `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 18（Track A）✅：zoom/currentIndex/quickOpenFolder/showUploadQueue 退役；箭头面 14 → 10（2026-09-11）】**
+>
+> - `zoom`：主窗口无消费面（`machineryZoom` 域内多处直调；preview-window 自有 scope）→ 退役。
+> - `currentIndex`：`detailState.ts` 原 `typeof scope.currentIndex === 'function' ? machineryCurrentIndex(scope) : 0`
+>   守卫 → 去守卫直调；`imageOpsService`/域内已直调 → 退役。
+> - `quickOpenFolder`：Inspector 字符串分发 `call('quickOpenFolder', live)` →
+>   `call(scoped(machineryQuickOpenFolder), live)`；`DuplicateFamily` 的 `body?.quickOpenFolder(...)` →
+>   直调 → 退役。
+> - `showUploadQueue`：`apiServerDomain` 5 处 `bs.showUploadQueue()` → 直调 → 退役。
+> - 箭头面挂载 **14 → 10**。剩余 10 = shims 锚定 2（enter/leaveDetailMode）+ 外部供给 8
+>   （callExternal 7 + onDropContainer 全局面）。另有 `reload` 单例（call-form）1 项。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

@@ -13,7 +13,7 @@ import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, getRootScope } from '../../core/appCore';
-import { machineryOpenUnfiled, machineryRebindRefresh } from '../../core/dataMachinery';
+import { machineryOpenUnfiled, machineryQuickOpenFolder, machineryRebindRefresh } from '../../core/dataMachinery';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
 import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
@@ -1738,7 +1738,7 @@ export function DuplicateModal() {
         {!isNew && (
           <div className="folder">
             {item.folders.length > 0 && (
-              <span onClick={() => body?.quickOpenFolder(folderMappings[item.folders[0]], item)}>{folderMappings[item.folders[0]]?.name}</span>
+              <span onClick={() => body && machineryQuickOpenFolder(body, folderMappings[item.folders[0]], item)}>{folderMappings[item.folders[0]]?.name}</span>
             )}
             {item.folders.length === 0 && (
               <span onClick={() => revealInUnfiled(item)}>{t('modal.duplicate.unfiled')}</span>

@@ -11304,8 +11304,7 @@ export function applyDataMachineryScope(): void {
   const w2 = window as any;
   if (!w2.RecentFileManager) w2.RecentFileManager = buildRecentFileManager();
   // c15：updateSelection/zoom
-  // D-1 A-2：updateSelection 挂载已退役（selectionViewDomain 域内订阅 / apiServerDomain 均 import 直调）
-  s.zoom = () => machineryZoom(s);
+  // D-1 A-2：updateSelection / zoom 挂载已退役（域内/组件均 import 直调；zoom 主窗口无消费面）
   // c15b：adjustLayoutWidth/zoomFit
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
@@ -11340,7 +11339,7 @@ export function applyDataMachineryScope(): void {
   // c18g-2：视图开启器族
   // b1-3：侧栏 prev/next 导航四向
   // b1-4a：滚动/列表辅助族第一批
-  s.currentIndex = () => machineryCurrentIndex(s);
+  // D-1 A-2：currentIndex 挂载已退役（imageOpsService/detailState/域内均 import 直调）
   // b1-4b：sortData/offsetScrollbar/updateFilterCounts（offsetScrollbar 实例经 getOffsetScrollbarFn 单例缓存）
   // b1-5：记忆/预载族
   // b1-5b：homeHandler/endHandler
@@ -11351,10 +11350,10 @@ export function applyDataMachineryScope(): void {
   // b1-7b：幻灯片/锁屏/调色板/布局/过滤入口/多开
   // b1-7c：展开族/重复图/排序/搜索全览
   // b1-7d-1：外部站点/教程/试用/多开/重命名入口/TouchID
-  s.quickOpenFolder = (folder: any, t: any) => machineryQuickOpenFolder(s, folder, t);
+  // D-1 A-2：quickOpenFolder 挂载已退役（Inspector/DuplicateFamily import 直调）
   // b1-7d-2：侧栏树渲染核心
   // b1-7d-3：列表滑条/元信息/移入文件夹/上传队列/链接导入/截屏
-  s.showUploadQueue = () => machineryShowUploadQueue(s);
+  // D-1 A-2：showUploadQueue 挂载已退役（apiServerDomain import 直调）
   // b1-9d 收口：onDropContainer（bundle 顶层 function → 同 window live binding 语义）。
   // 三处消费面都要命中：① smoke/CDP 直接调全局 onDropContainer(...)；② ListRegion
   // scopeFn('onDropContainer') 只在 scope 上找；③ callScope 先查 fns 表再查 scope

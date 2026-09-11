@@ -23,7 +23,7 @@ import { getBodyScope } from './appCore';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryRebindRefresh, machinerySaveFolder, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryRebindRefresh, machinerySaveFolder, machineryShowUploadQueue, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 
 let installed = false;
 
@@ -717,7 +717,7 @@ function machineryAddItemFromPath(params: any): Promise<any> {
       });
     }
 
-    bs.showUploadQueue();
+    machineryShowUploadQueue(bs);
     machineryAddPath(filePath, id, name, website, tags, annotation, star, modificationTime, folderIds, cutMode);
     resolve(id);
   });
@@ -753,7 +753,7 @@ function machineryAddItemFromPaths(params: any): Promise<any> {
         ids.push(id);
         machineryAddPath(filePath, id, undefined, undefined, undefined, undefined, undefined, undefined, folderIds, cutMode);
       });
-      bs.showUploadQueue();
+      machineryShowUploadQueue(bs);
       resolve(ids);
     }
     // v2 支持独立设置标签等属性
@@ -770,7 +770,7 @@ function machineryAddItemFromPaths(params: any): Promise<any> {
         var modificationTime = item.modificationTime;
         machineryAddPath(filePath, id, name, website, tags, annotation, star, modificationTime, folderIds);
       });
-      bs.showUploadQueue();
+      machineryShowUploadQueue(bs);
       resolve(ids);
     }
     else {
@@ -838,7 +838,7 @@ function machineryAddBookmarkItem(params: any): Promise<any> {
     name = name.substr(0, 128);
     name = w.sanitize(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
 
-    bs.showUploadQueue();
+    machineryShowUploadQueue(bs);
 
     var data: any = {
       id: w.guid(),
@@ -907,7 +907,7 @@ function machineryAddItemFromURL(params: any): Promise<any> {
     }
     name = name.substr(0, 128);
     name = w.sanitize(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
-    bs.showUploadQueue();
+    machineryShowUploadQueue(bs);
     if (url.length < 200) {
       w.electronLog.info(`[api] add url: ${url}`);
     }
@@ -949,7 +949,7 @@ function machineryAddItemFromURLs(params: any): Promise<any> {
         return bs.folderMappings[id];
       });
     }
-    bs.showUploadQueue();
+    machineryShowUploadQueue(bs);
     items.forEach(function (item: any) {
       var url = item.url;
       var name = item.name ?? w.guid();

@@ -41,7 +41,7 @@ import { req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
-import { machineryAutoScroll, machineryChangeStar, machineryOpenInspectorTagSelectPanel, machineryOpenInspectorFolderSelectPanel } from '../../core/dataMachinery';
+import { machineryAutoScroll, machineryChangeStar, machineryOpenInspectorTagSelectPanel, machineryOpenInspectorFolderSelectPanel, machineryQuickOpenFolder } from '../../core/dataMachinery';
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
 import { getRawUrl } from '../../core/itemDomain';
@@ -386,7 +386,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
       onClick={(e) => {
         e.stopPropagation();
         const live = getBodyScope()?.folderMappings?.[folderId];
-        if (live) call('quickOpenFolder', live)(e);
+        if (live) call(scoped(machineryQuickOpenFolder), live)(e);
       }}
     >
       <span className="label-item-name">{snapshot.folderName[folderId]}</span>

@@ -20,6 +20,7 @@ export interface DragUi {
 export interface DraggableOptions {
   distance?: number;
   containment?: string | HTMLElement;
+  axis?: 'x' | 'y';
   start?: (event: PointerEvent, ui: DragUi) => void;
   drag?: (event: PointerEvent, ui: DragUi) => void;
   stop?: (event: PointerEvent, ui: DragUi) => void;
@@ -33,14 +34,14 @@ const MARK = '__eagleDraggable';
 
 interface Rect { left: number; top: number; right: number; bottom: number; }
 
-function containmentRect(c: string | HTMLElement | undefined): Rect | null {
+function containmentRect(c: string | HTMLElement | undefined, el: HTMLElement): Rect | null {
   if (!c) return null;
   if (c === 'body' || c === 'html') {
     return { left: 0, top: 0, right: window.innerWidth + window.scrollX, bottom: window.innerHeight + window.scrollY };
   }
-  const el = typeof c === 'string' ? (document.querySelector(c) as HTMLElement | null) : c;
-  if (!el) return null;
-  const r = el.getBoundingClientRect();
+  const target = c === 'parent' ? el.parentElement : (typeof c === 'string' ? (document.querySelector(c) as HTMLElement | null) : c);
+  if (!target) return null;
+  const r = target.getBoundingClientRect();
   return { left: r.left + window.scrollX, top: r.top + window.scrollY, right: r.right + window.scrollX, bottom: r.bottom + window.scrollY };
 }
 
@@ -67,8 +68,8 @@ export function makeDraggable(el: HTMLElement, opts: DraggableOptions = {}): Dra
       started = true;
       opts.start?.(ev, ui);
     }
-    let l = sL + dx;
-    let t = sT + dy;
+    let l = opts.axis === 'y' ? sL : sL + dx;
+    let t = opts.axis === 'x' ? sT : sT + dy;
     if (cont) {
       const ow = el.offsetWidth;
       const oh = el.offsetHeight;
@@ -98,7 +99,7 @@ export function makeDraggable(el: HTMLElement, opts: DraggableOptions = {}): Dra
     sy = ev.clientY;
     sL = el.offsetLeft;
     sT = el.offsetTop;
-    cont = containmentRect(opts.containment);
+    cont = containmentRect(opts.containment, el);
     ui = { helper: hEl, position: { left: sL, top: sT }, originalPosition: { left: sL, top: sT } };
     started = false;
     document.addEventListener('pointermove', onMove);

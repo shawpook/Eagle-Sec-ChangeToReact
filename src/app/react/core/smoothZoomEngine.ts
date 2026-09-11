@@ -16,6 +16,7 @@ import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { machineryGetRatioNonExp } from '../core/dataMachinery';
+import { makeDraggable } from '../components/interactions/draggable';
 
 
 	/*****************************************************************************
@@ -392,10 +393,9 @@ import { machineryGetRatioNonExp } from '../core/dataMachinery';
 			event.stopPropagation();
 		});
 
-		self.scrollbar.navigatorViewport.draggable({ 
+		makeDraggable(self.scrollbar.navigatorViewport[0] as HTMLElement, { 
 			// axis: "x", 
 			// containment: self.scrollbar.navigator, 
-			scroll: false,
 			start: function (event, ui) {
 			},
 			drag: function(event, ui) {
@@ -429,19 +429,18 @@ import { machineryGetRatioNonExp } from '../core/dataMachinery';
 		// 横向 Scrollbar 拖拽
 		self.dragHorizontalStartProgess;
 		self.dragHorizontalOriginal;
-		self.scrollbar.horizontal.draggable({ 
+		makeDraggable(self.scrollbar.horizontal[0] as HTMLElement, { 
 			axis: "x", 
 			containment: "parent", 
-			scroll: false,
 			start: function (event, ui) {
-				var thumbnailWidth = $(event.target).width();
+				var thumbnailWidth = (event.target as HTMLElement).offsetWidth;
 				var left = ui.position.left;
 				var progress = Math.abs(left / (self.sW - thumbnailWidth) * 100);
 				self.dragHorizontalStartProgess = progress;
 				self.dragHorizontalOriginal = self.tX;
 			},
 			drag: function(event, ui) {
-				var thumbnailWidth = $(event.target).width();
+				var thumbnailWidth = (event.target as HTMLElement).offsetWidth;
 				var left = ui.position.left;
 				var progress = Math.abs(left / (self.sW - thumbnailWidth) * 100);
 				if (progress > 100) progress = 100;
@@ -460,19 +459,18 @@ import { machineryGetRatioNonExp } from '../core/dataMachinery';
 		// 横向 Scrollbar 拖拽
 		self.dragVerticalStartProgess;
 		self.dragVerticalOriginal;
-		self.scrollbar.vertical.draggable({ 
+		makeDraggable(self.scrollbar.vertical[0] as HTMLElement, { 
 			axis: "y", 
 			containment: "parent", 
-			scroll: false,
 			start: function (event, ui) {
-				var thumbnailHeight = $(event.target).height();
+				var thumbnailHeight = (event.target as HTMLElement).offsetHeight;
 				var top = ui.position.top;
 				var progress = Math.abs(top / (self.sH - thumbnailHeight - 80) * 100);
 				self.dragVerticalStartProgess = progress;
 				self.dragVerticalOriginal = self.tY;
 			},
 			drag: function(event, ui) {
-				var thumbnailHeight = $(event.target).height();
+				var thumbnailHeight = (event.target as HTMLElement).offsetHeight;
 				var top = ui.position.top;
 				var progress = Math.abs(top / (self.sH - thumbnailHeight - 80) * 100);
 				if (progress > 100) progress = 100;

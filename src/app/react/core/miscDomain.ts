@@ -40,6 +40,7 @@ import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
 import { openErrorChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, qaNot, widthOf, heightOf, hasClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -74,7 +75,6 @@ export function takeoverMiscDomain(): void {
   w.__eagleMiscDomain = diag;
 
   const electronLog: any = w.electronLog || console;
-  const $: any = w.$;
   const swal: any = w.swal;
   const sNow = (): any => getBodyScope();
   const rNow = (): any => getRootScope();
@@ -204,7 +204,7 @@ export function takeoverMiscDomain(): void {
     }).then(function () {
       const s = sNow();
       if (!s) return;
-      const showAlert = s.uploadQueue.length > 0 || s.downloadQueueLength > 0 || s.metadataQueueLength > 0 || s.isCleaningTrash || s.isImporting || $(".progress-dialog.open").not(".library-loading-dialog").length > 0 || $("#saving-progress-bar.open").length > 0;
+      const showAlert = s.uploadQueue.length > 0 || s.downloadQueueLength > 0 || s.metadataQueueLength > 0 || s.isCleaningTrash || s.isImporting || qaNot(".progress-dialog.open", ".library-loading-dialog").length > 0 || !!q("#saving-progress-bar.open");
       const doRelaunch = () => {
         ipc.send("save-cache-file");
         const cw = currentWindow();
@@ -328,8 +328,8 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     setTimeout(function () {
-      s.boxContianerWidth = $("#box-container").width() || s.boxContianerWidth;
-      s.boxContianerHeight = $("#box-container").height() || s.boxContianerHeight;
+      s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+      s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
     }, 200);
     s.isMaximize = true;
     syncToolbarFromScope();
@@ -341,8 +341,8 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     setTimeout(function () {
-      s.boxContianerWidth = $("#box-container").width() || s.boxContianerWidth;
-      s.boxContianerHeight = $("#box-container").height() || s.boxContianerHeight;
+      s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+      s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
     }, 200);
     s.isMaximize = false;
     syncToolbarFromScope();
@@ -378,7 +378,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('confirm-import-eaglepack', function (_e: any, params: any) {
     const s = sNow();
     if (!s) return;
-    if ($("#extract-eaglepack-progress").hasClass("open")) return;
+    if (hasClass(q("#extract-eaglepack-progress"), "open")) return;
 
     const eaglepackPath = params.path;
     const sizeStr = params.sizeStr;
@@ -449,7 +449,7 @@ export function takeoverMiscDomain(): void {
         cw.hide();
       }
     };
-    const showAlert = s.uploadQueue.length > 0 || s.downloadQueueLength > 0 || s.metadataQueueLength > 0 || s.isCleaningTrash || s.isImporting || $(".progress-dialog.open").not(".library-loading-dialog").length > 0 || $("#saving-progress-bar.open").length > 0;
+    const showAlert = s.uploadQueue.length > 0 || s.downloadQueueLength > 0 || s.metadataQueueLength > 0 || s.isCleaningTrash || s.isImporting || qaNot(".progress-dialog.open", ".library-loading-dialog").length > 0 || !!q("#saving-progress-bar.open");
     if (showAlert) {
       if (!swal) { doQuit(); return; }
       const $filter = getFilter();
@@ -692,7 +692,7 @@ export function takeoverMiscDomain(): void {
     try {
       ipc.send('electron-info', "[app] start api server");
       if (w.APIServer && w.APIServer.start) w.APIServer.start();
-      $(window).trigger("resize");
+      window.dispatchEvent(new Event("resize"));
     }
     catch (err) {
       electronLog && electronLog.error((err as any).stack || err);
@@ -703,7 +703,7 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     if (s.isDetailMode) {
-      const video = $(".detail-wrap video")[0];
+      const video = q(".detail-wrap video") as HTMLVideoElement | null;
       if (video && !video.paused) { video.pause(); }
     }
   });
@@ -949,7 +949,7 @@ export function takeoverMiscDomain(): void {
 
   // ── RootController 块：app-expired / change.current.theme / change.zoom ──
   ipc.on('app-expired', function () {
-    $("body").css({
+    cssSet("body", {
       "pointer-events": "none",
       "opacity": "0.3"
     });
@@ -1153,9 +1153,9 @@ export function escHandler(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function($event) {
-            if ($(".swal2-container").length > 0) return;
-            if ($(".select-panel.open:not(.pinned)").length > 0) {
-                $(".select-panel.open").removeClass("open");
+            if (q(".swal2-container")) return;
+            if (q(".select-panel.open:not(.pinned)")) {
+                removeClass(".select-panel.open", "open");
                 return;
             }
             s.selectedFolder = undefined;
@@ -1220,8 +1220,8 @@ export function leaveDetailMode(...args: any[]) {
 
                 setTimeout(function() {
                     if (s.isDetailMode) return;
-                    $(".content-panel.detail-mode").removeClass("inline-mode open");
-                    $(".smooth_zoom_preloader").scrollLeft(0);
+                    removeClass(".content-panel.detail-mode", "inline-mode open");
+                    setScrollLeft(".smooth_zoom_preloader", 0);
                 }, 50);
 
                 s.isInlineMode = false;

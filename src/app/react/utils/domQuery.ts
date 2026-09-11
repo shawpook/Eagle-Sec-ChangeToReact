@@ -79,6 +79,11 @@ export function qaVisible(sel: string): HTMLElement[] {
   return qa(sel).filter(isVisible);
 }
 
+/** jQuery `$(sel).not(x)`（排除匹配 x 的元素）。 */
+export function qaNot(sel: string, notSel: string): HTMLElement[] {
+  return qa(sel).filter((e) => !e.matches(notSel));
+}
+
 /** 事件委托命中：返回冒泡目标上匹配 selector 且仍挂在 body 内的元素（jQuery 委托 `this`）。 */
 export function delegateTarget(ev: any, selector: string): HTMLElement | null {
   const t = ev.target as Element | null;
@@ -254,4 +259,102 @@ export function cssSet(sel: string, styles: Record<string, any>): void {
 /** jQuery `.css({...})` 元素版。 */
 export function setCssEl(el: HTMLElement | null, styles: Record<string, any>): void {
   if (el) applyStyles(el, styles);
+}
+
+/** jQuery `.find(sel)`（首元素）。 */
+export function findEl(el: HTMLElement | null, sel: string): HTMLElement | null {
+  return el ? (el.querySelector(sel) as HTMLElement | null) : null;
+}
+
+/** jQuery `.find(sel)`（全部）。 */
+export function findAllEl(el: HTMLElement | null, sel: string): HTMLElement[] {
+  return el ? (Array.from(el.querySelectorAll(sel)) as HTMLElement[]) : [];
+}
+
+/** jQuery `.attr(name, value)` 元素版。 */
+export function setAttrEl(el: HTMLElement | null, name: string, value: any): void {
+  if (el) el.setAttribute(name, String(value));
+}
+
+/** jQuery `.text(value)` 元素版。 */
+export function setTextEl(el: HTMLElement | null, value: any): void {
+  if (el) el.textContent = String(value);
+}
+
+/** jQuery `.addClass(...)` 元素版。 */
+export function addClassEl(el: HTMLElement | null, ...cls: string[]): void {
+  if (!el) return;
+  const flat = cls.flatMap(classesOf);
+  if (flat.length) el.classList.add(...flat);
+}
+
+/** jQuery `.removeClass(...)` 元素版。 */
+export function removeClassEl(el: HTMLElement | null, ...cls: string[]): void {
+  if (!el) return;
+  const flat = cls.flatMap(classesOf);
+  if (flat.length) el.classList.remove(...flat);
+}
+
+/** jQuery `.width(v)`（内容盒写入）。 */
+export function setWidthEl(el: HTMLElement | null, v: number | string): void {
+  if (el) el.style.width = typeof v === 'number' ? `${v}px` : String(v);
+}
+
+/** jQuery `.height(v)`（内容盒写入）。 */
+export function setHeightEl(el: HTMLElement | null, v: number | string): void {
+  if (el) el.style.height = typeof v === 'number' ? `${v}px` : String(v);
+}
+
+/** jQuery `.val()`（表单控件读取）。 */
+export function valOf(el: HTMLElement | null): string {
+  return el ? String((el as HTMLInputElement).value ?? '') : '';
+}
+
+/** jQuery `.val(v)` 写入。 */
+export function setValEl(el: HTMLElement | null, v: any): void {
+  if (el) (el as HTMLInputElement).value = String(v);
+}
+
+/** jQuery 集合 `.length` 等价（选择器命中数；用于早期存在性/批量判定）。 */
+export function qaLen(sel: string): number {
+  return document.querySelectorAll(sel).length;
+}
+
+/**
+ * jQuery `.data()` 通道：元素内部缓存（WeakMap，写不落 `data-*` 属性）。
+ * 读取未命中时回落 `data-*` 属性并按 jQuery 规则做布尔/数字/JSON 类型转换后缓存。
+ */
+const elData = new WeakMap<HTMLElement, Record<string, any>>();
+
+function dataAttrName(key: string): string {
+  return 'data-' + key.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+}
+
+export function dataGet(el: HTMLElement | null, key: string): any {
+  if (!el) return undefined;
+  const store = elData.get(el);
+  if (store && key in store) return store[key];
+  const attr = el.getAttribute(dataAttrName(key));
+  if (attr == null) return undefined;
+  let v: any = attr;
+  if (v === 'true') v = true;
+  else if (v === 'false') v = false;
+  else if (v === 'null') v = null;
+  else if (/^-?\d+(\.\d+)?$/.test(v)) v = Number(v);
+  else if (/^[[{]/.test(v)) { try { v = JSON.parse(v); } catch { /* 保留字符串 */ } }
+  dataSet(el, key, v);
+  return v;
+}
+
+export function dataSet(el: HTMLElement | null, key: string, value: any): void {
+  if (!el) return;
+  let store = elData.get(el);
+  if (!store) { store = {}; elData.set(el, store); }
+  store[key] = value;
+}
+
+export function dataRemove(el: HTMLElement | null, key: string): void {
+  if (!el) return;
+  const store = elData.get(el);
+  if (store) delete store[key];
 }

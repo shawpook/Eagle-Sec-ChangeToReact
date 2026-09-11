@@ -28,6 +28,7 @@ import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { glRemoveitemsChannel, openDuplicateChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -76,13 +77,12 @@ function domainMuteCalcuteImageBinding(s: any, params: any, callback: any): void
 /* updateItemListView（bundle 34300 逐字；FileUrlHelper/VIDEO_TYPES/AUDIO_TYPES 全局） */
 function domainUpdateItemListView(s: any, generated: any): void {
   const w = window as any;
-  const $ = w.$;
   const FileUrlHelper = w.FileUrlHelper;
   const VIDEO_TYPES = s.VIDEO_TYPES || {};
   const AUDIO_TYPES = s.AUDIO_TYPES || {};
   if (!generated || !s.itemMappings[generated.id]) return;
 
-  const $img = $("#box-" + generated.id + " img");
+  const $imgEl = q("#box-" + generated.id + " img");
   const image = s.itemMappings[generated.id];
   const originWidth = image.width;
   const originHeight = image.height;
@@ -111,12 +111,12 @@ function domainUpdateItemListView(s: any, generated: any): void {
     }
 
     if ("png jpg".indexOf(generated.ext) === -1) {
-      $("#box-" + image.id + " .type-label").text(generated.ext.toUpperCase());
+      setTextEl(q("#box-" + image.id + " .type-label"), generated.ext.toUpperCase());
     }
     else {
-      $("#box-" + image.id + " .type-label").text("");
+      setTextEl(q("#box-" + image.id + " .type-label"), "");
     }
-    $("#box-" + image.id + " .name").attr("data-ext", `.${generated.ext}`);
+    setAttrEl(q("#box-" + image.id + " .name"), "data-ext", `.${generated.ext}`);
 
     if (generated.text && generated.text !== image.text) {
       image.text = generated.text;
@@ -126,7 +126,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
       paragraphs.forEach(function (paragraph: any) {
         paragraphsHTML += `<p>${paragraph.trim()}</p>`;
       });
-      $("#box-" + image.id + " .txt-content div").html(paragraphsHTML);
+      setHtmlEl(q("#box-" + image.id + " .txt-content div"), paragraphsHTML);
     }
 
     if (generated.mtime) { image.mtime = generated.mtime; }
@@ -171,7 +171,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
 
     // 如果尺寸发生改变，才需要重新更新画面排版
     const aspectRatio = `${image.width} / ${image.height}`;
-    const currentAspectRatio = $("#box-" + image.id).find(".thumbnail").css("aspect-ratio");
+    const currentAspectRatio = cssGet(findEl(q("#box-" + image.id), ".thumbnail"), "aspect-ratio");
     if (
       (originHeight !== generated.height && originWidth !== generated.width) ||
       originOrientation !== generated.orientation ||
@@ -194,35 +194,36 @@ function domainUpdateItemListView(s: any, generated: any): void {
     }
 
     if (refreshThumb && !image.noPreview) {
-      const $element = $("#box-" + image.id);
-      $element.find("img").attr("src", FileUrlHelper.getThumbnailUrl(image) + "&v=" + Date.now());
-      $element.find(".thumbnail").css("aspect-ratio", `${image.width} / ${image.height}`);
+      const boxEl = q("#box-" + image.id);
+      setAttrEl(findEl(boxEl, "img"), "src", FileUrlHelper.getThumbnailUrl(image) + "&v=" + Date.now());
+      setCssEl(findEl(boxEl, ".thumbnail"), { "aspect-ratio": `${image.width} / ${image.height}` });
     }
   }
-  if ($img && $img.length > 0 && !image.noPreview) {
-    $img.parent().removeClass("dummy").prop("title", "");
-    const src = $img.attr("src") || $img.attr('lazysrc');
+  if ($imgEl && !image.noPreview) {
+    const parentEl = $imgEl.parentElement;
+    if (parentEl) { removeClassEl(parentEl, "dummy"); parentEl.title = ""; }
+    const src = getAttr($imgEl, "src") || getAttr($imgEl, 'lazysrc');
     let newSrc;
     if (src) {
       if (generated.ext === 'svg') {
         newSrc = FileUrlHelper.getThumbnailUrl(generated) + "?v=" + Date.now();
-        $img.attr("src", newSrc);
-        $img.attr("lazysrc", newSrc);
+        setAttrEl($imgEl, "src", newSrc);
+        setAttrEl($imgEl, "lazysrc", newSrc);
       }
       else if (generated.noThumbnail) {
         newSrc = FileUrlHelper.getThumbnailUrl(generated) + "?v=" + Date.now();
-        $img.attr("src", newSrc);
-        $img.attr("lazysrc", newSrc);
+        setAttrEl($imgEl, "src", newSrc);
+        setAttrEl($imgEl, "lazysrc", newSrc);
       }
       else {
         newSrc = FileUrlHelper.getThumbnailUrl(generated);
         if (newSrc.indexOf("?v") > -1) {
-          $img.attr("src", newSrc + "&v=" + Date.now());
-          $img.attr("lazysrc", newSrc + "&v=" + Date.now());
+          setAttrEl($imgEl, "src", newSrc + "&v=" + Date.now());
+          setAttrEl($imgEl, "lazysrc", newSrc + "&v=" + Date.now());
         }
         else {
-          $img.attr("src", newSrc + "?v=" + Date.now());
-          $img.attr("lazysrc", newSrc + "?v=" + Date.now());
+          setAttrEl($imgEl, "src", newSrc + "?v=" + Date.now());
+          setAttrEl($imgEl, "lazysrc", newSrc + "?v=" + Date.now());
         }
       }
     }
@@ -274,7 +275,6 @@ export function takeoverItemDomain(): void {
   }
 
   const electronLog: any = w.electronLog || console;
-  const $: any = w.$;
 
   const sNow = (): any => getBodyScope();
 
@@ -322,7 +322,8 @@ export function takeoverItemDomain(): void {
       }
     }
 
-    if (w.ig && w.ig.remove) w.ig.remove($("#box-" + id)[0]);
+    const removedBoxEl = q("#box-" + id);
+    if (w.ig && w.ig.remove && removedBoxEl) w.ig.remove(removedBoxEl);
 
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s, true);
@@ -363,7 +364,7 @@ export function takeoverItemDomain(): void {
     if (!s) return;
     if (!s.raw) return;
 
-    const item = $("#box-" + newImage.id)[0];
+    const item = q("#box-" + newImage.id);
     if (item && newImage.isDeleted) {
       glRemoveitemsChannel.emit([item]);
     }
@@ -393,7 +394,7 @@ export function takeoverItemDomain(): void {
 
     const hashID = w.getHashID(newImage);
 
-    const item = $("#box-" + newImage.id)[0];
+    const item = q("#box-" + newImage.id);
     if (item && newImage.isDeleted) {
       glRemoveitemsChannel.emit([item]);
     }
@@ -532,8 +533,8 @@ export function takeoverItemDomain(): void {
 
     // Note: 故意不使用 async 來更新畫面，加速畫面性能
     const progress = s.finishQueue.length / s.uploadQueue.length;
-    $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
-    $("#upload-queue-progress").find(".current").width(progress * 100 + "%");
+    setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
+    setWidthEl(findEl(q("#upload-queue-progress"), ".current"), progress * 100 + "%");
 
     if (progress < 0.97) {
       w.updateWindowProgressBar(progress);
@@ -561,23 +562,23 @@ export function takeoverItemDomain(): void {
     if (!s) return;
     if (!generated || !generated.id || !s.selected || !s.selected[0]) return;
     if (s.selected && s.selected[0] && generated.id === s.selected[0].id) {
-      const $detailImage = $("img#detail-image");
-      if ($detailImage.length) {
+      const detailImageEl = q("img#detail-image");
+      if (detailImageEl) {
         const rawURL = getRawUrl(generated);
-        $detailImage.css({
+        setCssEl(detailImageEl, {
           "transform": `rotate(0deg)`,
           "transition": "none",
           "display": "none"
         });
         const temp = new Image();
         temp.onload = function () {
-          $detailImage.attr("src", rawURL);
+          setAttrEl(detailImageEl, "src", rawURL);
           detailZoom()?.updateNavigator( generated);
 
-          $detailImage.data("degree", 0);
+          dataSet(detailImageEl, "degree", 0);
 
           machineryForceFitImageSize(s, generated);
-          $detailImage.css({
+          setCssEl(detailImageEl, {
             "display": "block"
           });
         };
@@ -752,7 +753,7 @@ export function openFileWithDefault(...args: any[]) {
     if (!s) return;
     return (function (file: any) {
             if (!file || !file.id) return;
-            if ($(".swal2-container").length > 0) { return; }
+            if (q(".swal2-container")) { return; }
             var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
             var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
             IPCHelper.send('open-with-default', rawPath);
@@ -1028,7 +1029,7 @@ export function openInFinder(...args: any[]) {
             if (!s) return;
 
             // 禁止在任何 Modal 开启时，使用这个功能，避免快捷键冲突
-            if ($(".modal.open, .import-modal.open").length > 0) return;
+            if (q(".modal.open, .import-modal.open")) return;
             if (!s.selected.length) return;
 
             var btnLable;
@@ -1087,7 +1088,7 @@ export function openFilesWithDefault(...args: any[]) {
       __cc_openFilesWithDefault = debounce(function(files) {
         const s = getScope();
         if (!s) return;
-        if ($(".swal2-container").length > 0) { return; }
+        if (q(".swal2-container")) { return; }
         machineryCheckOperationSafety(s, function () {
             files.forEach(function (file, index) {
                 if (!file || !file.id) return;
@@ -1298,8 +1299,8 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
       syncUploadFromScope();
       s.uploadQueue = [];
       syncUploadFromScope();
-      $("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
-      $("#upload-queue-progress").find(".current").width(s.finishQueue.length / s.uploadQueue.length * 100 + "%");
+      setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
+      setWidthEl(findEl(q("#upload-queue-progress"), ".current"), s.finishQueue.length / s.uploadQueue.length * 100 + "%");
       machineryHideUploadQueue(s);
 
       // 判斷是否有重複的圖片

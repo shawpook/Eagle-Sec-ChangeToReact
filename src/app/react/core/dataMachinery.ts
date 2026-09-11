@@ -93,6 +93,7 @@ import { machineryColorSimilarityDistance, machineryRgbToHex } from '../utils/co
 import { machineryCloseWindowHandler, machineryDestoryMousetrap, machineryMHandler, machineryModShiftDownHandler, machineryModShiftLeftHandler, machineryModShiftRightHandler, machineryModShiftUpHandler, machineryOpenActionsPanel, machineryOpenQuickSearch } from './keymapActions';
 import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetAncestorFolders, machineryGetChildFoldersMaps, machineryGetFolderImages, machineryGetRecentFolders, machineryRefreshRandom, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder } from './libraryDomain';
 import { buildScrollbarSaver, machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCurrentIndex, machineryGetArroundBox, machineryGotoBottom, machineryGotoTop, machineryOffsetScrollbar, machineryRelayout, machineryRememberScrollTops, machinerySaveListHeight, machineryScrollbarTo, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight, machineryUpdateListSlider } from '../services/gridService';
+import { machineryCheckOperationSafety, machineryCheckOperationSafety2, machineryGetRatioExp, machineryGetRatioNonExp, machineryLastZoom, machinerySetViewMode, machineryToggleZoom, machineryUpdateZoomRatio, machineryZoom, machineryZoomFitEdge, machineryZoomIn, machineryZoomOut } from '../services/viewOpsService';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let calculateImageBindingTimeout: any = null;
 // ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
@@ -1171,27 +1172,10 @@ export function machineryReload(s: any): any {
 
 /* ── c9d：缩放/放映/计数/最近文件夹 ──────────────────────────────────── */
 
-/* getRatioExp（bundle 31336-31341 逐字） */
-export function machineryGetRatioExp(ratio: any): number {
-  if (ratio > 100) {
-    ratio = 100 + (ratio - 100) * 7;
-  }
-  return parseInt(ratio);
-}
 
-/* getRatioNonExp（bundle 31343-31348 逐字） */
-export function machineryGetRatioNonExp(ratio: any): number {
-  if (ratio > 100) {
-    ratio = (ratio - 100) / 7 + 100;
-  }
-  return ratio;
-}
 
 /* updateZoomRatio（bundle 31391-31418 逐字；smoothZoom = vendor jQuery 插件；
    updateZoomRatioTimeout 域内自管） */
-export function machineryUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTransition: any): void {
-  detailUpdateZoomRatio(s, ratio, x, y, hasTransition);
-}
 
 /* toggleSlideshow（bundle 23816-23823 逐字；enter/leaveSlideshowMode 经 scope 解析） */
 export function machineryToggleSlideshow(s: any): void {
@@ -2994,22 +2978,6 @@ function sortTagsForSelection(s: any, original: any): any {
   }
 }
 
-/* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
-export function machineryZoom(s: any): void {
-  const w = window as any;
-  if (!s.isDetailMode) return;
-  if (s.lastZoomMode === "edge") {
-    if (s.current && !w.VIDEO_TYPES[s.current.ext]) {
-      machineryZoomFitEdge(s);
-    }
-    else {
-      machineryZoomFit(s);
-    }
-  }
-  else {
-    machinerySmartZoom(s);
-  }
-}
 
 /* ── c15b：列表高度/缩放适配 ─────────────────────────────────────────── */
 
@@ -3017,10 +2985,6 @@ export function machineryZoom(s: any): void {
    （machinery 内部其余 2 处直调点与 scope 挂载面不变）。 */
 
 
-/* b1-9bd：zoomFit 实现体归位 services/gridService.ts */
-export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
-  gridZoomFit(s, event, noAnimation);
-}
 
 /* ── c15c：选择定位/侧栏索引/页面重置/筛选计数 ───────────────────────── */
 
@@ -3132,17 +3096,6 @@ let openAllTimeout: any = null;
 
 /* setViewMode（bundle 38475-38479 逐字；_.debounce 500——防抖实例为模块级单例，与 bundle
    controller init 同语义） */
-let setViewModeDebounced: any = null;
-export function machinerySetViewMode(s: any, viewMode: any): void {
-  const w = window as any;
-  if (!viewMode) return;
-  if (!setViewModeDebounced) {
-    setViewModeDebounced = debounce(function (vm: any) {
-      localStorage.setItem(`eagle.viewMode.${s.rootDir}`, vm);
-    }, 500);
-  }
-  setViewModeDebounced(viewMode);
-}
 
 /* setLastFolder（bundle 38480-38488 逐字；_.debounce 500 单实例语义同上） */
 let setLastFolderDebounced: any = null;
@@ -3705,177 +3658,14 @@ function cgNotifyServiceCloseAll(): void {
 
 /* ── c18a：smartZoom/lastZoom（详情智能缩放）──────────────────────────── */
 
-/* lastZoom（bundle 31288-31305 逐字；lastItemStates 经 scope 解析） */
-export function machineryLastZoom(s: any): boolean {
-  const w = window as any;
-  if (s.lastZoomMode === "edge") return false;
-  if (s.$root.preferences.habits.rememberLastZoom === "off") return false;
-  if (!s.current) return false;
-  if (s.isInlineMode) return false;
-  var state = s.lastItemStates[s.current.id];
-  if (state && state.data && state.data.tX !== undefined) {
-    detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
-    var ratio = parseInt(state.data.rA * 100 as any);
-    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
-    machineryOnZoomRatioChanged(s);
-    s.imageSize.zoomRatioExp = ratio;
-    return true;
-  }
-  return false;
-}
 
 /* smartZoom（bundle 31209-31334 逐字；devicesMetrics/isMobileResolution/getImagePixelDensity/
    isMobileWidth 经 window（c18a 供给），zoomRatio 换算走 machinery 版） */
-export function machinerySmartZoom(s: any, target: any, forceMode: any): void {
-  detailSmartZoom(s, target, forceMode);
-}
 
 /* ── c18b：详情缩放余部（zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght）── */
 
-/* zoomActual（bundle 33915-33937 逐字） */
-export function machineryZoomActual(s: any, event: any): void {
-  const w = window as any;
-  event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    s.imageSize.height = 150;
-    syncToolbarFromScope();
-    syncBodyFromScope();
-    syncDetailFromScope();
-    syncInspectorFromScope();
-    machineryOnImageSizeHeightChanged(s);
-    machineryChangeListHeight(s);
-    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      machineryAdjustLayoutWidth(s, 0);
-      machinerySaveListHeight(s, s.imageSize.height);
-    }
-  } else {
-    s.imageSize.zoomRatio = 100;
-    machineryOnZoomRatioChanged(s);
-    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
-    machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
 
-    // 如果是視頻格式，尽可能使用视频原来尺寸
-    var mpvPlayer = q(".detail-wrap mpv-video") as any;
-    if (mpvPlayer) {
-      mpvPlayer.scaleMode = 'original';
-    }
-    else {
-      var $videos = qa(".detail-wrap video") as HTMLVideoElement[];
-      if ($videos.length > 0) {
-        var vW = $videos[0].videoWidth;
-        var vH = $videos[0].videoHeight;
-        cssSet(".detail-wrap video", {
-          'max-width': `${vW}px !important`,
-          'max-height': `${vH}px !important`,
-        });
-        addClass(".detail-wrap video", "fit");
-      }
-    }
-  }
-}
 
-/* toggleZoom（bundle 33990-34012 逐字） */
-export function machineryToggleZoom(s: any, event: any): void {
-  const w = window as any;
-  if (!s.isDetailMode) return;
-  if (s.VIDEO_TYPES[s.current.ext]) {
-    if (s.lastZoomMode !== "edge") {
-      machineryZoomFit(s, event);
-      s.lastZoomMode = "edge";
-      syncDetailFromScope();
-      s.zoomFitSize = s.imageSize.zoomRatioExp;
-    }
-    else {
-      machineryZoomActual(s, event);
-      s.lastZoomMode = "fit";
-      syncDetailFromScope();
-      s.zoomFitSize = 0;
-    }
-  }
-  else {
-    if (s.lastZoomMode !== "edge") {
-      machineryZoomFitEdge(s, event, true);
-      s.lastZoomMode = "edge";
-      syncDetailFromScope();
-    }
-    else {
-      machineryZoomFit(s, event);
-      s.lastZoomMode = "fit";
-      syncDetailFromScope();
-    }
-  }
-  localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
-}
-
-/* zoomFitEdge（bundle 34015-34077 逐字） */
-export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): void {
-  const w = window as any;
-  event && event.preventDefault && event.preventDefault();
-
-  if (hasTransition) {
-    addClass("#detail-container", "zooming");
-    setTimeout(function () {
-      removeClass("#detail-container", "zooming");
-    }, 300);
-  }
-
-  var current = s.current;
-  var ratio = s.imageSize.zoomRatio || 100;
-  var lastRatio = ratio;
-  var $container = q(".content-panel");
-  var toolbarHeight = 40;
-  var containerWidth;
-  var containerHeight;
-  var offsetY = 0;
-
-  if (s.isSlideshowMode) {
-    toolbarHeight = 0;
-    containerWidth = window.innerWidth;
-    containerHeight = window.innerHeight - toolbarHeight;
-  }
-  else if (s.isInlineMode) {
-    toolbarHeight = 96;
-    containerWidth = window.innerWidth;
-    containerHeight = heightOf($container) - toolbarHeight;
-  }
-  else {
-    toolbarHeight = 48;
-    containerWidth = widthOf($container);
-    containerHeight = heightOf($container) - toolbarHeight;
-  }
-
-  var a = parseInt((containerHeight) / current.height * 100 as any);
-  var b = parseInt((containerWidth) / current.width * 100 as any);
-  ratio = Math.min(a, b);
-  offsetY = toolbarHeight / 2 * 100 / ratio;
-
-  if (!current) return;
-
-  cssSet("#detail-image", {
-    "transform": `rotate(0deg)`,
-    "transition": "none"
-  });
-
-  var $detailContainer = q("#detail-container");
-  var width = widthOf($detailContainer);
-  var height = current && current.height || heightOf($detailContainer);
-
-  offsetY = offsetY || 0;
-
-  if (ratio) {
-    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
-    machineryOnZoomRatioChanged(s);
-    s.imageSize.zoomRatioExp = ratio;
-    s.zoomFitSize = ratio;
-  }
-  s.showLargeImage = true;
-  detailZoom()?.focusTo( {
-    x: width / 2,
-    y: height / 2 + offsetY,
-    zoom: parseInt(ratio),
-    speed: 0
-  });
-}
 
 
 /* ── c18c：历史导航/撤销 ─────────────────────────────────────────────── */
@@ -5326,13 +5116,7 @@ export function machineryToggleAll(s: any, $event: any): void {
 
 /* b1-9bd：zoomIn/zoomOut 实现体归位 services/gridService.ts（详情分支的 ratio 梯度
    仍经 scope 解析 getRatioExp/getRatioNonExp/updateZoomRatio，S4 详情竖切归位） */
-export function machineryZoomIn(s: any, event: any): void {
-  gridZoomIn(s, event);
-}
 
-export function machineryZoomOut(s: any, event: any): void {
-  gridZoomOut(s, event);
-}
 
 /* saveHandler（bundle 35985-35991 逐字：crop 模式 saveCrop；saveCrop 经 scope 解析） */
 export function machinerySaveHandler(s: any): void {
@@ -6950,78 +6734,7 @@ export function machineryEndHandler(s: any, event: any): void {
 
 /* checkOperationSafety（bundle 26789-26817 逐字：selected ≥ amount 时 BulkAction 确认框
    （swal + i18n），否则/catch 直通 callback） */
-export function machineryCheckOperationSafety(s: any, callback: any, amount: any = 100): void {
-  const w = window as any;
-  try {
-    if (s.selected && s.selected.length >= amount) {
-      var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
-        { "property": "count", "value": s.selected.length },
-      ]);
-      w.swal({
-        html: `
-                            <div class="alert">
-                                <div class="alert-icon warning"></div>
-                                <h4 class="alert-title">${w.i18n.__("Dialog.BulkAction.Title")}</h4>
-                                <p class="alert-desc">${html}</p>
-                            </div>
-                        `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
-        width: 400,
-        customClass: "alert-box",
-        cancelButtonColor: "#777777",
-        confirmButtonText: w.i18n.__("Dialog.BulkAction.Button"),
-        cancelButtonText: w.i18n.__("general.cancel"),
-        allowEnterKey: false,
-      }).then(function (result: any) {
-        callback && callback();
-        scopeEvalAsync();
-      });
-    }
-    else {
-      callback && callback();
-    }
-  }
-  catch (err) {
-    callback && callback();
-  }
-}
 
-/* checkOperationSafety2（bundle 26823-26855 逐字：count 参数版） */
-export function machineryCheckOperationSafety2(s: any, count: any, callback: any, amount: any = 100): void {
-  const w = window as any;
-  try {
-    if (count >= amount) {
-      var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
-        { "property": "count", "value": count },
-      ]);
-      w.swal({
-        html: `
-                            <div class="alert">
-                                <div class="alert-icon warning"></div>
-                                <h4 class="alert-title">${w.i18n.__("Dialog.BulkAction.Title")}</h4>
-                                <p class="alert-desc">${html}</p>
-                            </div>
-                        `,
-        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
-        allowEnterKey: false,
-        width: 400,
-        customClass: "alert-box",
-        cancelButtonColor: "#777777",
-        confirmButtonText: w.i18n.__("Dialog.BulkAction.Button"),
-        cancelButtonText: w.i18n.__("general.cancel"),
-      }).then(function (result: any) {
-        callback && callback();
-        scopeEvalAsync();
-      });
-    }
-    else {
-      callback && callback();
-    }
-  }
-  catch (err) {
-    callback && callback();
-  }
-}
 
 /* resetFolderCover（bundle 41454-41461 逐字：getAncestorFolders（c9b machinery 版）+
    covers 清空） */
@@ -8464,12 +8177,6 @@ export function machineryOnImageSizeHeightChanged(s: any): void {
   }
 }
 
-/** imageSize.zoomRatio 变化后的统一处理（原 $watch("imageSize.zoomRatio") 的 listener）。 */
-export function machineryOnZoomRatioChanged(s: any): void {
-  if (!s || !s.imageSize) return;
-  s.sliderZoomRatio = s.imageSize.zoomRatio;
-  syncDetailFromScope();
-}
 
 /* changeMetaItems（bundle 37273-37278 逐字） */
 export function machineryChangeMetaItems(s: any, type: any): void {

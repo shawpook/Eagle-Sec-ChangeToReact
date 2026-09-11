@@ -7339,3 +7339,34 @@ boxGridEngine/gridDirectives/inspectorActions/detailState 等）。
 
 **门禁**：`bz-export-check` 无问题（2059 处）；`tsc` **619 → 619 零新增**；`probe LOAD_OK`；
 哨兵 `SENTINEL_OK`；定向 `stage11b0`/`stage11a49`/`ui-interactions`/`main-ui-workflow` 全绿。
+
+---
+
+## D-1 / Track B / B-8 记录（2026-09-11）
+
+**目标**：`services/viewOpsService` 域簇整搬 → `services/viewOpsService.ts`（17 个 / 294 行）。
+
+**归位表**：`machineryGetRatioExp` `machineryGetRatioNonExp` `machineryUpdateZoomRatio`
+`machineryZoom` `machineryZoomFit` `setViewModeDebounced`(私有 let) `machinerySetViewMode`
+`machineryLastZoom` `machinerySmartZoom` `machineryZoomActual` `machineryToggleZoom`
+`machineryZoomFitEdge` `machineryZoomIn` `machineryZoomOut` `machineryCheckOperationSafety`
+`machineryCheckOperationSafety2` `machineryOnZoomRatioChanged` → `services/viewOpsService.ts`。
+
+**刻意排除**：`zoomInitTimeout`（实际使用方为 miscDomain 的 `machineryEnterDetailMode`/
+`machineryLeaveDetailMode`，随该簇搬迁）；`machineryZoomFit/ZoomIn/ZoomOut` 为转发壳
+（`gridZoomFit/ZoomIn/ZoomOut`），归位后由 viewOps 直接 import gridService。
+
+**机制要点 / 踩坑**
+1. **顺带修掉 2 个 base 遗留 TS2304**：viewOpsService 的 `__lv_saveListHeight` 裸引用
+   `saveListHeightTimeout`（原 bundle 共享闭包 var，本仓 gridService 有同名 module-level let，
+   但不可跨模块写 ESM 导入绑定）→ 在 viewOpsService 本地显式 `let saveListHeightTimeout`。
+   故 tsc **619 → 617（-2，修复）**。
+2. viewOpsService 补装：`qa`/`cssSet`/`widthOf`/`heightOf`（domQuery）、`debounce`（utils/func）、
+   `detailUpdateZoomRatio`/`detailSmartZoom`（detailService）、`getFilter`/
+   `machineryOnImageSizeHeightChanged`（dataMachinery）、`machinerySaveListHeight`/`gridZoomFit`/
+   `gridZoomIn`/`gridZoomOut`（gridService——B-7 落点）。
+
+**核数**：`dataMachinery.ts` **10600 → 10306 行**（-294）；顶层声明 **256 → 239**。
+
+**门禁**：`bz-export-check` 无问题（2077 处）；`tsc` 619 → **617（零新增，净修 2）**；
+`probe LOAD_OK`；哨兵 `SENTINEL_OK`；定向 `stage7d1a`/`preview-delivery`/`ui-interactions` 全绿。

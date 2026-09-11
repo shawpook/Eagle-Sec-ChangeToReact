@@ -34,6 +34,7 @@ import { glRemoveitemsChannel } from '../global/bus';
 import { machineryContentFilter, machineryFilterData, machinerySmartFolderCount, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';
 
+import { machinerySmartZoom } from '../services/viewOpsService';
 declare const Buffer: any;
 
 let installed = false;

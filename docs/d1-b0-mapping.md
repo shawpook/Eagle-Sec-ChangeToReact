@@ -4,9 +4,9 @@
 
 ## 0. 总量
 
-- 文件：`src/app/react/core/dataMachinery.ts`，**10600 行**
-- 顶层声明：**256**（exported **191** / 私有 **65**）
-- import 面：**39** 条
+- 文件：`src/app/react/core/dataMachinery.ts`，**10307 行**
+- 顶层声明：**239**（exported **175** / 私有 **64**）
+- import 面：**40** 条
 - 引用文件：**30**（`from .../dataMachinery`）
 
 ## 1. 域聚类（批次候选）
@@ -21,355 +21,337 @@
 | tagManagerDomain | 21 | 817 | 14 |
 | core/keymap | 20 | 627 | 20 |
 | miscDomain | 21 | 419 | 13 |
-| services/viewOpsService | 18 | 285 | 16 |
 | services/uploadService | 1 | 219 | 1 |
 | services/folderCoreService | 5 | 115 | 3 |
 | stage/grid | 4 | 91 | 4 |
 | services/imageOpsService | 7 | 86 | 7 |
 | core/navHistory | 9 | 64 | 4 |
 | services/batchOpsService | 1 | 24 | 1 |
+| services/viewOpsService | 1 | 1 | 0 |
 
 ### filterDomain（27 项 / 1701 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `filterCache` |  | 105-105 | 1 | - |
-| `shimFilterInst` |  | 106-106 | 1 | - |
-| `getFilter` | Y | 107-237 | 131 | `filterCache`, `shimFilterInst` |
-| `machineryCalcuteFilterBadge` | Y | 704-813 | 110 | - |
-| `getMatchFunctionTable` |  | 1478-1510 | 33 | - |
-| `machineryIsMatchCondition` |  | 1513-1541 | 29 | `getMatchFunctionTable` |
-| `machineryExistInSmartFilter` | Y | 1544-1567 | 24 | `machineryIsMatchCondition` |
-| `semanticSearchController` |  | 1573-1573 | 1 | - |
-| `machineryFilterDataPart1` |  | 1577-1884 | 308 | - |
-| `machineryFilterDataPart2` |  | 1890-2124 | 235 | `getFilter`, `machineryColorFilter`, `machineryGrayColorFilter` |
-| `machineryFilterDataPart3` |  | 2130-2446 | 317 | `imageSearchController`, `machinerySortData`, `semanticSearchController` |
-| `machineryFilterData` | Y | 2449-2455 | 7 | `machineryFilterDataPart1`, `machineryFilterDataPart2`, `machineryFilterDataPart3` |
-| `machineryCalcuteFilterResult` | Y | 2458-2476 | 19 | `machineryContentFilter`, `machineryFilterData` |
-| `machineryContentFilter` | Y | 2571-2655 | 85 | `machineryExistInSmartFilter` |
-| `calculateFilterCountsTimeout` |  | 3111-3111 | 1 | - |
-| `machineryCalculateFilterCounts` | Y | 3112-3126 | 15 | `calculateFilterCountsTimeout`, `machineryUpdateFilterCounts` |
-| `machinerySearchFilter` |  | 5787-5887 | 101 | `machineryConvertToRegexGroup`, `machineryMatchWithRegexGroup` |
-| `machineryColorFilter` | Y | 5898-5989 | 92 | - |
-| `machineryGrayColorFilter` | Y | 5992-6008 | 17 | - |
-| `machineryFilterContent` | Y | 6013-6025 | 13 | `machineryCalls`, `machineryRebindRefresh` |
-| `machineryUpdateFilterCounts` | Y | 6755-6856 | 102 | - |
-| `FILTER_ID_MAP` |  | 7817-7837 | 21 | - |
-| `machineryOpenFilter` | Y | 7839-7846 | 8 | - |
-| `machineryToggleFilterByType` | Y | 7848-7865 | 18 | `FILTER_ID_MAP`, `machineryOpenFilter` |
-| `machinerySearchInAll` | Y | 7937-7941 | 5 | `machineryFocusSeach`, `machineryOpenAll` |
-| `machineryFocusSeach` | Y | 8999-9004 | 6 | - |
-| `getToggleFilterByTypeFn` | Y | 9609-9609 | 1 | `machineryToggleFilterByType`, `scopeSingleton` |
+| `filterCache` |  | 106-106 | 1 | - |
+| `shimFilterInst` |  | 107-107 | 1 | - |
+| `getFilter` | Y | 108-238 | 131 | `filterCache`, `shimFilterInst` |
+| `machineryCalcuteFilterBadge` | Y | 705-814 | 110 | - |
+| `getMatchFunctionTable` |  | 1462-1494 | 33 | - |
+| `machineryIsMatchCondition` |  | 1497-1525 | 29 | `getMatchFunctionTable` |
+| `machineryExistInSmartFilter` | Y | 1528-1551 | 24 | `machineryIsMatchCondition` |
+| `semanticSearchController` |  | 1557-1557 | 1 | - |
+| `machineryFilterDataPart1` |  | 1561-1868 | 308 | - |
+| `machineryFilterDataPart2` |  | 1874-2108 | 235 | `getFilter`, `machineryColorFilter`, `machineryGrayColorFilter` |
+| `machineryFilterDataPart3` |  | 2114-2430 | 317 | `imageSearchController`, `machinerySortData`, `semanticSearchController` |
+| `machineryFilterData` | Y | 2433-2439 | 7 | `machineryFilterDataPart1`, `machineryFilterDataPart2`, `machineryFilterDataPart3` |
+| `machineryCalcuteFilterResult` | Y | 2442-2460 | 19 | `machineryContentFilter`, `machineryFilterData` |
+| `machineryContentFilter` | Y | 2555-2639 | 85 | `machineryExistInSmartFilter` |
+| `calculateFilterCountsTimeout` |  | 3075-3075 | 1 | - |
+| `machineryCalculateFilterCounts` | Y | 3076-3090 | 15 | `calculateFilterCountsTimeout`, `machineryUpdateFilterCounts` |
+| `machinerySearchFilter` |  | 5571-5671 | 101 | `machineryConvertToRegexGroup`, `machineryMatchWithRegexGroup` |
+| `machineryColorFilter` | Y | 5682-5773 | 92 | - |
+| `machineryGrayColorFilter` | Y | 5776-5792 | 17 | - |
+| `machineryFilterContent` | Y | 5797-5809 | 13 | `machineryCalls`, `machineryRebindRefresh` |
+| `machineryUpdateFilterCounts` | Y | 6539-6640 | 102 | - |
+| `FILTER_ID_MAP` |  | 7530-7550 | 21 | - |
+| `machineryOpenFilter` | Y | 7552-7559 | 8 | - |
+| `machineryToggleFilterByType` | Y | 7561-7578 | 18 | `FILTER_ID_MAP`, `machineryOpenFilter` |
+| `machinerySearchInAll` | Y | 7650-7654 | 5 | `machineryFocusSeach`, `machineryOpenAll` |
+| `machineryFocusSeach` | Y | 8706-8711 | 6 | - |
+| `getToggleFilterByTypeFn` | Y | 9316-9316 | 1 | `machineryToggleFilterByType`, `scopeSingleton` |
 
 ### itemDomain（40 项 / 1520 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `calculateImageBindingTimeout` |  | 97-97 | 1 | - |
-| `rebindRefreshLazyTimeout` |  | 101-101 | 1 | - |
-| `prependImagesTimeout` |  | 103-103 | 1 | - |
-| `machinerySortRawData` | Y | 311-409 | 99 | `getLanguageBCP` |
-| `machineryCalculateImageBinding` | Y | 412-698 | 287 | `calculateImageBindingTimeout`, `getFilter`, `getTimeout`, `machineryGetExtendTags`, `machinerySortRawData` |
-| `machineryFilterSidebarItem` | Y | 818-855 | 38 | - |
-| `machineryRebindRefresh` | Y | 861-960 | 100 | `machineryCalcuteContainTags`, `machineryCalcuteFilterBadge`, `machineryCalcuteFilterResult`, `machineryCalls`, `machineryRefreshSubfolderList`, `machineryUpdateItemsView` |
-| `machineryRebindRefreshLazy` | Y | 963-969 | 7 | `getTimeout`, `machineryRebindRefresh`, `rebindRefreshLazyTimeout` |
-| `machineryUpdateItemsView` | Y | 1068-1075 | 8 | `machineryUpdateItemView` |
-| `machineryResetImageData` |  | 1081-1087 | 7 | - |
-| `machineryPrependImages` | Y | 1091-1104 | 14 | `machineryResetImageData`, `prependImagesTimeout` |
-| `machineryReload` | Y | 1125-1170 | 46 | `machineryAutoResizeTagFilter`, `machineryCalculateFilterCounts`, `machineryLeaveDetailMode`, `machineryRebindRefresh`, `machineryUpdateSelection`, `machineryUpdateSubFolderWidth` |
-| `machineryUpdateItemView` | Y | 1228-1450 | 223 | `getFilter` |
-| `imageSearchController` |  | 1572-1572 | 1 | - |
-| `machineryCopyImages` | Y | 4473-4526 | 54 | `getFilter`, `machineryGetSelectedTags` |
-| `machineryCreateTxtFileFromTemplate` | Y | 5359-5363 | 5 | `machineryNewFileFromTemplate` |
-| `machineryGetItemByElement` | Y | 5572-5577 | 6 | - |
-| `machineryNewFileFromTemplate` | Y | 6036-6072 | 37 | `machineryShowUploadQueue` |
-| `checkListItemsLessThanContainerTimeout` |  | 6525-6525 | 1 | - |
-| `machineryCheckListItemsLessThanContainer` | Y | 6529-6546 | 18 | `checkListItemsLessThanContainerTimeout` |
-| `machineryScrollToCurrentItem` | Y | 6572-6584 | 13 | - |
-| `machineryForceFitImageSize` | Y | 6588-6606 | 19 | - |
-| `machinerySortData` | Y | 6631-6743 | 113 | - |
-| `preloadImageTimeout` |  | 6884-6884 | 1 | - |
-| `machineryPreloadImage` | Y | 6888-6918 | 31 | `preloadImageTimeout` |
-| `machineryToggleCommentMode` | Y | 7592-7596 | 5 | - |
-| `machineryRemoveFromDuplicateMapping` | Y | 7947-7951 | 5 | - |
-| `machineryEnlargeThumbnailsTimeout` |  | 8413-8413 | 1 | - |
-| `machineryEnlargeThumbnails` | Y | 8414-8432 | 19 | `machineryEnlargeThumbnailsTimeout` |
-| `machineryShrinkThumbnailsTimeout` |  | 8434-8434 | 1 | - |
-| `machineryShrinkThumbnails` | Y | 8435-8452 | 18 | `machineryShrinkThumbnailsTimeout` |
-| `machineryOnImageSizeHeightChanged` | Y | 8455-8465 | 11 | `machineryEnlargeThumbnails`, `machineryShrinkThumbnails`, `machineryUpdateSubFolderWidth` |
-| `machineryChangeMetaItems` | Y | 8475-8482 | 8 | `machineryUpdateItemsView` |
-| `addImageTimeLeftInterval` |  | 8490-8490 | 1 | - |
-| `machineryCalcuteAddImageTimeLeft` |  | 8494-8509 | 16 | - |
-| `machineryShowUploadQueue` | Y | 8744-8757 | 14 | `addImageTimeLeftInterval`, `machineryCalcuteAddImageTimeLeft` |
-| `machineryHideUploadQueue` | Y | 8759-8766 | 8 | - |
-| `machineryFindDupclipate` | Y | 8783-8946 | 164 | - |
-| `machineryEnableImageNameEditable` | Y | 9052-9150 | 99 | - |
-| `machineryRenameImages` | Y | 9255-9273 | 19 | `machineryEnableImageNameEditable` |
+| `calculateImageBindingTimeout` |  | 98-98 | 1 | - |
+| `rebindRefreshLazyTimeout` |  | 102-102 | 1 | - |
+| `prependImagesTimeout` |  | 104-104 | 1 | - |
+| `machinerySortRawData` | Y | 312-410 | 99 | `getLanguageBCP` |
+| `machineryCalculateImageBinding` | Y | 413-699 | 287 | `calculateImageBindingTimeout`, `getFilter`, `getTimeout`, `machineryGetExtendTags`, `machinerySortRawData` |
+| `machineryFilterSidebarItem` | Y | 819-856 | 38 | - |
+| `machineryRebindRefresh` | Y | 862-961 | 100 | `machineryCalcuteContainTags`, `machineryCalcuteFilterBadge`, `machineryCalcuteFilterResult`, `machineryCalls`, `machineryRefreshSubfolderList`, `machineryUpdateItemsView` |
+| `machineryRebindRefreshLazy` | Y | 964-970 | 7 | `getTimeout`, `machineryRebindRefresh`, `rebindRefreshLazyTimeout` |
+| `machineryUpdateItemsView` | Y | 1069-1076 | 8 | `machineryUpdateItemView` |
+| `machineryResetImageData` |  | 1082-1088 | 7 | - |
+| `machineryPrependImages` | Y | 1092-1105 | 14 | `machineryResetImageData`, `prependImagesTimeout` |
+| `machineryReload` | Y | 1126-1171 | 46 | `machineryAutoResizeTagFilter`, `machineryCalculateFilterCounts`, `machineryLeaveDetailMode`, `machineryRebindRefresh`, `machineryUpdateSelection`, `machineryUpdateSubFolderWidth` |
+| `machineryUpdateItemView` | Y | 1212-1434 | 223 | `getFilter` |
+| `imageSearchController` |  | 1556-1556 | 1 | - |
+| `machineryCopyImages` | Y | 4263-4316 | 54 | `getFilter`, `machineryGetSelectedTags` |
+| `machineryCreateTxtFileFromTemplate` | Y | 5143-5147 | 5 | `machineryNewFileFromTemplate` |
+| `machineryGetItemByElement` | Y | 5356-5361 | 6 | - |
+| `machineryNewFileFromTemplate` | Y | 5820-5856 | 37 | `machineryShowUploadQueue` |
+| `checkListItemsLessThanContainerTimeout` |  | 6309-6309 | 1 | - |
+| `machineryCheckListItemsLessThanContainer` | Y | 6313-6330 | 18 | `checkListItemsLessThanContainerTimeout` |
+| `machineryScrollToCurrentItem` | Y | 6356-6368 | 13 | - |
+| `machineryForceFitImageSize` | Y | 6372-6390 | 19 | - |
+| `machinerySortData` | Y | 6415-6527 | 113 | - |
+| `preloadImageTimeout` |  | 6668-6668 | 1 | - |
+| `machineryPreloadImage` | Y | 6672-6702 | 31 | `preloadImageTimeout` |
+| `machineryToggleCommentMode` | Y | 7305-7309 | 5 | - |
+| `machineryRemoveFromDuplicateMapping` | Y | 7660-7664 | 5 | - |
+| `machineryEnlargeThumbnailsTimeout` |  | 8126-8126 | 1 | - |
+| `machineryEnlargeThumbnails` | Y | 8127-8145 | 19 | `machineryEnlargeThumbnailsTimeout` |
+| `machineryShrinkThumbnailsTimeout` |  | 8147-8147 | 1 | - |
+| `machineryShrinkThumbnails` | Y | 8148-8165 | 18 | `machineryShrinkThumbnailsTimeout` |
+| `machineryOnImageSizeHeightChanged` | Y | 8168-8178 | 11 | `machineryEnlargeThumbnails`, `machineryShrinkThumbnails`, `machineryUpdateSubFolderWidth` |
+| `machineryChangeMetaItems` | Y | 8182-8189 | 8 | `machineryUpdateItemsView` |
+| `addImageTimeLeftInterval` |  | 8197-8197 | 1 | - |
+| `machineryCalcuteAddImageTimeLeft` |  | 8201-8216 | 16 | - |
+| `machineryShowUploadQueue` | Y | 8451-8464 | 14 | `addImageTimeLeftInterval`, `machineryCalcuteAddImageTimeLeft` |
+| `machineryHideUploadQueue` | Y | 8466-8473 | 8 | - |
+| `machineryFindDupclipate` | Y | 8490-8653 | 164 | - |
+| `machineryEnableImageNameEditable` | Y | 8759-8857 | 99 | - |
+| `machineryRenameImages` | Y | 8962-8980 | 19 | `machineryEnableImageNameEditable` |
 
 ### libraryDomain（48 项 / 1494 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `updateSidebarListTimeout` |  | 100-100 | 1 | - |
-| `machineryUpdateSidebarList` | Y | 974-1063 | 90 | `getTimeout`, `machineryFilterSidebarItem`, `machineryGetFolderList`, `machineryGetQuickAccessList`, `machineryGetSmartFolderList`, `updateSidebarListTimeout` |
-| `machinerySmartFolderCount` | Y | 1206-1221 | 16 | `machineryExistInSmartFilter` |
-| `buildRecentFileManager` |  | 2481-2567 | 87 | - |
-| `machineryChangeSidebarIndex` | Y | 3048-3060 | 13 | `getTimeout` |
-| `setLastFolderDebounced` |  | 3148-3148 | 1 | - |
-| `machinerySetLastFolder` |  | 3149-3163 | 15 | `machinerySetViewMode`, `setLastFolderDebounced` |
-| `lastMoveToTrashCheckbox` |  | 4177-4177 | 1 | - |
-| `machineryOpenParentFolder` | Y | 5351-5355 | 5 | - |
-| `machinerySetFolderCover` | Y | 5367-5381 | 15 | `getFilter` |
-| `openUnfiledTimeout` |  | 6080-6080 | 1 | - |
-| `openRecentTimeout` |  | 6082-6082 | 1 | - |
-| `openTrashTimeout` |  | 6083-6083 | 1 | - |
-| `machineryOpenUnfiled` | Y | 6134-6172 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openUnfiledTimeout` |
-| `machineryOpenRecent` | Y | 6216-6254 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openRecentTimeout` |
-| `machineryOpenTrash` | Y | 6312-6350 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openTrashTimeout` |
-| `machineryOpenNextFolder` | Y | 6356-6369 | 14 | `machineryChangeSidebarIndex` |
-| `machineryOpenPrevFolder` | Y | 6373-6406 | 34 | `machineryChangeSidebarIndex`, `machineryOpenTrash` |
-| `machineryOpenNextSmartFolder` | Y | 6410-6431 | 22 | `machineryChangeSidebarIndex` |
-| `machineryOpenPrevSmartFolder` | Y | 6435-6464 | 30 | `machineryChangeSidebarIndex`, `machineryOpenTrash` |
-| `machineryGetQuickAccessList` | Y | 6513-6521 | 9 | - |
-| `machineryAddToRecentFile` | Y | 6869-6881 | 13 | - |
-| `machineryResetFolderCover` | Y | 7028-7035 | 8 | - |
-| `machineryRemoveSmartFolder` | Y | 7071-7095 | 25 | `getFilter`, `machineryRemoveSmartFolderInner` |
-| `machineryRemoveSmartFolderInner` |  | 7097-7180 | 84 | `getFilter`, `getTimeout`, `machineryOpenAll`, `machinerySaveFolderDebounce`, `machineryUpdateSidebarList` |
-| `machineryRemoveFolder` | Y | 7184-7230 | 47 | `getFilter`, `machineryCheckOperationSafety2`, `machineryRemoveFolderInner` |
-| `machineryRemoveFolderInner` |  | 7232-7382 | 151 | `getFilter`, `machineryCalculateImageBinding`, `machineryOpenAll`, `machineryRebindRefresh`, `machinerySaveFolderDebounce`, `machineryUpdateSidebarList` |
-| `machineryRemoveFolderContents` | Y | 7463-7587 | 125 | `getFilter`, `getTimeout`, `machineryAutoScroll`, `machineryCalculateImageBinding`, `machineryForceFitImageSize`, `machineryGetSelectedItemElements`, `machineryGetSelection`, `machineryLeaveDetailMode` … |
-| `machinerySaveFolderDebounce` | Y | 7615-7623 | 9 | - |
-| `machineryMultipleOpenFolder` | Y | 7873-7914 | 42 | - |
-| `machineryExpandFolder` | Y | 7920-7926 | 7 | `machineryUpdateSidebarList` |
-| `machineryExpandSmartFolder` | Y | 7928-7934 | 7 | `machineryUpdateSidebarList` |
-| `machineryToggleCurrentLevelSmartFoldersInner` | Y | 7958-7967 | 10 | `machineryUpdateSidebarList` |
-| `machineryToggleAllSmartFoldersInner` | Y | 7969-7978 | 10 | `machineryUpdateSidebarList` |
-| `machineryToggleCurrentLevelSmartFolders` | Y | 7990-7998 | 9 | `machineryToggleCurrentLevelSmartFoldersInner` |
-| `machineryToggleAllSmartFolderExpand` | Y | 8000-8019 | 20 | `machineryChangeSidebarIndex`, `machineryToggleAllSmartFoldersInner`, `machineryUpdateSidebarList` |
-| `machinerySetFolderOrder` | Y | 8023-8040 | 18 | - |
-| `machinerySetSmartFolderOrder` | Y | 8042-8059 | 18 | - |
-| `machineryQuickOpenFolder` | Y | 8074-8113 | 40 | `getTimeout`, `machineryAutoScroll`, `machineryChangeSidebarIndex`, `machineryOpenAll` |
-| `machineryShowTutorial` | Y | 8124-8165 | 42 | `getFilter` |
-| `machineryUnlockFolderWithTouchID` | Y | 8172-8214 | 43 | `machineryCalculateImageBinding`, `machineryUpdateSelection`, `machineryUpdateSidebarList` |
-| `machineryGetSmartFolderList` | Y | 8221-8315 | 95 | - |
-| `machineryGetFolderList` | Y | 8320-8405 | 86 | - |
-| `machineryGetAllChildFolder` | Y | 8949-8957 | 9 | - |
-| `machineryPrependFolder` | Y | 9011-9020 | 10 | `machineryCalculateImageBinding`, `machineryUpdateSidebarList` |
-| `machineryRenameCurrentFolder` | Y | 9478-9550 | 73 | `getTimeout`, `machineryEditTag`, `machineryEnableSubFolderNameEditable`, `machineryGetSelectedTags`, `machineryRenameImages`, `machineryRenameTagGroup` |
-| `machineryToggleAllFolders` | Y | 9573-9582 | 10 | `machineryUpdateSidebarList` |
-| `machineryToggleCurrentLevelFolders` | Y | 9584-9593 | 10 | `machineryUpdateSidebarList` |
+| `updateSidebarListTimeout` |  | 101-101 | 1 | - |
+| `machineryUpdateSidebarList` | Y | 975-1064 | 90 | `getTimeout`, `machineryFilterSidebarItem`, `machineryGetFolderList`, `machineryGetQuickAccessList`, `machineryGetSmartFolderList`, `updateSidebarListTimeout` |
+| `machinerySmartFolderCount` | Y | 1190-1205 | 16 | `machineryExistInSmartFilter` |
+| `buildRecentFileManager` |  | 2465-2551 | 87 | - |
+| `machineryChangeSidebarIndex` | Y | 3012-3024 | 13 | `getTimeout` |
+| `setLastFolderDebounced` |  | 3101-3101 | 1 | - |
+| `machinerySetLastFolder` |  | 3102-3116 | 15 | `setLastFolderDebounced` |
+| `lastMoveToTrashCheckbox` |  | 3967-3967 | 1 | - |
+| `machineryOpenParentFolder` | Y | 5135-5139 | 5 | - |
+| `machinerySetFolderCover` | Y | 5151-5165 | 15 | `getFilter` |
+| `openUnfiledTimeout` |  | 5864-5864 | 1 | - |
+| `openRecentTimeout` |  | 5866-5866 | 1 | - |
+| `openTrashTimeout` |  | 5867-5867 | 1 | - |
+| `machineryOpenUnfiled` | Y | 5918-5956 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openUnfiledTimeout` |
+| `machineryOpenRecent` | Y | 6000-6038 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openRecentTimeout` |
+| `machineryOpenTrash` | Y | 6096-6134 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openTrashTimeout` |
+| `machineryOpenNextFolder` | Y | 6140-6153 | 14 | `machineryChangeSidebarIndex` |
+| `machineryOpenPrevFolder` | Y | 6157-6190 | 34 | `machineryChangeSidebarIndex`, `machineryOpenTrash` |
+| `machineryOpenNextSmartFolder` | Y | 6194-6215 | 22 | `machineryChangeSidebarIndex` |
+| `machineryOpenPrevSmartFolder` | Y | 6219-6248 | 30 | `machineryChangeSidebarIndex`, `machineryOpenTrash` |
+| `machineryGetQuickAccessList` | Y | 6297-6305 | 9 | - |
+| `machineryAddToRecentFile` | Y | 6653-6665 | 13 | - |
+| `machineryResetFolderCover` | Y | 6741-6748 | 8 | - |
+| `machineryRemoveSmartFolder` | Y | 6784-6808 | 25 | `getFilter`, `machineryRemoveSmartFolderInner` |
+| `machineryRemoveSmartFolderInner` |  | 6810-6893 | 84 | `getFilter`, `getTimeout`, `machineryOpenAll`, `machinerySaveFolderDebounce`, `machineryUpdateSidebarList` |
+| `machineryRemoveFolder` | Y | 6897-6943 | 47 | `getFilter`, `machineryRemoveFolderInner` |
+| `machineryRemoveFolderInner` |  | 6945-7095 | 151 | `getFilter`, `machineryCalculateImageBinding`, `machineryOpenAll`, `machineryRebindRefresh`, `machinerySaveFolderDebounce`, `machineryUpdateSidebarList` |
+| `machineryRemoveFolderContents` | Y | 7176-7300 | 125 | `getFilter`, `getTimeout`, `machineryAutoScroll`, `machineryCalculateImageBinding`, `machineryForceFitImageSize`, `machineryGetSelectedItemElements`, `machineryGetSelection`, `machineryLeaveDetailMode` … |
+| `machinerySaveFolderDebounce` | Y | 7328-7336 | 9 | - |
+| `machineryMultipleOpenFolder` | Y | 7586-7627 | 42 | - |
+| `machineryExpandFolder` | Y | 7633-7639 | 7 | `machineryUpdateSidebarList` |
+| `machineryExpandSmartFolder` | Y | 7641-7647 | 7 | `machineryUpdateSidebarList` |
+| `machineryToggleCurrentLevelSmartFoldersInner` | Y | 7671-7680 | 10 | `machineryUpdateSidebarList` |
+| `machineryToggleAllSmartFoldersInner` | Y | 7682-7691 | 10 | `machineryUpdateSidebarList` |
+| `machineryToggleCurrentLevelSmartFolders` | Y | 7703-7711 | 9 | `machineryToggleCurrentLevelSmartFoldersInner` |
+| `machineryToggleAllSmartFolderExpand` | Y | 7713-7732 | 20 | `machineryChangeSidebarIndex`, `machineryToggleAllSmartFoldersInner`, `machineryUpdateSidebarList` |
+| `machinerySetFolderOrder` | Y | 7736-7753 | 18 | - |
+| `machinerySetSmartFolderOrder` | Y | 7755-7772 | 18 | - |
+| `machineryQuickOpenFolder` | Y | 7787-7826 | 40 | `getTimeout`, `machineryAutoScroll`, `machineryChangeSidebarIndex`, `machineryOpenAll` |
+| `machineryShowTutorial` | Y | 7837-7878 | 42 | `getFilter` |
+| `machineryUnlockFolderWithTouchID` | Y | 7885-7927 | 43 | `machineryCalculateImageBinding`, `machineryUpdateSelection`, `machineryUpdateSidebarList` |
+| `machineryGetSmartFolderList` | Y | 7934-8028 | 95 | - |
+| `machineryGetFolderList` | Y | 8033-8118 | 86 | - |
+| `machineryGetAllChildFolder` | Y | 8656-8664 | 9 | - |
+| `machineryPrependFolder` | Y | 8718-8727 | 10 | `machineryCalculateImageBinding`, `machineryUpdateSidebarList` |
+| `machineryRenameCurrentFolder` | Y | 9185-9257 | 73 | `getTimeout`, `machineryEditTag`, `machineryEnableSubFolderNameEditable`, `machineryGetSelectedTags`, `machineryRenameImages`, `machineryRenameTagGroup` |
+| `machineryToggleAllFolders` | Y | 9280-9289 | 10 | `machineryUpdateSidebarList` |
+| `machineryToggleCurrentLevelFolders` | Y | 9291-9300 | 10 | `machineryUpdateSidebarList` |
 
 ### selectionViewDomain（25 项 / 1111 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `updateSelectionTimeout` |  | 2769-2769 | 1 | - |
-| `machineryUpdateSelection` | Y | 2771-2959 | 189 | `getFilter`, `getTimeout`, `machineryCalls`, `sortTagsForSelection`, `updateSelectionTimeout` |
-| `sortTagsForSelection` |  | 2962-2995 | 34 | - |
-| `machineryGetSelection` | Y | 3028-3045 | 18 | - |
-| `cleanSelectedTimeout` |  | 3920-3920 | 1 | - |
-| `machinerySelectAll` | Y | 3923-3943 | 21 | `cleanSelectedTimeout`, `getTimeout` |
-| `machinerySelectNext` | Y | 3959-4016 | 58 | `getTimeout`, `machineryAddToRecentFile`, `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetSelection`, `machineryLastZoom`, `machineryPreloadImage`, `machineryZoom` … |
-| `machinerySelectPrev` | Y | 4020-4086 | 67 | `getTimeout`, `machineryAddToRecentFile`, `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetSelection`, `machineryLastZoom`, `machineryPreloadImage`, `machineryZoom` … |
-| `machineryMultipleSelectUp` | Y | 4091-4099 | 9 | `machineryMultipleSelectPrev` |
-| `machineryMultipleSelectDown` | Y | 4102-4110 | 9 | `machineryMultipleSelectNext` |
-| `machineryMultipleSelectNext` | Y | 4114-4141 | 28 | `machineryAutoScroll`, `machineryGetSelection` |
-| `machineryMultipleSelectPrev` | Y | 4145-4172 | 28 | `machineryAutoScroll`, `machineryGetSelection` |
-| `machineryRemoveSelected` | Y | 4184-4420 | 237 | `getFilter`, `getTimeout`, `lastMoveToTrashCheckbox`, `machineryAutoScroll`, `machineryCalculateImageBinding`, `machineryCheckOperationSafety`, `machineryForceFitImageSize`, `machineryGetSelectedItemElements` … |
-| `machinerySelectUp` | Y | 5100-5163 | 64 | `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetItemByElement`, `machineryGetSelection`, `machineryLastZoom`, `machineryZoom` |
-| `machinerySelectDown` | Y | 5165-5227 | 63 | `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetItemByElement`, `machineryGetSelection`, `machineryLastZoom`, `machineryZoom` |
-| `machineryOpenInspectorTagSelectPanel` | Y | 5387-5390 | 4 | - |
-| `machineryOpenInspectorFolderSelectPanel` | Y | 5402-5566 | 165 | `getFilter`, `machineryCalculateImageBinding`, `machineryCheckOperationSafety`, `machineryRebindRefresh`, `machineryUpdateFilterCounts`, `machineryUpdateSelection` |
-| `machineryGetSelectedItems` | Y | 6480-6491 | 12 | - |
-| `machineryGetSelectedItemElements` | Y | 6494-6504 | 11 | `machineryGetSelectedItems` |
-| `machineryGetSelectedTags` | Y | 6507-6510 | 4 | - |
-| `machineryRemoveSelectedFolders` | Y | 7386-7424 | 39 | `getFilter`, `machineryCheckOperationSafety2`, `machineryRemoveFolderInner` |
-| `machineryRemoveSelectedSmartFolders` | Y | 7428-7455 | 28 | `getFilter`, `machineryRemoveSmartFolderInner` |
-| `tagRectSelecting` |  | 7626-7626 | 1 | - |
-| `machineryToggleSelectSmartFolder` | Y | 7983-7988 | 6 | `machineryToggleCurrentLevelSmartFoldersInner` |
-| `machinerySelectFolder` | Y | 9032-9045 | 14 | `machineryUpdateSelection` |
+| `updateSelectionTimeout` |  | 2753-2753 | 1 | - |
+| `machineryUpdateSelection` | Y | 2755-2943 | 189 | `getFilter`, `getTimeout`, `machineryCalls`, `sortTagsForSelection`, `updateSelectionTimeout` |
+| `sortTagsForSelection` |  | 2946-2979 | 34 | - |
+| `machineryGetSelection` | Y | 2992-3009 | 18 | - |
+| `cleanSelectedTimeout` |  | 3710-3710 | 1 | - |
+| `machinerySelectAll` | Y | 3713-3733 | 21 | `cleanSelectedTimeout`, `getTimeout` |
+| `machinerySelectNext` | Y | 3749-3806 | 58 | `getTimeout`, `machineryAddToRecentFile`, `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetSelection`, `machineryPreloadImage`, `nextTimeout` |
+| `machinerySelectPrev` | Y | 3810-3876 | 67 | `getTimeout`, `machineryAddToRecentFile`, `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetSelection`, `machineryPreloadImage`, `prevTimeout` |
+| `machineryMultipleSelectUp` | Y | 3881-3889 | 9 | `machineryMultipleSelectPrev` |
+| `machineryMultipleSelectDown` | Y | 3892-3900 | 9 | `machineryMultipleSelectNext` |
+| `machineryMultipleSelectNext` | Y | 3904-3931 | 28 | `machineryAutoScroll`, `machineryGetSelection` |
+| `machineryMultipleSelectPrev` | Y | 3935-3962 | 28 | `machineryAutoScroll`, `machineryGetSelection` |
+| `machineryRemoveSelected` | Y | 3974-4210 | 237 | `getFilter`, `getTimeout`, `lastMoveToTrashCheckbox`, `machineryAutoScroll`, `machineryCalculateImageBinding`, `machineryForceFitImageSize`, `machineryGetSelectedItemElements`, `machineryGetSelectedTags` … |
+| `machinerySelectUp` | Y | 4890-4953 | 64 | `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetItemByElement`, `machineryGetSelection` |
+| `machinerySelectDown` | Y | 4955-5017 | 63 | `machineryAutoScroll`, `machineryForceFitImageSize`, `machineryGetItemByElement`, `machineryGetSelection` |
+| `machineryOpenInspectorTagSelectPanel` | Y | 5171-5174 | 4 | - |
+| `machineryOpenInspectorFolderSelectPanel` | Y | 5186-5350 | 165 | `getFilter`, `machineryCalculateImageBinding`, `machineryRebindRefresh`, `machineryUpdateFilterCounts`, `machineryUpdateSelection` |
+| `machineryGetSelectedItems` | Y | 6264-6275 | 12 | - |
+| `machineryGetSelectedItemElements` | Y | 6278-6288 | 11 | `machineryGetSelectedItems` |
+| `machineryGetSelectedTags` | Y | 6291-6294 | 4 | - |
+| `machineryRemoveSelectedFolders` | Y | 7099-7137 | 39 | `getFilter`, `machineryRemoveFolderInner` |
+| `machineryRemoveSelectedSmartFolders` | Y | 7141-7168 | 28 | `getFilter`, `machineryRemoveSmartFolderInner` |
+| `tagRectSelecting` |  | 7339-7339 | 1 | - |
+| `machineryToggleSelectSmartFolder` | Y | 7696-7701 | 6 | `machineryToggleCurrentLevelSmartFoldersInner` |
+| `machinerySelectFolder` | Y | 8739-8752 | 14 | `machineryUpdateSelection` |
 
 ### MOUNT-INFRA（最后一批/或留共享）（9 项 / 1025 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `timeoutCache` |  | 239-239 | 1 | - |
-| `shimTimeoutInst` |  | 240-240 | 1 | - |
-| `getTimeout` | Y | 242-276 | 35 | `shimTimeoutInst`, `timeoutCache` |
-| `singletonByScope` |  | 9599-9599 | 1 | - |
-| `scopeSingleton` |  | 9600-9605 | 6 | `singletonByScope` |
-| `machineryCalls` | Y | 9614-9614 | 1 | - |
-| `machinerySeedControllerState` | Y | 9619-10134 | 516 | - |
-| `applied` |  | 10136-10136 | 1 | - |
-| `applyDataMachineryScope` | Y | 10137-10599 | 463 | `applied`, `buildRecentFileManager`, `getTimeout`, `machineryCalculateImageBinding`, `machineryCalcuteFilterResult`, `machineryCalls`, `machineryChangeStar`, `machineryColorFilter` … |
+| `timeoutCache` |  | 240-240 | 1 | - |
+| `shimTimeoutInst` |  | 241-241 | 1 | - |
+| `getTimeout` | Y | 243-277 | 35 | `shimTimeoutInst`, `timeoutCache` |
+| `singletonByScope` |  | 9306-9306 | 1 | - |
+| `scopeSingleton` |  | 9307-9312 | 6 | `singletonByScope` |
+| `machineryCalls` | Y | 9321-9321 | 1 | - |
+| `machinerySeedControllerState` | Y | 9326-9841 | 516 | - |
+| `applied` |  | 9843-9843 | 1 | - |
+| `applyDataMachineryScope` | Y | 9844-10306 | 463 | `applied`, `buildRecentFileManager`, `getTimeout`, `machineryCalculateImageBinding`, `machineryCalcuteFilterResult`, `machineryCalls`, `machineryChangeStar`, `machineryColorFilter` … |
 
 ### tagManagerDomain（21 项 / 817 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryGetExtendTags` | Y | 290-308 | 19 | - |
-| `machineryAutoResizeTagFilter` |  | 1107-1119 | 13 | - |
-| `machineryCalcuteContainTagsInner` |  | 2658-2719 | 62 | - |
-| `machineryCalcuteContainTags` | Y | 2722-2763 | 42 | `machineryCalcuteContainTagsInner` |
-| `machineryOpenPrevGroup` |  | 4735-4759 | 25 | `machineryOpenStarredGroup`, `machineryOpenTagAllGroup`, `machineryOpenTagGroup`, `machineryOpenUnfiledGroup` |
-| `machineryOpenNextGroup` |  | 4761-4782 | 22 | `machineryOpenStarredGroup`, `machineryOpenTagGroup`, `machineryOpenUnfiledGroup` |
-| `machineryConvertToRegexGroup` |  | 5653-5763 | 111 | - |
-| `machineryMatchWithRegexGroup` |  | 5765-5785 | 21 | - |
-| `openUntaggedTimeout` |  | 6081-6081 | 1 | - |
-| `machineryOpenUntagged` | Y | 6175-6213 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openUntaggedTimeout` |
-| `machineryOpenAllTags` | Y | 6285-6308 | 24 | `getTimeout`, `machineryRebindRefresh`, `machineryResetPage` |
-| `machineryUpdateSubFolderWidth` | Y | 6550-6564 | 15 | - |
-| `machineryOpenTagAllGroup` | Y | 7632-7646 | 15 | `tagRectSelecting` |
-| `machineryOpenUnfiledGroup` | Y | 7648-7662 | 15 | `tagRectSelecting` |
-| `machineryOpenStarredGroup` | Y | 7664-7678 | 15 | `tagRectSelecting` |
-| `machineryOpenTagGroup` | Y | 7680-7696 | 17 | `tagRectSelecting` |
-| `machineryRemoveTagGroup` | Y | 7700-7742 | 43 | `machineryOpenTagAllGroup` |
-| `machineryRefreshSubfolderList` | Y | 8963-8996 | 34 | `machineryGetAllChildFolder` |
-| `machineryEnableSubFolderNameEditable` | Y | 9155-9250 | 96 | `machinerySelectFolder` |
-| `machineryRenameTagGroup` | Y | 9278-9293 | 16 | - |
-| `machineryEditTag` | Y | 9300-9471 | 172 | `getFilter`, `machineryCalculateImageBinding`, `machineryRebindRefresh`, `machineryUpdateSelection` |
+| `machineryGetExtendTags` | Y | 291-309 | 19 | - |
+| `machineryAutoResizeTagFilter` |  | 1108-1120 | 13 | - |
+| `machineryCalcuteContainTagsInner` |  | 2642-2703 | 62 | - |
+| `machineryCalcuteContainTags` | Y | 2706-2747 | 42 | `machineryCalcuteContainTagsInner` |
+| `machineryOpenPrevGroup` |  | 4525-4549 | 25 | `machineryOpenStarredGroup`, `machineryOpenTagAllGroup`, `machineryOpenTagGroup`, `machineryOpenUnfiledGroup` |
+| `machineryOpenNextGroup` |  | 4551-4572 | 22 | `machineryOpenStarredGroup`, `machineryOpenTagGroup`, `machineryOpenUnfiledGroup` |
+| `machineryConvertToRegexGroup` |  | 5437-5547 | 111 | - |
+| `machineryMatchWithRegexGroup` |  | 5549-5569 | 21 | - |
+| `openUntaggedTimeout` |  | 5865-5865 | 1 | - |
+| `machineryOpenUntagged` | Y | 5959-5997 | 39 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openUntaggedTimeout` |
+| `machineryOpenAllTags` | Y | 6069-6092 | 24 | `getTimeout`, `machineryRebindRefresh`, `machineryResetPage` |
+| `machineryUpdateSubFolderWidth` | Y | 6334-6348 | 15 | - |
+| `machineryOpenTagAllGroup` | Y | 7345-7359 | 15 | `tagRectSelecting` |
+| `machineryOpenUnfiledGroup` | Y | 7361-7375 | 15 | `tagRectSelecting` |
+| `machineryOpenStarredGroup` | Y | 7377-7391 | 15 | `tagRectSelecting` |
+| `machineryOpenTagGroup` | Y | 7393-7409 | 17 | `tagRectSelecting` |
+| `machineryRemoveTagGroup` | Y | 7413-7455 | 43 | `machineryOpenTagAllGroup` |
+| `machineryRefreshSubfolderList` | Y | 8670-8703 | 34 | `machineryGetAllChildFolder` |
+| `machineryEnableSubFolderNameEditable` | Y | 8862-8957 | 96 | `machinerySelectFolder` |
+| `machineryRenameTagGroup` | Y | 8985-9000 | 16 | - |
+| `machineryEditTag` | Y | 9007-9178 | 172 | `getFilter`, `machineryCalculateImageBinding`, `machineryRebindRefresh`, `machineryUpdateSelection` |
 
 ### core/keymap（20 项 / 627 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryBuildMousetrap` | Y | 3397-3535 | 139 | `getPageUpHandlerFn`, `machineryBack`, `machineryChangeTo1Star`, `machineryChangeTo2Star`, `machineryChangeTo3Star`, `machineryChangeTo4Star`, `machineryChangeTo5Star`, `machineryCopyImages` … |
-| `machineryInitMousetrap` | Y | 3539-3560 | 22 | `machineryBuildMousetrap` |
-| `machineryKeyCHandler` | Y | 4531-4536 | 6 | `machineryToggleCommentMode` |
-| `machineryKeyPHandler` | Y | 4538-4540 | 3 | `machineryOpenPluginPanel` |
-| `machineryKeyLeftHandler` | Y | 4545-4590 | 46 | `machinerySelectPrev`, `machineryUpdateSidebarList` |
-| `machineryKeyRightHandler` | Y | 4594-4627 | 34 | `machinerySelectNext`, `machineryUpdateSidebarList` |
-| `machineryModUpHandler` | Y | 4632-4644 | 13 | `machineryHomeHandler` |
-| `machineryModDownHandler` | Y | 4646-4658 | 13 | `machineryEndHandler` |
-| `machineryModLeftHandler` | Y | 4660-4674 | 15 | `machineryPrevHistory` |
-| `machineryModRightHandler` | Y | 4676-4690 | 15 | `machineryNextHistory` |
-| `machineryKeyUpHandler` | Y | 4790-4904 | 115 | `machineryOpenAll`, `machineryOpenAllTags`, `machineryOpenCommunity`, `machineryOpenPrevFolder`, `machineryOpenPrevGroup`, `machineryOpenPrevQuickAccess`, `machineryOpenPrevSmartFolder`, `machineryOpenRandom` … |
-| `machineryKeyDownHandler` | Y | 4912-5045 | 134 | `machineryOpenAllTags`, `machineryOpenCommunity`, `machineryOpenNextFolder`, `machineryOpenNextGroup`, `machineryOpenNextQuickAccess`, `machineryOpenNextSmartFolder`, `machineryOpenRandom`, `machineryOpenRecent` … |
-| `machineryPageDownHandler` | Y | 5062-5074 | 13 | - |
-| `machineryPageUpHandler` | Y | 5077-5094 | 18 | - |
-| `machineryNHandler` | Y | 5269-5280 | 12 | - |
-| `machinerySaveHandler` | Y | 5338-5343 | 6 | - |
-| `machineryHomeHandler` | Y | 6924-6933 | 10 | - |
-| `machineryEndHandler` | Y | 6937-6947 | 11 | - |
-| `getPageUpHandlerFn` | Y | 9607-9607 | 1 | `machineryPageUpHandler`, `scopeSingleton` |
-| `getPageDownHandlerFn` | Y | 9608-9608 | 1 | `machineryPageDownHandler`, `scopeSingleton` |
+| `machineryBuildMousetrap` | Y | 3350-3488 | 139 | `getPageUpHandlerFn`, `machineryBack`, `machineryChangeTo1Star`, `machineryChangeTo2Star`, `machineryChangeTo3Star`, `machineryChangeTo4Star`, `machineryChangeTo5Star`, `machineryCopyImages` … |
+| `machineryInitMousetrap` | Y | 3492-3513 | 22 | `machineryBuildMousetrap` |
+| `machineryKeyCHandler` | Y | 4321-4326 | 6 | `machineryToggleCommentMode` |
+| `machineryKeyPHandler` | Y | 4328-4330 | 3 | `machineryOpenPluginPanel` |
+| `machineryKeyLeftHandler` | Y | 4335-4380 | 46 | `machinerySelectPrev`, `machineryUpdateSidebarList` |
+| `machineryKeyRightHandler` | Y | 4384-4417 | 34 | `machinerySelectNext`, `machineryUpdateSidebarList` |
+| `machineryModUpHandler` | Y | 4422-4434 | 13 | `machineryHomeHandler` |
+| `machineryModDownHandler` | Y | 4436-4448 | 13 | `machineryEndHandler` |
+| `machineryModLeftHandler` | Y | 4450-4464 | 15 | `machineryPrevHistory` |
+| `machineryModRightHandler` | Y | 4466-4480 | 15 | `machineryNextHistory` |
+| `machineryKeyUpHandler` | Y | 4580-4694 | 115 | `machineryOpenAll`, `machineryOpenAllTags`, `machineryOpenCommunity`, `machineryOpenPrevFolder`, `machineryOpenPrevGroup`, `machineryOpenPrevQuickAccess`, `machineryOpenPrevSmartFolder`, `machineryOpenRandom` … |
+| `machineryKeyDownHandler` | Y | 4702-4835 | 134 | `machineryOpenAllTags`, `machineryOpenCommunity`, `machineryOpenNextFolder`, `machineryOpenNextGroup`, `machineryOpenNextQuickAccess`, `machineryOpenNextSmartFolder`, `machineryOpenRandom`, `machineryOpenRecent` … |
+| `machineryPageDownHandler` | Y | 4852-4864 | 13 | - |
+| `machineryPageUpHandler` | Y | 4867-4884 | 18 | - |
+| `machineryNHandler` | Y | 5059-5070 | 12 | - |
+| `machinerySaveHandler` | Y | 5122-5127 | 6 | - |
+| `machineryHomeHandler` | Y | 6708-6717 | 10 | - |
+| `machineryEndHandler` | Y | 6721-6731 | 11 | - |
+| `getPageUpHandlerFn` | Y | 9314-9314 | 1 | `machineryPageUpHandler`, `scopeSingleton` |
+| `getPageDownHandlerFn` | Y | 9315-9315 | 1 | `machineryPageDownHandler`, `scopeSingleton` |
 
 ### miscDomain（21 项 / 419 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `getLanguageBCP` |  | 279-286 | 8 | - |
-| `machineryToggleSlideshow` | Y | 1197-1203 | 7 | `machineryEnterSlideshowMode`, `machineryLeaveSlideshowMode` |
-| `machineryCheckTouchIDSupport` | Y | 1455-1469 | 15 | - |
-| `machineryEnterDetailMode` | Y | 3228-3322 | 95 | `getTimeout`, `machineryAddToRecentFile`, `machineryLastZoom`, `machineryPreloadImage`, `machineryZoom`, `zoomInitTimeout` |
-| `machineryLeaveDetailMode` | Y | 3327-3384 | 58 | `getTimeout`, `machineryFadeOutDetailMode`, `machineryInitMousetrap`, `zoomInitTimeout` |
-| `cgStack` |  | 3565-3565 | 1 | - |
-| `cgScopes` |  | 3566-3566 | 1 | - |
-| `CG_START_TOP` |  | 3567-3567 | 1 | - |
-| `CG_SPACING` |  | 3568-3568 | 1 | - |
-| `cgBuildTemplate` |  | 3573-3587 | 15 | - |
-| `cgRestack` |  | 3590-3602 | 13 | `CG_SPACING`, `CG_START_TOP`, `cgStack` |
-| `machineryNotify` | Y | 3608-3697 | 90 | `cgBuildTemplate`, `cgNotifyServiceCloseAll`, `cgRestack`, `cgStack`, `getFilter`, `getTimeout`, `undoTimeout` |
-| `cgNotifyServiceCloseAll` |  | 3700-3704 | 5 | `cgStack` |
-| `machineryToggleDetailMode` | Y | 3947-3949 | 3 | - |
-| `machineryQuicklook` | Y | 4427-4469 | 43 | `getPageDownHandlerFn`, `machineryToggleDetailMode` |
-| `machineryFadeOutDetailMode` | Y | 7599-7605 | 7 | - |
-| `machineryOpenPluginPanel` | Y | 7608-7611 | 4 | - |
-| `machineryEnterSlideshowMode` | Y | 7748-7765 | 18 | `getTimeout`, `machineryEnterDetailMode`, `machineryZoom` |
-| `machineryLeaveSlideshowMode` | Y | 7768-7783 | 16 | `getTimeout`, `machineryZoom` |
-| `machineryLockApp` | Y | 7788-7795 | 8 | `machineryFocusAppUnlockPassword` |
-| `machineryFocusAppUnlockPassword` | Y | 7797-7806 | 10 | - |
-
-### services/viewOpsService（18 项 / 285 行）
-
-| 名称 | exp | 行区间 | 行数 | 同文件依赖 |
-|---|---|---:|---:|---|
-| `machineryGetRatioExp` | Y | 1175-1180 | 6 | - |
-| `machineryGetRatioNonExp` | Y | 1183-1188 | 6 | - |
-| `machineryUpdateZoomRatio` | Y | 1192-1194 | 3 | - |
-| `machineryZoom` | Y | 2998-3012 | 15 | `machinerySmartZoom`, `machineryZoomFit`, `machineryZoomFitEdge` |
-| `machineryZoomFit` | Y | 3021-3023 | 3 | - |
-| `setViewModeDebounced` |  | 3135-3135 | 1 | - |
-| `machinerySetViewMode` | Y | 3136-3145 | 10 | `setViewModeDebounced` |
-| `zoomInitTimeout` |  | 3222-3222 | 1 | - |
-| `machineryLastZoom` | Y | 3709-3725 | 17 | `machineryGetRatioNonExp`, `machineryOnZoomRatioChanged` |
-| `machinerySmartZoom` | Y | 3729-3731 | 3 | - |
-| `machineryZoomActual` | Y | 3736-3775 | 40 | `machineryOnImageSizeHeightChanged`, `machineryOnZoomRatioChanged`, `machineryUpdateZoomRatio` |
-| `machineryToggleZoom` | Y | 3778-3808 | 31 | `machineryZoomActual`, `machineryZoomFit`, `machineryZoomFitEdge` |
-| `machineryZoomFitEdge` | Y | 3811-3878 | 68 | `machineryGetRatioNonExp`, `machineryOnZoomRatioChanged` |
-| `machineryZoomIn` | Y | 5329-5331 | 3 | - |
-| `machineryZoomOut` | Y | 5333-5335 | 3 | - |
-| `machineryCheckOperationSafety` | Y | 6953-6987 | 35 | `getFilter` |
-| `machineryCheckOperationSafety2` | Y | 6990-7024 | 35 | `getFilter` |
-| `machineryOnZoomRatioChanged` | Y | 8468-8472 | 5 | - |
+| `getLanguageBCP` |  | 280-287 | 8 | - |
+| `machineryToggleSlideshow` | Y | 1181-1187 | 7 | `machineryEnterSlideshowMode`, `machineryLeaveSlideshowMode` |
+| `machineryCheckTouchIDSupport` | Y | 1439-1453 | 15 | - |
+| `machineryEnterDetailMode` | Y | 3181-3275 | 95 | `getTimeout`, `machineryAddToRecentFile`, `machineryPreloadImage`, `zoomInitTimeout` |
+| `machineryLeaveDetailMode` | Y | 3280-3337 | 58 | `getTimeout`, `machineryFadeOutDetailMode`, `machineryInitMousetrap`, `zoomInitTimeout` |
+| `cgStack` |  | 3518-3518 | 1 | - |
+| `cgScopes` |  | 3519-3519 | 1 | - |
+| `CG_START_TOP` |  | 3520-3520 | 1 | - |
+| `CG_SPACING` |  | 3521-3521 | 1 | - |
+| `cgBuildTemplate` |  | 3526-3540 | 15 | - |
+| `cgRestack` |  | 3543-3555 | 13 | `CG_SPACING`, `CG_START_TOP`, `cgStack` |
+| `machineryNotify` | Y | 3561-3650 | 90 | `cgBuildTemplate`, `cgNotifyServiceCloseAll`, `cgRestack`, `cgStack`, `getFilter`, `getTimeout`, `undoTimeout` |
+| `cgNotifyServiceCloseAll` |  | 3653-3657 | 5 | `cgStack` |
+| `machineryToggleDetailMode` | Y | 3737-3739 | 3 | - |
+| `machineryQuicklook` | Y | 4217-4259 | 43 | `getPageDownHandlerFn`, `machineryToggleDetailMode` |
+| `machineryFadeOutDetailMode` | Y | 7312-7318 | 7 | - |
+| `machineryOpenPluginPanel` | Y | 7321-7324 | 4 | - |
+| `machineryEnterSlideshowMode` | Y | 7461-7478 | 18 | `getTimeout`, `machineryEnterDetailMode` |
+| `machineryLeaveSlideshowMode` | Y | 7481-7496 | 16 | `getTimeout` |
+| `machineryLockApp` | Y | 7501-7508 | 8 | `machineryFocusAppUnlockPassword` |
+| `machineryFocusAppUnlockPassword` | Y | 7510-7519 | 10 | - |
 
 ### services/uploadService（1 项 / 219 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryOnDropContainer` | Y | 8520-8738 | 219 | `getFilter`, `machineryHideUploadQueue`, `machineryShowUploadQueue` |
+| `machineryOnDropContainer` | Y | 8227-8445 | 219 | `getFilter`, `machineryHideUploadQueue`, `machineryShowUploadQueue` |
 
 ### services/folderCoreService（5 项 / 115 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `openAllTimeout` |  | 3131-3131 | 1 | - |
-| `machineryOpenAll` | Y | 3170-3217 | 48 | `getTimeout`, `machineryLeaveDetailMode`, `machineryOnImageSizeHeightChanged`, `machineryResetPage`, `machinerySetLastFolder`, `openAllTimeout` |
-| `openRandomTimeout` |  | 6079-6079 | 1 | - |
-| `machineryOpenRandom` | Y | 6089-6130 | 42 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openRandomTimeout` |
-| `machineryOpenCommunity` | Y | 6258-6280 | 23 | `machineryLeaveDetailMode`, `machineryResetPage` |
+| `openAllTimeout` |  | 3095-3095 | 1 | - |
+| `machineryOpenAll` | Y | 3123-3170 | 48 | `getTimeout`, `machineryLeaveDetailMode`, `machineryOnImageSizeHeightChanged`, `machineryResetPage`, `machinerySetLastFolder`, `openAllTimeout` |
+| `openRandomTimeout` |  | 5863-5863 | 1 | - |
+| `machineryOpenRandom` | Y | 5873-5914 | 42 | `getTimeout`, `machineryLeaveDetailMode`, `machineryResetPage`, `machinerySetLastFolder`, `openRandomTimeout` |
+| `machineryOpenCommunity` | Y | 6042-6064 | 23 | `machineryLeaveDetailMode`, `machineryResetPage` |
 
 ### stage/grid（4 项 / 91 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryResetPage` | Y | 3064-3107 | 44 | `machineryFindDupclipate` |
-| `machineryToggleAll` | Y | 5286-5325 | 40 | `getOffsetScrollbarFn`, `getTimeout`, `machineryZoomFitEdge` |
-| `machineryAutoScroll` | Y | 6470-6475 | 6 | `getTimeout` |
-| `getOffsetScrollbarFn` | Y | 9606-9606 | 1 | `scopeSingleton` |
+| `machineryResetPage` | Y | 3028-3071 | 44 | `machineryFindDupclipate` |
+| `machineryToggleAll` | Y | 5076-5115 | 40 | `getOffsetScrollbarFn`, `getTimeout` |
+| `machineryAutoScroll` | Y | 6254-6259 | 6 | `getTimeout` |
+| `getOffsetScrollbarFn` | Y | 9313-9313 | 1 | `scopeSingleton` |
 
 ### services/imageOpsService（7 项 / 86 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryChangeTo5Star` | Y | 5232-5235 | 4 | `machineryChangeStar` |
-| `machineryRemoveStar` | Y | 5240-5242 | 3 | `machineryChangeStar` |
-| `machineryChangeTo1Star` | Y | 5244-5247 | 4 | `machineryChangeStar` |
-| `machineryChangeTo2Star` | Y | 5249-5252 | 4 | `machineryChangeStar` |
-| `machineryChangeTo3Star` | Y | 5254-5257 | 4 | `machineryChangeStar` |
-| `machineryChangeTo4Star` | Y | 5259-5262 | 4 | `machineryChangeStar` |
-| `machineryChangeStar` | Y | 5583-5645 | 63 | `getFilter`, `machineryCheckOperationSafety`, `machineryUpdateItemsView` |
+| `machineryChangeTo5Star` | Y | 5022-5025 | 4 | `machineryChangeStar` |
+| `machineryRemoveStar` | Y | 5030-5032 | 3 | `machineryChangeStar` |
+| `machineryChangeTo1Star` | Y | 5034-5037 | 4 | `machineryChangeStar` |
+| `machineryChangeTo2Star` | Y | 5039-5042 | 4 | `machineryChangeStar` |
+| `machineryChangeTo3Star` | Y | 5044-5047 | 4 | `machineryChangeStar` |
+| `machineryChangeTo4Star` | Y | 5049-5052 | 4 | `machineryChangeStar` |
+| `machineryChangeStar` | Y | 5367-5429 | 63 | `getFilter`, `machineryUpdateItemsView` |
 
 ### core/navHistory（9 项 / 64 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `undoTimeout` |  | 3569-3569 | 1 | - |
-| `machineryUndo` | Y | 3885-3889 | 5 | `cgNotifyServiceCloseAll` |
-| `machineryNextHistory` | Y | 3893-3898 | 6 | - |
-| `machineryPrevHistory` | Y | 3900-3905 | 6 | - |
-| `machineryBack` | Y | 3908-3915 | 8 | `machineryLeaveDetailMode`, `machineryPrevHistory` |
-| `nextTimeout` |  | 3954-3954 | 1 | - |
-| `prevTimeout` |  | 3955-3955 | 1 | - |
-| `machineryOpenPrevQuickAccess` |  | 4697-4708 | 12 | `machineryOpenTrash` |
-| `machineryOpenNextQuickAccess` |  | 4710-4733 | 24 | - |
+| `undoTimeout` |  | 3522-3522 | 1 | - |
+| `machineryUndo` | Y | 3675-3679 | 5 | `cgNotifyServiceCloseAll` |
+| `machineryNextHistory` | Y | 3683-3688 | 6 | - |
+| `machineryPrevHistory` | Y | 3690-3695 | 6 | - |
+| `machineryBack` | Y | 3698-3705 | 8 | `machineryLeaveDetailMode`, `machineryPrevHistory` |
+| `nextTimeout` |  | 3744-3744 | 1 | - |
+| `prevTimeout` |  | 3745-3745 | 1 | - |
+| `machineryOpenPrevQuickAccess` |  | 4487-4498 | 12 | `machineryOpenTrash` |
+| `machineryOpenNextQuickAccess` |  | 4500-4523 | 24 | - |
 
 ### services/batchOpsService（1 项 / 24 行）
 
 | 名称 | exp | 行区间 | 行数 | 同文件依赖 |
 |---|---|---:|---:|---|
-| `machineryRemovePermanently` | Y | 7039-7062 | 24 | `machineryCalculateImageBinding`, `machineryGetSelectedItemElements`, `machineryRebindRefresh`, `machineryUpdateSelection` |
+| `machineryRemovePermanently` | Y | 6752-6775 | 24 | `machineryCalculateImageBinding`, `machineryGetSelectedItemElements`, `machineryRebindRefresh`, `machineryUpdateSelection` |
+
+### services/viewOpsService（1 项 / 1 行）
+
+| 名称 | exp | 行区间 | 行数 | 同文件依赖 |
+|---|---|---:|---:|---|
+| `zoomInitTimeout` |  | 3175-3175 | 1 | - |
 
 ## 2. 跨域共享顶层名（≥2 域引用 —— 最后搬或抽共享模块）
 
-- `getFilter`：filterDomain、itemDomain、libraryDomain、miscDomain、selectionViewDomain、services/imageOpsService、services/uploadService、services/viewOpsService、tagManagerDomain
+- `getFilter`：filterDomain、itemDomain、libraryDomain、miscDomain、selectionViewDomain、services/imageOpsService、services/uploadService、tagManagerDomain
 - `getTimeout`：MOUNT-INFRA（最后一批/或留共享）、itemDomain、libraryDomain、miscDomain、selectionViewDomain、services/folderCoreService、stage/grid、tagManagerDomain
 - `machineryRebindRefresh`：MOUNT-INFRA（最后一批/或留共享）、filterDomain、itemDomain、libraryDomain、selectionViewDomain、services/batchOpsService、tagManagerDomain
 - `machineryLeaveDetailMode`：MOUNT-INFRA（最后一批/或留共享）、core/navHistory、itemDomain、libraryDomain、selectionViewDomain、services/folderCoreService、tagManagerDomain
 - `machineryUpdateSelection`：MOUNT-INFRA（最后一批/或留共享）、itemDomain、libraryDomain、selectionViewDomain、services/batchOpsService、tagManagerDomain
 - `machineryCalculateImageBinding`：MOUNT-INFRA（最后一批/或留共享）、libraryDomain、selectionViewDomain、services/batchOpsService、tagManagerDomain
 - `machineryCalls`：MOUNT-INFRA（最后一批/或留共享）、filterDomain、itemDomain、selectionViewDomain
-- `machineryZoom`：MOUNT-INFRA（最后一批/或留共享）、libraryDomain、miscDomain、selectionViewDomain
 - `machineryUpdateItemsView`：MOUNT-INFRA（最后一批/或留共享）、itemDomain、services/imageOpsService
 - `machineryExistInSmartFilter`：MOUNT-INFRA（最后一批/或留共享）、filterDomain、libraryDomain
 - `machineryUpdateFilterCounts`：filterDomain、libraryDomain、selectionViewDomain
@@ -387,10 +369,7 @@
 - `machineryGrayColorFilter`：MOUNT-INFRA（最后一批/或留共享）、filterDomain
 - `machineryContentFilter`：MOUNT-INFRA（最后一批/或留共享）、filterDomain
 - `machineryFilterData`：MOUNT-INFRA（最后一批/或留共享）、filterDomain
-- `machineryZoomFitEdge`：services/viewOpsService、stage/grid
-- `machineryOnImageSizeHeightChanged`：services/folderCoreService、services/viewOpsService
 - `machineryAddToRecentFile`：miscDomain、selectionViewDomain
-- `machineryLastZoom`：miscDomain、selectionViewDomain
 - `machineryPreloadImage`：miscDomain、selectionViewDomain
 - `machineryInitMousetrap`：MOUNT-INFRA（最后一批/或留共享）、miscDomain
 - `machineryMultipleSelectNext`：core/keymap、selectionViewDomain
@@ -400,18 +379,14 @@
 - `machineryToggleAll`：MOUNT-INFRA（最后一批/或留共享）、core/keymap
 - `machineryToggleDetailMode`：core/keymap、miscDomain
 - `cgNotifyServiceCloseAll`：core/navHistory、miscDomain
-- `machineryGetRatioNonExp`：MOUNT-INFRA（最后一批/或留共享）、services/viewOpsService
-- `machineryUpdateZoomRatio`：MOUNT-INFRA（最后一批/或留共享）、services/viewOpsService
 - `machineryAutoScroll`：libraryDomain、selectionViewDomain
 - `machineryForceFitImageSize`：libraryDomain、selectionViewDomain
 - `machineryGetSelection`：libraryDomain、selectionViewDomain
-- `machineryCheckOperationSafety`：selectionViewDomain、services/imageOpsService
 - `machinerySelectPrev`：MOUNT-INFRA（最后一批/或留共享）、core/keymap
 - `machinerySelectNext`：MOUNT-INFRA（最后一批/或留共享）、core/keymap
 - `machineryChangeStar`：MOUNT-INFRA（最后一批/或留共享）、services/imageOpsService
 - `machineryShowUploadQueue`：itemDomain、services/uploadService
 - `machineryRemoveSmartFolderInner`：libraryDomain、selectionViewDomain
-- `machineryCheckOperationSafety2`：libraryDomain、selectionViewDomain
 - `machineryRemoveFolderInner`：libraryDomain、selectionViewDomain
 - `machineryEnterDetailMode`：MOUNT-INFRA（最后一批/或留共享）、miscDomain
 - `machineryToggleCurrentLevelSmartFoldersInner`：libraryDomain、selectionViewDomain
@@ -459,6 +434,7 @@
 | `./keymapActions` | { machineryCloseWindowHandler, machineryDestoryMousetrap, machineryMHandler, mac |
 | `./libraryDomain` | { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetAnc |
 | `../services/gridService` | { buildScrollbarSaver, machineryAdjustLayoutWidth, machineryChangeListHeight, ma |
+| `../services/viewOpsService` | { machineryCheckOperationSafety, machineryCheckOperationSafety2, machineryGetRat |
 
 ## 4. 建议批次顺序（按依赖自底向上）
 

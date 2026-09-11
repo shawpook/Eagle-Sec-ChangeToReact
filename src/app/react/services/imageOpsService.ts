@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeStar, machineryCheckOperationSafety, machineryGetExtendTags, machineryLeaveDetailMode, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeStar, machineryGetExtendTags, machineryLeaveDetailMode, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
 import { machineryVideoScreenShot } from './mediaService';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';

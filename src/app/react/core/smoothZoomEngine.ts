@@ -15,11 +15,12 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { machineryGetRatioNonExp } from '../core/dataMachinery';
+
 import { makeDraggable } from '../components/interactions/draggable';
 import { dom } from '../utils/domLite';
 
 
+import { machineryGetRatioNonExp } from '../services/viewOpsService';
 	/*****************************************************************************
 		Default settings:
 		For detailed description of individual parameters, see the help document

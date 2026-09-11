@@ -9,12 +9,16 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { machineryGetSelection, machineryLastZoom, machinerySmartZoom, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
+import { machineryGetSelection, getFilter, machineryOnImageSizeHeightChanged } from '../core/dataMachinery';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { q, addClass, removeClass } from '../utils/domQuery';
+import { q, qa, cssSet, addClass, removeClass, widthOf, heightOf } from '../utils/domQuery';
+import { debounce } from '../utils/func';
+import { detailUpdateZoomRatio, detailSmartZoom } from './detailService';
 
 
-import { machineryAdjustLayoutWidth, machineryChangeListHeight, machinerySwitchLayout } from './gridService';
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machinerySwitchLayout, machinerySaveListHeight, gridZoomFit, gridZoomIn, gridZoomOut } from './gridService';
+// 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
+let saveListHeightTimeout: any = null;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const EagleConfig: any = (window as any).EagleConfig || {};
@@ -242,3 +246,316 @@ export function machinerySaveLayout(s: any, folder: any, layout: any): void {
     w.localStorage[`eagle.list.layout.${s.rootDir}`] = layout;
   }
 }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryCheckOperationSafety(s: any, callback: any, amount: any = 100): void {
+  const w = window as any;
+  try {
+    if (s.selected && s.selected.length >= amount) {
+      var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
+        { "property": "count", "value": s.selected.length },
+      ]);
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${w.i18n.__("Dialog.BulkAction.Title")}</h4>
+                                <p class="alert-desc">${html}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__("Dialog.BulkAction.Button"),
+        cancelButtonText: w.i18n.__("general.cancel"),
+        allowEnterKey: false,
+      }).then(function (result: any) {
+        callback && callback();
+        scopeEvalAsync();
+      });
+    }
+    else {
+      callback && callback();
+    }
+  }
+  catch (err) {
+    callback && callback();
+  }
+}
+
+/* checkOperationSafety2（bundle 26823-26855 逐字：count 参数版） */
+export function machineryCheckOperationSafety2(s: any, count: any, callback: any, amount: any = 100): void {
+  const w = window as any;
+  try {
+    if (count >= amount) {
+      var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
+        { "property": "count", "value": count },
+      ]);
+      w.swal({
+        html: `
+                            <div class="alert">
+                                <div class="alert-icon warning"></div>
+                                <h4 class="alert-title">${w.i18n.__("Dialog.BulkAction.Title")}</h4>
+                                <p class="alert-desc">${html}</p>
+                            </div>
+                        `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: false, focusCancel: false, padding: 24,
+        allowEnterKey: false,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: w.i18n.__("Dialog.BulkAction.Button"),
+        cancelButtonText: w.i18n.__("general.cancel"),
+      }).then(function (result: any) {
+        callback && callback();
+        scopeEvalAsync();
+      });
+    }
+    else {
+      callback && callback();
+    }
+  }
+  catch (err) {
+    callback && callback();
+  }
+}
+
+/* getRatioExp（bundle 31336-31341 逐字） */
+export function machineryGetRatioExp(ratio: any): number {
+  if (ratio > 100) {
+    ratio = 100 + (ratio - 100) * 7;
+  }
+  return parseInt(ratio);
+}
+
+/* getRatioNonExp（bundle 31343-31348 逐字） */
+export function machineryGetRatioNonExp(ratio: any): number {
+  if (ratio > 100) {
+    ratio = (ratio - 100) / 7 + 100;
+  }
+  return ratio;
+}
+
+/* lastZoom（bundle 31288-31305 逐字；lastItemStates 经 scope 解析） */
+export function machineryLastZoom(s: any): boolean {
+  const w = window as any;
+  if (s.lastZoomMode === "edge") return false;
+  if (s.$root.preferences.habits.rememberLastZoom === "off") return false;
+  if (!s.current) return false;
+  if (s.isInlineMode) return false;
+  var state = s.lastItemStates[s.current.id];
+  if (state && state.data && state.data.tX !== undefined) {
+    detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
+    var ratio = parseInt(state.data.rA * 100 as any);
+    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    machineryOnZoomRatioChanged(s);
+    s.imageSize.zoomRatioExp = ratio;
+    return true;
+  }
+  return false;
+}
+
+/** imageSize.zoomRatio 变化后的统一处理（原 $watch("imageSize.zoomRatio") 的 listener）。 */
+export function machineryOnZoomRatioChanged(s: any): void {
+  if (!s || !s.imageSize) return;
+  s.sliderZoomRatio = s.imageSize.zoomRatio;
+  syncDetailFromScope();
+}
+
+export function machinerySetViewMode(s: any, viewMode: any): void {
+  const w = window as any;
+  if (!viewMode) return;
+  if (!setViewModeDebounced) {
+    setViewModeDebounced = debounce(function (vm: any) {
+      localStorage.setItem(`eagle.viewMode.${s.rootDir}`, vm);
+    }, 500);
+  }
+  setViewModeDebounced(viewMode);
+}
+
+export function machinerySmartZoom(s: any, target: any, forceMode: any): void {
+  detailSmartZoom(s, target, forceMode);
+}
+
+/* toggleZoom（bundle 33990-34012 逐字） */
+export function machineryToggleZoom(s: any, event: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) return;
+  if (s.VIDEO_TYPES[s.current.ext]) {
+    if (s.lastZoomMode !== "edge") {
+      machineryZoomFit(s, event);
+      s.lastZoomMode = "edge";
+      syncDetailFromScope();
+      s.zoomFitSize = s.imageSize.zoomRatioExp;
+    }
+    else {
+      machineryZoomActual(s, event);
+      s.lastZoomMode = "fit";
+      syncDetailFromScope();
+      s.zoomFitSize = 0;
+    }
+  }
+  else {
+    if (s.lastZoomMode !== "edge") {
+      machineryZoomFitEdge(s, event, true);
+      s.lastZoomMode = "edge";
+      syncDetailFromScope();
+    }
+    else {
+      machineryZoomFit(s, event);
+      s.lastZoomMode = "fit";
+      syncDetailFromScope();
+    }
+  }
+  localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
+}
+
+export function machineryUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTransition: any): void {
+  detailUpdateZoomRatio(s, ratio, x, y, hasTransition);
+}
+
+/* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
+export function machineryZoom(s: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) return;
+  if (s.lastZoomMode === "edge") {
+    if (s.current && !w.VIDEO_TYPES[s.current.ext]) {
+      machineryZoomFitEdge(s);
+    }
+    else {
+      machineryZoomFit(s);
+    }
+  }
+  else {
+    machinerySmartZoom(s);
+  }
+}
+
+/* zoomActual（bundle 33915-33937 逐字） */
+export function machineryZoomActual(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault && event.preventDefault();
+  if (!s.isDetailMode) {
+    s.imageSize.height = 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machineryOnImageSizeHeightChanged(s);
+    machineryChangeListHeight(s);
+    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+      machineryAdjustLayoutWidth(s, 0);
+      machinerySaveListHeight(s, s.imageSize.height);
+    }
+  } else {
+    s.imageSize.zoomRatio = 100;
+    machineryOnZoomRatioChanged(s);
+    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
+    machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
+
+    // 如果是視頻格式，尽可能使用视频原来尺寸
+    var mpvPlayer = q(".detail-wrap mpv-video") as any;
+    if (mpvPlayer) {
+      mpvPlayer.scaleMode = 'original';
+    }
+    else {
+      var $videos = qa(".detail-wrap video") as HTMLVideoElement[];
+      if ($videos.length > 0) {
+        var vW = $videos[0].videoWidth;
+        var vH = $videos[0].videoHeight;
+        cssSet(".detail-wrap video", {
+          'max-width': `${vW}px !important`,
+          'max-height': `${vH}px !important`,
+        });
+        addClass(".detail-wrap video", "fit");
+      }
+    }
+  }
+}
+
+/* b1-9bd：zoomFit 实现体归位 services/gridService.ts */
+export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
+  gridZoomFit(s, event, noAnimation);
+}
+
+/* zoomFitEdge（bundle 34015-34077 逐字） */
+export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): void {
+  const w = window as any;
+  event && event.preventDefault && event.preventDefault();
+
+  if (hasTransition) {
+    addClass("#detail-container", "zooming");
+    setTimeout(function () {
+      removeClass("#detail-container", "zooming");
+    }, 300);
+  }
+
+  var current = s.current;
+  var ratio = s.imageSize.zoomRatio || 100;
+  var lastRatio = ratio;
+  var $container = q(".content-panel");
+  var toolbarHeight = 40;
+  var containerWidth;
+  var containerHeight;
+  var offsetY = 0;
+
+  if (s.isSlideshowMode) {
+    toolbarHeight = 0;
+    containerWidth = window.innerWidth;
+    containerHeight = window.innerHeight - toolbarHeight;
+  }
+  else if (s.isInlineMode) {
+    toolbarHeight = 96;
+    containerWidth = window.innerWidth;
+    containerHeight = heightOf($container) - toolbarHeight;
+  }
+  else {
+    toolbarHeight = 48;
+    containerWidth = widthOf($container);
+    containerHeight = heightOf($container) - toolbarHeight;
+  }
+
+  var a = parseInt((containerHeight) / current.height * 100 as any);
+  var b = parseInt((containerWidth) / current.width * 100 as any);
+  ratio = Math.min(a, b);
+  offsetY = toolbarHeight / 2 * 100 / ratio;
+
+  if (!current) return;
+
+  cssSet("#detail-image", {
+    "transform": `rotate(0deg)`,
+    "transition": "none"
+  });
+
+  var $detailContainer = q("#detail-container");
+  var width = widthOf($detailContainer);
+  var height = current && current.height || heightOf($detailContainer);
+
+  offsetY = offsetY || 0;
+
+  if (ratio) {
+    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    machineryOnZoomRatioChanged(s);
+    s.imageSize.zoomRatioExp = ratio;
+    s.zoomFitSize = ratio;
+  }
+  s.showLargeImage = true;
+  detailZoom()?.focusTo( {
+    x: width / 2,
+    y: height / 2 + offsetY,
+    zoom: parseInt(ratio),
+    speed: 0
+  });
+}
+
+export function machineryZoomIn(s: any, event: any): void {
+  gridZoomIn(s, event);
+}
+
+export function machineryZoomOut(s: any, event: any): void {
+  gridZoomOut(s, event);
+}
+
+let setViewModeDebounced: any = null;

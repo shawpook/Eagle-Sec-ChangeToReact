@@ -23,7 +23,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
-import { getOffsetScrollbarFn, getFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryHideUploadQueue, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList } from './dataMachinery';
+import { getOffsetScrollbarFn, getFilter, machineryCalculateImageBinding, machineryForceFitImageSize, machineryHideUploadQueue, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
@@ -32,6 +32,7 @@ import { scopeEvalAsync } from '../global/scopeShim';
 import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setHtml, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
 import { machineryGetAncestorFolders, machinerySaveFolder } from './libraryDomain';
 import { machineryRelayout } from '../services/gridService';
+import { machineryCheckOperationSafety } from '../services/viewOpsService';
 declare const IPCHelper: any;
 declare const remote: any;
 

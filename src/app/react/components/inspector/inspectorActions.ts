@@ -7,12 +7,13 @@ import { q, blurOn, selectText } from '../../utils/domQuery';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { getOffsetScrollbarFn, machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode, machineryOpenPluginPanel, machineryRebindRefresh, machineryUpdateItemView } from '../../core/dataMachinery';
+import { getOffsetScrollbarFn, machineryEditTag, machineryEnterDetailMode, machineryOpenPluginPanel, machineryRebindRefresh, machineryUpdateItemView } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
 
 import { machineryRelayout } from '../../services/gridService';
+import { machineryCheckOperationSafety } from '../../services/viewOpsService';
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
  *

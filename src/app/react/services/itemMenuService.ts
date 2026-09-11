@@ -16,7 +16,7 @@
  */
 // @ts-nocheck
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryCopyImages, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRebindRefresh, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCopyImages, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRebindRefresh, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow } from '../core/dataMachinery';
 import { machineryVideoScreenShot } from './mediaService';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
@@ -32,6 +32,7 @@ import { regenerateThumbnail, replaceFile } from './imageOpsService';
 import { addToLibraryChannel, glRemoveitemsChannel, webpConvertStartChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { machineryGetRecentFolders } from '../core/libraryDomain';
+import { machineryCheckOperationSafety } from './viewOpsService';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });

@@ -13,7 +13,7 @@
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
-import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout, machineryCalculateImageBinding, machineryCalcuteContainTags, machineryCheckOperationSafety2, machineryOpenAll, machineryOpenTagAllGroup, machineryRemoveTagGroup, machineryRenameTagGroup, machineryUpdateItemsView, machineryUpdateSelection } from './dataMachinery';
+import { getFilter as machineryGetFilter, getTimeout as machineryGetTimeout, machineryCalculateImageBinding, machineryCalcuteContainTags, machineryOpenAll, machineryOpenTagAllGroup, machineryRemoveTagGroup, machineryRenameTagGroup, machineryUpdateItemsView, machineryUpdateSelection } from './dataMachinery';
 import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
@@ -27,6 +27,7 @@ import { scopeEvalAsync } from '../global/scopeShim';
 import { q, qa, widthOf, cssGet, cssSet, hide, show, setText, textOf, isVisible, offsetLeftOf, addClass, removeClass, delegateTarget } from '../utils/domQuery';
 
 import { machinerySaveFolder } from './libraryDomain';
+import { machineryCheckOperationSafety2 } from '../services/viewOpsService';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 

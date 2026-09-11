@@ -204,9 +204,8 @@ try {
       && second.querySelector('.metas').textContent.indexOf('1') > -1;
   })()`);
   await assertExpr('a5-subfolder-sortable-init', `(() => {
-    const $ = window.jQuery;
     const list = document.querySelector('#eagle-sub-folder-host .sub-folder-list');
-    return !!list && !!$(list).data('ui-sortable');
+    return !!list && !!list.__eagleSortable;
   })()`);
   await evalNow(`(() => { const b = window.$bodyScope; b.isHideSubFolder = false; b.$evalAsync(); return true; })()`);
   await assertExpr('a5-subfolder-collapsed', `!document.querySelector('#eagle-sub-folder-host .sub-folder-list')`);

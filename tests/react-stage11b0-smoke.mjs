@@ -107,18 +107,16 @@ try {
     return true;
   })()`);
   await assertExpr('b0-rectselect-rect-shown', `(() => {
-    const $ = window.jQuery;
-    const rect = $('#box-container .rect');
-    return rect.length === 1 && rect.css('display') !== 'none';
+    const rects = document.querySelectorAll('#box-container .rect');
+    return rects.length === 1 && getComputedStyle(rects[0]).display !== 'none';
   })()`);
   await evalNow(`(() => {
     window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0 }));
     return true;
   })()`);
   await assertExpr('b0-rectselect-rect-hidden', `(() => {
-    const $ = window.jQuery;
-    const rect = $('#box-container .rect');
-    return rect.length === 1 && rect.css('display') === 'none';
+    const rects = document.querySelectorAll('#box-container .rect');
+    return rects.length === 1 && getComputedStyle(rects[0]).display === 'none';
   })()`);
 
   // ── autoScroll 广播 ──
@@ -130,16 +128,17 @@ try {
 
   // ── boxContainerScrollbar ──
   await assertExpr('b0-scrollbar-thumb-style', `(() => {
-    const $ = window.jQuery;
-    return $('#box-container-scrollbar .box-container-scrollbar-thumb').css('will-change') === 'transform';
+    const thumb = document.querySelector('#box-container-scrollbar .box-container-scrollbar-thumb');
+    return !!thumb && getComputedStyle(thumb).willChange === 'transform';
   })()`);
   await evalNow(`(() => {
-    window.jQuery('#box-container-scrollbar').trigger('UPDATE_BOX_SCROLLBAR');
+    const bar = document.getElementById('box-container-scrollbar');
+    if (bar) bar.dispatchEvent(new CustomEvent('UPDATE_BOX_SCROLLBAR'));
     return true;
   })()`);
   await assertExpr('b0-scrollbar-normal-mode', `(() => {
-    const $ = window.jQuery;
-    return $('#box-container-scrollbar').css('display') === 'none';
+    const bar = document.getElementById('box-container-scrollbar');
+    return !!bar && getComputedStyle(bar).display === 'none';
   })()`);
 
   // ── scrollToTopSentinel 初始化样式 ──

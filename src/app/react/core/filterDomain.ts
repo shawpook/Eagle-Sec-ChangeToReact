@@ -18,7 +18,8 @@ import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncFilterFromScope } from '../store/filterState';
-import { machineryCalcuteContainFolders, machineryOpenQuickSearch, machineryUpdateFilterCounts } from '../core/dataMachinery';
+import { machineryCalcuteContainFolders, machineryUpdateFilterCounts } from '../core/dataMachinery';
+import { machineryOpenQuickSearch } from '../core/keymapActions';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 // b1-9bz-A 收口：迁移体 contentFilter/search/searchFocus 消费的原 controllerFns 闭包符号

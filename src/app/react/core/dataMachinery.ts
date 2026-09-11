@@ -86,10 +86,11 @@ import { resetFilter } from './filterDomain';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { saveCrop } from '../services/imageOpsService';
 import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from './../global/bus';
-import { autoscrollChannel, calculateImageBindingChannel, glRemoveitemsChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
+import { autoscrollChannel, calculateImageBindingChannel, glRemoveitemsChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize, pinyinCache } from '../utils/normalize';
 import { machineryColorSimilarityDistance, machineryRgbToHex } from '../utils/color';
+import { machineryCloseWindowHandler, machineryDestoryMousetrap, machineryMHandler, machineryModShiftDownHandler, machineryModShiftLeftHandler, machineryModShiftRightHandler, machineryModShiftUpHandler, machineryOpenActionsPanel, machineryOpenQuickSearch } from './keymapActions';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let calculateImageBindingTimeout: any = null;
 // ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
@@ -3802,17 +3803,6 @@ export function machineryBuildMousetrap(s: any): any {
 }
 
 /* destoryMousetrap（bundle 49316-49325 逐字；destory 原码 typo 逐字保留） */
-export function machineryDestoryMousetrap(s: any): void {
-  const w = window as any;
-  if (!s.mousetrap) return;
-
-  for (var key in s.mousetrap) {
-    if (s.mousetrap.hasOwnProperty(key)) {
-      w.Mousetrap.unbind(key);
-    }
-  }
-}
-
 /* initMousetrap（bundle 49326-49330 逐字） */
 export function machineryInitMousetrap(s: any): void {
   machineryDestoryMousetrap(s);
@@ -5001,50 +4991,6 @@ export function machineryModRightHandler(s: any, event: any): void {
   }
 }
 
-export function machineryModShiftUpHandler(s: any, event: any): void {
-  event && event.preventDefault();
-  if (s.isCropMode) {
-    resizeCropToolChannel.emit({
-      horizontal: 0,
-      vertical: -10
-    });
-    return;
-  }
-}
-
-export function machineryModShiftDownHandler(s: any, event: any): void {
-  event && event.preventDefault();
-  if (s.isCropMode) {
-    resizeCropToolChannel.emit({
-      horizontal: 0,
-      vertical: 10
-    });
-    return;
-  }
-}
-
-export function machineryModShiftLeftHandler(s: any, event: any): void {
-  event && event.preventDefault();
-  if (s.isCropMode) {
-    resizeCropToolChannel.emit({
-      horizontal: -10,
-      vertical: 0
-    });
-    return;
-  }
-}
-
-export function machineryModShiftRightHandler(s: any, event: any): void {
-  event && event.preventDefault();
-  if (s.isCropMode) {
-    resizeCropToolChannel.emit({
-      horizontal: 10,
-      vertical: 0
-    });
-    return;
-  }
-}
-
 /* ── c18e-5：keyUp/keyDown handler 族（含侧栏导航闭包）───────────────── */
 
 /* 域内闭包移植（原 controller 内 function 声明，非 scope 成员）：
@@ -5643,18 +5589,6 @@ export function machineryChangeTo4Star(s: any, event: any): void {
 /* closeWindowHandler（bundle 30802-30812 逐字；**bundle 原版怪癖：参数名为 $event 但体内
    引用全局 event——ESM 经 w.event 复刻同语义**（mousetrap 派发期内 window.event 即键盘事件）；
    IPCHelper 脚本级词法绑定（c17a 接装）经 window） */
-export function machineryCloseWindowHandler(s: any, $event: any): void {
-  const w = window as any;
-  if (s.isPreviewing) {
-    if (w.process.platform == 'darwin') {
-      w.event && w.event.stopPropagation();
-      w.event && w.event.preventDefault();
-      w.IPCHelper.send('quicklook', s.selected[0]);
-      s.isPreviewing = false;
-    }
-  }
-}
-
 /* nHandler（bundle 30813-30824 逐字：详情内视频/音频添加视频评论；VIDEO_TYPES/AUDIO_TYPES
    经 window（Tier-1 TYPES 契约），addVideoComment 经 scope 解析） */
 export function machineryNHandler(s: any, $event: any): void {
@@ -5667,17 +5601,6 @@ export function machineryNHandler(s: any, $event: any): void {
     if (video) {
       machineryAddVideoComment(s, s.current, video);
     }
-  }
-}
-
-/* mHandler（bundle 30825-30834 逐字：详情内视频/音频静音切换） */
-export function machineryMHandler(s: any, $event: any): void {
-  const w = window as any;
-  if (!s.isDetailMode) {
-    return;
-  }
-  if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
-    clickEl(".vjs-mute-control");
   }
 }
 
@@ -5799,17 +5722,7 @@ export function machinerySetFolderCover(s: any): void {
   machinerySaveFolder(s);
 }
 
-/* ── c18f-3：inspector 面板/快捷搜索打开器 ───────────────────────────── */
-
-/* openQuickSearch（bundle 32512-32514 逐字） */
-export function machineryOpenQuickSearch(s: any, event: any): void {
-  openQuickSearchModalChannel.emit();
-}
-
-/* openActionsPanel（bundle 43279-43282 逐字；eagle.action 经 window） */
-export function machineryOpenActionsPanel(s: any, event: any): void {
-  (window as any).eagle.action.open(s.selected);
-}
+/* ── c18f-3：inspector 面板/快捷搜索打开器（D-1 B-3 已归位 core/keymapActions.ts）── */
 
 /* openInspectorTagSelectPanel（bundle 43283-43287 逐字；body scope 生效版——54887 系为
    其他 controller 的 $bodyScope 委派壳） */

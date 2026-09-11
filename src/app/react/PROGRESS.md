@@ -2191,6 +2191,22 @@
 > | **b1-9bz-C-5** | 三窗口面收口（preview / preferences / collect） | 133 处 | C-3 | 各自 scope，独立门禁 |
 > | **b1-9bz-C-6** | `scopeShim` / `scopeBridge` / `coreState` 删除 + 永久哨兵扩面 + 收官审计 | 65 处 | C-2…C-5 全部 | REWRITE-PLAN v2 的 P4 终慹 |
 >
+>
+> **【C-6 ✅（2026-09-11，提交 `3a68168`）：补迁 gl:* + 永久哨兵扩面；shim 整体删除另议】**
+>
+> - **补迁 18 处**：新加的 C-6 禁项暴露出 C-2 按频道名枚举迁移的盲区 ——
+>   `gl:reset` / `gl:removeItems` / `gl:scrollToTop` / `$$rebind::refreshContainSize`
+>   （senders 与 receivers 均在 React 侧）此前漏迁。broadcast 19→4。
+> - **永久哨兵扩面**：主窗口禁止 `X.$evalAsync( / $apply( / $watch( / $watchCollection( /
+>   $broadcast( / $on(`（三窗口与 scopeShim 除外）。三类已知遗留列行级白名单：
+>   ① appCore.scopeApply 内部的 $apply（C-3 实测直调化会改失败路径语义）；
+>   ② gridDirectives 的 $on('$destroy')（Angular 生命周期残留，无发送方）；
+>   ③ FilterItemShell / Sidebar 的动态事件名 $on。
+> - **scopeShim / coreState 整体删除不可行（实测）**：它是 178 个 scope 字段的载体
+>   （属性访问器后端），需先把字段全迁 store。且单删 watcher 机制会让 1m1 的
+>   `m1-A6-scope-shim` / `m1-E-selected-watch` 挂（sweepForeignWatchers 与 shim 形状
+>   断言仍依赖它）—— 已回退。留待字段全面 store 化后处置。
+
 > **【C-5 ✅ 完成（2026-09-11，提交 `b8fef1b`，全套件 55/55 ALL GREEN）】**
 >
 > 实测三窗口的 controllerScope 是**各自的普通对象**：preview 有 `$evalAsync` 门面（= notify），

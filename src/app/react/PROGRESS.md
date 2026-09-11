@@ -7160,3 +7160,19 @@ D-2（jQuery/vendor 清零）首次全量回归（`node tests/run-react-suite.mj
 **AB 复核**：`a4-search-none`、`tm-unfiled-mode` 在会话基线 `d8253c6`（临时 worktree + node_modules junction）复现相同失败，确证非本会话引入。
 
 **门禁终态**：`REACT SUITE ALL GREEN`（55/55）；`bz-export-check` 无问题；tsc 619（<788 基线）；哨兵 `jQuery 0 / vendorScriptTags 0`。
+
+---
+
+**b1-9bz-D-1 Track B：B-2/B-3/B-4 三批（2026-09-11，同会话续批）**
+
+安全模式统一为「只搬**零反向依赖**声明到不 import dataMachinery 的模块」，避免 dataMachinery↔域文件的循环 import 求值顺序断裂；每批 probe + 定向测试 + tsc 不升，末批跑全量。
+
+| 批次 | 内容 | 目标模块（叶子安全） | 引用改道 |
+|---|---|---|---|
+| **B-2** | `machineryColorSimilarityDistance` + `machineryRgbToHex`（color-convert/delta-e 依赖随迁） | 新 `utils/color.ts` | `filterDomain` |
+| **B-3** | 键盘动作 handler 族 9 个（destoryMousetrap / mod+shift+方向×4 / closeWindow / MHandler / openQuickSearch / openActionsPanel） | 新 `core/keymapActions.ts` | `Sidebar`、`Toolbar`、`filterDomain` |
+| **B-4** | 媒体族 7 个（next/prevGifFrame、addVideoComment、getVideoPlayer、rememberVideoCurrentTime、videoScreenShot、calcRotateDegree） | `services/mediaService.ts`（该文件与 dataMachinery 的 import 环在本批前已存在） | `DetailToolbar`、`itemDomain`、`itemMenuService`、`miscDomain`、`selectionViewDomain`、`imageOpsService` |
+
+`machinerySaveHandler` 因 `saveCrop`（imageOpsService→dataMachinery）会新增环，暂留；`machineryNHandler` 依赖 `machineryAddVideoComment`，非零依赖不搬。
+
+**门禁**：`bz-export-check` 无问题（2025 命名导入/144 文件）；tsc **619**（未升）；probe LOAD_OK；**全套 55 项 ALL GREEN**。dataMachinery 11,651 → **11,508 行**。

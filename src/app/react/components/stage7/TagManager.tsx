@@ -8,7 +8,7 @@ import { ContentEditable } from '../inspector/ContentEditable';
 import { makeResizable } from '../interactions/resizable';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { useVirtualWindow } from '../sidebar/Sidebar';
-import { $ } from '../detail/detailHooks';
+import { offsetOf, widthOf, cssGet, outerHeightOf } from '../../utils/domQuery';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { syncTagManagerFromScope } from '../../store/tagManagerState';
 import { syncFilterFromScope } from '../../store/filterState';
@@ -98,27 +98,27 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       tagRectSelection = {};
       container = element.querySelector('.tag-manager-container') as HTMLElement;
       if (container) container.appendChild(rect);
-      windowHeight = $()(window).height();
+      windowHeight = window.innerHeight;
       tagRectSelection = {};
 
       const s = getBodyScope();
       if (e.which !== 1 || s?.isDetailMode) return;
 
-      offset = $()(container).offset();
+      offset = offsetOf(container);
       if (!offset) return;
 
       const displayData = s?.TagManager?.tagsResult?.display || [];
       const columnWidth = s?.TagManager?.tagsResult?.columnWidth || 200;
-      const $container = $()(container);
-      const tagWidth = $container.find('.tag').width() || 0;
+      const $container = container as HTMLElement;
+      const tagWidth = widthOf($container.querySelector('.tag') as HTMLElement) || 0;
       const gapWidth = columnWidth - tagWidth;
-      const containerPaddingLeft = parseInt($container.css('padding-left')) || 0;
-      const containerPaddingTop = parseInt($container.css('padding-top')) || 0;
+      const containerPaddingLeft = parseInt(cssGet($container, 'padding-left')) || 0;
+      const containerPaddingTop = parseInt(cssGet($container, 'padding-top')) || 0;
 
-      const $groupDescription = $container.find('.group-description');
+      const $groupDescription = $container.querySelector('.group-description') as HTMLElement | null;
       let descriptionHeight = 0;
-      if ($groupDescription.length > 0) {
-        descriptionHeight = $groupDescription.outerHeight(true) || 0;
+      if ($groupDescription) {
+        descriptionHeight = outerHeightOf($groupDescription) || 0;
       }
 
       let currentY = 0;
@@ -150,7 +150,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       });
 
       tagRectSelection.startX = startX = e.pageX - offset.left;
-      tagRectSelection.startY = startY = e.pageY - offset.top + $container.scrollTop();
+      tagRectSelection.startY = startY = e.pageY - offset.top + $container.scrollTop;
       w.tagRectSelecting = true;
 
       rect.style.opacity = '1';
@@ -186,8 +186,8 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       if (!w.tagRectSelecting) return;
       const s = getBodyScope();
 
-      const $container = $()(container);
-      const scrollTop = $container.scrollTop();
+      const $container = container as HTMLElement;
+      const scrollTop = $container.scrollTop;
       const flipX = startX > e.pageX - offset.left;
       const flipY = startY > e.pageY - offset.top + scrollTop;
 
@@ -225,12 +225,12 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
     };
 
     element.addEventListener('mousedown', onMouseDown);
-    $()(window).on('mouseup', onMouseUp);
-    $()(window).on('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('mousemove', onMouseMove);
     return () => {
       element.removeEventListener('mousedown', onMouseDown);
-      $()(window).off('mouseup', onMouseUp);
-      $()(window).off('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMouseMove);
       try {
         rect.remove();
       } catch (err) {}

@@ -1,7 +1,8 @@
 import { FileUrlHelper } from '../../core/fileUrlHelper';
 import { useEffect, useRef } from 'react';
 import { t } from '../../global/eagleGlobals';
-import { $, safeZoomData, getIpc, req } from './detailHooks';
+import { safeZoomData, getIpc, req } from './detailHooks';
+import { q, qa, widthOf, heightOf, offsetOf, outerWidthOf, outerHeightOf, cssGet, setCssEl, setHtmlEl, focusEl, blurEl, onEl, offEl } from '../../utils/domQuery';
 import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
@@ -88,13 +89,13 @@ export function useRectComment(enabled: boolean) {
       const zoomData = safeZoomData();
       const zoomRatio = zoomData.ratio;
 
-      const offset = $()(element).offset();
+      const offset = offsetOf(element);
       void offset;
       posRef.current.startX = e.pageX;
       posRef.current.startY = e.pageY;
       const rect: any = {};
       rect.startX = posRef.current.downX = e.offsetX;
-      rect.startY = posRef.current.downY = e.offsetY + $()(element).scrollTop() / zoomRatio;
+      rect.startY = posRef.current.downY = e.offsetY + element.scrollTop / zoomRatio;
       scopeApply(getBodyScope(), function (sc) {
         sc.commentRect = rect;
         sc.dragging = true;
@@ -110,18 +111,18 @@ export function useRectComment(enabled: boolean) {
       AnnotationPreview.hovering = false;
       AnnotationPreview.hide();
       setTimeout(function () {
-        $()('#annotation-preview-container-input').focus();
+        focusEl('#annotation-preview-container-input');
       }, 24);
       setTimeout(function () {
-        $()('#annotation-preview-container-input').blur();
+        blurEl('#annotation-preview-container-input');
       }, 50);
       scopeApply(s, function (sc) {
-        if ($()('#box-container').length <= 0) return;
-        const offsetLeft = $()('#box-container').offset().left - $()('#detail-image').offset().left;
-        const offsetTop = $()('#box-container').offset().top - $()('#detail-image').offset().top;
+        if (!q('#box-container')) return;
+        const offsetLeft = (offsetOf(q('#box-container'))?.left ?? 0) - (offsetOf(q('#detail-image'))?.left ?? 0);
+        const offsetTop = (offsetOf(q('#box-container'))?.top ?? 0) - (offsetOf(q('#detail-image'))?.top ?? 0);
         void offsetLeft;
         void offsetTop;
-        const image = $()('#detail-image').get(0);
+        const image = q('#detail-image') as HTMLImageElement;
         const ratio = sc.current ? sc.current.width / image.clientWidth : 0;
         const zoomData = safeZoomData();
         const zoomRatio = zoomData.ratio;
@@ -132,7 +133,7 @@ export function useRectComment(enabled: boolean) {
         const comment = {
           id: (window as any).guid(),
           x: Math.round(rect.startX * ratio),
-          y: Math.round((rect.startY + $()(element).scrollTop()) * ratio),
+          y: Math.round((rect.startY + element.scrollTop) * ratio),
           width: Math.round(rect.w * ratio),
           height: Math.round(rect.h * ratio),
           annotation: '',
@@ -145,9 +146,9 @@ export function useRectComment(enabled: boolean) {
           }
           sc.current.comments.push(comment);
           rebindRefreshChannel.emit(true);
-          $()(window).trigger('resize.comments');
+          window.dispatchEvent(new Event('resize.comments'));
           setTimeout(function () {
-            (window as any).AnnotationPreview.lastElem = $()('#comment-' + comment.id)[0];
+            (window as any).AnnotationPreview.lastElem = q('#comment-' + comment.id) || undefined;
             (window as any).AnnotationPreview.show(true);
           }, 100);
           (window as any).electronLog &&
@@ -207,10 +208,10 @@ export function recomputeCommentRatio() {
   if (!$bodyScope?.isDetailMode || !$bodyScope.isCommentMode) return;
   const image = $bodyScope.current;
   if (!image) return;
-  const $image = $()('#detail-image');
-  if (image && image.width && $image.length) {
+  const $image = q('#detail-image');
+  if (image && image.width && $image) {
     scopeApply($bodyScope, function (s) {
-      s.ratio = image.width / $image.width();
+      s.ratio = image.width / widthOf($image);
       syncDetailFromScope();
     });
   }
@@ -218,52 +219,52 @@ export function recomputeCommentRatio() {
 
 export function useCommentsContainer(currentId: string | undefined, hasComments: boolean) {
   useEffect(() => {
-    const $w = $();
-    $()('.annotation').blur();
+    qa('.annotation').forEach(function (el) {
+      el.blur();
+    });
 
     const resizeHandler = () => recomputeCommentRatio();
 
     resizeHandler();
-    $()(window).on('resize.comments', resizeHandler);
+    window.addEventListener('resize.comments', resizeHandler);
     // 原 $(window).trigger("resize.comments") 消費方
-    (window as any).__eagleResizeComments = () => $()(window).trigger('resize.comments');
+    (window as any).__eagleResizeComments = () => window.dispatchEvent(new Event('resize.comments'));
 
     // 原 $watch("image.id") → 圖片載入後重算 ratio
     if (hasComments) {
-      const $image = $()('#detail-image');
-      if (getBodyScope()?.current?.width && $image.length) {
+      const $image = q('#detail-image');
+      if (getBodyScope()?.current?.width && $image) {
         const onLoad = function () {
           const image = getBodyScope()?.current;
           if (!image) return;
           scopeApply(getBodyScope(), function (s) {
-            s.ratio = image.width / $image.width();
+            s.ratio = image.width / widthOf($image);
             syncDetailFromScope();
             s.$evalAsync?.();
           });
-          $image.off('load.comment');
+          offEl($image, 'load');
         };
-        $image.on('load.comment', onLoad);
+        onEl($image, 'load', onLoad);
       }
     }
 
     // 原 $("#detail-image").on("click") → comment-blur focus/blur
-    const $detailImage = $()('#detail-image');
+    const $detailImage = q('#detail-image');
     const onImageClick = function () {
       setTimeout(function () {
-        $()('#comment-blur').focus();
+        focusEl('#comment-blur');
       }, 24);
 
       setTimeout(function () {
-        $()('#comment-blur').blur();
+        blurEl('#comment-blur');
       }, 100);
     };
-    $detailImage.on('click', onImageClick);
+    $detailImage?.addEventListener('click', onImageClick);
 
-    void $w;
     return () => {
-      $()(window).off('resize.comments', resizeHandler);
-      $detailImage.off('click', onImageClick);
-      $detailImage.off('load.comment');
+      window.removeEventListener('resize.comments', resizeHandler);
+      $detailImage?.removeEventListener('click', onImageClick);
+      offEl($detailImage, 'load');
       delete (window as any).__eagleResizeComments;
     };
   }, [currentId, hasComments]);
@@ -292,13 +293,13 @@ export function useCommentItem(
     let zoomData: any;
     let zoomRatio = 1;
 
-    const $container = $()('#detail-container');
-    const $el = $()(element);
+    const $container = q('#detail-container');
 
     const annotationWheel = function (event: any) {
       event.stopPropagation();
     };
-    $el.find('.annotation').on('mousewheel', annotationWheel);
+    const annotationEl = element.querySelector('.annotation') as HTMLElement | null;
+    annotationEl?.addEventListener('mousewheel', annotationWheel);
 
     const onResizeStart = function () {
       const s = getBodyScope();
@@ -355,7 +356,7 @@ export function useCommentItem(
       startX = e.pageX;
       startY = e.pageY;
     };
-    $el.on('mousedown.drag', onMouseDownDrag);
+    element.addEventListener('mousedown', onMouseDownDrag);
 
     const onMouseUpDrag = function (e: any) {
       const s = getBodyScope();
@@ -369,7 +370,7 @@ export function useCommentItem(
         const zr = zoomData.ratio;
         const offsetX = (startX - currentX) / zr;
         const offsetY = (startY - currentY) / zr;
-        $el.css({
+        setCssEl(element, {
           top: originTop - offsetY + 'px',
           left: originLeft - offsetX + 'px',
         });
@@ -392,7 +393,7 @@ export function useCommentItem(
         }
       });
     };
-    $el.on('mouseup.drag', onMouseUpDrag);
+    element.addEventListener('mouseup', onMouseUpDrag);
 
     const onMouseMoveDrag = function (e: any) {
       const s = getBodyScope();
@@ -414,22 +415,22 @@ export function useCommentItem(
       const newY = originTop - offsetY;
 
       if (comment && (newX !== comment.x || newY !== comment.y)) {
-        $el.css({
+        setCssEl(element, {
           top: newY + 'px',
           left: newX + 'px',
         });
-        $()('[contenteditable]:focus').blur();
+        blurEl('[contenteditable]:focus');
         (window as any).AnnotationPreview.hide();
       }
     };
-    $container.on('mousemove.drag', onMouseMoveDrag);
+    $container?.addEventListener('mousemove', onMouseMoveDrag);
 
     return () => {
       rzHandles.destroy();
-      $el.find('.annotation').off('mousewheel', annotationWheel);
-      $el.off('mousedown.drag', onMouseDownDrag);
-      $el.off('mouseup.drag', onMouseUpDrag);
-      $container.off('mousemove.drag', onMouseMoveDrag);
+      annotationEl?.removeEventListener('mousewheel', annotationWheel);
+      element.removeEventListener('mousedown', onMouseDownDrag);
+      element.removeEventListener('mouseup', onMouseUpDrag);
+      $container?.removeEventListener('mousemove', onMouseMoveDrag);
     };
   }, [commentIndex, opts.enabled]);
 }
@@ -468,93 +469,94 @@ export function useCropImage(
     let orientationX = '';
 
     const s0 = getBodyScope();
-    const $cropContainer = $()(element);
-    const $cropArea = $cropContainer.find('.crop-area');
-    const $cropSize = $()(cropSizeEl);
+    const $cropArea = element.querySelector('.crop-area') as HTMLElement;
+    const $cropSize = cropSizeEl;
     let containerWidth = s0?.current?.width || 0;
     let containerHeight = s0?.current?.height || 0;
     const minCropSize = 24;
 
-    const $toolbarWidthInput = $()('#crop-width');
-    const $toolbarHeightInput = $()('#crop-height');
+    const $toolbarWidthInput = q('#crop-width') as HTMLInputElement | null;
+    const $toolbarHeightInput = q('#crop-height') as HTMLInputElement | null;
+    const setVal = (input: HTMLInputElement | null, value: any) => { if (input) input.value = String(value); };
+    const getVal = (input: HTMLInputElement | null) => (input ? input.value : '');
 
     const showSizeTimeout = { id: 0 };
 
     function updateCropperSize() {
-      let w = parseInt($toolbarWidthInput.val());
-      let h = parseInt($toolbarHeightInput.val());
+      let w = parseInt(getVal($toolbarWidthInput));
+      let h = parseInt(getVal($toolbarHeightInput));
       const s = getBodyScope();
 
       if ($cropArea && w > 0 && h > 0) {
         w = parseInt(String(Math.min(w, s?.current?.width || w)));
         h = parseInt(String(Math.min(h, s?.current?.height || h)));
 
-        $cropArea.css({
+        setCssEl($cropArea, {
           width: w,
           height: h,
         });
 
         showSize();
 
-        $toolbarWidthInput.val(w);
-        $toolbarHeightInput.val(h);
+        setVal($toolbarWidthInput, w);
+        setVal($toolbarHeightInput, h);
       }
     }
 
-    $toolbarWidthInput.off('change').on('change', updateCropperSize);
-    $toolbarHeightInput.off('change').on('change', updateCropperSize);
+    onEl($toolbarWidthInput, 'change', updateCropperSize);
+    onEl($toolbarHeightInput, 'change', updateCropperSize);
     const widthKeyup = function (event: any) {
       if (event && event.keyCode === 13) {
-        $toolbarHeightInput.trigger('focus');
-        $toolbarHeightInput.trigger('select');
+        $toolbarHeightInput?.focus();
+        $toolbarHeightInput?.select();
       }
     };
     const heightKeyup = function () {
-      $toolbarHeightInput.trigger('blur');
+      $toolbarHeightInput?.blur();
     };
-    $toolbarWidthInput.off('keyup').on('keyup', widthKeyup);
-    $toolbarHeightInput.off('keyup').on('keyup', heightKeyup);
+    onEl($toolbarWidthInput, 'keyup', widthKeyup);
+    onEl($toolbarHeightInput, 'keyup', heightKeyup);
 
-    $cropArea.width(containerWidth);
-    $cropArea.height(containerHeight);
-    $cropArea.css({
+    setCssEl($cropArea, { width: containerWidth });
+    setCssEl($cropArea, { height: containerHeight });
+    setCssEl($cropArea, {
       top: 0,
       left: 0,
       width: containerWidth,
       height: containerHeight,
     });
-    $cropArea.addClass('ui-resizable-resizing');
+    $cropArea.classList.add('ui-resizable-resizing');
     // D-2f：jQuery-UI resizable 仅用于创建手柄（实际缩放由下方自研 mousedown 逻辑驱动）→ handlesOnly
-    const cropHandles = ($cropArea[0] as HTMLElement | undefined)
-      ? makeResizable($cropArea[0] as HTMLElement, { handles: 'n, e, s, w, ne, se, sw, nw', handlesOnly: true })
+    const cropHandles = ($cropArea as HTMLElement | undefined)
+      ? makeResizable($cropArea as HTMLElement, { handles: 'n, e, s, w, ne, se, sw, nw', handlesOnly: true })
       : null;
 
-    $cropSize.html(
+    setHtmlEl($cropSize, 
       `x:${0} y:${0}, ${t('general.w')}:${containerWidth} ${t('general.h')}:${containerHeight}`
     );
-    $cropSize.hide();
-    $toolbarWidthInput.val(containerWidth);
-    $toolbarHeightInput.val(containerHeight);
+    $cropSize.style.display = 'none';
+    setVal($toolbarWidthInput, containerWidth);
+    setVal($toolbarHeightInput, containerHeight);
 
-    $cropContainer.find('.ui-resizable-handle').css({
+    element.querySelectorAll('.ui-resizable-handle').forEach((h) => setCssEl(h as HTMLElement, {
       transform: `scale(${100 / zoomRatio})`,
-    });
+    }));
 
-    $cropContainer.css({
+    setCssEl(element, {
       'outline-width': `${Math.max((100 / zoomRatio) * 1, 1)}px`,
     });
 
     const handleDown = function () {
       cropResizing = true;
     };
-    $cropArea.find('.ui-resizable-handle').on('mousedown', handleDown);
+    $cropArea.querySelectorAll('.ui-resizable-handle').forEach((h) => h.addEventListener('mousedown', handleDown));
 
     // 原 $watch("current")：裁切容器跟隨當前條目尺寸
     const applyCurrentSize = function () {
       const s = getBodyScope();
       containerWidth = s?.current?.width || 0;
       containerHeight = s?.current?.height || 0;
-      $cropArea.css({
+      setCssEl($cropArea, {
         top: 0,
         left: 0,
         width: containerWidth,
@@ -564,10 +566,10 @@ export function useCropImage(
 
     // 原 $watch("imageSize.zoomRatio")
     const applyZoom = function (newValue: number) {
-      $cropContainer.find('.ui-resizable-handle').css({
+      element.querySelectorAll('.ui-resizable-handle').forEach((h) => setCssEl(h as HTMLElement, {
         transform: `scale(${100 / newValue})`,
-      });
-      $cropContainer.css({
+      }));
+      setCssEl(element, {
         'border-width': `${(100 / newValue) * 1}px`,
       });
     };
@@ -584,39 +586,39 @@ export function useCropImage(
     });
 
     function moveCropper(offsetX: number, offsetY: number) {
-      const width = $cropArea.width();
-      const height = $cropArea.height();
-      const top = parseInt($cropArea.css('top'));
-      const left = parseInt($cropArea.css('left'));
+      const width = widthOf($cropArea);
+      const height = heightOf($cropArea);
+      const top = parseInt(cssGet($cropArea, 'top'));
+      const left = parseInt(cssGet($cropArea, 'left'));
       const windowWidth = containerWidth;
       const windowHeight = containerHeight;
       if (offsetX !== 0) {
         if (offsetX > 0) {
           if (left + offsetX + width > windowWidth) {
-            $cropArea.css('left', windowWidth - width);
+            setCssEl($cropArea, { 'left': windowWidth - width });
           } else {
-            $cropArea.css('left', left + offsetX);
+            setCssEl($cropArea, { 'left': left + offsetX });
           }
         } else if (offsetX < 0) {
           if (left + offsetX > 0) {
-            $cropArea.css('left', left + offsetX);
+            setCssEl($cropArea, { 'left': left + offsetX });
           } else {
-            $cropArea.css('left', 0);
+            setCssEl($cropArea, { 'left': 0 });
           }
         }
       }
       if (offsetY !== 0) {
         if (offsetY > 0) {
           if (top + offsetY + height > windowHeight) {
-            $cropArea.css('top', windowHeight - height);
+            setCssEl($cropArea, { 'top': windowHeight - height });
           } else {
-            $cropArea.css('top', top + offsetY);
+            setCssEl($cropArea, { 'top': top + offsetY });
           }
         } else if (offsetY < 0) {
           if (top + offsetY > 0) {
-            $cropArea.css('top', top + offsetY);
+            setCssEl($cropArea, { 'top': top + offsetY });
           } else {
-            $cropArea.css('top', 0);
+            setCssEl($cropArea, { 'top': 0 });
           }
         }
       }
@@ -624,64 +626,64 @@ export function useCropImage(
     }
 
     function resizeCropper(offsetX: number, offsetY: number) {
-      const width = $cropArea.outerWidth();
-      const height = $cropArea.outerHeight();
-      const top = parseInt($cropArea.css('top'));
-      const left = parseInt($cropArea.css('left'));
+      const width = outerWidthOf($cropArea);
+      const height = outerHeightOf($cropArea);
+      const top = parseInt(cssGet($cropArea, 'top'));
+      const left = parseInt(cssGet($cropArea, 'left'));
       const windowWidth = containerWidth;
       const windowHeight = containerHeight;
       if (offsetX !== 0) {
         if (offsetX > 0) {
           if (left + offsetX + width > windowWidth) {
-            $cropArea.css('width', windowWidth - left);
+            setCssEl($cropArea, { 'width': windowWidth - left });
           } else {
-            $cropArea.css('width', width + offsetX);
+            setCssEl($cropArea, { 'width': width + offsetX });
           }
         } else if (offsetX < 0) {
           if (width > minCropSize) {
-            $cropArea.css('width', width + offsetX);
+            setCssEl($cropArea, { 'width': width + offsetX });
           } else {
-            $cropArea.css('width', minCropSize);
+            setCssEl($cropArea, { 'width': minCropSize });
           }
         }
       }
       if (offsetY !== 0) {
         if (offsetY > 0) {
           if (top + offsetY + height > windowHeight) {
-            $cropArea.css('height', windowHeight - top);
+            setCssEl($cropArea, { 'height': windowHeight - top });
           } else {
-            $cropArea.css('height', height + offsetY);
+            setCssEl($cropArea, { 'height': height + offsetY });
           }
         } else if (offsetY < 0) {
           if (height > minCropSize) {
-            $cropArea.css('height', height + offsetY);
+            setCssEl($cropArea, { 'height': height + offsetY });
           } else {
-            $cropArea.css('height', minCropSize);
+            setCssEl($cropArea, { 'height': minCropSize });
           }
         }
       }
-      $toolbarWidthInput.val($cropArea.width());
-      $toolbarHeightInput.val($cropArea.height());
+      setVal($toolbarWidthInput, widthOf($cropArea));
+      setVal($toolbarHeightInput, heightOf($cropArea));
       showSize();
     }
 
     const showSize = function () {
       updateSize();
-      $cropSize.show();
+      $cropSize.style.display = '';
       clearTimeout(showSizeTimeout.id);
       showSizeTimeout.id = setTimeout(function () {
-        $cropSize.hide();
+        $cropSize.style.display = 'none';
       }, 1000) as unknown as number;
     };
 
     const updateSize = (window as any).throttle(function () {
-      $cropSize.html(
-        `x:${num0(parseInt($cropArea.css('left')))} y:${num0(parseInt($cropArea.css('top')))}, ${t('general.w')}:${num0(
-          $cropArea.width()
-        )} ${t('general.h')}:${num0($cropArea.height())}`
+      setHtmlEl($cropSize, 
+        `x:${num0(parseInt(cssGet($cropArea, 'left')))} y:${num0(parseInt(cssGet($cropArea, 'top')))}, ${t('general.w')}:${num0(
+          widthOf($cropArea)
+        )} ${t('general.h')}:${num0(heightOf($cropArea))}`
       );
-      const position = $cropArea[0].getBoundingClientRect();
-      $cropSize.css({
+      const position = $cropArea.getBoundingClientRect();
+      setCssEl($cropSize, {
         left: position.x + position.width - 10,
         top: position.y + position.height,
         transform: 'translateX(-50%)',
@@ -692,50 +694,50 @@ export function useCropImage(
       const s = getBodyScope();
       saveCrop();
     };
-    $cropArea.on('dblclick', onDblClick);
+    $cropArea.addEventListener('dblclick', onDblClick);
 
     const onResizeStart = function (event: any) {
       event.stopPropagation();
 
-      $cropSize.show();
+      $cropSize.style.display = '';
 
       zoomData = safeZoomData();
       zoomRatioLocal = zoomData.ratio;
 
       const targetClass = event.originalEvent.target.classList.value;
-      $cropSize.removeClass(
-        'orientation-ne orientation-se orientation-nw orientation-sw orientation-n orientation-e orientation-s orientation-w'
+      $cropSize.classList.remove(
+        ...'orientation-ne orientation-se orientation-nw orientation-sw orientation-n orientation-e orientation-s orientation-w'.split(/\s+/)
       );
       if (targetClass.indexOf('ui-resizable-ne') > -1) {
-        $cropSize.addClass('orientation-ne');
+        $cropSize.classList.add('orientation-ne');
         orientationY = 'n';
         orientationX = 'e';
       } else if (targetClass.indexOf('ui-resizable-se') > -1) {
-        $cropSize.addClass('orientation-se');
+        $cropSize.classList.add('orientation-se');
         orientationY = 's';
         orientationX = 'e';
       } else if (targetClass.indexOf('ui-resizable-sw') > -1) {
-        $cropSize.addClass('orientation-sw');
+        $cropSize.classList.add('orientation-sw');
         orientationY = 's';
         orientationX = 'w';
       } else if (targetClass.indexOf('ui-resizable-nw') > -1) {
-        $cropSize.addClass('orientation-nw');
+        $cropSize.classList.add('orientation-nw');
         orientationY = 'n';
         orientationX = 'w';
       } else if (targetClass.indexOf('ui-resizable-w') > -1) {
-        $cropSize.addClass('orientation-w');
+        $cropSize.classList.add('orientation-w');
         orientationY = '';
         orientationX = 'w';
       } else if (targetClass.indexOf('ui-resizable-e') > -1) {
-        $cropSize.addClass('orientation-e');
+        $cropSize.classList.add('orientation-e');
         orientationY = '';
         orientationX = 'e';
       } else if (targetClass.indexOf('ui-resizable-s') > -1) {
-        $cropSize.addClass('orientation-s');
+        $cropSize.classList.add('orientation-s');
         orientationY = 's';
         orientationX = '';
       } else if (targetClass.indexOf('ui-resizable-n') > -1) {
-        $cropSize.addClass('orientation-n');
+        $cropSize.classList.add('orientation-n');
         orientationY = 'n';
         orientationX = '';
       } else {
@@ -746,13 +748,13 @@ export function useCropImage(
       originalCanvasX = zoomData.scaledX;
       originalCanvasY = zoomData.scaledY;
     };
-    $cropArea.on('resizestart', onResizeStart);
+    $cropArea.addEventListener('resizestart', onResizeStart);
 
     const onResize = function (event: any, ui: any) {
       event.preventDefault();
       event.stopPropagation();
 
-      $cropSize.css({
+      setCssEl($cropSize, {
         top: `${event.pageY}px`,
         left: `${event.pageX}px`,
       });
@@ -980,22 +982,22 @@ export function useCropImage(
       const displayWidth = finalWidth;
       const displayHeight = finalHeight;
 
-      $cropSize.html(
-        `x:${num0(parseInt($cropArea.css('left')))} y:${num0(parseInt($cropArea.css('top')))}, ${t('general.w')}:${num0(
+      setHtmlEl($cropSize, 
+        `x:${num0(parseInt(cssGet($cropArea, 'left')))} y:${num0(parseInt(cssGet($cropArea, 'top')))}, ${t('general.w')}:${num0(
           displayWidth
         )} ${t('general.h')}:${num0(displayHeight)}`
       );
-      $toolbarWidthInput.val(displayWidth);
-      $toolbarHeightInput.val(displayHeight);
+      setVal($toolbarWidthInput, displayWidth);
+      setVal($toolbarHeightInput, displayHeight);
     };
-    $cropArea.on('resize', onResize);
+    $cropArea.addEventListener('resize', onResize as any);
 
     const onResizeStop = function (event: any) {
       event.stopPropagation();
       cropResizing = false;
-      $cropSize.hide();
+      $cropSize.style.display = 'none';
     };
-    $cropArea.on('resizestop', onResizeStop);
+    $cropArea.addEventListener('resizestop', onResizeStop);
 
     const onDragDown = function (e: any) {
       e.stopPropagation();
@@ -1004,14 +1006,14 @@ export function useCropImage(
       draggingCropArea = true;
       zoomData = safeZoomData();
 
-      const of = $cropArea.position();
+      const of = { top: $cropArea.offsetTop, left: $cropArea.offsetLeft };
       const zr = zoomData.ratio;
 
-      containerWidth = $cropContainer.width();
-      containerHeight = $cropContainer.height();
+      containerWidth = widthOf(element);
+      containerHeight = heightOf(element);
 
-      const cropAreaWidth = $cropArea.width();
-      const cropAreaHeight = $cropArea.height();
+      const cropAreaWidth = widthOf($cropArea);
+      const cropAreaHeight = heightOf($cropArea);
 
       originTop = of.top / zr;
       originLeft = of.left / zr;
@@ -1021,18 +1023,18 @@ export function useCropImage(
       originalCanvasX = zoomData.scaledX;
       originalCanvasY = zoomData.scaledY;
 
-      $cropArea.addClass('ui-resizable-resizing');
+      $cropArea.classList.add('ui-resizable-resizing');
       void cropAreaWidth;
       void cropAreaHeight;
     };
-    $cropArea.on('mousedown.drag', onDragDown);
+    $cropArea.addEventListener('mousedown', onDragDown);
 
     const onWinMouseUp = function () {
       if (!draggingCropArea) return;
-      $cropArea.removeClass('ui-resizable-resizing');
+      $cropArea.classList.remove('ui-resizable-resizing');
       draggingCropArea = false;
     };
-    $()(window).on('mouseup.cropimage', onWinMouseUp);
+    window.addEventListener('mouseup', onWinMouseUp);
 
     const onWinMouseMove = function (e: any) {
       if (!draggingCropArea) return;
@@ -1052,8 +1054,8 @@ export function useCropImage(
       let top = Math.floor(originTop - offsetY - offsetCanvasY);
       let left = Math.floor(originLeft - offsetX - offsetCanvasX);
 
-      const cropAreaWidth = $cropArea.width();
-      const cropAreaHeight = $cropArea.height();
+      const cropAreaWidth = widthOf($cropArea);
+      const cropAreaHeight = heightOf($cropArea);
 
       if (top < 0) {
         top = 0;
@@ -1068,7 +1070,7 @@ export function useCropImage(
         left = containerWidth - cropAreaWidth;
       }
 
-      $cropArea.css({
+      setCssEl($cropArea, {
         top: `${top}px`,
         left: `${left}px`,
         backgroundPosition: `${-left}px ${-top}px`,
@@ -1076,24 +1078,23 @@ export function useCropImage(
 
       showSize();
     };
-    $()(window).on('mousemove.cropimage', onWinMouseMove);
+    window.addEventListener('mousemove', onWinMouseMove);
 
     // current 變化 → 重算容器尺寸
     applyCurrentSize();
 
     return () => {
       if (cropHandles) cropHandles.destroy();
-      $cropArea.find('.ui-resizable-handle').off('mousedown', handleDown);
-      $cropArea.off('resizestart');
-      $cropArea.off('resize');
-      $cropArea.off('resizestop');
-      $cropArea.off('mouseup.cropimage');
-      $cropArea.off('dblclick', onDblClick);
-      $cropArea.off('mousedown.drag', onDragDown);
-      $()(window).off('mousemove.cropimage');
-      $()(window).off('mouseup.cropimage');
-      $toolbarWidthInput.off('change').off('keyup');
-      $toolbarHeightInput.off('change').off('keyup');
+      $cropArea.querySelectorAll('.ui-resizable-handle').forEach((h) => h.removeEventListener('mousedown', handleDown));
+      $cropArea.removeEventListener('resizestart', onResizeStart);
+      $cropArea.removeEventListener('resize', onResize as any);
+      $cropArea.removeEventListener('resizestop', onResizeStop);
+      $cropArea.removeEventListener('dblclick', onDblClick);
+      $cropArea.removeEventListener('mousedown', onDragDown);
+      window.removeEventListener('mousemove', onWinMouseMove);
+      window.removeEventListener('mouseup', onWinMouseUp);
+      offEl($toolbarWidthInput, 'change'); offEl($toolbarWidthInput, 'keyup');
+      offEl($toolbarHeightInput, 'change'); offEl($toolbarHeightInput, 'keyup');
       offMove && offMove();
       offResize && offResize();
     };
@@ -1110,7 +1111,7 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     if (!img || !currentId) return;
     let worker: Worker | null = null;
 
-    const $parent = $()(img.parentNode);
+    const $parent = img.parentNode as HTMLElement | null;
 
     async function loadURLFromWorker(url: string) {
       return new Promise<any>((resolve, reject) => {
@@ -1148,12 +1149,12 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
       const image = s?.current;
       if (!image) return;
 
-      $()('#detail-image').css('opacity', 1);
+      setCssEl(q('#detail-image'), { opacity: 1 });
 
-      const canvas = $parent.find('canvas');
-      if (canvas.length > 0) {
+      const canvas = $parent?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (canvas) {
         canvas.remove();
-        $()(img).css({
+        setCssEl(img, {
           opacity: 1,
           position: '',
           'z-index': '',
@@ -1165,7 +1166,7 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         const { rgba, width, height } = await loadURLFromWorker(filePath);
 
         if (rgba) {
-          canvas.remove();
+          canvas?.remove();
           const cnv = document.createElement('canvas');
           cnv.width = width;
           cnv.height = height;
@@ -1179,16 +1180,16 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
           for (let i = 0; i < attr.length; i++) {
             cnv.setAttribute(attr[i], img.getAttribute(attr[i]) || '');
           }
-          $()(cnv).css({
+          setCssEl(cnv, {
             'z-index': '10000',
             position: 'relative',
           });
-          $parent.append(cnv);
-          $()(img).css({
+          $parent?.appendChild(cnv);
+          setCssEl(img, {
             position: 'absolute',
             'z-index': '9999',
           });
-          $()('#detail-image').css('opacity', 0);
+          setCssEl(q('#detail-image'), { opacity: 0 });
         }
       } catch (err) {}
     })();
@@ -1209,7 +1210,7 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     const img = imgRef.current;
     if (!img || !currentId) return;
 
-    const $parent = $()(img.parentNode);
+    const $parent = img.parentNode as HTMLElement | null;
 
     function tagCanNotRead(imageData: any) {
       if (!imageData) {
@@ -1223,11 +1224,11 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     function loadTga() {
       const s = getBodyScope();
       if (!s?.current) return;
-      if ($parent.find('canvas').length > 0) {
-        $()(img).css('opacity', 0);
-        $()(img).css('position', 'absolute');
-        $()(img).css('z-index', '9999');
-        $parent.find('canvas').remove();
+      if ($parent && $parent.querySelectorAll('canvas').length > 0) {
+        setCssEl(img, { opacity: 0 });
+        setCssEl(img, { position: 'absolute' });
+        setCssEl(img, { 'z-index': '9999' });
+        $parent.querySelectorAll('canvas').forEach((c) => c.remove());
       }
       const filePath = getBodyScope()?.getRawPath
         ? String(getRawPath(s.current) || '').replace('file://', '')
@@ -1245,10 +1246,10 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         if (buf && buf.length <= 5000) {
           throw new Error('');
         }
-        $parent.append(canvas);
-        $()(img).css('opacity', 0);
-        $()(img).css('position', 'absolute');
-        $()(img).css('z-index', '9999');
+        $parent?.appendChild(canvas);
+        setCssEl(img, { opacity: 0 });
+        setCssEl(img, { position: 'absolute' });
+        setCssEl(img, { 'z-index': '9999' });
       } catch (err) {
         const libtga = req((window as any).appRoot.path + '/app/js/vendors/libtga.js');
         libtga.loadFile(filePath, function (err2: any, loaded: any) {
@@ -1261,10 +1262,10 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
             imageData.data.set(loaded.imageData);
             context.putImageData(imageData, 0, 0);
 
-            $parent.append(canvas);
-            $()(img).css('opacity', 0);
-            $()(img).css('position', 'absolute');
-            $()(img).css('z-index', '9999');
+            $parent?.appendChild(canvas);
+            setCssEl(img, { opacity: 0 });
+            setCssEl(img, { position: 'absolute' });
+            setCssEl(img, { 'z-index': '9999' });
           }
         });
       }

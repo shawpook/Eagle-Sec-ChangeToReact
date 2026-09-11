@@ -3,6 +3,7 @@ import { contextMenuOpenChannel, openAboutPanelChannel, rebindRefreshChannel, re
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { $, safeZoomData, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
+import { q } from '../../utils/domQuery';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
@@ -290,8 +291,10 @@ export function imagesChange() {
     // 避免修改影片名稱造成影片重頭播放
     if (getBodyScope().isDetailMode) {
       rememberVideoCurrentTime(getBodyScope()?.current);
-      if ($()('#font-viewer').length > 0) {
-        $()('iframe#font-viewer').contents().find('.font-name span').text(eagleIns.newName);
+      if (q('#font-viewer')) {
+        const iframe = q('iframe#font-viewer') as HTMLIFrameElement | null;
+        const fontName = iframe?.contentDocument?.querySelector('.font-name span') as HTMLElement | null;
+        if (fontName) fontName.textContent = String(eagleIns.newName);
       }
     }
     machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
@@ -378,8 +381,10 @@ export function urlChange() {
 
       if (getBodyScope().isDetailMode) {
         rememberVideoCurrentTime(getBodyScope()?.current);
-        if ($()('#font-viewer').length > 0) {
-          $()('iframe#font-viewer').contents().find('.font-name span').text(eagleIns.newName);
+        if (q('#font-viewer')) {
+          const iframe = q('iframe#font-viewer') as HTMLIFrameElement | null;
+          const fontName = iframe?.contentDocument?.querySelector('.font-name span') as HTMLElement | null;
+          if (fontName) fontName.textContent = String(eagleIns.newName);
         }
       }
       machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
@@ -510,8 +515,8 @@ export function openComment(event: any, image: any, comment: any) {
   }
 
   if (comment && comment.y) {
-    const $commentElem = $()(`#comment-${comment.id}`);
-    if ($commentElem.length > 0 && !(window as any).isElementInViewport($commentElem[0])) {
+    const $commentElem = q(`#comment-${comment.id}`);
+    if ($commentElem && !(window as any).isElementInViewport($commentElem)) {
       const offsetY = -200;
       safeZoomData();
       detailZoom()?.goToY( -(comment.y + offsetY) * (bodyScope.imageSize.zoomRatio || 100) / 100);
@@ -525,9 +530,9 @@ export function openComment(event: any, image: any, comment: any) {
 export function highlightAnnotation(event: any, comment: any) {
   const bodyScope = getBodyScope();
   if (bodyScope?.isDetailMode && comment) {
-    const $comment = $()(`#comment-${comment.id}`);
-    $comment.addClass('highlight');
-    (window as any).AnnotationPreview.lastElem = $comment[0];
+    const $comment = q(`#comment-${comment.id}`);
+    $comment?.classList.add('highlight');
+    (window as any).AnnotationPreview.lastElem = $comment || undefined;
     (window as any).AnnotationPreview.hoverTimeout = setTimeout(function () {
       (window as any).AnnotationPreview.show();
     }, 200);
@@ -537,8 +542,8 @@ export function highlightAnnotation(event: any, comment: any) {
 export function removeHighlightAnnotation(event: any, comment: any) {
   const bodyScope = getBodyScope();
   if (bodyScope?.isDetailMode && comment) {
-    const $comment = $()(`#comment-${comment.id}`);
-    $comment.removeClass('highlight');
+    const $comment = q(`#comment-${comment.id}`);
+    $comment?.classList.remove('highlight');
     clearTimeout((window as any).AnnotationPreview.hoverTimeout);
     if ((window as any).AnnotationPreview.lastElem) {
       (window as any).AnnotationPreview.hide();
@@ -579,7 +584,7 @@ export function openVideoComment(event: any, image: any, comment: any) {
   const isVideo = (window as any).VIDEO_TYPES?.[current?.ext];
   const isAudio = (window as any).AUDIO_TYPES?.[current?.ext];
   if (isVideo || isAudio) {
-    const video = $()('.detail-wrap video')[0] || $()('.detail-wrap mpv-video')[0];
+    const video = (q('.detail-wrap video') || q('.detail-wrap mpv-video')) as HTMLVideoElement | null;
     if (video && comment.duration !== undefined) {
       video.currentTime = comment.duration;
     }
@@ -596,7 +601,7 @@ export function editVideoComment(event: any, image: any, comment: any) {
     return;
   }
 
-  const video = $()('.detail-wrap video')[0] || $()('.detail-wrap mpv-video')[0];
+  const video = (q('.detail-wrap video') || q('.detail-wrap mpv-video')) as HTMLVideoElement | null;
   if (video) {
     video.currentTime = comment.duration;
     video.pause();

@@ -9,6 +9,7 @@ import { useTippy, useSelectAll } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
 import { ContentEditable } from './ContentEditable';
 import { $ } from '../detail/detailHooks';
+import { q } from '../../utils/domQuery';
 import {
   updateSelection,
   imagesChange,
@@ -915,13 +916,13 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
       if (!item) return;
 
       const webviewId = `inspector-plugin-${plugin?.manifest?.id}`;
-      const $webview = $()(`#${webviewId}`);
+      const $webview = q(`#${webviewId}`);
       const src = getBodyScope()?.pluginModule?.previewExtension?.getInspectorPluginURL(plugin, item);
       const hasInspectorPlugin = getBodyScope()?.pluginModule?.previewExtension?.hasInspectorPlugin(item);
       if (!hasInspectorPlugin) return;
 
-      if ($webview.length) {
-        $webview.attr('src', src);
+      if ($webview) {
+        $webview.setAttribute('src', src);
         return;
       }
 

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { controllerScope, applyController } from './controller';
 import { getBodyScope } from '../core/appCore';
 import { notifyController } from './controller';
+import { createEl, setCssEl } from '../utils/domQuery';
 
 /**
  * 阶段9a：preview-window.js 特有指令的逐字移植（与阶段5 detailHooks 同风格）。
@@ -14,7 +15,6 @@ import { notifyController } from './controller';
  *   throttle(50) + $evalAsync 包裹，$destroy 解绑）。
  */
 
-const $: any = () => (window as any).jQuery;
 const req = (name: string): any => (window as any).require?.(name);
 
 /* ------------------------------------------------------------------ */
@@ -41,10 +41,17 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
     let trailPoints: Array<{ x: number; y: number }> = [];
     const maxTrailLength = 30;
 
+    const onGestureCanvasResize = function () {
+      if ($gestureCanvas) {
+        $gestureCanvas.width = window.innerWidth;
+        $gestureCanvas.height = window.innerHeight;
+      }
+    };
+
     function createGestureCanvas() {
       if (!$gestureCanvas) {
-        $gestureCanvas = $()('<canvas class="gesture-canvas"></canvas>');
-        $gestureCanvas.css({
+        $gestureCanvas = createEl('<canvas class="gesture-canvas"></canvas>');
+        setCssEl($gestureCanvas, {
           position: 'fixed',
           top: 0,
           left: 0,
@@ -55,19 +62,14 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
           display: 'none',
         });
 
-        $()('body').append($gestureCanvas);
+        if ($gestureCanvas) document.body.appendChild($gestureCanvas);
 
-        $gestureCanvas[0].width = window.innerWidth;
-        $gestureCanvas[0].height = window.innerHeight;
+        $gestureCanvas.width = window.innerWidth;
+        $gestureCanvas.height = window.innerHeight;
 
-        gestureContext = $gestureCanvas[0].getContext('2d');
+        gestureContext = $gestureCanvas.getContext('2d');
 
-        $()(window).on('resize.gestureCanvas', function () {
-          if ($gestureCanvas) {
-            $gestureCanvas[0].width = window.innerWidth;
-            $gestureCanvas[0].height = window.innerHeight;
-          }
-        });
+        window.addEventListener('resize', onGestureCanvasResize);
       }
       return $gestureCanvas;
     }
@@ -108,7 +110,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
         return;
       }
 
-      gestureContext.clearRect(0, 0, $gestureCanvas[0].width, $gestureCanvas[0].height);
+      gestureContext.clearRect(0, 0, $gestureCanvas.width, $gestureCanvas.height);
 
       if (trailPoints.length === 0 && startPoint.y) {
         for (let i = 0; i < maxTrailLength; i++) {
@@ -160,7 +162,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
       const absDistance = Math.abs(distanceX);
 
       if (absDistance > gestureThreshold && !isZooming) {
-        $gestureCanvas.css('display', 'block');
+        setCssEl($gestureCanvas, { display: 'block' });
 
         if (!animationFrame) {
           animateGesture();
@@ -172,7 +174,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
 
     function hideGestureVisual() {
       if ($gestureCanvas) {
-        $gestureCanvas.css('display', 'none');
+        setCssEl($gestureCanvas, { display: 'none' });
       }
 
       if (animationFrame) {
@@ -183,7 +185,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
       trailPoints = [];
 
       if (gestureContext) {
-        gestureContext.clearRect(0, 0, $gestureCanvas[0].width, $gestureCanvas[0].height);
+        gestureContext.clearRect(0, 0, $gestureCanvas.width, $gestureCanvas.height);
       }
     }
 
@@ -200,7 +202,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
         hideGestureVisual();
       }
     };
-    $()(element).on('mousedown', onMouseDown);
+    element.addEventListener('mousedown', onMouseDown);
 
     const onMouseMove = (event: any) => {
       if (startPoint.y) {
@@ -228,7 +230,7 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
         maxDistanceX = Math.abs(startPoint.x - event.pageX);
       }
     };
-    $()(window).on('mousemove.mouseGesture', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove);
 
     const onMouseUp = (event: any) => {
       if (event.button === 2 || event.button === 1) {
@@ -259,13 +261,13 @@ export function usePreviewMouseGesture(ref: React.RefObject<HTMLElement | null>)
       originData = { x: undefined, y: undefined, ratio: 100 };
       maxDistanceX = 0;
     };
-    $()(window).on('mouseup.mouseGesture', onMouseUp);
+    window.addEventListener('mouseup', onMouseUp);
 
     return () => {
-      $()(element).off('mousedown');
-      $()(window).off('mousemove.mouseGesture');
-      $()(window).off('mouseup.mouseGesture');
-      $()(window).off('resize.gestureCanvas');
+      element.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('resize', onGestureCanvasResize);
 
       if ($gestureCanvas) {
         $gestureCanvas.remove();
@@ -290,7 +292,7 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
     const element = ref.current;
     if (!element || !rawUrl) return;
 
-    const $parent = $()(element.parentNode);
+    const $parent = element.parentNode as HTMLElement | null;
 
     function tagCanNotRead(imageData: any) {
       if (!imageData) {
@@ -303,11 +305,11 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
 
     function loadTga(newValue: any) {
       if (!newValue) return;
-      if ($parent.find('canvas').length > 0) {
-        $()(element).css('opacity', 0);
-        $()(element).css('position', 'absolute');
-        $()(element).css('z-index', '9999');
-        $parent.find('canvas').remove();
+      if ($parent && $parent.querySelectorAll('canvas').length > 0) {
+        setCssEl(element, { opacity: 0 });
+        setCssEl(element, { position: 'absolute' });
+        setCssEl(element, { 'z-index': '9999' });
+        $parent?.querySelectorAll('canvas').forEach((c) => c.remove());
       }
       console.time('tga');
       const filePath = newValue;
@@ -323,10 +325,10 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
         if (buffer2.length <= 5000) {
           throw new Error('');
         }
-        $parent.append(canvas);
-        $()(element).css('opacity', 0);
-        $()(element).css('position', 'absolute');
-        $()(element).css('z-index', '9999');
+        $parent?.appendChild(canvas);
+        setCssEl(element, { opacity: 0 });
+        setCssEl(element, { position: 'absolute' });
+        setCssEl(element, { 'z-index': '9999' });
         console.timeEnd('tga');
       } catch (err) {
         const libtga = req(String(req('app-root-path')) + '/app/js/vendors/libtga.js');
@@ -340,10 +342,10 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
             imageData.data.set(img.imageData);
             context.putImageData(imageData, 0, 0);
 
-            $parent.append(canvas);
-            $()(element).css('opacity', 0);
-            $()(element).css('position', 'absolute');
-            $()(element).css('z-index', '9999');
+            $parent?.appendChild(canvas);
+            setCssEl(element, { opacity: 0 });
+            setCssEl(element, { position: 'absolute' });
+            setCssEl(element, { 'z-index': '9999' });
             console.timeEnd('tga');
           }
         });
@@ -353,7 +355,7 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
     loadTga(rawUrl);
     return () => {
       // 原 scope.$on('$destroy')：指令未注册清理，仅移除视觉元素
-      $parent.find('canvas').remove();
+      $parent?.querySelectorAll('canvas').forEach((c) => c.remove());
     };
   }, [rawUrl, ref]);
 }

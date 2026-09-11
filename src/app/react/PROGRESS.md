@@ -2274,7 +2274,28 @@
 >   `typeof window.$bodyScope.calcuteFilterResult === 'function'`，且 `m1-A3-c9-machinery`
 >   按 15 个名字检查 `window.__eagleDataMachinery[k] === 'machinery'`。
 >
-> **结论：D-1 的挂载面退役必须「三位一体」逐批做**：
+> > **【D-1 批次 1 ✅ 完成（提交 86d786f）；批次 2 路径已验证】**
+>
+> **批次 1：删除 150 项死挂载**（247 项中，7 维核验无任何存活面者），
+> dataMachinery 11838 → 11687 行；probe LOAD_OK + stage-smoke/5/1m1/7a/7c 全过。
+> 核验维度：外部调用 / 测试引用 / 同文件内部调用 / 动态下标 / HTML / 存在性检查 /
+> **裸引用**（`s.xxx` 作值传递——这是上次整批删 156 失败的原因，实测 19 个名字属此类）。
+>
+> **批次 2（94 处主窗口调用点 / 40 个挂载名）：试点 rebindRefresh 已跑通路径，两个坑**：
+> 1. **import 路径多一层**：算 `../` 层数应为 `rel.count('/')`（core/x.ts=1 层、
+>    components/stage7/x.tsx=2 层），写成 +1 → 模块解析失败 → LOAD_BROKEN。
+> 2. **快捷键字符串被误改**：`['rebind-refresh', ['$scope.rebindRefresh();']]` 里的字面量
+>    被正则命中 → eval 时找不到符号。须排除引号内（引号数奇偶）与注释行。
+> 修完后 LOAD_OK，但触发两处契约失败 —— **批次 2 每名都须连带改契约**：
+> - `m1-A3-c9-machinery`：`window.__eagleDataMachinery[k] === 'machinery'` + `typeof s.xxx`
+> - `m1-D-rebind-broadcast`：测试 **spy `s.rebindRefresh`**（`s.xxx = function(){n++}`）——
+>   改直调后 spy 失效，须改为效果断言或 spy import 的函数。
+>
+> 单名改写器已就绪：`tests-tmp/bz-d1-one.py <name>`（调用点 + import + 删挂载一步到位，
+> 路径与字符串边界已修正）。
+>
+
+**结论：D-1 的挂载面退役必须「三位一体」逐批做**：
 > ① 调用方从 `s.xxx()` 改为 import 直调 machineryYyy；② 删除挂载项；
 > ③ 同步改契约（m1-A3 的标记表与 typeof 断言、m1-A10 等）——
 > 且每批必须过 probe + 全套，不可整批推进。

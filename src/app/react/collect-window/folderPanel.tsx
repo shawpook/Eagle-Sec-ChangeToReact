@@ -9,11 +9,10 @@ import { controllerScope, applyController, registerFolderPanelOpener, ct, reload
 import { SelectPanel, panelI18n, cartesianProduct } from './selectPanelEngine';
 import { ContextMenu } from './contextMenu';
 import { useVsRepeat, useVsAutoScroll } from '../components/stage7/FolderSelectPanels';
+import { q } from '../utils/domQuery';
 
 // folder-select-panel.html 的 vs-repeat 属性（vs-excess=30 vs-repeat=26 vs-size=size）
 const VS_REPEAT_OPTIONS = { elementSize: 26, excess: 30 };
-
-const $: any = (...args: any[]) => (window as any).jQuery(...args);
 
 class FolderSelectPanel extends SelectPanel {
   originalParams: any;
@@ -435,7 +434,8 @@ class FolderSelectPanel extends SelectPanel {
   }
 
   scrollToTop() {
-    $('folder-select-panel select-panel-list').scrollTop(0);
+    const list = q('folder-select-panel select-panel-list');
+    if (list) list.scrollTop = 0;
   }
 
   isItemSelectable(item: any) {

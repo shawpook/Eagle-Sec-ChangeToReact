@@ -9,7 +9,7 @@ import { t } from '../../global/eagleGlobals';
 import { filesize } from '../../app/filters';
 import { useTippy } from '../hooks';
 import { CornerBtns } from '../toolbar/Toolbar';
-import { $, getIpc, getCurrentWindow, req } from '../detail/detailHooks';
+import { getIpc, getCurrentWindow, req } from '../detail/detailHooks';
 import { machineryChangeMetaItems } from '../../core/dataMachinery';
 import { syncPanelFromScope } from '../../store/panelState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
@@ -21,6 +21,7 @@ import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
 import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, openNotificationChannel, setFolderPasswordChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../../utils/domQuery';
 
 /**
  * 阶段7c-1：小弹窗族接管。
@@ -44,12 +45,10 @@ const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: an
 
 /** global.js 的 moveToCursorPosition（const，window 上不可达，按原文转写）。 */
 function movePanelToCursorPosition(el: HTMLElement) {
-  const jQuery = $();
-  if (!jQuery) return;
-  const windowWidth = jQuery(window).width();
-  const windowHeight = jQuery(window).height();
-  const containerWidth = jQuery(el).width();
-  const containerHeight = jQuery(el).height();
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const containerWidth = widthOf(el);
+  const containerHeight = heightOf(el);
   const w = window as any;
   let x = w.windowMouseX + 10;
   let y = w.windowMouseY - 10;
@@ -66,7 +65,8 @@ function movePanelToCursorPosition(el: HTMLElement) {
     y = 36;
   }
 
-  jQuery(el).css({ left: `${x}px`, top: `${y}px` });
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
 }
 
 function usePortalHost(hostId: string): HTMLElement | null {
@@ -638,7 +638,7 @@ export function FolderPasswordModal() {
       setMode(params.mode);
       setOpen(true);
       setTimeout(() => {
-        $()('.folder-password-modal input:visible').eq(0).trigger('focus');
+        qa('.folder-password-modal input').filter(isVisible)[0]?.focus();
       }, 300);
     });
     return () => off();
@@ -655,10 +655,10 @@ export function FolderPasswordModal() {
   };
 
   const shake = (selector: string) => {
-    $()(selector).trigger('focus');
-    $()(selector).addClass('animation--shake-horizontal constant');
+    q(selector)?.focus();
+    addClass(selector, 'animation--shake-horizontal constant');
     setTimeout(() => {
-      $()(selector).removeClass('animation--shake-horizontal constant');
+      removeClass(selector, 'animation--shake-horizontal constant');
     }, 350);
   };
 

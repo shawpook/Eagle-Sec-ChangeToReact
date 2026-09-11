@@ -15,9 +15,6 @@ import { CollectTagSelectPanel } from './tagPanelEngine';
 import { makeDraggable } from '../components/interactions/draggable';
 import { makeResizable } from '../components/interactions/resizable';
 
-const $: any = (...args: any[]) => (window as any).jQuery(...args);
-
-
 
 export function TagSelectPanelHost() {
   const panelRef = useRef<any>(null);

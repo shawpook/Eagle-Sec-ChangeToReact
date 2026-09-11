@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
 import { numberAbbreviate } from '../../app/filters';
-import { $, getIpc } from '../detail/detailHooks';
+import { getIpc } from '../detail/detailHooks';
+import { delegateTarget } from '../../utils/domQuery';
 import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
@@ -569,7 +570,6 @@ export function PluginCenter() {
   useEffect(() => {
     const body = getBodyScope();
     if (!body) return;
-    const jQuery = $();
     const ipc = getIpc();
 
     // 點擊外部關閉排序下拉選單（镜像 85-94）
@@ -579,22 +579,24 @@ export function PluginCenter() {
         bumpAll();
       }
     };
-    if (jQuery) {
-      jQuery(document).on('click.pluginCenterSort', onDocClick);
-    }
+    document.addEventListener('click', onDocClick);
 
-    // 攔截 detail 區塊內所有連結點擊（镜像 97-104；jQuery 委托）
+    // 攔截 detail 區塊內所有連結點擊（镜像 97-104；原生委托）
     let offDetailLinks: any;
-    if (jQuery && rootElRef.current) {
-      jQuery(rootElRef.current).on('click', '.page.detail a', function (this: any, event: any) {
+    const rootEl = rootElRef.current;
+    if (rootEl) {
+      const onDetailLinkClick = (event: any) => {
+        const a = delegateTarget(event, '.page.detail a');
+        if (!a || !rootEl.contains(a)) return;
         event.preventDefault();
         event.stopPropagation();
-        const href = jQuery(this).attr('href');
+        const href = a.getAttribute('href');
         if (href && href !== '#') {
           w().require('electron').shell.openExternal(href);
         }
-      });
-      offDetailLinks = () => jQuery(rootElRef.current).off('click', '.page.detail a');
+      };
+      rootEl.addEventListener('click', onDetailLinkClick);
+      offDetailLinks = () => rootEl.removeEventListener('click', onDetailLinkClick);
     }
 
     const currentWindow = w().require('@electron/remote').getCurrentWindow();
@@ -696,7 +698,7 @@ export function PluginCenter() {
     };
 
     return () => {
-      if (jQuery) jQuery(document).off('click.pluginCenterSort');
+      document.removeEventListener('click', onDocClick);
       if (offDetailLinks) offDetailLinks();
       if (ipc && ipc.off) {
         ipc.off('install-plugin', onInstallPlugin);

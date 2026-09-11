@@ -4,8 +4,8 @@ import { contextMenuOpenChannel, contextMenuCloseChannel } from '../../global/bu
 import { t } from '../../global/eagleGlobals';
 import { shortcuts } from '../../app/filters';
 import { useToolbarState } from '../../store/toolbarState';
-import { $ } from '../detail/detailHooks';
 import { max } from '../../utils/lang';
+import { q, widthOf, heightOf, outerWidthOf, offsetOf } from '../../utils/domQuery';
 import { makeSortable } from '../interactions/sortable';
 
 /**
@@ -451,44 +451,43 @@ function SubmenuPane({
     const element = elRef.current;
     if (!element) return;
     const autoPosition = () => {
-      const $menuItem = $()('#submenu-placeholder').parent();
-      if (!$menuItem.length) return;
+      const placeholder = q('#submenu-placeholder');
+      const $menuItem = placeholder?.parentElement;
+      if (!$menuItem) return;
 
-      const position = $menuItem.position();
-      const offset = $menuItem.offset();
+      const position = { top: $menuItem.offsetTop, left: $menuItem.offsetLeft };
+      const offset = offsetOf($menuItem);
+      if (!offset) return;
 
       const elementTop = offset.top;
-      const elementBottom = elementTop + $()(element).height();
-      const elementRight = offset.left + $menuItem.outerWidth() + $()(element).outerWidth();
-      const maxBottom = $()(window).height() - 20;
-      const maxRight = $()(window).width() - 20;
+      const elementBottom = elementTop + heightOf(element);
+      const elementRight = offset.left + outerWidthOf($menuItem) + outerWidthOf(element);
+      const maxBottom = window.innerHeight - 20;
+      const maxRight = window.innerWidth - 20;
 
       let offsetY = 0;
       let offsetX = 0;
 
       if (elementBottom > maxBottom) offsetY = elementBottom - maxBottom;
-      if (elementRight > maxRight) offsetX = $menuItem.outerWidth() + $()(element).outerWidth();
+      if (elementRight > maxRight) offsetX = outerWidthOf($menuItem) + outerWidthOf(element);
 
       offsetY = Math.min(offsetY, elementTop);
 
       const top = position.top - offsetY;
-      const left = Math.max(-offset.left + 20, offset.left + $menuItem.outerWidth() - offsetX - 4);
+      const left = Math.max(-offset.left + 20, offset.left + outerWidthOf($menuItem) - offsetX - 4);
 
-      $()(element).css({
-        opacity: 1,
-        top: `${top}px`,
-        left: `${left}px`,
-      });
+      element.style.opacity = '1';
+      element.style.top = `${top}px`;
+      element.style.left = `${left}px`;
 
-      $()(element).find('.context-menu-items').css({
-        maxHeight: `${maxBottom - offsetY}px`,
-      });
+      const items = element.querySelector('.context-menu-items') as HTMLElement | null;
+      if (items) items.style.maxHeight = `${maxBottom - offsetY}px`;
     };
     const timer = setTimeout(autoPosition, 50);
-    $()(window).off('resize.submenu').on('resize.submenu', autoPosition);
+    window.addEventListener('resize', autoPosition);
     return () => {
       clearTimeout(timer);
-      $()(window).off('resize.submenu');
+      window.removeEventListener('resize', autoPosition);
     };
   }, [ctx.tick, item]);
 
@@ -630,14 +629,12 @@ export function ContextMenuPanel() {
   };
 
   const moveToCursorPosition = (callback: () => void, retry: number) => {
-    const jQuery = $();
-    if (!jQuery) return;
     const el = rootRef.current;
     if (!el) return;
-    const windowWidth = jQuery(window).width();
-    const windowHeight = jQuery(window).height();
-    const containerWidth = jQuery(el).width();
-    const containerHeight = jQuery(el).height();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = widthOf(el);
+    const containerHeight = heightOf(el);
     const searchInputHeight = stateRef.current.displayMenu.showSearch ? 36 : 0;
 
     if (retry < 5 && (containerHeight < 34 + searchInputHeight || containerWidth < 90)) {
@@ -662,16 +659,13 @@ export function ContextMenuPanel() {
       y = 36;
     }
 
-    jQuery(el).css({
-      left: `${x}px`,
-      top: `${y}px`,
-    });
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
 
     const maxHeight = windowHeight - searchInputHeight - y - 20;
 
-    jQuery(el).find('.context-menu-items').css({
-      maxHeight: `${maxHeight}px`,
-    });
+    const items = el.querySelector('.context-menu-items') as HTMLElement | null;
+    if (items) items.style.maxHeight = `${maxHeight}px`;
 
     callback();
   };
@@ -688,7 +682,8 @@ export function ContextMenuPanel() {
 
   const destroy = () => {
     const st = stateRef.current;
-    $()(rootRef.current).find('.context-menu-items').css('max-height', '');
+    const items = rootRef.current?.querySelector('.context-menu-items') as HTMLElement | null;
+    if (items) items.style.maxHeight = '';
     setSearchKeyword('');
     st.displayMenu = {};
     st.activeMenu = null;

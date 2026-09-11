@@ -14,7 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import { controllerScope, applyController, ct } from './controller';
 import { SelectPanel, panelI18n, cartesianProduct } from './selectPanelEngine';
 
-const $: any = (...args: any[]) => (window as any).jQuery(...args);
+import { setCssEl, heightOf } from '../utils/domQuery';
 
 function deepCopy<T>(value: T): T {
   return value === undefined ? value : JSON.parse(JSON.stringify(value));
@@ -129,10 +129,10 @@ export class CollectTagSelectPanel extends SelectPanel {
     squareMode: false,
     listMode: localStorage.getItem('eagle.tagsPopup.listMode') === 'true',
     onScrollStart: () => {
-      this.$panel.find('select-panel-list').addClass('scrolling');
+      this.panelListEl()?.classList.add('scrolling');
     },
     onScrollEnd: () => {
-      this.$panel.find('select-panel-list').removeClass('scrolling');
+      this.panelListEl()?.classList.remove('scrolling');
     },
   };
   vsGridItems: any = [];
@@ -144,7 +144,7 @@ export class CollectTagSelectPanel extends SelectPanel {
   }
 
   open() {
-    this.$panel.css({
+    setCssEl(this.$panelEl, {
       width: `${this.width}px`,
       height: `${this.height}px`,
     });
@@ -803,7 +803,7 @@ export class CollectTagSelectPanel extends SelectPanel {
   selectUp() {
     if (this?.listData?.currentGroup?.isCollapsed) return this.selectPreviousGroup();
 
-    const columns = parseInt(this.$panel.find('select-panel-list').attr('columns'));
+    const columns = parseInt(this.panelListEl()?.getAttribute('columns') as any);
     const currentGroup = this.listData.currentGroup;
     const currentIndex = this.listData.currentIndex;
     const items = currentGroup.items;
@@ -843,7 +843,7 @@ export class CollectTagSelectPanel extends SelectPanel {
   selectDown() {
     if (this?.listData?.currentGroup?.isCollapsed) return this.selectNextGroup();
 
-    const columns = parseInt(this.$panel.find('select-panel-list').attr('columns'));
+    const columns = parseInt(this.panelListEl()?.getAttribute('columns') as any);
     const currentGroup = this.listData.currentGroup;
     const currentIndex = this.listData.currentIndex;
     const items = currentGroup.items;
@@ -999,12 +999,12 @@ export class CollectTagSelectPanel extends SelectPanel {
   }
 
   scrollTop() {
-    this.$panel.find('select-panel-list').scrollTop(0);
-    this.$panel.find('select-panel-list').trigger('render');
+    const __l = this.panelListEl(); if (__l) __l.scrollTop = 0;
+    this.panelListEl()?.dispatchEvent(new Event('render'));
   }
 
   render() {
-    this.$panel.find('select-panel-list').trigger('render');
+    this.panelListEl()?.dispatchEvent(new Event('render'));
   }
 
   keywordChanged() {
@@ -1019,7 +1019,7 @@ export class CollectTagSelectPanel extends SelectPanel {
     const top = itemPositions.find((item: any) => item.id === groupId)?.y;
 
     if (top !== undefined) {
-      this.$panel.find('select-panel-list').scrollTop(top);
+      const __lt = this.panelListEl(); if (__lt) __lt.scrollTop = top;
     }
   }
 
@@ -1059,7 +1059,7 @@ export class CollectTagSelectPanel extends SelectPanel {
       });
     }
 
-    const $list = this.$panel.find('select-panel-list');
+    const $list = this.panelListEl();
     const itemPositions = this.vsGridItems;
     const item = itemPositions.find((item: any) => item.id === itemId);
 
@@ -1068,12 +1068,12 @@ export class CollectTagSelectPanel extends SelectPanel {
     const itemTop = item.y;
     const itemHeight = item.height;
 
-    const currentScrollTop = $list.scrollTop();
-    const isVisible = itemTop >= currentScrollTop && itemTop + itemHeight <= currentScrollTop + $list.height();
-    const targetScrollTop = itemTop - $list.height() / 2;
+    const currentScrollTop = $list?.scrollTop || 0;
+    const isVisible = itemTop >= currentScrollTop && itemTop + itemHeight <= currentScrollTop + heightOf($list);
+    const targetScrollTop = itemTop - heightOf($list) / 2;
 
     if (!isVisible) {
-      scrollPageTo($list[0], targetScrollTop, 100);
+      scrollPageTo($list, targetScrollTop, 100);
     }
   }
 

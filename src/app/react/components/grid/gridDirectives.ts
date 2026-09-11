@@ -1,7 +1,9 @@
+// @ts-nocheck
 import { getBodyScope } from '../../core/appCore';
 import { machineryGotoBottom } from '../../core/dataMachinery';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { autoscrollChannel } from '../../global/bus';
+import { q, heightOf, setCssEl, offsetOf, addClass, removeClass, onEl, offEl } from '../../utils/domQuery';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -14,29 +16,26 @@ import { autoscrollChannel } from '../../global/bus';
  * isElementInViewport / jQuery + scrollTo 插件）在 b1 移除 bundle 前继续存在，其去留随
  * b3 bundle 分解处理。文件含 @ts-nocheck：逐字 JS 移植不做 TS 改写。
  */
-// @ts-nocheck
 
 function deepCopy(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
 
 export function initAutoScroll() {
   const $scope = getBodyScope();
   const $rootScope = $scope ? $scope.$root : null;
-  const element = window.jQuery('#box-container');
-  const elem = element;
-  const $ = window.jQuery;
+  const element = q('#box-container') as HTMLElement | null;
   const attrs = {};
 
-            var $container = $(elem);
+            var $container = element;
             autoscrollChannel.on(function (event, index) {
 
                 // 暫時做修正，未來有直接滾動 index 的方式再調整
                 if (!$bodyScope.selected || $bodyScope.selected.length === 0) return;
                 var boxId = $bodyScope.selected[$bodyScope.selected.length - 1].id;
-                var height = $bodyScope.boxContianerHeight || $container.height(),
+                var height = $bodyScope.boxContianerHeight || heightOf(element),
                 // var height = ig._renderer._size.view,
-                    box = $(`#box-${boxId}`);
+                    box = q(`#box-${boxId}`);
 
-                if (!box || box.length === 0) {
+                if (!box) {
                     console.log("项目不再当前画面中，自动重新定位")
                     if ($scope.viewMode !== 'random' && $scope.viewMode !== 'duplicate') {
                         scrollToSelectedItem();
@@ -44,17 +43,20 @@ export function initAutoScroll() {
                     return;
                 }
 
-                var boxHeight = box.height(),
-                    scrollTop = box.offset().top,
+                var boxHeight = heightOf(box),
+                    scrollTop = offsetOf(box)?.top || 0,
                     offset = height / 2 - boxHeight;
 
                 if (scrollTop - boxHeight / 2 < 0 || scrollTop + boxHeight / 2 > height || !isElementInViewport(box)) {
-                    $container.stop().scrollTo(box, 100, { axis: 'y', offset: -boxHeight, queue: false });
+                    if ($container) {
+                        const delta = (offsetOf(box)?.top || 0) - (offsetOf($container)?.top || 0);
+                        $container.scrollTop = $container.scrollTop + delta - boxHeight;
+                    }
                 }
 
                 setTimeout(function () {
-                    if ($container[0].scrollTop === 0 && $bodyScope.startCursor !== 0) {
-                        $container[0].scrollTop = 3;
+                    if ($container && $container.scrollTop === 0 && $bodyScope.startCursor !== 0) {
+                        $container.scrollTop = 3;
                     }
                 }, 200);
             });
@@ -62,12 +64,11 @@ export function initAutoScroll() {
 }
 
 export function initScrollToTopSentinel() {
-  const element = window.jQuery('#scroll-to-top-sentinel');
-  const $ = window.jQuery;
+  const element = q('#scroll-to-top-sentinel') as HTMLElement | null;
   const attrs = {
-    target: element.attr('target'),
-    threshold: element.attr('threshold'),
-    scrollContainer: element.attr('scroll-container'),
+    target: element?.getAttribute('target'),
+    threshold: element?.getAttribute('threshold'),
+    scrollContainer: element?.getAttribute('scroll-container'),
   };
   const destroyHandlers = [];
   const scope = { $on: function (name, fn) { if (name === '$destroy') destroyHandlers.push(fn); return function () {}; } };
@@ -80,23 +81,25 @@ export function initScrollToTopSentinel() {
                 console.error('scrollToTopSentinel: target attribute is required');
                 return;
             }
+            if (!element) return;
             
             let observer;
-            let $target;
-            let $container;
+            let $target: HTMLElement | null;
+            let $container: HTMLElement | null;
+            let onFallbackScroll: any;
             
             function init() {
-                $target = $(targetSelector);
-                if (!$target.length) {
+                $target = q(targetSelector);
+                if (!$target) {
                     console.error('scrollToTopSentinel: target element not found:', targetSelector);
                     return;
                 }
                 
                 // 確定捲動容器
-                $container = scrollContainer ? $(scrollContainer) : element.parent();
+                $container = scrollContainer ? q(scrollContainer) : element.parentElement;
                 
                 // 設置哨兵元素樣式
-                element.css({
+                setCssEl(element, {
                     height: '1px',
                     opacity: 0,
                     pointerEvents: 'none',
@@ -116,39 +119,40 @@ export function initScrollToTopSentinel() {
                         // 當哨兵元素在視窗內時，隱藏按鈕
                         // 當哨兵元素離開視窗時，顯示按鈕
                         if (entry.isIntersecting) {
-                            $target.removeClass('show');
+                            $target!.classList.remove('show');
                         } else {
                             // 只有當容器確實有捲動時才顯示按鈕
-                            const scrollTop = $container.scrollTop();
+                            const scrollTop = $container?.scrollTop || 0;
                             if (scrollTop >= threshold) {
-                                $target.addClass('show');
+                                $target!.classList.add('show');
                             }
                         }
                     });
                 }, {
-                    root: $container[0] === document.body ? null : $container[0],
+                    root: $container === document.body ? null : $container,
                     rootMargin: '0px',
                     threshold: 0
                 });
                 
-                observer.observe(element[0]);
+                observer.observe(element);
             }
             
             // Fallback: 使用傳統 scroll 事件
             function initFallback() {
                 let scrollTimeout;
-                $container.on('scroll.scrollToTopSentinel', function() {
+                onFallbackScroll = function() {
                     clearTimeout(scrollTimeout);
                     
                     scrollTimeout = setTimeout(function() {
-                        const scrollTop = $container.scrollTop();
+                        const scrollTop = $container?.scrollTop || 0;
                         if (scrollTop >= threshold) {
-                            $target.addClass('show');
+                            $target?.classList.add('show');
                         } else {
-                            $target.removeClass('show');
+                            $target?.classList.remove('show');
                         }
                     }, 250);
-                });
+                };
+                $container?.addEventListener('scroll', onFallbackScroll);
             }
             
             // 清理
@@ -156,7 +160,7 @@ export function initScrollToTopSentinel() {
                 if (observer) {
                     observer.disconnect();
                 }
-                $container.off('scroll.scrollToTopSentinel');
+                if ($container && onFallbackScroll) $container.removeEventListener('scroll', onFallbackScroll);
             });
             
             // 延遲初始化以確保 DOM 就緒
@@ -165,21 +169,20 @@ export function initScrollToTopSentinel() {
 }
 
 export function initBoxContainerScrollbar() {
-  const element = window.jQuery('#box-container-scrollbar');
-  const $ = window.jQuery;
+  const element = q('#box-container-scrollbar') as HTMLElement | null;
   const destroyHandlers = [];
   const scope = { $on: function (name, fn) { if (name === '$destroy') destroyHandlers.push(fn); return function () {}; } };
   const attrs = {};
 
             var enabledSize = 3;
             var $bodyScope = getBodyScope();
-            var $boxContainer = $("#box-container");
-            var $scrollThumb = element.find(".box-container-scrollbar-thumb");
+            var $boxContainer = q("#box-container") as HTMLElement | null;
+            var $scrollThumb = element ? (element.querySelector(".box-container-scrollbar-thumb") as HTMLElement | null) : null;
             // var $scrollHints = element.find(".box-container-scrollbar-hints");
             var orderBy;
             
             // 初始化 thumb 的 transform 和效能優化屬性
-            $scrollThumb.css({
+            setCssEl($scrollThumb, {
                 transform: 'translateY(0px)',
                 top: '0',
                 'will-change': 'transform',
@@ -188,7 +191,7 @@ export function initBoxContainerScrollbar() {
                 'transform-style': 'preserve-3d'
             });
 
-            element.on("UPDATE_BOX_SCROLLBAR", function () {
+            onEl(element, "UPDATE_BOX_SCROLLBAR", function () {
             // scope.$on("UPDATE_BOX_SCROLLBAR", function () {
                 var total = $bodyScope.allData.length;
                 // var pageLength = parseInt($bodyScope.allData.length / $bodyScope.options.page);
@@ -212,7 +215,7 @@ export function initBoxContainerScrollbar() {
 
                 updateThumbHeight(total);
                 // updateThumbPosition(current, pageLength, 0);
-                $boxContainer.trigger("scroll.boxContainer");
+                $boxContainer && $boxContainer.dispatchEvent(new Event("scroll"));
 
                 if ($bodyScope.currentFolder) {
                     if ($bodyScope.currentFolder.orderBy) {
@@ -237,7 +240,7 @@ export function initBoxContainerScrollbar() {
 
             //var scrollTimeout;
             // $boxContainer.on("mousewheel.boxContainer", _.throttle(function () {
-            //     $boxContainer.trigger("scroll.boxContainer");
+            //     $boxContainer && $boxContainer.dispatchEvent(new Event("scroll"));
             // }, 200, true));
             
             // 動態節流的滾動處理
@@ -260,7 +263,7 @@ export function initBoxContainerScrollbar() {
                 };
             }
             
-            $boxContainer.on("scroll.boxContainer", dynamicThrottle(function () {
+            onEl($boxContainer, "scroll", dynamicThrottle(function () {
 
                 if (!ig || isDragging || justFinishedDragging) return; // 拖拽時和剛結束拖拽時不處理 scroll 事件
                 
@@ -278,8 +281,8 @@ export function initBoxContainerScrollbar() {
                 if (pos <= 10) {
                     // 快取 DOM 查詢結果
                     if (!this._scrollBarHeight) {
-                        this._scrollBarHeight = element.height();
-                        this._thumbnailHeight = $scrollThumb.height();
+                        this._scrollBarHeight = heightOf(element);
+                        this._thumbnailHeight = heightOf($scrollThumb);
                     }
                     
                     // 使用微小的百分比而不是直接設為0，避免突然跳動
@@ -287,8 +290,8 @@ export function initBoxContainerScrollbar() {
                     var scrollTop = (this._scrollBarHeight - this._thumbnailHeight) * percentage / 100;
                     
                     // 使用 transform3d 強制 GPU 加速
-                    $scrollThumb[0].style.transform = `translate3d(0, ${scrollTop}px, 0)`;
-                    $subFolderContainer.show();
+                    $scrollThumb.style.transform = `translate3d(0, ${scrollTop}px, 0)`;
+                    if ($subFolderContainer) $subFolderContainer.style.display = '';
                     return;
                 }
                 
@@ -304,38 +307,38 @@ export function initBoxContainerScrollbar() {
                     
                     // 更新 thumb 位置（使用快取值）
                     if (!this._scrollBarHeight) {
-                        this._scrollBarHeight = element.height();
-                        this._thumbnailHeight = $scrollThumb.height();
+                        this._scrollBarHeight = heightOf(element);
+                        this._thumbnailHeight = heightOf($scrollThumb);
                     }
                     var scrollBarHeight = this._scrollBarHeight;
                     var thumbnailHeight = this._thumbnailHeight;
                     var scrollTop = (scrollBarHeight - thumbnailHeight) * percentage / 100;
                     
                     // 使用 transform3d 強制 GPU 加速
-                    $scrollThumb[0].style.transform = `translate3d(0, ${scrollTop}px, 0)`;
+                    $scrollThumb.style.transform = `translate3d(0, ${scrollTop}px, 0)`;
                     
                     // 更新 UI 元素
                     if (currentPageWithDecimal >= 1) {
-                        $subFolderContainer.hide();
-                        if (!$scrollToTop.hasClass("show")) {
-                            $scrollToTop.addClass("show");
+                        if ($subFolderContainer) $subFolderContainer.style.display = 'none';
+                        if (!$scrollToTop?.classList.contains("show")) {
+                            $scrollToTop?.classList.add("show");
                         }
                     } else {
-                        $subFolderContainer.show();
+                        if ($subFolderContainer) $subFolderContainer.style.display = '';
                     }
                 }
                 
             })); // 使用動態節流替代固定的 throttle
 
             function switchNormalMode() {
-                $("#sub-folder-container").show();
-                $("#box-container").removeClass("hide-scrollbar");
-                element.hide();
+                const sfc = q("#sub-folder-container"); if (sfc) sfc.style.display = '';
+                removeClass("#box-container", "hide-scrollbar");
+                if (element) element.style.display = 'none';
             };
 
             function switchPageMode() {
-                $("#box-container").addClass("hide-scrollbar");
-                element.show();
+                addClass("#box-container", "hide-scrollbar");
+                if (element) element.style.display = '';
                 // 觸發一次重新計算以更新快取值
                 this._scrollBarHeight = null;
                 this._thumbnailHeight = null;
@@ -347,17 +350,17 @@ export function initBoxContainerScrollbar() {
                 }
                 else {
                     switchPageMode();
-                    var scrollHeight = element.height();
+                    var scrollHeight = heightOf(element);
                     var height = parseInt($bodyScope.options.page / total * scrollHeight);
                     if (height < 18) height = 18;
-                    $scrollThumb.height(height);
+                    setCssEl($scrollThumb, { height: height });
                     // console.log(`thumbHeight: ${height}`);
                 }
             };
 
             var updateThumbPositionAnimateTimeout;
-            var $subFolderContainer = $("#sub-folder-container");
-            var $scrollToTop = $("#scroll-to-top");
+            var $subFolderContainer = q("#sub-folder-container") as HTMLElement | null;
+            var $scrollToTop = q("#scroll-to-top") as HTMLElement | null;
             var updateThumbPositionTimeout;
             var updateThumbPositionRequest;
             // 移除這些變數，改為在需要時動態獲取
@@ -369,13 +372,13 @@ export function initBoxContainerScrollbar() {
                 
                 // 更新 UI 元素顯示
                 if (precisePosition >= 1) {
-                    $subFolderContainer.hide();
-                    if (!$scrollToTop.hasClass("show")) {
-                        $scrollToTop.addClass("show");
+                    if ($subFolderContainer) $subFolderContainer.style.display = 'none';
+                    if (!$scrollToTop?.classList.contains("show")) {
+                        $scrollToTop?.classList.add("show");
                     }
                 }
                 else {
-                    $subFolderContainer.show();
+                    if ($subFolderContainer) $subFolderContainer.style.display = '';
                 }
             };
 
@@ -538,7 +541,7 @@ export function initBoxContainerScrollbar() {
                             resetNgGridLayoutData($bodyScope.allData, 0, scrollPercentage);
                         });
                         if (!scrollPercentage) {
-                            setTimeout(function () { $boxContainer.scrollTop(10); }, 200);
+                            setTimeout(function () { if ($boxContainer) $boxContainer.scrollTop = 10; }, 200);
                         }
                     }
                     return;
@@ -604,14 +607,14 @@ export function initBoxContainerScrollbar() {
                         
                         if (pageHeight > 0) {
                             // 使用可滾動範圍計算精準的 scrollTop 位置
-                            var viewportHeight = $boxContainer[0].clientHeight;
+                            var viewportHeight = $boxContainer.clientHeight;
                             var scrollableRange = pageHeight - viewportHeight;
                             var targetScrollTop = (scrollableRange > 0) ? pageStart + (scrollableRange * decimalPart) : pageStart;
 
-                            $boxContainer.scrollTop(targetScrollTop);
+                            if ($boxContainer) $boxContainer.scrollTop = targetScrollTop;
                         } else {
                             // 如果頁面高度為 0，至少滾動到頁面開始位置
-                            $boxContainer.scrollTop(pageStart);
+                            if ($boxContainer) $boxContainer.scrollTop = pageStart;
                         }
                     }
                 }, 50);
@@ -640,14 +643,14 @@ export function initBoxContainerScrollbar() {
                     
                     if (pageHeight > 0) {
                         // 使用可滾動範圍計算精準的 scrollTop 位置
-                        var viewportHeight = $boxContainer[0].clientHeight;
+                        var viewportHeight = $boxContainer.clientHeight;
                         var scrollableRange = pageHeight - viewportHeight;
                         var targetScrollTop = (scrollableRange > 0) ? pageStart + (scrollableRange * decimalPart) : pageStart;
 
                         smoothScrollTo($boxContainer, targetScrollTop, 100);
                     } else if (decimalPart === 0) {
                         // 如果是頁面開頭，直接滾動到起始位置
-                        // $boxContainer.scrollTop(pageStart);
+                        // if ($boxContainer) $boxContainer.scrollTop = pageStart;
                         smoothScrollTo($boxContainer, pageStart, 100);
                     }
                 }
@@ -659,12 +662,12 @@ export function initBoxContainerScrollbar() {
                     cancelAnimationFrame(scrollAnimationFrame);
                 }
                 
-                const startPosition = element[0].scrollTop;
+                const startPosition = element.scrollTop;
                 const distance = targetPosition - startPosition;
                 
                 // 如果距離太小，直接跳轉
                 if (Math.abs(distance) < 4) {
-                    element[0].scrollTop = targetPosition;
+                    element.scrollTop = targetPosition;
                     return;
                 }
                 
@@ -679,13 +682,13 @@ export function initBoxContainerScrollbar() {
                     const progress = Math.min(elapsed / duration, 1);
                     const easeProgress = easeOutCubic(progress);
 
-                    element[0].scrollTop = startPosition + distance * easeProgress;
+                    element.scrollTop = startPosition + distance * easeProgress;
 
                     if (progress < 1) {
                         scrollAnimationFrame = requestAnimationFrame(animate);
                     } else {
                         // 確保最後精確到達目標位置
-                        element[0].scrollTop = targetPosition;
+                        element.scrollTop = targetPosition;
                         scrollAnimationFrame = null;
                     }
                 }
@@ -707,7 +710,7 @@ export function initBoxContainerScrollbar() {
                     var decimal = 0;
                     if (groupHeight > 0) {
                         // 使用可滾動範圍而非內容高度，確保與 applyPreciseScrollPositionImmediate 一致
-                        var viewportHeight = $boxContainer[0].clientHeight;
+                        var viewportHeight = $boxContainer.clientHeight;
                         var scrollableRange = groupHeight - viewportHeight;
                         if (scrollableRange > 0) {
                             decimal = (scrollPos - groupStart) / scrollableRange;
@@ -734,7 +737,7 @@ export function initBoxContainerScrollbar() {
 
                         var decimal = 0;
                         if (groupHeight > 0) {
-                            var viewportHeight = $boxContainer[0].clientHeight;
+                            var viewportHeight = $boxContainer.clientHeight;
                             var scrollableRange = groupHeight - viewportHeight;
                             if (scrollableRange > 0) {
                                 decimal = (scrollPos - groupStart) / scrollableRange;
@@ -808,8 +811,8 @@ export function initBoxContainerScrollbar() {
             var draggableInstance = null;
             
             function initDraggable() {
-                var draggableThumb = $scrollThumb[0];
-                var parentElement = element[0];
+                var draggableThumb = $scrollThumb;
+                var parentElement = element;
                 
                 var dragState = {
                     isDragging: false,
@@ -850,8 +853,8 @@ export function initBoxContainerScrollbar() {
                     dragState.maxTop = dragState.parentHeight - dragState.thumbHeight;
                     
                     // 觸發 start 回調
-                    $scrollThumb.addClass("dragging");
-                    $("body").addClass("dragging-list-scrollbar");
+                    $scrollThumb?.classList.add("dragging");
+                    document.body.classList.add("dragging-list-scrollbar");
                     isDragging = true;
                     lastTargetPage = $bodyScope.startCursor;
                     lastDecimalPart = -1;
@@ -927,7 +930,7 @@ export function initBoxContainerScrollbar() {
                     
                     // 處理子資料夾容器顯示（使用快取）
                     if (!subFolderContainerCache) {
-                        subFolderContainerCache = $("#sub-folder-container");
+                        subFolderContainerCache = q("#sub-folder-container");
                     }
                     if (targetPageWithDecimal < 0.1) {
                         subFolderContainerCache.show();
@@ -1004,8 +1007,8 @@ export function initBoxContainerScrollbar() {
                     // 這樣可以避免拖拽結束時的重繪
                     
                     // 觸發 stop 回調
-                    $scrollThumb.removeClass("dragging");
-                    $("body").removeClass("dragging-list-scrollbar");
+                    $scrollThumb?.classList.remove("dragging");
+                    document.body.classList.remove("dragging-list-scrollbar");
                     isDragging = false;
                     clearTimeout(pageChangeTimeout);
                     
@@ -1067,9 +1070,9 @@ export function initBoxContainerScrollbar() {
             // 初始化拖拽
             draggableInstance = initDraggable();
 
-            element.on("mousedown", function (event) {
+            onEl(element, "mousedown", function (event) {
                 // 避免點擊 thumb 時觸發
-                if ($(event.target).hasClass('box-container-scrollbar-thumb')) {
+                if (event.target && event.target.classList && event.target.classList.contains('box-container-scrollbar-thumb')) {
                     return;
                 }
                 
@@ -1081,8 +1084,8 @@ export function initBoxContainerScrollbar() {
                 }
                 
                 
-                var scrollHeight = element.height();
-                var elementOffset = element.offset();
+                var scrollHeight = heightOf(element);
+                var elementOffset = offsetOf(element);
                 var mouseY = event.pageY - elementOffset.top;
                 
                 var totalPageCount = getTotalPageCount();
@@ -1137,8 +1140,9 @@ export function initBoxContainerScrollbar() {
                 if (draggableInstance) {
                     draggableInstance();
                 }
-                element.off();
-                $boxContainer.off("scroll.boxContainer");
+                offEl(element, "UPDATE_BOX_SCROLLBAR");
+                offEl(element, "mousedown");
+                offEl($boxContainer, "scroll");
                 
                 // 清理快取
                 subFolderContainerCache = null;

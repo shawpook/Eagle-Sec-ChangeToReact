@@ -3,13 +3,14 @@ import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts } from '../../app/filters';
 import { usePanelState } from '../../store/panelState';
-import { $, getIpc } from '../detail/detailHooks';
+import { getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { widthOf, heightOf } from '../../utils/domQuery';
 
 /**
  * 阶段7d-5a：pluginPanel + pluginCreator 接管（pluginCenter 见 7d-5b）。
@@ -157,12 +158,11 @@ export function PluginPanel() {
   }
 
   // moveToCursorPosition（镜像 24-57 逐字）
-  const moveToCursorPosition = ($elem: any) => {
-    const jQuery = $();
-    const windowWidth = jQuery(window).width();
-    const windowHeight = jQuery(window).height();
-    const containerWidth = $elem.width();
-    const containerHeight = $elem.height();
+  const moveToCursorPosition = ($elem: HTMLElement) => {
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = widthOf($elem);
+    const containerHeight = heightOf($elem);
     let x = w().windowMouseX + 10;
     let y = w().windowMouseY - 10;
     let maxHeight = windowHeight; // 初始化最大高度為視窗高度
@@ -181,15 +181,12 @@ export function PluginPanel() {
 
     maxHeight = windowHeight - y - 160;
 
-    $elem.css({
-      left: `${x}px`,
-      top: `${y}px`,
-    });
+    $elem.style.left = `${x}px`;
+    $elem.style.top = `${y}px`;
 
     // find .plugin-container and set max-height
-    $elem.find('.plugin-container').css({
-      'max-height': `${maxHeight - 40}px`, // 設定最大高度
-    });
+    const container = $elem.querySelector('.plugin-container') as HTMLElement | null;
+    if (container) container.style.maxHeight = `${maxHeight - 40}px`; // 設定最大高度
   };
 
   const calculateList = () => {
@@ -308,9 +305,8 @@ export function PluginPanel() {
   focusInputRef.current = focusInput;
 
   const close = () => {
-    const jQuery = $();
     scrollToTop();
-    jQuery(panelRef.current).removeClass('open');
+    panelRef.current?.classList.remove('open');
     searchInputRef.current?.blur();
     scrollToTop();
     bumpAll();
@@ -319,9 +315,8 @@ export function PluginPanel() {
   closeRef.current = close;
 
   const scrollToTop = () => {
-    const jQuery = $();
-    if (!jQuery || !panelRef.current) return;
-    jQuery(panelRef.current).find('.plugin-container').scrollTop(0);
+    const container = panelRef.current?.querySelector('.plugin-container') as HTMLElement | null;
+    if (container) container.scrollTop = 0;
   };
 
   const hoverItem = (index: any) => {
@@ -668,7 +663,6 @@ export function PluginPanel() {
   useEffect(() => {
     const body = getBodyScope();
     if (!body) return;
-    const jQuery = $();
 
     // b1-9ba：UPDATE_PLUGIN_PANEL 頻道全樹無發送者（原發送面在 bundle，摘除後死亡）
     // ——死監聽移除。
@@ -695,8 +689,8 @@ export function PluginPanel() {
       calculateListRef.current();
 
       setTimeout(function () {
-        moveToCursorPosition(jQuery(panelRef.current));
-        jQuery(panelRef.current).addClass('open');
+        if (panelRef.current) moveToCursorPosition(panelRef.current);
+        panelRef.current?.classList.add('open');
         setTimeout(function () {
           focusInputRef.current();
         }, 50);

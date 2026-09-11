@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
-import { $, getIpc } from '../detail/detailHooks';
+import { getIpc } from '../detail/detailHooks';
+import { q, hasClass, widthOf, heightOf, setCssEl, offsetOf } from '../../utils/domQuery';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
 import { getBodyScope, getRootScope } from '../../core/appCore';
@@ -64,8 +65,6 @@ export function useVsGridRepeat(
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const jQuery = $();
-    const $container = jQuery ? jQuery(container) : null;
 
     let scrollTimeout: any;
     const onScroll = () => {
@@ -80,12 +79,9 @@ export function useVsGridRepeat(
     });
     resizeObserver.observe(container);
 
-    // element.on("render") —— panel.render() 经 jQuery trigger 通知重渲染
-    let offRender: any;
-    if ($container) {
-      $container.on('render', () => bump((v) => v + 1));
-      offRender = () => $container.off('render');
-    }
+    // element.on("render") —— panel.render() 经原生事件通知重渲染
+    const onRender = () => bump((v) => v + 1);
+    container.addEventListener('render', onRender);
 
     // setupScrollHandlers（scrolling class + onScrollStart/End）
     let isScrolling: any;
@@ -109,7 +105,7 @@ export function useVsGridRepeat(
       resizeObserver.disconnect();
       clearTimeout(scrollTimeout);
       clearTimeout(renderTimeout);
-      if (offRender) offRender();
+      container.removeEventListener('render', onRender);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef.current, options]);
@@ -290,7 +286,6 @@ export function GeneralTagSelectPanel() {
 
   useEffect(() => {
     if (!host || !rootRef.current) return;
-    const jQuery = $();
 
     const panel = new TagSelectPanel({
       showCreateTagBtn: false,
@@ -309,33 +304,33 @@ export function GeneralTagSelectPanel() {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         if (panel.isPined) {
-          const $selectPanel = jQuery('.general-tag-select-panel-live select-panel');
-          if (!$selectPanel || !$selectPanel.hasClass('open')) return;
+          const selectPanel = q('.general-tag-select-panel-live select-panel');
+          if (!selectPanel || !hasClass(selectPanel, 'open')) return;
 
-          const windowHeight = jQuery(window).height();
-          const windowWidth = jQuery(window).width();
-          const popupHeight = $selectPanel.height();
-          const popupWidth = $selectPanel.width();
-          const popupTop = $selectPanel.offset().top;
-          const popupLeft = $selectPanel.offset().left;
+          const windowHeight = window.innerHeight;
+          const windowWidth = window.innerWidth;
+          const popupHeight = heightOf(selectPanel);
+          const popupWidth = widthOf(selectPanel);
+          const popupTop = offsetOf(selectPanel)?.top || 0;
+          const popupLeft = offsetOf(selectPanel)?.left || 0;
 
           // 確保面板不會超出視窗右邊界
           if (popupLeft + popupWidth > windowWidth) {
             const move = popupLeft + popupWidth - windowWidth + 20;
-            $selectPanel.css('left', `${popupLeft - move}px`);
+            setCssEl(selectPanel, { left: `${popupLeft - move}px` });
           }
 
           // 確保面板不會超出視窗下邊界
           if (popupHeight + 60 + popupTop > windowHeight) {
             let newHeight = windowHeight - 60;
             const height = Math.max(120, newHeight - popupTop);
-            $selectPanel.height(height);
+            setCssEl(selectPanel, { height });
             void newHeight;
           }
         }
       }, 333);
     };
-    jQuery(window).on('resize.inspectTagSelect', onWindowResize);
+    window.addEventListener('resize', onWindowResize);
 
     // initDraggable / initResizable（D-2f：自研交互层，替代 jQuery UI）
     let dragOriginalSize: any = {};
@@ -394,7 +389,7 @@ export function GeneralTagSelectPanel() {
     }
 
     return () => {
-      jQuery(window).off('resize.inspectTagSelect');
+      window.removeEventListener('resize', onWindowResize);
       if (off) off();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

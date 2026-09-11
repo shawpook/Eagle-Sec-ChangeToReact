@@ -9350,7 +9350,12 @@ export function machineryOnDropContainer(s: any, event: any): void {
     var fsPath = w.require('path');
     var ipcRenderer = w.require('electron').ipcRenderer;
     var folder = s.currentFolder;
-    var dragUrl = event.dataTransfer && w.jQuery("<div></div>").html(event.dataTransfer.getData("text/html")).find("img").attr("src");
+    var dragUrl: any = undefined;
+    if (event.dataTransfer) {
+      const holder = document.createElement("div");
+      holder.innerHTML = event.dataTransfer.getData("text/html");
+      dragUrl = holder.querySelector("img")?.getAttribute("src");
+    }
     var files = event.dataTransfer && event.dataTransfer.files;
     var dragFile = false;
 

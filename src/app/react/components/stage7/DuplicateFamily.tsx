@@ -4,7 +4,7 @@ import { calculateImageBinding } from '../../services/gridBindingService';
 import { updateSelection } from '../../services/selectionService';
 import { t } from '../../global/eagleGlobals';
 import { filesize, second2time } from '../../app/filters';
-import { $, getIpc } from '../detail/detailHooks';
+import { getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { ayncsImagesChange } from './FolderModals';
 import { ExtIcon } from '../inspector/Inspector';
@@ -1374,14 +1374,14 @@ export function DuplicateModal() {
     const ipc = getIpc();
 
     // $("body").on("click", ".duplicate-modal *", ...)（镜像 22-24）
-    const jQuery = $();
-    let offBodyClick: any;
-    if (jQuery) {
-      jQuery('body').on('click', '.duplicate-modal *', function () {
+    const onBodyClick = (e: any) => {
+      const t = e.target as Element | null;
+      if (t && typeof (t as any).closest === 'function' && (t as any).closest('.duplicate-modal')) {
         document.getElementById('duplicate-input')?.focus();
-      });
-      offBodyClick = () => jQuery('body').off('click', '.duplicate-modal *');
-    }
+      }
+    };
+    document.body.addEventListener('click', onBodyClick);
+    const offBodyClick = () => document.body.removeEventListener('click', onBodyClick);
 
     // $on("OPEN_DUPLICATE")（镜像 26-41 逐字）
     const offOpen = openDuplicateChannel.on((params: any) => {

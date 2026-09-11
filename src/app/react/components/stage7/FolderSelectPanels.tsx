@@ -5,7 +5,7 @@ import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
 import { useSelectAll } from '../hooks';
-import { $ } from '../detail/detailHooks';
+import { q, widthOf, setCssEl, offsetOf } from '../../utils/domQuery';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
@@ -234,7 +234,6 @@ export function FolderSelectPanelHost() {
 
   useEffect(() => {
     if (!host || !rootRef.current) return;
-    const jQuery = $();
 
     const panel = new FolderSelectPanel({
       notify: () => bump((v: number) => v + 1),
@@ -248,13 +247,13 @@ export function FolderSelectPanelHost() {
     // 如果面板的位置壓住了標籤選擇按鈕，則將面板移動到檢查器左側 + 10px 處（567-578 逐字）
     const preventOverlayInspector = () => {
       try {
-        const $selectPanel = jQuery(rootRef.current).find('.select-panel');
-        const inspectorLeft = jQuery('.inspector').offset().left;
-        const panelWidth = $selectPanel.width();
-        const panelLeft = $selectPanel.offset().left;
+        const selectPanel = rootRef.current ? (rootRef.current.querySelector('.select-panel') as HTMLElement | null) : null;
+        const inspectorLeft = offsetOf(q('.inspector'))?.left || 0;
+        const panelWidth = widthOf(selectPanel);
+        const panelLeft = offsetOf(selectPanel)?.left || 0;
         const newLeft = inspectorLeft - panelWidth + 5;
         if (panelLeft + panelWidth > inspectorLeft && newLeft > 0) {
-          $selectPanel.css('left', newLeft);
+          setCssEl(selectPanel, { left: newLeft });
         }
       } catch (e) {}
     };

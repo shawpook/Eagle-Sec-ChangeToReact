@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
-import { $, getIpc, req } from '../detail/detailHooks';
+import { getIpc, req } from '../detail/detailHooks';
+import { q, widthOf, heightOf, offsetOf, setCssEl } from '../../utils/domQuery';
 import { duration } from '../../app/filters';
 import { FolderSelectPanel } from './selectPanelEngine';
 import { openGeneralTagSelectPanel, themePathOf } from './SelectPanels';
@@ -1086,71 +1087,70 @@ export function BatchSavePanel() {
 
   /* ── initMouseWheelEvent（257-287 逐字；jQuery mousewheel + window.throttle） ── */
   useEffect(() => {
-    if (!galleryRef.current) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    const $gallery = jQuery(galleryRef.current);
+    const gallery = galleryRef.current;
+    if (!gallery) return;
 
-    $gallery.on('mousewheel.zoomming', (e: any) => {
+    const onWheelStop = (e: any) => {
       if (e.altKey || e.ctrlKey) {
         e.preventDefault();
         e.stopPropagation();
       }
-    });
+    };
 
-    $gallery.on(
-      'mousewheel.zoomming',
-      w().throttle((e: any) => {
-        if (e.altKey || e.ctrlKey) {
-          e.preventDefault();
-          e.stopPropagation();
-          const speedControl = 2;
-          const delta0 = Math.abs(e.originalEvent.wheelDelta / 20);
-          const ne = e.originalEvent.wheelDelta / Math.abs(e.originalEvent.wheelDelta) || 1;
-          let delta = delta0;
-          if (delta < 10) delta = 10;
-          if (delta > 80) delta = 80;
-          delta = ne * delta * speedControl;
-          setListSize((prev) => {
-            let next = prev + delta * 1.2;
-            next = Math.floor(next / 5) * 5;
-            if (next > 600) next = 600;
-            if (next < 50) next = 50;
-            listSizeRef.current = next;
-            const slider = document.getElementById('batch-save-panel-slider') as HTMLInputElement | null;
-            if (slider) slider.value = String(next);
-            return next;
-          });
-          bumpAll();
-          return false;
-        }
-      }, 50, true)
-    );
+    const onWheelZoom = w().throttle((e: any) => {
+      if (e.altKey || e.ctrlKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        const speedControl = 2;
+        const delta0 = Math.abs(e.deltaY / 20);
+        const ne = e.deltaY < 0 ? 1 : (e.deltaY > 0 ? -1 : 1);
+        let delta = delta0;
+        if (delta < 10) delta = 10;
+        if (delta > 80) delta = 80;
+        delta = ne * delta * speedControl;
+        setListSize((prev) => {
+          let next = prev + delta * 1.2;
+          next = Math.floor(next / 5) * 5;
+          if (next > 600) next = 600;
+          if (next < 50) next = 50;
+          listSizeRef.current = next;
+          const slider = document.getElementById('batch-save-panel-slider') as HTMLInputElement | null;
+          if (slider) slider.value = String(next);
+          return next;
+        });
+        bumpAll();
+        return false;
+      }
+    }, 50, true) as any;
+
+    gallery.addEventListener('wheel', onWheelStop, { passive: false });
+    gallery.addEventListener('wheel', onWheelZoom, { passive: false });
 
     return () => {
-      $gallery.off('mousewheel.zoomming');
+      gallery.removeEventListener('wheel', onWheelStop);
+      gallery.removeEventListener('wheel', onWheelZoom);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [host]);
 
   /* ── batchRectSelect（59288-59423 逐字；$scope.selected/isOpen → refs） ── */
   useEffect(() => {
-    if (!galleryRef.current) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    const element = jQuery(galleryRef.current);
+    const element = galleryRef.current;
+    if (!element) return;
 
     let rectSelection: any = {};
     let rectSelecting = false;
     let startX: any, startY: any;
-    let offset = element.offset();
-    const $rect = jQuery('<div class="rect"></div>').hide();
-    let $boxs: any;
+    let offset = offsetOf(element) as { left: number; top: number };
+    const rect = document.createElement('div');
+    rect.className = 'rect';
+    rect.style.display = 'none';
+    let boxs: HTMLElement[] = [];
     let originSelected: any[] = [];
 
-    jQuery('#batch-save-panel .gallery').prepend($rect);
+    q('#batch-save-panel .gallery')?.prepend(rect);
 
-    element.on('mousedown', (e: any) => {
+    const onMouseDown = (e: any) => {
       e.stopPropagation();
 
       if (e.which != 1) return;
@@ -1162,40 +1162,40 @@ export function BatchSavePanel() {
         originSelected = [];
       }
 
-      offset = element.offset();
-      $boxs = element.find('.item');
+      offset = offsetOf(element) as { left: number; top: number };
+      boxs = Array.from(element.querySelectorAll('.item')) as HTMLElement[];
       rectSelection.startX = startX = e.pageX - offset.left;
-      rectSelection.startY = startY = e.pageY - offset.top + element.scrollTop();
+      rectSelection.startY = startY = e.pageY - offset.top + element.scrollTop;
       rectSelecting = true;
 
-      $rect.css({
+      setCssEl(rect, {
         top: rectSelection.startY,
         left: rectSelection.startX,
       });
-      $rect.show();
-    });
+      rect.style.display = '';
+    };
 
-    jQuery(window).on('mouseup', (e: any) => {
+    const onWindowMouseUp = (e: any) => {
       if (!isOpenRef.current) return;
       e.stopPropagation();
 
       rectSelection = {};
       rectSelecting = false;
 
-      $rect.css({
+      setCssEl(rect, {
         top: 0,
         left: 0,
         width: 0,
         height: 0,
       });
-      $rect.hide();
-    });
+      rect.style.display = 'none';
+    };
 
-    element.on('mousemove', (e: any) => {
+    const onMouseMove = (e: any) => {
       e.stopPropagation();
 
       if (rectSelecting) {
-        const scrollTop = element.scrollTop(),
+        const scrollTop = element.scrollTop,
           flipX = startX > e.pageX - offset.left,
           flipY = startY > e.pageY - offset.top + scrollTop;
 
@@ -1208,7 +1208,7 @@ export function BatchSavePanel() {
         if (flipY) {
           rectSelection.startY = startY - rectSelection.h;
         }
-        $rect.css({
+        setCssEl(rect, {
           top: rectSelection.startY,
           left: rectSelection.startX,
           width: rectSelection.w,
@@ -1217,14 +1217,14 @@ export function BatchSavePanel() {
 
         caculate();
       }
-    });
+    };
 
-    function contain(el: any) {
+    function contain(el: HTMLElement) {
       const a = {
-        width: el.width(),
-        height: el.height(),
-        x: el[0].offsetLeft,
-        y: el[0].offsetTop,
+        width: widthOf(el),
+        height: heightOf(el),
+        x: el.offsetLeft,
+        y: el.offsetTop,
       };
       const b = {
         width: rectSelection.w,
@@ -1244,12 +1244,11 @@ export function BatchSavePanel() {
       const BreakException = {};
 
       try {
-        $boxs.each(function (this: any) {
+        boxs.forEach((domNode) => {
           if (miss > 20) {
             throw BreakException;
           }
-          const domNode = this;
-          if (contain(jQuery(domNode))) {
+          if (contain(domNode)) {
             hit++;
             // 原：angular.element(this).scope().image → DOM 节点挂 __eagleItem
             const item = (domNode as any).__eagleItem;
@@ -1267,13 +1266,17 @@ export function BatchSavePanel() {
         updateSelectedCountRef.current();
         bumpAll();
       }
-    }, 100);
+    }, 100) as any;
+
+    element.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onWindowMouseUp);
+    element.addEventListener('mousemove', onMouseMove);
 
     return () => {
-      element.off('mousedown');
-      element.off('mousemove');
-      jQuery(window).off('mouseup');
-      $rect.remove();
+      element.removeEventListener('mousedown', onMouseDown);
+      element.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onWindowMouseUp);
+      rect.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [host]);

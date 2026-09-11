@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ct } from './controller';
 import { getSortable, makeSortable } from '../components/interactions/sortable';
 
-const $: any = (...args: any[]) => (window as any).jQuery(...args);
+import { q, hasClass, widthOf, heightOf, setCssEl, onEl, offsetOf, outerWidthOf } from '../utils/domQuery';
 const treeUtil = (window as any).eagle.utils.tree;
 
 type Listener = () => void;
@@ -358,8 +358,8 @@ function createEngine(forceUpdate: () => void) {
   let keyBuffer = '';
   let keyBufferTimeout: any = null;
   let enterKeydown = false;
-  let $contextMenuElement: any = null;
-  let $searchInputElement: any = null;
+  let contextMenuEl: HTMLElement | null = null;
+  let searchInputEl: HTMLInputElement | null = null;
   let sortableEl: any = null;
   let sortableMenu: any = null;
 
@@ -369,11 +369,11 @@ function createEngine(forceUpdate: () => void) {
     lastCloseSignal: -1,
 
     bindElement(el: any, input: any) {
-      $contextMenuElement = el ? $(el) : null;
-      $searchInputElement = input ? $(input) : null;
-      if ($searchInputElement) {
-        $searchInputElement.off('focus').on('focus', () => {
-          if (!$contextMenuElement.hasClass('open')) {
+      contextMenuEl = el || null;
+      searchInputEl = input || null;
+      if (searchInputEl) {
+        onEl(searchInputEl, 'focus', () => {
+          if (!hasClass(contextMenuEl, 'open')) {
             blurSearchInput();
           }
         });
@@ -410,43 +410,44 @@ function createEngine(forceUpdate: () => void) {
       if (!el) return;
       // 原 autoPositionContextMenu 指令（462-462 逐字语义）
       const autoPosition = () => {
-        const $menuItem = $('#submenu-placeholder').parent();
-        if (!$menuItem.length) return;
-        const menuItemOffset = $menuItem.offset();
-        const menuItemTop = $menuItem.position().top;
-        const menuItemLeft = $menuItem.position().left;
+        const menuItem = q('#submenu-placeholder')?.parentElement;
+        if (!menuItem) return;
+        const menuItemOffset = offsetOf(menuItem);
+        if (!menuItemOffset) return;
+        const menuItemTop = menuItem.offsetTop;
+        const menuItemLeft = menuItem.offsetLeft;
         const menuItemOffsetTop = menuItemOffset.top;
         const menuItemOffsetLeft = menuItemOffset.left;
 
         const elementTop = menuItemOffsetTop;
-        const elementBottom = elementTop + $(el).height();
-        const elementRight = menuItemOffsetLeft + $menuItem.outerWidth() + $(el).outerWidth();
-        const maxBottom = $(window).height() - 20;
-        const maxRight = $(window).width() - 20;
+        const elementBottom = elementTop + heightOf(el);
+        const elementRight = menuItemOffsetLeft + outerWidthOf(menuItem) + outerWidthOf(el);
+        const maxBottom = window.innerHeight - 20;
+        const maxRight = window.innerWidth - 20;
 
         let offsetY = 0;
         let offsetX = 0;
 
         if (elementBottom > maxBottom) offsetY = elementBottom - maxBottom;
-        if (elementRight > maxRight) offsetX = $menuItem.outerWidth() + $(el).outerWidth();
+        if (elementRight > maxRight) offsetX = outerWidthOf(menuItem) + outerWidthOf(el);
 
         offsetY = Math.min(offsetY, elementTop);
 
         const top = menuItemTop - offsetY;
-        const left = Math.max(-menuItemOffsetLeft + 20, menuItemLeft + $menuItem.outerWidth() - offsetX - 4);
+        const left = Math.max(-menuItemOffsetLeft + 20, menuItemLeft + outerWidthOf(menuItem) - offsetX - 4);
 
-        $(el).css({
+        setCssEl(el, {
           opacity: 1,
           top: `${top}px`,
           left: `${left}px`,
         });
 
-        $(el).find('.context-menu-items').css({
+        setCssEl(el.querySelector('.context-menu-items') as HTMLElement | null, {
           maxHeight: `${maxBottom - offsetY}px`,
         });
       };
       setTimeout(autoPosition, 50);
-      $(window).off('resize.submenu').on('resize.submenu', autoPosition);
+      window.addEventListener('resize', autoPosition);
     },
 
     selectUp() {
@@ -517,7 +518,7 @@ function createEngine(forceUpdate: () => void) {
 
     focusSearchInput() {
       setTimeout(() => {
-        $searchInputElement && $searchInputElement.focus();
+        searchInputEl?.focus();
       }, 24);
     },
 
@@ -628,7 +629,7 @@ function createEngine(forceUpdate: () => void) {
     openContextMenu() {
       setTimeout(() => {
         moveToCursorPosition(() => {
-          $contextMenuElement.addClass('open');
+          contextMenuEl?.classList.add('open');
           onOpened();
           setTimeout(eng.focusSearchInput, 50);
         }, 0);
@@ -637,14 +638,15 @@ function createEngine(forceUpdate: () => void) {
 
     closeContextMenu() {
       eng.destroy();
-      $contextMenuElement && $contextMenuElement.removeClass('open');
+      contextMenuEl?.classList.remove('open');
       blurSearchInput();
       onClosed();
       forceUpdate();
     },
 
     destroy() {
-      $contextMenuElement && $contextMenuElement.find('.context-menu-items').css('max-height', '');
+      const cmItems = contextMenuEl?.querySelector('.context-menu-items') as HTMLElement | null;
+      if (cmItems) cmItems.style.maxHeight = '';
       scope.searchKeyword = '';
       scope.displayMenu = {};
       scope.activeMenu = null;
@@ -652,7 +654,7 @@ function createEngine(forceUpdate: () => void) {
   };
 
   const blurSearchInput = () => {
-    $searchInputElement && $searchInputElement.blur();
+    searchInputEl?.blur();
   };
 
   const isItemSelectable = (item: any) => {
@@ -661,11 +663,10 @@ function createEngine(forceUpdate: () => void) {
   };
 
   function moveToCursorPosition(callback: () => void, retry: number) {
-    const $w = $(window);
-    const windowWidth = $w.width();
-    const windowHeight = $w.height();
-    const containerWidth = $contextMenuElement.width();
-    const containerHeight = $contextMenuElement.height();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = widthOf(contextMenuEl);
+    const containerHeight = heightOf(contextMenuEl);
     const searchInputHeight = scope.displayMenu.showSearch ? 36 : 0;
 
     if (retry < 5 && (containerWidth < 20 || containerHeight < 34 + searchInputHeight || containerWidth < 90)) {
@@ -689,14 +690,14 @@ function createEngine(forceUpdate: () => void) {
       y = 36;
     }
 
-    $contextMenuElement.css({
+    setCssEl(contextMenuEl, {
       left: `${x}px`,
       top: `${y}px`,
     });
 
     const maxHeight = windowHeight - searchInputHeight - y - 20;
 
-    $contextMenuElement.find('.context-menu-items').css({
+    setCssEl(contextMenuEl?.querySelector('.context-menu-items') as HTMLElement | null, {
       maxHeight: `${maxHeight}px`,
     });
 

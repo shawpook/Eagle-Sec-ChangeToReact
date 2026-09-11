@@ -217,18 +217,25 @@ export function getAttr(el: HTMLElement | null, name: string): string | null {
 /** 无单位 CSS 属性（jQuery `.css(name, number)` 不补 px 的白名单，最小集）。 */
 const UNITLESS = new Set(['opacity', 'zIndex', 'lineHeight', 'fontWeight', 'flexGrow', 'flexShrink', 'order', 'zoom', 'columnCount']);
 
-/** jQuery `.css({...})` 批量写入（camelCase 键经 style 直赋，kebab 键走 setProperty；
- *  支持值尾 `!important` 提升优先级）。 */
+/** 应用内联样式（jQuery `.css({...})` 语义；值尾 `!important` 提升优先级）。 */
+function applyStyles(e: HTMLElement, styles: Record<string, any>): void {
+  for (const k in styles) {
+    const raw = styles[k];
+    const isImp = typeof raw === 'string' && /!\s*important\s*$/.test(raw);
+    const v = isImp ? raw.replace(/\s*!\s*important\s*$/, '') : raw;
+    const priority = isImp ? 'important' : '';
+    if (k.includes('-')) (e.style as any).setProperty(k, String(v), priority);
+    else if (priority) (e.style as any).setProperty(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), String(v), priority);
+    else (e.style as any)[k] = typeof v === 'number' && !UNITLESS.has(k) ? `${v}px` : v;
+  }
+}
+
+/** jQuery `.css({...})` 批量写入（选择器）。 */
 export function cssSet(sel: string, styles: Record<string, any>): void {
-  qa(sel).forEach((e) => {
-    for (const k in styles) {
-      const raw = styles[k];
-      const isImp = typeof raw === 'string' && /!\s*important\s*$/.test(raw);
-      const v = isImp ? raw.replace(/\s*!\s*important\s*$/, '') : raw;
-      const priority = isImp ? 'important' : '';
-      if (k.includes('-')) (e.style as any).setProperty(k, String(v), priority);
-      else if (priority) (e.style as any).setProperty(k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase()), String(v), priority);
-      else (e.style as any)[k] = typeof v === 'number' && !UNITLESS.has(k) ? `${v}px` : v;
-    }
-  });
+  qa(sel).forEach((e) => applyStyles(e, styles));
+}
+
+/** jQuery `.css({...})` 元素版。 */
+export function setCssEl(el: HTMLElement | null, styles: Record<string, any>): void {
+  if (el) applyStyles(el, styles);
 }

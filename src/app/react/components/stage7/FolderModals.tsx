@@ -4,7 +4,7 @@ import { updateSidebarList } from '../../services/sidebarService';
 import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
-import { $, req, getIpc } from '../detail/detailHooks';
+import { req, getIpc } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { max, uniq } from '../../utils/lang';
@@ -163,7 +163,6 @@ export function hiddenByCurrentFilter(items: any[]) {
       if (result.length > 0) {
         const hiddenItemMap: any = {};
         const hiddenElements: any[] = [];
-        const jQuery = $();
         result.forEach((item) => {
           const box = document.getElementById(`box-${item.id}`);
           if (box) {
@@ -171,7 +170,6 @@ export function hiddenByCurrentFilter(items: any[]) {
           }
           hiddenItemMap[item.id] = true;
         });
-        void jQuery;
 
         // 从当前筛选结果移除项目
         getBodyScope().allData = getBodyScope().allData.filter((item: any) => {
@@ -1793,9 +1791,7 @@ export function MoveFolderModal() {
         if (search) search.blur();
         const button = w.swal.getConfirmButton();
         if (button) {
-          const jQuery = $();
-          if (jQuery) jQuery(button).focus();
-          else button.focus();
+          button.focus();
         }
       },
     }).then(

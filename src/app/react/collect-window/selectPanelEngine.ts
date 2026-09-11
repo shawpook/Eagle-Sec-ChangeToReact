@@ -9,7 +9,7 @@
 import { mouseState } from './controller';
 import { notifyController } from './controller';
 
-const $: any = (...args: any[]) => (window as any).jQuery(...args);
+import { q, widthOf, heightOf, setCssEl, onEl } from '../utils/domQuery';
 
 /* ---- String.prototype.score（select-panel.js 4-99 逐字） ---- */
 if (!(String.prototype as any).__eagleScorePatched) {
@@ -144,7 +144,7 @@ export const panelI18n = (key: string): string => {
 export class SelectPanelSearchInput {
   enterKeydown: any;
   escKeydown: any;
-  $input: any;
+  $inputEl: HTMLInputElement | null;
   onChange: any;
   onEnterKey: any;
   onEscKey: any;
@@ -156,7 +156,7 @@ export class SelectPanelSearchInput {
   onPaste: any;
 
   constructor(params: any) {
-    this.$input = $(params.selector);
+    this.$inputEl = q(params.selector) as HTMLInputElement | null;
     this.onChange = params.onChange || function () {};
     this.onEnterKey = params.onEnterKey || function () {};
     this.onEscKey = params.onEscKey || function () {};
@@ -169,7 +169,7 @@ export class SelectPanelSearchInput {
     this.enterKeydown = false;
     this.escKeydown = false;
 
-    this.$input.off('keyup').on('keyup', (event: any) => {
+    onEl(this.$inputEl, 'keyup', (event: any) => {
       switch (event.keyCode) {
         case 13:
           if (this.enterKeydown) {
@@ -188,7 +188,7 @@ export class SelectPanelSearchInput {
       }
     });
 
-    this.$input.off('keydown').on('keydown', (event: any) => {
+    onEl(this.$inputEl, 'keydown', (event: any) => {
       switch (event.keyCode) {
         case 9:
           if (this.onTabKey !== undefined) {
@@ -228,23 +228,23 @@ export class SelectPanelSearchInput {
       }
     });
 
-    this.$input.off('paste').on('paste', (event: any) => {
+    onEl(this.$inputEl, 'paste', (event: any) => {
       this.onPaste(event);
     });
 
-    this.$input.off('input').on('input', () => {
+    onEl(this.$inputEl, 'input', () => {
       this.onChange();
     });
   }
 
   focus() {
     setTimeout(() => {
-      this.$input.focus();
+      if (this.$inputEl) this.$inputEl.focus();
     }, 24);
   }
 
   blur() {
-    this.$input.blur();
+    if (this.$inputEl) this.$inputEl.blur();
   }
 }
 
@@ -254,7 +254,7 @@ export class SelectPanel {
   fixedSize: any;
   searchInput: any;
   listData: any;
-  $panel: any;
+  $panelEl: HTMLElement | null;
   onOpened: any;
   onClosed: any;
   scope: any;
@@ -263,14 +263,14 @@ export class SelectPanel {
 
   constructor(params: any) {
     this.scope = params.scope;
-    this.$panel = $(params.panelSelector);
+    this.$panelEl = q(params.panelSelector) as HTMLElement | null;
     this.fixedSize = params.fixedSize ?? false;
 
     this.searchInput = new SelectPanelSearchInput({
       scope: params.scope,
       selector: params.searchInputSelector,
       onChange: () => {
-        this.listData.searchKeyword = this.searchInput.$input.val();
+        this.listData.searchKeyword = (this.searchInput.$inputEl ? this.searchInput.$inputEl.value : '');
         this.keywordChanged();
         notifyController();
       },
@@ -312,7 +312,7 @@ export class SelectPanel {
 
   init(params: any) {
     this.reset();
-    this.panelHeight = this.$panel.height();
+    this.panelHeight = heightOf(this.$panelEl);
     this.onOpened = params.onOpened || (() => {});
     this.onClosed = params.onClosed || (() => {});
   }
@@ -335,7 +335,7 @@ export class SelectPanel {
     if (params?.preventCollisionWithElement) {
       this.#moveToCursorPositionAndPreventCollisionWithElement(
         () => {
-          this.$panel.addClass('open');
+          if (this.$panelEl) this.$panelEl.classList.add('open');
           this.onOpened && this.onOpened();
           setTimeout(() => {
             this.searchInput.focus();
@@ -346,7 +346,7 @@ export class SelectPanel {
       );
     } else {
       this.#moveToCursorPosition(() => {
-        this.$panel.addClass('open');
+        if (this.$panelEl) this.$panelEl.classList.add('open');
         this.onOpened && this.onOpened();
         setTimeout(() => {
           this.searchInput.focus();
@@ -357,7 +357,7 @@ export class SelectPanel {
 
   close() {
     this.scrollTop();
-    this.$panel.removeClass('open');
+    if (this.$panelEl) this.$panelEl.classList.remove('open');
     this.searchInput.blur();
     this.reset();
     this.onClosed();
@@ -415,7 +415,7 @@ export class SelectPanel {
   }
 
   clearSearchInput() {
-    this.searchInput.$input.val('');
+    if (this.searchInput.$inputEl) this.searchInput.$inputEl.value = '';
   }
 
   keywordChanged() {
@@ -426,16 +426,19 @@ export class SelectPanel {
     throw new Error('You have to implement the method doSomething!');
   }
 
+  panelListEl(): HTMLElement | null {
+    return this.$panelEl ? (this.$panelEl.querySelector('select-panel-list') as HTMLElement | null) : null;
+  }
+
   scrollTop() {
-    this.$panel.find('select-panel-list').scrollTop(0);
+    const __l = this.panelListEl(); if (__l) __l.scrollTop = 0;
   }
 
   #moveToCursorPositionAndPreventCollisionWithElement(callback: () => void, element: any, retry: number) {
-    const $w = $(window);
-    const windowWidth = $w.width();
-    const windowHeight = $w.height();
-    const containerWidth = this.$panel.width();
-    const containerHeight = this.$panel.height();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = widthOf(this.$panelEl);
+    const containerHeight = heightOf(this.$panelEl);
     let x = mouseState.windowMouseX + 10;
     let y = mouseState.windowMouseY - 10;
 
@@ -473,7 +476,7 @@ export class SelectPanel {
       }
     }
 
-    this.$panel.css({
+    setCssEl(this.$panelEl, {
       left: `${x}px`,
       top: `${y}px`,
     });
@@ -482,11 +485,10 @@ export class SelectPanel {
   }
 
   #moveToCursorPosition(callback: () => void, retry: number) {
-    const $w = $(window);
-    const windowWidth = $w.width();
-    const windowHeight = $w.height();
-    const containerWidth = this.$panel.width();
-    const containerHeight = this.$panel.height();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = widthOf(this.$panelEl);
+    const containerHeight = heightOf(this.$panelEl);
     let x = mouseState.windowMouseX + 10;
     let y = mouseState.windowMouseY - 10;
     let maxHeight = windowHeight;
@@ -513,12 +515,12 @@ export class SelectPanel {
 
     maxHeight = windowHeight - y - 80;
 
-    this.$panel.css({
+    setCssEl(this.$panelEl, {
       left: `${x}px`,
       top: `${y}px`,
     });
 
-    this.$panel.find('select-panel-list').css({
+    setCssEl(this.panelListEl(), {
       'max-height': `${maxHeight - 40}px`,
     });
 

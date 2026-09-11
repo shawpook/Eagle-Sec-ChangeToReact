@@ -1,4 +1,4 @@
-import { $ } from '../detail/detailHooks';
+import { q, hasClass, widthOf, heightOf, setCssEl, onEl } from '../../utils/domQuery';
 import { t } from '../../global/eagleGlobals';
 import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { getBodyScope, getRootScope } from '../../core/appCore';
@@ -99,7 +99,7 @@ export class TagSelectPanelItem {
 export class SelectPanelSearchInput {
   enterKeydown: any;
   escKeydown: any;
-  $input: any;
+  $inputEl: HTMLInputElement | null;
   onChange: any;
   onEnterKey: any;
   onEscKey: any;
@@ -111,8 +111,7 @@ export class SelectPanelSearchInput {
   onPaste: any;
 
   constructor(params: any) {
-    // $ 是返回 window.jQuery 的工厂，必须双调用（7a 教训）
-    this.$input = $()(params.selector);
+    this.$inputEl = q(params.selector) as HTMLInputElement | null;
     this.onChange = params.onChange || function () {};
     this.onEnterKey = params.onEnterKey || function () {};
     this.onEscKey = params.onEscKey || function () {};
@@ -126,7 +125,7 @@ export class SelectPanelSearchInput {
     this.escKeydown = false;
 
     // HACK: 中文輸入法的 enter 不會有完整的 keydown + keyup，所以這邊用 enterKeydown 確保是一次完整的 enter keydown + keyup 事件
-    this.$input.off('keyup').on('keyup', (event: any) => {
+    onEl(this.$inputEl, 'keyup', (event: any) => {
       switch (event.keyCode) {
         case 13: // enter
           if (this.enterKeydown) {
@@ -145,7 +144,7 @@ export class SelectPanelSearchInput {
       }
     });
 
-    this.$input.off('keydown').on('keydown', (event: any) => {
+    onEl(this.$inputEl, 'keydown', (event: any) => {
       switch (event.keyCode) {
         case 9: // tab
           if (this.onTabKey !== undefined) {
@@ -185,23 +184,23 @@ export class SelectPanelSearchInput {
       }
     });
 
-    this.$input.off('paste').on('paste', (event: any) => {
+    onEl(this.$inputEl, 'paste', (event: any) => {
       this.onPaste(event);
     });
 
     // off and bing jquery input change event
-    this.$input.off('input').on('input', (event: any) => {
+    onEl(this.$inputEl, 'input', (event: any) => {
       void event;
       this.onChange();
     });
   }
 
   focus() {
-    this.$input.focus();
+    if (this.$inputEl) this.$inputEl.focus();
   }
 
   blur() {
-    this.$input.blur();
+    if (this.$inputEl) this.$inputEl.blur();
   }
 }
 
@@ -215,21 +214,21 @@ export class SelectPanel {
   searchInput: any;
   searchKeyword: any;
   listData: any;
-  $panel: any;
+  $panelEl: HTMLElement | null;
   onOpened: any;
   onClosed: any;
   notify: any;
 
   constructor(params: any) {
     this.notify = params.notify || (() => {});
-    this.$panel = $()(params.panelSelector);
+    this.$panelEl = q(params.panelSelector) as HTMLElement | null;
     this.fixedSize = params.fixedSize ?? false;
 
     // 初始化搜尋輸入框、回呼函式
     this.searchInput = new SelectPanelSearchInput({
       selector: params.searchInputSelector,
       onChange: () => {
-        this.listData.searchKeyword = this.searchInput.$input.val();
+        this.listData.searchKeyword = this.searchInput.$inputEl ? this.searchInput.$inputEl.value : '';
         this.keywordChanged();
         this.notify();
       },
@@ -275,7 +274,7 @@ export class SelectPanel {
 
   init(params: any) {
     this.reset();
-    this.panelHeight = this.$panel.height();
+    this.panelHeight = heightOf(this.$panelEl);
     // 初始化事件 callbacks
     this.onOpened = params.onOpened || (() => {});
     this.onClosed = params.onClosed || (() => {});
@@ -297,7 +296,7 @@ export class SelectPanel {
 
   // 打開 Panel
   open() {
-    if (this.$panel.hasClass('open')) {
+    if (hasClass(this.$panelEl, 'open')) {
       this.onOpened && this.onOpened();
       setTimeout(() => {
         this.searchInput.focus();
@@ -305,7 +304,7 @@ export class SelectPanel {
       return;
     }
     this.moveToCursorPosition(() => {
-      this.$panel.addClass('open');
+      if (this.$panelEl) this.$panelEl.classList.add('open');
       this.onOpened && this.onOpened();
       setTimeout(() => {
         this.searchInput.focus();
@@ -316,7 +315,7 @@ export class SelectPanel {
   // 關閉 Panel
   close() {
     (this as any).scrollTop();
-    this.$panel.removeClass('open');
+    if (this.$panelEl) this.$panelEl.classList.remove('open');
     this.searchInput.blur();
     this.reset();
     this.onClosed();
@@ -369,7 +368,7 @@ export class SelectPanel {
   }
 
   clearSearchInput() {
-    this.searchInput.$input.val('');
+    if (this.searchInput.$inputEl) this.searchInput.$inputEl.value = '';
   }
 
   keywordChanged() {
@@ -382,16 +381,19 @@ export class SelectPanel {
     throw new Error('You have to implement the method doSomething!');
   }
 
+  panelListEl(): HTMLElement | null {
+    return this.$panelEl ? (this.$panelEl.querySelector('select-panel-list') as HTMLElement | null) : null;
+  }
+
   scrollTopBase() {
-    this.$panel.find('select-panel-list').scrollTop(0);
+    const __l = this.panelListEl(); if (__l) __l.scrollTop = 0;
   }
 
   moveToCursorPosition(callback: any, retry: number) {
-    const jQuery = $();
-    const windowWidth = jQuery(window).width();
-    const windowHeight = jQuery(window).height();
-    const containerWidth = this.$panel.width();
-    const containerHeight = this.$panel.height();
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    const containerWidth = widthOf(this.$panelEl);
+    const containerHeight = heightOf(this.$panelEl);
     let x = w().windowMouseX + 10;
     let y = w().windowMouseY - 10;
     let maxHeight = windowHeight; // 初始化最大高度為視窗高度
@@ -419,13 +421,13 @@ export class SelectPanel {
 
     maxHeight = windowHeight - y - 80;
 
-    this.$panel.css({
+    setCssEl(this.$panelEl, {
       left: `${x}px`,
       top: `${y}px`,
     });
 
     // find [select-panel-list] and set max-height
-    this.$panel.find('select-panel-list').css({
+    setCssEl(this.panelListEl(), {
       'max-height': `${maxHeight - 40}px`, // 設定最大高度
     });
 
@@ -492,11 +494,11 @@ export class TagSelectPanel extends SelectPanel {
     listMode: localStorage.getItem('eagle.tagsPopup.listMode') === 'true' || false,
     onScrollStart: () => {
       // 當滾動開始時，添加 scrolling 樣式
-      this.$panel.find('select-panel-list').addClass('scrolling');
+      this.panelListEl()?.classList.add('scrolling');
     },
     onScrollEnd: () => {
       // 當滾動結束時，移除 scrolling 樣式
-      this.$panel.find('select-panel-list').removeClass('scrolling');
+      this.panelListEl()?.classList.remove('scrolling');
     },
   };
   // 配置虛擬滾動網格的選項，包括列寬、列高、間距等
@@ -517,7 +519,7 @@ export class TagSelectPanel extends SelectPanel {
   }
 
   open() {
-    this.$panel.css({
+    setCssEl(this.$panelEl, {
       width: this.width + 'px',
       height: this.height + 'px',
     });
@@ -1359,7 +1361,7 @@ export class TagSelectPanel extends SelectPanel {
     if (this?.listData?.currentGroup?.isCollapsed) return this.selectPreviousGroup();
 
     // 取得當前群組的項目和索引
-    const columns = parseInt(this.$panel.find('select-panel-list').attr('columns'));
+    const columns = parseInt(this.panelListEl()?.getAttribute('columns') as any);
     const currentGroup = this.listData.currentGroup;
     const currentIndex = this.listData.currentIndex;
     const items = currentGroup.items;
@@ -1404,7 +1406,7 @@ export class TagSelectPanel extends SelectPanel {
     if (this?.listData?.currentGroup?.isCollapsed) return this.selectNextGroup();
 
     // 取得當前群組的項目和索引
-    const columns = parseInt(this.$panel.find('select-panel-list').attr('columns'));
+    const columns = parseInt(this.panelListEl()?.getAttribute('columns') as any);
     const currentGroup = this.listData.currentGroup;
     const currentIndex = this.listData.currentIndex;
     const items = currentGroup.items;
@@ -1601,12 +1603,12 @@ export class TagSelectPanel extends SelectPanel {
   }
 
   scrollTop() {
-    this.$panel.find('select-panel-list').scrollTop(0);
-    this.$panel.find('select-panel-list').trigger('render');
+    const __l = this.panelListEl(); if (__l) __l.scrollTop = 0;
+    this.panelListEl()?.dispatchEvent(new Event('render'));
   }
 
   render() {
-    this.$panel.find('select-panel-list').trigger('render');
+    this.panelListEl()?.dispatchEvent(new Event('render'));
   }
 
   keywordChanged() {
@@ -1621,7 +1623,7 @@ export class TagSelectPanel extends SelectPanel {
     const top = itemPositions.find((item: any) => item.id === groupId)?.y;
 
     if (top !== undefined) {
-      this.$panel.find('select-panel-list').scrollTop(top);
+      const __lt = this.panelListEl(); if (__lt) __lt.scrollTop = top;
     }
   }
 
@@ -1665,7 +1667,7 @@ export class TagSelectPanel extends SelectPanel {
       });
     }
 
-    const $list = this.$panel.find('select-panel-list');
+    const $list = this.panelListEl();
     const itemPositions = this.vsGridItems;
     const item = itemPositions.find((item: any) => item.id === itemId);
 
@@ -1674,12 +1676,12 @@ export class TagSelectPanel extends SelectPanel {
     const itemTop = item.y;
     const itemHeight = item.height;
 
-    const currentScrollTop = $list.scrollTop();
-    const isVisible = itemTop >= currentScrollTop && itemTop + itemHeight <= currentScrollTop + $list.height();
-    const targetScrollTop = itemTop - $list.height() / 2;
+    const currentScrollTop = $list?.scrollTop || 0;
+    const isVisible = itemTop >= currentScrollTop && itemTop + itemHeight <= currentScrollTop + heightOf($list);
+    const targetScrollTop = itemTop - heightOf($list) / 2;
 
     if (!isVisible) {
-      scrollPageTo($list[0], targetScrollTop, 100);
+      scrollPageTo($list, targetScrollTop, 100);
     }
   }
 

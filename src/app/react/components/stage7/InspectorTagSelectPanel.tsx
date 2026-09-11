@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { calculateImageBinding } from '../../services/gridBindingService';
 import { t } from '../../global/eagleGlobals';
 import { usePanelState } from '../../store/panelState';
-import { $, getIpc } from '../detail/detailHooks';
+import { getIpc } from '../detail/detailHooks';
+import { q, hasClass, widthOf, heightOf, setCssEl, offsetOf } from '../../utils/domQuery';
 import { TagSelectPanel } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVsGridRepeat, themePathOf } from './SelectPanels';
@@ -43,7 +44,6 @@ export function InspectorTagSelectPanel() {
 
   useEffect(() => {
     if (!host || !rootRef.current) return;
-    const jQuery = $();
 
     // 指令 link（57921-57932 逐字）
     const panel = new TagSelectPanel({
@@ -56,19 +56,19 @@ export function InspectorTagSelectPanel() {
     // 闭环测试契约
     (window as any).__eagleInspectorTagSelectPanel = panel;
 
-    // 注：onWindowResize 定位逻辑仍用 jQuery（属 D-2b jQuery 核心清理面，非 D-2f 交互层）
-    const $selectPanel = jQuery(rootRef.current).find('.select-panel');
+    // D-2i：onWindowResize / preventOverlay 定位逻辑原生化
+    const selectPanelEl = rootRef.current ? (rootRef.current.querySelector('.select-panel') as HTMLElement | null) : null;
 
     // 如果面板的位置壓住了標籤選擇按鈕，則將面板移動到檢查器左側 + 10px 處（57929-57940 逐字）
     const preventOverlayInspector = () => {
       try {
-        const $sp = jQuery(rootRef.current).find('.select-panel');
-        const inspectorLeft = jQuery('.inspector').offset().left;
-        const panelWidth = $sp.width();
-        const panelLeft = $sp.offset().left;
+        const sp = rootRef.current ? (rootRef.current.querySelector('.select-panel') as HTMLElement | null) : null;
+        const inspectorLeft = offsetOf(q('.inspector'))?.left || 0;
+        const panelWidth = widthOf(sp);
+        const panelLeft = offsetOf(sp)?.left || 0;
         const newLeft = inspectorLeft - panelWidth + 5;
         if (panelLeft + panelWidth > inspectorLeft && newLeft > 0) {
-          $sp.css('left', newLeft);
+          setCssEl(sp, { left: newLeft });
         }
       } catch (e) {}
     };
@@ -101,31 +101,31 @@ export function InspectorTagSelectPanel() {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         if (panel.isPined) {
-          if (!jQuery('inspector-tag-select-panel select-panel').hasClass('open')) return;
+          if (!hasClass(q('inspector-tag-select-panel select-panel'), 'open')) return;
 
-          const windowHeight = jQuery(window).height();
-          const windowWidth = jQuery(window).width();
-          let popupHeight = $selectPanel.height();
-          const popupWidth = $selectPanel.width();
-          const popupTop = $selectPanel.offset().top;
-          const popupLeft = $selectPanel.offset().left;
+          const windowHeight = window.innerHeight;
+          const windowWidth = window.innerWidth;
+          let popupHeight = heightOf(selectPanelEl);
+          const popupWidth = widthOf(selectPanelEl);
+          const popupTop = offsetOf(selectPanelEl)?.top || 0;
+          const popupLeft = offsetOf(selectPanelEl)?.left || 0;
 
           // 確保面板不會超出視窗右邊界
           if (popupLeft + popupWidth > windowWidth) {
             const move = popupLeft + popupWidth - windowWidth + 20;
-            $selectPanel.css('left', `${popupLeft - move}px`);
+            setCssEl(selectPanelEl, { left: `${popupLeft - move}px` });
           }
 
           // 確保面板不會超出視窗下邊界
           if (popupHeight + 60 + popupTop > windowHeight) {
             popupHeight = windowHeight - 60;
             const height = Math.max(120, popupHeight - popupTop);
-            $selectPanel.height(height);
+            setCssEl(selectPanelEl, { height });
           }
         }
       }, 333);
     };
-    jQuery(window).on('resize.inspectTagSelect', onWindowResize);
+    window.addEventListener('resize', onWindowResize);
 
     // initDraggable / initResizable（D-2f：自研交互层，替代 jQuery UI）
     let dragOriginalSize: any = {};
@@ -242,7 +242,7 @@ export function InspectorTagSelectPanel() {
     }
 
     return () => {
-      jQuery(window).off('resize.inspectTagSelect');
+      window.removeEventListener('resize', onWindowResize);
       offs.forEach((off) => off());
       if (ipc && ipc.off) ipc.off('app-status-loading', onAppStatusLoading);
     };

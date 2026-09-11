@@ -238,9 +238,8 @@ export function Toolbar() {
   useEffect(() => {
     const el = pinnedRef.current;
     if (!el) return;
-    const $ = (window as any).jQuery || (window as any).$;
     const scope = getBodyScope();
-    if (!$ || !$.ui || !scope) return;
+    if (!scope) return;
     const options = scope.pluginModule?.pinPluginSortableOptions;
     const syncModel = () => {
       scopeApply(scope, (s) => {

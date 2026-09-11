@@ -787,17 +787,16 @@ export function takeoverMiscDomain(): void {
     if (!s) return;
 
     function unregister({ email, licenseCode, machineID }: any, url: string, callback: any): void {
-      // Angular $http.post(...).then(success, failure)：response 带 .data 包装；jqXHR 同 Promise 语义
-      $.ajax({
-        type: 'POST',
-        url: url,
-        data: JSON.stringify({
+      // Angular $http.post(...).then(success, failure)：response 带 .data 包装；fetch Promise 同语义
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           email: email,
           licenseCode: licenseCode,
           machineID: machineID,
         }),
-        contentType: 'application/json',
-      }).then(function (resp: any) {
+      }).then(function (r: any) { return r.json(); }).then(function (resp: any) {
         const data = { data: resp };
         electronLog && electronLog.info(`[app] Unregister successfully, email: ${s.email}`);
         domainTimeout(s, function () {

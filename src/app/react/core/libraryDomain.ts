@@ -905,25 +905,22 @@ export function takeoverLibraryDomain(): void {
           if (w.Registration && w.Registration.license && w.Registration.license.email) {
             email = w.Registration.license.email;
           }
-          // 原 $http.post（第三参为误传的成功回调，Angular 按默认配置发送）→ $.ajax JSON POST 等价复刻
-          if ($) {
-            try {
-              $.ajax({
-                type: 'POST',
-                url: "https://core.eagle.cool/update-machine",
-                data: JSON.stringify({
-                  machineID: w.machineID,
-                  email: email,
-                  'all': metrics.all,
-                  'folders': metrics.folders,
-                  'smartFolders': metrics.smartFolders,
-                  'tags': metrics.tags,
-                  'tagGroups': metrics.tagGroups
-                }),
-                contentType: 'application/json'
-              });
-            } catch (err) { /* noop */ }
-          }
+          // 原 $http.post → 原生 fetch JSON POST 等价复刻
+          try {
+            fetch("https://core.eagle.cool/update-machine", {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                machineID: w.machineID,
+                email: email,
+                'all': metrics.all,
+                'folders': metrics.folders,
+                'smartFolders': metrics.smartFolders,
+                'tags': metrics.tags,
+                'tagGroups': metrics.tagGroups
+              }),
+            }).catch(() => { /* 网络失败静默（原 ajax 无回调） */ });
+          } catch (err) { /* noop */ }
         }
       }
     });
@@ -1050,23 +1047,18 @@ export function takeoverLibraryDomain(): void {
     s.errorList = [];
     syncErrorCount();
 
-    if ($) {
-      // 检查 localhost 是否可以连线，如果无法练接，通常是本地代理搞鬼，提示用户关闭或调整代理工具
-      $.ajax({
-        url: "http://localhost:41593"
-      }).done(function (res: any) {
-        void res;
-        electronLog.info(`[app] Local server: enabled`);
-        electronLog.info("---------------------------------------");
-      }).fail(function () {
-        if (s.localhostError !== true) {
-          s.localhostError = true;
-          scopeEvalAsync();
-        }
-        electronLog.error(`[app] Local server: disabled`);
-        electronLog.error("---------------------------------------");
-      });
-    }
+    // 检查 localhost 是否可以连线，如果无法练接，通常是本地代理搞鬼，提示用户关闭或调整代理工具
+    fetch("http://localhost:41593").then(() => {
+      electronLog.info(`[app] Local server: enabled`);
+      electronLog.info("---------------------------------------");
+    }).catch(() => {
+      if (s.localhostError !== true) {
+        s.localhostError = true;
+        scopeEvalAsync();
+      }
+      electronLog.error(`[app] Local server: disabled`);
+      electronLog.error("---------------------------------------");
+    });
 
     if (typeof (window as any).ACCESS?.checkALCs === 'function') {
       if (!ACCESS.checkALCs(s.libraryPath)) {

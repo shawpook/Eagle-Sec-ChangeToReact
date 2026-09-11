@@ -2,6 +2,8 @@ import { FileUrlHelper } from '../core/fileUrlHelper';
 import { detailZoom, ensureDetailZoom } from '../core/smoothZoomEngine';
 import { getResizable, makeResizable } from '../components/interactions/resizable';
 import { q, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
+import { dom } from '../utils/domLite';
+import { isNumeric } from '../utils/lang';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -654,19 +656,19 @@ scope.updateZoomRatio = function (ratio: number, x: any, y: any, hasTransition?:
     scope.imageSize.zoomRatio = parseInt(String(ratio));
   }
 
-  if ((window as any).$.isNumeric(x) && (window as any).$.isNumeric(y)) {
+  if (isNumeric(x) && isNumeric(y)) {
     pageX = x;
     pageY = y;
   } else {
-    pageX = (window as any).$(window).width() / 2;
-    pageY = (window as any).$(window).height() / 2;
+    pageX = dom(window).width() / 2;
+    pageY = dom(window).height() / 2;
   }
 
   if (hasTransition) {
     clearTimeout(updateZoomRatioTimeout);
-    (window as any).$('#detail-container').addClass('zooming');
+    dom('#detail-container').addClass('zooming');
     updateZoomRatioTimeout = setTimeout(function () {
-      (window as any).$('#detail-container').removeClass('zooming');
+      dom('#detail-container').removeClass('zooming');
     }, 300);
   }
 
@@ -763,7 +765,7 @@ scope.prevFrameHandler = (window as any).throttle
 let copyImageTimeout: any;
 scope.videoScreenShot = function (copyMode?: boolean) {
   if (scope.current) {
-    const video = (window as any).$('.detail-wrap video')[0];
+    const video = dom('.detail-wrap video')[0];
     const currentTime = video.currentTime;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
@@ -816,7 +818,7 @@ scope.copeVideoFrame = function () {
 };
 
 scope.mHandler = function () {
-  (window as any).$('.vjs-mute-control').click();
+  dom('.vjs-mute-control').click();
 };
 
 scope.flipHandler = function ($event: any) {
@@ -1003,9 +1005,9 @@ scope.zoomFit = function (event?: any) {
   scope.imageSize.zoomRatio = 100;
   scope.zoomFitSize = 0;
 
-  (window as any).$('#detail-container').addClass('zooming');
+  dom('#detail-container').addClass('zooming');
   setTimeout(function () {
-    (window as any).$('#detail-container').removeClass('zooming');
+    dom('#detail-container').removeClass('zooming');
   }, 300);
 
   scope.smartZoom();
@@ -1032,21 +1034,21 @@ scope.zoomFitEdge = function (event: any, hasTransition?: boolean) {
   event && event.preventDefault && event.preventDefault();
 
   if (hasTransition) {
-    (window as any).$('#detail-container').addClass('zooming');
+    dom('#detail-container').addClass('zooming');
     setTimeout(function () {
-      (window as any).$('#detail-container').removeClass('zooming');
+      dom('#detail-container').removeClass('zooming');
     }, 300);
   }
 
-  const windowHeight = (window as any).$(window).height();
-  const windowWidth = (window as any).$(window).width();
+  const windowHeight = dom(window).height();
+  const windowWidth = dom(window).width();
   const windowSize = Math.min(windowHeight, windowWidth);
   let ratio = scope.imageSize.zoomRatio || 100;
-  const containerWidth = (window as any).$('.smooth_zoom_preloader').width();
-  const containerHeight = (window as any).$('.smooth_zoom_preloader').height();
+  const containerWidth = dom('.smooth_zoom_preloader').width();
+  const containerHeight = dom('.smooth_zoom_preloader').height();
   let offsetY = 0;
-  const pageX = (window as any).$(window).width() / 2;
-  const pageY = (window as any).$(window).height() / 2;
+  const pageX = dom(window).width() / 2;
+  const pageY = dom(window).height() / 2;
 
   if (!scope.current) return;
 
@@ -1054,8 +1056,8 @@ scope.zoomFitEdge = function (event: any, hasTransition?: boolean) {
   const b = Math.ceil((containerWidth / scope.current.width) * 100);
   ratio = Math.min(a, b);
 
-  const width = (window as any).$('#detail-container').width();
-  const height = (scope.current && scope.current.height) || (window as any).$('#detail-container').height();
+  const width = dom('#detail-container').width();
+  const height = (scope.current && scope.current.height) || dom('#detail-container').height();
 
   offsetY = offsetY || 0;
 
@@ -1153,7 +1155,7 @@ scope.spaceHandler = function (event: any) {
 };
 
 scope.toggleVideoPlay = function () {
-  const video = (window as any).$('.detail-wrap video')[0];
+  const video = dom('.detail-wrap video')[0];
   if (!video.paused) {
     video.pause();
   } else {
@@ -1540,7 +1542,7 @@ scope.gifViewer = {
     scope.gifViewer.speed = speed;
     notifyController();
     scope.gifPlayer.set_speed(speed);
-    (window as any).$('.gif-toolbar-btn.speed span').text(`${speed}x`);
+    dom('.gif-toolbar-btn.speed span').text(`${speed}x`);
   },
   mousedown: function (event: any) {
     if (event.button !== 0) return;
@@ -1562,7 +1564,7 @@ scope.gifViewer = {
   cancelRange: function () {
     if (scope.gifViewer.range !== undefined) {
       scope.gifViewer.range = undefined;
-      const $resizableBar = (window as any).$('.gif-toolbar .resize-bar');
+      const $resizableBar = dom('.gif-toolbar .resize-bar');
       $resizableBar.css({
         left: '0%',
         width: '100%',
@@ -1602,7 +1604,7 @@ scope.gifViewer = {
       notifyController();
     }
     updateGifProgressbar(progress);
-    (window as any).$('.gif-toolbar .message span').text(`${parseInt(String(progress * 100))}%`);
+    dom('.gif-toolbar .message span').text(`${parseInt(String(progress * 100))}%`);
   },
   onFinished: function (result: any) {
     scope.gifViewer.range = undefined;
@@ -1612,8 +1614,8 @@ scope.gifViewer = {
     scope.gifViewer.playing = result.playing;
     scope.gifViewer.setSpeed(1);
     notifyController();
-    const $resizableBar = (window as any).$('.gif-toolbar .resize-bar');
-    (window as any).$('.gif-toolbar .total-frame').text(`/ ${scope.gifViewer.frames.length}`);
+    const $resizableBar = dom('.gif-toolbar .resize-bar');
+    dom('.gif-toolbar .total-frame').text(`/ ${scope.gifViewer.frames.length}`);
 
     const resizableBarEl = ($resizableBar[0] as HTMLElement | undefined);
     const prevBar = resizableBarEl ? getResizable(resizableBarEl) : undefined;
@@ -1624,9 +1626,9 @@ scope.gifViewer = {
       width: 'auto',
     });
 
-    (window as any).$('.gif-toolbar.in').removeClass('in');
+    dom('.gif-toolbar.in').removeClass('in');
     setTimeout(function () {
-      (window as any).$('.gif-toolbar').addClass('in');
+      dom('.gif-toolbar').addClass('in');
     }, 100);
 
     let gifPlayerResizeOriginalState = false;
@@ -1644,13 +1646,13 @@ scope.gifViewer = {
         scope.gifPlayer.pause();
       },
       resize: function (event: any, ui: any) {
-        (window as any).$('#gif-progress-indicator').hide();
+        dom('#gif-progress-indicator').hide();
         gifPlayerResizing = true;
       },
       stop: function (event: any, ui: any) {
         gifPlayerResizing = false;
         const frames = scope.gifViewer.frames;
-        const parentWidth = (window as any).$('.gif-toolbar .progress-bar').width();
+        const parentWidth = dom('.gif-toolbar .progress-bar').width();
         const left = parseInt(ui.element.css('left'));
         const width = ui.element.width();
         const leftP = (left / parentWidth) * 100;
@@ -1681,7 +1683,7 @@ scope.gifViewer = {
         }
         console.log(scope.gifViewer.range);
 
-        (window as any).$('#gif-progress-indicator').show();
+        dom('#gif-progress-indicator').show();
         if (gifPlayerResizeOriginalState) {
           scope.gifPlayer.play();
         }
@@ -1707,8 +1709,8 @@ scope.gifViewer = {
         }
 
         const text = (window as any).paddingNumber(c + 1, `${length}`.length);
-        if ((window as any).$('.gif-toolbar .current-frame').text() !== text) {
-          (window as any).$('.gif-toolbar .current-frame').text(text);
+        if (dom('.gif-toolbar .current-frame').text() !== text) {
+          dom('.gif-toolbar .current-frame').text(text);
         }
         updateGifIndicator(c + 1);
       } catch (err) {}
@@ -1723,13 +1725,13 @@ const updateGifIndicator = function (index: number) {
   let percent = ((index - 1) / (scope.gifViewer.frames.length - 1)) * 100;
   if (percent < 0) percent = 0;
   const value = `${percent}%`;
-  if ((window as any).$('#gif-progress-indicator').css('left') !== value) {
-    (window as any).$('#gif-progress-indicator').css('left', value);
+  if (dom('#gif-progress-indicator').css('left') !== value) {
+    dom('#gif-progress-indicator').css('left', value);
   }
 };
 
 const updateGifProgressbar = function (progress: number) {
-  (window as any).$('.gif-toolbar .progress-bar .current').css('width', `${progress * 100}%`);
+  dom('.gif-toolbar .progress-bar .current').css('width', `${progress * 100}%`);
 };
 
 scope.toggleGifPlay = function () {
@@ -1743,9 +1745,9 @@ scope.toggleGifPlay = function () {
       scope.gifViewer.playing = true;
       notifyController();
     }
-    (window as any).$('.gif-viewer').css('opacity', 0.8);
+    dom('.gif-viewer').css('opacity', 0.8);
     setTimeout(function () {
-      (window as any).$('.gif-viewer').css('opacity', 1);
+      dom('.gif-viewer').css('opacity', 1);
     }, 100);
   }
 };
@@ -1817,15 +1819,15 @@ scope.zoom = function () {
 };
 
 scope.smartZoom = function () {
-  const windowHeight = (window as any).$(window).height();
-  const windowWidth = (window as any).$(window).width();
+  const windowHeight = dom(window).height();
+  const windowWidth = dom(window).width();
   const windowSize = Math.min(windowHeight, windowWidth);
   let ratio = scope.imageSize.zoomRatio || 100;
-  const containerWidth = (window as any).$('.smooth_zoom_preloader').width();
-  const containerHeight = (window as any).$('.smooth_zoom_preloader').height();
+  const containerWidth = dom('.smooth_zoom_preloader').width();
+  const containerHeight = dom('.smooth_zoom_preloader').height();
   let offsetY = 0;
-  const pageX = (window as any).$(window).width() / 2;
-  const pageY = (window as any).$(window).height() / 2;
+  const pageX = dom(window).width() / 2;
+  const pageY = dom(window).height() / 2;
 
   if (!scope.current) return;
 
@@ -1845,9 +1847,9 @@ scope.smartZoom = function () {
       if (ratio > 100) {
         ratio = 100;
       }
-      if (scope.current.height > (window as any).$('.smooth_zoom_preloader').height()) {
+      if (scope.current.height > dom('.smooth_zoom_preloader').height()) {
         offsetY =
-          (scope.current.height - ((window as any).$('.smooth_zoom_preloader').height() * 100) / ratio) / -2;
+          (scope.current.height - (dom('.smooth_zoom_preloader').height() * 100) / ratio) / -2;
       }
     } else {
       if (scope.current.height > containerHeight || scope.current.width > containerWidth) {
@@ -1860,8 +1862,8 @@ scope.smartZoom = function () {
     }
   }
 
-  const width = (window as any).$('#detail-container').width();
-  const height = (scope.current && scope.current.height) || (window as any).$('#detail-container').height();
+  const width = dom('#detail-container').width();
+  const height = (scope.current && scope.current.height) || dom('#detail-container').height();
 
   offsetY = offsetY || 0;
 
@@ -1921,9 +1923,9 @@ function initContainer() {
     on_IMAGE_LOAD: function () {
       setTimeout(function () {
         detailZoom()?.updateNavigator( scope.current);
-        (window as any).$(window).trigger('orientationchange');
+        dom(window).trigger('orientationchange');
         scope.zoom();
-        (window as any).$('#detail-container').css('opacity', 1);
+        dom('#detail-container').css('opacity', 1);
         setTimeout(function () {
           scope.showDetailImage = true;
           notifyController();
@@ -2072,11 +2074,11 @@ scope.runInitSequence = runInitSequence;
   // 全屏类切换（43-49 逐字）
   if (currentWindow && currentWindow.on) {
     currentWindow.on('enter-full-screen', function () {
-      (window as any).$('body').addClass('fullscreen');
+      dom('body').addClass('fullscreen');
     });
 
     currentWindow.on('leave-full-screen', function () {
-      (window as any).$('body').removeClass('fullscreen');
+      dom('body').removeClass('fullscreen');
     });
   }
 
@@ -2088,30 +2090,30 @@ scope.runInitSequence = runInitSequence;
 function initShellBehaviors() {
   // 持压著 Shift 直接拖拽图片窗口位置
   let isDragMode = false;
-  (window as any).$(window).on('keydown.toggleDragMode', function (event: any) {
+  dom(window).on('keydown.toggleDragMode', function (event: any) {
     if (event.keyCode === 16) {
-      (window as any).$('#drag-mode-overlay').addClass('show');
+      dom('#drag-mode-overlay').addClass('show');
       isDragMode = true;
     }
   });
 
-  (window as any).$(window).on('keyup.toggleDragMode', function (event: any) {
+  dom(window).on('keyup.toggleDragMode', function (event: any) {
     if (event.keyCode === 16) {
-      (window as any).$('#drag-mode-overlay').removeClass('show');
+      dom('#drag-mode-overlay').removeClass('show');
       isDragMode = false;
     }
   });
 
-  (window as any).$('#drag-mode-overlay').on('mouseup', function (event: any) {
+  dom('#drag-mode-overlay').on('mouseup', function (event: any) {
     if (!event.shiftKey) {
-      (window as any).$('#drag-mode-overlay').removeClass('show');
+      dom('#drag-mode-overlay').removeClass('show');
       isDragMode = false;
     }
   });
 
-  (window as any).$('#drag-mode-overlay').on('mousemove', function (event: any) {
+  dom('#drag-mode-overlay').on('mousemove', function (event: any) {
     if (isDragMode) {
-      (window as any).$('#drag-mode-overlay').removeClass('show');
+      dom('#drag-mode-overlay').removeClass('show');
       isDragMode = false;
     }
   });
@@ -2119,20 +2121,20 @@ function initShellBehaviors() {
   document.addEventListener('mousemove', function (event: any) {
     if (!isDragMode) {
       if (event.shiftKey) {
-        (window as any).$('#drag-mode-overlay').addClass('show');
+        dom('#drag-mode-overlay').addClass('show');
         isDragMode = true;
       }
     } else {
-      (window as any).$('#drag-mode-overlay').removeClass('show');
+      dom('#drag-mode-overlay').removeClass('show');
       isDragMode = false;
     }
   });
 
-  (window as any).$('#min-btn').on('click', function () {
+  dom('#min-btn').on('click', function () {
     currentWindow && currentWindow.minimize();
   });
 
-  (window as any).$('#max-btn').on('click', function () {
+  dom('#max-btn').on('click', function () {
     if (!currentWindow) return;
     if (currentWindow.isFullScreen()) {
       currentWindow.setFullScreen(false);
@@ -2145,7 +2147,7 @@ function initShellBehaviors() {
     }
   });
 
-  (window as any).$('#restore-btn').on('click', function () {
+  dom('#restore-btn').on('click', function () {
     if (!currentWindow) return;
     if (currentWindow.isFullScreen()) {
       currentWindow.setFullScreen(false);
@@ -2158,12 +2160,12 @@ function initShellBehaviors() {
     }
   });
 
-  (window as any).$(window).on(
+  dom(window).on(
     'resize',
     (window as any).throttle
       ? (window as any).throttle(
           function () {
-            (window as any).$(window).trigger('orientationchange');
+            dom(window).trigger('orientationchange');
             if (!scope.imageSize.modified) {
               scope.zoom();
               setTimeout(function () {
@@ -2190,10 +2192,10 @@ function initShellBehaviors() {
         currentPoint.x > windowBounds.x + windowBounds.width ||
         currentPoint.y > windowBounds.y + windowBounds.height
       ) {
-        (window as any).$('body').addClass('hide-toolbar');
+        dom('body').addClass('hide-toolbar');
       } else {
         if (lastPoint.x === currentPoint.x && lastPoint.y === currentPoint.y) return;
-        (window as any).$('body').removeClass('hide-toolbar');
+        dom('body').removeClass('hide-toolbar');
       }
 
       lastPoint.x = currentPoint.x;
@@ -2202,41 +2204,41 @@ function initShellBehaviors() {
   }, 500);
 
   let autoHideToolbarTimeout: any;
-  (window as any).$(window).on('blur', function () {
+  dom(window).on('blur', function () {
     clearTimeout(autoHideToolbarTimeout);
-    (window as any).$('body').addClass('hide-toolbar');
+    dom('body').addClass('hide-toolbar');
   });
 
-  (window as any).$(document).on('mouseenter', function () {
+  dom(document).on('mouseenter', function () {
     clearTimeout(autoHideToolbarTimeout);
-    (window as any).$('body').removeClass('hide-toolbar');
+    dom('body').removeClass('hide-toolbar');
   });
 
-  (window as any).$(document).on(
+  dom(document).on(
     'mousemove',
     (window as any).throttle
       ? (window as any).throttle(function () {
-          (window as any).$('body').removeClass('hide-toolbar');
+          dom('body').removeClass('hide-toolbar');
         }, 200)
       : function () {}
   );
 
-  (window as any).$(document).on('mousemove', function () {
+  dom(document).on('mousemove', function () {
     clearTimeout(autoHideToolbarTimeout);
     autoHideToolbarTimeout = setTimeout(function () {
-      (window as any).$('body').addClass('hide-toolbar');
+      dom('body').addClass('hide-toolbar');
     }, 1000);
   });
 
   // gif 工具列委托（2156-2242 逐字）
-  (window as any).$('body').on('mousedown', '.gif-toolbar .progress-bar', function (this: any, event: any) {
+  dom('body').on('mousedown', '.gif-toolbar .progress-bar', function (this: any, event: any) {
     if (event.button === 0) {
       gifPlayerProgressDown = true;
       gifPlayerOriginalState = scope.gifPlayer && scope.gifPlayer.get_playing();
-      (window as any).$('#thumbnail-preview').hide();
+      dom('#thumbnail-preview').hide();
 
       if (scope.isGifReady) {
-        const width = (window as any).$(this).width();
+        const width = dom(this).width();
         const currentPosX = event.offsetX;
         let index = Math.round((currentPosX / width) * scope.gifViewer.frames.length) + 1;
         if (!index) return;
@@ -2246,7 +2248,7 @@ function initShellBehaviors() {
             return;
           }
         }
-        (window as any).$('#gif-progress-indicator').css(
+        dom('#gif-progress-indicator').css(
           'left',
           `${((index - 1) / (scope.gifViewer.frames.length - 1)) * 100}%`
         );
@@ -2256,7 +2258,7 @@ function initShellBehaviors() {
     }
   });
 
-  (window as any).$('body').on('mouseup', '.gif-toolbar', function (event: any) {
+  dom('body').on('mouseup', '.gif-toolbar', function (event: any) {
     if (event.button === 0) {
       gifPlayerProgressDown = false;
       if (gifPlayerOriginalState) {
@@ -2265,47 +2267,47 @@ function initShellBehaviors() {
     } else if (event.button === 2) {
       scope.openGifContextMenu(event);
     }
-    (window as any).$('.gif-toolbar .progress-bar .ui-resizable-handle').css('pointer-events', '');
+    dom('.gif-toolbar .progress-bar .ui-resizable-handle').css('pointer-events', '');
   });
 
-  (window as any).$('body').on('mouseleave', '.gif-toolbar .progress-bar', function () {
+  dom('body').on('mouseleave', '.gif-toolbar .progress-bar', function () {
     if (!gifPlayerProgressDown) {
-      (window as any).$('#thumbnail-preview').hide();
+      dom('#thumbnail-preview').hide();
     }
   });
 
-  (window as any).$('body').on('mousemove', '.gif-toolbar .progress-bar .ui-resizable-handle', function (event: any) {
+  dom('body').on('mousemove', '.gif-toolbar .progress-bar .ui-resizable-handle', function (event: any) {
     event.stopPropagation();
   });
 
-  (window as any).$('body').on('mousemove', '.gif-toolbar .progress-bar', function (this: any, event: any) {
+  dom('body').on('mousemove', '.gif-toolbar .progress-bar', function (this: any, event: any) {
     if (event.button === 0) {
       const currentPosX = event.offsetX;
 
       if (scope.isGifReady) {
-        const width = (window as any).$(this).width();
+        const width = dom(this).width();
         let index = Math.round((currentPosX / width) * scope.gifViewer.frames.length) + 1;
         if (index - 1 >= scope.gifViewer.frames.length) index = scope.gifViewer.frames.length;
         if (!gifPlayerProgressDown) {
-          const img = (window as any).$('#thumbnail-preview img')[0];
+          const img = dom('#thumbnail-preview img')[0];
           const f = scope.gifPlayer.get_frame(index - 1);
           if (!f) return;
           img.src = f.base64;
 
-          const w = (window as any).$('#thumbnail-preview img').width();
+          const w = dom('#thumbnail-preview img').width();
           let left = currentPosX - w / 2;
           if (left < 0) left = 0;
           if (left > width - w) left = width - w;
 
-          (window as any).$('#thumbnail-preview').css({
+          dom('#thumbnail-preview').css({
             transform: `translateX(${left}px)`,
           });
 
-          (window as any).$('#thumbnail-preview .current-index').text(`${index}`);
-          (window as any).$('#thumbnail-preview').show();
+          dom('#thumbnail-preview .current-index').text(`${index}`);
+          dom('#thumbnail-preview').show();
         } else {
-          (window as any).$('.gif-toolbar .progress-bar .ui-resizable-handle').css('pointer-events', 'none');
-          (window as any).$('#gif-progress-indicator').css(
+          dom('.gif-toolbar .progress-bar .ui-resizable-handle').css('pointer-events', 'none');
+          dom('#gif-progress-indicator').css(
             'left',
             `${((index - 1) / (scope.gifViewer.frames.length - 1)) * 100}%`
           );
@@ -2317,7 +2319,7 @@ function initShellBehaviors() {
   });
 
   // 快照刷新（旧版依赖 digest 的字段变化 → notify）
-  (window as any).$(document).ready(function () {
+  dom(document).ready(function () {
     notifyController();
   });
 }

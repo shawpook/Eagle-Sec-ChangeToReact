@@ -542,6 +542,34 @@ export class DomSet {
     });
     return this;
   }
+  /** jQuery `.click()`（无参触发） / `.click(fn)`（绑定）。 */
+  click(fn?: any): this {
+    if (typeof fn === 'function') return this.on('click', fn);
+    this.els.forEach((el) => { if (typeof el.click === 'function') el.click(); });
+    return this;
+  }
+  focus(fn?: any): this {
+    if (typeof fn === 'function') return this.on('focus', fn);
+    this.els.forEach((el) => { if (typeof el.focus === 'function') el.focus(); });
+    return this;
+  }
+  blur(fn?: any): this {
+    if (typeof fn === 'function') return this.on('blur', fn);
+    this.els.forEach((el) => { if (typeof el.blur === 'function') el.blur(); });
+    return this;
+  }
+  select(fn?: any): this {
+    if (typeof fn === 'function') return this.on('select', fn);
+    this.els.forEach((el) => { if (typeof el.select === 'function') el.select(); });
+    return this;
+  }
+  /** jQuery `.ready(fn)`：DOM 就绪后执行（已就绪则下一个微任务）。 */
+  ready(fn: any): this {
+    const run = () => fn.call(document);
+    if (document.readyState === 'complete' || document.readyState === 'interactive') setTimeout(run, 0);
+    else document.addEventListener('DOMContentLoaded', run, { once: true });
+    return this;
+  }
 }
 
 /** jQuery `$(...)` 工厂（子集）。 */

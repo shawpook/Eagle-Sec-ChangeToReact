@@ -13,6 +13,7 @@ import { newFolder } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { dom } from '../../utils/domLite';
 /**
  * 阶段2：侧栏接管。
  *
@@ -714,7 +715,7 @@ function LibraryIcon({ libraryPath }: { libraryPath: string }) {
     const iconUrl = URL_MODULE.pathToFileURL(iconPath).href;
     fs.exists(libraryPath, (libraryExists: boolean) => {
       if (!el) return;
-      const $item = (window as any).$(`.check-item`).has(el);
+      const $item = dom(`.check-item`).has(el);
       if (!libraryExists) {
         $item.addClass('missing');
         el.innerHTML = `<img src="assets/images/base/icons/ic-library-missing-warning.svg" style="position: absolute; right: -2px; bottom: -2px;">`;

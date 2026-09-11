@@ -1,5 +1,6 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
 import { detailZoom, ensureDetailZoom } from '../core/smoothZoomEngine';
+import { getResizable, makeResizable } from '../components/interactions/resizable';
 /**
  * 预览大窗控制器——preview-window.js（PreviewWindowController）无 Angular 移植。
  *
@@ -1614,9 +1615,9 @@ scope.gifViewer = {
     const $resizableBar = (window as any).$('.gif-toolbar .resize-bar');
     (window as any).$('.gif-toolbar .total-frame').text(`/ ${scope.gifViewer.frames.length}`);
 
-    if ($resizableBar.is('.ui-resizable')) {
-      $resizableBar.resizable('destroy');
-    }
+    const resizableBarEl = ($resizableBar[0] as HTMLElement | undefined);
+    const prevBar = resizableBarEl ? getResizable(resizableBarEl) : undefined;
+    if (prevBar) prevBar.destroy();
 
     $resizableBar.css({
       left: 0,
@@ -1632,7 +1633,8 @@ scope.gifViewer = {
     let gifPlayerResizing = false;
     let gifPlayerLastResizeLeft: any;
     let gifPlayerLastResizeWidth: any;
-    $resizableBar.resizable({
+    // D-2f：jQuery-UI resizable → 自研
+    makeResizable(resizableBarEl as HTMLElement, {
       handles: 'e, w',
       containment: '.gif-toolbar .progress-bar',
       start: function (event: any, ui: any) {

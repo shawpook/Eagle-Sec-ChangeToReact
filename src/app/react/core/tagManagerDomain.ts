@@ -20,6 +20,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from './appCore';
 import { toggleGifPlay } from '../services/mediaService';
 import { getLibraryHistory } from '../services/folderCoreService';
+import { getResizable, makeResizable } from '../components/interactions/resizable';
 import { addToLibraryChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 
@@ -1993,9 +1994,9 @@ export function machineryBuildTagManager(s: any): any {
                 var $resizableBar = w.$(".gif-toolbar .resize-bar");
                 w.$(".gif-toolbar .total-frame").text(`/ ${s.gifViewer.frames.length}`);
 
-                if ($resizableBar.is('.ui-resizable')) {
-                    $resizableBar.resizable( "destroy" );
-                }
+                const resizableBarEl = ($resizableBar[0] as HTMLElement | undefined);
+                const prevBar = resizableBarEl ? getResizable(resizableBarEl) : undefined;
+                if (prevBar) prevBar.destroy();
 
                 $resizableBar.css({
                     left: 0,
@@ -2012,7 +2013,8 @@ export function machineryBuildTagManager(s: any): any {
                 var gifPlayerLastResizeLeft;
                 var gifPlayerLastResizeWidth;
                 var gifPlayerToolbarOffset;
-                $resizableBar.resizable({
+                // D-2f：jQuery-UI resizable → 自研
+                makeResizable(resizableBarEl as HTMLElement, {
                 	minWidth: 2,
                     handles: "e, w",
                     containment: ".gif-toolbar .progress-bar",

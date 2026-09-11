@@ -40,6 +40,11 @@ export interface ResizableHandle {
   destroy(): void;
 }
 
+/** 取元素上已装配的句柄（无则 undefined）——供「先销毁再按新闭包重建」的宿主使用。 */
+export function getResizable(el: HTMLElement): ResizableHandle | undefined {
+  return (el as any)[MARK] as ResizableHandle | undefined;
+}
+
 const MARK = '__eagleResizable';
 const DIR_CURSOR: Record<string, string> = {
   n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',

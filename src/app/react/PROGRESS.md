@@ -7657,3 +7657,13 @@ MOUNT-INFRA 9 个 → **新建 `core/machineryInfra.ts`**（scope 面供给层�
 libraryDomain/filterDomain/itemDomain/selectionViewDomain/tagManagerDomain/miscDomain/
 keymap/keymapActions/navHistory/machineryInfra + gridService/viewOpsService/mediaService/
 imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normalize、utils/color）。
+
+---
+
+## Track B 收官 · 全量套件复核（2026-09-11）
+
+`node tests/run-react-suite.mjs` → **REACT SUITE ALL GREEN（55/55，SUITE_RC=0）**，
+在 `dataMachinery.ts` 删除后跑通（这是 D-1 整个大项的收官验证）。
+
+累计成果：`dataMachinery.ts` **11509 行 / 306 声明 → 删除**；`tsc` **788（D 前基线）
+→ 508**；`jQuery 0 / vendorScriptTags 0`；55 项全绿。

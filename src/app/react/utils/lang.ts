@@ -51,3 +51,9 @@ export function uniq<T>(arr: ArrayLike<T> | null | undefined): T[] {
 export function isString(value: any): value is string {
   return typeof value === 'string';
 }
+
+/** jQuery `$.isNumeric`（1.8 实现：`!isNaN(parseFloat(obj)) && isFinite(obj)`）——
+ *  数值与数字字符串为真，`''`/null/undefined/布尔/Infinity/NaN 为假。 */
+export function isNumeric(obj: any): boolean {
+  return !isNaN(parseFloat(obj)) && isFinite(obj);
+}

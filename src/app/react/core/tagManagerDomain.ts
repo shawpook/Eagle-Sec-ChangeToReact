@@ -1,6 +1,7 @@
 /**
  * b1-9d：TagManager 域（bundle 47050-49176 逐字机械移植——$scope→s / $rootScope→s.$root /
- *   $timeout→getTimeout() / $→w.$ / path,fs,writeFileAtomic,electronLog,languageBCP,
+ *   $timeout→getTimeout() / 原生 DOM（b1-9bz-D-2c 起，utils/domQuery） / path,fs,
+ *   writeFileAtomic,electronLog,languageBCP,
  *   ayncsImagesChange,hiddenByCurrentFilter,swal,guid,analytics,i18n→w.* /
  *   calcuteContainTags→s.calcuteContainTags（scope 面）。
  *   @ts-nocheck 与 controllerFns.ts 同先例：bundle 原码宽松类型逐字保留。
@@ -23,6 +24,7 @@ import { getLibraryHistory } from '../services/folderCoreService';
 import { getResizable, makeResizable } from '../components/interactions/resizable';
 import { addToLibraryChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { q, qa, widthOf, cssGet, cssSet, hide, show, setText, textOf, isVisible, offsetLeftOf, addClass, removeClass, delegateTarget } from '../utils/domQuery';
 
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
@@ -232,7 +234,7 @@ export function machineryBuildTagManager(s: any): any {
                         return (tags.length > 0);
                     });
                 }
-                const containerWidth = w.$(".tag-manager-container").width();
+                const containerWidth = widthOf(q(".tag-manager-container"));
                 const n = (s.tagViewLayoutMode === "LIST")? 0 : Math.max(0, parseInt(((containerWidth - 32) / 200) as any) - 1);
                 const columnCount = parseInt((containerWidth / 200) as any);
                 const columnWidth = parseInt((containerWidth / columnCount) as any);
@@ -513,7 +515,7 @@ export function machineryBuildTagManager(s: any): any {
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
-            w.$("#tag-search-input").focus();
+            q("#tag-search-input")?.focus();
             machineryCalculateImageBinding(s, {ignoreSort : true}, () => {});
             w.electronLog.info(`[app] Remove tag [${tag}] from ${changedItems.length} files`);
         };
@@ -761,9 +763,9 @@ export function machineryBuildTagManager(s: any): any {
 
         TagManager.focusTag = function (delay: any) {
             setTimeout(function () {
-                var $active = w.$("#tags-popup .tag.active");
+                var $active = qa("#tags-popup .tag.active");
                 if ($active.length == 0) {
-                    w.$("#tags-popup .tag").first().addClass("active");
+                    q("#tags-popup .tag")?.classList.add("active");
                 }
             }, delay || 500);
         };
@@ -1479,7 +1481,7 @@ export function machineryBuildTagManager(s: any): any {
             s.currentTagGroup = group;
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
-            w.$("input:focus").blur();
+            q("input:focus")?.blur();
             if (s.currentTagGroup === group) return;
             s.selectedTags = {};
             syncTagManagerFromScope();
@@ -1591,7 +1593,7 @@ export function machineryBuildTagManager(s: any): any {
                     }
                 }
             });
-            const $target = w.$(".tag-manager-sidebar .sidebar-item").has(event.target);
+            const $target = qa(".tag-manager-sidebar .sidebar-item").filter((el) => el.contains(event.target));
             ContextMenu.open({
                 items: [
                     // 搜尋
@@ -1646,10 +1648,10 @@ export function machineryBuildTagManager(s: any): any {
                     }
                 ],
                 onOpened: () => {
-                    $target.addClass("context-activate");
+                    $target.forEach((el) => el.classList.add("context-activate"));
                 },
                 onClosed: () => {
-                    $target.removeClass("context-activate");
+                    $target.forEach((el) => el.classList.remove("context-activate"));
                 },
                 showSearch: true
             });
@@ -1662,10 +1664,12 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             group.editable = true;
             setTimeout(function() {
-                w.$("#group-input-" + group.id).focus().select();
+                q("#group-input-" + group.id)?.focus();
+                (q("#group-input-" + group.id) as HTMLInputElement)?.select();
             }, 100);
             setTimeout(function() {
-                w.$("#group-input-" + group.id).focus().select();
+                q("#group-input-" + group.id)?.focus();
+                (q("#group-input-" + group.id) as HTMLInputElement)?.select();
             }, 200);
         };
 
@@ -1905,7 +1909,7 @@ export function machineryBuildTagManager(s: any): any {
                 syncDetailFromScope();
                 scopeEvalAsync();
                 s.gifPlayer.set_speed(speed);
-                w.$(".gif-toolbar-btn.speed span").text(`${speed}x`);
+                setText(".gif-toolbar-btn.speed span", `${speed}x`);
             },
             mousedown: function (event: any) {
                 if (event.button !== 0) return;
@@ -1928,8 +1932,7 @@ export function machineryBuildTagManager(s: any): any {
                 if (s.gifViewer.range !== undefined) {
                     s.gifViewer.range = undefined;
                     syncDetailFromScope();
-                    var $resizableBar = w.$(".gif-toolbar .resize-bar");
-                    $resizableBar.css({
+                    cssSet(".gif-toolbar .resize-bar", {
                         left: "0%",
                         width: "100%"
                     });
@@ -1976,7 +1979,7 @@ export function machineryBuildTagManager(s: any): any {
                     scopeEvalAsync();
                 }
                 updateGifProgressbar(progress);
-                w.$(".gif-toolbar .message span").text(`${parseInt((progress * 100) as any)}%`)
+                setText(".gif-toolbar .message span", `${parseInt((progress * 100) as any)}%`)
             },
             onFinished: function (result: any) {
                 s.gifViewer.range = undefined;
@@ -1991,21 +1994,20 @@ export function machineryBuildTagManager(s: any): any {
                 syncDetailFromScope();
                 s.gifViewer.setSpeed(1);
                 scopeEvalAsync();
-                var $resizableBar = w.$(".gif-toolbar .resize-bar");
-                w.$(".gif-toolbar .total-frame").text(`/ ${s.gifViewer.frames.length}`);
+                const resizableBarEl = q(".gif-toolbar .resize-bar");
+                setText(".gif-toolbar .total-frame", `/ ${s.gifViewer.frames.length}`);
 
-                const resizableBarEl = ($resizableBar[0] as HTMLElement | undefined);
                 const prevBar = resizableBarEl ? getResizable(resizableBarEl) : undefined;
                 if (prevBar) prevBar.destroy();
 
-                $resizableBar.css({
+                cssSet(".gif-toolbar .resize-bar", {
                     left: 0,
                     width: 'auto'
                 });
 
-                w.$(".gif-toolbar.in").removeClass("in");
+                removeClass(".gif-toolbar.in", "in");
                 setTimeout(function () {
-                    w.$(".gif-toolbar").addClass("in");
+                    addClass(".gif-toolbar", "in");
                 }, 100);
 
                 var gifPlayerResizeOriginalState = false;
@@ -2023,38 +2025,38 @@ export function machineryBuildTagManager(s: any): any {
                         gifPlayerLastResizeWidth = ui.element.width();
                         gifPlayerResizeOriginalState = s.gifPlayer.get_playing();
                         s.gifPlayer.pause();
-                        gifPlayerToolbarOffset = w.$(".gif-toolbar .progress-bar").offset().left;
+                        gifPlayerToolbarOffset = offsetLeftOf(q(".gif-toolbar .progress-bar"));
                     },
                     resize: function (event: any, ui: any) {
-                        w.$("#gif-progress-indicator").hide();
+                        hide("#gif-progress-indicator");
                         gifPlayerResizing = true;
 
                         var currentPosX = event.pageX - gifPlayerToolbarOffset;
-                        var width = w.$(".gif-toolbar .progress-bar").width();
+                        var width = widthOf(q(".gif-toolbar .progress-bar"));
                         var index = Math.round(currentPosX / width * s.gifViewer.frames.length) + 1;
                         // if (!index) return;
                         if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
                         if (!gifPlayerProgressDown) {
-                            var img = w.$("#thumbnail-preview img")[0];
+                            var img = q("#thumbnail-preview img") as HTMLImageElement;
                             var f = s.gifPlayer.get_frame(index - 1);
                             if (!f) return;
                             img.src = f.base64;
 
-                            var w = w.$("#thumbnail-preview img").width();
-                            var left = currentPosX - w / 2;
+                            var imgWidth = widthOf(q("#thumbnail-preview img"));
+                            var left = currentPosX - imgWidth / 2;
                             if (left < 0) left = 0;
-                            if (left > width - w) left = width - w;
+                            if (left > width - imgWidth) left = width - imgWidth;
 
-                            w.$("#thumbnail-preview").css({
+                            cssSet("#thumbnail-preview", {
                                 transform: `translateX(${left}px)`
                             });
 
-                            w.$("#thumbnail-preview .current-index").text(`${index}`);
-                            w.$("#thumbnail-preview").show();
+                            setText("#thumbnail-preview .current-index", `${index}`);
+                            show("#thumbnail-preview");
                         }
                         else {
-                            w.$(".gif-toolbar .progress-bar .ui-resizable-handle").css("pointer-events", "none");
-                            w.$("#gif-progress-indicator").css('left', `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%`);
+                            cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "none" });
+                            cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%` });
                             s.gifPlayer.move_to(index - 1);
                             s.gifPlayer.pause();
                         }
@@ -2063,18 +2065,17 @@ export function machineryBuildTagManager(s: any): any {
                     stop: function (event: any, ui: any) {
                         gifPlayerResizing = false;
                         var frames = s.gifViewer.frames;
-                        var parentWidth = w.$(".gif-toolbar .progress-bar").width();
+                        var parentWidth = widthOf(q(".gif-toolbar .progress-bar"));
                         var left = parseInt((ui.element.css("left")) as any);
                         var width = ui.element.width();
                         var leftP = left / parentWidth * 100;
                         var widthP = width / parentWidth * 100;;
-                        $resizableBar.css({
+                        cssSet(".gif-toolbar .resize-bar", {
                             left: `${leftP}%`,
                             width: `${widthP}%`
                         });
 
                         // 移動 start
-                        // var index = parseInt((w.$(".gif-toolbar .current-frame").text()) as any) - 1;
                         var index = s.gifPlayer.get_current_frame();
                         if (index < 0) index = 0;
                         if (gifPlayerLastResizeLeft !== left) {
@@ -2105,14 +2106,14 @@ export function machineryBuildTagManager(s: any): any {
                         }
                         console.log(s.gifViewer.range);
 
-                        w.$("#gif-progress-indicator").show();
-                        if (!w.$(".gif-toolbar-btn.play-btn").is(":visible")) {
+                        show("#gif-progress-indicator");
+                        if (!isVisible(q(".gif-toolbar-btn.play-btn"))) {
                             s.gifPlayer.play();
                         }
 
                         gifPlayerProgressDown = false;
-                        w.$(".gif-toolbar .progress-bar .ui-resizable-handle").css("pointer-events", "");
-                        // w.$(".gif-toolbar").trigger("mouseup");
+                        cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "" });
+                        // jQuery: $(".gif-toolbar").trigger("mouseup");
                     }
                 });
 
@@ -2136,8 +2137,8 @@ export function machineryBuildTagManager(s: any): any {
                         }
 
                         var text = paddingNumber(c + 1, `${length}`.length);
-                        if (w.$(".gif-toolbar .current-frame").text() !== text) {
-                            w.$(".gif-toolbar .current-frame").text(text);
+                        if (textOf(".gif-toolbar .current-frame") !== text) {
+                            setText(".gif-toolbar .current-frame", text);
                         }
                         updateGifIndicator(c + 1);
                     }
@@ -2150,26 +2151,29 @@ export function machineryBuildTagManager(s: any): any {
             var percent = (index - 1) / (s.gifViewer.frames.length - 1) * 100;
             if (percent < 0) percent = 0;
             var value = `${ percent }%`;
-            if (w.$("#gif-progress-indicator").css('left') !== value) {
-                w.$("#gif-progress-indicator").css('left', value);
+            if (cssGet(q("#gif-progress-indicator"), 'left') !== value) {
+                cssSet("#gif-progress-indicator", { left: value });
             }
         };
         
         var updateGifProgressbar = function (progress: any) {
-            w.$(".gif-toolbar .progress-bar .current").css('width', `${ progress * 100 }%`);
+            cssSet(".gif-toolbar .progress-bar .current", { width: `${ progress * 100 }%` });
         };
 
         var gifPlayerProgressDown = false;
         var gifPlayerOriginalState = false;
-        w.$("body").on('mousedown', ".gif-toolbar .progress-bar", function (event: any) {
-        	var self = this;
+        var gifDragMove: any = null;
+        var gifDragEnd: any = null;
+        document.body.addEventListener('mousedown', function (event: any) {
+        	var self = delegateTarget(event, ".gif-toolbar .progress-bar");
+        	if (!self) return;
             if (event.button === 0 && s.gifPlayer) {
                 gifPlayerProgressDown = true;
                 gifPlayerOriginalState = s.gifPlayer.get_playing();
-                w.$("#thumbnail-preview").hide();
+                hide("#thumbnail-preview");
 
                 if (s.isGifReady) {
-                    var width = w.$(this).width();
+                    var width = widthOf(self);
                     var currentPosX = event.offsetX;
                     var index = Math.round(currentPosX / width * s.gifViewer.frames.length) + 1;
                     if (!index) return;
@@ -2179,25 +2183,27 @@ export function machineryBuildTagManager(s: any): any {
                             return;
                         }
                     }
-                    w.$("#gif-progress-indicator").css('left', `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%`);
+                    cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%` });
                     s.gifPlayer.move_to(index - 1);
                     s.gifPlayer.pause();
 
                     var startX = event.pageX;
-	            	w.$("body").off("mousemove.gif").on("mousemove.gif", function (event: any) {
-	            		var offsetX = event.pageX - startX;
-	            		var x = currentPosX + offsetX;
-	            		var width = w.$(self).width();
-	                    var index = Math.round(x / width * s.gifViewer.frames.length) + 1;
-	                    if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
-	                    if (index < 1) index = 1;
-	            		w.$(".gif-toolbar .progress-bar .ui-resizable-handle").css("pointer-events", "none");
-		                w.$("#gif-progress-indicator").css('left', `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%`);
-		                s.gifPlayer.move_to(index - 1);
-		                s.gifPlayer.pause();
-	            	});
+		            	if (gifDragMove) document.body.removeEventListener("mousemove", gifDragMove);
+		            	if (gifDragEnd) document.body.removeEventListener("mouseup", gifDragEnd);
+		            	gifDragMove = function (event: any) {
+		            		var offsetX = event.pageX - startX;
+		            		var x = currentPosX + offsetX;
+		            		var width2 = widthOf(self);
+		                    var index = Math.round(x / width2 * s.gifViewer.frames.length) + 1;
+		                    if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
+		                    if (index < 1) index = 1;
+		            		cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "none" });
+			                cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%` });
+			                s.gifPlayer.move_to(index - 1);
+			                s.gifPlayer.pause();
+		            	};
 
-	            	w.$("body").off("mouseup.gif").on("mouseup.gif", function (event: any) {
+		            	gifDragEnd = function (event: any) {
             			if (event.button === 0) {
             				event.stopPropagation();
 			                gifPlayerProgressDown = false;
@@ -2205,15 +2211,18 @@ export function machineryBuildTagManager(s: any): any {
 			                    s.gifPlayer.play();
 			                }
 			            }
-			            w.$(".gif-toolbar .progress-bar .ui-resizable-handle").css("pointer-events", "");
-            			w.$("body").off("mousemove.gif");
-            			w.$("body").off("mouseup.gif");
-            		});
+			            cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "" });
+            			document.body.removeEventListener("mousemove", gifDragMove);
+            			document.body.removeEventListener("mouseup", gifDragEnd);
+            		};
+            		document.body.addEventListener("mousemove", gifDragMove);
+            		document.body.addEventListener("mouseup", gifDragEnd);
                 }
             }
         });
 
-        w.$("body").on('mouseup', ".gif-toolbar", function (event: any) {
+        document.body.addEventListener('mouseup', function (event: any) {
+        	if (!delegateTarget(event, ".gif-toolbar")) return;
             if (event.button === 0) {
             }
             else if (event.button === 2) {
@@ -2222,55 +2231,60 @@ export function machineryBuildTagManager(s: any): any {
             }
         });
 
-        w.$("body").on('mouseleave', ".gif-toolbar .progress-bar", function (event: any) {
+        document.body.addEventListener('mouseleave', function (event: any) {
+        	if (!delegateTarget(event, ".gif-toolbar .progress-bar")) return;
             if (!gifPlayerProgressDown) {
-                w.$("#thumbnail-preview").hide();
+                hide("#thumbnail-preview");
             }
-        });
+        }, true);
 
-        w.$("body").on('mousemove', ".gif-toolbar .progress-bar .ui-resizable-handle", function (event: any) {
+        document.body.addEventListener('mousemove', function (event: any) {
+        	if (!delegateTarget(event, ".gif-toolbar .progress-bar .ui-resizable-handle")) return;
             event.stopPropagation();
         });
 
-        w.$("body").on('mousewheel', ".gif-toolbar .progress-bar", function (e: any) {
+        document.body.addEventListener('wheel', function (e: any) {
+        	if (!delegateTarget(e, ".gif-toolbar .progress-bar")) return;
         	s.gifPlayer.pause();
-        	var ne = e.originalEvent.wheelDelta / Math.abs(e.originalEvent.wheelDelta) || 1;
-        	console.log(ne);
+        	var delta = e.deltaY;
+        	var ne = delta < 0 ? 1 : (delta > 0 ? -1 : 1);
         	if (ne > 0) {
         		s.gifViewer.nextFrame();
         	}
         	else {
         		s.gifViewer.prevFrame();
         	}
-        });
+        }, { passive: true });
 
-        w.$("body").on('mousemove', ".gif-toolbar .progress-bar", function (event: any) {
+        document.body.addEventListener('mousemove', function (event: any) {
+        	var self = delegateTarget(event, ".gif-toolbar .progress-bar");
+        	if (!self) return;
             if (event.button === 0) {
                 var currentPosX = event.offsetX;
 
                 // 显示缩略图
                 if (s.isGifReady) {
-                    var width = w.$(this).width();
+                    var width = widthOf(self);
                     var index = Math.round(currentPosX / width * s.gifViewer.frames.length) + 1;
                     // if (!index) return;
                     if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
                     if (!gifPlayerProgressDown) {
-                        var img = w.$("#thumbnail-preview img")[0];
+                        var img = q("#thumbnail-preview img") as HTMLImageElement;
                         var f = s.gifPlayer.get_frame(index - 1);
                         if (!f) return;
                         img.src = f.base64;
 
-                        var w = w.$("#thumbnail-preview img").width();
-                        var left = currentPosX - w / 2;
+                        var imgWidth = widthOf(q("#thumbnail-preview img"));
+                        var left = currentPosX - imgWidth / 2;
                         if (left < 0) left = 0;
-                        if (left > width - w) left = width - w;
+                        if (left > width - imgWidth) left = width - imgWidth;
 
-                        w.$("#thumbnail-preview").css({
+                        cssSet("#thumbnail-preview", {
                             transform: `translateX(${left}px)`
                         });
 
-                        w.$("#thumbnail-preview .current-index").text(`${index}`);
-                        w.$("#thumbnail-preview").show();
+                        setText("#thumbnail-preview .current-index", `${index}`);
+                        show("#thumbnail-preview");
                     }
                 }
             }

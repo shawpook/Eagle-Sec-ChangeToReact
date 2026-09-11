@@ -13,24 +13,24 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
 import { openFolder } from './folderCoreService';
 import { saveCrop } from './imageOpsService';
+import { q, qa, widthOf, heightOf, addClass, removeClass, cssSet } from '../utils/domQuery';
+import { isNumeric } from '../utils/lang';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;
 
 /** zooming 护栏（b1-9bk 抽取：原三处重复的 clearTimeout + addClass + 300ms 移除块） */
 export function beginZoomingTransition(): void {
-  const w = window as any;
   clearTimeout(updateZoomRatioTimeout);
-  w.$("#detail-container").addClass("zooming");
+  addClass("#detail-container", "zooming");
   updateZoomRatioTimeout = setTimeout(function () {
-    w.$("#detail-container").removeClass("zooming");
+    removeClass("#detail-container", "zooming");
   }, 300);
 }
 
 /* updateZoomRatio（bundle 31391-31418 逐字；smoothZoom = vendor jQuery 插件；
    updateZoomRatioTimeout 域内自管） */
 export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTransition: any): void {
-  const w = window as any;
   var pageX: any, pageY: any;
 
   if (ratio) {
@@ -39,12 +39,12 @@ export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTra
     s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
   }
 
-  if (w.$.isNumeric(x) && w.$.isNumeric(y)) {
+  if (isNumeric(x) && isNumeric(y)) {
     pageX = x;
     pageY = y;
   } else {
-    pageX = w.$(window).width() / 2;
-    pageY = w.$(window).height() / 2;
+    pageX = window.innerWidth / 2;
+    pageY = window.innerHeight / 2;
   }
 
   if (hasTransition) {
@@ -66,7 +66,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
   var current = target || s.current;
   var ratio = s.imageSize.zoomRatio || 100;
   var lastRatio = ratio;
-  var $container = w.$(".content-panel");
+  var $container = q(".content-panel");
   var toolbarHeight = 0;
   var containerWidth;
   var containerHeight;
@@ -74,23 +74,23 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
 
   if (s.isSlideshowMode) {
     toolbarHeight = 0;
-    containerWidth = w.$(window).width();
-    containerHeight = w.$(window).height() - toolbarHeight;
+    containerWidth = window.innerWidth;
+    containerHeight = window.innerHeight - toolbarHeight;
   }
   else if (s.isInlineMode) {
     toolbarHeight = 96;
-    containerWidth = w.$(window).width();
-    containerHeight = $container.height() - toolbarHeight;
+    containerWidth = window.innerWidth;
+    containerHeight = heightOf($container) - toolbarHeight;
   }
   else {
     toolbarHeight = 48;
-    containerWidth = $container.width();
-    containerHeight = $container.height() - toolbarHeight;
+    containerWidth = widthOf($container);
+    containerHeight = heightOf($container) - toolbarHeight;
   }
 
   if (!current) return;
 
-  w.$("#detail-image").css({
+  cssSet("#detail-image", {
     "transform": `rotate(0deg)`,
     "transition": "none"
   });
@@ -110,7 +110,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
       if (ratio > 100) {
         ratio = 100;
       }
-      if (current.height > $container.height()) {
+      if (current.height > heightOf($container)) {
         offsetY = toolbarHeight / 2 * 100 / ratio;
         offsetY += (current.height - containerHeight * 100 / ratio) / -2;
       }
@@ -164,16 +164,16 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
       if (ratio > 100) {
         ratio = 100;
       }
-      if (current.height > $container.height()) {
-        offsetY = (current.height - $container.height() * 100 / ratio) / -2;
+      if (current.height > heightOf($container)) {
+        offsetY = (current.height - heightOf($container) * 100 / ratio) / -2;
         offsetY = toolbarHeight / 2 * 100 / ratio;
       }
     }
   }
 
-  var $detailContainer = w.$("#detail-container");
-  var width = $detailContainer.width();
-  var height = current && current.height || $detailContainer.height();
+  var $detailContainer = q("#detail-container");
+  var width = widthOf($detailContainer);
+  var height = current && current.height || heightOf($detailContainer);
 
   offsetY = offsetY || 0;
 
@@ -194,8 +194,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
 /* toggleDetailMode（bundle 31005-31029 逐字；saveCrop/renameCurrentFolder/openFolder
    经 scope 解析） */
 export function detailToggleDetailMode(s: any, $event: any, isInline: any): void {
-  const w = window as any;
-  if (w.$(".swal2-container").length > 0) return;
+  if (qa(".swal2-container").length > 0) return;
   if (s.isCropMode) {
     saveCrop();
     return;

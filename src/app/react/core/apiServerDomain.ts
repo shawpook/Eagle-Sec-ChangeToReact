@@ -24,6 +24,7 @@ import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { machineryCalculateImageBinding, machineryExistInSmartFilter, machineryRebindRefresh, machinerySaveFolder, machineryShowUploadQueue, machinerySortData, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { isNumeric } from '../utils/lang';
 
 let installed = false;
 
@@ -1018,7 +1019,7 @@ function machineryUpdateItem(params: any): Promise<any> {
           item.annotation = annotation;
         }
 
-        if (star && w.$.isNumeric(star) && star <= 5 && star >= 0) {
+        if (star && isNumeric(star) && star <= 5 && star >= 0) {
           item.star = star;
         }
 
@@ -1240,7 +1241,7 @@ function machineryListImages(params: any): Promise<any> {
         return !item.isDeleted;
       });
 
-      if (limit && w.$.isNumeric(limit)) {
+      if (limit && isNumeric(limit)) {
         if (offset) {
           items = items.slice(limit * offset);
         }

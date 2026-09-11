@@ -1,7 +1,8 @@
 /**
  * b1-9bx-B：jquery-audio 自研替换（js/vendors/jquery-audio.js 1,068B 退役）。
+ * D-2e：命名空间由挂 `$`（jQuery 函数对象）改为 `window.__eagleAudio`（去 jQuery 依赖）。
  *
- * 消费面 = dataMachinery 10320-10334 音效三件套（$.playSound('sounds/*.wav') ×3）。
+ * 消费面 = dataMachinery 音效三件套（__eagleAudio.playSound('sounds/*.wav') ×3）。
  * 原实现（jQuery 插件）：playSound = debounce(500, immediate)——连续触发 500ms 窗口内
  * 只建一次；stopSound = 移除全部 .sound-player。本实现去 jQuery 化（vanilla DOM），
  * debounce 语义逐字（immediate=true：窗口首触发立即执行）。
@@ -44,10 +45,10 @@ function playSound(src: string): Element {
 export function installAudioPlugin(): void {
   if (installed) return;
   installed = true;
-  if (!_w.$) _w.$ = {};
-  if (!_w.$.playSound) _w.$.playSound = debounceImmediate(playSound, 500);
-  if (!_w.$.stopSound) {
-    _w.$.stopSound = function () {
+  if (!_w.__eagleAudio) _w.__eagleAudio = {};
+  if (!_w.__eagleAudio.playSound) _w.__eagleAudio.playSound = debounceImmediate(playSound, 500);
+  if (!_w.__eagleAudio.stopSound) {
+    _w.__eagleAudio.stopSound = function () {
       document.querySelectorAll('.sound-player').forEach((el) => el.remove());
     };
   }

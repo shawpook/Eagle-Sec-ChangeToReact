@@ -18,6 +18,7 @@ import { machineryChangeMetaItems, machineryCurrentIndex, machineryOnZoomRatioCh
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { onSelectedChanged } from './selectionNotify';
+import { addClass, removeClass, cssSet } from '../utils/domQuery';
 
 let done = false;
 
@@ -48,7 +49,6 @@ export function takeoverSelectionViewDomain(): void {
   const diag: any = { takenOver: true, watchesRemoved: {} as Record<string, number>, listenersRemoved: {} as Record<string, number> };
   w.__eagleSelectionViewDomain = diag;
 
-  const $: any = w.$;
   const s0: any = getBodyScope();
   if (!s0 || typeof s0.$watch !== 'function') return;
 
@@ -68,14 +68,13 @@ export function takeoverSelectionViewDomain(): void {
   const selectItemsView = function (items: any) {
     const s2: any = getBodyScope();
     if (!s2) return;
-    const $boxContainer = w.$("#box-container");
-    $boxContainer.find(".box.selected").removeClass("selected");
+    removeClass(".box.selected", "selected");
     (items || []).forEach(function (item: any) {
       if (s2.selectedMappings[item.id]) {
-        w.$("#box-" + item.id).addClass("selected");
+        addClass("#box-" + item.id, "selected");
       }
       else {
-        w.$("#box-" + item.id).removeClass("selected");
+        removeClass("#box-" + item.id, "selected");
       }
     });
   };
@@ -103,7 +102,7 @@ export function takeoverSelectionViewDomain(): void {
       machineryRememberVideoCurrentTime(s, oldValue[0]);
       if (w.AnnotationPreview) w.AnnotationPreview.hide();
       w.$("#detail-image").data("degree", 0);
-      w.$("#detail-image").css({
+      cssSet("#detail-image", {
         "transform": ``,
       });
       setTimeout(() => {
@@ -119,7 +118,7 @@ export function takeoverSelectionViewDomain(): void {
     // 全选
     if (s.selected.length === s.allData.length) {
       s.lastSelectedIndex = s.selected.length - 1;
-      w.$(".box").addClass("selected");
+      addClass(".box", "selected");
     }
     else {
       selectItemsView(s.selected);

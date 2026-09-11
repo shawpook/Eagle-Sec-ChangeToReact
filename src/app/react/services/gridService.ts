@@ -17,6 +17,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
 import { getOffsetScrollbarFn, machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCheckListItemsLessThanContainer, machineryRelayout, machineryScrollToCurrentItem, machinerySmartZoom, machineryUpdateZoomRatio } from '../core/dataMachinery';
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
+import { q, widthOf, heightOf, addClass, removeClass, setAttr } from '../utils/domQuery';
 
 let saveListHeightTimeout: any = null;
 
@@ -54,11 +55,11 @@ export function gridAdjustLayoutWidth(s: any, increases: any): void {
 
   increases = increases || 0;
   var height;
-  s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
-  s.boxContianerHeight = w.$("#box-container").height() || s.boxContianerHeight;
+  s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+  s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
   if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
     if (!w.ig._layout._columnLength) return;
-    var containerWidth = w.$("#box-container").width() || s.boxContianerWidth;
+    var containerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
     containerWidth = containerWidth - 16 - 10 - 6;
     var currentColumn = w.ig._layout._columnLength;
     var newColumn = (currentColumn + increases) || 1;
@@ -86,7 +87,7 @@ export function gridAdjustLayoutWidth(s: any, increases: any): void {
   if (!height) height = s.imageSize.height;
   if (Number.isFinite(height) && height > 0) {
     s.lastImageHeight = s.imageSize.height;
-    w.$("#box-container").attr("box-size", height);
+    setAttr("#box-container", "box-size", height);
     var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
     if (margin === Infinity) margin = 10;
     machineryRelayout(s, margin);
@@ -114,15 +115,12 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
   } else {
     if (s.VIDEO_TYPES[s.current.ext]) {
       // 如果是視頻格式，撐滿畫面
-      var mpvPlayer = w.$(".detail-wrap mpv-video")[0];
+      var mpvPlayer = q(".detail-wrap mpv-video") as any;
       if (mpvPlayer) {
         mpvPlayer.scaleMode = 'fit';
       }
       else {
-        var $video = w.$(".detail-wrap video");
-        if ($video.length > 0) {
-          $video.removeClass("fit");
-        }
+        removeClass(".detail-wrap video", "fit");
       }
       return;
     }
@@ -134,9 +132,9 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
     s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
 
     if (!noAnimation) {
-      w.$("#detail-container").addClass("zooming");
+      addClass("#detail-container", "zooming");
       setTimeout(function () {
-        w.$("#detail-container").removeClass("zooming");
+        removeClass("#detail-container", "zooming");
       }, 300);
     }
 
@@ -194,46 +192,45 @@ export function zoomOut(event: any): void {
    initMenu 仍经 scope 解析；forceLayout 参数原实现未消费，逐字保留签名） */
 export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
   const w = window as any;
-  var $container = w.$("#box-container");
   var allLayout = "grid-layout justified-layout list-layout";
   switch (layout) {
     case "GridLayout":
       window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
+        removeClass("body", "is-square-layout is-list-layout");
       });
       s.layout = "GridLayout";
-      $container.removeClass(allLayout).addClass("grid-layout");
+      removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
       machineryRelayout(s);
       // $scope.adjustLayoutWidth(0);
       w.electronLog && w.electronLog.info("[app] Layout: Waterfall");
       break;
     case "SquareLayout":
       window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
-        w.$("body").addClass("is-square-layout");
+        removeClass("body", "is-square-layout is-list-layout");
+        addClass("body", "is-square-layout");
       });
       s.layout = "SquareLayout";
-      $container.removeClass(allLayout).addClass("grid-layout");
+      removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
       machineryRelayout(s);
       // $scope.adjustLayoutWidth(0);
       w.electronLog && w.electronLog.info("[app] Layout: Grid");
       break;
     case "ListLayout":
       window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
-        w.$("body").addClass("is-list-layout");
+        removeClass("body", "is-square-layout is-list-layout");
+        addClass("body", "is-list-layout");
       });
       s.layout = "ListLayout";
-      $container.removeClass(allLayout).addClass("list-layout");
+      removeClass("#box-container", allLayout); addClass("#box-container", "list-layout");
       machineryRelayout(s);
       w.electronLog && w.electronLog.info("[app] Layout: List");
       break;
     default:
       window.requestAnimationFrame(() => {
-        w.$("body").removeClass("is-square-layout is-list-layout");
+        removeClass("body", "is-square-layout is-list-layout");
       });
       s.layout = "JustifiedLayout";
-      $container.removeClass(allLayout).addClass("justified-layout");
+      removeClass("#box-container", allLayout); addClass("#box-container", "justified-layout");
       machineryRelayout(s);
       w.electronLog && w.electronLog.info("[app] Layout: Justified");
   }

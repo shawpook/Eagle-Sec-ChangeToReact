@@ -66,7 +66,8 @@ import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTim
 import colorConvert from 'color-convert';
 import DeltaE from 'delta-e';
 import { debounce, throttle } from '../utils/func';
-import { get, isString, max, uniq, unescape } from '../utils/lang';
+import { get, isString, max, uniq, unescape, isNumeric } from '../utils/lang';
+import { q, qa, qaVisible, widthOf, heightOf, addClass, removeClass, setAttr, cssSet, hide, show, setHtml, hasClass, setHtmlEl, textEl, triggerEl, selectText, onEl, offEl, trigger, clickEl, focusEl, blurEl, selectEl, scrollTopValue, setScrollTop, setScrollLeft, offsetOf, offsetTopOf, outerHeightOf } from '../utils/domQuery';
 import { syncFolderLock } from '../store/lockState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncListFromScope } from '../store/listState';
@@ -969,7 +970,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
     w.resetNgGridLayoutData(s.allData, startCursor || s.startCursor);
   }
   machineryUpdateItemsView(s, s.selected);
-  w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
+  trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
   if (w.HoverPreview.isShow) {
     w.HoverPreview.hide();
   }
@@ -1084,7 +1085,7 @@ export function machineryUpdateSidebarList(s: any): void {
 /* updateItemsView（bundle 35065-35072 逐字；updateItemView 仍由 bundle 承载经 scope 解析） */
 export function machineryUpdateItemsView(s: any, items: any[]): void {
   const w = window as any;
-  w.$(".box.selected").removeClass("selected");
+  removeClass(".box.selected", "selected");
   for (var i = items.length - 1; i >= 0; i--) {
     var item = items[i];
     machineryUpdateItemView(s, item);
@@ -1130,10 +1131,10 @@ function machineryAutoResizeTagFilter(s: any): void {
   var height = tagsLength * 24 + 54;
   if (s.containerSize && s.containerSize.tagFilter) {
     if (s.containerSize.tagFilter > height) {
-      w.$(".tags-filter").height(height);
+      cssSet(".tags-filter", { height: height });
     }
     else {
-      w.$(".tags-filter").height(s.containerSize.tagFilter);
+      cssSet(".tags-filter", { height: s.containerSize.tagFilter });
     }
   }
 }
@@ -1161,13 +1162,13 @@ export function machineryReload(s: any): any {
 
     s.loadMoreDisable = false;
     s.lastImageHeight = s.imageSize.height;
-    s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
+    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
     machineryRebindRefresh(s);
     machineryRelayout(s);
     machineryUpdateSelection(s);
     machineryCalculateFilterCounts(s);
     machineryUpdateSubFolderWidth(s);
-    w.$("#box-container-scrollbar").trigger("UPDATE_BOX_SCROLLBAR");
+    trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
 
     machineryAutoResizeTagFilter(s);
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
@@ -1175,16 +1176,16 @@ export function machineryReload(s: any): any {
     }
     s.listDone = true;
 
-    if (w.$("#box-container").scrollTop() !== 0) {
-      w.$("#box-container").scrollTop(0);
+    if (scrollTopValue("#box-container") !== 0) {
+      setScrollTop("#box-container", 0);
     }
-    w.$(".box.processed").removeClass("processed");
+    removeClass(".box.processed", "processed");
     setTimeout(function () {
-      w.$("#image-drop-area").show();
-      w.$("#box-container").trigger("scroll");
+      show("#image-drop-area");
+      trigger("#box-container", "scroll");
     }, 100);
     setTimeout(function () {
-      w.$("#box-container").trigger("scroll");
+      trigger("#box-container", "scroll");
     }, 500);
   }, 100, true);
 }
@@ -1276,20 +1277,20 @@ export function machineryUpdateItemView(s: any, item: any): void {
   if (!item) return;
   try {
     var id = item.id;
-    var $element = w.$("#box-" + id);
-    if ($element.length === 0) return;
-    var $name = $element.find(".name span");
-    var $iconName = $element.find(".ext-icon-name");
-    var $metas = $element.find(".metas");
-    var thumbnail = $element.find(".thumbnail");
-    var $propTags = $element.find(".prop.tags");
-    var $propResolution = $element.find(".prop.resolution");
-    var $propRating = $element.find(".prop.rating");
-    var $propSize = $element.find(".prop.size");
+    var $element = q("#box-" + id) as HTMLElement | null;
+    if (!$element) return;
+    const findEl = (sel: string) => $element!.querySelector(sel) as HTMLElement | null;
+    var $name = findEl(".name span");
+    var $iconName = findEl(".ext-icon-name");
+    var $metas = findEl(".metas");
+    var $propTags = findEl(".prop.tags");
+    var $propResolution = findEl(".prop.resolution");
+    var $propRating = findEl(".prop.rating");
+    var $propSize = findEl(".prop.size");
     var isSelected = s.selectedMappings[id];
     var tags = item.tags || [];
     var isTagged = tags.length > 0;
-    var $annotationCount = $element.find(".annotation-count");
+    var $annotationCount = findEl(".annotation-count");
     var ratingStrings: any = {
       "undefined": "★★★★★",
       "0": "★★★★★",
@@ -1309,35 +1310,37 @@ export function machineryUpdateItemView(s: any, item: any): void {
       tagsFormated = tags2.join("");
     }
 
-    $element.attr("data-height", item.height);
-    $element.attr("data-width", item.width);
+    $element.setAttribute("data-height", item.height);
+    $element.setAttribute("data-width", item.width);
 
-    if ($name.text() !== item.name) {
+    if (textEl($name) !== item.name) {
       if (!s.modifiedMappings[item.id]) s.modifiedMappings[item.id] = 0;
       s.modifiedMappings[item.id]++;
       let src = w.FileUrlHelper.getLastestThumbnailUrl(item);
-      var $img = $element.find(".thumbnail img");
-      $img.attr("lazysrc", "");
-      $img.attr("lsrc", src);
-      $img.attr("raw", src);
+      var $img = findEl(".thumbnail img");
+      if ($img) {
+        $img.setAttribute("lazysrc", "");
+        $img.setAttribute("lsrc", src);
+        $img.setAttribute("raw", src);
+      }
       // 確保不是在編輯模式
-      if (!$name.parent().hasClass('editable')) {
-        $name.text(item.name);
-        $iconName.text(item.name);
+      if (!$name?.parentElement?.classList.contains('editable')) {
+        if ($name) $name.textContent = item.name;
+        if ($iconName) $iconName.textContent = item.name;
       }
     }
 
     if (item.comments && item.comments.length > 0) {
-      $element.addClass("has-annotation");
-      $annotationCount.text(item.comments.length);
+      $element.classList.add("has-annotation");
+      if ($annotationCount) $annotationCount.textContent = String(item.comments.length);
     }
     else {
-      $element.removeClass("has-annotation");
+      $element.classList.remove("has-annotation");
     }
 
-    $element.removeClass("bg-light bg-dark bg-gray bg-grid");
+    $element.classList.remove("bg-light", "bg-dark", "bg-gray", "bg-grid");
     if (item.background) {
-      $element.addClass(`bg-${item.background}`);
+      $element.classList.add(`bg-${item.background}`);
     }
 
     var metas = '';
@@ -1377,7 +1380,7 @@ export function machineryUpdateItemView(s: any, item: any): void {
           paragraphs.forEach(function (paragraph: any) {
             paragraphsHTML += `<p>${paragraph.trim()}</p>`;
           });
-          w.$("#box-" + item.id + " .txt-content div").html(paragraphsHTML);
+          setHtml("#box-" + item.id + " .txt-content div", paragraphsHTML);
         }
         break;
       case 'FILESIZE':
@@ -1401,62 +1404,63 @@ export function machineryUpdateItemView(s: any, item: any): void {
         metas = `<span class="small star">${ratingStrings[item.star]}</span>`;
         break;
     }
-    $metas.html(metas);
+    if ($metas) $metas.innerHTML = metas;
 
-    $propTags.html(tagsFormated);
+    if ($propTags) $propTags.innerHTML = tagsFormated;
     if (item.width) {
-      $propResolution.html(`${item.width} x ${item.height}`);
+      if ($propResolution) $propResolution.innerHTML = `${item.width} x ${item.height}`;
     }
     else {
-      $propResolution.html(`-`);
+      if ($propResolution) $propResolution.innerHTML = `-`;
     }
-    $propRating.html(`<span class="small star">${ratingStrings[item.star]}</span>`);
-    $propSize.html(`${w.fileSize(item.size, 1)}`);
+    if ($propRating) $propRating.innerHTML = `<span class="small star">${ratingStrings[item.star]}</span>`;
+    if ($propSize) $propSize.innerHTML = `${w.fileSize(item.size, 1)}`;
 
     if (isSelected) {
-      $element.addClass("selected");
+      $element.classList.add("selected");
     }
     else {
-      $element.removeClass("selected");
+      $element.classList.remove("selected");
     }
 
     if (isTagged) {
-      $element.addClass("tagged");
+      $element.classList.add("tagged");
     }
     else {
-      $element.removeClass("tagged");
+      $element.classList.remove("tagged");
     }
 
-    $element.find("img").removeClass("r2 r3 r4 r5 r6 r7 r8");
+    const imgs = Array.from($element.querySelectorAll("img"));
+    imgs.forEach((im) => im.classList.remove("r2", "r3", "r4", "r5", "r6", "r7", "r8"));
     if (item.orientation && !item.noThumbnail) {
       if (item.orientation === 8) {
-        $element.find("img").addClass(" r8 ");
+        imgs.forEach((im) => im.classList.add("r8"));
       }
       else if (item.orientation === 7) {
-        $element.find("img").addClass(" r7 ");
+        imgs.forEach((im) => im.classList.add("r7"));
       }
       else if (item.orientation === 6) {
-        $element.find("img").addClass(" r6 ");
+        imgs.forEach((im) => im.classList.add("r6"));
       }
       else if (item.orientation === 5) {
-        $element.find("img").addClass(" r5 ");
+        imgs.forEach((im) => im.classList.add("r5"));
       }
       else if (item.orientation === 4) {
-        $element.find("img").addClass(" r4 ");
+        imgs.forEach((im) => im.classList.add("r4"));
       }
       else if (item.orientation === 3) {
-        $element.find("img").addClass(" r3 ");
+        imgs.forEach((im) => im.classList.add("r3"));
       }
       else if (item.orientation === 2) {
-        $element.find("img").addClass(" r2 ");
+        imgs.forEach((im) => im.classList.add("r2"));
       }
 
       if (item.orientation > 4) {
         if (item.width < item.height) {
-          $element.find("img").css("min-width", `${item.height / item.width * 100}%`);
+          imgs.forEach((im) => { (im as HTMLElement).style.minWidth = `${item.height / item.width * 100}%`; });
         }
         else {
-          $element.find("img").css("width", `${item.height / item.width * 100}%`);
+          imgs.forEach((im) => { (im as HTMLElement).style.width = `${item.height / item.width * 100}%`; });
         }
       }
     }
@@ -1469,19 +1473,19 @@ export function machineryUpdateItemView(s: any, item: any): void {
       var deactivatedLabel = w.i18n.__("Context.Image.Font.Deactivate");
       // 添加正在启用、正在停用状态
       if (item.activating || item.deactivating) {
-        $element.addClass("activating");
+        $element.classList.add("activating");
       }
       else if (fs && fs.existsSync(fontPath)) {
         w.installedFonts[`${postScriptName}_.${item.ext}`] = true;
-        $element.removeClass("activating");
-        $element.addClass("activated");
-        $element.find(".activate-btn").attr("title", deactivatedLabel);
+        $element.classList.remove("activating");
+        $element.classList.add("activated");
+        findEl(".activate-btn")?.setAttribute("title", deactivatedLabel);
       }
       else {
         w.installedFonts[`${postScriptName}_.${item.ext}`] = false;
-        $element.removeClass("activating");
-        $element.removeClass("activated");
-        $element.find(".activate-btn").attr("title", activatedLabel);
+        $element.classList.remove("activating");
+        $element.classList.remove("activated");
+        findEl(".activate-btn")?.setAttribute("title", activatedLabel);
       }
     }
   }
@@ -1514,13 +1518,13 @@ export function machineryCheckTouchIDSupport(s: any): void {
 export function machineryRelayout(s: any, margin: any): void {
   const w = window as any;
   if (!s.isItemBindCalculated) return;
-  var $container = w.$("#box-container");
+  var $container = q("#box-container");
   var currentImageSize = s.imageSize.height;
-  w.$("#box-container").attr("box-size", Math.floor(currentImageSize / 5) * 5);
+  setAttr("#box-container", "box-size", Math.floor(currentImageSize / 5) * 5);
   const ig = w.ig;
   if (!ig) return;
   if (s.layout === "JustifiedLayout") {
-    var cw = $container.width();
+    var cw = widthOf($container);
     ig.setLayout('JustifiedLayout', {
       minSize: currentImageSize * 1 - 10,
       maxSize: currentImageSize * 1 + 10,
@@ -1834,7 +1838,7 @@ function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
 
   // 档案大小筛选
   // 最小值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.file.min)) {
+  if (isNumeric(w.eagle.filter.filterRules.file.min)) {
     var unit = 1024;
     if (w.eagle.filter.filterRules.file.unit == 'mb') {
       unit = 1024 * 1024;
@@ -1844,7 +1848,7 @@ function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
     });
   }
   // 最大值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.file.max)) {
+  if (isNumeric(w.eagle.filter.filterRules.file.max)) {
     var unit2 = 1024;
     if (w.eagle.filter.filterRules.file.unit == 'mb') {
       unit2 = 1024 * 1024;
@@ -1856,7 +1860,7 @@ function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
 
   // 视频、音频长度筛选
   // 最小值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.duration.min)) {
+  if (isNumeric(w.eagle.filter.filterRules.duration.min)) {
     var unit3 = 1;
     if (w.eagle.filter.filterRules.duration.unit == 'h') {
       unit3 = 60 * 60;
@@ -1869,7 +1873,7 @@ function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
     });
   }
   // 最大值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.duration.max)) {
+  if (isNumeric(w.eagle.filter.filterRules.duration.max)) {
     var unit4 = 1;
     if (w.eagle.filter.filterRules.duration.unit == 'h') {
       unit4 = 60 * 60;
@@ -1883,14 +1887,14 @@ function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
   }
 
   // BPM 最小值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.bpm.min)) {
+  if (isNumeric(w.eagle.filter.filterRules.bpm.min)) {
     data = data.filter(function (image: any) {
       if (!image.bpm) return false;
       return image.bpm >= parseInt(w.eagle.filter.filterRules.bpm.min);
     });
   }
   // BPM 最大值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.bpm.max)) {
+  if (isNumeric(w.eagle.filter.filterRules.bpm.max)) {
     data = data.filter(function (image: any) {
       if (!image.bpm) return false;
       return image.bpm <= parseInt(w.eagle.filter.filterRules.bpm.max);
@@ -1899,25 +1903,25 @@ function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
 
   // 图片大小筛选
   // 宽度最小值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.minW)) {
+  if (isNumeric(w.eagle.filter.filterRules.resolution.minW)) {
     data = data.filter(function (image: any) {
       return image.width >= parseInt(w.eagle.filter.filterRules.resolution.minW);
     });
   }
   // 宽度最大值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.maxW)) {
+  if (isNumeric(w.eagle.filter.filterRules.resolution.maxW)) {
     data = data.filter(function (image: any) {
       return image.width <= parseInt(w.eagle.filter.filterRules.resolution.maxW);
     });
   }
   // 高度最小值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.minH)) {
+  if (isNumeric(w.eagle.filter.filterRules.resolution.minH)) {
     data = data.filter(function (image: any) {
       return image.height >= parseInt(w.eagle.filter.filterRules.resolution.minH);
     });
   }
   // 高度最大值
-  if (w.$.isNumeric(w.eagle.filter.filterRules.resolution.maxH)) {
+  if (isNumeric(w.eagle.filter.filterRules.resolution.maxH)) {
     data = data.filter(function (image: any) {
       return image.height <= parseInt(w.eagle.filter.filterRules.resolution.maxH);
     });
@@ -3185,7 +3189,7 @@ export function machineryResetPage(s: any): void {
     resetFilter();
     s.keyword = undefined;
   }
-  w.$("#image-drop-area").hide();
+  hide("#image-drop-area");
 
   if (s.duplicateTarget) {
     s.duplicateTarget = undefined;
@@ -3255,7 +3259,7 @@ export function machineryUpdateListHeight(s: any, height: any): void {
   const w = window as any;
   clearTimeout(updateListHeightTimeout);
   updateListHeightTimeout = setTimeout(function () {
-    w.$("#box-container").attr("box-size", height);
+    setAttr("#box-container", "box-size", height);
   }, 50);
 }
 
@@ -3281,8 +3285,8 @@ export function buildScrollbarSaver(): any {
       const s: any = getBodyScope();
       if (w.eagle.filter.filterBadge > 0) return;
       if (s.keyword) return;
-      if (w.$(".box").length + w.$(".sub-folder").length === 0) return;
-      var scrollTop = w.$("#box-container").scrollTop();
+      if (qa(".box").length + qa(".sub-folder").length === 0) return;
+      var scrollTop = scrollTopValue("#box-container");
       var obj: any = {};
       var id = ScrollbarSaver.getId();
 
@@ -3292,14 +3296,14 @@ export function buildScrollbarSaver(): any {
       }
 
       var startCursor = 0;
-      var offsetTop = (w.$(".box-list")[0] && w.$(".box-list")[0].offsetTop) || 0;
+      var offsetTop = (q(".box-list")?.offsetTop) || 0;
       var scrollOffset;
-      if (w.$(".sub-folder").length > 0 && s.startCursor === 0) {
-        scrollOffset = w.$("#box-container").scrollTop();
+      if (qa(".sub-folder").length > 0 && s.startCursor === 0) {
+        scrollOffset = scrollTopValue("#box-container");
       }
       else {
-        if (w.$(".box").length === 0) return;
-        scrollOffset = Math.abs(w.$(".box").eq(0).offset().top - 44) + offsetTop;
+        if (qa(".box").length === 0) return;
+        scrollOffset = Math.abs(offsetTopOf(q(".box")) - 44) + offsetTop;
       }
       var its = w.ig.getItems();
       if (its[0]) { startCursor = its[0].groupKey - 1000000; }
@@ -3319,15 +3323,15 @@ export function buildScrollbarSaver(): any {
       if (!id) return;
 
       var obj = ScrollbarSaver.positionMapping[id];
-      var $boxContainer = w.$("#box-container");
+      var $boxContainer = q("#box-container");
       if (obj) {
         s.startCursor = obj.cursor || 0;
         var offset = obj.offset || 0;
         var times = [20, 300];
         for (var i = times[0]; i < times[1]; i += 20) {
           setTimeout(function () {
-            if (ScrollbarSaver.getId() !== id || $boxContainer.scrollTop() !== offset) {
-              $boxContainer.scrollTop(offset);
+            if (ScrollbarSaver.getId() !== id || ($boxContainer?.scrollTop || 0) !== offset) {
+              if ($boxContainer) $boxContainer.scrollTop = offset;
             }
           }, i);
         }
@@ -3383,7 +3387,7 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
-    w.$("#sidebar-item-container").scrollTop(0);
+    setScrollTop("#sidebar-item-container", 0);
     s.reload();
     if (callback) {
       callback();
@@ -3404,7 +3408,7 @@ let zoomInitTimeout: any = null;
 export function machineryEnterDetailMode(s: any, $event: any, image: any): void {
   const w = window as any;
   const $timeout = getTimeout();
-  w.$("#detail-container").css("opacity", 0);
+  cssSet("#detail-container", { opacity: 0 });
 
   var duration = 100;
   if (s.isInlineMode) {
@@ -3456,7 +3460,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
         zoom_MIN: 5,
         on_IMAGE_LOAD: function () {
           $timeout(function () {
-            w.$(window).trigger("orientationchange");
+            window.dispatchEvent(new Event("orientationchange"));
             s.showDetailImage = true;
             syncDetailFromScope();
             s.smoothZoomDone = true;
@@ -3466,14 +3470,14 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
             }
             detailZoom()?.updateNavigator( s.current);
 
-            w.$("#detail-container").css("opacity", 1);
-            w.$(".smooth_zoom_preloader").show();
+            cssSet("#detail-container", { opacity: 1 });
+            show(".smooth_zoom_preloader");
 
             // 如果用户没有设置过 mousewheel 偏好
             if (!s.$root.preferences.habits.scrollBehaviorTour) {
-              w.$(".smooth_zoom_preloader").one("mousewheel.tour", function () {
+              q(".smooth_zoom_preloader")?.addEventListener("wheel", function () {
                 openMousewheelPreferenceWindowChannel.emit();
-              });
+              }, { once: true });
             }
           }, 100);
         }
@@ -3482,11 +3486,11 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
       s.smoothZoomDone = true;
       syncDetailFromScope();
       detailZoom()?.updateNavigator( s.current);
-      w.$(window).trigger("orientationchange");
+      window.dispatchEvent(new Event("orientationchange"));
       if (!machineryLastZoom(s)) {
         machineryZoom(s, image);
       }
-      w.$("#detail-container").css("opacity", 1);
+      cssSet("#detail-container", { opacity: 1 });
       setTimeout(function () {
         machineryPreloadImage(s, "next");
       }, 200);
@@ -3527,8 +3531,8 @@ export function machineryLeaveDetailMode(s: any): void {
 
     setTimeout(function () {
       if (s.isDetailMode) return;
-      w.$(".content-panel.detail-mode").removeClass("inline-mode open");
-      w.$(".smooth_zoom_preloader").scrollLeft(0);
+      removeClass(".content-panel.detail-mode", "inline-mode open");
+      setScrollLeft(".smooth_zoom_preloader", 0);
     }, 50);
 
     s.isInlineMode = false;
@@ -3867,11 +3871,13 @@ function cgRestack(): void {
   let b = CG_START_TOP;
   for (let c = cgStack.length - 1; c >= 0; c--) {
     const d = 10;
-    const e = cgStack[c];
-    const h = e[0].offsetHeight;
+    const e: any = cgStack[c];
+    const h = e.offsetHeight;
     let i = b + h + d;
-    if (e.attr('data-closing')) i += 20; else b += h + CG_SPACING;
-    e.css('top', i + 'px').css('margin-top', '-' + (h + d) + 'px').css('visibility', 'visible');
+    if (e.getAttribute('data-closing')) i += 20; else b += h + CG_SPACING;
+    e.style.top = i + 'px';
+    e.style.marginTop = '-' + (h + d) + 'px';
+    e.style.visibility = 'visible';
   }
 }
 
@@ -3904,21 +3910,28 @@ export function machineryNotify(s: any, params: any, restoreCallbackk: any): voi
     const position = params.position || 'center';
     const useTemplate = true; // $rootScope.notify 恒传 messageTemplate
 
-    const element = w.$(cgBuildTemplate(position, classes, null, message, messageTemplate, () => { }));
+    const holder = document.createElement('div');
+    holder.innerHTML = cgBuildTemplate(position, classes, null, message, messageTemplate, () => { });
+    const element: any = holder.firstElementChild;
     // undo 锚点：ng-click="closeAll();undo();" 等价委托
-    element.on('click', '[data-cg-undo]', function () {
+    element.addEventListener('click', function (ev: any) {
+      const t = ev.target as Element;
+      if (!t || !t.closest('[data-cg-undo]')) return;
       cgNotifyServiceCloseAll();
       const undo = s.$root.undo;
       if (typeof undo === 'function') undo();
     });
     // 关闭按钮：ng-click="$close()" 等价委托
-    element.on('click', '.cg-notify-close', function () {
-      element.css('opacity', 0).attr('data-closing', 'true');
+    element.addEventListener('click', function (ev: any) {
+      const t = ev.target as Element;
+      if (!t || !t.closest('.cg-notify-close')) return;
+      element.style.opacity = 0;
+      element.setAttribute('data-closing', 'true');
       cgRestack();
     });
     // transitionend（opacity）→ remove + 出栈 + restack（bundle 16724 同语义）
-    element.bind('webkitTransitionEnd oTransitionEnd otransitionend transitionend msTransitionEnd', function (a: any) {
-      if (('opacity' === a.propertyName || 0 === a.currentTarget.style.opacity || (a.originalEvent && 'opacity' === a.originalEvent.propertyName))) {
+    element.addEventListener('transitionend', function (a: any) {
+      if (a.propertyName === 'opacity' || element.style.opacity === '0' || (a.originalEvent && 'opacity' === a.originalEvent.propertyName)) {
         element.remove();
         const mi = cgStack.indexOf(element);
         if (mi > -1) cgStack.splice(mi, 1);
@@ -3926,16 +3939,22 @@ export function machineryNotify(s: any, params: any, restoreCallbackk: any): voi
       }
     });
     // messageTemplate 注入 .cg-notify-message-template
-    element.find('.cg-notify-message-template').append(w.$('<span>').html(messageTemplate).contents());
-    w.$(document.body).append(element);
+    const tpl = element.querySelector('.cg-notify-message-template');
+    if (tpl) {
+      const span = document.createElement('span');
+      span.innerHTML = messageTemplate;
+      while (span.firstChild) tpl.appendChild(span.firstChild);
+    }
+    document.body.appendChild(element);
     cgStack.push(element);
     if (position === 'center') {
       $timeout(function () {
-        element.css('margin-left', '-' + element[0].offsetWidth / 2 + 'px');
+        element.style.marginLeft = '-' + element.offsetWidth / 2 + 'px';
       });
     }
     const closeSelf = function () {
-      element.css('opacity', 0).attr('data-closing', 'true');
+      element.style.opacity = 0;
+      element.setAttribute('data-closing', 'true');
       cgRestack();
     };
     $timeout(function () { cgRestack(); });
@@ -3960,7 +3979,7 @@ export function machineryNotify(s: any, params: any, restoreCallbackk: any): voi
 /* cgNotify closeAll（bundle 16724 o.closeAll 逐字：全栈 opacity 0） */
 function cgNotifyServiceCloseAll(): void {
   for (let a = cgStack.length - 1; a >= 0; a--) {
-    cgStack[a].css('opacity', 0);
+    cgStack[a].style.opacity = 0;
   }
 }
 
@@ -4016,20 +4035,20 @@ export function machineryZoomActual(s: any, event: any): void {
     machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
 
     // 如果是視頻格式，尽可能使用视频原来尺寸
-    var mpvPlayer = w.$(".detail-wrap mpv-video")[0];
+    var mpvPlayer = q(".detail-wrap mpv-video") as any;
     if (mpvPlayer) {
       mpvPlayer.scaleMode = 'original';
     }
     else {
-      var $video = w.$(".detail-wrap video");
-      if ($video.length > 0) {
-        var vW = $video[0].videoWidth;
-        var vH = $video[0].videoHeight;
-        $video.css({
+      var $videos = qa(".detail-wrap video") as HTMLVideoElement[];
+      if ($videos.length > 0) {
+        var vW = $videos[0].videoWidth;
+        var vH = $videos[0].videoHeight;
+        cssSet(".detail-wrap video", {
           'max-width': `${vW}px !important`,
           'max-height': `${vH}px !important`,
         });
-        $video.addClass("fit");
+        addClass(".detail-wrap video", "fit");
       }
     }
   }
@@ -4074,16 +4093,16 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
   event && event.preventDefault && event.preventDefault();
 
   if (hasTransition) {
-    w.$("#detail-container").addClass("zooming");
+    addClass("#detail-container", "zooming");
     setTimeout(function () {
-      w.$("#detail-container").removeClass("zooming");
+      removeClass("#detail-container", "zooming");
     }, 300);
   }
 
   var current = s.current;
   var ratio = s.imageSize.zoomRatio || 100;
   var lastRatio = ratio;
-  var $container = w.$(".content-panel");
+  var $container = q(".content-panel");
   var toolbarHeight = 40;
   var containerWidth;
   var containerHeight;
@@ -4091,18 +4110,18 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
 
   if (s.isSlideshowMode) {
     toolbarHeight = 0;
-    containerWidth = w.$(window).width();
-    containerHeight = w.$(window).height() - toolbarHeight;
+    containerWidth = window.innerWidth;
+    containerHeight = window.innerHeight - toolbarHeight;
   }
   else if (s.isInlineMode) {
     toolbarHeight = 96;
-    containerWidth = w.$(window).width();
-    containerHeight = $container.height() - toolbarHeight;
+    containerWidth = window.innerWidth;
+    containerHeight = heightOf($container) - toolbarHeight;
   }
   else {
     toolbarHeight = 48;
-    containerWidth = $container.width();
-    containerHeight = $container.height() - toolbarHeight;
+    containerWidth = widthOf($container);
+    containerHeight = heightOf($container) - toolbarHeight;
   }
 
   var a = parseInt((containerHeight) / current.height * 100 as any);
@@ -4112,14 +4131,14 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
 
   if (!current) return;
 
-  w.$("#detail-image").css({
+  cssSet("#detail-image", {
     "transform": `rotate(0deg)`,
     "transition": "none"
   });
 
-  var $detailContainer = w.$("#detail-container");
-  var width = $detailContainer.width();
-  var height = current && current.height || $detailContainer.height();
+  var $detailContainer = q("#detail-container");
+  var width = widthOf($detailContainer);
+  var height = current && current.height || heightOf($detailContainer);
 
   offsetY = offsetY || 0;
 
@@ -4145,28 +4164,28 @@ export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay:
   if (!hasAnimation) duration = 1;
   setTimeout(() => {
     if (w.eagle.filter.isOpen) {
-      var $filterBar = w.$("#filter-toolbar");
-      var height = $filterBar.outerHeight();
-      w.$("#box-container").css({
+      var $filterBar = q("#filter-toolbar");
+      var height = outerHeightOf($filterBar);
+      cssSet("#box-container", {
         "padding-bottom": height,
         "height": `calc(100% - ${48 + height}px)`
       });
-      w.$("#box-container-scrollbar").css({
+      cssSet("#box-container-scrollbar", {
         "top": 48 + height,
       });
-      w.$("#box-container").css({
+      cssSet("#box-container", {
         "margin-top": height,
       });
     }
     else {
-      w.$("#box-container").css({
+      cssSet("#box-container", {
         "padding-bottom": 0,
         "height": `calc(100% - 48px)`
       });
-      w.$("#box-container-scrollbar").css({
+      cssSet("#box-container-scrollbar", {
         "top": 48,
       });
-      w.$("#box-container").css({
+      cssSet("#box-container", {
         "margin-top": 0,
       });
     }
@@ -4268,8 +4287,8 @@ export function machinerySelectNext(s: any, event: any): void {
   }
 
   if (!s.allData[end]) {
-    w.$("#is-last-item").show();
-    setTimeout(() => { w.$("#is-last-item").hide(); }, 500);
+    show("#is-last-item");
+    setTimeout(() => { hide("#is-last-item"); }, 500);
     return;
   }
   else {
@@ -4325,8 +4344,8 @@ export function machinerySelectPrev(s: any, event: any): void {
   var end = selection.end + 1;
 
   if (start === 0) {
-    w.$("#is-first-item").show();
-    setTimeout(() => { w.$("#is-first-item").hide(); }, 500);
+    show("#is-first-item");
+    setTimeout(() => { hide("#is-first-item"); }, 500);
     return;
   }
   if (s.allData.length == 0) { return; }
@@ -4721,7 +4740,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
    var（105501）/process/swal 容器经 window） */
 export function machineryQuicklook(s: any, event: any): void {
   const w = window as any;
-  if (w.$(".swal2-container").length > 0) {
+  if (qa(".swal2-container").length > 0) {
     return;
   }
   if (s.isCropMode) return;
@@ -4740,9 +4759,9 @@ export function machineryQuicklook(s: any, event: any): void {
     // 如果用户设定是预览
     if (s.$root.preferences.habits.keyspace === "preview") {
       if (s.selected.length > 0) {
-        w.$(".content-panel.detail-mode").addClass("inline-mode");
+        addClass(".content-panel.detail-mode", "inline-mode");
         setTimeout(function () {
-          w.$(".content-panel.detail-mode").addClass("open");
+          addClass(".content-panel.detail-mode", "open");
         }, 30);
         machineryToggleDetailMode(s, event, true);
         w.analytics.event('QuickLook', 'Open');
@@ -4840,7 +4859,7 @@ export function machineryKeyPHandler(s: any, event: any): void {
 export function machineryKeyLeftHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
-  if (w.$(".swal2-container").length > 0) return;
+  if (qa(".swal2-container").length > 0) return;
   if (s.$root.currentFocus == "content") {
     machinerySelectPrev(s, event);
   }
@@ -4889,7 +4908,7 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
 export function machineryKeyRightHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
-  if (w.$(".swal2-container").length > 0) return;
+  if (qa(".swal2-container").length > 0) return;
   if (s.$root.currentFocus == "content") {
     machinerySelectNext(s, event);
   }
@@ -5034,13 +5053,12 @@ export function machineryModShiftRightHandler(s: any, event: any): void {
    openPrevQuickAccess（35287-35302）/ openNextQuickAccess（35304-35341）/
    openPrevGroup（35704-35725）/ openNextGroup（35730-35752） */
 function machineryOpenPrevQuickAccess(s: any): void {
-  const w = window as any;
-  var $quickAccessItems = w.$(".sidebar-quick-access-item:visible");
-  var $current = w.$(".sidebar-quick-access-item.active");
-  var currentIndex = $quickAccessItems.index($current);
+  var $quickAccessItems = qaVisible(".sidebar-quick-access-item");
+  var $current = q(".sidebar-quick-access-item.active");
+  var currentIndex = $current ? $quickAccessItems.indexOf($current) : -1;
 
   if (currentIndex - 1 >= 0) {
-    $quickAccessItems.eq(currentIndex - 1).click();
+    $quickAccessItems[currentIndex - 1].click();
   }
   else {
     machineryOpenTrash(s);
@@ -5048,13 +5066,12 @@ function machineryOpenPrevQuickAccess(s: any): void {
 }
 
 function machineryOpenNextQuickAccess(s: any): void {
-  const w = window as any;
-  var $quickAccessItems = w.$(".sidebar-quick-access-item:visible");
-  var $current = w.$(".sidebar-quick-access-item.active");
-  var currentIndex = $quickAccessItems.index($current);
+  var $quickAccessItems = qaVisible(".sidebar-quick-access-item");
+  var $current = q(".sidebar-quick-access-item.active");
+  var currentIndex = $current ? $quickAccessItems.indexOf($current) : -1;
 
   if (currentIndex + 1 < $quickAccessItems.length) {
-    $quickAccessItems.eq(currentIndex + 1).click();
+    $quickAccessItems[currentIndex + 1].click();
   }
   else {
     var listItems = s.sidebarList;
@@ -5074,7 +5091,6 @@ function machineryOpenNextQuickAccess(s: any): void {
 }
 
 function machineryOpenPrevGroup(s: any): void {
-  const w = window as any;
   if (s.tagViewMode === "ALL") {
     return;
   }
@@ -5085,9 +5101,9 @@ function machineryOpenPrevGroup(s: any): void {
     machineryOpenUnfiledGroup(s);
   }
   else {
-    var $visibleGroups = w.$(".tag-manager-sidebar .group-item:visible");
-    var $currentGroup = w.$(".tag-manager-sidebar .group-item.active");
-    var currentIndex = $visibleGroups.index($currentGroup);
+    var $visibleGroups = qaVisible(".tag-manager-sidebar .group-item");
+    var $currentGroup = q(".tag-manager-sidebar .group-item.active");
+    var currentIndex = $currentGroup ? $visibleGroups.indexOf($currentGroup) : -1;
     if (currentIndex === 0) {
       machineryOpenStarredGroup(s);
     }
@@ -5101,7 +5117,6 @@ function machineryOpenPrevGroup(s: any): void {
 }
 
 function machineryOpenNextGroup(s: any): void {
-  const w = window as any;
   if (s.tagViewMode === "ALL") {
     machineryOpenUnfiledGroup(s);
   }
@@ -5114,9 +5129,9 @@ function machineryOpenNextGroup(s: any): void {
     }
   }
   else if (s.TagManager.groups.length > 0) {
-    var $visibleGroups = w.$(".tag-manager-sidebar .group-item:visible");
-    var $currentGroup = w.$(".tag-manager-sidebar .group-item.active");
-    var currentIndex = $visibleGroups.index($currentGroup);
+    var $visibleGroups = qaVisible(".tag-manager-sidebar .group-item");
+    var $currentGroup = q(".tag-manager-sidebar .group-item.active");
+    var currentIndex = $currentGroup ? $visibleGroups.indexOf($currentGroup) : -1;
     var next = s.TagManager.groups[currentIndex + 1];
     if (next) {
       machineryOpenTagGroup(s, next);
@@ -5133,7 +5148,7 @@ function machineryOpenNextGroup(s: any): void {
 export function machineryKeyUpHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
-  if (w.$(".swal2-container").length > 0) return;
+  if (qa(".swal2-container").length > 0) return;
   if (s.$root.currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
@@ -5255,7 +5270,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
 export function machineryKeyDownHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
-  if (w.$(".swal2-container").length > 0) return;
+  if (qa(".swal2-container").length > 0) return;
   if (s.$root.currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
@@ -5361,7 +5376,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         return item.vstype === 'quickAccess';
       });
       if (quickAccessItems.length > 0) {
-        w.$("#quick-access-" + quickAccessItems[0].id).click();
+        clickEl("#quick-access-" + quickAccessItems[0].id);
       }
       else if (smartFolders.length > 0 && smartFolders[0]) {
         openSmartFolder(smartFolders[0]);
@@ -5391,10 +5406,9 @@ export function machineryKeyDownHandler(s: any, event: any): void {
 
 /* getArroundBox（bundle 35091-35097 逐字，controller 闭包） */
 export function machineryGetArroundBox(s: any, index: any): any {
-  const w = window as any;
   var arroundStart = (index - 20 >= 0) ? index - 20 : 0;
   var arroundEnd = (index + 20 > s.allData.length) ? s.allData.length : index + 20;
-  var $arround = w.$(".box").slice(arroundStart, arroundEnd);
+  var $arround = qa(".box").slice(arroundStart, arroundEnd);
   return $arround;
 }
 
@@ -5429,13 +5443,13 @@ function machineryScrollbarTo(element: any, to: any, duration: any): void {
 export function machineryPageDownHandler(s: any): any {
   const w = window as any;
   return throttle(function (event: any) {
-    var offset = w.$(window).height() - 72;
+    var offset = window.innerHeight - 72;
     if (s.isDetailMode) {
       detailZoom()?.moveY( offset);
     }
     else {
-      var scrollTop = w.$(".box-container").scrollTop();
-      machineryScrollbarTo(w.$(".box-container")[0], scrollTop + offset * 1, 100);
+      var scrollTop = scrollTopValue(".box-container");
+      machineryScrollbarTo(q(".box-container"), scrollTop + offset * 1, 100);
     }
   }, 100, true);
 }
@@ -5444,15 +5458,15 @@ export function machineryPageDownHandler(s: any): any {
 export function machineryPageUpHandler(s: any): any {
   const w = window as any;
   return throttle(function (event: any) {
-    var offset = w.$(window).height() - 72;
+    var offset = window.innerHeight - 72;
     if (s.isDetailMode) {
       detailZoom()?.moveY( -offset);
     }
     else {
-      var scrollTop = w.$(".box-container").scrollTop();
-      machineryScrollbarTo(w.$(".box-container")[0], scrollTop - offset * 1, 100);
+      var scrollTop = scrollTopValue(".box-container");
+      machineryScrollbarTo(q(".box-container"), scrollTop - offset * 1, 100);
       setTimeout(function () {
-        if (s.startCursor !== 0 && w.$("#box-container").scrollTop() === 0) {
+        if (s.startCursor !== 0 && scrollTopValue("#box-container") === 0) {
           w.ig.trigger("prepend");
         }
       }, 200);
@@ -5465,22 +5479,22 @@ export function machineryPageUpHandler(s: any): any {
    selected 末盒为锚点；**autoScroll(target) 传元素非索引，bundle 怪癖逐字保留**；
    getItemByElement 经 scope 解析） */
 export function machinerySelectUp(s: any, event: any): void {
-  const w = window as any;
   event && event.preventDefault();
 
   var selection = machineryGetSelection(s);
   var start = selection.start;
-  var $box = w.$(".box.selected").eq(0);
-  var boxOffest = $box.offset();
+  var $box = q(".box.selected");
+  var boxOffest = offsetOf($box);
   if (!boxOffest) return;
   var boxCenterX = boxOffest.left;
   var boxCenterY = boxOffest.top;
-  var target;
+  var target: HTMLElement | undefined;
   var d = 100000;
 
-  w.$(".box").each(function (this: any, index: any) {
-    var $b = w.$(this);
-    var offset = $b.offset();
+  qa(".box").forEach(function (b) {
+    var $b = b;
+    var offset = offsetOf($b);
+    if (!offset) return;
     var bx = offset.left;
     var by = offset.top;
     if (s.layout === "GridLayout") {
@@ -5494,7 +5508,7 @@ export function machinerySelectUp(s: any, event: any): void {
     }
     else {
       var td2 = Math.sqrt((boxCenterY - by) * (boxCenterY - by) + (boxCenterX - bx) * (boxCenterX - bx));
-      if (boxOffest.top > offset.top && Math.abs(boxOffest.top - offset.top) > 20) {
+      if (boxCenterY > offset.top && Math.abs(boxCenterY - offset.top) > 20) {
         if (td2 < d) {
           d = td2;
           target = $b;
@@ -5503,7 +5517,7 @@ export function machinerySelectUp(s: any, event: any): void {
     }
   });
   if (target) {
-    var image = machineryGetItemByElement(s, target[0]);
+    var image = machineryGetItemByElement(s, target);
     s.selected = [image];
     syncInspectorFromScope();
     s.selectedFolderMappings = {};
@@ -5530,21 +5544,21 @@ export function machinerySelectUp(s: any, event: any): void {
 }
 
 export function machinerySelectDown(s: any, event: any): void {
-  const w = window as any;
   event && event.preventDefault();
   var selection = machineryGetSelection(s);
   var end = selection.end || 0;
   var $arround = machineryGetArroundBox(s, end);
-  var $box = w.$(".box.selected").last();
-  var boxOffest = $box.offset();
+  var $box = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
+  var boxOffest = offsetOf($box || null);
   if (!boxOffest) return;
   var boxCenterX = boxOffest.left;
   var boxCenterY = boxOffest.top;
-  var target;
+  var target: HTMLElement | undefined;
   var d = 100000;
-  w.$(".box").each(function (this: any, index: any) {
-    var $b = w.$(this);
-    var offset = $b.offset();
+  qa(".box").forEach(function (b) {
+    var $b = b;
+    var offset = offsetOf($b);
+    if (!offset) return;
     var bx = offset.left;
     var by = offset.top;
     if (s.layout === "GridLayout") {
@@ -5558,7 +5572,7 @@ export function machinerySelectDown(s: any, event: any): void {
     }
     else {
       var td2 = Math.sqrt((boxCenterY - by) * (boxCenterY - by) + (boxCenterX - bx) * (boxCenterX - bx));
-      if (boxOffest.top < offset.top && Math.abs(boxOffest.top - offset.top) > 20) {
+      if (boxCenterY < offset.top && Math.abs(boxCenterY - offset.top) > 20) {
         if (td2 < d) {
           d = td2;
           target = $b;
@@ -5567,7 +5581,7 @@ export function machinerySelectDown(s: any, event: any): void {
     }
   });
   if (target) {
-    var image = machineryGetItemByElement(s, target[0]);
+    var image = machineryGetItemByElement(s, target);
     s.selected = [image];
     syncInspectorFromScope();
     s.selectedFolderMappings = {};
@@ -5651,7 +5665,7 @@ export function machineryNHandler(s: any, $event: any): void {
     return;
   }
   if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
-    var video = w.$(".detail-wrap video")[0] || w.$(".detail-wrap mpv-video")[0];
+    var video = q(".detail-wrap video") || q(".detail-wrap mpv-video");
     if (video) {
       machineryAddVideoComment(s, s.current, video);
     }
@@ -5665,7 +5679,7 @@ export function machineryMHandler(s: any, $event: any): void {
     return;
   }
   if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
-    w.$(".vjs-mute-control").click();
+    clickEl(".vjs-mute-control");
   }
 }
 
@@ -5689,9 +5703,9 @@ export function machineryToggleAll(s: any, $event: any): void {
   }
   $timeout(function () {
     s.lastItemStates = {};
-    w.$(window).trigger("orientationchange");
-    s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
-    s.boxContianerHeight = w.$("#box-container").height() || s.boxContianerHeight;
+    window.dispatchEvent(new Event("orientationchange"));
+    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+    s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
     machineryRelayout(s);
     getOffsetScrollbarFn(s)(30);
     if (s.isDetailMode) {
@@ -5744,9 +5758,9 @@ export function machineryRefreshRandom(s: any): void {
     (s.currentSmartFolder && s.currentSmartFolder.orderBy === "RANDOM")
   ) {
     s.shuffle = [];
-    w.$("#refresh-random").addClass("active");
+    addClass("#refresh-random", "active");
     setTimeout(function () {
-      w.$("#refresh-random").removeClass("active");
+      removeClass("#refresh-random", "active");
     }, 50);
     s.reload();
   }
@@ -5904,7 +5918,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
                 var idx2 = item.folders.indexOf(folder.id);
                 if (idx2 !== -1) {
                   if (s.currentFolder && s.currentFolder.id === folder.id) {
-                    w.ig.remove(w.$("#box-" + item.id)[0]);
+                    w.ig.remove(q("#box-" + item.id));
                     s.currentFolder.imagesMappings[item.id] = false;
                   }
                   item.folders.splice(idx2, 1);
@@ -6453,7 +6467,7 @@ export function machineryFilterContent(s: any, type?: any): void {
   s.shuffle = [];
   machineryRebindRefresh(s, undefined, s.contentFilterCache);
   scopeEvalAsync();
-  w.$("#box-container").scrollTop(0);
+  setScrollTop("#box-container", 0);
   void type;
 }
 
@@ -6567,7 +6581,7 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
   machineryResetPage(s);
   s.$root.currentFocus = "sidebar";
 
-  w.$("#image-drop-area").hide();
+  hide("#image-drop-area");
   $timeout.cancel(openRandomTimeout);
   openRandomTimeout = $timeout(function () {
     if (!ignoreHistory) {
@@ -6584,7 +6598,7 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
     syncDetailFromScope();
     syncInspectorFromScope();
     machinerySetLastFolder(s, undefined);
-    w.$("#sidebar-item-container").scrollTop(0);
+    setScrollTop("#sidebar-item-container", 0);
     s.reload();
     if (callback) {
       callback();
@@ -6629,7 +6643,7 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
-    w.$("#sidebar-item-container").scrollTop(0);
+    setScrollTop("#sidebar-item-container", 0);
     s.reload();
     w.analytics.screenView('Unfiled');
   }, 50);
@@ -6670,7 +6684,7 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
-    w.$("#sidebar-item-container").scrollTop(0);
+    setScrollTop("#sidebar-item-container", 0);
     s.reload();
     w.analytics.screenView('Untagged');
   }, 50);
@@ -6711,7 +6725,7 @@ export function machineryOpenRecent(s: any, ignoreHistory: any): void {
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
-    w.$("#sidebar-item-container").scrollTop(0);
+    setScrollTop("#sidebar-item-container", 0);
     s.reload();
     w.analytics.screenView('Recent');
   }, 50);
@@ -6788,7 +6802,7 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
   machineryResetPage(s);
   s.$root.currentFocus = "sidebar";
 
-  w.$("#image-drop-area").hide();
+  hide("#image-drop-area");
   $timeout.cancel(openTrashTimeout);
   openTrashTimeout = $timeout(function () {
     if (!ignoreHistory) {
@@ -6807,7 +6821,7 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
     machinerySetLastFolder(s, undefined);
     machineryUpdateListHeight(s, s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
-    w.$("#sidebar-item-container").scrollTop(0);
+    setScrollTop("#sidebar-item-container", 0);
     s.reload();
     w.analytics.screenView('Trash');
   }, 50);
@@ -6861,7 +6875,7 @@ export function machineryOpenPrevFolder(s: any): void {
       machineryChangeSidebarIndex(s, smartFolders[smartFolders.length - 1]);
     }
     else if (quickAccessItems.length > 0 && quickAccessItems[quickAccessItems.length - 1]) {
-      w.$("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id).click();
+      clickEl("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id);
     }
     else {
       machineryOpenTrash(s);
@@ -6915,7 +6929,7 @@ export function machineryOpenPrevSmartFolder(s: any): void {
         return item.vstype === 'quickAccess';
       });
       if (quickAccessItems.length > 0) {
-        w.$("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id).click();
+        clickEl("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id);
       }
       else {
         machineryOpenTrash(s);
@@ -7004,10 +7018,10 @@ export function machineryCheckListItemsLessThanContainer(s: any): void {
     checkListItemsLessThanContainerTimeout = setTimeout(function () {
       console.log("checkListItemsLessThanContainer");
       // 如果列表尺寸很小，一次載入兩頁
-      var boxList = w.$("#box-container .box-list")[0];
+      var boxList = q("#box-container .box-list") as HTMLElement | null;
       if (boxList && boxList.style) {
         var boxListHeight = parseInt(boxList.style.height);
-        if (boxListHeight < w.$("#box-container").height()) {
+        if (boxListHeight < heightOf(q("#box-container"))) {
           w.ig.trigger("append");
         }
       }
@@ -7019,8 +7033,9 @@ export function machineryCheckListItemsLessThanContainer(s: any): void {
    5 取整 → 下限 90 → MAX_LIST_WIDTH 封顶 → imageSize.subfolderWidth） */
 export function machineryUpdateSubFolderWidth(s: any): void {
   const w = window as any;
-  if (!w.$("#box-container")[0]) return;
-  var containerWidth = w.$("#box-container")[0].clientWidth;
+  const boxContainer = q("#box-container");
+  if (!boxContainer) return;
+  var containerWidth = boxContainer.clientWidth;
   var column = parseInt(containerWidth / s.imageSize.height as any);
   if (!column) column = 1;
   var result = parseInt((containerWidth - 38 - (column * 10)) / column as any);
@@ -7089,7 +7104,7 @@ export function machineryChangeListHeight(s: any, height: any): void {
       }
     }, 500);
 
-    w.$("#box-container").attr("box-size", height as any);
+    setAttr("#box-container", "box-size", height as any);
     machineryRelayout(s);
 
     machineryScrollToCurrentItem(s);
@@ -7100,12 +7115,12 @@ export function machineryChangeListHeight(s: any, height: any): void {
 export function machineryScrollToCurrentItem(s: any): void {
   const w = window as any;
   if (s.selected.length > 0) {
-    var $lastItem = w.$(".box.selected").last();
-    if ($lastItem.length > 0) {
-      let y = $lastItem.attr("posy");
-      if (y !== undefined) {
-        let offsetTop = w.$("#box-container").height() / 2 - $lastItem.height() / 2;
-        w.$("#box-container").scrollTop(parseInt(y as any) - offsetTop);
+    var $lastItem = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
+    if ($lastItem) {
+      let y = $lastItem.getAttribute("posy");
+      if (y != null) {
+        let offsetTop = heightOf(q("#box-container")) / 2 - heightOf($lastItem) / 2;
+        setScrollTop("#box-container", parseInt(y as any) - offsetTop);
       }
     }
   }
@@ -7117,19 +7132,18 @@ export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: a
   const w = window as any;
   if (!image) return;
   if (!s.isDetailMode) return;
-  if (w.$("#detail-image").length === 0) return;
-  w.$("#detail-image")
-    .css({
-      width: image.width,
-      height: image.height,
-      transition: 'none'
-    });
+  if (qa("#detail-image").length === 0) return;
+  cssSet("#detail-image", {
+    width: image.width,
+    height: image.height,
+    transition: 'none'
+  });
   if (usingThumbnail) {
     if (image.animated || (image.orientation && image.orientation !== 1)) {
-      w.$("img#detail-image").attr("src", callExternal('getRawUrl', image));
+      setAttr("img#detail-image", "src", callExternal('getRawUrl', image));
     }
     else {
-      w.$("img#detail-image").attr("src", w.FileUrlHelper.getThumbnailUrl(image));
+      setAttr("img#detail-image", "src", w.FileUrlHelper.getThumbnailUrl(image));
     }
   }
 }
@@ -7275,36 +7289,27 @@ export function machinerySortData(s: any, data: any, orderBy: any): any {
    无选中时防越界（末盒 transform Y 与 scrollTop 比较）+ updateContainerHieght（machinery
    版经 scope）） */
 export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any): void {
-  const w = window as any;
-  var $container = w.$("#box-container");
   setTimeout(function () {
+    var container = q("#box-container") as HTMLElement | null;
     if (s.selected.length > 0) {
-      var $current = w.$(".box.selected").last();
-      var offsetTop = $container.height() / 2 - $current.height() / 2;
-      $container.scrollTo($current, 20, {
-        axis: 'y',
-        duration: 0,
-        offset: {
-          top: -offsetTop,
-        }
-      });
+      var $current = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
+      if (container && $current) {
+        var offsetTop = container.clientHeight / 2 - $current.offsetHeight / 2;
+        var delta = $current.getBoundingClientRect().top - container.getBoundingClientRect().top;
+        container.scrollTop = container.scrollTop + delta - offsetTop;
+      }
     }
     else {
       // Note: 這段程式馬主要用來避免因為列表縮放，
       // Container 的 scrollTop 超過最後一個 box 的位置，造成畫面變成空白的
       // 判斷方式：找到最後一個 box 並與 container 進行高度比較
-      var $lastBox = w.$(".box:last");
-      if ($lastBox[0]) {
-        var lastBoxY = $lastBox[0].style.transform.split(',')[1];
+      var $lastBox = qa(".box").slice(-1)[0] as HTMLElement | undefined;
+      if ($lastBox) {
+        var lastBoxY: any = $lastBox.style.transform.split(',')[1];
         lastBoxY = parseInt(lastBoxY);
-        if ($container.scrollTop() > lastBoxY) {
-          $container.scrollTo($lastBox, 20, {
-            axis: 'y',
-            duration: 30,
-            offset: {
-              top: -$container.height(),
-            }
-          });
+        if (container && container.scrollTop > lastBoxY) {
+          var delta2 = $lastBox.getBoundingClientRect().top - container.getBoundingClientRect().top;
+          container.scrollTop = container.scrollTop + delta2 - container.clientHeight;
         }
       }
     }
@@ -8187,11 +8192,10 @@ export function machineryToggleCommentMode(s: any, event: any): void {
 
 /* fadeOutDetailMode（bundle 31672-31678 逐字：selected 首盒 popdown 100ms） */
 export function machineryFadeOutDetailMode(s: any): void {
-  const w = window as any;
-  var $box = w.$(".box.selected").eq(0);
-  $box.addClass("popdown");
+  var $box = q(".box.selected");
+  if ($box) $box.classList.add("popdown");
   setTimeout(function () {
-    $box.removeClass("popdown");
+    if ($box) $box.classList.remove("popdown");
   }, 100);
 }
 
@@ -8280,7 +8284,7 @@ export function machineryOpenTagGroup(s: any, group: any): void {
   s.currentTagGroup = group;
   syncTagManagerFromScope();
   s.TagManager.renderTagsResult();
-  w.$("input:focus").blur();
+  blurEl("input:focus");
   if (s.currentTagGroup === group) return;
   s.selectedTags = {};
   syncTagManagerFromScope();
@@ -8346,8 +8350,8 @@ export function machineryEnterSlideshowMode(s: any): void {
   machineryEnterDetailMode(s, null, s.selected[0]);
   s.isSlideshowMode = true;
   $timeout(function () {
-    w.$(window).trigger("orientationchange");
-    w.$(window).trigger("resize");
+    window.dispatchEvent(new Event("orientationchange"));
+    window.dispatchEvent(new Event("resize"));
     $timeout(function () {
       machineryZoom(s, undefined);
     }, duration);
@@ -8364,8 +8368,8 @@ export function machineryLeaveSlideshowMode(s: any): void {
   s.isSlideshowMode = false;
   w.currentWindow.setFullScreen(false);
   $timeout(function () {
-    w.$(window).trigger("orientationchange");
-    w.$(window).trigger("resize");
+    window.dispatchEvent(new Event("orientationchange"));
+    window.dispatchEvent(new Event("resize"));
     $timeout(function () {
       machineryZoom(s, undefined);
     }, duration);
@@ -8392,13 +8396,12 @@ export function machineryLockApp(s: any): void {
 }
 
 export function machineryFocusAppUnlockPassword(s: any): void {
-  const w = window as any;
   setTimeout(() => {
-    w.$("#app-lock-password-input").focus();
+    focusEl("#app-lock-password-input");
   }, 24);
-  w.$("#app-lock-password-input").on("blur", () => {
+  q("#app-lock-password-input")?.addEventListener("blur", () => {
     setTimeout(() => {
-      w.$("#app-lock-password-input").focus();
+      focusEl("#app-lock-password-input");
     }, 24);
   });
 }
@@ -8409,7 +8412,7 @@ export function machineryPausePalette(s: any): void {
   const w = window as any;
   s.paletteQueuePaused = true;
   syncSidebarFromScope();
-  w.$("#background-state-spinner .sm-spiner").removeClass("has-animation");
+  removeClass("#background-state-spinner .sm-spiner", "has-animation");
   w.IPCHelper.send('change-palette-pause');
 }
 
@@ -8417,7 +8420,7 @@ export function machineryResumePalette(s: any): void {
   const w = window as any;
   s.paletteQueuePaused = false;
   syncSidebarFromScope();
-  w.$("#background-state-spinner .sm-spiner").addClass("has-animation");
+  addClass("#background-state-spinner .sm-spiner", "has-animation");
   w.IPCHelper.send('change-palette-resume');
 }
 
@@ -8486,7 +8489,7 @@ export function machineryToggleFilterByType(s: any): any {
     machineryOpenFilter(s);
     const filterId = FILTER_ID_MAP[filterType];
     if (filterId) {
-      w.$("#" + filterId).click();
+      clickEl("#" + filterId);
     }
   }, 300);
 }
@@ -8757,9 +8760,9 @@ export function machineryUpdateTxtItem(s: any, item: any): void {
   paragraphs.forEach(function (paragraph: any) {
     paragraphsHTML += `<p>${paragraph.trim()}</p>`;
   });
-  w.$("#box-" + item.id + " .txt-content div").html(paragraphsHTML);
+  setHtml("#box-" + item.id + " .txt-content div", paragraphsHTML);
   if (s.selected.length === 0 && s.selected[0] === item) {
-    w.$(".inspector .txt-content div").html(paragraphsHTML);
+    setHtml(".inspector .txt-content div", paragraphsHTML);
   }
 }
 
@@ -8817,7 +8820,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
           var startPage = parseInt(i / 60 as any);
           console.log(`目标在第 ${startPage} 页`);
           s.startCursor = startPage;
-          w.$("#box-container").css("visibility", "hidden");
+          cssSet("#box-container", { visibility: "hidden" });
           s.reload();
           s.selected = [];
           syncInspectorFromScope();
@@ -8825,7 +8828,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
             callExternal('select', undefined, target);
             machineryAutoScroll(s, undefined);
             setTimeout(function () {
-              w.$("#box-container").css("visibility", "initial");
+              cssSet("#box-container", { visibility: "initial" });
             }, 100);
           }, 500);
           scopeEvalAsync();
@@ -8891,10 +8894,12 @@ export function machineryRenameFolder(s: any, event: any, folder: any): void {
   folder.editable = true;
   folder.newFolderName = folder.name;
   setTimeout(function () {
-    w.$("#folder-input-" + folder.id).focus().select();
+    focusEl("#folder-input-" + folder.id);
+    selectEl("#folder-input-" + folder.id);
   }, 100);
   setTimeout(function () {
-    w.$("#folder-input-" + folder.id).focus().select();
+    focusEl("#folder-input-" + folder.id);
+    selectEl("#folder-input-" + folder.id);
   }, 200);
 }
 
@@ -8907,10 +8912,12 @@ export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any)
   smartFolder.editable = true;
   smartFolder.newFolderName = smartFolder.name;
   setTimeout(function () {
-    w.$("#folder-input-" + smartFolder.id).focus().select();
+    focusEl("#folder-input-" + smartFolder.id);
+    selectEl("#folder-input-" + smartFolder.id);
   }, 100);
   setTimeout(function () {
-    w.$("#folder-input-" + smartFolder.id).focus().select();
+    focusEl("#folder-input-" + smartFolder.id);
+    selectEl("#folder-input-" + smartFolder.id);
   }, 200);
 }
 
@@ -9004,14 +9011,14 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
     console.log('Touch ID 驗證失敗:', err);
 
     // 顯示錯誤動畫
-    w.$(".touchid-btn-inline").addClass("animation--shake-horizontal");
+    addClass(".touchid-btn-inline", "animation--shake-horizontal");
     setTimeout(() => {
-      w.$(".touchid-btn-inline").removeClass("animation--shake-horizontal");
+      removeClass(".touchid-btn-inline", "animation--shake-horizontal");
     }, 500);
 
     // 焦點回到密碼輸入框
     setTimeout(() => {
-      w.$("#lock-password-input").focus();
+      focusEl("#lock-password-input");
     }, 100);
   }
 }
@@ -9360,7 +9367,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
     }
     console.log(dragFile);
 
-    w.$("#box-container").removeClass("drag-accept");
+    removeClass("#box-container", "drag-accept");
 
     if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eaglepack") !== -1) {
         var file = files[0];
@@ -9552,10 +9559,10 @@ export function machineryShowUploadQueue(s: any): void {
   if (!s.addImageStartTime) {
     s.addImageStartTime = Date.now();
   }
-  w.$("body").addClass("is-uploading");
-  w.$("#upload-queue-progress").addClass("open");
-  w.$("#upload-queue-progress .progressbar").removeClass("ng-hide");
-  w.$("#upload-queue-progress").find(".message .percentage").html(s.finishQueue.length + "/" + s.uploadQueue.length);
+  addClass("body", "is-uploading");
+  addClass("#upload-queue-progress", "open");
+  removeClass("#upload-queue-progress .progressbar", "ng-hide");
+  setHtml("#upload-queue-progress .message .percentage", s.finishQueue.length + "/" + s.uploadQueue.length);
   addImageTimeLeftInterval = setInterval(function () {
     machineryCalcuteAddImageTimeLeft(s);
     scopeEvalAsync();
@@ -9565,8 +9572,8 @@ export function machineryShowUploadQueue(s: any): void {
 export function machineryHideUploadQueue(s: any): void {
   const w = window as any;
   if (s.uploadQueue.length === 0) {
-    w.$("#upload-queue-progress").removeClass("open");
-    w.$("body").removeClass("is-uploading");
+    removeClass("#upload-queue-progress", "open");
+    removeClass("body", "is-uploading");
     w.updateWindowProgressBar(-1);
   }
 }
@@ -9635,37 +9642,41 @@ export function machineryImportLinks(s: any): void {
     const folderIds = currentFolderId ? [currentFolderId] : [];
 
     links.forEach((link: any) => {
-      w.$.ajax({
-        type: "HEAD",
-        url: link,
-        timeout: 10000,
-        complete: function (xhr: any) {
-          let contentType = (xhr.getResponseHeader('Content-Type') || "").toLowerCase();
-          if (contentType.indexOf("image") > -1) {
-            // 圖片類型：直接下載圖片
-            w.IPCHelper.send('upload-url', {
-              url: link,
-              folders: folderIds,
-              tags: [],
-            });
-          }
-          else {
-            // 其他所有情況（html、未知類型、HEAD 請求失敗等）：
-            // 一律當作書籤匯入，截圖能不能成功由後端決定
-            const data = {
-              id: w.guid(),
-              url: link,
-              tags: [],
-              modificationTime: Date.now(),
-              folders: folderIds,
-            };
-            const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-            ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
-          }
-          s.uploadQueue.push({});
-          syncUploadFromScope();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const onComplete = function (contentType: string) {
+        clearTimeout(timer);
+        if (contentType.indexOf("image") > -1) {
+          // 圖片類型：直接下載圖片
+          w.IPCHelper.send('upload-url', {
+            url: link,
+            folders: folderIds,
+            tags: [],
+          });
         }
-      });
+        else {
+          // 其他所有情況（html、未知類型、HEAD 請求失敗等）：
+          // 一律當作書籤匯入，截圖能不能成功由後端決定
+          const data = {
+            id: w.guid(),
+            url: link,
+            tags: [],
+            modificationTime: Date.now(),
+            folders: folderIds,
+          };
+          const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+          ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
+        }
+        s.uploadQueue.push({});
+        syncUploadFromScope();
+      };
+      fetch(link, { method: "HEAD", signal: controller.signal })
+        .then(function (resp) {
+          onComplete((resp.headers.get('Content-Type') || "").toLowerCase());
+        })
+        .catch(function () {
+          onComplete("");
+        });
     });
   }, function () { });
 }
@@ -9929,7 +9940,7 @@ export function machineryRefreshSubfolderList(s: any): void {
 /* focusSeach（bundle 29192-29195 逐字，typo 原样） */
 export function machineryFocusSeach(s: any): void {
   const w = window as any;
-  w.$("#search").focus().select();
+  focusEl("#search"); selectEl("#search");
   s.showSuggestions = true;
   syncToolbarFromScope();
 }
@@ -9959,32 +9970,27 @@ export function machineryPrependFolder(s: any, folder: any): void {
 export function machineryGotoTop(s: any): void {
   const w = window as any;
   if (s.allData.length < s.options.page) {
-    var $boxContainer = w.$("#box-container");
-    $boxContainer.scrollTop(0);
+    setScrollTop("#box-container", 0);
   }
   else {
     clearTimeout(s.gotoBottomTimeout);
     w.resetNgGridLayoutData(s.allData, 0);
-    var $boxContainer = w.$("#box-container");
-    $boxContainer.scrollTop(0);
+    setScrollTop("#box-container", 0);
   }
 }
 
 export function machineryGotoBottom(s: any): void {
   const w = window as any;
   if (s.allData.length < s.options.page) {
-    var $boxContainer = w.$("#box-container");
-    var offset = $boxContainer[0].scrollHeight;
-    $boxContainer.scrollTop(offset);
+    var offset = (q("#box-container") as HTMLElement | null)?.scrollHeight;
+    setScrollTop("#box-container", offset as any);
   }
   else {
     var endCursor = Math.ceil(s.allData.length / s.options.page) - 1 || 0;
     w.resetNgGridLayoutData(s.allData, endCursor);
-    var $boxContainer = w.$("#box-container");
     var times = [100, 400];
-    var offset = $boxContainer[0].scrollHeight;
     for (var i = times[0]; i < times[1]; i += 100) {
-      s.gotoBottomTimeout = setTimeout(function () { $boxContainer.scrollTop(1000000); }, i);
+      s.gotoBottomTimeout = setTimeout(function () { setScrollTop("#box-container", 1000000); }, i);
     }
   }
 }
@@ -10035,34 +10041,35 @@ export function machinerySelectFolder(s: any, event: any, folder: any): void {
    （49667/49600）→ w.* 直连（b1 终审 vendor 提取清单登记）。 */
 export function machineryEnableImageNameEditable(s: any, event: any, $name: any): void {
   const w = window as any;
-  if (!$name) return;
-  if ($name.hasClass("editable")) return;
-  var originalName = $name.text().trim();
-  $name.attr("contenteditable", "true");
-  $name.addClass("editable");
-  $name.focus();
+  const el = (($name as any) instanceof HTMLElement ? $name : ($name && $name[0])) as HTMLElement;
+  if (!el) return;
+  if (hasClass(el, "editable")) return;
+  var originalName = textEl(el).trim();
+  el.setAttribute("contenteditable", "true");
+  el.classList.add("editable");
+  el.focus();
   setTimeout(function () {
-    $name.focus();
-    $name.select();
+    el.focus();
+    selectText(el);
     document.execCommand('selectAll', false, null as any);
   }, 50);
 
-  $name.off("mousedown").on("mousedown", function (event: any) {
+  onEl(el, "mousedown", function (event: any) {
     event.stopPropagation();
   });
 
-  $name.off("keydown").on("keydown", function (event: any) {
+  onEl(el, "keydown", function (event: any) {
     var keyCode = event.keyCode;
     switch (keyCode) {
       case 13:
         event.preventDefault();
         event.stopPropagation();
-        $name.trigger("blur");
+        triggerEl(el, "blur");
         break;
       case 27:
         event.preventDefault();
         event.stopPropagation();
-        $name.html(`<span>${originalName}</span>`);
+        setHtmlEl(el, `<span>${originalName}</span>`);
         exitEditable();
         break;
       case 65:
@@ -10075,18 +10082,18 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
     }
   });
 
-  $name.off("paste").on("paste", function (e: any) {
+  onEl(el, "paste", function (e: any) {
     e.preventDefault();
-    var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    var text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
     document.execCommand("insertHTML", false, text);
   });
 
-  $name.off("blur").on("blur", w.debounce(function () {
+  onEl(el, "blur", w.debounce(function () {
     exitEditable();
     var $scope = getBodyScope();
-    var newName = $name.text();
+    var newName = textEl(el);
     if (!newName || !newName.trim()) {
-      $name.html(`<span>${originalName}</span>`);
+      setHtmlEl(el, `<span>${originalName}</span>`);
       return;
     }
     if (newName !== originalName && $scope && $scope.selected[0]) {
@@ -10109,7 +10116,7 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
         image.name = name;
         image.newName = name;
       }
-      $name.html(`<span>${name}</span>`);
+      setHtmlEl(el, `<span>${name}</span>`);
       console.log(`${originalName} > ${name}`);
       w.ayncsImagesChange([image]);
       w.hiddenByCurrentFilter([image]);
@@ -10120,18 +10127,14 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
   }, 200, true));
 
   function exitEditable() {
-    $name.css({
-      "white-space": "normal"
-    });
-    $name.attr("contenteditable", "false");
-    $name.removeClass("editable");
-    $name.off("keyup");
-    $name.off("keydown");
-    $name.off("mousedown");
+    el.style.whiteSpace = "normal";
+    el.setAttribute("contenteditable", "false");
+    el.classList.remove("editable");
+    offEl(el, "keyup");
+    offEl(el, "keydown");
+    offEl(el, "mousedown");
     setTimeout(function () {
-      $name.css({
-        "white-space": ""
-      });
+      el.style.whiteSpace = "";
     }, 33);
   }
 }
@@ -10141,38 +10144,38 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
    经 scope 解析（machinery 版）；exitEditable 内嵌闭包。 */
 export function machineryEnableSubFolderNameEditable(s: any, event: any, folder: any): void {
   const w = window as any;
-  var $name = w.$(event.target);
+  const el = ((event && event.target) || null) as HTMLElement;
   if (!folder) return;
-  if ($name.hasClass("editable")) return;
-  if (!$name || $name.length === 0) return;
+  if (hasClass(el, "editable")) return;
+  if (!el) return;
 
   machinerySelectFolder(s, event, folder);
 
-  var originalName = $name.text().trim();
-  $name.attr("contenteditable", "true");
-  $name.addClass("editable");
-  $name.focus();
+  var originalName = textEl(el).trim();
+  el.setAttribute("contenteditable", "true");
+  el.classList.add("editable");
+  el.focus();
   setTimeout(function () {
-    $name.select();
+    selectText(el);
     document.execCommand('selectAll', false, null as any);
   }, 50);
 
-  $name.off("mousedown").on("mousedown", function (event: any) {
+  onEl(el, "mousedown", function (event: any) {
     event.stopPropagation();
   });
 
-  $name.off("keydown").on("keydown", function (event: any) {
+  onEl(el, "keydown", function (event: any) {
     var keyCode = event.keyCode;
     switch (keyCode) {
       case 13:
         event.preventDefault();
         event.stopPropagation();
-        $name.trigger("blur");
+        triggerEl(el, "blur");
         break;
       case 27:
         event.preventDefault();
         event.stopPropagation();
-        $name.html(`${originalName}`);
+        setHtmlEl(el, `${originalName}`);
         exitEditable();
         break;
       case 65:
@@ -10185,22 +10188,22 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
     }
   });
 
-  $name.off("paste").on("paste", function (e: any) {
+  onEl(el, "paste", function (e: any) {
     e.preventDefault();
-    var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    var text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
     document.execCommand("insertHTML", false, text);
   });
 
-  $name.off("click").on("click", function (event: any) {
+  onEl(el, "click", function (event: any) {
     event.stopPropagation();
   });
 
-  $name.off("blur").on("blur", w.debounce(function () {
+  onEl(el, "blur", w.debounce(function () {
     exitEditable();
     var $scope = getBodyScope();
-    var newName = $name.text();
+    var newName = textEl(el);
     if (!newName || !newName.trim()) {
-      $name.html(`${originalName}`);
+      setHtmlEl(el, `${originalName}`);
       return;
     }
     if (newName !== originalName && folder) {
@@ -10214,7 +10217,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
         name = name.replace(emojiRegex, '');
       }
 
-      $name.html(`${name}`);
+      setHtmlEl(el, `${name}`);
       folder.name = name;
       $scope.saveFolder();
       scopeEvalAsync();
@@ -10223,19 +10226,15 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
   }, 500, true));
 
   function exitEditable() {
-    $name.css({
-      "white-space": "normal"
-    });
-    $name.attr("contenteditable", "false");
-    $name.removeClass("editable");
-    $name.off("click");
-    $name.off("keyup");
-    $name.off("keydown");
-    $name.off("mousedown");
+    el.style.whiteSpace = "normal";
+    el.setAttribute("contenteditable", "false");
+    el.classList.remove("editable");
+    offEl(el, "click");
+    offEl(el, "keyup");
+    offEl(el, "keydown");
+    offEl(el, "mousedown");
     setTimeout(function () {
-      $name.css({
-        "white-space": ""
-      });
+      el.style.whiteSpace = "";
     }, 33);
   }
 }
@@ -10253,10 +10252,11 @@ export function machineryRenameImages(s: any): void {
   }
   else {
     var imageId = s.selected[0].id;
-    var $box = w.$(`#box-${imageId}`);
-    if ($box.length > 0) {
+    var $box = q(`#box-${imageId}`);
+    if ($box) {
+      const boxEl = $box;
       setTimeout(() => {
-        machineryEnableImageNameEditable(s, w.event, $box.find(".name"));
+        machineryEnableImageNameEditable(s, w.event, boxEl.querySelector(".name"));
       }, 50);
     }
   }
@@ -10292,10 +10292,12 @@ export function machineryRenameTagGroup(s: any, group: any): void {
   syncTagManagerFromScope();
   group.editable = true;
   setTimeout(function () {
-    w.$("#group-input-" + group.id).focus().select();
+    focusEl("#group-input-" + group.id);
+    selectEl("#group-input-" + group.id);
   }, 100);
   setTimeout(function () {
-    w.$("#group-input-" + group.id).focus().select();
+    focusEl("#group-input-" + group.id);
+    selectEl("#group-input-" + group.id);
   }, 200);
 }
 
@@ -10315,7 +10317,8 @@ export function machineryEditTag(s: any, tag: any): void {
       setTimeout(function () {
         var input = w.swal.getInput();
         if (input) {
-          w.$(input).select().focus();
+          (input as HTMLInputElement).select();
+          (input as HTMLInputElement).focus();
         }
       }, 100);
     },
@@ -10488,17 +10491,16 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
       machineryRenameImages(s);
     }
     else {
-      w.$('#inspector-name').focus();
+      focusEl("#inspector-name");
       setTimeout(() => {
         document.execCommand('selectAll', false, null as any);
       }, 100);
     }
   }
   else if (s.$root.currentFocus !== "sidebar" && s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
-    var $name = w.$(".sub-folder.selected").find(".name");
-    if ($name.length === 0) return;
-    var e = w.jQuery.Event("click");
-    e.target = $name[0];
+    var nameEl = q(".sub-folder.selected .name");
+    if (!nameEl) return;
+    var e: any = { target: nameEl, preventDefault: function () { }, stopPropagation: function () { }, stopImmediatePropagation: function () { } };
     let folderId = Object.keys(s.selectedFolderMappings)[0];
     let folder = s.folderMappings[folderId];
     machineryEnableSubFolderNameEditable(s, e, folder);
@@ -10722,17 +10724,17 @@ export function machinerySeedControllerState(s: any): void {
         // 该插件原内联在 app.bundle.js 内，b1-9d 后由 index.html 独立引入）
         s.removeSound = {
             play: function () {
-                w.$.playSound('sounds/remove.wav');
+                w.__eagleAudio.playSound('sounds/remove.wav');
             }
         };
         s.duplicateSound = {
             play: function () {
-                w.$.playSound('sounds/duplicate.wav');
+                w.__eagleAudio.playSound('sounds/duplicate.wav');
             }
         };
         s.errorSound = {
             play: function () {
-                w.$.playSound('sounds/error.wav');
+                w.__eagleAudio.playSound('sounds/error.wav');
             }
         };
         // b1-9l：controller init 接线补种三件（b1-9g 台账根因 5 + fx/fc 补种）
@@ -11122,41 +11124,41 @@ export function machinerySeedControllerState(s: any): void {
         if (localStorage.getItem("eagle.list.show.name") == 'false') {
             s.showName = false;
             syncPanelFromScope();
-            w.$("#box-container").addClass("hide-box-name");
+            addClass("#box-container", "hide-box-name");
         }
         else {
             s.showName = true;
             syncPanelFromScope();
-            w.$("#box-container").removeClass("hide-box-name");
+            removeClass("#box-container", "hide-box-name");
         }
 
         if (localStorage.getItem("eagle.list.show.meta") == 'false') {
             s.showMetas = false;
             syncPanelFromScope();
-            w.$("#box-container").addClass("hide-box-metas");
+            addClass("#box-container", "hide-box-metas");
         }
         else {
             s.showMetas = true;
             syncPanelFromScope();
-            w.$("#box-container").removeClass("hide-box-metas");
+            removeClass("#box-container", "hide-box-metas");
         }
 
         if (localStorage.getItem("eagle.list.show.annotation") == 'false') {
             s.showAnnotation = false;
             syncPanelFromScope();
-            w.$("#box-container").addClass("hide-box-annotation");
+            addClass("#box-container", "hide-box-annotation");
         }
 
         if (localStorage.getItem("eagle.list.show.extension") == 'false') {
             s.showFileExtension = false;
             syncPanelFromScope();
-            w.$("#box-container").addClass("hide-box-extension");
+            addClass("#box-container", "hide-box-extension");
         }
 
         if (localStorage.getItem("eagle.list.show.extension_LABEL") == 'false') {
             s.showFileExtensionLabel = false;
             syncPanelFromScope();
-            w.$("#box-container").addClass("hide-box-extension-label");
+            addClass("#box-container", "hide-box-extension-label");
         }
 
         let defaultListLayoutSettings = {

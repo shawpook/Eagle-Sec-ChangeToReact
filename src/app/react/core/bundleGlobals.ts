@@ -32,6 +32,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { glRemoveitemsChannel } from '../global/bus';
 import { machineryContentFilter, machineryFilterData, machinerySmartFolderCount, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';
 
 declare const Buffer: any;
 
@@ -400,9 +401,9 @@ function _hiddenByCurrentFilter(items: any[]): void {
         var hiddenItemMap: any = {};
         var hiddenElements: any[] = [];
         result.forEach(function (item: any) {
-          var $box = w.$(`#box-${item.id}`);
-          if ($box.length > 0) {
-            hiddenElements.push($box[0]);
+          var boxEl = q(`#box-${item.id}`);
+          if (boxEl) {
+            hiddenElements.push(boxEl);
           }
           hiddenItemMap[item.id] = true;
         });
@@ -966,9 +967,9 @@ function _buildSlowNotify(): any {
       bodyScope.showSlowNotify = true;
       scopeEvalAsync(function () {
         setTimeout(function () {
-          w.$("#library-warning").addClass("show active");
+          addClass("#library-warning", "show active");
           setTimeout(function () {
-            w.$("#library-warning").removeClass("active");
+            removeClass("#library-warning", "active");
           }, 10000);
         }, 300);
       });
@@ -1193,8 +1194,8 @@ function _buildScrollbarSaver(): any {
     saveScrollPosition: function (this: any) {
       if (w.eagle.filter.filterBadge > 0) return;
       if (s().keyword) return;
-      if (w.$(".box").length + w.$(".sub-folder").length === 0) return;
-      var scrollTop = w.$("#box-container").scrollTop();
+      if (qa(".box").length + qa(".sub-folder").length === 0) return;
+      var scrollTop = q("#box-container")?.scrollTop || 0;
       var obj: any = {};
       var id = w.ScrollbarSaver.getId();
 
@@ -1204,14 +1205,14 @@ function _buildScrollbarSaver(): any {
       }
 
       var startCursor = 0;
-      var offsetTop = (w.$(".box-list")[0] && w.$(".box-list")[0].offsetTop) || 0;
+      var offsetTop = q(".box-list")?.offsetTop || 0;
       var scrollOffset;
-      if (w.$(".sub-folder").length > 0 && s().startCursor === 0) {
-        scrollOffset = w.$("#box-container").scrollTop();
+      if (qa(".sub-folder").length > 0 && s().startCursor === 0) {
+        scrollOffset = q("#box-container")?.scrollTop || 0;
       }
       else {
-        if (w.$(".box").length === 0) return;
-        scrollOffset = Math.abs(w.$(".box").eq(0).offset().top - 44) + offsetTop;
+        if (qa(".box").length === 0) return;
+        scrollOffset = Math.abs(offsetTopOf(q(".box")) - 44) + offsetTop;
       }
       var its = w.ig.getItems();
       if (its[0]) { startCursor = its[0].groupKey - 1000000; }
@@ -1231,15 +1232,15 @@ function _buildScrollbarSaver(): any {
       if (!id) return;
 
       var obj = w.ScrollbarSaver.positionMapping[id];
-      var $boxContainer = w.$("#box-container");
+      var boxContainer = q("#box-container");
       if (obj) {
         s().startCursor = obj.cursor || 0;
         var offset = obj.offset || 0;
         var times = [20, 300];
         for (var i = times[0]; i < times[1]; i += 20) {
           setTimeout(function () {
-            if (w.ScrollbarSaver.getId() !== id || $boxContainer.scrollTop() !== offset) {
-              $boxContainer.scrollTop(offset);
+            if (w.ScrollbarSaver.getId() !== id || (boxContainer?.scrollTop || 0) !== offset) {
+              if (boxContainer) boxContainer.scrollTop = offset;
             }
           }, i);
         }
@@ -1916,9 +1917,11 @@ export function installBundleGlobals(): void {
           }
 
           if (fileurl) {
-            w.$(`<div>${fileurl}</div>`).find("plist").find("string").each(function (this: any) {
-              files.push(w.$(this).text());
-            })
+            const holder = document.createElement("div");
+            holder.innerHTML = `<div>${fileurl}</div>`;
+            holder.querySelectorAll("plist string").forEach(function (el) {
+              files.push((el as HTMLElement).textContent || '');
+            });
           }
 
           let text = clipboardMod.readText();
@@ -1927,12 +1930,12 @@ export function installBundleGlobals(): void {
           const isUrl = /^(https?|ftp|file):\/\//i.test(text) || /^www\.[^\s]+$/i.test(text);
 
           if (isUrl) {
-            w.$.ajax({
-              type: "HEAD",
-              url: text,
-              timeout: 10000,
-              complete: function (xhr: any, textStatus: any) {
-                let contentType = xhr.getResponseHeader('Content-Type') || "";
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 10000);
+            fetch(text, { method: "HEAD", signal: ctrl.signal })
+              .then(function (resp) {
+                clearTimeout(timer);
+                const contentType = resp.headers.get("Content-Type") || "";
                 if (contentType.indexOf("image") > -1) {
                   url = text;
                 }
@@ -1941,8 +1944,15 @@ export function installBundleGlobals(): void {
                   url: url,
                   files: files
                 });
-              }
-            });
+              })
+              .catch(function () {
+                clearTimeout(timer);
+                return resolve({
+                  image: image,
+                  url: url,
+                  files: files
+                });
+              });
           }
           else {
             if (w.process.platform == 'darwin') {

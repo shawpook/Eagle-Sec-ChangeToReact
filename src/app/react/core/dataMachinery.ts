@@ -3976,6 +3976,7 @@ export function machineryLastZoom(s: any): boolean {
     detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
     var ratio = parseInt(state.data.rA * 100 as any);
     s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    machineryOnZoomRatioChanged(s);
     s.imageSize.zoomRatioExp = ratio;
     return true;
   }
@@ -4008,6 +4009,7 @@ export function machineryZoomActual(s: any, event: any): void {
     }
   } else {
     s.imageSize.zoomRatio = 100;
+    machineryOnZoomRatioChanged(s);
     s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
     machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
 
@@ -4121,6 +4123,7 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
 
   if (ratio) {
     s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    machineryOnZoomRatioChanged(s);
     s.imageSize.zoomRatioExp = ratio;
     s.zoomFitSize = ratio;
   }
@@ -9266,6 +9269,13 @@ export function machineryOnImageSizeHeightChanged(s: any): void {
   else {
     machineryShrinkThumbnails();
   }
+}
+
+/** imageSize.zoomRatio 变化后的统一处理（原 $watch("imageSize.zoomRatio") 的 listener）。 */
+export function machineryOnZoomRatioChanged(s: any): void {
+  if (!s || !s.imageSize) return;
+  s.sliderZoomRatio = s.imageSize.zoomRatio;
+  syncDetailFromScope();
 }
 
 /* changeMetaItems（bundle 37273-37278 逐字） */

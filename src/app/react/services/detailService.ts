@@ -8,7 +8,7 @@
  * detailHooks 的 updateZoomRatio ×1 改直调。
  */
 import { detailZoom } from '../core/smoothZoomEngine';
-import { machineryEnterDetailMode, machineryGetRatioExp, machineryGetRatioNonExp, machineryLeaveDetailMode, machineryRenameCurrentFolder } from '../core/dataMachinery';
+import { machineryEnterDetailMode, machineryGetRatioExp, machineryGetRatioNonExp, machineryLeaveDetailMode, machineryOnZoomRatioChanged, machineryRenameCurrentFolder } from '../core/dataMachinery';
 import { syncDetailFromScope } from '../store/detailState';
 import { getBodyScope } from '../core/appCore';
 import { openFolder } from './folderCoreService';
@@ -35,6 +35,7 @@ export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTra
 
   if (ratio) {
     s.imageSize.zoomRatio = ratio;
+    machineryOnZoomRatioChanged(s);
     s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
   }
 
@@ -178,6 +179,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
 
   if (ratio) {
     s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    machineryOnZoomRatioChanged(s);
     s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
   }
   s.showLargeImage = true;

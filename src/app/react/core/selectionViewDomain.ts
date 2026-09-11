@@ -14,7 +14,7 @@
 import { detailZoom } from './smoothZoomEngine';
 import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
-import { machineryChangeMetaItems, machineryCurrentIndex, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
+import { machineryChangeMetaItems, machineryCurrentIndex, machineryOnZoomRatioChanged, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateListSlider, machineryUpdateSelection, machineryUpdateSubFolderWidth } from './dataMachinery';
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 
@@ -157,15 +157,15 @@ export function takeoverSelectionViewDomain(): void {
     }
   }
 
-  // ── imageSize.zoomRatio（34211 逐字）──
-  const zFn1 = function (newValue: any) {
+  // ── imageSize.zoomRatio（34211 逐字）── b1-9bz-C-4：$watch → 写入点直调
+  // 由 machineryOnZoomRatioChanged 在 5 个写入点调用（dataMachinery ×3 + detailService ×2）。
+  // 保留 Angular $watch「注册即触发一次」的语义（try/catch 兜住：接管时 scope 可能未就绪）。
+  {
     const s: any = getBodyScope();
-    if (!s) return;
-    s.sliderZoomRatio = newValue;
-    syncDetailFromScope();
-  };
-  s0.$watch("imageSize.zoomRatio", zFn1);
-  sweepForeignWatchers(s0, 'imageSize.zoomRatio', [zFn1], 'sliderZoomRatio');
+    if (s) {
+      try { machineryOnZoomRatioChanged(s); } catch (err) { /* noop */ }
+    }
+  }
 
   // ── listMetaType（37269 逐字）── b1-9bz-C-4：$watch → 显式调用
   // 原 $watch 的语义是「外部写 s.listMetaType 后触发 changeMetaItems」；唯一外部写入点

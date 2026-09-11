@@ -7143,3 +7143,20 @@ D-1 目标）；真正的箭头/调用式挂载仅剩 **9 处**，且**全部是
 （255 export + 76 私有）/ 36 import 边 / 30 引用文件**；按目标域聚类全部落桶
 （UNCLASSIFIED 归 0），并列出跨域共享顶层名（B-final 前必须收口）与建议批次顺序。
 下一步 = B-1 起按域分批搬迁（≤30 导出/≤1500 行/批，每批 probe + 定向测试 + 提交）。
+
+---
+
+**b1-9bz-D-2 收官：全套 55 项 ALL GREEN + 全量套件暴露的三处真问题修复（2026-09-11）**
+
+D-2（jQuery/vendor 清零）首次全量回归（`node tests/run-react-suite.mjs`）暴露 4 项失败，逐一定性：
+
+| 失败 | 定性 | 处置 |
+|---|---|---|
+| `main-ui-workflow` `scope.updateSelection is not a function` | **真回归**：A-2 误判「主窗口无消费面」，只扫 React 树漏掉 `electron/main.cjs:1858`（无 typeof 守卫） | 恢复 scope 面挂载：`updateSelection`/`zoom`（:2932/3015）+ 同因恢复 `changeStar`/`removeSelected`/`toggleAll`/`selectNext`/`selectPrev`/`addImagesToFolder`（后者已在 externalSupply 注册却漏挂 scope） |
+| `stage7b` `tm-unfiled-mode` | **真移植 bug**：`tagManagerDomain` 的 `s.openXGroup` 引用未声明的裸 `tagRectSelecting`（ESM 严格模式 ReferenceError），点击「未分类」整段中止、`tagViewMode` 不变 | 4 处改 `(window as any).tagRectSelecting`（与 `TagManager.tsx` 的 `w.tagRectSelecting` 同通道）；`dataMachinery` 内本地同名 flag 的重复实现留 D-1 Track B 归并 |
+| `stage11a49` `a5-subfolder-sortable-init` | 陈旧契约：断言 `$(list).data('ui-sortable')`（jQuery-UI 已于 D-2f 退役） | 改断言自研 `makeSortable` 的 `el.__eagleSortable` 标记 |
+| `stage11a49` `a4-search-none` / `stage11b0` 4 项 | 陈旧契约：测试自身用 `$(...)`（vendor 已摘，`$` undefined 抛错）；a4 直接 `b.filtereds=[]` 驱动 scope，但 b1-9by-A 已退役 scope 轮询 watcher | stage11b0 4 处改原生 DOM/CustomEvent；a4 改驱动 zustand store（`__eagleBodyState`/`__eagleListState`） |
+
+**AB 复核**：`a4-search-none`、`tm-unfiled-mode` 在会话基线 `d8253c6`（临时 worktree + node_modules junction）复现相同失败，确证非本会话引入。
+
+**门禁终态**：`REACT SUITE ALL GREEN`（55/55）；`bz-export-check` 无问题；tsc 619（<788 基线）；哨兵 `jQuery 0 / vendorScriptTags 0`。

@@ -62,9 +62,6 @@ import { isInFolder } from './itemDomain';
 import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 import { detailUpdateZoomRatio, detailSmartZoom, detailToggleDetailMode, beginZoomingTransition } from '../services/detailService';
 import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot, toggleGifPlay } from '../services/mediaService';
-// b1-9ad：颜色筛选依赖（bundle 9153-9154 同款；ambient 声明见 global/vendor-modules.d.ts）
-import colorConvert from 'color-convert';
-import DeltaE from 'delta-e';
 import { debounce, throttle } from '../utils/func';
 import { get, isString, max, uniq, unescape, isNumeric } from '../utils/lang';
 import { q, qa, qaVisible, widthOf, heightOf, addClass, removeClass, setAttr, cssSet, hide, show, setHtml, hasClass, setHtmlEl, textEl, triggerEl, selectText, onEl, offEl, trigger, clickEl, focusEl, blurEl, selectEl, scrollTopValue, setScrollTop, setScrollLeft, offsetOf, offsetTopOf, outerHeightOf, getAttr, setAttrEl, addClassEl, removeClassEl } from '../utils/domQuery';
@@ -92,6 +89,7 @@ import { moveCropToolChannel, openRenameChannel, resizeCropToolChannel } from '.
 import { autoscrollChannel, calculateImageBindingChannel, glRemoveitemsChannel, importArtstationChannel, inspectorTagSelectPanelOpenChannel, newSmartFolderChannel, openDuplicateScanPanelChannel, openMousewheelPreferenceWindowChannel, openPluginPanelChannel, openQuickSearchModalChannel, openUrlInPanelChannel, rebindRefreshChannel, updateInspectorChannel, updateSelectionChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize, pinyinCache } from '../utils/normalize';
+import { machineryColorSimilarityDistance, machineryRgbToHex } from '../utils/color';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let calculateImageBindingTimeout: any = null;
 // ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
@@ -6320,23 +6318,10 @@ function machinerySearchFilter(s: any, image: any): any {
 // ── b1-9ad：颜色筛选管线移植（bundle 32688-32813 逐字；$scope→s）──
 // 此前 s.colorFilter/s.grayColorFilter 无定义：machineryFilterContent 的
 // `data.filter(s.colorFilter)` 在开启颜色筛选时抛 TypeError 被吞、黑白筛选同理，
-// 且 colorDistancesMap 排序比较器恒空。依赖 npm color-convert@2 + delta-e
-// （bundle 9153-9154 顶层 require 同款；v2 裸 .lab 输出取整 Lab 与原版行为一致）。
-// bundle 同域 rgb2lab（32664）全 bundle 零调用（死代码）不移植；
-// `eagle.filter.filterRules.color.accuracy = 20` 默认值已由 eagleClasses.ts 初始化承载。
-// 計算顏色相似性（bundle 32784-32795 逐字）
-function machineryColorSimilarityDistance(color1: any, color2: any): any {
-    var c1: any = colorConvert.rgb.lab(color1[0], color1[1], color1[2]);
-    var c2: any = colorConvert.rgb.lab(color2[0], color2[1], color2[2]);
-    var l1 = { L: c1[0], A: c1[1], B: c1[2] };
-    var l2 = { L: c2[0], A: c2[1], B: c2[2] };
-    var d76 = DeltaE.getDeltaE76(l1, l2);
-    var d2000 = DeltaE.getDeltaE00(l1, l2);
-    return {
-        d76: d76,
-        d2000: d2000,
-    };
-}
+// 且 colorDistancesMap 排序比较器恒空。
+// D-1 B-2：machineryColorSimilarityDistance / machineryRgbToHex 已归位 utils/color.ts
+// （color-convert/delta-e 依赖随之迁出）。
+
 
 /* colorFilter（bundle 32689-32781 逐字） */
 export function machineryColorFilter(s: any, image: any): boolean {
@@ -8374,13 +8359,7 @@ export function machineryLeaveSlideshowMode(s: any): void {
   w.electronLog && w.electronLog.info(`[app] Leave slideshow mode.`);
 }
 
-/* rgbToHex（bundle 28976-28981 逐字） */
-export function machineryRgbToHex(s: any, r: any, g: any, b: any): any {
-  if (r === undefined) {
-    return false;
-  }
-  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-}
+/* rgbToHex（bundle 28976-28981 逐字）—— D-1 B-2 已归位 utils/color.ts */
 
 /* lockApp（bundle 29016-29023 逐字）+ focusAppUnlockPassword（29025-29034 逐字） */
 export function machineryLockApp(s: any): void {
@@ -11292,6 +11271,14 @@ export function applyDataMachineryScope(): void {
   // 只扫了 React 树，漏掉 main.cjs；缺 updateSelection 会使 m1 selectItems 直接 TypeError。
   s.updateSelection = () => machineryUpdateSelection(s);
   s.zoom = () => machineryZoom(s);
+  // 同因：main.cjs 主窗工作流还直调 changeStar（:2058/2083）、removeSelected（:2192）、
+  // toggleAll（:2319/2325）、addImagesToFolder（:2057）；selectNext/selectPrev 为详情导航
+  // 的 bundle scope 面（DetailViewer 以 typeof 守卫消费），一并恢复以保 parity。
+  s.changeStar = (...a: any[]) => (machineryChangeStar as any)(s, ...a);
+  s.removeSelected = (...a: any[]) => (machineryRemoveSelected as any)(s, ...a);
+  s.toggleAll = (...a: any[]) => (machineryToggleAll as any)(s, ...a);
+  s.selectNext = (...a: any[]) => (machinerySelectNext as any)(s, ...a);
+  s.selectPrev = (...a: any[]) => (machinerySelectPrev as any)(s, ...a);
   // c15b：adjustLayoutWidth/zoomFit
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
@@ -11372,6 +11359,9 @@ export function applyDataMachineryScope(): void {
   s.getRawPath = (...args: any[]) => callExternal('getRawPath', ...args);
   s.getRawUrl = (...args: any[]) => callExternal('getRawUrl', ...args);
   s.select = (...args: any[]) => callExternal('select', ...args);
+  // D-1 A-2 误判修正：addImagesToFolder 已在 externalSupplyRegistrar 注册，却漏了 scope 面挂载，
+  // main.cjs:2057 直调 scope.addImagesToFolder 即 TypeError（m1 实测）。
+  s.addImagesToFolder = (...args: any[]) => callExternal('addImagesToFolder', ...args);
 
   // b1-9av：启动期键盘绑定。原链 = update-menu/update-preferences IPC → initMousetrap
   // （bundle 22399/22408），该两通道 React 世界无发送方无桥（PROGRESS 曾登记"暂留"）——

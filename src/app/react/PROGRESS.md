@@ -7046,3 +7046,62 @@ version 31）**：
 | shortcutInput | 快捷键输入 | 64490 | 待办 |
 | mediaElement | 媒体元素 | 64843 | 待办 |
 | mpvMediaElement | MPV 媒体元素 | 65684 | 待办 |
+
+<details><summary>b1-9bz-D-2 施工进展（2026-09-11）——jQuery 核心清零</summary>
+
+**已完成批次**（每批 probe + 定向测试 + tsc 不增，随批 commit）：
+
+| 批次 | 范围 | 结果 |
+| --- | --- | --- |
+| D-2b | gridService / detailService / selectionViewDomain / bundleGlobals 的 `w.$()` | 原生（utils/domQuery） |
+| D-2c | tagManagerDomain 60 处（含 GIF 工具条事件委托块） | 原生 addEventListener + delegateTarget |
+| D-2d | dataMachinery 172 处（updateItemView/notify/selectUp-Down/rename 等） | 原生；tsc 回 788 基线 |
+| D-2e | `w.$.isNumeric`→utils/lang、`w.$.ajax`→fetch(HEAD)、audioPlugin `w.$`→`w.__eagleAudio`、apiServerDomain | 静态清零 |
+| D-2i | 组件层 `jQuery(`（stage7/collect-window/selectPanelEngine/gridDirectives）| **sentinel jQuery 59→0** |
+| D-2h-a | detailHooks 三 hook（mediaElement/mpvMediaElement/useMouseGesture/useRectSelect）去 `$()`；safeZoomData 去 jQuery.fn 壳 | tsc 660（<788） |
+
+**新增工具**：`src/app/react/utils/domQuery.ts`（迁移期原生 DOM 助手，jQuery 语义对齐：
+q/qa/qaVisible、widthOf/heightOf/outer*、offsetOf、cssSet/setCssEl、onEl/offEl/offAllEl、
+createEl、delegateTarget、trigger/clickEl/focusEl/…）。`onEl/offEl` 为 WeakMap 按类型单挂注册表
+（等价 `$(el).off(type).on(type, fn)` 的替换式语义）。
+
+**门禁现状**：
+- sentinel：`SENTINEL_OK`，`jQuery 59 → 0`（基线已更新为 b1-9bz-D-2i），`vendorScriptTags 1`。
+- `bz-export-check.py` 无问题；`probe-b5-load.mjs` LOAD_OK；tsc 660（低于 788 基线）。
+- 定向套件全绿：stage-smoke / stage5 / stage6 / stage1m1 / stage7a/b/c2 / stage7d1c1 /
+  stage7d3a / stage8b / stage8c / stage9a2（stage7b `tm-unfiled-mode` 为既有失败，stash A/B 确认）。
+
+**D-2 尚未完成（阻塞 D-2g vendor 摘除）**：
+
+> **重要更正**：哨兵 `jQuery` 指标（`/\bjQuery\(/g`）只统计 `jQuery(...)` 工厂调用，
+> **不等于** jQuery 全部消费面。真实残余是三类：`$(...)`（全局 `window.$`）、
+> `$()`（detailHooks getter，已在 D-2h 清 0）、`.data()` 元素缓存通道。
+> D-2h-a/b 后 `$()` 与 `jQuery(` 已归 0，但全局 `$(...)` 仍散落多处。
+
+1. 全局 `$(...)` / `window.$`（含注释外的代码点，近似计数）：
+   `core/smoothZoomEngine.ts`（~69，插件内部 appendTo/bind/mouseUp 等）、
+   `core/hoverPreview.ts`（~53，box 悬停预览容器/清理）、`core/itemDomain.ts`（~18）、
+   `core/miscDomain.ts`（~16）、`services/folderCoreService.ts`（~9）、
+   `core/dataMachinery.ts`（~9）、`services/lockService.ts`（~8）、`core/bitmapViewer.ts`（~8）、
+   `services/imageOpsService.ts`（~7）、`services/sidebarService.ts`（~6）、
+   `services/batchOpsService.ts`（~6）、`core/libraryDomain.ts`（~6）、
+   `services/miscMenuService.ts`（~5）、`services/mediaService.ts`（~5）、
+   `preferences/panels.tsx`（~5）、`components/inspector/Inspector.tsx`（5）、
+   `services/viewOpsService.ts`（~4）、`services/uploadService.ts`（~4）、`core/filterDomain.ts`（~4）
+   + 十余个 1–2 处的小文件。其中 `smoothZoomEngine`/`hoverPreview` 为最大两块。
+2. `components/inspector/inspectorActions.ts` 454/463 与 `Inspector.tsx` 138/152/153/1004/1010
+   的 bare `$(x)`（经 detailHooks getter）——getter 为 0 参语义，本就非 jQuery 集合，
+   属既有隐性缺陷，迁移时一并修正。
+3. `.data()` 通道（26 处，跨 7 文件）：`degree`（itemDomain/selectionViewDomain/preview-window/
+   imageOpsService/mediaService）、`flip`（preview-window/mediaService）、`search-active`
+   （preferences/panels）、smoothZoom 插件的 `data('show-at-zoom'|'allow-scale'|…)` 只读配置。
+   jQuery `.data` 为元素内部缓存（写不落 `data-*` 属性），需以 WeakMap/`dataset` 统一原生并
+   同批切换全部读/写点（不可分批，否则读写不互通）。
+4. `components/shell/BodyBindings.tsx` 的 `$.fn.hoverIntent` 守卫（hoverIntent 供应商脚本早不在
+   vendors，去 jQuery 后该守卫自然短路）。
+5. 上述 1–4 清零后，方可 `git rm src/app/js/vendors/jquery-1.8.0.min.js` + 摘 `index.html`
+   引用，并处置 `shims.js`（`w.__eagleMachinery` / `scopeEvalAsync` 等边界层）。
+
+
+</details>
+

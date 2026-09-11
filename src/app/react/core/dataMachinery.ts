@@ -11305,7 +11305,6 @@ export function applyDataMachineryScope(): void {
   s.updateSelection = () => machineryUpdateSelection(s);
   s.zoom = () => machineryZoom(s);
   // c15b：adjustLayoutWidth/zoomFit
-  s.adjustLayoutWidth = (increases: any) => machineryAdjustLayoutWidth(s, increases);
   s.zoomFit = (event: any, noAnimation: any) => machineryZoomFit(s, event, noAnimation);
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
   s.changeSidebarIndex = (node: any) => machineryChangeSidebarIndex(s, node);
@@ -11317,7 +11316,6 @@ export function applyDataMachineryScope(): void {
   s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode(s, $event, image);
   s.leaveDetailMode = () => machineryLeaveDetailMode(s);
   // c16c：saveFolder
-  s.saveFolder = () => machinerySaveFolder(s);
   // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
   // 双写保证 $rootScope.notify 直调与 s.notify 原型链解析都走移植版）
   const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(s, params, restoreCallbackk);
@@ -11367,17 +11365,13 @@ export function applyDataMachineryScope(): void {
   // b1-4a：滚动/列表辅助族第一批
   s.autoScroll = (index: any) => machineryAutoScroll(s, index);
   s.currentIndex = () => machineryCurrentIndex(s);
-  s.getSelectedItemElements = () => machineryGetSelectedItemElements(s);
   // b1-4b：sortData/offsetScrollbar/updateFilterCounts
-  s.sortData = (data: any, orderBy: any) => machinerySortData(s, data, orderBy);
   s.offsetScrollbar = machineryOffsetScrollbar(s);
-  s.updateFilterCounts = (image: any, inc: any, now: any) => machineryUpdateFilterCounts(s, image, inc, now);
   // b1-5：记忆/预载族
   // b1-5b：homeHandler/endHandler
   s.homeHandler = (event: any) => machineryHomeHandler(s, event);
   s.endHandler = (event: any) => machineryEndHandler(s, event);
   // b1-6a：删除族第一批
-  s.checkOperationSafety = (callback: any, amount: any) => machineryCheckOperationSafety(s, callback, amount);
   // b1-6b：删除族第二批
   // b1-6c：removeFolderContents
   // b1-7a：小件批

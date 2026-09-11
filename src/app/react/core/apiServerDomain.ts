@@ -23,6 +23,7 @@ import { getBodyScope } from './appCore';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
 import { scopeEvalAsync } from '../global/scopeShim';
+import { machinerySaveFolder, machinerySortData, machineryUpdateFilterCounts } from '../core/dataMachinery';
 
 let installed = false;
 
@@ -546,7 +547,7 @@ function machineryCreateFolder(params: any): Promise<any> {
       bs.folderMappings[folder.id] = folder;
       bs.updateSidebarList();
       addToRecentFolders([folder.id]);
-      bs.saveFolder();
+      machinerySaveFolder(bs, );
       w.electronLog.info(`[api] create folder: ${folderName}(${folder.id})`);
       resolve(folder);
     }
@@ -568,7 +569,7 @@ function machineryRenameFolder(params: any): Promise<any> {
       let originName = folder.name;
       bs.changeFolderName(folder, newName);
       bs.updateSidebarList();
-      bs.saveFolder();
+      machinerySaveFolder(bs, );
       w.electronLog.info(`[api] rename folder: ${originName} to ${newName}`);
       resolve(folder);
     }
@@ -608,7 +609,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
         folder.description = newDescription;
       }
       bs.updateSidebarList();
-      bs.saveFolder();
+      machinerySaveFolder(bs, );
       resolve(folder);
     }
   });
@@ -799,7 +800,7 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
     items.forEach(function (item: any) {
       item.isDeleted = true;
       item.deletedTime = now;
-      bs.updateFilterCounts(item, -1, now);
+      machineryUpdateFilterCounts(bs, item, -1, now);
     });
 
     w.ayncsImagesChange(items);
@@ -1163,7 +1164,7 @@ function machineryListImages(params: any): Promise<any> {
       var reverse = orderBy.indexOf("-") > -1;
       var items = [...bs.raw];
 
-      items = bs.sortData(items, orderBy.replace("-", ""));
+      items = machinerySortData(bs, items, orderBy.replace("-", ""));
       if (reverse) {
         items.reverse();
       }
@@ -1250,7 +1251,7 @@ function machineryListImages(params: any): Promise<any> {
       else if (200 < items.length) {
         items.length = 200;
       }
-      items = bs.sortData(items, "IMPORT");
+      items = machinerySortData(bs, items, "IMPORT");
       resolve(items);
     }
     catch (err) {

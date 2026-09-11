@@ -6,7 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryEditTag, machineryEnterDetailMode } from '../../core/dataMachinery';
+import { machineryCheckOperationSafety, machineryEditTag, machineryEnterDetailMode } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -325,7 +325,7 @@ export function annotationChange() {
 
   const items = [...getBodyScope().selected];
 
-  getBodyScope().checkOperationSafety(() => {
+  machineryCheckOperationSafety(getBodyScope(), () => {
     items.forEach((image: any) => {
       image.annotation = annotation;
     });
@@ -337,7 +337,7 @@ export function annotationChange() {
 }
 
 export function urlChange() {
-  getBodyScope().checkOperationSafety(() => {
+  machineryCheckOperationSafety(getBodyScope(), () => {
     const eagleIns = (window as any).eagle.inspector;
     const changedItems: any[] = [];
 

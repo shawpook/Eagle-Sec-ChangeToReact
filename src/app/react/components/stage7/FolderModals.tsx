@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
-import { machineryGetSelection } from '../../core/dataMachinery';
+import { machineryGetSelectedItemElements, machineryGetSelection, machineryUpdateFilterCounts } from '../../core/dataMachinery';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1072,7 +1072,7 @@ export function AddToFolderModal() {
               const box = document.getElementById(`box-${image.id}`);
               if (box && w.ig && typeof w.ig.remove === 'function') w.ig.remove(box);
               image.folders.splice(idx, 1);
-              body.updateFilterCounts(image, true);
+              machineryUpdateFilterCounts(body, image, true);
               viewRef.current.current.imagesMappings[image.id] = false;
               hasRemoved = true;
             }
@@ -1089,7 +1089,7 @@ export function AddToFolderModal() {
                   viewRef.current.current.imagesMappings[image.id] = false;
                 }
                 image.folders.splice(idx, 1);
-                body.updateFilterCounts(image, true);
+                machineryUpdateFilterCounts(body, image, true);
                 hasRemoved = true;
               }
             });
@@ -1136,7 +1136,7 @@ export function AddToFolderModal() {
     }
 
     if (body.viewMode === 'unfiled') {
-      const itemElements = body.getSelectedItemElements();
+      const itemElements = machineryGetSelectedItemElements(body, );
       glRemoveitemsChannel.emit(itemElements);
     } else {
       if (w.ig && typeof w.ig.layout === 'function') w.ig.layout(false);

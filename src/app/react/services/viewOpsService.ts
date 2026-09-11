@@ -9,7 +9,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySaveLayout, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, addClass, removeClass } from '../utils/domQuery';
 
@@ -228,3 +228,16 @@ export function getNext(...args: any[]) {
         return s.allData[end + 1] || s.allData[end - 1];
     }).apply(null, args);
   }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* saveLayout（bundle 37280-37286 逐字：localStorage bracket 赋值原样） */
+export function machinerySaveLayout(s: any, folder: any, layout: any): void {
+  const w = window as any;
+  if (folder) {
+    w.localStorage[`eagle.list.layout.${folder.id}`] = layout;
+  }
+  else {
+    w.localStorage[`eagle.list.layout.${s.rootDir}`] = layout;
+  }
+}

@@ -6911,27 +6911,6 @@ export function machineryUpdateSubFolderWidth(s: any): void {
   s.imageSize.subfolderWidth = result;
 }
 
-/* updateSliderPosition（bundle 33689-33705：函数体全被注释——no-op 原样保留注释） */
-export function machineryUpdateSliderPosition(s: any): void {
-  // var $breadcrumbs = $(".content-panel .toolbar .breadcrumbs ul");
-  // var $right = $(".content-panel .toolbar .right:visible");
-  // var $slider = $(".sliders-bar:visible");
-
-  // if ($slider.length === 0 || $right.length === 0 || $breadcrumbs.length === 0) return;
-
-  // var x1 = $slider.offset().left + $slider.width();
-  // var x2 = $right.offset().left;
-
-  // var x3 = $slider.offset().left;
-  // var x4 = $breadcrumbs.offset().left + $breadcrumbs.width();
-
-  // if ( x1 + 5 > x2 || x4 + 5 > x3 ) {
-  //     $slider.addClass("response");
-  // }
-  // else {
-  //     $slider.removeClass("response");
-  // }
-}
 
 /* changeListHeight（bundle 33746-33785 逐字：5 取整 + lastImageHeight 留档 + 500ms 后
    thumbSize 键持久化（currentFolder/smartFolder/tag/viewMode 九分支键逐字）+ 即时
@@ -8258,38 +8237,9 @@ export function machineryFocusAppUnlockPassword(s: any): void {
 
 /* pausePalette/resumePalette（bundle 37201/37207 逐字；change-palette-pause 通道 typo
    原样；IPCHelper c17a 接装经 window） */
-export function machineryPausePalette(s: any): void {
-  const w = window as any;
-  s.paletteQueuePaused = true;
-  syncSidebarFromScope();
-  removeClass("#background-state-spinner .sm-spiner", "has-animation");
-  w.IPCHelper.send('change-palette-pause');
-}
 
-export function machineryResumePalette(s: any): void {
-  const w = window as any;
-  s.paletteQueuePaused = false;
-  syncSidebarFromScope();
-  addClass("#background-state-spinner .sm-spiner", "has-animation");
-  w.IPCHelper.send('change-palette-resume');
-}
 
-/* saveLayout（bundle 37280-37286 逐字：localStorage bracket 赋值原样） */
-export function machinerySaveLayout(s: any, folder: any, layout: any): void {
-  const w = window as any;
-  if (folder) {
-    w.localStorage[`eagle.list.layout.${folder.id}`] = layout;
-  }
-  else {
-    w.localStorage[`eagle.list.layout.${s.rootDir}`] = layout;
-  }
-}
 
-/* cancelCrop（bundle 36091-36093 逐字） */
-export function machineryCancelCrop(s: any): void {
-  s.isCropMode = false;
-  syncDetailFromScope();
-}
 
 /* openFilter（bundle 30173-30178 逐字）+ FILTER_ID_MAP（30204 前注释映射表逐字）+
    toggleFilterByType（30204-30216 逐字：_.throttle(300) 实例 apply 时一次性创建 +
@@ -8358,14 +8308,6 @@ export function machineryGetChildFoldersMaps(s: any, folders: any): any {
   return childs;
 }
 
-export function machineryGetChildFoldersMap(s: any, folder: any): any {
-  const w = window as any;
-  var childs: any = {};
-  w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
-    childs[child.id] = true;
-  });
-  return childs;
-}
 
 /* multipleOpenFolder（bundle 38128-38162 逐字：resetFilter + 多选态切换（indexOf 增删 +
    needReload reload）+ currentFolderChildren getChildFoldersMaps） */
@@ -8441,26 +8383,7 @@ export function machinerySearchInAll(s: any): void {
 
 /* isDuplicateImage/addToDuplicateMapping/removeFromDuplicateMapping（bundle 30572/30585/
    30591 逐字：svg/tif/tiff 排除 + getHashID（Tier-2）+ 垃圾桶排除） */
-export function machineryIsDuplicateImage(s: any, image: any): any {
-  const w = window as any;
-  if (!s.duplicateMappings) return false;
-  if (image.ext === 'svg') return false;
-  if (image.ext === 'tif') return false;
-  if (image.ext === 'tiff') return false;
 
-  var hashID = w.getHashID(image);
-  if (!hashID) return false;
-  // 垃圾桶文件不纳入考量
-  if (s.duplicateMappings[hashID] && s.duplicateMappings[hashID].isDeleted) return false;
-  return s.duplicateMappings[hashID];
-}
-
-export function machineryAddToDuplicateMapping(s: any, image: any): void {
-  const w = window as any;
-  var hashID = w.getHashID(image);
-  if (!s.duplicateMappings) s.duplicateMappings = {};
-  s.duplicateMappings[hashID] = image;
-}
 
 export function machineryRemoveFromDuplicateMapping(s: any, image: any): void {
   const w = window as any;
@@ -8470,30 +8393,6 @@ export function machineryRemoveFromDuplicateMapping(s: any, image: any): void {
 
 /* openDuplicate（bundle 36944-36974 逐字：selected/currentPage/all 三档
    OPEN_DUPLICATE_SCAN_PANEL 广播，selected 档含合并回调过滤 isDeleted） */
-export function machineryOpenDuplicate(s: any, options: any = {}): void {
-  if (options?.selected) {
-    openDuplicateScanPanelChannel.emit({
-      items: [...s.selected],
-      onMergedCallback: () => {
-        s.selected = s.selected.filter((item: any) => {
-          return !item.isDeleted;
-        });
-        syncInspectorFromScope();
-        scopeEvalAsync();
-      },
-    });
-  }
-  else if (options?.currentPage) {
-    openDuplicateScanPanelChannel.emit({
-      items: [...s.allData],
-    });
-  }
-  else {
-    openDuplicateScanPanelChannel.emit({
-      items: [...s.all],
-    });
-  }
-}
 
 /* toggleCurrentLevelSmartFolders 内嵌闭包（38841 逐字）+ toggleAllSmartFolders 内嵌闭包
    （38831 逐字：tree.walk 全展开/收起）——localStorage 键逐字 */
@@ -8602,47 +8501,13 @@ export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any):
 
 /* updateTxtItem（bundle 34478-34489 逐字：txt 盒内容 HTML 重绘 + **selected.length === 0
    且 selected[0] === item 的矛盾守卫——bundle 原样（实际恒 false 不生效）**） */
-export function machineryUpdateTxtItem(s: any, item: any): void {
-  const w = window as any;
-  var paragraphs = item.text.split("\n");
-  var paragraphsHTML = "";
-  paragraphsHTML += `<h4>${item.name.trim()}</h4>`;
-  paragraphs.forEach(function (paragraph: any) {
-    paragraphsHTML += `<p>${paragraph.trim()}</p>`;
-  });
-  setHtml("#box-" + item.id + " .txt-content div", paragraphsHTML);
-  if (s.selected.length === 0 && s.selected[0] === item) {
-    setHtml(".inspector .txt-content div", paragraphsHTML);
-  }
-}
 
 /* ── b1-7d-1：外部站点 opener 族/教程/试用/多开/重命名入口/TouchID ────── */
 
 /* openPinterest（bundle 26859-26871 逐字三语）+ openHuaban（26873）+ openArtstation
    （26877 广播）；shell 经 w.electron.shell（19019 解构同源） */
-export function machineryOpenPinterest(s: any): void {
-  const w = window as any;
-  switch (s.$root.preferences.general.language) {
-    case 'zh_CN':
-      w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/828-import-from-pinterest");
-      break;
-    case 'zh_TW':
-      w.electron.shell.openExternal("https://docs-tw.eagle.cool/article/950-import-from-pinterest");
-      break;
-    default:
-      w.electron.shell.openExternal("https://docs-en.eagle.cool/article/517-import-from-pinterest");
-      break;
-  }
-}
 
-export function machineryOpenHuaban(s: any): void {
-  const w = window as any;
-  w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/402-import-from-huaban");
-}
 
-export function machineryOpenArtstation(s: any): void {
-  importArtstationChannel.emit();
-}
 
 /* quickOpenFolder（bundle 44900-44936 逐字：openFolder(ignoreReload=true)/openAll 分流 +
    changeSidebarIndex 200ms + 自动定位（60/页倒序扫 allData → startCursor + 藏容器 reload +
@@ -8690,46 +8555,6 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
 
 /* multipleOpenSmartFolder（bundle 38172-38197 逐字：与 multipleOpenFolder 对称
    （smartFolder 多选态切换，currentFolder 清空）） */
-export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needReload: any): void {
-  resetFilter();
-  s.keyword = "";
-  s.$root.currentFocus = "sidebar";
-  s.viewMode = undefined;
-  s.currentTag = undefined;
-  syncToolbarFromScope();
-  s.startCursor = 0;
-  s.currentFolder = undefined;
-  syncPanelFromScope();
-  syncFolderLock();
-  syncListFromScope();
-  s.$root.selectedFolders = [];
-  syncListFromScope();
-  s.$root.selectedFoldersMappings = {};
-  var idx = s.$root.selectedSmartFolders.indexOf(smartFolder);
-  if (idx === -1) {
-    s.$root.selectedSmartFolders.push(smartFolder);
-    s.$root.selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
-    if (needReload) {
-      s.startCursor = 0;
-      s.reload();
-    }
-    s.currentId = 'smart-folder-' + smartFolder.id;
-    syncSidebarFromScope();
-  }
-  else {
-    if (s.$root.selectedSmartFolders.length > 1) {
-      s.$root.selectedSmartFolders.splice(idx, 1);
-      delete s.$root.selectedSmartFoldersMappings[smartFolder.id];
-      if (needReload) {
-        s.startCursor = 0;
-        s.reload();
-      }
-    }
-    else {
-      return;
-    }
-  }
-}
 
 /* renameFolder/renameSmartFolder（bundle 38163 邻域/38168 邻域逐字：editable + newFolderName
    + 双 100/200ms focus select——bundle 原样双写） */
@@ -8816,14 +8641,6 @@ export function machineryShowTutorial(s: any): void {
   }
 }
 
-/* openTrialModal（bundle 37xxx 逐字：ipcRenderer 统一表达式 send('open-trial-modal')） */
-export function machineryOpenTrialModal(s: any, trialRemain: any): void {
-  const w = window as any;
-  if (trialRemain) {
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-    ipc.send('open-trial-modal', trialRemain);
-  }
-}
 
 /* unlockFolderWithTouchID（bundle 37xxx 逐字 async：canUseTouchID 守卫 + remote
    systemPreferences promptTouchID（@electron/remote 为 bundle 19020 词法绑定 →
@@ -9149,7 +8966,6 @@ export function machineryChangeMetaItems(s: any, type: any): void {
    b1-9ba：该频道全树无 $on 接收者（原接收者随 bundle 摘除退役，js/directives 侧文件
    从未挂载）——广播体移除，函数保形（快捷键 'move-to-folders' 入口与 s.moveToFolders
    挂载面不变；移动到文件夹竖切时按 React 语义归位）。 */
-export function machineryMoveToFolders(_s: any, _e: any): void {}
 
 // ── b1-7d-3 域内自管（原 controller 闭包 var：addImageTimeLeftInterval 45319 邻域）──
 let addImageTimeLeftInterval: any = null;
@@ -9433,105 +9249,6 @@ export function machineryHideUploadQueue(s: any): void {
 /* importLinks（bundle 26906-26994 逐字：剪贴板 http 预读（**clipboard 裸引 →
    w.electron.clipboard**；is.url → w.is 镜像）+ textarea 校验 swal → 逐链 HEAD 探测分流
    （image → upload-url 通道 / 其他 → 书签 url-from-extension）+ uploadQueue 占位） */
-export function machineryImportLinks(s: any): void {
-  const w = window as any;
-
-  var inputValue = '';
-
-  // 從剪貼版預先讀取用戶的資料，如果發現是 http 開頭
-  const clipboardText = w.electron.clipboard.readText();
-  if (clipboardText.startsWith('http')) {
-    const links = clipboardText.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0 && w.is.url(line));
-    if (links.length > 0) {
-      inputValue = links.join('\n');
-    }
-  }
-
-  w.swal({
-    html: `
-                    <div class="alert">
-                        <div class="alert-icon links"></div>
-                        <h4 class="alert-title">${w.i18n.__('Dialog.ImportLinks.title')}</h4>
-                        <p class="alert-desc">${w.i18n.__('Dialog.ImportLinks.desc')}</p>
-                    </div>
-                `,
-    showCloseButton: false,
-    showCancelButton: true,
-    allowOutsideClick: false,
-    focusConfirm: true,
-    focusCancel: false,
-    padding: 24,
-    width: 480,
-    maxWidth: 480,
-    input: 'textarea',
-    inputValue: inputValue ?? '',
-    inputValidator: function (value: any) {
-      return new Promise(function (resolve: any, reject: any) {
-        if (!value || value.trim() === "") {
-          reject(w.i18n.__('Dialog.ImportLinks.LinkFormatError'));
-          return;
-        }
-        // 支援多行，每行一個鏈接
-        const lines = value.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
-        // 簡單的 URL 格式驗證
-        const urlPattern = /^(https?:\/\/)[^\s\/$.?#].[^\s]*$/i;
-        const invalidLinks = lines.filter((line: any) => !urlPattern.test(line));
-        if (invalidLinks.length > 0) {
-          reject(w.i18n.__('Dialog.ImportLinks.LinkFormatError') + "\n" + invalidLinks.join('\n'));
-        } else {
-          resolve();
-        }
-      });
-    },
-    customClass: "alert-box",
-    cancelButtonColor: "#777777",
-    confirmButtonText: w.i18n.__("Dialog.ImportLinks.Button"),
-    cancelButtonText: w.i18n.__("general.cancel"),
-  }).then(function (result: any) {
-    // 批量處理鏈接
-    const links = result.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
-    const currentFolderId = s.currentFolder?.id;
-    const folderIds = currentFolderId ? [currentFolderId] : [];
-
-    links.forEach((link: any) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 10000);
-      const onComplete = function (contentType: string) {
-        clearTimeout(timer);
-        if (contentType.indexOf("image") > -1) {
-          // 圖片類型：直接下載圖片
-          w.IPCHelper.send('upload-url', {
-            url: link,
-            folders: folderIds,
-            tags: [],
-          });
-        }
-        else {
-          // 其他所有情況（html、未知類型、HEAD 請求失敗等）：
-          // 一律當作書籤匯入，截圖能不能成功由後端決定
-          const data = {
-            id: w.guid(),
-            url: link,
-            tags: [],
-            modificationTime: Date.now(),
-            folders: folderIds,
-          };
-          const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-          ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
-        }
-        s.uploadQueue.push({});
-        syncUploadFromScope();
-      };
-      fetch(link, { method: "HEAD", signal: controller.signal })
-        .then(function (resp) {
-          onComplete((resp.headers.get('Content-Type') || "").toLowerCase());
-        })
-        .catch(function () {
-          onComplete("");
-        });
-    });
-  }, function () { });
-}
 
 /* videoScreenShot（bundle 33233-33288 逐字 async：mpv screenshot API / native drawImage
    双路 → copyMode 剪贴板（electron.nativeImage）或 screencapture-from-extension 上送
@@ -9795,9 +9512,6 @@ export function machineryFocusSeach(s: any): void {
 
 /* newSmartFolder（bundle 39944-39946 逐字：$rootScope.$broadcast → s.$root（shim $root
    同体语义）） */
-export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): void {
-  newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
-}
 
 /* prependFolder（bundle 39968-39979 逐字：unshift + folderMappings 登记 + updateSidebarList
    + 1s 后 calculateImageBinding→saveFolder） */
@@ -10393,83 +10107,12 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
 
 /* getAncestorSmartFolders（bundle 42527-42542 逐字：smartFolderMappings 祖先链 +
    electronLog catch 原样） */
-export function machineryGetAncestorSmartFolders(s: any, folder: any, folders: any[]): any[] {
-  const w = window as any;
-  try {
-    if (folder.parent && s.smartFolderMappings[folder.parent]) {
-      var parent = s.smartFolderMappings[folder.parent];
-      if (parent.id != folder.id) {
-        folders.push(parent);
-        return machineryGetAncestorSmartFolders(s, parent, folders);
-      }
-    }
-    return folders;
-  }
-  catch (err: any) {
-    w.electronLog && w.electronLog.error(err.stack || err);
-    return folders;
-  }
-}
 
 /* calcuteContainFolders 闭包版（bundle 27283-27325 逐字：倒序 folders 计数 +
    foldersMappings 建表（isSelected=filterRules.folder.includes）+ filter 剔 null +
    {containFoldersMappings, containFolders, noFoldersCount} 返回——**与 $scope 版
    （27259，含 containFolders 落 scope）不同体，scope 面不可接装（同名碰撞）**） */
-export function machineryCalcuteContainFolders(s: any, data: any): any {
-  const w = window as any;
-  var foldersCount: any = {};
-  var foldersMappings: any = {};
-  var noFoldersCount = 0;
 
-  for (var i = data.length - 1; i >= 0; i--) {
-    var image = data[i];
-    if (image.folders && image.folders.length > 0) {
-      image.folders.forEach(function (folder: any) {
-        if (!foldersCount[folder]) { foldersCount[folder] = 0 };
-        foldersCount[folder]++;
-      });
-    }
-    else {
-      noFoldersCount++;
-    }
-  }
-
-  var folders = Object.keys(foldersCount).map(function (key: any) {
-    var folder = s.folderMappings[key];
-    if (!folder) return;
-    var index = foldersCount[key];
-
-    foldersMappings[key] = {
-      id: key,
-      isSelected: !!w.eagle.filter.filterRules.folder.includes[key],
-      name: folder.name,
-      pinyin: folder.pinyin,
-      imageCount: foldersCount[key],
-      index: index
-    };
-    return foldersMappings[key];
-  });
-
-  folders = folders.filter(function (f: any) {
-    return !!f;
-  });
-
-  return {
-    containFoldersMappings: foldersMappings,
-    containFolders: folders,
-    noFoldersCount: noFoldersCount
-  }
-}
-
-/* getFolderParentChilder（bundle 40842-40848 逐字，typo 原样：父级 children / 根层回落） */
-export function machineryGetFolderParentChilder(s: any, folder: any): any {
-  if (folder.parent && s.folderMappings[folder.parent]) {
-    return s.folderMappings[folder.parent].children;
-  }
-  else {
-    return s.folders;
-  }
-}
 
 /* calcRotateDegree（bundle 36170-36180 逐字：click 分支 shift ±90 / 其余 -90 + 360 归一；
    纯函数无 scope 依赖） */

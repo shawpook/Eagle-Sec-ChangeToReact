@@ -34,14 +34,15 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryMoveToFolders, machineryNewSmartFolder, machineryOpenAll, machineryPausePalette, machineryPrependFolder, machineryQuickOpenFolder, machineryRebindRefresh, machineryRememberScrollTops, machineryResumePalette, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryGetRecentFolders, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryOpenAll, machineryPrependFolder, machineryQuickOpenFolder, machineryRebindRefresh, machineryRememberScrollTops, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
 import { openErrorChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { q, qaNot, widthOf, heightOf, hasClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
+import { q, qaNot, widthOf, heightOf, hasClass, addClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
+import { machineryNewSmartFolder } from './libraryDomain';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -1516,3 +1517,23 @@ export function updateSuggestions() {
             syncToolbarFromScope();
             console.timeEnd("updateSuggestions");
         }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryMoveToFolders(_s: any, _e: any): void {}
+
+export function machineryPausePalette(s: any): void {
+  const w = window as any;
+  s.paletteQueuePaused = true;
+  syncSidebarFromScope();
+  removeClass("#background-state-spinner .sm-spiner", "has-animation");
+  w.IPCHelper.send('change-palette-pause');
+}
+
+export function machineryResumePalette(s: any): void {
+  const w = window as any;
+  s.paletteQueuePaused = false;
+  syncSidebarFromScope();
+  addClass("#background-state-spinner .sm-spiner", "has-animation");
+  w.IPCHelper.send('change-palette-resume');
+}

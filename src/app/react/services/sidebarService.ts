@@ -11,7 +11,7 @@
  * 本模块是**组件侧唯一入口**（Sidebar.tsx 此前 ~30 处 scopeApply 绕道）。
  * 菜单族（openFolderContextMenu 等）归 S5 菜单竖切；DnD（onDropFolder 族）归 bh。
  */
-import { getOffsetScrollbarFn, machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryToggleSelectSmartFolder, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
+import { getOffsetScrollbarFn, machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryToggleSelectSmartFolder, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
@@ -22,6 +22,8 @@ import { openFolder, openSmartFolder } from './folderCoreService';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, hasClass, addClass, removeClass } from '../utils/domQuery';
 
+import { machineryMultipleOpenSmartFolder } from '../core/libraryDomain';
+import { machineryUpdateSliderPosition } from './gridService';
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
 export function sidebarClickNode(s: any, event: any, folder: any): void {

@@ -23,13 +23,13 @@ import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
-import { getOffsetScrollbarFn, getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
+import { getOffsetScrollbarFn, getFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
-import { glRemoveitemsChannel, openDuplicateChannel } from '../global/bus';
+import { glRemoveitemsChannel, openDuplicateChannel, openDuplicateScanPanelChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
-import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
+import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setHtml, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
 declare const IPCHelper: any;
 declare const remote: any;
 
@@ -1413,4 +1413,66 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
       console.log("添加 %s 張圖片完成", total);
       console.timeEnd("添加圖片耗費時間");
     }
+}
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryAddToDuplicateMapping(s: any, image: any): void {
+  const w = window as any;
+  var hashID = w.getHashID(image);
+  if (!s.duplicateMappings) s.duplicateMappings = {};
+  s.duplicateMappings[hashID] = image;
+}
+
+export function machineryIsDuplicateImage(s: any, image: any): any {
+  const w = window as any;
+  if (!s.duplicateMappings) return false;
+  if (image.ext === 'svg') return false;
+  if (image.ext === 'tif') return false;
+  if (image.ext === 'tiff') return false;
+
+  var hashID = w.getHashID(image);
+  if (!hashID) return false;
+  // 垃圾桶文件不纳入考量
+  if (s.duplicateMappings[hashID] && s.duplicateMappings[hashID].isDeleted) return false;
+  return s.duplicateMappings[hashID];
+}
+
+export function machineryOpenDuplicate(s: any, options: any = {}): void {
+  if (options?.selected) {
+    openDuplicateScanPanelChannel.emit({
+      items: [...s.selected],
+      onMergedCallback: () => {
+        s.selected = s.selected.filter((item: any) => {
+          return !item.isDeleted;
+        });
+        syncInspectorFromScope();
+        scopeEvalAsync();
+      },
+    });
+  }
+  else if (options?.currentPage) {
+    openDuplicateScanPanelChannel.emit({
+      items: [...s.allData],
+    });
+  }
+  else {
+    openDuplicateScanPanelChannel.emit({
+      items: [...s.all],
+    });
+  }
+}
+
+export function machineryUpdateTxtItem(s: any, item: any): void {
+  const w = window as any;
+  var paragraphs = item.text.split("\n");
+  var paragraphsHTML = "";
+  paragraphsHTML += `<h4>${item.name.trim()}</h4>`;
+  paragraphs.forEach(function (paragraph: any) {
+    paragraphsHTML += `<p>${paragraph.trim()}</p>`;
+  });
+  setHtml("#box-" + item.id + " .txt-content div", paragraphsHTML);
+  if (s.selected.length === 0 && s.selected[0] === item) {
+    setHtml(".inspector .txt-content div", paragraphsHTML);
+  }
 }

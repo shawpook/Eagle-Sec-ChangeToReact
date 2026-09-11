@@ -43,11 +43,12 @@ import { syncFilterFromScope } from '../store/filterState';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncToolbarFromScope } from '../store/toolbarState';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
-import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenTrialModal, machineryOpenUnfiled, machineryOpenUntagged, machineryRebindRefresh, machineryShowTutorial, machinerySmartFolderCount, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateSidebarList } from './dataMachinery';
-import { filterWithColor } from './filterDomain';
+import { machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryFindDupclipate, machineryOpenAll, machineryOpenAllTags, machineryOpenCommunity, machineryOpenRandom, machineryOpenRecent, machineryOpenTrash, machineryOpenUnfiled, machineryOpenUntagged, machineryRebindRefresh, machineryShowTutorial, machinerySmartFolderCount, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateSidebarList } from './dataMachinery';
+import { filterWithColor, resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
-import { closeTagsPopupChannel } from '../global/bus';
+import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel } from '../global/bus';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl } from '../utils/domQuery';
 declare const ga4track: any;
@@ -1127,4 +1128,221 @@ export function takeoverLibraryDomain(): void {
     // 事件驱动的测试/静默场景下补一次 $evalAsync，保证 binding 派工即时可flush
     scopeEvalAsync();
   });
+}
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryGetAncestorSmartFolders(s: any, folder: any, folders: any[]): any[] {
+  const w = window as any;
+  try {
+    if (folder.parent && s.smartFolderMappings[folder.parent]) {
+      var parent = s.smartFolderMappings[folder.parent];
+      if (parent.id != folder.id) {
+        folders.push(parent);
+        return machineryGetAncestorSmartFolders(s, parent, folders);
+      }
+    }
+    return folders;
+  }
+  catch (err: any) {
+    w.electronLog && w.electronLog.error(err.stack || err);
+    return folders;
+  }
+}
+
+export function machineryGetChildFoldersMap(s: any, folder: any): any {
+  const w = window as any;
+  var childs: any = {};
+  w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
+    childs[child.id] = true;
+  });
+  return childs;
+}
+
+/* getFolderParentChilder（bundle 40842-40848 逐字，typo 原样：父级 children / 根层回落） */
+export function machineryGetFolderParentChilder(s: any, folder: any): any {
+  if (folder.parent && s.folderMappings[folder.parent]) {
+    return s.folderMappings[folder.parent].children;
+  }
+  else {
+    return s.folders;
+  }
+}
+
+export function machineryImportLinks(s: any): void {
+  const w = window as any;
+
+  var inputValue = '';
+
+  // 從剪貼版預先讀取用戶的資料，如果發現是 http 開頭
+  const clipboardText = w.electron.clipboard.readText();
+  if (clipboardText.startsWith('http')) {
+    const links = clipboardText.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0 && w.is.url(line));
+    if (links.length > 0) {
+      inputValue = links.join('\n');
+    }
+  }
+
+  w.swal({
+    html: `
+                    <div class="alert">
+                        <div class="alert-icon links"></div>
+                        <h4 class="alert-title">${w.i18n.__('Dialog.ImportLinks.title')}</h4>
+                        <p class="alert-desc">${w.i18n.__('Dialog.ImportLinks.desc')}</p>
+                    </div>
+                `,
+    showCloseButton: false,
+    showCancelButton: true,
+    allowOutsideClick: false,
+    focusConfirm: true,
+    focusCancel: false,
+    padding: 24,
+    width: 480,
+    maxWidth: 480,
+    input: 'textarea',
+    inputValue: inputValue ?? '',
+    inputValidator: function (value: any) {
+      return new Promise(function (resolve: any, reject: any) {
+        if (!value || value.trim() === "") {
+          reject(w.i18n.__('Dialog.ImportLinks.LinkFormatError'));
+          return;
+        }
+        // 支援多行，每行一個鏈接
+        const lines = value.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
+        // 簡單的 URL 格式驗證
+        const urlPattern = /^(https?:\/\/)[^\s\/$.?#].[^\s]*$/i;
+        const invalidLinks = lines.filter((line: any) => !urlPattern.test(line));
+        if (invalidLinks.length > 0) {
+          reject(w.i18n.__('Dialog.ImportLinks.LinkFormatError') + "\n" + invalidLinks.join('\n'));
+        } else {
+          resolve();
+        }
+      });
+    },
+    customClass: "alert-box",
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__("Dialog.ImportLinks.Button"),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (result: any) {
+    // 批量處理鏈接
+    const links = result.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
+    const currentFolderId = s.currentFolder?.id;
+    const folderIds = currentFolderId ? [currentFolderId] : [];
+
+    links.forEach((link: any) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const onComplete = function (contentType: string) {
+        clearTimeout(timer);
+        if (contentType.indexOf("image") > -1) {
+          // 圖片類型：直接下載圖片
+          w.IPCHelper.send('upload-url', {
+            url: link,
+            folders: folderIds,
+            tags: [],
+          });
+        }
+        else {
+          // 其他所有情況（html、未知類型、HEAD 請求失敗等）：
+          // 一律當作書籤匯入，截圖能不能成功由後端決定
+          const data = {
+            id: w.guid(),
+            url: link,
+            tags: [],
+            modificationTime: Date.now(),
+            folders: folderIds,
+          };
+          const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+          ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
+        }
+        s.uploadQueue.push({});
+        syncUploadFromScope();
+      };
+      fetch(link, { method: "HEAD", signal: controller.signal })
+        .then(function (resp) {
+          onComplete((resp.headers.get('Content-Type') || "").toLowerCase());
+        })
+        .catch(function () {
+          onComplete("");
+        });
+    });
+  }, function () { });
+}
+
+export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needReload: any): void {
+  resetFilter();
+  s.keyword = "";
+  s.$root.currentFocus = "sidebar";
+  s.viewMode = undefined;
+  s.currentTag = undefined;
+  syncToolbarFromScope();
+  s.startCursor = 0;
+  s.currentFolder = undefined;
+  syncPanelFromScope();
+  syncFolderLock();
+  syncListFromScope();
+  s.$root.selectedFolders = [];
+  syncListFromScope();
+  s.$root.selectedFoldersMappings = {};
+  var idx = s.$root.selectedSmartFolders.indexOf(smartFolder);
+  if (idx === -1) {
+    s.$root.selectedSmartFolders.push(smartFolder);
+    s.$root.selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
+    if (needReload) {
+      s.startCursor = 0;
+      s.reload();
+    }
+    s.currentId = 'smart-folder-' + smartFolder.id;
+    syncSidebarFromScope();
+  }
+  else {
+    if (s.$root.selectedSmartFolders.length > 1) {
+      s.$root.selectedSmartFolders.splice(idx, 1);
+      delete s.$root.selectedSmartFoldersMappings[smartFolder.id];
+      if (needReload) {
+        s.startCursor = 0;
+        s.reload();
+      }
+    }
+    else {
+      return;
+    }
+  }
+}
+
+export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): void {
+  newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
+}
+
+export function machineryOpenArtstation(s: any): void {
+  importArtstationChannel.emit();
+}
+
+export function machineryOpenHuaban(s: any): void {
+  const w = window as any;
+  w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/402-import-from-huaban");
+}
+
+export function machineryOpenPinterest(s: any): void {
+  const w = window as any;
+  switch (s.$root.preferences.general.language) {
+    case 'zh_CN':
+      w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/828-import-from-pinterest");
+      break;
+    case 'zh_TW':
+      w.electron.shell.openExternal("https://docs-tw.eagle.cool/article/950-import-from-pinterest");
+      break;
+    default:
+      w.electron.shell.openExternal("https://docs-en.eagle.cool/article/517-import-from-pinterest");
+      break;
+  }
+}
+
+/* openTrialModal（bundle 37xxx 逐字：ipcRenderer 统一表达式 send('open-trial-modal')） */
+export function machineryOpenTrialModal(s: any, trialRemain: any): void {
+  const w = window as any;
+  if (trialRemain) {
+    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    ipc.send('open-trial-modal', trialRemain);
+  }
 }

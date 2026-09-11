@@ -248,3 +248,27 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
    交换批保留 window.ig 为 facade 对象：方法子集委托 React InfiniteGrid ref，
    machinery/scope 世界调用面零改动；React 侧条目渲染改由 React 组件承载。
 */
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* updateSliderPosition（bundle 33689-33705：函数体全被注释——no-op 原样保留注释） */
+export function machineryUpdateSliderPosition(s: any): void {
+  // var $breadcrumbs = $(".content-panel .toolbar .breadcrumbs ul");
+  // var $right = $(".content-panel .toolbar .right:visible");
+  // var $slider = $(".sliders-bar:visible");
+
+  // if ($slider.length === 0 || $right.length === 0 || $breadcrumbs.length === 0) return;
+
+  // var x1 = $slider.offset().left + $slider.width();
+  // var x2 = $right.offset().left;
+
+  // var x3 = $slider.offset().left;
+  // var x4 = $breadcrumbs.offset().left + $breadcrumbs.width();
+
+  // if ( x1 + 5 > x2 || x4 + 5 > x3 ) {
+  //     $slider.addClass("response");
+  // }
+  // else {
+  //     $slider.removeClass("response");
+  // }
+}

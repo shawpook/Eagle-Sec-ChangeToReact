@@ -18,7 +18,7 @@ import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncFilterFromScope } from '../store/filterState';
-import { machineryCalcuteContainFolders, machineryUpdateFilterCounts } from '../core/dataMachinery';
+import { machineryUpdateFilterCounts } from '../core/dataMachinery';
 import { machineryOpenQuickSearch } from '../core/keymapActions';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -947,3 +947,51 @@ export function parseKeywordsWithOR(keywordStr) {
             
             return keywords;
         }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryCalcuteContainFolders(s: any, data: any): any {
+  const w = window as any;
+  var foldersCount: any = {};
+  var foldersMappings: any = {};
+  var noFoldersCount = 0;
+
+  for (var i = data.length - 1; i >= 0; i--) {
+    var image = data[i];
+    if (image.folders && image.folders.length > 0) {
+      image.folders.forEach(function (folder: any) {
+        if (!foldersCount[folder]) { foldersCount[folder] = 0 };
+        foldersCount[folder]++;
+      });
+    }
+    else {
+      noFoldersCount++;
+    }
+  }
+
+  var folders = Object.keys(foldersCount).map(function (key: any) {
+    var folder = s.folderMappings[key];
+    if (!folder) return;
+    var index = foldersCount[key];
+
+    foldersMappings[key] = {
+      id: key,
+      isSelected: !!w.eagle.filter.filterRules.folder.includes[key],
+      name: folder.name,
+      pinyin: folder.pinyin,
+      imageCount: foldersCount[key],
+      index: index
+    };
+    return foldersMappings[key];
+  });
+
+  folders = folders.filter(function (f: any) {
+    return !!f;
+  });
+
+  return {
+    containFoldersMappings: foldersMappings,
+    containFolders: folders,
+    noFoldersCount: noFoldersCount
+  }
+}

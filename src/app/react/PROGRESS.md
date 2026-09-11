@@ -7226,3 +7226,43 @@ D-3（套件 65+，可并行） ────────────────
 1. `src/app/collect-window/` 自带 `js/vendors/jquery-1.8.0.min.js` + `js/lib/api/{env,swal-dialog}.js` 仍消费 jQuery —— 采集窗是独立 HTML/API 层，与主窗共享路径无关，随采集窗 API 迁移另行推进。
 2. `main.cjs` 在 **preview 窗口** 侧直调 `scope.copyImage/openWithDefault/openWithFinder/startDrag` —— 由 `preview-window/controller.ts` 供给，无需迁到 body scope。
 3. `tagRectSelecting` 存在两份实现（`dataMachinery` 本地 `let` 与 `TagManager.tsx` 的 `window.tagRectSelecting`），B-3 已修 UI 侧 ReferenceError，去重留 Track B 域归并。
+
+---
+
+## D-1 / Track B / B-5 记录（2026-09-11）
+
+**目标**：把 `dataMachinery.ts` 内「零同文件依赖 + 零文件内反向引用（rev=0）+ 有外部引用」
+的 21 个声明归位到对应域模块（最安全的一批：dataMachinery 无需回引，不新增反向依赖边）。
+
+**挑选方法**：`tests-tmp/bz-b5-pick.py`（只读）——对 144 个零依赖声明统计：
+`rev`（dataMachinery 内除自身体外引用次数，字符串字面量已剔除）与 `ext`（外部引用文件数）。
+得 trivial=21（rev=0 有外部引用）、needs_back=53、no_external_use=70（多为域内 helper，留给 B-cycle）。
+
+**归位表（21 个 / 357 行）**
+
+| 目标域 | 声明 |
+|---|---|
+| `core/itemDomain.ts` | `machineryIsDuplicateImage` `machineryAddToDuplicateMapping` `machineryUpdateTxtItem` `machineryOpenDuplicate` |
+| `core/libraryDomain.ts` | `machineryGetAncestorSmartFolders` `machineryGetChildFoldersMap` `machineryGetFolderParentChilder` `machineryMultipleOpenSmartFolder` `machineryOpenPinterest` `machineryOpenHuaban` `machineryOpenArtstation` `machineryImportLinks` `machineryOpenTrialModal` `machineryNewSmartFolder` |
+| `core/miscDomain.ts` | `machineryPausePalette` `machineryResumePalette` `machineryMoveToFolders` |
+| `core/filterDomain.ts` | `machineryCalcuteContainFolders` |
+| `services/viewOpsService.ts` | `machinerySaveLayout` |
+| `services/gridService.ts` | `machineryUpdateSliderPosition` |
+| `services/imageOpsService.ts` | `machineryCancelCrop` |
+
+**附带 import 修复**：`DetailToolbar.tsx`（→imageOpsService）、`folderCoreService` / `folderMenuService` /
+`sidebarService`（→libraryDomain）、`fontTagService`（→gridService）、`miscMenuService`（→itemDomain+libraryDomain）、
+`miscDomain`（→libraryDomain）。目标域补装：itemDomain +`setHtml`/`openDuplicateScanPanelChannel`；
+libraryDomain +`resetFilter`/`syncToolbarFromScope`/`importArtstationChannel`/`newSmartFolderChannel`；
+miscDomain +`addClass`。
+
+**核数变化**：`dataMachinery.ts` **11509 → 11151 行**（-358）；顶层声明 **306 → 285**（导出 238 → 217）。
+
+**门禁**：`bz-export-check` 无问题（2022 处具名导入）；`tsc --noEmit` **619 → 619**（零新增）；
+`probe-b5-load` `LOAD_OK allData=1`；哨兵 `SENTINEL_OK`（jQuery 0 / vendorScriptTags 0）；
+全量套件 **55/55 ALL GREEN**。
+
+**下一批（B-6 起）**：trivial 集已清空；余 123 个零依赖声明中 53 个 `rev>0`（内部仍引用，需
+「搬迁 + dataMachinery 回引」或与消费方同批），70 个 `no_external_use`（多为域内 helper/死代码，
+随 B-cycle 域簇整搬）。建议 B-6 起转入**按域整簇搬迁**（先低耦合域 `stage/grid` / `core/keymap` /
+`core/navHistory`），每域一次 循环分析 + 全量验证。

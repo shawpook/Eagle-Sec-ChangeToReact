@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCancelCrop, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
 import { machineryVideoScreenShot } from './mediaService';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
@@ -1123,3 +1123,11 @@ export function changeImagesBackground(...args: any[]) {
         try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
     }).apply(null, args);
   }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* cancelCrop（bundle 36091-36093 逐字） */
+export function machineryCancelCrop(s: any): void {
+  s.isCropMode = false;
+  syncDetailFromScope();
+}

@@ -2606,6 +2606,12 @@
 > - **新发现的全局消费面**：`frontend/public/shims.js`（交接文档 8 类存活面之外）。
 > - 改写器盲区 4 类：`s().name()` / `.name()` 方法链 / `$scope.name()` 嵌长串 / dangling `, )`；
 >   以及 `dataMachinery` **同文件内部谓词消费面**（`s.contentFilter` → LOAD_BROKEN 根因）。
+>
+> **Track A 收官全套（55 项）**：**52/55 通过**，仅 **3 项既有失败**（非本轮引入）——
+> `react-stage7b-smoke`（`tm-unfiled-mode`）、`react-stage11a49-smoke`（`a4-search-none`，
+> 根因 `s.searchFilter` 从无赋值）、`main-ui-workflow-closed-loop`。
+> 本会话另修好既有失败 2 项：`residue-closed-loop`、`ui-interactions-closed-loop`。
+> 哨兵 `SENTINEL_OK`；probe `LOAD_OK allData=1`；tsc 788（基线持平）。
 
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |

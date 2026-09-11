@@ -637,7 +637,7 @@ try {
   console.log('PASS stage3a-search-keyword-roundtrip');
   // 还原 keyword
   await page.send('Runtime.evaluate', {
-    expression: `(() => { const s = window.$bodyScope; s.keyword = ''; s.filterContent && s.filterContent(); s.$evalAsync(); })()`,
+    expression: `(() => { const s = window.$bodyScope; s.keyword = ''; window.__eagleMachinery.filterContent(s); s.$evalAsync(); })()`,
     returnByValue: true,
   });
   await waitFor(async () => {

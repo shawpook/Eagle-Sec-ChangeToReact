@@ -111,15 +111,17 @@ try {
     // b1-9bz-B-8 终态：controllerFns fns 表与 shimFnsBridge 退役，消费面全部直 import。
     //   ① 表 / 桥的全局痕迹必须消失；
     //   ② 窄口径观测钩子 __eaglePorts 在位（同对象引用，无运行期供给语义）；
-    //   ③ machinery 挂载面承接 scope 函数供给（applyDataMachineryScope 写入的名字仍在）。
+    //   ③ D-1 A-2：三函数挂载已退役，改查 machinery 诊断面（__eagleMachinery）。
     const ports = window.__eaglePorts;
+    const M = window.__eagleMachinery;
     const need = ['cancelAllTasks', 'changeOrderBy', 'switchGridLayout', 'cleanSelected'];
     return window.__eagleCoreFns === undefined
       && window.__eagleShimFnsBridge === undefined
       && !!ports && need.every((k) => typeof ports[k] === 'function')
-      && typeof window.$bodyScope.calculateImageBinding === 'function'
-      && typeof window.$bodyScope.rebindRefresh === 'function'
-      && typeof window.$bodyScope.updateSidebarList === 'function';
+      && !!M
+      && typeof M.calculateImageBinding === 'function'
+      && typeof M.rebindRefresh === 'function'
+      && typeof M.updateSidebarList === 'function';
   })()`);
 
   await evalNow(`(() => { window.__reloadMarker = 'ALIVE'; return true; })()`);

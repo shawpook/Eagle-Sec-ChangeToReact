@@ -2577,6 +2577,36 @@
 > `ui-interactions`/`stage6`/`stage8c`/`stage5` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【Track A 收官（2026-09-11）：挂载面 67 → 10；剩余 10 项 = 边界锚定层（不退役，用户裁定方向 2）】**
+>
+> Track A（挂载面退役）收口。箭头面挂载 **67 → 10**（另退役 4 个 call-form 单例）。
+> 剩余 10 项经逐个查证**均为「边界消费面」**——消费方在 React 模块图之外、无法 import 直调，
+> 由 C-0 `externalSupply` 按 scope 面供给；**不是可机械退役的存量**，属 D-1 的边界层收口。
+>
+> | 挂载 | 外部消费方 | 处置 |
+> |---|---|---|
+> | `enterDetailMode` / `leaveDetailMode` | `frontend/public/shims.js`（25ms 轮询包装 → 详情原图交付门控） | D-2 退役 shims.js 时随迁 |
+> | `activateFont` / `deactivateFont` / `escHandler` | `shims.js` + `viewers/font`、`viewers/text-editor` 的 `parent.$bodyScope.X()` | 同上（viewers 窗口边界） |
+> | `copyAsPath` / `getRawPath` / `getRawUrl` / `select` | **`electron/main.cjs`**（主进程 `scope.X()`） | D-2/D-4 与主进程边界一并处置 |
+> | `onDropContainer` | `window.onDropContainer` 全局面 + 6 处测试引用 | 同上 |
+> | `reload`（call-form 单例） | aux tests（tab-bar / workbench / probe-b19d*） | 同上 |
+>
+> 其中 `window.__eagleMachinery` 已承接 shims 内的 `rebindRefresh`/`toggleAll` 调用；其余边界面
+> 留待 D-2（shims.js / vendor 退役）集中迁移更划算，避免现在单为 10 项动主进程。
+>
+> **Track A 期间新增机制与关键发现（汇总）**：
+> - `appCore.scoped()/SCOPED_HANDLER`——动态分发点（call/callSeq/scopeFn）传 machinery 引用时由
+>   helper 注入 scope，零 `getBodyScope` 增量。
+> - `window.__eagleMachinery` 诊断面 + `machineryCalls` 调用计数——契约从「scope 挂载存在性 / spy
+>   `s.xxx`」改为「machinery 导出已就位 / 调用计数」。
+> - `scopeSingleton()` + `getOffsetScrollbarFn`/`getPageUpHandlerFn`/`getPageDownHandlerFn`/
+>   `getToggleFilterByTypeFn`——单例 debounce/throttle 的按 scope 缓存。
+> - **修好两个既有失败**：`residue-closed-loop`（批次 1 键位回归：keymap 裸引用被当死挂载删）、
+>   `ui-interactions-closed-loop`（Enter 进详情 + z 悬停预览）。
+> - **新发现的全局消费面**：`frontend/public/shims.js`（交接文档 8 类存活面之外）。
+> - 改写器盲区 4 类：`s().name()` / `.name()` 方法链 / `$scope.name()` 嵌长串 / dangling `, )`；
+>   以及 `dataMachinery` **同文件内部谓词消费面**（`s.contentFilter` → LOAD_BROKEN 根因）。
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

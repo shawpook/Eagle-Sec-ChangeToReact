@@ -61,7 +61,7 @@ import { updateCurrentOrderAndIncrease } from './miscDomain';
 import { isInFolder } from './itemDomain';
 import { gridSaveListHeight, gridAdjustLayoutWidth, gridZoomFit, gridZoomIn, gridZoomOut, gridSwitchLayout } from '../services/gridService';
 import { detailUpdateZoomRatio, detailSmartZoom, detailToggleDetailMode, beginZoomingTransition } from '../services/detailService';
-import { mediaAddVideoComment, mediaGetVideoPlayer, mediaRememberVideoCurrentTime, mediaVideoScreenShot, toggleGifPlay } from '../services/mediaService';
+import { machineryAddVideoComment, machineryNextGifFrame, machineryPrevGifFrame, machineryRememberVideoCurrentTime, toggleGifPlay } from '../services/mediaService';
 import { debounce, throttle } from '../utils/func';
 import { get, isString, max, uniq, unescape, isNumeric } from '../utils/lang';
 import { q, qa, qaVisible, widthOf, heightOf, addClass, removeClass, setAttr, cssSet, hide, show, setHtml, hasClass, setHtmlEl, textEl, triggerEl, selectText, onEl, offEl, trigger, clickEl, focusEl, blurEl, selectEl, scrollTopValue, setScrollTop, setScrollLeft, offsetOf, offsetTopOf, outerHeightOf, getAttr, setAttrEl, addClassEl, removeClassEl } from '../utils/domQuery';
@@ -6368,41 +6368,10 @@ export function machineryFilterContent(s: any, type?: any): void {
 
 /* nextGifFrame/prevGifFrame（bundle 32838-32863 逐字：gifPlayer/gifViewer 经 scope 解析；
    **next 帧越界上界为 total-1、prev 下界 0——bundle 原样**） */
-export function machineryNextGifFrame(s: any, amount: any = 1): void {
-  if (s.gifPlayer && s.isGifReady) {
-    s.gifPlayer.pause();
-    s.gifViewer.playing = false;
-    syncDetailFromScope();
-    var curr = s.gifPlayer.get_current_frame();
-    var total = s.gifViewer.frames.length;
-    var idx = curr + amount;
-    if (idx > total) idx = total - 1;
-    s.gifPlayer.move_to(idx);
-    scopeEvalAsync();
-  }
-}
-
-export function machineryPrevGifFrame(s: any, amount: any = 1): void {
-  if (s.gifPlayer && s.isGifReady) {
-    s.gifPlayer.pause();
-    s.gifViewer.playing = false;
-    syncDetailFromScope();
-    var curr = s.gifPlayer.get_current_frame();
-    var idx = curr - amount;
-    if (idx < 0) idx = 0;
-    s.gifPlayer.move_to(idx);
-    scopeEvalAsync();
-  }
-}
-
 /* addVideoComment（bundle 21182-21237 逐字：swal textarea（i18n 经 window）→ guid（Tier-2）
    构造 comment（duration/annotation）→ current.comments 插入 + duration 升序排序 →
    REFRESH_VIDEO_COMMENTS 广播 + updateItemView（scope 解析）+ ipcRenderer 统一表达式
    send('image-change')） */
-export function machineryAddVideoComment(s: any, video: any, videoElem: any): void {
-  mediaAddVideoComment(s, video, videoElem);
-}
-
 /* newFileFromTemplate（bundle 37336-37374 逐字：resourcesPath/EAGLE_THUMBNAIL_TEMP_PATH 为
    bundle 顶层 var 经 window、fs/path 经 window.require、i18n/FileUrlHelper 经 window、
    uploadFiles/showUploadQueue 经 scope 解析、electronLog 兜底 catch） */
@@ -7331,10 +7300,6 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
    preloadImage + getVideoPlayer 域内闭包）──────────────────────────────── */
 
 /* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
-export function machineryGetVideoPlayer(s: any): any {
-  return mediaGetVideoPlayer(s);
-}
-
 /* rememberScrollTops（bundle 31142-31150 逐字：inline/edge 模式跳过 + smoothZoom
    getChangedData 快照入 lastItemStates） */
 export function machineryRememberScrollTops(s: any, item: any): void {
@@ -7350,10 +7315,6 @@ export function machineryRememberScrollTops(s: any, item: any): void {
 
 /* rememberVideoCurrentTime（bundle 31726-31736 逐字：视频类 → getVideoPlayer().el.currentTime
    → eagle.videoPlayer.currentTime.{id} 键） */
-export function machineryRememberVideoCurrentTime(s: any, item: any): void {
-  mediaRememberVideoCurrentTime(s, item);
-}
-
 /* addToRecentFile（bundle 36435-36443 逐字：1s 后 current 换人则不记（已換人 console）→
    RecentFileManager.addFile（c14c 版经 window if-absent）） */
 export function machineryAddToRecentFile(s: any, item: any): void {
@@ -9575,10 +9536,6 @@ export function machineryImportLinks(s: any): void {
 /* videoScreenShot（bundle 33233-33288 逐字 async：mpv screenshot API / native drawImage
    双路 → copyMode 剪贴板（electron.nativeImage）或 screencapture-from-extension 上送
    （guid + currentTime.toFixed(2) 命名）） */
-export async function machineryVideoScreenShot(s: any, copyMode: any): Promise<void> {
-  return mediaVideoScreenShot(s, copyMode);
-}
-
 /* getFolderImages（bundle 42841-42865 逐字：倒序扫描 raw + folders 归属判定；
    includeSubFolder 时 eagle.utils.tree.walk 子树命中即含（回调 return 原样）；
    try/catch 吞错原样） */
@@ -10516,19 +10473,6 @@ export function machineryGetFolderParentChilder(s: any, folder: any): any {
 
 /* calcRotateDegree（bundle 36170-36180 逐字：click 分支 shift ±90 / 其余 -90 + 360 归一；
    纯函数无 scope 依赖） */
-export function machineryCalcRotateDegree(currentDegree: any, event: any): any {
-  var degree = currentDegree;
-  if (event.type === "click") {
-    degree += event.shiftKey ? 90 : -90;
-  }
-  else {
-    degree -= 90;
-  }
-  degree = degree % 360;
-  if (degree < 0) degree += 360;
-  return degree;
-}
-
 /* getArroundBox（bundle 35094-35099 逐字：index ±20 窗口 .box 切片）——既有移植版
    5180 行（bundle 35091-35097 锚）承担，此处不再重复 */
 

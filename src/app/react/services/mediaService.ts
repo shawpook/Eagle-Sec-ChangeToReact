@@ -1,5 +1,5 @@
 import { getBodyScope } from '../core/appCore';
-import { machineryCalcRotateDegree, machineryEnterSlideshowMode, machineryGetVideoPlayer, machineryLeaveSlideshowMode, machineryToggleSlideshow, machineryUpdateItemView } from '../core/dataMachinery';
+import { machineryEnterSlideshowMode, machineryLeaveSlideshowMode, machineryToggleSlideshow, machineryUpdateItemView } from '../core/dataMachinery';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 import { refreshVideoCommentsChannel } from '../global/bus';
@@ -413,3 +413,72 @@ export function loadSubtitles(...args: any[]) {
         });
     }).apply(null, args);
   }
+
+/* ── D-1 / Track B / B-4：dataMachinery 媒体族归位（薄包装 + 纯函数）──
+   原 core/dataMachinery.ts 中这些函数即 media* 的 scope 版包装 / 纯计算；
+   dataMachinery 与外部消费面改从本模块 import（dataMachinery↔mediaService
+   的 import 环在本批前已存在且有 probe 护栏）。 */
+
+/* nextGifFrame/prevGifFrame（bundle 32838-32863 逐字：gifPlayer/gifViewer 经 scope 解析；
+   **next 帧越界上界为 total-1、prev 下界 0——bundle 原样**） */
+export function machineryNextGifFrame(s: any, amount: any = 1): void {
+  if (s.gifPlayer && s.isGifReady) {
+    s.gifPlayer.pause();
+    s.gifViewer.playing = false;
+    syncDetailFromScope();
+    var curr = s.gifPlayer.get_current_frame();
+    var total = s.gifViewer.frames.length;
+    var idx = curr + amount;
+    if (idx > total) idx = total - 1;
+    s.gifPlayer.move_to(idx);
+    scopeEvalAsync();
+  }
+}
+
+export function machineryPrevGifFrame(s: any, amount: any = 1): void {
+  if (s.gifPlayer && s.isGifReady) {
+    s.gifPlayer.pause();
+    s.gifViewer.playing = false;
+    syncDetailFromScope();
+    var curr = s.gifPlayer.get_current_frame();
+    var idx = curr - amount;
+    if (idx < 0) idx = 0;
+    s.gifPlayer.move_to(idx);
+    scopeEvalAsync();
+  }
+}
+
+/* addVideoComment（bundle 21182-21237 逐字：-> mediaAddVideoComment） */
+export function machineryAddVideoComment(s: any, video: any, videoElem: any): void {
+  mediaAddVideoComment(s, video, videoElem);
+}
+
+/* getVideoPlayer（bundle 36159-36164 逐字：mpv 优先 native 次之） */
+export function machineryGetVideoPlayer(s: any): any {
+  return mediaGetVideoPlayer(s);
+}
+
+/* rememberVideoCurrentTime（bundle 31726-31736 逐字） */
+export function machineryRememberVideoCurrentTime(s: any, item: any): void {
+  mediaRememberVideoCurrentTime(s, item);
+}
+
+/* videoScreenShot（bundle 33233-33288 逐字 async） */
+export async function machineryVideoScreenShot(s: any, copyMode: any): Promise<void> {
+  return mediaVideoScreenShot(s, copyMode);
+}
+
+/* calcRotateDegree（bundle 36170-36180 逐字：click 分支 shift ±90 / 其余 -90 + 360 归一；
+   纯函数无 scope 依赖） */
+export function machineryCalcRotateDegree(currentDegree: any, event: any): any {
+  var degree = currentDegree;
+  if (event.type === "click") {
+    degree += event.shiftKey ? 90 : -90;
+  }
+  else {
+    degree -= 90;
+  }
+  degree = degree % 360;
+  if (degree < 0) degree += 360;
+  return degree;
+}

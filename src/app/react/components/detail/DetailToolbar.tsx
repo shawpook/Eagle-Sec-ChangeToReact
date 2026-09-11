@@ -18,7 +18,8 @@ import { maximize } from '../../core/miscDomain';
 import { openFileWithDefault } from '../../core/itemDomain';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { openRatioContextMenu } from '../../services/miscMenuService';
-import { machineryCancelCrop, machineryLeaveDetailMode, machineryNextGifFrame, machineryOpenPluginPanel, machineryPrevGifFrame, machinerySelectNext, machinerySelectPrev, machineryToggleAll, machineryToggleCommentMode, machineryToggleZoom, machineryZoomActual } from '../../core/dataMachinery';
+import { machineryCancelCrop, machineryLeaveDetailMode, machineryOpenPluginPanel, machinerySelectNext, machinerySelectPrev, machineryToggleAll, machineryToggleCommentMode, machineryToggleZoom, machineryZoomActual } from '../../core/dataMachinery';
+import { machineryNextGifFrame, machineryPrevGifFrame } from '../../services/mediaService';
 
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。

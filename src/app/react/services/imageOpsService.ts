@@ -19,7 +19,8 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCancelCrop, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView, machineryVideoScreenShot } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCancelCrop, machineryChangeStar, machineryCheckOperationSafety, machineryCurrentIndex, machineryGetAncestorFolders, machineryGetExtendTags, machineryLeaveDetailMode, machineryRelayout, machineryResetFolderCover, machinerySortRawData, machineryUpdateItemView, machineryUpdateItemsView } from '../core/dataMachinery';
+import { machineryVideoScreenShot } from './mediaService';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';

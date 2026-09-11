@@ -16,7 +16,8 @@
  */
 // @ts-nocheck
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryCopyImages, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRebindRefresh, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow, machineryVideoScreenShot } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryCopyImages, machineryGetRecentFolders, machineryGetSelectedItemElements, machineryOpenAll, machineryOpenFilter, machineryRebindRefresh, machineryRemovePermanently, machineryRemoveSelected, machinerySetFolderCover, machineryToggleSlideshow } from '../core/dataMachinery';
+import { machineryVideoScreenShot } from './mediaService';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from '../core/appCore';
 import { copyAsBase64, copyAsFolderPath, copyAsLink, copyAsPath, copyAsProperity, copyAsThumbnail, openFilesWithDefault, openInFinder, openInPreviewWindow, openItemLocation, openWithOther } from '../core/itemDomain';

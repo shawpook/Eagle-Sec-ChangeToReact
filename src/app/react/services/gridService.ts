@@ -32,7 +32,8 @@ import { syncSidebarFromScope } from '../store/sidebarState';
 import { hide } from '../utils/domQuery';
 import { resetFilter } from '../core/filterDomain';
 import { machineryFindDupclipate } from '../core/itemDomain';
-import { getTimeout, scopeSingleton } from '../core/dataMachinery';
+
+import { getTimeout, scopeSingleton } from '../core/machineryInfra';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */

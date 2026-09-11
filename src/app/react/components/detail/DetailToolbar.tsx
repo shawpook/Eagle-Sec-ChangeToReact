@@ -27,6 +27,7 @@ import { machineryToggleCommentMode } from '../../core/itemDomain';
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
 import { machineryToggleAll } from '../../services/gridService';
+import { applyDataMachineryScope } from '../../core/machineryInfra';
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
  * （面包屑、缩放滑条、webview-toolbar、裁切工具列、插件工具列、通用工具列、

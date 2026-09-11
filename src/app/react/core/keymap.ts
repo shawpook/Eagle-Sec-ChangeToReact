@@ -1,3 +1,23 @@
+import { scopeSingleton } from './machineryInfra';
+import { scopeEvalAsync } from '../global/scopeShim';
+import { beginZoomingTransition } from '../services/detailService';
+import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openFolder, openSmartFolder } from '../services/folderCoreService';
+import { machineryGotoBottom, machineryGotoTop, machineryScrollbarTo, machineryToggleAll } from '../services/gridService';
+import { machineryChangeTo1Star, machineryChangeTo2Star, machineryChangeTo3Star, machineryChangeTo4Star, machineryChangeTo5Star, machineryRemoveStar, saveCrop } from '../services/imageOpsService';
+import { machineryAddVideoComment, machineryNextGifFrame, machineryPrevGifFrame } from '../services/mediaService';
+import { machineryToggleZoom, machineryZoomIn, machineryZoomOut } from '../services/viewOpsService';
+import { syncListFromScope } from '../store/listState';
+import { clickEl, q, qa, scrollTopValue } from '../utils/domQuery';
+import { throttle } from '../utils/func';
+import { moveCropToolChannel, resizeCropToolChannel } from '../global/bus';
+import { machineryCopyImages, machineryCreateTxtFileFromTemplate, machineryToggleCommentMode } from './itemDomain';
+import { machineryCloseWindowHandler, machineryDestoryMousetrap, machineryMHandler, machineryModShiftDownHandler, machineryModShiftLeftHandler, machineryModShiftRightHandler, machineryModShiftUpHandler, machineryOpenActionsPanel, machineryOpenQuickSearch } from './keymapActions';
+import { machineryOpenNextFolder, machineryOpenNextSmartFolder, machineryOpenParentFolder, machineryOpenPrevFolder, machineryOpenPrevSmartFolder, machineryOpenRecent, machineryOpenTrash, machineryOpenUnfiled, machineryRefreshRandom, machinerySetFolderCover, machineryToggleAllFolders, machineryUpdateSidebarList } from './libraryDomain';
+import { machineryOpenPluginPanel, machineryQuicklook, machineryToggleDetailMode } from './miscDomain';
+import { machineryBack, machineryNextHistory, machineryOpenNextQuickAccess, machineryOpenPrevQuickAccess, machineryPrevHistory, machineryUndo } from './navHistory';
+import { machineryMultipleSelectDown, machineryMultipleSelectNext, machineryMultipleSelectPrev, machineryMultipleSelectUp, machineryOpenInspectorFolderSelectPanel, machineryOpenInspectorTagSelectPanel, machineryRemoveSelected, machinerySelectAll, machinerySelectDown, machinerySelectNext, machinerySelectPrev, machinerySelectUp } from './selectionViewDomain';
+import { detailZoom } from './smoothZoomEngine';
+import { machineryOpenAllTags, machineryOpenNextGroup, machineryOpenPrevGroup, machineryOpenUntagged } from './tagManagerDomain';
 /**
  * b1-9bv-A：mousetrap v1.6.3 自研替换（js/vendors/mousetrap.min.js 退役）。
  *
@@ -204,4 +224,658 @@ export function installKeymap(): void {
   installed = true;
   const w = window as any;
   if (!w.Mousetrap) w.Mousetrap = Mousetrap;
+}
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function getPageDownHandlerFn(s: any): any { return scopeSingleton(s, 'pageDownHandler', () => machineryPageDownHandler(s)); }
+
+export function getPageUpHandlerFn(s: any): any { return scopeSingleton(s, 'pageUpHandler', () => machineryPageUpHandler(s)); }
+
+export function machineryBuildMousetrap(s: any): any {
+  const w = window as any;
+  const bindings: any = {};
+
+  // 建立快捷鍵名稱到處理函數的映射
+  const shortcutHandlerMap: any = {
+    'player.playAndPause': () => {
+      machineryQuicklook(s);
+    },
+    'player.prev1frame': () => {
+      machineryPrevGifFrame(s, 1);
+    },
+    'player.next1frame': () => {
+      machineryNextGifFrame(s, 1);
+    },
+    'player.prev10frame': () => {
+      machineryPrevGifFrame(s, 10);
+    },
+    'player.next10frame': () => {
+      machineryNextGifFrame(s, 10);
+    },
+    'player.speed.up': () => {
+      let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
+      if (s.current.ext == 'gif') {
+        let currnt = s.gifViewer.speed;
+        let idx = playbackRates.indexOf(currnt);
+        if (idx !== -1 && playbackRates[idx + 1]) {
+          s.gifViewer.setSpeed(playbackRates[idx + 1]);
+        }
+      }
+    },
+    'player.speed.down': () => {
+      let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
+      if (s.isDetailMode) {
+        if (s.current.ext == 'gif') {
+          let currnt = s.gifViewer.speed;
+          let idx = playbackRates.indexOf(currnt);
+          if (idx !== -1 && playbackRates[idx - 1]) {
+            s.gifViewer.setSpeed(playbackRates[idx - 1]);
+          }
+        }
+      }
+    },
+    'player.thumbnail.set': () => { }, // 不做任何事情，但需要把這個快速鍵還給其它有綁定的人
+    'player.thumbnail.copy': () => { }, // 不做任何事情，但需要把這個快速鍵還給其它有綁定的人
+    'player.thumbnail.save': () => { }, // 不做任何事情，但需要把這個快速鍵還給其它有綁定的人
+  };
+
+  // 從 preferences 載入快捷鍵
+  if (w.preferences && w.preferences.shortcuts && w.preferences.shortcuts.keybinds && w.ShortcutManager) {
+    for (const [keyName, electronKey] of Object.entries(w.preferences.shortcuts.keybinds)) {
+      if (shortcutHandlerMap[keyName] && electronKey) {
+        const mousetrapKey = w.ShortcutManager.electronToMousetrap(electronKey);
+        if (mousetrapKey) {
+          bindings[mousetrapKey] = shortcutHandlerMap[keyName];
+          // console.log(`[Preview] Mapped ${keyName}: ${electronKey} -> ${mousetrapKey}`);
+        }
+      }
+    }
+  }
+
+  // 添加硬編碼的快捷鍵（未在 preferences 中定義或沒有對應設定的）
+  const hardcodedShortcuts: any = {
+    '*': (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand),
+    '/': (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand),
+    '-': (event: any) => machineryZoomOut(s, event),
+    '+': (event: any) => machineryZoomIn(s, event),
+    '=': (event: any) => machineryZoomIn(s, event),
+    '0': () => machineryRemoveStar(s),
+    '1': (event: any) => machineryChangeTo1Star(s, event),
+    '2': (event: any) => machineryChangeTo2Star(s, event),
+    '3': (event: any) => machineryChangeTo3Star(s, event),
+    '4': (event: any) => machineryChangeTo4Star(s, event),
+    '5': (event: any) => machineryChangeTo5Star(s, event),
+    'r': () => machineryRefreshRandom(s),
+    't': () => machineryOpenInspectorTagSelectPanel(s),
+    'g': (event: any) => machineryOpenActionsPanel(s, event),
+    'f': (event: any) => machineryOpenInspectorFolderSelectPanel(s, event),
+    'j': (event: any) => machineryOpenQuickSearch(s, event),
+    'n': ($event: any) => machineryNHandler(s, $event),
+    'm': ($event: any) => machineryMHandler(s, $event),
+    'mod+z': () => machineryUndo(s),
+    'mod+a': (event: any) => machinerySelectAll(s, event),
+    'mod+c': (event: any) => machineryCopyImages(s, event),
+    'mod+w': ($event: any) => machineryCloseWindowHandler(s, $event),
+    'space': (event: any) => machineryQuicklook(s, event),
+    'shift+space': getPageUpHandlerFn(s),
+    'c': (event: any) => machineryKeyCHandler(s, event),
+    'p': (event: any) => machineryKeyPHandler(s, event),
+    'a': (event: any) => machineryKeyLeftHandler(s, event),
+    'd': (event: any) => machineryKeyRightHandler(s, event),
+    'w': (event: any) => machineryKeyUpHandler(s, event),
+    's': (event: any) => machineryKeyDownHandler(s, event),
+    'left': (event: any) => machineryKeyLeftHandler(s, event),
+    'right': (event: any) => machineryKeyRightHandler(s, event),
+    'up': (event: any) => machineryKeyUpHandler(s, event),
+    'shift+up': (event: any) => machineryMultipleSelectUp(s, event),
+    'down': (event: any) => machineryKeyDownHandler(s, event),
+    'shift+down': (event: any) => machineryMultipleSelectDown(s, event),
+    'shift+right': (event: any) => machineryMultipleSelectNext(s, event),
+    'shift+left': (event: any) => machineryMultipleSelectPrev(s, event),
+    'mod+up': (event: any) => machineryModUpHandler(s, event),
+    'mod+down': (event: any) => machineryModDownHandler(s, event),
+    'mod+left': (event: any) => machineryModLeftHandler(s, event),
+    'mod+right': (event: any) => machineryModRightHandler(s, event),
+    'mod+shift+up': (event: any) => machineryModShiftUpHandler(s, event),
+    'mod+shift+down': (event: any) => machineryModShiftDownHandler(s, event),
+    'mod+shift+left': (event: any) => machineryModShiftLeftHandler(s, event),
+    'mod+shift+right': (event: any) => machineryModShiftRightHandler(s, event),
+    'backspace': () => machineryBack(s),
+    'alt+right': () => machineryNextHistory(s),
+    'alt+left': () => machineryPrevHistory(s),
+    'mod+s': () => machinerySaveHandler(s),
+    '`': (event: any) => machineryToggleZoom(s, event),
+    'mod++': (event: any) => machineryZoomIn(s, event),
+    'mod+-': (event: any) => machineryZoomOut(s, event),
+    'tab': ($event: any) => machineryToggleAll(s, $event),
+    'alt+up': () => machineryOpenParentFolder(s),
+    'alt+shift+n': (event: any) => machineryCreateTxtFileFromTemplate(s, event),
+    'alt+shift+c': () => machinerySetFolderCover(s),
+    'enter': ($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline),
+    'del': (event: any) => machineryRemoveSelected(s, event),
+  };
+
+  // 合併硬編碼快捷鍵（如果沒有被 preferences 覆蓋）
+  for (const [key, handler] of Object.entries(hardcodedShortcuts)) {
+    if (!bindings[key]) {
+      bindings[key] = handler;
+    }
+  }
+
+  // 處理 'mod+plus' 的特殊情況（確保 + 號的快捷鍵都能正常工作）
+  if (bindings['mod+='] && !bindings['mod+plus']) {
+    bindings['mod+plus'] = bindings['mod+='];
+  }
+
+  console.log('[App] Total mousetrap bindings:', Object.keys(bindings).length);
+  return bindings;
+}
+
+export function machineryEndHandler(s: any, event: any): void {
+  const w = window as any;
+  if (s.isDetailMode) {
+    beginZoomingTransition();
+    detailZoom()?.goToY( -99999999);
+    detailZoom()?.moveY( -window.outerHeight + 60);
+  }
+  else {
+    machineryGotoBottom(s);
+  }
+}
+
+export function machineryHomeHandler(s: any, event: any): void {
+  const w = window as any;
+  if (s.isDetailMode) {
+    beginZoomingTransition();
+    detailZoom()?.goToY( 40);
+  }
+  else {
+    machineryGotoTop(s);
+  }
+}
+
+/* destoryMousetrap（bundle 49316-49325 逐字；destory 原码 typo 逐字保留） */
+/* initMousetrap（bundle 49326-49330 逐字） */
+export function machineryInitMousetrap(s: any): void {
+  machineryDestoryMousetrap(s);
+  s.mousetrap = machineryBuildMousetrap(s);
+  // b1-9av：mousetrap 绑定消费端补移植（bundle 49326-49341 逐字——原由 mgo-mousetrap
+  // 指令 + 本函数双承载，Angular 消亡后 map 无人 bind，全键盘层死：Enter/方向键/Del/
+  // Mod+Z/空格 quicklook 等）。applyWrapper 逐字：throttle 25 + $evalAsync。
+  const w = window as any;
+  const Mousetrap = w.Mousetrap;
+  if (!Mousetrap || !s.mousetrap) return;
+  const applyWrapper = function (func: any) {
+    return w.throttle(function (e: any) {
+      func(e);
+      scopeEvalAsync();
+    }, 25);
+  };
+  for (var key in s.mousetrap) {
+    if (s.mousetrap.hasOwnProperty(key)) {
+      Mousetrap.unbind(key);
+      Mousetrap.bind(key, applyWrapper(s.mousetrap[key]));
+    }
+  }
+}
+
+/* keyCHandler（bundle 35099-35103 逐字）、keyPHandler（35104-35106 逐字） */
+export function machineryKeyCHandler(s: any, event: any): void {
+  if (s.isInlineMode) return;
+  if (s.isDetailMode) {
+    machineryToggleCommentMode(s, event);
+  }
+}
+
+export function machineryKeyDownHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (qa(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    if (s.isDetailMode && !s.isInlineMode) {
+      if (s.isCropMode) {
+        moveCropToolChannel.emit({ horizontal: 0, vertical: 1 });
+        return;
+      }
+      else {
+        detailZoom()?.moveY( 150);
+      }
+    } else {
+      machinerySelectDown(s, event);
+    }
+  }
+  else if (s.$root.currentFocus == "sidebar") {
+    s.$root.selectedFolders = [];
+    syncListFromScope();
+    s.$root.selectedFoldersMappings = {};
+    s.$root.selectedSmartFoldersMappings = {};
+    s.$root.selectedSmartFolders = [];
+    if (s.viewMode == "all") {
+      if (s.$root.preferences.sidebar.unfiled != 'false') {
+        machineryOpenUnfiled(s);
+      }
+      else if (s.$root.preferences.sidebar.untagged != 'false') {
+        machineryOpenUntagged(s);
+      }
+      else if (s.$root.preferences.sidebar.recent != 'false') {
+        machineryOpenRecent(s);
+      }
+      else if (s.$root.preferences.sidebar.random != 'false') {
+        machineryOpenRandom(s);
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        machineryOpenCommunity(s);
+      }
+      else {
+        machineryOpenAllTags(s);
+      }
+    }
+    else if (s.viewMode == "unfiled") {
+      if (s.$root.preferences.sidebar.untagged != 'false') {
+        machineryOpenUntagged(s);
+      }
+      else if (s.$root.preferences.sidebar.recent != 'false') {
+        machineryOpenRecent(s);
+      }
+      else if (s.$root.preferences.sidebar.random != 'false') {
+        machineryOpenRandom(s);
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        machineryOpenCommunity(s);
+      }
+      else {
+        machineryOpenAllTags(s);
+      }
+    }
+    else if (s.viewMode == "untagged") {
+      if (s.$root.preferences.sidebar.recent != 'false') {
+        machineryOpenRecent(s);
+      }
+      else if (s.$root.preferences.sidebar.random != 'false') {
+        machineryOpenRandom(s);
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        machineryOpenCommunity(s);
+      }
+      else {
+        machineryOpenAllTags(s);
+      }
+    }
+    else if (s.viewMode == "recent") {
+      if (s.$root.preferences.sidebar.random != 'false') {
+        machineryOpenRandom(s);
+      }
+      else if (s.$root.preferences.sidebar.community2 != 'false') {
+        machineryOpenCommunity(s);
+      }
+      else {
+        machineryOpenAllTags(s);
+      }
+    }
+    else if (s.viewMode == "random") {
+      if (s.$root.preferences.sidebar.community2 != 'false') {
+        machineryOpenCommunity(s);
+      }
+      else {
+        machineryOpenAllTags(s);
+      }
+    }
+    else if (s.viewMode == "community") {
+      machineryOpenAllTags(s);
+    }
+    else if (s.viewMode == "alltags") { machineryOpenTrash(s) } else if (s.viewMode == "trash") {
+
+      var listItems = s.sidebarList;
+      var folders = listItems.filter(function (item: any) {
+        return item.vstype === 'folder';
+      });
+      var smartFolders = listItems.filter(function (item: any) {
+        return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
+      });
+      var quickAccessItems = listItems.filter(function (item: any) {
+        return item.vstype === 'quickAccess';
+      });
+      if (quickAccessItems.length > 0) {
+        clickEl("#quick-access-" + quickAccessItems[0].id);
+      }
+      else if (smartFolders.length > 0 && smartFolders[0]) {
+        openSmartFolder(smartFolders[0]);
+      }
+      else if (folders.length > 0 && folders[0]) {
+        openFolder(folders[0]);
+      }
+    }
+    else {
+      if (s.currentId.indexOf("smart-folder") > -1) {
+        machineryOpenNextSmartFolder(s);
+      }
+      else if (s.currentId.indexOf("quick") > -1) {
+        machineryOpenNextQuickAccess(s);
+      }
+      else if (s.currentId.indexOf("folder") > -1) {
+        machineryOpenNextFolder(s);
+      }
+    }
+  }
+  else if (s.$root.currentFocus == "tags") {
+    machineryOpenNextGroup(s);
+  }
+}
+
+export function machineryKeyLeftHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (qa(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    machinerySelectPrev(s, event);
+  }
+  else if (s.$root.currentFocus == "tags") {
+    s.$root.currentFocus = "sidebar";
+  }
+  else {
+    if (s.$root.selectedFolders.length > 1) {
+      s.$root.selectedFolders.forEach(function (folder: any) {
+        if (folder.children && folder.children.length > 0) {
+          if (folder.isExpand !== false) {
+            folder.isExpand = false;
+            w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, false);
+          }
+        }
+      });
+      machineryUpdateSidebarList(s);
+    }
+    else if (s.currentFolder) {
+      if (!s.currentFolder.children || s.currentFolder.children.length == 0) {
+        s.currentFolder.isExpand = true;
+        machineryUpdateSidebarList(s);
+      }
+      else {
+        s.currentFolder.isExpand = false;
+        machineryUpdateSidebarList(s);
+      }
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, false);
+    }
+    else if (s.currentSmartFolder) {
+      if (!s.currentSmartFolder.children || s.currentSmartFolder.children.length == 0) {
+        s.currentSmartFolder.isExpand = true;
+        machineryUpdateSidebarList(s);
+      }
+      else {
+        s.currentSmartFolder.isExpand = false;
+        machineryUpdateSidebarList(s);
+      }
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, false);
+    }
+  }
+}
+
+export function machineryKeyPHandler(s: any, event: any): void {
+  machineryOpenPluginPanel(s, event);
+}
+
+export function machineryKeyRightHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (qa(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    machinerySelectNext(s, event);
+  }
+  else {
+    if (s.$root.selectedFolders.length > 1) {
+      s.$root.selectedFolders.forEach(function (folder: any) {
+        if (folder.children && folder.children.length > 0) {
+          if (folder.isExpand !== true) {
+            folder.isExpand = true;
+            w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, true);
+          }
+        }
+      });
+      machineryUpdateSidebarList(s);
+    }
+    else if (s.currentFolder) {
+      s.currentFolder.isExpand = true;
+      machineryUpdateSidebarList(s);
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, true);
+    }
+    else if (s.currentSmartFolder) {
+      s.currentSmartFolder.isExpand = true;
+      machineryUpdateSidebarList(s);
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, true);
+    }
+    else if (s.viewMode == "alltags") {
+      s.$root.currentFocus = "tags";
+    }
+  }
+}
+
+export function machineryKeyUpHandler(s: any, event: any): void {
+  const w = window as any;
+  event && event.preventDefault();
+  if (qa(".swal2-container").length > 0) return;
+  if (s.$root.currentFocus == "content") {
+    if (s.isDetailMode && !s.isInlineMode) {
+      if (s.isCropMode) {
+        moveCropToolChannel.emit({ horizontal: 0, vertical: -1 });
+        return;
+      }
+      else {
+        detailZoom()?.moveY( -150);
+      }
+    } else {
+      machinerySelectUp(s, event);
+    }
+  }
+  else if (s.$root.currentFocus == "sidebar") {
+    s.$root.selectedFolders = [];
+    syncListFromScope();
+    s.$root.selectedFoldersMappings = {};
+    s.$root.selectedSmartFoldersMappings = {};
+    s.$root.selectedSmartFolders = [];
+    if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { machineryOpenAll(s) }
+      else if (s.viewMode == "untagged") {
+        if (s.$root.preferences.sidebar.unfiled != 'false') {
+          machineryOpenUnfiled(s);
+        }
+        else {
+          machineryOpenAll(s);
+        }
+      }
+      else if (s.viewMode == "recent") {
+        if (s.$root.preferences.sidebar.untagged != 'false') {
+          machineryOpenUntagged(s);
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          machineryOpenUnfiled(s);
+        }
+        else {
+          machineryOpenAll(s);
+        }
+      }
+      else if (s.viewMode == "random") {
+        if (s.$root.preferences.sidebar.recent != 'false') {
+          machineryOpenRecent(s);
+        }
+        else if (s.$root.preferences.sidebar.untagged != 'false') {
+          machineryOpenUntagged(s);
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          machineryOpenUnfiled(s);
+        }
+        else {
+          machineryOpenAll(s);
+        }
+      }
+      else if (s.viewMode == "community") {
+        if (s.$root.preferences.sidebar.random != 'false') {
+          machineryOpenRandom(s);
+        }
+        else if (s.$root.preferences.sidebar.recent != 'false') {
+          machineryOpenRecent(s);
+        }
+        else if (s.$root.preferences.sidebar.untagged != 'false') {
+          machineryOpenUntagged(s);
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          machineryOpenUnfiled(s);
+        }
+        else {
+          machineryOpenAll(s);
+        }
+      }
+      else if (s.viewMode == "alltags") {
+        if (s.$root.preferences.sidebar.community2 != 'false') {
+          machineryOpenCommunity(s);
+        }
+        else if (s.$root.preferences.sidebar.random != 'false') {
+          machineryOpenRandom(s);
+        }
+        else if (s.$root.preferences.sidebar.recent != 'false') {
+          machineryOpenRecent(s);
+        }
+        else if (s.$root.preferences.sidebar.untagged != 'false') {
+          machineryOpenUntagged(s);
+        }
+        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+          machineryOpenUnfiled(s);
+        }
+        else {
+          machineryOpenAll(s);
+        }
+      }
+      else if (s.viewMode == "trash") {
+        machineryOpenAllTags(s)
+      }
+      else {
+        if (s.currentId) {
+          if (s.currentId.indexOf("smart-folder") > -1) {
+            machineryOpenPrevSmartFolder(s);
+          }
+          else if (s.currentId.indexOf("quick") > -1) {
+            machineryOpenPrevQuickAccess(s);
+          }
+          else if (s.currentId.indexOf("folder") > -1) {
+            machineryOpenPrevFolder(s);
+          }
+        }
+      }
+  }
+  else if (s.$root.currentFocus == "tags") {
+    machineryOpenPrevGroup(s);
+  }
+}
+
+export function machineryModDownHandler(s: any, event: any): void {
+  if (s.isCropMode) {
+    event && event.preventDefault();
+    resizeCropToolChannel.emit({
+      horizontal: 0,
+      vertical: 1
+    });
+    return;
+  }
+  else {
+    machineryEndHandler(s, event);
+  }
+}
+
+export function machineryModLeftHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isDetailMode) {
+    if (s.isCropMode) {
+      resizeCropToolChannel.emit({
+        horizontal: -1,
+        vertical: 0
+      });
+      return;
+    }
+  }
+  else {
+    machineryPrevHistory(s, event);
+  }
+}
+
+export function machineryModRightHandler(s: any, event: any): void {
+  event && event.preventDefault();
+  if (s.isDetailMode) {
+    if (s.isCropMode) {
+      resizeCropToolChannel.emit({
+        horizontal: 1,
+        vertical: 0
+      });
+      return;
+    }
+  }
+  else {
+    machineryNextHistory(s, event);
+  }
+}
+
+export function machineryModUpHandler(s: any, event: any): void {
+  if (s.isCropMode) {
+    event && event.preventDefault();
+    resizeCropToolChannel.emit({
+      horizontal: 0,
+      vertical: -1
+    });
+    return;
+  }
+  else {
+    machineryHomeHandler(s, event);
+  }
+}
+
+export function machineryNHandler(s: any, $event: any): void {
+  const w = window as any;
+  if (!s.isDetailMode) {
+    return;
+  }
+  if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
+    var video = q(".detail-wrap video") || q(".detail-wrap mpv-video");
+    if (video) {
+      machineryAddVideoComment(s, s.current, video);
+    }
+  }
+}
+
+export function machineryPageDownHandler(s: any): any {
+  const w = window as any;
+  return throttle(function (event: any) {
+    var offset = window.innerHeight - 72;
+    if (s.isDetailMode) {
+      detailZoom()?.moveY( offset);
+    }
+    else {
+      var scrollTop = scrollTopValue(".box-container");
+      machineryScrollbarTo(q(".box-container"), scrollTop + offset * 1, 100);
+    }
+  }, 100, true);
+}
+
+/* pageUpHandler（bundle 35691-35702 逐字：含 prepend 触发面 ig.trigger("prepend")） */
+export function machineryPageUpHandler(s: any): any {
+  const w = window as any;
+  return throttle(function (event: any) {
+    var offset = window.innerHeight - 72;
+    if (s.isDetailMode) {
+      detailZoom()?.moveY( -offset);
+    }
+    else {
+      var scrollTop = scrollTopValue(".box-container");
+      machineryScrollbarTo(q(".box-container"), scrollTop - offset * 1, 100);
+      setTimeout(function () {
+        if (s.startCursor !== 0 && scrollTopValue("#box-container") === 0) {
+          w.ig.trigger("prepend");
+        }
+      }, 200);
+    }
+  }, 100, true);
+}
+
+/* saveHandler（bundle 35985-35991 逐字：crop 模式 saveCrop；saveCrop 经 scope 解析） */
+export function machinerySaveHandler(s: any): void {
+  if (s.isRotating) return;
+  if (s.isCropMode) {
+    saveCrop();
+  }
 }

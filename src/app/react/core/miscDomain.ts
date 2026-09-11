@@ -57,9 +57,11 @@ import { machineryPreloadImage } from './itemDomain';
 import { machineryAddToRecentFile } from './libraryDomain';
 import { ensureDetailZoom } from './smoothZoomEngine';
 import { getFilter } from './filterDomain';
-import { getPageDownHandlerFn, getTimeout, machineryInitMousetrap } from './dataMachinery';
+
 import { machinerySortRawData } from './itemDomain';
 import { machineryUndo } from './navHistory';
+import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
+import { getTimeout } from './machineryInfra';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;

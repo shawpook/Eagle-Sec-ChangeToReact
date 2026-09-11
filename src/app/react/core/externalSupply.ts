@@ -1,3 +1,4 @@
+import { applyDataMachineryScope } from './machineryInfra';
 // b1-9bz-C-0：跨窗口 / 驱动脚本所需的 scope 面供给，改用**延迟注册**而非静态 import。
 //
 // 背景：b1-9bz-B-8 退役 fns 表后，子窗口（viewers/font、viewers/text-editor）经

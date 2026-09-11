@@ -13,6 +13,7 @@
 import { openQuickSearchModalChannel, resizeCropToolChannel } from '../global/bus';
 import { clickEl } from '../utils/domQuery';
 
+import { machinerySaveHandler } from './keymap';
 /** destoryMousetrap（bundle 49326-49330 邻域逐字：清空 scope.mousetrap 表并解绑全局键）。 */
 export function machineryDestoryMousetrap(s: any): void {
   const w = window as any;

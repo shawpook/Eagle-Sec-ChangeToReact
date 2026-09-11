@@ -4,56 +4,15 @@
 
 ## 0. 总量
 
-- 文件：`src/app/react/core/dataMachinery.ts`，**2588 行**
-- 顶层声明：**29**（exported **25** / 私有 **4**）
-- import 面：**52** 条
+- 文件：`src/app/react/core/dataMachinery.ts`，**928 行**
+- 顶层声明：**0**（exported **0** / 私有 **0**）
+- import 面：**53** 条
 - 引用文件：**30**（`from .../dataMachinery`）
 
 ## 1. 域聚类（批次候选）
 
 | 目标域 | 声明数 | 行数（含私有依赖） | 导出数 |
 |---|---:|---:|---:|
-| MOUNT-INFRA（最后一批/或留共享） | 9 | 1025 | 5 |
-| core/keymap | 20 | 627 | 20 |
-
-### MOUNT-INFRA（最后一批/或留共享）（9 项 / 1025 行）
-
-| 名称 | exp | 行区间 | 行数 | 同文件依赖 |
-|---|---|---:|---:|---|
-| `timeoutCache` |  | 111-111 | 1 | - |
-| `shimTimeoutInst` |  | 112-112 | 1 | - |
-| `getTimeout` | Y | 114-148 | 35 | `shimTimeoutInst`, `timeoutCache` |
-| `singletonByScope` |  | 1589-1589 | 1 | - |
-| `scopeSingleton` | Y | 1590-1595 | 6 | `singletonByScope` |
-| `machineryCalls` | Y | 1602-1602 | 1 | - |
-| `machinerySeedControllerState` | Y | 1607-2122 | 516 | - |
-| `applied` |  | 2124-2124 | 1 | - |
-| `applyDataMachineryScope` | Y | 2125-2587 | 463 | `applied`, `getTimeout`, `machineryCalls`, `machineryInitMousetrap`, `machinerySeedControllerState` |
-
-### core/keymap（20 项 / 627 行）
-
-| 名称 | exp | 行区间 | 行数 | 同文件依赖 |
-|---|---|---:|---:|---|
-| `machineryBuildMousetrap` | Y | 304-442 | 139 | `getPageUpHandlerFn`, `machineryKeyCHandler`, `machineryKeyDownHandler`, `machineryKeyLeftHandler`, `machineryKeyPHandler`, `machineryKeyRightHandler`, `machineryKeyUpHandler`, `machineryModDownHandler` … |
-| `machineryInitMousetrap` | Y | 446-467 | 22 | `machineryBuildMousetrap` |
-| `machineryKeyCHandler` | Y | 552-557 | 6 | - |
-| `machineryKeyPHandler` | Y | 559-561 | 3 | - |
-| `machineryKeyLeftHandler` | Y | 566-611 | 46 | - |
-| `machineryKeyRightHandler` | Y | 615-648 | 34 | - |
-| `machineryModUpHandler` | Y | 653-665 | 13 | `machineryHomeHandler` |
-| `machineryModDownHandler` | Y | 667-679 | 13 | `machineryEndHandler` |
-| `machineryModLeftHandler` | Y | 681-695 | 15 | - |
-| `machineryModRightHandler` | Y | 697-711 | 15 | - |
-| `machineryKeyUpHandler` | Y | 728-842 | 115 | - |
-| `machineryKeyDownHandler` | Y | 850-983 | 134 | - |
-| `machineryPageDownHandler` | Y | 1000-1012 | 13 | - |
-| `machineryPageUpHandler` | Y | 1015-1032 | 18 | - |
-| `machineryNHandler` | Y | 1056-1067 | 12 | - |
-| `machinerySaveHandler` | Y | 1079-1084 | 6 | - |
-| `machineryHomeHandler` | Y | 1277-1286 | 10 | - |
-| `machineryEndHandler` | Y | 1290-1300 | 11 | - |
-| `getPageUpHandlerFn` | Y | 1596-1596 | 1 | `machineryPageUpHandler`, `scopeSingleton` |
-| `getPageDownHandlerFn` | Y | 1597-1597 | 1 | `machineryPageDownHandler`, `scopeSingleton` |
 
 ## 2. 跨域共享顶层名（≥2 域引用 —— 最后搬或抽共享模块）
 
@@ -115,6 +74,7 @@
 | `./itemDomain` | { machineryReload, machinerySortRawData } |
 | `./navHistory` | { machineryBack, machineryNextHistory, machineryOpenNextQuickAccess, machineryOp |
 | `../services/gridService` | { getOffsetScrollbarFn, machineryToggleAll } |
+| `./machineryInfra` | { applyDataMachineryScope } |
 
 ## 4. 建议批次顺序（按依赖自底向上）
 

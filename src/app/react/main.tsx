@@ -42,7 +42,7 @@ import { eagle as coreEagle } from './core/eagleApi';
 import { bridgeScopeFields, coreState, getBodyScope } from './core/appCore';
 import { exposeScopeShimDiagnostics } from './global/scopeShim';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
-import { applyDataMachineryScope } from './core/dataMachinery';
+
 import { installPortsProbe } from './core/portsProbe';
 import { installBundleGlobals } from './core/bundleGlobals';
 import { installApiServerGlobals, installInitAPIServer } from './core/apiServerDomain';
@@ -55,6 +55,7 @@ import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
 
+import { applyDataMachineryScope } from './core/machineryInfra';
 /**
  * React 入口（Eagle React 化改造）。
  *

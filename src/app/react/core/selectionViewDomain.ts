@@ -39,10 +39,11 @@ import { getFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryCalculateImageBinding, machineryForceFitImageSize, machineryGetItemByElement, machineryPreloadImage, machineryRebindRefresh } from './itemDomain';
 import { machineryAddToRecentFile, machineryRemoveFolder, machineryRemoveFolderContents, machineryRemoveFolderInner, machineryRemoveSmartFolder, machineryRemoveSmartFolderInner, machineryResetFolderCover, machineryToggleCurrentLevelSmartFoldersInner } from './libraryDomain';
 import { machineryRemoveTagGroup } from './tagManagerDomain';
-import { getTimeout, machineryCalls } from './dataMachinery';
+
 import { machineryRemovePermanently } from '../services/batchOpsService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryAutoScroll } from '../services/gridService';
+import { getTimeout, machineryCalls } from './machineryInfra';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {

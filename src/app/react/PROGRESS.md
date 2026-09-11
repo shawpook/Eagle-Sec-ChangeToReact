@@ -7611,3 +7611,26 @@ libraryDomain/gridService/dataMachinery 各若干）。
 哨兵 `SENTINEL_OK`；定向 `ui-interactions`/`main-ui-workflow`/`stage7a` 全绿。
 
 **余量（30）**：MOUNT-INFRA 9（1025 行）+ `core/keymap` 20（627 行）+ `undoTimeout` 已清。
+
+---
+
+## D-1 / Track B / B-17 记录（2026-09-11）
+
+**目标**：最后两簇归位——`core/keymap` 20 个 → `core/keymap.ts`；
+MOUNT-INFRA 9 个 → **新建 `core/machineryInfra.ts`**（scope 面供给层）。
+
+**结果**：`dataMachinery.ts` **顶层声明清零**（2588 → 927 行，余下仅头注释与孤儿 import）。
+所有 `from '...dataMachinery'` 引用已全部改道（`grep` 零命中）。
+
+**踩坑**：
+1. `tagManagerDomain` 自带 `const getTimeout = machineryGetTimeout` 别名 —— 脚本按名误加
+   `import { getTimeout } from './machineryInfra'`（@ts-nocheck 掩盖 TS2440）；已剔除并把
+   `machineryGetTimeout` 的来源从 dataMachinery 改为 machineryInfra。
+2. `smoothZoomEngine` 注释里的 "applied" 被误判为引用 → 误加 `import { applied }`；已剔除。
+
+**核数**：`dataMachinery.ts` **2588 → 927 行**（-1661）；顶层声明 **30 → 0**。
+`tsc` **508 → 508**。
+
+**门禁**：`bz-export-check` 无问题（2454 处）；`bz-free-check`（keymap OK；machineryInfra 的
+「缺失」经核为注释/字符串/属性键误报，且该文件非 @ts-nocheck，以 tsc 为准）；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `ui-interactions`/`main-ui-workflow`/`stage7b` 全绿。

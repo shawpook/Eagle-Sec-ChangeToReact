@@ -39,13 +39,14 @@ import { machineryColorSimilarityDistance } from '../utils/color';
 import { clickEl, focusEl, selectEl } from '../utils/domQuery';
 import { throttle } from '../utils/func';
 import { isNumeric } from '../utils/lang';
-import { machineryCalls } from './dataMachinery';
+
 
 import { machineryOpenAll } from '../services/folderCoreService';
 import { get } from '../utils/lang';
 import { machinerySortData } from './itemDomain';
 import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './tagManagerDomain';
-import { scopeSingleton } from './dataMachinery';
+
+import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 declare const RecentFileManager: any;
 declare const UrlStateService: any;
 declare const analytics: any;

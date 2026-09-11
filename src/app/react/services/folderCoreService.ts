@@ -46,9 +46,10 @@ import { machineryUpdateListHeight } from '../services/gridService';
 import { hide, setScrollTop } from '../utils/domQuery';
 import { machineryOnImageSizeHeightChanged } from '../core/itemDomain';
 import { machinerySetLastFolder } from '../core/libraryDomain';
-import { getTimeout } from '../core/dataMachinery';
+
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryResetPage } from './gridService';
+import { getTimeout } from '../core/machineryInfra';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;

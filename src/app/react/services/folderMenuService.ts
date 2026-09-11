@@ -620,7 +620,7 @@ export function showListSubfolderContent(...args: any[]) {
       machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
         machineryRebindRefresh(s);
         machineryUpdateSelection(s);
-        const scrollbar = document.getElementById('box-container-scrollbar') || (w.$ && w.$('#box-container-scrollbar')[0]);
+        const scrollbar = document.getElementById('box-container-scrollbar');
         if (scrollbar) scrollbar.dispatchEvent(new Event('UPDATE_BOX_SCROLLBAR', { bubbles: true }));
       });
 

@@ -2613,6 +2613,38 @@
 > 本会话另修好既有失败 2 项：`residue-closed-loop`、`ui-interactions-closed-loop`。
 > 哨兵 `SENTINEL_OK`；probe `LOAD_OK allData=1`；tsc 788（基线持平）。
 
+> **【D-2 摸底（2026-09-11）：jQuery / vendor 面盘点与分批计划】**
+>
+> **实测用量**（`src/app/react`）：
+> - `w.$(...)` **283 处 / 10 文件**：`dataMachinery` 172、`tagManagerDomain` 60、`gridService` 15、
+>   `bundleGlobals` 13、`detailService` 11、`selectionViewDomain` 6、`mediaService` 2、`filterDomain` 2、
+>   `folderMenuService` 1、`smoothZoomEngine` 1（注释）。
+> - `jQuery(...)` 字面量 **78 处**（哨兵 `jQuery` 指标口径）。
+> - **jQuery UI 48 处**：`.sortable` 23、`.resizable` 19、`.draggable` 6 —— 集中在
+>   `collect-window/tagPanel.tsx`、`collect-window/contextMenu.tsx`、`components/detail/commentHooks.ts`、
+>   `components/detail/DetailToolbar.tsx` 等拖拽/缩放交互面。
+> - jQuery 静态：`$.ajax` 8、`$.fn` 5、`jQuery.fn` 4、`$.each` 1、`$.extend` 1。
+> - `index.html` 仍引 `js/vendors/jquery-1.8.0.min.js`、`js/vendors/jquery-ui.min.js`、
+>   `css/jquery-ui.min.css`。
+> - **`frontend/public/shims.js` 实测 0 处 jQuery**（纯原生 DOM）——shims.js 退役与 jQuery 解耦。
+>
+> **分批计划（每批 probe + 定向测试 + 哨兵）**：
+> 1. **D-2a**：低风险零星位（已完成首批 5 处：`mediaService` 2、`filterDomain` 2、`folderMenuService` 1）。
+> 2. **D-2b**：小文件整批（`gridService` 15 / `detailService` 11 / `selectionViewDomain` 6 / `bundleGlobals` 13）
+>    —— 注意 `.width()/.height()/.css()/.data()/.on()/.trigger()` 有 jQuery 盒模型/事件语义，逐个判等。
+> 3. **D-2c**：`tagManagerDomain` 60。
+> 4. **D-2d**：`dataMachinery` 172（与 D-1 Track B 函数体归位可合并做）。
+> 5. **D-2e**：jQuery 静态（`$.ajax` → fetch/IPC、`$.fn`/`$.extend`/`$.each`）。
+> 6. **D-2f**：jQuery UI 48 处（**需策略决策**，见下）。
+> 7. **D-2g**：`index.html` 摘 vendor script/css + 哨兵 `vendorScriptTags` 归零。
+>
+> **⚠ 策略分叉（jQuery UI）**：`.sortable/.resizable/.draggable` 是拖拽/缩放交互内核，
+> 原生重写工作量大（句柄、containment、排序占位、touch），风险高。DoD 3 明确允许
+> 「评估后留任需在 PROGRESS 记录理由」。建议二选一：
+> (a) 单独作为子项目原生重写（或引入等价自研交互层）；(b) 本轮**留任 jquery-ui**，
+> 只清 `w.$()`/jQuery 核心查询面，`index.html` 保留 jquery-ui 并记录理由。
+> 其余 5 步（D-2a~e、g）与 (b) 不冲突，可先行推进。
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

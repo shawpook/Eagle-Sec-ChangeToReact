@@ -108,7 +108,7 @@ export function takeoverFilterDomain(): void {
     const s: any = getBodyScope();
     if (!s) return;
     scopeEvalAsync(function () {
-      w.$("#folder-search").focus();
+      (document.getElementById('folder-search') as HTMLElement | null)?.focus();
     });
   });
 
@@ -123,7 +123,7 @@ export function takeoverFilterDomain(): void {
       w.eagle.filter.isOpen = !w.eagle.filter.isOpen;
       syncFilterFromScope();
       if (!w.eagle.filter.isOpen) {
-        w.$("[filter-item].open").removeClass("open");
+        document.querySelectorAll("[filter-item].open").forEach((el) => el.classList.remove("open"));
       }
       machineryUpdateContainerHieght(s, true);
       if (w.eagle.filter.isOpen) { w.electronLog && w.electronLog.info("[app] Filter: ON"); }

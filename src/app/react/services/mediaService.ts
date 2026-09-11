@@ -80,9 +80,9 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
 /* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
 export function mediaGetVideoPlayer(s: any): any {
   const w = window as any;
-  var mpv = w.$(".detail-wrap mpv-video")[0];
+  var mpv = document.querySelector(".detail-wrap mpv-video");
   if (mpv) return { el: mpv, type: 'mpv' };
-  var native = w.$(".detail-wrap video")[0];
+  var native = document.querySelector(".detail-wrap video");
   if (native) return { el: native, type: 'native' };
   return null;
 }

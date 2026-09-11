@@ -2678,6 +2678,35 @@
 > 5. **D-2f-5**：`index.html` 摘 `jquery-ui.min.js` + `css/jquery-ui.min.css`；移除 `jQuery.fn.{draggable,resizable,sortable}` 守卫（缺失时不再静默降级）。
 >
 
+> **【D-2f ✅ 完成（2026-09-11）：jQuery UI 全面退役 → 自研交互层】**
+>
+> 交付 `src/app/react/components/interactions/`：
+> - `domHandle.ts`——原生元素的最小 jQuery 风格包装（`css/width/height/inner*/outer*/offset/position`，
+>   含 setter），供合成 jQuery-UI 兼容的 `ui.element/helper`。
+> - `resizable.ts`——pointer 驱动、8 方向手柄（类名 `ui-resizable-handle ui-resizable-<dir>`）、
+>   min/max（content-box）+ containment（border-box）、`handlesOnly` 模式（仅建手柄）、
+>   `getResizable`；`ui` 形状兼容 `size/position/originalSize/originalPosition/element/helper`。
+> - `draggable.ts`——`distance`/`containment`（含 `'parent'`/`'body'`）/`axis`/start-drag-stop；
+>   `ui.helper` 为 ElHandle。
+> - `sortable.ts`——`makeSortable`（distance/handle/disabled+setDisabled/占位重排/update/stop）+
+>   `sortableToArray(el, attr)` + `getSortable`。
+>
+> **迁移站点 48 处 / 覆盖**：resizable 19（10 宿主：sidebar/inspector/tagSidebar/3 浮动面板/
+> comment×2/cropArea/gif bar×3）、sortable 23（7 宿主：inspector×2/tagManager/detailToolbar/
+> ContextMenu×2/ListRegion/Toolbar）、draggable 6（3 浮动面板 + smoothZoomEngine 3 处 scrollbar）。
+>
+> **关键坑**：`smoothZoomEngine` 的 `scrollbar.*.draggable(...)` 初判为「引擎自有 API」，
+> 实为 jQuery UI draggable —— 移除 vendor 后 **`stage5` 的 `detail-delivery-released` 挂**
+> （原图交付门控未释放）。迁移后恢复。**教训：vendor 退役前必须逐个 `.draggable/.resizable/
+> .sortable` 站点核验是否真为 jQuery 对象**（`.on()/.width()` 即 jQuery 特征）。
+>
+> **vendor**：`git rm src/app/js/vendors/jquery-ui.min.js` + `src/app/css/jquery-ui.min.css`；
+> `index.html` 两处引用摘除。哨兵基线 `jQuery 78→59`（19 处 `jQuery(...)` 调用点随 UI 迁移消失）、
+> `vendorScriptTags 2→1`（仅剩 jquery-1.8.0）。
+>
+> **未做（仍属 D-2）**：`w.$()` 283 处（D-2b~d）与 jQuery 静态（D-2e）——本次仅清 jQuery **UI**。
+
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

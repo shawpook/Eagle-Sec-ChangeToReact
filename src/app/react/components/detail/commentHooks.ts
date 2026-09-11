@@ -7,6 +7,7 @@ import { getBodyScope, scopeApply } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
 import { getRawPath } from '../../core/itemDomain';
 import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from '../../global/bus';
+import { makeResizable } from '../interactions/resizable';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -294,13 +295,6 @@ export function useCommentItem(
     const $container = $()('#detail-container');
     const $el = $()(element);
 
-    $el.resizable();
-
-    const handleMousedown = function () {
-      resizing = true;
-    };
-    $el.find('.ui-resizable-handle').on('mousedown', handleMousedown);
-
     const annotationWheel = function (event: any) {
       event.stopPropagation();
     };
@@ -312,7 +306,6 @@ export function useCommentItem(
       zoomData = $()('#detail-container').safeZoomData();
       zoomRatio = zoomData.ratio;
     };
-    $el.on('resizestart', onResizeStart);
 
     const onResize = function (event: any, ui: any) {
       event.preventDefault();
@@ -324,7 +317,6 @@ export function useCommentItem(
       ui.size.width = Math.round(originWidth + offsetWidth / zoomRatio);
       ui.size.height = Math.round(originHeight + offsetHeight / zoomRatio);
     };
-    $el.on('resize', onResize);
 
     const onResizeStop = function (event: any, ui: any) {
       event.stopPropagation();
@@ -342,7 +334,12 @@ export function useCommentItem(
         ipc.send('image-change', s.current);
       });
     };
-    $el.on('resizestop', onResizeStop);
+    // D-2f：jQuery-UI resizable → 自研（原 resizestart/resize/resizestop 事件订阅 + handle mousedown 改为回调）
+    const rzHandles = makeResizable(element as HTMLElement, {
+      start: function () { resizing = true; onResizeStart(); },
+      resize: onResize,
+      stop: onResizeStop,
+    });
 
     const onMouseDownDrag = function (e: any) {
       const s = getBodyScope();
@@ -428,14 +425,8 @@ export function useCommentItem(
     $container.on('mousemove.drag', onMouseMoveDrag);
 
     return () => {
-      try {
-        $el.resizable('destroy');
-      } catch (err) {}
-      $el.find('.ui-resizable-handle').off('mousedown', handleMousedown);
+      rzHandles.destroy();
       $el.find('.annotation').off('mousewheel', annotationWheel);
-      $el.off('resizestart', onResizeStart);
-      $el.off('resize', onResize);
-      $el.off('resizestop', onResizeStop);
       $el.off('mousedown.drag', onMouseDownDrag);
       $el.off('mouseup.drag', onMouseUpDrag);
       $container.off('mousemove.drag', onMouseMoveDrag);
@@ -533,9 +524,10 @@ export function useCropImage(
       height: containerHeight,
     });
     $cropArea.addClass('ui-resizable-resizing');
-    $cropArea.resizable({
-      handles: 'n, e, s, w, ne, se, sw, nw',
-    });
+    // D-2f：jQuery-UI resizable 仅用于创建手柄（实际缩放由下方自研 mousedown 逻辑驱动）→ handlesOnly
+    const cropHandles = ($cropArea[0] as HTMLElement | undefined)
+      ? makeResizable($cropArea[0] as HTMLElement, { handles: 'n, e, s, w, ne, se, sw, nw', handlesOnly: true })
+      : null;
 
     $cropSize.html(
       `x:${0} y:${0}, ${t('general.w')}:${containerWidth} ${t('general.h')}:${containerHeight}`
@@ -1090,9 +1082,7 @@ export function useCropImage(
     applyCurrentSize();
 
     return () => {
-      try {
-        $cropArea.resizable('destroy');
-      } catch (err) {}
+      if (cropHandles) cropHandles.destroy();
       $cropArea.find('.ui-resizable-handle').off('mousedown', handleDown);
       $cropArea.off('resizestart');
       $cropArea.off('resize');

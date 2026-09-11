@@ -15,8 +15,8 @@
 export interface ElHandle {
   el: HTMLElement;
   css(prop: string | Record<string, string | number>, value?: string | number): any;
-  width(): number;
-  height(): number;
+  width(value?: number | string): any;
+  height(value?: number | string): any;
   innerWidth(): number;
   innerHeight(): number;
   outerWidth(): number;
@@ -57,8 +57,16 @@ export function elementHandle(el: HTMLElement): ElHandle {
       }
       return h;
     },
-    width() { return parseFloat(getComputedStyle(el).width) || 0; },
-    height() { return parseFloat(getComputedStyle(el).height) || 0; },
+    width(value?: number | string) {
+      if (value === undefined) return parseFloat(getComputedStyle(el).width) || 0;
+      el.style.width = typeof value === 'number' ? `${value}px` : value;
+      return h;
+    },
+    height(value?: number | string) {
+      if (value === undefined) return parseFloat(getComputedStyle(el).height) || 0;
+      el.style.height = typeof value === 'number' ? `${value}px` : value;
+      return h;
+    },
     innerWidth() { const cs = getComputedStyle(el); return h.width() + pad(cs, 'Left') + pad(cs, 'Right'); },
     innerHeight() { const cs = getComputedStyle(el); return h.height() + pad(cs, 'Top') + pad(cs, 'Bottom'); },
     outerWidth() { const cs = getComputedStyle(el); return h.innerWidth() + border(cs, 'Left') + border(cs, 'Right'); },

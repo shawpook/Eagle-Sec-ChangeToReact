@@ -5,6 +5,7 @@ import { saveFolder } from '../../services/folderService';
 import { t } from '../../global/eagleGlobals';
 import { useTippy } from '../hooks';
 import { ContentEditable } from '../inspector/ContentEditable';
+import { makeResizable } from '../interactions/resizable';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { $ } from '../detail/detailHooks';
 import { fuzzyMatchHtml } from './ContextMenu';
@@ -252,13 +253,11 @@ export function TagManagerPanel() {
     setHost(document.getElementById('eagle-tag-manager-host'));
   }, []);
 
-  // resizable="e"（bundle:70423-70440；onTagSidebarResize 在 body scope）
+  // resizable="e"（bundle:70423-70440；onTagSidebarResize 在 body scope）——D-2f：自研 makeResizable
   useEffect(() => {
     const el = sidebarRef.current;
     if (!el) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    jQuery(el).resizable({
+    const r = makeResizable(el, {
       maxWidth: 600,
       minWidth: 200,
       handles: 'e',
@@ -270,9 +269,7 @@ export function TagManagerPanel() {
       },
     });
     return () => {
-      try {
-        jQuery(el).resizable('destroy');
-      } catch (err) {}
+      r.destroy();
     };
   }, [host]);
 

@@ -9,6 +9,8 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { useVsGridRepeat, themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
 import { inspectorTagSelectPanelOpenChannel } from '../../global/bus';
+import { makeDraggable } from '../interactions/draggable';
+import { makeResizable } from '../interactions/resizable';
 
 /**
  * 阶段7d-3a：inspectorTagSelectPanel 指令接管（bundle 57911-58122 + inspector-tag-select-panel.html）。
@@ -54,6 +56,7 @@ export function InspectorTagSelectPanel() {
     // 闭环测试契约
     (window as any).__eagleInspectorTagSelectPanel = panel;
 
+    // 注：onWindowResize 定位逻辑仍用 jQuery（属 D-2b jQuery 核心清理面，非 D-2f 交互层）
     const $selectPanel = jQuery(rootRef.current).find('.select-panel');
 
     // 如果面板的位置壓住了標籤選擇按鈕，則將面板移動到檢查器左側 + 10px 處（57929-57940 逐字）
@@ -124,11 +127,11 @@ export function InspectorTagSelectPanel() {
     };
     jQuery(window).on('resize.inspectTagSelect', onWindowResize);
 
-    // initDraggable / initResizable（jQuery UI，缺失時跳過）
+    // initDraggable / initResizable（D-2f：自研交互层，替代 jQuery UI）
     let dragOriginalSize: any = {};
-    if (jQuery && jQuery.fn && (jQuery as any).fn.draggable) {
-      $selectPanel.draggable({
-        scroll: false,
+    const panelEl = rootRef.current ? (rootRef.current.querySelector('.select-panel') as HTMLElement | null) : null;
+    if (panelEl) {
+      makeDraggable(panelEl, {
         distance: 5,
         containment: 'body',
         start: (e: any, ui: any) => {
@@ -137,13 +140,13 @@ export function InspectorTagSelectPanel() {
             width: ui.helper.outerWidth(),
           };
         },
-        stop: () => {
-          $selectPanel.height(dragOriginalSize.height);
-          $selectPanel.width(dragOriginalSize.width);
+        stop: (e: any, ui: any) => {
+          ui.helper.height(dragOriginalSize.height);
+          ui.helper.width(dragOriginalSize.width);
           panel.fixedSize = true;
         },
       });
-      $selectPanel.resizable({
+      makeResizable(panelEl, {
         maxWidth: 800,
         minWidth: 200,
         minHeight: 160,

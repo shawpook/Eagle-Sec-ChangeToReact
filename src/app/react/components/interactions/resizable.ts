@@ -29,6 +29,8 @@ export interface ResizableOptions {
   maxWidth?: number;
   maxHeight?: number;
   containment?: string | HTMLElement;
+  /** 仅创建 handle 元素（供既有自研手柄逻辑消费），不挂 pointer 拖拽。 */
+  handlesOnly?: boolean;
   start?: (event: PointerEvent, ui: ResizeUi) => void;
   resize?: (event: PointerEvent, ui: ResizeUi) => void;
   stop?: (event: PointerEvent, ui: ResizeUi) => void;
@@ -190,7 +192,7 @@ export function makeResizable(el: HTMLElement, opts: ResizableOptions = {}): Res
     const hd = document.createElement('div');
     hd.className = `ui-resizable-handle ui-resizable-${d}`;
     styleHandle(hd, d);
-    hd.addEventListener('pointerdown', down(d));
+    if (!opts.handlesOnly) hd.addEventListener('pointerdown', down(d));
     el.appendChild(hd);
     handleEls.push(hd);
   }

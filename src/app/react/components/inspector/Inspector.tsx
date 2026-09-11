@@ -38,6 +38,7 @@ import {
   bindInspectorEvents,
 } from './inspectorActions';
 import { req } from '../detail/detailHooks';
+import { makeResizable } from '../interactions/resizable';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
@@ -1039,13 +1040,11 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   useTippy(rootRef, JSON.stringify([snapshot.theme, snapshot.newUrl, snapshot.trialRemain, snapshot.items.map((i) => i.id).join(',')]));
   useSelectAllItems(itemsRef, snapshot);
 
-  // resizable="w" 指令（bundle:70423-70440，maxWidth 600 / minWidth 200）
+  // resizable="w" 指令（bundle:70423-70440，maxWidth 600 / minWidth 200）——D-2f：自研 makeResizable
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const jQuery = $();
-    if (!jQuery) return;
-    jQuery(el).resizable({
+    const r = makeResizable(el, {
       maxWidth: 600,
       minWidth: 200,
       handles: 'w',
@@ -1055,9 +1054,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
       },
     });
     return () => {
-      try {
-        jQuery(el).resizable('destroy');
-      } catch (err) {}
+      r.destroy();
     };
   }, []);
 

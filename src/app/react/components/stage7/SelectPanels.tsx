@@ -7,6 +7,8 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { calculateImageBindingChannel, folderSettingsChannel, generalTagSelectPanelOpenChannel, saveFolderChannel, updateSelectionChannel } from '../../global/bus';
+import { makeDraggable } from '../interactions/draggable';
+import { makeResizable } from '../interactions/resizable';
 
 /**
  * 阶段7d-1c-1：tagsInput + generalTagSelectPanel + AutoTaggingController 接管。
@@ -335,12 +337,11 @@ export function GeneralTagSelectPanel() {
     };
     jQuery(window).on('resize.inspectTagSelect', onWindowResize);
 
-    // initDraggable / initResizable（jQuery UI，缺失時跳過）
+    // initDraggable / initResizable（D-2f：自研交互层，替代 jQuery UI）
     let dragOriginalSize: any = {};
-    if (jQuery && jQuery.fn && (jQuery as any).fn.draggable && rootRef.current) {
-      const $selectPanel = jQuery(rootRef.current).find('.select-panel');
-      $selectPanel.draggable({
-        scroll: false,
+    const panelEl = rootRef.current ? (rootRef.current.querySelector('.select-panel') as HTMLElement | null) : null;
+    if (panelEl) {
+      makeDraggable(panelEl, {
         distance: 5,
         containment: 'body',
         start: (e: any, ui: any) => {
@@ -349,13 +350,13 @@ export function GeneralTagSelectPanel() {
             width: ui.helper.outerWidth(),
           };
         },
-        stop: () => {
-          $selectPanel.height(dragOriginalSize.height);
-          $selectPanel.width(dragOriginalSize.width);
+        stop: (e: any, ui: any) => {
+          ui.helper.height(dragOriginalSize.height);
+          ui.helper.width(dragOriginalSize.width);
           panel.fixedSize = true;
         },
       });
-      $selectPanel.resizable({
+      makeResizable(panelEl, {
         maxWidth: 800,
         minWidth: 200,
         minHeight: 160,
@@ -366,8 +367,8 @@ export function GeneralTagSelectPanel() {
         stop: (event: any, ui: any) => {
           const height = ui.element.innerHeight();
           const width = ui.element.innerWidth();
-          localStorage.setItem('eagle.tagsPopup.height', height);
-          localStorage.setItem('eagle.tagsPopup.width', width);
+          localStorage.setItem('eagle.tagsPopup.height', String(height));
+          localStorage.setItem('eagle.tagsPopup.width', String(width));
           panel.height = height;
           panel.width = width;
           panel.fixedSize = true;

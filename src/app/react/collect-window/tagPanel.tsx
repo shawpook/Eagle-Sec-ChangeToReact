@@ -12,6 +12,8 @@ function escapeHtml(s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 import { CollectTagSelectPanel } from './tagPanelEngine';
+import { makeDraggable } from '../components/interactions/draggable';
+import { makeResizable } from '../components/interactions/resizable';
 
 const $: any = (...args: any[]) => (window as any).jQuery(...args);
 
@@ -26,7 +28,8 @@ export function TagSelectPanelHost() {
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const $selectPanel = $(el).find('.tag-select-panel');
+    // D-2f：jQuery UI → 自研交互层（元素直取，不再经 jQuery 包装）
+    const panelEl = el.querySelector('.tag-select-panel') as HTMLElement | null;
 
     const panel = new CollectTagSelectPanel({
       showCreateTagBtn: false,
@@ -39,9 +42,9 @@ export function TagSelectPanelHost() {
     (window as any).__eagleCollectTagPanel = panel;
 
     const initDraggable = () => {
+      if (!panelEl) return;
       let dragOriginalSize: any = {};
-      $selectPanel.draggable({
-        scroll: false,
+      makeDraggable(panelEl, {
         distance: 5,
         containment: 'body',
         start: (e: any, ui: any) => {
@@ -50,16 +53,17 @@ export function TagSelectPanelHost() {
             width: ui.helper.outerWidth(),
           };
         },
-        stop: () => {
-          $selectPanel.height(dragOriginalSize.height);
-          $selectPanel.width(dragOriginalSize.width);
+        stop: (e: any, ui: any) => {
+          ui.helper.height(dragOriginalSize.height);
+          ui.helper.width(dragOriginalSize.width);
           panel.fixedSize = true;
         },
       });
     };
 
     const initResizable = () => {
-      $selectPanel.resizable({
+      if (!panelEl) return;
+      makeResizable(panelEl, {
         maxWidth: 800,
         minWidth: 200,
         minHeight: 160,

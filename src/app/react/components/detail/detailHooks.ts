@@ -8,6 +8,7 @@ import { syncDetailFromScope, useDetailState } from '../../store/detailState';
 import { useBodyState } from '../../store/bodyState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { machineryLeaveDetailMode, machineryOpenPluginPanel, machinerySelectNext, machinerySelectPrev } from '../../core/dataMachinery';
+import { makeResizable } from '../interactions/resizable';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
@@ -423,15 +424,16 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
 
       function initResizer() {
         const $container = $()('.vjs-progress-control');
-        const $resizableBar = $()(`<div class="resize-bar"><div class="bar"></div></div>`);
-        if ($resizableBar.is('.ui-resizable')) {
-          $resizableBar.resizable('destroy');
-        }
+        const resizableBar = document.createElement('div');
+        resizableBar.className = 'resize-bar';
+        resizableBar.innerHTML = '<div class="bar"></div>';
+        const $resizableBar = $()(resizableBar);
         $resizableBar.css({
           left: 0,
           width: 'auto',
         });
-        $resizableBar.resizable({
+        // D-2f：jQuery-UI resizable → 自研
+        makeResizable(resizableBar, {
           minWidth: 2,
           handles: 'e, w',
           containment: '.vjs-progress-control',

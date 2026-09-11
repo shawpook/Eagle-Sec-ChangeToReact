@@ -6,7 +6,7 @@ import { $, getIpc, req, getCurrentWindow } from '../detail/detailHooks';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
-import { machineryEnterDetailMode } from '../../core/dataMachinery';
+import { machineryEditTag, machineryEnterDetailMode } from '../../core/dataMachinery';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';
@@ -687,7 +687,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           label: t('Context.Tag.Edit.Title'),
           icon: 'ic-rename.svg',
           click: () => {
-            getBodyScope().editTag(getBodyScope().TagManager.tagMappings[tag]);
+            machineryEditTag(getBodyScope(), getBodyScope().TagManager.tagMappings[tag]);
             scopeEvalAsync();
           },
         },

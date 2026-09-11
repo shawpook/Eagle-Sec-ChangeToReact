@@ -11308,7 +11308,6 @@ export function applyDataMachineryScope(): void {
   s.adjustLayoutWidth = (increases: any) => machineryAdjustLayoutWidth(s, increases);
   s.zoomFit = (event: any, noAnimation: any) => machineryZoomFit(s, event, noAnimation);
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
-  s.getSelection = () => machineryGetSelection(s);
   s.changeSidebarIndex = (node: any) => machineryChangeSidebarIndex(s, node);
   s.calculateFilterCounts = () => machineryCalculateFilterCounts(s);
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
@@ -11406,7 +11405,6 @@ export function applyDataMachineryScope(): void {
   s.newSmartFolder = (event: any, smartFolder: any) => machineryNewSmartFolder(s, event, smartFolder);
   s.prependFolder = (folder: any) => machineryPrependFolder(s, folder);
   // b1-8：rename 域（路由 + 图片/子文件夹行内编辑 + 批量 + 标签/群组 + selectFolder）
-  s.editTag = (tag: any) => machineryEditTag(s, tag);
   // b1-8 裸引用审计修复：controllerFns fns 表内闭包裸调改走 scope 解析——闭包三件
   // （getExtendTags/getChildFoldersMaps/getChildFoldersMap）+ setViewMode 闭包 debounce
   // 经 apply 接装后可解析（machinery 版本均已存在）

@@ -15,6 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { machineryGetSelection } from '../../core/dataMachinery';
 
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
@@ -1101,7 +1102,7 @@ export function AddToFolderModal() {
     });
 
     if (hasRemoved) {
-      body.lastIndex = body.getSelection().start;
+      body.lastIndex = machineryGetSelection(body).start;
 
       // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
       const next = body.allData[body.lastIndex + body.selected.length];

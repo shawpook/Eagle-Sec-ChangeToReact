@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryUpdateContainerHieght } from '../../core/dataMachinery';
 
+
+import { machineryUpdateContainerHieght } from '../../services/gridService';
 /**
  * filterItem 基础指令移植（bundle:67305-67559，attribute 指令）。
  *

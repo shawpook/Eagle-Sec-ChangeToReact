@@ -34,7 +34,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryOpenAll, machineryPrependFolder, machineryQuickOpenFolder, machineryRebindRefresh, machineryRememberScrollTops, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
+import { machineryChangeSidebarIndex, machineryEnterDetailMode, machineryFadeOutDetailMode, machineryFindDupclipate, machineryHideUploadQueue, machineryLeaveDetailMode, machineryLockApp, machineryOpenAll, machineryPrependFolder, machineryQuickOpenFolder, machineryRebindRefresh, machinerySetFolderOrder, machinerySetSmartFolderOrder, machinerySortRawData, machineryToggleSlideshow, machineryUndo, machineryUpdateSidebarList } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
@@ -44,6 +44,7 @@ import { scopeEvalAsync } from '../global/scopeShim';
 import { q, qaNot, widthOf, heightOf, hasClass, addClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
 import { machineryNewSmartFolder } from './libraryDomain';
 import { machineryGetRecentFolders } from './libraryDomain';
+import { machineryRememberScrollTops } from '../services/gridService';
 declare const IPCHelper: any;
 declare const remote: any;
 

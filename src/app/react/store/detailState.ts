@@ -4,11 +4,12 @@ import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
-import { machineryCurrentIndex } from '../core/dataMachinery';
+
 import { getGIFPath, getModelPath, getNativeViewerPath, getPDFPath, getRawPath, getRawUrl, getRawViewerPath, getTxtPath, getURLSrc } from '../core/itemDomain';
 import { getThumbnailUrl } from '../services/imageOpsService';
 import { getFontPath } from '../services/fontTagService';
 
+import { machineryCurrentIndex } from '../services/gridService';
 /**
  * 阶段5：详情模式与查看器状态 —— 快照自 EagleController scope。
  *

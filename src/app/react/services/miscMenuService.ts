@@ -18,7 +18,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getToggleFilterByTypeFn, getFilter as machineryGetFilter, machineryNewFileFromTemplate, machineryOpenFilter, machineryToggleAllSmartFolderExpand, machineryToggleCurrentLevelSmartFolders, machineryToggleSelectSmartFolder, machineryUpdateContainerHieght, machineryUpdateZoomRatio, machineryZoomActual, machineryZoomFit } from '../core/dataMachinery';
+import { getToggleFilterByTypeFn, getFilter as machineryGetFilter, machineryNewFileFromTemplate, machineryOpenFilter, machineryToggleAllSmartFolderExpand, machineryToggleCurrentLevelSmartFolders, machineryToggleSelectSmartFolder, machineryUpdateZoomRatio, machineryZoomActual, machineryZoomFit } from '../core/dataMachinery';
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
@@ -33,6 +33,7 @@ import { scopeEvalAsync } from '../global/scopeShim';
 import { clickEl, qaHasEl, addClassEl, removeClassEl } from '../utils/domQuery';
 import { machineryOpenDuplicate } from '../core/itemDomain';
 import { machineryImportLinks, machineryNewSmartFolder, machineryOpenArtstation, machineryOpenHuaban, machineryOpenPinterest } from '../core/libraryDomain';
+import { machineryUpdateContainerHieght } from './gridService';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

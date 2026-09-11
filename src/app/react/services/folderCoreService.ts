@@ -15,7 +15,7 @@
  * - dialog/ipcRenderer → electron 同源
  */
 // @ts-nocheck
-import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySetViewMode, machinerySmartFolderCount, machinerySwitchLayout, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
+import { getFilter as machineryGetFilter, machineryCalculateImageBinding, machineryChangeSidebarIndex, machineryExistInSmartFilter, machineryExpandFolder, machineryExpandSmartFolder, machineryLeaveDetailMode, machineryOpenUnfiled, machineryRebindRefresh, machineryRefreshSubfolderList, machineryReload, machineryResetPage, machinerySetViewMode, machinerySmartFolderCount, machineryUnlockFolderWithTouchID, machineryUpdateFilterCounts, machineryUpdateSelection, machineryUpdateSidebarList } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -33,6 +33,9 @@ import { scopeEvalAsync } from '../global/scopeShim';
 import { q, focusOn, selectText, offsetTopOf, setAttr } from '../utils/domQuery';
 import { machineryGetAncestorSmartFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder } from '../core/libraryDomain';
 import { machineryGetAncestorFolders, machinerySaveFolder } from '../core/libraryDomain';
+import { machinerySwitchLayout } from './gridService';
+// 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
+let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const remote: any = _req('@electron/remote');

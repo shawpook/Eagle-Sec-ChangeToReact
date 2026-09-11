@@ -1,9 +1,10 @@
 // @ts-nocheck
 import { getBodyScope } from '../../core/appCore';
-import { machineryGotoBottom } from '../../core/dataMachinery';
+
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { autoscrollChannel } from '../../global/bus';
 import { q, heightOf, setCssEl, offsetOf, addClass, removeClass, onEl, offEl } from '../../utils/domQuery';
+import { machineryGotoBottom } from '../../services/gridService';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。

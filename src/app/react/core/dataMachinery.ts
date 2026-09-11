@@ -92,6 +92,7 @@ import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize, pinyi
 import { machineryColorSimilarityDistance, machineryRgbToHex } from '../utils/color';
 import { machineryCloseWindowHandler, machineryDestoryMousetrap, machineryMHandler, machineryModShiftDownHandler, machineryModShiftLeftHandler, machineryModShiftRightHandler, machineryModShiftUpHandler, machineryOpenActionsPanel, machineryOpenQuickSearch } from './keymapActions';
 import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetAncestorFolders, machineryGetChildFoldersMaps, machineryGetFolderImages, machineryGetRecentFolders, machineryRefreshRandom, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder } from './libraryDomain';
+import { buildScrollbarSaver, machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCurrentIndex, machineryGetArroundBox, machineryGotoBottom, machineryGotoTop, machineryOffsetScrollbar, machineryRelayout, machineryRememberScrollTops, machinerySaveListHeight, machineryScrollbarTo, machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight, machineryUpdateListSlider } from '../services/gridService';
 // ── 域内自管的 controller 闭包变量（原 bundle 28682/28683 内 var）──
 let calculateImageBindingTimeout: any = null;
 // ── c9b 域内自管（原 controller 闭包 var：26927 邻域 updateSidebarListTimeout / 27006
@@ -1075,9 +1076,6 @@ export function machineryUpdateItemsView(s: any, items: any[]): void {
 
 /* b1-9be：switchLayout 实现体归位 services/gridService.ts（body class 四分支 +
    relayout/offsetScrollbar/initMenu 仍经 scope 解析） */
-export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): void {
-  gridSwitchLayout(s, layout, forceLayout);
-}
 
 /* resetImageData（bundle 30540-30548 逐字；controller 闭包函数 → 域内移植） */
 function machineryResetImageData(s: any, images: any[]): void {
@@ -1472,45 +1470,6 @@ export function machineryCheckTouchIDSupport(s: any): void {
 
 /* relayout（bundle 27329-27364 逐字；be2 起 ig = window.ig facade（v4 引擎），布局选项
    经 setLayout(label, opts) 通知 facade——v4 sizeRange/gap 由 BoxList 渲染时从 scope 派生） */
-export function machineryRelayout(s: any, margin: any): void {
-  const w = window as any;
-  if (!s.isItemBindCalculated) return;
-  var $container = q("#box-container");
-  var currentImageSize = s.imageSize.height;
-  setAttr("#box-container", "box-size", Math.floor(currentImageSize / 5) * 5);
-  const ig = w.ig;
-  if (!ig) return;
-  if (s.layout === "JustifiedLayout") {
-    var cw = widthOf($container);
-    ig.setLayout('JustifiedLayout', {
-      minSize: currentImageSize * 1 - 10,
-      maxSize: currentImageSize * 1 + 10,
-      margin: 8,
-    });
-    ig._renderer.updateSize(ig.getItems(false));
-    ig.layout(true);
-    ig._watcher._onCheck();
-  }
-  else if (s.layout === "ListLayout") {
-    ig.setLayout('GridLayout', {
-      margin: 0,
-      align: "left",
-    });
-    ig._renderer.updateSize(ig.getItems(false));
-    ig.layout(true);
-    ig._watcher._onCheck();
-  }
-  else {
-    ig.setLayout('GridLayout', {
-      margin: Math.max(margin, 8) || 8,
-      align: "left",
-    });
-    ig._renderer.updateSize(ig.getItems(false));
-    ig.layout(true);
-    ig._watcher._onCheck();
-  }
-  ig._updateContainerHeight();
-}
 
 /* ── c14：智能文件夹规则匹配域 ───────────────────────────────────────── */
 
@@ -3056,14 +3015,7 @@ export function machineryZoom(s: any): void {
 
 /* b1-9bd：saveListHeight 实现体归位 services/gridService.ts——此处仅存委托壳
    （machinery 内部其余 2 处直调点与 scope 挂载面不变）。 */
-export function machinerySaveListHeight(s: any, height: any): void {
-  gridSaveListHeight(s, height);
-}
 
-/* b1-9bd：adjustLayoutWidth 实现体归位 services/gridService.ts */
-export function machineryAdjustLayoutWidth(s: any, increases: any): void {
-  gridAdjustLayoutWidth(s, increases);
-}
 
 /* b1-9bd：zoomFit 实现体归位 services/gridService.ts */
 export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
@@ -3177,7 +3129,6 @@ export function machineryCalculateFilterCounts(s: any): void {
 
 // ── c15d 域内自管（原 controller 闭包 var）──
 let openAllTimeout: any = null;
-let updateListHeightTimeout: any = null;
 
 /* setViewMode（bundle 38475-38479 逐字；_.debounce 500——防抖实例为模块级单例，与 bundle
    controller init 同语义） */
@@ -3211,95 +3162,7 @@ function machinerySetLastFolder(s: any, folderId: any): void {
   setLastFolderDebounced(folderId);
 }
 
-/* updateListHeight（bundle 33712-33719 逐字；50ms 防抖） */
-export function machineryUpdateListHeight(s: any, height: any): void {
-  const w = window as any;
-  clearTimeout(updateListHeightTimeout);
-  updateListHeightTimeout = setTimeout(function () {
-    setAttr("#box-container", "box-size", height);
-  }, 50);
-}
 
-/* ScrollbarSaver（bundle 46754-46812 逐字；隐式全局赋值 → if-absent 接装 window） */
-export function buildScrollbarSaver(): any {
-  const w = window as any;
-  const ScrollbarSaver: any = {
-    positionMapping: {},
-    getId: function () {
-      const s: any = getBodyScope();
-      var id;
-      if (s.currentFolder) { id = s.currentFolder.id; }
-      else if (s.currentSmartFolder) { id = s.currentSmartFolder.id; }
-      else if (s.viewMode == "all") { id = "all"; }
-      else if (s.viewMode == "unfiled") { id = "unfiled"; }
-      else if (s.viewMode == "untagged") { id = "untagged"; }
-      else if (s.viewMode == "trash") { id = "trash"; }
-      else if (s.viewMode == "random") { id = "random"; }
-      else if (s.viewMode == "recent") { id = "recent"; }
-      return id;
-    },
-    saveScrollPosition: function () {
-      const s: any = getBodyScope();
-      if (w.eagle.filter.filterBadge > 0) return;
-      if (s.keyword) return;
-      if (qa(".box").length + qa(".sub-folder").length === 0) return;
-      var scrollTop = scrollTopValue("#box-container");
-      var obj: any = {};
-      var id = ScrollbarSaver.getId();
-
-      if (scrollTop === 0) {
-        delete ScrollbarSaver.positionMapping[id];
-        return;
-      }
-
-      var startCursor = 0;
-      var offsetTop = (q(".box-list")?.offsetTop) || 0;
-      var scrollOffset;
-      if (qa(".sub-folder").length > 0 && s.startCursor === 0) {
-        scrollOffset = scrollTopValue("#box-container");
-      }
-      else {
-        if (qa(".box").length === 0) return;
-        scrollOffset = Math.abs(offsetTopOf(q(".box")) - 44) + offsetTop;
-      }
-      var its = w.ig.getItems();
-      if (its[0]) { startCursor = its[0].groupKey - 1000000; }
-
-      if (!id) return;
-
-      if (startCursor) { obj.cursor = startCursor; }
-      obj.offset = scrollOffset;
-      ScrollbarSaver.positionMapping[id] = obj;
-    },
-    restoreScrollPosition: function () {
-      const s: any = getBodyScope();
-      if (s.viewMode === 'random') return;
-      if (w.eagle.filter.filterBadge > 0) return;
-      var id = ScrollbarSaver.getId();
-
-      if (!id) return;
-
-      var obj = ScrollbarSaver.positionMapping[id];
-      var $boxContainer = q("#box-container");
-      if (obj) {
-        s.startCursor = obj.cursor || 0;
-        var offset = obj.offset || 0;
-        var times = [20, 300];
-        for (var i = times[0]; i < times[1]; i += 20) {
-          setTimeout(function () {
-            if (ScrollbarSaver.getId() !== id || ($boxContainer?.scrollTop || 0) !== offset) {
-              if ($boxContainer) $boxContainer.scrollTop = offset;
-            }
-          }, i);
-        }
-      }
-      else {
-        s.startCursor = 0;
-      }
-    }
-  };
-  return ScrollbarSaver;
-}
 
 /* openAll（bundle 36702-36733 逐字；openAllTimeout 域内自管；UrlStateService 经 scope
    解析（bundle 20208 $scope 赋值）——post-b1 Angular $location 缺席为诚实缺口，该服务
@@ -4014,40 +3877,6 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
   });
 }
 
-/* updateContainerHieght（bundle 34078-34119 逐字；typo 逐字保留） */
-export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay: any = 1): void {
-  const w = window as any;
-  let duration = 170;
-  if (!hasAnimation) duration = 1;
-  setTimeout(() => {
-    if (w.eagle.filter.isOpen) {
-      var $filterBar = q("#filter-toolbar");
-      var height = outerHeightOf($filterBar);
-      cssSet("#box-container", {
-        "padding-bottom": height,
-        "height": `calc(100% - ${48 + height}px)`
-      });
-      cssSet("#box-container-scrollbar", {
-        "top": 48 + height,
-      });
-      cssSet("#box-container", {
-        "margin-top": height,
-      });
-    }
-    else {
-      cssSet("#box-container", {
-        "padding-bottom": 0,
-        "height": `calc(100% - 48px)`
-      });
-      cssSet("#box-container-scrollbar", {
-        "top": 48,
-      });
-      cssSet("#box-container", {
-        "margin-top": 0,
-      });
-    }
-  }, delay);
-}
 
 /* ── c18c：历史导航/撤销 ─────────────────────────────────────────────── */
 
@@ -5217,13 +5046,6 @@ export function machineryKeyDownHandler(s: any, event: any): void {
 
 /* ── c18e-6：selectUp/Down + pageUp/pageDownHandler（滚动翻页面）──────── */
 
-/* getArroundBox（bundle 35091-35097 逐字，controller 闭包） */
-export function machineryGetArroundBox(s: any, index: any): any {
-  var arroundStart = (index - 20 >= 0) ? index - 20 : 0;
-  var arroundEnd = (index + 20 > s.allData.length) ? s.allData.length : index + 20;
-  var $arround = qa(".box").slice(arroundStart, arroundEnd);
-  return $arround;
-}
 
 /* scrollbarTo（bundle 35612-35635 逐字）+ Math.easeInOutQuad（35638-35643 逐字；bundle 于
    controller init 补丁全局 Math，此处同体幂等补丁） */
@@ -5234,22 +5056,6 @@ export function machineryGetArroundBox(s: any, index: any): any {
   return -c / 2 * (t * (t - 2) - 1) + b;
 };
 
-function machineryScrollbarTo(element: any, to: any, duration: any): void {
-  var start = element.scrollTop,
-    change = to - start,
-    currentTime = 0,
-    increment = 20;
-
-  var animateScroll = function () {
-    currentTime += increment;
-    var val = (Math as any).easeInOutQuad(currentTime, start, change, duration);
-    element.scrollTop = val;
-    if (currentTime < duration) {
-      setTimeout(animateScroll, increment);
-    }
-  };
-  animateScroll();
-}
 
 /* pageDownHandler（bundle 35680-35689 逐字）——_.throttle 实例 apply 时一次性创建
    （与 bundle controller init 同语义），shift+space 绑定消费 */
@@ -6668,11 +6474,6 @@ export function machineryAutoScroll(s: any, index: any): void {
   }, 50);
 }
 
-/* currentIndex（bundle 28993-28997 逐字：selected[0] 在 allData 的位次 +1） */
-export function machineryCurrentIndex(s: any): any {
-  if (!s.allData) return undefined;
-  return s.allData.indexOf(s.selected[0]) + 1;
-}
 
 /* getSelectedItems（bundle 21852-21862 逐字：ig.getItems(true) × selectedMappings 过滤，
    含旧实现注释逐字保留） */
@@ -6722,7 +6523,6 @@ export function machineryGetQuickAccessList(s: any): any[] {
 // ── b1-4a 域内自管（原 controller 闭包 var：checkListItemsLessThanContainerTimeout 33661
 //    邻域 / changeListHeightTimeout 33745 邻域）──
 let checkListItemsLessThanContainerTimeout: any = null;
-let changeListHeightTimeout: any = null;
 
 /* checkListItemsLessThanContainer（bundle 33658-33674 逐字：<180 项时 500ms 后量
    box-list 高度不足一屏则 ig.trigger("append") 一次載入兩頁） */
@@ -6767,44 +6567,6 @@ export function machineryUpdateSubFolderWidth(s: any): void {
 /* changeListHeight（bundle 33746-33785 逐字：5 取整 + lastImageHeight 留档 + 500ms 后
    thumbSize 键持久化（currentFolder/smartFolder/tag/viewMode 九分支键逐字）+ 即时
    box-size 属性 + relayout + scrollToCurrentItem（machinery 版）） */
-export function machineryChangeListHeight(s: any, height: any): void {
-  const w = window as any;
-  if (!height) height = s.imageSize.height;
-  if (Number.isFinite(height) && height > 0) {
-
-    height = parseInt(height / 5 as any) * 5;
-
-    s.lastImageHeight = s.imageSize.height;
-
-    clearTimeout(changeListHeightTimeout);
-    changeListHeightTimeout = setTimeout(function () {
-      if (s.currentFolder) {
-        w.localStorage.setItem("eagle.list.thumbSize." + s.currentFolder.id, height as any);
-      } else if (s.currentSmartFolder) {
-        w.localStorage.setItem("eagle.list.thumbSize." + s.currentSmartFolder.id, height as any);
-      } else if (s.currentTag) {
-        w.localStorage.setItem("eagle.list.thumbSize." + s.currentTag, height as any);
-      } else if (s.viewMode === 'all') {
-        w.localStorage.setItem("eagle.list.thumbSize.all", height as any);
-      } else if (s.viewMode === 'unfiled') {
-        w.localStorage.setItem("eagle.list.thumbSize.unfiled", height as any);
-      } else if (s.viewMode === 'untagged') {
-        w.localStorage.setItem("eagle.list.thumbSize.untagged", height as any);
-      } else if (s.viewMode === 'trash') {
-        w.localStorage.setItem("eagle.list.thumbSize.trash", height as any);
-      } else if (s.viewMode === 'random') {
-        w.localStorage.setItem("eagle.list.thumbSize.random", height as any);
-      } else if (s.viewMode === 'recent') {
-        w.localStorage.setItem("eagle.list.thumbSize.recent", height as any);
-      }
-    }, 500);
-
-    setAttr("#box-container", "box-size", height as any);
-    machineryRelayout(s);
-
-    machineryScrollToCurrentItem(s);
-  }
-}
 
 /* scrollToCurrentItem（bundle 34118-34130 逐字：selected 末盒 posy 属性 → 容器居中定位） */
 export function machineryScrollToCurrentItem(s: any): void {
@@ -6983,43 +6745,9 @@ export function machinerySortData(s: any, data: any, orderBy: any): any {
 /* offsetScrollbarImm（bundle 34140-34166 逐字：delay||1 后 selected 末盒居中 scrollTo；
    无选中时防越界（末盒 transform Y 与 scrollTop 比较）+ updateContainerHieght（machinery
    版经 scope）） */
-export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any): void {
-  setTimeout(function () {
-    var container = q("#box-container") as HTMLElement | null;
-    if (s.selected.length > 0) {
-      var $current = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
-      if (container && $current) {
-        var offsetTop = container.clientHeight / 2 - $current.offsetHeight / 2;
-        var delta = $current.getBoundingClientRect().top - container.getBoundingClientRect().top;
-        container.scrollTop = container.scrollTop + delta - offsetTop;
-      }
-    }
-    else {
-      // Note: 這段程式馬主要用來避免因為列表縮放，
-      // Container 的 scrollTop 超過最後一個 box 的位置，造成畫面變成空白的
-      // 判斷方式：找到最後一個 box 並與 container 進行高度比較
-      var $lastBox = qa(".box").slice(-1)[0] as HTMLElement | undefined;
-      if ($lastBox) {
-        var lastBoxY: any = $lastBox.style.transform.split(',')[1];
-        lastBoxY = parseInt(lastBoxY);
-        if (container && container.scrollTop > lastBoxY) {
-          var delta2 = $lastBox.getBoundingClientRect().top - container.getBoundingClientRect().top;
-          container.scrollTop = container.scrollTop + delta2 - container.clientHeight;
-        }
-      }
-    }
-  }, delay || 1);
-  machineryUpdateContainerHieght(s);
-}
 
 /* offsetScrollbar（bundle 34168-34170 逐字）——_.debounce(100, leading) 实例 apply 时
    一次性创建（与 bundle controller init 同语义） */
-export function machineryOffsetScrollbar(s: any): any {
-  const w = window as any;
-  return debounce(function offsetScrollbar(delay: any, forceScroll: any) {
-    machineryOffsetScrollbarImm(s, delay, forceScroll);
-  }, 100, true);
-}
 
 /* updateFilterCounts（bundle 42946-43040 逐字：type/camera（filterCamerasMapping 联动）/
    fontActivated（installedFonts 键）/star（0 归档）/shape（横竖比 2.5 与 4:3、3:4、16:9、
@@ -7133,16 +6861,6 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
 /* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
 /* rememberScrollTops（bundle 31142-31150 逐字：inline/edge 模式跳过 + smoothZoom
    getChangedData 快照入 lastItemStates） */
-export function machineryRememberScrollTops(s: any, item: any): void {
-  const w = window as any;
-  if (s.isInlineMode) return;
-  if (s.lastZoomMode === "edge") return;
-  if (item && item.id) {
-    s.lastItemStates[item.id] = {
-      data: detailZoom()?.getChangedData()
-    }
-  }
-}
 
 /* rememberVideoCurrentTime（bundle 31726-31736 逐字：视频类 → getVideoPlayer().el.currentTime
    → eagle.videoPlayer.currentTime.{id} 键） */
@@ -8688,10 +8406,6 @@ export function machineryGetFolderList(s: any): any[] {
 
 /* ── b1-7d-3：列表滑条/元信息/移入文件夹/上传队列/链接导入 ───────────── */
 
-/* updateListSlider（bundle 31350-31352：**函数体为空——no-op 原样**） */
-export function machineryUpdateListSlider(s: any, size: any): void {
-
-}
 
 /* ── b1-9bz-C-4：缩略图放大/还原（自 selectionViewDomain 迁入；原 domainEnlarge/ShrinkThumbnails
    随 imageSize.height watcher 退役改为写入点直调，故实现迁到本模块 —— 本模块不能被域反向
@@ -9308,33 +9022,7 @@ export function machineryPrependFolder(s: any, folder: any): void {
 /* gotoTop/gotoBottom（bundle 21886-21916 逐字：resetNgGridLayoutData 为 ngGridLayout 指令
    66970 隐式全局赋值（window 可达，w.* 直连——同 764/944 先例；post-b1 由 grid 域供给）；
    gotoBottomTimeout 存 scope 字段原样；gotoBottom else 分支 offset 死变量原样保留） */
-export function machineryGotoTop(s: any): void {
-  const w = window as any;
-  if (s.allData.length < s.options.page) {
-    setScrollTop("#box-container", 0);
-  }
-  else {
-    clearTimeout(s.gotoBottomTimeout);
-    w.resetNgGridLayoutData(s.allData, 0);
-    setScrollTop("#box-container", 0);
-  }
-}
 
-export function machineryGotoBottom(s: any): void {
-  const w = window as any;
-  if (s.allData.length < s.options.page) {
-    var offset = (q("#box-container") as HTMLElement | null)?.scrollHeight;
-    setScrollTop("#box-container", offset as any);
-  }
-  else {
-    var endCursor = Math.ceil(s.allData.length / s.options.page) - 1 || 0;
-    w.resetNgGridLayoutData(s.allData, endCursor);
-    var times = [100, 400];
-    for (var i = times[0]; i < times[1]; i += 100) {
-      s.gotoBottomTimeout = setTimeout(function () { setScrollTop("#box-container", 1000000); }, i);
-    }
-  }
-}
 
 /* ── b1-8 rename 域 ──
    emojiRegex / remainingFilenameLength / sanitize / escapeRegex / pinyinCache 已随

@@ -9,11 +9,12 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryGetSelection, machineryLastZoom, machinerySmartZoom, machinerySwitchLayout, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
+import { machineryGetSelection, machineryLastZoom, machinerySmartZoom, machineryUpdateZoomRatio, machineryZoom, machineryZoomFit, machineryZoomFitEdge, machineryZoomIn } from '../core/dataMachinery';
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, addClass, removeClass } from '../utils/domQuery';
 
 
+import { machineryAdjustLayoutWidth, machineryChangeListHeight, machinerySwitchLayout } from './gridService';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const EagleConfig: any = (window as any).EagleConfig || {};

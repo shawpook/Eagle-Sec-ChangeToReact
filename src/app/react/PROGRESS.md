@@ -7305,3 +7305,37 @@ Track B 收官统一跑）。
 
 > **策略调整（用户指令）**：非必要不再每批跑全套；改为每批「export-check + tsc 零新增 +
 > probe + 定向闭环」，**整个大项（D-1 Track B）完成后**再跑一次完整 55 项 + 哨兵收口。
+
+---
+
+## D-1 / Track B / B-7 记录（2026-09-11）
+
+**目标**：`stage/grid` 域簇整搬 → `services/gridService.ts`（19 个 / 313 行）。
+
+**归位表**：`machinerySwitchLayout` `machineryRelayout` `machinerySaveListHeight`
+`machineryAdjustLayoutWidth` `updateListHeightTimeout`(私有 let) `machineryUpdateListHeight`
+`buildScrollbarSaver` `machineryUpdateContainerHieght` `machineryGetArroundBox`
+`machineryScrollbarTo`(私有→导出) `machineryCurrentIndex` `changeListHeightTimeout`(私有 let)
+`machineryChangeListHeight` `machineryOffsetScrollbarImm` `machineryOffsetScrollbar`
+`machineryRememberScrollTops` `machineryUpdateListSlider` `machineryGotoTop` `machineryGotoBottom`
+→ `services/gridService.ts`。21 个引用文件自动改道（FilterItems/FilterItems2/FilterItemShell/
+boxGridEngine/gridDirectives/inspectorActions/detailState 等）。
+
+**刻意未搬**（依赖私有 helper，留待其 helper 同批搬迁）：`machineryToggleAll`（`getTimeout`）、
+`machineryAutoScroll`（`getTimeout`）、`getOffsetScrollbarFn`（`scopeSingleton`）、
+`machineryResetPage`（可搬但引用面大，缓一缓）。
+
+**机制要点 / 踩坑**
+1. `machineryScrollbarTo` 原为私有，需改 `export` 才能被 dataMachinery 回引（`machineryPageUp/DownHandler` 用）。
+2. **脚本按名匹配会把「仅出现在注释里的名字」误当真引用**：`dataMachinery` 仅注释提及
+   `changeListHeightTimeout` → 误加回引；`folderCoreService` 的 `__lv_updateListHeight` 引用
+   `updateListHeightTimeout`（原 bundle 共享闭包 var，本仓无声明，base 起就是隐式全局）→ 误加
+   `from './gridService'`。已分别改为「删误加导入」+「folderCoreService 本地显式声明
+   `let updateListHeightTimeout`（其唯一使用方，语义自洽）」。
+3. gridService 补装：`qa`/`cssSet`/`setScrollTop`/`scrollTopValue`/`outerHeightOf`/`offsetTopOf`
+   （domQuery）、`detailZoom`（smoothZoomEngine）、`debounce`（utils/func）。
+
+**核数**：`dataMachinery.ts` **10912 → 10599 行**（-313）；顶层声明 **275 → 256**。
+
+**门禁**：`bz-export-check` 无问题（2059 处）；`tsc` **619 → 619 零新增**；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `stage11b0`/`stage11a49`/`ui-interactions`/`main-ui-workflow` 全绿。

@@ -1,5 +1,6 @@
 import { getBodyScope } from '../../core/appCore';
 import { glRemoveitemsChannel, glResetChannel, glScrolltotopChannel } from '../../global/bus';
+import { machineryRelayout, machineryScrollbarTo } from '../../services/gridService';
 /**
  * b1-9be2：内容网格引擎 —— @egjs/react-infinitegrid v4 renderer 交换（v3 vanilla 退役）。
  *

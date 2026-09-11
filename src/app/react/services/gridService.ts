@@ -15,9 +15,11 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
-import { getOffsetScrollbarFn, machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCheckListItemsLessThanContainer, machineryRelayout, machineryScrollToCurrentItem, machinerySmartZoom, machineryUpdateZoomRatio } from '../core/dataMachinery';
+import { detailZoom } from '../core/smoothZoomEngine';
+import { getOffsetScrollbarFn, machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem, machinerySmartZoom, machineryUpdateZoomRatio } from '../core/dataMachinery';
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
-import { q, widthOf, heightOf, addClass, removeClass, setAttr } from '../utils/domQuery';
+import { q, qa, cssSet, widthOf, heightOf, addClass, removeClass, setAttr, setScrollTop, scrollTopValue, outerHeightOf, offsetTopOf } from '../utils/domQuery';
+import { debounce } from '../utils/func';
 
 let saveListHeightTimeout: any = null;
 
@@ -272,3 +274,337 @@ export function machineryUpdateSliderPosition(s: any): void {
   //     $slider.removeClass("response");
   // }
 }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* ScrollbarSaver（bundle 46754-46812 逐字；隐式全局赋值 → if-absent 接装 window） */
+export function buildScrollbarSaver(): any {
+  const w = window as any;
+  const ScrollbarSaver: any = {
+    positionMapping: {},
+    getId: function () {
+      const s: any = getBodyScope();
+      var id;
+      if (s.currentFolder) { id = s.currentFolder.id; }
+      else if (s.currentSmartFolder) { id = s.currentSmartFolder.id; }
+      else if (s.viewMode == "all") { id = "all"; }
+      else if (s.viewMode == "unfiled") { id = "unfiled"; }
+      else if (s.viewMode == "untagged") { id = "untagged"; }
+      else if (s.viewMode == "trash") { id = "trash"; }
+      else if (s.viewMode == "random") { id = "random"; }
+      else if (s.viewMode == "recent") { id = "recent"; }
+      return id;
+    },
+    saveScrollPosition: function () {
+      const s: any = getBodyScope();
+      if (w.eagle.filter.filterBadge > 0) return;
+      if (s.keyword) return;
+      if (qa(".box").length + qa(".sub-folder").length === 0) return;
+      var scrollTop = scrollTopValue("#box-container");
+      var obj: any = {};
+      var id = ScrollbarSaver.getId();
+
+      if (scrollTop === 0) {
+        delete ScrollbarSaver.positionMapping[id];
+        return;
+      }
+
+      var startCursor = 0;
+      var offsetTop = (q(".box-list")?.offsetTop) || 0;
+      var scrollOffset;
+      if (qa(".sub-folder").length > 0 && s.startCursor === 0) {
+        scrollOffset = scrollTopValue("#box-container");
+      }
+      else {
+        if (qa(".box").length === 0) return;
+        scrollOffset = Math.abs(offsetTopOf(q(".box")) - 44) + offsetTop;
+      }
+      var its = w.ig.getItems();
+      if (its[0]) { startCursor = its[0].groupKey - 1000000; }
+
+      if (!id) return;
+
+      if (startCursor) { obj.cursor = startCursor; }
+      obj.offset = scrollOffset;
+      ScrollbarSaver.positionMapping[id] = obj;
+    },
+    restoreScrollPosition: function () {
+      const s: any = getBodyScope();
+      if (s.viewMode === 'random') return;
+      if (w.eagle.filter.filterBadge > 0) return;
+      var id = ScrollbarSaver.getId();
+
+      if (!id) return;
+
+      var obj = ScrollbarSaver.positionMapping[id];
+      var $boxContainer = q("#box-container");
+      if (obj) {
+        s.startCursor = obj.cursor || 0;
+        var offset = obj.offset || 0;
+        var times = [20, 300];
+        for (var i = times[0]; i < times[1]; i += 20) {
+          setTimeout(function () {
+            if (ScrollbarSaver.getId() !== id || ($boxContainer?.scrollTop || 0) !== offset) {
+              if ($boxContainer) $boxContainer.scrollTop = offset;
+            }
+          }, i);
+        }
+      }
+      else {
+        s.startCursor = 0;
+      }
+    }
+  };
+  return ScrollbarSaver;
+}
+
+let changeListHeightTimeout: any = null;
+
+/* b1-9bd：adjustLayoutWidth 实现体归位 services/gridService.ts */
+export function machineryAdjustLayoutWidth(s: any, increases: any): void {
+  gridAdjustLayoutWidth(s, increases);
+}
+
+export function machineryChangeListHeight(s: any, height: any): void {
+  const w = window as any;
+  if (!height) height = s.imageSize.height;
+  if (Number.isFinite(height) && height > 0) {
+
+    height = parseInt(height / 5 as any) * 5;
+
+    s.lastImageHeight = s.imageSize.height;
+
+    clearTimeout(changeListHeightTimeout);
+    changeListHeightTimeout = setTimeout(function () {
+      if (s.currentFolder) {
+        w.localStorage.setItem("eagle.list.thumbSize." + s.currentFolder.id, height as any);
+      } else if (s.currentSmartFolder) {
+        w.localStorage.setItem("eagle.list.thumbSize." + s.currentSmartFolder.id, height as any);
+      } else if (s.currentTag) {
+        w.localStorage.setItem("eagle.list.thumbSize." + s.currentTag, height as any);
+      } else if (s.viewMode === 'all') {
+        w.localStorage.setItem("eagle.list.thumbSize.all", height as any);
+      } else if (s.viewMode === 'unfiled') {
+        w.localStorage.setItem("eagle.list.thumbSize.unfiled", height as any);
+      } else if (s.viewMode === 'untagged') {
+        w.localStorage.setItem("eagle.list.thumbSize.untagged", height as any);
+      } else if (s.viewMode === 'trash') {
+        w.localStorage.setItem("eagle.list.thumbSize.trash", height as any);
+      } else if (s.viewMode === 'random') {
+        w.localStorage.setItem("eagle.list.thumbSize.random", height as any);
+      } else if (s.viewMode === 'recent') {
+        w.localStorage.setItem("eagle.list.thumbSize.recent", height as any);
+      }
+    }, 500);
+
+    setAttr("#box-container", "box-size", height as any);
+    machineryRelayout(s);
+
+    machineryScrollToCurrentItem(s);
+  }
+}
+
+/* currentIndex（bundle 28993-28997 逐字：selected[0] 在 allData 的位次 +1） */
+export function machineryCurrentIndex(s: any): any {
+  if (!s.allData) return undefined;
+  return s.allData.indexOf(s.selected[0]) + 1;
+}
+
+/* getArroundBox（bundle 35091-35097 逐字，controller 闭包） */
+export function machineryGetArroundBox(s: any, index: any): any {
+  var arroundStart = (index - 20 >= 0) ? index - 20 : 0;
+  var arroundEnd = (index + 20 > s.allData.length) ? s.allData.length : index + 20;
+  var $arround = qa(".box").slice(arroundStart, arroundEnd);
+  return $arround;
+}
+
+export function machineryGotoBottom(s: any): void {
+  const w = window as any;
+  if (s.allData.length < s.options.page) {
+    var offset = (q("#box-container") as HTMLElement | null)?.scrollHeight;
+    setScrollTop("#box-container", offset as any);
+  }
+  else {
+    var endCursor = Math.ceil(s.allData.length / s.options.page) - 1 || 0;
+    w.resetNgGridLayoutData(s.allData, endCursor);
+    var times = [100, 400];
+    for (var i = times[0]; i < times[1]; i += 100) {
+      s.gotoBottomTimeout = setTimeout(function () { setScrollTop("#box-container", 1000000); }, i);
+    }
+  }
+}
+
+export function machineryGotoTop(s: any): void {
+  const w = window as any;
+  if (s.allData.length < s.options.page) {
+    setScrollTop("#box-container", 0);
+  }
+  else {
+    clearTimeout(s.gotoBottomTimeout);
+    w.resetNgGridLayoutData(s.allData, 0);
+    setScrollTop("#box-container", 0);
+  }
+}
+
+export function machineryOffsetScrollbar(s: any): any {
+  const w = window as any;
+  return debounce(function offsetScrollbar(delay: any, forceScroll: any) {
+    machineryOffsetScrollbarImm(s, delay, forceScroll);
+  }, 100, true);
+}
+
+export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any): void {
+  setTimeout(function () {
+    var container = q("#box-container") as HTMLElement | null;
+    if (s.selected.length > 0) {
+      var $current = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
+      if (container && $current) {
+        var offsetTop = container.clientHeight / 2 - $current.offsetHeight / 2;
+        var delta = $current.getBoundingClientRect().top - container.getBoundingClientRect().top;
+        container.scrollTop = container.scrollTop + delta - offsetTop;
+      }
+    }
+    else {
+      // Note: 這段程式馬主要用來避免因為列表縮放，
+      // Container 的 scrollTop 超過最後一個 box 的位置，造成畫面變成空白的
+      // 判斷方式：找到最後一個 box 並與 container 進行高度比較
+      var $lastBox = qa(".box").slice(-1)[0] as HTMLElement | undefined;
+      if ($lastBox) {
+        var lastBoxY: any = $lastBox.style.transform.split(',')[1];
+        lastBoxY = parseInt(lastBoxY);
+        if (container && container.scrollTop > lastBoxY) {
+          var delta2 = $lastBox.getBoundingClientRect().top - container.getBoundingClientRect().top;
+          container.scrollTop = container.scrollTop + delta2 - container.clientHeight;
+        }
+      }
+    }
+  }, delay || 1);
+  machineryUpdateContainerHieght(s);
+}
+
+export function machineryRelayout(s: any, margin: any): void {
+  const w = window as any;
+  if (!s.isItemBindCalculated) return;
+  var $container = q("#box-container");
+  var currentImageSize = s.imageSize.height;
+  setAttr("#box-container", "box-size", Math.floor(currentImageSize / 5) * 5);
+  const ig = w.ig;
+  if (!ig) return;
+  if (s.layout === "JustifiedLayout") {
+    var cw = widthOf($container);
+    ig.setLayout('JustifiedLayout', {
+      minSize: currentImageSize * 1 - 10,
+      maxSize: currentImageSize * 1 + 10,
+      margin: 8,
+    });
+    ig._renderer.updateSize(ig.getItems(false));
+    ig.layout(true);
+    ig._watcher._onCheck();
+  }
+  else if (s.layout === "ListLayout") {
+    ig.setLayout('GridLayout', {
+      margin: 0,
+      align: "left",
+    });
+    ig._renderer.updateSize(ig.getItems(false));
+    ig.layout(true);
+    ig._watcher._onCheck();
+  }
+  else {
+    ig.setLayout('GridLayout', {
+      margin: Math.max(margin, 8) || 8,
+      align: "left",
+    });
+    ig._renderer.updateSize(ig.getItems(false));
+    ig.layout(true);
+    ig._watcher._onCheck();
+  }
+  ig._updateContainerHeight();
+}
+
+export function machineryRememberScrollTops(s: any, item: any): void {
+  const w = window as any;
+  if (s.isInlineMode) return;
+  if (s.lastZoomMode === "edge") return;
+  if (item && item.id) {
+    s.lastItemStates[item.id] = {
+      data: detailZoom()?.getChangedData()
+    }
+  }
+}
+
+export function machinerySaveListHeight(s: any, height: any): void {
+  gridSaveListHeight(s, height);
+}
+
+export function machineryScrollbarTo(element: any, to: any, duration: any): void {
+  var start = element.scrollTop,
+    change = to - start,
+    currentTime = 0,
+    increment = 20;
+
+  var animateScroll = function () {
+    currentTime += increment;
+    var val = (Math as any).easeInOutQuad(currentTime, start, change, duration);
+    element.scrollTop = val;
+    if (currentTime < duration) {
+      setTimeout(animateScroll, increment);
+    }
+  };
+  animateScroll();
+}
+
+export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): void {
+  gridSwitchLayout(s, layout, forceLayout);
+}
+
+/* updateContainerHieght（bundle 34078-34119 逐字；typo 逐字保留） */
+export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay: any = 1): void {
+  const w = window as any;
+  let duration = 170;
+  if (!hasAnimation) duration = 1;
+  setTimeout(() => {
+    if (w.eagle.filter.isOpen) {
+      var $filterBar = q("#filter-toolbar");
+      var height = outerHeightOf($filterBar);
+      cssSet("#box-container", {
+        "padding-bottom": height,
+        "height": `calc(100% - ${48 + height}px)`
+      });
+      cssSet("#box-container-scrollbar", {
+        "top": 48 + height,
+      });
+      cssSet("#box-container", {
+        "margin-top": height,
+      });
+    }
+    else {
+      cssSet("#box-container", {
+        "padding-bottom": 0,
+        "height": `calc(100% - 48px)`
+      });
+      cssSet("#box-container-scrollbar", {
+        "top": 48,
+      });
+      cssSet("#box-container", {
+        "margin-top": 0,
+      });
+    }
+  }, delay);
+}
+
+/* updateListHeight（bundle 33712-33719 逐字；50ms 防抖） */
+export function machineryUpdateListHeight(s: any, height: any): void {
+  const w = window as any;
+  clearTimeout(updateListHeightTimeout);
+  updateListHeightTimeout = setTimeout(function () {
+    setAttr("#box-container", "box-size", height);
+  }, 50);
+}
+
+/* updateListSlider（bundle 31350-31352：**函数体为空——no-op 原样**） */
+export function machineryUpdateListSlider(s: any, size: any): void {
+
+}
+
+let updateListHeightTimeout: any = null;

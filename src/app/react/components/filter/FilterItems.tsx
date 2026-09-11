@@ -7,11 +7,12 @@ import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterI
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryCalculateFilterCounts, machineryFilterContent, machineryReload, machineryUpdateContainerHieght } from '../../core/dataMachinery';
+import { machineryCalculateFilterCounts, machineryFilterContent, machineryReload } from '../../core/dataMachinery';
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';
 import { scopeEvalAsync } from '../../global/scopeShim';
+import { machineryUpdateContainerHieght } from '../../services/gridService';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
 export const KIND_COMPONENTS: Record<string, React.ComponentType<{ snapshot: FilterSnapshot }>> = {};

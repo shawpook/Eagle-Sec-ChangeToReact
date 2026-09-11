@@ -11090,7 +11090,6 @@ export function machinerySeedControllerState(s: any): void {
         if (localStorage.getItem("eagle.search.scope.note") === 'false') { s.isSearchScopeNote = false; }
         // b1-9ab：searchFilter 管线（bundle 32182 逐字；machineryFilterContent 的
         // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
-        s.searchFilter = (image: any) => machinerySearchFilter(s, image);
         // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
         // data.filter(s.colorFilter)/data.filter(s.grayColorFilter) 消费面）
         s.colorFilter = (image: any) => machineryColorFilter(s, image);
@@ -11267,7 +11266,6 @@ export function applyDataMachineryScope(): void {
   // updateSidebarList 一并替换（React 域 10+ 处调用面 + bundle 18203/18438/$broadcast 路径）。
   s.calculateImageBinding = (params: any, callback: any) => machineryCalculateImageBinding(s, params, callback);
   s.sortRawData = (orderBy: any) => machinerySortRawData(s, orderBy);
-  s.getAncestorFolders = (folder: any, folders: any[]) => machineryGetAncestorFolders(s, folder, folders);
   s.rebindRefresh = (muteMode: any, contentFilterCache: any, startCursor: any) => machineryRebindRefresh(s, muteMode, contentFilterCache, startCursor);
   s.rebindRefreshLazy = () => machineryRebindRefreshLazy(s);
   // filterContent（bundle 32583-32589 逐字；b1-9p 补端口——keyword/筛选规则 watcher 的
@@ -11291,7 +11289,6 @@ export function applyDataMachineryScope(): void {
   // c9e：updateItemView（updateItemsView 循环体；bundle 侧 $bodyScope.updateItemView 19688-19751
   // 与 ipc 路径 21234/23632+ 全部改走移植版）
   s.updateItemView = (item: any) => machineryUpdateItemView(s, item);
-  s.checkTouchIDSupport = () => machineryCheckTouchIDSupport(s);
   // c13：relayout（ig/eg 经 window 解析）
   s.relayout = (margin: any) => machineryRelayout(s, margin);
   // c14：existInSmartFilter（26 规则函数经 window + MATCH_FUNCTION 表）
@@ -11302,7 +11299,6 @@ export function applyDataMachineryScope(): void {
   s.calcuteFilterResult = (data: any[], contentFilterCache: any) => machineryCalcuteFilterResult(s, data, contentFilterCache);
   // c14c：contentFilter/calcuteContainTags + RecentFileManager（if-absent）
   s.contentFilter = (image: any) => machineryContentFilter(s, image);
-  s.calcuteContainTags = (data: any[]) => machineryCalcuteContainTags(s, data);
   const w2 = window as any;
   if (!w2.RecentFileManager) w2.RecentFileManager = buildRecentFileManager();
   // c15：updateSelection/zoom
@@ -11314,7 +11310,6 @@ export function applyDataMachineryScope(): void {
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
   s.getSelection = () => machineryGetSelection(s);
   s.changeSidebarIndex = (node: any) => machineryChangeSidebarIndex(s, node);
-  s.resetPage = () => machineryResetPage(s);
   s.calculateFilterCounts = () => machineryCalculateFilterCounts(s);
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
   s.openAll = (ignoreHistory: any, callback: any) => machineryOpenAll(s, ignoreHistory, callback);
@@ -11339,41 +11334,15 @@ export function applyDataMachineryScope(): void {
   s.updateContainerHieght = (hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimation, delay);
   // c18c：undo/nextHistory/prevHistory/back
   s.undo = () => machineryUndo(s);
-  s.nextHistory = () => machineryNextHistory(s);
-  s.prevHistory = () => machineryPrevHistory(s);
-  s.back = () => machineryBack(s);
   // c18d：selectAll/toggleDetailMode
-  s.selectAll = (event: any) => machinerySelectAll(s, event);
-  s.toggleDetailMode = ($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline);
   // c18e-1：selectNext/selectPrev
   s.selectNext = (event: any) => machinerySelectNext(s, event);
   s.selectPrev = (event: any) => machinerySelectPrev(s, event);
   // c18e-2：multipleSelect 四件套
-  s.multipleSelectUp = (event: any) => machineryMultipleSelectUp(s, event);
-  s.multipleSelectDown = (event: any) => machineryMultipleSelectDown(s, event);
-  s.multipleSelectNext = (event: any) => machineryMultipleSelectNext(s, event);
-  s.multipleSelectPrev = (event: any) => machineryMultipleSelectPrev(s, event);
   // c18e-2b：removeSelected
-  s.removeSelected = (event: any) => machineryRemoveSelected(s, event);
   // c18e-3：quicklook/copyImages
-  s.quicklook = (event: any) => machineryQuicklook(s, event);
-  s.copyImages = (event: any) => machineryCopyImages(s, event);
   // c18e-4：方向键/修饰键 handler 族（第一批）
-  s.keyCHandler = (event: any) => machineryKeyCHandler(s, event);
-  s.keyPHandler = (event: any) => machineryKeyPHandler(s, event);
-  s.keyLeftHandler = (event: any) => machineryKeyLeftHandler(s, event);
-  s.keyRightHandler = (event: any) => machineryKeyRightHandler(s, event);
-  s.modUpHandler = (event: any) => machineryModUpHandler(s, event);
-  s.modDownHandler = (event: any) => machineryModDownHandler(s, event);
-  s.modLeftHandler = (event: any) => machineryModLeftHandler(s, event);
-  s.modRightHandler = (event: any) => machineryModRightHandler(s, event);
-  s.modShiftUpHandler = (event: any) => machineryModShiftUpHandler(s, event);
-  s.modShiftDownHandler = (event: any) => machineryModShiftDownHandler(s, event);
-  s.modShiftLeftHandler = (event: any) => machineryModShiftLeftHandler(s, event);
-  s.modShiftRightHandler = (event: any) => machineryModShiftRightHandler(s, event);
   // c18e-5：keyUp/keyDown（侧栏导航级联 + QuickAccess/Group 闭包域内移植）
-  s.keyUpHandler = (event: any) => machineryKeyUpHandler(s, event);
-  s.keyDownHandler = (event: any) => machineryKeyDownHandler(s, event);
   // c18e-6：selectUp/Down + pageUp/pageDown（throttle 实例 apply 时一次性创建）
   s.selectUp = (event: any) => machinerySelectUp(s, event);
   s.selectDown = (event: any) => machinerySelectDown(s, event);
@@ -11381,143 +11350,49 @@ export function applyDataMachineryScope(): void {
   s.pageUpHandler = machineryPageUpHandler(s);
   // c18f-1：小 handler 批
   // b1-9ay：评级键族补齐（mousetrap '0'-'5' 六键的 handler 此前仅 changeTo5Star 在册）
-  s.removeStar = () => machineryRemoveStar(s);
-  s.changeTo1Star = (event: any) => machineryChangeTo1Star(s, event);
-  s.changeTo2Star = (event: any) => machineryChangeTo2Star(s, event);
-  s.changeTo3Star = (event: any) => machineryChangeTo3Star(s, event);
-  s.changeTo4Star = (event: any) => machineryChangeTo4Star(s, event);
-  s.changeTo5Star = (event: any) => machineryChangeTo5Star(s, event);
-  s.closeWindowHandler = ($event: any) => machineryCloseWindowHandler(s, $event);
-  s.nHandler = ($event: any) => machineryNHandler(s, $event);
   s.mHandler = ($event: any) => machineryMHandler(s, $event);
   s.toggleAll = ($event: any) => machineryToggleAll(s, $event);
   s.zoomIn = (event: any) => machineryZoomIn(s, event);
   s.zoomOut = (event: any) => machineryZoomOut(s, event);
-  s.saveHandler = () => machinerySaveHandler(s);
-  s.refreshRandom = () => machineryRefreshRandom(s);
   // c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover
-  s.openParentFolder = () => machineryOpenParentFolder(s);
-  s.createTxtFileFromTemplate = (event: any) => machineryCreateTxtFileFromTemplate(s, event);
-  s.setFolderCover = () => machinerySetFolderCover(s);
   // c18f-3：inspector 面板/快捷搜索打开器
   s.openQuickSearch = (event: any) => machineryOpenQuickSearch(s, event);
-  s.openActionsPanel = (event: any) => machineryOpenActionsPanel(s, event);
-  s.openInspectorTagSelectPanel = () => machineryOpenInspectorTagSelectPanel(s);
-  s.openInspectorFolderSelectPanel = (event: any) => machineryOpenInspectorFolderSelectPanel(s, event);
   // c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
   s.getItemByElement = (element: any) => machineryGetItemByElement(s, element);
   s.changeStar = (star: any, showNotify: any, force: any) => machineryChangeStar(s, star, showNotify, force);
   s.nextGifFrame = (amount: any) => machineryNextGifFrame(s, amount);
   s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);
-  s.addVideoComment = (video: any, videoElem: any) => machineryAddVideoComment(s, video, videoElem);
-  s.newFileFromTemplate = (ext: any) => machineryNewFileFromTemplate(s, ext);
   // c18g-2：视图开启器族
-  s.openRandom = (ignoreHistory: any, callback: any) => machineryOpenRandom(s, ignoreHistory, callback);
   s.openUnfiled = (ignoreHistory: any) => machineryOpenUnfiled(s, ignoreHistory);
-  s.openUntagged = (ignoreHistory: any) => machineryOpenUntagged(s, ignoreHistory);
-  s.openRecent = (ignoreHistory: any) => machineryOpenRecent(s, ignoreHistory);
-  s.openCommunity = (ignoreHistory: any) => machineryOpenCommunity(s, ignoreHistory);
-  s.openAllTags = (ignoreHistory: any) => machineryOpenAllTags(s, ignoreHistory);
-  s.openTrash = (ignoreHistory: any) => machineryOpenTrash(s, ignoreHistory);
   // b1-3：侧栏 prev/next 导航四向
-  s.openNextFolder = () => machineryOpenNextFolder(s);
-  s.openPrevFolder = () => machineryOpenPrevFolder(s);
-  s.openNextSmartFolder = () => machineryOpenNextSmartFolder(s);
-  s.openPrevSmartFolder = () => machineryOpenPrevSmartFolder(s);
   // b1-4a：滚动/列表辅助族第一批
   s.autoScroll = (index: any) => machineryAutoScroll(s, index);
   s.currentIndex = () => machineryCurrentIndex(s);
-  s.getSelectedItems = () => machineryGetSelectedItems(s);
   s.getSelectedItemElements = () => machineryGetSelectedItemElements(s);
-  s.getSelectedTags = () => machineryGetSelectedTags(s);
-  s.getQuickAccessList = () => machineryGetQuickAccessList(s);
-  s.checkListItemsLessThanContainer = () => machineryCheckListItemsLessThanContainer(s);
-  s.updateSubFolderWidth = () => machineryUpdateSubFolderWidth(s);
-  s.updateSliderPosition = () => machineryUpdateSliderPosition(s);
-  s.changeListHeight = (height: any) => machineryChangeListHeight(s, height);
-  s.scrollToCurrentItem = () => machineryScrollToCurrentItem(s);
-  s.forceFitImageSize = (image: any, usingThumbnail: any) => machineryForceFitImageSize(s, image, usingThumbnail);
   // b1-4b：sortData/offsetScrollbar/updateFilterCounts
   s.sortData = (data: any, orderBy: any) => machinerySortData(s, data, orderBy);
   s.offsetScrollbar = machineryOffsetScrollbar(s);
   s.updateFilterCounts = (image: any, inc: any, now: any) => machineryUpdateFilterCounts(s, image, inc, now);
   // b1-5：记忆/预载族
-  s.rememberScrollTops = (item: any) => machineryRememberScrollTops(s, item);
-  s.rememberVideoCurrentTime = (item: any) => machineryRememberVideoCurrentTime(s, item);
-  s.addToRecentFile = (item: any) => machineryAddToRecentFile(s, item);
-  s.preloadImage = (mode: any) => machineryPreloadImage(s, mode);
   // b1-5b：homeHandler/endHandler
   s.homeHandler = (event: any) => machineryHomeHandler(s, event);
   s.endHandler = (event: any) => machineryEndHandler(s, event);
   // b1-6a：删除族第一批
   s.checkOperationSafety = (callback: any, amount: any) => machineryCheckOperationSafety(s, callback, amount);
-  s.checkOperationSafety2 = (count: any, callback: any, amount: any) => machineryCheckOperationSafety2(s, count, callback, amount);
-  s.resetFolderCover = (folder: any) => machineryResetFolderCover(s, folder);
-  s.removePermanently = () => machineryRemovePermanently(s);
   // b1-6b：删除族第二批
-  s.removeSmartFolder = (smartFolder: any) => machineryRemoveSmartFolder(s, smartFolder);
-  s.removeFolder = (folder: any, params: any) => machineryRemoveFolder(s, folder, params);
-  s.removeSelectedFolders = () => machineryRemoveSelectedFolders(s);
-  s.removeSelectedSmartFolders = () => machineryRemoveSelectedSmartFolders(s);
   // b1-6c：removeFolderContents
-  s.removeFolderContents = (params: any) => machineryRemoveFolderContents(s, params);
   // b1-7a：小件批
-  s.toggleCommentMode = (event: any) => machineryToggleCommentMode(s, event);
-  s.fadeOutDetailMode = () => machineryFadeOutDetailMode(s);
   s.openPluginPanel = (event: any) => machineryOpenPluginPanel(s, event);
-  s.saveFolderDebounce = () => machinerySaveFolderDebounce(s);
-  s.openTagAllGroup = () => machineryOpenTagAllGroup(s);
-  s.openUnfiledGroup = () => machineryOpenUnfiledGroup(s);
-  s.openStarredGroup = () => machineryOpenStarredGroup(s);
-  s.openTagGroup = (group: any) => machineryOpenTagGroup(s, group);
-  s.removeTagGroup = (group: any) => machineryRemoveTagGroup(s, group);
   // b1-7b：幻灯片/锁屏/调色板/布局/过滤入口/多开
-  s.enterSlideshowMode = () => machineryEnterSlideshowMode(s);
-  s.leaveSlideshowMode = () => machineryLeaveSlideshowMode(s);
-  s.rgbToHex = (r: any, g: any, b: any) => machineryRgbToHex(s, r, g, b);
   s.lockApp = () => machineryLockApp(s);
-  s.focusAppUnlockPassword = () => machineryFocusAppUnlockPassword(s);
-  s.pausePalette = () => machineryPausePalette(s);
-  s.resumePalette = () => machineryResumePalette(s);
-  s.saveLayout = (folder: any, layout: any) => machinerySaveLayout(s, folder, layout);
-  s.cancelCrop = () => machineryCancelCrop(s);
-  s.openFilter = () => machineryOpenFilter(s);
   s.toggleFilterByType = machineryToggleFilterByType(s);
-  s.multipleOpenFolder = (folder: any, needReload: any) => machineryMultipleOpenFolder(s, folder, needReload);
   // b1-7c：展开族/重复图/排序/搜索全览
-  s.expandFolder = (folder: any) => machineryExpandFolder(s, folder);
-  s.expandSmartFolder = (smartFolder: any) => machineryExpandSmartFolder(s, smartFolder);
-  s.searchInAll = () => machinerySearchInAll(s);
-  s.isDuplicateImage = (image: any) => machineryIsDuplicateImage(s, image);
-  s.addToDuplicateMapping = (image: any) => machineryAddToDuplicateMapping(s, image);
-  s.removeFromDuplicateMapping = (image: any) => machineryRemoveFromDuplicateMapping(s, image);
-  s.openDuplicate = (options: any) => machineryOpenDuplicate(s, options);
-  s.toggleSelectSmartFolder = (event: any, smartFolder: any) => machineryToggleSelectSmartFolder(s, event, smartFolder);
-  s.toggleCurrentLevelSmartFolders = (event: any, smartFolder: any) => machineryToggleCurrentLevelSmartFolders(s, event, smartFolder);
-  s.toggleAllSmartFolderExpand = (event: any, selectedSmartFolder: any) => machineryToggleAllSmartFolderExpand(s, event, selectedSmartFolder);
-  s.setFolderOrder = (folder: any, orderBy: any, ignoreReload: any) => machinerySetFolderOrder(s, folder, orderBy, ignoreReload);
-  s.setSmartFolderOrder = (folder: any, orderBy: any) => machinerySetSmartFolderOrder(s, folder, orderBy);
-  s.updateTxtItem = (item: any) => machineryUpdateTxtItem(s, item);
   // b1-7d-1：外部站点/教程/试用/多开/重命名入口/TouchID
-  s.openPinterest = () => machineryOpenPinterest(s);
-  s.openHuaban = () => machineryOpenHuaban(s);
-  s.openArtstation = () => machineryOpenArtstation(s);
   s.quickOpenFolder = (folder: any, t: any) => machineryQuickOpenFolder(s, folder, t);
-  s.multipleOpenSmartFolder = (smartFolder: any, needReload: any) => machineryMultipleOpenSmartFolder(s, smartFolder, needReload);
-  s.renameFolder = (event: any, folder: any) => machineryRenameFolder(s, event, folder);
-  s.renameSmartFolder = (event: any, smartFolder: any) => machineryRenameSmartFolder(s, event, smartFolder);
-  s.showTutorial = () => machineryShowTutorial(s);
-  s.openTrialModal = (trialRemain: any) => machineryOpenTrialModal(s, trialRemain);
-  s.unlockFolderWithTouchID = (event: any) => machineryUnlockFolderWithTouchID(s, event);
   // b1-7d-2：侧栏树渲染核心
-  s.getSmartFolderList = () => machineryGetSmartFolderList(s);
-  s.getFolderList = () => machineryGetFolderList(s);
   // b1-7d-3：列表滑条/元信息/移入文件夹/上传队列/链接导入/截屏
-  s.updateListSlider = (size: any) => machineryUpdateListSlider(s, size);
-  s.changeMetaItems = (type: any) => machineryChangeMetaItems(s, type);
   s.moveToFolders = (e: any) => machineryMoveToFolders(s, e);
   s.showUploadQueue = () => machineryShowUploadQueue(s);
-  s.hideUploadQueue = () => machineryHideUploadQueue(s);
   // b1-9d 收口：onDropContainer（bundle 顶层 function → 同 window live binding 语义）。
   // 三处消费面都要命中：① smoke/CDP 直接调全局 onDropContainer(...)；② ListRegion
   // scopeFn('onDropContainer') 只在 scope 上找；③ callScope 先查 fns 表再查 scope
@@ -11525,42 +11400,19 @@ export function applyDataMachineryScope(): void {
   // if-absent 零改变。
   s.onDropContainer = (event: any) => machineryOnDropContainer(s, event);
   if (s.__eagleShim && !(window as any).onDropContainer) (window as any).onDropContainer = s.onDropContainer;
-  s.importLinks = () => machineryImportLinks(s);
   s.videoScreenShot = (copyMode: any) => machineryVideoScreenShot(s, copyMode);
   // b1-7e：全局查重（getFolderImages/findDupclipate）+ 子文件夹列表 + 搜索聚焦 +
   // 新建智能文件夹/前置插入 + 列表滚顶/滚底
-  s.getFolderImages = (folder: any, includeSubFolder: any) => machineryGetFolderImages(s, folder, includeSubFolder);
-  s.findDupclipate = (currentFolder: any, hasColorInfo: any) => machineryFindDupclipate(s, currentFolder, hasColorInfo);
-  s.refreshSubfolderList = () => machineryRefreshSubfolderList(s);
-  s.focusSeach = () => machineryFocusSeach(s);
   s.newSmartFolder = (event: any, smartFolder: any) => machineryNewSmartFolder(s, event, smartFolder);
   s.prependFolder = (folder: any) => machineryPrependFolder(s, folder);
-  s.gotoTop = () => machineryGotoTop(s);
-  s.gotoBottom = () => machineryGotoBottom(s);
   // b1-8：rename 域（路由 + 图片/子文件夹行内编辑 + 批量 + 标签/群组 + selectFolder）
-  s.selectFolder = (event: any, folder: any) => machinerySelectFolder(s, event, folder);
-  s.enableSubFolderNameEditable = (event: any, folder: any) => machineryEnableSubFolderNameEditable(s, event, folder);
-  s.batchRenameFolders = () => machineryBatchRenameFolders(s);
-  s.batchRenameSmartFolders = () => machineryBatchRenameSmartFolders(s);
-  s.renameTagGroup = (group: any) => machineryRenameTagGroup(s, group);
   s.editTag = (tag: any) => machineryEditTag(s, tag);
-  s.renameCurrentFolder = (event: any) => machineryRenameCurrentFolder(s, event);
   // b1-8 裸引用审计修复：controllerFns fns 表内闭包裸调改走 scope 解析——闭包三件
   // （getExtendTags/getChildFoldersMaps/getChildFoldersMap）+ setViewMode 闭包 debounce
   // 经 apply 接装后可解析（machinery 版本均已存在）
-  s.getExtendTags = (folder: any, tags: any[]) => machineryGetExtendTags(s, folder, tags);
-  s.getChildFoldersMaps = (folders: any) => machineryGetChildFoldersMaps(s, folders);
-  s.getChildFoldersMap = (folder: any) => machineryGetChildFoldersMap(s, folder);
   s.setViewMode = (viewMode: any) => machinerySetViewMode(s, viewMode);
   // b1-8 续：闭包供给面的非碰撞 scope 接装（calcuteContainFolders/toggleCurrentLevel{Folders,
   // SmartFolders} 与 bundle $scope 同名——**不可接装**，controllerFns 经 import 直调）
-  s.getVideoPlayer = () => machineryGetVideoPlayer(s);
-  s.getFolderParentChilder = (folder: any) => machineryGetFolderParentChilder(s, folder);
-  s.calcRotateDegree = (currentDegree: any, event: any) => machineryCalcRotateDegree(currentDegree, event);
-  s.getArroundBox = (index: any) => machineryGetArroundBox(s, index);
-  s.getAncestorSmartFolders = (folder: any, folders: any[]) => machineryGetAncestorSmartFolders(s, folder, folders);
-  s.toggleAllFolders = (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand);
-  s.toggleAllSmartFolders = (smartFolders: any, isExpand: any) => machineryToggleAllSmartFoldersInner(s, smartFolders, isExpand);
 
   // b1-9bz-B-8：**子窗口**（viewers/font、viewers/text-editor）经  驱动的
   // 名字 —— 跨窗口无法直 import，必须由 scope 面供给。原先依赖 controllerFns fns 表的
@@ -11568,18 +11420,15 @@ export function applyDataMachineryScope(): void {
   // 清单来自 tests-tmp/bz-b8-viewers.py 的枚举（子窗引用 ∩ 表供给且未挂载）。
   s.activateFont = (...args: any[]) => callExternal('activateFont', ...args);
   s.deactivateFont = (...args: any[]) => callExternal('deactivateFont', ...args);
-  s.isFontActivate = (...args: any[]) => callExternal('isFontActivate', ...args);
   s.escHandler = (...args: any[]) => callExternal('escHandler', ...args);
 
   // b1-9bz-B-8：原版主 UI 工作流驱动脚本（electron/main.cjs 的 selectItems / 等）经 scope
   // 面调用的名字 —— 与子窗口同款需求（脚本在页面主世界驱动 scope，无法直 import）。
   // 原由 fns 表 if-absent 供给，表退役后改为显式挂载。
-  s.addImagesToFolder = (...args: any[]) => callExternal('addImagesToFolder', ...args);
   s.copyAsPath = (...args: any[]) => callExternal('copyAsPath', ...args);
   s.getRawPath = (...args: any[]) => callExternal('getRawPath', ...args);
   s.getRawUrl = (...args: any[]) => callExternal('getRawUrl', ...args);
   s.select = (...args: any[]) => callExternal('select', ...args);
-  s.startDrag = (...args: any[]) => callExternal('startDrag', ...args);
 
   // b1-9av：启动期键盘绑定。原链 = update-menu/update-preferences IPC → initMousetrap
   // （bundle 22399/22408），该两通道 React 世界无发送方无桥（PROGRESS 曾登记"暂留"）——

@@ -23,7 +23,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
-import { getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
+import { getOffsetScrollbarFn, getFilter, machineryAddToDuplicateMapping, machineryCalculateImageBinding, machineryCheckOperationSafety, machineryForceFitImageSize, machineryGetAncestorFolders, machineryHideUploadQueue, machineryIsDuplicateImage, machineryPrependImages, machineryQuickOpenFolder, machineryRebindRefresh, machineryRelayout, machineryRememberVideoCurrentTime, machinerySaveFolder, machineryUpdateFilterCounts, machineryUpdateItemView, machineryUpdateSelection, machineryUpdateSidebarList, machineryUpdateTxtItem } from './dataMachinery';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { glRemoveitemsChannel, openDuplicateChannel } from '../global/bus';
@@ -179,7 +179,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
     ) {
       machineryUpdateItemView(s, image);
       machineryRelayout(s);
-      s.offsetScrollbar(30);
+      getOffsetScrollbarFn(s)(30);
       refreshThumb = true;
     }
 

@@ -2400,6 +2400,25 @@
 > `stage-smoke`/`1m1`/`residue`/`ui-interactions` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
 >
 
+> **【D-1 批次 10（Track A / A-4）✅：单例 debounce/throttle getter；挂载 67→45（箭头面）（2026-09-11）】**
+>
+> **机制**：新增 `scopeSingleton(s, key, make)`（模块级 `WeakMap`）+ 4 个导出 getter
+> `getOffsetScrollbarFn` / `getPageUpHandlerFn` / `getPageDownHandlerFn` / `getToggleFilterByTypeFn`。
+> 这些挂载右侧是**调用**（返回 debounce/throttle 实例），直调化若每次新建会丢防抖/节流状态；
+> 改用按 scope 缓存的单例取用，保持「每 scope 一实例」语义。
+>
+> **退役 4 项**：`offsetScrollbar`（5 处调用：itemDomain / gridService / sidebarService /
+> inspectorActions / dataMachinery 内部）、`pageUpHandler`+`pageDownHandler`（keymap `shift+space`
+> 与内部 handler）、`toggleFilterByType`（miscMenuService 右键菜单）。挂载 67 → **45**（箭头面）。
+>
+> **未做**：`reload = machineryReload(s)` —— 它同时是 debounce 单例**且被 tests/*（
+> tab-bar-closed-loop、workbench-interactions、probe-b19d*）以 `s.reload()` 引用**，需与契约/测试
+> 一并处置，留待后续批次。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`residue`/
+> `ui-interactions`/`stage6`/`stage8c` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

@@ -18,7 +18,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getFilter as machineryGetFilter, machineryImportLinks, machineryNewFileFromTemplate, machineryNewSmartFolder, machineryOpenArtstation, machineryOpenDuplicate, machineryOpenFilter, machineryOpenHuaban, machineryOpenPinterest, machineryToggleAllSmartFolderExpand, machineryToggleCurrentLevelSmartFolders, machineryToggleSelectSmartFolder, machineryUpdateContainerHieght, machineryUpdateZoomRatio, machineryZoomActual, machineryZoomFit } from '../core/dataMachinery';
+import { getToggleFilterByTypeFn, getFilter as machineryGetFilter, machineryImportLinks, machineryNewFileFromTemplate, machineryNewSmartFolder, machineryOpenArtstation, machineryOpenDuplicate, machineryOpenFilter, machineryOpenHuaban, machineryOpenPinterest, machineryToggleAllSmartFolderExpand, machineryToggleCurrentLevelSmartFolders, machineryToggleSelectSmartFolder, machineryUpdateContainerHieght, machineryUpdateZoomRatio, machineryZoomActual, machineryZoomFit } from '../core/dataMachinery';
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
@@ -244,7 +244,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                         scopeEvalAsync();
                     },
                     click: () => {
-                        s.toggleFilterByType('shape');
+                        getToggleFilterByTypeFn(s)('shape');
                         scopeEvalAsync();
                     }
                 },

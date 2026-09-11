@@ -15,7 +15,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
-import { machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCheckListItemsLessThanContainer, machineryRelayout, machineryScrollToCurrentItem, machinerySmartZoom, machineryUpdateZoomRatio } from '../core/dataMachinery';
+import { getOffsetScrollbarFn, machineryAdjustLayoutWidth, machineryChangeListHeight, machineryCheckListItemsLessThanContainer, machineryRelayout, machineryScrollToCurrentItem, machinerySmartZoom, machineryUpdateZoomRatio } from '../core/dataMachinery';
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
 
 let saveListHeightTimeout: any = null;
@@ -238,7 +238,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       w.electronLog && w.electronLog.info("[app] Layout: Justified");
   }
 
-  s.offsetScrollbar(30);
+  getOffsetScrollbarFn(s)(30);
   // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
   if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
 }

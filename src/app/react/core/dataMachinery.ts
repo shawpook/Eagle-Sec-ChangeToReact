@@ -3743,7 +3743,7 @@ export function machineryBuildMousetrap(s: any): any {
     'mod+c': (event: any) => machineryCopyImages(s, event),
     'mod+w': ($event: any) => machineryCloseWindowHandler(s, $event),
     'space': (event: any) => machineryQuicklook(s, event),
-    'shift+space': s.pageUpHandler,
+    'shift+space': getPageUpHandlerFn(s),
     'c': (event: any) => machineryKeyCHandler(s, event),
     'p': (event: any) => machineryKeyPHandler(s, event),
     'a': (event: any) => machineryKeyLeftHandler(s, event),
@@ -4756,7 +4756,7 @@ export function machineryQuicklook(s: any, event: any): void {
     }
     // 如果用户设定是滚动页面
     else {
-      s.pageDownHandler(event);
+      getPageDownHandlerFn(s)(event);
     }
   }
 }
@@ -5691,7 +5691,7 @@ export function machineryToggleAll(s: any, $event: any): void {
     s.boxContianerWidth = w.$("#box-container").width() || s.boxContianerWidth;
     s.boxContianerHeight = w.$("#box-container").height() || s.boxContianerHeight;
     machineryRelayout(s);
-    s.offsetScrollbar(30);
+    getOffsetScrollbarFn(s)(30);
     if (s.isDetailMode) {
       s.$root.currentFocus = "content";
     }
@@ -10680,6 +10680,22 @@ export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpan
   machineryUpdateSidebarList(s);
 }
 
+/* D-1 A-4：单例 debounce/throttle 工厂缓存。
+   reload/offsetScrollbar/pageUpDownHandler/toggleFilterByType 的右侧是**调用**（返回 debounce/
+   throttle 实例），原挂在 scope 上按 seed 时机创建一次。直调化后改用本缓存按 scope 取用，
+   保证「每 scope 一个实例」——否则每次调用新建实例会丢掉防抖/节流状态。 */
+const singletonByScope = new WeakMap<object, Map<string, any>>();
+function scopeSingleton<T>(s: any, key: string, make: () => T): T {
+  let m = singletonByScope.get(s);
+  if (!m) { m = new Map(); singletonByScope.set(s, m); }
+  if (!m.has(key)) m.set(key, make());
+  return m.get(key) as T;
+}
+export function getOffsetScrollbarFn(s: any): any { return scopeSingleton(s, 'offsetScrollbar', () => machineryOffsetScrollbar(s)); }
+export function getPageUpHandlerFn(s: any): any { return scopeSingleton(s, 'pageUpHandler', () => machineryPageUpHandler(s)); }
+export function getPageDownHandlerFn(s: any): any { return scopeSingleton(s, 'pageDownHandler', () => machineryPageDownHandler(s)); }
+export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType(s)); }
+
 /* controller init 状态面（bundle 21242-21619 逐字——$scope→s / $rootScope→s.$root 机械替换；
    initEvent/var allTags/var updateTimer 略去：React 组件自有事件面 + 闭包死变量；
    仅 shim 世界调用（bundle 在世时状态由 controller init 填充，零调用零改变）） */
@@ -11331,9 +11347,7 @@ export function applyDataMachineryScope(): void {
   // c18e-3：quicklook/copyImages
   // c18e-4：方向键/修饰键 handler 族（第一批）
   // c18e-5：keyUp/keyDown（侧栏导航级联 + QuickAccess/Group 闭包域内移植）
-  // c18e-6：selectUp/Down + pageUp/pageDown（throttle 实例 apply 时一次性创建）
-  s.pageDownHandler = machineryPageDownHandler(s);
-  s.pageUpHandler = machineryPageUpHandler(s);
+  // c18e-6：selectUp/Down + pageUp/pageDown（throttle 实例经 getPage*HandlerFn 单例缓存）
   // c18f-1：小 handler 批
   // b1-9ay：评级键族补齐（mousetrap '0'-'5' 六键的 handler 此前仅 changeTo5Star 在册）
   // c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover
@@ -11343,8 +11357,7 @@ export function applyDataMachineryScope(): void {
   // b1-3：侧栏 prev/next 导航四向
   // b1-4a：滚动/列表辅助族第一批
   s.currentIndex = () => machineryCurrentIndex(s);
-  // b1-4b：sortData/offsetScrollbar/updateFilterCounts
-  s.offsetScrollbar = machineryOffsetScrollbar(s);
+  // b1-4b：sortData/offsetScrollbar/updateFilterCounts（offsetScrollbar 实例经 getOffsetScrollbarFn 单例缓存）
   // b1-5：记忆/预载族
   // b1-5b：homeHandler/endHandler
   s.homeHandler = (event: any) => machineryHomeHandler(s, event);
@@ -11354,7 +11367,6 @@ export function applyDataMachineryScope(): void {
   // b1-6c：removeFolderContents
   // b1-7a：小件批
   // b1-7b：幻灯片/锁屏/调色板/布局/过滤入口/多开
-  s.toggleFilterByType = machineryToggleFilterByType(s);
   // b1-7c：展开族/重复图/排序/搜索全览
   // b1-7d-1：外部站点/教程/试用/多开/重命名入口/TouchID
   s.quickOpenFolder = (folder: any, t: any) => machineryQuickOpenFolder(s, folder, t);

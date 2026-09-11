@@ -11,7 +11,7 @@
  * 本模块是**组件侧唯一入口**（Sidebar.tsx 此前 ~30 处 scopeApply 绕道）。
  * 菜单族（openFolderContextMenu 等）归 S5 菜单竖切；DnD（onDropFolder 族）归 bh。
  */
-import { machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryToggleSelectSmartFolder, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
+import { getOffsetScrollbarFn, machineryChangeSidebarIndex, machineryFilterSidebarItem, machineryGetChildFoldersMaps, machineryMultipleOpenFolder, machineryMultipleOpenSmartFolder, machineryRelayout, machineryReload, machineryRenameFolder, machineryRenameSmartFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryToggleSelectSmartFolder, machineryUpdateSidebarList, machineryUpdateSliderPosition } from '../core/dataMachinery';
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { getBodyScope } from '../core/appCore';
@@ -463,7 +463,7 @@ export function onSidebarResize(...args: any[]) {
             clearTimeout(__lv_onSidebarResizeTimeout);
             __lv_onSidebarResizeTimeout = setTimeout(function () {
                 machineryRelayout(s);
-                s.offsetScrollbar(30);
+                getOffsetScrollbarFn(s)(30);
                 localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
             }, 500);
         }

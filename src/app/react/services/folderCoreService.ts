@@ -41,6 +41,12 @@ import { getFilter, machineryUpdateFilterCounts } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryRefreshSubfolderList } from '../core/tagManagerDomain';
 import { machineryUpdateSelection } from '../core/selectionViewDomain';
+import { openUrlInPanelChannel } from '../global/bus';
+import { machineryUpdateListHeight } from '../services/gridService';
+import { hide, setScrollTop } from '../utils/domQuery';
+import { machineryOnImageSizeHeightChanged } from '../core/itemDomain';
+import { machinerySetLastFolder } from '../core/libraryDomain';
+import { getTimeout } from '../core/dataMachinery';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
@@ -1033,3 +1039,129 @@ export function checkDiskSpace(...args: any[]) {
         callback && callback();
     }).apply(null, args);
   }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'all' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (callback) {
+      callback();
+    }
+    if (s.isDetailMode) {
+      machineryLeaveDetailMode(s);
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+
+  s.viewMode = 'all';
+  s.$root.currentFocus = "sidebar";
+  machineryResetPage(s);
+
+  $timeout.cancel(openAllTimeout);
+  openAllTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      s.UrlStateService.setState({ view: 'all', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.all") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    s.imageSize.height = parseInt(s.imageSize.height);
+    // b1-9bz-C-4：原 $watch("imageSize.height") 在 flush 时触发 —— 改为写入点直调
+    machineryOnImageSizeHeightChanged(s);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    setScrollTop("#sidebar-item-container", 0);
+    s.reload();
+    if (callback) {
+      callback();
+    }
+    w.analytics.screenView('All');
+  }, 50);
+}
+
+export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'community';
+  s.$root.currentFocus = "sidebar";
+  machineryResetPage(s);
+  s.images = [];
+  s.isDetailMode = false;
+  s.selected = [];
+  syncInspectorFromScope();
+  if (!ignoreHistory) {
+    w.UrlStateService.setState({ view: 'community', folder: null, smartfolder: null, tag: null, color: null });
+  }
+
+  let lng2locale: any = {
+    "zh_CN": "cn",
+    "zh_TW": "tw",
+    "ja_JP": "jp"
+  };
+  let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
+  openUrlInPanelChannel.emit(`${baseUrl}`);
+  machineryLeaveDetailMode(w.$bodyScope);
+}
+
+export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.viewMode === 'random' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (callback) {
+      callback();
+    }
+    if (s.isDetailMode) {
+      machineryLeaveDetailMode(s);
+    }
+    return;
+  }
+
+  s.viewMode = 'random';
+  machineryResetPage(s);
+  s.$root.currentFocus = "sidebar";
+
+  hide("#image-drop-area");
+  $timeout.cancel(openRandomTimeout);
+  openRandomTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'random', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.random") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machinerySetLastFolder(s, undefined);
+    setScrollTop("#sidebar-item-container", 0);
+    s.reload();
+    if (callback) {
+      callback();
+    }
+    w.analytics.screenView('Random');
+  }, 50);
+}
+
+// ── c15d 域内自管（原 controller 闭包 var）──
+export let openAllTimeout: any = null;
+
+// ── c18g-2 域内自管（原 controller 闭包 var：openRandomTimeout 36758 邻域 /
+//    openUnfiledTimeout 36773 / openUntaggedTimeout 36804 / openRecentTimeout 36835 /
+//    openTrashTimeout 36968）──
+let openRandomTimeout: any = null;

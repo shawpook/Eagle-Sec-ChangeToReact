@@ -45,7 +45,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
-import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom } from './dataMachinery';
+
 import { filterWithColor, resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel, openRenameChannel } from '../global/bus';
@@ -62,6 +62,7 @@ import { machineryCalculateImageBinding, machineryFilterSidebarItem, machineryFi
 import { machineryExistInSmartFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryEditTag, machineryEnableSubFolderNameEditable, machineryOpenAllTags, machineryOpenUntagged, machineryRenameTagGroup } from './tagManagerDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from './selectionViewDomain';
+import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom } from '../services/folderCoreService';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;

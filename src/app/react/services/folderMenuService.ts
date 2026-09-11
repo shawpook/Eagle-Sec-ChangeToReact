@@ -17,7 +17,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { machineryOpenAll, machineryReload, machinerySortRawData } from '../core/dataMachinery';
+import { machineryReload, machinerySortRawData } from '../core/dataMachinery';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';

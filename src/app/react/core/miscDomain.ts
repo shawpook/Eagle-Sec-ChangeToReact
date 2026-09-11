@@ -34,7 +34,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machineryEnterDetailMode, machineryFadeOutDetailMode, machineryLeaveDetailMode, machineryLockApp, machineryOpenAll, machinerySortRawData, machineryToggleSlideshow, machineryUndo } from './dataMachinery';
+import { machineryEnterDetailMode, machineryFadeOutDetailMode, machineryLeaveDetailMode, machineryLockApp, machinerySortRawData, machineryToggleSlideshow, machineryUndo } from './dataMachinery';
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
@@ -47,6 +47,7 @@ import { machineryGetRecentFolders } from './libraryDomain';
 import { machineryRememberScrollTops } from '../services/gridService';
 import { machineryChangeSidebarIndex, machineryPrependFolder, machineryQuickOpenFolder, machinerySetFolderOrder, machinerySetSmartFolderOrder, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryFindDupclipate, machineryHideUploadQueue, machineryRebindRefresh } from './itemDomain';
+import { machineryOpenAll } from '../services/folderCoreService';
 declare const IPCHelper: any;
 declare const remote: any;
 

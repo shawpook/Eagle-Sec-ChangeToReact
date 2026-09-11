@@ -101,6 +101,9 @@ import { calculateImageBindingTimeout, machineryCalculateImageBinding, machinery
 import { FILTER_ID_MAP, calculateFilterCountsTimeout, getFilter, machineryCalculateFilterCounts, machineryCalcuteFilterBadge, machineryCalcuteFilterResult, machineryColorFilter, machineryContentFilter, machineryExistInSmartFilter, machineryFilterContent, machineryFilterData, machineryGrayColorFilter, machineryToggleFilterByType, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryAutoResizeTagFilter, machineryConvertToRegexGroup, machineryMatchWithRegexGroup, machineryOpenAllTags, machineryOpenNextGroup, machineryOpenPrevGroup, machineryOpenUntagged, machineryRefreshSubfolderList, machineryRemoveTagGroup, machineryUpdateSubFolderWidth, openUntaggedTimeout, tagRectSelecting } from './tagManagerDomain';
 import { machineryGetSelectedItemElements, machineryMultipleSelectDown, machineryMultipleSelectNext, machineryMultipleSelectPrev, machineryMultipleSelectUp, machineryOpenInspectorFolderSelectPanel, machineryOpenInspectorTagSelectPanel, machineryRemoveSelected, machinerySelectAll, machinerySelectDown, machinerySelectNext, machinerySelectPrev, machinerySelectUp, machineryUpdateSelection } from './selectionViewDomain';
+import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openAllTimeout } from '../services/folderCoreService';
+import { machineryChangeStar, machineryChangeTo1Star, machineryChangeTo2Star, machineryChangeTo3Star, machineryChangeTo4Star, machineryChangeTo5Star, machineryRemoveStar } from '../services/imageOpsService';
+import { machineryOnDropContainer } from '../services/uploadService';
 let timeoutCache: any = null;
 let shimTimeoutInst: any = null;
 // b1-9k 导出：tagManagerDomain 的裸 getTimeout（1307/1379/1654/1670）此前是死标识符
@@ -802,8 +805,6 @@ export function machineryResetPage(s: any): void {
 
 /* ── c15d：openAll 及支撑链 ──────────────────────────────────────────── */
 
-// ── c15d 域内自管（原 controller 闭包 var）──
-let openAllTimeout: any = null;
 
 /* setViewMode（bundle 38475-38479 逐字；_.debounce 500——防抖实例为模块级单例，与 bundle
    controller init 同语义） */
@@ -814,54 +815,6 @@ let openAllTimeout: any = null;
 /* openAll（bundle 36702-36733 逐字；openAllTimeout 域内自管；UrlStateService 经 scope
    解析（bundle 20208 $scope 赋值）——post-b1 Angular $location 缺席为诚实缺口，该服务
    移植随 c16 详情族定 $location shim 方案） */
-export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-
-  if (s.viewMode === 'all' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
-    if (callback) {
-      callback();
-    }
-    if (s.isDetailMode) {
-      machineryLeaveDetailMode(s);
-    }
-    return;
-  }
-
-  w.ScrollbarSaver.saveScrollPosition();
-
-  s.viewMode = 'all';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
-
-  $timeout.cancel(openAllTimeout);
-  openAllTimeout = $timeout(function () {
-    if (!ignoreHistory) {
-      s.UrlStateService.setState({ view: 'all', folder: null, smartfolder: null, tag: null, color: null });
-    }
-    s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.all") || 150;
-    syncToolbarFromScope();
-    syncBodyFromScope();
-    syncDetailFromScope();
-    syncInspectorFromScope();
-    s.imageSize.height = parseInt(s.imageSize.height);
-    // b1-9bz-C-4：原 $watch("imageSize.height") 在 flush 时触发 —— 改为写入点直调
-    machineryOnImageSizeHeightChanged(s);
-    syncToolbarFromScope();
-    syncBodyFromScope();
-    syncDetailFromScope();
-    syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    machineryUpdateListHeight(s, s.imageSize.height);
-    w.ScrollbarSaver.restoreScrollPosition();
-    setScrollTop("#sidebar-item-container", 0);
-    s.reload();
-    if (callback) {
-      callback();
-    }
-    w.analytics.screenView('All');
-  }, 50);
-}
 
 /* ── c16a：详情模式进出 ──────────────────────────────────────────────── */
 
@@ -2017,38 +1970,14 @@ export function machineryPageUpHandler(s: any): any {
 
 /* ── c18f-1：小 handler 批（评分/视频键/侧栏开关/缩放步进/保存/随机刷新）── */
 
-/* changeTo5Star（bundle 30316-30319 逐字；changeStar 为 bundle scope 函数经 scope 解析） */
-export function machineryChangeTo5Star(s: any, event: any): void {
-  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 5, true, true);
-}
 
 /* removeStar/changeTo1Star…changeTo4Star（bundle 30292-30314 逐字补齐——b1-9ay：c18f-1 批
    此前仅落了 changeTo5Star，mousetrap '0'-'4' 五键绑定期读到 undefined，按键即
    TypeError: func is not a function（sweep B5/B6 实锤）） */
-export function machineryRemoveStar(s: any): void {
-  machineryChangeStar(s, undefined, true);
-}
 
-export function machineryChangeTo1Star(s: any, event: any): void {
-  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 1, true, true);
-}
 
-export function machineryChangeTo2Star(s: any, event: any): void {
-  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 2, true, true);
-}
 
-export function machineryChangeTo3Star(s: any, event: any): void {
-  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 3, true, true);
-}
 
-export function machineryChangeTo4Star(s: any, event: any): void {
-  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 4, true, true);
-}
 
 /* closeWindowHandler（bundle 30802-30812 逐字；**bundle 原版怪癖：参数名为 $event 但体内
    引用全局 event——ESM 经 w.event 复刻同语义**（mousetrap 派发期内 window.event 即键盘事件）；
@@ -2162,69 +2091,6 @@ export function machinerySaveHandler(s: any): void {
    包装两分支——刪除星星（filterCounts rating 0/原星数增减 + delete image.star）与设置星星
    （原星数减/new 星数增/rating 0 减 + eagle.inspector.star 记录）+ i18n 通知 + analytics +
    updateItemsView（machinery 版）+ ayncsImagesChange/hiddenByCurrentFilter） */
-export function machineryChangeStar(s: any, star: any, showNotify: any, force: any): void {
-  const w = window as any;
-  if (s.selected.length === 0) return;
-  if (!star && s.selected.length === 1 && !s.selected[0].star) {
-    return;
-  }
-
-  machineryCheckOperationSafety(s, function () {
-
-    let changedItems: any[] = [];
-
-    // 刪除星星
-    if (star === undefined || (w.eagle.inspector.star === star && !force)) {
-      for (var i = 0; i < s.selected.length; i++) {
-        let image = s.selected[i];
-        if (image.star) {
-          w.eagle.filter.filterCounts['rating']['0']++;
-          w.eagle.filter.filterCounts['rating']['' + image.star]--;
-          delete image.star;
-          changedItems.push(image);
-        }
-      }
-      delete w.eagle.inspector.star;
-      if (showNotify) {
-        s.notify({
-          message: getFilter()('i18n')('appmenu.tag>removeRating'),
-          duration: 750
-        });
-      }
-      w.electronLog && w.electronLog.info(`[app] Remove rating, total: ${changedItems.length} files`);
-      w.analytics.event('Rating', 'Remove');
-    }
-    else {
-      for (var i = 0; i < s.selected.length; i++) {
-        let image = s.selected[i];
-        if (image.star !== star) {
-          w.eagle.filter.filterCounts['rating']['' + image.star]--;
-          image.star = star;
-          w.eagle.filter.filterCounts['rating']['' + star]++;
-          w.eagle.filter.filterCounts['rating']['0']--;
-          changedItems.push(image);
-        }
-      }
-      w.eagle.inspector.star = star;
-      var message = getFilter()('i18n')("notify.setStar.msg", [
-        { "property": "star", "value": star }
-      ]);
-      if (showNotify) {
-        s.notify({
-          message: message,
-          duration: 750
-        });
-      }
-      w.electronLog && w.electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
-      w.analytics.event('Rating', 'Set', star);
-    }
-    machineryUpdateItemsView(s, s.selected);
-    if (changedItems.length > 0) {
-      w.ayncsImagesChange(changedItems);
-      w.hiddenByCurrentFilter(changedItems);
-    }
-  });
-}
 
 // ── b1-9ab：searchFilter 管线移植（bundle 29211-29346 + 32182-32283 逐字）──
 // 此前 s.searchFilter 无定义：machineryFilterContent 的 `data.filter(s.searchFilter)`
@@ -2362,57 +2228,11 @@ function machinerySearchFilter(s: any, image: any): any {
 
 /* ── c18g-2：视图开启器族（random/unfiled/untagged/recent/community/allTags/trash）── */
 
-// ── c18g-2 域内自管（原 controller 闭包 var：openRandomTimeout 36758 邻域 /
-//    openUnfiledTimeout 36773 / openUntaggedTimeout 36804 / openRecentTimeout 36835 /
-//    openTrashTimeout 36968）──
-let openRandomTimeout: any = null;
 
 /* openRandom（bundle 36740-36770 逐字：同视图+有色规则外早退（callback/leaveDetailMode）+
    resetPage + image-drop-area 隐藏 + 50ms timeout（UrlStateService setState + random 专用
    thumbSize 键 + setLastFolder/updateListHeight **不调** + scrollTop 0 + reload + callback +
    screenView）——**本开启器无 ScrollbarSaver 存取，bundle 原样**） */
-export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-  if (s.viewMode === 'random' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
-    if (callback) {
-      callback();
-    }
-    if (s.isDetailMode) {
-      machineryLeaveDetailMode(s);
-    }
-    return;
-  }
-
-  s.viewMode = 'random';
-  machineryResetPage(s);
-  s.$root.currentFocus = "sidebar";
-
-  hide("#image-drop-area");
-  $timeout.cancel(openRandomTimeout);
-  openRandomTimeout = $timeout(function () {
-    if (!ignoreHistory) {
-      w.UrlStateService.setState({ view: 'random', folder: null, smartfolder: null, tag: null, color: null });
-    }
-    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.random") || 150;
-    syncToolbarFromScope();
-    syncBodyFromScope();
-    syncDetailFromScope();
-    syncInspectorFromScope();
-    s.imageSize.height = parseInt(s.imageSize.height);
-    syncToolbarFromScope();
-    syncBodyFromScope();
-    syncDetailFromScope();
-    syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    setScrollTop("#sidebar-item-container", 0);
-    s.reload();
-    if (callback) {
-      callback();
-    }
-    w.analytics.screenView('Random');
-  }, 50);
-}
 
 /* openUnfiled（bundle 36774-36802 逐字：早退 + ScrollbarSaver 存取 + unfiled thumbSize 键 +
    updateListHeight + restoreScrollPosition + screenView） */
@@ -2421,29 +2241,6 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
 
 /* openCommunity（bundle 36866-36888 逐字：community 面板 iframe 化——images 清空 + 详情退出 +
    lng2locale 三语映射 + OPEN_URL_IN_PANEL 广播 + leaveDetailMode（经 $bodyScope 逐字）） */
-export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
-  const w = window as any;
-  w.ScrollbarSaver.saveScrollPosition();
-  s.viewMode = 'community';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
-  s.images = [];
-  s.isDetailMode = false;
-  s.selected = [];
-  syncInspectorFromScope();
-  if (!ignoreHistory) {
-    w.UrlStateService.setState({ view: 'community', folder: null, smartfolder: null, tag: null, color: null });
-  }
-
-  let lng2locale: any = {
-    "zh_CN": "cn",
-    "zh_TW": "tw",
-    "ja_JP": "jp"
-  };
-  let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
-  openUrlInPanelChannel.emit(`${baseUrl}`);
-  machineryLeaveDetailMode(w.$bodyScope);
-}
 
 /* openAllTags（bundle 36889-36911 逐字：同视图有色早退 + ScrollbarSaver 存 + rebindRefresh +
    TagManager.renderTagsResult（scope 字段 TagManager，48351）50ms 延迟——**无 imageSize/
@@ -2591,30 +2388,6 @@ export function machineryEndHandler(s: any, event: any): void {
 
 /* removePermanently（bundle 37074-37094 逐字：trash 视图限定 + raw splice 移除 +
    ayncsImagesRemove（49709 顶层 function 经 window）+ gl:removeItems + 清选 + 重建绑定） */
-export function machineryRemovePermanently(s: any): void {
-  const w = window as any;
-  if (s.viewMode !== "trash") { return; }
-  var images = s.selected;
-
-  images.forEach(function (r: any) {
-    var idx = s.raw.indexOf(r);
-    if (idx != -1) {
-      s.raw.splice(idx, 1);
-      syncListFromScope();
-    }
-  });
-
-  w.ayncsImagesRemove(images);
-
-  var itemElements = machineryGetSelectedItemElements(s);
-  glRemoveitemsChannel.emit(itemElements);
-  s.selected = [];
-  syncInspectorFromScope();
-  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-    machineryRebindRefresh(s, true);
-    machineryUpdateSelection(s);
-  });
-}
 
 /* ── b1-6b：删除族第二批（removeSmartFolder/removeFolder 双层 + 多选删除）── */
 
@@ -2856,225 +2629,6 @@ export function machineryFocusAppUnlockPassword(s: any): void {
    （无行为差异）。
    诚实缺口（与既有 w.is 消费面 8744 同状态，不在 b1-9 装载链上）：dragUrl 分支的
    w.is（my_modules 无 is_js 包）与 s.uploadUrl（单数版，React 侧仅 uploadUrls）。 */
-export function machineryOnDropContainer(s: any, event: any): void {
-  const w = window as any;
-
-
-    if (w.dragging) {
-        w.dragging = false;
-        return;
-    }
-
-    event && event.preventDefault();
-    event && event.stopPropagation();
-
-    var fsPath = w.require('path');
-    var ipcRenderer = w.require('electron').ipcRenderer;
-    var folder = s.currentFolder;
-    var dragUrl: any = undefined;
-    if (event.dataTransfer) {
-      const holder = document.createElement("div");
-      holder.innerHTML = event.dataTransfer.getData("text/html");
-      dragUrl = holder.querySelector("img")?.getAttribute("src");
-    }
-    var files = event.dataTransfer && event.dataTransfer.files;
-    var dragFile = false;
-
-    if (!dragUrl) {
-        if (w.is.url(event.dataTransfer.getData("text/plain"))) {
-            dragUrl = event.dataTransfer.getData("text/plain");
-        }
-        // if (dragUrl && dragUrl.indexOf("data:image") === -1 ) {
-        //     dragUrl = undefined;
-        // }
-        if (files && files[0] && files[0].path) {
-            dragFile = true;
-        }
-    }
-    console.log(dragFile);
-
-    removeClass("#box-container", "drag-accept");
-
-    if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eaglepack") !== -1) {
-        var file = files[0];
-        var packPath = file.path;
-        ipcRenderer.send("open-eaglepack", {
-            path: packPath,
-            folderId: folder && folder.id
-        });
-        return;
-    }
-	else if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eagleplugin") !== -1) {
-        var file = files[0];
-        var pluginPath = file.path;
-        ipcRenderer.send("open-eagleplugin-file", {
-            path: pluginPath
-        });
-        return;
-    }
-    else if (!w.dragging && files.length == 1 && files[0].path.endsWith(".library")) {
-        var file2 = files[0];
-        var libraryPath = file.path;
-        ipcRenderer.send('open-library', libraryPath);
-        return;
-    }
-
-    if (!w.dragging && files && files[0] && files[0].path) {
-
-        // 如果文件夾名稱過長，路徑會變成很奇怪的符號
-        if (files[0] && !w.fs.existsSync(files[0].path)) {
-            w.swal({
-                html: `
-                    <div class="alert">
-                        <div class="alert-icon error"></div>
-                        <h4 class="alert-title">${w.i18n.__("Dialog.PathTooLong.Title")}</h4>
-                        <p class="alert-desc">${w.i18n.__("Dialog.PathTooLong.Description")}</p>
-                    </div>
-                `,
-                showCloseButton: false, showCancelButton: false, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
-                width: 360,
-                customClass: "alert-box",
-                cancelButtonColor: "#777777",
-                confirmButtonText: w.i18n.__("general.close"),
-            }).then(function () {});
-            w.electronLog && w.electronLog.error("[app] Unable to add local folder, beacuse the path is too long: " + files[0].path);
-            return;
-        }
-
-        console.time("拖曳档案事件");
-        machineryShowUploadQueue(s);
-
-        var fds = [];
-        var notSupportFiles = [];   // 不支持添加的文件
-
-
-        for (var i = 0; i < files.length; i++) {
-        // for (var i = files.length - 1; i >= 0; i--) {
-            var filePath = files[i].path;
-            var lowercase = filePath.toLowerCase();
-            var ext = w.getExt(files[i]);
-            if (ext) {
-                // var ext = w.getExt(files[i]);
-                if (w.EagleConfig.SUPPORT_FORMATS[ext]) {
-                    files[i].type = "image/" + ext;
-                    fds.push(files[i]);
-                }
-                else if (filePath.indexOf("svg") !== -1 || filePath.indexOf("icns") !== -1 || filePath.indexOf("ico") !== -1) {
-                    fds.push(files[i]);
-                }
-                else if (!w.IS_HIDDEN_FILE.check(lowercase)) {
-                    fds.push(files[i]);
-                }
-            }
-            // 使用者拖曳資料夾
-            else if (w.IS_DIRECTORY.check(filePath)) {
-                var dirFiles = w.walk(filePath);
-                if (dirFiles && dirFiles.length !== 0) {
-                    var now = Date.now();
-                    dirFiles.forEach(function (p: any, index: any) {
-                        var fpath = p;
-                        // var stat = fs.statSync(fpath);
-                        var f: any = {
-                            name: fsPath.basename(fpath),
-                            // size: stat.size,
-                            path: fpath,
-                            lastModified: now,
-                        };
-                        var ext = w.getExt(f);
-                        if (w.EagleConfig.SUPPORT_FORMATS[ext]) {
-                            f.type = "image/" + ext;
-                            fds.push(f);
-                        }
-                        else if (fpath.indexOf("svg") !== -1) {
-                            f.type = "image/svg+xml";
-                            fds.push(f);
-                        }
-                        else if (fpath.indexOf("icns") !== -1) {
-                            f.type = "icns";
-                            fds.push(f);
-                        }
-                        else if (fpath.indexOf("ico") !== -1) {
-                            f.type = "ico";
-                            fds.push(f);
-                        }
-                        else {
-                            fds.push(f);
-                            // notSupportFiles.push(f);
-                        }
-                    });
-                }
-                else {
-                    machineryHideUploadQueue(s);
-                }
-            }
-            else {
-                fds.push(files[i]);
-                // notSupportFiles.push(files[i]);
-            }
-        }
-
-        if (fds.length == 0 && files.length == 1 && notSupportFiles.length > 0) {
-            machineryHideUploadQueue(s);
-        }
-        else {
-            // let reason = (w.process.platform === 'darwin')? w.i18n.__("Dialog.NotSupport.Format.Descript.Mac") :  w.i18n.__("Dialog.NotSupport.Format.Descript.Windows");
-            // notSupportFiles.forEach(function (file) {
-            //     $bodyScope.errorList.push({
-            //         type: 'ADD_ERROR',
-            //         object: { 
-            //             name: file.name,
-            //             path: file.path 
-            //         },
-            //         reason: reason
-            //     });
-            // });
-            console.log("收到 Drop，準備添加");
-            // Windows 拖拽顺序无法对应当前 explorer，所以这里自己做了排序
-            if (w.process.platform === 'win32') { w.sortByAZ(fds); }
-            uploadFiles(fds, folder);
-            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to ${folder.name}(${folder.id})(Center), path: ${fds[0].path}`); }
-            else { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to All(Center), path: ${fds[0].path}`); }
-            scopeEvalAsync();
-        }
-        console.timeEnd("拖曳档案事件");
-    }
-    // else if (!w.dragging && dragFile) {
-    //     s.uploadDraggingBoard(folder, dragUrl);
-    //     machineryShowUploadQueue(s);
-    //     console.log("上传记忆体内的图片");
-    // }
-    else if (!w.dragging && dragUrl) {
-        if (w.is.url(dragUrl)) {
-        // if (w.is.url(dragUrl) && dragUrl.indexOf("data:image" !== -1)) {
-            machineryShowUploadQueue(s);
-        }
-        if (w.is.url(dragUrl)) {
-            s.uploadUrl(dragUrl, folder);
-            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop url: ${dragUrl} to ${folder.name}(${folder.id})（Center）`); }
-            else { w.electronLog && w.electronLog.info(`[app] Drop url ${dragUrl} to All(Center)`); }
-        }
-        // bundle 原 bug 逐字保留：实参实为 ("data:image" > -1)，即 indexOf(false)
-        else if ((dragUrl as any).indexOf(("data:image" as any) > -1) ) {
-            s.uploadUrl(dragUrl, folder);
-            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop base64 url to: ${folder.name}(${folder.id})(Center)`); }
-            else { w.electronLog && w.electronLog.info(`[app] Drop base64 url to All(Center)`); }
-        }
-        else {
-            var $filter = getFilter();
-            var html = (w.process.platform === 'darwin')? $filter('i18n')("Dialog.NotSupport.Format.Descript.Mac") :  $filter('i18n')("Dialog.NotSupport.Format.Descript.Windows");
-            machineryHideUploadQueue(s);
-            w.swal({
-                title: w.i18n.__("Dialog.NotSupport.Format.Title"),
-                html: html,
-                showCloseButton: false, showCancelButton: false, allowOutsideClick: true, focusConfirm: true, focusCancel: false, padding: 24,
-                width: 360,
-                cancelButtonColor: "#777777",
-                confirmButtonText: w.i18n.__("Dialog.NotSupport.Format.Buttom"),
-            }).then(function () {});
-        }
-    }
-    w.dragging = false;
-}
 
 /* showUploadQueue（bundle 45313-45324 逐字：addImageStartTime 立时 + 上传队列面板 +
    1s 剩余时间轮询）+ hideUploadQueue（45343-45351 逐字：空队列收面板 +

@@ -7,12 +7,13 @@ import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } fr
 import { getBodyScope } from '../../core/appCore';
 import { getSortable, makeSortable } from '../interactions/sortable';
 import { openFileListContextMenu } from '../../services/miscMenuService';
-import { machineryOnDropContainer } from '../../core/dataMachinery';
+
 import { importFolders } from '../../services/uploadService';
 import { showListSubfolderContent } from '../../services/folderMenuService';
 import { cleanSelected } from '../../services/batchOpsService';
 import { openFolder } from '../../services/folderCoreService';
 
+import { machineryOnDropContainer } from '../../services/uploadService';
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。
  * - DropAreas：六种空状态（132-215）；

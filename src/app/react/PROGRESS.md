@@ -7529,3 +7529,30 @@ libraryDomain/gridService/dataMachinery 各若干）。
 
 **门禁**：`bz-export-check` 无问题（2293 处）；`bz-free-check` OK；`probe LOAD_OK`；
 哨兵 `SENTINEL_OK`；定向 `main-ui-workflow`/`stage7a`/`ui-interactions` 全绿。
+
+---
+
+## D-1 / Track B / B-14 记录（2026-09-11）
+
+**目标**：四个 services 域簇归位（**14 个 / 449 行**）：
+- `services/imageOpsService.ts` ← `machineryChangeStar` + `ChangeTo1~5Star` + `RemoveStar`（7）
+- `services/folderCoreService.ts` ← `machineryOpenAll` `machineryOpenCommunity` `machineryOpenRandom`
+  + `openAllTimeout` `openRandomTimeout`（5）
+- `services/uploadService.ts` ← `machineryOnDropContainer`（1）
+- `services/batchOpsService.ts` ← `machineryRemovePermanently`（1）
+
+**踩坑（工具 bug，已修）**：`bz-fix-imports.py` 把「dataMachinery 的 import 路径」当成相对目标文件
+的相对路径——同目录目标（core/*）恰好正确，跨目录（services/*）生成 `./itemDomain` 这类**失效路径**
+（export-check 的「相对路径解析」检查抓出 3 处致命错）。已修：先解析绝对路径再相对目标文件；
+3 处手工改回 `../core/...`。
+
+**@ts-nocheck 盲区**：`imageOpsService`/`folderCoreService` 缺 `getFilter`/`machineryCheckOperationSafety`/
+`getTimeout`/`hide`/`machineryOnImageSizeHeightChanged`/`machinerySetLastFolder`/
+`machineryUpdateListHeight`/`openUrlInPanelChannel`/`setScrollTop`；`uploadService` 缺 `scopeEvalAsync`
+——`bz-free-check` 逐一抓出并补装。
+
+**核数**：`dataMachinery.ts` **4181 → 3732 行**（-449）；顶层声明 **83 → 69**。
+`tsc` **510 → 508**（-2）。
+
+**门禁**：`bz-export-check` 无问题（2313 处）；`bz-free-check` 四目标全 OK；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `empty-trash`/`main-ui-workflow`/`drag-start` 全绿。

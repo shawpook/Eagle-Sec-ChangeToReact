@@ -39,7 +39,8 @@ import { getFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryCalculateImageBinding, machineryForceFitImageSize, machineryGetItemByElement, machineryPreloadImage, machineryRebindRefresh } from './itemDomain';
 import { machineryAddToRecentFile, machineryRemoveFolder, machineryRemoveFolderContents, machineryRemoveFolderInner, machineryRemoveSmartFolder, machineryRemoveSmartFolderInner, machineryResetFolderCover, machineryToggleCurrentLevelSmartFoldersInner } from './libraryDomain';
 import { machineryRemoveTagGroup } from './tagManagerDomain';
-import { getTimeout, machineryAutoScroll, machineryCalls, machineryLeaveDetailMode, machineryRemovePermanently } from './dataMachinery';
+import { getTimeout, machineryAutoScroll, machineryCalls, machineryLeaveDetailMode } from './dataMachinery';
+import { machineryRemovePermanently } from '../services/batchOpsService';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {

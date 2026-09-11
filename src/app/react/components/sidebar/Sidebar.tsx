@@ -6,7 +6,7 @@ import { shortcuts, shortcutsWrapper, longTitle } from '../../app/filters';
 import { clickNode, clickSmartNode, dblclickSidebarFolder, dblclickSidebarSmartFolderGroup, hoverHideSidebar, openFolderExpandContextMenu, preventMiddleClick, sidebarFocus, toggleFolderExpand, toggleSmartFolderExpand } from '../../services/sidebarService';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { findLiveNode, getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryToggleAll, machineryOpenAll } from '../../core/dataMachinery';
+import { machineryToggleAll } from '../../core/dataMachinery';
 import { machineryOpenQuickSearch } from '../../core/keymapActions';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
 import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder, switchLibrary } from '../../services/folderCoreService';
@@ -16,6 +16,7 @@ import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextM
 import { scopeEvalAsync } from '../../global/scopeShim';
 import { dom } from '../../utils/domLite';
 import { machineryOpenUnfiled } from '../../core/libraryDomain';
+import { machineryOpenAll } from '../../services/folderCoreService';
 /**
  * 阶段2：侧栏接管。
  *

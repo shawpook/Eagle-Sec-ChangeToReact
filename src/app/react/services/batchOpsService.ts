@@ -785,3 +785,30 @@ export function exportSelectedToCsv(...args: any[]) {
         }
     }).apply(null, args);
 }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryRemovePermanently(s: any): void {
+  const w = window as any;
+  if (s.viewMode !== "trash") { return; }
+  var images = s.selected;
+
+  images.forEach(function (r: any) {
+    var idx = s.raw.indexOf(r);
+    if (idx != -1) {
+      s.raw.splice(idx, 1);
+      syncListFromScope();
+    }
+  });
+
+  w.ayncsImagesRemove(images);
+
+  var itemElements = machineryGetSelectedItemElements(s);
+  glRemoveitemsChannel.emit(itemElements);
+  s.selected = [];
+  syncInspectorFromScope();
+  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+    machineryRebindRefresh(s, true);
+    machineryUpdateSelection(s);
+  });
+}

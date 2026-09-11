@@ -12,6 +12,7 @@ import { q, findEl, removeClass, setHtmlEl, setWidthEl } from '../utils/domQuery
 
 import { machineryHideUploadQueue, machineryShowUploadQueue } from '../core/itemDomain';
 import { getFilter } from '../core/filterDomain';
+import { scopeEvalAsync } from '../global/scopeShim';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -268,3 +269,225 @@ export function uploadUrls(...args: any[]) {
             ipcRenderer.send('upload-urls', __lv_files);
         }).apply(null, args);
   }
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryOnDropContainer(s: any, event: any): void {
+  const w = window as any;
+
+
+    if (w.dragging) {
+        w.dragging = false;
+        return;
+    }
+
+    event && event.preventDefault();
+    event && event.stopPropagation();
+
+    var fsPath = w.require('path');
+    var ipcRenderer = w.require('electron').ipcRenderer;
+    var folder = s.currentFolder;
+    var dragUrl: any = undefined;
+    if (event.dataTransfer) {
+      const holder = document.createElement("div");
+      holder.innerHTML = event.dataTransfer.getData("text/html");
+      dragUrl = holder.querySelector("img")?.getAttribute("src");
+    }
+    var files = event.dataTransfer && event.dataTransfer.files;
+    var dragFile = false;
+
+    if (!dragUrl) {
+        if (w.is.url(event.dataTransfer.getData("text/plain"))) {
+            dragUrl = event.dataTransfer.getData("text/plain");
+        }
+        // if (dragUrl && dragUrl.indexOf("data:image") === -1 ) {
+        //     dragUrl = undefined;
+        // }
+        if (files && files[0] && files[0].path) {
+            dragFile = true;
+        }
+    }
+    console.log(dragFile);
+
+    removeClass("#box-container", "drag-accept");
+
+    if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eaglepack") !== -1) {
+        var file = files[0];
+        var packPath = file.path;
+        ipcRenderer.send("open-eaglepack", {
+            path: packPath,
+            folderId: folder && folder.id
+        });
+        return;
+    }
+	else if (!w.dragging && files.length == 1 && files[0].path.indexOf(".eagleplugin") !== -1) {
+        var file = files[0];
+        var pluginPath = file.path;
+        ipcRenderer.send("open-eagleplugin-file", {
+            path: pluginPath
+        });
+        return;
+    }
+    else if (!w.dragging && files.length == 1 && files[0].path.endsWith(".library")) {
+        var file2 = files[0];
+        var libraryPath = file.path;
+        ipcRenderer.send('open-library', libraryPath);
+        return;
+    }
+
+    if (!w.dragging && files && files[0] && files[0].path) {
+
+        // 如果文件夾名稱過長，路徑會變成很奇怪的符號
+        if (files[0] && !w.fs.existsSync(files[0].path)) {
+            w.swal({
+                html: `
+                    <div class="alert">
+                        <div class="alert-icon error"></div>
+                        <h4 class="alert-title">${w.i18n.__("Dialog.PathTooLong.Title")}</h4>
+                        <p class="alert-desc">${w.i18n.__("Dialog.PathTooLong.Description")}</p>
+                    </div>
+                `,
+                showCloseButton: false, showCancelButton: false, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                width: 360,
+                customClass: "alert-box",
+                cancelButtonColor: "#777777",
+                confirmButtonText: w.i18n.__("general.close"),
+            }).then(function () {});
+            w.electronLog && w.electronLog.error("[app] Unable to add local folder, beacuse the path is too long: " + files[0].path);
+            return;
+        }
+
+        console.time("拖曳档案事件");
+        machineryShowUploadQueue(s);
+
+        var fds = [];
+        var notSupportFiles = [];   // 不支持添加的文件
+
+
+        for (var i = 0; i < files.length; i++) {
+        // for (var i = files.length - 1; i >= 0; i--) {
+            var filePath = files[i].path;
+            var lowercase = filePath.toLowerCase();
+            var ext = w.getExt(files[i]);
+            if (ext) {
+                // var ext = w.getExt(files[i]);
+                if (w.EagleConfig.SUPPORT_FORMATS[ext]) {
+                    files[i].type = "image/" + ext;
+                    fds.push(files[i]);
+                }
+                else if (filePath.indexOf("svg") !== -1 || filePath.indexOf("icns") !== -1 || filePath.indexOf("ico") !== -1) {
+                    fds.push(files[i]);
+                }
+                else if (!w.IS_HIDDEN_FILE.check(lowercase)) {
+                    fds.push(files[i]);
+                }
+            }
+            // 使用者拖曳資料夾
+            else if (w.IS_DIRECTORY.check(filePath)) {
+                var dirFiles = w.walk(filePath);
+                if (dirFiles && dirFiles.length !== 0) {
+                    var now = Date.now();
+                    dirFiles.forEach(function (p: any, index: any) {
+                        var fpath = p;
+                        // var stat = fs.statSync(fpath);
+                        var f: any = {
+                            name: fsPath.basename(fpath),
+                            // size: stat.size,
+                            path: fpath,
+                            lastModified: now,
+                        };
+                        var ext = w.getExt(f);
+                        if (w.EagleConfig.SUPPORT_FORMATS[ext]) {
+                            f.type = "image/" + ext;
+                            fds.push(f);
+                        }
+                        else if (fpath.indexOf("svg") !== -1) {
+                            f.type = "image/svg+xml";
+                            fds.push(f);
+                        }
+                        else if (fpath.indexOf("icns") !== -1) {
+                            f.type = "icns";
+                            fds.push(f);
+                        }
+                        else if (fpath.indexOf("ico") !== -1) {
+                            f.type = "ico";
+                            fds.push(f);
+                        }
+                        else {
+                            fds.push(f);
+                            // notSupportFiles.push(f);
+                        }
+                    });
+                }
+                else {
+                    machineryHideUploadQueue(s);
+                }
+            }
+            else {
+                fds.push(files[i]);
+                // notSupportFiles.push(files[i]);
+            }
+        }
+
+        if (fds.length == 0 && files.length == 1 && notSupportFiles.length > 0) {
+            machineryHideUploadQueue(s);
+        }
+        else {
+            // let reason = (w.process.platform === 'darwin')? w.i18n.__("Dialog.NotSupport.Format.Descript.Mac") :  w.i18n.__("Dialog.NotSupport.Format.Descript.Windows");
+            // notSupportFiles.forEach(function (file) {
+            //     $bodyScope.errorList.push({
+            //         type: 'ADD_ERROR',
+            //         object: { 
+            //             name: file.name,
+            //             path: file.path 
+            //         },
+            //         reason: reason
+            //     });
+            // });
+            console.log("收到 Drop，準備添加");
+            // Windows 拖拽顺序无法对应当前 explorer，所以这里自己做了排序
+            if (w.process.platform === 'win32') { w.sortByAZ(fds); }
+            uploadFiles(fds, folder);
+            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to ${folder.name}(${folder.id})(Center), path: ${fds[0].path}`); }
+            else { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to All(Center), path: ${fds[0].path}`); }
+            scopeEvalAsync();
+        }
+        console.timeEnd("拖曳档案事件");
+    }
+    // else if (!w.dragging && dragFile) {
+    //     s.uploadDraggingBoard(folder, dragUrl);
+    //     machineryShowUploadQueue(s);
+    //     console.log("上传记忆体内的图片");
+    // }
+    else if (!w.dragging && dragUrl) {
+        if (w.is.url(dragUrl)) {
+        // if (w.is.url(dragUrl) && dragUrl.indexOf("data:image" !== -1)) {
+            machineryShowUploadQueue(s);
+        }
+        if (w.is.url(dragUrl)) {
+            s.uploadUrl(dragUrl, folder);
+            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop url: ${dragUrl} to ${folder.name}(${folder.id})（Center）`); }
+            else { w.electronLog && w.electronLog.info(`[app] Drop url ${dragUrl} to All(Center)`); }
+        }
+        // bundle 原 bug 逐字保留：实参实为 ("data:image" > -1)，即 indexOf(false)
+        else if ((dragUrl as any).indexOf(("data:image" as any) > -1) ) {
+            s.uploadUrl(dragUrl, folder);
+            if (folder) { w.electronLog && w.electronLog.info(`[app] Drop base64 url to: ${folder.name}(${folder.id})(Center)`); }
+            else { w.electronLog && w.electronLog.info(`[app] Drop base64 url to All(Center)`); }
+        }
+        else {
+            var $filter = getFilter();
+            var html = (w.process.platform === 'darwin')? $filter('i18n')("Dialog.NotSupport.Format.Descript.Mac") :  $filter('i18n')("Dialog.NotSupport.Format.Descript.Windows");
+            machineryHideUploadQueue(s);
+            w.swal({
+                title: w.i18n.__("Dialog.NotSupport.Format.Title"),
+                html: html,
+                showCloseButton: false, showCancelButton: false, allowOutsideClick: true, focusConfirm: true, focusCancel: false, padding: 24,
+                width: 360,
+                cancelButtonColor: "#777777",
+                confirmButtonText: w.i18n.__("Dialog.NotSupport.Format.Buttom"),
+            }).then(function () {});
+        }
+    }
+    w.dragging = false;
+}

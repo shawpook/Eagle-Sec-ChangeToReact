@@ -19,7 +19,7 @@
 // @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
-import { machineryChangeStar, machineryLeaveDetailMode, machinerySortRawData } from '../core/dataMachinery';
+import { machineryLeaveDetailMode, machinerySortRawData } from '../core/dataMachinery';
 import { machineryVideoScreenShot } from './mediaService';
 import { debounce } from '../utils/func';
 import { syncListFromScope } from '../store/listState';
@@ -39,6 +39,8 @@ import { machineryResetFolderCover } from '../core/libraryDomain';
 import { machineryCalculateImageBinding, machineryUpdateItemView, machineryUpdateItemsView } from '../core/itemDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryGetExtendTags } from '../core/tagManagerDomain';
+import { machineryCheckOperationSafety } from '../services/viewOpsService';
+import { getFilter } from '../core/filterDomain';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
@@ -1136,4 +1138,100 @@ export function changeImagesBackground(...args: any[]) {
 export function machineryCancelCrop(s: any): void {
   s.isCropMode = false;
   syncDetailFromScope();
+}
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryChangeStar(s: any, star: any, showNotify: any, force: any): void {
+  const w = window as any;
+  if (s.selected.length === 0) return;
+  if (!star && s.selected.length === 1 && !s.selected[0].star) {
+    return;
+  }
+
+  machineryCheckOperationSafety(s, function () {
+
+    let changedItems: any[] = [];
+
+    // 刪除星星
+    if (star === undefined || (w.eagle.inspector.star === star && !force)) {
+      for (var i = 0; i < s.selected.length; i++) {
+        let image = s.selected[i];
+        if (image.star) {
+          w.eagle.filter.filterCounts['rating']['0']++;
+          w.eagle.filter.filterCounts['rating']['' + image.star]--;
+          delete image.star;
+          changedItems.push(image);
+        }
+      }
+      delete w.eagle.inspector.star;
+      if (showNotify) {
+        s.notify({
+          message: getFilter()('i18n')('appmenu.tag>removeRating'),
+          duration: 750
+        });
+      }
+      w.electronLog && w.electronLog.info(`[app] Remove rating, total: ${changedItems.length} files`);
+      w.analytics.event('Rating', 'Remove');
+    }
+    else {
+      for (var i = 0; i < s.selected.length; i++) {
+        let image = s.selected[i];
+        if (image.star !== star) {
+          w.eagle.filter.filterCounts['rating']['' + image.star]--;
+          image.star = star;
+          w.eagle.filter.filterCounts['rating']['' + star]++;
+          w.eagle.filter.filterCounts['rating']['0']--;
+          changedItems.push(image);
+        }
+      }
+      w.eagle.inspector.star = star;
+      var message = getFilter()('i18n')("notify.setStar.msg", [
+        { "property": "star", "value": star }
+      ]);
+      if (showNotify) {
+        s.notify({
+          message: message,
+          duration: 750
+        });
+      }
+      w.electronLog && w.electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
+      w.analytics.event('Rating', 'Set', star);
+    }
+    machineryUpdateItemsView(s, s.selected);
+    if (changedItems.length > 0) {
+      w.ayncsImagesChange(changedItems);
+      w.hiddenByCurrentFilter(changedItems);
+    }
+  });
+}
+
+export function machineryChangeTo1Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  machineryChangeStar(s, 1, true, true);
+}
+
+export function machineryChangeTo2Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  machineryChangeStar(s, 2, true, true);
+}
+
+export function machineryChangeTo3Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  machineryChangeStar(s, 3, true, true);
+}
+
+export function machineryChangeTo4Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  machineryChangeStar(s, 4, true, true);
+}
+
+/* changeTo5Star（bundle 30316-30319 逐字；changeStar 为 bundle scope 函数经 scope 解析） */
+export function machineryChangeTo5Star(s: any, event: any): void {
+  if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
+  machineryChangeStar(s, 5, true, true);
+}
+
+export function machineryRemoveStar(s: any): void {
+  machineryChangeStar(s, undefined, true);
 }

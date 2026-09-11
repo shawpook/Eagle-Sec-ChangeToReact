@@ -15,6 +15,7 @@ import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
 import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../../services/fontTagService';
 import { openTag } from '../../services/batchOpsService';
+import { tagRectSelecting } from '../../core/tagManagerDomain';
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *

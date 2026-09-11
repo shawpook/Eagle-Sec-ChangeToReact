@@ -46,9 +46,10 @@ import { emojiRegex, getRemainingFilenameLength, getSanitize, pinyinCache } from
 import { openRenameChannel } from './../global/bus';
 import { callExternal } from './externalSupply';
 import { machineryGetFolderImages } from './libraryDomain';
-import { getTimeout, machineryCalcuteContainTags, machineryCalls, machineryGetExtendTags, machineryGetSelectedTags, machineryRefreshSubfolderList, machinerySortRawData, machineryUpdateSubFolderWidth } from './dataMachinery';
+import { getTimeout, machineryCalls, machineryGetSelectedTags, machinerySortRawData } from './dataMachinery';
 import { FileUrlHelper } from './fileUrlHelper';
 import { getFilter, machineryCalcuteFilterBadge, machineryCalcuteFilterResult, machineryUpdateFilterCounts } from './filterDomain';
+import { machineryCalcuteContainTags, machineryGetExtendTags, machineryRefreshSubfolderList, machineryUpdateSubFolderWidth } from './tagManagerDomain';
 declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;

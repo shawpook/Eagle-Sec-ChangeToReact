@@ -7476,3 +7476,33 @@ selectionView 簇，随该簇搬迁；否则跨模块写 ESM 导入绑定非法�
 **门禁**：`bz-export-check` 无问题（2202 处）；`probe LOAD_OK`；哨兵 `SENTINEL_OK`；
 定向 `stage7a`/`ui-interactions`/`main-ui-workflow` 全绿（main-ui-workflow 首跑 inspector
 超时属已知 flake，复跑通过）。
+
+---
+
+## D-1 / Track B / B-12 记录（2026-09-11）
+
+**目标**：`tagManagerDomain` 域簇整体归位 → `core/tagManagerDomain.ts`
+（**22 个 / 825 行**：17 可搬 + 4 个 tagRectSelecting 阻塞项 + `tagRectSelecting`）。
+
+**范围**：`machineryGetExtendTags` `machineryAutoResizeTagFilter` `machineryCalcuteContainTags(Inner)`
+`machineryOpenPrev/NextGroup` `machineryConvertToRegexGroup` `machineryMatchWithRegexGroup`
+`openUntaggedTimeout` `machineryOpenUntagged` `machineryOpenAllTags` `machineryUpdateSubFolderWidth`
+`machineryRemoveTagGroup` `machineryRefreshSubfolderList` `machineryEnableSubFolderNameEditable`
+`machineryRenameTagGroup` `machineryEditTag` `machineryOpenTagGroup` `machineryOpenTagAllGroup`
+`machineryOpenUnfiledGroup` `machineryOpenStarredGroup` `tagRectSelecting`(私有 let)。
+
+**重大踩坑（已修复，教训入档）**：`tagManagerDomain.ts` 带 `// @ts-nocheck`，**tsc 不报缺失符号**。
+搬迁后 `machineryRefreshSubfolderList` 内 `syncListFromScope` 无导入 → 运行时 `ReferenceError`
+→ 网格 `.box` 渲染为 0（stage7a/7b 双双超时，无 JS 异常冒泡）。经 CDP 事件抓取定位后，
+新增 `tests-tmp/bz-free-check.py`（静态比对「dataMachinery 曾提供的自由标识符」是否在目标文件
+已导入/声明），一次补装 **28 个**缺失符号（domQuery/store/normalize/filterDomain/itemDomain/
+libraryDomain/gridService/dataMachinery 各若干）。
+
+> **流程强化**：此后每批搬迁后必跑 `bz-free-check.py <dest> <manifest>`（尤其目标文件带
+> `@ts-nocheck` 时）；已回查 B-5 的 `imageOpsService.ts` 无同类问题。
+
+**核数**：`dataMachinery.ts` **6130 → 5305 行**（-825）；顶层声明 **132 → 110**。
+`tsc` **512 → 510**（-2）。
+
+**门禁**：`bz-export-check` 无问题（2239 处）；`bz-free-check` OK；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `stage7a`/`stage7b`/`menu-popup`/`ui-interactions` 全绿。

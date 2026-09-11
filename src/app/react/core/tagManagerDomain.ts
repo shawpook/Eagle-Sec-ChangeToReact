@@ -13,7 +13,7 @@
 // 1654/1670 的裸引用此前是死标识符（@ts-nocheck 掩盖；createTagGroup 首行即抛
 // ReferenceError → group.editable 永不置真、群组命名输入框不渲染）。
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
-import { getTimeout as machineryGetTimeout, machineryCalcuteContainTags, machineryOpenAll, machineryOpenTagAllGroup, machineryRemoveTagGroup, machineryRenameTagGroup, machineryUpdateSelection } from './dataMachinery';
+import { getTimeout as machineryGetTimeout, machineryOpenAll, machineryUpdateSelection } from './dataMachinery';
 import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
@@ -30,6 +30,18 @@ import { machinerySaveFolder } from './libraryDomain';
 import { machineryCheckOperationSafety2 } from '../services/viewOpsService';
 import { machineryCalculateImageBinding, machineryUpdateItemsView } from './itemDomain';
 import { getFilter as machineryGetFilter } from './filterDomain';
+import { machineryUpdateListHeight } from '../services/gridService';
+import { syncBodyFromScope } from '../store/bodyState';
+import { syncInspectorFromScope } from '../store/inspectorState';
+import { syncListFromScope } from '../store/listState';
+import { syncToolbarFromScope } from '../store/toolbarState';
+import { blurEl, focusEl, hasClass, offEl, onEl, qaVisible, selectEl, selectText, setHtmlEl, setScrollTop, textEl, triggerEl } from '../utils/domQuery';
+import { unescape } from '../utils/lang';
+import { emojiRegex, escapeRegex, getRemainingFilenameLength, getSanitize } from '../utils/normalize';
+import { getFilter } from './filterDomain';
+import { machineryRebindRefresh } from './itemDomain';
+import { machineryGetAllChildFolder, machinerySetLastFolder } from './libraryDomain';
+import { machineryLeaveDetailMode, machineryResetPage, machinerySelectFolder } from './dataMachinery';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -2298,3 +2310,851 @@ export function machineryBuildTagManager(s: any): any {
   return TagManager;
 }
 
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+/* autoResizeTagFilter（bundle 43119-43128 逐字；controller 闭包函数 → 域内移植） */
+export function machineryAutoResizeTagFilter(s: any): void {
+  const w = window as any;
+  var tagsLength = s.containTags.length;
+  var height = tagsLength * 24 + 54;
+  if (s.containerSize && s.containerSize.tagFilter) {
+    if (s.containerSize.tagFilter > height) {
+      cssSet(".tags-filter", { height: height });
+    }
+    else {
+      cssSet(".tags-filter", { height: s.containerSize.tagFilter });
+    }
+  }
+}
+
+/* $scope.calcuteContainTags（bundle 27155-27194 逐字） */
+export function machineryCalcuteContainTags(s: any, data: any[]): void {
+  const w = window as any;
+  var result = machineryCalcuteContainTagsInner(s, data);
+
+  // 建立群组列表
+  var tagsMappings = result.containTagsMappings;
+  s.TagManager.groups.forEach(function (group: any) {
+    var groupObject = [];
+    group.tags.forEach(function (tag: any) {
+      if (tagsMappings[tag]) {
+        groupObject.push(tagsMappings[tag]);
+        tagsMappings[tag].type = "group-item";
+        tagsMappings[tag].group = group;
+      }
+    });
+  });
+
+  s.containTags = [];
+  syncFilterFromScope();
+
+  var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+  result.containTags = result.containTags.sort(function (a: any, b: any) {
+    return collator.compare(a.name, b.name);
+  });
+
+  result.containTags.forEach(function (tag: any) {
+    s.containTags.push(tag);
+    syncFilterFromScope();
+  });
+
+  // 显示未标签功能
+  if (result.noTagsCount > 0) {
+    s.containTags.unshift({
+      isSelected: w.eagle.filter.filterRules.tag.no,
+      name: w.i18n.__("Filter.NoTags"),
+      imageCount: result.noTagsCount,
+      index: 100000000,
+      isNoTags: true
+    });
+    syncFilterFromScope();
+  }
+}
+
+/* calcuteContainTags 闭包版（bundle 27196-27292 逐字） */
+function machineryCalcuteContainTagsInner(s: any, data: any[]): any {
+  const w = window as any;
+  var tagsCount: any = {};
+  var tagsMappings: any = {};
+  var noTagsCount = 0;
+
+  w.eagle.filter.filterRules.tag.excludes.forEach(function (tag: any) {
+    tagsCount[tag] = 0;
+  });
+
+  for (var i = data.length - 1; i >= 0; i--) {
+    var image = data[i];
+    if (image.tags && image.tags.length > 0) {
+      image.tags.forEach(function (tag: any) {
+        if (tag && tag.length > 200) return;
+        if (!tagsCount[tag]) { tagsCount[tag] = 0; }
+        tagsCount[tag]++;
+      });
+    }
+    else {
+      noTagsCount++;
+    }
+  }
+
+  var tags = Object.keys(tagsCount).map(function (key: any) {
+    var idx = w.eagle.filter.filterRules.tag.includes.indexOf(key);
+    var eidx = w.eagle.filter.filterRules.tag.excludes.indexOf(key);
+    var index;
+    if (idx > -1 && (w.eagle.filter.tagFilterLogic === "AND")) {
+      index = tagsCount[key] - idx;
+    }
+    else if (eidx > -1 && (w.eagle.filter.tagFilterLogic === "AND")) {
+      index = tagsCount[key] - 100;
+    }
+    else {
+      index = tagsCount[key] - 100;
+    }
+    tagsMappings[key] = {
+      isSelected: idx > -1,
+      isExcluded: eidx > -1,
+      name: key,
+      pinyin: s.TagManager.tagMappings[key] && s.TagManager.tagMappings[key].pinyin,
+      imageCount: tagsCount[key],
+      index: index
+    };
+    return tagsMappings[key];
+  });
+
+  tags.sort(function (tag1: any, tag2: any) {
+    return tag2.imageCount - tag1.imageCount;
+  });
+
+  if (noTagsCount === 0 && !w.eagle.filter.isLock) {
+    w.eagle.filter.filterRules.tag.no = false;
+  }
+
+  return {
+    containTagsMappings: tagsMappings,
+    containTags: tags,
+    noTagsCount: noTagsCount
+  };
+}
+
+export function machineryConvertToRegexGroup(keywords: any, keywords_cn: any, keywords_tw: any): any {
+    const regexGroup: any = {
+        mustMatch: [] as any[],      // AND 邏輯
+        mustNotMatch: [] as any[],   // NOT 邏輯
+        anyMatch: [] as any[],       // OR 邏輯
+        exactMatch: [] as any[]      // 精確匹配（雙引號）
+    };
+
+    keywords.forEach((keyword: any, index: any) => {
+        if (Array.isArray(keyword)) {
+            // OR 群組
+            const positives: any[] = [];
+            const negatives: any[] = [];
+
+            keyword.forEach((k: any, orIndex: any) => {
+                if (k.startsWith('-')) {
+                    // 處理負向條件
+                    let word = k.substring(1).replace(/"/g, '');
+                    negatives.push(word);
+
+                    // 加入繁簡體版本
+                    if (keywords_cn && keywords_cn[index] && keywords_cn[index][orIndex]) {
+                        let word_cn = keywords_cn[index][orIndex].substring(1).replace(/"/g, '');
+                        if (word_cn !== word) negatives.push(word_cn);
+                    }
+                    if (keywords_tw && keywords_tw[index] && keywords_tw[index][orIndex]) {
+                        let word_tw = keywords_tw[index][orIndex].substring(1).replace(/"/g, '');
+                        if (word_tw !== word) negatives.push(word_tw);
+                    }
+                } else if (k.startsWith('"') && k.endsWith('"')) {
+                    // OR 群組中的精確匹配暫時當作一般匹配處理
+                    let word = k.replace(/"/g, '');
+                    positives.push(word);
+
+                    // 加入繁簡體版本
+                    if (keywords_cn && keywords_cn[index] && keywords_cn[index][orIndex]) {
+                        let word_cn = keywords_cn[index][orIndex].replace(/"/g, '');
+                        if (word_cn !== word) positives.push(word_cn);
+                    }
+                    if (keywords_tw && keywords_tw[index] && keywords_tw[index][orIndex]) {
+                        let word_tw = keywords_tw[index][orIndex].replace(/"/g, '');
+                        if (word_tw !== word) positives.push(word_tw);
+                    }
+                } else {
+                    // 處理正向條件
+                    let word = k;
+                    positives.push(word);
+
+                    // 加入繁簡體版本
+                    if (keywords_cn && keywords_cn[index] && keywords_cn[index][orIndex]) {
+                        let word_cn = keywords_cn[index][orIndex];
+                        if (word_cn !== word) positives.push(word_cn);
+                    }
+                    if (keywords_tw && keywords_tw[index] && keywords_tw[index][orIndex]) {
+                        let word_tw = keywords_tw[index][orIndex];
+                        if (word_tw !== word) positives.push(word_tw);
+                    }
+                }
+            });
+
+            // 建立正向 OR 的 RegEx
+            if (positives.length > 0) {
+                const pattern = positives.map(escapeRegex).join('|');
+                regexGroup.anyMatch.push(new RegExp(`(${pattern})`, 'i'));
+            }
+
+            // 負向條件單獨處理
+            negatives.forEach((neg: any) => {
+                regexGroup.mustNotMatch.push(new RegExp(escapeRegex(neg), 'i'));
+            });
+
+        } else if (keyword.startsWith('-')) {
+            // 單純 NOT
+            let word = keyword.substring(1).replace(/"/g, '');
+            let patterns = [word];
+
+            // 加入繁簡體版本
+            if (keywords_cn && keywords_cn[index]) {
+                let word_cn = keywords_cn[index].substring(1).replace(/"/g, '');
+                if (word_cn !== word) patterns.push(word_cn);
+            }
+            if (keywords_tw && keywords_tw[index]) {
+                let word_tw = keywords_tw[index].substring(1).replace(/"/g, '');
+                if (word_tw !== word) patterns.push(word_tw);
+            }
+
+            const pattern = patterns.map(escapeRegex).join('|');
+            regexGroup.mustNotMatch.push(new RegExp(`(${pattern})`, 'i'));
+
+        } else {
+            // 單純 AND
+            let word = keyword.replace(/"/g, '');
+            let patterns = [word];
+
+            // 加入繁簡體版本
+            if (keywords_cn && keywords_cn[index]) {
+                let word_cn = keywords_cn[index].replace(/"/g, '');
+                if (word_cn !== word) patterns.push(word_cn);
+            }
+            if (keywords_tw && keywords_tw[index]) {
+                let word_tw = keywords_tw[index].replace(/"/g, '');
+                if (word_tw !== word) patterns.push(word_tw);
+            }
+
+            const pattern = patterns.map(escapeRegex).join('|');
+            regexGroup.mustMatch.push(new RegExp(`(${pattern})`, 'i'));
+        }
+    });
+
+    return regexGroup;
+}
+
+export function machineryEditTag(s: any, tag: any): void {
+  const w = window as any;
+  const TagManager = s.TagManager;
+  w.swal({
+    title: w.i18n.__("Context.Tag.Edit.Title"),
+    html: w.i18n.__("Context.Tag.Edit.Descript"),
+    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+    onOpen: function () {
+      setTimeout(function () {
+        var input = w.swal.getInput();
+        if (input) {
+          (input as HTMLInputElement).select();
+          (input as HTMLInputElement).focus();
+        }
+      }, 100);
+    },
+    width: 400,
+    input: 'text',
+    inputPlaceholder: w.i18n.__('Context.Tag.Edit.Placeholder'),
+    inputValue: tag.name,
+    inputValidator: function (value: any) {
+      return new Promise(function (resolve: any, reject: any) {
+        // if (value && !/[$%^*<>'"\\|?*]+/.test(value)) {
+        resolve()
+        // } else {
+        // reject(i18n.__('Dialog.CreateLibrary.Error'))
+        // }
+      })
+    },
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__("Context.Tag.Edit.Title"),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (newName: any) {
+
+    if (newName === tag.name) return;
+
+    w.electronLog && w.electronLog.info(`[app] Rename tag: [${tag.name}] > [${newName}]`);
+    w.analytics.event('Tag', 'Rename', newName);
+
+    var originTag = structuredClone(tag);
+
+    // 更新所有出现该标签的图片
+    var originImages: any[] = [];
+    var originImagesTags: any[] = [];
+    var changed: any[] = [];
+
+    // $scope.raw.forEach(function(image) {
+    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+      var image = s.raw[rindex];
+      if (image && image.tags) {
+        var idx = image.tags.indexOf(tag.name);
+        if (idx !== -1 && newName) {
+          originImages.push(image);
+          originImagesTags.push(structuredClone(image.tags));
+          image.tags[idx] = newName;
+          image.tags = [...new Set(image.tags)];
+          changed.push(image);
+        }
+      }
+    }
+    w.ayncsImagesChange(changed);
+    w.hiddenByCurrentFilter(changed);
+
+    // 修改标签群组包含的标签
+    var originGroups: any[] = [];
+    var originGroupsTags: any[] = [];
+    if (TagManager.groups.length > 0) {
+      TagManager.groups.forEach(function (group: any) {
+        originGroups.push(group);
+        originGroupsTags.push(structuredClone(group.tags));
+        if (group.tags) {
+          var idx = group.tags.indexOf(tag.name);
+          if (idx !== -1 && newName) {
+            var nidx = group.tags.indexOf(newName);
+            if (nidx === -1) {
+              group.tags[idx] = newName;
+              group.tags = [...new Set(group.tags)];
+            }
+            else {
+              group.tags.splice(idx, 1);
+            }
+          }
+        }
+      });
+    }
+
+    var originHistoryTags: any = structuredClone(originHistoryTags);
+    try {
+      if (TagManager.historyTags && TagManager.historyTags.length > 0) {
+        var idx = TagManager.historyTags.indexOf(tag.name);
+        if (idx !== -1 && newName) {
+          var nidx = TagManager.historyTags.indexOf(newName);
+          if (nidx === -1) {
+            TagManager.historyTags[idx] = newName;
+            TagManager.historyTags = [...new Set(TagManager.historyTags)];
+          }
+          else {
+            TagManager.historyTags.splice(idx, 1);
+          }
+          TagManager.save();
+        }
+      }
+    } catch (err: any) {
+      w.electronLog && w.electronLog.error(err.stack || err);
+    }
+
+    // 更新所有文件夹智能标签
+    var originFolders: any[] = [];
+    var originFoldersTags: any[] = [];
+    w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any) {
+      if (folder && folder.tags) {
+        var idx = folder.tags.indexOf(tag.name);
+        if (idx !== -1 && newName) {
+          originFolders.push(folder);
+          originFoldersTags.push(structuredClone(folder.tags));
+          folder.tags[idx] = newName;
+          folder.tags = [...new Set(folder.tags)];
+        }
+      }
+    });
+
+    // 更新智能文件夹的标签属性
+    var originConditions: any[] = [];
+    var originSmartFolders: any[] = [];
+    w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+      if (!smartFolder.conditions) return;
+      originSmartFolders.push(smartFolder);
+      originConditions.push(structuredClone(smartFolder.conditions));
+
+      smartFolder.conditions.forEach(function (condition: any) {
+        if (!condition.rules) return;
+        condition.rules.forEach(function (rule: any) {
+          if (rule && rule.property === 'tags') {
+            var ruleTags = rule.value;
+            if (ruleTags && ruleTags.length > 0) {
+              var idx = ruleTags.indexOf(tag.name);
+              if (idx !== -1 && newName) {
+                rule.value[idx] = newName;
+                rule.value = [...new Set(rule.value)];
+              }
+            }
+          }
+        });
+      });
+    });
+
+    s.tagsSuggestion.push({
+      value: newName,
+      text: newName
+    });
+
+    machinerySaveFolder(s);
+
+    tag.name = newName;
+    tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
+    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+      machineryRebindRefresh(s);
+      machineryUpdateSelection(s);
+    });
+
+    var message = getFilter()('i18n')("notify.tag.nameChange", [
+      { "property": "origin", "value": originTag.name },
+      { "property": "new", "value": tag.name }
+    ]);
+    // 復原
+    s.$root.notify({
+      message: message,
+      duration: 2000,
+    });
+
+  }, function () { });
+}
+
+export function machineryEnableSubFolderNameEditable(s: any, event: any, folder: any): void {
+  const w = window as any;
+  const el = ((event && event.target) || null) as HTMLElement;
+  if (!folder) return;
+  if (hasClass(el, "editable")) return;
+  if (!el) return;
+
+  machinerySelectFolder(s, event, folder);
+
+  var originalName = textEl(el).trim();
+  el.setAttribute("contenteditable", "true");
+  el.classList.add("editable");
+  el.focus();
+  setTimeout(function () {
+    selectText(el);
+    document.execCommand('selectAll', false, null as any);
+  }, 50);
+
+  onEl(el, "mousedown", function (event: any) {
+    event.stopPropagation();
+  });
+
+  onEl(el, "keydown", function (event: any) {
+    var keyCode = event.keyCode;
+    switch (keyCode) {
+      case 13:
+        event.preventDefault();
+        event.stopPropagation();
+        triggerEl(el, "blur");
+        break;
+      case 27:
+        event.preventDefault();
+        event.stopPropagation();
+        setHtmlEl(el, `${originalName}`);
+        exitEditable();
+        break;
+      case 65:
+        if (event.metaKey || event.ctrlKey) {
+          event.preventDefault();
+          event.stopPropagation();
+          document.execCommand('selectAll', false, null as any);
+        }
+        break;
+    }
+  });
+
+  onEl(el, "paste", function (e: any) {
+    e.preventDefault();
+    var text = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+    document.execCommand("insertHTML", false, text);
+  });
+
+  onEl(el, "click", function (event: any) {
+    event.stopPropagation();
+  });
+
+  onEl(el, "blur", w.debounce(function () {
+    exitEditable();
+    var $scope = getBodyScope();
+    var newName = textEl(el);
+    if (!newName || !newName.trim()) {
+      setHtmlEl(el, `${originalName}`);
+      return;
+    }
+    if (newName !== originalName && folder) {
+
+      var name = newName;
+      name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
+      name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
+      name = unescape(name);
+
+      if (emojiRegex.test(name)) {
+        name = name.replace(emojiRegex, '');
+      }
+
+      setHtmlEl(el, `${name}`);
+      folder.name = name;
+      $scope.saveFolder();
+      scopeEvalAsync();
+      try { w.electronLog && w.electronLog.info(`[app] Change sub-folder name: ${originalName}(${folder.id}) > ${newName}`); } catch (err) { }
+    }
+  }, 500, true));
+
+  function exitEditable() {
+    el.style.whiteSpace = "normal";
+    el.setAttribute("contenteditable", "false");
+    el.classList.remove("editable");
+    offEl(el, "click");
+    offEl(el, "keyup");
+    offEl(el, "keydown");
+    offEl(el, "mousedown");
+    setTimeout(function () {
+      el.style.whiteSpace = "";
+    }, 33);
+  }
+}
+
+/* 取得继承炼的标签（bundle 32028 逐字；tags.unique() 为 bundle Array 原型扩展，保留原调用） */
+export function machineryGetExtendTags(s: any, folder: any, tags: any[]): any[] {
+  const uniqueTags: any = tags as any;
+  try {
+    if (folder.tags) {
+      folder.tags.forEach(function (tag: any) {
+        tags.push(tag);
+      });
+    }
+    const parent = s.folderMappings[folder.parent];
+    if (parent && parent.tags && folder.parent) {
+      return machineryGetExtendTags(s, parent, tags);
+    }
+    else {
+      return uniqueTags.unique().reverse();
+    }
+  } catch (err) {
+    return uniqueTags.unique().reverse();
+  }
+}
+
+export function machineryMatchWithRegexGroup(text: any, regexGroup: any): any {
+    // 1. 所有 mustMatch 都必須匹配
+    for (let regex of regexGroup.mustMatch) {
+        if (!regex.test(text)) return false;
+    }
+
+    // 2. 所有 mustNotMatch 都不能匹配
+    for (let regex of regexGroup.mustNotMatch) {
+        if (regex.test(text)) return false;
+    }
+
+    // 3. 每個 anyMatch（OR群組）至少要有一個匹配
+    for (let regex of regexGroup.anyMatch) {
+        if (!regex.test(text)) return false;
+    }
+
+    // 如果沒有任何條件，或所有條件都通過
+    return regexGroup.mustMatch.length > 0 ||
+           regexGroup.mustNotMatch.length > 0 ||
+           regexGroup.anyMatch.length > 0;
+}
+
+export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if (s.viewMode === 'alltags' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) return;
+
+  w.ScrollbarSaver.saveScrollPosition();
+
+  s.viewMode = 'alltags';
+  s.$root.currentFocus = "sidebar";
+  machineryResetPage(s);
+  s.images = [];
+  s.isDetailMode = false;
+  s.selected = [];
+  syncInspectorFromScope();
+  if (!ignoreHistory) {
+    w.UrlStateService.setState({ view: 'alltags', folder: null, smartfolder: null, tag: null, color: null });
+  }
+
+  machineryRebindRefresh(s);
+  w.analytics.screenView('AllTags');
+  $timeout(() => {
+    s.TagManager.renderTagsResult();
+  }, 50);
+}
+
+export function machineryOpenNextGroup(s: any): void {
+  if (s.tagViewMode === "ALL") {
+    machineryOpenUnfiledGroup(s);
+  }
+  else if (s.tagViewMode === "UNFILED") {
+    machineryOpenStarredGroup(s);
+  }
+  else if (s.tagViewMode === "STARRED") {
+    if (s.TagManager.groups[0]) {
+      machineryOpenTagGroup(s, s.TagManager.groups[0]);
+    }
+  }
+  else if (s.TagManager.groups.length > 0) {
+    var $visibleGroups = qaVisible(".tag-manager-sidebar .group-item");
+    var $currentGroup = q(".tag-manager-sidebar .group-item.active");
+    var currentIndex = $currentGroup ? $visibleGroups.indexOf($currentGroup) : -1;
+    var next = s.TagManager.groups[currentIndex + 1];
+    if (next) {
+      machineryOpenTagGroup(s, next);
+    }
+  }
+}
+
+export function machineryOpenPrevGroup(s: any): void {
+  if (s.tagViewMode === "ALL") {
+    return;
+  }
+  else if (s.tagViewMode === "UNFILED") {
+    machineryOpenTagAllGroup(s);
+  }
+  else if (s.tagViewMode === "STARRED") {
+    machineryOpenUnfiledGroup(s);
+  }
+  else {
+    var $visibleGroups = qaVisible(".tag-manager-sidebar .group-item");
+    var $currentGroup = q(".tag-manager-sidebar .group-item.active");
+    var currentIndex = $currentGroup ? $visibleGroups.indexOf($currentGroup) : -1;
+    if (currentIndex === 0) {
+      machineryOpenStarredGroup(s);
+    }
+    else if (currentIndex > 0) {
+      var prev = s.TagManager.groups[currentIndex - 1];
+      if (prev) {
+        machineryOpenTagGroup(s, prev);
+      }
+    }
+  }
+}
+
+export function machineryOpenStarredGroup(s: any): void {
+  if (s.tagViewMode === "STARRED") return;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "STARRED";
+  syncTagManagerFromScope();
+  s.tagViewModeName = "STARRED";
+  syncTagManagerFromScope();
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = undefined;
+  syncTagManagerFromScope();
+  s.selectedTags = {};
+  syncTagManagerFromScope();
+  s.TagManager.renderTagsResult();
+}
+
+export function machineryOpenTagAllGroup(s: any): void {
+  if (s.tagViewMode === "ALL") return;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "ALL";
+  syncTagManagerFromScope();
+  s.tagViewModeName = "ALL";
+  syncTagManagerFromScope();
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = undefined;
+  syncTagManagerFromScope();
+  s.selectedTags = {};
+  syncTagManagerFromScope();
+  s.TagManager.renderTagsResult();
+}
+
+export function machineryOpenTagGroup(s: any, group: any): void {
+  const w = window as any;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "GROUP";
+  syncTagManagerFromScope();
+  s.tagViewModeName = `GROUP-${group.id}`;
+  syncTagManagerFromScope();
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = group;
+  syncTagManagerFromScope();
+  s.TagManager.renderTagsResult();
+  blurEl("input:focus");
+  if (s.currentTagGroup === group) return;
+  s.selectedTags = {};
+  syncTagManagerFromScope();
+}
+
+export function machineryOpenUnfiledGroup(s: any): void {
+  if (s.tagViewMode === "UNFILED") return;
+  tagRectSelecting = false;
+  s.keyword = "";
+  s.tagViewMode = "UNFILED";
+  syncTagManagerFromScope();
+  s.tagViewModeName = "UNFILED";
+  syncTagManagerFromScope();
+  s.$root.currentFocus = 'tags';
+  s.currentTagGroup = undefined;
+  syncTagManagerFromScope();
+  s.selectedTags = {};
+  syncTagManagerFromScope();
+  s.TagManager.renderTagsResult();
+}
+
+/* openUntagged（bundle 36805-36833 逐字：同 openUnfiled 模板，untagged 键） */
+export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+
+  if (s.viewMode === 'untagged' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (s.isDetailMode) {
+      machineryLeaveDetailMode(s);
+    }
+    return;
+  }
+
+  w.ScrollbarSaver.saveScrollPosition();
+  s.viewMode = 'untagged';
+  s.$root.currentFocus = "sidebar";
+  machineryResetPage(s);
+
+  $timeout.cancel(openUntaggedTimeout);
+  openUntaggedTimeout = $timeout(function () {
+    if (!ignoreHistory) {
+      w.UrlStateService.setState({ view: 'untagged', folder: null, smartfolder: null, tag: null, color: null });
+    }
+    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.untagged") || 150;
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    s.imageSize.height = parseInt(s.imageSize.height);
+    syncToolbarFromScope();
+    syncBodyFromScope();
+    syncDetailFromScope();
+    syncInspectorFromScope();
+    machinerySetLastFolder(s, undefined);
+    machineryUpdateListHeight(s, s.imageSize.height);
+    w.ScrollbarSaver.restoreScrollPosition();
+    setScrollTop("#sidebar-item-container", 0);
+    s.reload();
+    w.analytics.screenView('Untagged');
+  }, 50);
+}
+
+export function machineryRefreshSubfolderList(s: any): void {
+  // 过滤子文件夹
+  if (s.currentFolder) {
+    if (s.showSubfolderContent) {
+      s.subFolders = machineryGetAllChildFolder(s, s.currentFolder);
+      syncListFromScope();
+      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
+    }
+    else {
+      s.subFolders = s.currentFolder.children;
+      syncListFromScope();
+      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = false;
+    }
+    if (s.keyword) {
+      s.subFolders = s.subFolders.filter(function (folder: any) {
+        if (folder.name.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+          return true;
+        }
+        if (folder && folder.tags) {
+          var folderTags = folder.tags.join("");
+          if (folderTags.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+            return true;
+          }
+        }
+      });
+      syncListFromScope();
+      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
+    }
+  }
+  else {
+    s.subFolders = [];
+    syncListFromScope();
+  }
+}
+
+export function machineryRemoveTagGroup(s: any, group: any): void {
+  const w = window as any;
+
+  const remove = function (group: any) {
+    var idx = s.TagManager.removeGroup(group.id);
+    if (s.TagManager.groups[idx]) {
+      s.currentTagGroup = s.TagManager.groups[idx];
+      syncTagManagerFromScope();
+    }
+    else if (s.TagManager.groups[idx - 1]) {
+      s.currentTagGroup = s.TagManager.groups[idx - 1];
+      syncTagManagerFromScope();
+    }
+    else {
+      machineryOpenTagAllGroup(s);
+    }
+  };
+
+  if (group.tags.length > 0) {
+    w.swal({
+      html: `
+                        <div class="alert">
+                            <div class="alert-icon warning"></div>
+                            <h4 class="alert-title">${w.i18n.__("dialog.removeTagGroup.title")}</h4>
+                            <p class="alert-desc">${w.i18n.__("dialog.removeTagGroup.desc")}</p>
+                        </div>
+                    `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: "alert-box",
+      cancelButtonColor: "#777777",
+      confirmButtonText: w.i18n.__('dialog.removeTagGroup.button'),
+      cancelButtonText: w.i18n.__("general.cancel"),
+    }).then(function () {
+      remove(group);
+      scopeEvalAsync();
+    });
+  }
+  else {
+    remove(group);
+    scopeEvalAsync();
+  }
+}
+
+/* renameTagGroup（bundle 48582-48592 逐字：双 100/200ms focus 双写原样） */
+export function machineryRenameTagGroup(s: any, group: any): void {
+  const w = window as any;
+  s.currentTagGroup = group;
+  syncTagManagerFromScope();
+  s.newGroupName = group.name;
+  syncTagManagerFromScope();
+  group.editable = true;
+  setTimeout(function () {
+    focusEl("#group-input-" + group.id);
+    selectEl("#group-input-" + group.id);
+  }, 100);
+  setTimeout(function () {
+    focusEl("#group-input-" + group.id);
+    selectEl("#group-input-" + group.id);
+  }, 200);
+}
+
+export function machineryUpdateSubFolderWidth(s: any): void {
+  const w = window as any;
+  const boxContainer = q("#box-container");
+  if (!boxContainer) return;
+  var containerWidth = boxContainer.clientWidth;
+  var column = parseInt(containerWidth / s.imageSize.height as any);
+  if (!column) column = 1;
+  var result = parseInt((containerWidth - 38 - (column * 10)) / column as any);
+  result = parseInt(result / 5 as any) * 5;
+  if (result < 90) result = 90;
+  if (result >= s.MAX_LIST_WIDTH) {
+    result = s.MAX_LIST_WIDTH;
+  }
+  s.imageSize.subfolderWidth = result;
+}
+
+export let openUntaggedTimeout: any = null;
+
+// ── b1-7a 域内自管（原 controller 闭包 var：tagRectSelecting，标签框选态）──
+export let tagRectSelecting: any = false;

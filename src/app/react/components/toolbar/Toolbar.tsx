@@ -14,7 +14,7 @@ import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
 import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
-import { machineryOnImageSizeHeightChanged, machineryOpenAll, machineryOpenUnfiled, machineryChangeSidebarIndex, machineryOpenPluginPanel } from '../../core/dataMachinery';
+import { machineryOnImageSizeHeightChanged, machineryOpenAll, machineryOpenUnfiled, machineryChangeSidebarIndex, machineryOpenPluginPanel, machineryToggleAll, machineryPrevHistory, machineryNextHistory, machineryRefreshRandom, machineryOpenActionsPanel } from '../../core/dataMachinery';
 
 /**
  * 阶段3a：工具栏接管。
@@ -279,7 +279,7 @@ export function Toolbar() {
             <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
           </div>
         ) : null}
-        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call('toggleAll')} onContextMenu={call('openSidebarMenu')}>
+        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call(scoped(machineryToggleAll))} onContextMenu={call('openSidebarMenu')}>
           <img src={iconSrc(snapshot.theme, 'ic_toggle-sidebar.svg')} />
         </div>
         <div
@@ -288,7 +288,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={shortcuts('<key>⌘</key><key>←</key>')}
           ng-click="prevHistory($event)"
-          onClick={call('prevHistory')}
+          onClick={call(scoped(machineryPrevHistory))}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-prev.svg')} />
         </div>
@@ -298,7 +298,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={shortcuts('<key>⌘</key><key>→</key>')}
           ng-click="nextHistory($event)"
-          onClick={call('nextHistory')}
+          onClick={call(scoped(machineryNextHistory))}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-next.svg')} />
         </div>
@@ -446,7 +446,7 @@ export function Toolbar() {
             tippy-placement="bottom"
             tippy-content={`${t('toolbar.randomRefhreshBtn')}<key>R</key>`}
             ng-click="refreshRandom()"
-            onClick={call('refreshRandom')}
+            onClick={call(scoped(machineryRefreshRandom))}
           >
             <img src={iconSrc(snapshot.theme, 'ic_refresh.svg')} />
           </div>
@@ -458,7 +458,7 @@ export function Toolbar() {
           tippy-content={`${t('appmenu.actions')} <key>G</key>`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="openActionsPanel($event)"
-          onClick={call('openActionsPanel')}
+          onClick={call(scoped(machineryOpenActionsPanel))}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-action.svg')} />
         </div>

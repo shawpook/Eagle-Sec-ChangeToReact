@@ -2349,6 +2349,38 @@
 > `stage6` / `stage8c` 全绿 + 哨兵 `SENTINEL_OK`（全指标 flat）。
 >
 
+> **【D-1 批次 8（Track A / A-3）✅：裸引用直调化 + 死字符串分发修复；挂载 61 → 54（2026-09-11）】**
+>
+> **根因（重要）**：批次 1 删挂载时的「7 维核验」**没有字符串动态调用维度**，且裸引用扫描
+> **把 dataMachinery 自身排除**，导致两类真实回归：
+> ① `machineryBuildMousetrap` 的 `hardcodedShortcuts` 把挂载当值引用（`'tab': s.toggleAll`、
+>    `'0': s.removeStar` 等），挂载被删 → 47 个快捷键 handler 变 undefined（`mousetrap-zero-dead-keys`、
+>    `rating-key-sets-star`、`Enter` 进详情全挂）；
+> ② react 侧 `call('refreshRandom')` / `call('openInspectorTagSelectPanel')` / `call('prevHistory')` 等
+>    字符串分发指向已删挂载；`_w.$bodyScope.getItemByElement(...)`（hoverPreview）、
+>    `$bodyScope.gotoBottom()`（gridDirectives）因接收者前缀不同被 rewriter 漏掉。
+>
+> **本批改动**：
+> - `hardcodedShortcuts` **58 条**改为直接引用 machinery（用批次 1 前的精确 wrapper 表达式，
+>   行为零变化）；仅 `shift+space: s.pageUpHandler` 保留（右侧是**调用**的单例，属 A-4）。
+> - 修复死字符串分发：Toolbar（toggleAll/prevHistory/nextHistory/refreshRandom×2/openActionsPanel）、
+>   Inspector（openInspectorTagSelectPanel×3/openInspectorFolderSelectPanel）。
+> - 修复漏网直调：hoverPreview `machineryGetItemByElement`、gridDirectives `machineryGotoBottom`。
+> - 退役 **7** 项（keymap 转直调后无其余调用面）：`toggleZoom` `undo` `mHandler` `toggleAll`
+>   `zoomIn` `zoomOut` `openQuickSearch`；`ControllerModals.toggleAll` 去掉 `typeof s.toggleAll` 守卫。
+>   （`s.undo` 删除附带消除 `machineryUndo` 因 `shim.$root === shim` 而 `s.$root.undo` 自递归的隐患。）
+> - 挂载 **61 → 54**。
+>
+> **回归测试转绿**（pre-change 对照确认原为既有失败）：`residue-closed-loop`、
+> `ui-interactions-closed-loop` 现 **全绿**。
+>
+> **遗留**：`viewers/{font,text-editor}` 的 `parentCall('removeStar'|'changeTo1..5Star')` 指向
+> `window.parent.$bodyScope`（主窗口），对应挂载已删 → 查看器内星标键失效；属跨窗口面，另批处置。
+>
+> **门禁**：export-check 无问题 + probe `LOAD_OK allData=1` + `stage-smoke`/`1m1`/`stage6`/`stage8c`/
+> `residue`/`ui-interactions` 全绿 + 哨兵 `SENTINEL_OK` + tsc 788→788（无新增）。
+>
+
 > | **b1-9bz-D-2** | jQuery 清零 + vendor 清零（含 `shims.js` 退役） | 188 处（175 随 D-1 走）+ vendor 3 文件 | D-1 |
 > | **b1-9bz-D-3** | 套件 55 → 65+（每竖切补 1 闭环项） | +10 项 | 可并行 |
 > | **b1-9bz-D-4** | 收官文档 + REWRITE-PLAN 归档 | — | 全部 |

@@ -3720,65 +3720,65 @@ export function machineryBuildMousetrap(s: any): any {
 
   // 添加硬編碼的快捷鍵（未在 preferences 中定義或沒有對應設定的）
   const hardcodedShortcuts: any = {
-    '*': s.toggleAllFolders,
-    '/': s.toggleAllFolders,
-    '-': s.zoomOut,
-    '+': s.zoomIn,
-    '=': s.zoomIn,
-    '0': s.removeStar,
-    '1': s.changeTo1Star,
-    '2': s.changeTo2Star,
-    '3': s.changeTo3Star,
-    '4': s.changeTo4Star,
-    '5': s.changeTo5Star,
-    'r': s.refreshRandom,
-    't': s.openInspectorTagSelectPanel,
-    'g': s.openActionsPanel,
-    'f': s.openInspectorFolderSelectPanel,
-    'j': s.openQuickSearch,
-    'n': s.nHandler,
-    'm': s.mHandler,
-    'mod+z': s.undo,
-    'mod+a': s.selectAll,
-    'mod+c': s.copyImages,
-    'mod+w': s.closeWindowHandler,
-    'space': s.quicklook,
+    '*': (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand),
+    '/': (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand),
+    '-': (event: any) => machineryZoomOut(s, event),
+    '+': (event: any) => machineryZoomIn(s, event),
+    '=': (event: any) => machineryZoomIn(s, event),
+    '0': () => machineryRemoveStar(s),
+    '1': (event: any) => machineryChangeTo1Star(s, event),
+    '2': (event: any) => machineryChangeTo2Star(s, event),
+    '3': (event: any) => machineryChangeTo3Star(s, event),
+    '4': (event: any) => machineryChangeTo4Star(s, event),
+    '5': (event: any) => machineryChangeTo5Star(s, event),
+    'r': () => machineryRefreshRandom(s),
+    't': () => machineryOpenInspectorTagSelectPanel(s),
+    'g': (event: any) => machineryOpenActionsPanel(s, event),
+    'f': (event: any) => machineryOpenInspectorFolderSelectPanel(s, event),
+    'j': (event: any) => machineryOpenQuickSearch(s, event),
+    'n': ($event: any) => machineryNHandler(s, $event),
+    'm': ($event: any) => machineryMHandler(s, $event),
+    'mod+z': () => machineryUndo(s),
+    'mod+a': (event: any) => machinerySelectAll(s, event),
+    'mod+c': (event: any) => machineryCopyImages(s, event),
+    'mod+w': ($event: any) => machineryCloseWindowHandler(s, $event),
+    'space': (event: any) => machineryQuicklook(s, event),
     'shift+space': s.pageUpHandler,
-    'c': s.keyCHandler,
-    'p': s.keyPHandler,
-    'a': s.keyLeftHandler,
-    'd': s.keyRightHandler,
-    'w': s.keyUpHandler,
-    's': s.keyDownHandler,
-    'left': s.keyLeftHandler,
-    'right': s.keyRightHandler,
-    'up': s.keyUpHandler,
-    'shift+up': s.multipleSelectUp,
-    'down': s.keyDownHandler,
-    'shift+down': s.multipleSelectDown,
-    'shift+right': s.multipleSelectNext,
-    'shift+left': s.multipleSelectPrev,
-    'mod+up': s.modUpHandler,
-    'mod+down': s.modDownHandler,
-    'mod+left': s.modLeftHandler,
-    'mod+right': s.modRightHandler,
-    'mod+shift+up': s.modShiftUpHandler,
-    'mod+shift+down': s.modShiftDownHandler,
-    'mod+shift+left': s.modShiftLeftHandler,
-    'mod+shift+right': s.modShiftRightHandler,
-    'backspace': s.back,
-    'alt+right': s.nextHistory,
-    'alt+left': s.prevHistory,
-    'mod+s': s.saveHandler,
-    '`': s.toggleZoom,
-    'mod++': s.zoomIn,
-    'mod+-': s.zoomOut,
-    'tab': s.toggleAll,
-    'alt+up': s.openParentFolder,
-    'alt+shift+n': s.createTxtFileFromTemplate,
-    'alt+shift+c': s.setFolderCover,
-    'enter': s.toggleDetailMode,
-    'del': s.removeSelected,
+    'c': (event: any) => machineryKeyCHandler(s, event),
+    'p': (event: any) => machineryKeyPHandler(s, event),
+    'a': (event: any) => machineryKeyLeftHandler(s, event),
+    'd': (event: any) => machineryKeyRightHandler(s, event),
+    'w': (event: any) => machineryKeyUpHandler(s, event),
+    's': (event: any) => machineryKeyDownHandler(s, event),
+    'left': (event: any) => machineryKeyLeftHandler(s, event),
+    'right': (event: any) => machineryKeyRightHandler(s, event),
+    'up': (event: any) => machineryKeyUpHandler(s, event),
+    'shift+up': (event: any) => machineryMultipleSelectUp(s, event),
+    'down': (event: any) => machineryKeyDownHandler(s, event),
+    'shift+down': (event: any) => machineryMultipleSelectDown(s, event),
+    'shift+right': (event: any) => machineryMultipleSelectNext(s, event),
+    'shift+left': (event: any) => machineryMultipleSelectPrev(s, event),
+    'mod+up': (event: any) => machineryModUpHandler(s, event),
+    'mod+down': (event: any) => machineryModDownHandler(s, event),
+    'mod+left': (event: any) => machineryModLeftHandler(s, event),
+    'mod+right': (event: any) => machineryModRightHandler(s, event),
+    'mod+shift+up': (event: any) => machineryModShiftUpHandler(s, event),
+    'mod+shift+down': (event: any) => machineryModShiftDownHandler(s, event),
+    'mod+shift+left': (event: any) => machineryModShiftLeftHandler(s, event),
+    'mod+shift+right': (event: any) => machineryModShiftRightHandler(s, event),
+    'backspace': () => machineryBack(s),
+    'alt+right': () => machineryNextHistory(s),
+    'alt+left': () => machineryPrevHistory(s),
+    'mod+s': () => machinerySaveHandler(s),
+    '`': (event: any) => machineryToggleZoom(s, event),
+    'mod++': (event: any) => machineryZoomIn(s, event),
+    'mod+-': (event: any) => machineryZoomOut(s, event),
+    'tab': ($event: any) => machineryToggleAll(s, $event),
+    'alt+up': () => machineryOpenParentFolder(s),
+    'alt+shift+n': (event: any) => machineryCreateTxtFileFromTemplate(s, event),
+    'alt+shift+c': () => machinerySetFolderCover(s),
+    'enter': ($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline),
+    'del': (event: any) => machineryRemoveSelected(s, event),
   };
 
   // 合併硬編碼快捷鍵（如果沒有被 preferences 覆蓋）
@@ -11322,11 +11322,9 @@ export function applyDataMachineryScope(): void {
   s.lastZoom = () => machineryLastZoom(s);
   // c18b：zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght
   s.zoomActual = (event: any) => machineryZoomActual(s, event);
-  s.toggleZoom = (event: any) => machineryToggleZoom(s, event);
   s.zoomFitEdge = (event: any, hasTransition: any) => machineryZoomFitEdge(s, event, hasTransition);
   s.updateContainerHieght = (hasAnimation: any, delay: any) => machineryUpdateContainerHieght(s, hasAnimation, delay);
   // c18c：undo/nextHistory/prevHistory/back
-  s.undo = () => machineryUndo(s);
   // c18d：selectAll/toggleDetailMode
   // c18e-1：selectNext/selectPrev
   s.selectNext = (event: any) => machinerySelectNext(s, event);
@@ -11341,13 +11339,8 @@ export function applyDataMachineryScope(): void {
   s.pageUpHandler = machineryPageUpHandler(s);
   // c18f-1：小 handler 批
   // b1-9ay：评级键族补齐（mousetrap '0'-'5' 六键的 handler 此前仅 changeTo5Star 在册）
-  s.mHandler = ($event: any) => machineryMHandler(s, $event);
-  s.toggleAll = ($event: any) => machineryToggleAll(s, $event);
-  s.zoomIn = (event: any) => machineryZoomIn(s, event);
-  s.zoomOut = (event: any) => machineryZoomOut(s, event);
   // c18f-2：openParentFolder/createTxtFileFromTemplate/setFolderCover
   // c18f-3：inspector 面板/快捷搜索打开器
-  s.openQuickSearch = (event: any) => machineryOpenQuickSearch(s, event);
   // c18g-1：getItemByElement/changeStar/gif 帧步进/addVideoComment/newFileFromTemplate
   s.nextGifFrame = (amount: any) => machineryNextGifFrame(s, amount);
   s.prevGifFrame = (amount: any) => machineryPrevGifFrame(s, amount);

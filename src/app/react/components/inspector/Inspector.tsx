@@ -41,7 +41,7 @@ import { req } from '../detail/detailHooks';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
-import { machineryAutoScroll, machineryChangeStar } from '../../core/dataMachinery';
+import { machineryAutoScroll, machineryChangeStar, machineryOpenInspectorTagSelectPanel, machineryOpenInspectorFolderSelectPanel } from '../../core/dataMachinery';
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
 import { getRawUrl } from '../../core/itemDomain';
@@ -303,7 +303,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
         </div>
       </div>
       <div className="info-section-container">
-        <div className="label-container" onClick={(e) => { e.stopPropagation(); call('openInspectorTagSelectPanel')(e); }}>
+        <div className="label-container" onClick={(e) => { e.stopPropagation(); call(scoped(machineryOpenInspectorTagSelectPanel))(e); }}>
           {newTags.map((tag, i) => (
             <div
               key={i}
@@ -336,7 +336,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
               tippy-content={`${t('inspector.tagInputPlaceholder')}<key>T</key>`}
               onClick={(e) => {
                 e.stopPropagation();
-                call('openInspectorTagSelectPanel')(e);
+                call(scoped(machineryOpenInspectorTagSelectPanel))(e);
               }}
             >
               <img src={iconSrc(theme, 'ic-inspector-add-label.svg')} />
@@ -351,7 +351,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
               tippy-content={`${t('inspector.tagInputPlaceholder')}<key>T</key>`}
               onClick={(e) => {
                 e.stopPropagation();
-                call('openInspectorTagSelectPanel')(e);
+                call(scoped(machineryOpenInspectorTagSelectPanel))(e);
               }}
             >
               <img src={iconSrc(theme, 'ic-inspector-add-label.svg')} />
@@ -371,7 +371,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
   const multi = snapshot.selectedCount > 1;
   const folderIds = single ? snapshot.selectedFirst?.folders || [] : snapshot.folders;
 
-  const openPanel = (e: any) => call('openInspectorFolderSelectPanel', e)(e);
+  const openPanel = (e: any) => call(scoped(machineryOpenInspectorFolderSelectPanel), e)(e);
   const folderRow = (folderId: string, i: number) => (
     <div
       key={i}

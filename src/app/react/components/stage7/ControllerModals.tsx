@@ -482,9 +482,7 @@ export function WebsitePanel() {
   };
 
   const toggleAll = (event: any) => {
-    scopeApply(getBodyScope(), (s: any) => {
-      if (typeof s.toggleAll === 'function') machineryToggleAll(s, event);
-    });
+    scopeApply(getBodyScope(), (s: any) => machineryToggleAll(s, event));
   };
 
   const openSidebarMenu = (event: any) => {

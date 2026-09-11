@@ -191,7 +191,7 @@ var HoverPreview = {
         clearTimeout(HoverPreview.showTimeout);
         var $hoverImage = HoverPreview.$container.find("img");
         var $imageWraper = HoverPreview.$container.find(".image-wraper");
-        var image = _w.$bodyScope.getItemByElement(HoverPreview.lastElem.parentElement);
+        var image = machineryGetItemByElement(_w.$bodyScope, HoverPreview.lastElem.parentElement);
         if (image.noPreview) return;
         var thumbnailPath = FileUrlHelper.getLastestThumbnailUrl(image);
         var offset = $(HoverPreview.lastElem).offset();

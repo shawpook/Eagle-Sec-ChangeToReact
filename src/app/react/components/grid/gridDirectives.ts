@@ -1,4 +1,5 @@
 import { getBodyScope } from '../../core/appCore';
+import { machineryGotoBottom } from '../../core/dataMachinery';
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { autoscrollChannel } from '../../global/bus';
 /**
@@ -558,7 +559,7 @@ export function initBoxContainerScrollbar() {
                 
                 goToPageTimeout = setTimeout(function () {
                     if (targetPage >= pageLength) {
-                        $bodyScope.gotoBottom();
+                        machineryGotoBottom($bodyScope);
                     }
                     else {
                         // 測量執行時間

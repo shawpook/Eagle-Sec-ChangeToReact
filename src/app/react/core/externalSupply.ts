@@ -4,13 +4,16 @@ import { applyDataMachineryScope } from './machineryInfra';
 // 背景：b1-9bz-B-8 退役 fns 表后，子窗口（viewers/font、viewers/text-editor）经
 // `parent.$bodyScope.X()` 驱动父窗、主 UI 驱动脚本（electron/main.cjs）经 `scope.X()`
 // 驱动，这两处跨边界调用无法直 import，必须由 scope 面供给。B8 当时在
-// `applyDataMachineryScope` 里直接静态 import 这些 service —— 但 dataMachinery 是全树
+// `applyDataMachineryScope` 里直接静态 import 这些 service —— 但当时的 dataMachinery 是全树
 // 依赖汇点，新增 import 边会改变 ESM 求值顺序（service 模块体在 dataMachinery 完成前
 // 执行，其顶层读到的 dataMachinery 导出为 undefined），导致启动加载链断裂：
 // allData 不填充、listDone 不置位。
 //
-// 解法：dataMachinery 只依赖本模块（零依赖、无副作用），真正的函数由入口在启动后
-// 注册进来。挂载点改为运行期查表，语义不变，依赖图保持 B8 前的形状。
+// 解法：供给方只依赖本模块（零依赖、无副作用），真正的函数由入口在启动后注册进来。
+// 挂载点改为运行期查表，语义不变。
+// 注（b1-9bz-D-1 B-final，2026-09-11）：`dataMachinery.ts` 已删除，职责拆入各域模块；
+// 新的汇点/挂载入口为 `core/machineryInfra.ts`（applyDataMachineryScope 等），
+// 本模块的延迟注册契约不变。
 
 type AnyFn = (...args: any[]) => any;
 

@@ -7634,3 +7634,26 @@ MOUNT-INFRA 9 个 → **新建 `core/machineryInfra.ts`**（scope 面供给层�
 **门禁**：`bz-export-check` 无问题（2454 处）；`bz-free-check`（keymap OK；machineryInfra 的
 「缺失」经核为注释/字符串/属性键误报，且该文件非 @ts-nocheck，以 tsc 为准）；`probe LOAD_OK`；
 哨兵 `SENTINEL_OK`；定向 `ui-interactions`/`main-ui-workflow`/`stage7b` 全绿。
+
+---
+
+## D-1 / Track B / B-final 记录（2026-09-11）—— **dataMachinery.ts 删除**
+
+**动作**：`git rm src/app/react/core/dataMachinery.ts`（927 行，仅余头注释与孤儿 import，
+顶层声明已 0）；更新 `externalSupply.ts` 陈旧注释（汇点由 dataMachinery → `core/machineryInfra.ts`）。
+
+**核数**：文件 **删除**；DoD ① 的 `dataMachinery` 项达成（文件零存在）。全树
+`from '...dataMachinery'` 引用 **0**。
+
+**门禁**：`tsc` **508 → 508**（删除后零新增）；`bz-export-check` 无问题（2235 处 / 145 文件）；
+`probe LOAD_OK`；哨兵 `SENTINEL_OK`；定向 `stage7a`/`stage7b`/`ui-interactions` 全绿；
+`main-ui-workflow` 复跑通过（首跑 inspector 超时为既有 flake）。
+
+**新增工具**：`tests-tmp/dod0-grep-zero.py`（DoD ① 六项删除核对）。
+当前六项：`dataMachinery` ✅ 文件已删（余注释提及）；`scopeBridge`/`shimFnsBridge`/`controllerFns`
+文件已删（余注释提及）；`scopeShim`/`coreState` **仍存**（下一步 DoD ① 实体删除）。
+
+**Track B 总账**：`dataMachinery.ts` 11509 行 / 306 声明 → **0**（拆入 12 个域模块：
+libraryDomain/filterDomain/itemDomain/selectionViewDomain/tagManagerDomain/miscDomain/
+keymap/keymapActions/navHistory/machineryInfra + gridService/viewOpsService/mediaService/
+imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normalize、utils/color）。

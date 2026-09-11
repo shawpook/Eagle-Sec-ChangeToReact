@@ -54,7 +54,7 @@ import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addCla
 import { machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight } from '../services/gridService';
 import { machinerySetViewMode, machineryZoom, machineryCheckOperationSafety2 } from '../services/viewOpsService';
 import { callExternal } from './externalSupply';
-import { machineryAutoScroll, machineryResetPage, getTimeout } from './dataMachinery';
+import { getTimeout } from './dataMachinery';
 import { setScrollTop, clickEl, hide } from '../utils/domQuery';
 import { glRemoveitemsChannel } from '../global/bus';
 import { debounce } from '../utils/func';
@@ -64,6 +64,7 @@ import { machineryEditTag, machineryEnableSubFolderNameEditable, machineryOpenAl
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom } from '../services/folderCoreService';
 import { machineryLeaveDetailMode } from './miscDomain';
+import { machineryAutoScroll, machineryResetPage } from '../services/gridService';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;

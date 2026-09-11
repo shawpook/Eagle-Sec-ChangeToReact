@@ -7587,3 +7587,27 @@ libraryDomain/gridService/dataMachinery 各若干）。
 
 > **流程强化**：`bz-state-check.py` 必须在 manifest 最终定稿后运行（本批 3 个阻塞项是后加的，
 > 早跑漏检 undoTimeout）。
+
+---
+
+## D-1 / Track B / B-16 记录（2026-09-11）
+
+**目标**：navHistory 新落点 + filter/item/grid 余量归位（**17 个 / 721 行**）。
+
+| 目标 | 声明 |
+|---|---|
+| **`core/navHistory.ts`（新建）** | `machineryUndo` `machineryNext/PrevHistory` `machineryBack` `machineryOpenPrev/NextQuickAccess` |
+| `core/filterDomain.ts` | `machineryFilterDataPart3`（317，图像/语义搜索）`machinerySearchFilter` `getToggleFilterByTypeFn` `semanticSearchController` `imageSearchController` |
+| `core/itemDomain.ts` | `machinerySortRawData` `machineryReload` |
+| `services/gridService.ts` | `machineryResetPage` `machineryToggleAll` `machineryAutoScroll` `getOffsetScrollbarFn` |
+
+**清理**：B-15 遗留的孤儿 `export let undoTimeout` 从 dataMachinery 删除（唯一写方已在 miscDomain）。
+`scopeSingleton` 由 dataMachinery 补 `export` 供 filter/grid 回引。
+
+**核数**：`dataMachinery.ts` **3306 → 2585 行**（-721）；顶层声明 **47 → 30**。
+`tsc` **508 → 508**。
+
+**门禁**：`bz-export-check` 无问题（2358 处）；四目标 `bz-free-check` 全 OK；`probe LOAD_OK`；
+哨兵 `SENTINEL_OK`；定向 `ui-interactions`/`main-ui-workflow`/`stage7a` 全绿。
+
+**余量（30）**：MOUNT-INFRA 9（1025 行）+ `core/keymap` 20（627 行）+ `undoTimeout` 已清。

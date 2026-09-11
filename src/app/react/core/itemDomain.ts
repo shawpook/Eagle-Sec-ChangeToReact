@@ -23,7 +23,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
-import { getOffsetScrollbarFn } from './dataMachinery';
+
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
@@ -46,11 +46,17 @@ import { emojiRegex, getRemainingFilenameLength, getSanitize, pinyinCache } from
 import { openRenameChannel } from './../global/bus';
 import { callExternal } from './externalSupply';
 import { machineryGetFolderImages } from './libraryDomain';
-import { getTimeout, machineryCalls, machinerySortRawData } from './dataMachinery';
+import { getTimeout, machineryCalls } from './dataMachinery';
 import { FileUrlHelper } from './fileUrlHelper';
 import { getFilter, machineryCalcuteFilterBadge, machineryCalcuteFilterResult, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryCalcuteContainTags, machineryGetExtendTags, machineryRefreshSubfolderList, machineryUpdateSubFolderWidth } from './tagManagerDomain';
 import { machineryGetSelectedTags, machineryUpdateSelection } from './selectionViewDomain';
+import { getOffsetScrollbarFn } from '../services/gridService';
+import { machineryAdjustLayoutWidth } from '../services/gridService';
+import { scrollTopValue, show, widthOf } from '../utils/domQuery';
+import { machineryCalculateFilterCounts } from './filterDomain';
+import { getLanguageBCP, machineryLeaveDetailMode, updateCurrentOrderAndIncrease } from './miscDomain';
+import { machineryAutoResizeTagFilter } from './tagManagerDomain';
 declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;
@@ -2935,3 +2941,153 @@ let preloadImageTimeout: any = null;
 export let prependImagesTimeout: any = null;
 
 export let rebindRefreshLazyTimeout: any = null;
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function machineryReload(s: any): any {
+  const w = window as any;
+  return debounce(function reload(keepDetailMode: any) {
+    s.hexColor = undefined;
+    s.unlockPassword = "";
+
+    if (!keepDetailMode) {
+      if (s.isDetailMode) {
+        machineryLeaveDetailMode(s);
+      }
+
+      if (s.selected.length > 0) {
+        s.selected = [];
+        syncInspectorFromScope();
+      }
+    }
+
+    s.loadMoreDisable = false;
+    s.lastImageHeight = s.imageSize.height;
+    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+    machineryRebindRefresh(s);
+    machineryRelayout(s);
+    machineryUpdateSelection(s);
+    machineryCalculateFilterCounts(s);
+    machineryUpdateSubFolderWidth(s);
+    trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
+
+    machineryAutoResizeTagFilter(s);
+    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+      machineryAdjustLayoutWidth(s, 0);
+    }
+    s.listDone = true;
+
+    if (scrollTopValue("#box-container") !== 0) {
+      setScrollTop("#box-container", 0);
+    }
+    removeClass(".box.processed", "processed");
+    setTimeout(function () {
+      show("#image-drop-area");
+      trigger("#box-container", "scroll");
+    }, 100);
+    setTimeout(function () {
+      trigger("#box-container", "scroll");
+    }, 500);
+  }, 100, true);
+}
+
+/* sortRawData（bundle 21621-21708 逐字） */
+export function machinerySortRawData(s: any, orderBy: any): void {
+  console.time("sortRawData");
+  const languageBCP = getLanguageBCP(s);
+  switch (orderBy) {
+    case 'NAME':
+      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
+      var collator = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
+      s.raw = s.raw.sort(function (a: any, b: any) {
+        return collator.compare(a.name, b.name);
+      });
+      syncListFromScope();
+      break;
+    case 'EXT':
+      var collator2 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
+      s.raw = s.raw.sort(function (a: any, b: any) {
+        return collator2.compare(a.ext, b.ext);
+      });
+      syncListFromScope();
+      break;
+    case 'RESOLUTION':
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var ra = a.width * a.height;
+        var rb = b.width * b.height;
+        if(ra > rb) return 1;
+        if(ra < rb) return -1;
+        return 0;
+      });
+      syncListFromScope();
+      break;
+    case 'FILESIZE':
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var sizeA = parseInt(a.size);
+        var sizeB = parseInt(b.size);
+        if(sizeA > sizeB) return 1;
+        if(sizeA < sizeB) return -1;
+        return 0;
+      });
+      syncListFromScope();
+      break;
+    case 'RATING':
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var starA = parseInt(a.star) || 0;
+        var starB = parseInt(b.star) || 0;
+        if(starA > starB) return 1;
+        if(starA < starB) return -1;
+        return 0;
+      });
+      syncListFromScope();
+      break;
+    case 'DURATION':
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var durationA = parseInt(a.duration) || 0;
+        var durationB = parseInt(b.duration) || 0;
+        if(durationA > durationB) return 1;
+        if(durationA < durationB) return -1;
+        return 0;
+      });
+      syncListFromScope();
+      break;
+    case 'BTIME':
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var btimeA = a.btime || a.modificationTime;
+        var btimeB = b.btime || b.modificationTime;
+        if(btimeA > btimeB) return -1;
+        if(btimeA < btimeB) return 1;
+      });
+      syncListFromScope();
+      break;
+    case 'MTIME':
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var mtimeA = a.mtime || a.modificationTime;
+        var mtimeB = b.mtime || b.modificationTime;
+        if(mtimeA > mtimeB) return -1;
+        if(mtimeA < mtimeB) return 1;
+      });
+      syncListFromScope();
+      break;
+    case 'TAGS':
+      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
+      var collator3 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
+      s.raw = s.raw.sort(function (a: any, b: any) {
+        const aTag1 = a?.tags?.[0] ?? '';
+        const bTag1 = b?.tags?.[0] ?? '';
+        return collator3.compare(aTag1, bTag1);
+      });
+      syncListFromScope();
+      break;
+    default:
+      s.raw = s.raw.sort(function(a: any, b: any) {
+        var mtimeA = a.modificationTime || a.mtime;
+        var mtimeB = b.modificationTime || b.mtime;
+        if(mtimeA > mtimeB) return -1;
+        if(mtimeA < mtimeB) return 1;
+      });
+      syncListFromScope();
+  }
+  updateCurrentOrderAndIncrease();
+  console.timeEnd("sortRawData");
+}

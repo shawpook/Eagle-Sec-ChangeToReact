@@ -10,7 +10,7 @@ import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryReload } from '../../core/dataMachinery';
+
 import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
 import { scopeEvalAsync } from '../../global/scopeShim';

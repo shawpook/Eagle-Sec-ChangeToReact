@@ -16,13 +16,23 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { getBodyScope } from '../core/appCore';
 import { detailZoom } from '../core/smoothZoomEngine';
-import { getOffsetScrollbarFn } from '../core/dataMachinery';
+
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
 import { q, qa, cssSet, widthOf, heightOf, addClass, removeClass, setAttr, setScrollTop, scrollTopValue, outerHeightOf, offsetTopOf } from '../utils/domQuery';
 import { debounce } from '../utils/func';
 
 import { machinerySmartZoom, machineryUpdateZoomRatio, machineryZoomIn } from './viewOpsService';
 import { machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem } from '../core/itemDomain';
+import { autoscrollChannel } from '../global/bus';
+import { machineryZoomFitEdge } from './viewOpsService';
+import { syncListFromScope } from '../store/listState';
+import { syncFolderLock } from '../store/lockState';
+import { syncPanelFromScope } from '../store/panelState';
+import { syncSidebarFromScope } from '../store/sidebarState';
+import { hide } from '../utils/domQuery';
+import { resetFilter } from '../core/filterDomain';
+import { machineryFindDupclipate } from '../core/itemDomain';
+import { getTimeout, scopeSingleton } from '../core/dataMachinery';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */
@@ -610,3 +620,100 @@ export function machineryUpdateListSlider(s: any, size: any): void {
 }
 
 let updateListHeightTimeout: any = null;
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function getOffsetScrollbarFn(s: any): any { return scopeSingleton(s, 'offsetScrollbar', () => machineryOffsetScrollbar(s)); }
+
+export function machineryAutoScroll(s: any, index: any): void {
+  const $timeout = getTimeout();
+  $timeout(function () {
+    autoscrollChannel.emit(index);
+  }, 50);
+}
+
+export function machineryResetPage(s: any): void {
+  const w = window as any;
+
+  // Note: 切换文件夹时，强制触发 inspector 输入框先进行 change
+  // b1-9ba：RESET_PAGE 广播全树无接收者（原接收者随 bundle 摘除退役）——广播体移除，
+  // 本函数其余状态复位语义不变。
+  (document.activeElement as any)?.blur?.();
+  s.listDone = false;
+  setTimeout(() => { w.ig.clear(); }, 40);
+  s.isOpenWebpagePanel = false;
+  s.currentTag = undefined;
+  syncToolbarFromScope();
+  s.startCursor = 0;
+  s.currentFolder = undefined;
+  syncPanelFromScope();
+  syncFolderLock();
+  syncListFromScope();
+  w.eagle.inspector.reset();
+  s.currentFolderChildren = undefined;
+  s.currentSmartFolder = undefined;
+  syncPanelFromScope();
+  syncListFromScope();
+  s.$root.selectedFoldersMappings = {};
+  s.$root.selectedFolders = [];
+  syncListFromScope();
+  s.selectedFolderMappings = {};
+  syncListFromScope();
+  s.$root.selectedSmartFoldersMappings = {};
+  s.$root.selectedSmartFolders = [];
+  s.currentId = undefined;
+  syncSidebarFromScope();
+  s.layout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
+
+  if (!w.eagle.filter.isLock) {
+    resetFilter();
+    s.keyword = undefined;
+  }
+  hide("#image-drop-area");
+
+  if (s.duplicateTarget) {
+    s.duplicateTarget = undefined;
+    machineryFindDupclipate(s, undefined);
+  }
+}
+
+export function machineryToggleAll(s: any, $event: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  if ($event) {
+    $event.preventDefault();
+    $event.stopPropagation();
+  }
+  if (s.isHideSidebar) {
+    w.eagle.inspector.isHideInspector = s.isHideSidebar = false;
+    syncPanelFromScope();
+  } else {
+    w.eagle.inspector.isHideInspector = s.isHideSidebar = true;
+    syncPanelFromScope();
+  }
+  $timeout(function () {
+    s.lastItemStates = {};
+    window.dispatchEvent(new Event("orientationchange"));
+    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+    s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
+    machineryRelayout(s);
+    getOffsetScrollbarFn(s)(30);
+    if (s.isDetailMode) {
+      s.$root.currentFocus = "content";
+    }
+    if (s.isDetailMode && s.lastZoomMode === "edge") {
+      machineryZoomFitEdge(s, w.event);
+    }
+    // if ($scope.layout === "GridLayout" || $scope.layout === "SquareLayout") {
+    //     var currentColumn = ig._layout._columnLength;
+    //     var currentWidth = $scope.imageSize.height;
+    //     var targetColumn = Math.floor($scope.boxContianerWidth / currentWidth);
+    //     $scope.adjustLayoutWidth(targetColumn - currentColumn);
+    // }
+  }, 100);
+  w.localStorage.setItem("isHideSidebar", s.isHideSidebar);
+  if (s.isHideSidebar) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
+  else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
+  if (w.eagle.inspector.isHideInspector) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
+  else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
+}

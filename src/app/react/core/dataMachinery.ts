@@ -105,6 +105,9 @@ import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openAllT
 import { machineryChangeStar, machineryChangeTo1Star, machineryChangeTo2Star, machineryChangeTo3Star, machineryChangeTo4Star, machineryChangeTo5Star, machineryRemoveStar } from '../services/imageOpsService';
 import { machineryOnDropContainer } from '../services/uploadService';
 import { cgNotifyServiceCloseAll, getLanguageBCP, machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryOpenPluginPanel, machineryQuicklook, machineryToggleDetailMode, machineryToggleSlideshow } from './miscDomain';
+import { machineryReload, machinerySortRawData } from './itemDomain';
+import { machineryBack, machineryNextHistory, machineryOpenNextQuickAccess, machineryOpenPrevQuickAccess, machineryPrevHistory, machineryUndo } from './navHistory';
+import { getOffsetScrollbarFn, machineryToggleAll } from '../services/gridService';
 let timeoutCache: any = null;
 let shimTimeoutInst: any = null;
 // b1-9k 导出：tagManagerDomain 的裸 getTimeout（1307/1379/1654/1670）此前是死标识符
@@ -147,106 +150,6 @@ export function getTimeout(): any {
 
 
 
-/* sortRawData（bundle 21621-21708 逐字） */
-export function machinerySortRawData(s: any, orderBy: any): void {
-  console.time("sortRawData");
-  const languageBCP = getLanguageBCP(s);
-  switch (orderBy) {
-    case 'NAME':
-      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
-      s.raw = s.raw.sort(function (a: any, b: any) {
-        return collator.compare(a.name, b.name);
-      });
-      syncListFromScope();
-      break;
-    case 'EXT':
-      var collator2 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
-      s.raw = s.raw.sort(function (a: any, b: any) {
-        return collator2.compare(a.ext, b.ext);
-      });
-      syncListFromScope();
-      break;
-    case 'RESOLUTION':
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var ra = a.width * a.height;
-        var rb = b.width * b.height;
-        if(ra > rb) return 1;
-        if(ra < rb) return -1;
-        return 0;
-      });
-      syncListFromScope();
-      break;
-    case 'FILESIZE':
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var sizeA = parseInt(a.size);
-        var sizeB = parseInt(b.size);
-        if(sizeA > sizeB) return 1;
-        if(sizeA < sizeB) return -1;
-        return 0;
-      });
-      syncListFromScope();
-      break;
-    case 'RATING':
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var starA = parseInt(a.star) || 0;
-        var starB = parseInt(b.star) || 0;
-        if(starA > starB) return 1;
-        if(starA < starB) return -1;
-        return 0;
-      });
-      syncListFromScope();
-      break;
-    case 'DURATION':
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var durationA = parseInt(a.duration) || 0;
-        var durationB = parseInt(b.duration) || 0;
-        if(durationA > durationB) return 1;
-        if(durationA < durationB) return -1;
-        return 0;
-      });
-      syncListFromScope();
-      break;
-    case 'BTIME':
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var btimeA = a.btime || a.modificationTime;
-        var btimeB = b.btime || b.modificationTime;
-        if(btimeA > btimeB) return -1;
-        if(btimeA < btimeB) return 1;
-      });
-      syncListFromScope();
-      break;
-    case 'MTIME':
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var mtimeA = a.mtime || a.modificationTime;
-        var mtimeB = b.mtime || b.modificationTime;
-        if(mtimeA > mtimeB) return -1;
-        if(mtimeA < mtimeB) return 1;
-      });
-      syncListFromScope();
-      break;
-    case 'TAGS':
-      // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator3 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
-      s.raw = s.raw.sort(function (a: any, b: any) {
-        const aTag1 = a?.tags?.[0] ?? '';
-        const bTag1 = b?.tags?.[0] ?? '';
-        return collator3.compare(aTag1, bTag1);
-      });
-      syncListFromScope();
-      break;
-    default:
-      s.raw = s.raw.sort(function(a: any, b: any) {
-        var mtimeA = a.modificationTime || a.mtime;
-        var mtimeB = b.modificationTime || b.mtime;
-        if(mtimeA > mtimeB) return -1;
-        if(mtimeA < mtimeB) return 1;
-      });
-      syncListFromScope();
-  }
-  updateCurrentOrderAndIncrease();
-  console.timeEnd("sortRawData");
-}
 
 
 /* ── c9b：rebindRefresh 域 ───────────────────────────────────────────── */
@@ -283,52 +186,6 @@ export function machinerySortRawData(s: any, orderBy: any): void {
    防抖实例在 applyDataMachineryScope 时一次性创建（与 bundle controller init 同语义）。
    leaveDetailMode/relayout/updateSelection/calculateFilterCounts/updateSubFolderWidth/
    adjustLayoutWidth 仍由 bundle 承载经 scope 解析；rebindRefresh 已是移植版（scope 解析即达）） */
-export function machineryReload(s: any): any {
-  const w = window as any;
-  return debounce(function reload(keepDetailMode: any) {
-    s.hexColor = undefined;
-    s.unlockPassword = "";
-
-    if (!keepDetailMode) {
-      if (s.isDetailMode) {
-        machineryLeaveDetailMode(s);
-      }
-
-      if (s.selected.length > 0) {
-        s.selected = [];
-        syncInspectorFromScope();
-      }
-    }
-
-    s.loadMoreDisable = false;
-    s.lastImageHeight = s.imageSize.height;
-    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-    machineryRebindRefresh(s);
-    machineryRelayout(s);
-    machineryUpdateSelection(s);
-    machineryCalculateFilterCounts(s);
-    machineryUpdateSubFolderWidth(s);
-    trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
-
-    machineryAutoResizeTagFilter(s);
-    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      machineryAdjustLayoutWidth(s, 0);
-    }
-    s.listDone = true;
-
-    if (scrollTopValue("#box-container") !== 0) {
-      setScrollTop("#box-container", 0);
-    }
-    removeClass(".box.processed", "processed");
-    setTimeout(function () {
-      show("#image-drop-area");
-      trigger("#box-container", "scroll");
-    }, 100);
-    setTimeout(function () {
-      trigger("#box-container", "scroll");
-    }, 500);
-  }, 100, true);
-}
 
 /* ── c9d：缩放/放映/计数/最近文件夹 ──────────────────────────────────── */
 
@@ -361,9 +218,6 @@ export function machineryReload(s: any): any {
 
 /* ── c14b：筛选引擎（filterData 27654-28504 逐字分片）────────────────── */
 
-// ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
-let imageSearchController: any = null;
-let semanticSearchController: any = null;
 
 /* filterData 分片 1：import 月份/时间、mtime、类型含排、档案大小、长度、BPM、解析度、
    标注、注释（27654-27960 逐字） */
@@ -377,323 +231,6 @@ let semanticSearchController: any = null;
 
 /* filterData 分片 3：标签 OR/AND/EQUAL、文件夹 OR/AND/EQUAL、lockedImages、排序、
    以图找图/语义搜索、recent 排序（28170-28504 逐字） */
-export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Promise<any[]> {
-
-  // 如果是 OR 逻辑需要保留所有 tags filter 的结果，为了计算 containTags
-  if (w.eagle.filter.tagFilterLogic === "OR") {
-
-    if ((w.eagle.filter.filterRules.tag.includes && w.eagle.filter.filterRules.tag.includes.length > 0) || (w.eagle.filter.filterRules.tag.excludes && w.eagle.filter.filterRules.tag.excludes.length > 0)) {
-      data = data.filter(function (image: any) {
-
-        // 包含標籤
-        if (w.eagle.filter.filterRules.tag.includes.length > 0) {
-          for (var i = 0; i < w.eagle.filter.filterRules.tag.includes.length; i++) {
-            var tag = w.eagle.filter.filterRules.tag.includes[i];
-            if (image.tags && image.tags.length > 0) {
-              for (var j = 0; j < image.tags.length; j++) {
-                if (image.tags[j] == tag) {
-                  return true;
-                }
-              }
-            }
-          }
-        }
-
-        // 排除標籤
-        if (w.eagle.filter.filterRules.tag.excludes.length > 0) {
-          var matchCount = 0;
-          for (var i = 0; i < w.eagle.filter.filterRules.tag.excludes.length; i++) {
-            var tag = w.eagle.filter.filterRules.tag.excludes[i];
-            if (image.tags && image.tags.length > 0) {
-              if (image.tags.indexOf(tag) !== -1) {
-                matchCount++;
-              }
-            }
-          }
-          if (matchCount === 0) {
-            return true;
-          }
-        }
-        return false;
-      });
-
-      if (w.eagle.filter.filterRules.tag.no) {
-        s.preelaborations.forEach(function (image: any) {
-          if (!image.tags || image.tags.length === 0) {
-            data.push(image);
-          }
-        });
-      }
-    }
-    else {
-      if (w.eagle.filter.filterRules.tag.no) {
-        data = data.filter(function (image: any) {
-          return !image.tags || image.tags.length === 0;
-        });
-      }
-    }
-  }
-  // 标签筛选（and 逻辑）
-  else if (w.eagle.filter.tagFilterLogic === "AND" || w.eagle.filter.tagFilterLogic === "EQUAL") {
-
-    // 包含標籤
-    if (w.eagle.filter.filterRules.tag.includes && w.eagle.filter.filterRules.tag.includes.length > 0) {
-      data = data.filter(function (image: any) {
-        var matchCount = 0;
-        for (var i = 0; i < w.eagle.filter.filterRules.tag.includes.length; i++) {
-          var tag = w.eagle.filter.filterRules.tag.includes[i];
-          if (image.tags && image.tags.length > 0) {
-            for (var j = 0; j < image.tags.length; j++) {
-              if (image.tags[j] == tag) {
-                if (w.eagle.filter.tagFilterLogic === "EQUAL") {
-                  if (image.tags.length === w.eagle.filter.filterRules.tag.includes.length) {
-                    matchCount++;
-                  }
-                }
-                else {
-                  matchCount++;
-                }
-                break;
-              }
-            }
-          }
-        }
-        return (matchCount == w.eagle.filter.filterRules.tag.includes.length);
-      });
-    }
-
-    // 排除標籤
-    if (w.eagle.filter.filterRules.tag.excludes && w.eagle.filter.filterRules.tag.excludes.length > 0) {
-      data = data.filter(function (image: any) {
-        for (var i = 0; i < w.eagle.filter.filterRules.tag.excludes.length; i++) {
-          var tag = w.eagle.filter.filterRules.tag.excludes[i];
-          if (image.tags && image.tags.length > 0) {
-            if (image.tags.indexOf(tag) !== -1) {
-              return false;
-            }
-          }
-        }
-        return true;
-      });
-    }
-
-    // 没标签筛选
-    if (w.eagle.filter.filterRules.tag.no) {
-      data = data.filter(function (image: any) {
-        return !image.tags || image.tags.length === 0;
-      });
-    }
-  }
-
-  // 筛选器文件夹
-  // OR
-  if (w.eagle.filter.folderFilterLogic === "OR") {
-
-    var filterFolders = Object.values(w.eagle.filter.filterRules.folder.includes).map(function (folder: any) { return folder; });
-    var excludeFolders = Object.values(w.eagle.filter.filterRules.folder.excludes).map(function (folder: any) { return folder; });
-
-    if (filterFolders.length > 0 || excludeFolders.length > 0) {
-
-      data = data.filter(function (image: any) {
-
-        // 包含文件夹
-        if (filterFolders.length > 0) {
-          for (var i = 0; i < filterFolders.length; i++) {
-            var folderId = filterFolders[i].id;
-            if (folderId === "NoFolders" && image.folders.length === 0) {
-              return true;
-            }
-            if (folderId && image.folders && image.folders.length > 0) {
-              for (var j = 0; j < image.folders.length; j++) {
-                if (image.folders[j] == folderId) {
-                  return true;
-                }
-              }
-            }
-          }
-        }
-
-        // 排除文件夹
-        if (excludeFolders.length > 0) {
-          var matchCount = 0;
-          for (var i = 0; i < excludeFolders.length; i++) {
-            var folderId = excludeFolders[i].id;
-            if (folderId === "NoFolders" && image.folders.length === 0) {
-              matchCount++;
-            }
-            if (image.folders && image.folders.length > 0) {
-              if (image.folders.indexOf(folderId) !== -1) {
-                matchCount++;
-              }
-            }
-          }
-          if (matchCount === 0) {
-            return true;
-          }
-        }
-
-        return false;
-      });
-    }
-  }
-  // AND
-  else if (w.eagle.filter.folderFilterLogic === "AND" || w.eagle.filter.folderFilterLogic === "EQUAL") {
-
-    var filterFolders2 = Object.values(w.eagle.filter.filterRules.folder.includes).map(function (folder: any) { return folder; });
-    var excludeFolders2 = Object.values(w.eagle.filter.filterRules.folder.excludes).map(function (folder: any) { return folder; });
-
-    // 包含文件夹
-    if (filterFolders2.length > 0) {
-      data = data.filter(function (image: any) {
-        var matchCount = 0;
-        for (var i = 0; i < filterFolders2.length; i++) {
-          var folder = filterFolders2[i];
-          var folderId = folder.id;
-          if (folderId === "NoFolders" && image.folders.length === 0) {
-            matchCount++;
-          }
-          if (folder && image.folders && image.folders.length > 0) {
-            for (var j = 0; j < image.folders.length; j++) {
-              if (image.folders[j] == folder.id) {
-                if (w.eagle.filter.folderFilterLogic === "EQUAL") {
-                  if (image.folders.length === filterFolders2.length) {
-                    matchCount++;
-                  }
-                }
-                else {
-                  matchCount++;
-                }
-                break;
-              }
-            }
-          }
-        }
-        return (matchCount === filterFolders2.length);
-      });
-    }
-
-    // 排除文件夹
-    if (excludeFolders2.length > 0) {
-      data = data.filter(function (image: any) {
-        for (var i = 0; i < excludeFolders2.length; i++) {
-          var folderId = excludeFolders2[i].id;
-          if (folderId === "NoFolders" && image.folders.length === 0) {
-            return false;
-          }
-          if (image.folders && image.folders.length > 0) {
-            if (image.folders.indexOf(folderId) !== -1) {
-              return false;
-            }
-          }
-        }
-        return true;
-      });
-    }
-  }
-
-  // 如果沒有使用加密文件夾，就不需要判斷這件事情
-  if (Object.keys(s.lockedImages).length > 0) {
-    data = data.filter(s.lockImageFilter);
-  }
-
-  // 文件夹有自己的排序方式
-  if (!s.$root.selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
-    if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
-      data = machinerySortData(s, data, s.currentFolder.orderBy);
-    }
-    if (!s.currentFolder.sortIncrease) {
-      data = data.reverse();
-    }
-  }
-
-  // 智能文件夹有自己的排序方式
-  else if (s.currentSmartFolder && s.currentSmartFolder.orderBy) {
-    if (s.currentSmartFolder.orderBy !== s.orderBy || s.currentSmartFolder.orderBy === "RANDOM") {
-      data = machinerySortData(s, data, s.currentSmartFolder.orderBy);
-    }
-    if (!s.currentSmartFolder.sortIncrease) {
-      data = data.reverse();
-    }
-  }
-  else if (!s.sortIncrease && !w.eagle.filter.filterRules.color.value) {
-    data = data.reverse();
-  }
-
-  // 內部以圖找圖 by id
-  if (w.eagle.filter.filterRules.image.itemId || w.eagle.filter.filterRules.image.base64) {
-    if (imageSearchController) {
-      imageSearchController.abort();
-    }
-    imageSearchController = new AbortController();
-    const imageSignal = imageSearchController.signal;
-
-    try {
-      const handle = (w.eagle.filter.filterRules.image.itemId)
-        ? w.eagle.aiSearch.searchByItemId(w.eagle.filter.filterRules.image.itemId, { signal: imageSignal })
-        : w.eagle.aiSearch.searchByBase64(w.eagle.filter.filterRules.image.base64, { signal: imageSignal });
-      const result = await handle;
-      const ids: any = {};
-      ids[result.eagleId] = {
-        score: 1,
-        id: result.eagleId
-      };
-      result.results.forEach((item: any) => {
-        if (item.score > 0.1) {
-          ids[item.id] = item;
-        }
-      });
-
-      data = data.filter((item: any) => {
-        return ids[item.id];
-      }).sort((a: any, b: any) => {
-        return ids[b.id].score - ids[a.id].score;
-      });
-    }
-    catch (err: any) {
-      if (err.name === 'AbortError') return data;
-    }
-  }
-
-  // 语义
-  if (w.eagle.filter.filterRules.semantic.value) {
-    if (semanticSearchController) {
-      semanticSearchController.abort();
-    }
-    semanticSearchController = new AbortController();
-
-    try {
-      const result = await w.eagle.aiSearch.searchByText(
-        w.eagle.filter.filterRules.semantic.value,
-        { signal: semanticSearchController.signal }
-      );
-      const ids: any = {};
-      ids[result.eagleId] = {
-        score: 1,
-        id: result.eagleId
-      };
-      result.results.forEach((item: any) => {
-        ids[item.id] = item;
-      });
-
-      data = data.filter((item: any) => {
-        return ids[item.id];
-      }).sort((a: any, b: any) => {
-        return ids[b.id].score - ids[a.id].score;
-      });
-    }
-    catch (err: any) {
-      if (err.name === 'AbortError') return data;
-    }
-  }
-
-  if (s.viewMode === 'recent') {
-    data = data.sort(function (a: any, b: any) {
-      return w.RecentFileManager.recentFilesOrder[a.id] - w.RecentFileManager.recentFilesOrder[b.id];
-    });
-  }
-
-  return data;
-}
 
 
 
@@ -724,50 +261,6 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
 
 /* resetPage（bundle 36668-36700 逐字；resetFilter/findDupclipate 经 scope 解析，
    eagle.inspector.reset 经 c12 挂载面，ig.clear 经 window） */
-export function machineryResetPage(s: any): void {
-  const w = window as any;
-
-  // Note: 切换文件夹时，强制触发 inspector 输入框先进行 change
-  // b1-9ba：RESET_PAGE 广播全树无接收者（原接收者随 bundle 摘除退役）——广播体移除，
-  // 本函数其余状态复位语义不变。
-  (document.activeElement as any)?.blur?.();
-  s.listDone = false;
-  setTimeout(() => { w.ig.clear(); }, 40);
-  s.isOpenWebpagePanel = false;
-  s.currentTag = undefined;
-  syncToolbarFromScope();
-  s.startCursor = 0;
-  s.currentFolder = undefined;
-  syncPanelFromScope();
-  syncFolderLock();
-  syncListFromScope();
-  w.eagle.inspector.reset();
-  s.currentFolderChildren = undefined;
-  s.currentSmartFolder = undefined;
-  syncPanelFromScope();
-  syncListFromScope();
-  s.$root.selectedFoldersMappings = {};
-  s.$root.selectedFolders = [];
-  syncListFromScope();
-  s.selectedFolderMappings = {};
-  syncListFromScope();
-  s.$root.selectedSmartFoldersMappings = {};
-  s.$root.selectedSmartFolders = [];
-  s.currentId = undefined;
-  syncSidebarFromScope();
-  s.layout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
-
-  if (!w.eagle.filter.isLock) {
-    resetFilter();
-    s.keyword = undefined;
-  }
-  hide("#image-drop-area");
-
-  if (s.duplicateTarget) {
-    s.duplicateTarget = undefined;
-    machineryFindDupclipate(s, undefined);
-  }
-}
 
 /* calculateFilterCounts（bundle 42929-42944 逐字；calculateFilterCountsTimeout 域内自管，
    updateFilterCounts 经 scope 解析） */
@@ -975,7 +468,7 @@ export function machineryInitMousetrap(s: any): void {
 
 /* ── c17b：notify（cgNotify 服务等价移植）────────────────────────────── */
 
-export let undoTimeout: any = null;
+/* undoTimeout 已于 B-15 随 machineryNotify 归位 miscDomain（唯一写方） */
 
 /* angular-notify.html 模板（bundle 16724 templateCache 逐字；ng-class/ng-style/ng-show/
    ng-click 以具体值物化） */
@@ -1003,37 +496,11 @@ export let undoTimeout: any = null;
 
 /* undo（bundle 26999-27002 逐字；$rootScope.undo 桩 + closeAll——root 上无 closeAll 时
    走 cg 栈清屏等价） */
-export function machineryUndo(s: any): void {
-  if (typeof s.$root.undo === 'function') s.$root.undo();
-  if (typeof s.$root.closeAll === 'function') s.$root.closeAll();
-  else cgNotifyServiceCloseAll();
-}
 
 /* nextHistory/prevHistory（bundle 38566-38577 逐字；UrlStateService.canGo* 方法存在性
    判定原样保留，goForward/goBack 经 currentWindow） */
-export function machineryNextHistory(s: any): void {
-  const w = window as any;
-  if (s.UrlStateService.canGoForward) {
-    w.currentWindow.webContents.goForward();
-  }
-}
 
-export function machineryPrevHistory(s: any): void {
-  const w = window as any;
-  if (s.UrlStateService.canGoBack) {
-    w.currentWindow.webContents.goBack();
-  }
-}
 
-/* back（bundle 30889-30896 逐字） */
-export function machineryBack(s: any): void {
-  if (!s.isDetailMode) {
-    machineryPrevHistory(s);
-  }
-  else {
-    machineryLeaveDetailMode(s);
-  }
-}
 
 /* ── c18d：全选/详情切换 ─────────────────────────────────────────────── */
 
@@ -1248,43 +715,7 @@ export function machineryModRightHandler(s: any, event: any): void {
 /* 域内闭包移植（原 controller 内 function 声明，非 scope 成员）：
    openPrevQuickAccess（35287-35302）/ openNextQuickAccess（35304-35341）/
    openPrevGroup（35704-35725）/ openNextGroup（35730-35752） */
-function machineryOpenPrevQuickAccess(s: any): void {
-  var $quickAccessItems = qaVisible(".sidebar-quick-access-item");
-  var $current = q(".sidebar-quick-access-item.active");
-  var currentIndex = $current ? $quickAccessItems.indexOf($current) : -1;
 
-  if (currentIndex - 1 >= 0) {
-    $quickAccessItems[currentIndex - 1].click();
-  }
-  else {
-    machineryOpenTrash(s);
-  }
-}
-
-function machineryOpenNextQuickAccess(s: any): void {
-  var $quickAccessItems = qaVisible(".sidebar-quick-access-item");
-  var $current = q(".sidebar-quick-access-item.active");
-  var currentIndex = $current ? $quickAccessItems.indexOf($current) : -1;
-
-  if (currentIndex + 1 < $quickAccessItems.length) {
-    $quickAccessItems[currentIndex + 1].click();
-  }
-  else {
-    var listItems = s.sidebarList;
-    var folders = listItems.filter(function (item: any) {
-      return item.vstype === 'folder';
-    });
-    var smartFolders = listItems.filter(function (item: any) {
-      return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
-    });
-    if (smartFolders.length > 0 && smartFolders[0]) {
-      openSmartFolder(smartFolders[0]);
-    }
-    else if (folders.length > 0 && folders[0]) {
-      openFolder(folders[0]);
-    }
-  }
-}
 
 
 
@@ -1639,46 +1070,6 @@ export function machineryNHandler(s: any, $event: any): void {
    双写）+ lastItemStates 清空 + orientationchange + boxContianerWidth/Height 快照 + relayout/
    offsetScrollbar + 详情 edge 模式 zoomFitEdge（**裸 event 怪癖：$timeout 回调期 window.event
    为 null，以 w.event 复刻**）+ isHideSidebar localStorage 键逐字 + electronLog 双分支） */
-export function machineryToggleAll(s: any, $event: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
-  if ($event) {
-    $event.preventDefault();
-    $event.stopPropagation();
-  }
-  if (s.isHideSidebar) {
-    w.eagle.inspector.isHideInspector = s.isHideSidebar = false;
-    syncPanelFromScope();
-  } else {
-    w.eagle.inspector.isHideInspector = s.isHideSidebar = true;
-    syncPanelFromScope();
-  }
-  $timeout(function () {
-    s.lastItemStates = {};
-    window.dispatchEvent(new Event("orientationchange"));
-    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-    s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
-    machineryRelayout(s);
-    getOffsetScrollbarFn(s)(30);
-    if (s.isDetailMode) {
-      s.$root.currentFocus = "content";
-    }
-    if (s.isDetailMode && s.lastZoomMode === "edge") {
-      machineryZoomFitEdge(s, w.event);
-    }
-    // if ($scope.layout === "GridLayout" || $scope.layout === "SquareLayout") {
-    //     var currentColumn = ig._layout._columnLength;
-    //     var currentWidth = $scope.imageSize.height;
-    //     var targetColumn = Math.floor($scope.boxContianerWidth / currentWidth);
-    //     $scope.adjustLayoutWidth(targetColumn - currentColumn);
-    // }
-  }, 100);
-  w.localStorage.setItem("isHideSidebar", s.isHideSidebar);
-  if (s.isHideSidebar) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
-  else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
-  if (w.eagle.inspector.isHideInspector) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
-  else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
-}
 
 /* b1-9bd：zoomIn/zoomOut 实现体归位 services/gridService.ts（详情分支的 ratio 梯度
    仍经 scope 解析 getRatioExp/getRatioNonExp/updateZoomRatio，S4 详情竖切归位） */
@@ -1738,107 +1129,6 @@ export function machinerySaveHandler(s: any): void {
 
 
 
-function machinerySearchFilter(s: any, image: any): any {
-    const w = window as any;
-    try {
-        // 如果還沒有建立 RegEx 群組，先建立
-        if (!s.searchRegexGroup) {
-            s.searchRegexGroup = machineryConvertToRegexGroup(
-                s.keywords,
-                s.keywords_cn,
-                s.keywords_tw
-            );
-        }
-
-        // 建構要搜尋的文字內容
-        var name = image.name || "",
-            annotation = image.annotation || "",
-            ext = image.ext || "",
-            url = image.url || "",
-            allText = "";
-
-        // 組合所有可搜尋的文字
-        if (image.text) {
-            allText += image.text.toLowerCase() + " ";
-        }
-
-        if (image.rawMetas && image.rawMetas.camera) {
-            allText += `${image.rawMetas.camera} `;
-        }
-
-        if (name && s.isSearchScopeName) {
-            allText += `${name} `;
-        }
-
-        if (ext && s.isSearchScopeExt) {
-            allText += `.${ext} `;
-        }
-
-        if (url && s.isSearchScopeUrl && s.keyword.length >= 2) {
-            allText += `${url} `;
-        }
-
-        if (annotation && s.isSearchScopeNote) {
-            allText += `${annotation} `;
-        }
-
-        // 標註
-        if (s.isSearchScopeAnnotation && image.comments) {
-            image.comments.forEach(function (comment: any) {
-                allText += `${comment.annotation} `;
-            });
-        }
-
-        // 字體特殊處理
-        if (image.ext && w.FONT_TYPES[image.ext] && image.fontMetas) {
-            var preferLng = "zh";
-            var fullName = get(image.fontMetas, `fullName.${preferLng}`, undefined) ||
-                           get(image.fontMetas, `fullName.en`, "");
-            allText += `${fullName} `;
-
-            if (s.keyword.length > 2 && image.fontMetas.postScriptName) {
-                allText += `${JSON.stringify(image.fontMetas)} `;
-            }
-        }
-
-        // 標籤
-        if (s.isSearchScopeTag && image.tags && image.tags.length > 0) {
-            image.tags.forEach(function (tag: any) {
-                if (tag) allText += `${tag} `;
-            });
-        }
-
-        // 資料夾
-        if ((s.isSearchScopeFolderDesc || s.isSearchScopeFolderName) &&
-            image.folders && image.folders.length > 0) {
-            image.folders.forEach(function (folderId: any) {
-                var folder = s.folderMappings[folderId];
-                if (folder) {
-                    if (s.isSearchScopeFolderName && folder.name) {
-                        allText += `${folder.name} `;
-                    }
-                    if (s.isSearchScopeFolderDesc && folder.description) {
-                        allText += `${folder.description} `;
-                    }
-                }
-            });
-        }
-
-        // 使用 RegEx 群組進行匹配
-        const regexMatch = machineryMatchWithRegexGroup(allText.toLowerCase(), s.searchRegexGroup);
-
-        // 如果 regex 已經匹配，直接返回 true
-        if (regexMatch) return true;
-
-        // 否則使用 indexOf 進行簡單字串匹配（處理包含特殊字符的情況）
-        const keywordForIndexOf = s.keyword.toLowerCase();
-        return allText.toLowerCase().indexOf(keywordForIndexOf) > -1;
-    }
-    catch (err) {
-        console.error("Search filter error:", err);
-    }
-    return false;
-}
 
 // ── b1-9ad：颜色筛选管线移植（bundle 32688-32813 逐字；$scope→s）──
 // 此前 s.colorFilter/s.grayColorFilter 无定义：machineryFilterContent 的
@@ -1905,12 +1195,6 @@ function machinerySearchFilter(s: any, image: any): any {
 
 /* autoScroll（bundle 35086-35091 逐字：AutoScroll 广播 50ms 延迟；**注意 54389 系
    $bodyScope 委派壳属子 scope controller，body scope 生效版即本闭包**） */
-export function machineryAutoScroll(s: any, index: any): void {
-  const $timeout = getTimeout();
-  $timeout(function () {
-    autoscrollChannel.emit(index);
-  }, 50);
-}
 
 
 /* getSelectedItems（bundle 21852-21862 逐字：ig.getItems(true) × selectedMappings 过滤，
@@ -2303,16 +1587,14 @@ export function machineryEndHandler(s: any, event: any): void {
    throttle 实例），原挂在 scope 上按 seed 时机创建一次。直调化后改用本缓存按 scope 取用，
    保证「每 scope 一个实例」——否则每次调用新建实例会丢掉防抖/节流状态。 */
 const singletonByScope = new WeakMap<object, Map<string, any>>();
-function scopeSingleton<T>(s: any, key: string, make: () => T): T {
+export function scopeSingleton<T>(s: any, key: string, make: () => T): T {
   let m = singletonByScope.get(s);
   if (!m) { m = new Map(); singletonByScope.set(s, m); }
   if (!m.has(key)) m.set(key, make());
   return m.get(key) as T;
 }
-export function getOffsetScrollbarFn(s: any): any { return scopeSingleton(s, 'offsetScrollbar', () => machineryOffsetScrollbar(s)); }
 export function getPageUpHandlerFn(s: any): any { return scopeSingleton(s, 'pageUpHandler', () => machineryPageUpHandler(s)); }
 export function getPageDownHandlerFn(s: any): any { return scopeSingleton(s, 'pageDownHandler', () => machineryPageDownHandler(s)); }
-export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType(s)); }
 
 /* D-1 A-2：测试诊断计数（`window.__eagleMachinery.calls`）——替代 scope 挂载 spy
  * （m1-D-filter-watch / m1-D-rebind-broadcast / m1-E-selected-watch）。

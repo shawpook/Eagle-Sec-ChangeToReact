@@ -40,8 +40,12 @@ import { clickEl, focusEl, selectEl } from '../utils/domQuery';
 import { throttle } from '../utils/func';
 import { isNumeric } from '../utils/lang';
 import { machineryCalls } from './dataMachinery';
-import { machineryFilterDataPart3 } from './dataMachinery';
+
 import { machineryOpenAll } from '../services/folderCoreService';
+import { get } from '../utils/lang';
+import { machinerySortData } from './itemDomain';
+import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './tagManagerDomain';
+import { scopeSingleton } from './dataMachinery';
 declare const RecentFileManager: any;
 declare const UrlStateService: any;
 declare const analytics: any;
@@ -2325,3 +2329,432 @@ export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: a
 }
 
 let shimFilterInst: any = null;
+
+
+// ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
+export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType(s)); }
+
+// ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
+let imageSearchController: any = null;
+
+export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Promise<any[]> {
+
+  // 如果是 OR 逻辑需要保留所有 tags filter 的结果，为了计算 containTags
+  if (w.eagle.filter.tagFilterLogic === "OR") {
+
+    if ((w.eagle.filter.filterRules.tag.includes && w.eagle.filter.filterRules.tag.includes.length > 0) || (w.eagle.filter.filterRules.tag.excludes && w.eagle.filter.filterRules.tag.excludes.length > 0)) {
+      data = data.filter(function (image: any) {
+
+        // 包含標籤
+        if (w.eagle.filter.filterRules.tag.includes.length > 0) {
+          for (var i = 0; i < w.eagle.filter.filterRules.tag.includes.length; i++) {
+            var tag = w.eagle.filter.filterRules.tag.includes[i];
+            if (image.tags && image.tags.length > 0) {
+              for (var j = 0; j < image.tags.length; j++) {
+                if (image.tags[j] == tag) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+
+        // 排除標籤
+        if (w.eagle.filter.filterRules.tag.excludes.length > 0) {
+          var matchCount = 0;
+          for (var i = 0; i < w.eagle.filter.filterRules.tag.excludes.length; i++) {
+            var tag = w.eagle.filter.filterRules.tag.excludes[i];
+            if (image.tags && image.tags.length > 0) {
+              if (image.tags.indexOf(tag) !== -1) {
+                matchCount++;
+              }
+            }
+          }
+          if (matchCount === 0) {
+            return true;
+          }
+        }
+        return false;
+      });
+
+      if (w.eagle.filter.filterRules.tag.no) {
+        s.preelaborations.forEach(function (image: any) {
+          if (!image.tags || image.tags.length === 0) {
+            data.push(image);
+          }
+        });
+      }
+    }
+    else {
+      if (w.eagle.filter.filterRules.tag.no) {
+        data = data.filter(function (image: any) {
+          return !image.tags || image.tags.length === 0;
+        });
+      }
+    }
+  }
+  // 标签筛选（and 逻辑）
+  else if (w.eagle.filter.tagFilterLogic === "AND" || w.eagle.filter.tagFilterLogic === "EQUAL") {
+
+    // 包含標籤
+    if (w.eagle.filter.filterRules.tag.includes && w.eagle.filter.filterRules.tag.includes.length > 0) {
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < w.eagle.filter.filterRules.tag.includes.length; i++) {
+          var tag = w.eagle.filter.filterRules.tag.includes[i];
+          if (image.tags && image.tags.length > 0) {
+            for (var j = 0; j < image.tags.length; j++) {
+              if (image.tags[j] == tag) {
+                if (w.eagle.filter.tagFilterLogic === "EQUAL") {
+                  if (image.tags.length === w.eagle.filter.filterRules.tag.includes.length) {
+                    matchCount++;
+                  }
+                }
+                else {
+                  matchCount++;
+                }
+                break;
+              }
+            }
+          }
+        }
+        return (matchCount == w.eagle.filter.filterRules.tag.includes.length);
+      });
+    }
+
+    // 排除標籤
+    if (w.eagle.filter.filterRules.tag.excludes && w.eagle.filter.filterRules.tag.excludes.length > 0) {
+      data = data.filter(function (image: any) {
+        for (var i = 0; i < w.eagle.filter.filterRules.tag.excludes.length; i++) {
+          var tag = w.eagle.filter.filterRules.tag.excludes[i];
+          if (image.tags && image.tags.length > 0) {
+            if (image.tags.indexOf(tag) !== -1) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+    }
+
+    // 没标签筛选
+    if (w.eagle.filter.filterRules.tag.no) {
+      data = data.filter(function (image: any) {
+        return !image.tags || image.tags.length === 0;
+      });
+    }
+  }
+
+  // 筛选器文件夹
+  // OR
+  if (w.eagle.filter.folderFilterLogic === "OR") {
+
+    var filterFolders = Object.values(w.eagle.filter.filterRules.folder.includes).map(function (folder: any) { return folder; });
+    var excludeFolders = Object.values(w.eagle.filter.filterRules.folder.excludes).map(function (folder: any) { return folder; });
+
+    if (filterFolders.length > 0 || excludeFolders.length > 0) {
+
+      data = data.filter(function (image: any) {
+
+        // 包含文件夹
+        if (filterFolders.length > 0) {
+          for (var i = 0; i < filterFolders.length; i++) {
+            var folderId = filterFolders[i].id;
+            if (folderId === "NoFolders" && image.folders.length === 0) {
+              return true;
+            }
+            if (folderId && image.folders && image.folders.length > 0) {
+              for (var j = 0; j < image.folders.length; j++) {
+                if (image.folders[j] == folderId) {
+                  return true;
+                }
+              }
+            }
+          }
+        }
+
+        // 排除文件夹
+        if (excludeFolders.length > 0) {
+          var matchCount = 0;
+          for (var i = 0; i < excludeFolders.length; i++) {
+            var folderId = excludeFolders[i].id;
+            if (folderId === "NoFolders" && image.folders.length === 0) {
+              matchCount++;
+            }
+            if (image.folders && image.folders.length > 0) {
+              if (image.folders.indexOf(folderId) !== -1) {
+                matchCount++;
+              }
+            }
+          }
+          if (matchCount === 0) {
+            return true;
+          }
+        }
+
+        return false;
+      });
+    }
+  }
+  // AND
+  else if (w.eagle.filter.folderFilterLogic === "AND" || w.eagle.filter.folderFilterLogic === "EQUAL") {
+
+    var filterFolders2 = Object.values(w.eagle.filter.filterRules.folder.includes).map(function (folder: any) { return folder; });
+    var excludeFolders2 = Object.values(w.eagle.filter.filterRules.folder.excludes).map(function (folder: any) { return folder; });
+
+    // 包含文件夹
+    if (filterFolders2.length > 0) {
+      data = data.filter(function (image: any) {
+        var matchCount = 0;
+        for (var i = 0; i < filterFolders2.length; i++) {
+          var folder = filterFolders2[i];
+          var folderId = folder.id;
+          if (folderId === "NoFolders" && image.folders.length === 0) {
+            matchCount++;
+          }
+          if (folder && image.folders && image.folders.length > 0) {
+            for (var j = 0; j < image.folders.length; j++) {
+              if (image.folders[j] == folder.id) {
+                if (w.eagle.filter.folderFilterLogic === "EQUAL") {
+                  if (image.folders.length === filterFolders2.length) {
+                    matchCount++;
+                  }
+                }
+                else {
+                  matchCount++;
+                }
+                break;
+              }
+            }
+          }
+        }
+        return (matchCount === filterFolders2.length);
+      });
+    }
+
+    // 排除文件夹
+    if (excludeFolders2.length > 0) {
+      data = data.filter(function (image: any) {
+        for (var i = 0; i < excludeFolders2.length; i++) {
+          var folderId = excludeFolders2[i].id;
+          if (folderId === "NoFolders" && image.folders.length === 0) {
+            return false;
+          }
+          if (image.folders && image.folders.length > 0) {
+            if (image.folders.indexOf(folderId) !== -1) {
+              return false;
+            }
+          }
+        }
+        return true;
+      });
+    }
+  }
+
+  // 如果沒有使用加密文件夾，就不需要判斷這件事情
+  if (Object.keys(s.lockedImages).length > 0) {
+    data = data.filter(s.lockImageFilter);
+  }
+
+  // 文件夹有自己的排序方式
+  if (!s.$root.selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
+    if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
+      data = machinerySortData(s, data, s.currentFolder.orderBy);
+    }
+    if (!s.currentFolder.sortIncrease) {
+      data = data.reverse();
+    }
+  }
+
+  // 智能文件夹有自己的排序方式
+  else if (s.currentSmartFolder && s.currentSmartFolder.orderBy) {
+    if (s.currentSmartFolder.orderBy !== s.orderBy || s.currentSmartFolder.orderBy === "RANDOM") {
+      data = machinerySortData(s, data, s.currentSmartFolder.orderBy);
+    }
+    if (!s.currentSmartFolder.sortIncrease) {
+      data = data.reverse();
+    }
+  }
+  else if (!s.sortIncrease && !w.eagle.filter.filterRules.color.value) {
+    data = data.reverse();
+  }
+
+  // 內部以圖找圖 by id
+  if (w.eagle.filter.filterRules.image.itemId || w.eagle.filter.filterRules.image.base64) {
+    if (imageSearchController) {
+      imageSearchController.abort();
+    }
+    imageSearchController = new AbortController();
+    const imageSignal = imageSearchController.signal;
+
+    try {
+      const handle = (w.eagle.filter.filterRules.image.itemId)
+        ? w.eagle.aiSearch.searchByItemId(w.eagle.filter.filterRules.image.itemId, { signal: imageSignal })
+        : w.eagle.aiSearch.searchByBase64(w.eagle.filter.filterRules.image.base64, { signal: imageSignal });
+      const result = await handle;
+      const ids: any = {};
+      ids[result.eagleId] = {
+        score: 1,
+        id: result.eagleId
+      };
+      result.results.forEach((item: any) => {
+        if (item.score > 0.1) {
+          ids[item.id] = item;
+        }
+      });
+
+      data = data.filter((item: any) => {
+        return ids[item.id];
+      }).sort((a: any, b: any) => {
+        return ids[b.id].score - ids[a.id].score;
+      });
+    }
+    catch (err: any) {
+      if (err.name === 'AbortError') return data;
+    }
+  }
+
+  // 语义
+  if (w.eagle.filter.filterRules.semantic.value) {
+    if (semanticSearchController) {
+      semanticSearchController.abort();
+    }
+    semanticSearchController = new AbortController();
+
+    try {
+      const result = await w.eagle.aiSearch.searchByText(
+        w.eagle.filter.filterRules.semantic.value,
+        { signal: semanticSearchController.signal }
+      );
+      const ids: any = {};
+      ids[result.eagleId] = {
+        score: 1,
+        id: result.eagleId
+      };
+      result.results.forEach((item: any) => {
+        ids[item.id] = item;
+      });
+
+      data = data.filter((item: any) => {
+        return ids[item.id];
+      }).sort((a: any, b: any) => {
+        return ids[b.id].score - ids[a.id].score;
+      });
+    }
+    catch (err: any) {
+      if (err.name === 'AbortError') return data;
+    }
+  }
+
+  if (s.viewMode === 'recent') {
+    data = data.sort(function (a: any, b: any) {
+      return w.RecentFileManager.recentFilesOrder[a.id] - w.RecentFileManager.recentFilesOrder[b.id];
+    });
+  }
+
+  return data;
+}
+
+function machinerySearchFilter(s: any, image: any): any {
+    const w = window as any;
+    try {
+        // 如果還沒有建立 RegEx 群組，先建立
+        if (!s.searchRegexGroup) {
+            s.searchRegexGroup = machineryConvertToRegexGroup(
+                s.keywords,
+                s.keywords_cn,
+                s.keywords_tw
+            );
+        }
+
+        // 建構要搜尋的文字內容
+        var name = image.name || "",
+            annotation = image.annotation || "",
+            ext = image.ext || "",
+            url = image.url || "",
+            allText = "";
+
+        // 組合所有可搜尋的文字
+        if (image.text) {
+            allText += image.text.toLowerCase() + " ";
+        }
+
+        if (image.rawMetas && image.rawMetas.camera) {
+            allText += `${image.rawMetas.camera} `;
+        }
+
+        if (name && s.isSearchScopeName) {
+            allText += `${name} `;
+        }
+
+        if (ext && s.isSearchScopeExt) {
+            allText += `.${ext} `;
+        }
+
+        if (url && s.isSearchScopeUrl && s.keyword.length >= 2) {
+            allText += `${url} `;
+        }
+
+        if (annotation && s.isSearchScopeNote) {
+            allText += `${annotation} `;
+        }
+
+        // 標註
+        if (s.isSearchScopeAnnotation && image.comments) {
+            image.comments.forEach(function (comment: any) {
+                allText += `${comment.annotation} `;
+            });
+        }
+
+        // 字體特殊處理
+        if (image.ext && w.FONT_TYPES[image.ext] && image.fontMetas) {
+            var preferLng = "zh";
+            var fullName = get(image.fontMetas, `fullName.${preferLng}`, undefined) ||
+                           get(image.fontMetas, `fullName.en`, "");
+            allText += `${fullName} `;
+
+            if (s.keyword.length > 2 && image.fontMetas.postScriptName) {
+                allText += `${JSON.stringify(image.fontMetas)} `;
+            }
+        }
+
+        // 標籤
+        if (s.isSearchScopeTag && image.tags && image.tags.length > 0) {
+            image.tags.forEach(function (tag: any) {
+                if (tag) allText += `${tag} `;
+            });
+        }
+
+        // 資料夾
+        if ((s.isSearchScopeFolderDesc || s.isSearchScopeFolderName) &&
+            image.folders && image.folders.length > 0) {
+            image.folders.forEach(function (folderId: any) {
+                var folder = s.folderMappings[folderId];
+                if (folder) {
+                    if (s.isSearchScopeFolderName && folder.name) {
+                        allText += `${folder.name} `;
+                    }
+                    if (s.isSearchScopeFolderDesc && folder.description) {
+                        allText += `${folder.description} `;
+                    }
+                }
+            });
+        }
+
+        // 使用 RegEx 群組進行匹配
+        const regexMatch = machineryMatchWithRegexGroup(allText.toLowerCase(), s.searchRegexGroup);
+
+        // 如果 regex 已經匹配，直接返回 true
+        if (regexMatch) return true;
+
+        // 否則使用 indexOf 進行簡單字串匹配（處理包含特殊字符的情況）
+        const keywordForIndexOf = s.keyword.toLowerCase();
+        return allText.toLowerCase().indexOf(keywordForIndexOf) > -1;
+    }
+    catch (err) {
+        console.error("Search filter error:", err);
+    }
+    return false;
+}
+
+let semanticSearchController: any = null;

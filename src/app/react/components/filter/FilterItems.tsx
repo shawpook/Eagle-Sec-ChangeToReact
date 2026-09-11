@@ -7,7 +7,7 @@ import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterI
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, scopeApply } from '../../core/appCore';
-import { machineryReload } from '../../core/dataMachinery';
+
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';

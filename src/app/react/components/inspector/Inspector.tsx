@@ -43,7 +43,7 @@ import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
-import { machineryAutoScroll } from '../../core/dataMachinery';
+
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
 import { getRawUrl } from '../../core/itemDomain';
@@ -51,6 +51,7 @@ import { getRawUrl } from '../../core/itemDomain';
 import { machineryQuickOpenFolder } from '../../core/libraryDomain';
 import { machineryOpenInspectorFolderSelectPanel, machineryOpenInspectorTagSelectPanel } from '../../core/selectionViewDomain';
 import { machineryChangeStar } from '../../services/imageOpsService';
+import { machineryAutoScroll } from '../../services/gridService';
 /**
  * 阶段6：检查器接管。
  *

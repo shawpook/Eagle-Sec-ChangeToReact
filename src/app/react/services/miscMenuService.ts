@@ -18,7 +18,7 @@
  */
 // @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
-import { getToggleFilterByTypeFn } from '../core/dataMachinery';
+
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
@@ -40,6 +40,7 @@ import { machineryNewFileFromTemplate } from '../core/itemDomain';
 import { getFilter, machineryOpenFilter } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryToggleSelectSmartFolder } from '../core/selectionViewDomain';
+import { getToggleFilterByTypeFn } from '../core/filterDomain';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};

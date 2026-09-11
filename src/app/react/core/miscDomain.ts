@@ -34,7 +34,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
 import { importFolders } from '../services/uploadService';
-import { machinerySortRawData, machineryUndo } from './dataMachinery';
+
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../services/batchOpsService';
 import { newFolder } from '../services/folderCoreService';
@@ -58,6 +58,8 @@ import { machineryAddToRecentFile } from './libraryDomain';
 import { ensureDetailZoom } from './smoothZoomEngine';
 import { getFilter } from './filterDomain';
 import { getPageDownHandlerFn, getTimeout, machineryInitMousetrap } from './dataMachinery';
+import { machinerySortRawData } from './itemDomain';
+import { machineryUndo } from './navHistory';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;

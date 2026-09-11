@@ -20,7 +20,7 @@
  */
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
-import { machineryAutoScroll, machineryResetPage } from '../core/dataMachinery';
+
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
@@ -44,6 +44,7 @@ import { getFilter, machineryFilterContent } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
+import { machineryAutoScroll, machineryResetPage } from './gridService';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行

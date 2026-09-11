@@ -6,7 +6,7 @@
 import { getBodyScope } from '../core/appCore';
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
-import { machineryReload } from '../core/dataMachinery';
+
 import { scopeEvalAsync } from '../global/scopeShim';
 import { q, focusOn, valOf, setValEl, addClass, removeClass, offEl } from '../utils/domQuery';
 

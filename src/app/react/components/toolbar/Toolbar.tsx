@@ -15,7 +15,7 @@ import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
 import { openApplicationContextMenu, openOrderMenu } from '../../services/miscMenuService';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
-import { machineryToggleAll, machineryPrevHistory, machineryNextHistory } from '../../core/dataMachinery';
+
 import { machineryOpenActionsPanel } from '../../core/keymapActions';
 
 import { machineryRefreshRandom } from '../../core/libraryDomain';
@@ -23,6 +23,8 @@ import { machineryChangeSidebarIndex, machineryOpenUnfiled } from '../../core/li
 import { machineryOnImageSizeHeightChanged } from '../../core/itemDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';
 import { machineryOpenPluginPanel } from '../../core/miscDomain';
+import { machineryNextHistory, machineryPrevHistory } from '../../core/navHistory';
+import { machineryToggleAll } from '../../services/gridService';
 /**
  * 阶段3a：工具栏接管。
  *

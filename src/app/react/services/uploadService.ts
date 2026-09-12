@@ -13,6 +13,8 @@ import { q, findEl, removeClass, setHtmlEl, setWidthEl } from '../utils/domQuery
 import { machineryHideUploadQueue, machineryShowUploadQueue } from '../core/itemDomain';
 import { getFilter } from '../core/filterDomain';
 import { scopeEvalAsync } from '../core/scopeRuntime';
+import { useFolderState } from '../store/folderState';
+import { useMiscRawState } from '../store/miscRawState';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -272,7 +274,7 @@ export function uploadUrls(...args: any[]) {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryOnDropContainer(s: any, event: any): void {
+export function machineryOnDropContainer(event: any): void {
   const w = window as any;
 
 
@@ -286,7 +288,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
 
     var fsPath = w.require('path');
     var ipcRenderer = w.require('electron').ipcRenderer;
-    var folder = s.currentFolder;
+    var folder = useFolderState.getState().currentFolder;
     var dragUrl: any = undefined;
     if (event.dataTransfer) {
       const holder = document.createElement("div");
@@ -465,13 +467,13 @@ export function machineryOnDropContainer(s: any, event: any): void {
             machineryShowUploadQueue();
         }
         if (w.is.url(dragUrl)) {
-            s.uploadUrl(dragUrl, folder);
+            useMiscRawState.getState().uploadUrl(dragUrl, folder);
             if (folder) { w.electronLog && w.electronLog.info(`[app] Drop url: ${dragUrl} to ${folder.name}(${folder.id})（Center）`); }
             else { w.electronLog && w.electronLog.info(`[app] Drop url ${dragUrl} to All(Center)`); }
         }
         // bundle 原 bug 逐字保留：实参实为 ("data:image" > -1)，即 indexOf(false)
         else if ((dragUrl as any).indexOf(("data:image" as any) > -1) ) {
-            s.uploadUrl(dragUrl, folder);
+            useMiscRawState.getState().uploadUrl(dragUrl, folder);
             if (folder) { w.electronLog && w.electronLog.info(`[app] Drop base64 url to: ${folder.name}(${folder.id})(Center)`); }
             else { w.electronLog && w.electronLog.info(`[app] Drop base64 url to All(Center)`); }
         }

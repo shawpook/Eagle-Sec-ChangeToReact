@@ -321,7 +321,6 @@ function machineryGetLibraryHistory(): Promise<any> {
 /* switchLibrary（bundle 17976-17986 逐字） */
 function machinerySwitchLibrary(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     const fs = w.require('fs');
     const pathMod = w.require('path');
@@ -330,7 +329,7 @@ function machinerySwitchLibrary(params: any): Promise<any> {
       reject(`Library does not exist.`);
     }
     else {
-      bs.openLibrary(pathMod.normalize(libraryPath));
+      useMiscRawState.getState().openLibrary(pathMod.normalize(libraryPath));
       resolve(undefined);
     }
   });
@@ -497,8 +496,7 @@ function machineryGetTagGroups(params: any): Promise<any> {
 /* getRecentFolders（bundle 18157-18174 逐字） */
 function machineryGetRecentFoldersAPI(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    var recentFolders = bs.getRecentFoldersForAPI(16);
+    var recentFolders = useMiscRawState.getState().getRecentFoldersForAPI(16);
     if (recentFolders.length < 16) {
       for (var i = 0; i < useFolderState.getState().folderList.length; i++) {
         if (i > 16) break;
@@ -554,7 +552,6 @@ function machineryCreateFolder(params: any): Promise<any> {
 /* renameFolder（bundle 18201-18215 逐字） */
 function machineryRenameFolder(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     var newName = params.newName;
     var folderId = params.folderId ?? params.folderID;
@@ -564,7 +561,7 @@ function machineryRenameFolder(params: any): Promise<any> {
     }
     else {
       let originName = folder.name;
-      bs.changeFolderName(folder, newName);
+      useMiscRawState.getState().changeFolderName(folder, newName);
       machineryUpdateSidebarList();
       machinerySaveFolder( );
       w.electronLog.info(`[api] rename folder: ${originName} to ${newName}`);
@@ -576,7 +573,6 @@ function machineryRenameFolder(params: any): Promise<any> {
 /* updateFolder（bundle 18217-18245 逐字） */
 function machineryUpdateFolder(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     var colors: any = {
       "red": true,
       "orange": true,
@@ -597,7 +593,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
     }
     else {
       if (newName) {
-        bs.changeFolderName(folder, newName);
+        useMiscRawState.getState().changeFolderName(folder, newName);
       }
       if (newColor && colors[newColor]) {
         folder.iconColor = newColor;

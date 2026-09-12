@@ -106,7 +106,7 @@ class Inspector {
     toggle() {
         this.isHideInspector = !this.isHideInspector;
         setTimeout(() => {
-            getBodyScope().whenLayoutChange();
+            useMiscRawState.getState().whenLayoutChange();
             scopeEvalAsync();
         }, 100);
         if (eagle.inspector.isHideInspector) { electronLog && electronLog.info("[app] Inspector: OFF"); }

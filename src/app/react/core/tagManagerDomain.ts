@@ -18,7 +18,7 @@ import { debounce } from '../utils/func';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
-import { getBodyScope } from './appCore';
+
 import { toggleGifPlay } from '../services/mediaService';
 import { getLibraryHistory } from '../services/folderCoreService';
 import { getResizable, makeResizable } from '../components/interactions/resizable';
@@ -2791,7 +2791,6 @@ export function machineryEnableSubFolderNameEditable(event: any, folder: any): v
 
   onEl(el, "blur", w.debounce(function () {
     exitEditable();
-    var $scope = getBodyScope();
     var newName = textEl(el);
     if (!newName || !newName.trim()) {
       setHtmlEl(el, `${originalName}`);
@@ -2810,7 +2809,7 @@ export function machineryEnableSubFolderNameEditable(event: any, folder: any): v
 
       setHtmlEl(el, `${name}`);
       folder.name = name;
-      $scope.saveFolder();
+      useMiscRawState.getState().saveFolder();
       scopeEvalAsync();
       try { w.electronLog && w.electronLog.info(`[app] Change sub-folder name: ${originalName}(${folder.id}) > ${newName}`); } catch (err) { }
     }

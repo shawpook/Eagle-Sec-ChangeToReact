@@ -1041,7 +1041,7 @@ export function FileAddLibraryProgress() {
             lib.modificationTime = Date.now();
             const newMetadataJSON = JSON.stringify(lib);
             updateLibraryMetadata(targetMetadataPath, newMetadataJSON);
-            getRootScope().notify({ message: t('general.taskFinished'), duration: 800 });
+            useMiscRawState.getState().notify({ message: t('general.taskFinished'), duration: 800 });
           }
         });
         rootRef.current.isAdding = false;
@@ -1067,7 +1067,7 @@ export function FileAddLibraryProgress() {
             lib.modificationTime = Date.now();
             const newMetadataJSON = JSON.stringify(lib);
             updateLibraryMetadata(targetMetadataPath, newMetadataJSON);
-            getRootScope().notify({ message: t('general.taskFinished'), duration: 800 });
+            useMiscRawState.getState().notify({ message: t('general.taskFinished'), duration: 800 });
           }
         });
         rootRef.current.isAdding = false;
@@ -1153,7 +1153,7 @@ export function FileAddLibraryProgress() {
         rootRef.current.total = 0;
         rootRef.current.forceQuit = false;
         ipc && ipc.send && ipc.send('electron-info', `[app] Add to library finished, total: ${items.length}, success: ${success.length}, fail: ${fail.length}`);
-        getRootScope().notify({ message: t('general.taskFinished'), duration: 800 });
+        useMiscRawState.getState().notify({ message: t('general.taskFinished'), duration: 800 });
 
         const targetMtimePath = pathMod.normalize(`${libraryPath}/mtime.json`);
         fsMod.readFile(targetMtimePath, 'utf8', function (err: any, data: string) {

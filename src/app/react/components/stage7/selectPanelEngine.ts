@@ -7,6 +7,7 @@ import { createFolder } from '../../services/folderCoreService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryGetRecentFolders } from '../../core/libraryDomain';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段7d-1c-1：SelectPanel 体系纯类逐字移植（React 组件层见 SelectPanels.tsx）。
  *
@@ -2294,7 +2295,7 @@ export class FolderSelectPanel extends SelectPanel {
           {
             label: t('selectFolderPanel.context.removeHistory'),
             click: () => {
-              getBodyScope().removeRecentFolder(item.id, () => {
+              useMiscRawState.getState().removeRecentFolder(item.id, () => {
                 const selectedIds = { ...this.listData.selectedIds };
                 this.reset();
                 this.init(this.originalParams);

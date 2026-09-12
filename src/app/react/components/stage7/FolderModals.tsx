@@ -1269,8 +1269,7 @@ export function AddToFolderModal() {
   useVsAutoScroll('.move-to-folder-modal .sidebar-item-container', view.currentIndex, sizes, sizesCumulative, 28);
 
   const preventMiddleClick = (event: any) => {
-    const body = getBodyScope();
-    if (body && typeof body.preventMiddleClick === 'function') body.preventMiddleClick(event);
+    if (typeof useMiscRawState.getState().preventMiddleClick === 'function') useMiscRawState.getState().preventMiddleClick(event);
   };
 
   const renderNode = (node: any, idx: number) => {
@@ -1948,8 +1947,7 @@ export function MoveFolderModal() {
   const win = useVirtualWindow(listRef, sizes, `${view.resultList.length}:${view.open}:${filterKeywordRef.current}`);
 
   const preventMiddleClick = (event: any) => {
-    const body = getBodyScope();
-    if (body && typeof body.preventMiddleClick === 'function') body.preventMiddleClick(event);
+    if (typeof useMiscRawState.getState().preventMiddleClick === 'function') useMiscRawState.getState().preventMiddleClick(event);
   };
 
   const renderNode = (node: any, idx: number) => {

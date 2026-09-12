@@ -510,7 +510,7 @@ export function rgbToHex(r: number, g: number, b: number): string | false {
 export function copyComment(event: any, image: any, comment: any) {
   if (comment && comment.annotation) {
     req('electron')?.clipboard?.writeText(unescape(comment.annotation));
-    getBodyScope().notify({
+    useMiscRawState.getState().notify({
       message: t('previewWindow.copied'),
       duration: 750,
     });
@@ -573,7 +573,7 @@ export function removeImageComment(item: any, index: number) {
   (window as any).electronLog && (window as any).electronLog.info(`[app] Remove image annotation: ${item.name}(${item.id})`);
 
   const message = t('notify.annotation.remove');
-  getRootScope()?.notify({ message: message, duration: 4000 }, () => {
+  useMiscRawState.getState().notify({ message: message, duration: 4000 }, () => {
     item.comments = originComments;
     rebindRefreshChannel.emit(true);
     ipc.send('image-change', item);
@@ -668,7 +668,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
       (window as any).electronLog && (window as any).electronLog.info(`[app] Remove video annotation: ${video.name}(${video.id})`);
 
       const message = t('notify.annotation.remove');
-      getRootScope()?.notify({ message: message, duration: 4000 }, function () {
+      useMiscRawState.getState().notify({ message: message, duration: 4000 }, function () {
         video.comments = originComments;
         rebindRefreshChannel.emit(true);
         refreshVideoCommentsChannel.emit();
@@ -712,7 +712,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           icon: 'ic-tag-copy.svg',
           click: () => {
             eagleIns.copyTags([tag]);
-            getBodyScope().notify({
+            useMiscRawState.getState().notify({
               message: t('Context.Tag.Copy.Success'),
               duration: 750,
             });
@@ -754,7 +754,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           icon: 'ic-tag-empty.svg',
           accelerator: (window as any).preferences.shortcuts.keybinds['organize.tag.clear'],
           click: () => {
-            getBodyScope().clearAllTags();
+            useMiscRawState.getState().clearAllTags();
             scopeEvalAsync();
           },
         },
@@ -809,7 +809,7 @@ export function openHelpContextMenu() {
         icon: 'ic-help.svg',
         keywords: 'help center 帮助中心 帮助中心 ヘルプセンター',
         click: () => {
-          getBodyScope().openHelpCenter();
+          useMiscRawState.getState().openHelpCenter();
         },
       },
       {
@@ -817,7 +817,7 @@ export function openHelpContextMenu() {
         icon: 'ic-tips.svg',
         keywords: 'tips 小技巧 小技巧 ヒント',
         click: () => {
-          getBodyScope().openGetStarted();
+          useMiscRawState.getState().openGetStarted();
         },
       },
       {
@@ -836,7 +836,7 @@ export function openHelpContextMenu() {
         icon: 'ic-privacy.svg',
         keywords: 'privacy 隐私 プライバシー',
         click: () => {
-          getBodyScope().openPrivacy();
+          useMiscRawState.getState().openPrivacy();
         },
       },
       {
@@ -844,7 +844,7 @@ export function openHelpContextMenu() {
         icon: 'ic-developer.svg',
         keywords: 'api developer 開發者 開發者 開発者',
         click: () => {
-          getBodyScope().openAPIDocument();
+          useMiscRawState.getState().openAPIDocument();
         },
       },
       {
@@ -852,7 +852,7 @@ export function openHelpContextMenu() {
         icon: 'ic-twitter.svg',
         keywords: 'twitter social media 社交媒体 社交媒體 ソーシャルメディア',
         click: () => {
-          getBodyScope().openTwitter();
+          useMiscRawState.getState().openTwitter();
         },
       },
     ],

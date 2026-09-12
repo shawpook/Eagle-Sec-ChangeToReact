@@ -891,7 +891,7 @@ export function replaceFile(...args: any[]) {
                         ayncsImagesChange([item]);
                     }
 
-                    getBodyScope().updateItemListView(item);
+                    useMiscRawState.getState().updateItemListView(item);
 
 
                     // Step 5: 更新 UI

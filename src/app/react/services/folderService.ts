@@ -1,6 +1,7 @@
-import { getBodyScope } from '../core/appCore';
+
 
 import { machinerySaveFolder } from '../core/libraryDomain';
+import { useMiscRawState } from '../store/miscRawState';
 /**
  * b1-9bb：文件夹服务 —— saveFolder 热点收编。
  *
@@ -12,6 +13,5 @@ import { machinerySaveFolder } from '../core/libraryDomain';
  */
 
 export function saveFolder(): void {
-  const s = getBodyScope();
-  if (s && typeof s.saveFolder === 'function') machinerySaveFolder();
+  if (typeof useMiscRawState.getState().saveFolder === 'function') machinerySaveFolder();
 }

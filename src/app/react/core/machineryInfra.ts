@@ -184,7 +184,7 @@ export function applyDataMachineryScope(): void {
   // scopeFn('onDropContainer') 只在 scope 上找；③ callScope 先查 fns 表再查 scope
   // ——两者均不回落 window，故 window 与 scope 都要挂。bundle 在世时 window 已有绑定，
   // if-absent 零改变。
-  s.onDropContainer = (event: any) => machineryOnDropContainer(s, event);
+  s.onDropContainer = (event: any) => machineryOnDropContainer(event);
   if (s.__eagleShim && !(window as any).onDropContainer) (window as any).onDropContainer = s.onDropContainer;
   // b1-7e：全局查重（getFolderImages/findDupclipate）+ 子文件夹列表 + 搜索聚焦 +
   // 新建智能文件夹/前置插入 + 列表滚顶/滚底

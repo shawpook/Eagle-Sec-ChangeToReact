@@ -22,6 +22,7 @@ import { useLayoutState } from '../../store/layoutState';
 import { useItemState } from '../../store/itemState';
 import { usePreferencesState } from '../../store/preferencesState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）
@@ -837,7 +838,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         const s = getBodyScope();
         machineryLeaveDetailMode(s);
       } else {
-        getBodyScope().toggleFullScreen();
+        useMiscRawState.getState().toggleFullScreen();
         scopeEvalAsync();
       }
     });
@@ -1187,7 +1188,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
       if (!isInPreviewWindow) {
         machineryLeaveDetailMode(getBodyScope());
       } else {
-        getBodyScope().toggleFullScreen();
+        useMiscRawState.getState().toggleFullScreen();
         scopeEvalAsync();
       }
     };

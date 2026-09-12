@@ -87,6 +87,25 @@ interface MiscRawState {
   hsks: any;
   Registration: any;
   AnalyticsHelper: any;
+  uploadUrl: any;
+  filterWithTags: any;
+  openGifContextMenu: any;
+  getExifPath: any;
+  clearAllTags: any;
+  openHelpCenter: any;
+  openGetStarted: any;
+  openPrivacy: any;
+  openAPIDocument: any;
+  openTwitter: any;
+  whenLayoutChange: any;
+  removeRecentFolder: any;
+  updateItemListView: any;
+  preventMiddleClick: any;
+  changeFolderName: any;
+  saveFolder: any;
+  openLibrary: any;
+  getRecentFoldersForAPI: any;
+  toggleFullScreen: any;
   searchFilter: any;
   lockImageFilter: any;
   $$listeners: any;
@@ -292,6 +311,25 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   hsks: null,
   Registration: null,
   AnalyticsHelper: null,
+  uploadUrl: null,
+  filterWithTags: null,
+  openGifContextMenu: null,
+  getExifPath: null,
+  clearAllTags: null,
+  openHelpCenter: null,
+  openGetStarted: null,
+  openPrivacy: null,
+  openAPIDocument: null,
+  openTwitter: null,
+  whenLayoutChange: null,
+  removeRecentFolder: null,
+  updateItemListView: null,
+  preventMiddleClick: null,
+  changeFolderName: null,
+  saveFolder: null,
+  openLibrary: null,
+  getRecentFoldersForAPI: null,
+  toggleFullScreen: null,
   searchFilter: null,
   lockImageFilter: null,
   $$listeners: null,
@@ -437,6 +475,7 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'debugReportStatus', 'fixUtils', 'trashRemoved', 'currentTrashRemoved', 'sortIncrease', 'isContainAlphabet',
   'keyword_cn', 'keyword_tw', 'isKeywordTW', 'isKeywordCN', 'tagsSuggestion', 'showSlowNotify',
   'isItemBindCalculated', 'currentTag', 'progress', 'hsks', 'Registration', 'AnalyticsHelper',
+  'uploadUrl', 'filterWithTags', 'openGifContextMenu', 'getExifPath', 'clearAllTags', 'openHelpCenter', 'openGetStarted', 'openPrivacy', 'openAPIDocument', 'openTwitter', 'whenLayoutChange', 'removeRecentFolder', 'updateItemListView', 'preventMiddleClick', 'changeFolderName', 'saveFolder', 'openLibrary', 'getRecentFoldersForAPI', 'toggleFullScreen',
   'searchFilter', 'lockImageFilter', '$$listeners', '$$watchers', 'saveFolderDebounce', 'tagsSuggestionResult',
   'undo', 'closeAll', 'initMenu', 'notify', 'reload', 'toggleFilter', 'updateSelection', 'zoom', 'changeStar', 'removeSelected', 'toggleAll', 'selectNext', 'selectPrev', 'enterDetailMode', 'leaveDetailMode', 'onDropContainer', 'activateFont', 'deactivateFont', 'escHandler', 'copyAsPath', 'getRawPath', 'getRawUrl', 'select', 'addImagesToFolder', 'selectTag', 'createTagGroup', 'openTagAllGroup', 'openUnfiledGroup', 'openStarredGroup', 'openTagGroup', 'addStarredTags', 'addGroupTags', 'openTagGroupContextMenu', 'renameTagGroup', 'changeTagGroupColor', 'removeTagGroup', 'renameTagGroupBlur', 'renameTagGroupKeyup', 'tagGroupDescriptionChange', 'tagGroupDescriptionFocus', 'tagGroupDescriptionBlur',
   'gifViewer', 'gifPlayer', 'selectedTags', 'removeSound', 'lastIndex', 'isGifReady', 'orderBy', 'currentId', 'duplicateGroupings', 'tagViewModeName', 'colorDistancesMap', 'folderKeyword', 'listMetaType', 'isSearchScopeFolderName', 'isSearchScopeFolderDesc', 'preelaborations', 'paletteQueuePaused', 'addImageStartTime', 'availableHistoryTags', 'lastSelectedTag', 'gifUpadteInterval', 'sidebarIndex', 'canUseTouchID', 'unlockPassword', 'historySearchKeywords', 'boxContianerWidth', 'isSearchScopeName', 'isSearchScopeExt', 'isSearchScopeTag', 'isSearchScopeUrl', 'isSearchScopeAnnotation', 'isSearchScopeNote', 'keywordDebounce', 'MAX_LIST_WIDTH', 'contentFilterCache', 'isExpandQuickAccess', 'isExpandSmartFolder', 'isExpandFolder', 'commentRect', 'duplicateTarget', 'showName', 'showMetas', 'searchRegexGroup', 'addImageTimeLeftInSeconds', 'sliderZoomRatio', 'newGroupName', 'usingGifPlayer', 'paletteQueueDelay', 'lastProcessCount', 'isLibrarySaving', 'saveFolderDebounceTimeout', 'libraryHistory', 'isEnglish', 'initDetailMode', 'untagged', 'lastImageHeight', 'gotoBottomTimeout', 'isOpenWebpagePanel', 'boxContianerHeight', 'isHideMainNav', 'page', 'len', 'showOriginalImageWhenLarge', 'showAnnotation', 'showFileExtension', 'showFileExtensionLabel', 'duplicates', 'showLargeImage', 'usingCache', 'winMenu', 'selectingTags', 'libraryLoadedProgress', 'paletteQueueLength', 'metadataQueueLength', 'downloadQueueLength', 'MAX_DIMENSION', 'duplicateSound', 'errorSound', 'orderByName', 'folderIcons', 'hexColor', 'loadMoreDisable',

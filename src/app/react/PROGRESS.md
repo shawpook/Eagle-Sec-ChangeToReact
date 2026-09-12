@@ -7794,5 +7794,15 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
 - 结果：`watch/watchCollection/broadcast/on/apply = 0`；`evalAsync = 4`（3 个独立窗口 + shim 测试钩子）；
   `scopeEvalAsync 356`、`getBodyScope 627`、`rootAccess 360`、`coreState 14` 待 E2/E3/E4。
 
-**E1 门禁**：`tsc` 508（零新增）+ `probe LOAD_OK` + 受影响 ~20 测试全过（stage-smoke/5/6/7a/7b/11a1/7d6b、
-cz1、m1、d3 组、menu-popup、residue、ui-interactions、sidebar-dnd、main-ui-workflow）。
+**E1 门禁**：`tsc` 508（零新增）+ `probe LOAD_OK` + **全套 65/65 `REACT SUITE ALL GREEN`**
+（`suite-e1b.log`；首轮 61/65，4 项单独修复后复跑全绿）。逐项修复记录：
+1. `react-stage11b0` —— `gridDirectives` **第二处**假 scope（`:175`）仍名 `$on`，而调用点已改 `.on(` →
+   指令内 TypeError（`__eagleGridDirectiveErrors`）；同步改名修复。
+2. `react-stage1m1` m1-A6 —— 断言 `shim.$evalAsync === undefined` 与"保留为测试钩子"矛盾，改判为
+   `typeof $evalAsync === 'function'`（`$apply/$watch/$watchCollection/$on/$broadcast` 仍断言为 undefined）。
+3. `main-ui-workflow` —— 已知孤儿 Electron 偶发，复跑通过。
+4. `preview-delivery` —— **驱动 `main.cjs` 的 `scope.$evalAsync()` 提交钩子不可删**：实测「有 4/4 过、
+   无 4/4 败」与调用存在性完全相关（视频详情切换受影响）。已还原该 11 处调用。
+   ⚠️ 但探针实测 `window.$bodyScope.__eagleShim === true` 且 `$evalAsync` 即 shim 的 **no-op 实现**
+   （`$apply/$watch` 已 undefined）——「no-op 调用却有行为影响」的原因未明（疑似驱动内时序/加载链
+   副作用）。**E4/E5 删除 `$evalAsync` 前必须先在驱动侧完成迁移**（改用 store hook 后删）。

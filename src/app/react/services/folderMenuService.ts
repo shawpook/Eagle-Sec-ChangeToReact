@@ -42,6 +42,7 @@ import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { usePreferencesState } from '../store/preferencesState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -105,24 +106,22 @@ export function checkOperationSafety2(...args: any[]) {
 }
 
 export function refreshSubfolderList(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
       // 过滤子文件夹
       if (useFolderState.getState().currentFolder) {
         let subFolders: any[] = [];
         if (useListState.getState().showSubfolderContent) {
-          s.subFolders = getAllChildFolder(useFolderState.getState().currentFolder);
+          writeScopeField('subFolders', getAllChildFolder(useFolderState.getState().currentFolder));
           syncListFromScope();
           if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
         }
         else {
-          s.subFolders = useFolderState.getState().currentFolder.children;
+          writeScopeField('subFolders', useFolderState.getState().currentFolder.children);
           syncListFromScope();
           if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = false;
         }
         if (useListState.getState().keyword) {
-          s.subFolders = useMiscRawState.getState().subFolders.filter(function (folder: any) {
+          writeScopeField('subFolders', useMiscRawState.getState().subFolders.filter(function (folder: any) {
             if (folder.name.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
               return true;
             }
@@ -132,21 +131,19 @@ export function refreshSubfolderList(...args: any[]) {
                 return true;
               }
             }
-          });
+          }));
           syncListFromScope();
           if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
         }
       }
       else {
-        s.subFolders = [];
+        writeScopeField('subFolders', []);
         syncListFromScope();
       }
     }).apply(null, args);
 }
 
 export function setFolderPassword(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folder: any) {
       var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
@@ -155,8 +152,6 @@ export function setFolderPassword(...args: any[]) {
 }
 
 export function changeFolderPassword(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folder: any) {
       var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
@@ -165,8 +160,6 @@ export function changeFolderPassword(...args: any[]) {
 }
 
 export function resetFolderPassword(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folder: any) {
       var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
@@ -195,8 +188,6 @@ export function setFolderOrder(...args: any[]) {
 }
 
 export function setFoldersSortIncrease(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folders: any, sortIncrease: any, ignoreReload: any) {
       folders.forEach(function (folder: any) {
         setFolderSortIncrease(folder, sortIncrease);
@@ -238,8 +229,6 @@ export function lockFolder(...args: any[]) {
 }
 
 export function settingFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any) {
       var f = folder;
       if (!f) {
@@ -405,8 +394,6 @@ export function changeSelectedFoldersColor(...args: any[]) {
 }
 
 export function folderExportAsPack(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
       var images: any[] = [];
@@ -461,8 +448,6 @@ export function folderExportAsPack(...args: any[]) {
 }
 
 export function folderExportAsFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
       var folders = useMiscRawState.getState().selectedFolders;
@@ -595,8 +580,6 @@ export function folderExportAsFolder(...args: any[]) {
 }
 
 export function moveFolders(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (selectedFolders: any, node: any) {
       var selected = (selectedFolders && selectedFolders.length > 0) ? selectedFolders : [node];
       if (selected && selected.length > 0) {
@@ -1208,8 +1191,6 @@ export function setSmartFolderOrder(...args: any[]) {
 }
 
 export function setSmartFoldersSortIncrease(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (smartFolders: any, sortIncrease: any, ignoreReload: any) {
       smartFolders.forEach(function (folder: any) {
         setSmartFolderSortIncrease(folder, sortIncrease);
@@ -1549,8 +1530,6 @@ export function newSmartFolder(...args: any[]) {
 }
 
 export function newChildSmartFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any) {
       newSmartFolderChannel.emit({ smartFolder: smartFolder || useFolderState.getState().currentSmartFolder, parent: smartFolder });
     }).apply(null, args);

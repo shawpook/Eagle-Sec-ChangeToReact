@@ -10,7 +10,7 @@
  */
 // @ts-nocheck
 import { contextMenuCloseChannel, contextMenuOpenChannel, openRenameChannel } from '../global/bus';
-import { getBodyScope } from './appCore';
+
 import { q, findEl } from '../utils/domQuery';
 import { useSelectionState } from '../store/selectionState';
 
@@ -39,8 +39,6 @@ const _legacyContextMenu: any = {
 // renameImages（bundle 41480-41495 逐字；$scope→scope 桥。bare event 为 bundle
 // window.event 怪癖逐字保留——Chromium 下 bare 标识符经全局回退读到 window.event）
 export function renameImages() {
-  const s: any = getBodyScope();
-  if (!s) return;
   if (useSelectionState.getState().selected.length > 1) {
     openRenameChannel.emit({
       type: 'IMAGE',

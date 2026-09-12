@@ -8,7 +8,7 @@ import { q, hasClass, widthOf, heightOf, setCssEl, offsetOf } from '../../utils/
 import { TagSelectPanel } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { useVsGridRepeat, themePathOf } from './SelectPanels';
-import { getBodyScope } from '../../core/appCore';
+
 import { inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { makeDraggable } from '../interactions/draggable';
 import { makeResizable } from '../interactions/resizable';
@@ -166,9 +166,8 @@ export function InspectorTagSelectPanel() {
       });
     }
 
-    const body = getBodyScope();
     const offs: any[] = [];
-    if (body) {
+    {
       // $watchCollection("selected")（57938-57942 逐字；selected 为 body scope 同名属性）
       // b1-9bz-C-4：$watchCollection('selected') → 组件内 200ms 轮询（与原 shim watcher
       // 同频）。轮询在本组件内，不依赖 scopeShim 的 watcher —— 删 shim 后仍工作。

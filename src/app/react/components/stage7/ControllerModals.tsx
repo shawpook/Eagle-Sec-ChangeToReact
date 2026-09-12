@@ -11,7 +11,7 @@ import { ayncsImagesChange } from './FolderModals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
-import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
@@ -57,8 +57,6 @@ export function ErrorModal() {
   }, []);
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const offOpen = openErrorChannel.on((params: any) => {
       errorListRef.current = params.errorList;
       setOpen(true);
@@ -106,7 +104,6 @@ export function ErrorModal() {
   const retryAll = () => {
     const w = window as any;
     const body = getBodyScope();
-    const rootScope = getRootScope();
     const urlFiles: any[] = [];
     const localFiles: any[] = [];
     errorListRef.current.forEach((error) => {
@@ -443,8 +440,6 @@ export function WebsitePanel() {
 
   // OPEN_URL_IN_PANEL（74113-74120 逐字）
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openUrlInPanelChannel.on((url: any) => {
       currentUrlRef.current = url;
       const webview = (document.querySelector('#website-panel webview') as any) || webviewRef.current;

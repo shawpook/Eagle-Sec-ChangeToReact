@@ -38,6 +38,7 @@ import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';
 import { machinerySmartZoom } from '../services/viewOpsService';
 import { machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryContentFilter, machineryFilterData } from './filterDomain';
+import { writeScopeField } from './scopeFieldBridge';
 declare const Buffer: any;
 
 let installed = false;
@@ -967,8 +968,7 @@ function _buildSlowNotify(): any {
       }
     },
     show: function () {
-      const bodyScope = getBodyScope();
-      bodyScope.showSlowNotify = true;
+      writeScopeField('showSlowNotify', true);
       scopeEvalAsync(function () {
         setTimeout(function () {
           addClass("#library-warning", "show active");

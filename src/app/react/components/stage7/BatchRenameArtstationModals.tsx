@@ -11,7 +11,7 @@ import { ayncsImagesChange, hiddenByCurrentFilter } from './FolderModals';
 import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
 import { syncUploadFromScope } from '../../store/uploadState';
-import { getBodyScope, getRootScope } from '../../core/appCore';
+import { getRootScope } from '../../core/appCore';
 import { openFolder } from '../../services/folderCoreService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
@@ -176,8 +176,6 @@ export function ArtstationImportModal() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
 
     const off = importArtstationChannel.on(() => {
       open();
@@ -1565,8 +1563,6 @@ export function BatchRenameModal() {
 
   // $on("OPEN_RENAME")（76807-76834 逐字）+ autoFocus 指令（73003-73014 等价）
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
 
     const off = openRenameChannel.on((params: any) => {
       ngSafe(() => {

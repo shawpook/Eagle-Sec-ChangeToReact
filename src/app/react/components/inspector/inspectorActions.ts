@@ -685,7 +685,6 @@ export function tagsInputMouseDown(event: any, tag?: string) {
   if (event.button === 2) {
     event.stopPropagation();
     event.preventDefault();
-    const bodyScope = getBodyScope();
     const eagleIns = (window as any).eagle.inspector;
     let items: any[] = [];
     if (tag) {
@@ -765,7 +764,6 @@ export function tagsInputMouseDown(event: any, tag?: string) {
       items: items,
       showSearch: false,
     });
-    void bodyScope;
   }
 }
 
@@ -878,7 +876,6 @@ export function onInspectorResize(event: any, ui: any) {
 /* ---------------- 事件订阅（link 中的 $on/ipc） ---------------- */
 
 export function bindInspectorEvents(): () => void {
-  const scope = getBodyScope();
   const ipc = getIpc();
   const offs: Array<() => void> = [];
 
@@ -895,7 +892,7 @@ export function bindInspectorEvents(): () => void {
     } catch (err) {}
   });
 
-  if (scope) {
+  {
     // b1-9ba：INSPECTOR_SAVE_CHANGES / PLUGIN_UNINSTALL 兩頻道全樹無發送者（原發送面在
     // bundle，摘除後死亡）——死監聽移除；UPDATE_INSPECTOR 仍有活發送面，保留。
     const offUpdate = updateInspectorChannel.on(() => {

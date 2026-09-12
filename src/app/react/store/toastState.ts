@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
-import { getBodyScope } from '../core/appCore';
+
 import { useMiscRawState } from './miscRawState';
 
 /**
@@ -46,8 +46,7 @@ for (const fieldName of MIGRATED_TOAST_FIELDS) {
  * 引用（OPEN_ERROR/CLEAN_ALL_ERROR params 透传），splice/length=0 后传入以即时对齐。
  */
 export function syncErrorCount(list?: any[]): void {
-  const s: any = getBodyScope();
-  const arr = list || (s && useMiscRawState.getState().errorList);
+  const arr = list || (useMiscRawState.getState().errorList);
   const count = (arr && arr.length) || 0;
   if (useToastState.getState().errorCount !== count) {
     useToastState.setState({ errorCount: count });

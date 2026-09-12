@@ -86,16 +86,12 @@ export function takeoverSelectionViewDomain(): void {
   //    m1-E-selected-watch 断言面。依赖：setLastItem（38490 link var 逐字）、selectItemsView
   //    （35073 逐字）随 watcher 一并补挂；AnnotationPreview（52076）整条未端口——按存在性守卫）──
   const setLastItem = w.debounce(function (item: any) {
-    const s2: any = getBodyScope();
-    if (!s2) return;
     if (item) {
       localStorage.setItem(`eagle.lastViewItem.${useMiscRawState.getState().rootDir}`, item.id);
       localStorage.setItem(`eagle.lastViewItemTime.${useMiscRawState.getState().rootDir}`, String(Date.now()));
     }
   }, 333);
   const selectItemsView = function (items: any) {
-    const s2: any = getBodyScope();
-    if (!s2) return;
     removeClass(".box.selected", "selected");
     (items || []).forEach(function (item: any) {
       if (useItemState.getState().selectedMappings[item.id]) {
@@ -134,8 +130,7 @@ export function takeoverSelectionViewDomain(): void {
         "transform": ``,
       });
       setTimeout(() => {
-        const sNow: any = getBodyScope();
-        detailZoom()?.updateNavigator( sNow && useSelectionState.getState().current);
+        detailZoom()?.updateNavigator( useSelectionState.getState().current);
       }, 300);
     }
 

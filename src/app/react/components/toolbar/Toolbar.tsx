@@ -9,7 +9,7 @@ import { syncBodyFromScope } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
-import { getBodyScope, runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
 import { makeSortable } from '../interactions/sortable';
 import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
@@ -27,6 +27,7 @@ import { machineryNextHistory, machineryPrevHistory } from '../../core/navHistor
 import { machineryToggleAll } from '../../services/gridService';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useFolderState } from '../../store/folderState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段3a：工具栏接管。
  *
@@ -87,8 +88,8 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
     const win = currentWindow();
     if (!win) return;
     if (win.isFullScreen()) win.setFullScreen(false);
-    else if (!win.isMaximized()) { win.maximize(); const s = getBodyScope(); if (s) s.isMaximize = true; }
-    else { win.unmaximize(); const s = getBodyScope(); if (s) s.isMaximize = false; }
+    else if (!win.isMaximized()) { win.maximize();  writeScopeField('isMaximize', true); }
+    else { win.unmaximize();  writeScopeField('isMaximize', false); }
     syncToolbarFromScope();
   };
   const restore = maximize;
@@ -248,8 +249,6 @@ export function Toolbar() {
   useEffect(() => {
     const el = pinnedRef.current;
     if (!el) return;
-    const scope = getBodyScope();
-    if (!scope) return;
     const options = useMiscRawState.getState().pluginModule?.pinPluginSortableOptions;
     const syncModel = () => {
       runInBodyScope((s) => {

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
-import { getBodyScope } from '../core/appCore';
+
 import { useFolderState } from './folderState';
 
 /**
@@ -66,8 +66,6 @@ migrateScopeFieldToStore(
  * isUnLock 写点调用（原 200ms 轮询快照退役）。
  */
 export function syncFolderLock(): void {
-  const s: any = getBodyScope();
-  if (!s) return;
   const cf = useFolderState.getState().currentFolder;
   const locked = !!(cf && cf.password && !cf.isUnLock);
   const tips = (cf && cf.passwordTips) || '';

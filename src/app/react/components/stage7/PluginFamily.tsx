@@ -7,7 +7,7 @@ import { getIpc } from '../detail/detailHooks';
 import { openAppContextMenu } from './selectPanelEngine';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
-import { getBodyScope, getRootScope } from '../../core/appCore';
+
 import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { widthOf, heightOf } from '../../utils/domQuery';
@@ -662,8 +662,6 @@ export function PluginPanel() {
   };
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
 
     // b1-9ba：UPDATE_PLUGIN_PANEL 頻道全樹無發送者（原發送面在 bundle，摘除後死亡）
     // ——死監聽移除。
@@ -984,8 +982,6 @@ export function PluginCreator() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
 
     // $on("OPEN_PLUGIN_CREATOR")（镜像 16-18）
     const off = openPluginCreatorChannel.on((params: any) => {

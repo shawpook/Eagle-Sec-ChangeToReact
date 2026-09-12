@@ -50,6 +50,7 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
@@ -60,8 +61,7 @@ var __lv_rotateImageSaveTimeout;
 var __lv_rotateImageTimeout;
 var __lv_pinyinCache = {};
 const initLinkVars = () => {
-	const s0: any = getBodyScope();
-	if (s0 && useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
+	if (useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 };
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -252,8 +252,6 @@ export function rotateImage(...args: any[]) {
    组件侧改直 import，零行为变化。 */
 export function flipImage(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event, __lv_image, writeToFile = false) {
 
             if (useBodyState.getState().isCropMode) return;
@@ -444,8 +442,6 @@ export function updateItemView(...args: any[]) {
 
 export function updateSelection(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function() {
             updateInspectorChannel.emit();
         }).apply(null, args);
@@ -453,8 +449,6 @@ export function updateSelection(...args: any[]) {
 
 export function startDrag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event) {
             if (useSelectionState.getState().current) {
                 var __lv_transformsJSON = JSON.stringify([useSelectionState.getState().current]);
@@ -483,18 +477,14 @@ export function saveVideoFrame(...args: any[]) {
 
 export function cancelRegenerateThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
             IPCHelper.send('cancel.generate.thumbnail');
-            s.regenerateThumbnailQueue = [];
+            writeScopeField('regenerateThumbnailQueue', []);
     }).apply(null, args);
 }
 
 export function getThumbnailPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (__lv_image) {
             if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
@@ -503,8 +493,6 @@ export function getThumbnailPath(...args: any[]) {
 
 export function getThumbnailUrl(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (__lv_image) {
             if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
@@ -520,8 +508,6 @@ export function currentIndex(...args: any[]) {
 
 export function regenerateThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         useSelectionState.getState().selected.forEach(function(image) {
             useMiscRawState.getState().regenerateThumbnailQueue.push(image);
@@ -825,8 +811,6 @@ export function calculateImageBinding(...args: any[]) {
 
 export function replaceFile(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         // 檢查是否只選擇了一個檔案
         if (!useSelectionState.getState().selected || useSelectionState.getState().selected.length !== 1) return;

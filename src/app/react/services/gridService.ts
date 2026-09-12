@@ -36,6 +36,8 @@ import { machineryFindDupclipate } from '../core/itemDomain';
 import { getTimeout, scopeSingleton } from '../core/machineryInfra';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
+import { useBodyState } from '../store/bodyState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */
@@ -298,20 +300,18 @@ export function buildScrollbarSaver(): any {
   const ScrollbarSaver: any = {
     positionMapping: {},
     getId: function () {
-      const s: any = getBodyScope();
       var id;
       if (useFolderState.getState().currentFolder) { id = useFolderState.getState().currentFolder.id; }
       else if (useFolderState.getState().currentSmartFolder) { id = useFolderState.getState().currentSmartFolder.id; }
-      else if (s.viewMode == "all") { id = "all"; }
-      else if (s.viewMode == "unfiled") { id = "unfiled"; }
-      else if (s.viewMode == "untagged") { id = "untagged"; }
-      else if (s.viewMode == "trash") { id = "trash"; }
-      else if (s.viewMode == "random") { id = "random"; }
-      else if (s.viewMode == "recent") { id = "recent"; }
+      else if (useBodyState.getState().viewMode == "all") { id = "all"; }
+      else if (useBodyState.getState().viewMode == "unfiled") { id = "unfiled"; }
+      else if (useBodyState.getState().viewMode == "untagged") { id = "untagged"; }
+      else if (useBodyState.getState().viewMode == "trash") { id = "trash"; }
+      else if (useBodyState.getState().viewMode == "random") { id = "random"; }
+      else if (useBodyState.getState().viewMode == "recent") { id = "recent"; }
       return id;
     },
     saveScrollPosition: function () {
-      const s: any = getBodyScope();
       if (w.eagle.filter.filterBadge > 0) return;
       if (useListState.getState().keyword) return;
       if (qa(".box").length + qa(".sub-folder").length === 0) return;
@@ -327,7 +327,7 @@ export function buildScrollbarSaver(): any {
       var startCursor = 0;
       var offsetTop = (q(".box-list")?.offsetTop) || 0;
       var scrollOffset;
-      if (qa(".sub-folder").length > 0 && s.startCursor === 0) {
+      if (qa(".sub-folder").length > 0 && useFolderState.getState().startCursor === 0) {
         scrollOffset = scrollTopValue("#box-container");
       }
       else {
@@ -344,8 +344,7 @@ export function buildScrollbarSaver(): any {
       ScrollbarSaver.positionMapping[id] = obj;
     },
     restoreScrollPosition: function () {
-      const s: any = getBodyScope();
-      if (s.viewMode === 'random') return;
+      if (useBodyState.getState().viewMode === 'random') return;
       if (w.eagle.filter.filterBadge > 0) return;
       var id = ScrollbarSaver.getId();
 
@@ -354,7 +353,7 @@ export function buildScrollbarSaver(): any {
       var obj = ScrollbarSaver.positionMapping[id];
       var $boxContainer = q("#box-container");
       if (obj) {
-        s.startCursor = obj.cursor || 0;
+        writeScopeField('startCursor', obj.cursor || 0);
         var offset = obj.offset || 0;
         var times = [20, 300];
         for (var i = times[0]; i < times[1]; i += 20) {
@@ -366,7 +365,7 @@ export function buildScrollbarSaver(): any {
         }
       }
       else {
-        s.startCursor = 0;
+        writeScopeField('startCursor', 0);
       }
     }
   };

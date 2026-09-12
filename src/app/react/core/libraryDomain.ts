@@ -70,6 +70,7 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useFolderState } from '../store/folderState';
+import { writeScopeField } from './scopeFieldBridge';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -278,17 +279,13 @@ export function takeoverLibraryDomain(): void {
 
   // ── app-status-library-dirs-loaded（22753 逐字）──
   ipc.on('app-status-library-dirs-loaded', function (_e: any, _count: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
-    s.isLoading = true;
+    writeScopeField('isLoading', true);
     scopeEvalAsync();
   });
 
   // ── app-status-library-cache-loaded（22758 逐字）──
   ipc.on('app-status-library-cache-loaded', function (_e: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
-    s.isLoading = true;
+    writeScopeField('isLoading', true);
     scopeEvalAsync();
   });
 
@@ -432,17 +429,15 @@ export function takeoverLibraryDomain(): void {
   // ── app-status-loading（22734 逐字；重 require 段略去 = 同路径 require 缓存命中同一实例）──
   ipc.on('app-status-loading', function () {
     const w = window as any;
-    const s: any = getBodyScope();
-    if (!s) return;
     if (w.ig && w.ig.clear) w.ig.clear();
-    s.isUILoaded = false;
+    writeScopeField('isUILoaded', false);
     syncSidebarFromScope();
-    s.isItemBindCalculated = false;
+    writeScopeField('isItemBindCalculated', false);
     closeTagsPopupChannel.emit();
-    s.allData = [];
+    writeScopeField('allData', []);
     syncListFromScope();
-    s.isLoading = false;
-    s.startCursor = 0;
+    writeScopeField('isLoading', false);
+    writeScopeField('startCursor', 0);
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
     scopeEvalAsync();
 

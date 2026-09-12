@@ -9,7 +9,7 @@ import { openGeneralTagSelectPanel, themePathOf } from './SelectPanels';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { syncUploadFromScope } from '../../store/uploadState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
-import { getBodyScope } from '../../core/appCore';
+
 import { uploadUrls } from '../../services/uploadService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { importImagesChannel, openDuplicateChannel } from '../../global/bus';
@@ -17,6 +17,7 @@ import { useFolderState } from '../../store/folderState';
 import { useItemState } from '../../store/itemState';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -490,10 +491,9 @@ export function BatchSavePanel() {
 
   // init（37-104 逐字）
   const init = (params: any) => {
-    const body = getBodyScope();
 
     // Note: 取消全域选取的图片
-    body.selected = [];
+    writeScopeField('selected', []);
     syncInspectorFromScope();
     itemsRef.current = [];
     displayedRef.current = [];
@@ -1014,8 +1014,6 @@ export function BatchSavePanel() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
 
     const offs: any[] = [];
 

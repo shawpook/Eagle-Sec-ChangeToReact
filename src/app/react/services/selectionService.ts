@@ -92,13 +92,12 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
 
   onEl(nameEl, 'blur', debounce(function () {
     exitEditable();
-    var $scope = getBodyScope();
     var newName = textEl(nameEl);
     if (!newName || !newName.trim()) {
       setHtmlEl(nameEl, `<span>${originalName}</span>`);
       return;
     }
-    if (newName !== originalName && $scope && useSelectionState.getState().selected[0]) {
+    if (newName !== originalName && useSelectionState.getState().selected[0]) {
       var name = newName;
       var image = useSelectionState.getState().selected[0];
       name = name.substr(0, remainingFilenameLength(useMiscRawState.getState().libraryPath));

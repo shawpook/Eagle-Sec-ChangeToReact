@@ -98,8 +98,7 @@ function installFacade() {
       if (!id) return;
       const idx = state.items.findIndex((it) => it.id === id);
       if (idx > -1) state.items.splice(idx, 1);
-      const s = getBodyScope();
-      const lzm = s && useMiscRawState.getState().lazyLoadManager;
+      const lzm = useMiscRawState.getState().lazyLoadManager;
       if (lzm) {
         try { lzm.unobserve(el); lzm.cancelLoad(el); } catch (err) {}
       }
@@ -198,8 +197,7 @@ let installed = false;
 let scopeEventsDereg: Array<() => void> = [];
 
 function applyReset(nextItems: any[], cursor?: number, scrollPercentage?: number) {
-  const s = getBodyScope();
-  const lzm = s && useMiscRawState.getState().lazyLoadManager;
+  const lzm = useMiscRawState.getState().lazyLoadManager;
   if (lzm) {
     try { lzm.softReset(); lzm.initObserver(); } catch (err) {}
   }
@@ -235,8 +233,6 @@ export function installBoxGrid(): () => void {
   };
 
   const attach = () => {
-    const scope = getBodyScope();
-    if (!scope) return false;
     scopeEventsDereg.push(glResetChannel.on((_e: unknown, nextItems: any[], cursor?: number) => {
       applyReset(nextItems, cursor);
     }));

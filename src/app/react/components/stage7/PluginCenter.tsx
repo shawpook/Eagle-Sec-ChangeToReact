@@ -6,7 +6,7 @@ import { getIpc } from '../detail/detailHooks';
 import { delegateTarget } from '../../utils/domQuery';
 import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
-import { getBodyScope } from '../../core/appCore';
+
 import { openPluginCenterChannel, openPluginCenterDetailChannel, refreshPluginCenterChannel } from '../../global/bus';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
@@ -567,8 +567,6 @@ export function PluginCenter() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     const ipc = getIpc();
 
     // 點擊外部關閉排序下拉選單（镜像 85-94）

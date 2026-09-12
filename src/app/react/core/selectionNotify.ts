@@ -30,8 +30,7 @@ function sameSelection(a: any[], b: any[]): boolean {
 
 function ensurePoll(): void {
   if (timer) return;
-  const sv: any = getBodyScope();
-  prev = (sv && useSelectionState.getState().selected) ? useSelectionState.getState().selected.slice() : [];
+  prev = (useSelectionState.getState().selected) ? useSelectionState.getState().selected.slice() : [];
   timer = setInterval(() => {
     const s: any = getBodyScope();
     if (!s) return;

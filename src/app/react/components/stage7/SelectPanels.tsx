@@ -6,7 +6,7 @@ import { getIpc } from '../detail/detailHooks';
 import { q, hasClass, widthOf, heightOf, setCssEl, offsetOf } from '../../utils/domQuery';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { TagSelectPanel, TagSelectPanelItem } from './selectPanelEngine';
-import { getBodyScope, getRootScope } from '../../core/appCore';
+
 import { calculateImageBindingChannel, folderSettingsChannel, generalTagSelectPanelOpenChannel, saveFolderChannel, updateSelectionChannel } from '../../global/bus';
 import { makeDraggable } from '../interactions/draggable';
 import { makeResizable } from '../interactions/resizable';
@@ -34,8 +34,7 @@ export const themePathOf = (theme: string) => (theme === 'light' || theme === 'l
 
 export function openGeneralTagSelectPanel(params: any) {
   // GeneralTagSelectPanel 类（58115-58120）：$rootScope（html scope）广播
-  const rootScope = getRootScope();
-  if (rootScope) generalTagSelectPanelOpenChannel.emit(params);
+  generalTagSelectPanelOpenChannel.emit(params);
 }
 
 /* ================= vsGridRepeat 指令（14686-15106）→ useVsGridRepeat ================= */
@@ -374,9 +373,8 @@ export function GeneralTagSelectPanel() {
     }
 
     // initWatcher（58227-58243 逐字）
-    const scope = getBodyScope();
     let off: any;
-    if (scope) {
+    {
       const offOpen = generalTagSelectPanelOpenChannel.on((params: any) => {
         setTimeout(() => {
           panel.init(params);
@@ -849,8 +847,6 @@ export function AutoTaggingModal() {
   }, []);
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = folderSettingsChannel.on((folder: any) => {
       folderRef.current = folder;
       setOpen(true);
@@ -936,7 +932,6 @@ export function AutoTaggingModal() {
   };
 
   const save = () => {
-        const rootScope = getRootScope();
     setOpen(false);
     const folder = folderRef.current;
     if (!folder) return;

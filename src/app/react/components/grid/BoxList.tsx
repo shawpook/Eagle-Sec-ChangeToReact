@@ -134,9 +134,8 @@ export function BoxList() {
   }, []);
 
   const engine = getEngineState();
-  const scope = getBodyScope();
-  const layout: string = (scope && useBodyState.getState().layout) || '';
-  const imageSizeHeight = (scope && useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) || 200;
+  const layout: string = (useBodyState.getState().layout) || '';
+  const imageSizeHeight = (useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) || 200;
 
   useLayoutEffect(() => {
     registerGridRef(gridRef.current);
@@ -161,7 +160,7 @@ export function BoxList() {
     if (layout === 'GridLayout' || layout === 'SquareLayout') container.classList.add('grid-layout');
     else if (layout === 'ListLayout') container.classList.add('list-layout');
     else container.classList.add('justified-layout');
-    if (scope && useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) {
+    if (useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) {
       container.setAttribute('box-size', String(useLayoutState.getState().imageSize.height));
     }
   }, [layout, imageSizeHeight]);

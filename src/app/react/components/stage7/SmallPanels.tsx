@@ -12,7 +12,7 @@ import { CornerBtns } from '../toolbar/Toolbar';
 import { getIpc, getCurrentWindow, req } from '../detail/detailHooks';
 
 import { syncPanelFromScope } from '../../store/panelState';
-import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
 import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
 
@@ -25,6 +25,7 @@ import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../.
 
 import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';
 import { useMiscRawState } from '../../store/miscRawState';
+import { usePreferencesState } from '../../store/preferencesState';
 /**
  * 阶段7c-1：小弹窗族接管。
  *
@@ -123,8 +124,6 @@ export function LayoutPanel() {
   const { theme } = snapshot;
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openLayoutPanelChannel.on(() => {
       const el = panelRef.current;
       if (el) movePanelToCursorPosition(el);
@@ -482,8 +481,6 @@ export function NotificationModal() {
   const { theme } = snapshot;
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openNotificationChannel.on(() => setOpen(true));
     return () => off();
   }, []);
@@ -633,8 +630,6 @@ export function FolderPasswordModal() {
   const host = usePortalHost('eagle-folder-password-host');
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = setFolderPasswordChannel.on((params: any) => {
       setFolder(params.folder);
       setMode(params.mode);
@@ -839,8 +834,6 @@ export function MousewheelModal() {
   const host = usePortalHost('eagle-mousewheel-modal-host');
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openMousewheelPreferenceWindowChannel.on(() => {
       setOpen(true);
     });
@@ -849,10 +842,9 @@ export function MousewheelModal() {
 
   const save = () => {
     setOpen(false);
-    const root = getRootScope();
-    if (root) {
-      root.preferences.habits.scrollBehaviorTour = true;
-      root.preferences.habits.scrollBehavior = mode;
+    {
+      usePreferencesState.getState().preferences.habits.scrollBehaviorTour = true;
+      usePreferencesState.getState().preferences.habits.scrollBehavior = mode;
     }
     getIpc()?.send?.('chnage-scrollBehavior', mode);
   };
@@ -908,8 +900,6 @@ export function AboutPanel() {
 
   useEffect(() => {
     (async () => setPjson(await loadPjson()))();
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openAboutPanelChannel.on(() => setOpen(true));
     return () => off();
   }, []);

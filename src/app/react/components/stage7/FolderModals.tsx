@@ -337,8 +337,7 @@ export function AddToFolderModal() {
   // {{::folderList.length}}（body scope folderList 的一次性绑定，bootstrap 期即定型）
   const folderCountRef = useRef<number | null>(null);
   if (folderCountRef.current === null) {
-    const body = getBodyScope();
-    if (body && useFolderState.getState().folderList) folderCountRef.current = useFolderState.getState().folderList.length;
+    if (useFolderState.getState().folderList) folderCountRef.current = useFolderState.getState().folderList.length;
   }
 
   useEffect(() => {
@@ -550,8 +549,6 @@ export function AddToFolderModal() {
 
   /* openModal（74749-74799 逐字） */
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openAddFolderModalChannel.on((params: any) => {
             const w = window as any;
       foldersRef.current = [];
@@ -1664,8 +1661,6 @@ export function MoveFolderModal() {
 
   /* openModal（75651-75680 逐字；filterFolderKeyword 不清空——原版该行被注释） */
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const off = openMoveFolderModalChannel.on((params: any) => {
       const w = window as any;
       foldersRef.current = [];

@@ -42,8 +42,7 @@ var __lv_TagManager;
 var __lv_onTagSidebarResizeTimeout;
 var __lv_path;
 const initLinkVars = () => {
-	const s0: any = getBodyScope();
-	if (s0 && useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
+	if (useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 	if (!__lv_path) __lv_path = _req('path');
 };
 
@@ -284,8 +283,6 @@ export function changeFontDefaultLang(...args: any[]) {
 
 export function isFontActivate(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (item) {
             try {
                 var key = Object.keys(item.fontMetas.postScriptName)[0];
@@ -300,8 +297,6 @@ export function isFontActivate(...args: any[]) {
 
 export function getFontPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function() {
             if (useSelectionState.getState().current) {
                 return `./font-viewer/font-viewer.html?id=${useSelectionState.getState().current.id}&theme=${useBodyState.getState().theme}&language=${useBodyState.getState().language}`;
@@ -359,8 +354,6 @@ export function filterWithTag(...args: any[]) {
 
 export function renameTagGroupKeyup(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event, __lv_group, newName) {
             event.stopPropagation();
             // event.preventDefault();
@@ -378,8 +371,6 @@ export function renameTagGroupKeyup(...args: any[]) {
 
 export function renameTagGroupBlur(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (__lv_group, newName) {
             if (newName) {
                 __lv_TagManager.renameGroup(__lv_group.id, newName);
@@ -390,8 +381,6 @@ export function renameTagGroupBlur(...args: any[]) {
 
 export function onTagSidebarResize(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(e, ui) {
             if (ui && ui.size.width >= 200) {
                 useLayoutState.getState().containerSize.tagSidebar = ui.size.width;

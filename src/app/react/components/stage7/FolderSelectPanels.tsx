@@ -265,9 +265,8 @@ export function FolderSelectPanelHost() {
     };
 
     // scope.$on('FOLDER.SELECT.PANEL.OPEN')（586-634；Object.assign(scope, ...) → 实例直读）
-    const scope = getBodyScope();
     let off: any;
-    if (scope) {
+    {
       off = folderSelectPanelOpenChannel.on((params: any) => {
         panel.init(params);
 
@@ -1056,8 +1055,6 @@ export function NewSmartFolderModal() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
 
     // $scope.$on("NEW.SMART.FOLDER")（74387-74414 逐字）
     const offNew = newSmartFolderChannel.on(({ smartFolder, parent }: any) => {

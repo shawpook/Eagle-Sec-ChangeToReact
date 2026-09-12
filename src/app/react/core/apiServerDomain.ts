@@ -383,8 +383,7 @@ function machineryGetAPIApplicationInfo(): Promise<any> {
 /* setAPIPreferenceCollectOn（bundle 18054-18066 逐字；"chnage-preferences" 原码 typo 保留） */
 function machinerySetAPIPreferenceCollectOn(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    if (bs.preferences !== undefined && usePreferencesState.getState().preferences.general) {
+    if (usePreferencesState.getState().preferences !== undefined && usePreferencesState.getState().preferences.general) {
       usePreferencesState.getState().preferences.general.showCollectModal = 'true';
       apiIpc().send("chnage-preferences", usePreferencesState.getState().preferences);
       resolve(undefined);
@@ -398,8 +397,7 @@ function machinerySetAPIPreferenceCollectOn(): Promise<any> {
 /* setAPIPreferenceCollectOff（bundle 18067-18079 逐字） */
 function machinerySetAPIPreferenceCollectOff(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    if (bs.preferences !== undefined && usePreferencesState.getState().preferences.general) {
+    if (usePreferencesState.getState().preferences !== undefined && usePreferencesState.getState().preferences.general) {
       usePreferencesState.getState().preferences.general.showCollectModal = 'false';
       apiIpc().send("chnage-preferences", usePreferencesState.getState().preferences);
       resolve(undefined);

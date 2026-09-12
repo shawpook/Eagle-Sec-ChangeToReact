@@ -86,7 +86,7 @@ export function DropAreas() {
               <h2>{t('empty.folder.title')}</h2>
               <p>{t('empty.all.desc')}</p>
               <div className="buttons">
-                <div className="button button-xs button-grey" onClick={() => { const s = getBodyScope(); if (s) scopeFn(importFolders, useFolderState.getState().currentFolder)(); }}>{t('dialog.importLocalFolder.title')}</div>
+                <div className="button button-xs button-grey" onClick={() => {  scopeFn(importFolders, useFolderState.getState().currentFolder)(); }}>{t('dialog.importLocalFolder.title')}</div>
                 <a className="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank" rel="noreferrer">{t('appmenu.help>installExtension')}</a>
               </div>
             </div>
@@ -202,8 +202,6 @@ export function SubFolderSection() {
 
   useEffect(() => {
     if (!ngIf || !listRef.current) return;
-    const scope = getBodyScope();
-    if (!scope) return;
     // D-2f：jQuery-UI sortable → 自研（按 options 装配；disabled 用 setDisabled 切换）
     const listEl = listRef.current;
     const options = useMiscRawState.getState().subFolderSortableOptions || {};
@@ -351,8 +349,7 @@ export function BoxContainerListeners() {
     /* b1-9bz-B：原 `call(fn: string)` 字符串派发退役（scope 面直取，同 DetailToolbar）。
        onDragEnter/Leave/Over/MouseMove 四个在表与 machinery 均无供给，保留 scope 面回退。 */
     const call = (fn: (...a: any[]) => any) => (e: Event) => {
-      const s = getBodyScope();
-      if (s && typeof fn === 'function') fn(e);
+      if (typeof fn === 'function') fn(e);
     };
     const callM = (fn: (...a: any[]) => any) => (e: Event) => {
       const s = getBodyScope();

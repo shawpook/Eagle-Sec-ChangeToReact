@@ -47,6 +47,7 @@ import { machinerySortData } from './itemDomain';
 import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './tagManagerDomain';
 
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
+import { writeScopeField } from './scopeFieldBridge';
 declare const RecentFileManager: any;
 declare const UrlStateService: any;
 declare const analytics: any;
@@ -106,10 +107,8 @@ export function takeoverFilterDomain(): void {
   // ── 通道重挂（逐字）──
   // keyword-suggestion（23520）
   ipc.on('keyword-suggestion', function (_event: any, keywords: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
     if (keywords) {
-      s.globalKeywords = keywords;
+      writeScopeField('globalKeywords', keywords);
     }
   });
 
@@ -129,8 +128,6 @@ export function takeoverFilterDomain(): void {
 
   // filter-folder（23712）
   ipc.on('filter-folder', function (_event: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
     scopeEvalAsync(function () {
       (document.getElementById('folder-search') as HTMLElement | null)?.focus();
     });
@@ -178,8 +175,7 @@ export function takeoverFilterDomain(): void {
   if (s0) {
     useListState.subscribe((state: any, prev: any) => {
       if (state && prev && state.keyword !== prev.keyword) {
-        const s: any = getBodyScope();
-        if (s) search(state.keyword);
+        search(state.keyword);
       }
     });
     diag.keywordSubscribed = true;

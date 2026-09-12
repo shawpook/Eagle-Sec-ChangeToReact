@@ -1365,7 +1365,6 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 
     const ipc = getIpc();
     const element = video;
-    const $parentScope = getBodyScope();
 
     const volume = localStorage.getItem('eagle.videoPlayer.volume') || '100';
     video.volume = parseInt(volume) / 100;
@@ -1729,7 +1728,6 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         }
       }
     };
-    void $parentScope;
     void direction;
 
     return () => cleanups.forEach((fn) => fn());
@@ -2230,11 +2228,10 @@ export function useRectSelect() {
     window.addEventListener('mousemove', onMouseMove);
 
     function contain(gridItem: any) {
-      const s = getBodyScope();
       const offsetX = 16;
       const offsetY = 16;
       let w2: number, h2: number;
-      if (s?.layout === 'JustifiedLayout') {
+      if (useBodyState.getState().layout === 'JustifiedLayout') {
         w2 = gridItem.rect.width;
         h2 = gridItem.rect.height;
       } else {
@@ -2254,7 +2251,7 @@ export function useRectSelect() {
         y: (window as any).rectSelection.startY,
       };
 
-      if (s?.layout === 'JustifiedLayout') {
+      if (useBodyState.getState().layout === 'JustifiedLayout') {
         a.x += offsetX;
       }
 

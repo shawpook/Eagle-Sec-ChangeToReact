@@ -51,6 +51,7 @@ import { useSelectionState } from '../store/selectionState';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -58,8 +59,7 @@ import { usePreferencesState } from '../store/preferencesState';
 var __lv_cleanSelectedTimeout;
 var __lv_TagManager;
 const initLinkVars = () => {
-	const s0: any = getBodyScope();
-	if (s0 && useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
+	if (useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 };
 
 export function cancelCleanSelectedTimeout(): void {
@@ -93,8 +93,6 @@ const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
    getBodyScope），表项改指针、组件侧改直 import + scopeApply，零行为变化。 */
 export function cleanAllError(...args: any[]) {
   try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-  const s = getBodyScope();
-  if (!s) return;
   return (function (event: any) {
           event && event.stopPropagation();
           cleanAllErrorChannel.emit({
@@ -106,13 +104,11 @@ export function cleanAllError(...args: any[]) {
 /* 19 fns（逐字；fns/getScope 为闭包注入） */
 export function cancelEmptyTrash(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
-            s.isCleaningTrash = false;
+            writeScopeField('isCleaningTrash', false);
             syncSidebarFromScope();
-            s.trashRemoved = 0;
-            s.currentTrashRemoved = 0;
+            writeScopeField('trashRemoved', 0);
+            writeScopeField('currentTrashRemoved', 0);
             IPCHelper.send('palette-resume');
             IPCHelper.sendTo((window as any).backgroundWindowID, 'cancel-empty-trash');
     }).apply(null, args);
@@ -189,8 +185,6 @@ export function emptyTrash(...args: any[]) {
 
 export function addToFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (e) {
             if (useSelectionState.getState().selected.length > 0) {
                 openAddFolderModalChannel.emit({
@@ -205,8 +199,6 @@ export function addToFolders(...args: any[]) {
 
 export function addToRecentFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folderIDs) {
             if (!folderIDs || folderIDs.length == 0 ) return;
             var recentMoveFolders = localStorage.getItem("recentMoveFolders");
@@ -566,8 +558,6 @@ export function openTag(...args: any[]) {
 
 export function exportSelectedAsFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         if (useSelectionState.getState().selected.length === 0) return;
         exportFolder(function (savePath) {
@@ -658,8 +648,6 @@ export function exportSelectedAsFolder(...args: any[]) {
 
 export function exportSelectedAsEaglepack(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         if (useSelectionState.getState().selected.length === 0) return;
         var defaultPath = path.join("*/", 'Untitled' + '.eaglepack');
@@ -689,8 +677,6 @@ export function exportSelectedAsEaglepack(...args: any[]) {
 
 export function exportSelectedAsFormat(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         if (useSelectionState.getState().selected.length === 0) return;
         eagle.customExport.open(useSelectionState.getState().selected);

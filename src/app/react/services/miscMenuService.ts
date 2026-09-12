@@ -77,8 +77,6 @@ const initLinkVars = () => {
    导出（bz-A 落点同形态：install 注入的 getScope 等价 getBodyScope），表项改指针，
    组件侧改直 import + scopeApply，零行为变化。 */
 export function openFileListContextMenu(...args: any[]) {
-  const s = getBodyScope();
-  if (!s) return;
   return (function (event: any) {
           event.stopPropagation();
           openOrderMenu();
@@ -87,8 +85,6 @@ export function openFileListContextMenu(...args: any[]) {
 
 export function openApplicationContextMenu(...args: any[]) {
   try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-  const s = getBodyScope();
-  if (!s) return;
   return (function () {
           var applicationMenu = Menu.getApplicationMenu();
           // b1-9ak：冒烟捕获分支——__EAGLE_MENU_SMOKE 时序列化菜单模板通报 main
@@ -135,8 +131,6 @@ export function openRatioContextMenu(...args: any[]) {
 }
 
 export function openTrashContextMenu(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any) {
 
             const disabled = useItemState.getState().trash.length === 0;
@@ -171,8 +165,6 @@ export function openTrashContextMenu(...args: any[]) {
 }
 
 export function openOrderMenu(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any) {
             event && event.stopPropagation();
             openLayoutPanelChannel.emit();
@@ -769,8 +761,6 @@ export function openNewContextMenu(...args: any[]) {
 
 export function openQuickAccessContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event, item) {
             const targetEl = event.delegateTarget as HTMLElement;
             ContextMenu.open({
@@ -800,8 +790,6 @@ export function openQuickAccessContextMenu(...args: any[]) {
 
 export function openSidebarVisibleContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
             const targetEl = qaHasEl(".sidebar-item-container .item", event.target);
             ContextMenu.open({

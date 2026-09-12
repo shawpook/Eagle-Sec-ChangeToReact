@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
 import { second2time } from '../../app/filters';
 import { getIpc, req } from '../detail/detailHooks';
-import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
+import { getRootScope, runInBodyScope } from '../../core/appCore';
 import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
 import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
 import { addToLibraryChannel, webpConvertStartChannel } from '../../global/bus';
@@ -690,19 +690,15 @@ export function FileThumbnailProgress() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     // 模板绑定 regenerateThumbnailQueue/finishGenerateQueue 解析到 body scope（原版空 link）；
     // 队列原地 push/splice 引用不变 → 函数型 watcher 读 length 串（等价模板逐 digest 重读插值）
     const read = () => {
-      const b = getBodyScope();
-      return `${b && useMiscRawState.getState().finishGenerateQueue ? useMiscRawState.getState().finishGenerateQueue.length : 0}|${b && useMiscRawState.getState().regenerateThumbnailQueue ? useMiscRawState.getState().regenerateThumbnailQueue.length : 0}`;
+      return `${useMiscRawState.getState().finishGenerateQueue ? useMiscRawState.getState().finishGenerateQueue.length : 0}|${useMiscRawState.getState().regenerateThumbnailQueue ? useMiscRawState.getState().regenerateThumbnailQueue.length : 0}`;
     };
     const sync = () => {
-      const b = getBodyScope();
       setLengths({
-        finish: b && useMiscRawState.getState().finishGenerateQueue ? useMiscRawState.getState().finishGenerateQueue.length : 0,
-        total: b && useMiscRawState.getState().regenerateThumbnailQueue ? useMiscRawState.getState().regenerateThumbnailQueue.length : 0,
+        finish: useMiscRawState.getState().finishGenerateQueue ? useMiscRawState.getState().finishGenerateQueue.length : 0,
+        total: useMiscRawState.getState().regenerateThumbnailQueue ? useMiscRawState.getState().regenerateThumbnailQueue.length : 0,
       });
       bumpAll();
     };
@@ -876,17 +872,13 @@ export function DebugReportProgress() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     // debugReportStatus 由 debug-reporter 写在 body scope（106539）；两个原始值 watch 即可
     const read = () => {
-      const b = getBodyScope();
-      const s = b && useMiscRawState.getState().debugReportStatus ? useMiscRawState.getState().debugReportStatus : {};
+      const s = useMiscRawState.getState().debugReportStatus ? useMiscRawState.getState().debugReportStatus : {};
       return `${s.isExporting ? 1 : 0}|${s.progress}`;
     };
     const sync = () => {
-      const b = getBodyScope();
-      const s = b && useMiscRawState.getState().debugReportStatus ? useMiscRawState.getState().debugReportStatus : {};
+      const s = useMiscRawState.getState().debugReportStatus ? useMiscRawState.getState().debugReportStatus : {};
       setSt({ isExporting: !!s.isExporting, progress: Number(s.progress) || 0 });
       bumpAll();
     };
@@ -939,8 +931,6 @@ export function FileAddLibraryProgress() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     const ipc = getIpc();
     const w = window as any;
     const fsMod = req('fs');
@@ -1273,8 +1263,6 @@ export function WebpConvertProgress() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     const ipc = getIpc();
     const w = window as any;
 
@@ -1426,16 +1414,12 @@ const bumpAllRef = { current: () => {} };
 function useFixUtilsBridge(fields: string[]) {
   const [values, setValues] = useState<any>(() => fields.map(() => 0));
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     const read = () => {
-      const b = getBodyScope();
-      const fu = b && useMiscRawState.getState().fixUtils ? useMiscRawState.getState().fixUtils : {};
+      const fu = useMiscRawState.getState().fixUtils ? useMiscRawState.getState().fixUtils : {};
       return fields.map((f) => String(fu[f])).join('|');
     };
     const sync = () => {
-      const b = getBodyScope();
-      const fu = b && useMiscRawState.getState().fixUtils ? useMiscRawState.getState().fixUtils : {};
+      const fu = useMiscRawState.getState().fixUtils ? useMiscRawState.getState().fixUtils : {};
       setValues(fields.map((f) => (fu[f] === undefined ? 0 : fu[f])));
       bumpAllRef.current();
     };

@@ -1,7 +1,7 @@
 import { q, hasClass, widthOf, heightOf, setCssEl, onEl } from '../../utils/domQuery';
 import { t } from '../../global/eagleGlobals';
 import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
-import { getBodyScope, getRootScope } from '../../core/appCore';
+import { getBodyScope } from '../../core/appCore';
 
 import { createFolder } from '../../services/folderCoreService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
@@ -1861,8 +1861,7 @@ export class FolderSelectPanel extends SelectPanel {
 
   static open(params: any) {
     // 原：angular.element("html").folderSelectPanelOpenChannel.emit(params)
-    const rootScope = getRootScope();
-    if (rootScope) folderSelectPanelOpenChannel.emit(params);
+    folderSelectPanelOpenChannel.emit(params);
   }
 
   constructor(params: any) {

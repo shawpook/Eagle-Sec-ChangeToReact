@@ -6,7 +6,7 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
 import { max, uniq } from '../../utils/lang';
-import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
@@ -19,6 +19,7 @@ import { useListState } from '../../store/listState';
 import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -368,8 +369,6 @@ export function QuickSearchModal() {
   };
 
   const runKeywordChange = (mode: string, kw: string) => {
-    const body = getBodyScope();
-    if (!body) return;
     const w = window as any;
     const { pinyinlite, cartesianProduct } = loadPinyinModules();
 
@@ -545,16 +544,12 @@ export function QuickSearchModal() {
   const close = () => {
     setView((prev) => ({ ...prev, open: false }));
     inputRef.current?.blur();
-    const rootScope = getRootScope();
-    if (rootScope) rootScope.currentFocus = 'content';
+    writeScopeField('currentFocus', 'content');
   };
 
   useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
     const offOpen = openQuickSearchModalChannel.on(() => {
-      const body = getBodyScope();
-      if (body) body.keyword = '';
+      writeScopeField('keyword', '');
       setView((prev) => ({ ...prev, open: true, active: prev.active || 0 }));
       setTimeout(() => {
         inputRef.current?.focus();
@@ -602,10 +597,8 @@ export function QuickSearchModal() {
 
   const openQuickSearchResult = (target: any) => {
     if (!target) return;
-    const body = getBodyScope();
     const w = window as any;
     const mode = modeRef.current;
-    if (!body) return;
     if (mode === 'FOLDERS') {
       runInBodyScope((s: any) => openFolder(target));
       addQuickSearchFolderHistory(target.id);

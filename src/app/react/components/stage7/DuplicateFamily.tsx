@@ -12,7 +12,7 @@ import { useVsRepeat } from './FolderSelectPanels';
 import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
-import { getBodyScope, getRootScope } from '../../core/appCore';
+import { getBodyScope } from '../../core/appCore';
 
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
@@ -22,6 +22,7 @@ import { machineryOpenUnfiled, machineryQuickOpenFolder } from '../../core/libra
 import { machineryRebindRefresh } from '../../core/itemDomain';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
  *
@@ -521,8 +522,6 @@ export function DuplicateScanPanel() {
   }, []);
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     const off = openDuplicateScanPanelChannel.on((params: any) => {
       // $scope.init(options)（镜像 11-18；原版 `[...options.items] || []` 右侧为死代码）
       rootRef.current.isOpen = true;
@@ -1372,8 +1371,6 @@ export function DuplicateModal() {
   }
 
   useEffect(() => {
-    const body = getBodyScope();
-    if (!body) return;
     const ipc = getIpc();
 
     // $("body").on("click", ".duplicate-modal *", ...)（镜像 22-24）
@@ -1563,7 +1560,6 @@ export function DuplicateModal() {
         rootScope.raw.push(rootRef.current.right);
       }
       rootRef.current.duplicates.splice(0, 1);
-      const rootScopeB = getRootScope();
       calculateImageBindingChannel.emit();
       rebindRefreshChannel.emit(false);
 
@@ -1629,7 +1625,6 @@ export function DuplicateModal() {
     }
 
     rootRef.current.duplicates = [];
-    const rootScopeB = getRootScope();
     calculateImageBindingChannel.emit();
     rebindRefreshChannel.emit(false);
     ipc.send('palette-resume');
@@ -1637,7 +1632,6 @@ export function DuplicateModal() {
   };
 
   const cancel = () => {
-    const body = getBodyScope();
     const ipc = getIpc();
 
     if (rootRef.current.applyAll == 'true') {
@@ -1654,8 +1648,8 @@ export function DuplicateModal() {
         loadFirst();
       } else {
         if (useItemState.getState().selectedMappings[image.id]) {
-          body.selectedMappings = {};
-          body.selected = [];
+          writeScopeField('selectedMappings', {});
+          writeScopeField('selected', []);
           syncInspectorFromScope();
           updateSelection();
         }
@@ -1677,7 +1671,6 @@ export function DuplicateModal() {
     });
     ipc.send('empty-trash', imageIdString);
     rootRef.current.duplicates = [];
-    const rootScopeB = getRootScope();
     calculateImageBindingChannel.emit();
     rebindRefreshChannel.emit(false);
     glResetChannel.emit(rootScope.allData);

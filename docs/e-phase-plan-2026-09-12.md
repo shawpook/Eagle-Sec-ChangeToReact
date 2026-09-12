@@ -85,6 +85,23 @@ scopeApply       200        callScope          0
 需先定归属——这批是 `itemDomain`/`libraryDomain` 的镜像缓存，倾向新建 `itemCacheStore`）。
 **产出物**：`docs/e1-scope-field-map.md`（对应 D-1 的 `d1-b0-mapping.md`）。
 
+> ⚠️ **别名障碍（2026-09-12 实测，施工前必读）**：`getBodyScope().X` 直链只暴露 **60 个**
+> 顶层名，但 `getBodyScope()` 共 **793** 处——多数是「取回 scope 存进变量再访问」
+> （`const s = getBodyScope(); s.current…` / `const scope = …; scope.selected…`）或作首参传递。
+> 因此**直接名清单 ≠ 真实访问面**。施工前必须先做**别名感知的访问面提取器**
+> （对应 D-1 的 `bz-d1-rest.py`/B-0 映射工具）：定位所有 `getBodyScope()` 的赋值目标
+> （`const/let/var X = …`、函数首参、解构）→ 追踪其后 `X.<prop>` 访问 → 汇总真实字段面与
+> 调用点清单。**没有这张真实清单，§4 的 S/C 批次切不准。**
+
+### 3.1b store 形态分两类（决定字段能否「注册式源翻转」）
+- **扁平标量 store**：`bodyState/listState/lockState/toastState/uploadState/appState`（顶层平铺字段）
+  —— 可用既有 `migrateScopeFieldToStore` 逐字段源翻转（现共注册 **33** 个字段）。
+- **快照 store**：`inspector/detail/filter/panel/sidebar/tagManager/toolbar` 均为
+  `create<{ snapshot: XSnapshot }>` —— 只服务 React 只读消费，scope 仍是写入真身，
+  由同步函数产快照。这类字段（`inspector.*`、`TagManager`、`eagle.*` 等）**不能直接注册**：
+  要么把标量子字段拆成扁平 store（§3.2(a)），要么改快照为真身并改写全部写入点。
+  → §4 批次必须按 store 形态分别设计，S-1 不能照搬 bodyState 模式。
+
 ### 3.2 嵌套路径（`inspector.*` / `preferences.*` / `containerSize.*` / `currentFolder.*`）
 `migrateScopeFieldToStore` 只拦顶层 get/set；两段式访问 `scope.inspector.newName` 需
 **store 持有稳定对象引用**（对象原地 mutate → 但 zustand 要求不可变更新触发订阅，二者冲突）。
@@ -121,7 +138,7 @@ scopeApply       200        callScope          0
 ### 轨道 S（源翻转，打地基；不改哨兵计数但为 C 铺路）
 | 批 | 字段组 | 落点 | 验证 |
 |---|---|---|---|
-| **S-1** | bodyState 派生字段（`imageHeight/listProp*/boxSortable/hideBadge/hideZoomBtn/showTransparentGrid/hasCurrentComment/sidebarWidth/inspectorWidth/filterOpen`） | `store/bodyState.ts` MIGRATED 列表 + `buildBodySnapshot` 降级为回声 | 哨兵不增；`d3-theme/loading/detail-mode` 闭环 |
+| **S-1** | **（已排除为 no-op，见 §7；改为）**真实被 scope 访问的标量字段首批：`role/scalars in body/list/filter` 中经 §3.1 提取器确认有 `scope.X` 读写的那些（如 `sortIncrease`/`orderBy`/`isEnglish`/`hsks`/`libraryImagesPath`/`rootDir`/`libraryPath`/`searchIndex`/`isContainAlphabet`/`historySearchKeywords`/`uploadQueue`） | 归属扁平 store / 新建 `appState` 扩展 | 哨兵不增；`probe` + 对应闭环 |
 | **S-2** | `inspector.*` 拆平（§3.2(a) 试点） | `store/inspectorState.ts` | `main-ui-workflow` + `d3-selection` |
 | **S-3** | `listState` 余量（`current/selected/allData/orderBy/sortIncrease`） | `store/listState.ts` | `d3-selection`/`d3-focus` |
 | **S-4** | `filterState`（`keyword*/isKeyword*/globalKeywords/showSuggestions/keywordSuggestions`） | `store/filterState.ts` | `menu-popup`/`d3-search-empty` |
@@ -185,7 +202,17 @@ node tests/<定向>-closed-loop.mjs               # 该字段组对应闭环
 
 ## 7. 建议下一步
 
-1. 立项确认本规划（尤其是 §3.1 字段归属表、§3.2 嵌套拆平决策）。
-2. 产出 `docs/e1-scope-field-map.md`（字段→store 归属表，对应 D-1 的 B-0 映射表）。
-3. 从 **S-1**（bodyState 派生字段源翻转，风险最低、模式已验证）开路，逐批向右推进；
-   轨 C 与轨 S 交错，优先 C-1（inspectorActions/detailHooks，密集度最高、压计数最快）。
+1. 立项确认本规划（尤其是 §3.1 字段归属表、§3.1b store 形态分类、§3.2 嵌套拆平决策）。
+2. **先做工具**：写别名感知的 scope 访问提取器（§3.1 ⚠️），产出真实「字段面 + 每字段调用点」
+   清单 → 落 `docs/e1-scope-field-map.md`。这是 D-1 `bz-d1-b0-map.py` 的对应物，没有它批次切不准。
+3. 依清单切批次：**扁平 store 字段**走注册式源翻转（低风险，先做）；**快照 store 字段**
+   （`inspector.*` / `TagManager` / `eagle.*` / `current` / `selected` / `allData` …）需先定
+   「拆平 vs 快照转真身」再动（§3.1b）。
+4. 轨 C 与轨 S 交错；密集度最高、压计数最快的 **C-1（`inspectorActions.ts` 53 / `detailHooks.ts` 47）**
+   可作为首个「看得见进度」的批次，但须在轨 S 把其依赖字段源翻转之后。
+
+### 已排除的伪批次（2026-09-12 实测，避免重走）
+- **「bodyState 派生字段源翻转」是 no-op**：`imageHeight/listProp*/boxSortable/hideBadge/hideZoomBtn/
+  showTransparentGrid/hasCurrentComment/sidebarWidth/inspectorWidth/filterOpen` 经 grep 全树
+  **0 处 `scope.X` 读、0 处写**（纯由 `syncBodyFromScope` 快照进 store、React 直接消费），
+  注册进 shim 不改变任何计数、不退役 coreState 任何真实用途。原 S-1 应删除或改述。

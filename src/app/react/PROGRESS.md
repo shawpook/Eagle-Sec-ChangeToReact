@@ -7922,6 +7922,13 @@ E3 后段全部走**同为「源翻转 + 调用点改写」的机械化 codemod 
 - **coreState 镜像丢失**：`writeScopeField` 早期直接写 store、不镜像 coreState → cz1 `cz1-bridged`
   失败（`c.platform` 变 undefined）。修法：`writeScopeField` 改**经 shim Proxy 写**（注册 writer +
   镜像），Proxy 缺席时才退化为直接写注册表 → coreState 计数保持 13 不增。
+- **E3-15「遗留多余 scope 首实参」**（**全套才暴露**）：`machineryChangeStar` 等函数已被去 scope
+  参数化，但其 **scope 面挂载**仍写 `(machineryX as any)(s, ...a)` → 形参错位（`star` 收到 proxy）
+  → `main-ui-workflow` 的 `inspector tags folder and star persistence timeout`（连败两次）。
+  同类還有 `smoothZoomEngine` 内 `machineryGetRatioNonExp($scope, …)`。修法：新增
+  **符号级**校验的清理器（首参名 ∉ scope 名 且首实参确为 scope 符号 → 删实参；避免
+  `createFromHtml(s)` 这类「局部变量恰好叫 s」的误伤）。**教训：批次自测必须包含
+  `main-ui-workflow`（唯一的原版端到端），否则迁移面挂载错位会漏到全套才现。**
 
 **E3 收官核数**：`getBodyScope 793 → 79`（**-90%**）、`rootAccess 367 → 7`（**-98%**）、
 `scopeApply 200 → 16`（余为 preferences 独立窗口）、`watch/on/broadcast/apply = 0`、

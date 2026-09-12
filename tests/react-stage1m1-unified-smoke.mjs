@@ -164,13 +164,18 @@ try {
     const c = window.__eagleCoreState;
     s.raw = [{ id: 'C8W', ext: 'png' }];
     window.__c8w = c.raw && c.raw.length === 1 && c.raw[0].id === 'C8W';
-    c.allData = [{ id: 'C8R' }];
-    window.__c8r = s.allData && s.allData.length === 1 && s.allData[0].id === 'C8R';
+    // b1-9bz-E2：raw/allData 等已注册到底层 store——scope 写 = store 真身 + coreState 诊断镜像；
+    // 反向（直写 coreState → scope 读）按设计不再透明（cz1 已记录同口径）。
+    s.allData = [{ id: 'C8R' }];
+    window.__c8r = !!(s.allData && s.allData.length === 1 && s.allData[0].id === 'C8R')
+      && window.__eagleItemState.getState().allData[0].id === 'C8R';
+    window.__c8keys = ['raw', 'allData', 'selected', 'currentFolder', 'folders', 'imageSize', 'preferences', 'pluginModule', 'TagManager', 'eagle']
+      .every((k) => window.__eagleScopeShim.migratedFieldNames().includes(k));
     s.raw = [];
-    c.allData = [];
+    s.allData = [];
     return true;
   })()`);
-  await assertExpr('m1-A2-c8-write-through', `window.__c8w === true && window.__c8r === true`);
+  await assertExpr('m1-A2-c8-write-through', `window.__c8w === true && window.__c8r === true && window.__c8keys === true`);
 
   // ═══ A3. c9 数据机器域（scope 函数替换生效 + 契约）═══
   await assertExpr('m1-A3-c9-machinery', `(() => {

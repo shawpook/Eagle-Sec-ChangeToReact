@@ -7983,3 +7983,53 @@ E3 后段全部走**同为「源翻转 + 调用点改写」的机械化 codemod 
   合成未注册字段名（静态候选字段会随注册批次全部命中，原断言已失真）。
 - `scopeFace` 的工厂须**单例**（`__eagleScopeShim.factory()` 冒烟直调与 `getBodyScope` 需同一面），
   否则 m1-A6 的 `__eagleCoreState.testField === 42` 跨面断言失败。
+
+---
+
+## E5：`$bodyScope` / `shims.js` 退役（DoD ② 收口）—— 进行中
+
+### E5-1（提交 `57b4bac6`）runInBodyScope 回调去 scope 化 + 三项归零
+
+- E4 codemod 的匿名回调白名单加入 `runInBodyScope`：`runInBodyScope((s) => { s.X = v })` 整条收编
+  （体内改写 store 读/writeScopeField，回调首参删除）——19 文件 115 回调 270 处编辑。
+  **刻意不含 `applyController`**：偏好/预览窗口是自有 `controllerScope`，不得改读主窗 store（E3-3b 约束）。
+- `preferences/panels.tsx` 本地 helper `scopeApply` → `runPrefsController`（纯本地命名）。
+- viewers/font、viewers/text-editor 的 parent `$evalAsync` no-op 调用删除。
+- preview-window/shell `$root.removeComment` → `removeComment`。
+- 哨兵：**`scopeApply 16→0`、`rootAccess 1→0`、`evalAsync 4→1`**（余 `scopeFace` 的 `$evalAsync` 定义）。
+
+### E5 剩余面的侦察结论（实施 E5-2 前必读）
+
+DoD ② 只剩 **`getBodyScope 15` 与 `evalAsync 1`**，两者都等于「scope 面本身还在」。要归零必须
+**删 `getBodyScope` + 去掉 `window.$bodyScope`**。侦察（2026-09-12 夜）实测的消费面：
+
+| 消费方 | 引用面 | 说明 |
+|---|---|---|
+| **65 套件中的 52 个测试** | `window.$bodyScope.X` 读写 + `.$evalAsync()` + `.enterDetailMode()` | 主要用 `raw/selected/allData/current/itemMappings/listDone/sliderZoomRatio/boxContianerHeight/startCursor/options/…`；`d3-*`/`react-stage*`/`m1`/`cz*`/`menu-popup` 等 |
+| **`electron/main.cjs`** | 5 处 `window.$bodyScope` 就绪等待 + 约 37 个成员（`raw/current/selected/images/itemMappings/inspector/enterDetailMode/updateSelection/zoom/changeStar/removeSelected/toggleAll/selectNext/selectPrev/select/addImagesToFolder/TagManager/getRawUrl/getRawPath/copyAsPath/$evalAsync`） | 非 ESM，无法 import；同一文件同时服务主窗/预览窗/doc-viewer 三种窗口 |
+| **`frontend/public/shims.js`** | `window.$bodyScope` ×17（详情交付门控包装 `enterDetailMode/leaveDetailMode`、读 `current/raw/itemMappings/inspector/allData/theme/language/preferences/libraryImagesPath`），并**自己给 viewer 页造 `window.$bodyScope` mock** | 3996 行，是**浏览器/冒烟 harness**（mock library、fetch 改写、desktopApi mock、逐页 mock），由 `vite.preview.config.mjs` 在 dev **与 build** 双路径注入 |
+| **预览窗** | `preview-window/controller.ts:2425` `window.$bodyScope = scope`（自有 2000 行 `controllerScope`，含 `openWithDefault/openWithFinder/copyImage/startDrag/mousetrap`） | 与主窗 store 后端**不是**同一对象；`getBodyScope()` 在该窗返回的既有可能是 controllerScope |
+| **viewer iframe** | `parent.$bodyScope`（font ×2、text-editor ×2、gif） | 子窗经 parent 面驱动 |
+| **src 内部** | `appCore.getBodyScope` 定义 + `runInBodyScope`/`findLiveNode`；`machineryInfra.applyDataMachineryScope` 22 个挂载写入；`fileUrlHelper`（子窗共享模块，5 处）；`preview-window/detailHooks`；`boxGridEngine`（`window.$bodyScope` 兜底赋值）；`gridDirectives`（`$bodyScope.` 直读） | 均可改 `getScopeFace()`/store 直读 |
+
+**结论**：`$bodyScope` 不是「一个残留变量」，而是**主窗驱动作业面 + 子窗/预览窗自有面 + 测试观测句柄
+的三合一**。删它 = 同时改 (a) 生产侧跨窗口供给协议、(b) 52 个测试的观测契约、(c) shims.js 的逐页 mock。
+
+**建议分步**（每步单独提交 + 定向回归）：
+1. **E5-2（生产侧）**：新增 `core/driverApi.ts`（`window.__eagleDriver` 显式白名单：数据 getter + 动作 +
+   `$evalAsync` no-op；后端仍 store 注册表）；`applyDataMachineryScope` 挂载改写入 driver；
+   `appCore` 删 `getBodyScope`（含死 Angular 分支），内部改 `scopeFace.getScopeFace()`；
+   `fileUrlHelper`/`gridDirectives`/`preview-window` 改 store/自有面；`boxGridEngine` 去掉全局兜底。
+   main.cjs 主窗段改 `__eagleDriver`，预览窗段改 `__eaglePreviewController`；shims.js 同步。
+   此步**保留** `window.$bodyScope` 作为过渡别名 → 套件应仍全绿（可先只改生产侧，零测试改动）。
+2. **E5-3（测试观测口）**：`window.__eagleScopeRegistry`（app 侧诊断口：`read/write/names`）+
+   测试 harness 安装 `window.__eagleProbe`（Proxy→注册表，仅测试期），52 个测试 `$bodyScope → __eagleProbe`。
+   契约测试（m1-A6 的 `__eagleCoreState` 跨对象断言、cz1 合成字段）同批修订。
+3. **E5-4**：删 `window.$bodyScope` 与 `getBodyScope` 残余；`shims.js` 的 viewer mock 改 `__eagleDriver`；
+   哨兵 `getBodyScope 0`、`evalAsync 0` → **DoD ② 达标**；全套。
+4. **E5-5（D-2 收口，独立评估）**：`shims.js` 整体退役（mock library/fetch/desktopApi/逐页 mock 迁入
+   React entry 或 preload）；3 个直读 shims 源码的测试（empty-trash/txt-update/native-preview）同步。
+
+> ⚠️ **未解之谜（E5 前必查）**：E1b 记录「`main.cjs` 的 `scope.$evalAsync()` 提交钩子有则 4/4 过、
+> 无则 4/4 败」，但 shim 世界的 `$evalAsync` 是 no-op。删该钩子前必须先定位这个（疑似时序/加载链
+> 副作用），否则 preview-delivery 会以「看起来无关」的方式回归。

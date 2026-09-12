@@ -1644,11 +1644,15 @@ export function installBundleGlobals(): void {
     try { w.pluginModule = req(w.appRoot + '/app/js/plugin'); } catch (err) { /* noop */ }
     syncToolbarFromScope();
   }
-  // b1-9j：bundle 20207 的 $scope.pluginModule = pluginModule —— shim 世界数据面字段只经
-  // coreState/proxy 可达；插件面板（PluginFamily）与详情查看分支（detailState 的 pluginExt）
-  // 读 body.pluginModule 取不到 → 桥接同一实例
-  if (w.pluginModule && !coreState.pluginModule) {
-    coreState.pluginModule = w.pluginModule;
+  // b1-9j：bundle 20207 的 $scope.pluginModule = pluginModule —— 插件面板（PluginFamily）与
+  // 详情查看分支（detailState 的 pluginExt）读 body.pluginModule。
+  // b1-9bz-E2-3：pluginModule 已注册到 miscRawState（store 为真身），须经 proxy 写入，直写
+  // coreState 会被 store 委托遮蔽 → 取不到。
+  {
+    const bs: any = getBodyScope();
+    if (w.pluginModule && bs && !bs.pluginModule) {
+      bs.pluginModule = w.pluginModule;
+    }
   }
 
   // ── b1-9q：openItemContextMenu 依赖的 bundle 顶层全局（原码 51042/49552/49777/985）──

@@ -59,6 +59,7 @@ import { bindItemSync } from './store/itemState';
 import { bindFolderSync } from './store/folderState';
 import { bindLayoutSync } from './store/layoutState';
 import { bindPreferencesSync } from './store/preferencesState';
+import { bindMiscRawSync } from './store/miscRawState';
 
 import { applyDataMachineryScope } from './core/machineryInfra';
 /**
@@ -197,6 +198,7 @@ bindItemSync();
 bindFolderSync();
 bindLayoutSync();
 bindPreferencesSync();
+bindMiscRawSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

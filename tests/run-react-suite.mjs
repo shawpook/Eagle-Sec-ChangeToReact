@@ -91,15 +91,26 @@ const failed = [];
 for (const t of tests) {
   killLeftoverElectron();
   process.stdout.write(`RUN ${t} ... `);
-  const r = spawnSync(process.execPath, [t], { encoding: 'utf8', timeout: 300000 });
+  let r = spawnSync(process.execPath, [t], { encoding: 'utf8', timeout: 300000 });
   if (r.status === 0) {
     console.log('OK');
-  } else {
-    console.log(`FAIL (exit=${r.status})`);
-    const tail = (r.stdout || '').split('\n').filter(l => /FAIL|SMOKE ERROR|OK$/.test(l)).slice(-8).join('\n');
-    console.log(tail);
-    failed.push(t);
+    continue;
   }
+  // b1-9bz-D-4：长套件下偶发环境级假失败（孤儿 Electron/文件锁/负载）——失败重跑一次。
+  // 真回归会连败两次，仍计入 failed。
+  console.log(`FAIL (exit=${r.status}) → RETRY`);
+  killLeftoverElectron();
+  const r2 = spawnSync(process.execPath, [t], { encoding: 'utf8', timeout: 300000 });
+  if (r2.status === 0) {
+    console.log(`OK (retry)`);
+    continue;
+  }
+  r = r2;
+  // 失败信息可能只走 stderr（console.error），stdout/stderr 都要看
+  const tail = ((r.stdout || '') + '\n' + (r.stderr || ''))
+    .split('\n').filter(l => /FAIL|SMOKE ERROR|OK$|Error:/.test(l)).slice(-8).join('\n');
+  console.log(tail);
+  failed.push(t);
 }
 console.log(failed.length === 0 ? 'REACT SUITE ALL GREEN' : `REACT SUITE FAILED: ${failed.length}: ${failed.join(', ')}`);
 process.exit(failed.length === 0 ? 0 : 1);

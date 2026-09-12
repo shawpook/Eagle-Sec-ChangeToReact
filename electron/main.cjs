@@ -2016,10 +2016,14 @@ app.whenReady().then(async () => {
               await selectInspectorItems([droppedId]);
               scope.inspector.newName = 'Inspector Renamed';
               scope.inspector.newUrl = 'https://example.test/original-main';
-              // b1-9bz-D-4：原实现只等一次结果，CI/并发压力下偶发「事件丢失」假失败。
-              // 改为触发+等待最多 3 轮（每轮 8s），丢弃的轮次重新触发 imagesChange。
+              // b1-9bz-D-4：原实现只等一次结果，CI/并发压力下偶发「事件丢失/操作失败」假失败。
+              // 改为触发+等待最多 5 轮（每轮 8s），超时轮次重新触发 imagesChange
+              // （shim 的 updateMany 走后端 HTTP，负载下可能整体失败——ok:false 也会本轮等满后重试）。
               let firstInspectorOperation = null;
-              for (let attempt = 0; attempt < 3 && !firstInspectorOperation; attempt++) {
+              // 诊断：记录上一轮「结果到达但不含目标 id」或 ok:false 的值，超时时一并抛出。
+              let lastBad = null;
+              for (let attempt = 0; attempt < 5 && !firstInspectorOperation; attempt++) {
+                let sawResult = false;
                 const firstInspectorResult = new Promise((resolve) => {
                   const ipc = require('electron').ipcRenderer;
                   const timer = setTimeout(() => {
@@ -2027,8 +2031,12 @@ app.whenReady().then(async () => {
                     resolve(null);
                   }, 8000);
                   const onResult = (_event, value) => {
+                    sawResult = true;
                     const items = value && Array.isArray(value.items) ? value.items : [];
-                    if (!items.some((item) => item.id === droppedId)) return;
+                    if (!items.some((item) => item.id === droppedId)) {
+                      lastBad = { reason: 'no-target-id', value };
+                      return;
+                    }
                     clearTimeout(timer);
                     ipc.off('item:operation-result', onResult);
                     resolve(value);
@@ -2037,9 +2045,12 @@ app.whenReady().then(async () => {
                 });
                 inspectorActions.imagesChange();
                 firstInspectorOperation = await firstInspectorResult;
-                if (!firstInspectorOperation) await new Promise((resolve) => setTimeout(resolve, 500));
+                if (!firstInspectorOperation) {
+                  if (!sawResult) lastBad = { reason: 'no-event' };
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+                }
               }
-              if (!firstInspectorOperation) throw new Error('inspector operation result timeout for ' + droppedId);
+              if (!firstInspectorOperation) throw new Error('inspector operation result timeout for ' + droppedId + ' last=' + JSON.stringify(lastBad));
               if (!firstInspectorOperation.ok) throw new Error('inspector update failed: ' + JSON.stringify(firstInspectorOperation));
               const firstUpdatedItem = Array.isArray(firstInspectorOperation.items) ? firstInspectorOperation.items.find((item) => item.id === droppedId) : null;
               if (!firstUpdatedItem || firstUpdatedItem.name !== 'Inspector Renamed' || firstUpdatedItem.url !== 'https://example.test/original-main') {

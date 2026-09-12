@@ -10,7 +10,7 @@ import { req } from './detailHooks';
 import { useMouseGesture } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { flipImage, rotateImage, saveCrop } from '../../services/imageOpsService';
 import { flipVideo, rotateVideo, toggleGifPlay } from '../../services/mediaService';
@@ -45,15 +45,15 @@ const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(th
    参数语义逐字保留：preArgs 优先且不传事件；e 为 undefined 时不传参；目标非函数时空转。 */
 const callArgs = (preArgs: any[], e: any) => (preArgs.length ? preArgs : e === undefined ? [] : [e]);
 const call = (fn: (...a: any[]) => any, ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), () => {
+  runInBodyScope(() => {
     if (typeof fn === 'function') fn(...callArgs(preArgs, e));
   });
 const callM = (fn: (...a: any[]) => any, ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (s: any) => {
+  runInBodyScope((s: any) => {
     if (typeof fn === 'function') fn(s, ...callArgs(preArgs, e));
   });
 const callF = (name: string, ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (s: any) => {
+  runInBodyScope((s: any) => {
     if (s && typeof s[name] === 'function') s[name](...callArgs(preArgs, e));
   });
 
@@ -229,7 +229,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
     // D-2f：jQuery-UI sortable → 自研
     const sortable = makeSortable(el, {
       update: () => {
-        scopeApply(getBodyScope(), (s) => {
+        runInBodyScope((s) => {
           const order = sortableToArray(el, 'data-plugin-index').map(Number);
           const plugins = s.pluginModule.pinnedPlugins || [];
           s.pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
@@ -292,7 +292,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               value={sliderZoomRatio}
               onChange={(e) => {
                 const value = Number(e.target.value);
-                scopeApply(getBodyScope(), (s) => {
+                runInBodyScope((s) => {
                   s.sliderZoomRatio = value;
                   syncDetailFromScope();
                 });
@@ -361,7 +361,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
                   tippy-placement="bottom"
                   onClick={() => {
                     const live = getBodyScope()?.pluginModule?.pinnedPlugins?.[i];
-                    if (live) scopeApply(getBodyScope(), (s) => s.pluginModule.open(live));
+                    if (live) runInBodyScope((s) => s.pluginModule.open(live));
                   }}
                 >
                   <img width={20} height={20} src={plugin.icon} />
@@ -638,7 +638,7 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
                 key={speed}
                 className={`speed-menu-itme${gifSpeed === speed ? ' active' : ''}`}
                 onClick={(e) =>
-                  scopeApply(getBodyScope(), (s) => {
+                  runInBodyScope((s) => {
                     if (typeof s.gifViewer?.setSpeed === 'function') s.gifViewer.setSpeed(speed);
                   })
                 }

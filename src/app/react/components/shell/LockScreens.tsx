@@ -9,7 +9,7 @@ import { t } from '../../global/eagleGlobals';
 import { focusAppUnlockPassword, focusUnlockPassword, unlockAppPasswordKeydown, unlockAppPasswordKeyup, unlockPasswordKeyup } from '../../services/lockService';
 
 import { CornerBtns } from '../toolbar/Toolbar';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { machineryUnlockFolderWithTouchID } from '../../core/libraryDomain';
 /**
@@ -60,7 +60,7 @@ export function FolderLockScreen() {
 
   const themePath = themePathOf(theme);
   return createPortal(
-    <div className="lock-screen" onClick={(e) => scopeApply(getBodyScope(), () => focusUnlockPassword(e))}>
+    <div className="lock-screen" onClick={(e) => runInBodyScope(() => focusUnlockPassword(e))}>
       <div className="info">
         <img src={`assets/images/${themePath}/illustrations/lock-screen.png`} width={400} height={144} />
         <h4>{t('pages.unlock.title')}</h4>
@@ -75,11 +75,11 @@ export function FolderLockScreen() {
               if (scope) scope.unlockPassword = (e.target as HTMLInputElement).value;
             }}
             onFocus={(e) => (e.target as HTMLInputElement).select()}
-            onKeyUp={(e) => scopeApply(getBodyScope(), () => unlockPasswordKeyup(e))}
+            onKeyUp={(e) => runInBodyScope(() => unlockPasswordKeyup(e))}
           />
           {/* Touch ID 按鈕 - 整合在輸入框內 */}
           {canUseTouchID && (
-            <button className="ic-btn touchid-btn-inline" onClick={(e) => scopeApply(getBodyScope(), (s) => machineryUnlockFolderWithTouchID(s, e))}>
+            <button className="ic-btn touchid-btn-inline" onClick={(e) => runInBodyScope((s) => machineryUnlockFolderWithTouchID(s, e))}>
               <img src={`assets/images/${themePath}/icons/ic-touchid.svg`} width={20} height={20} />
             </button>
           )}
@@ -117,7 +117,7 @@ export function AppLockScreen() {
   const themePath = themePathOf(theme);
   const enableTouchID = privacy && privacy.enableTouchID === 'true';
   return createPortal(
-    <div className="lock-screen app-lock-screen" onClick={(e) => scopeApply(getBodyScope(), () => focusAppUnlockPassword(e))}>
+    <div className="lock-screen app-lock-screen" onClick={(e) => runInBodyScope(() => focusAppUnlockPassword(e))}>
       <CornerBtns snapshot={toolbarSnapshot} />
       <div className="info">
         <img src={`assets/images/${themePath}/illustrations/lock-screen.png`} width={400} height={144} />
@@ -130,12 +130,12 @@ export function AppLockScreen() {
             placeholder={t('pages.unlock.placeholder')}
             ref={inputRef}
             onFocus={(e) => (e.target as HTMLInputElement).select()}
-            onKeyDown={(e) => scopeApply(getBodyScope(), () => unlockAppPasswordKeydown(e))}
-            onKeyUp={(e) => scopeApply(getBodyScope(), () => unlockAppPasswordKeyup(e))}
+            onKeyDown={(e) => runInBodyScope(() => unlockAppPasswordKeydown(e))}
+            onKeyUp={(e) => runInBodyScope(() => unlockAppPasswordKeyup(e))}
           />
           {/* Touch ID 按鈕 - 整合在輸入框內 */}
           {canUseTouchID && enableTouchID && (
-            <button className="ic-btn touchid-btn-inline" onClick={(e) => scopeApply(getBodyScope(), (s) => { if (typeof s.unlockWithTouchID === 'function') s.unlockWithTouchID(e); })}>
+            <button className="ic-btn touchid-btn-inline" onClick={(e) => runInBodyScope((s) => { if (typeof s.unlockWithTouchID === 'function') s.unlockWithTouchID(e); })}>
               <img src={`assets/images/${themePath}/icons/ic-touchid.svg`} width={20} height={20} />
             </button>
           )}

@@ -9,7 +9,7 @@ import { syncBodyFromScope } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
-import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { getBodyScope, runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
 import { makeSortable } from '../interactions/sortable';
 import { maximize } from '../../core/miscDomain';
 import { resetFilter, search, searchFocus } from '../../core/filterDomain';
@@ -40,7 +40,7 @@ function themePathOf(theme: string): string {
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (scope) => {
+  runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
     if (typeof target !== 'function') return;
     const args = preArgs.length ? preArgs : e === undefined ? [] : [e];
@@ -51,7 +51,7 @@ const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: an
 
 /** 多语句 ng-click 的逐字转写（如 resetKeyword(); resetFilter(); filterContent(); openAll()）。 */
 const callSeq = (...fns: Array<[string | ((...a: any[]) => any), any?]>) => (e: any) =>
-  scopeApply(getBodyScope(), (scope) => {
+  runInBodyScope((scope) => {
     for (const [fn, arg] of fns) {
       const target = typeof fn === 'function' ? fn : scope[fn];
       if (typeof target !== 'function') continue;
@@ -91,7 +91,7 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
   };
   const restore = maximize;
   const close = () => currentWindow()?.close?.();
-  const toggleAlwaysOnTop = () => scopeApply(getBodyScope(), (s) => s.toggleAlwaysOnTop());
+  const toggleAlwaysOnTop = () => runInBodyScope((s) => s.toggleAlwaysOnTop());
   const stop = (e: any) => { e.stopPropagation(); e.preventDefault(); };
   const pinTip = `${t('titlebar.alwayTop.on')}${shortcuts(shortcutsWrapper(keybinds['view.alwaysOnTop'] || ''))}`;
   const unpinTip = `${t('titlebar.alwayTop.off')}${shortcuts(shortcutsWrapper(keybinds['view.alwaysOnTop'] || ''))}`;
@@ -151,7 +151,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
 
   // $("#search").on("focus") → $rootScope.currentFocus = "content"（bundle:21830，原直绑元素已被 React 接管）
   const onFocus = (e: any) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.$root.currentFocus = 'content';
       searchFocus(e);
     });
@@ -186,24 +186,24 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
             // 随机模式变体：ng-change="search(keyword)"，ng-model-options debounce 200ms
             clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
-              scopeApply(getBodyScope(), (s) => {
+              runInBodyScope((s) => {
                 s.keyword = value;
                 search(value);
               });
             }, 200);
           } else {
-            scopeApply(getBodyScope(), (s) => { s.keyword = value; });
+            runInBodyScope((s) => { s.keyword = value; });
           }
         }}
         onKeyDown={(e) => {
-          scopeApply(getBodyScope(), (s) => { s.keyword = (e.target as HTMLInputElement).value; });
+          runInBodyScope((s) => { s.keyword = (e.target as HTMLInputElement).value; });
           call('seachKeyup')(e);
         }}
         onFocus={onFocus}
         onBlur={(e) => {
           if (randomMode) {
             clearTimeout(debounceRef.current);
-            scopeApply(getBodyScope(), (s) => {
+            runInBodyScope((s) => {
               s.keyword = draft;
               search(draft);
             });
@@ -232,7 +232,7 @@ export function Toolbar() {
     if (!host) return;
     const visible = !snapshot.isDetailMode || snapshot.isInlineMode;
     host.style.display = visible ? '' : 'none';
-    const onDblClick = (e: MouseEvent) => scopeApply(getBodyScope(), () => maximize(e));
+    const onDblClick = (e: MouseEvent) => runInBodyScope(() => maximize(e));
     host.addEventListener('dblclick', onDblClick);
     return () => host.removeEventListener('dblclick', onDblClick);
   }, [toolbarHost, snapshot.isDetailMode, snapshot.isInlineMode]);
@@ -250,7 +250,7 @@ export function Toolbar() {
     if (!scope) return;
     const options = scope.pluginModule?.pinPluginSortableOptions;
     const syncModel = () => {
-      scopeApply(scope, (s) => {
+      runInBodyScope((s) => {
         const nodes = Array.from(el.querySelectorAll('.ic-btn'));
         const plugins = s.pluginModule.pinnedPlugins || [];
         if (nodes.length !== plugins.length) return;
@@ -390,7 +390,7 @@ export function Toolbar() {
               value={snapshot.imageSizeHeight}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                scopeApply(getBodyScope(), (s) => {
+                runInBodyScope((s) => {
                   s.imageSize.height = v;
                   machineryOnImageSizeHeightChanged(s);
                 });
@@ -426,7 +426,7 @@ export function Toolbar() {
                 tippy=""
                 tippy-placement="bottom"
                 tippy-content={plugin.name || ''}
-                onClick={() => { const live = getBodyScope()?.pluginModule?.pinnedPlugins?.[i]; if (live) scopeApply(getBodyScope(), (s) => s.pluginModule.open(live)); }}
+                onClick={() => { const live = getBodyScope()?.pluginModule?.pinnedPlugins?.[i]; if (live) runInBodyScope((s) => s.pluginModule.open(live)); }}
               >
                 <img width={20} height={20} src={plugin.icon} />
               </div>

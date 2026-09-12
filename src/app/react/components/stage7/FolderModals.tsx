@@ -11,7 +11,7 @@ import { max, uniq } from '../../utils/lang';
 import { smartZoom } from '../../services/detailService';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
-import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../core/scopeRuntime';

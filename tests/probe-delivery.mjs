@@ -77,10 +77,10 @@ try {
   await evalNow(page, `window.__errLog = []; window.addEventListener('error', (e) => { window.__errLog.push(String(e.message).slice(0, 200)); });`);
   console.log('ENTER result =', JSON.stringify(await evalNow(page, `(() => {
     try {
-      window.$bodyScope.$apply(() => {
+      (() => {
         window.$bodyScope.selected = [window.$bodyScope.allData[0]];
         window.$bodyScope.enterDetailMode(null, window.$bodyScope.allData[0]);
-      });
+      })();
       return 'OK';
     }
     catch (e) { return 'THROW: ' + (e && e.message) + ' | ' + String(e && e.stack).slice(0, 300); }

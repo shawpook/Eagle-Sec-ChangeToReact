@@ -20,7 +20,7 @@ import {
   removeComment,
   recomputeCommentRatio,
 } from './commentHooks';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { openItemContextMenu } from '../../services/itemMenuService';
 
@@ -36,7 +36,7 @@ import { machineryLeaveDetailMode, machineryToggleSlideshow } from '../../core/m
 const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (scope) => {
+  runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
     if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
@@ -298,7 +298,7 @@ function WebViewBranch({ snapshot }: { snapshot: DetailSnapshot }) {
         if ((window as any).process?.platform === 'darwin') {
           webview.executeJavaScript(`document.exitFullscreen();`);
         }
-        scopeApply(getBodyScope(), (s) => {
+        runInBodyScope((s) => {
           machineryToggleSlideshow(s);
           s.$evalAsync?.();
         });
@@ -511,7 +511,7 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
   // iframe 聚焦时 ESC 无法退出详情、无法左右切换）
   useEffect(() => {
     function onMessage(e: any) {
-      scopeApply(getBodyScope(), (s) => {
+      runInBodyScope((s) => {
         if (e.data === 'Exit' || e.message === 'Exit') {
           if (typeof s.leaveDetailMode === 'function') machineryLeaveDetailMode(s);
           s.$evalAsync?.();
@@ -571,12 +571,12 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
       <div
         className={`detail-wrap ${ext}`}
         onMouseDown={(e) => {
-          scopeApply(getBodyScope(), (sc) => {
+          runInBodyScope((sc) => {
             if (typeof sc.gifViewer?.mousedown === 'function') sc.gifViewer.mousedown(e);
           });
         }}
         onMouseUp={(e) => {
-          scopeApply(getBodyScope(), (sc) => {
+          runInBodyScope((sc) => {
             if (typeof sc.gifViewer?.mouseup === 'function') sc.gifViewer.mouseup(e);
           });
         }}

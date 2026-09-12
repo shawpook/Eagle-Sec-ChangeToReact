@@ -98,13 +98,13 @@ try {
     expression: `(() => {
       const box = document.querySelector('#box-list .box');
       const rect = box.getBoundingClientRect();
-      window.$bodyScope.$apply(() => {
+      (() => {
         window.$bodyScope.selected = [window.$bodyScope.allData[0]];
         window.__eaglePorts.openItemContextMenu({
           pageX: rect.left + 40, pageY: rect.top + 40, clientX: rect.left + 40, clientY: rect.top + 40,
           target: box, preventDefault() {}, stopPropagation() {}, button: 2,
         }, window.$bodyScope.allData[0]);
-      });
+      })();
       return true;
     })()`,
     returnByValue: true,
@@ -126,7 +126,7 @@ try {
 
   // ── 自定义菜单：点击回调 + 关闭 ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => {
+    expression: `(() => {
       window.__cmClicked = 0;
       window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [
@@ -136,7 +136,7 @@ try {
         ],
         showSearch: true,
       });
-    })`,
+    })()`,
     returnByValue: true,
   });
   await assertExpr(
@@ -170,12 +170,12 @@ try {
 
   // ── keepOpen + checked 翻转 ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => {
+    expression: `(() => {
       window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [{ label: 'KeepOpen Item', keepOpen: true, checked: false, click: () => {} }],
         showSearch: true,
       });
-    })`,
+    })()`,
     returnByValue: true,
   });
   await page.send('Runtime.evaluate', {
@@ -197,7 +197,7 @@ try {
 
   // ── 子菜单（右方向键 → submenu.open） ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => {
+    expression: `(() => {
       window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [
           {
@@ -207,7 +207,7 @@ try {
         ],
         showSearch: true,
       });
-    })`,
+    })()`,
     returnByValue: true,
   });
   await page.send('Runtime.evaluate', {
@@ -250,7 +250,7 @@ try {
 
   // ── 搜索过滤 ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => {
+    expression: `(() => {
       window.__eagleBus.emit('CONTEXTMENU.OPEN', {
         items: [
           { label: 'Alpha Action', click: () => {} },
@@ -260,7 +260,7 @@ try {
         ],
         showSearch: true,
       });
-    })`,
+    })()`,
     returnByValue: true,
   });
   await assertExpr(
@@ -303,13 +303,13 @@ try {
     expression: `(() => {
       const box = document.querySelector('#box-list .box');
       const rect = box.getBoundingClientRect();
-      window.$bodyScope.$apply(() => {
+      (() => {
         window.$bodyScope.selected = [window.$bodyScope.allData[0]];
         window.__eaglePorts.openItemContextMenu({
           pageX: rect.left + 40, pageY: rect.top + 40, clientX: rect.left + 40, clientY: rect.top + 40,
           target: box, preventDefault() {}, stopPropagation() {}, button: 2,
         }, window.$bodyScope.allData[0]);
-      });
+      })();
       return true;
     })()`,
     returnByValue: true,

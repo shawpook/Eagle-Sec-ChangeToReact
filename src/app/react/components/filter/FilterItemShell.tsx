@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 
 import { machineryUpdateContainerHieght } from '../../services/gridService';
@@ -78,9 +78,9 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
       document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
     }
     setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
+      runInBodyScope((s) => machineryUpdateContainerHieght(s));
     }, 50);
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.$root.currentFocus = 'content';
       s.$root.$evalAsync?.();
     });
@@ -158,7 +158,7 @@ export function closeShell(elem: HTMLElement | null) {
     document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
   }
   setTimeout(() => {
-    scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
+    runInBodyScope((s) => machineryUpdateContainerHieght(s));
   }, 50);
 }
 

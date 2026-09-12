@@ -99,14 +99,6 @@ export function createBodyScopeShim(): any {
       }
       flushWatchers();
     },
-    $apply(fn?: any): any {
-      try {
-        if (typeof fn === 'function') fn();
-      } catch (err) {
-        console.error('[scopeShim] $apply fn failed', err);
-      }
-      flushWatchers();
-    },
     $eval(expr: any): any {
       if (typeof expr === 'function') return expr(selfProxy || shim);
       if (typeof expr === 'string') return evalPath(expr);

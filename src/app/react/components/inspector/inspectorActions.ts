@@ -6,7 +6,7 @@ import { $, safeZoomData, getIpc, req, getCurrentWindow } from '../detail/detail
 import { q, blurOn, selectText } from '../../utils/domQuery';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
-import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
@@ -80,7 +80,7 @@ function sortTags(scope: any, original: string[]): string[] {
 export function updateSelection() {
   clearTimeout(updateSelectionTimeout);
   updateSelectionTimeout = setTimeout(function () {
-    scopeApply(getBodyScope(), function (s) {
+    runInBodyScope(function (s) {
       const eagleIns = (window as any).eagle.inspector;
       const selected = Array.isArray(s.selected) ? s.selected : [];
       const i18n = (window as any).i18n;
@@ -939,4 +939,3 @@ export function bindInspectorEvents(): () => void {
 }
 
 void getCurrentWindow;
-void scopeApply;

@@ -9,7 +9,7 @@ import { KIND_COMPONENTS } from './FilterItems';
 import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
 import { syncFilterFromScope } from '../../store/filterState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
@@ -31,12 +31,12 @@ const menuIcon = (theme: string, icon: string) => `assets/images/${themePathOf(t
 const filter = (): any => getBodyScope()?.eagle?.filter;
 const bodyScope = (): any => getBodyScope();
 const runSeq = (fns: Array<(s: any) => void>) =>
-  scopeApply(getBodyScope(), (s) => { fns.forEach((fn) => fn(s)); });
+  runInBodyScope((s) => { fns.forEach((fn) => fn(s)); });
 
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
+      runInBodyScope((s) => machineryUpdateContainerHieght(s));
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -170,13 +170,13 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   excluded={!!excludes[typeItem]}
                   onClick={() => {
                     focusInput(rootRef.current);
-                    scopeApply(bodyScope(), (s) => toggleExtFilter(typeItem));
+                    runInBodyScope((s) => toggleExtFilter(typeItem));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                     setTypesKeyword('');
                   }}
                   onContextMenu={(e) => {
                     focusInput(rootRef.current);
-                    scopeApply(bodyScope(), (s) => toggleExtFilterExclude(typeItem));
+                    runInBodyScope((s) => toggleExtFilterExclude(typeItem));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                     setTypesKeyword('');
                   }}
@@ -579,7 +579,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
   const icon = isImport ? 'ic-filter-item-duration.svg' : 'ic-filter-item-modify.svg';
 
   const onOpen = () => {
-    scopeApply(bodyScope(), (s) => {
+    runInBodyScope((s) => {
       calculateDateFilter();
       s.filterImportDateMonths = getDateFilterCountsArray('date');
       syncFilterFromScope();
@@ -676,7 +676,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
                 placeholder={t('filter.import>rangePlaceholder')}
                 onBlur={(e) => {
                   const v = e.target.value;
-                  scopeApply(bodyScope(), (s) => { s.eagle.filter.filterRules[kind].model = v; });
+                  runInBodyScope((s) => { s.eagle.filter.filterRules[kind].model = v; });
                   runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                 }}
               />
@@ -1036,7 +1036,7 @@ export function FilterPanel() {
           defaultValue="#ff0000"
           onChange={(e) => {
             const v = e.target.value;
-            scopeApply(bodyScope(), (s) => {
+            runInBodyScope((s) => {
               s.hexColor = v.toUpperCase();
               filterWithColor(hexToRGB(s.hexColor));
             });
@@ -1047,7 +1047,7 @@ export function FilterPanel() {
             const Comp = KIND_COMPONENTS[type];
             return Comp ? <Comp key={`${type}-${index}`} snapshot={snapshot} /> : null;
           })}
-          <div className="ic-btn filter-add-btn" onClick={() => scopeApply(bodyScope(), (s) => openFilterAddContextMenu())}>
+          <div className="ic-btn filter-add-btn" onClick={() => runInBodyScope((s) => openFilterAddContextMenu())}>
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-add.svg`} />
           </div>
         </div>
@@ -1061,7 +1061,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={t('savedFilter.filterButton')}
             style={snapshot.filterBadge > 0 || snapshot.savedFilterCount > 0 || snapshot.keyword.length > 0 ? undefined : { display: 'none' }}
-            onClick={(e) => scopeApply(bodyScope(), (s) => s.SavedFilter && s.SavedFilter.toggle(e))}
+            onClick={(e) => runInBodyScope((s) => s.SavedFilter && s.SavedFilter.toggle(e))}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-saved.svg`} />
           </div>

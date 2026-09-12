@@ -4,7 +4,7 @@ import { t } from '../../global/eagleGlobals';
 import { safeZoomData, getIpc, req } from './detailHooks';
 import { q, qa, widthOf, heightOf, offsetOf, outerWidthOf, outerHeightOf, cssGet, setCssEl, setHtmlEl, focusEl, blurEl, onEl, offEl } from '../../utils/domQuery';
 import { syncDetailFromScope } from '../../store/detailState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
 import { getRawPath } from '../../core/itemDomain';
 import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from '../../global/bus';
@@ -33,7 +33,7 @@ export function removeComment(index: number) {
 
   const message = t('notify.annotation.remove');
   // 復原
-  scopeApply($bodyScope, function (s) {
+  runInBodyScope(function (s) {
     s.notify(
       {
         message: message,
@@ -65,7 +65,7 @@ export function useRectComment(enabled: boolean) {
     if (!element) return;
 
     // 原 link：$scope.rect = {}（寫回 commentRect，僅首次）
-    scopeApply(getBodyScope(), function (s) {
+    runInBodyScope(function (s) {
       if (!s.commentRect) {
         s.commentRect = {};
         syncDetailFromScope();
@@ -96,7 +96,7 @@ export function useRectComment(enabled: boolean) {
       const rect: any = {};
       rect.startX = posRef.current.downX = e.offsetX;
       rect.startY = posRef.current.downY = e.offsetY + element.scrollTop / zoomRatio;
-      scopeApply(getBodyScope(), function (sc) {
+      runInBodyScope(function (sc) {
         sc.commentRect = rect;
         sc.dragging = true;
       });
@@ -116,7 +116,7 @@ export function useRectComment(enabled: boolean) {
       setTimeout(function () {
         blurEl('#annotation-preview-container-input');
       }, 50);
-      scopeApply(s, function (sc) {
+      runInBodyScope(function (sc) {
         if (!q('#box-container')) return;
         const offsetLeft = (offsetOf(q('#box-container'))?.left ?? 0) - (offsetOf(q('#detail-image'))?.left ?? 0);
         const offsetTop = (offsetOf(q('#box-container'))?.top ?? 0) - (offsetOf(q('#detail-image'))?.top ?? 0);
@@ -171,7 +171,7 @@ export function useRectComment(enabled: boolean) {
       const flipX = posRef.current.startX > e.pageX;
       const flipY = posRef.current.startY > e.pageY;
 
-      scopeApply(s, function (sc) {
+      runInBodyScope(function (sc) {
         const rect = sc.commentRect;
         if (flipX) {
           rect.startX = posRef.current.downX - (posRef.current.startX - e.pageX) / zoomRatio;
@@ -210,7 +210,7 @@ export function recomputeCommentRatio() {
   if (!image) return;
   const $image = q('#detail-image');
   if (image && image.width && $image) {
-    scopeApply($bodyScope, function (s) {
+    runInBodyScope(function (s) {
       s.ratio = image.width / widthOf($image);
       syncDetailFromScope();
     });
@@ -237,7 +237,7 @@ export function useCommentsContainer(currentId: string | undefined, hasComments:
         const onLoad = function () {
           const image = getBodyScope()?.current;
           if (!image) return;
-          scopeApply(getBodyScope(), function (s) {
+          runInBodyScope(function (s) {
             s.ratio = image.width / widthOf($image);
             syncDetailFromScope();
             s.$evalAsync?.();
@@ -325,7 +325,7 @@ export function useCommentItem(
       const height = ui.element.height();
       const width = ui.element.width();
 
-      scopeApply(getBodyScope(), function (s) {
+      runInBodyScope(function (s) {
         resizing = false;
         const comment = s.current?.comments?.[commentIndex];
         if (comment) {
@@ -362,7 +362,7 @@ export function useCommentItem(
       const s = getBodyScope();
       if (!dragging) return;
       if (!s?.isCommentMode) return;
-      scopeApply(s, function (sc) {
+      runInBodyScope(function (sc) {
         e.stopPropagation();
         dragging = false;
         const currentX = e.pageX;

@@ -8,7 +8,7 @@ import { useAppState } from '../../store/appState';
 import { contentFocus, dblclickContentPanel } from '../../core/miscDomain';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { onSidebarResize } from '../../services/sidebarService';
 import { makeResizable } from '../interactions/resizable';
 
@@ -145,7 +145,7 @@ export function AppMenuButton() {
   }, []);
   if (!host || !isLoading) return null;
   return createPortal(
-    <div className="icon-btn application-menu-btn fixed" style={{ position: 'absolute', left: 12, top: 12 }} onClick={(e) => scopeApply(getBodyScope(), () => openApplicationContextMenu(e))}>
+    <div className="icon-btn application-menu-btn fixed" style={{ position: 'absolute', left: 12, top: 12 }} onClick={(e) => runInBodyScope(() => openApplicationContextMenu(e))}>
       <img src={`assets/images/${theme === 'light' || theme === 'lightgray' ? 'light' : 'dark'}/icons/ic-app-menu.svg`} />
     </div>,
     host
@@ -179,7 +179,7 @@ export function SidebarResizable() {
       minWidth: 200,
       handles: 'e',
       resize: function (event: any, ui: any) {
-        scopeApply(scope, (s: any) => {
+        runInBodyScope((s: any) => {
           onSidebarResize(event, ui);
         });
       },
@@ -214,8 +214,8 @@ export function DetailWrapper() {
       id="eagle-detail-wrapper"
       className="content-panel detail-mode"
       style={{ display: 'none' }}
-      onDoubleClick={(e) => scopeApply(getBodyScope(), () => dblclickContentPanel(e))}
-      onMouseDown={(e) => scopeApply(getBodyScope(), () => contentFocus(e))}
+      onDoubleClick={(e) => runInBodyScope(() => dblclickContentPanel(e))}
+      onMouseDown={(e) => runInBodyScope(() => contentFocus(e))}
     >
       {/* 詳情模式工具列/懸浮層（React portal 內容為 Fragment） */}
       <div id="eagle-detail-host" />

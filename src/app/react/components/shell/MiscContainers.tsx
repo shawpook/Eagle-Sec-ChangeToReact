@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { filterWithColor, hexToRGB } from '../../core/filterDomain';
 
 /**
@@ -45,7 +45,7 @@ export function ColorsPicker() {
         const value = e.target.value;
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-          scopeApply(getBodyScope(), (s: any) => {
+          runInBodyScope((s: any) => {
             filterWithColor(hexToRGB(value));
           });
         }, 200);

@@ -112,10 +112,10 @@ try {
 
   // ── 进入详情（走 shims 包裹后的 enterDetailMode；真实路径先点选再双击，等价于 selected=[item]） ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => {
+    expression: `(() => {
       window.$bodyScope.selected = [window.$bodyScope.allData[0]];
       window.$bodyScope.enterDetailMode(null, window.$bodyScope.allData[0]);
-    })`,
+    })()`,
     returnByValue: true,
   });
 
@@ -165,7 +165,7 @@ try {
 
   // ── 缩放滑条快照联动 ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.sliderZoomRatio = 150; window.$bodyScope.$apply(); window.__eagleDetailSync && window.__eagleDetailSync();`,
+    expression: `window.$bodyScope.sliderZoomRatio = 150; window.__eagleDetailSync && window.__eagleDetailSync();`,
     returnByValue: true,
   });
   await assertExpr(
@@ -177,7 +177,7 @@ try {
     `(() => { const bar = document.querySelector('#detail-slider-ratio')?.closest('.range-wrap')?.querySelector('.range-progressbar .current'); return bar && bar.style.width !== ''; })()`
   );
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.sliderZoomRatio = 100; window.$bodyScope.$apply(); window.__eagleDetailSync && window.__eagleDetailSync();`,
+    expression: `window.$bodyScope.sliderZoomRatio = 100; window.__eagleDetailSync && window.__eagleDetailSync();`,
     returnByValue: true,
   });
 
@@ -193,7 +193,7 @@ try {
 
   // ── 退出详情（ng-click 语义=在 $apply 内调用） ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => window.$bodyScope.leaveDetailMode())`,
+    expression: `window.$bodyScope.leaveDetailMode()`,
     returnByValue: true,
   });
   await assertExpr('detail-exit-body-class', `!document.body.classList.contains('is-detail-mode')`);

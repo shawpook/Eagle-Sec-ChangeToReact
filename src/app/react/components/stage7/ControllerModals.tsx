@@ -11,7 +11,7 @@ import { ayncsImagesChange } from './FolderModals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
-import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
@@ -484,11 +484,11 @@ export function WebsitePanel() {
   };
 
   const toggleAll = (event: any) => {
-    scopeApply(getBodyScope(), (s: any) => machineryToggleAll(s, event));
+    runInBodyScope((s: any) => machineryToggleAll(s, event));
   };
 
   const openSidebarMenu = (event: any) => {
-    scopeApply(getBodyScope(), (s: any) => {
+    runInBodyScope((s: any) => {
       if (typeof s.openSidebarMenu === 'function') s.openSidebarMenu(event);
     });
   };

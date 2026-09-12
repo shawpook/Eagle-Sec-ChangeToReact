@@ -6,7 +6,7 @@ import { useTippy, useSelectAll } from '../hooks';
 import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
@@ -34,7 +34,7 @@ const bodyScope = (): any => getBodyScope();
 
 /** `page = 1; filterContent();` / `page = 1; reload();` 等价。 */
 const runSeq = (fns: Array<(s: any) => void>) =>
-  scopeApply(getBodyScope(), (s) => {
+  runInBodyScope((s) => {
     fns.forEach((fn) => fn(s));
   });
 
@@ -42,7 +42,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      scopeApply(getBodyScope(), (s) => machineryUpdateContainerHieght(s));
+      runInBodyScope((s) => machineryUpdateContainerHieght(s));
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -225,18 +225,18 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   <div
                     className={`palette none${!gray && !activeHex ? ' active' : ''}`}
                     style={{ backgroundColor: '#ccc' }}
-                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => filterWithColor()); }}
+                    onClick={(e) => { focusInput(rootRef.current); runInBodyScope((s) => filterWithColor()); }}
                   />
                   <div
                     className="palette gray"
-                    onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => filterWithHexColor('gray')); }}
+                    onClick={(e) => { focusInput(rootRef.current); runInBodyScope((s) => filterWithHexColor('gray')); }}
                   />
                   {COLOR_PALETTES.map(([hex]) => (
                     <div
                       key={hex}
                       className={`palette${hex === activeHex ? ' active' : ''}`}
                       style={{ backgroundColor: hex }}
-                      onClick={(e) => { focusInput(rootRef.current); scopeApply(bodyScope(), (s) => filterWithHexColor(hex)); }}
+                      onClick={(e) => { focusInput(rootRef.current); runInBodyScope((s) => filterWithHexColor(hex)); }}
                     />
                   ))}
                 </div>
@@ -251,8 +251,8 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     value={hexDraft}
                     onChange={(e) => {
                       setHexDraft(e.target.value);
-                      scopeApply(bodyScope(), (s) => { s.hexColor = e.target.value; });
-                      scopeApply(bodyScope(), (s) => filterWithHexColor(e.target.value));
+                      runInBodyScope((s) => { s.hexColor = e.target.value; });
+                      runInBodyScope((s) => filterWithHexColor(e.target.value));
                     }}
                   />
                   <div className="fake-color-input" onClick={openColorPicker} style={{ backgroundColor: hexDraft }} />
@@ -274,8 +274,8 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     value={rules.color?.accuracy ?? 20}
                     onChange={(e) => {
                       const v = Number(e.target.value);
-                      scopeApply(bodyScope(), (s) => { s.eagle.filter.filterRules.color.accuracy = v; });
-                      scopeApply(bodyScope(), (s) => filterWithHexColor(s.hexColor));
+                      runInBodyScope((s) => { s.eagle.filter.filterRules.color.accuracy = v; });
+                      runInBodyScope((s) => filterWithHexColor(s.hexColor));
                     }}
                   />
                 </div>
@@ -369,7 +369,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   }, [snapshot.containFolders, snapshot.filterFolderKeyword]);
 
   const onOpen = () => {
-    scopeApply(bodyScope(), (s) => {
+    runInBodyScope((s) => {
       if (s.eagle.filter.folderFilterLogic === 'OR') {
         calcuteContainFolders(s.preelaborations);
       } else {
@@ -388,7 +388,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   };
 
   const changeRule = (rule: string) => {
-    scopeApply(bodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.eagle.filter.folderFilterLogic = rule;
       syncFilterFromScope();
       const selectedCount = (s.containFolders || []).filter((f: any) => f && f.isSelected).length;
@@ -440,7 +440,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   setSearchDraft(e.target.value);
                   clearTimeout((window as any).__foldersSearchTimer);
                   (window as any).__foldersSearchTimer = setTimeout(() => {
-                    scopeApply(bodyScope(), (s) => { s.eagle.filter.filterFolderKeyword = e.target.value; });
+                    runInBodyScope((s) => { s.eagle.filter.filterFolderKeyword = e.target.value; });
                     syncFilterFromScope();
                   }, 100);
                 }}
@@ -477,14 +477,14 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   onClick={(e) => {
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
-                    scopeApply(bodyScope(), (s) => filterWithFolder(live));
+                    runInBodyScope((s) => filterWithFolder(live));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                   }}
                   onContextMenu={(e) => {
                     e.stopPropagation();
                     focusInput(rootRef.current);
                     const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
-                    scopeApply(bodyScope(), (s) => excludeWithFolder(live));
+                    runInBodyScope((s) => excludeWithFolder(live));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                   }}
                   nameHtml={substring(fuzzyName(folder.name), 0, 200)}
@@ -615,7 +615,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
   };
 
   const changeRule = (rule: string) => {
-    scopeApply(bodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.eagle.filter.tagFilterLogic = rule;
       syncFilterFromScope();
       const sel = (s.containTags || []).filter((tg: any) => tg && (tg.isSelected || tg.isExcluded)).length;
@@ -669,7 +669,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   setSearchDraft(e.target.value);
                   clearTimeout((window as any).__tagsSearchTimer);
                   (window as any).__tagsSearchTimer = setTimeout(() => {
-                    scopeApply(bodyScope(), (s) => { s.tagKeyword = e.target.value; });
+                    runInBodyScope((s) => { s.tagKeyword = e.target.value; });
                     syncFilterFromScope();
                   }, 100);
                 }}
@@ -739,14 +739,14 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onClick={() => {
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      scopeApply(bodyScope(), (s) => filterWithTag(live));
+                      runInBodyScope((s) => filterWithTag(live));
                       runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                     }}
                     onContextMenu={(e) => {
                       e.stopPropagation();
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      scopeApply(bodyScope(), (s) => excludeWithTag(live));
+                      runInBodyScope((s) => excludeWithTag(live));
                       runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
                     }}
                     nameHtml={substring(fuzzyName(tag.name), 0, 200)}
@@ -758,7 +758,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                 <CheckItem
                   checked={tagsList.length > 0 && tagsList.every((tg) => tg.isSelected)}
                   onClick={() => {
-                    scopeApply(bodyScope(), (s) => {
+                    runInBodyScope((s) => {
                       const live = s.containTags || [];
                       const isAllSelected = live.every((tg: any) => tg.isSelected);
                       if (isAllSelected) {

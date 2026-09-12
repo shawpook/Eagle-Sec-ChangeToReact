@@ -91,7 +91,7 @@ try {
     shimActive: window.__eagleScopeShim ? String(window.__eagleScopeShim.active) : 'NO-DIAG',
   })`));
   // ①b 其它域的 scope→store 同步是否也死了（keyword 走 listState/appState）
-  await evalNow(page, `window.$bodyScope.keyword = 'probe-kw'; window.$bodyScope.$apply();`);
+  await evalNow(page, `window.$bodyScope.keyword = 'probe-kw'; `);
   await delay(1000);
   console.log('OTHER_SYNC', await evalNow(page, `JSON.stringify({
     scopeKeyword: String(window.$bodyScope.keyword),
@@ -113,10 +113,10 @@ try {
 
   console.log('ENTER', await evalNow(page, `(function () {
     try {
-      window.$bodyScope.$apply(function () {
+      window.$(function () {bodyScope
         window.$bodyScope.selected = [window.$bodyScope.allData[0]];
         window.$bodyScope.enterDetailMode(null, window.$bodyScope.allData[0]);
-      });
+      })();
       return 'OK';
     } catch (e) { return 'THROW ' + String(e && e.stack || e).slice(0, 300); }
   })()`));

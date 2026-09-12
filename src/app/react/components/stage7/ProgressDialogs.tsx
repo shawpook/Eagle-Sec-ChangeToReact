@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
 import { second2time } from '../../app/filters';
 import { getIpc, req } from '../detail/detailHooks';
-import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
 import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
 import { addToLibraryChannel, webpConvertStartChannel } from '../../global/bus';
@@ -67,7 +67,7 @@ export function EmptyTrashProgress() {
 
   const cancelEmptyTrash = () => {
     // ng-click 等价：$apply 包裹（digest 触发 $watch 桥接 → isCleaningTrash=false → 关闭）
-    scopeApply(getBodyScope(), () => cancelEmptyTrashAction());
+    runInBodyScope(() => cancelEmptyTrashAction());
   };
 
   return createPortal(
@@ -723,7 +723,7 @@ export function FileThumbnailProgress() {
 
   const isOpen = lengths.total > 0;
   const cancelRegenerateThumbnail = () => {
-    scopeApply(getBodyScope(), () => cancelRegenerateThumbnailAction());
+    runInBodyScope(() => cancelRegenerateThumbnailAction());
   };
 
   return createPortal(
@@ -1483,7 +1483,7 @@ export function FixutilCleanEmptyFolderProgress() {
                 用户可见行为为无操作；scopeApply + 守卫等价 */}
             <div
               className="button button-xs button-grey cancel-button"
-              onClick={() => scopeApply(getBodyScope(), (s: any) => s.cancel && s.cancel())}
+              onClick={() => runInBodyScope((s: any) => s.cancel && s.cancel())}
             >
               {t('general.cancel')}
             </div>
@@ -1522,7 +1522,7 @@ export function FixutilProgress() {
             {/* 同上：body.cancel 不存在（原版怪癖） */}
             <div
               className="button button-xs button-grey cancel-button"
-              onClick={() => scopeApply(getBodyScope(), (s: any) => s.cancel && s.cancel())}
+              onClick={() => runInBodyScope((s: any) => s.cancel && s.cancel())}
             >
               {t('general.cancel')}
             </div>

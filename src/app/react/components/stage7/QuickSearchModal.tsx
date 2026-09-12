@@ -6,7 +6,7 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
 import { max, uniq } from '../../utils/lang';
-import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 
 import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
@@ -603,21 +603,21 @@ export function QuickSearchModal() {
     const mode = modeRef.current;
     if (!body) return;
     if (mode === 'FOLDERS') {
-      scopeApply(body, (s: any) => openFolder(target));
+      runInBodyScope((s: any) => openFolder(target));
       addQuickSearchFolderHistory(target.id);
       setTimeout(() => {
-        scopeApply(getBodyScope(), (s: any) => {
+        runInBodyScope((s: any) => {
           machineryChangeSidebarIndex(s, target);
           if (typeof s.$evalAsync === 'function') scopeEvalAsync();
         });
       }, 200);
     } else if (mode === 'TAGS') {
-      scopeApply(body, (s: any) => {
+      runInBodyScope((s: any) => {
         s.viewMode = undefined;
         openTag(target.name);
       });
     } else if (mode === 'ITEMS') {
-      scopeApply(body, (s: any) => {
+      runInBodyScope((s: any) => {
         let folder = null;
         if (target.folders && target.folders[0]) {
           folder = s.folderMappings[target.folders[0]];
@@ -625,10 +625,10 @@ export function QuickSearchModal() {
         openItemLocation(target, folder);
       });
     } else {
-      scopeApply(body, (s: any) => openSmartFolder(target));
+      runInBodyScope((s: any) => openSmartFolder(target));
       addQuickSearchSmartFolderHistory(target.id);
       setTimeout(() => {
-        scopeApply(getBodyScope(), (s: any) => {
+        runInBodyScope((s: any) => {
           machineryChangeSidebarIndex(s, target);
           if (typeof s.$evalAsync === 'function') scopeEvalAsync();
         });
@@ -751,7 +751,7 @@ export function QuickSearchModal() {
 
   const closeViaScope = () => {
     const s = getBodyScope();
-    if (s) scopeApply(s, () => closeQuickSearch());
+    if (s) runInBodyScope(() => closeQuickSearch());
     else close();
   };
 
@@ -787,7 +787,7 @@ export function QuickSearchModal() {
               className="parent-name"
               onClick={(e) => {
                 e.stopPropagation();
-                scopeApply(getBodyScope(), (s: any) =>
+                runInBodyScope((s: any) =>
                   kind === 'folder' ? openFolder(s.folderMappings[folder.parent]) : openSmartFolder(s.smartFolderMappings[folder.parent])
                 );
                 closeViaScope();
@@ -844,7 +844,7 @@ export function QuickSearchModal() {
             <span
               key={fi}
               className="parent"
-              onClick={() => scopeApply(getBodyScope(), (s: any) => openItemLocation(item, s.folderMappings[folderId]))}
+              onClick={() => runInBodyScope((s: any) => openItemLocation(item, s.folderMappings[folderId]))}
             >
               <a>{iv(body?.folderMappings?.[folderId]?.name)} </a>
             </span>

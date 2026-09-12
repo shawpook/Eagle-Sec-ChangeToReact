@@ -42,7 +42,7 @@ import { makeResizable } from '../interactions/resizable';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
-import { getBodyScope, scopeApply, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { getBodyScope, runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
 
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
@@ -65,7 +65,7 @@ const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgra
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (scope) => {
+  runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
     if (typeof target !== 'function') return;
     const args = preArgs.length ? preArgs : e === undefined ? [] : [e];
@@ -297,7 +297,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
       <div
         className="info-section-label"
         onClick={(e) =>
-          scopeApply(getBodyScope(), (s) => {
+          runInBodyScope((s) => {
             s.inspector.showTags = !s.inspector.showTags;
             syncInspectorFromScope();
           })
@@ -326,7 +326,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
                 className="ic-btn label-item-remove-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  scopeApply(getBodyScope(), (s) => s.TagManager.removeTag(tag));
+                  runInBodyScope((s) => s.TagManager.removeTag(tag));
                   e.stopPropagation();
                 }}
               >
@@ -415,7 +415,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              scopeApply(getBodyScope(), (s) => {
+              runInBodyScope((s) => {
                 s.inspector.showFolders = !s.inspector.showFolders;
                 syncInspectorFromScope();
               })
@@ -468,7 +468,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              scopeApply(getBodyScope(), (s) => {
+              runInBodyScope((s) => {
                 s.inspector.showFolders = !s.inspector.showFolders;
                 syncInspectorFromScope();
               })
@@ -628,7 +628,7 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
       disabled: false,
       helper: 'clone',
       update: () => {
-        scopeApply(getBodyScope(), (s) => {
+        runInBodyScope((s) => {
           const item = s.selected?.[0];
           if (!item) return;
           const order = sortableToArray(el, 'data-comment-index').map(Number);
@@ -654,7 +654,7 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
       <div
         className="info-section-label"
         onClick={() =>
-          scopeApply(getBodyScope(), (s) => {
+          runInBodyScope((s) => {
             s.inspector.showComments = !s.inspector.showComments;
             syncInspectorFromScope();
           })
@@ -702,7 +702,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              scopeApply(getBodyScope(), (s) => {
+              runInBodyScope((s) => {
                 s.inspector.showProperties = !s.inspector.showProperties;
                 syncInspectorFromScope();
               })
@@ -794,7 +794,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              scopeApply(getBodyScope(), (s) => {
+              runInBodyScope((s) => {
                 s.inspector.showProperties = !s.inspector.showProperties;
                 syncInspectorFromScope();
               })
@@ -1067,7 +1067,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
     // D-2f：jQuery-UI sortable → 自研
     const sortable = makeSortable(el, {
       update: () => {
-        scopeApply(getBodyScope(), (s) => {
+        runInBodyScope((s) => {
           const order = sortableToArray(el, 'data-item-id');
           const items = s.inspector.inspectorItems || [];
           s.inspector.inspectorItems = order.map((id: string) => items.find((i: any) => String(i.id) === id)).filter(Boolean);
@@ -1084,26 +1084,26 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   const categoryNameEditable = snapshot.category?.editable;
 
   const writeCategoryName = (html: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.inspector.category.newName = html;
     });
     inspectorCategoryNameChange();
   };
   const writeCategoryDescription = (html: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.inspector.category.newDescription = html;
     });
     inspectorCategoryDescriptionChange();
   };
   const writeName = (html: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.inspector.newName = html;
       syncInspectorFromScope();
     });
     inspectorNameChange();
   };
   const writeAnnotation = (html: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.inspector.newAnnotation = html;
       syncInspectorFromScope();
     });
@@ -1111,7 +1111,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   };
   const [urlDebounce] = useState<any>({ id: 0 });
   const writeUrl = (html: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.inspector.newUrl = html;
       syncInspectorFromScope();
     });
@@ -1183,7 +1183,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              scopeApply(getBodyScope(), (s) => {
+              runInBodyScope((s) => {
                 s.inspector.showProperties = !s.inspector.showProperties;
                 syncInspectorFromScope();
               })
@@ -1291,7 +1291,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
                 tippy-content={`${rgbToHex(palette.color[0], palette.color[1], palette.color[2])} (${numFilter(palette.ratio, 1)}%)`}
                 onClick={(e) => call('openColorContextMenu', palette)(e)}
                 onContextMenu={(e) => {
-                  scopeApply(getBodyScope(), (s) => {
+                  runInBodyScope((s) => {
                     const hex = rgbToHex(palette.color[0], palette.color[1], palette.color[2]);
                     if (typeof hex === 'string') s.$body?.hexColor !== undefined && (s.$body.hexColor = hex);
                     s.hexColor = hex;

@@ -129,14 +129,13 @@ const cForbidden = [
   ['scope 面 $broadcast', /\.\$broadcast\s*\(/],
   ['scope 面 $on', /\.\$on\s*\(/],
 ];
-// 已知遗留（行级白名单，均需在 C-6 后续批次处置，见 PROGRESS b1-9bz-C-6 节）：
-// 1) appCore.scopeApply 内部的 scope.$apply —— 直调化会改变失败路径语义（C-3 实测），
-//    待 C-6 删 scopeShim 时随 scopeApply 一起处置；
-// 2) gridDirectives 的 scope.$on('$destroy') —— Angular 生命周期残留，无发送方；
+// 已知遗留（行级白名单，均需后续批次处置）：
+// 1) b1-9bz-E1b 已删 appCore.scopeApply 内部的 $apply 与 shim 的 $apply —— 原白名单项 1 移除，
+//    主窗口 `.$apply(` 计数现为 0；
+// 2) gridDirectives 的 scope.$on('$destroy') —— Angular 生命周期残留，无发送方（E1c 处置）；
 // 3) FilterItemShell / Sidebar 的**动态事件名** $on（eventName / autoFocusEvent 变量），
-//    非静态频道，无法用 defineChannel 迁移。
+//    非静态频道，无法用 defineChannel 迁移（E1c 处置）。
 const cAllowed = [
-  /scope\.\$apply\(/,                 // 1
   /\$on\('\$\w+',/,                    // 2（'$destroy' 等 Angular 内部事件名）
   /\$on\(\s*(eventName|autoFocusEvent)\b/, // 3
 ];

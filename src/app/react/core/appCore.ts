@@ -217,24 +217,23 @@ export function scoped<A extends any[], R>(fn: (s: any, ...args: A) => R): (...a
   return wrapped;
 }
 
-/** 在 Angular 作用域上下文中执行表达式（等价 ng-click 的 $apply 语义，digest 期内安全跳过）。 */
-export function scopeApply(scope: any, fn: (scope: any) => void): void {
-  if (!scope) return;
-  // b1-9bz-C-3 实测：直调化（去掉 $$phase 分叉与 $apply 间接）会让 stage-smoke 的
-  // 「theme switch」稳定失败 —— 原版在 scope 无 $apply 时抛错被 catch（fn 不执行），
-  // 直调则执行了 fn，属于行为差异。**保持原实现**，本项留给 C-6（删 scopeShim 时统一处置）。
-  if (scope.$$phase || scope.$root.$$phase) {
-    try {
-      fn(scope);
-    } catch (err) {
-      console.error('[react-scope-bridge]', err);
-    }
-    return;
-  }
+/**
+ * b1-9bz-E1b：在 body scope 上下文中执行回调（取代原 `scopeApply(scope, fn)`）。
+ *
+ * 原实现经 shim 的 `$apply` 包装（Angular digest）。实测 shim 世界 `$$phase` 恒 undefined，
+ * 该包装等价于「执行 fn + flushWatchers（全树已无 watcher，恒 no-op）」并吞掉 fn 抛错。
+ * 新实现保留同语义：取不到 scope 则不执行；fn 抛错 catch + log；不向调用方上抛。
+ * C-3 记录的行为差异（原版在 scope 无 `$apply` 时抛错被 catch、fn 不执行）在 shim 世界不成立
+ * （`$apply` 恒存在），故直调化安全。
+ */
+export function runInBodyScope<T = void>(fn: (scope: any) => T): T | undefined {
+  const scope = getBodyScope();
+  if (!scope) return undefined;
   try {
-    scope.$apply(fn.bind(null, scope));
+    return fn(scope);
   } catch (err) {
     console.error('[react-scope-bridge]', err);
+    return undefined;
   }
 }
 

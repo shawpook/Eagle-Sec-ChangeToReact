@@ -109,7 +109,7 @@ try {
 
   // ── 切换到标签视图 ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$apply(() => { window.$bodyScope.viewMode = 'alltags'; }); return true; })()`,
+    expression: `(() => { (() => { window.$bodyScope.viewMode = 'alltags'; })(); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(
@@ -171,7 +171,7 @@ try {
 
   // ── 建群组（可编辑输入框） ──
   await page.send('Runtime.evaluate', {
-    expression: `(() => { window.$bodyScope.$apply(() => { window.$bodyScope.createTagGroup(); }); return true; })()`,
+    expression: `(() => { (() => { window.$bodyScope.createTagGroup(); })(); return true; })()`,
     returnByValue: true,
   });
   await assertExpr(

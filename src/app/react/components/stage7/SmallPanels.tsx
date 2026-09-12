@@ -12,7 +12,7 @@ import { CornerBtns } from '../toolbar/Toolbar';
 import { getIpc, getCurrentWindow, req } from '../detail/detailHooks';
 
 import { syncPanelFromScope } from '../../store/panelState';
-import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
 import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
 
@@ -39,7 +39,7 @@ const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgra
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (scope) => {
+  runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
     if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
@@ -152,7 +152,7 @@ export function LayoutPanel() {
   }, [open]);
 
   const onLayoutChange = (layout: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       s.layout = layout;
       switch (layout) {
         case 'GridLayout':
@@ -172,7 +172,7 @@ export function LayoutPanel() {
   };
 
   const writeOrderBy = (model: 'currentFolder' | 'currentSmartFolder' | 'currentOrderBy', value: string) => {
-    scopeApply(getBodyScope(), (s) => {
+    runInBodyScope((s) => {
       if (model === 'currentOrderBy') {
         s.currentOrderBy = value;
       } else if (s[model]) {
@@ -392,7 +392,7 @@ export function LayoutPanel() {
                     tabIndex={-1}
                     value={snapshot.listMetaType}
                     onChange={(e) =>
-                      scopeApply(getBodyScope(), (s) => {
+                      runInBodyScope((s) => {
                         // b1-9bz-C-4：原经 $watch("listMetaType") 间接触发 —— 改显式调用
                         // machineryChangeMetaItems（其内部本身就写 s.listMetaType）。
                         machineryChangeMetaItems(s, e.target.value);
@@ -449,7 +449,7 @@ export function LayoutPanel() {
             <div
               className="panel-item"
               onClick={() =>
-                scopeApply(getBodyScope(), (s) => {
+                runInBodyScope((s) => {
                   if (s.inspector && typeof s.inspector.toggle === 'function') s.inspector.toggle();
                 })
               }

@@ -12,7 +12,7 @@ import { offsetOf, widthOf, cssGet, outerHeightOf } from '../../utils/domQuery';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { syncTagManagerFromScope } from '../../store/tagManagerState';
 import { syncFilterFromScope } from '../../store/filterState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../../services/fontTagService';
 import { openTag } from '../../services/batchOpsService';
 import { tagRectSelecting } from '../../core/tagManagerDomain';
@@ -28,7 +28,7 @@ const themePathOf = (theme: string) => (theme === 'light' || theme === 'lightgra
 const iconSrc = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/${icon}`;
 
 const call = (fn: string | ((...a: any[]) => any), ...preArgs: any[]) => (e?: any) =>
-  scopeApply(getBodyScope(), (scope) => {
+  runInBodyScope((scope) => {
     const target = typeof fn === 'function' ? fn : scope[fn];
     if (typeof target === 'function') target(...(preArgs.length ? preArgs : e === undefined ? [] : [e]));
   });
@@ -145,7 +145,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
         }
       });
 
-      scopeApply(s, (sc) => {
+      runInBodyScope((sc) => {
         sc.selectedTags = {};
         sc.selectingTags = {};
       });
@@ -160,7 +160,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       rect.style.left = tagRectSelection.startX + 'px';
       (rect.style as any).display = 'block';
 
-      scopeApply(s, (sc) => {
+      runInBodyScope((sc) => {
         sc.$root.currentFocus = 'content';
         sc.$evalAsync?.();
       });
@@ -176,7 +176,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       tagRectSelection = {};
       w.tagRectSelecting = false;
 
-      scopeApply(s, (sc) => {
+      runInBodyScope((sc) => {
         sc.selectedTags = { ...(sc.selectingTags || {}) };
         sc.selectingTags = {};
         sc.$evalAsync?.();
@@ -211,7 +211,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       drawRect();
 
       if (tagItems.length > 0) {
-        scopeApply(s, (sc) => {
+        runInBodyScope((sc) => {
           sc.selectingTags = {};
           for (let i = 0; i < tagItems.length; i++) {
             const tagName = tagItems[i].name;
@@ -264,7 +264,7 @@ export function TagManagerPanel() {
       minWidth: 200,
       handles: 'e',
       resize: (event: any, ui: any) => {
-        scopeApply(getBodyScope(), (s) => {
+        runInBodyScope((s) => {
           onTagSidebarResize(event, ui);
           s.$evalAsync?.();
         });
@@ -285,7 +285,7 @@ export function TagManagerPanel() {
       disabled: false,
       helper: 'clone',
       stop: () => {
-        scopeApply(getBodyScope(), (s) => {
+        runInBodyScope((s) => {
           const order = sortableToArray(el, 'data-group-id');
           const groups = s.TagManager.groups || [];
           s.TagManager.groups = order.map((id: string) => groups.find((g: any) => g.id === id)).filter(Boolean);
@@ -369,7 +369,7 @@ export function TagManagerPanel() {
               onFocus={() => call('tagGroupDescriptionFocus')()}
               onBlur={() => call('tagGroupDescriptionBlur')()}
               onChange={(html) => {
-                scopeApply(getBodyScope(), (s) => {
+                runInBodyScope((s) => {
                   s.currentTagGroup.description = html;
                 });
               }}
@@ -523,14 +523,14 @@ export function TagManagerPanel() {
                         onKeyDown={(e) => {
                           e.stopPropagation();
                           e.nativeEvent.stopPropagation();
-                          scopeApply(getBodyScope(), (s) => {
+                          runInBodyScope((s) => {
                             s.newGroupName = (e.target as HTMLInputElement).value;
                             syncTagManagerFromScope();
                             if (typeof s.renameTagGroupKeyup === 'function') renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), s.newGroupName);
                           });
                         }}
                         onBlur={(e) => {
-                          scopeApply(getBodyScope(), (s) => {
+                          runInBodyScope((s) => {
                             s.newGroupName = (e.target as HTMLInputElement).value;
                             syncTagManagerFromScope();
                             if (typeof s.renameTagGroupBlur === 'function') renameTagGroupBlur(liveGroup(group.id), s.newGroupName);

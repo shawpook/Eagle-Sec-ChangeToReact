@@ -14,7 +14,7 @@ import {
 } from './boxGridEngine';
 import { BoxItem } from './boxItem';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { cleanSelected } from '../../services/batchOpsService';
 /**
  * b1-9be2：#box-list 接管 —— @egjs/react-infinitegrid v4 renderer。
@@ -55,14 +55,14 @@ export function BoxList() {
       const onMouseDown = (e: MouseEvent) => {
         const boxEl = (e.target as HTMLElement | null)?.closest?.('.box') as HTMLElement | null;
         if (boxEl) {
-          scopeApply(getBodyScope(), (s) => {
+          runInBodyScope((s) => {
             const id = boxEl.getAttribute('data-box-id');
             const item = id && s.itemMappings ? s.itemMappings[id] : null;
             if (item) select(e, item);
           });
           return;
         }
-        scopeApply(getBodyScope(), (s) => cleanSelected(e));
+        runInBodyScope((s) => cleanSelected(e));
       };
 
       const boxFrom = (target: EventTarget | null) =>
@@ -75,7 +75,7 @@ export function BoxList() {
       // b1-9bz-B：原 callScope 字符串路由 → 落点导出直调（表项本就是这些导出的指针，
       // 同对象调用，零行为变化）；scopeApply 包裹保留原 ng-click digest 语义。
       const callFn = (fn: (...a: any[]) => any, ...args: any[]) => {
-        scopeApply(getBodyScope(), () => fn(...args));
+        runInBodyScope(() => fn(...args));
       };
 
       const onMouseUp = (e: MouseEvent) => {

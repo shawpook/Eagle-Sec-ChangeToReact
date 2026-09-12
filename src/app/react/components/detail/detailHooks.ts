@@ -6,7 +6,7 @@ import { updateZoomRatio } from '../../services/detailService';
 import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../services/mediaService';
 import { syncDetailFromScope, useDetailState } from '../../store/detailState';
 import { useBodyState } from '../../store/bodyState';
-import { getBodyScope, scopeApply } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 
 import { makeResizable } from '../interactions/resizable';
 import { onDetailClick } from '../../services/selectionService';
@@ -259,7 +259,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             return;
           }
           console.log('[mediaElement] Falling back to MPV player');
-          scopeApply(getBodyScope(), function (s) {
+          runInBodyScope(function (s) {
             s.useMpvPlayer = true;
             syncDetailFromScope();
           });
@@ -338,7 +338,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       // 偵測無法播放的影片：metadata 載入但無法解碼
       if ((!video.videoWidth && !video.videoHeight) || !isFinite(video.duration) || video.duration <= 0) {
         console.log('[mediaElement] Unplayable video detected (no dimensions or duration), falling back to MPV');
-        scopeApply(getBodyScope(), function (s) {
+        runInBodyScope(function (s) {
           s.useMpvPlayer = true;
           syncDetailFromScope();
         });
@@ -350,7 +350,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       const frameCheckTimeout = setTimeout(function () {
         if (!frameRendered && !video.paused) {
           console.log('[mediaElement] No frames rendered during playback, falling back to MPV');
-          scopeApply(getBodyScope(), function (s) {
+          runInBodyScope(function (s) {
             s.useMpvPlayer = true;
             syncDetailFromScope();
           });
@@ -1035,7 +1035,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     const unwatchCurrent = useDetailState.subscribe((state: any) => {
       const id = state.snapshot.current?.id;
       if (id !== lastCurrentId && lastCurrentId !== undefined) {
-        scopeApply(getBodyScope(), function (s: any) {
+        runInBodyScope(function (s: any) {
           s.useMpvPlayer = false;
           syncDetailFromScope();
         });
@@ -1058,7 +1058,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         offAllEl(video);
         video.destroy?.();
 
-        scopeApply(getBodyScope(), function (s) {
+        runInBodyScope(function (s) {
           s.useMpvPlayer = false;
           syncDetailFromScope();
         });
@@ -1969,12 +1969,12 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         } else if (Math.abs(endPoint.x - startPoint.x) > 20 && originData.ratio === s?.imageSize?.zoomRatio) {
           if (Date.now() - downTime.value <= 1000 && Math.abs(endPoint.x - startPoint.x) > (maxDistanceX * 2) / 3) {
             if (endPoint.x > startPoint.x) {
-              scopeApply(s, function (sc) {
+              runInBodyScope(function (sc) {
                 machinerySelectNext(sc, undefined);
                 sc.$evalAsync?.();
               });
             } else {
-              scopeApply(s, function (sc) {
+              runInBodyScope(function (sc) {
                 machinerySelectPrev(sc, undefined);
                 sc.$evalAsync?.();
               });
@@ -1982,11 +1982,11 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
           }
         } else if (!state.isZooming && Math.abs(endPoint.x - startPoint.x) < 2 && Math.abs(endPoint.y - startPoint.y) < 2) {
           if (event && event.button === 1) {
-            scopeApply(s, function (sc) {
+            runInBodyScope(function (sc) {
               machineryOpenPluginPanel(sc, undefined);
             });
           } else {
-            scopeApply(s, function (sc) {
+            runInBodyScope(function (sc) {
               openItemContextMenu(event, sc.current);
               sc.$evalAsync?.();
             });
@@ -2048,7 +2048,7 @@ export function useDetailContainerBehaviors(
     const host = detailContainer();
     if (!host) return;
     const onClick = (event: MouseEvent) => {
-      scopeApply(getBodyScope(), (s) => onDetailClick(event));
+      runInBodyScope((s) => onDetailClick(event));
     };
     host.addEventListener('click', onClick);
     return () => host.removeEventListener('click', onClick);
@@ -2106,7 +2106,7 @@ export function useRectSelect() {
           }
         }
         if (!isMultipleSelecting) {
-          scopeApply(s, function (sc) {
+          runInBodyScope(function (sc) {
             sc.selectedMappings = {};
           });
         }
@@ -2129,7 +2129,7 @@ export function useRectSelect() {
       });
 
       rectEl.style.display = '';
-      scopeApply(s, function (sc) {
+      runInBodyScope(function (sc) {
         sc.$root.currentFocus = 'content';
       });
     };
@@ -2154,7 +2154,7 @@ export function useRectSelect() {
         transform: 'none',
       });
 
-      scopeApply(s, function (sc) {
+      runInBodyScope(function (sc) {
         sc.selected = sc.allData.filter(function (image: any) {
           return sc.selectedMappings[image.id];
         });

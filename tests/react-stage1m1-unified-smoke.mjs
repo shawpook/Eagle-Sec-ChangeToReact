@@ -452,9 +452,9 @@ try {
   await evalNow(`(() => {
     const s = window.$bodyScope;
     window.__eagleMachinery.calls.updateSelection = 0;
-    s.$apply(function () {
+    (function () {
       s.selected = [s.raw[0]];
-    });
+    })();
     return true;
   })()`);
   await delay(500);

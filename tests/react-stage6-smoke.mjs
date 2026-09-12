@@ -125,7 +125,7 @@ try {
 
   // ── 选择条目 → ITEM 页签 ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => { window.$bodyScope.selected = [window.$bodyScope.allData[0]]; window.__eagleBus.emit('UPDATE_INSPECTOR'); })`,
+    expression: `(() => { window.$bodyScope.selected = [window.$bodyScope.allData[0]]; window.__eagleBus.emit('UPDATE_INSPECTOR'); })()`,
     returnByValue: true,
   });
   await assertExpr(
@@ -159,7 +159,7 @@ try {
 
   // ── 多选 → selected-count ──
   await page.send('Runtime.evaluate', {
-    expression: `window.$bodyScope.$apply(() => { window.$bodyScope.selected = [...window.$bodyScope.allData]; window.__eagleBus.emit('UPDATE_INSPECTOR'); })`,
+    expression: `(() => { window.$bodyScope.selected = [...window.$bodyScope.allData]; window.__eagleBus.emit('UPDATE_INSPECTOR'); })()`,
     returnByValue: true,
   });
   await assertExpr(

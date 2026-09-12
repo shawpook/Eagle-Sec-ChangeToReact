@@ -125,7 +125,7 @@ export function applyDataMachineryScope(): void {
   // 同因：main.cjs 主窗工作流还直调 changeStar（:2058/2083）、removeSelected（:2192）、
   // toggleAll（:2319/2325）、addImagesToFolder（:2057）；selectNext/selectPrev 为详情导航
   // 的 bundle scope 面（DetailViewer 以 typeof 守卫消费），一并恢复以保 parity。
-  s.changeStar = (...a: any[]) => (machineryChangeStar as any)(s, ...a);
+  s.changeStar = (...a: any[]) => (machineryChangeStar as any)(...a);
   s.removeSelected = (...a: any[]) => (machineryRemoveSelected as any)(s, ...a);
   s.toggleAll = (...a: any[]) => (machineryToggleAll as any)(s, ...a);
   s.selectNext = (...a: any[]) => (machinerySelectNext as any)(s, ...a);

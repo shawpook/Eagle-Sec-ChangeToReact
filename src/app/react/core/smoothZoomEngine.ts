@@ -1859,7 +1859,7 @@ if (!self._mousedown) return;
 			}
 
 			$scope.imageSize.zoomRatioExp = self.rA * 100;
-			$scope.imageSize.zoomRatio = machineryGetRatioNonExp($scope, $scope.imageSize.zoomRatioExp);
+			$scope.imageSize.zoomRatio = machineryGetRatioNonExp($scope.imageSize.zoomRatioExp);
 
 			if ($scope.updateDetailSlider) {
 				$scope.updateDetailSlider($scope.imageSize.zoomRatioExp);

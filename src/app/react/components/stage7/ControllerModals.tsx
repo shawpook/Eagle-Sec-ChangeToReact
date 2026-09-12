@@ -15,7 +15,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryUpdateItemView } from '../../core/itemDomain';
 import { machineryToggleAll } from '../../services/gridService';

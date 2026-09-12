@@ -49,7 +49,7 @@ import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { filterWithColor, resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel, openRenameChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addClass, removeClass, focusEl, selectEl } from '../utils/domQuery';
 import { machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight } from '../services/gridService';
 import { machinerySetViewMode, machineryZoom, machineryCheckOperationSafety2 } from '../services/viewOpsService';

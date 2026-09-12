@@ -13,7 +13,7 @@
 import { amputateChannel, getBodyScope } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { refreshTouchID } from '../store/lockState';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 
 function checkCanUseTouchID(): boolean {
   try {

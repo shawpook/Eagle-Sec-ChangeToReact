@@ -34,7 +34,7 @@ import { checkDiskSpace, exportFolder } from './folderCoreService';
 import { select } from './selectionService';
 import { addImagesToFolder } from './folderCoreService';
 import { cleanAllErrorChannel, glRemoveitemsChannel, openAddFolderModalChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, qa, cssSet, outerWidthOf } from '../utils/domQuery';
 import { machineryGetRecentFolders } from '../core/libraryDomain';
 import { machineryRelayout } from './gridService';

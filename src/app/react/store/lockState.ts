@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ipcRenderer } from '../global/eagleGlobals';
-import { migrateScopeFieldToStore } from '../global/scopeShim';
+import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { getBodyScope } from '../core/appCore';
 
 /**

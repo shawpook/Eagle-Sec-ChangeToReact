@@ -1,5 +1,5 @@
 import { scopeSingleton } from './machineryInfra';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { beginZoomingTransition } from '../services/detailService';
 import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openFolder, openSmartFolder } from '../services/folderCoreService';
 import { machineryGotoBottom, machineryGotoTop, machineryScrollbarTo, machineryToggleAll } from '../services/gridService';

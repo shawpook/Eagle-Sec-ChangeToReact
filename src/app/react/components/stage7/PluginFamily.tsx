@@ -9,7 +9,7 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { widthOf, heightOf } from '../../utils/domQuery';
 
 /**

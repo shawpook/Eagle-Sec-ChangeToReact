@@ -30,7 +30,7 @@ import { updateSuggestions } from './miscDomain';
 
 import { machineryRgbToHex } from '../utils/color';
 import { calculateImageBindingChannel, closeQuickSearchModalChannel, rebindRefreshChannel, resetFilterChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { setScrollTop, removeClass } from '../utils/domQuery';
 
 import { machineryUpdateContainerHieght } from '../services/gridService';

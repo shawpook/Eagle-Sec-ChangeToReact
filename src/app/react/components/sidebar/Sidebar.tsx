@@ -13,7 +13,7 @@ import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder,
 import { newFolder } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { dom } from '../../utils/domLite';
 import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';

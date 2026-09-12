@@ -30,7 +30,7 @@ import { newFolderWidthSelection } from './folderCoreService';
 import { activateFonts, changeFontDefaultLang, deactivateFonts, isFontActivate, renameFontsWithFullName } from './fontTagService';
 import { regenerateThumbnail, replaceFile } from './imageOpsService';
 import { addToLibraryChannel, glRemoveitemsChannel, webpConvertStartChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { machineryGetRecentFolders } from '../core/libraryDomain';
 import { machineryCheckOperationSafety } from './viewOpsService';
 import { machinerySetFolderCover } from '../core/libraryDomain';

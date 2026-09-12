@@ -11,7 +11,7 @@ import { getBodyScope, scopeApply } from '../../core/appCore';
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */

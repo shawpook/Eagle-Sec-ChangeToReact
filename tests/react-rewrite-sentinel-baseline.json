@@ -1,7 +1,7 @@
 {
  "generated": "b1-9bz-E0",
  "counts": {
-  "evalAsync": 25,
+  "evalAsync": 24,
   "apply": 2,
   "watch": 19,
   "watchCollection": 7,
@@ -13,7 +13,7 @@
   "getBodyScope": 793,
   "jQuery": 0,
   "rootAccess": 367,
-  "coreState": 31,
+  "coreState": 29,
   "lodashWindow": 0,
   "lodashBind": 0,
   "lodashBare": 10,

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { migrateScopeFieldToStore } from '../global/scopeShim';
+import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
 

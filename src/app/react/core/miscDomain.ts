@@ -40,7 +40,7 @@ import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../serv
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
 import { openErrorChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { q, qaNot, widthOf, heightOf, hasClass, addClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
 import { machineryNewSmartFolder } from './libraryDomain';
 import { machineryGetRecentFolders } from './libraryDomain';

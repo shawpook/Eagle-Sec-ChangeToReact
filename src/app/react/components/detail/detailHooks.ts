@@ -12,7 +12,7 @@ import { makeResizable } from '../interactions/resizable';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { q, qa, widthOf, heightOf, offsetOf, setCssEl, cssSet, addClass, removeClass, onEl, offEl, offAllEl, createEl, setHtml, show, hide } from '../../utils/domQuery';
 
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';

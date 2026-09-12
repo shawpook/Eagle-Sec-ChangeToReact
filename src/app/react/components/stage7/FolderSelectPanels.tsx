@@ -13,7 +13,7 @@ import { getBodyScope } from '../../core/appCore';
 
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryChangeSidebarIndex, machinerySmartFolderCount } from '../../core/libraryDomain';
 import { machineryRebindRefresh } from '../../core/itemDomain';

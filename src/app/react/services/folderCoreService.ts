@@ -29,7 +29,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { debounce } from '../utils/func';
 import { getFolderFullPath } from '../core/itemDomain';
 import { addToRecentFolders } from './batchOpsService';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, focusOn, selectText, offsetTopOf, setAttr } from '../utils/domQuery';
 import { machineryGetAncestorSmartFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder } from '../core/libraryDomain';
 import { machineryGetAncestorFolders, machinerySaveFolder } from '../core/libraryDomain';

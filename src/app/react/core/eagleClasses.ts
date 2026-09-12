@@ -17,7 +17,7 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from './appCore';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }

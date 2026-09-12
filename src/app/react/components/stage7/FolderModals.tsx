@@ -14,7 +14,7 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 
 import { machinerySmartFolderCount } from '../../core/libraryDomain';

@@ -23,7 +23,7 @@ import { toggleGifPlay } from '../services/mediaService';
 import { getLibraryHistory } from '../services/folderCoreService';
 import { getResizable, makeResizable } from '../components/interactions/resizable';
 import { addToLibraryChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { q, qa, widthOf, cssGet, cssSet, hide, show, setText, textOf, isVisible, offsetLeftOf, addClass, removeClass, delegateTarget } from '../utils/domQuery';
 
 import { machinerySaveFolder } from './libraryDomain';

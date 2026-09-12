@@ -29,7 +29,7 @@ import { installArtstation } from './artstation';
 import { installFlatpickr } from './flatpickrLite';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { glRemoveitemsChannel } from '../global/bus';
 
 import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';

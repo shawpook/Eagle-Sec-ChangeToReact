@@ -30,7 +30,7 @@ import { getBodyScope } from '../core/appCore';
 import { flipVideo, rotateVideo } from './mediaService';
 import { uploadFiles } from './uploadService';
 import { updateInspectorChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, dataGet, dataSet, setCssEl, cssGet, widthOf, heightOf } from '../utils/domQuery';
 
 import { machineryGetAncestorFolders } from '../core/libraryDomain';

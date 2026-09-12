@@ -1,5 +1,5 @@
 import { machineryInitMousetrap } from './keymap';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { buildScrollbarSaver, machineryRelayout, machinerySwitchLayout, machineryToggleAll } from '../services/gridService';
 import { machineryChangeStar } from '../services/imageOpsService';
 import { machineryOnDropContainer } from '../services/uploadService';

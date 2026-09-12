@@ -28,7 +28,7 @@ import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { glRemoveitemsChannel, openDuplicateChannel, openDuplicateScanPanelChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setHtml, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
 import { machineryGetAncestorFolders, machinerySaveFolder } from './libraryDomain';
 import { machineryRelayout } from '../services/gridService';

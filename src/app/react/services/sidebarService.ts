@@ -19,7 +19,7 @@ import { contextMenuOpenChannel, rebindRefreshcontainsizeChannel } from '../glob
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { openFolder, openSmartFolder } from './folderCoreService';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, hasClass, addClass, removeClass } from '../utils/domQuery';
 
 import { machineryMultipleOpenSmartFolder } from '../core/libraryDomain';

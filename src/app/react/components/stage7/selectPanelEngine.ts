@@ -4,7 +4,7 @@ import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelec
 import { getBodyScope, getRootScope } from '../../core/appCore';
 
 import { createFolder } from '../../services/folderCoreService';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryGetRecentFolders } from '../../core/libraryDomain';
 /**

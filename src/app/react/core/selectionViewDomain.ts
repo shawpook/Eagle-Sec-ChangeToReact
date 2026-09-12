@@ -17,7 +17,7 @@ import { syncDetailFromScope } from '../store/detailState';
 
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 import { onSelectedChanged } from './selectionNotify';
 import { addClass, removeClass, cssSet, q, dataSet } from '../utils/domQuery';
 

@@ -10,55 +10,18 @@
  *   按原路径填充，无快照需求。
  * - **函数面**：machinery 24 函数 + 域函数由 dataMachinery scope 替换面在接管时写入
  *   coreState（s.calculateImageBinding = ... 经 Proxy set 落 coreState），shim 天然解析。
- *   bundle 独占函数（relayout/filterContent/zoom 等）post-b1 缺席 = 诚实失败（b1 前必须
- *   完成各自 c 域移植）。
- * - **生命周期面**：$evalAsync/$apply（直调 + watcher flush）、$watch/$watchCollection
- *   （函数型 watcher 轮询 + 深比较——startScopeSync 兼容语义）、$on/$broadcast/$emit
- *   （shim 内事件总线——域处理器 $on 注册与 misc $broadcast 路径）、mousetrap 桩
- *   （bridgeWhenReady 强就绪门 b1 后放行）、$watchers = []（sweep 幂等 no-op）。
- *   $root/$parent = 自身（root 字段 theme/preferences 已在 coreState）。
+ *   bundle 独占函数（relayout/filterContent/zoom 等）post-b1 缺席 = 诚实失败。
+ * - **生命周期面**：$evalAsync/$apply/$eval/$watch/$on/$broadcast/emit 仍以实现保留，
+ *   但全树已无 $watch/$watchCollection 注册与 $broadcast 发送方（见 sentinel 计数）；
+ *   E1b/E1c 将逐项收敛。
+ *
+ * b1-9bz-E1a：字段迁移注册表与 digest/flush 运行时迁出到中立模块
+ * `core/scopeFieldBridge.ts` / `core/scopeRuntime.ts`（本文件仅剩属性 Proxy 与诊断）。
  */
 
 import { coreState } from '../core/appCore';
-
-// b1-9az：字段迁移注册表（彻底化 R1——状态单源机制，REWRITE-PLAN.md 阶段 1）。
-// 注册字段以 zustand store 为唯一状态源：get 委托 store、set 写 store（coreState 保留
-// 镜像供 __eagleCoreState 诊断面）；未注册字段行为不变。注册由各 store 模块完成
-// （bodyState 首批 20 字段）。scopeShim 由此逐批从"状态真身"降级为适配器，待全部
-// 字段迁完、fns/machinery 归位后整个删除。
-const migratedFields = new Map<string, { read: () => any; write: (v: any) => void }>();
-
-export function migrateScopeFieldToStore(name: string, read: () => any, write: (v: any) => void): void {
-  migratedFields.set(name, { read, write });
-}
-
-/** 诊断/测试契约：已源翻转字段清单（cz1 等机制测试动态选未迁移字段用）。 */
-export function getMigratedScopeFieldNames(): string[] {
-  return Array.from(migratedFields.keys());
-}
-
-// b1-9bz-C-3：脱 scope 面的 flush 入口。shim 的 $evalAsync/$apply 语义都是
-// 「执行 fn（若有）+ flushWatchers()」；watcher 另有 200ms 定时轮询兜底（ensureFlushTimer）。
-// 把该语义以模块级函数暴露后，全树 `s.$evalAsync(...)` 可改名调用，调用面不再经 scope 对象。
-let bodyFlushWatchers: (() => void) | null = null;
-
-export function flushScopeWatchers(): void {
-  if (bodyFlushWatchers) bodyFlushWatchers();
-}
-
-export function scopeEvalAsync(fn?: any): void {
-  try {
-    if (typeof fn === 'function') fn();
-  } catch (err) {
-    console.error('[scopeShim] scopeEvalAsync fn failed', err);
-  }
-  flushScopeWatchers();
-}
-
-/** 是否有 watcher 在用（诊断：watcher 归零后 flush 即 no-op，届时可删调用点）。 */
-export function hasScopeWatchers(): boolean {
-  return bodyFlushWatchers !== null;
-}
+import { getMigratedScopeField, getMigratedScopeFieldNames } from '../core/scopeFieldBridge';
+import { setBodyFlushWatchers } from '../core/scopeRuntime';
 
 export function createBodyScopeShim(): any {
   const watchers: any[] = [];
@@ -105,7 +68,7 @@ export function createBodyScopeShim(): any {
     }, 200);
   }
 
-  bodyFlushWatchers = flushWatchers;
+  setBodyFlushWatchers(flushWatchers);
 
   const SHIM_UNSET = Symbol('shim-unset');
 
@@ -207,12 +170,12 @@ export function createBodyScopeShim(): any {
   const proxy = new Proxy(shim, {
     get(target: any, prop: string) {
       if (prop in target) return target[prop];
-      const migrated = migratedFields.get(prop);
+      const migrated = getMigratedScopeField(prop);
       if (migrated) return migrated.read();
       return coreState[prop];
     },
     set(target: any, prop: string, value: any) {
-      const migrated = migratedFields.get(prop);
+      const migrated = getMigratedScopeField(prop);
       if (migrated) {
         migrated.write(value);
         // 迁移期镜像：__eagleCoreState 诊断面与未迁移读取方不失真
@@ -241,8 +204,6 @@ export function exposeScopeShimDiagnostics(): void {
   (window as any).__eagleScopeShim = {
     factory: createBodyScopeShim,
     active: false,
-    // b1-9az 批 2：已源翻转字段清单（cz1 等机制测试动态选未迁移字段——静态字段名
-    // 会随迁移批次推进而失效，keyword 即被批 2 迁移后踩中）
     migratedFieldNames: getMigratedScopeFieldNames,
   };
 }

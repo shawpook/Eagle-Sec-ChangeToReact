@@ -22,7 +22,7 @@ import { syncUploadFromScope } from '../store/uploadState';
 import { getBodyScope } from './appCore';
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 
 import { isNumeric } from '../utils/lang';
 

@@ -14,7 +14,7 @@ import { BitmapViewer } from './bitmapViewer';
 import { syncDetailFromScope } from '../store/detailState';
 import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from './scopeRuntime';
 
 import { makeDraggable } from '../components/interactions/draggable';
 import { dom } from '../utils/domLite';

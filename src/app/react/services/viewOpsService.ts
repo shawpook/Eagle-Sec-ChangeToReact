@@ -10,7 +10,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, qa, cssSet, addClass, removeClass, widthOf, heightOf } from '../utils/domQuery';
 import { debounce } from '../utils/func';
 import { detailUpdateZoomRatio, detailSmartZoom } from './detailService';

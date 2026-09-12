@@ -10,7 +10,7 @@ import { getBodyScope, getRootScope, scopeApply } from '../../core/appCore';
 
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryRelayout } from '../../services/gridService';
 import { machineryCheckOperationSafety } from '../../services/viewOpsService';

@@ -29,7 +29,7 @@ import { getRatioNonExp } from './viewOpsService';
 import { emptyTrash } from './batchOpsService';
 import { emptyRestore, newFolder } from './folderCoreService';
 import { openLayoutPanelChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { clickEl, qaHasEl, addClassEl, removeClassEl } from '../utils/domQuery';
 import { machineryOpenDuplicate } from '../core/itemDomain';
 import { machineryImportLinks, machineryNewSmartFolder, machineryOpenArtstation, machineryOpenHuaban, machineryOpenPinterest } from '../core/libraryDomain';

@@ -3,7 +3,7 @@ import { getBodyScope } from '../core/appCore';
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 import { refreshVideoCommentsChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, cssSet, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
 import { machineryUpdateItemView } from '../core/itemDomain';
 import { machineryToggleSlideshow } from '../core/miscDomain';

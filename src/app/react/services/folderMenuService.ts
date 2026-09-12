@@ -26,7 +26,7 @@ import { getBodyScope } from '../core/appCore';
 import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
 import { addToLibraryChannel, editSmartFolderChannel, folderSettingsChannel, newSmartFolderChannel, openMoveFolderModalChannel, setFolderPasswordChannel } from '../global/bus';
-import { scopeEvalAsync } from '../global/scopeShim';
+import { scopeEvalAsync } from '../core/scopeRuntime';
 
 import { machineryNewSmartFolder } from '../core/libraryDomain';
 import { machineryBatchRenameFolders, machineryBatchRenameSmartFolders, machineryGetFolderImages, machineryRenameFolder, machineryRenameSmartFolder, machinerySaveFolder } from '../core/libraryDomain';

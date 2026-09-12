@@ -13,7 +13,7 @@ import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
 import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryChangeSidebarIndex } from '../../core/libraryDomain';
 /**
  * 阶段7c-2：quickSearchModal 接管。

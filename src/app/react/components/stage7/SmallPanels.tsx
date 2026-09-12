@@ -20,7 +20,7 @@ import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
 import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, openNotificationChannel, setFolderPasswordChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../global/scopeShim';
+import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../../utils/domQuery';
 
 import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';

@@ -524,7 +524,7 @@ export function regenerateThumbnail(...args: any[]) {
     if (!s) return;
     return (function () {
         useSelectionState.getState().selected.forEach(function(image) {
-            s.regenerateThumbnailQueue.push(image);
+            useMiscRawState.getState().regenerateThumbnailQueue.push(image);
         });
         ayncsImagesGenerateThumbnail(useSelectionState.getState().selected);
     }).apply(null, args);
@@ -600,7 +600,7 @@ export function calculateImageBinding(...args: any[]) {
 
                         if (folder.tags && folder.tags.length > 0) {
                             folder.tags.forEach(function(tag) {
-                                s.tagsSuggestion.push({
+                                useMiscRawState.getState().tagsSuggestion.push({
                                     value: tag,
                                     text: tag
                                 });
@@ -934,7 +934,7 @@ export function replaceFile(...args: any[]) {
 
                     setTimeout(() => {
                         // 刷新缩略图
-                        s.regenerateThumbnailQueue.push(item);
+                        useMiscRawState.getState().regenerateThumbnailQueue.push(item);
                         ayncsImagesGenerateThumbnail([item]);
                     }, 500);
                 });

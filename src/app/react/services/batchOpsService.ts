@@ -50,6 +50,7 @@ import { useItemState } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
+import { usePreferencesState } from '../store/preferencesState';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -97,7 +98,7 @@ export function cleanAllError(...args: any[]) {
   return (function (event: any) {
           event && event.stopPropagation();
           cleanAllErrorChannel.emit({
-              errorList: s.errorList
+              errorList: useMiscRawState.getState().errorList
           });
       }).apply(null, args);
 }
@@ -178,7 +179,7 @@ export function emptyTrash(...args: any[]) {
                     eagle.aiSearch.fullSync();
 
                     // 如果声音效果是开启的
-                    if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+                    if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
                         s.removeSound.play();
                     }
                 });
@@ -405,7 +406,7 @@ export function removeFromFolder(...args: any[]) {
             glRemoveitemsChannel.emit(itemElements);
         }
 
-        if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+        if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteImage == 'true') {
             s.removeSound.play();
         }
 

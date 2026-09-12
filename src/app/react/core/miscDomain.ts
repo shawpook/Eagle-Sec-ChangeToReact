@@ -1373,7 +1373,7 @@ export function updateCurrentOrderAndIncrease () {
                     sortIncrease = useFolderState.getState().currentFolder.sortIncrease;
                 }
                 else {
-                    sortIncrease = getBodyScope().sortIncrease;
+                    sortIncrease = useMiscRawState.getState().sortIncrease;
                 }
             }
             else if (useFolderState.getState().currentSmartFolder) {
@@ -1381,13 +1381,13 @@ export function updateCurrentOrderAndIncrease () {
                     sortIncrease = useFolderState.getState().currentSmartFolder.sortIncrease;
                 }
                 else {
-                    sortIncrease = getBodyScope().sortIncrease;
+                    sortIncrease = useMiscRawState.getState().sortIncrease;
                 }
                 orderBy = useFolderState.getState().currentSmartFolder.orderBy;
             }
             else {
                 orderBy = getBodyScope().orderBy;
-                sortIncrease = getBodyScope().sortIncrease;
+                sortIncrease = useMiscRawState.getState().sortIncrease;
             }
             getBodyScope().currentOrderBy = orderBy;
             getBodyScope().currentSortIncrease = sortIncrease;
@@ -1453,7 +1453,7 @@ export function updateSuggestions() {
             	getBodyScope().keywordSuggestions = suggestions;
             	syncToolbarFromScope();
                 getBodyScope().keywordSuggestions = useMiscRawState.getState().keywordSuggestions.filter((suggestion) => {
-                    return getBodyScope().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
+                    return useMiscRawState.getState().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
                 });
                 syncToolbarFromScope();
             	console.timeEnd("updateSuggestions");
@@ -1466,11 +1466,11 @@ export function updateSuggestions() {
 
             getBodyScope().keyword_cn = chineseConvert.tw2cn(keyword);
             getBodyScope().keyword_tw = chineseConvert.cn2tw(keyword);
-            getBodyScope().isKeywordTW = keyword === getBodyScope().keyword_tw;
-            getBodyScope().isKeywordCN = keyword === getBodyScope().keyword_cn;
-            getBodyScope().isEnglish = getBodyScope().isKeywordTW === getBodyScope().isKeywordCN;
+            getBodyScope().isKeywordTW = keyword === useMiscRawState.getState().keyword_tw;
+            getBodyScope().isKeywordCN = keyword === useMiscRawState.getState().keyword_cn;
+            getBodyScope().isEnglish = getBodyScope().isKeywordTW === useMiscRawState.getState().isKeywordCN;
 
-            if (keyword.length === 1 && getBodyScope().isContainAlphabet) {
+            if (keyword.length === 1 && useMiscRawState.getState().isContainAlphabet) {
                 suggestions = dataset.filter(function(suggestion) {
                     return keyword.toLowerCase() === suggestion.word[0].toLowerCase();
                 });
@@ -1481,13 +1481,13 @@ export function updateSuggestions() {
                     if (getBodyScope().isEnglish) {
                         return (__lv_idx > -1);
                     }
-                    else if (getBodyScope().isKeywordTW) {
+                    else if (useMiscRawState.getState().isKeywordTW) {
                         return (__lv_idx > -1) && (suggestion.word != keyword) ||
-                        (suggestion.word.indexOf(getBodyScope().keyword_cn) > -1)
+                        (suggestion.word.indexOf(useMiscRawState.getState().keyword_cn) > -1)
                     }
-                    else if (getBodyScope().isKeywordCN) {
+                    else if (useMiscRawState.getState().isKeywordCN) {
                         return (__lv_idx > -1) && (suggestion.word != keyword) ||
-                        (suggestion.word.indexOf(getBodyScope().keyword_tw) > -1)
+                        (suggestion.word.indexOf(useMiscRawState.getState().keyword_tw) > -1)
                     }
                 });
             }

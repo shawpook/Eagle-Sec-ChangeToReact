@@ -25,6 +25,7 @@ import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { useFolderState } from '../../store/folderState';
 import { useLayoutState } from '../../store/layoutState';
+import { useLockState } from '../../store/lockState';
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
  *
@@ -800,7 +801,7 @@ export function openHelpContextMenu() {
         accelerator: (window as any).preferences.shortcuts.keybinds['app.preferences'] || 'CmdOrCtrl+,',
         enabled: !getRootScope()?.isAppLocked,
         click: () => {
-          if (getRootScope()?.isAppLocked) return;
+          if (useLockState.getState().isAppLocked) return;
           ipc.send('open.preferences');
         },
       },

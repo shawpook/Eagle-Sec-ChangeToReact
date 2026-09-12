@@ -950,8 +950,7 @@ export function BatchSavePanel() {
   // import（528-578 逐字）
   const importRef = useRef<() => void>(() => {});
   const importImages = () => {
-    const body = getBodyScope();
-
+    
     if (selectedRef.current.length === 0) return;
 
     const names: any[] = [];
@@ -982,7 +981,7 @@ export function BatchSavePanel() {
         } else {
           imageUrls.push(original.base64 ?? original.src ?? item.src);
         }
-        body.uploadQueue.push({});
+        useMiscRawState.getState().uploadQueue.push({});
         syncUploadFromScope();
       }
     });

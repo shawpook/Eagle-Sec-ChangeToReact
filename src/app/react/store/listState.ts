@@ -108,7 +108,7 @@ export function syncListFromScope(): void {
   const s: any = getBodyScope();
   if (!s) return;
   const next = {
-    filteredsCount: (s.filtereds && s.filtereds.length) || 0,
+    filteredsCount: (useMiscRawState.getState().filtereds && useMiscRawState.getState().filtereds.length) || 0,
     allDataCount: (useItemState.getState().allData && useItemState.getState().allData.length) || 0,
     hasSmartFolder: !!useFolderState.getState().currentSmartFolder,
     filterBadge: (useMiscRawState.getState().eagle && useMiscRawState.getState().eagle.filter && useMiscRawState.getState().eagle.filter.filterBadge) || 0,
@@ -117,7 +117,7 @@ export function syncListFromScope(): void {
     trashCount: (useItemState.getState().trash && useItemState.getState().trash.length) || 0,
     rawCount: (useItemState.getState().raw && useItemState.getState().raw.length) || 0,
     subFoldersCount: (useMiscRawState.getState().subFolders && useMiscRawState.getState().subFolders.length) || 0,
-    noSelectedFolders: !(s.$root && s.$root.selectedFolders && s.$root.selectedFolders.length > 0),
+    noSelectedFolders: !(s.$root && useMiscRawState.getState().selectedFolders && useMiscRawState.getState().selectedFolders.length > 0),
     subFolders: useMiscRawState.getState().subFolders ? useMiscRawState.getState().subFolders.slice() : [],
     selectedFolderMappings: { ...(useItemState.getState().selectedFolderMappings || {}) },
   };

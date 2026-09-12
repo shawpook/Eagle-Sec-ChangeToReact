@@ -261,7 +261,7 @@ export function QuickSearchModal() {
         } else {
           if (
             (w.i18n.locale !== 'zh_CN' && w.i18n.locale !== 'zh_TW' && w.i18n.locale !== 'en') ||
-            body.isContainAlphabet
+            useMiscRawState.getState().isContainAlphabet
           ) {
             if (allText.indexOf(keyword) != -1) {
               isMatch = true;
@@ -344,7 +344,7 @@ export function QuickSearchModal() {
         } else {
           if (
             (w.i18n.locale !== 'zh_CN' && w.i18n.locale !== 'zh_TW' && w.i18n.locale !== 'en') ||
-            body.isContainAlphabet
+            useMiscRawState.getState().isContainAlphabet
           ) {
             if (allText.indexOf(keyword) != -1) {
               isMatch = true;
@@ -470,7 +470,7 @@ export function QuickSearchModal() {
         break;
       }
       case 'SMARTFOLDERS': {
-        if (!kw && (body.smartFolderList || []).length > 10 && getQuickSearchSmartFolderHistory().length > 0) {
+        if (!kw && (useMiscRawState.getState().smartFolderList || []).length > 10 && getQuickSearchSmartFolderHistory().length > 0) {
           getQuickSearchSmartFolderHistory().forEach((fid: any) => {
             if (list.length >= 10) return;
             if (useItemState.getState().smartFolderMappings[fid]) {
@@ -482,7 +482,7 @@ export function QuickSearchModal() {
             }
           });
         }
-        list.push(...(body.smartFolderList || []));
+        list.push(...(useMiscRawState.getState().smartFolderList || []));
         break;
       }
     }

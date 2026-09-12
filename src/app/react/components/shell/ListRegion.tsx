@@ -15,6 +15,7 @@ import { openFolder } from '../../services/folderCoreService';
 
 import { machineryOnDropContainer } from '../../services/uploadService';
 import { useFolderState } from '../../store/folderState';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。
  * - DropAreas：六种空状态（132-215）；
@@ -205,7 +206,7 @@ export function SubFolderSection() {
     if (!scope) return;
     // D-2f：jQuery-UI sortable → 自研（按 options 装配；disabled 用 setDisabled 切换）
     const listEl = listRef.current;
-    const options = scope.subFolderSortableOptions || {};
+    const options = useMiscRawState.getState().subFolderSortableOptions || {};
     let sortable = getSortable(listEl);
     if (!sortable) sortable = makeSortable(listEl, { ...options });
     sortable.setDisabled(!!options.disabled);

@@ -43,6 +43,48 @@ interface MiscRawState {
   subFolders: any;
   currentProcessCount: any;
   showNTFSWarning: any;
+  // ── b1-9bz-E3-3 增补：其余常在读的状态字段（含 `$root.*` 面；均为 object/array/scalar 状态，
+  //    不含函数面）。默认 `null` 以尽量贴近 coreState 时代「未赋值即 undefined」的真值语义。──
+  inspector: any;
+  listLayoutSettings: any;
+  selectedFolders: any;
+  selectedSmartFolders: any;
+  uploadQueue: any;
+  finishQueue: any;
+  duplicateQueue: any;
+  regenerateThumbnailQueue: any;
+  finishGenerateQueue: any;
+  subFolderSortableOptions: any;
+  UrlStateService: any;
+  errorList: any;
+  sidebarList: any;
+  quickAccess: any;
+  smartFolderList: any;
+  isPreviewing: any;
+  filtereds: any;
+  currentComment: any;
+  zoomFitSize: any;
+  lastZoomMode: any;
+  options: any;
+  lazyLoadManager: any;
+  debugReportStatus: any;
+  fixUtils: any;
+  trashRemoved: any;
+  currentTrashRemoved: any;
+  sortIncrease: any;
+  isContainAlphabet: any;
+  keyword_cn: any;
+  keyword_tw: any;
+  isKeywordTW: any;
+  isKeywordCN: any;
+  tagsSuggestion: any;
+  showSlowNotify: any;
+  isItemBindCalculated: any;
+  currentTag: any;
+  progress: any;
+  hsks: any;
+  Registration: any;
+  AnalyticsHelper: any;
 }
 
 export const useMiscRawState = create<MiscRawState>(() => ({
@@ -74,6 +116,46 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   subFolders: [],
   currentProcessCount: 0,
   showNTFSWarning: false,
+  inspector: null,
+  listLayoutSettings: null,
+  selectedFolders: null,
+  selectedSmartFolders: null,
+  uploadQueue: null,
+  finishQueue: null,
+  duplicateQueue: null,
+  regenerateThumbnailQueue: null,
+  finishGenerateQueue: null,
+  subFolderSortableOptions: null,
+  UrlStateService: null,
+  errorList: null,
+  sidebarList: null,
+  quickAccess: null,
+  smartFolderList: null,
+  isPreviewing: false,
+  filtereds: null,
+  currentComment: null,
+  zoomFitSize: null,
+  lastZoomMode: null,
+  options: null,
+  lazyLoadManager: null,
+  debugReportStatus: null,
+  fixUtils: null,
+  trashRemoved: null,
+  currentTrashRemoved: null,
+  sortIncrease: null,
+  isContainAlphabet: null,
+  keyword_cn: null,
+  keyword_tw: null,
+  isKeywordTW: null,
+  isKeywordCN: null,
+  tagsSuggestion: null,
+  showSlowNotify: null,
+  isItemBindCalculated: null,
+  currentTag: null,
+  progress: null,
+  hsks: null,
+  Registration: null,
+  AnalyticsHelper: null,
 }));
 
 const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
@@ -83,6 +165,13 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'rootDir', 'libraryPath', 'libraryName', 'imagesDir', 'libraryImagesPath', 'libraryModificationTime',
   'searchIndex', 'isRotating', 'isUILoaded', 'showDetailImage', 'subFolders', 'currentProcessCount',
   'showNTFSWarning',
+  'inspector', 'listLayoutSettings', 'selectedFolders', 'selectedSmartFolders',
+  'uploadQueue', 'finishQueue', 'duplicateQueue', 'regenerateThumbnailQueue', 'finishGenerateQueue',
+  'subFolderSortableOptions', 'UrlStateService', 'errorList', 'sidebarList', 'quickAccess', 'smartFolderList',
+  'isPreviewing', 'filtereds', 'currentComment', 'zoomFitSize', 'lastZoomMode', 'options', 'lazyLoadManager',
+  'debugReportStatus', 'fixUtils', 'trashRemoved', 'currentTrashRemoved', 'sortIncrease', 'isContainAlphabet',
+  'keyword_cn', 'keyword_tw', 'isKeywordTW', 'isKeywordCN', 'tagsSuggestion', 'showSlowNotify',
+  'isItemBindCalculated', 'currentTag', 'progress', 'hsks', 'Registration', 'AnalyticsHelper',
 ];
 for (const fieldName of MIGRATED) {
   migrateScopeFieldToStore(

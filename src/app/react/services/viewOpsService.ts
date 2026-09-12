@@ -22,6 +22,7 @@ import { getFilter } from '../core/filterDomain';
 import { machineryGetSelection } from '../core/selectionViewDomain';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
+import { useMiscRawState } from '../store/miscRawState';
 // 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
 let saveListHeightTimeout: any = null;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -54,8 +55,8 @@ const initLinkVars = () => {
                       localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentFolder.id, height);
                   } else if (useFolderState.getState().currentSmartFolder) {
                       localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentSmartFolder.id, height);
-                  } else if (getBodyScope().currentTag) {
-                      localStorage.setItem("eagle.list.thumbSize." + getBodyScope().currentTag, height);
+                  } else if (useMiscRawState.getState().currentTag) {
+                      localStorage.setItem("eagle.list.thumbSize." + useMiscRawState.getState().currentTag, height);
                   } else if (useBodyState.getState().viewMode === 'all') {
                       localStorage.setItem("eagle.list.thumbSize.all", height);
                   } else if (useBodyState.getState().viewMode === 'unfiled') {

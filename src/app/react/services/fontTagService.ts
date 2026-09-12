@@ -33,6 +33,7 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
+import { usePreferencesState } from '../store/preferencesState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -176,7 +177,7 @@ export function renameFontsWithFullName(...args: any[]) {
         if (items && items.length > 0) {
             machineryCheckOperationSafety(s, function () {
                 var updates = [];
-                var lng = s.$root.preferences.general.language;
+                var lng = usePreferencesState.getState().preferences.general.language;
                 var preferLng = 'en';
                 switch (lng) {
                     case 'zh_TW':

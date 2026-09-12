@@ -41,6 +41,7 @@ import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
+import { usePreferencesState } from '../store/preferencesState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -113,12 +114,12 @@ export function refreshSubfolderList(...args: any[]) {
         if (useListState.getState().showSubfolderContent) {
           s.subFolders = getAllChildFolder(useFolderState.getState().currentFolder);
           syncListFromScope();
-          if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
+          if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
         }
         else {
           s.subFolders = useFolderState.getState().currentFolder.children;
           syncListFromScope();
-          if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = false;
+          if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = false;
         }
         if (useListState.getState().keyword) {
           s.subFolders = useMiscRawState.getState().subFolders.filter(function (folder: any) {
@@ -133,7 +134,7 @@ export function refreshSubfolderList(...args: any[]) {
             }
           });
           syncListFromScope();
-          if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
+          if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
         }
       }
       else {
@@ -349,8 +350,8 @@ export function changeSelectedFoldersIcon(...args: any[]) {
     if (!s) return;
     return (function (event: any, icon: any) {
       const w = window as any;
-      if (s.$root.selectedFolders.length === 0) return;
-      s.$root.selectedFolders.forEach(function (folder: any) {
+      if (useMiscRawState.getState().selectedFolders.length === 0) return;
+      useMiscRawState.getState().selectedFolders.forEach(function (folder: any) {
         if (!icon) {
           delete folder.icon;
         }
@@ -359,7 +360,7 @@ export function changeSelectedFoldersIcon(...args: any[]) {
         }
       });
       machinerySaveFolder(s);
-      try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedFolders.length} folders icon to: ${icon}`); } catch (err) {}
+      try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
     }).apply(null, args);
 }
@@ -387,8 +388,8 @@ export function changeSelectedFoldersColor(...args: any[]) {
     if (!s) return;
     return (function (event: any, color: any) {
       const w = window as any;
-      if (s.$root.selectedFolders.length === 0) return;
-      s.$root.selectedFolders.forEach(function (folder: any) {
+      if (useMiscRawState.getState().selectedFolders.length === 0) return;
+      useMiscRawState.getState().selectedFolders.forEach(function (folder: any) {
         if (!color) {
           delete folder.iconColor;
         }
@@ -398,7 +399,7 @@ export function changeSelectedFoldersColor(...args: any[]) {
       });
       machineryUpdateSidebarList(s);
       machinerySaveFolder(s);
-      try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedFolders.length} folders icon color to: ${color}`); } catch (err) {}
+      try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
     }).apply(null, args);
 }
@@ -464,13 +465,13 @@ export function folderExportAsFolder(...args: any[]) {
     if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
-      var folders = s.$root.selectedFolders;
+      var folders = useMiscRawState.getState().selectedFolders;
       if (folder) {
         folders = [folder];
       }
       else {
-        if (s.$root.selectedFolders.length === 0) return;
-        folders = s.$root.selectedFolders;
+        if (useMiscRawState.getState().selectedFolders.length === 0) return;
+        folders = useMiscRawState.getState().selectedFolders;
       }
 
       var exportFolder = function (folder2: any, savePath: any) {
@@ -652,10 +653,10 @@ export function openFolderContextMenu(...args: any[]) {
       if (event && event.target && event.target.tagName === 'INPUT') return;
 
       const disabled = !!folder.password && !folder.isUnLock;
-      const isOpenQuickAccess = s.$root.preferences.sidebar.quickAccess != 'false';
+      const isOpenQuickAccess = usePreferencesState.getState().preferences.sidebar.quickAccess != 'false';
       const isAddedQuickAccess = w.QuickAccessManager.indexOf(folder) > -1;
       const isMultiple = s.selectedFoldersMappings[folder.id];
-      const selectedFolders = s.$root.selectedFolders;
+      const selectedFolders = useMiscRawState.getState().selectedFolders;
 
       let items: any = null;
       let historyLibraryMenu: any = {};
@@ -769,7 +770,7 @@ export function openFolderContextMenu(...args: any[]) {
             label: i18n.__('context.folder.moveFolder'),
             keywords: 'move folder dir 資料夾 文件夾 移动',
             icon: 'ic-folder-move.svg',
-            accelerator: s.$root.preferences.shortcuts.keybinds['edit.folder.move'],
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.folder.move'],
             click: () => {
               moveFolders(selectedFolders, folder);
               scopeEvalAsync();
@@ -777,7 +778,7 @@ export function openFolderContextMenu(...args: any[]) {
           },
           // 批次命名
           {
-            accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
             label: i18n.__('context.image.batchRename.msg1') + selectedFolders.length + i18n.__('context.image.batchRename.msg2'),
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
@@ -859,7 +860,7 @@ export function openFolderContextMenu(...args: any[]) {
         items = [
           // 新增資料夾
           {
-            accelerator: s.$root.preferences.shortcuts.keybinds['file.create.folder'] || 'CmdOrCtrl+Shift+N',
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.create.folder'] || 'CmdOrCtrl+Shift+N',
             label: i18n.__('context.folder.newFolder'),
             keywords: 'folder dir new create 資料夾 文件夾 新建 建立 新增 ',
             icon: 'ic-folder-new-folder.svg',
@@ -885,7 +886,7 @@ export function openFolderContextMenu(...args: any[]) {
             label: i18n.__('context.folder.moveFolder'),
             keywords: 'move folder dir 資料夾 文件夾 移动',
             icon: 'ic-folder-move.svg',
-            accelerator: s.$root.preferences.shortcuts.keybinds['edit.folder.move'],
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.folder.move'],
             click: () => {
               moveFolders(selectedFolders, folder);
               scopeEvalAsync();
@@ -922,7 +923,7 @@ export function openFolderContextMenu(...args: any[]) {
           },
           // 重命名
           {
-            accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
             label: i18n.__('context.folder.renameFolder'),
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
@@ -1276,8 +1277,8 @@ export function changeSelectedSmartFoldersIcon(...args: any[]) {
     if (!s) return;
     return (function (event: any, icon: any) {
       const w = window as any;
-      if (s.$root.selectedSmartFolders.length === 0) return;
-      s.$root.selectedSmartFolders.forEach(function (smartFolder: any) {
+      if (useMiscRawState.getState().selectedSmartFolders.length === 0) return;
+      useMiscRawState.getState().selectedSmartFolders.forEach(function (smartFolder: any) {
         if (!icon) {
           delete smartFolder.icon;
         }
@@ -1287,7 +1288,7 @@ export function changeSelectedSmartFoldersIcon(...args: any[]) {
       });
       machineryUpdateSidebarList(s);
       machinerySaveFolder(s);
-      try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedSmartFolders.length} smart-folders icon to: ${icon}`); } catch (err) {}
+      try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
     }).apply(null, args);
 }
@@ -1297,8 +1298,8 @@ export function changeSelectedSmartFoldersColor(...args: any[]) {
     if (!s) return;
     return (function (event: any, color: any) {
       const w = window as any;
-      if (s.$root.selectedSmartFolders.length === 0) return;
-      s.$root.selectedSmartFolders.forEach(function (smartFolder: any) {
+      if (useMiscRawState.getState().selectedSmartFolders.length === 0) return;
+      useMiscRawState.getState().selectedSmartFolders.forEach(function (smartFolder: any) {
         if (!color) {
           delete smartFolder.iconColor;
         }
@@ -1308,7 +1309,7 @@ export function changeSelectedSmartFoldersColor(...args: any[]) {
       });
       machineryUpdateSidebarList(s);
       machinerySaveFolder(s);
-      try { w.electronLog && w.electronLog.info(`[app] Change ${s.$root.selectedSmartFolders.length} smart-folders icon color to: ${color}`); } catch (err) {}
+      try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
     }).apply(null, args);
 }
@@ -1624,10 +1625,10 @@ export function openSmartFolderContextMenu(...args: any[]) {
 
       if (event && event.target && event.target.tagName === 'INPUT') return;
 
-      const isOpenQuickAccess = s.$root.preferences.sidebar.quickAccess != 'false';
+      const isOpenQuickAccess = usePreferencesState.getState().preferences.sidebar.quickAccess != 'false';
       const isAddedQuickAccess = w.QuickAccessManager.indexOf(smartFolder) > -1;
       const isMultiple = s.$root.selectedSmartFoldersMappings && s.$root.selectedSmartFoldersMappings[smartFolder.id];
-      const selectedSmartFolders = s.$root.selectedSmartFolders;
+      const selectedSmartFolders = useMiscRawState.getState().selectedSmartFolders;
 
       let items: any = null;
       let historyLibraryMenu: any = {};
@@ -1745,7 +1746,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           },
           // 批次命名
           {
-            accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
             label: i18n.__('context.image.batchRename.msg1') + selectedSmartFolders.length + i18n.__('context.image.batchRename.msg2'),
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
@@ -1819,7 +1820,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           },
           // 重命名
           {
-            accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
+            accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds[`edit.rename.${w.process.platform}`],
             label: i18n.__('context.smartFolder.renameFolder'),
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',

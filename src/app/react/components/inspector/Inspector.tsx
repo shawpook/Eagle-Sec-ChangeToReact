@@ -1082,7 +1082,7 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
     };
   }, [snapshot.items.length]);
 
-  const ins = getBodyScope()?.inspector || {};
+  const ins = useMiscRawState.getState().inspector || {};
   const categoryNameEditable = snapshot.category?.editable;
 
   const writeCategoryName = (html: string) => {

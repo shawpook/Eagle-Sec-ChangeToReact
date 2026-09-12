@@ -399,7 +399,7 @@ export function ArtstationImportModal() {
         imageUrls.push(image.src);
         names.push(image.title.replace(/%/g, '').replace(/[:|"<>,.^&*?//-]+/g, '').substr(0, 36) || w().guid());
         originals.push(image.link || pageUrlRef.current);
-        getBodyScope().uploadQueue.push({});
+        useMiscRawState.getState().uploadQueue.push({});
         syncUploadFromScope();
       });
 

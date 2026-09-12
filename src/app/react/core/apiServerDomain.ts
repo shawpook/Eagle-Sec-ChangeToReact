@@ -653,8 +653,7 @@ function machineryAddPath(filePath: any, id: any, name: any, websiteUrl: any, ta
 
 /* addURLs（bundle 18270-18296 逐字） */
 function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: any, annotations: any, stars: any, modificationTimes: any, headers: any, folderIds: any): void {
-  const bs: any = getBodyScope();
-  uploadUrls(imageUrls, folderIds, {
+    uploadUrls(imageUrls, folderIds, {
     names: names,
     urls: websiteUrls,
     tags: tags,
@@ -664,7 +663,7 @@ function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: 
     stars: stars,
   });
   imageUrls.forEach(function () {
-    bs.uploadQueue.push({});
+    useMiscRawState.getState().uploadQueue.push({});
     syncUploadFromScope();
   });
 

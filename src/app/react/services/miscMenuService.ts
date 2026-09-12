@@ -44,6 +44,8 @@ import { getToggleFilterByTypeFn } from '../core/filterDomain';
 import { useLayoutState } from '../store/layoutState';
 import { useItemState } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
+import { usePreferencesState } from '../store/preferencesState';
+import { useMiscRawState } from '../store/miscRawState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -517,7 +519,7 @@ export function openNewContextMenu(...args: any[]) {
                 items: [
                     // 建立资料夹
                     {
-                        accelerator: s.$root.preferences.shortcuts.keybinds['file.create.folder'] || 'CmdOrCtrl+Shift+N',
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.create.folder'] || 'CmdOrCtrl+Shift+N',
                         label: i18n.__('context.import.createFolder'),
                         keywords: 'folder dir new create 資料夾 文件夾 新建 建立 新增 ',
                         icon: 'ic-folder-new-folder.svg',
@@ -525,7 +527,7 @@ export function openNewContextMenu(...args: any[]) {
                     },
                     // 建立智能资料夹
                     {
-                        accelerator: s.$root.preferences.shortcuts.keybinds['file.create.smartfolder'] || 'CmdOrCtrl+Shift+Alt+N',
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.create.smartfolder'] || 'CmdOrCtrl+Shift+Alt+N',
                         label: i18n.__('context.import.createSmartFolder'),
                         keywords: 'smart folder dir new create 資料夾 文件夾 新建 建立 新增 智能 智慧',
                         icon: 'ic-smart-folder-new.svg',
@@ -539,7 +541,7 @@ export function openNewContextMenu(...args: any[]) {
                     },
                     // 導入本地文件夾
                     {
-                        accelerator: s.$root.preferences.shortcuts.keybinds['file.import.folders'],
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.import.folders'],
                         label: i18n.__('context.import.folders'),
                         keywords: 'import folder dir 資料夾 文件夾 導入 local 本地 本機 本机 匯入 导入',
                         icon: 'ic-import-local.svg',
@@ -549,7 +551,7 @@ export function openNewContextMenu(...args: any[]) {
                     },
                     // 導入連結
                     {
-                        accelerator: s.$root.preferences.shortcuts.keybinds['file.import.links'],
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.import.links'],
                         label: i18n.__('appmenu.file>links'),
                         keywords: '',
                         icon: 'ic-import-links.svg',
@@ -559,7 +561,7 @@ export function openNewContextMenu(...args: any[]) {
                     },
                     // 導入 eaglepack
                     {
-                        accelerator: s.$root.preferences.shortcuts.keybinds['file.import.eaglepack'],
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.import.eaglepack'],
                         label: i18n.__('context.import.eaglepack'),
                         keywords: 'import eaglepack 素材包 導入 匯入',
                         icon: 'ic-import-eaglepack.svg',
@@ -596,10 +598,10 @@ export function openNewContextMenu(...args: any[]) {
                                 },
                                 {
                                     disabled: true,
-                                    visible: s.$root.preferences.autoImport.enable === 'true' && s.$root.preferences.autoImport.path,
-                                    label: s.$root.preferences.autoImport.path,
+                                    visible: usePreferencesState.getState().preferences.autoImport.enable === 'true' && usePreferencesState.getState().preferences.autoImport.path,
+                                    label: usePreferencesState.getState().preferences.autoImport.path,
                                     click: function () {
-                                        ipcRenderer.send('open-with-default', s.$root.preferences.autoImport.path);
+                                        ipcRenderer.send('open-with-default', usePreferencesState.getState().preferences.autoImport.path);
                                     }
                                 }
                             ]
@@ -741,7 +743,7 @@ export function openNewContextMenu(...args: any[]) {
                         role: 'separator'
                     },
                     {
-                        accelerator: s.$root.preferences.shortcuts.keybinds['file.import.pinterest'],
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.import.pinterest'],
                         label: "Pinterest",
                         icon: '/templates/ic-pinterest.png',
                         click: function() { machineryOpenPinterest(s); }
@@ -777,7 +779,7 @@ export function openQuickAccessContextMenu(...args: any[]) {
                         label: i18n.__("Context.QuickAccess.Remove"),
                         icon: "ic-favorite-remove.svg",
                         click: () => {
-                            const __lv_idx = s.quickAccess.indexOf(item);
+                            const __lv_idx = useMiscRawState.getState().quickAccess.indexOf(item);
                             if (__lv_idx !== -1) {
                                 QuickAccessManager.removeIndex(__lv_idx);
                                 scopeEvalAsync();
@@ -813,85 +815,85 @@ export function openSidebarVisibleContextMenu(...args: any[]) {
                         click: () => {}
                     },
                     {
-                        checked: s.$root.preferences.sidebar.unfiled === 'true', 
+                        checked: usePreferencesState.getState().preferences.sidebar.unfiled === 'true', 
                         label: i18n.__('preferencesWindow.sidebar.unfiled'),
                         icon: 'ic-sidebar-unfiled.svg',
                         keepOpen: true,
                         click: () => {
-                            if (s.$root.preferences.sidebar.unfiled === "true") s.$root.preferences.sidebar.unfiled = 'false';
-                            else s.$root.preferences.sidebar.unfiled = "true";
+                            if (usePreferencesState.getState().preferences.sidebar.unfiled === "true") usePreferencesState.getState().preferences.sidebar.unfiled = 'false';
+                            else usePreferencesState.getState().preferences.sidebar.unfiled = "true";
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
-                            ipcRenderer.send('chnage-preferences', s.$root.preferences);
+                            ipcRenderer.send('chnage-preferences', usePreferencesState.getState().preferences);
                         }
                     },
                     {
-                        checked: s.$root.preferences.sidebar.untagged === 'true', 
+                        checked: usePreferencesState.getState().preferences.sidebar.untagged === 'true', 
                         label: i18n.__('preferencesWindow.sidebar.untagged'),
                         icon: 'ic-sidebar-untagged.svg',
                         keepOpen: true,
                         click: () => {
-                            if (s.$root.preferences.sidebar.untagged === "true") s.$root.preferences.sidebar.untagged = 'false';
-                            else s.$root.preferences.sidebar.untagged = "true";
+                            if (usePreferencesState.getState().preferences.sidebar.untagged === "true") usePreferencesState.getState().preferences.sidebar.untagged = 'false';
+                            else usePreferencesState.getState().preferences.sidebar.untagged = "true";
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
-                            ipcRenderer.send('chnage-preferences', s.$root.preferences);
+                            ipcRenderer.send('chnage-preferences', usePreferencesState.getState().preferences);
                         }
                     },
                     {
-                        checked: s.$root.preferences.sidebar.recent === 'true', 
+                        checked: usePreferencesState.getState().preferences.sidebar.recent === 'true', 
                         label: i18n.__('general.pages.recent'),
                         icon: 'ic-sidebar-recent.svg',
                         keepOpen: true,
                         click: () => {
-                            if (s.$root.preferences.sidebar.recent === "true") s.$root.preferences.sidebar.recent = 'false';
-                                                        else s.$root.preferences.sidebar.recent = "true";
+                            if (usePreferencesState.getState().preferences.sidebar.recent === "true") usePreferencesState.getState().preferences.sidebar.recent = 'false';
+                                                        else usePreferencesState.getState().preferences.sidebar.recent = "true";
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
-                            ipcRenderer.send('chnage-preferences', s.$root.preferences);
+                            ipcRenderer.send('chnage-preferences', usePreferencesState.getState().preferences);
                         }
                     },
                     {
-                        checked: s.$root.preferences.sidebar.random === 'true', 
+                        checked: usePreferencesState.getState().preferences.sidebar.random === 'true', 
                         label: i18n.__('preferencesWindow.sidebar.random'),
                         icon: 'ic-sidebar-random.svg',
                         keepOpen: true,
                         click: () => {
-                            if (s.$root.preferences.sidebar.random === "true") s.$root.preferences.sidebar.random = 'false';
-                                                        else s.$root.preferences.sidebar.random = "true";
+                            if (usePreferencesState.getState().preferences.sidebar.random === "true") usePreferencesState.getState().preferences.sidebar.random = 'false';
+                                                        else usePreferencesState.getState().preferences.sidebar.random = "true";
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
-                            ipcRenderer.send('chnage-preferences', s.$root.preferences);
+                            ipcRenderer.send('chnage-preferences', usePreferencesState.getState().preferences);
                         }
                     },
                     {
-                        checked: s.$root.preferences.sidebar.community2 === 'true', 
+                        checked: usePreferencesState.getState().preferences.sidebar.community2 === 'true', 
                         label: i18n.__('preferencesWindow.sidebar.community'),
                         icon: 'ic-sidebar-community.svg',
                         keepOpen: true,
                         click: () => {
-                            if (s.$root.preferences.sidebar.community2 === "true") s.$root.preferences.sidebar.community2 = 'false';
-                                                        else s.$root.preferences.sidebar.community2 = "true";
+                            if (usePreferencesState.getState().preferences.sidebar.community2 === "true") usePreferencesState.getState().preferences.sidebar.community2 = 'false';
+                                                        else usePreferencesState.getState().preferences.sidebar.community2 = "true";
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
                             syncToolbarFromScope();
                             syncBodyFromScope();
                             syncDetailFromScope();
-                            ipcRenderer.send('chnage-preferences', s.$root.preferences);
+                            ipcRenderer.send('chnage-preferences', usePreferencesState.getState().preferences);
                         }
                     },
                     {

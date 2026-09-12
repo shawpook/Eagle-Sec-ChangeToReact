@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { getBodyScope } from '../core/appCore';
+import { useMiscRawState } from './miscRawState';
 
 /**
  * 11-pre a2：toast-alert 三块状态源（index.html 失败重试提示 / 本地服务器警告 /
@@ -46,7 +47,7 @@ for (const fieldName of MIGRATED_TOAST_FIELDS) {
  */
 export function syncErrorCount(list?: any[]): void {
   const s: any = getBodyScope();
-  const arr = list || (s && s.errorList);
+  const arr = list || (s && useMiscRawState.getState().errorList);
   const count = (arr && arr.length) || 0;
   if (useToastState.getState().errorCount !== count) {
     useToastState.setState({ errorCount: count });

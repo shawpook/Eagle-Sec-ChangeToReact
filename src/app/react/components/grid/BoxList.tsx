@@ -19,6 +19,7 @@ import { cleanSelected } from '../../services/batchOpsService';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { useLayoutState } from '../../store/layoutState';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * b1-9be2：#box-list 接管 —— @egjs/react-infinitegrid v4 renderer。
  *
@@ -199,7 +200,7 @@ export function BoxList() {
       onRenderComplete={() => {
         const s = getBodyScope();
         if (!s || !s.lazyLoadManager) return;
-        const lzm = s.lazyLoadManager;
+        const lzm = useMiscRawState.getState().lazyLoadManager;
         const container = gridRef.current && gridRef.current.getContainerElement && gridRef.current.getContainerElement();
         if (!container) return;
         container.querySelectorAll('.box:not(.show)').forEach((el: HTMLElement) => {

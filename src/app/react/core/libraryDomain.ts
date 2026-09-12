@@ -622,7 +622,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     // Clear URL state when switching libraries
-    if (s.UrlStateService && s.UrlStateService.clearState) s.UrlStateService.clearState();
+    if (useMiscRawState.getState().UrlStateService && useMiscRawState.getState().UrlStateService.clearState) useMiscRawState.getState().UrlStateService.clearState();
     // lastProcessedUrlState = null —— controller 闭包 guard（bundle 20539），另一写入方（watcher）仍在，略去
 
     s.libraryName = pathMod.basename(params.rootDir).replace('.library', '');
@@ -833,7 +833,7 @@ export function takeoverLibraryDomain(): void {
         }
       } else {
         let urlState: any = {};
-        try { urlState = s.UrlStateService.getState(); } catch (err) { urlState = {}; }
+        try { urlState = useMiscRawState.getState().UrlStateService.getState(); } catch (err) { urlState = {}; }
         let hasUrlState = false;
 
         switch (urlState.view) {
@@ -898,7 +898,7 @@ export function takeoverLibraryDomain(): void {
 
       // 记录用户收藏数据 / 记录用户打开资源库性能
       let metrics: any = null;
-      try { metrics = s.AnalyticsHelper.getCommonMertics(); } catch (err) { metrics = null; }
+      try { metrics = useMiscRawState.getState().AnalyticsHelper.getCommonMertics(); } catch (err) { metrics = null; }
       if (metrics) {
         if (w.analytics && w.analytics.custom) {
           w.analytics.custom({
@@ -942,7 +942,7 @@ export function takeoverLibraryDomain(): void {
       machineryFindDupclipate(s, undefined);
       machineryUpdateSidebarList(s);
 
-      domainAyncsUpdateSmartFoldersCount(s, s.smartFolderList, () => { /* noop */ });
+      domainAyncsUpdateSmartFoldersCount(s, useMiscRawState.getState().smartFolderList, () => { /* noop */ });
 
       setTimeout(function () { machineryUpdateContainerHieght(s); }, 300);
       scopeEvalAsync();

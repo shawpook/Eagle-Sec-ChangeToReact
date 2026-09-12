@@ -7,6 +7,7 @@ import { q, heightOf, setCssEl, offsetOf, addClass, removeClass, onEl, offEl } f
 import { machineryGotoBottom } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -348,13 +349,13 @@ export function initBoxContainerScrollbar() {
             };
 
             function updateThumbHeight(total) {
-                if (total / $bodyScope.options.page <= enabledSize) {
+                if (total / useMiscRawState.getState().options.page <= enabledSize) {
                     switchNormalMode();
                 }
                 else {
                     switchPageMode();
                     var scrollHeight = heightOf(element);
-                    var height = parseInt($bodyScope.options.page / total * scrollHeight);
+                    var height = parseInt(useMiscRawState.getState().options.page / total * scrollHeight);
                     if (height < 18) height = 18;
                     setCssEl($scrollThumb, { height: height });
                     // console.log(`thumbHeight: ${height}`);
@@ -526,7 +527,7 @@ export function initBoxContainerScrollbar() {
 
             // 計算總頁數（包含最後不完整的頁面）
             function getTotalPageCount() {
-                return Math.ceil(useItemState.getState().allData.length / $bodyScope.options.page);
+                return Math.ceil(useItemState.getState().allData.length / useMiscRawState.getState().options.page);
             }
 
             var goToPageTimeout;

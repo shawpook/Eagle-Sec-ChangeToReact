@@ -1,6 +1,7 @@
 import { getBodyScope } from '../../core/appCore';
 import { glRemoveitemsChannel, glResetChannel, glScrolltotopChannel } from '../../global/bus';
 import { machineryRelayout, machineryScrollbarTo } from '../../services/gridService';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * b1-9be2：内容网格引擎 —— @egjs/react-infinitegrid v4 renderer 交换（v3 vanilla 退役）。
  *
@@ -98,7 +99,7 @@ function installFacade() {
       const idx = state.items.findIndex((it) => it.id === id);
       if (idx > -1) state.items.splice(idx, 1);
       const s = getBodyScope();
-      const lzm = s && s.lazyLoadManager;
+      const lzm = s && useMiscRawState.getState().lazyLoadManager;
       if (lzm) {
         try { lzm.unobserve(el); lzm.cancelLoad(el); } catch (err) {}
       }
@@ -198,7 +199,7 @@ let scopeEventsDereg: Array<() => void> = [];
 
 function applyReset(nextItems: any[], cursor?: number, scrollPercentage?: number) {
   const s = getBodyScope();
-  const lzm = s && s.lazyLoadManager;
+  const lzm = s && useMiscRawState.getState().lazyLoadManager;
   if (lzm) {
     try { lzm.softReset(); lzm.initObserver(); } catch (err) {}
   }

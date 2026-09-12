@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ipcRenderer, t } from '../global/eagleGlobals';
 import { getBodyScope } from '../core/appCore';
+import { useMiscRawState } from './miscRawState';
 
 /**
  * 11-pre a1：upload-queue-progress / saving-progress-bar 状态源。
@@ -77,9 +78,9 @@ export function syncUploadFromScope(): void {
   const s: any = getBodyScope();
   if (!s) return;
   useUploadState.getState().set({
-    queueLength: (s.uploadQueue && s.uploadQueue.length) || 0,
-    finishCount: (s.finishQueue && s.finishQueue.length) || 0,
-    progress: typeof s.progress === 'number' ? s.progress : 0,
+    queueLength: (useMiscRawState.getState().uploadQueue && useMiscRawState.getState().uploadQueue.length) || 0,
+    finishCount: (useMiscRawState.getState().finishQueue && useMiscRawState.getState().finishQueue.length) || 0,
+    progress: typeof useMiscRawState.getState().progress === 'number' ? useMiscRawState.getState().progress : 0,
     timeLeft: s.addImageTimeLeftInSeconds || 0,
   });
 }

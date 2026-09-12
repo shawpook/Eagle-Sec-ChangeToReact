@@ -24,6 +24,7 @@ import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../../utils/domQuery';
 
 import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段7c-1：小弹窗族接管。
  *
@@ -665,7 +666,7 @@ export function FolderPasswordModal() {
 
   const save = () => {
     const s = getBodyScope();
-    const Registration = s?.Registration;
+    const Registration = useMiscRawState.getState().Registration;
     const electronLog = (window as any).electronLog;
     if (mode === 'new') {
       if (newPassword && newRePassword && newPassword === newRePassword) {

@@ -20,6 +20,7 @@ import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/m
 import { useSelectionState } from '../../store/selectionState';
 import { useLayoutState } from '../../store/layoutState';
 import { useItemState } from '../../store/itemState';
+import { usePreferencesState } from '../../store/preferencesState';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）
@@ -377,7 +378,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       const currentTime = useSelectionState.getState().current
         ? localStorage.getItem('eagle.videoPlayer.currentTime.' + useSelectionState.getState().current.id)
         : undefined;
-      const rootPreferences = (getBodyScope()?.$root?.preferences || {}) as any;
+      const rootPreferences = (usePreferencesState.getState().preferences || {}) as any;
       const autoPlay = rootPreferences.video?.autoPlay != 'false';
       const zoomFill = rootPreferences.video?.zoomFill != 'false';
       const rememberPosition = rootPreferences.video?.rememberPosition != 'false';
@@ -843,7 +844,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     let direction: string = '';
     let directionTimeout: any;
     const doScroll = function (e: any, player: any) {
-      const rootPreferences = (getBodyScope()?.$root?.preferences || {}) as any;
+      const rootPreferences = (usePreferencesState.getState().preferences || {}) as any;
       if (!isInPreviewWindow && rootPreferences.habits?.scrollBehavior === 'paging') {
         return;
       }
@@ -1071,7 +1072,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         return;
       }
 
-      const rootPreferences = (getBodyScope()?.$root?.preferences || {}) as any;
+      const rootPreferences = (usePreferencesState.getState().preferences || {}) as any;
       const autoPlay = rootPreferences.video?.autoPlay != 'false';
       const rememberPosition = rootPreferences.video?.rememberPosition != 'false';
       const loopShortVideo = rootPreferences.video?.loopShortVideo != 'false';
@@ -1195,7 +1196,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     let direction: string = '';
     let directionTimeout: any;
     const onWheel = function (e: any) {
-      const rootPreferences = (getBodyScope()?.$root?.preferences || {}) as any;
+      const rootPreferences = (usePreferencesState.getState().preferences || {}) as any;
       if (!isInPreviewWindow && rootPreferences.habits?.scrollBehavior === 'paging') {
         return;
       }
@@ -1657,7 +1658,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
     let direction: string = '';
     let directionTimeout: any;
     const doScroll = function (e: any, player: any) {
-      const rootPreferences = (getBodyScope()?.$root?.preferences || {}) as any;
+      const rootPreferences = (usePreferencesState.getState().preferences || {}) as any;
       if (rootPreferences.habits?.scrollBehavior === 'paging') {
         return;
       }

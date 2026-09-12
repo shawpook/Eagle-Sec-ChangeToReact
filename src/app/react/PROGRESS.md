@@ -7754,3 +7754,45 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
 6. **D 阶段收官门禁通过**（2026-09-12）：`node tests/run-react-suite.mjs` = **65/65
    `REACT SUITE ALL GREEN`**（exit 0，RETRY 0 / FAIL 0，含首项哨兵 `SENTINEL_OK`）。
    至此 D-1~D-4 全部达成；DoD ①/② 转入 E 阶段（见 `docs/e-phase-plan-2026-09-12.md`）。
+
+---
+
+## E 阶段：退役 `$bodyScope`（`scopeShim` + `coreState`）并收口 D-2（`shims.js`）
+
+> 规划：`docs/e-phase-plan-2026-09-12.md`；字段映射：`docs/e1-scope-field-map.md`（v2，AST 精确）。
+
+**用户确认口径**：① 范围含 `shims.js` 退役；② 793 处 `getBodyScope()` 读取全部改写为 zustand 直读；
+③ 过渡用「注册式双写」（store 先成真身），再改读点。
+
+### E0（提交 `40c8015`）工具与度量校正
+- AST 精确版提取器（`tests-tmp/e1-scope-access.mjs`，TypeScript Compiler API + 符号绑定，本地不入库）：
+  `getBodyScope()` **764** 处、绑定符号 518、顶层字段 **209**、访问 1974；产出 `docs/e1-scope-field-map.md` v2。
+- 哨兵度量校正：正则识别可选链 `?.` 形态 → `evalAsync 6→25`、`watchCollection 6→7`（长期盲区）；
+  新增 `scopeEvalAsync` 计数（357）。
+
+### E1a（提交 `b5c4f5ca`）shim 导出迁中立模块
+- 新建 `core/scopeFieldBridge.ts`（`migrateScopeFieldToStore` 注册表）与 `core/scopeRuntime.ts`
+  （`scopeEvalAsync`/`flushScopeWatchers`）；改 **41** 文件 import；`scopeShim.ts` 不再被业务直接依赖。
+- 门禁：`tsc` 零新增（508）、`probe LOAD_OK`、41 处导出检查无问题。
+
+### E1b（提交 `258fe3ff`）`scopeApply` → `runInBodyScope`
+- 原 `scopeApply(scope, fn)` 经 shim `$apply`（digest 包装）；实测等价「null 守卫 + 直调 + 吞错」，改为
+  `runInBodyScope(fn)`；**183** 调用点 / **23** 文件；删 shim `$apply`；8 个测试驱动的 `$apply` 去包装。
+- 结果：`scopeApply 200→17`（余为 preferences 独立窗口，E5）、`getBodyScope 793→658`、`apply→0`。
+- 受影响 13 测试全过（含 `residue`＝scopeApply 吞错回归网、`main-ui-workflow`）。
+
+### E1c（提交 `f7ee6783`）shim 仅剩属性 Proxy
+- 删 shim 的 `$watch`/`$watchCollection`/watcher 定时器/`$on`/`$broadcast`/`$emit`/`__bus`；
+  `$evalAsync` 保留为**测试/驱动用 no-op 提交钩子**（生产 src 调用点为 0）。
+- 最后 1 个 watcher（`inspectorActions` 的 `$watchCollection('selected')`→activeTab）改用
+  `core/selectionNotify.onSelectedChanged`；两处死 `$on` 处置（`FilterItemShell.useScopeEvent` 删除、
+  `Sidebar` 的 rename-folder 改 `eagleBus`）；19 处 no-op `$evalAsync?.()` 删除。
+- **关键修复**：`selectionViewDomain` 与 `filterDomain` 以 `typeof s0.$watch/$on === 'function'` 判
+  「scope 就绪」，shim 去方法后整段域接管被跳过（选中集不再重建 → box `.selected` 类丢失）；
+  守卫改为仅判 `s0` 存在；另清理 7 文件同型 `$evalAsync` 存在性守卫。
+- 哨兵度量改为**注释感知**（剔除整行注释/文档，实测 raw 被注释灌水严重）。
+- 结果：`watch/watchCollection/broadcast/on/apply = 0`；`evalAsync = 4`（3 个独立窗口 + shim 测试钩子）；
+  `scopeEvalAsync 356`、`getBodyScope 627`、`rootAccess 360`、`coreState 14` 待 E2/E3/E4。
+
+**E1 门禁**：`tsc` 508（零新增）+ `probe LOAD_OK` + 受影响 ~20 测试全过（stage-smoke/5/6/7a/7b/11a1/7d6b、
+cz1、m1、d3 组、menu-popup、residue、ui-interactions、sidebar-dnd、main-ui-workflow）。

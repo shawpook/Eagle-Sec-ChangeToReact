@@ -54,6 +54,8 @@ import { takeoverMiscDomain } from './core/miscDomain';
 import './core/eagleClasses';
 import { bindListSync } from './store/listState';
 import { bindBodySync } from './store/bodyState';
+import { bindSelectionSync } from './store/selectionState';
+import { bindItemSync } from './store/itemState';
 
 import { applyDataMachineryScope } from './core/machineryInfra';
 /**
@@ -186,6 +188,9 @@ bindToastSync();
 bindLockSync();
 bindListSync();
 bindBodySync();
+// b1-9bz-E2-1：选区/条目真身 store（注册式双写；字段读写仍走 scope，E3 再改读点）
+bindSelectionSync();
+bindItemSync();
 
 // 供闭环测试（CDP Runtime.evaluate）直接访问 React 全局状态，不参与业务逻辑。
 (window as any).__eagleReactStore = useAppState;

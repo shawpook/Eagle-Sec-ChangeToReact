@@ -7945,3 +7945,41 @@ E3 后段全部走**同为「源翻转 + 调用点改写」的机械化 codemod 
 5. **动态元素访问与 `$root` 作值**：`scope[fn]`（ListRegion 派发）、`const root = s.$root` 的
    `$filter`/`$timeout` 闭包 —— 属「函数面动态分发」，随 E4/E5 收敛。
 
+---
+
+## E4：删壳（DoD ① 达标）—— `scopeShim.ts` + `coreState` 退役
+
+目标：删除 `global/scopeShim.ts`（Proxy-over-`coreState` 的 body scope 回退实现）与
+`appCore.coreState`；scope 面改为**显式 store 后端**（`core/scopeFace.ts`）。6 批，逐批 commit。
+
+| 批 | 内容 | 结果 |
+|---|---|---|
+| **E4-1** | 余量字段注册（mousetrap/TYPE 表/appVersion/buildVersion/tagViewLayoutMode/currentFolderPath/useMpvPlayer/supportRotate/supportCrop/ratio/inspectorFolder/currentUrl/selectedFolder/isAlwaysOnTop/keywords*/isImporting/openWithInfo/lastestAddItem/email/fontFolder/dragged* 等 ~28 项）；`scopeSingleton` 去 scope 键（WeakMap→Map）；`callGetter` 去 scope 参（字符串名走注册表） | — |
+| **E4-2** | 去 scope 参数化**不动点** codemod：`pass-arg` 解析为依赖边 + 最大不动点（被调方无效则整链拒绝）；基表达式解包 `(s as any).X`；`delete s.X`→`writeScopeField(X, undefined)`；`fn.call(s.$root,…)` thisArg→undefined；首参须 `any`/无标注（`parseHandles(s: string)` 不误伤）。62 函数/204 调用点 | getBodyScope 79→77 |
+| **E4-3** | 局部 scope 别名**整条消除**（`const X = getBodyScope()/getRootScope()/getScope()/… || {}`），体内改写 + 声明语句删除。135 别名/27 文件 | 77→48 |
+| **E4-4** | 特殊站点清扫：零参 scope 取值器（`sNow`/`bodyScopeOf`/`s0probe`/`()=>getBodyScope()`）识别与消除、内联取值器调用 `s().F` 改写、`X.$root.F` 与 `X.F` 同一套读写（libraryDomain 92 引用大 handler）、匿名回调（`onSelectedChanged`/`debounce` 白名单）首参去参数化；`$filter` 助手去恒缺席的 `s.$root.$filter` 分支（7 文件）；Sidebar 拖拽载荷改 store 字段（保 `s.$root.draggedFolders` 观测契约）；ListRegion 动态派发改注册表；12 文件死 `const getScope = getBodyScope` + 48 文件 import 清理 | 48→15 |
+| **E4-5** | 新增 `core/scopeFace.ts`（单例）：注册字段 `Object.defineProperty` 直连 store（读/写），未注册字段落面自身普通属性（等价旧 coreState 稀疏写穿）；**无 Proxy、无 coreState**；保留 `$root`/`$parent` 自指 + `$eval`/`$evalAsync`/`$destroy` 与 `__eagleShim` 判据；诊断出口仍名 `__eagleScopeShim`。删 `appCore.coreState`/`bridgeScopeFields`/`findOwner`/`bridged`/`isBridged`；`main.tsx` 去 CZ_BRIDGE_FIELDS 与重复桥接分支、`__eagleCoreState` 改指 scope 面本体；`bundleGlobals` pluginModule 直写 store；删 `global/scopeShim.ts` | coreState 13→**0**（DoD ①）；getBodyScope 15 |
+
+**E4 收官核数**：`getBodyScope 793 → 15`（-98%）、`rootAccess 367 → 1`、`coreState 31 → 0`、
+`scopeApply 200 → 16`（余为 preferences 独立窗口，E5）、`watch/on/broadcast/apply = 0`、
+`evalAsync 4`、`jQuery/vendorScriptTags = 0`；`tsc` 494（基线 508 之下，逐批零新增）。
+
+**E4 剩余 15 处 `getBodyScope()`（逐条，均为硬约束/后续阶段）**：
+1. `core/appCore.ts`（5：定义 + `getRootScope`/`runInBodyScope`/`findLiveNode` 取用）——E5 随面退役；
+2. `core/fileUrlHelper.ts`（5）——子窗口实际执行的共享 core 模块，硬排除（E3-3b）；
+3. `core/machineryInfra.ts`（1）——`applyDataMachineryScope` 的 scope 面挂载（跨窗/驱动供给），E5 随驱动迁移；
+4. `main.tsx`（1）——就绪门 `getBodyScope()`；**E5**；
+5. `components/grid/boxGridEngine.ts`（1）——`window.$bodyScope` 兜底赋值；**E5**；
+6. `preview-window/detailHooks.ts`（1）——子窗口自有 scope 面；**E5**。
+
+**E4 教训**：
+- `pass-arg` 必须按**符号**（被调方是否候选）判定，并按**最大不动点**收敛——否则互相传 scope
+  的函数链永远无法整体去参（E3 遗留 50 处即此）。
+- 被调方为 `(f as any)(s, …)` 形态时，E3 的 pass4 因「要求 `node.expression` 是 Identifier」
+  整处跳过（E3-15 的手工清理即此漏网）——E4 已修，并加符号级遗留实参清理器兜底。
+- 匿名回调（`onSelectedChanged(function (s) {…})`）的 scope 首参同样要收编，但**必须白名单**
+  注册点，否则 `arr.map((s) => …)` 一类「恰好叫 s」的局部对象会被误伤。
+- 去 `coreState` 后 `__eagleCoreState` 改指 scope 面本体：cz1 的「core→scope 方向」断言改用
+  合成未注册字段名（静态候选字段会随注册批次全部命中，原断言已失真）。
+- `scopeFace` 的工厂须**单例**（`__eagleScopeShim.factory()` 冒烟直调与 `getBodyScope` 需同一面），
+  否则 m1-A6 的 `__eagleCoreState.testField === 42` 跨面断言失败。

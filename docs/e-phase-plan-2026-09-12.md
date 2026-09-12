@@ -1,5 +1,16 @@
 # E 阶段规划：`$bodyScope` / `scopeShim` / `coreState` 退役（DoD ①、②）
 
+> **E4 收官更新（2026-09-12 夜）**：**DoD ① 已达标** —— `global/scopeShim.ts` 已删除、
+> `appCore.coreState` 已删除（哨兵 `coreState 13 → 0`）。scope 面改为 `core/scopeFace.ts`
+> 的**显式 store 后端**（注册字段 `Object.defineProperty` 直连 store；无 Proxy、无 coreState）。
+> 哨兵：`getBodyScope 793 → 15`（-98%）、`rootAccess 367 → 1`、`coreState 0`、
+> `watch/watchCollection/on/broadcast/apply = 0`、`jQuery/vendorScriptTags = 0`。
+> 剩余 15 处 `getBodyScope()` 与逐条原因见 `src/app/react/PROGRESS.md`《E4：删壳》节——
+> 全部为 **E5 前置**（`appCore` 定义处、`fileUrlHelper` 子窗硬排除、`machineryInfra` 跨窗/驱动
+> 供给、`main.tsx` 就绪门、`boxGridEngine` 的 `window.$bodyScope` 兜底、`preview-window`
+> 自有面）。**下一步 E5**：迁移 `electron/main.cjs`、`frontend/public/shims.js` 与
+> `$evalAsync` 提交钩子 → `$bodyScope` 不再作为运行时对象存在（DoD ② 收口）。
+
 > 生成时间：2026-09-12　工作目录：`H:\dev\Eagle-Sec-development - 副本`　分支：`react-in-place`
 > 起点 HEAD：`aa173cb`（D 阶段收官，全套 65/65 `REACT SUITE ALL GREEN`）
 > 依据：`docs/d-phase-closing-2026-09-11.md` §3「① 为何未达 + 剩余路线」、`src/app/react/PROGRESS.md` 终章、

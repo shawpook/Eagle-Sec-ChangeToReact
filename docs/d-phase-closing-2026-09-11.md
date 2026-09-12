@@ -84,9 +84,11 @@ Angular-ism 计数的来源与 ① 同源：`scopeApply`/`on`/`watch` 等仍由 
 2. **`main-ui-workflow-closed-loop` flake 已定位并加固**：表现为 `inspector operation result
    timeout` / `annotation persistence timeout`。根因**非代码**——是「父进程被强杀后 Electron 子进程
    成为孤儿、后续 spawn 争用/失联」的环境级污染（实测：每次跑前清理本仓 Electron，连跑 3/3 全过）。
-   两处加固：① `tests/run-react-suite.mjs` 每项前清理本仓残留 Electron；② 回归驱动
-   （`electron/main.cjs`，仅 `--regression-host` 路径）的 inspector 结果等待改为「触发+等待最多 3 轮」
-   且单轮 8s，丢弃轮次重新触发。
+   三处加固：① `tests/run-react-suite.mjs` 每项前清理本仓残留 Electron；② 回归驱动
+   （`electron/main.cjs`，仅 `--regression-host` 路径）的 inspector 结果等待改为「触发+等待最多 5 轮」
+   且单轮 8s，丢弃轮次重新触发，超时错误附带 `last={reason:'no-event'|'no-target-id', value}`
+   （D-4c，把 shim 侧失败原因带出）；③ 套件失败重跑一次，通过记 `OK (retry)`，真回归连败两次才计入。
+   实测（2026-09-12）：清场后单独连跑 4/4 全过、判别序列（stage-smoke → main-ui-workflow）1/1 过。
 3. **`tagRectSelecting` 双实现**：`tagManagerDomain`（`export let`，真实体）与
    `TagManager.tsx`（`window.tagRectSelecting`）各一份；B-12 已随簇归位，去重留 E 阶段。
 4. **`collect-window` 独立 jQuery/API 层**：自带 `js/vendors/jquery-1.8.0.min.js` +

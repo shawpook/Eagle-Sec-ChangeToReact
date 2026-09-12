@@ -7742,5 +7742,12 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
    timeout` 均为该环境污染，非代码回归）。
 2. **`electron/main.cjs`（仅 `--regression-host` 路径）inspector 结果等待改为
    「触发+等待最多 3 轮（每轮 8s）」**，丢弃轮次重新触发 `imagesChange`（原一次性等 10s）。
-3. 收官文档：`docs/d-phase-closing-2026-09-11.md`（DoD 六项实况、架构前后对照、
+   后续 D-4c 升至 **5 轮**并加诊断：超时错误附带 `last={reason:'no-event'|'no-target-id', value}`
+   （区分「事件完全没来」与「来了但不含目标 id / ok:false」，把 shim 侧失败原因带出来）。
+3. **`tests/run-react-suite.mjs` 失败重跑一次**（D-4c）：偶发环境级失败重跑，通过则记 `OK (retry)`
+   不计入 failed；真回归连败两次仍计入。失败摘要同时抓 stdout+stderr（部分测试只走 `console.error`）。
+4. 收官文档：`docs/d-phase-closing-2026-09-11.md`（DoD 六项实况、架构前后对照、
    行为差异/风险清单、验证方法）；`REWRITE-PLAN.md` 加归档横幅。
+5. **flake 实测收敛**（2026-09-12）：清场后 `main-ui-workflow` 单独连跑 4/4 全过、
+   `react-stage-smoke → main-ui-workflow` 判别序列 1/1 过；此前 4/4 连败系孤儿 Electron
+   污染叠加，非代码回归。收口提交 `6a4ebc0`（D-4c）。

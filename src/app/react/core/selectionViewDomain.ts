@@ -46,6 +46,8 @@ import { machineryAutoScroll } from '../services/gridService';
 import { getTimeout, machineryCalls } from './machineryInfra';
 import { useItemState } from '../store/itemState';
 import { useListState } from '../store/listState';
+import { useMiscRawState } from '../store/miscRawState';
+import { useSelectionState } from '../store/selectionState';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {
@@ -87,8 +89,8 @@ export function takeoverSelectionViewDomain(): void {
     const s2: any = getBodyScope();
     if (!s2) return;
     if (item) {
-      localStorage.setItem(`eagle.lastViewItem.${s2.rootDir}`, item.id);
-      localStorage.setItem(`eagle.lastViewItemTime.${s2.rootDir}`, String(Date.now()));
+      localStorage.setItem(`eagle.lastViewItem.${useMiscRawState.getState().rootDir}`, item.id);
+      localStorage.setItem(`eagle.lastViewItemTime.${useMiscRawState.getState().rootDir}`, String(Date.now()));
     }
   }, 333);
   const selectItemsView = function (items: any) {
@@ -96,7 +98,7 @@ export function takeoverSelectionViewDomain(): void {
     if (!s2) return;
     removeClass(".box.selected", "selected");
     (items || []).forEach(function (item: any) {
-      if (s2.selectedMappings[item.id]) {
+      if (useItemState.getState().selectedMappings[item.id]) {
         addClass("#box-" + item.id, "selected");
       }
       else {
@@ -133,7 +135,7 @@ export function takeoverSelectionViewDomain(): void {
       });
       setTimeout(() => {
         const sNow: any = getBodyScope();
-        detailZoom()?.updateNavigator( sNow && sNow.current);
+        detailZoom()?.updateNavigator( sNow && useSelectionState.getState().current);
       }, 300);
     }
 

@@ -21,6 +21,7 @@ import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, ope
 import { machineryOpenUnfiled, machineryQuickOpenFolder } from '../../core/libraryDomain';
 import { machineryRebindRefresh } from '../../core/itemDomain';
 import { useItemState } from '../../store/itemState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
  *
@@ -278,7 +279,7 @@ function MergeEditor({
       const trash: any[] = [];
       selectedGroups.forEach((group: any) => {
         if (!group.choice?.id) return;
-        const choice = body.itemMappings[group.choice.id];
+        const choice = useItemState.getState().itemMappings[group.choice.id];
         const originName = choice.name;
         const newName = group.mergedData.name;
         choice.name = newName;
@@ -296,7 +297,7 @@ function MergeEditor({
         choice.url = group.mergedData.url ?? choice.url;
 
         group.items.forEach((item: any) => {
-          const origin = body.itemMappings[item.id];
+          const origin = useItemState.getState().itemMappings[item.id];
           if (!origin) return;
           if (group.choice !== item) {
             origin.isDeleted = true;
@@ -938,8 +939,7 @@ export function DuplicateScanPanel() {
   const timeLeftInSeconds = rootRef.current.timeLeftInSeconds;
   const hasPotentialSimilarResults = rootRef.current.hasPotentialSimilarResults;
   const reducedSize = rootRef.current.reducedSize;
-  const body = getBodyScope();
-  const theme = (body?.theme as string) || 'dark';
+    const theme = (useBodyState.getState().theme as string) || 'dark';
 
   const vr = useVsRepeat(listRef, step === 'SCAN-RESULT' ? groups : undefined, { elementSize: 275, excess: 10 }, groups.length);
 
@@ -1336,7 +1336,7 @@ export function DuplicateScanPanel() {
                   groups={groups}
                   selectedGroupMap={rootRef.current.selectedGroupMap}
                   onMerged={onMerged}
-                  folderMappings={body?.folderMappings || {}}
+                  folderMappings={useItemState.getState().folderMappings || {}}
                 />
               </div>
             </div>
@@ -1532,7 +1532,7 @@ export function DuplicateModal() {
           const newFileFolders = rootRef.current.right.folders;
           if (newFileFolders && newFileFolders.length > 0) {
             newFileFolders.forEach((folderId: any) => {
-              const folder = body.folderMappings[folderId];
+              const folder = useItemState.getState().folderMappings[folderId];
               if (!folder) return;
 
               const idx = rootRef.current.left.folders.indexOf(folderId);
@@ -1595,7 +1595,7 @@ export function DuplicateModal() {
           const newFileFolders = right.folders;
           if (newFileFolders && newFileFolders.length > 0) {
             newFileFolders.forEach((folderId: any) => {
-              const folder = body.folderMappings[folderId];
+              const folder = useItemState.getState().folderMappings[folderId];
               if (!folder) return;
 
               const idx = left.folders.indexOf(folderId);
@@ -1648,12 +1648,12 @@ export function DuplicateModal() {
 
       ipc.send('empty-trash', image.id);
       rootRef.current.duplicates.splice(0, 1);
-      delete body.itemMappings[image.id];
+      delete useItemState.getState().itemMappings[image.id];
 
       if (rootRef.current.duplicates.length > 0) {
         loadFirst();
       } else {
-        if (body.selectedMappings[image.id]) {
+        if (useItemState.getState().selectedMappings[image.id]) {
           body.selectedMappings = {};
           body.selected = [];
           syncInspectorFromScope();
@@ -1673,7 +1673,7 @@ export function DuplicateModal() {
     let imageIdString = '';
     rootRef.current.duplicates.forEach((r: any) => {
       imageIdString += r.id + ',';
-      delete body.itemMappings[r.id];
+      delete useItemState.getState().itemMappings[r.id];
     });
     ipc.send('empty-trash', imageIdString);
     rootRef.current.duplicates = [];
@@ -1705,7 +1705,7 @@ export function DuplicateModal() {
   const usingExist = rootRef.current.usingExist;
   const applyAll = rootRef.current.applyAll;
   const body = getBodyScope();
-  const folderMappings = rootRef.current.folderMappings || body?.folderMappings || {};
+  const folderMappings = rootRef.current.folderMappings || useItemState.getState().folderMappings || {};
 
   const videoExts = 'ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v'.split('|');
   const renderDuplicate = (side: 'left' | 'right', item: any) => {

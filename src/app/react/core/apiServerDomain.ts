@@ -31,6 +31,10 @@ import { machineryUpdateSidebarList } from './libraryDomain';
 import { machineryCalculateImageBinding, machineryRebindRefresh, machineryShowUploadQueue, machinerySortData } from './itemDomain';
 import { machineryExistInSmartFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryUpdateSelection } from './selectionViewDomain';
+import { useFolderState } from '../store/folderState';
+import { useItemState } from '../store/itemState';
+import { useMiscRawState } from '../store/miscRawState';
+import { usePreferencesState } from '../store/preferencesState';
 let installed = false;
 
 /* ── 支撑工具（bundle 顶层逐字；if-absent 接装 window）────────────────── */
@@ -187,8 +191,7 @@ function apiIpc(): any {
 /* getAPIFolders（bundle 17881-17925 逐字） */
 function machineryGetAPIFolders(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-
+    
     function cloneFolderList(newTree: any[], tree: any, extraInfo: any): void {
       var arr: any;
       if (Array.isArray(tree)) {
@@ -228,9 +231,9 @@ function machineryGetAPIFolders(): Promise<any> {
       }
     }
 
-    if (bs.folders) {
+    if (useFolderState.getState().folders) {
       let clone: any[] = [];
-      cloneFolderList(clone, bs.folders, false);
+      cloneFolderList(clone, useFolderState.getState().folders, false);
       (window as any).eagle.utils.tree.walk(clone, 'children', function (folder: any, parent: any) {
         if (folder.password && !folder.isUnLock) {
           folder.children = [];
@@ -248,10 +251,9 @@ function machineryGetAPIFolders(): Promise<any> {
 /* unlockFolder（bundle 17928-17942 逐字） */
 function machineryUnlockFolder(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    const folderId = params.folderId;
+        const folderId = params.folderId;
     const password = params.password;
-    const folder = bs.folderMappings[folderId];
+    const folder = useItemState.getState().folderMappings[folderId];
     if (!folder) {
       reject(`Folder does not exist.`);
     }
@@ -269,16 +271,15 @@ function machineryUnlockFolder(params: any): Promise<any> {
 /* getAPIMetadataInfo（bundle 17944-17960 逐字） */
 function machineryGetAPIMetadataInfo(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    const w = window as any;
-    if (decodeURI(bs.rootDir)) {
+        const w = window as any;
+    if (decodeURI(useMiscRawState.getState().rootDir)) {
       var metadataPath = "";
       try {
-        metadataPath = `${decodeURI(bs.rootDir)}/metadata.json`;
+        metadataPath = `${decodeURI(useMiscRawState.getState().rootDir)}/metadata.json`;
         var metadataJSON = w.require(metadataPath);
         metadataJSON.library = {
-          path: bs.libraryPath,
-          name: bs.libraryName
+          path: useMiscRawState.getState().libraryPath,
+          name: useMiscRawState.getState().libraryName
         };
         resolve(metadataJSON);
       }
@@ -361,17 +362,16 @@ function machineryGetLibraryIcon(params: any): Promise<any> {
 /* getAPIApplicationInfo（bundle 18006-18022 逐字） */
 function machineryGetAPIApplicationInfo(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    const w = window as any;
+        const w = window as any;
     try {
       var pjson = w.require(w.appRoot + '/package.json');
       resolve({
         version: pjson.version,
         prereleaseVersion: pjson.prerelease ?? null,
         buildVersion: pjson.buildVersion ?? null,
-        showCollectModal: bs.preferences.general.showCollectModal === 'true',
+        showCollectModal: usePreferencesState.getState().preferences.general.showCollectModal === 'true',
         platform: w.process.platform,
-        preferences: bs.preferences,
+        preferences: usePreferencesState.getState().preferences,
       });
     }
     catch (err) {
@@ -384,9 +384,9 @@ function machineryGetAPIApplicationInfo(): Promise<any> {
 function machinerySetAPIPreferenceCollectOn(): Promise<any> {
   return new Promise((resolve, reject) => {
     const bs: any = getBodyScope();
-    if (bs.preferences !== undefined && bs.preferences.general) {
-      bs.preferences.general.showCollectModal = 'true';
-      apiIpc().send("chnage-preferences", bs.preferences);
+    if (bs.preferences !== undefined && usePreferencesState.getState().preferences.general) {
+      usePreferencesState.getState().preferences.general.showCollectModal = 'true';
+      apiIpc().send("chnage-preferences", usePreferencesState.getState().preferences);
       resolve(undefined);
     }
     else {
@@ -399,9 +399,9 @@ function machinerySetAPIPreferenceCollectOn(): Promise<any> {
 function machinerySetAPIPreferenceCollectOff(): Promise<any> {
   return new Promise((resolve, reject) => {
     const bs: any = getBodyScope();
-    if (bs.preferences !== undefined && bs.preferences.general) {
-      bs.preferences.general.showCollectModal = 'false';
-      apiIpc().send("chnage-preferences", bs.preferences);
+    if (bs.preferences !== undefined && usePreferencesState.getState().preferences.general) {
+      usePreferencesState.getState().preferences.general.showCollectModal = 'false';
+      apiIpc().send("chnage-preferences", usePreferencesState.getState().preferences);
       resolve(undefined);
     }
     else {
@@ -427,14 +427,13 @@ function machineryRunAPIScript(input: any): Promise<any> {
 /* getAllTags（bundle 18091-18103 逐字） */
 function machineryGetAllTags(): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    if (!bs.TagManager) {
+        if (!useMiscRawState.getState().TagManager) {
       return reject('not ready');
     }
     return resolve({
-      tags: bs.TagManager.allTags ?? [],
+      tags: useMiscRawState.getState().TagManager.allTags ?? [],
       recent: machineryGetRecentTagsResult() ?? [],
-      groups: bs.TagManager.groups ?? [],
+      groups: useMiscRawState.getState().TagManager.groups ?? [],
       starred: machineryGetStarredTags() ?? [],
     });
   });
@@ -443,19 +442,17 @@ function machineryGetAllTags(): Promise<any> {
 /* getTags（bundle 18105-18112 逐字） */
 function machineryGetTags(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    if (!bs.TagManager) {
+        if (!useMiscRawState.getState().TagManager) {
       return reject('not ready');
     }
-    return resolve(bs.TagManager.allTags ?? []);
+    return resolve(useMiscRawState.getState().TagManager.allTags ?? []);
   });
 }
 
 /* getRecentTags（bundle 18114-18122 逐字） */
 function machineryGetRecentTags(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    if (!bs.TagManager) {
+        if (!useMiscRawState.getState().TagManager) {
       return reject('not ready');
     }
     const recentTags = machineryGetRecentTagsResult();
@@ -465,11 +462,10 @@ function machineryGetRecentTags(params: any): Promise<any> {
 
 /* getRecentTagsResult（bundle 18124-18134 逐字） */
 function machineryGetRecentTagsResult(): any[] {
-  const bs: any = getBodyScope();
-  const tags = bs.TagManager.getHistoryTags() ?? [];
+    const tags = useMiscRawState.getState().TagManager.getHistoryTags() ?? [];
   const result: any[] = [];
   tags.forEach((tag: any) => {
-    const obj = bs.TagManager.tagMappings[tag];
+    const obj = useMiscRawState.getState().TagManager.tagMappings[tag];
     if (obj) {
       result.push(obj);
     }
@@ -479,11 +475,10 @@ function machineryGetRecentTagsResult(): any[] {
 
 /* getStarredTags（bundle 18136-18145 逐字） */
 function machineryGetStarredTags(): any[] {
-  const bs: any = getBodyScope();
-  const tags = bs.TagManager.starredTags ?? [];
+    const tags = useMiscRawState.getState().TagManager.starredTags ?? [];
   const result: any[] = [];
   tags.forEach((tag: any) => {
-    const obj = bs.TagManager.tagMappings[tag];
+    const obj = useMiscRawState.getState().TagManager.tagMappings[tag];
     if (obj) {
       result.push(obj);
     }
@@ -494,11 +489,10 @@ function machineryGetStarredTags(): any[] {
 /* getTagGroups（bundle 18147-18155 逐字） */
 function machineryGetTagGroups(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    if (!bs.TagManager) {
+        if (!useMiscRawState.getState().TagManager) {
       return reject('not ready');
     }
-    return resolve(bs.TagManager.groups ?? []);
+    return resolve(useMiscRawState.getState().TagManager.groups ?? []);
   });
 }
 
@@ -508,11 +502,11 @@ function machineryGetRecentFoldersAPI(): Promise<any> {
     const bs: any = getBodyScope();
     var recentFolders = bs.getRecentFoldersForAPI(16);
     if (recentFolders.length < 16) {
-      for (var i = 0; i < bs.folderList.length; i++) {
+      for (var i = 0; i < useFolderState.getState().folderList.length; i++) {
         if (i > 16) break;
-        var id = bs.folderList[i].id;
-        if (bs.folderMappings[id]) {
-          recentFolders.push(bs.folderMappings[id]);
+        var id = useFolderState.getState().folderList[i].id;
+        if (useItemState.getState().folderMappings[id]) {
+          recentFolders.push(useItemState.getState().folderMappings[id]);
         }
       }
     }
@@ -544,13 +538,13 @@ function machineryCreateFolder(params: any): Promise<any> {
         children: [],
         isExpand: true,
       };
-      if (parent && bs.folderMappings[parent]) {
-        bs.folderMappings[parent].children.push(folder);
+      if (parent && useItemState.getState().folderMappings[parent]) {
+        useItemState.getState().folderMappings[parent].children.push(folder);
       }
       else {
-        bs.folders.splice(bs.folders.length, 0, folder);
+        useFolderState.getState().folders.splice(useFolderState.getState().folders.length, 0, folder);
       }
-      bs.folderMappings[folder.id] = folder;
+      useItemState.getState().folderMappings[folder.id] = folder;
       machineryUpdateSidebarList(bs);
       addToRecentFolders([folder.id]);
       machinerySaveFolder(bs, );
@@ -567,7 +561,7 @@ function machineryRenameFolder(params: any): Promise<any> {
     const w = window as any;
     var newName = params.newName;
     var folderId = params.folderId ?? params.folderID;
-    var folder = bs.folderMappings[folderId];
+    var folder = useItemState.getState().folderMappings[folderId];
     if (!newName || !folderId || !folder) {
       reject(`Missing required parameters.`);
     }
@@ -600,7 +594,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
     var newDescription = params.newDescription;
     var newColor = params.newColor;
     var folderId = params.folderId ?? params.folderID;
-    var folder = bs.folderMappings[folderId];
+    var folder = useItemState.getState().folderMappings[folderId];
     if (!folderId || !folder) {
       reject(`Missing required parameters.`);
     }
@@ -625,8 +619,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
 
 /* addPath（bundle 18247-18268 逐字） */
 function machineryAddPath(filePath: any, id: any, name: any, websiteUrl: any, tags: any, annotation: any, star: any, modificationTime: any, folderIds: any, cutMode?: any): void {
-  const bs: any = getBodyScope();
-  const w = window as any;
+    const w = window as any;
   const fs = w.require('fs');
   const pathMod = w.require('path');
   var fds: any[] = [];
@@ -676,7 +669,7 @@ function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: 
   });
 
   if (tags && tags?.length > 0) {
-    bs.TagManager.addHistoryTags(tags);
+    useMiscRawState.getState().TagManager.addHistoryTags(tags);
   }
 
   if (folderIds && folderIds.length > 0) {
@@ -702,13 +695,13 @@ function machineryAddItemFromPath(params: any): Promise<any> {
     var folderId = params.folderId ?? params.folderID;
     var folderIds = params.folderIds ?? params.folderIDs ?? [];
 
-    if (folderId && bs.folderMappings[folderId]) {
-      folder = bs.folderMappings[folderId];
+    if (folderId && useItemState.getState().folderMappings[folderId]) {
+      folder = useItemState.getState().folderMappings[folderId];
       folderIds = [folder.id];
     }
     else if (folderIds && Array.isArray(folderIds)) {
       folderIds = folderIds.filter((id: any) => {
-        return bs.folderMappings[id];
+        return useItemState.getState().folderMappings[id];
       });
     }
 
@@ -742,13 +735,13 @@ function machineryAddItemFromPaths(params: any): Promise<any> {
     var folderId = params.folderId ?? params.folderID;
     var folderIds = params.folderIds ?? params.folderIDs ?? [];
 
-    if (folderId && bs.folderMappings[folderId]) {
-      folder = bs.folderMappings[folderId];
+    if (folderId && useItemState.getState().folderMappings[folderId]) {
+      folder = useItemState.getState().folderMappings[folderId];
       folderIds = [folder.id];
     }
     else if (folderIds && Array.isArray(folderIds)) {
       folderIds = folderIds.filter((id: any) => {
-        return bs.folderMappings[id];
+        return useItemState.getState().folderMappings[id];
       });
     }
 
@@ -798,8 +791,8 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
     var now = Date.now();
 
     ids.forEach(function (id: any) {
-      if (bs.itemMappings[id]) {
-        items.push(bs.itemMappings[id]);
+      if (useItemState.getState().itemMappings[id]) {
+        items.push(useItemState.getState().itemMappings[id]);
       }
     });
 
@@ -837,8 +830,8 @@ function machineryAddBookmarkItem(params: any): Promise<any> {
     var modificationTime = params.modificationTime;
     var folder;
     var folderId = params.folderId ?? params.folderID;
-    if (folderId && bs.folderMappings[folderId]) {
-      folder = bs.folderMappings[folderId];
+    if (folderId && useItemState.getState().folderMappings[folderId]) {
+      folder = useItemState.getState().folderMappings[folderId];
     }
     var folderIds = params.folderIds ?? params.folderIDs ?? [];
     name = name.substr(0, 128);
@@ -864,7 +857,7 @@ function machineryAddBookmarkItem(params: any): Promise<any> {
 
     if (folderIds && Array.isArray(folderIds)) {
       folderIds = folderIds.map((id: any) => {
-        const folder = bs.folderMappings[id];
+        const folder = useItemState.getState().folderMappings[id];
         if (folder) {
           return folder.id;
         }
@@ -902,13 +895,13 @@ function machineryAddItemFromURL(params: any): Promise<any> {
     var folder;
     var folderId = params.folderId ?? params.folderID;
     var folderIds = params.folderIds ?? params.folderIDs ?? [];
-    if (folderId && bs.folderMappings[folderId]) {
-      folder = bs.folderMappings[folderId];
+    if (folderId && useItemState.getState().folderMappings[folderId]) {
+      folder = useItemState.getState().folderMappings[folderId];
       folderIds = [folder.id];
     }
     else if (folderIds && Array.isArray(folderIds)) {
       folderIds = folderIds.filter((id: any) => {
-        return bs.folderMappings[id];
+        return useItemState.getState().folderMappings[id];
       });
     }
     name = name.substr(0, 128);
@@ -946,13 +939,13 @@ function machineryAddItemFromURLs(params: any): Promise<any> {
     var folder;
     var folderId = params.folderId ?? params.folderID;
     var folderIds = params.folderIds ?? params.folderIDs ?? [];
-    if (folderId && bs.folderMappings[folderId]) {
-      folder = bs.folderMappings[folderId];
+    if (folderId && useItemState.getState().folderMappings[folderId]) {
+      folder = useItemState.getState().folderMappings[folderId];
       folderIds = [folder.id];
     }
     else if (folderIds && Array.isArray(folderIds)) {
       folderIds = folderIds.filter((id: any) => {
-        return bs.folderMappings[id];
+        return useItemState.getState().folderMappings[id];
       });
     }
     machineryShowUploadQueue(bs);
@@ -999,8 +992,7 @@ function machineryBatchSave(params: any): Promise<any> {
 /* updateItem（bundle 18606-18645 逐字） */
 function machineryUpdateItem(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    const w = window as any;
+        const w = window as any;
 
     var id = params.id;
     var tags = params.tags;
@@ -1008,8 +1000,8 @@ function machineryUpdateItem(params: any): Promise<any> {
     var star = params.star;
     var annotation = params.annotation;
 
-    if (id && bs.itemMappings[id]) {
-      var item = bs.itemMappings[id];
+    if (id && useItemState.getState().itemMappings[id]) {
+      var item = useItemState.getState().itemMappings[id];
       try {
 
         if (tags && Array.isArray(tags)) {
@@ -1044,11 +1036,10 @@ function machineryUpdateItem(params: any): Promise<any> {
 /* setCustomThumbnail（bundle 18647-18679 逐字） */
 function machinerySetCustomThumbnail(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    const ipc = apiIpc();
+        const ipc = apiIpc();
     const itemId = params.id;
     const thumbnailPath = params.thumbnailPath;
-    const item = bs.itemMappings[itemId];
+    const item = useItemState.getState().itemMappings[itemId];
     if (item) {
       // b1-9ae：同 controllerFns——undefined → send 走 main；main（b1-9aa handler）完成后
       // 回发 thumbnail-generated 供本承诺链 resolve（bundle 时代 background 的回程事件）
@@ -1092,10 +1083,9 @@ function machinerySetCustomThumbnail(params: any): Promise<any> {
 /* getItemInfo（bundle 18681-18690 逐字） */
 function machineryGetItemInfo(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    var id = params.id;
-    if (id && bs.itemMappings[id]) {
-      resolve(bs.itemMappings[id]);
+        var id = params.id;
+    if (id && useItemState.getState().itemMappings[id]) {
+      resolve(useItemState.getState().itemMappings[id]);
     }
     else {
       reject(`File does not exist.`);
@@ -1106,10 +1096,9 @@ function machineryGetItemInfo(params: any): Promise<any> {
 /* getItemThumb（bundle 18692-18703 逐字） */
 function machineryGetItemThumb(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    var id = params.id;
-    if (id && bs.itemMappings[id]) {
-      resolve(apiGetThumbnailPath(bs.imagesDir, bs.itemMappings[id]));
+        var id = params.id;
+    if (id && useItemState.getState().itemMappings[id]) {
+      resolve(apiGetThumbnailPath(useMiscRawState.getState().imagesDir, useItemState.getState().itemMappings[id]));
     }
     else {
       reject(`File does not exist.`);
@@ -1121,10 +1110,9 @@ function machineryGetItemThumb(params: any): Promise<any> {
 /* refreshItemPalette（bundle 18705-18715 逐字） */
 function machineryRefreshItemPalette(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    var id = params.id;
-    if (id && bs.itemMappings[id]) {
-      apiIpc().send('regenerate-palette', [bs.itemMappings[id]]);
+        var id = params.id;
+    if (id && useItemState.getState().itemMappings[id]) {
+      apiIpc().send('regenerate-palette', [useItemState.getState().itemMappings[id]]);
       resolve(undefined);
     }
     else {
@@ -1137,10 +1125,9 @@ function machineryRefreshItemPalette(params: any): Promise<any> {
 /* refreshItemThumbnail（bundle 18717-18727 逐字） */
 function machineryRefreshItemThumbnail(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
-    var id = params.id;
-    if (id && bs.itemMappings[id]) {
-      apiIpc().send('regenerate-thumbnail', [bs.itemMappings[id]]);
+        var id = params.id;
+    if (id && useItemState.getState().itemMappings[id]) {
+      apiIpc().send('regenerate-thumbnail', [useItemState.getState().itemMappings[id]]);
       resolve(undefined);
     }
     else {
@@ -1168,7 +1155,7 @@ function machineryListImages(params: any): Promise<any> {
       var tags = params.tags;
       var folders = params.folders;
       var reverse = orderBy.indexOf("-") > -1;
-      var items = [...bs.raw];
+      var items = [...useItemState.getState().raw];
 
       items = machinerySortData(bs, items, orderBy.replace("-", ""));
       if (reverse) {
@@ -1327,9 +1314,8 @@ function machineryInitAPIServer(): void {
     // example https://localhost:xxxx/item/?id=M3QSGJNQTC2DG
     APIServer.addHandler('/item', (args: any, res: any) => {
       return new Promise((resolve, reject) => {
-        const bs: any = getBodyScope();
-        const itemID = args.id;
-        if (itemID && bs.itemMappings[itemID]) {
+                const itemID = args.id;
+        if (itemID && useItemState.getState().itemMappings[itemID]) {
           res.writeHead(302, { 'Location': `eagle://item/${itemID}` });
           res.end();
         }
@@ -1342,9 +1328,8 @@ function machineryInitAPIServer(): void {
 
     APIServer.addHandler('/folder', (args: any, res: any) => {
       return new Promise((resolve, reject) => {
-        const bs: any = getBodyScope();
-        const folderID = args.id;
-        if (folderID && bs.folderMappings[folderID]) {
+                const folderID = args.id;
+        if (folderID && useItemState.getState().folderMappings[folderID]) {
           res.writeHead(302, { 'Location': `eagle://folder/${folderID}` });
           res.end();
         }
@@ -1357,9 +1342,8 @@ function machineryInitAPIServer(): void {
 
     APIServer.addHandler('/smart-folder', (args: any, res: any) => {
       return new Promise((resolve, reject) => {
-        const bs: any = getBodyScope();
-        const folderID = args.id;
-        if (folderID && bs.smartFolderMappings[folderID]) {
+                const folderID = args.id;
+        if (folderID && useItemState.getState().smartFolderMappings[folderID]) {
           res.writeHead(302, { 'Location': `eagle://smart-folder/${folderID}` });
           res.end();
         }

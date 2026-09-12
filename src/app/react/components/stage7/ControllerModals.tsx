@@ -19,6 +19,8 @@ import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryUpdateItemView } from '../../core/itemDomain';
 import { machineryToggleAll } from '../../services/gridService';
+import { useItemState } from '../../store/itemState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
  * （bundle 74094-74144，含 websitePanelWebview 指令 74147-74189）接管。
@@ -136,7 +138,7 @@ export function ErrorModal() {
         try {
           if (error.modifiedData && error.modifiedData.id) {
             // 原版变量名 rootScope 实为 body scope（angular.element("body").scope()）
-            const item = body.itemMappings[error.modifiedData.id];
+            const item = useItemState.getState().itemMappings[error.modifiedData.id];
             if (item) {
               Object.assign(item, error.modifiedData);
               machineryUpdateItemView(body, item);
@@ -205,8 +207,7 @@ export function ErrorModal() {
       errorListRef.current.length = 0;
       syncErrorCount(errorListRef.current);
       close();
-      const body = getBodyScope();
-      scopeEvalAsync();
+            scopeEvalAsync();
       bump((v) => v + 1);
     });
   };
@@ -378,8 +379,8 @@ export function WebsitePanel() {
       try {
         webview.executeJavaScript(
           `
-                        localStorage["theme"] = "${body?.theme}";
-                        document.querySelector("html").setAttribute("theme", "${body?.theme}");
+                        localStorage["theme"] = "${useBodyState.getState().theme}";
+                        document.querySelector("html").setAttribute("theme", "${useBodyState.getState().theme}");
                     `,
           true
         );
@@ -421,15 +422,14 @@ export function WebsitePanel() {
 
   // controller：$watch('theme') → webview 主题注入
   useEffect(() => {
-    const body = getBodyScope();
-    if (body?.theme) {
+        if (useBodyState.getState().theme) {
       const webview = document.querySelector('#website-panel webview') as any;
       if (webview) {
         try {
           webview.executeJavaScript(
             `
-                        localStorage["theme"] = "${body.theme}";
-                        document.querySelector("html").setAttribute("theme", "${body.theme}");
+                        localStorage["theme"] = "${useBodyState.getState().theme}";
+                        document.querySelector("html").setAttribute("theme", "${useBodyState.getState().theme}");
                     `,
             true
           );

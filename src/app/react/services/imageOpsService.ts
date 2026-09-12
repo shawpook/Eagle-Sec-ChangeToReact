@@ -44,6 +44,12 @@ import { getFilter } from '../core/filterDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machinerySortRawData } from '../core/itemDomain';
 import { useMiscRawState } from '../store/miscRawState';
+import { useBodyState } from '../store/bodyState';
+import { useSelectionState } from '../store/selectionState';
+import { usePreferencesState } from '../store/preferencesState';
+import { useItemState } from '../store/itemState';
+import { useFolderState } from '../store/folderState';
+import { useListState } from '../store/listState';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
@@ -55,7 +61,7 @@ var __lv_rotateImageTimeout;
 var __lv_pinyinCache = {};
 const initLinkVars = () => {
 	const s0: any = getBodyScope();
-	if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
+	if (s0 && useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 };
 
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -103,7 +109,7 @@ export function rotateImage(...args: any[]) {
     if (!s) return;
     return (function (event, __lv_image) {
 
-            if (s.isCropMode) return;
+            if (useBodyState.getState().isCropMode) return;
 
             if (__lv_lastRotateImage === __lv_image) {
                 clearTimeout(__lv_rotateImageTimeout);
@@ -115,10 +121,10 @@ export function rotateImage(...args: any[]) {
                 return;
             }
 
-            let rotatedImage = __lv_image || s.selected[0];
+            let rotatedImage = __lv_image || useSelectionState.getState().selected[0];
             if (!rotatedImage) return;
 
-            if (s.preferences.habits.imageRotateMode === 'write') {
+            if (usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
                 const [originalWidth, originalHeight] = [rotatedImage.width, rotatedImage.height];
                 [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
             }
@@ -153,7 +159,7 @@ export function rotateImage(...args: any[]) {
             __lv_rotateImageSaveTimeout = setTimeout(async function () {
 
                 // 检查度数，如果不为 0 并且设定为写入文件时执行写入动作
-                if (degree % 360 != 0 && s.preferences.habits.imageRotateMode === 'write') {
+                if (degree % 360 != 0 && usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
                     var rawPath = FileUrlHelper.getRawPath(rotatedImage);
                     if (!rawPath) {
                         s.isRotating = false;
@@ -250,8 +256,8 @@ export function flipImage(...args: any[]) {
     if (!s) return;
     return (function (event, __lv_image, writeToFile = false) {
 
-            if (s.isCropMode) return;
-            var rotatedImage = __lv_image || s.selected[0];
+            if (useBodyState.getState().isCropMode) return;
+            var rotatedImage = __lv_image || useSelectionState.getState().selected[0];
             if (!rotatedImage) return;
 
             // 直接進行 bitmap 翻轉，不需要狀態追蹤
@@ -272,7 +278,7 @@ export function flipImage(...args: any[]) {
             detailZoom()?.flip( scaleX, scaleY);
 
             // 處理檔案寫入功能，根據設定決定是否寫入
-            var shouldWriteToFile = writeToFile && s.preferences.habits.imageRotateMode === 'write';
+            var shouldWriteToFile = writeToFile && usePreferencesState.getState().preferences.habits.imageRotateMode === 'write';
             if (shouldWriteToFile && rotatedImage) {
                 // 根據 scaleX 和 scaleY 決定翻轉類型
                 var flipType;
@@ -321,7 +327,7 @@ export function saveCrop(...args: any[]) {
             var cropAreaEl = q("#crop-image-tool .crop-area");
             var [top, left] = [cssGet(cropAreaEl, "top").replace("px", ""), cssGet(cropAreaEl, "left").replace("px", "")];
             var [__lv_width, __lv_height] = [widthOf(cropAreaEl), heightOf(cropAreaEl)];
-            var croppedImage = s.current;
+            var croppedImage = useSelectionState.getState().current;
             var imagePath = FileUrlHelper.getRawPath(croppedImage);
 
             electronLog.info(`[app] Crop image: ${imagePath}`);
@@ -392,7 +398,7 @@ export function saveCrop(...args: any[]) {
                                             // 强制更新相关 folder 封面
                                             if (croppedImage.folders) {
                                                 croppedImage.folders.forEach(function (fid) {
-                                                    machineryResetFolderCover(s, s.folderMappings[fid]);
+                                                    machineryResetFolderCover(s, useItemState.getState().folderMappings[fid]);
                                                 });
                                             }
 
@@ -450,9 +456,9 @@ export function startDrag(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (event) {
-            if (s.current) {
-                var __lv_transformsJSON = JSON.stringify([s.current]);
-                ipcRenderer.send('ondragstart', { images: __lv_transformsJSON, target: s.current, resize: 120 });
+            if (useSelectionState.getState().current) {
+                var __lv_transformsJSON = JSON.stringify([useSelectionState.getState().current]);
+                ipcRenderer.send('ondragstart', { images: __lv_transformsJSON, target: useSelectionState.getState().current, resize: 120 });
             }
         }).apply(null, args);
 }
@@ -490,7 +496,7 @@ export function getThumbnailPath(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (__lv_image) {
-            if (!s.imagesDir || !__lv_image) return;
+            if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
         }).apply(null, args);
 }
@@ -500,7 +506,7 @@ export function getThumbnailUrl(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (__lv_image) {
-            if (!s.imagesDir || !__lv_image) return;
+            if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
         }).apply(null, args);
 }
@@ -517,10 +523,10 @@ export function regenerateThumbnail(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-        s.selected.forEach(function(image) {
+        useSelectionState.getState().selected.forEach(function(image) {
             s.regenerateThumbnailQueue.push(image);
         });
-        ayncsImagesGenerateThumbnail(s.selected);
+        ayncsImagesGenerateThumbnail(useSelectionState.getState().selected);
     }).apply(null, args);
 }
 
@@ -543,7 +549,7 @@ export function calculateImageBinding(...args: any[]) {
 
                 try {
 
-                    if (!s.raw) return;
+                    if (!useItemState.getState().raw) return;
 
                     if (!params.ignoreSort) {
                         machinerySortRawData(s, s.orderBy);
@@ -570,14 +576,14 @@ export function calculateImageBinding(...args: any[]) {
                     let ancestorsCache = {};
                     let defaultFolderCoverIdMap = {};
 
-                    eagle.utils.tree.walk(s.folders, 'children', function(folder, parent, depth) {
+                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent, depth) {
 
                         if (folder && parent) {
                             folder.parent = parent.id;
                         }
 
                         // 列表版本 Folders
-                        s.folderList.push(folder);
+                        useFolderState.getState().folderList.push(folder);
                         syncSidebarFromScope();
 
                         // 去除重複的資料夾
@@ -603,29 +609,29 @@ export function calculateImageBinding(...args: any[]) {
 
                         ancestorsCache[folder.id] = machineryGetAncestorFolders(s, folder, [folder]);
 
-                        s.folderMappings[folder.id] = folder;
+                        useItemState.getState().folderMappings[folder.id] = folder;
                     });
 
-                    eagle.utils.tree.walk(s.folders, 'children', function(folder, parent) {
+                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent) {
                         folder.extendTags = machineryGetExtendTags(s, folder, []);
 						folder.covers = [];
                     });
 
 
-                    eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder, parent, depth) {
-                        s.smartFolderMappings[smartFolder.id] = smartFolder;
+                    eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder, parent, depth) {
+                        useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
                     });
 
                     // 重新建立圖片關係
-                    for (var rindex = 0; rindex < s.raw.length; rindex++) {
-                        var __lv_image = s.raw[rindex];
+                    for (var rindex = 0; rindex < useItemState.getState().raw.length; rindex++) {
+                        var __lv_image = useItemState.getState().raw[rindex];
 
-                        if (!s.itemMappings[__lv_image.id]) {
-                            s.itemMappings[__lv_image.id] = __lv_image;
+                        if (!useItemState.getState().itemMappings[__lv_image.id]) {
+                            useItemState.getState().itemMappings[__lv_image.id] = __lv_image;
                         }
 
                         if (__lv_image.isDeleted) {
-                            s.trash.push(__lv_image);
+                            useItemState.getState().trash.push(__lv_image);
                             syncSidebarFromScope();
                             syncListFromScope();
                         }
@@ -635,12 +641,12 @@ export function calculateImageBinding(...args: any[]) {
                             if (__lv_image.folders && __lv_image.folders.length > 0) {
                                 var increaseAncestors = {};
                                 __lv_image.folders.forEach(function(__lv_folderId) {
-                                    var folder = s.folderMappings[__lv_folderId];
+                                    var folder = useItemState.getState().folderMappings[__lv_folderId];
                                     if (folder) {
                                         folder.imageCount++;
 
                                         if (folder.password && !folder.isUnLock) {
-                                            s.lockedImages[__lv_image.id] = true;
+                                            useItemState.getState().lockedImages[__lv_image.id] = true;
                                         }
 
                                         // 祖先们也都 + 1 , 记录在其他栏位上
@@ -655,39 +661,39 @@ export function calculateImageBinding(...args: any[]) {
                                             increaseAncestors[ancestor.id] = true;
 
                                             if (ancestor.password && !ancestor.isUnLock) {
-                                                s.lockedImages[__lv_image.id] = true;
+                                                useItemState.getState().lockedImages[__lv_image.id] = true;
                                             }
                                         });
                                     }
                                 });
                             }
 
-                            if (!s.lockedImages[__lv_image.id]) {
-                                s.all.push(__lv_image);
+                            if (!useItemState.getState().lockedImages[__lv_image.id]) {
+                                useItemState.getState().all.push(__lv_image);
                                 syncSidebarFromScope();
                                 exts[__lv_image.ext] = true;
                                 if (__lv_image.tags && __lv_image.tags.length == 0) {
-                                    s.untaggedCount++;
+                                    useListState.getState().untaggedCount++;
                                 }
 
                                 if (!__lv_image.folders) {
-                                    s.unfiledCount++;
+                                    useListState.getState().unfiledCount++;
                                 }
                                 else if (__lv_image.folders.length === 0) {
-                                    s.unfiledCount++;
+                                    useListState.getState().unfiledCount++;
                                 }
                                 else {
                                     // 修复异常 folders
-                                    if (__lv_image.folders.length === 1 && !s.folderMappings[__lv_image.folders[0]]) {
-                                        if (s.libraryModificationTime && __lv_image.lastModified && __lv_image.lastModified < s.libraryModificationTime) {
+                                    if (__lv_image.folders.length === 1 && !useItemState.getState().folderMappings[__lv_image.folders[0]]) {
+                                        if (useMiscRawState.getState().libraryModificationTime && __lv_image.lastModified && __lv_image.lastModified < useMiscRawState.getState().libraryModificationTime) {
                                             __lv_image.folders = [];
-                                            s.unfiledCount++;
+                                            useListState.getState().unfiledCount++;
                                         }
                                     }
                                     else if (__lv_image.folders[0] === null || __lv_image.folders[1] === null) {
 										__lv_image.folders = [...new Set(__lv_image.folders)].filter(function (obj) { return obj != null; });
 										if (__lv_image.folders.length === 0) {
-											s.unfiledCount++;
+											useListState.getState().unfiledCount++;
 											try {
 												electronLog && electronLog.error(`[app] ${__lv_image.id} 's folder properity is incorrect[2], move to Uncategorized`);
 											} catch (err) {}
@@ -704,7 +710,7 @@ export function calculateImageBinding(...args: any[]) {
 						
 
                         if (!__lv_image.isDeleted && __lv_image.tags && __lv_image.tags.length > 0) {
-                            if (!s.lockedImages[__lv_image.id]) {
+                            if (!useItemState.getState().lockedImages[__lv_image.id]) {
                                 __lv_image.tags.forEach(function(tag) {
                                     var tagName = tag;
                                     if (!tagName || tagName.length > 500) return;
@@ -726,11 +732,11 @@ export function calculateImageBinding(...args: any[]) {
                             for (var i = 0; i < __lv_image.folders.length; i++) {
                                 if (__lv_image.isDeleted) continue;
                                 if (__lv_image.noPreview) continue;
-								if (s.lockedImages[__lv_image.id]) continue;
+								if (useItemState.getState().lockedImages[__lv_image.id]) continue;
                                 // txt 不支持做为封面
                                 if (__lv_image.ext === 'txt') continue;
                                 var __lv_folderId = __lv_image.folders[i];
-                                var folder = s.folderMappings[__lv_folderId];
+                                var folder = useItemState.getState().folderMappings[__lv_folderId];
                                 if (folder) {
                                     if (!defaultFolderCoverIdMap[__lv_folderId]) {
                                         defaultFolderCoverIdMap[__lv_folderId] = __lv_image.id;
@@ -753,12 +759,12 @@ export function calculateImageBinding(...args: any[]) {
                     syncFilterFromScope();
 
                     // 如果祖先门没有封面，补上封面
-                    eagle.utils.tree.walk(s.folders, 'children', function(folder, parent) {
+                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent) {
                         try {
                             let converId = folder.coverId || defaultFolderCoverIdMap[folder.id];
                             if (!folder.covers) folder.covers = [];
-                            if (converId && s.itemMappings[converId]) {
-                                var coverImage = s.itemMappings[converId];
+                            if (converId && useItemState.getState().itemMappings[converId]) {
+                                var coverImage = useItemState.getState().itemMappings[converId];
                                 var __lv_thumbnailPath = FileUrlHelper.getThumbnailUrl(coverImage);
                                 let pos = "";
                                 if (coverImage.fontMetas) {
@@ -800,7 +806,7 @@ export function calculateImageBinding(...args: any[]) {
                     s.tags = __lv_TagManager.rawdata;
                     syncSidebarFromScope();
 
-                    if (!s.tags) {
+                    if (!useFolderState.getState().tags) {
                         s.tags = [];
                         syncSidebarFromScope();
                     }
@@ -823,9 +829,9 @@ export function replaceFile(...args: any[]) {
     if (!s) return;
     return (function () {
         // 檢查是否只選擇了一個檔案
-        if (!s.selected || s.selected.length !== 1) return;
+        if (!useSelectionState.getState().selected || useSelectionState.getState().selected.length !== 1) return;
 
-        const item = s.selected[0];
+        const item = useSelectionState.getState().selected[0];
 
         // 使用 dialog.showOpenDialog 讓用戶選擇文件
         dialog.showOpenDialog(currentWindow, {

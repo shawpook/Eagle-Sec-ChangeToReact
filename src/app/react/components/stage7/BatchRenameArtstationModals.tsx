@@ -17,6 +17,8 @@ import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
 import { calculateImageBindingChannel, importArtstationChannel, importImagesChannel, openRenameChannel } from '../../global/bus';
 import { useItemState } from '../../store/itemState';
+import { useFolderState } from '../../store/folderState';
+import { useMiscRawState } from '../../store/miscRawState';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -92,8 +94,7 @@ export function ArtstationImportModal() {
   };
 
   const selectFolders = () => {
-    const body = getBodyScope();
-    const folders = body.folders;
+        const folders = useFolderState.getState().folders;
     const originalSelectedIds = importFoldersRef.current.reduce(
       (map: any, folder: any) => {
         map[folder.id] = true;
@@ -112,7 +113,7 @@ export function ArtstationImportModal() {
 
         const next: any[] = [];
         Object.keys(result.selectedFolderIds).forEach((id) => {
-          const folder = body.folderMappings[id];
+          const folder = useItemState.getState().folderMappings[id];
           if (folder) {
             next.push(folder);
           }
@@ -124,8 +125,7 @@ export function ArtstationImportModal() {
   };
 
   const createNewFolder = (title: any) => {
-    const body = getBodyScope();
-    const folder = {
+        const folder = {
       id: w().guid(),
       name: title,
       tags: [],
@@ -136,8 +136,8 @@ export function ArtstationImportModal() {
       isExpand: true,
       description: `${pageUrlRef.current}`,
     };
-    body.folders.push(folder);
-    body.folderMappings[folder.id] = folder;
+    useFolderState.getState().folders.push(folder);
+    useItemState.getState().folderMappings[folder.id] = folder;
     updateSidebarList();
     calculateImageBinding();
     saveFolder();
@@ -756,9 +756,8 @@ export function BatchRenameModal() {
           // 使用 folderMappings 將 folder id 轉換為名稱
           const folderNames: any[] = [];
           item.folders.forEach((id: any) => {
-            const body = getBodyScope();
-            if (body.folderMappings && body.folderMappings[id]) {
-              folderNames.push(body.folderMappings[id].name);
+                        if (useItemState.getState().folderMappings && useItemState.getState().folderMappings[id]) {
+              folderNames.push(useItemState.getState().folderMappings[id].name);
             }
           });
           if (folderNames.length > 0) {
@@ -1348,8 +1347,7 @@ export function BatchRenameModal() {
   // 批次修改標籤名稱（77493-77618 逐字）
   const renameTags = () => {
     const old2new: any = {};
-    const body = getBodyScope();
-
+    
     // 全新格式
     if (replaceMethodRef.current == 'format') {
       itemsRef.current.forEach(function (item: any, index: number) {
@@ -1387,8 +1385,8 @@ export function BatchRenameModal() {
     }
 
     const changed: any[] = [];
-    for (let rindex = body.raw.length - 1; rindex >= 0; rindex--) {
-      const item = body.raw[rindex];
+    for (let rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
+      const item = useItemState.getState().raw[rindex];
       let needUpadate = false;
       if (item?.tags) {
         item.tags.forEach((tag: any, index: number) => {
@@ -1405,8 +1403,8 @@ export function BatchRenameModal() {
     }
 
     // 修改标签群组包含的标签
-    if (body.TagManager.groups.length > 0) {
-      body.TagManager.groups.forEach(function (group: any) {
+    if (useMiscRawState.getState().TagManager.groups.length > 0) {
+      useMiscRawState.getState().TagManager.groups.forEach(function (group: any) {
         if (group.tags) {
           if (group?.tags) {
             let needUpadate = false;
@@ -1425,7 +1423,7 @@ export function BatchRenameModal() {
     }
 
     // 更新所有文件夹智能标签
-    w().eagle.utils.tree.walk(body.folders, 'children', function (folder: any, parent: any) {
+    w().eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder: any, parent: any) {
       if (folder && folder.tags) {
         let needUpadate = false;
         folder.tags.forEach((tag: any, index: number) => {
@@ -1441,7 +1439,7 @@ export function BatchRenameModal() {
     });
 
     // 更新智能文件夹的标签属性
-    w().eagle.utils.tree.walk(body.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+    w().eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
       if (!smartFolder.conditions) return;
       smartFolder.conditions.forEach(function (condition: any) {
         if (!condition.rules) return;

@@ -47,6 +47,7 @@ import { machineryOpenAll } from '../services/folderCoreService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryResetPage } from '../services/gridService';
 import { applyDataMachineryScope } from './machineryInfra';
+import { useMiscRawState } from '../store/miscRawState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -2792,7 +2793,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
     if (newName !== originalName && folder) {
 
       var name = newName;
-      name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
+      name = name.substr(0, getRemainingFilenameLength()(useMiscRawState.getState().libraryPath));
       name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
       name = unescape(name);
 

@@ -8,6 +8,8 @@ import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, hasClass, textEl, setAttrEl, addClassEl, removeClassEl, setHtmlEl, focusOn, selectText, onEl, offAllEl, blurEl } from '../utils/domQuery';
 import { machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../core/miscDomain';
+import { useSelectionState } from '../store/selectionState';
+import { useMiscRawState } from '../store/miscRawState';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -96,10 +98,10 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
       setHtmlEl(nameEl, `<span>${originalName}</span>`);
       return;
     }
-    if (newName !== originalName && $scope && $scope.selected[0]) {
+    if (newName !== originalName && $scope && useSelectionState.getState().selected[0]) {
       var name = newName;
-      var image = $scope.selected[0];
-      name = name.substr(0, remainingFilenameLength($scope.libraryPath));
+      var image = useSelectionState.getState().selected[0];
+      name = name.substr(0, remainingFilenameLength(useMiscRawState.getState().libraryPath));
       name = sanitize(name).replace(/%/g, '').replace(/&lt;/g, '').replace(/&gt;/g, '').trim();
       name = unescape(name);
       eagle.inspector.newName = name;

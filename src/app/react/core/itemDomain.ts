@@ -60,6 +60,8 @@ import { machineryAutoResizeTagFilter } from './tagManagerDomain';
 import { getTimeout, machineryCalls } from './machineryInfra';
 import { useListState } from '../store/listState';
 import { useFolderState } from '../store/folderState';
+import { useSelectionState } from '../store/selectionState';
+import { useMiscRawState } from '../store/miscRawState';
 declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;
@@ -1983,12 +1985,12 @@ export function machineryEnableImageNameEditable(s: any, event: any, $name: any)
       setHtmlEl(el, `<span>${originalName}</span>`);
       return;
     }
-    if (newName !== originalName && $scope && $scope.selected[0]) {
+    if (newName !== originalName && $scope && useSelectionState.getState().selected[0]) {
 
       var name = newName;
-      var image = $scope.selected[0];
+      var image = useSelectionState.getState().selected[0];
 
-      name = name.substr(0, getRemainingFilenameLength()($scope.libraryPath));
+      name = name.substr(0, getRemainingFilenameLength()(useMiscRawState.getState().libraryPath));
       name = getSanitize()(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
       name = unescape(name);
       w.eagle.inspector.newName = name;

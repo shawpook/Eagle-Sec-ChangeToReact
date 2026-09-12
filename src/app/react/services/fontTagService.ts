@@ -29,6 +29,10 @@ import { machineryCalculateImageBinding, machineryRebindRefresh, machineryUpdate
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryUpdateSelection } from '../core/selectionViewDomain';
+import { useMiscRawState } from '../store/miscRawState';
+import { useSelectionState } from '../store/selectionState';
+import { useBodyState } from '../store/bodyState';
+import { useLayoutState } from '../store/layoutState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -38,7 +42,7 @@ var __lv_onTagSidebarResizeTimeout;
 var __lv_path;
 const initLinkVars = () => {
 	const s0: any = getBodyScope();
-	if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
+	if (s0 && useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 	if (!__lv_path) __lv_path = _req('path');
 };
 
@@ -72,7 +76,7 @@ export function deactivateFont(...args: any[]) {
             var postScriptName = font.fontMetas.postScriptName?.[key];
             var fullName = font?.fontMetas?.fullName?.en || font?.fontMetas?.compatibleFullName?.en;
             var outPath = `${fontFolder}/${postScriptName}.${font.ext}`;
-            var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + font.id + ".info/");
+            var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + font.id + ".info/");
             var rawPath = __lv_path.normalize(folderPath + name);
             if (process.platform === 'darwin') {
                 if (fs.existsSync(outPath)) {
@@ -123,7 +127,7 @@ export function activateFont(...args: any[]) {
             var key = Object.keys(font.fontMetas.postScriptName)[0];
             var postScriptName = font.fontMetas.postScriptName?.[key];
             var fullName = font?.fontMetas?.fullName?.en || font?.fontMetas?.compatibleFullName?.en;
-            var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + font.id + ".info/");
+            var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + font.id + ".info/");
             var rawPath = __lv_path.normalize(folderPath + name);
             var outPath = `${fontFolder}/${postScriptName}.${font.ext}`;
             if (process.platform === 'darwin') {
@@ -298,8 +302,8 @@ export function getFontPath(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function() {
-            if (s.current) {
-                return `./font-viewer/font-viewer.html?id=${s.current.id}&theme=${s.theme}&language=${s.language}`;
+            if (useSelectionState.getState().current) {
+                return `./font-viewer/font-viewer.html?id=${useSelectionState.getState().current.id}&theme=${useBodyState.getState().theme}&language=${useBodyState.getState().language}`;
             }
         }).apply(null, args);
 }
@@ -389,7 +393,7 @@ export function onTagSidebarResize(...args: any[]) {
     if (!s) return;
     return (function(e, ui) {
             if (ui && ui.size.width >= 200) {
-                s.containerSize.tagSidebar = ui.size.width;
+                useLayoutState.getState().containerSize.tagSidebar = ui.size.width;
                 syncBodyFromScope();
                 syncSidebarFromScope();
                 syncTagManagerFromScope();

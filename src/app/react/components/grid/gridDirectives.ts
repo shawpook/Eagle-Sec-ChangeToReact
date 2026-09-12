@@ -5,6 +5,8 @@ import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { autoscrollChannel } from '../../global/bus';
 import { q, heightOf, setCssEl, offsetOf, addClass, removeClass, onEl, offEl } from '../../utils/domQuery';
 import { machineryGotoBottom } from '../../services/gridService';
+import { useItemState } from '../../store/itemState';
+import { useFolderState } from '../../store/folderState';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -194,7 +196,7 @@ export function initBoxContainerScrollbar() {
 
             onEl(element, "UPDATE_BOX_SCROLLBAR", function () {
             // scope.$on("UPDATE_BOX_SCROLLBAR", function () {
-                var total = $bodyScope.allData.length;
+                var total = useItemState.getState().allData.length;
                 // var pageLength = parseInt($bodyScope.allData.length / $bodyScope.options.page);
                 // var current;
                 // var itgs = ig._items._data;
@@ -218,17 +220,17 @@ export function initBoxContainerScrollbar() {
                 // updateThumbPosition(current, pageLength, 0);
                 $boxContainer && $boxContainer.dispatchEvent(new Event("scroll"));
 
-                if ($bodyScope.currentFolder) {
-                    if ($bodyScope.currentFolder.orderBy) {
-                        orderBy = $bodyScope.currentFolder.orderBy;
+                if (useFolderState.getState().currentFolder) {
+                    if (useFolderState.getState().currentFolder.orderBy) {
+                        orderBy = useFolderState.getState().currentFolder.orderBy;
                     }
                     else {
                         orderBy = $bodyScope.orderBy;
                     }
                 }
-                else if ($bodyScope.currentSmartFolder) {
-                    if ($bodyScope.currentSmartFolder.orderBy) {
-                        orderBy = $bodyScope.currentSmartFolder.orderBy;
+                else if (useFolderState.getState().currentSmartFolder) {
+                    if (useFolderState.getState().currentSmartFolder.orderBy) {
+                        orderBy = useFolderState.getState().currentSmartFolder.orderBy;
                     }
                     else {
                         orderBy = $bodyScope.orderBy;
@@ -268,7 +270,7 @@ export function initBoxContainerScrollbar() {
 
                 if (!ig || isDragging || justFinishedDragging) return; // 拖拽時和剛結束拖拽時不處理 scroll 事件
                 
-                var total = $bodyScope.allData.length;
+                var total = useItemState.getState().allData.length;
                 var pageLength = getTotalPageCount();
                 var pos = ig._watcher.getScrollPos();
                 var groups = ig._items._data;
@@ -524,7 +526,7 @@ export function initBoxContainerScrollbar() {
 
             // 計算總頁數（包含最後不完整的頁面）
             function getTotalPageCount() {
-                return Math.ceil($bodyScope.allData.length / $bodyScope.options.page);
+                return Math.ceil(useItemState.getState().allData.length / $bodyScope.options.page);
             }
 
             var goToPageTimeout;
@@ -535,11 +537,11 @@ export function initBoxContainerScrollbar() {
                     clearTimeout(goToPageTimeout);
                 // }
                 
-                if (targetPage === $bodyScope.startCursor) {
+                if (targetPage === useFolderState.getState().startCursor) {
                     if (targetPage === 0) {
                         // 測量執行時間
                         measureExecutionTime(function() {
-                            resetNgGridLayoutData($bodyScope.allData, 0, scrollPercentage);
+                            resetNgGridLayoutData(useItemState.getState().allData, 0, scrollPercentage);
                         });
                         if (!scrollPercentage) {
                             setTimeout(function () { if ($boxContainer) $boxContainer.scrollTop = 10; }, 200);
@@ -568,7 +570,7 @@ export function initBoxContainerScrollbar() {
                     else {
                         // 測量執行時間
                         measureExecutionTime(function() {
-                            resetNgGridLayoutData($bodyScope.allData, targetPage, scrollPercentage);
+                            resetNgGridLayoutData(useItemState.getState().allData, targetPage, scrollPercentage);
                         });
                     }
 
@@ -857,7 +859,7 @@ export function initBoxContainerScrollbar() {
                     $scrollThumb?.classList.add("dragging");
                     document.body.classList.add("dragging-list-scrollbar");
                     isDragging = true;
-                    lastTargetPage = $bodyScope.startCursor;
+                    lastTargetPage = useFolderState.getState().startCursor;
                     lastDecimalPart = -1;
                     
                     // 開始拖拽時設置 will-change 和 contain
@@ -940,7 +942,7 @@ export function initBoxContainerScrollbar() {
                     }
                     
                     // 檢查目標頁面是否已經在畫面上（相鄰頁面）
-                    var isAdjacentPage = Math.abs(targetPage - $bodyScope.startCursor) <= 1;
+                    var isAdjacentPage = Math.abs(targetPage - useFolderState.getState().startCursor) <= 1;
                     var groups = ig._items._data;
                     var targetPageExists = false;
                     
@@ -955,10 +957,10 @@ export function initBoxContainerScrollbar() {
                     }
                     
                     // 計算頁面距離，用於更智能的切換
-                    var pageDistance = Math.abs(targetPage - $bodyScope.startCursor);
+                    var pageDistance = Math.abs(targetPage - useFolderState.getState().startCursor);
                     
                     // 如果在相同頁面內拖拽，直接滾動
-                    if (targetPage === $bodyScope.startCursor && targetPageExists) {
+                    if (targetPage === useFolderState.getState().startCursor && targetPageExists) {
                         applyPreciseScrollPositionImmediate(targetPage, decimalPart);
                         lastDecimalPart = decimalPart;
                         lastTargetPage = targetPage;
@@ -981,7 +983,7 @@ export function initBoxContainerScrollbar() {
                         var dragDelay = Math.max(5, performanceMetrics.currentDelay * 0.15);
                         
                         pageChangeTimeout = setTimeout(function() {
-                            if (isDragging && targetPage !== $bodyScope.startCursor) {
+                            if (isDragging && targetPage !== useFolderState.getState().startCursor) {
                                 // 取消正在進行的滾動動畫
                                 if (scrollAnimationFrame) {
                                     cancelAnimationFrame(scrollAnimationFrame);
@@ -992,7 +994,7 @@ export function initBoxContainerScrollbar() {
                                 $bodyScope.startCursor = targetPage;
                                 // 測量拖拽時的執行時間
                                 measureExecutionTime(function() {
-                                    resetNgGridLayoutData($bodyScope.allData, targetPage, lastDecimalPart);
+                                    resetNgGridLayoutData(useItemState.getState().allData, targetPage, lastDecimalPart);
                                 });
                             }
                         }, dragDelay);
@@ -1020,7 +1022,7 @@ export function initBoxContainerScrollbar() {
                     }, 200); // 200ms 後恢復正常 scroll 處理
                     
                     // 拖拽結束時，如果有待處理的頁面切換，立即執行
-                    if (lastTargetPage !== $bodyScope.startCursor && lastTargetPage >= 0) {
+                    if (lastTargetPage !== useFolderState.getState().startCursor && lastTargetPage >= 0) {
                         // 取消正在進行的滾動動畫
                         if (scrollAnimationFrame) {
                             cancelAnimationFrame(scrollAnimationFrame);
@@ -1030,7 +1032,7 @@ export function initBoxContainerScrollbar() {
                         $bodyScope.startCursor = lastTargetPage;
                         // 測量拖拽結束時的執行時間
                         measureExecutionTime(function() {
-                            resetNgGridLayoutData($bodyScope.allData, lastTargetPage, lastDecimalPart);
+                            resetNgGridLayoutData(useItemState.getState().allData, lastTargetPage, lastDecimalPart);
                         });
                     }
                     
@@ -1107,7 +1109,7 @@ export function initBoxContainerScrollbar() {
                 }
                 
                 // 檢查是否在相同頁面
-                if (targetPage === $bodyScope.startCursor) {
+                if (targetPage === useFolderState.getState().startCursor) {
                     // 相同頁面內，檢查當前頁面是否已載入
                     if (ig && ig._items && ig._items._data && ig._items._data.length > 0) {
                         // 直接滾動到目標位置
@@ -1115,14 +1117,14 @@ export function initBoxContainerScrollbar() {
                     } else {
                         // 如果頁面數據不完整，重新載入
                         measureExecutionTime(function() {
-                            resetNgGridLayoutData($bodyScope.allData, targetPage, decimalPart);
+                            resetNgGridLayoutData(useItemState.getState().allData, targetPage, decimalPart);
                         });
                     }
                 } else {
                     // 不同頁面，使用新的一氣呵成方式跳轉
                     $bodyScope.startCursor = targetPage;
                     measureExecutionTime(function() {
-                        resetNgGridLayoutData($bodyScope.allData, targetPage, decimalPart);
+                        resetNgGridLayoutData(useItemState.getState().allData, targetPage, decimalPart);
                     });
                 }
             });

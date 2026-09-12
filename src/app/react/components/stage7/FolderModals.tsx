@@ -23,6 +23,7 @@ import { machineryGetSelectedItemElements, machineryGetSelection } from '../../c
 import { machineryLeaveDetailMode } from '../../core/miscDomain';
 import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
+import { useSelectionState } from '../../store/selectionState';
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
  * （bundle 75637-76134）接管，模板 = index.html 411-617 逐字转写。
@@ -337,7 +338,7 @@ export function AddToFolderModal() {
   const folderCountRef = useRef<number | null>(null);
   if (folderCountRef.current === null) {
     const body = getBodyScope();
-    if (body && body.folderList) folderCountRef.current = body.folderList.length;
+    if (body && useFolderState.getState().folderList) folderCountRef.current = useFolderState.getState().folderList.length;
   }
 
   useEffect(() => {
@@ -496,8 +497,7 @@ export function AddToFolderModal() {
     let folderList = getFolderList(foldersRef.current, filterKeywordRef.current, folderMappingsRef.current);
     const folderLabel = { vstype: 'label-folder', size: 25 };
     const createFolderItem = { vstype: 'createFolder', size: 28 };
-    const body = getBodyScope();
-
+    
     folderList = filterFolders(folderList, filterKeywordRef.current);
 
     if (filterKeywordRef.current.length <= 0) {
@@ -506,8 +506,8 @@ export function AddToFolderModal() {
       }
 
       recentMoveFoldersRef.current.forEach((recentFolderId) => {
-        if (recentFolderId && body?.folderMappings[recentFolderId]) {
-          const folder = JSON.parse(JSON.stringify(body.folderMappings[recentFolderId]));
+        if (recentFolderId && useItemState.getState().folderMappings[recentFolderId]) {
+          const folder = JSON.parse(JSON.stringify(useItemState.getState().folderMappings[recentFolderId]));
           folder.size = 28;
           folder.styles = {
             depth: 0,
@@ -553,8 +553,7 @@ export function AddToFolderModal() {
     const scope = getBodyScope();
     if (!scope) return;
     const off = openAddFolderModalChannel.on((params: any) => {
-      const body = getBodyScope();
-      const w = window as any;
+            const w = window as any;
       foldersRef.current = [];
       selectedFoldersRef.current = {};
 
@@ -589,7 +588,7 @@ export function AddToFolderModal() {
         recentMoveFolders = JSON.parse(raw);
         recentMoveFolders = recentMoveFolders.slice(0, 8);
       }
-      recentMoveFoldersRef.current = recentMoveFolders.filter((folderId: any) => !!body?.folderMappings[folderId]);
+      recentMoveFoldersRef.current = recentMoveFolders.filter((folderId: any) => !!useItemState.getState().folderMappings[folderId]);
 
       filterKeywordRef.current = '';
       const resultList = renderFolderList();
@@ -855,8 +854,7 @@ export function AddToFolderModal() {
   const newFolder = (event: any) => {
     event.stopPropagation();
     const w = window as any;
-    const body = getBodyScope();
-    const idx = 0;
+        const idx = 0;
     swalCreateFolder((folderName) => {
       if (folderName === undefined) return;
       const folderId = w.guid();
@@ -874,9 +872,9 @@ export function AddToFolderModal() {
       const newFolderCopy = JSON.parse(JSON.stringify(newFolder));
 
       foldersRef.current.splice(idx, 0, newFolder);
-      body.folders.splice(idx, 0, newFolderCopy);
+      useFolderState.getState().folders.splice(idx, 0, newFolderCopy);
       folderMappingsRef.current[newFolder.id] = newFolder;
-      body.folderMappings[newFolder.id] = newFolderCopy;
+      useItemState.getState().folderMappings[newFolder.id] = newFolderCopy;
 
       renderFolderList();
       updateSidebarList();
@@ -908,8 +906,7 @@ export function AddToFolderModal() {
   const moreButtonClick = (event: any, folder: any) => {
     event.stopPropagation();
     const w = window as any;
-    const body = getBodyScope();
-    const remote = req('@electron/remote');
+        const remote = req('@electron/remote');
     const Menu = remote.Menu;
     const MenuItem = remote.MenuItem;
 
@@ -935,14 +932,14 @@ export function AddToFolderModal() {
           const newFolderCopy = JSON.parse(JSON.stringify(newFolder));
 
           const idx = 0;
-          const bodyFolder = body.folderMappings[folder.id];
+          const bodyFolder = useItemState.getState().folderMappings[folder.id];
           if (!folder.children) folder.children = [];
           if (!bodyFolder.children) bodyFolder.children = [];
 
           folder.children.splice(folder.children.length, 0, newFolder);
           bodyFolder.children.splice(folder.children.length, 0, newFolderCopy);
           folderMappingsRef.current[newFolder.id] = newFolder;
-          body.folderMappings[newFolder.id] = newFolderCopy;
+          useItemState.getState().folderMappings[newFolder.id] = newFolderCopy;
 
           folder.isExpand = true;
 
@@ -961,19 +958,19 @@ export function AddToFolderModal() {
 
           const folderId = w.guid();
           const idx = 0;
-          const bodyFolder = body.folderMappings[folder.id];
+          const bodyFolder = useItemState.getState().folderMappings[folder.id];
           const parentId = folder.parent;
           let parentFolderChildren: any;
           let bodyParentFolderChildren: any;
 
           if (!parentId) {
             parentFolderChildren = foldersRef.current;
-            bodyParentFolderChildren = body.folders;
+            bodyParentFolderChildren = useFolderState.getState().folders;
           } else {
             if (!folderMappingsRef.current[parentId]) return;
-            if (!body.folderMappings[parentId]) return;
+            if (!useItemState.getState().folderMappings[parentId]) return;
             parentFolderChildren = folderMappingsRef.current[parentId].children;
-            bodyParentFolderChildren = body.folderMappings[parentId].children;
+            bodyParentFolderChildren = useItemState.getState().folderMappings[parentId].children;
           }
 
           const realIdx = parentFolderChildren.indexOf(folder);
@@ -996,7 +993,7 @@ export function AddToFolderModal() {
           parentFolderChildren.splice(realIdx + 1, 0, newFolder);
           bodyParentFolderChildren.splice(realIdx + 1, 0, newFolderCopy);
           folderMappingsRef.current[newFolder.id] = newFolder;
-          body.folderMappings[newFolder.id] = newFolderCopy;
+          useItemState.getState().folderMappings[newFolder.id] = newFolderCopy;
 
           renderFolderList();
           updateSidebarList();
@@ -1109,8 +1106,8 @@ export function AddToFolderModal() {
       body.lastIndex = machineryGetSelection(body).start;
 
       // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-      const next = body.allData[body.lastIndex + body.selected.length];
-      const prev = body.allData[body.lastIndex - 1];
+      const next = useItemState.getState().allData[body.lastIndex + useSelectionState.getState().selected.length];
+      const prev = useItemState.getState().allData[body.lastIndex - 1];
       if (next) {
         body.selected = [next];
         syncInspectorFromScope();
@@ -1827,8 +1824,7 @@ export function MoveFolderModal() {
       ]);
     }
     moveConfirm(msg, () => {
-      const body = getBodyScope();
-      const folder = body.folderMappings[node.id];
+            const folder = useItemState.getState().folderMappings[node.id];
       focusSeach();
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder);
@@ -1854,8 +1850,7 @@ export function MoveFolderModal() {
       ]);
     }
     moveConfirm(msg, () => {
-      const body = getBodyScope();
-      const folder = body.folderMappings[node.id];
+            const folder = useItemState.getState().folderMappings[node.id];
       if (folder) {
         moveFoldersToFolder(viewRef.current.selectedFolders, folder);
         cancel();
@@ -1881,9 +1876,8 @@ export function MoveFolderModal() {
       ]);
     }
     moveConfirm(msg, () => {
-      const body = getBodyScope();
-      focusSeach();
-      const folder = body.folderMappings[node.id];
+            focusSeach();
+      const folder = useItemState.getState().folderMappings[node.id];
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder, true);
         cancel();

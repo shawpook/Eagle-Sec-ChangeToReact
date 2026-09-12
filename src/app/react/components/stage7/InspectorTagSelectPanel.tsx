@@ -12,6 +12,8 @@ import { getBodyScope } from '../../core/appCore';
 import { inspectorTagSelectPanelOpenChannel } from '../../global/bus';
 import { makeDraggable } from '../interactions/draggable';
 import { makeResizable } from '../interactions/resizable';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useSelectionState } from '../../store/selectionState';
 
 /**
  * 阶段7d-3a：inspectorTagSelectPanel 指令接管（bundle 57911-58122 + inspector-tag-select-panel.html）。
@@ -75,8 +77,7 @@ export function InspectorTagSelectPanel() {
 
     // 更新建議標籤列表（57943-57957 逐字）
     const updateSelected = () => {
-      const body = getBodyScope();
-      body.TagManager.getSuggestTags(body.selected);
+            useMiscRawState.getState().TagManager.getSuggestTags(useSelectionState.getState().selected);
       setTimeout(() => {
         const originSelected = (window as any).eagle.inspector.newTags.reduce(
           (acc: any, cur: any) => {
@@ -171,9 +172,9 @@ export function InspectorTagSelectPanel() {
       // $watchCollection("selected")（57938-57942 逐字；selected 为 body scope 同名属性）
       // b1-9bz-C-4：$watchCollection('selected') → 组件内 200ms 轮询（与原 shim watcher
       // 同频）。轮询在本组件内，不依赖 scopeShim 的 watcher —— 删 shim 后仍工作。
-      let prevSel: any[] = (body.selected || []).slice();
+      let prevSel: any[] = (useSelectionState.getState().selected || []).slice();
       const selPoll = setInterval(() => {
-        const cur: any[] = body.selected || [];
+        const cur: any[] = useSelectionState.getState().selected || [];
         const changed = cur.length !== prevSel.length
           || cur.some((it: any, i: number) => (it && it.id) !== (prevSel[i] && prevSel[i].id));
         if (!changed) return;
@@ -188,7 +189,7 @@ export function InspectorTagSelectPanel() {
       // $on('INSPECTOR.TAG.SELECT.PANEL.OPEN')（57945-57982 逐字）
       const offOpen = inspectorTagSelectPanelOpenChannel.on((params: any) => {
         void params;
-        body.TagManager.getSuggestTags(body.selected);
+        useMiscRawState.getState().TagManager.getSuggestTags(useSelectionState.getState().selected);
         const originSelected = (window as any).eagle.inspector.newTags.reduce(
           (acc: any, cur: any) => {
             acc[cur] = true;
@@ -200,17 +201,17 @@ export function InspectorTagSelectPanel() {
         setTimeout(() => {
           panel.init({
             showCreateTagBtn: true,
-            tagManager: body.TagManager,
+            tagManager: useMiscRawState.getState().TagManager,
             selectedTags: originSelected,
             onAdd: (tags: any) => {
               console.log(`onAdd: ${tags}`);
-              body.TagManager.addTags(tags);
+              useMiscRawState.getState().TagManager.addTags(tags);
               calculateImageBinding({ ignoreSort: true }, () => {});
             },
             onRemove: (tags: any) => {
               console.log(`onRemove: ${tags}`);
               tags.forEach((tag: any) => {
-                body.TagManager.removeTag(tag);
+                useMiscRawState.getState().TagManager.removeTag(tag);
               });
               calculateImageBinding({ ignoreSort: true }, () => {});
             },
@@ -259,8 +260,7 @@ export function InspectorTagSelectPanel() {
 
   const panel = panelRef.current;
   const listData = panel?.listData;
-  const body = getBodyScope();
-  const selectedCount = body?.selected?.length ?? 0;
+    const selectedCount = useSelectionState.getState().selected?.length ?? 0;
 
   const grid = useVsGridRepeat(
     listRef,

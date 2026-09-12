@@ -13,6 +13,7 @@ import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { widthOf, heightOf } from '../../utils/domQuery';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
+import { useSelectionState } from '../../store/selectionState';
 
 /**
  * 阶段7d-5a：pluginPanel + pluginCreator 接管（pluginCenter 见 7d-5b）。
@@ -360,8 +361,7 @@ export function PluginPanel() {
       const pluginModule = useMiscRawState.getState().pluginModule;
       const plugin = item?.plugin;
       if (!item.executable) {
-        const body = getBodyScope();
-        const file = body.selected[0];
+                const file = useSelectionState.getState().selected[0];
         const ext = file?.ext;
         // 原版逐字：Object.keys(preview)（preview 可能 undefined → 抛）+ preview[keys]
         //（数组键恒 undefined → 提前 return），异常经 $exceptionHandler
@@ -383,10 +383,9 @@ export function PluginPanel() {
   };
 
   const removePlugin = (item: any) => {
-    const body = getBodyScope();
-    const pluginModule = body.pluginModule;
+        const pluginModule = useMiscRawState.getState().pluginModule;
     const desc = t('dialog.removePlugin.desc', [{ property: 'name', value: item.name }]);
-    const themePath = themePathOf(body.theme);
+    const themePath = themePathOf(useBodyState.getState().theme);
 
     w().swal({
       html: `
@@ -672,7 +671,7 @@ export function PluginPanel() {
     // $on("OPEN_PLUGIN_PANEL")（镜像 59-80 逐字）
     const offOpen = openPluginPanelChannel.on((params: any) => {
       void params;
-      const pluginModule = body.pluginModule;
+      const pluginModule = useMiscRawState.getState().pluginModule;
       rootRef.current.currentIndex = -1;
       rootRef.current.searchKeyword = '';
       const searchEl = searchInputRef.current;

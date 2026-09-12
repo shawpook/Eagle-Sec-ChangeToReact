@@ -14,6 +14,7 @@ import { cleanSelected } from '../../services/batchOpsService';
 import { openFolder } from '../../services/folderCoreService';
 
 import { machineryOnDropContainer } from '../../services/uploadService';
+import { useFolderState } from '../../store/folderState';
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域模板接管（index.html 原块逐字）。
  * - DropAreas：六种空状态（132-215）；
@@ -84,7 +85,7 @@ export function DropAreas() {
               <h2>{t('empty.folder.title')}</h2>
               <p>{t('empty.all.desc')}</p>
               <div className="buttons">
-                <div className="button button-xs button-grey" onClick={() => { const s = getBodyScope(); if (s) scopeFn(importFolders, s.currentFolder)(); }}>{t('dialog.importLocalFolder.title')}</div>
+                <div className="button button-xs button-grey" onClick={() => { const s = getBodyScope(); if (s) scopeFn(importFolders, useFolderState.getState().currentFolder)(); }}>{t('dialog.importLocalFolder.title')}</div>
                 <a className="button button-xs button-grey" href="https://eagle.cool/extensions" target="_blank" rel="noreferrer">{t('appmenu.help>installExtension')}</a>
               </div>
             </div>

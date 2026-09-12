@@ -15,6 +15,10 @@ import { closeQuickSearch } from '../../core/filterDomain';
 import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryChangeSidebarIndex } from '../../core/libraryDomain';
+import { useListState } from '../../store/listState';
+import { useItemState } from '../../store/itemState';
+import { useFolderState } from '../../store/folderState';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -227,7 +231,7 @@ export function QuickSearchModal() {
         }
 
         if (url && body.isSearchScopeUrl) {
-          if (body.keyword.length >= 2) {
+          if (useListState.getState().keyword.length >= 2) {
             allText += `${url} `;
           }
         }
@@ -301,7 +305,7 @@ export function QuickSearchModal() {
           if (image.folders && image.folders.length > 0) {
             for (let fi = 0; fi < image.folders.length; fi++) {
               const folderId = image.folders[fi];
-              const folder = body.folderMappings[folderId];
+              const folder = useItemState.getState().folderMappings[folderId];
               if (folder) {
                 if (body.isSearchScopeFolderName && folder && folder.name) {
                   folderNames += `${folder.name} `;
@@ -386,15 +390,15 @@ export function QuickSearchModal() {
 
     switch (mode) {
       case 'ITEMS':
-        list = body.all || [];
+        list = useItemState.getState().all || [];
         break;
       case 'FOLDERS': {
         // 顯示歷史記錄
-        if (!kw && (body.folderList || []).length > 15 && getQuickSearchFolderHistory().length > 0) {
+        if (!kw && (useFolderState.getState().folderList || []).length > 15 && getQuickSearchFolderHistory().length > 0) {
           getQuickSearchFolderHistory().forEach((fid: any) => {
             if (list.length >= 10) return;
-            if (body.folderMappings[fid]) {
-              const copy = cloneWithoutKey(body.folderMappings[fid], 'children');
+            if (useItemState.getState().folderMappings[fid]) {
+              const copy = cloneWithoutKey(useItemState.getState().folderMappings[fid], 'children');
               delete copy.$$hashKey;
               copy.isRecent = true;
               list.push(copy);
@@ -406,7 +410,7 @@ export function QuickSearchModal() {
         const ancestorsCache: any = {};
         const guidelinesMap: any = {};
 
-        w.eagle.utils.tree.walk(body.folders, 'children', (folder: any, parent: any) => {
+        w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', (folder: any, parent: any) => {
           const item = { ...folder };
           if (item && parent) {
             item.parent = parent.id;
@@ -432,10 +436,10 @@ export function QuickSearchModal() {
       }
       case 'TAGS': {
         const tagGroupsIndexMap: any = {};
-        (body.TagManager?.groups || []).forEach((tagGroup: any, index: number) => {
+        (useMiscRawState.getState().TagManager?.groups || []).forEach((tagGroup: any, index: number) => {
           tagGroupsIndexMap[tagGroup.id] = index;
         });
-        list = [...(body.tags || [])];
+        list = [...(useFolderState.getState().tags || [])];
 
         // sort tags by tag.group property（原版直接 a.groups[0]，这里对缺失 groups 兜底）
         list = list.sort((a: any, b: any) => {
@@ -469,8 +473,8 @@ export function QuickSearchModal() {
         if (!kw && (body.smartFolderList || []).length > 10 && getQuickSearchSmartFolderHistory().length > 0) {
           getQuickSearchSmartFolderHistory().forEach((fid: any) => {
             if (list.length >= 10) return;
-            if (body.smartFolderMappings[fid]) {
-              const copy = cloneWithoutKey(body.smartFolderMappings[fid], 'children');
+            if (useItemState.getState().smartFolderMappings[fid]) {
+              const copy = cloneWithoutKey(useItemState.getState().smartFolderMappings[fid], 'children');
               delete copy.$$hashKey;
               delete copy.iconColor;
               copy.isRecent = true;
@@ -725,10 +729,9 @@ export function QuickSearchModal() {
 
   /* ---------------- 渲染（quick-search-modal.html 逐字） ---------------- */
 
-  const body = getBodyScope();
-
+  
   const getThumbnailUrl = (image: any) => {
-    if (!body?.imagesDir || !image) return '';
+    if (!useMiscRawState.getState().imagesDir || !image) return '';
     return FileUrlHelper.getThumbnailUrl(image) || '';
   };
 
@@ -793,7 +796,7 @@ export function QuickSearchModal() {
                 closeViaScope();
               }}
             >
-              {iv(kind === 'folder' ? body?.folderMappings?.[folder.parent]?.name : body?.smartFolderMappings?.[folder.parent]?.name)}
+              {iv(kind === 'folder' ? useItemState.getState().folderMappings?.[folder.parent]?.name : useItemState.getState().smartFolderMappings?.[folder.parent]?.name)}
             </span>
           ) : null}
         </div>
@@ -815,7 +818,7 @@ export function QuickSearchModal() {
         <div className="name" dangerouslySetInnerHTML={{ __html: fuzzyMatchHtml(tag.name, view.keyword) }} />
         <div className="right">
           {tag.groups && tag.groups[0] ? (
-            <span className="parent-name">{iv(body?.TagManager?.groupMappings?.[tag.groups[0]]?.name)}</span>
+            <span className="parent-name">{iv(useMiscRawState.getState().TagManager?.groupMappings?.[tag.groups[0]]?.name)}</span>
           ) : null}
         </div>
       </div>
@@ -846,7 +849,7 @@ export function QuickSearchModal() {
               className="parent"
               onClick={() => runInBodyScope((s: any) => openItemLocation(item, s.folderMappings[folderId]))}
             >
-              <a>{iv(body?.folderMappings?.[folderId]?.name)} </a>
+              <a>{iv(useItemState.getState().folderMappings?.[folderId]?.name)} </a>
             </span>
           ))}
         </div>

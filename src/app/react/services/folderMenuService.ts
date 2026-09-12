@@ -37,6 +37,10 @@ import { getFilter, machineryExistInSmartFilter } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machinerySortRawData } from '../core/itemDomain';
+import { useFolderState } from '../store/folderState';
+import { useListState } from '../store/listState';
+import { useMiscRawState } from '../store/miscRawState';
+import { useItemState } from '../store/itemState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -104,26 +108,26 @@ export function refreshSubfolderList(...args: any[]) {
     if (!s) return;
     return (function () {
       // 过滤子文件夹
-      if (s.currentFolder) {
+      if (useFolderState.getState().currentFolder) {
         let subFolders: any[] = [];
-        if (s.showSubfolderContent) {
-          s.subFolders = getAllChildFolder(s.currentFolder);
+        if (useListState.getState().showSubfolderContent) {
+          s.subFolders = getAllChildFolder(useFolderState.getState().currentFolder);
           syncListFromScope();
           if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
         }
         else {
-          s.subFolders = s.currentFolder.children;
+          s.subFolders = useFolderState.getState().currentFolder.children;
           syncListFromScope();
           if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = false;
         }
-        if (s.keyword) {
-          s.subFolders = s.subFolders.filter(function (folder: any) {
-            if (folder.name.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+        if (useListState.getState().keyword) {
+          s.subFolders = useMiscRawState.getState().subFolders.filter(function (folder: any) {
+            if (folder.name.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
               return true;
             }
             if (folder && folder.tags) {
               var folderTags = folder.tags.join('');
-              if (folderTags.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+              if (folderTags.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
                 return true;
               }
             }
@@ -143,7 +147,7 @@ export function setFolderPassword(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
-      var f = folder || s.currentFolder;
+      var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
       setFolderPasswordChannel.emit({ folder: f, mode: 'new' });
     }).apply(null, args);
@@ -153,7 +157,7 @@ export function changeFolderPassword(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
-      var f = folder || s.currentFolder;
+      var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
       setFolderPasswordChannel.emit({ folder: f, mode: 'change' });
     }).apply(null, args);
@@ -163,7 +167,7 @@ export function resetFolderPassword(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (folder: any) {
-      var f = folder || s.currentFolder;
+      var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
       setFolderPasswordChannel.emit({ folder: f, mode: 'reset' });
     }).apply(null, args);
@@ -216,7 +220,7 @@ export function lockFolder(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (event: any, f: any) {
-      var folder = f || s.currentFolder;
+      var folder = f || useFolderState.getState().currentFolder;
       if (!folder) return;
       if (!folder.isUnLock || !folder.password) return;
       delete folder.isUnLock;
@@ -238,14 +242,14 @@ export function settingFolder(...args: any[]) {
     return (function (event: any, folder: any) {
       var f = folder;
       if (!f) {
-        f = s.currentFolder || s.currentSmartFolder;
-        if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
-          var selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key) {
+        f = useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder;
+        if (useItemState.getState().selectedFolderMappings && Object.keys(useItemState.getState().selectedFolderMappings).length > 0) {
+          var selectedFolders = Object.keys(useItemState.getState().selectedFolderMappings).map(function (key) {
             return key;
           });
           var folderId = selectedFolders[0];
-          if (folderId && s.folderMappings[folderId]) {
-            f = s.folderMappings[folderId];
+          if (folderId && useItemState.getState().folderMappings[folderId]) {
+            f = useItemState.getState().folderMappings[folderId];
           }
         }
       }
@@ -292,9 +296,9 @@ export function cloneFolder(...args: any[]) {
       var newFolder = JSON.parse(JSON.stringify(folder));
       resetFolder(newFolder);
 
-      var children = s.folders;
-      if (folder.parent && s.folderMappings[folder.parent]) {
-        let parent = s.folderMappings[folder.parent];
+      var children = useFolderState.getState().folders;
+      if (folder.parent && useItemState.getState().folderMappings[folder.parent]) {
+        let parent = useItemState.getState().folderMappings[folder.parent];
         children = parent.children;
       }
       var idx = children.indexOf(folder);
@@ -309,12 +313,12 @@ export function cloneFolder(...args: any[]) {
           sf.parent = parent.id;
         }
         resetFolder(sf);
-        s.folderMappings[newId] = sf;
+        useItemState.getState().folderMappings[newId] = sf;
       });
 
       if (idx > -1) {
         children.splice(idx + 1, 0, newFolder);
-        s.folderMappings[newFolder.id] = newFolder;
+        useItemState.getState().folderMappings[newFolder.id] = newFolder;
         machineryUpdateSidebarList(s);
         machinerySaveFolder(s);
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
@@ -406,9 +410,9 @@ export function folderExportAsPack(...args: any[]) {
       const w = window as any;
       var images: any[] = [];
       var f: any = {};
-      for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+      for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
         try {
-          var image = s.raw[rindex];
+          var image = useItemState.getState().raw[rindex];
           if (image.isDeleted) continue;
           var isContain = image.folders.indexOf(folder.id) > -1;
           if (!isContain) {
@@ -472,9 +476,9 @@ export function folderExportAsFolder(...args: any[]) {
       var exportFolder = function (folder2: any, savePath: any) {
         var images: any[] = [];
         if (savePath) {
-          for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+          for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
             try {
-              var image = s.raw[rindex];
+              var image = useItemState.getState().raw[rindex];
               if (image.isDeleted) continue;
               var isContain = image.folders.indexOf(folder2.id) > -1;
               if (!isContain) {
@@ -485,7 +489,7 @@ export function folderExportAsFolder(...args: any[]) {
                   }
                 });
               }
-              if (isContain && !(s.lockedImages && s.lockedImages[image.id])) {
+              if (isContain && !(useItemState.getState().lockedImages && useItemState.getState().lockedImages[image.id])) {
                 images.push(image);
               }
             }
@@ -596,8 +600,8 @@ export function moveFolders(...args: any[]) {
       var selected = (selectedFolders && selectedFolders.length > 0) ? selectedFolders : [node];
       if (selected && selected.length > 0) {
         openMoveFolderModalChannel.emit({
-          current: s.currentFolder,
-          folders: s.folders,
+          current: useFolderState.getState().currentFolder,
+          folders: useFolderState.getState().folders,
           selectedFolders: selected
         });
       }
@@ -623,8 +627,8 @@ export function showListSubfolderContent(...args: any[]) {
     if (!s) return;
     return (function () {
       const w = window as any;
-      s.showSubfolderContent = !s.showSubfolderContent;
-      preferences.showSubfolderContent = s.showSubfolderContent;
+      s.showSubfolderContent = !useListState.getState().showSubfolderContent;
+      preferences.showSubfolderContent = useListState.getState().showSubfolderContent;
       (window as any).electronSettings.set('preferences', preferences).then(function () {});
       machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
         machineryRebindRefresh(s);
@@ -634,7 +638,7 @@ export function showListSubfolderContent(...args: any[]) {
       });
 
       scopeEvalAsync();
-      if (s.showSubfolderContent) { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: ON'); }
+      if (useListState.getState().showSubfolderContent) { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: ON'); }
       else { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: OFF'); }
     }).apply(null, args);
 }
@@ -658,8 +662,8 @@ export function openFolderContextMenu(...args: any[]) {
 
       historyLibraryMenu.items = getLibraryHistory().filter((history: any) => {
         var isCurrent = false;
-        if (s.libraryPath) {
-          isCurrent = w.path.normalize(history.path) == w.path.normalize(s.libraryPath);
+        if (useMiscRawState.getState().libraryPath) {
+          isCurrent = w.path.normalize(history.path) == w.path.normalize(useMiscRawState.getState().libraryPath);
         }
         return !isCurrent;
       }).map((history: any) => {
@@ -1004,7 +1008,7 @@ export function openFolderContextMenu(...args: any[]) {
                   label: i18n.__('context.folder.sortByTitle>title') + `(${i18n.__('context.folder.sortByCurrentLevel')}) (A→Z)`,
                   keywords: i18n.__('context.folder.sortByTitle'),
                   click: () => {
-                    let folders = (folder.parent) ? s.folderMappings[folder.parent].children : s.folders;
+                    let folders = (folder.parent) ? useItemState.getState().folderMappings[folder.parent].children : useFolderState.getState().folders;
                     reorderFolderByTitle(folders);
                   }
                 },
@@ -1012,7 +1016,7 @@ export function openFolderContextMenu(...args: any[]) {
                   label: i18n.__('context.folder.sortByTitle>title') + `(${i18n.__('context.folder.sortByCurrentLevel')}) (Z→A)`,
                   keywords: i18n.__('context.folder.sortByTitle'),
                   click: () => {
-                    let folders = (folder.parent) ? s.folderMappings[folder.parent].children : s.folders;
+                    let folders = (folder.parent) ? useItemState.getState().folderMappings[folder.parent].children : useFolderState.getState().folders;
                     reorderFolderByTitle(folders, true);
                   }
                 },
@@ -1120,7 +1124,7 @@ export function openFolderContextMenu(...args: any[]) {
           { role: 'separator' },
           // 在父文件夾顯示子文件夾內容
           {
-            checked: s.showSubfolderContent,
+            checked: useListState.getState().showSubfolderContent,
             label: i18n.__('context.folder.toogleSubFolderContent'),
             icon: 'ic-folder-show-sub-folder-content.svg',
             click: () => {
@@ -1315,9 +1319,9 @@ export function cloneSmartFolder(...args: any[]) {
     return (function (event: any, smartFolder: any) {
       const w = window as any;
       var newFolder = JSON.parse(JSON.stringify(smartFolder));
-      var children = s.smartFolders;
-      if (smartFolder.parent && s.smartFolderMappings[smartFolder.parent]) {
-        let parent = s.smartFolderMappings[smartFolder.parent];
+      var children = useFolderState.getState().smartFolders;
+      if (smartFolder.parent && useItemState.getState().smartFolderMappings[smartFolder.parent]) {
+        let parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
         children = parent.children;
       }
       var idx = children.indexOf(smartFolder);
@@ -1331,12 +1335,12 @@ export function cloneSmartFolder(...args: any[]) {
         if (parent) {
           sf.parent = parent.id;
         }
-        s.smartFolderMappings[newId] = sf;
+        useItemState.getState().smartFolderMappings[newId] = sf;
       });
 
       if (idx > -1) {
         children.splice(idx, 0, newFolder);
-        s.smartFolderMappings[newFolder.id] = newFolder;
+        useItemState.getState().smartFolderMappings[newFolder.id] = newFolder;
         machineryUpdateSidebarList(s);
         machinerySaveFolder(s);
         try { w.electronLog && w.electronLog.info(`[app] Clone smart-folder: ${smartFolder.name}(${smartFolder.id}), new smart-folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
@@ -1384,15 +1388,15 @@ export function smartFolderExportAsPack(...args: any[]) {
           return false;
         }
         else {
-          return machineryExistInSmartFilter(s, s.currentSmartFolder, image);
+          return machineryExistInSmartFilter(s, useFolderState.getState().currentSmartFolder, image);
         }
       };
 
       var f: any = {};
       var folderId = guid();
       var images: any[] = [];
-      for (var i = 0; i < s.raw.length; i++) {
-        var image = s.raw[i];
+      for (var i = 0; i < useItemState.getState().raw.length; i++) {
+        var image = useItemState.getState().raw[i];
         if (image.isDeleted) continue;
         if (isInSmartFolder(smartFolder, image)) {
           var clone: any = {};
@@ -1454,7 +1458,7 @@ export function smartFolderExportAsFolder(...args: any[]) {
           return false;
         }
         else {
-          return machineryExistInSmartFilter(s, s.currentSmartFolder, image);
+          return machineryExistInSmartFilter(s, useFolderState.getState().currentSmartFolder, image);
         }
       };
 
@@ -1463,8 +1467,8 @@ export function smartFolderExportAsFolder(...args: any[]) {
         var folderId = guid();
         var images: any[] = [];
         if (savePath) {
-          for (var i = 0; i < s.raw.length; i++) {
-            var image = s.raw[i];
+          for (var i = 0; i < useItemState.getState().raw.length; i++) {
+            var image = useItemState.getState().raw[i];
             if (image.isDeleted) continue;
             if (isInSmartFolder(smartFolder, image)) {
               var clone: any = {};
@@ -1547,7 +1551,7 @@ export function newChildSmartFolder(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (event: any, smartFolder: any) {
-      newSmartFolderChannel.emit({ smartFolder: smartFolder || s.currentSmartFolder, parent: smartFolder });
+      newSmartFolderChannel.emit({ smartFolder: smartFolder || useFolderState.getState().currentSmartFolder, parent: smartFolder });
     }).apply(null, args);
 }
 
@@ -1564,7 +1568,7 @@ export function newSmartFolderGroup(...args: any[]) {
         conditions: [],
         icon: 'grid'
       };
-      s.smartFolders.push(smartFolderGroup);
+      useFolderState.getState().smartFolders.push(smartFolderGroup);
       machineryUpdateSidebarList(s);
       machinerySaveFolder(s);
       w.analytics.event('SmartFolder', 'CreateGroup');
@@ -1630,8 +1634,8 @@ export function openSmartFolderContextMenu(...args: any[]) {
 
       historyLibraryMenu.items = getLibraryHistory().filter((history: any) => {
         var isCurrent = false;
-        if (s.libraryPath) {
-          isCurrent = w.path.normalize(history.path) == w.path.normalize(s.libraryPath);
+        if (useMiscRawState.getState().libraryPath) {
+          isCurrent = w.path.normalize(history.path) == w.path.normalize(useMiscRawState.getState().libraryPath);
         }
         return !isCurrent;
       }).map((history: any) => {

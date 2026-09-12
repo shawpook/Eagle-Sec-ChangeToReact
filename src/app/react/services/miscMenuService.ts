@@ -41,6 +41,9 @@ import { getFilter, machineryOpenFilter } from '../core/filterDomain';
 import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryToggleSelectSmartFolder } from '../core/selectionViewDomain';
 import { getToggleFilterByTypeFn } from '../core/filterDomain';
+import { useLayoutState } from '../store/layoutState';
+import { useItemState } from '../store/itemState';
+import { useSelectionState } from '../store/selectionState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -109,17 +112,17 @@ export function openRatioContextMenu(...args: any[]) {
     return (function() {
             ContextMenu.open({
                 items: [
-                    { label: '5%', checked: parseInt(s.imageSize.zoomRatioExp) == 5, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(5), undefined, undefined, true); s.imageSize.zoomRatioExp = 5; scopeEvalAsync(); } },
-                    { label: '10%', checked: parseInt(s.imageSize.zoomRatioExp) == 10, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(10), undefined, undefined, true); s.imageSize.zoomRatioExp = 10; scopeEvalAsync(); } },
-                    { label: '25%', checked: parseInt(s.imageSize.zoomRatioExp) == 25, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(25), undefined, undefined, true); s.imageSize.zoomRatioExp = 25; scopeEvalAsync(); } },
-                    { label: '50%', checked: parseInt(s.imageSize.zoomRatioExp) == 50, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(50), undefined, undefined, true); s.imageSize.zoomRatioExp = 50; scopeEvalAsync(); } },
-                    { label: '100%', checked: parseInt(s.imageSize.zoomRatioExp) == 100, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(100), undefined, undefined, true); s.imageSize.zoomRatioExp = 100; scopeEvalAsync(); } },
-                    { label: '125%', checked: parseInt(s.imageSize.zoomRatioExp) == 125, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(125), undefined, undefined, true); s.imageSize.zoomRatioExp = 125; scopeEvalAsync(); } },
-                    { label: '150%', checked: parseInt(s.imageSize.zoomRatioExp) == 150, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(150), undefined, undefined, true); s.imageSize.zoomRatioExp = 150; scopeEvalAsync(); } },
-                    { label: '200%', checked: parseInt(s.imageSize.zoomRatioExp) == 200, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(200), undefined, undefined, true); s.imageSize.zoomRatioExp = 200; scopeEvalAsync(); } },
-                    { label: '300%', checked: parseInt(s.imageSize.zoomRatioExp) == 300, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(300), undefined, undefined, true); s.imageSize.zoomRatioExp = 300; scopeEvalAsync(); } },
-                    { label: '400%', checked: parseInt(s.imageSize.zoomRatioExp) == 400, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(400), undefined, undefined, true); s.imageSize.zoomRatioExp = 400; scopeEvalAsync(); } },
-                    { label: '800%', checked: parseInt(s.imageSize.zoomRatioExp) == 800, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(800), undefined, undefined, true); s.imageSize.zoomRatioExp = 800; scopeEvalAsync(); } },
+                    { label: '5%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 5, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(5), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 5; scopeEvalAsync(); } },
+                    { label: '10%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 10, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(10), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 10; scopeEvalAsync(); } },
+                    { label: '25%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 25, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(25), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 25; scopeEvalAsync(); } },
+                    { label: '50%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 50, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(50), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 50; scopeEvalAsync(); } },
+                    { label: '100%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 100, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(100), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 100; scopeEvalAsync(); } },
+                    { label: '125%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 125, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(125), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 125; scopeEvalAsync(); } },
+                    { label: '150%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 150, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(150), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 150; scopeEvalAsync(); } },
+                    { label: '200%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 200, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(200), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 200; scopeEvalAsync(); } },
+                    { label: '300%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 300, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(300), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 300; scopeEvalAsync(); } },
+                    { label: '400%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 400, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(400), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 400; scopeEvalAsync(); } },
+                    { label: '800%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 800, click: () => { machineryUpdateZoomRatio(s, getRatioNonExp(800), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 800; scopeEvalAsync(); } },
                     { role: 'separator' },
                     { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { machineryZoomActual(s); scopeEvalAsync(); } },
                     { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { machineryZoomFit(s); scopeEvalAsync(); } },
@@ -134,7 +137,7 @@ export function openTrashContextMenu(...args: any[]) {
     if (!s) return;
     return (function (event: any) {
 
-            const disabled = s.trash.length === 0;
+            const disabled = useItemState.getState().trash.length === 0;
             const trashEl = event.delegateTarget as HTMLElement;
 
             ContextMenu.open({
@@ -617,7 +620,7 @@ export function openNewContextMenu(...args: any[]) {
                                     }
                                 },
                                 {
-                                    disabled: s.allData.length === 0,
+                                    disabled: useItemState.getState().allData.length === 0,
                                     label: i18n.__("context.import.findDuplicate>currentList"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
@@ -628,7 +631,7 @@ export function openNewContextMenu(...args: any[]) {
                                     }
                                 },
                                 {
-                                    disabled: s.selected.length <= 1,
+                                    disabled: useSelectionState.getState().selected.length <= 1,
                                     label: i18n.__("context.import.findDuplicate>selected"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {

@@ -967,8 +967,7 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
           const app = remote?.app;
           const pjson = req((window as any).appRoot.path + '/package.json');
           const preferences = (window as any).preferences;
-          const s = getBodyScope();
-          const script = `
+                    const script = `
                             window.parentID = ${remote?.getCurrentWindow?.()?.webContents?.id};
                             window.windowID = ${webview.getWebContentsId()};
                             window.eagle.app.theme = '${preferences?.theme?.name}';
@@ -976,14 +975,14 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
                             window.eagle.app.build = ${pjson?.buildNumber};
                             window.eagle.app.locale = '${preferences?.general?.language}';
                             window.eagle.app.runningUnderARM64Translation = ${app?.runningUnderARM64Translation};
-                            window.eagle.library.path = '${String(s?.libraryPath || '').replace(/\\/gm, '/').replace(/'/g, "\\'")}';
+                            window.eagle.library.path = '${String(useMiscRawState.getState().libraryPath || '').replace(/\\/gm, '/').replace(/'/g, "\\'")}';
                             window.eagle.library.path = require('path').normalize(window.eagle.library.path);
                             window.eagle.plugin = {};
 
                             window.eagle.plugin.path = '${String(plugin?.path || '').replace(/\\/gm, '/').replace(/'/g, "\\'")}';
                             window.eagle.plugin.path = require('path').normalize(window.eagle.plugin.path);
 
-                            window.eagle.library.path = '${String(s?.libraryPath || '').replace(/\\/gm, '/').replace(/'/g, "\\'")}';
+                            window.eagle.library.path = '${String(useMiscRawState.getState().libraryPath || '').replace(/\\/gm, '/').replace(/'/g, "\\'")}';
                             window.eagle.library.path = require('path').normalize(window.eagle.library.path);
                             window.eagle.app.userDataPath = '${String(app?.getPath('userData') || '').replace(/\\/gm, '/').replace(/'/g, "\\'")}';
                             

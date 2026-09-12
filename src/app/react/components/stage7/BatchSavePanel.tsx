@@ -13,6 +13,10 @@ import { getBodyScope } from '../../core/appCore';
 import { uploadUrls } from '../../services/uploadService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { importImagesChannel, openDuplicateChannel } from '../../global/bus';
+import { useFolderState } from '../../store/folderState';
+import { useItemState } from '../../store/itemState';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useBodyState } from '../../store/bodyState';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -719,8 +723,7 @@ export function BatchSavePanel() {
 
   // selectFolders（289-318 逐字）
   const selectFolders = () => {
-    const body = getBodyScope();
-    const folders = body.folders;
+        const folders = useFolderState.getState().folders;
     const originalSelectedIds = importFoldersRef.current.reduce(
       (map: any, folder: any) => {
         map[folder.id] = true;
@@ -740,7 +743,7 @@ export function BatchSavePanel() {
 
         const next: any[] = [];
         Object.keys(result.selectedFolderIds).forEach((id) => {
-          const folder = body.folderMappings[id];
+          const folder = useItemState.getState().folderMappings[id];
           if (folder) {
             next.push(folder);
           }
@@ -765,8 +768,7 @@ export function BatchSavePanel() {
 
   // selectTags（327-362 逐字）
   const selectTags = () => {
-    const body = getBodyScope();
-    const originSelected = tagsRef.current.reduce(
+        const originSelected = tagsRef.current.reduce(
       (acc: any, cur: any) => {
         acc[cur] = true;
         return acc;
@@ -775,7 +777,7 @@ export function BatchSavePanel() {
     );
 
     openGeneralTagSelectPanel({
-      tagManager: body.TagManager,
+      tagManager: useMiscRawState.getState().TagManager,
       selectedTags: originSelected,
       onChanged: (result: any) => {
         if (!result?.isDirty) return;
@@ -1284,8 +1286,7 @@ export function BatchSavePanel() {
   if (!host) return null;
 
   const counts = countsRef.current;
-  const body = getBodyScope();
-
+  
   const renderMetas = (image: any) => {
     if (image.original.type === 'image' && !image.hasLarge) {
       return <div className="metas">{image.original.width} × {image.original.height} / {image.original.ext}</div>;
@@ -1334,7 +1335,7 @@ export function BatchSavePanel() {
           <div className="sliders-bar has-btn">
             <div className="slider">
               <div className="ic-btn zoom-btn" onClick={() => zoomOut()}>
-                <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-toolbar-zoom-out.svg`} />
+                <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-toolbar-zoom-out.svg`} />
               </div>
               <div className="range-wrap">
                 <div className="range-progressbar">
@@ -1357,18 +1358,18 @@ export function BatchSavePanel() {
                 />
               </div>
               <div className="ic-btn zoom-btn" onClick={() => zoomIn()}>
-                <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-toolbar-zoom-in.svg`} />
+                <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-toolbar-zoom-in.svg`} />
               </div>
             </div>
           </div>
           <div className="right">
             <div className="ic-btns">
               <div className="ic-btn" onClick={() => selectAll()}>
-                <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/batch-save-select-all.svg`} />
+                <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/batch-save-select-all.svg`} />
                 {t('batchImport.selectAll')}
               </div>
               <div className="ic-btn" onClick={() => invertSelected()}>
-                <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/batch-save-select-invert.svg`} />
+                <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/batch-save-select-invert.svg`} />
                 {t('batchImport.reverseSelect')}
               </div>
             </div>
@@ -1399,7 +1400,7 @@ export function BatchSavePanel() {
             <div className="gallery-container" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${listSize}px, 1fr))` }}>
               <div className="empty" style={ngShow(displayedRef.current.length !== 0)}>
                 <img
-                  src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/illustrations/batch-save-empty.png`}
+                  src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/illustrations/batch-save-empty.png`}
                   width={256}
                   height={144}
                 />
@@ -1452,7 +1453,7 @@ export function BatchSavePanel() {
                 >
                   <div className="name">{t('batchImport.size')}</div>
                   <div className="ic-btn info-section-expand">
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
                   </div>
                 </div>
                 <div className="info-section-container options">
@@ -1571,7 +1572,7 @@ export function BatchSavePanel() {
                 >
                   <div className="name">{t('batchImport.type')}</div>
                   <div className="ic-btn info-section-expand">
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
                   </div>
                 </div>
                 <div className="info-section-container options">
@@ -1620,7 +1621,7 @@ export function BatchSavePanel() {
                 >
                   <div className="name">{t('batchImport.domain')}</div>
                   <div className="ic-btn info-section-expand">
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
                   </div>
                 </div>
                 <div className="info-section-container options">
@@ -1665,19 +1666,19 @@ export function BatchSavePanel() {
                 >
                   <div className="name">{t('inspector.includesFoldersLabel')}</div>
                   <div className="ic-btn info-section-expand">
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
                   </div>
                 </div>
                 <div className="info-section-container label-container">
                   {importFoldersRef.current.map((folder: any, index: number) => (
                     <div
                       key={index}
-                      className={`label-item color-${body?.folderMappings?.[folder.id]?.iconColor ?? ''}`}
+                      className={`label-item color-${useItemState.getState().folderMappings?.[folder.id]?.iconColor ?? ''}`}
                       style={ngShow(importFoldersRef.current.length > 0)}
                     >
-                      <span className="label-item-name">{body?.folderMappings?.[folder.id]?.name}</span>
+                      <span className="label-item-name">{useItemState.getState().folderMappings?.[folder.id]?.name}</span>
                       <div className="ic-btn label-item-remove-btn" onClick={(e) => removeImportFolder(e, folder)}>
-                        <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-remove-label.svg`} />
+                        <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-remove-label.svg`} />
                       </div>
                     </div>
                   ))}
@@ -1690,7 +1691,7 @@ export function BatchSavePanel() {
                     tippy-content={`${t('inspector.includesFoldersBtn')}<key>F</key>`}
                     onClick={() => selectFolders()}
                   >
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
                     <span>{t('inspector.includesFoldersBtn')}</span>
                   </div>
                   {/* 新增資料夾（已有資料狀態） */}
@@ -1702,7 +1703,7 @@ export function BatchSavePanel() {
                     tippy-content={`${t('inspector.includesFoldersBtn')}<key>F</key>`}
                     onClick={() => selectFolders()}
                   >
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
                   </div>
                 </div>
               </div>
@@ -1718,15 +1719,15 @@ export function BatchSavePanel() {
                 >
                   <div className="name">{t('inspector.includesTagsLabel')}</div>
                   <div className="ic-btn info-section-expand">
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-expand.svg`} />
                   </div>
                 </div>
                 <div className="info-section-container label-container">
                   {tagsRef.current.map((tag: any, index: number) => (
-                    <div key={index} className={`label-item color-${body?.TagManager?.tagMappings?.[tag]?.color ?? ''}`} style={ngShow(tagsRef.current.length > 0)}>
+                    <div key={index} className={`label-item color-${useMiscRawState.getState().TagManager?.tagMappings?.[tag]?.color ?? ''}`} style={ngShow(tagsRef.current.length > 0)}>
                       <span className="label-item-name">{tag}</span>
                       <div className="ic-btn label-item-remove-btn" onClick={(e) => removeImportTag(e, tag)}>
-                        <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-remove-label.svg`} />
+                        <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-remove-label.svg`} />
                       </div>
                     </div>
                   ))}
@@ -1739,7 +1740,7 @@ export function BatchSavePanel() {
                     tippy-content={`${t('inspector.tagInputPlaceholder')}<key>T</key>`}
                     onClick={() => selectTags()}
                   >
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
                     <span>{t('inspector.tagInputPlaceholder')}</span>
                   </div>
                   {/* 新增標籤（已有資料狀態） */}
@@ -1751,7 +1752,7 @@ export function BatchSavePanel() {
                     tippy-content={`${t('inspector.tagInputPlaceholder')}<key>T</key>`}
                     onClick={() => selectTags()}
                   >
-                    <img src={`assets/images/${themePathOf((body?.theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
+                    <img src={`assets/images/${themePathOf((useBodyState.getState().theme as string) || 'dark')}/icons/ic-inspector-add-label.svg`} />
                   </div>
                 </div>
               </div>

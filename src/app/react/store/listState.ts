@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
+import { useItemState } from './itemState';
+import { useFolderState } from './folderState';
+import { useMiscRawState } from './miscRawState';
 
 /**
  * 11-pre a4/a5/a6/a9：文件列表区域（drop-areas / sub-folder 列表 / 列表列头 /
@@ -106,17 +109,17 @@ export function syncListFromScope(): void {
   if (!s) return;
   const next = {
     filteredsCount: (s.filtereds && s.filtereds.length) || 0,
-    allDataCount: (s.allData && s.allData.length) || 0,
-    hasSmartFolder: !!s.currentSmartFolder,
-    filterBadge: (s.eagle && s.eagle.filter && s.eagle.filter.filterBadge) || 0,
-    folderChildrenCount: (s.currentFolder && s.currentFolder.children && s.currentFolder.children.length) || 0,
-    folderLocked: !!(s.currentFolder && s.currentFolder.password && !s.currentFolder.isUnLock),
-    trashCount: (s.trash && s.trash.length) || 0,
-    rawCount: (s.raw && s.raw.length) || 0,
-    subFoldersCount: (s.subFolders && s.subFolders.length) || 0,
+    allDataCount: (useItemState.getState().allData && useItemState.getState().allData.length) || 0,
+    hasSmartFolder: !!useFolderState.getState().currentSmartFolder,
+    filterBadge: (useMiscRawState.getState().eagle && useMiscRawState.getState().eagle.filter && useMiscRawState.getState().eagle.filter.filterBadge) || 0,
+    folderChildrenCount: (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.children && useFolderState.getState().currentFolder.children.length) || 0,
+    folderLocked: !!(useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.password && !useFolderState.getState().currentFolder.isUnLock),
+    trashCount: (useItemState.getState().trash && useItemState.getState().trash.length) || 0,
+    rawCount: (useItemState.getState().raw && useItemState.getState().raw.length) || 0,
+    subFoldersCount: (useMiscRawState.getState().subFolders && useMiscRawState.getState().subFolders.length) || 0,
     noSelectedFolders: !(s.$root && s.$root.selectedFolders && s.$root.selectedFolders.length > 0),
-    subFolders: s.subFolders ? s.subFolders.slice() : [],
-    selectedFolderMappings: { ...(s.selectedFolderMappings || {}) },
+    subFolders: useMiscRawState.getState().subFolders ? useMiscRawState.getState().subFolders.slice() : [],
+    selectedFolderMappings: { ...(useItemState.getState().selectedFolderMappings || {}) },
   };
   if (lastSnapshot !== null && shallowEq(next, lastSnapshot)) return;
   lastSnapshot = next;

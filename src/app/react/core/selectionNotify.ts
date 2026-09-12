@@ -11,6 +11,7 @@
  *   theme 断言稳定失败）。叶子模块零依赖，谁 import 都安全。
  */
 import { getBodyScope } from './appCore';
+import { useSelectionState } from '../store/selectionState';
 
 type Listener = (s: any, oldValue: any[]) => void;
 
@@ -30,11 +31,11 @@ function sameSelection(a: any[], b: any[]): boolean {
 function ensurePoll(): void {
   if (timer) return;
   const sv: any = getBodyScope();
-  prev = (sv && sv.selected) ? sv.selected.slice() : [];
+  prev = (sv && useSelectionState.getState().selected) ? useSelectionState.getState().selected.slice() : [];
   timer = setInterval(() => {
     const s: any = getBodyScope();
     if (!s) return;
-    const cur: any[] = s.selected || [];
+    const cur: any[] = useSelectionState.getState().selected || [];
     if (sameSelection(cur, prev)) return;
     const oldValue = prev;
     prev = cur.slice();

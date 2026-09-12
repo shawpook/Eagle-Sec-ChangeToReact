@@ -9,6 +9,7 @@ import { themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
 import { openPluginCenterChannel, openPluginCenterDetailChannel, refreshPluginCenterChannel } from '../../global/bus';
 import { useMiscRawState } from '../../store/miscRawState';
+import { useBodyState } from '../../store/bodyState';
 
 /**
  * 阶段7d-5b：pluginCenter 接管（bundle 62140-62723 附近；镜像 js/directives/plugin-center.js
@@ -395,13 +396,12 @@ export function PluginCenter() {
 
   // installPlugin（镜像 369-398 逐字）
   const installPlugin = async (plugin: any) => {
-    const body = getBodyScope();
-    const pluginModule = body.pluginModule;
+        const pluginModule = useMiscRawState.getState().pluginModule;
     const desc = t('dialog.installPlugin.desc', [
       { property: 'name', value: plugin.name },
       { property: 'version', value: `v${plugin.lasteVersion.version}` },
     ]);
-    const themePath = themePathOf(body.theme);
+    const themePath = themePathOf(useBodyState.getState().theme);
     const size = w().fileSize(plugin.lasteVersion.fileSize);
 
     w().swal({
@@ -435,13 +435,12 @@ export function PluginCenter() {
 
   // updatePlugin（镜像 400-429 逐字）
   const updatePlugin = async (plugin: any) => {
-    const body = getBodyScope();
-    const pluginModule = body.pluginModule;
+        const pluginModule = useMiscRawState.getState().pluginModule;
     const desc = t('dialog.updatePlugin.desc', [
       { property: 'name', value: plugin.name },
       { property: 'version', value: `v${plugin.lasteVersion.version}` },
     ]);
-    const themePath = themePathOf(body.theme);
+    const themePath = themePathOf(useBodyState.getState().theme);
     const size = w().fileSize(plugin.lasteVersion.fileSize);
 
     w().swal({
@@ -518,11 +517,10 @@ export function PluginCenter() {
 
   // uninstall（镜像 471-497 逐字）
   const uninstall = async (plugin: any) => {
-    const body = getBodyScope();
-    const pluginModule = body.pluginModule;
+        const pluginModule = useMiscRawState.getState().pluginModule;
     const installed = pluginModule.installedPluginMaps[plugin.id];
     const desc = t('dialog.removePlugin.desc', [{ property: 'name', value: installed.manifest.name }]);
-    const themePath = themePathOf(body.theme);
+    const themePath = themePathOf(useBodyState.getState().theme);
     w().swal({
       html: `
 						<div class="alert">
@@ -730,8 +728,7 @@ export function PluginCenter() {
   const officialPluginMap = rootRef.current.officialPluginMap;
   const tabIndicatorStyle = rootRef.current.tabIndicatorStyle || {};
   const pluginModule = useMiscRawState.getState().pluginModule || {};
-  const body = getBodyScope();
-  const theme = themePathOf((body?.theme as string) || 'dark');
+    const theme = themePathOf((useBodyState.getState().theme as string) || 'dark');
   const detail = pluginDetails[currentPluginId];
   const isDetailShown = !!(currentPluginId && pluginDetails[currentPluginId]);
 

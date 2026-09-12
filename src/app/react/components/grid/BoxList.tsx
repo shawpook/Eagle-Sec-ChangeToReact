@@ -16,6 +16,9 @@ import { BoxItem } from './boxItem';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
 import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { cleanSelected } from '../../services/batchOpsService';
+import { useItemState } from '../../store/itemState';
+import { useBodyState } from '../../store/bodyState';
+import { useLayoutState } from '../../store/layoutState';
 /**
  * b1-9be2：#box-list 接管 —— @egjs/react-infinitegrid v4 renderer。
  *
@@ -68,9 +71,8 @@ export function BoxList() {
       const boxFrom = (target: EventTarget | null) =>
         (target as HTMLElement | null)?.closest?.('.box') as HTMLElement | null;
       const itemOf = (boxEl: HTMLElement | null) => {
-        const s = getBodyScope();
-        const id = boxEl?.getAttribute('data-box-id');
-        return id && s?.itemMappings ? s.itemMappings[id] : null;
+                const id = boxEl?.getAttribute('data-box-id');
+        return id && useItemState.getState().itemMappings ? useItemState.getState().itemMappings[id] : null;
       };
       // b1-9bz-B：原 callScope 字符串路由 → 落点导出直调（表项本就是这些导出的指针，
       // 同对象调用，零行为变化）；scopeApply 包裹保留原 ng-click digest 语义。
@@ -132,8 +134,8 @@ export function BoxList() {
 
   const engine = getEngineState();
   const scope = getBodyScope();
-  const layout: string = (scope && scope.layout) || '';
-  const imageSizeHeight = (scope && scope.imageSize && scope.imageSize.height) || 200;
+  const layout: string = (scope && useBodyState.getState().layout) || '';
+  const imageSizeHeight = (scope && useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) || 200;
 
   useLayoutEffect(() => {
     registerGridRef(gridRef.current);
@@ -158,8 +160,8 @@ export function BoxList() {
     if (layout === 'GridLayout' || layout === 'SquareLayout') container.classList.add('grid-layout');
     else if (layout === 'ListLayout') container.classList.add('list-layout');
     else container.classList.add('justified-layout');
-    if (scope && scope.imageSize && scope.imageSize.height) {
-      container.setAttribute('box-size', String(scope.imageSize.height));
+    if (scope && useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) {
+      container.setAttribute('box-size', String(useLayoutState.getState().imageSize.height));
     }
   }, [layout, imageSizeHeight]);
 

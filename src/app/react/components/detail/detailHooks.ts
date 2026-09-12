@@ -19,6 +19,7 @@ import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionVi
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
 import { useSelectionState } from '../../store/selectionState';
 import { useLayoutState } from '../../store/layoutState';
+import { useItemState } from '../../store/itemState';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）
@@ -75,9 +76,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     if (!videoRef.current) return;
     const isInPreviewWindow = qa('#preview-window').length > 0;
     const ipc = getIpc();
-    const scope = getBodyScope();
-    const $parentScope = getBodyScope();
-    let player: any;
+            let player: any;
     const element = video;
 
     const volume = localStorage.getItem('eagle.videoPlayer.volume') || '100';
@@ -160,8 +159,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       const keybinds = (window as any).preferences.shortcuts.keybinds;
       const playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
       const frameTime = 0.04166667;
-      const bodyScope = getBodyScope();
-
+      
       const shortcutHandlerMap: Record<string, () => void> = {
         'player.volume.increase': () => {
           video.volume = Math.min(1, video.volume + 0.05);
@@ -232,7 +230,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       for (const [name, electronKey] of Object.entries(keybinds)) {
         if (shortcutHandlerMap[name] && electronKey) {
           const key = (window as any).ShortcutManager.electronToMousetrap(electronKey);
-          if (bodyScope.isInlineMode && key === 'space') return;
+          if (useBodyState.getState().isInlineMode && key === 'space') return;
           if (key) {
             (window as any).Mousetrap.unbind(key);
             (window as any).Mousetrap.bind(key, applyWrapper(shortcutHandlerMap[name]));
@@ -997,9 +995,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     const video = videoRef.current as any;
     if (!videoRef.current) return;
     const isInPreviewWindow = qa('#preview-window').length > 0;
-    const $bodyScope = getBodyScope();
-    const bodyScope = getBodyScope();
-
+        
     // 從 localStorage 恢復音量
     const volume = localStorage.getItem('eagle.videoPlayer.volume') || '100';
     video.volume = parseInt(volume) / 100;
@@ -1020,10 +1016,10 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
       }
     }
 
-    applyMpvTheme(bodyScope?.theme || 'dark');
+    applyMpvTheme(useBodyState.getState().theme || 'dark');
 
     // b1-9bz-C-4：$watch('theme') → bodyState 订阅（theme 已源翻转，watcher 归零）
-    let lastTheme = bodyScope?.theme;
+    let lastTheme = useBodyState.getState().theme;
     const unwatchTheme = useBodyState.subscribe((state: any) => {
       if (state.theme !== lastTheme) {
         lastTheme = state.theme;
@@ -1331,10 +1327,9 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
       }
 
       for (const [name, electronKey] of Object.entries(keybinds)) {
-        const s = getBodyScope();
-        if (shortcutHandlerMap[name] && electronKey) {
+                if (shortcutHandlerMap[name] && electronKey) {
           const key = (window as any).ShortcutManager.electronToMousetrap(electronKey);
-          if (s?.isInlineMode && key === 'space') continue;
+          if (useBodyState.getState().isInlineMode && key === 'space') continue;
           if (key) {
             (window as any).Mousetrap.unbind(key);
             (window as any).Mousetrap.bind(key, applyWrapper(shortcutHandlerMap[name]));
@@ -1558,8 +1553,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
       const keybinds = (window as any).preferences.shortcuts.keybinds;
       const playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
       const frameTime = 0.04166667;
-      const bodyScope = getBodyScope();
-
+      
       const shortcutHandlerMap: Record<string, () => void> = {
         'player.volume.increase': () => {
           video.volume = Math.min(1, video.volume + 0.05);
@@ -1621,7 +1615,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
       for (const [name, electronKey] of Object.entries(keybinds)) {
         if (shortcutHandlerMap[name] && electronKey) {
           const key = (window as any).ShortcutManager.electronToMousetrap(electronKey);
-          if (bodyScope.isInlineMode && key === 'space') return;
+          if (useBodyState.getState().isInlineMode && key === 'space') return;
           if (key) {
             (window as any).Mousetrap.unbind(key);
             (window as any).Mousetrap.bind(key, applyWrapper(shortcutHandlerMap[name]));
@@ -1964,10 +1958,9 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         event.stopPropagation();
         endPoint = { x: event.pageX, y: event.pageY };
 
-        const s = getBodyScope();
-        if (Math.abs(startPoint.y - event.pageY) - 5 > Math.abs(startPoint.x - event.pageX)) {
+                if (Math.abs(startPoint.y - event.pageY) - 5 > Math.abs(startPoint.x - event.pageX)) {
           // 垂直拖拽（縮放已在 move 中處理）
-        } else if (Math.abs(endPoint.x - startPoint.x) > 20 && originData.ratio === s?.imageSize?.zoomRatio) {
+        } else if (Math.abs(endPoint.x - startPoint.x) > 20 && originData.ratio === useLayoutState.getState().imageSize?.zoomRatio) {
           if (Date.now() - downTime.value <= 1000 && Math.abs(endPoint.x - startPoint.x) > (maxDistanceX * 2) / 3) {
             if (endPoint.x > startPoint.x) {
               runInBodyScope(function (sc) {
@@ -2079,13 +2072,12 @@ export function useRectSelect() {
     containerEl.prepend(rectEl);
 
     const onMouseDown = function (e: any) {
-      const s = getBodyScope();
-      if (e && containerEl.offsetWidth <= e.offsetX + 10) {
+            if (e && containerEl.offsetWidth <= e.offsetX + 10) {
         e.stopPropagation();
         return;
       }
 
-      if (e.which != 1 || s?.isDetailMode) return;
+      if (e.which != 1 || useBodyState.getState().isDetailMode) return;
       isMultipleSelecting = e.metaKey || e.ctrlKey;
 
       offset = offsetOf(element) as { left: number; top: number };
@@ -2110,7 +2102,7 @@ export function useRectSelect() {
         }
       }
 
-      Object.assign(originSelectedMappings, JSON.parse(JSON.stringify(s?.selectedMappings || {})));
+      Object.assign(originSelectedMappings, JSON.parse(JSON.stringify(useItemState.getState().selectedMappings || {})));
 
       w.rectSelection.startX = startX = e.pageX - offset.left;
       w.rectSelection.startY = startY = e.pageY - offset.top + element.scrollTop;
@@ -2134,9 +2126,8 @@ export function useRectSelect() {
     element.addEventListener('mousedown', onMouseDown);
 
     const onMouseUp = function () {
-      const s = getBodyScope();
-      if (!w.rectSelecting) return;
-      if (s?.isDetailMode) {
+            if (!w.rectSelecting) return;
+      if (useBodyState.getState().isDetailMode) {
         return;
       }
 
@@ -2164,8 +2155,7 @@ export function useRectSelect() {
       isMultipleSelecting = e.metaKey || e.ctrlKey;
 
       if (w.rectSelecting) {
-        const s = getBodyScope();
-        const scrollTop = element.scrollTop;
+                const scrollTop = element.scrollTop;
         const flipX = startX > e.pageX - offset.left;
         const flipY = startY > e.pageY - offset.top + scrollTop;
 
@@ -2205,12 +2195,12 @@ export function useRectSelect() {
             if (contain(gridItems[i])) {
               if (!el.classList.contains('selected')) {
                 el.classList.add('selected');
-                s.selectedMappings[id] = true;
+                useItemState.getState().selectedMappings[id] = true;
               }
             } else {
               if (el.classList.contains('selected')) {
                 el.classList.remove('selected');
-                delete s.selectedMappings[id];
+                delete useItemState.getState().selectedMappings[id];
               }
             }
           } else {
@@ -2218,18 +2208,18 @@ export function useRectSelect() {
             if (contain(gridItems[i])) {
               if (isOriginalSelected) {
                 el.classList.remove('selected');
-                s.selectedMappings[id] = false;
+                useItemState.getState().selectedMappings[id] = false;
               } else {
                 el.classList.add('selected');
-                s.selectedMappings[id] = true;
+                useItemState.getState().selectedMappings[id] = true;
               }
             } else {
               if (isOriginalSelected) {
                 el.classList.add('selected');
-                s.selectedMappings[id] = true;
+                useItemState.getState().selectedMappings[id] = true;
               } else {
                 el.classList.remove('selected');
-                s.selectedMappings[id] = false;
+                useItemState.getState().selectedMappings[id] = false;
               }
             }
           }

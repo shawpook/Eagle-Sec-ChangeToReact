@@ -10,6 +10,7 @@ import { getRawPath } from '../../core/itemDomain';
 import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from '../../global/bus';
 import { makeResizable } from '../interactions/resizable';
 import { useSelectionState } from '../../store/selectionState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -21,9 +22,8 @@ const liveCurrent = () => useSelectionState.getState().current;
 
 /** commentsContainer link 內賦值到 $rootScope 的 removeComment（72400-72423）。 */
 export function removeComment(index: number) {
-  const $bodyScope = getBodyScope();
-  const ipc = getIpc();
-  const image = $bodyScope.selected[0];
+    const ipc = getIpc();
+  const image = useSelectionState.getState().selected[0];
   const originComments = JSON.parse(JSON.stringify(image.comments));
 
   image.comments.splice(index, 1);
@@ -78,11 +78,10 @@ export function useRectComment(enabled: boolean) {
       const target = e.target as HTMLElement;
       if (!target || !target.closest('.image-wrap')) return;
       e.preventDefault();
-      const s = getBodyScope();
-      const isEnabled = enabledRef.current;
+            const isEnabled = enabledRef.current;
       if (!isEnabled) return;
       if (e.button !== 0) return;
-      if ((s?.current && s.current.ext == 'mp4') || s?.current?.ext == 'pdf') {
+      if ((useSelectionState.getState().current && useSelectionState.getState().current.ext == 'mp4') || useSelectionState.getState().current?.ext == 'pdf') {
         e.preventDefault();
         e.stopPropagation();
         return;
@@ -204,9 +203,8 @@ export function useRectComment(enabled: boolean) {
 
 /** resize/圖片載入時重算 ratio 並寫回 body scope（原 commentsContainer resizeHandler）。 */
 export function recomputeCommentRatio() {
-  const $bodyScope = getBodyScope();
-  if (!$bodyScope?.isDetailMode || !$bodyScope.isCommentMode) return;
-  const image = $bodyScope.current;
+    if (!useBodyState.getState().isDetailMode || !useBodyState.getState().isCommentMode) return;
+  const image = useSelectionState.getState().current;
   if (!image) return;
   const $image = q('#detail-image');
   if (image && image.width && $image) {
@@ -301,8 +299,7 @@ export function useCommentItem(
     annotationEl?.addEventListener('mousewheel', annotationWheel);
 
     const onResizeStart = function () {
-      const s = getBodyScope();
-      if (!s?.isCommentMode) return;
+            if (!useBodyState.getState().isCommentMode) return;
       zoomData = safeZoomData();
       zoomRatio = zoomData.ratio;
     };
@@ -342,14 +339,13 @@ export function useCommentItem(
     });
 
     const onMouseDownDrag = function (e: any) {
-      const s = getBodyScope();
-      e.stopPropagation();
+            e.stopPropagation();
       e.preventDefault();
       if (resizing) return;
-      if (!s?.isCommentMode) return;
+      if (!useBodyState.getState().isCommentMode) return;
       dragging = true;
       zoomData = safeZoomData();
-      const comment = s?.current?.comments?.[commentIndex];
+      const comment = useSelectionState.getState().current?.comments?.[commentIndex];
       originTop = comment ? comment.y : 0;
       originLeft = comment ? comment.x : 0;
       startX = e.pageX;
@@ -358,9 +354,8 @@ export function useCommentItem(
     element.addEventListener('mousedown', onMouseDownDrag);
 
     const onMouseUpDrag = function (e: any) {
-      const s = getBodyScope();
-      if (!dragging) return;
-      if (!s?.isCommentMode) return;
+            if (!dragging) return;
+      if (!useBodyState.getState().isCommentMode) return;
       runInBodyScope(function (sc) {
         e.stopPropagation();
         dragging = false;
@@ -395,9 +390,8 @@ export function useCommentItem(
     element.addEventListener('mouseup', onMouseUpDrag);
 
     const onMouseMoveDrag = function (e: any) {
-      const s = getBodyScope();
-      if (!dragging) return;
-      if (!s?.isCommentMode) return;
+            if (!dragging) return;
+      if (!useBodyState.getState().isCommentMode) return;
 
       e.stopPropagation();
       e.preventDefault();
@@ -409,7 +403,7 @@ export function useCommentItem(
       const offsetX = (startX - currentX) / zr;
       const offsetY = (startY - currentY) / zr;
 
-      const comment = s?.current?.comments?.[commentIndex];
+      const comment = useSelectionState.getState().current?.comments?.[commentIndex];
       const newX = originLeft - offsetX;
       const newY = originTop - offsetY;
 
@@ -467,11 +461,10 @@ export function useCropImage(
     let orientationY = '';
     let orientationX = '';
 
-    const s0 = getBodyScope();
-    const $cropArea = element.querySelector('.crop-area') as HTMLElement;
+        const $cropArea = element.querySelector('.crop-area') as HTMLElement;
     const $cropSize = cropSizeEl;
-    let containerWidth = s0?.current?.width || 0;
-    let containerHeight = s0?.current?.height || 0;
+    let containerWidth = useSelectionState.getState().current?.width || 0;
+    let containerHeight = useSelectionState.getState().current?.height || 0;
     const minCropSize = 24;
 
     const $toolbarWidthInput = q('#crop-width') as HTMLInputElement | null;
@@ -484,11 +477,10 @@ export function useCropImage(
     function updateCropperSize() {
       let w = parseInt(getVal($toolbarWidthInput));
       let h = parseInt(getVal($toolbarHeightInput));
-      const s = getBodyScope();
-
+      
       if ($cropArea && w > 0 && h > 0) {
-        w = parseInt(String(Math.min(w, s?.current?.width || w)));
-        h = parseInt(String(Math.min(h, s?.current?.height || h)));
+        w = parseInt(String(Math.min(w, useSelectionState.getState().current?.width || w)));
+        h = parseInt(String(Math.min(h, useSelectionState.getState().current?.height || h)));
 
         setCssEl($cropArea, {
           width: w,
@@ -552,9 +544,8 @@ export function useCropImage(
 
     // 原 $watch("current")：裁切容器跟隨當前條目尺寸
     const applyCurrentSize = function () {
-      const s = getBodyScope();
-      containerWidth = s?.current?.width || 0;
-      containerHeight = s?.current?.height || 0;
+            containerWidth = useSelectionState.getState().current?.width || 0;
+      containerHeight = useSelectionState.getState().current?.height || 0;
       setCssEl($cropArea, {
         top: 0,
         left: 0,
@@ -690,8 +681,7 @@ export function useCropImage(
     }, 33);
 
     const onDblClick = () => {
-      const s = getBodyScope();
-      saveCrop();
+            saveCrop();
     };
     $cropArea.addEventListener('dblclick', onDblClick);
 
@@ -1144,8 +1134,7 @@ export function useTifImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     }
 
     (async function loadTif() {
-      const s = getBodyScope();
-      const image = s?.current;
+            const image = useSelectionState.getState().current;
       if (!image) return;
 
       setCssEl(q('#detail-image'), { opacity: 1 });
@@ -1221,8 +1210,7 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
     }
 
     function loadTga() {
-      const s = getBodyScope();
-      if (!s?.current) return;
+            if (!useSelectionState.getState().current) return;
       if ($parent && $parent.querySelectorAll('canvas').length > 0) {
         setCssEl(img, { opacity: 0 });
         setCssEl(img, { position: 'absolute' });
@@ -1230,9 +1218,9 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         $parent.querySelectorAll('canvas').forEach((c) => c.remove());
       }
       const filePath = getBodyScope()?.getRawPath
-        ? String(getRawPath(s.current) || '').replace('file://', '')
+        ? String(getRawPath(useSelectionState.getState().current) || '').replace('file://', '')
         : '';
-      const filePath2 = FileUrlHelper.getRawPath(s.current);
+      const filePath2 = FileUrlHelper.getRawPath(useSelectionState.getState().current);
       try {
         const TgaLoader = req((window as any).appRoot.path + '/app/js/vendors/tga.js');
         const tga = new TgaLoader();

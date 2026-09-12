@@ -17,6 +17,7 @@ import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../
 import { openTag } from '../../services/batchOpsService';
 import { tagRectSelecting } from '../../core/tagManagerDomain';
 import { useMiscRawState } from '../../store/miscRawState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *
@@ -103,14 +104,13 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       windowHeight = window.innerHeight;
       tagRectSelection = {};
 
-      const s = getBodyScope();
-      if (e.which !== 1 || s?.isDetailMode) return;
+            if (e.which !== 1 || useBodyState.getState().isDetailMode) return;
 
       offset = offsetOf(container);
       if (!offset) return;
 
-      const displayData = s?.TagManager?.tagsResult?.display || [];
-      const columnWidth = s?.TagManager?.tagsResult?.columnWidth || 200;
+      const displayData = useMiscRawState.getState().TagManager?.tagsResult?.display || [];
+      const columnWidth = useMiscRawState.getState().TagManager?.tagsResult?.columnWidth || 200;
       const $container = container as HTMLElement;
       const tagWidth = widthOf($container.querySelector('.tag') as HTMLElement) || 0;
       const gapWidth = columnWidth - tagWidth;
@@ -167,9 +167,8 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
     };
 
     const onMouseUp = () => {
-      const s = getBodyScope();
-      if (!w.tagRectSelecting) return;
-      if (s?.isDetailMode) return;
+            if (!w.tagRectSelecting) return;
+      if (useBodyState.getState().isDetailMode) return;
 
       hideRect();
 
@@ -184,8 +183,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
 
     const onMouseMove = (e: MouseEvent) => {
       if (!w.tagRectSelecting) return;
-      const s = getBodyScope();
-
+      
       const $container = container as HTMLElement;
       const scrollTop = $container.scrollTop;
       const flipX = startX > e.pageX - offset.left;

@@ -12,6 +12,7 @@
 import { contextMenuCloseChannel, contextMenuOpenChannel, openRenameChannel } from '../global/bus';
 import { getBodyScope } from './appCore';
 import { q, findEl } from '../utils/domQuery';
+import { useSelectionState } from '../store/selectionState';
 
 // URL_MODULE（bundle 顶层 const；fileUrlHelper.ts 同款惰性解析）
 export const URL_MODULE: any = (() => {
@@ -40,14 +41,14 @@ const _legacyContextMenu: any = {
 export function renameImages() {
   const s: any = getBodyScope();
   if (!s) return;
-  if (s.selected.length > 1) {
+  if (useSelectionState.getState().selected.length > 1) {
     openRenameChannel.emit({
       type: 'IMAGE',
-      images: s.selected,
+      images: useSelectionState.getState().selected,
     });
   }
   else {
-    var imageId = s.selected[0].id;
+    var imageId = useSelectionState.getState().selected[0].id;
     var boxEl = q(`#box-${imageId}`);
     if (boxEl) {
       setTimeout(() => {

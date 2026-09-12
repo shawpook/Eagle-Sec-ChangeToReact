@@ -45,6 +45,11 @@ import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryAutoScroll, machineryResetPage } from './gridService';
+import { useMiscRawState } from '../store/miscRawState';
+import { useItemState } from '../store/itemState';
+import { useSelectionState } from '../store/selectionState';
+import { useFolderState } from '../store/folderState';
+import { useBodyState } from '../store/bodyState';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -53,7 +58,7 @@ var __lv_cleanSelectedTimeout;
 var __lv_TagManager;
 const initLinkVars = () => {
 	const s0: any = getBodyScope();
-	if (s0 && s0.TagManager) __lv_TagManager = s0.TagManager;
+	if (s0 && useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 };
 
 export function cancelCleanSelectedTimeout(): void {
@@ -116,7 +121,7 @@ export function emptyTrash(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-            if (s.trash && s.trash.length > 0) {
+            if (useItemState.getState().trash && useItemState.getState().trash.length > 0) {
                 swal({
                     html: `
                         <div class="alert">
@@ -133,28 +138,28 @@ export function emptyTrash(...args: any[]) {
                     cancelButtonText: i18n.__("general.cancel"),
                 }).then(function () {
 
-                    var removeCount = s.trash.length;
+                    var removeCount = useItemState.getState().trash.length;
 
                     var willDelete = {};
-                    s.trash.forEach(function(r: any) {
+                    useItemState.getState().trash.forEach(function(r: any) {
                         if (r.id) {
                             willDelete[r.id] = true;
                         }
                     });
 
-                    for (var i = 0; i < s.raw.length; i++) {
-                        var image = s.raw[i];
+                    for (var i = 0; i < useItemState.getState().raw.length; i++) {
+                        var image = useItemState.getState().raw[i];
                         if (image.id && willDelete[image.id]) {
-                            s.raw.splice(i, 1);
+                            useItemState.getState().raw.splice(i, 1);
                             syncListFromScope();
-                            delete s.itemMappings[image.id];
+                            delete useItemState.getState().itemMappings[image.id];
                             i--;
                             continue;
                         }
                     }
 
                     try { electronLog && electronLog.info(`[app] Empty trash`); } catch (err) {};
-                    ayncsImagesRemove(s.trash);
+                    ayncsImagesRemove(useItemState.getState().trash);
 
                     s.trash = [];
                     syncSidebarFromScope();
@@ -186,12 +191,12 @@ export function addToFolders(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function (e) {
-            if (s.selected.length > 0) {
+            if (useSelectionState.getState().selected.length > 0) {
                 openAddFolderModalChannel.emit({
-                    current: s.currentFolder,
-                    folders: s.folders,
-                    images: s.selected,
-                    existsFolders: eagle.inspector.calculateFolders(s.selected),
+                    current: useFolderState.getState().currentFolder,
+                    folders: useFolderState.getState().folders,
+                    images: useSelectionState.getState().selected,
+                    existsFolders: eagle.inspector.calculateFolders(useSelectionState.getState().selected),
                 });
             }
     }).apply(null, args);
@@ -228,17 +233,17 @@ export function addToLastUsedFolder(...args: any[]) {
         machineryCheckOperationSafety(s, function () {
             var recentFolders = machineryGetRecentFolders(s);
             if (!recentFolders || recentFolders.length === 0) return;
-            if (!recentFolders[0] || !s.selected[0]) return;
+            if (!recentFolders[0] || !useSelectionState.getState().selected[0]) return;
             var folder = recentFolders[0];
             addToRecentFolders([folder.id]);
-            addImagesToFolder(s.selected, folder);
+            addImagesToFolder(useSelectionState.getState().selected, folder);
             if (s.viewMode === 'unfiled') {
                 var itemElements = machineryGetSelectedItemElements(s);
                 glRemoveitemsChannel.emit(itemElements);
                 // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
                 s.lastIndex = machineryGetSelection(s).start;
-                var next = s.allData[s.lastIndex + s.selected.length];
-                var prev = s.allData[s.lastIndex - 1];
+                var next = useItemState.getState().allData[s.lastIndex + useSelectionState.getState().selected.length];
+                var prev = useItemState.getState().allData[s.lastIndex - 1];
                 if (next) {
                     s.selected = [next];
                     syncInspectorFromScope();
@@ -309,8 +314,8 @@ export function pasteTags(...args: any[]) {
         event && event.preventDefault();
         event && event.stopPropagation();
         var copiedTags = eagle.inspector.copiedTags;
-        if (s.selected && s.selected.length > 0 && copiedTags && copiedTags.length > 0) {
-            s.selected.forEach(function (image) {
+        if (useSelectionState.getState().selected && useSelectionState.getState().selected.length > 0 && copiedTags && copiedTags.length > 0) {
+            useSelectionState.getState().selected.forEach(function (image) {
                 copiedTags.forEach(function (tag) {
                     if (image.tags.indexOf(tag) === -1) {
                         image.tags.push(tag);
@@ -318,9 +323,9 @@ export function pasteTags(...args: any[]) {
                 });
             });
             machineryUpdateSelection(s);
-            ayncsImagesChange(s.selected);
-            hiddenByCurrentFilter(s.selected);
-            electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${s.selected.length} files`);
+            ayncsImagesChange(useSelectionState.getState().selected);
+            hiddenByCurrentFilter(useSelectionState.getState().selected);
+            electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${useSelectionState.getState().selected.length} files`);
         }
     }).apply(null, args);
 }
@@ -335,11 +340,11 @@ export function removeFromFolder(...args: any[]) {
             event.stopPropagation();
         }
 
-        if (!folderId && s.selected.length <= 0) return;
+        if (!folderId && useSelectionState.getState().selected.length <= 0) return;
 
         var origins = [];
 
-        s.selected.forEach(function(image) {
+        useSelectionState.getState().selected.forEach(function(image) {
             var idx = image.folders.indexOf(folderId);
             if (idx !== -1) {
                 origins.push(image);
@@ -348,28 +353,28 @@ export function removeFromFolder(...args: any[]) {
         });
 
         try {
-            electronLog && electronLog.info(`[app] Remove ${s.selected.length} files from ${s.folderMappings[folderId].name}(${folderId})`);
+            electronLog && electronLog.info(`[app] Remove ${useSelectionState.getState().selected.length} files from ${useItemState.getState().folderMappings[folderId].name}(${folderId})`);
         } catch (err) {};
 
-        ayncsImagesChange(s.selected);
-        hiddenByCurrentFilter(s.selected);
+        ayncsImagesChange(useSelectionState.getState().selected);
+        hiddenByCurrentFilter(useSelectionState.getState().selected);
 
         var message = $filter('i18n')("notify.image.removeFromFolder", [
-            { "property": "imageCount", "value": s.selected.length },
-            { "property": "folderName", "value": s.folderMappings[folderId].name }
+            { "property": "imageCount", "value": useSelectionState.getState().selected.length },
+            { "property": "folderName", "value": useItemState.getState().folderMappings[folderId].name }
         ]);
 
-        if (s.selected.length === 1) { message = message.replace("images", "image"); }
+        if (useSelectionState.getState().selected.length === 1) { message = message.replace("images", "image"); }
 
         // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-        if (s.currentFolder && s.currentFolder.id === folderId) {
+        if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
             s.lastIndex = machineryGetSelection(s).start;
-            var next = s.allData[s.lastIndex + s.selected.length];
-            var prev = s.allData[s.lastIndex - 1];
+            var next = useItemState.getState().allData[s.lastIndex + useSelectionState.getState().selected.length];
+            var prev = useItemState.getState().allData[s.lastIndex - 1];
             if (next) {
                 s.selected = [next];
                 syncInspectorFromScope();
-                if (s.isDetailMode) {
+                if (useBodyState.getState().isDetailMode) {
                     s.current = next;
                     syncDetailFromScope();
                     syncInspectorFromScope();
@@ -377,7 +382,7 @@ export function removeFromFolder(...args: any[]) {
             } else if (prev) {
                 s.selected = [prev];
                 syncInspectorFromScope();
-                if (s.isDetailMode) {
+                if (useBodyState.getState().isDetailMode) {
                     s.current = prev;
                     syncDetailFromScope();
                     syncInspectorFromScope();
@@ -388,9 +393,9 @@ export function removeFromFolder(...args: any[]) {
                 machineryLeaveDetailMode(s);
             }
 
-            if (s.isDetailMode) {
+            if (useBodyState.getState().isDetailMode) {
                 $timeout(function() {
-                    machineryForceFitImageSize(s, s.current);
+                    machineryForceFitImageSize(s, useSelectionState.getState().current);
                     machineryZoom(s);
                 }, 100);
             }
@@ -421,7 +426,7 @@ export function removeFromFolder(...args: any[]) {
             });
 
             // 如果這張圖片就在這個資料夾，畫面需要更新
-            if (s.currentFolder && s.currentFolder.id === folderId) {
+            if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
                 machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                     machineryRebindRefresh(s);
                     machineryUpdateSelection(s);
@@ -455,7 +460,7 @@ export function scrollToSelectedItem(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function() {
-            var __lv_target = s.selected[0];
+            var __lv_target = useSelectionState.getState().selected[0];
             // 自动定位
             if (__lv_target) {
 
@@ -468,18 +473,18 @@ export function scrollToSelectedItem(...args: any[]) {
                 }
                 // var originSelected = [];
                 // originSelected = originSelected.concat(s.selected);
-                if (s.currentFolder && s.currentFolder.orderBy === "RANDOM") {
+                if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy === "RANDOM") {
                     return;        
                 }
 
-                for (var i = s.allData.length - 1; i >= 0; i--) {
-                    var __lv_image = s.allData[i];
+                for (var i = useItemState.getState().allData.length - 1; i >= 0; i--) {
+                    var __lv_image = useItemState.getState().allData[i];
                     if (__lv_target && __lv_target === __lv_image) {
                         var startPage = parseInt(i / 60);
                         console.log(`目标在第 ${startPage} 页`);
                         console.log(qa(`#box-${__lv_target.id}`).length);
                         // 東西不在畫面上，強制更新畫面然後定位
-                        if (!q(`#box-${__lv_target.id}`) || startPage !== s.startCursor) {
+                        if (!q(`#box-${__lv_target.id}`) || startPage !== useFolderState.getState().startCursor) {
                             machineryRebindRefresh(s, undefined, undefined, startPage);
                             machineryRelayout(s);    
                         }
@@ -488,7 +493,7 @@ export function scrollToSelectedItem(...args: any[]) {
                         s.$root.currentFocus = "content";
                         $timeout(function () {
                             // s.selected = originSelected;
-                            s.selected.forEach(function (item) {
+                            useSelectionState.getState().selected.forEach(function (item) {
                                 select(undefined, item);
                             })
                             machineryAutoScroll(s);
@@ -563,16 +568,16 @@ export function exportSelectedAsFolder(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-        if (s.selected.length === 0) return;
+        if (useSelectionState.getState().selected.length === 0) return;
         exportFolder(function (savePath) {
             if (savePath) {
                 var imageNames = {};
-                for (var i = 0; i < s.selected.length; i++) {
-                    var image = s.selected[i];
+                for (var i = 0; i < useSelectionState.getState().selected.length; i++) {
+                    var image = useSelectionState.getState().selected[i];
                     imageNames[image.name + "." + image.ext] = image.name;
                 }
 
-                var needSpace = eagle.inspector.calculateFileSize(s.selected);
+                var needSpace = eagle.inspector.calculateFileSize(useSelectionState.getState().selected);
                 checkDiskSpace(savePath, needSpace, function () {
 
                     fs.readdir(savePath, function(err, files) {
@@ -610,7 +615,7 @@ export function exportSelectedAsFolder(...args: any[]) {
                                 if ((window as any).backgroundWindowID === undefined) {
                                     IPCHelper.send('export-as-folder', {
                                         folder: undefined,
-                                        images: s.selected,
+                                        images: useSelectionState.getState().selected,
                                         savePath: savePath,
                                         needSpace: needSpace
                                     });
@@ -618,7 +623,7 @@ export function exportSelectedAsFolder(...args: any[]) {
                                 else {
                                     IPCHelper.sendTo((window as any).backgroundWindowID, 'export-as-folder', {
                                         folder: undefined,
-                                        images: s.selected,
+                                        images: useSelectionState.getState().selected,
                                         savePath: savePath,
                                         needSpace: needSpace
                                     });
@@ -629,7 +634,7 @@ export function exportSelectedAsFolder(...args: any[]) {
                             if ((window as any).backgroundWindowID === undefined) {
                                 IPCHelper.send('export-as-folder', {
                                     folder: undefined,
-                                    images: s.selected,
+                                    images: useSelectionState.getState().selected,
                                     savePath: savePath,
                                     needSpace: needSpace
                                 });
@@ -637,7 +642,7 @@ export function exportSelectedAsFolder(...args: any[]) {
                             else {
                                 IPCHelper.sendTo((window as any).backgroundWindowID, 'export-as-folder', {
                                     folder: undefined,
-                                    images: s.selected,
+                                    images: useSelectionState.getState().selected,
                                     savePath: savePath,
                                     needSpace: needSpace
                                 });
@@ -655,7 +660,7 @@ export function exportSelectedAsEaglepack(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-        if (s.selected.length === 0) return;
+        if (useSelectionState.getState().selected.length === 0) return;
         var defaultPath = path.join("*/", 'Untitled' + '.eaglepack');
 
         dialog.showSaveDialog(currentWindow, {
@@ -667,13 +672,13 @@ export function exportSelectedAsEaglepack(...args: any[]) {
             if (!savePath) return;
             if ((window as any).backgroundWindowID === undefined) {
                 IPCHelper.send('export-images', {
-                    images: s.selected,
+                    images: useSelectionState.getState().selected,
                     savePath: savePath
                 });
             }
             else {
                 IPCHelper.sendTo((window as any).backgroundWindowID, 'export-images', {
-                    images: s.selected,
+                    images: useSelectionState.getState().selected,
                     savePath: savePath
                 });
             }
@@ -686,8 +691,8 @@ export function exportSelectedAsFormat(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-        if (s.selected.length === 0) return;
-        eagle.customExport.open(s.selected);
+        if (useSelectionState.getState().selected.length === 0) return;
+        eagle.customExport.open(useSelectionState.getState().selected);
     }).apply(null, args);
 }
 
@@ -696,9 +701,9 @@ export function exportSelectedToCsv(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-        if (s.selected.length === 0) return;
+        if (useSelectionState.getState().selected.length === 0) return;
 
-        electronLog.info(`[App] Export CSV started, selected count: ${s.selected.length}`);
+        electronLog.info(`[App] Export CSV started, selected count: ${useSelectionState.getState().selected.length}`);
 
         const options = {
             title: i18n.__('dialog.exportCsv.title'),
@@ -734,13 +739,13 @@ export function exportSelectedToCsv(...args: any[]) {
                              'URL', 'Annotation', 'Comments', 'Tags', 'Folders',
                              'Size', 'Rating', 'Imported At', 'Modified At', 'File Path'];
 
-            const rows = s.selected.map(item => {
+            const rows = useSelectionState.getState().selected.map(item => {
                 // 獲取文件夾名稱
                 let folderNames = [];
                 if (item.folders && item.folders.length > 0) {
                     folderNames = item.folders.map(folderId => {
                         // 使用 folderMappings 取得文件夾名稱
-                        const folder = s.folderMappings[folderId];
+                        const folder = useItemState.getState().folderMappings[folderId];
                         return folder ? folder.name : folderId;
                     });
                 }

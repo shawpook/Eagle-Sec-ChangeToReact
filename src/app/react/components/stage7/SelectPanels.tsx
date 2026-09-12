@@ -10,6 +10,8 @@ import { getBodyScope, getRootScope } from '../../core/appCore';
 import { calculateImageBindingChannel, folderSettingsChannel, generalTagSelectPanelOpenChannel, saveFolderChannel, updateSelectionChannel } from '../../global/bus';
 import { makeDraggable } from '../interactions/draggable';
 import { makeResizable } from '../interactions/resizable';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useItemState } from '../../store/itemState';
 
 /**
  * 阶段7d-1c-1：tagsInput + generalTagSelectPanel + AutoTaggingController 接管。
@@ -770,14 +772,13 @@ export function TagsInput({
 
   const openPanel = (e: any) => {
     e.stopPropagation();
-    const body = getBodyScope();
-    const originSelected = tagsRef.current.reduce((map: any, tag: any) => {
+        const originSelected = tagsRef.current.reduce((map: any, tag: any) => {
       map[tag] = true;
       return map;
     }, {});
 
     openGeneralTagSelectPanel({
-      tagManager: body?.TagManager,
+      tagManager: useMiscRawState.getState().TagManager,
       selectedTags: originSelected,
       // showCreateTagBtn: false,
       onChanged: (result: any) => {
@@ -935,8 +936,7 @@ export function AutoTaggingModal() {
   };
 
   const save = () => {
-    const body = getBodyScope();
-    const rootScope = getRootScope();
+        const rootScope = getRootScope();
     setOpen(false);
     const folder = folderRef.current;
     if (!folder) return;
@@ -957,7 +957,7 @@ export function AutoTaggingModal() {
 
     // 將標籤加入到資料夾的圖片中
     if (needUpdateTags) {
-      body.raw.forEach((image: any) => {
+      useItemState.getState().raw.forEach((image: any) => {
         if (isInFolder(image, folder, true)) {
           if (image.tags) {
             const tags = image.tags.join();

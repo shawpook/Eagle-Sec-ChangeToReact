@@ -23,6 +23,8 @@ import { buildRecentFileManager, machineryGetRecentFolders, machinerySaveFolder,
 import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
+import { useMiscRawState } from '../store/miscRawState';
+import { usePreferencesState } from '../store/preferencesState';
 
 /**
  * b1-9bz-D-1 B-17：dataMachinery 收尾——挂载基础设施域（scope 面供给层）。
@@ -47,7 +49,7 @@ export function applyDataMachineryScope(): void {
 
   // b1-9d：TagManager 供给（bundle 48351 $scope.TagManager = TagManager 的 shim 等价；
   // bundle 在世时 s.TagManager 已存在，零调用）
-  if (s.__eagleShim && !s.TagManager) {
+  if (s.__eagleShim && !useMiscRawState.getState().TagManager) {
     const w = window as any;
     w.TagManager = machineryBuildTagManager(s);
     syncFilterFromScope();
@@ -67,7 +69,7 @@ export function applyDataMachineryScope(): void {
   // if-absent + shim-only：bundle 在世时两处均由 controller init 赋值，零调用零改变。
   if (s.__eagleShim) {
     const w = window as any;
-    if (!s.preferences && w.preferences) s.preferences = w.preferences;
+    if (!usePreferencesState.getState().preferences && w.preferences) s.preferences = w.preferences;
     if (!s.UrlStateService && w.UrlStateService) s.UrlStateService = w.UrlStateService;
   }
 
@@ -519,8 +521,7 @@ export function getTimeout(): any {
           delete timers[id];
           try { if (typeof fn === 'function') fn(); } catch (err) { console.error('[shimTimeout] fn failed', err); }
           try {
-            const s = getBodyScope();
-            scopeEvalAsync();
+                        scopeEvalAsync();
           } catch (err) { /* noop */ }
         }, ms || 0);
         return id;

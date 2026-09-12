@@ -250,7 +250,7 @@ export function Toolbar() {
     if (!el) return;
     const scope = getBodyScope();
     if (!scope) return;
-    const options = scope.pluginModule?.pinPluginSortableOptions;
+    const options = useMiscRawState.getState().pluginModule?.pinPluginSortableOptions;
     const syncModel = () => {
       runInBodyScope((s) => {
         const nodes = Array.from(el.querySelectorAll('.ic-btn'));

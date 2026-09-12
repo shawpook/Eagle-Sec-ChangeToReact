@@ -34,6 +34,8 @@ import { resetFilter } from '../core/filterDomain';
 import { machineryFindDupclipate } from '../core/itemDomain';
 
 import { getTimeout, scopeSingleton } from '../core/machineryInfra';
+import { useFolderState } from '../store/folderState';
+import { useListState } from '../store/listState';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */
@@ -298,8 +300,8 @@ export function buildScrollbarSaver(): any {
     getId: function () {
       const s: any = getBodyScope();
       var id;
-      if (s.currentFolder) { id = s.currentFolder.id; }
-      else if (s.currentSmartFolder) { id = s.currentSmartFolder.id; }
+      if (useFolderState.getState().currentFolder) { id = useFolderState.getState().currentFolder.id; }
+      else if (useFolderState.getState().currentSmartFolder) { id = useFolderState.getState().currentSmartFolder.id; }
       else if (s.viewMode == "all") { id = "all"; }
       else if (s.viewMode == "unfiled") { id = "unfiled"; }
       else if (s.viewMode == "untagged") { id = "untagged"; }
@@ -311,7 +313,7 @@ export function buildScrollbarSaver(): any {
     saveScrollPosition: function () {
       const s: any = getBodyScope();
       if (w.eagle.filter.filterBadge > 0) return;
-      if (s.keyword) return;
+      if (useListState.getState().keyword) return;
       if (qa(".box").length + qa(".sub-folder").length === 0) return;
       var scrollTop = scrollTopValue("#box-container");
       var obj: any = {};

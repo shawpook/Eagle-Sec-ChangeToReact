@@ -24,6 +24,7 @@ import { useSelectionState } from '../../store/selectionState';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { useFolderState } from '../../store/folderState';
+import { useLayoutState } from '../../store/layoutState';
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
  *
@@ -314,11 +315,10 @@ export function imagesChange() {
 }
 
 export function inspectorNameChange() {
-  const bodyScope = getBodyScope();
-  const ext = bodyScope?.current?.ext;
+    const ext = useSelectionState.getState().current?.ext;
   const isVideo = (window as any).VIDEO_TYPES?.[ext];
   const isAudio = (window as any).AUDIO_TYPES?.[ext];
-  if (bodyScope?.isDetailMode && (isVideo || isAudio)) {
+  if (useBodyState.getState().isDetailMode && (isVideo || isAudio)) {
     (window as any).eagle.inspector.isRenaming = true;
     scopeEvalAsync();
     setTimeout(() => {
@@ -518,7 +518,7 @@ export function copyComment(event: any, image: any, comment: any) {
 
 export function openComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
-  if (!bodyScope?.isDetailMode) {
+  if (!useBodyState.getState().isDetailMode) {
     machineryEnterDetailMode(bodyScope, event, image);
     setTimeout(function () {
       openComment(event, image, comment);
@@ -531,7 +531,7 @@ export function openComment(event: any, image: any, comment: any) {
     if ($commentElem && !(window as any).isElementInViewport($commentElem)) {
       const offsetY = -200;
       safeZoomData();
-      detailZoom()?.goToY( -(comment.y + offsetY) * (bodyScope.imageSize.zoomRatio || 100) / 100);
+      detailZoom()?.goToY( -(comment.y + offsetY) * (useLayoutState.getState().imageSize.zoomRatio || 100) / 100);
       setTimeout(function () {
         (window as any).AnnotationPreview.show();
       }, 100);
@@ -540,8 +540,7 @@ export function openComment(event: any, image: any, comment: any) {
 }
 
 export function highlightAnnotation(event: any, comment: any) {
-  const bodyScope = getBodyScope();
-  if (bodyScope?.isDetailMode && comment) {
+    if (useBodyState.getState().isDetailMode && comment) {
     const $comment = q(`#comment-${comment.id}`);
     $comment?.classList.add('highlight');
     (window as any).AnnotationPreview.lastElem = $comment || undefined;
@@ -552,8 +551,7 @@ export function highlightAnnotation(event: any, comment: any) {
 }
 
 export function removeHighlightAnnotation(event: any, comment: any) {
-  const bodyScope = getBodyScope();
-  if (bodyScope?.isDetailMode && comment) {
+    if (useBodyState.getState().isDetailMode && comment) {
     const $comment = q(`#comment-${comment.id}`);
     $comment?.classList.remove('highlight');
     clearTimeout((window as any).AnnotationPreview.hoverTimeout);
@@ -585,14 +583,14 @@ export function removeImageComment(item: any, index: number) {
 
 export function openVideoComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
-  if (!bodyScope?.isDetailMode) {
+  if (!useBodyState.getState().isDetailMode) {
     machineryEnterDetailMode(bodyScope, event, image);
     setTimeout(function () {
       openVideoComment(event, image, comment);
     }, 500);
     return;
   }
-  const current = bodyScope.current;
+  const current = useSelectionState.getState().current;
   const isVideo = (window as any).VIDEO_TYPES?.[current?.ext];
   const isAudio = (window as any).AUDIO_TYPES?.[current?.ext];
   if (isVideo || isAudio) {
@@ -605,7 +603,7 @@ export function openVideoComment(event: any, image: any, comment: any) {
 
 export function editVideoComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
-  if (!bodyScope?.isDetailMode) {
+  if (!useBodyState.getState().isDetailMode) {
     machineryEnterDetailMode(bodyScope, event, image);
     setTimeout(function () {
       editVideoComment(event, image, comment);

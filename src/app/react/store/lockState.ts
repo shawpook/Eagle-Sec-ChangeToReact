@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { getBodyScope } from '../core/appCore';
+import { useFolderState } from './folderState';
 
 /**
  * 11-pre a3：lock-screen 双块状态源（文件夹密码锁 + 应用锁屏）。
@@ -67,7 +68,7 @@ migrateScopeFieldToStore(
 export function syncFolderLock(): void {
   const s: any = getBodyScope();
   if (!s) return;
-  const cf = s.currentFolder;
+  const cf = useFolderState.getState().currentFolder;
   const locked = !!(cf && cf.password && !cf.isUnLock);
   const tips = (cf && cf.passwordTips) || '';
   const cur = useLockState.getState();

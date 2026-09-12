@@ -20,6 +20,7 @@ import { machineryRebindRefresh } from '../../core/itemDomain';
 import { machineryContentFilter } from '../../core/filterDomain';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
+import { useFolderState } from '../../store/folderState';
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
  *
@@ -530,8 +531,7 @@ export function FoldersInput({
   const [, setBump] = useState(0);
 
   const openPanel = () => {
-    const body = getBodyScope();
-    const folders = body.folders;
+        const folders = useFolderState.getState().folders;
     const originalSelectedIds = folderIdsRef.current.reduce(
       (map: any, id: any) => {
         map[id] = true;
@@ -720,8 +720,7 @@ export function NewSmartFolderModal() {
 
   const init = () => {
     foldersSuggestionRef.current = [];
-    const body = getBodyScope();
-    w().eagle.utils.tree.walk(body.folders, 'children', (folder: any, parent: any) => {
+        w().eagle.utils.tree.walk(useFolderState.getState().folders, 'children', (folder: any, parent: any) => {
       foldersSuggestionRef.current.push({
         value: folder.id,
         text: folder.name,
@@ -921,10 +920,10 @@ export function NewSmartFolderModal() {
       conditions: conditionsRef.current,
     };
     if (smartFolderRef.current && smartFolderRef.current.parent) {
-      body.currentSmartFolder.parent = smartFolderRef.current.parent;
+      useFolderState.getState().currentSmartFolder.parent = smartFolderRef.current.parent;
     }
     // $filter('filter')(raw, contentFilter)——contentFilter 为函数谓词，等价 raw.filter
-    const result = body.raw.filter((x: any) => machineryContentFilter(body, x));
+    const result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(body, x));
     const count = result.length;
     setTotalCount(count);
     machineryRebindRefresh(body, undefined, undefined, undefined);
@@ -975,7 +974,7 @@ export function NewSmartFolderModal() {
         children: [],
       };
 
-      let children = body.smartFolders;
+      let children = useFolderState.getState().smartFolders;
       if (parentRef.current) {
         if (!parentRef.current.children) {
           parentRef.current.children = [];
@@ -992,7 +991,7 @@ export function NewSmartFolderModal() {
 
       children.splice(idx, 0, smartFolder);
       smartFolder.imageCount = machinerySmartFolderCount(body, smartFolder);
-      body.smartFolderMappings[smartFolder.id] = smartFolder;
+      useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
       updateSidebarList();
       openSmartFolder(smartFolder);
       setTimeout(() => {
@@ -1070,11 +1069,11 @@ export function NewSmartFolderModal() {
       conditionsRef.current = defaultConditions();
       originSmartFolderRef.current = smartFolder;
       if (!parent) {
-        if (smartFolder && smartFolder.parent && body.smartFolderMappings[smartFolder.parent]) {
-          parentRef.current = body.smartFolderMappings[smartFolder.parent];
+        if (smartFolder && smartFolder.parent && useItemState.getState().smartFolderMappings[smartFolder.parent]) {
+          parentRef.current = useItemState.getState().smartFolderMappings[smartFolder.parent];
         }
       } else {
-        parentRef.current = body.smartFolderMappings[parent.id];
+        parentRef.current = useItemState.getState().smartFolderMappings[parent.id];
       }
       setTimeout(() => {
         document.getElementById('smart-folder-name-input')?.focus();

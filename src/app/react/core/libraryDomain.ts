@@ -66,6 +66,10 @@ import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom } from '.
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryAutoScroll, machineryResetPage } from '../services/gridService';
 import { getTimeout } from './machineryInfra';
+import { usePreferencesState } from '../store/preferencesState';
+import { useItemState } from '../store/itemState';
+import { useMiscRawState } from '../store/miscRawState';
+import { useFolderState } from '../store/folderState';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -231,16 +235,16 @@ export function takeoverLibraryDomain(): void {
       // 原 $timeout 语义：延时执行 + digest
       setTimeout(() => {
         try {
-          if (s.trialRemain && s.trialRemain > 0 && s.trialRemain < 30) {
+          if (usePreferencesState.getState().trialRemain && usePreferencesState.getState().trialRemain > 0 && usePreferencesState.getState().trialRemain < 30) {
             const popupDays = [1, 3, 7, 14, 21, 28];
-            if (popupDays.indexOf(s.trialRemain) > -1) {
+            if (popupDays.indexOf(usePreferencesState.getState().trialRemain) > -1) {
               let lastOpenTrialModalTime = localStorage["lastOpenTrialModalTime"] || undefined;
               const now = Date.now();
               const HALF_DAY = 1000 * 60 * 60 * 12;
               if (!lastOpenTrialModalTime) {
                 lastOpenTrialModalTime = now;
                 localStorage["lastOpenTrialModalTime"] = now;
-                machineryOpenTrialModal(s, s.trialRemain);
+                machineryOpenTrialModal(s, usePreferencesState.getState().trialRemain);
               }
               else {
                 lastOpenTrialModalTime = parseInt(lastOpenTrialModalTime);
@@ -248,7 +252,7 @@ export function takeoverLibraryDomain(): void {
                   console.log("12小时内暂时不再跳出");
                   return;
                 }
-                machineryOpenTrialModal(s, s.trialRemain);
+                machineryOpenTrialModal(s, usePreferencesState.getState().trialRemain);
                 localStorage["lastOpenTrialModalTime"] = now;
               }
             }
@@ -305,11 +309,11 @@ export function takeoverLibraryDomain(): void {
         folder.parent = (parent as any).id;
       }
 
-      if (s.folderMappings[folder.id]) {
-        folder.images = s.folderMappings[folder.id].images;
+      if (useItemState.getState().folderMappings[folder.id]) {
+        folder.images = useItemState.getState().folderMappings[folder.id].images;
         folder.isExpand = localStorage.getItem("eagle.sidebar.folder.expand." + folder.id) === "true";
       }
-      s.folderMappings[folder.id] = folder;
+      useItemState.getState().folderMappings[folder.id] = folder;
     });
 
     s.libraryModificationTime = newLibrary.modificationTime;
@@ -321,10 +325,10 @@ export function takeoverLibraryDomain(): void {
 
       if (smartFolder && parent) { smartFolder.parent = (parent as any).id; }
 
-      if (s.smartFolderMappings[smartFolder.id]) {
+      if (useItemState.getState().smartFolderMappings[smartFolder.id]) {
         smartFolder.isExpand = localStorage.getItem("eagle.sidebar.smartFolder.expand." + smartFolder.id) === "true";
       }
-      s.smartFolderMappings[smartFolder.id] = smartFolder;
+      useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
     });
 
     s.smartFolders = newLibrary.smartFolders || [];
@@ -445,7 +449,7 @@ export function takeoverLibraryDomain(): void {
     clearInterval(w.heartbeatInterval);
     if (domainHeartbeatInterval) { clearInterval(domainHeartbeatInterval); domainHeartbeatInterval = null; }
     ipc.removeAllListeners('background-state');
-    if (s.SavedFilter && s.SavedFilter.unwatch) s.SavedFilter.unwatch();
+    if (useMiscRawState.getState().SavedFilter && useMiscRawState.getState().SavedFilter.unwatch) useMiscRawState.getState().SavedFilter.unwatch();
     if (w.eagle && w.eagle.action && w.eagle.action.destroy) w.eagle.action.destroy();
     if (typeof w.stopAPIServer === 'function') w.stopAPIServer();
     console.log("移除 " + "background-state 监听");
@@ -522,7 +526,7 @@ export function takeoverLibraryDomain(): void {
       setInterval(domainGetMemory, 2000);
     }
 
-    if (!s.isUILoaded) {
+    if (!useMiscRawState.getState().isUILoaded) {
       s.isUILoaded = true;
       syncSidebarFromScope();
     }
@@ -636,16 +640,16 @@ export function takeoverLibraryDomain(): void {
     s.libraryImagesPath = params.imagesDir;
 
     if (s.$root) {
-      s.$root.imagesDir = s.imagesDir;
+      s.$root.imagesDir = useMiscRawState.getState().imagesDir;
       s.$root.fontFolder = w.fontFolder;
     }
 
-    s.orderBy = localStorage.getItem(`eagle.list.orderBy.${s.rootDir}`) || localStorage.getItem("eagle.list.orderBy") || "IMPORT";
+    s.orderBy = localStorage.getItem(`eagle.list.orderBy.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.orderBy") || "IMPORT";
     syncBodyFromScope();
-    const userLayout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
+    const userLayout = localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
 
-    if (localStorage.getItem(`eagle.list.sortIncrease.${s.rootDir}`)) {
-      s.sortIncrease = localStorage.getItem(`eagle.list.sortIncrease.${s.rootDir}`) === 'true';
+    if (localStorage.getItem(`eagle.list.sortIncrease.${useMiscRawState.getState().rootDir}`)) {
+      s.sortIncrease = localStorage.getItem(`eagle.list.sortIncrease.${useMiscRawState.getState().rootDir}`) === 'true';
     }
 
     const userLayoutOptions = localStorage.getItem("eagle.list.layout.options") || "Fit";
@@ -653,9 +657,9 @@ export function takeoverLibraryDomain(): void {
     syncPanelFromScope();
     machinerySwitchLayout(s, userLayout);
 
-    if (w.RecentFileManager && w.RecentFileManager.init) w.RecentFileManager.init(s.libraryName);
-    if (s.TagManager && s.TagManager.init) s.TagManager.init(params.rootDir);
-    if (s.SavedFilter && s.SavedFilter.init) s.SavedFilter.init(params.rootDir);
+    if (w.RecentFileManager && w.RecentFileManager.init) w.RecentFileManager.init(useMiscRawState.getState().libraryName);
+    if (useMiscRawState.getState().TagManager && useMiscRawState.getState().TagManager.init) useMiscRawState.getState().TagManager.init(params.rootDir);
+    if (useMiscRawState.getState().SavedFilter && useMiscRawState.getState().SavedFilter.init) useMiscRawState.getState().SavedFilter.init(params.rootDir);
     if (w.eagle && w.eagle.action && w.eagle.action.initActions) w.eagle.action.initActions(params.rootDir);
 
     s.folders = params.folders;
@@ -663,34 +667,34 @@ export function takeoverLibraryDomain(): void {
 
     // 自动补上 children
     if (w.eagle && w.eagle.utils && w.eagle.utils.tree) {
-      w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any) {
+      w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder: any, parent: any) {
         if (!folder.children) { folder.children = []; }
         if (folder && parent) { folder.parent = parent.id; }
         // 从 localStorage 取得 expand 状态，如果没有预设为 false
         folder.isExpand = localStorage.getItem("eagle.sidebar.folder.expand." + folder.id) === "true";
         if (!folder.children || folder.children.length === 0) { folder.isExpand = true; }
         folder.images = [];
-        s.folderMappings[folder.id] = folder;
+        useItemState.getState().folderMappings[folder.id] = folder;
       });
 
       s.smartFolders = params.smartFolders || [];
-      w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, _depth: any) {
+      w.eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, _depth: any) {
         if (!smartFolder.children) { smartFolder.children = []; }
         if (!smartFolder.conditions) { smartFolder.conditions = []; }
         smartFolder.isExpand = localStorage.getItem("eagle.sidebar.smartFolder.expand." + smartFolder.id) === "true";
         if (smartFolder && parent) { smartFolder.parent = parent.id; }
-        s.smartFolderMappings[smartFolder.id] = smartFolder;
+        useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
       });
     }
 
     s.quickAccess = params.quickAccess || [];
     syncSidebarFromScope();
-    if (s.TagManager) {
-      s.TagManager.groups = params.tagsGroups || [];
+    if (useMiscRawState.getState().TagManager) {
+      useMiscRawState.getState().TagManager.groups = params.tagsGroups || [];
       syncFilterFromScope();
       syncTagManagerFromScope();
       // Note: 过去版本如果使用者曾经使用批量添加，标签会多了一个 \r 符号
-      s.TagManager.groups.forEach(function (group: any) {
+      useMiscRawState.getState().TagManager.groups.forEach(function (group: any) {
         if (group && group.tags) {
           for (let i = 0; i < group.tags.length; i++) {
             try {
@@ -706,7 +710,7 @@ export function takeoverLibraryDomain(): void {
     if (s.$root && s.$root.initMenu) s.$root.initMenu();
 
     // NOTE: 只能用迂迴的方式處理可能超過 10W 張圖片的狀況，避免使用 JSON.parse 造成大量數據無法傳輸的問題
-    electronLog.info(`[app] Load Library: ${s.rootDir}`);
+    electronLog.info(`[app] Load Library: ${useMiscRawState.getState().rootDir}`);
 
     let images: any[] = [];
     if (params.usingPreloadCache && domainLibraryCache.length > 0) {
@@ -771,14 +775,14 @@ export function takeoverLibraryDomain(): void {
     syncListFromScope();
 
     machineryCalculateImageBinding(s, {}, function () {
-      s.viewMode = localStorage.getItem(`eagle.viewMode.${s.rootDir}`) || "all";
+      s.viewMode = localStorage.getItem(`eagle.viewMode.${useMiscRawState.getState().rootDir}`) || "all";
       s.isItemBindCalculated = true;
       if (s.viewMode == "all") {
-        const lastFolderId = localStorage.getItem(`eagle.lastFolder.${s.rootDir}`);
-        const lastItem = s.itemMappings[localStorage.getItem(`eagle.lastViewItem.${s.rootDir}`) as any];
-        const lastItemTime = localStorage.getItem(`eagle.lastViewItemTime.${s.rootDir}`);
-        const lastFolder = s.folderMappings[lastFolderId as any];
-        const lastSmartFolder = s.smartFolderMappings[lastFolderId as any];
+        const lastFolderId = localStorage.getItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`);
+        const lastItem = useItemState.getState().itemMappings[localStorage.getItem(`eagle.lastViewItem.${useMiscRawState.getState().rootDir}`) as any];
+        const lastItemTime = localStorage.getItem(`eagle.lastViewItemTime.${useMiscRawState.getState().rootDir}`);
+        const lastFolder = useItemState.getState().folderMappings[lastFolderId as any];
+        const lastSmartFolder = useItemState.getState().smartFolderMappings[lastFolderId as any];
 
         if (lastFolder && !lastFolder?.password) {
           openFolder(lastFolder);
@@ -788,7 +792,7 @@ export function takeoverLibraryDomain(): void {
               const DAY_7 = 604800000;
               if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) &&
                 (lastItem && lastItem.folders && isInFolder(lastItem, lastFolder)) &&
-                !s.lockedImages[lastItem.id]
+                !useItemState.getState().lockedImages[lastItem.id]
               ) {
                 s.selected = [lastItem];
                 syncInspectorFromScope();
@@ -818,7 +822,7 @@ export function takeoverLibraryDomain(): void {
           machineryOpenAll(s, undefined, function () {
             setTimeout(function () {
               const DAY_7 = 604800000;
-              if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) && lastItem && !s.lockedImages[lastItem.id]) {
+              if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) && lastItem && !useItemState.getState().lockedImages[lastItem.id]) {
                 s.selected = [lastItem];
                 syncInspectorFromScope();
                 scrollToSelectedItem();
@@ -841,14 +845,14 @@ export function takeoverLibraryDomain(): void {
           case 'alltags': machineryOpenAllTags(s, true); hasUrlState = true; break;
           case 'trash': machineryOpenTrash(s, true); hasUrlState = true; break;
           case 'folder':
-            if (urlState.folder && s.folderMappings && s.folderMappings[urlState.folder]) {
-              openFolder(s.folderMappings[urlState.folder], true);
+            if (urlState.folder && useItemState.getState().folderMappings && useItemState.getState().folderMappings[urlState.folder]) {
+              openFolder(useItemState.getState().folderMappings[urlState.folder], true);
               hasUrlState = true;
             }
             break;
           case 'smartfolder':
-            if (urlState.smartfolder && s.smartFolderMappings && s.smartFolderMappings[urlState.smartfolder]) {
-              openSmartFolder(s.smartFolderMappings[urlState.smartfolder], true);
+            if (urlState.smartfolder && useItemState.getState().smartFolderMappings && useItemState.getState().smartFolderMappings[urlState.smartfolder]) {
+              openSmartFolder(useItemState.getState().smartFolderMappings[urlState.smartfolder], true);
               hasUrlState = true;
             }
             break;
@@ -1017,7 +1021,7 @@ export function takeoverLibraryDomain(): void {
         const backgroundStateComponentEl = q("#background-state-spinner");
         const backgroundStateSpinnerIconEl = q("#background-state-spinner .pause-icon");
         const backgroundStateSpinnerEl = q("#background-state-spinner .sm-spiner");
-        if (s.currentProcessCount > 0) {
+        if (useMiscRawState.getState().currentProcessCount > 0) {
           showEl(backgroundStateComponentEl);
         }
         else {
@@ -1034,7 +1038,7 @@ export function takeoverLibraryDomain(): void {
           hideEl(backgroundStateSpinnerIconEl);
         }
 
-        s.lastProcessCount = s.currentProcessCount;
+        s.lastProcessCount = useMiscRawState.getState().currentProcessCount;
       });
     });
 
@@ -1069,8 +1073,8 @@ export function takeoverLibraryDomain(): void {
     });
 
     if (typeof (window as any).ACCESS?.checkALCs === 'function') {
-      if (!ACCESS.checkALCs(s.libraryPath)) {
-        ipc.send('electron-log', "[app] Detect library has no write permission, path: " + s.libraryPath);
+      if (!ACCESS.checkALCs(useMiscRawState.getState().libraryPath)) {
+        ipc.send('electron-log', "[app] Detect library has no write permission, path: " + useMiscRawState.getState().libraryPath);
         if (s.libraryPathPermissionError !== true) {
           s.libraryPathPermissionError = true;
         }
@@ -1106,10 +1110,10 @@ export function takeoverLibraryDomain(): void {
       };
       try {
         const getDriveType = w.require(w.appRoot + '/my_modules/get-drive-type');
-        const driveType = getDriveType(s.libraryPath).toLowerCase();
+        const driveType = getDriveType(useMiscRawState.getState().libraryPath).toLowerCase();
         if (driveType.indexOf("ntfs") > -1 || driveType.indexOf("lifs") > -1) {
           if ((window as any).isVentura) {
-            s.showNTFSWarning = isNTFS(s.libraryPath);
+            s.showNTFSWarning = isNTFS(useMiscRawState.getState().libraryPath);
             syncSidebarFromScope();
           }
           else {

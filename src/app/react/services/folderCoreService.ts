@@ -51,6 +51,9 @@ import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryResetPage } from './gridService';
 import { getTimeout } from '../core/machineryInfra';
 import { useMiscRawState } from '../store/miscRawState';
+import { useItemState } from '../store/itemState';
+import { useFolderState } from '../store/folderState';
+import { useSelectionState } from '../store/selectionState';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
@@ -94,7 +97,7 @@ export function createFolder(...args: any[]) {
 
             // 兄弟模式
             if (sibling) {
-                const siblingParent = s.folderMappings[sibling.parent];
+                const siblingParent = useItemState.getState().folderMappings[sibling.parent];
                 let index;
                 if (siblingParent) {
                     index = siblingParent.children.indexOf(sibling);
@@ -102,14 +105,14 @@ export function createFolder(...args: any[]) {
                     siblingParent.children.splice(index + 1, 0, folder);
                 }
                 else {
-                    index = s.folders.indexOf(sibling);
-                    if (index === -1) index = s.folders.length - 1;
-                    s.folders.splice(index + 1, 0, folder);
+                    index = useFolderState.getState().folders.indexOf(sibling);
+                    if (index === -1) index = useFolderState.getState().folders.length - 1;
+                    useFolderState.getState().folders.splice(index + 1, 0, folder);
                 }
             }
             // 添加成為孩子
             else if (parentID) {
-                const parent = s.folderMappings[parentID];
+                const parent = useItemState.getState().folderMappings[parentID];
                 if (parent) {
                     parent.children.splice(0, 0, folder);
                 }
@@ -117,14 +120,14 @@ export function createFolder(...args: any[]) {
             // 添加在第一層
             else {
                 if (position === "top") {
-                    s.folders.splice(0, 0, folder);
+                    useFolderState.getState().folders.splice(0, 0, folder);
                 }
                 else if (position === "bottom") {
-                    s.folders.splice(s.folders.length, 0, folder);
+                    useFolderState.getState().folders.splice(useFolderState.getState().folders.length, 0, folder);
                 }
             }
 
-            s.folderMappings[folder.id] = folder;
+            useItemState.getState().folderMappings[folder.id] = folder;
             addToRecentFolders([folder.id]);
             machineryUpdateSidebarList(s);
             machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
@@ -165,8 +168,8 @@ export function newFolder(...args: any[]) {
             // 预设状态：新增同级文件夹
             // 若带有参数 parent 则新增子文件夹
             if (isSiblingFolder) {
-                var father = s.folderMappings[parent.parent];
-                var children = (father && father.children) ? father.children : s.folders;
+                var father = useItemState.getState().folderMappings[parent.parent];
+                var children = (father && father.children) ? father.children : useFolderState.getState().folders;
                 var __lv_idx = children.indexOf(parent);
                 // 创建兄弟文件夹，如果目标及目标父文件夹相同，继承文件夹颜色、图标设置
                 if (father) {
@@ -182,11 +185,11 @@ export function newFolder(...args: any[]) {
                 if (__lv_idx === -1) __lv_idx = children.length - 1;
                 children.splice(__lv_idx + 1, 0, folder);
             }
-            else if (s.currentFolder || parent) {
+            else if (useFolderState.getState().currentFolder || parent) {
 				var __lv_target = parent;
-                var parent = parent || s.folderMappings[s.currentFolder.parent];
-                var children = (parent && parent.children) ? parent.children : s.folders;
-                var __lv_idx = children.indexOf(s.currentFolder);
+                var parent = parent || useItemState.getState().folderMappings[useFolderState.getState().currentFolder.parent];
+                var children = (parent && parent.children) ? parent.children : useFolderState.getState().folders;
+                var __lv_idx = children.indexOf(useFolderState.getState().currentFolder);
                 if (parent) {
                     folder.parent = parent.id;
                     parent.isExpand = true;
@@ -199,11 +202,11 @@ export function newFolder(...args: any[]) {
                             folder.iconColor = parent.iconColor;
                         }
                     }
-                    else if (s.currentFolder) {
-                        if (parent && parent.icon === s.currentFolder.icon) {
+                    else if (useFolderState.getState().currentFolder) {
+                        if (parent && parent.icon === useFolderState.getState().currentFolder.icon) {
                             folder.icon = parent.icon;
                         }
-                        if (parent && parent.iconColor === s.currentFolder.iconColor) {
+                        if (parent && parent.iconColor === useFolderState.getState().currentFolder.iconColor) {
                             folder.iconColor = parent.iconColor;
                         }
                     }
@@ -216,7 +219,7 @@ export function newFolder(...args: any[]) {
                         }
                     }
                 } else {
-                    folder.parent = s.currentFolder.parent;
+                    folder.parent = useFolderState.getState().currentFolder.parent;
                 }
                 if (__lv_idx === -1) __lv_idx = children.length - 1;
                 if (isSubFolder) {
@@ -228,11 +231,11 @@ export function newFolder(...args: any[]) {
             }
             // 插入尾端
             else {
-                __lv_idx = s.folders.length;
-                s.folders.splice(__lv_idx, 0, folder);
+                __lv_idx = useFolderState.getState().folders.length;
+                useFolderState.getState().folders.splice(__lv_idx, 0, folder);
             }
 
-            s.folderMappings[folder.id] = folder;
+            useItemState.getState().folderMappings[folder.id] = folder;
 			addToRecentFolders([folder.id]);
 			
             setTimeout(function() { 
@@ -255,7 +258,7 @@ export function newFolder(...args: any[]) {
             machineryUpdateSidebarList(s);
 
             // Note: 如果用戶當前選擇多個文件，表示正在分類，這時候不要跳轉是比較好的選擇
-            if (s.selected.length === 0 && !ignoreAutoOpen) {
+            if (useSelectionState.getState().selected.length === 0 && !ignoreAutoOpen) {
                 openFolder(folder);
             }
             setTimeout(function() {
@@ -345,18 +348,18 @@ export function newFolderWidthSelection(...args: any[]) {
                 children: [],
                 isExpand: true,
             };
-            s.folders.splice(s.folders.length, 0, folder);
-            s.folderMappings[folder.id] = folder;
+            useFolderState.getState().folders.splice(useFolderState.getState().folders.length, 0, folder);
+            useItemState.getState().folderMappings[folder.id] = folder;
             machineryUpdateSidebarList(s);
             addToRecentFolders([folder.id]);
 
             // 添加圖片
-            s.selected.forEach(function(image) {
+            useSelectionState.getState().selected.forEach(function(image) {
                 if (!image.folders) image.folders = [];
                 image.folders.push(folderId);
             });
-            ayncsImagesChange(s.selected);
-            hiddenByCurrentFilter(s.selected);
+            ayncsImagesChange(useSelectionState.getState().selected);
+            hiddenByCurrentFilter(useSelectionState.getState().selected);
             machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                 machineryRebindRefresh(s);
             });
@@ -364,7 +367,7 @@ export function newFolderWidthSelection(...args: any[]) {
             setTimeout(function() {
                 machinerySaveFolder(s);
             }, 1000);
-            electronLog && electronLog.info(`[app] Create new folder ${folder.name}(${folder.id}) with ${s.selected.length} files`);
+            electronLog && electronLog.info(`[app] Create new folder ${folder.name}(${folder.id}) with ${useSelectionState.getState().selected.length} files`);
             analytics.event('Folder', 'Create-With-Images', folder.name);
         });
     }).apply(null, args);
@@ -496,7 +499,7 @@ export function moveFoldersAsSibling(...args: any[]) {
             });
 
             var clone = [];
-            cloneTree(clone, s.folders, true);
+            cloneTree(clone, useFolderState.getState().folders, true);
 
             try {
                 for (var i = folders.length - 1; i >= 0; i--) {
@@ -507,11 +510,11 @@ export function moveFoldersAsSibling(...args: any[]) {
                         // 从原来位置移除
                         var ch;
                         var index = -1;
-                        if (p && s.folderMappings[p].children) {
-                            ch = s.folderMappings[p].children;
+                        if (p && useItemState.getState().folderMappings[p].children) {
+                            ch = useItemState.getState().folderMappings[p].children;
                         }
                         else {
-                            ch = s.folders;
+                            ch = useFolderState.getState().folders;
                         }
                         index = ch.indexOf(f);
                         if (index > -1) {
@@ -602,7 +605,7 @@ export function moveFoldersToFolder(...args: any[]) {
             });
 
             var clone = [];
-            cloneTree(clone, s.folders, true);
+            cloneTree(clone, useFolderState.getState().folders, true);
 
             try {
 
@@ -614,11 +617,11 @@ export function moveFoldersToFolder(...args: any[]) {
                         // 从原来位置移除
                         var ch;
                         var index = -1;
-                        if (p && s.folderMappings[p].children) {
-                            ch = s.folderMappings[p].children;
+                        if (p && useItemState.getState().folderMappings[p].children) {
+                            ch = useItemState.getState().folderMappings[p].children;
                         }
                         else {
-                            ch = s.folders;
+                            ch = useFolderState.getState().folders;
                         }
                         index = ch.indexOf(f);
                         if (index > -1) {
@@ -654,7 +657,7 @@ export function emptyRestore(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-            if (s.trash && s.trash.length > 0) {
+            if (useItemState.getState().trash && useItemState.getState().trash.length > 0) {
                 swal({
                     html: `
                         <div class="alert">
@@ -672,7 +675,7 @@ export function emptyRestore(...args: any[]) {
                 }).then(function () {
                     var changes = [];
                     let now = Date.now();
-                    s.trash.forEach(function(image: any) {
+                    useItemState.getState().trash.forEach(function(image: any) {
                         image.isDeleted = false;
                         changes.push(image);
                         machineryUpdateFilterCounts(s, image, -1, now);

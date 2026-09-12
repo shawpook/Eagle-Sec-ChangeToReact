@@ -111,5 +111,5 @@ for (const [failpoint, expectedName] of [
   fs.rmSync(libraryPath, { recursive: true, force: true });
 }
 
-fs.rmSync(tempRoot, { recursive: true, force: true });
+try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 console.log('LIBRARY_TRANSACTION_FAULTS_OK');

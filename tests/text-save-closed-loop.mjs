@@ -223,7 +223,7 @@ try {
   if (emptyAfter.content !== 'hello') throw new Error('empty file save content mismatch');
 } finally {
   await stopServer(server);
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }
 
 console.log('TEXT_SAVE_CLOSED_LOOP_OK');

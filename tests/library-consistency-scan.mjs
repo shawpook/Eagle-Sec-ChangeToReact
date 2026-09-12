@@ -71,5 +71,5 @@ assert.ok(report.reportDigest && report.issueCount > 0, 'scan report digest was 
 const after = directoryHash(libraryPath);
 assert.equal(before, after, 'consistency scan mutated the library');
 
-fs.rmSync(tempRoot, { recursive: true, force: true });
+try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 console.log('LIBRARY_CONSISTENCY_SCAN_OK');

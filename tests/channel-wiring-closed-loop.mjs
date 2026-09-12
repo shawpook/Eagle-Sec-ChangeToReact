@@ -179,5 +179,5 @@ try {
 } finally {
   await stop(electron);
   await stop(backend);
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }

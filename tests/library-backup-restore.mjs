@@ -56,5 +56,5 @@ assert.equal(restoredItem.name, 'Backup Item');
 assert.deepEqual(restoredItem.tags, ['backup']);
 assert.equal(restored.libraryName, 'restored');
 
-fs.rmSync(tempRoot, { recursive: true, force: true });
+try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 console.log('LIBRARY_BACKUP_RESTORE_OK');

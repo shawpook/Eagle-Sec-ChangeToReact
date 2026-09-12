@@ -46,7 +46,7 @@ try {
   const after = await json('GET', `${apiBase}/api/plugins/installed`);
   if (after.data.some((plugin) => plugin.id === 'eagle-reverse-example-service')) throw new Error('plugin uninstall failed');
 } finally {
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }
 
 console.log('Plugin package test passed');

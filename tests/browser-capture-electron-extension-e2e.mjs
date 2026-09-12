@@ -130,7 +130,7 @@ const fixture = await startFixture();
 if (await portInUse(41593)) {
   console.log('BROWSER_CAPTURE_EXTENSION_E2E_BLOCKED original port 41593 is occupied');
   await new Promise((resolve) => fixture.fixture.close(resolve));
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
   process.exit(0);
 }
 const [apiPort, thumbnailPort, debugPort] = await Promise.all([freePort(), freePort(), freePort()]);
@@ -242,5 +242,5 @@ try {
   await stop(electron);
   await stop(backend);
   await new Promise((resolve) => fixture.fixture.close(resolve));
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }

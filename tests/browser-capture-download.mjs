@@ -236,5 +236,5 @@ try {
 } finally {
   await stopServer(server);
   await new Promise((resolve) => fixture.fixture.close(resolve));
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }

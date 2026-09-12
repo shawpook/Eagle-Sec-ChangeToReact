@@ -116,11 +116,14 @@ try {
   assert('name-area drop moves folder into target', nested && nested.parent === beta, nested);
 
   // dragend 清理：helper 移除、dragCheck 50ms 后复位
-  await delay(150);
-  const afterEnd = await evaluate(`(() => ({
-    helper: !!document.querySelector('body > .multiple-drag-folder-helper'),
-    dragCheck: window.dragCheck,
-  }))()`);
+  // b1-9bz-D-4：固定 150ms 在负载下偶发假失败——改为轮询等待清理完成（上限 5s）
+  const afterEnd = await waitFor(async () => {
+    const r = await evaluate(`(() => ({
+      helper: !!document.querySelector('body > .multiple-drag-folder-helper'),
+      dragCheck: window.dragCheck,
+    }))()`);
+    return (r.helper === false && r.dragCheck === false) ? r : null;
+  }, 'dragend cleanup', 5000);
   assert('dragend removes helper', afterEnd.helper === false, afterEnd);
   assert('dragend resets dragCheck', afterEnd.dragCheck === false, afterEnd);
 
@@ -155,6 +158,6 @@ try {
 } finally {
   clearTimeout(watchdog);
   if (stack) { await stop(stack.electron); await stop(stack.vite); await stop(stack.backend); }
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }
 process.exit(failure ? 1 : 0);

@@ -56,5 +56,5 @@ assert.equal(reloaded.items.find((entry) => entry.name === 'Crash New')?.name, '
 const item = reloaded.items.find((entry) => entry.name === 'Crash New');
 assert.equal(fs.existsSync(path.join(libraryPath, 'images', `${item.id}.info`, 'Crash New.png')), true);
 
-fs.rmSync(tempRoot, { recursive: true, force: true });
+try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 console.log('LIBRARY_CRASH_RECOVERY_OK');

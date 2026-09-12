@@ -243,7 +243,7 @@ try {
   // electron 退出后 Dictionaries 等文件锁可能短暂残留——重试清理，勿让 EBUSY 掩盖测试输出
   for (let i = 0; i < 6; i++) {
     try {
-      fs.rmSync(tempRoot, { recursive: true, force: true });
+      try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
       break;
     } catch (err) {
       if (i === 5) console.warn(`cleanup incomplete: ${err.message}`);

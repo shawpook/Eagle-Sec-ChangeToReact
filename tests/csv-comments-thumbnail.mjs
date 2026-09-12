@@ -68,7 +68,7 @@ try {
   if (comments.data.length !== 0) throw new Error('comment remove failed');
 } finally {
   await json('POST', `${apiBase}/api/library/switch`, { libraryPath: originalLibrary });
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }
 
 console.log('CSV/comments/thumbnail test passed');

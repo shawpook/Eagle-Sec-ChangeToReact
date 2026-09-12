@@ -201,5 +201,5 @@ try {
   console.log(`ITEM_API_COMPATIBILITY_OK ${JSON.stringify({ targetA: targetA.id, targetB: targetB.id, v2Ext: v2Updated.ext })}`);
 } finally {
   await stop(backend);
-  fs.rmSync(tempRoot, { recursive: true, force: true });
+  try { fs.rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch (err) { /* Windows 文件锁：清理失败不影响测试结果 */ }
 }

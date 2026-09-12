@@ -6,7 +6,7 @@
  * （vendor:116 裸引用、全仓无声明，removeBoxAudioPlayer 一调用即 ReferenceError 的哑雷）。
  * 过渡期保留面：$ / FileUrlHelper / throttle 裸标识经 window（bundleGlobals 供给，bl 同款；
  * throttle 必须 bundle 2400 helper——签名 fn/delay/immediate，与 utils/func 版不同）；
- * $bodyScope / playingAudiosElements / HoverPreviewKeydown 显式 _w 前缀（跨世界共享存储：
+ * scope 面 / playingAudiosElements / HoverPreviewKeydown 显式 _w 前缀（跨世界共享存储：
  * openItemContextMenu 与 controllerFns 清理点同源）。vendor 脚本与 c16b fetch 注入/
  * if-absent 重复定义随本批退役；install 由 bundleGlobals 在 _throttle 挂载后同步调用。
  */
@@ -17,6 +17,9 @@ import { dom } from '../utils/domLite';
 
 import { machineryGetItemByElement } from './itemDomain';
 const _w: any = window as any;
+import { getWindowScope } from './scopeFace';
+// b1-9bz-E5-3：原 window 上 body scope 直读 → 本窗 scope 面访问器（主窗 store 面 / 预览窗 controllerScope）。
+function ws(): any { return getWindowScope(); }
 
 let installed = false;
 
@@ -127,9 +130,8 @@ function removeBoxAudioPlayer (event) {
         event.stopPropagation();
     }
 
-    // b1-9d：去 Angular 后 window.angular 缺席；_w.$bodyScope 即 bundle 世界同对象
+    // b1-9d：去 Angular 后 window.angular 缺席；ws() 即 bundle 世界同对象
     // （同 egjs-infinitegrid.umd.js 内 Eagle 自有写法），bundle 在世时语义零改变。
-    var $scope = _w.$bodyScope || angular.element("body").scope();
     var $box = dom(".box").has(event.target);
     disarmHoverSentinel($box);
     var image = machineryGetItemByElement($box[0]);
@@ -493,7 +495,7 @@ dom("body").on('mouseleave', '.box', throttle(function(event) {
 
 
 dom("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
-    if (_w.$bodyScope.preferences.habits.hoverZoom === "on") {
+    if (ws().preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         
         // 找到包含 data-box-id 的父元素（處理不同 DOM 結構）
@@ -510,7 +512,7 @@ dom("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
 });
 
 dom("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
-    if (_w.$bodyScope.preferences.habits.hoverZoom === "on") {
+    if (ws().preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         if (HoverPreview.lastElem) {
             HoverPreview.hide();
@@ -522,7 +524,7 @@ dom("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
 
 
 // ── b1-9bu-A：Z 键监听回填（js/hover-preview.js 361-387 逐字；b1-9am 提取片缺失段，
-// Z 键悬停预览自 React 切换起死——本段即复活路径；$bodyScope/HoverPreviewKeydown → _w）──
+// Z 键悬停预览自 React 切换起死——本段即复活路径；scope 面/HoverPreviewKeydown → _w）──
 dom(window).on("keydown.hover-preview", function (event) {
     if (_w.HoverPreviewKeydown || event.ctrlKey || event.metaKey || event.shiftKey) return;
 
@@ -535,7 +537,7 @@ dom(window).on("keydown.hover-preview", function (event) {
         return;
     }
 
-    if (_w.$bodyScope.isDetailMode) return;
+    if (ws().isDetailMode) return;
     
     if (event.keyCode === 90) {
         _w.HoverPreviewKeydown = true;
@@ -556,7 +558,7 @@ dom(window).on("keyup.hover-preview", function (event) {
 
 // ── b1-9bu-B：video/audio 悬停播放复活 ─────────────────────────────────
 // video-hover-preview.js 78-84/86-475 + audio-hover-preview.js 7-167/169（b1-9s 误删，
-// git e8afdfc^ 取回）逐字搬迁。angular.element → _w.$bodyScope（b1-9d 同款）；drag
+// git e8afdfc^ 取回）逐字搬迁。angular.element → ws()（b1-9d 同款）；drag
 // 三兄弟 → _w.?.（onDragStartContainer 族 React 世界尚未供给——网格拖拽独立缺口另批，
 // preventDefault 先行保证悬停视频拖拽阻断语义）；mouseX bundle 隐式全局显式化；
 // videoHelper/getDurationString → _w（bundleGlobals 本批供给）。
@@ -585,9 +587,8 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
     // 避免拖拽时重复触发又在背景无限播放
     if (event.which === 1) return;
     if (rectSelecting) return;
-    if (_w.$bodyScope.preferences.video.hoverPlay === "false") return;
+    if (ws().preferences.video.hoverPlay === "false") return;
 
-    var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = dom(".box").has(this);
     var image = machineryGetItemByElement($box[0]);
 
@@ -932,7 +933,6 @@ dom("#box-container").on('mouseleave', videoHoverSelector, removeBoxVideoPlayer)
 
 function removeBoxVideoPlayer(event) {
     event.stopPropagation();
-    var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = dom(".box").has(this);
     disarmHoverSentinel($box);
     var image = machineryGetItemByElement($box[0]);
@@ -972,7 +972,6 @@ dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail
     if (rectSelecting) return;
     if (event.which === 1) return;
 
-    var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = dom(".box").has(this);
     var image = machineryGetItemByElement($box[0]);
 
@@ -1004,7 +1003,7 @@ dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail
         var imageWidth = $image.width();
         var imageHeight = $image.height();
         var src = $image.attr("src");
-        var imageDir = `${_w.$bodyScope.libraryPath.replace(/#/g, '%23')}/images/`
+        var imageDir = `${ws().libraryPath.replace(/#/g, '%23')}/images/`
         $box.find(".audio-progress-bar").remove();
         $box.find(".current-time").remove();
         var $progressbar = dom(`<div class="audio-progress-bar"><img src="${src}" style="height: ${imageHeight}px !important; width: ${imageWidth}px !important;"/></div>`);
@@ -1133,7 +1132,7 @@ currentWindow.on('hide', removePlayingAudios);   // b1-9bu-B：窗口隐藏即�
 // ── b1-9bu-C：youtube/vimeo iframe 悬停预览复活 ───────────────────────────
 // youtube-hover-preview.js 1-303 + vimeo-hover-preview.js 1-291（b1-9s 误删，git
 // e8afdfc^ 取回）全文逐字搬迁。bilibili-hover-preview.js 为 site isolation 时代移除
-// 桩（3 行注释），无可移植。angular.element ×4 → _w.$bodyScope（b1-9d 同款）；
+// 桩（3 行注释），无可移植。angular.element ×4 → ws()（b1-9d 同款）；
 // getDurationString → _w；drag 三兄弟 ×6 → _w.?.（同 bu-B 录档）；_ytPlayerState/
 // _vimeoPlayerState 为模块闭包 var——本模块 cleanupBoxHoverPreview 的 bare typeof
 // 清理引用与 handlers 同 install 作用域（var 提升语义一致）。
@@ -1210,9 +1209,8 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
     event.stopPropagation();
 
     if (rectSelecting) return;
-    if (_w.$bodyScope.preferences.video.hoverPlay === "false") return;
+    if (ws().preferences.video.hoverPlay === "false") return;
 
-    let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
     let image = machineryGetItemByElement($box[0]);
 
@@ -1248,9 +1246,9 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
         }
 
         var vq = "";
-        if (_w.$bodyScope.imageSize.height <= 400) {
+        if (ws().imageSize.height <= 400) {
             vq = "sd480";
-        } else if (_w.$bodyScope.imageSize.height <= 600) {
+        } else if (ws().imageSize.height <= 600) {
             vq = "hq720";
         } else {
             vq = "hq1080";
@@ -1413,7 +1411,6 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
 
 dom("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(event) {
     event.stopPropagation();
-    let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
     let image = machineryGetItemByElement($box[0]);
@@ -1505,9 +1502,8 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
     event.stopPropagation();
 
     if (rectSelecting) return;
-    if (_w.$bodyScope.preferences.video.hoverPlay === "false") return;
+    if (ws().preferences.video.hoverPlay === "false") return;
 
-    let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
     let image = machineryGetItemByElement($box[0]);
 
@@ -1543,7 +1539,7 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
         }
 
         var quality = "";
-        if (_w.$bodyScope.imageSize.height <= 480) {
+        if (ws().imageSize.height <= 480) {
             quality = "240p";
         } else {
             quality = "360p";
@@ -1707,7 +1703,6 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
 
 dom("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(event) {
     event.stopPropagation();
-    let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
     let image = machineryGetItemByElement($box[0]);

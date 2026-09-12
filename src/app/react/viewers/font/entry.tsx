@@ -80,7 +80,8 @@ function FontViewer() {
   );
 
   const parent = window.parent as any;
-  const $parentScope = parent.$bodyScope;
+  // b1-9bz-E5-3：父窗驱动面优先 __eagleDriver（显式白名单），过渡期回落 parent.$bodyScope。
+  const $parentScope = parent.__eagleDriver || parent.$bodyScope;
   const lng: string = $parentScope.preferences.general.language;
   const platform: string = parent.process.platform;
   const theme: string = urlParams.theme || 'gray';

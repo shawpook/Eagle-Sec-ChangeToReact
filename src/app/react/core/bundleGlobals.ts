@@ -30,6 +30,7 @@ import { installFlatpickr } from './flatpickrLite';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { scopeEvalAsync } from './scopeRuntime';
+import { getWindowScope } from './scopeFace';
 import { glRemoveitemsChannel } from '../global/bus';
 
 import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';
@@ -373,11 +374,11 @@ function _getHashID(image: any, hasColorInfo: any): any {
 }
 
 /* hiddenByCurrentFilter（bundle 49600-49663 逐字；filterData/contentFilter/smartFolderCount
-   经 $bodyScope 解析——filterData/contentFilter 仍由 bundle 承载，smartFolderCount 已是
+   经本窗 scope 面解析——filterData/contentFilter 仍由 bundle 承载，smartFolderCount 已是
    c9d 移植版） */
 function _hiddenByCurrentFilter(items: any[]): void {
   const w = window as any;
-  const bs: any = w.$bodyScope;
+  const bs: any = getWindowScope();
 
   if (!items || items.length === 0) return;
   let total = items.length;
@@ -920,7 +921,7 @@ function _buildRecentFileManager(): any {
   return RecentFileManager;
 }
 
-/* SlowNotify（bundle 19073-19133 逐字；show 内 $bodyScope → getBodyScope） */
+/* SlowNotify（bundle 19073-19133 逐字；show 内 scope 取用） */
 function _buildSlowNotify(): any {
   const w = window as any;
   return {
@@ -1524,7 +1525,7 @@ export function installBundleGlobals(): void {
       canGoForward: function () { return w.currentWindow && w.currentWindow.webContents && w.currentWindow.webContents.canGoForward(); },
       getState: function () { return usStateOf(usParseHash()); },
       setState: function (params: any, replace: any) {
-        const s: any = w.$bodyScope;
+        const s: any = getWindowScope();
         if (s && s.isDetailMode) return; // $locationChangeStart preventDefault 语义
         const current = usParseHash();
         const merged: any = Object.assign({}, current, params);
@@ -1545,7 +1546,7 @@ export function installBundleGlobals(): void {
         usListeners.slice().forEach((fn) => { try { fn(state); } catch (err) { /* noop */ } });
       },
       clearState: function () {
-        const s: any = w.$bodyScope;
+        const s: any = getWindowScope();
         if (s && s.isDetailMode) return;
         window.location.hash = usComposeHash({});
       },

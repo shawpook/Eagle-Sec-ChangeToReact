@@ -225,7 +225,8 @@ function TextEditor() {
     const language = urlParams.language || 'en';
     document.body.className = `${theme} ${language}`;
 
-    const $parentScope = parent.$bodyScope;
+    // b1-9bz-E5-3：父窗驱动面优先 __eagleDriver，过渡期回落 parent.$bodyScope。
+    const $parentScope = parent.__eagleDriver || parent.$bodyScope;
     const txtPath = $parentScope.imagesDir + $parentScope.current.id + '.info/' + $parentScope.current.name + '.' + $parentScope.current.ext;
 
     s.txtPath = decodeURIComponent(txtPath);
@@ -326,7 +327,8 @@ function TextEditor() {
   // ── 星标/切换直通 parent（text-editor.js 73-111 逐字；$eavlAsync 原始拼写为原 bug，经
   //    $evalAsync 修正语义——原行 `$parentScope.$eavlAsync()` 是静默 no-op）──
   const parentCall = (fn: string) => {
-    const p = (window.parent as any).$bodyScope;
+    const _pw = window.parent as any;
+    const p = _pw.__eagleDriver || _pw.$bodyScope;
     if (p && typeof p[fn] === 'function') p[fn]();
   };
 

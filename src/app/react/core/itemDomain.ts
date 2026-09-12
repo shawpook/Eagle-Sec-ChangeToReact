@@ -58,6 +58,7 @@ import { machineryCalculateFilterCounts } from './filterDomain';
 import { getLanguageBCP, machineryLeaveDetailMode, updateCurrentOrderAndIncrease } from './miscDomain';
 import { machineryAutoResizeTagFilter } from './tagManagerDomain';
 import { getTimeout, machineryCalls } from './machineryInfra';
+import { getWindowScope } from './scopeFace';
 import { useListState } from '../store/listState';
 import { useFolderState } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
@@ -67,7 +68,6 @@ import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
-declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;
 declare const __cc_openInFinder: any;
@@ -914,9 +914,10 @@ export function getRawUrl(...args: any[]) {
             if (!EagleConfig.SUPPORT_FORMATS[__lv_image.ext]) {
                 rawUrl = FileUrlHelper.getThumbnailUrl(__lv_image);
             }
-            if ($bodyScope.modifiedMappings && $bodyScope.modifiedMappings[__lv_image.id]) {
-	            rawUrl = `${rawUrl}?v=${$bodyScope.modifiedMappings[__lv_image.id]}`;
-	        }
+            const _ws: any = getWindowScope();
+            if (_ws.modifiedMappings && _ws.modifiedMappings[__lv_image.id]) {
+                rawUrl = `${rawUrl}?v=${_ws.modifiedMappings[__lv_image.id]}`;
+            }
         	return rawUrl;
         }).apply(null, args);
   }

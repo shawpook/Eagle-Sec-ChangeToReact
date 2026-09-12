@@ -31,6 +31,8 @@ const DATA_FIELDS = [
   'useMpvPlayer', 'initDetailMode', 'isCropMode', 'isGrayscaleMode', 'isSlideshowMode',
   'showDetailImage', 'theme', 'language', 'platform', 'libraryImagesPath', 'libraryPath',
   'goalTotal', 'canUseTouchID', 'UrlStateService', 'subFolderSortableOptions', 'mousetrap',
+  // b1-9bz-E5-3：viewer iframe（font/text-editor/gif）经 parent 面读取的字段
+  'imagesDir', 'gifViewer', 'subFolders',
 ];
 
 /** 跨边界可调的动作（machineryInfra 挂载的函数面 + externalSupply 供给）。 */

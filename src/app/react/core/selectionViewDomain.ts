@@ -12,6 +12,7 @@
  */
 
 import { detailZoom } from './smoothZoomEngine';
+import { getWindowScope } from './scopeFace';
 import { persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
 
@@ -456,8 +457,9 @@ export function machineryOpenInspectorFolderSelectPanel(event: any): void {
           if (hasChanged) {
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
-            if (w.$bodyScope.viewMode === 'unfiled') {
-              glRemoveitemsChannel.emit(w.$bodyScope.getSelectedItemElements());
+            const _ws: any = getWindowScope();
+            if (_ws.viewMode === 'unfiled') {
+              glRemoveitemsChannel.emit(_ws.getSelectedItemElements());
             }
 
             machineryCalculateImageBinding({ ignoreSort: true }, () => {

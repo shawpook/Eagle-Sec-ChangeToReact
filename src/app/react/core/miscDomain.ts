@@ -21,6 +21,7 @@
 
 import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
+import { getWindowScope } from './scopeFace';
 import { syncErrorCount } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -1303,7 +1304,7 @@ export function updateSuggestions() {
             var wordsIndex = {};
             var dataset = [];
             var currPageTags = [];
-            var allCount = $bodyScope.all.length;
+            var allCount = getWindowScope().all.length;
             useMiscRawState.getState().containTags.forEach(function (tag) {
             	if (tag.imageCount && !tag.isNoTags) {
 	            	currPageTags.push({

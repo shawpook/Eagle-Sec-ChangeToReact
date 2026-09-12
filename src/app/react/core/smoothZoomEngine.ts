@@ -15,6 +15,10 @@ import { syncDetailFromScope } from '../store/detailState';
 import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
 import { scopeEvalAsync } from './scopeRuntime';
+import { getWindowScope } from './scopeFace';
+// b1-9bz-E5-3：原裸全局 body scope → 本窗 scope 面访问器（主窗 store 面 / 预览窗 controllerScope）。
+// 逐字搬迁体大量使用该裸全局，访问器取值即本窗面。
+function bodyScopeOf(): any { return getWindowScope(); }
 
 import { makeDraggable } from '../components/interactions/draggable';
 import { dom } from '../utils/domLite';
@@ -359,21 +363,21 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
             let backgroundHeight;
             let backgroundWidth;
             let ratio;
-            if ($bodyScope.current.width > $bodyScope.current.height) {
-            	ratio = $bodyScope.current.width / $bodyScope.current.height;
+            if (bodyScopeOf().current.width > bodyScopeOf().current.height) {
+            	ratio = bodyScopeOf().current.width / bodyScopeOf().current.height;
             	backgroundWidth = NAVIGATOR_SIZE;
             	backgroundHeight = parseInt(NAVIGATOR_SIZE / ratio);
             }
             else {
-            	ratio = $bodyScope.current.height / $bodyScope.current.width;
+            	ratio = bodyScopeOf().current.height / bodyScopeOf().current.width;
             	backgroundHeight = NAVIGATOR_SIZE;
             	backgroundWidth = parseInt(NAVIGATOR_SIZE / ratio);
             }
 			let left = (offsetX - self.scrollbar.navigatorViewport.width() / 2) / backgroundWidth;
 			let top = (offsetY - self.scrollbar.navigatorViewport.height() / 2) / backgroundHeight;
-			self.tY = -$bodyScope.current.height * self._sc * top;
-			let startX = (self._w / 2) - ($bodyScope.current.width / 2) * self._sc;
-			self.tX = -startX - (left * $bodyScope.current.width * self._sc);
+			self.tY = -bodyScopeOf().current.height * self._sc * top;
+			let startX = (self._w / 2) - (bodyScopeOf().current.width / 2) * self._sc;
+			self.tX = -startX - (left * bodyScopeOf().current.width * self._sc);
 			self.changeOffset(true, true);
 			self.Animate();
 		}
@@ -406,21 +410,21 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 	            let backgroundHeight;
 	            let backgroundWidth;
 	            let ratio;
-	            if ($bodyScope.current.width > $bodyScope.current.height) {
-	            	ratio = $bodyScope.current.width / $bodyScope.current.height;
+	            if (bodyScopeOf().current.width > bodyScopeOf().current.height) {
+	            	ratio = bodyScopeOf().current.width / bodyScopeOf().current.height;
 	            	backgroundWidth = NAVIGATOR_SIZE;
 	            	backgroundHeight = parseInt(NAVIGATOR_SIZE / ratio);
 	            }
 	            else {
-	            	ratio = $bodyScope.current.height / $bodyScope.current.width;
+	            	ratio = bodyScopeOf().current.height / bodyScopeOf().current.width;
 	            	backgroundHeight = NAVIGATOR_SIZE;
 	            	backgroundWidth = parseInt(NAVIGATOR_SIZE / ratio);
 	            }
 				let left = ui.position.left / backgroundWidth;
 				let top = ui.position.top / backgroundHeight;
-				self.tY = -$bodyScope.current.height * self._sc * top;
-				let startX = (self._w / 2) - ($bodyScope.current.width / 2) * self._sc;
-				self.tX = -startX - (left * $bodyScope.current.width * self._sc);
+				self.tY = -bodyScopeOf().current.height * self._sc * top;
+				let startX = (self._w / 2) - (bodyScopeOf().current.width / 2) * self._sc;
+				self.tX = -startX - (left * bodyScopeOf().current.width * self._sc);
 				self.changeOffset(true, true);
 				self.Animate();
 			},
@@ -1453,7 +1457,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
         	}
 
 			if (!$scope) {
-				$scope = window.$bodyScope;
+				$scope = bodyScopeOf();
 			}
 			if ($scope.isCommentMode || e.button === 2 || e.button === 1) {
 				return;
@@ -1710,7 +1714,7 @@ if (!self._mousedown) return;
 		mouseWheel: function (e, delta) {
 
 			if (!$scope) {
-				$scope = window.$bodyScope;
+				$scope = bodyScopeOf();
 			}
 
 			var limit = 12;
@@ -1855,7 +1859,7 @@ if (!self._mousedown) return;
 
 			// UPDATE VIEW
 			if (!$scope) {
-				$scope = window.$bodyScope;
+				$scope = bodyScopeOf();
 			}
 
 			$scope.imageSize.zoomRatioExp = self.rA * 100;
@@ -2227,7 +2231,7 @@ if (!self._mousedown) return;
 			}
 
 			if (!$scope) {
-				$scope = window.$bodyScope;
+				$scope = bodyScopeOf();
 			}
 
 			//Apply Scale and position to the image:
@@ -2285,11 +2289,11 @@ if (!self._mousedown) return;
 				}
 
 				let navigatorZoomData = self.getZoomData();
-				let navigatorTop = (navigatorZoomData.normY) / $bodyScope.current.height * 100;
-				let navigatorStartX = (20000 / 2) - ($bodyScope.current.width / 2);
-				let navigatorLeft = (navigatorZoomData.normX - navigatorStartX) / $bodyScope.current.width * 100;
-				let navigatorWidth = self.sW / ($bodyScope.current.width * navigatorZoomData.ratio) * 100;
-				let navigatorHeight = self.sH / ($bodyScope.current.height * navigatorZoomData.ratio) * 100;
+				let navigatorTop = (navigatorZoomData.normY) / bodyScopeOf().current.height * 100;
+				let navigatorStartX = (20000 / 2) - (bodyScopeOf().current.width / 2);
+				let navigatorLeft = (navigatorZoomData.normX - navigatorStartX) / bodyScopeOf().current.width * 100;
+				let navigatorWidth = self.sW / (bodyScopeOf().current.width * navigatorZoomData.ratio) * 100;
+				let navigatorHeight = self.sH / (bodyScopeOf().current.height * navigatorZoomData.ratio) * 100;
 				
 				if (self.scrollbar.navigator) {
 					if (self._sc * $scope.current.width * 0.97 > self.sW || self._sc * $scope.current.height > self.sH) {
@@ -2308,11 +2312,11 @@ if (!self._mousedown) return;
 				}
 
 				self.bitmapViewer.update({
-					id: $bodyScope.current.id,
+					id: bodyScopeOf().current.id,
 					top: parseInt(navigatorZoomData.normY),
 					left: parseInt(navigatorZoomData.normX - navigatorStartX),
-					width: parseInt(navigatorWidth / 100 * $bodyScope.current.width),
-					height: parseInt(navigatorHeight / 100 * $bodyScope.current.height)
+					width: parseInt(navigatorWidth / 100 * bodyScopeOf().current.width),
+					height: parseInt(navigatorHeight / 100 * bodyScopeOf().current.height)
 				});
 
 				// 横向 scrollbar
@@ -2735,7 +2739,7 @@ if (!self._mousedown) return;
             	height: backgroundHeight + "px"
             });
 
-			const $injector = { get: function (name) { return name === '$rootScope' ? (window.$bodyScope && window.$bodyScope.$root) : undefined; } };
+			const $injector = { get: function (name) { return name === '$rootScope' ? (bodyScopeOf() && bodyScopeOf().$root) : undefined; } };
 			const $rootScope = $injector.get('$rootScope');
 			const rawURL = getRawUrl(image);
 			const thumbnailURL = getThumbnailUrl(image);
@@ -3100,7 +3104,7 @@ if (!self._mousedown) return;
 		resize: function (e) {
 
 			if (!$scope) {
-				$scope = window.$bodyScope;
+				$scope = bodyScopeOf();
 			}
 			if (!$scope.isDetailMode) {
 				return;

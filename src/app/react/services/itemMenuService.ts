@@ -16,6 +16,7 @@
  */
 // @ts-nocheck
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
+import { getWindowScope } from '../core/scopeFace';
 
 import { machineryVideoScreenShot } from './mediaService';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -115,8 +116,9 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
         let historyLibraryMenu = {};
         historyLibraryMenu.items = getLibraryHistory().filter((history) => {
             var isCurrent = false;
-            if ($bodyScope.libraryPath) {
-                isCurrent = path.normalize(history.path) == path.normalize($bodyScope.libraryPath);
+            const _ws: any = getWindowScope();
+            if (_ws.libraryPath) {
+                isCurrent = path.normalize(history.path) == path.normalize(_ws.libraryPath);
             }
             return !isCurrent;
         }).map((history) => {

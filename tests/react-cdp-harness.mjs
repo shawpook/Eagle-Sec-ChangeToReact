@@ -194,6 +194,37 @@ export async function bootStack({
     if (!page) throw new Error('CDP page connect failed after retries');
     await page.send('Runtime.enable');
     await page.send('Page.enable');
+    // b1-9bz-E5-3：测试观测口 `window.__eagleProbe`（name→值 的 scope 外观，**仅测试期**）。
+    // 应用在 E5-4 起不再暴露主窗 `window.$bodyScope`；本探针经 `__eagleScopeRegistry`
+    // （app 侧诊断口，注册表 + 面属性两级）读写，并补齐测试惯用的 `$evalAsync` no-op 钩子。
+    // 过渡期（应用仍装别名时）直接复用应用面，保证行为等价。
+    await page.send('Runtime.evaluate', {
+      expression: `(() => {
+        try {
+          if (window.$bodyScope) { window.__eagleProbe = window.$bodyScope; return true; }
+          const reg = window.__eagleScopeRegistry;
+          if (!reg) { window.__eagleProbe = null; return false; }
+          const noop = () => undefined;
+          const probe = new Proxy({}, {
+            get: (_t, k) => {
+              if (typeof k !== 'string') return undefined;
+              if (k === '$evalAsync' || k === '$eval') return noop;
+              if (k === '$destroy') return noop;
+              if (k === '$root' || k === '$parent') return probe;
+              if (k === '__eagleShim') return true;
+              return reg.read(k);
+            },
+            set: (_t, k, v) => { if (typeof k === 'string') reg.write(k, v); return true; },
+            deleteProperty: (_t, k) => { if (typeof k === 'string') reg.write(k, undefined); return true; },
+            has: (_t, k) => typeof k === 'string' && (reg.names().includes(k) || reg.read(k) !== undefined),
+          });
+          window.__eagleProbe = probe;
+          window.$bodyScope = probe;
+          return true;
+        } catch (err) { window.__eagleProbe = null; return false; }
+      })()`,
+      returnByValue: true,
+    });
     return { apiPort, thumbnailPort, extensionPort, vitePort, debugPort, backend, vite, electron, page, targets: [] };
   } catch (err) {
     await stop(backend);

@@ -50,7 +50,10 @@ export function createBodyScopeFace(): any {
 
   const define = (name: string): void => {
     Object.defineProperty(face, name, {
-      configurable: true,
+      // configurable:false：注册字段是 store 的**稳定视图**，不可 delete/redefine——
+      // 否则 `delete scope.X` 会摘掉访问器，使该字段此后从面读取恒 undefined（cz2 契约测试
+      // 的 `delete __eagleCoreState.canUseTouchID` 清理动作即踩中此点）。
+      configurable: false,
       enumerable: true,
       get() { const m = getMigratedScopeField(name); return m ? m.read() : plain[name]; },
       set(v: any) {
@@ -88,11 +91,15 @@ export function installScopeAlias(): void {
   (window as any).$bodyScope = getScopeFace();
 }
 
-/** store 注册表诊断口（测试/驱动按名读写字段；非 scope 对象）。 */
+/** store 注册表诊断口（测试/驱动按名读写字段；非 scope 对象，但读不到注册字段时回落面属性）。 */
 export function installScopeRegistry(): void {
   (window as any).__eagleScopeRegistry = {
-    read: (name: string) => { const m = getMigratedScopeField(name); return m ? m.read() : undefined; },
-    write: (name: string, value: any) => { const m = getMigratedScopeField(name); if (m) m.write(value); },
+    read: (name: string) => { const m = getMigratedScopeField(name); return m ? m.read() : getScopeFace()[name]; },
+    write: (name: string, value: any) => {
+      const m = getMigratedScopeField(name);
+      if (m) m.write(value);
+      else getScopeFace()[name] = value;
+    },
     names: () => getMigratedScopeFieldNames(),
   };
 }

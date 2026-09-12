@@ -1,6 +1,13 @@
 (function () {
   'use strict';
 
+  // b1-9bz-E5-3：本窗 scope 面访问器——优先显式驱动面 window.__eagleDriver
+  // （main.tsx 的 core/driverApi.ts 安装：数据 getter + 动作 + $evalAsync no-op），
+  // 过渡期回落 window.$bodyScope（子窗/预览窗自有面）。E5-4 主窗别名退役后仍可工作。
+  function bodyScope() {
+    return window.__eagleDriver || window.$bodyScope || null;
+  }
+
   if (window.__eagleBrowserShimLoaded) return;
   window.__eagleBrowserShimLoaded = true;
 
@@ -94,7 +101,7 @@
   }
 
   function releaseDetailImage(itemId, mode) {
-    const scope = window.$bodyScope;
+    const scope = bodyScope();
     if (!scope || !scope.isDetailMode || !scope.current || scope.current.id !== itemId) return false;
     detailRenderState.mode = mode;
     detailRenderState.releasedAt = performance.now();
@@ -105,7 +112,7 @@
   function waitForDetailOriginal(itemId, tiles) {
     const deadline = performance.now() + 5000;
     const check = () => {
-      const scope = window.$bodyScope;
+      const scope = bodyScope();
       if (!scope || !scope.isDetailMode || !scope.current || scope.current.id !== itemId) {
         document.body.classList.remove('eagle-detail-awaiting-original');
         return;
@@ -177,7 +184,7 @@
   }
 
   const detailHookTimer = setInterval(() => {
-    const scope = window.$bodyScope;
+    const scope = bodyScope();
     if (!scope || typeof scope.enterDetailMode !== 'function' || scope.enterDetailMode.__eagleOriginalGate) return;
     const enterDetailMode = scope.enterDetailMode;
     originalDetailModeEntry = enterDetailMode;
@@ -251,7 +258,7 @@
       if (id) ids.push(id);
     });
     if (ids.length > 0) return ids;
-    const scope = window.$bodyScope;
+    const scope = bodyScope();
     const items = (scope && Array.isArray(scope.raw))
       ? scope.raw
       : (Array.isArray(window.__mockLibraryCache) ? window.__mockLibraryCache : []);
@@ -315,7 +322,7 @@
   // component is actually rendered we prefer its measured width.
   function inspectorVisibilityState() {
     try {
-      const scope = window.$bodyScope;
+      const scope = bodyScope();
       const inspector = scope && scope.inspector;
       let width = (inspector && Number(inspector.width)) || 0;
       let hidden = Boolean(inspector && inspector.isHideInspector);
@@ -430,7 +437,7 @@
   function autoCollapseSidebar() {
     try {
       if (document.body.classList.contains('hide-sidebar')) return;
-      const scope = window.$bodyScope;
+      const scope = bodyScope();
       const M = window.__eagleMachinery;
       if (scope && M && typeof M.toggleAll === 'function') {
         // E5-2：machineryToggleAll 已去 scope 化（E4-2，签名 ($event)）——原以 scope 当 $event 传入
@@ -472,7 +479,7 @@
 
   function fallbackToOriginalDetail(itemId) {
     try {
-      const scope = window.$bodyScope;
+      const scope = bodyScope();
       const item = (scope && Array.isArray(scope.raw))
         ? scope.raw.find((entry) => entry && entry.id === itemId)
         : null;
@@ -532,7 +539,7 @@
       closeDocumentViewer();
       // Restore any non-detail grid state left behind by the original app.
       try {
-        const scope = window.$bodyScope;
+        const scope = bodyScope();
         if (scope && typeof scope.leaveDetailMode === 'function' && scope.isDetailMode) {
           scope.leaveDetailMode();
         }
@@ -1318,7 +1325,7 @@
   }
 
   function previewCurrentItemId() {
-    const scope = window.$bodyScope;
+    const scope = bodyScope();
     return scope && scope.current && scope.current.id ? scope.current.id : '';
   }
 
@@ -1348,7 +1355,7 @@
   }
 
   function isCurrentPreviewRawPath(rawPath) {
-    const scope = window.$bodyScope;
+    const scope = bodyScope();
     if (!scope || !scope.current || !scope.current.id || !scope.current.name || !scope.current.ext) return false;
     const expected = `${scope.libraryImagesPath || ''}/${scope.current.id}.info/${scope.current.name}.${scope.current.ext}`
       .replace(/\\/g, '/')
@@ -1885,7 +1892,7 @@
   // $scope.rebindRefresh() + $scope.scrollToSelectedItem()
   if (desktopApi && typeof desktopApi.onRebindRefresh === 'function') {
     desktopApi.onRebindRefresh(() => {
-      const scope = typeof window !== 'undefined' ? window.$bodyScope : null;
+      const scope = typeof window !== 'undefined' ? bodyScope() : null;
       const M = window.__eagleMachinery;
       if (scope && M && typeof M.rebindRefresh === 'function') {
         try {
@@ -3127,9 +3134,9 @@
         const cachedIds = new Set((window.__mockLibraryCache || []).map((item) => item && item.id).filter(Boolean));
         let rawIds = new Set();
         try {
-          // 去 Angular 后 body scope 由 window.$bodyScope 承载（angular 缺席时原表达式恒 null，
+          // 去 Angular 后 body scope 由 bodyScope() 承载（angular 缺席时原表达式恒 null，
           // 这道「已在列表里」的防线会整条失效）。
-          const scope = window.angular ? angular.element(document.body).scope() : (window.$bodyScope || null);
+          const scope = window.angular ? angular.element(document.body).scope() : (bodyScope() || null);
           rawIds = new Set((scope && Array.isArray(scope.raw) ? scope.raw : []).map((item) => item && item.id).filter(Boolean));
         } catch (err) {
           // Ignore scope access failures; the cache check still protects against local imports.
@@ -3310,7 +3317,7 @@
     // 固定延时发射存在竞态：页面 bootstrap 慢于 300ms 时 'initial' / 'app-status-loading'
     // 会在控制器注册监听器之前丢失（bundle 22664 的 'initial' 处理器内部才注册
     // app-status-loading 监听），导致 sanitize/tinyPinyin 等运行时 require 缺失。
-    // 这里改为等待控制器就绪（window.$bodyScope 由 bootstrap 期间设置）后再按序发射。
+    // 这里改为等待控制器就绪（bodyScope() 由 bootstrap 期间设置）后再按序发射。
     const emitAfterControllerReady = () => {
       ipcRenderer.emit('initial', {
         trialRemain: 0,
@@ -3349,11 +3356,11 @@
       }, 150);
     };
 
-    // 控制器就绪后才发射（window.$bodyScope 由 bootstrap 期间设置；兜底 10s 后照常发射）
+    // 控制器就绪后才发射（bodyScope() 由 bootstrap 期间设置；兜底 10s 后照常发射）
     let emitAttempts = 0;
     const waitControllerReady = () => {
       emitAttempts += 1;
-      if (window.$bodyScope || emitAttempts > 400) {
+      if (bodyScope() || emitAttempts > 400) {
         emitAfterControllerReady();
         return;
       }

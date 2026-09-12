@@ -15,6 +15,7 @@
 // 与 controllerFns 的同名 shim 同款语义；ESM 循环引用双侧均为函数声明提升，运行时安全。
 import { getTimeout as machineryGetTimeout } from './machineryInfra';
 import { debounce } from '../utils/func';
+import { getWindowScope } from './scopeFace';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
@@ -1599,8 +1600,9 @@ export function machineryBuildTagManager(): any {
             let historyLibraryMenu = {};
             historyLibraryMenu.items = getLibraryHistory().filter(( history: any) => {
                 var isCurrent = false;
-                if ($bodyScope.libraryPath) {
-                    isCurrent = w.path.normalize(history.path) == w.path.normalize($bodyScope.libraryPath);
+                const _ws: any = getWindowScope();
+                if (_ws.libraryPath) {
+                    isCurrent = w.path.normalize(history.path) == w.path.normalize(_ws.libraryPath);
                 }
                 return !isCurrent;
             }).map(( history: any) => {

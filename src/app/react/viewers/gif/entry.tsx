@@ -45,7 +45,8 @@ function GifPlayer() {
     const gifPlayer = new (window as any).SuperGif({ gif: ins });
 
     console.time('gifPlayer.load');
-    const parentScope = parent.$bodyScope;
+    // b1-9bz-E5-3：父窗驱动面优先 __eagleDriver，过渡期回落 parent.$bodyScope。
+    const parentScope = parent.__eagleDriver || parent.$bodyScope;
     let startTime: number | undefined;
 
     gifPlayer.load(function () {

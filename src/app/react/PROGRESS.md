@@ -7837,3 +7837,24 @@ body scope 的 get/set 委托 store（读走 store、写 store + `coreState` 镜
 
 **E2 余量（转下一批）**：`eagle.filter.*` 嵌套拆平、`inspector.*` 拆平、`selectedFolders/selectedSmartFolders`
 （`$root.*` 面）等——见 `docs/e1-scope-field-map.md` §3 与 `docs/e-phase-plan-2026-09-12.md` §3.2。
+
+---
+
+## E3：读点改写（直接链首刀）
+
+### E3-1（提交 `f413048f`）`getBodyScope().<注册字段>` 直链读 → 归属 store
+- 工具：`tests-tmp/e3-rewrite-inline.cjs`（本地不入库）——按 93 字段→归属 store 表，把
+  `getBodyScope().F` / `getBodyScope()?.F` 的**直链读**替换为 `useXState.getState().F`；
+  **跳过赋值点**（`= F` 保留经 proxy 写，以维持 `coreState` 诊断镜像）与函数调用点。
+- 实测：**138 处 / 22 文件**；`getBodyScope 627 → 489`，`coreState 14 → 13`。
+- 踩坑（已修）：① codemod 的 import 说明符误用 hook 名（`store/useSelectionState`）而非文件名
+  （`store/selectionState`）→ 22 文件 import 全部 404、应用起不来（`window.eagle timeout`）；
+  ② 新 store 字段用具体类型（`any[]`/`Record`）后，替换处类型由 `any` 收窄 → tsc +38；
+  解法：新 6 store 字段类型放宽为 `any`（与 proxy 时代读到的 `any` 一致），tsc 回 508 零新增。
+- 门禁：`tsc` 508（零新增）+ `probe LOAD_OK` + 13 项定向测试全过
+  （stage-smoke/5/6/7a/7b、cz1、m1、residue、ui-interactions、main-ui-workflow、d3 组、menu-popup）。
+
+**E3 余量**：别名读（`const s = getBodyScope(); s.X`，实测约 1200 处）需逐文件人工改写——
+按 `docs/e-phase-plan-2026-09-12.md` §4 的 C-1…C-6 切片推进（密度序：`inspectorActions` 53 /
+`detailHooks` 47 / `folderMenuService` 45 / `miscDomain` 42 / `Sidebar` 41 …），
+每批改后压 `getBodyScope`/`rootAccess` 并棘轮基线。

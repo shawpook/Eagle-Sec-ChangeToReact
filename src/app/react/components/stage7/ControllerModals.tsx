@@ -165,7 +165,6 @@ export function ErrorModal() {
 
   /* copyAll（76230-76242） */
   const copyAll = () => {
-    const body = getBodyScope();
     const paths: string[] = [];
     errorListRef.current.forEach((error) => {
       if (error.object.path) {
@@ -173,7 +172,7 @@ export function ErrorModal() {
       }
     });
     getIpc().sendTo((window as any).backgroundWindowID, 'copy-paths-to-clipboard', paths);
-    body.notify({
+    useMiscRawState.getState().notify({
       message: t('previewWindow.copied'),
       duration: 1000,
     });

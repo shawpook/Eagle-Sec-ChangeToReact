@@ -11,7 +11,7 @@ import { max, uniq } from '../../utils/lang';
 import { smartZoom } from '../../services/detailService';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncDetailFromScope } from '../../store/detailState';
-import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
+import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
@@ -24,6 +24,8 @@ import { machineryLeaveDetailMode } from '../../core/miscDomain';
 import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useSelectionState } from '../../store/selectionState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
  * （bundle 75637-76134）接管，模板 = index.html 411-617 逐字转写。
@@ -179,9 +181,9 @@ export function hiddenByCurrentFilter(items: any[]) {
         });
 
         // 从当前筛选结果移除项目
-        getBodyScope().allData = useItemState.getState().allData.filter((item: any) => {
+        writeScopeField('allData', useItemState.getState().allData.filter((item: any) => {
           return !hiddenItemMap[item.id];
-        });
+        }));
 
         if (hiddenElements.length > 0) {
           glRemoveitemsChannel.emit(hiddenElements);
@@ -1018,7 +1020,6 @@ export function AddToFolderModal() {
   const save = () => {
     const w = window as any;
     const body = getBodyScope();
-    const rootScope = getRootScope();
     const selectedFolders: any[] = [];
 
     const origin: any[] = [];
@@ -1167,8 +1168,8 @@ export function AddToFolderModal() {
     }
 
     // 復原操作
-    if (rootScope.notify) {
-      rootScope.notify(
+    if (useMiscRawState.getState().notify) {
+      useMiscRawState.getState().notify(
         {
           message: message,
           duration: 4000,
@@ -1179,9 +1180,9 @@ export function AddToFolderModal() {
             image.tags = originTags[index];
             image.isDeleted = originDeleted[index];
           });
-          getBodyScope().selected = origin;
+          writeScopeField('selected', origin);
           syncInspectorFromScope();
-          getBodyScope().current = origin[0];
+          writeScopeField('current', origin[0]);
           syncDetailFromScope();
           syncInspectorFromScope();
           calculateImageBindingChannel.emit();

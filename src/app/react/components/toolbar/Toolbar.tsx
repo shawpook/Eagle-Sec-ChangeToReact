@@ -455,7 +455,7 @@ export function Toolbar() {
             tippy-placement="bottom"
             tippy-content={`${t('toolbar.randomRefhreshBtn')}<key>R</key>`}
             ng-click="refreshRandom()"
-            onClick={call(scoped(machineryRefreshRandom))}
+            onClick={call(machineryRefreshRandom)}
           >
             <img src={iconSrc(snapshot.theme, 'ic_refresh.svg')} />
           </div>

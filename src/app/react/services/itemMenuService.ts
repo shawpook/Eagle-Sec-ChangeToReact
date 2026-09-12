@@ -300,7 +300,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'cover thumbnail 封面 copy 複製',
                     icon: 'ic-video-copy-frame.svg',
                     click: () => {
-                        machineryVideoScreenShot(s, true);
+                        machineryVideoScreenShot(true);
                     },
                 },
                 // 保存当前画面（視頻）
@@ -311,7 +311,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'cover thumbnail 封面 save 儲存 保存',
                     icon: 'ic-video-save-frame.svg',
                     click: () => {
-                        machineryVideoScreenShot(s);
+                        machineryVideoScreenShot();
                     },
                 },
                 // 保存当前画面（視頻）
@@ -590,7 +590,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'set as cover 設為封面',
                     icon: 'ic-folder-set-cover.svg',
                     click: () => {
-                        machinerySetFolderCover(s);
+                        machinerySetFolderCover();
                         scopeEvalAsync();
                     },
                 },
@@ -642,7 +642,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'copy file 複製 文件',
                     icon: 'ic-file-copy.svg',
                     click: () => {
-                        machineryCopyImages(s, event);
+                        machineryCopyImages(event);
                         scopeEvalAsync();
                     },
                 },

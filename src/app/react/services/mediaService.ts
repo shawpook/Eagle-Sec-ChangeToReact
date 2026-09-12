@@ -109,16 +109,16 @@ export function mediaRememberVideoCurrentTime(item: any): void {
 /* videoScreenShot（bundle 33233-33288 逐字 async：mpv screenshot API / native drawImage
    双路 → copyMode 剪贴板（electron.nativeImage）或 screencapture-from-extension 上送
    （guid + currentTime.toFixed(2) 命名）） */
-export async function mediaVideoScreenShot(s: any, copyMode: any): Promise<void> {
+export async function mediaVideoScreenShot(copyMode: any): Promise<void> {
   const w = window as any;
-  if (s.current && w.VIDEO_TYPES[s.current.ext]) {
+  if (useSelectionState.getState().current && w.VIDEO_TYPES[useSelectionState.getState().current.ext]) {
 
     var player = mediaGetVideoPlayer();
     if (!player) return;
 
     var currentTime = player.el.currentTime;
-    var width = s.current.width;
-    var height = s.current.height;
+    var width = useSelectionState.getState().current.width;
+    var height = useSelectionState.getState().current.height;
     var base64;
 
     if (player.type === 'mpv') {
@@ -154,7 +154,7 @@ export async function mediaVideoScreenShot(s: any, copyMode: any): Promise<void>
         var newImage = nativeImage.createFromDataURL(base64);
 
         w.electron.clipboard.writeImage(newImage);
-        s.notify({
+        useMiscRawState.getState().notify({
           message: w.i18n.__("previewWindow.copied"),
           duration: 750
         });
@@ -166,11 +166,11 @@ export async function mediaVideoScreenShot(s: any, copyMode: any): Promise<void>
     else {
       var data = {
         id: w.guid(),
-        name: `${s.current.name} - ${currentTime.toFixed(2)}`,
-        url: s.current.url || "",
+        name: `${useSelectionState.getState().current.name} - ${currentTime.toFixed(2)}`,
+        url: useSelectionState.getState().current.url || "",
         tags: [],
-        modificationTime: s.current.modificationTime + 1 || Date.now(),
-        folders: s.current.folders || [],
+        modificationTime: useSelectionState.getState().current.modificationTime + 1 || Date.now(),
+        folders: useSelectionState.getState().current.folders || [],
         base64data: base64,
       };
       const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
@@ -188,8 +188,7 @@ export function rememberVideoCurrentTime(item: any): void {
 }
 
 export function videoScreenShot(copyMode?: any): Promise<void> {
-  const s = getBodyScope();
-  if (s) return mediaVideoScreenShot(s, copyMode);
+  return mediaVideoScreenShot(copyMode);
   return Promise.resolve();
 }
 
@@ -465,8 +464,8 @@ export function machineryRememberVideoCurrentTime(item: any): void {
 }
 
 /* videoScreenShot（bundle 33233-33288 逐字 async） */
-export async function machineryVideoScreenShot(s: any, copyMode: any): Promise<void> {
-  return mediaVideoScreenShot(s, copyMode);
+export async function machineryVideoScreenShot(copyMode: any): Promise<void> {
+  return mediaVideoScreenShot(copyMode);
 }
 
 /* calcRotateDegree（bundle 36170-36180 逐字：click 分支 shift ±90 / 其余 -90 + 360 归一；

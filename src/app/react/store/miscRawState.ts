@@ -85,6 +85,48 @@ interface MiscRawState {
   hsks: any;
   Registration: any;
   AnalyticsHelper: any;
+  // ── b1-9bz-E3-11：函数面挂载字段源翻转（值是函数的状态字段；scope.X = fn 写、scope.X() 读）──
+  undo: any;
+  closeAll: any;
+  initMenu: any;
+  notify: any;
+  reload: any;
+  toggleFilter: any;
+  updateSelection: any;
+  zoom: any;
+  changeStar: any;
+  removeSelected: any;
+  toggleAll: any;
+  selectNext: any;
+  selectPrev: any;
+  enterDetailMode: any;
+  leaveDetailMode: any;
+  onDropContainer: any;
+  activateFont: any;
+  deactivateFont: any;
+  escHandler: any;
+  copyAsPath: any;
+  getRawPath: any;
+  getRawUrl: any;
+  select: any;
+  addImagesToFolder: any;
+  selectTag: any;
+  createTagGroup: any;
+  openTagAllGroup: any;
+  openUnfiledGroup: any;
+  openStarredGroup: any;
+  openTagGroup: any;
+  addStarredTags: any;
+  addGroupTags: any;
+  openTagGroupContextMenu: any;
+  renameTagGroup: any;
+  changeTagGroupColor: any;
+  removeTagGroup: any;
+  renameTagGroupBlur: any;
+  renameTagGroupKeyup: any;
+  tagGroupDescriptionChange: any;
+  tagGroupDescriptionFocus: any;
+  tagGroupDescriptionBlur: any;
   // ── b1-9bz-E3-5 增补：machinery 函数体内仍以 `s.X` 访问的其余状态字段（恒为状态值，
   //    无函数面成员；函数面（notify/reload/... ）留待 E3-7 直调化，不在此注册）。──
   gifViewer: any;
@@ -240,6 +282,47 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   hsks: null,
   Registration: null,
   AnalyticsHelper: null,
+  undo: null,
+  closeAll: null,
+  initMenu: null,
+  notify: null,
+  reload: null,
+  toggleFilter: null,
+  updateSelection: null,
+  zoom: null,
+  changeStar: null,
+  removeSelected: null,
+  toggleAll: null,
+  selectNext: null,
+  selectPrev: null,
+  enterDetailMode: null,
+  leaveDetailMode: null,
+  onDropContainer: null,
+  activateFont: null,
+  deactivateFont: null,
+  escHandler: null,
+  copyAsPath: null,
+  getRawPath: null,
+  getRawUrl: null,
+  select: null,
+  addImagesToFolder: null,
+  selectTag: null,
+  createTagGroup: null,
+  openTagAllGroup: null,
+  openUnfiledGroup: null,
+  openStarredGroup: null,
+  openTagGroup: null,
+  addStarredTags: null,
+  addGroupTags: null,
+  openTagGroupContextMenu: null,
+  renameTagGroup: null,
+  changeTagGroupColor: null,
+  removeTagGroup: null,
+  renameTagGroupBlur: null,
+  renameTagGroupKeyup: null,
+  tagGroupDescriptionChange: null,
+  tagGroupDescriptionFocus: null,
+  tagGroupDescriptionBlur: null,
   gifViewer: null,
   gifPlayer: null,
   selectedTags: null,
@@ -338,6 +421,7 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'debugReportStatus', 'fixUtils', 'trashRemoved', 'currentTrashRemoved', 'sortIncrease', 'isContainAlphabet',
   'keyword_cn', 'keyword_tw', 'isKeywordTW', 'isKeywordCN', 'tagsSuggestion', 'showSlowNotify',
   'isItemBindCalculated', 'currentTag', 'progress', 'hsks', 'Registration', 'AnalyticsHelper',
+  'undo', 'closeAll', 'initMenu', 'notify', 'reload', 'toggleFilter', 'updateSelection', 'zoom', 'changeStar', 'removeSelected', 'toggleAll', 'selectNext', 'selectPrev', 'enterDetailMode', 'leaveDetailMode', 'onDropContainer', 'activateFont', 'deactivateFont', 'escHandler', 'copyAsPath', 'getRawPath', 'getRawUrl', 'select', 'addImagesToFolder', 'selectTag', 'createTagGroup', 'openTagAllGroup', 'openUnfiledGroup', 'openStarredGroup', 'openTagGroup', 'addStarredTags', 'addGroupTags', 'openTagGroupContextMenu', 'renameTagGroup', 'changeTagGroupColor', 'removeTagGroup', 'renameTagGroupBlur', 'renameTagGroupKeyup', 'tagGroupDescriptionChange', 'tagGroupDescriptionFocus', 'tagGroupDescriptionBlur',
   'gifViewer', 'gifPlayer', 'selectedTags', 'removeSound', 'lastIndex', 'isGifReady', 'orderBy', 'currentId', 'duplicateGroupings', 'tagViewModeName', 'colorDistancesMap', 'folderKeyword', 'listMetaType', 'isSearchScopeFolderName', 'isSearchScopeFolderDesc', 'preelaborations', 'paletteQueuePaused', 'addImageStartTime', 'availableHistoryTags', 'lastSelectedTag', 'gifUpadteInterval', 'sidebarIndex', 'canUseTouchID', 'unlockPassword', 'historySearchKeywords', 'boxContianerWidth', 'isSearchScopeName', 'isSearchScopeExt', 'isSearchScopeTag', 'isSearchScopeUrl', 'isSearchScopeAnnotation', 'isSearchScopeNote', 'keywordDebounce', 'MAX_LIST_WIDTH', 'contentFilterCache', 'isExpandQuickAccess', 'isExpandSmartFolder', 'isExpandFolder', 'commentRect', 'duplicateTarget', 'showName', 'showMetas', 'searchRegexGroup', 'addImageTimeLeftInSeconds', 'sliderZoomRatio', 'newGroupName', 'usingGifPlayer', 'paletteQueueDelay', 'lastProcessCount', 'isLibrarySaving', 'saveFolderDebounceTimeout', 'libraryHistory', 'isEnglish', 'initDetailMode', 'untagged', 'lastImageHeight', 'gotoBottomTimeout', 'isOpenWebpagePanel', 'boxContianerHeight', 'isHideMainNav', 'page', 'len', 'showOriginalImageWhenLarge', 'showAnnotation', 'showFileExtension', 'showFileExtensionLabel', 'duplicates', 'showLargeImage', 'usingCache', 'winMenu', 'selectingTags', 'libraryLoadedProgress', 'paletteQueueLength', 'metadataQueueLength', 'downloadQueueLength', 'MAX_DIMENSION', 'duplicateSound', 'errorSound', 'orderByName', 'folderIcons', 'hexColor', 'loadMoreDisable',
 ];
 for (const fieldName of MIGRATED) {

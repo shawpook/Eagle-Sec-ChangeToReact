@@ -11,7 +11,7 @@ import { ayncsImagesChange, hiddenByCurrentFilter } from './FolderModals';
 import { ExtIcon } from '../inspector/Inspector';
 import { useVsRepeat } from './FolderSelectPanels';
 import { syncUploadFromScope } from '../../store/uploadState';
-import { getRootScope } from '../../core/appCore';
+
 import { openFolder } from '../../services/folderCoreService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
@@ -1240,13 +1240,12 @@ export function BatchRenameModal() {
     } catch (err) {}
 
     // 復原
-    const rootScope = getRootScope();
     let message = t('notify.image.rename', [{ property: 'count', value: String(itemsRef.current.length) }]);
     if (itemsRef.current.length === 1) {
       message = message.replace('images', 'image');
     }
-    if (rootScope.notify) {
-      rootScope.notify(
+    if (useMiscRawState.getState().notify) {
+      useMiscRawState.getState().notify(
         {
           message: message,
           duration: 10000,
@@ -1316,13 +1315,12 @@ export function BatchRenameModal() {
     } catch (err) {}
 
     // 復原
-    const rootScope = getRootScope();
     let message = t('notify.image.rename', [{ property: 'count', value: String(itemsRef.current.length) }]);
     if (itemsRef.current.length === 1) {
       message = message.replace('images', 'image');
     }
-    if (rootScope.notify) {
-      rootScope.notify(
+    if (useMiscRawState.getState().notify) {
+      useMiscRawState.getState().notify(
         {
           message: message,
           duration: 10000,

@@ -425,9 +425,8 @@ export function saveCrop(...args: any[]) {
 export function changeStar(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（diff 仅 __lv_image→image、
   // eagle→w.eagle，且 s.checkOperationSafety 挂载即 machinery 版）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryChangeStar(s, args[0], args[1], args[2]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryChangeStar(args[0], args[1], args[2]);
 }
 
 export function updateItemView(...args: any[]) {
@@ -456,19 +455,15 @@ export function startDrag(...args: any[]) {
 
 export function copeVideoFrame(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
-        	machineryVideoScreenShot(s, true);
+        	machineryVideoScreenShot(true);
         }).apply(null, args);
 }
 
 export function saveVideoFrame(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
-        	machineryVideoScreenShot(s);
+        	machineryVideoScreenShot();
         }).apply(null, args);
 }
 
@@ -1129,10 +1124,10 @@ export function machineryCancelCrop(): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryChangeStar(s: any, star: any, showNotify: any, force: any): void {
+export function machineryChangeStar(star: any, showNotify: any, force: any): void {
   const w = window as any;
-  if (s.selected.length === 0) return;
-  if (!star && s.selected.length === 1 && !s.selected[0].star) {
+  if (useSelectionState.getState().selected.length === 0) return;
+  if (!star && useSelectionState.getState().selected.length === 1 && !useSelectionState.getState().selected[0].star) {
     return;
   }
 
@@ -1142,8 +1137,8 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
 
     // 刪除星星
     if (star === undefined || (w.eagle.inspector.star === star && !force)) {
-      for (var i = 0; i < s.selected.length; i++) {
-        let image = s.selected[i];
+      for (var i = 0; i < useSelectionState.getState().selected.length; i++) {
+        let image = useSelectionState.getState().selected[i];
         if (image.star) {
           w.eagle.filter.filterCounts['rating']['0']++;
           w.eagle.filter.filterCounts['rating']['' + image.star]--;
@@ -1153,7 +1148,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
       }
       delete w.eagle.inspector.star;
       if (showNotify) {
-        s.notify({
+        useMiscRawState.getState().notify({
           message: getFilter()('i18n')('appmenu.tag>removeRating'),
           duration: 750
         });
@@ -1162,8 +1157,8 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
       w.analytics.event('Rating', 'Remove');
     }
     else {
-      for (var i = 0; i < s.selected.length; i++) {
-        let image = s.selected[i];
+      for (var i = 0; i < useSelectionState.getState().selected.length; i++) {
+        let image = useSelectionState.getState().selected[i];
         if (image.star !== star) {
           w.eagle.filter.filterCounts['rating']['' + image.star]--;
           image.star = star;
@@ -1177,7 +1172,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
         { "property": "star", "value": star }
       ]);
       if (showNotify) {
-        s.notify({
+        useMiscRawState.getState().notify({
           message: message,
           duration: 750
         });
@@ -1185,7 +1180,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
       w.electronLog && w.electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
       w.analytics.event('Rating', 'Set', star);
     }
-    machineryUpdateItemsView(s.selected);
+    machineryUpdateItemsView(useSelectionState.getState().selected);
     if (changedItems.length > 0) {
       w.ayncsImagesChange(changedItems);
       w.hiddenByCurrentFilter(changedItems);
@@ -1193,32 +1188,32 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
   });
 }
 
-export function machineryChangeTo1Star(s: any, event: any): void {
+export function machineryChangeTo1Star(event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 1, true, true);
+  machineryChangeStar(1, true, true);
 }
 
-export function machineryChangeTo2Star(s: any, event: any): void {
+export function machineryChangeTo2Star(event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 2, true, true);
+  machineryChangeStar(2, true, true);
 }
 
-export function machineryChangeTo3Star(s: any, event: any): void {
+export function machineryChangeTo3Star(event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 3, true, true);
+  machineryChangeStar(3, true, true);
 }
 
-export function machineryChangeTo4Star(s: any, event: any): void {
+export function machineryChangeTo4Star(event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 4, true, true);
+  machineryChangeStar(4, true, true);
 }
 
 /* changeTo5Star（bundle 30316-30319 逐字；changeStar 为 bundle scope 函数经 scope 解析） */
-export function machineryChangeTo5Star(s: any, event: any): void {
+export function machineryChangeTo5Star(event: any): void {
   if (event?.altKey || event?.metaKey || event?.ctrlKey) return;
-  machineryChangeStar(s, 5, true, true);
+  machineryChangeStar(5, true, true);
 }
 
-export function machineryRemoveStar(s: any): void {
-  machineryChangeStar(s, undefined, true);
+export function machineryRemoveStar(): void {
+  machineryChangeStar(undefined, true);
 }

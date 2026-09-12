@@ -66,8 +66,6 @@ const $filter: any = (name: string) => {
 /* 12 fns（逐字；fns/getScope 为闭包注入） */
 export function deactivateFont(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (font, {showNotify, updateView}) {
             if (!font) return;
             if (font.activating || font.deactivating) return;
@@ -106,7 +104,7 @@ export function deactivateFont(...args: any[]) {
             analytics.event("Font", "Uninstall");
 
             if (showNotify) {
-                s.notify({
+                useMiscRawState.getState().notify({
                     message: $filter('i18n')("notify.font.deactivate", [
                             { "property": "name", "value": font.name }
                         ]),
@@ -118,8 +116,6 @@ export function deactivateFont(...args: any[]) {
 
 export function activateFont(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (font, {showNotify, updateView}) {
             if (!font) return;
             if (font.activating || font.deactivating) return;
@@ -158,7 +154,7 @@ export function activateFont(...args: any[]) {
             analytics.event("Font", "Install");
 
             if (showNotify) {
-                s.notify({
+                useMiscRawState.getState().notify({
                     message: $filter('i18n')("notify.font.activate", [
                             { "property": "name", "value": font.name }
                         ]),
@@ -219,8 +215,6 @@ export function renameFontsWithFullName(...args: any[]) {
 
 export function activateFonts(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (items) {
         if (!items || items.length === 0) return;
         if (!fs.existsSync(fontFolder)) {
@@ -232,7 +226,7 @@ export function activateFonts(...args: any[]) {
         if (process.platform === 'darwin') {
             machineryUpdateItemsView(items);
         }
-        s.notify({
+        useMiscRawState.getState().notify({
             message: $filter('i18n')("notify.fonts.activate", [
                         { "property": "count", "value": items.length }
                     ]),
@@ -244,8 +238,6 @@ export function activateFonts(...args: any[]) {
 
 export function deactivateFonts(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (items) {
         if (!fs.existsSync(fontFolder)) { return; }
         items.forEach(function (font) {
@@ -255,7 +247,7 @@ export function deactivateFonts(...args: any[]) {
             machineryUpdateItemsView(items);
         }
 
-        s.notify({
+        useMiscRawState.getState().notify({
             message: $filter('i18n')("notify.fonts.deactivate", [
                         { "property": "count", "value": items.length }
                     ]),

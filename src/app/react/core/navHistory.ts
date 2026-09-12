@@ -74,7 +74,7 @@ export function machineryPrevHistory(): void {
 }
 
 export function machineryUndo(s: any): void {
-  if (typeof s.$root.undo === 'function') s.$root.undo();
-  if (typeof s.$root.closeAll === 'function') s.$root.closeAll();
+  if (typeof useMiscRawState.getState().undo === 'function') s.$root.undo();
+  if (typeof useMiscRawState.getState().closeAll === 'function') s.$root.closeAll();
   else cgNotifyServiceCloseAll();
 }

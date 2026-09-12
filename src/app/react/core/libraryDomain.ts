@@ -703,7 +703,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     machineryUpdateSidebarList();
-    if (s.$root && s.$root.initMenu) s.$root.initMenu();
+    if (s.$root && useMiscRawState.getState().initMenu) s.$root.initMenu();
 
     // NOTE: 只能用迂迴的方式處理可能超過 10W 張圖片的狀況，避免使用 JSON.parse 造成大量數據無法傳輸的問題
     electronLog.info(`[app] Load Library: ${useMiscRawState.getState().rootDir}`);
@@ -1461,21 +1461,21 @@ export function machineryGetRecentFolders(length: any): any[] {
   return recentFolders;
 }
 
-export function machineryRefreshRandom(s: any): void {
+export function machineryRefreshRandom(): void {
   const w = window as any;
-  if (s.isDetailMode) return;
+  if (useBodyState.getState().isDetailMode) return;
 
   if (
-    s.viewMode === 'random' ||
-    (s.currentFolder && s.currentFolder.orderBy === "RANDOM") ||
-    (s.currentSmartFolder && s.currentSmartFolder.orderBy === "RANDOM")
+    useBodyState.getState().viewMode === 'random' ||
+    (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy === "RANDOM") ||
+    (useFolderState.getState().currentSmartFolder && useFolderState.getState().currentSmartFolder.orderBy === "RANDOM")
   ) {
-    s.shuffle = [];
+    writeScopeField('shuffle', []);
     addClass("#refresh-random", "active");
     setTimeout(function () {
       removeClass("#refresh-random", "active");
     }, 50);
-    s.reload();
+    useMiscRawState.getState().reload();
   }
 }
 
@@ -2373,7 +2373,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   ]);
   if (s.selected.length === 1) { message = message.replace("images", "image"); }
 
-  (s.$root.notify || s.notify).call(s.$root, {
+  (useMiscRawState.getState().notify || s.notify).call(s.$root, {
     message: message,
     duration: 4000,
   }, function () {
@@ -2568,7 +2568,7 @@ export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages
     var message = getFilter()('i18n')("notify.folder.remove", [
       { "property": "folder", "value": folder.name },
     ]);
-    (s.$root.notify || s.notify).call(s.$root, {
+    (useMiscRawState.getState().notify || s.notify).call(s.$root, {
       message: message,
       duration: 7000,
     }, function () {
@@ -2689,7 +2689,7 @@ export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { igno
   w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
 
   if (!ignoreRestore) {
-    (s.$root.notify || s.notify).call(s.$root, {
+    (useMiscRawState.getState().notify || s.notify).call(s.$root, {
       message: message,
       duration: 5000,
     }, function () {
@@ -2805,23 +2805,23 @@ export function machinerySaveFolderDebounce(): void {
   }, 1000));
 }
 
-export function machinerySetFolderCover(s: any): void {
-  const item = s.selected[0];
-  if (!s.currentFolder || !item) return;
-  s.currentFolder.coverId = item.id;
+export function machinerySetFolderCover(): void {
+  const item = useSelectionState.getState().selected[0];
+  if (!useFolderState.getState().currentFolder || !item) return;
+  useFolderState.getState().currentFolder.coverId = item.id;
   var thumbnailUrl = (window as any).FileUrlHelper.getThumbnailUrl(item);
-  s.currentFolder.covers[0] = `<img class="sub-folder-cover" src="${thumbnailUrl}" style="aspect-ratio: ${s.selected[0].width / s.selected[0].height};">`;
+  useFolderState.getState().currentFolder.covers[0] = `<img class="sub-folder-cover" src="${thumbnailUrl}" style="aspect-ratio: ${useSelectionState.getState().selected[0].width / useSelectionState.getState().selected[0].height};">`;
   var message = getFilter()('i18n')("notify.folder.setAsCover", [
-    { "property": "folderName", "value": s.currentFolder.name }
+    { "property": "folderName", "value": useFolderState.getState().currentFolder.name }
   ]);
-  s.notify({
+  useMiscRawState.getState().notify({
     message: message,
     duration: 750
   });
   machinerySaveFolder();
 }
 
-export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignoreReload: any): void {
+export function machinerySetFolderOrder(folder: any, orderBy: any, ignoreReload: any): void {
   var folder = folder;
   if (!folder) return;
   if (!orderBy) {
@@ -2834,8 +2834,8 @@ export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignor
       folder.sortIncrease = true;
     }
   }
-  if (s.currentFolder === folder && !ignoreReload) {
-    s.reload();
+  if (useFolderState.getState().currentFolder === folder && !ignoreReload) {
+    useMiscRawState.getState().reload();
   }
   machinerySaveFolder();
 }
@@ -2856,7 +2856,7 @@ export function machinerySetLastFolder(folderId: any): void {
   setLastFolderDebounced(folderId);
 }
 
-export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any): void {
+export function machinerySetSmartFolderOrder(folder: any, orderBy: any): void {
   var folder = folder;
   if (!folder) return;
   if (!orderBy) {
@@ -2869,8 +2869,8 @@ export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any):
       folder.sortIncrease = true;
     }
   }
-  if (s.currentSmartFolder === folder) {
-    s.reload();
+  if (useFolderState.getState().currentSmartFolder === folder) {
+    useMiscRawState.getState().reload();
   }
   machinerySaveFolder();
 }

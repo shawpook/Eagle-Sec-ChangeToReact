@@ -1872,13 +1872,13 @@ export function machineryCheckListItemsLessThanContainer(): void {
   }
 }
 
-export function machineryCopyImages(s: any, event: any): void {
+export function machineryCopyImages(event: any): void {
   const w = window as any;
-  if (s.viewMode === 'alltags') {
+  if (useBodyState.getState().viewMode === 'alltags') {
     var selectedTags = machineryGetSelectedTags();
     if (selectedTags && selectedTags.length > 0) {
       w.electron.clipboard.writeText(selectedTags.join(","));
-      s.notify({
+      useMiscRawState.getState().notify({
         message: getFilter()('i18n')("Context.Tag.Copy.Success"),
         duration: 1000
       });
@@ -1906,19 +1906,19 @@ export function machineryCopyImages(s: any, event: any): void {
         });
         w.electron.clipboard.writeText(copyText);
       }
-      else if (s.currentSmartFolder) {
-        w.electron.clipboard.writeText(s.currentSmartFolder.name);
+      else if (useFolderState.getState().currentSmartFolder) {
+        w.electron.clipboard.writeText(useFolderState.getState().currentSmartFolder.name);
       }
-      else if (s.currentFolder) {
-        w.electron.clipboard.writeText(s.currentFolder.name);
+      else if (useFolderState.getState().currentFolder) {
+        w.electron.clipboard.writeText(useFolderState.getState().currentFolder.name);
       }
     }
-    else if (s.selected.length > 0) {
+    else if (useSelectionState.getState().selected.length > 0) {
       const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-      ipc.sendTo(w.backgroundWindowID, 'copy-images', s.selected);
-      w.RecentFileManager.addFiles(s.selected);
+      ipc.sendTo(w.backgroundWindowID, 'copy-images', useSelectionState.getState().selected);
+      w.RecentFileManager.addFiles(useSelectionState.getState().selected);
       setTimeout(function () {
-        s.notify({
+        useMiscRawState.getState().notify({
           message: getFilter()('i18n')("previewWindow.copied"),
           duration: 1000
         });

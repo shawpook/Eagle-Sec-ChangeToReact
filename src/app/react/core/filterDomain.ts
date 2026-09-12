@@ -140,9 +140,8 @@ export function takeoverFilterDomain(): void {
   // ── toggleFilter（30898 逐字；b1-9k 补端口——Toolbar 筛选按钮 onClick=call('toggleFilter')，
   //    缺席时 call() 静默 no-op → 按钮 active 不翻转、FilterItems2 消费的 filterIsOpen 恒 false。
   //    updateContainerHieght 为 controllerFns 移植件（bundle 原码 typo 逐字保留））──
-  const s0toggle: any = getBodyScope();
-  if (s0toggle) {
-    s0toggle.toggleFilter = function () {
+  {
+    writeScopeField('toggleFilter', function () {
       w.eagle.filter.isOpen = !w.eagle.filter.isOpen;
       syncFilterFromScope();
       if (!w.eagle.filter.isOpen) {
@@ -151,7 +150,7 @@ export function takeoverFilterDomain(): void {
       machineryUpdateContainerHieght(true);
       if (w.eagle.filter.isOpen) { w.electronLog && w.electronLog.info("[app] Filter: ON"); }
       else { w.electronLog && w.electronLog.info("[app] Filter: OFF"); }
-    };
+    });
   }
 
   // ── eagle.filter watch 族 12 个（b1-9bi：scopeShim 轮询 watcher → filterService 订阅）──

@@ -1108,11 +1108,11 @@ export function changeOrderBy(...args: any[]) {
     if (!s) return;
     return (function (orderBy) {
             if (s.currentFolder) {
-                machinerySetFolderOrder(s, s.currentFolder, orderBy);
+                machinerySetFolderOrder(s.currentFolder, orderBy);
                 try { electronLog && electronLog.info(`[app] Change folder order to “${s.currentFolder.name}(${s.currentFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else if (s.currentSmartFolder) {
-                machinerySetSmartFolderOrder(s, s.currentSmartFolder, orderBy);
+                machinerySetSmartFolderOrder(s.currentSmartFolder, orderBy);
                 try { electronLog && electronLog.info(`[app] Change smart-folder order to “${s.currentSmartFolder.name}(${s.currentSmartFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else {
@@ -1393,26 +1393,26 @@ export function updateCurrentOrderAndIncrease () {
                 orderBy = useMiscRawState.getState().orderBy;
                 sortIncrease = useMiscRawState.getState().sortIncrease;
             }
-            getBodyScope().currentOrderBy = orderBy;
-            getBodyScope().currentSortIncrease = sortIncrease;
+            writeScopeField('currentOrderBy', orderBy);
+            writeScopeField('currentSortIncrease', sortIncrease);
         }
 
 export function updateSuggestions() {
             console.time("updateSuggestions");
-            getBodyScope().searchIndex = -1;
+            writeScopeField('searchIndex', -1);
             syncToolbarFromScope();
             var keyword = "";
             if (useListState.getState().keyword) {
                 keyword = useListState.getState().keyword.toLowerCase();
             }
 
-            getBodyScope().hsks = useMiscRawState.getState().historySearchKeywords.filter(function (word) {
+            writeScopeField('hsks', useMiscRawState.getState().historySearchKeywords.filter(function (word) {
                 if (!keyword || keyword == "") return true;
                 if (word) {
                     return fuzzy_match(word, keyword).length > 0;
                 }
                 return false;
-            }).slice(0,8);
+            }).slice(0,8));
             syncToolbarFromScope();
             var suggestions = [];
             var wordsIndex = {};
@@ -1454,11 +1454,11 @@ export function updateSuggestions() {
 	            // if (suggestions.length > 5) {
 	            //     suggestions.length = 5;
 	            // }
-            	getBodyScope().keywordSuggestions = suggestions;
+            	writeScopeField('keywordSuggestions', suggestions);
             	syncToolbarFromScope();
-                getBodyScope().keywordSuggestions = useMiscRawState.getState().keywordSuggestions.filter((suggestion) => {
+                writeScopeField('keywordSuggestions', useMiscRawState.getState().keywordSuggestions.filter((suggestion) => {
                     return useMiscRawState.getState().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
-                });
+                }));
                 syncToolbarFromScope();
             	console.timeEnd("updateSuggestions");
             	return;
@@ -1468,11 +1468,11 @@ export function updateSuggestions() {
             	dataset = currPageTags.concat(useMiscRawState.getState().globalKeywords);
             }
 
-            getBodyScope().keyword_cn = chineseConvert.tw2cn(keyword);
-            getBodyScope().keyword_tw = chineseConvert.cn2tw(keyword);
-            getBodyScope().isKeywordTW = keyword === useMiscRawState.getState().keyword_tw;
-            getBodyScope().isKeywordCN = keyword === useMiscRawState.getState().keyword_cn;
-            getBodyScope().isEnglish = useMiscRawState.getState().isKeywordTW === useMiscRawState.getState().isKeywordCN;
+            writeScopeField('keyword_cn', chineseConvert.tw2cn(keyword));
+            writeScopeField('keyword_tw', chineseConvert.cn2tw(keyword));
+            writeScopeField('isKeywordTW', keyword === useMiscRawState.getState().keyword_tw);
+            writeScopeField('isKeywordCN', keyword === useMiscRawState.getState().keyword_cn);
+            writeScopeField('isEnglish', useMiscRawState.getState().isKeywordTW === useMiscRawState.getState().isKeywordCN);
 
             if (keyword.length === 1 && useMiscRawState.getState().isContainAlphabet) {
                 suggestions = dataset.filter(function(suggestion) {
@@ -1529,11 +1529,11 @@ export function updateSuggestions() {
                 }
             }
             else {
-                getBodyScope().showSuggestions = false;
+                writeScopeField('showSuggestions', false);
                 syncToolbarFromScope();
             }
 
-            getBodyScope().keywordSuggestions = suggestions;
+            writeScopeField('keywordSuggestions', suggestions);
             syncToolbarFromScope();
             console.timeEnd("updateSuggestions");
         }
@@ -1849,7 +1849,7 @@ export function machineryLeaveSlideshowMode(s: any): void {
 export function machineryLockApp(s: any): void {
   const w = window as any;
   s.$root.isAppLocked = true;
-  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
+  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') s.$root.initMenu();
   setTimeout(function () {
     machineryFocusAppUnlockPassword();
   }, 100);
@@ -1888,7 +1888,7 @@ export function machineryNotify(s: any, params: any, restoreCallbackk: any): voi
       const t = ev.target as Element;
       if (!t || !t.closest('[data-cg-undo]')) return;
       cgNotifyServiceCloseAll();
-      const undo = s.$root.undo;
+      const undo = useMiscRawState.getState().undo;
       if (typeof undo === 'function') undo();
     });
     // 关闭按钮：ng-click="$close()" 等价委托

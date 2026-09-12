@@ -258,7 +258,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
 
   getOffsetScrollbarFn(s)(30);
   // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
-  if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
+  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') s.$root.initMenu();
 }
 
 /* ── b1-9be：@egjs/react-infinitegrid 交换的 window.ig facade 契约（交换批施工依据）──

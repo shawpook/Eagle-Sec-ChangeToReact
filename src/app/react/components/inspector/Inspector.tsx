@@ -692,7 +692,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
 
   if (!single && !multi) return null;
 
-  const changeStar = (star: number) => (e: any) => call(scoped(machineryChangeStar), star)(e);
+  const changeStar = (star: number) => (e: any) => call(machineryChangeStar, star)(e);
   const resHide =
     single && item && (!item.width || item.ext === 'txt' || (window as any).FONT_TYPES?.[item.ext] || (window as any).AUDIO_TYPES?.[item.ext]);
   const resShow = single && item && !((window as any).VIDEO_TYPES?.[item.ext] || !item.width || item.ext === 'txt' || (window as any).FONT_TYPES?.[item.ext] || (window as any).AUDIO_TYPES?.[item.ext]);

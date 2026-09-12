@@ -285,10 +285,8 @@ export function cleanSelected(...args: any[]) {
 export function copyTags(...args: any[]) {
     if (!__cc_copyTags) {
       __cc_copyTags = throttle(function () {
-        const s = getBodyScope();
-        if (!s) return;
         eagle.inspector.copyTags();
-        s.notify({
+        useMiscRawState.getState().notify({
           message: $filter('i18n')("Context.Tag.Copy.Success"),
           duration: 750
         });

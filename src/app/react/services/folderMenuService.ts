@@ -171,7 +171,7 @@ export function setFoldersOrder(...args: any[]) {
     if (!s) return;
     return (function (folders: any, orderBy: any, ignoreReload: any) {
       folders.forEach(function (folder: any) {
-        machinerySetFolderOrder(s, folder, orderBy);
+        machinerySetFolderOrder(folder, orderBy);
       });
       machinerySortRawData(orderBy);
       machineryRebindRefresh(s);
@@ -181,9 +181,8 @@ export function setFoldersOrder(...args: any[]) {
 
 export function setFolderOrder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machinerySetFolderOrder(s, args[0], args[1], args[2]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySetFolderOrder(args[0], args[1], args[2]);
 }
 
 export function setFoldersSortIncrease(...args: any[]) {
@@ -195,13 +194,11 @@ export function setFoldersSortIncrease(...args: any[]) {
 }
 
 export function setFolderSortIncrease(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folder: any, sortIncrease: any, ignoreReload: any) {
       if (!folder) return;
       folder.sortIncrease = !!sortIncrease;
-      if (s.currentFolder === folder && !ignoreReload) {
-        s.reload();
+      if (useFolderState.getState().currentFolder === folder && !ignoreReload) {
+        useMiscRawState.getState().reload();
       }
       machinerySaveFolder();
     }).apply(null, args);
@@ -582,12 +579,10 @@ export function moveFolders(...args: any[]) {
 }
 
 export function copyFolderLink(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any) {
       if (folder && folder.id) {
         clipboard.writeText(`http://localhost:41595/folder?id=${folder.id}`);
-        s.notify({
+        useMiscRawState.getState().notify({
           message: i18n.__('notify.colorCopySuccess'),
           duration: 750
         });
@@ -1164,7 +1159,7 @@ export function setSmartFoldersOrder(...args: any[]) {
     if (!s) return;
     return (function (smartFolders: any, orderBy: any, ignoreReload: any) {
       smartFolders.forEach(function (folder: any) {
-        machinerySetSmartFolderOrder(s, folder, orderBy);
+        machinerySetSmartFolderOrder(folder, orderBy);
       });
       machinerySortRawData(orderBy);
       machineryRebindRefresh(s);
@@ -1174,9 +1169,8 @@ export function setSmartFoldersOrder(...args: any[]) {
 
 export function setSmartFolderOrder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machinerySetSmartFolderOrder(s, args[0], args[1], args[2]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySetSmartFolderOrder(args[0], args[1], args[2]);
 }
 
 export function setSmartFoldersSortIncrease(...args: any[]) {
@@ -1188,13 +1182,11 @@ export function setSmartFoldersSortIncrease(...args: any[]) {
 }
 
 export function setSmartFolderSortIncrease(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folder: any, sortIncrease: any) {
       if (!folder) return;
       folder.sortIncrease = !!sortIncrease;
-      if (s.currentSmartFolder === folder) {
-        s.reload();
+      if (useFolderState.getState().currentSmartFolder === folder) {
+        useMiscRawState.getState().reload();
       }
       machinerySaveFolder();
     }).apply(null, args);
@@ -1315,12 +1307,10 @@ export function renameSmartFolder(...args: any[]) {
 }
 
 export function copySmartFolderLink(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any) {
       if (smartFolder && smartFolder.id) {
         clipboard.writeText(`http://localhost:41595/smart-folder?id=${smartFolder.id}`);
-        s.notify({
+        useMiscRawState.getState().notify({
           message: i18n.__('notify.colorCopySuccess'),
           duration: 750
         });

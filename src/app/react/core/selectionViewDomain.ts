@@ -658,7 +658,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
           ]);
           if (s.selected.length === 1) { message = message.replace("images", "image"); }
 
-          (s.$root.notify || s.notify).call(s.$root, {
+          (useMiscRawState.getState().notify || s.notify).call(s.$root, {
             message: message,
             duration: 4000,
           }, function () {

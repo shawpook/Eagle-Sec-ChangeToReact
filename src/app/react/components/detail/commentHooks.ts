@@ -1216,7 +1216,7 @@ export function useTgaImage(imgRef: React.RefObject<HTMLImageElement | null>, cu
         setCssEl(img, { 'z-index': '9999' });
         $parent.querySelectorAll('canvas').forEach((c) => c.remove());
       }
-      const filePath = getBodyScope()?.getRawPath
+      const filePath = useMiscRawState.getState().getRawPath
         ? String(getRawPath(useSelectionState.getState().current) || '').replace('file://', '')
         : '';
       const filePath2 = FileUrlHelper.getRawPath(useSelectionState.getState().current);

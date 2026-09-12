@@ -7692,3 +7692,55 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
 `ListLayout` 类名不稳定 → 该项改为 alltags-view 闭环）。
 
 **结果**：`run-react-suite.mjs` 列表 **55 → 65**，头部注释同步；10 项单独运行全绿。
+
+---
+
+# D 阶段终章（2026-09-11）
+
+完整收官说明见 `docs/d-phase-closing-2026-09-11.md`。要点：
+
+## 成果
+
+- **D-1 ✅**：`dataMachinery.ts` **11509 行 / 306 声明 → 删除**，拆入 16 个域/服务模块；
+  挂载面清零（Track A 余 9 处为跨边界 scope 供给，由 `machineryInfra` + `externalSupply` 承载）。
+- **D-2 🟡**：主窗 **jQuery 0 / vendorScriptTags 0**；`frontend/public/shims.js`（3996 行）待退役
+  （阻塞于 DoD ①）。
+- **D-3 ✅**：套件 **55 → 65**（`tests/closed-loop-common.mjs` + 10 项 `d3-*-closed-loop`）。
+- **D-4 ✅**：本终章 + 收官文档 + DoD 六项核对。
+
+## DoD 六项
+
+| # | 项 | 状态 |
+|---|---|---|
+| ① | 六项删除 grep-zero | ❌ `dataMachinery` 已删；`scopeShim.ts` / `appCore.coreState` 仍存（40+ 文件依赖 scope 面） |
+| ② | 哨兵：无 Angular 语义 + jQuery | ❌ jQuery 0 ✅；Angular-ism（scopeApply 200 / getBodyScope 794 / watch 19 / on 26）非零 |
+| ③ | index.html vendor 清零 | ✅ |
+| ④ | 套件 65+ 全绿 | ✅ |
+| ⑤ | 收官文档 + 归档 | ✅ |
+
+## 遗留（建议 E 阶段单独立项）
+
+1. **DoD ①/②**：退役 `$bodyScope` scope 对象（`createBodyScopeShim` + `coreState`）→ 794 处
+   `getBodyScope()` 迁 zustand + `scopeEvalAsync` 换 store 订阅；随之删 `scopeShim.ts`。
+2. **D-2 遗留**：`frontend/public/shims.js` 退役（依赖 1）。
+3. `tagRectSelecting` 双实现去重；`collect-window` 自带 jQuery/API 层迁移。
+4. `main-ui-workflow-closed-loop` 偶发 inspector 超时（flaky，建议加重试/超时）。
+
+## 关键不变量（勿破）
+
+- `machineryInfra` 是新的依赖汇点，与各域互成函数声明环——**顶层新增加 `const`/`class` 求值语句前
+  须评估 TDZ**。
+- 门禁：`probe-b5-load` `LOAD_OK` + 哨兵 `SENTINEL_OK` + `bz-export-check` 无问题 + `tsc` 零新增。
+
+---
+
+## D-4 补充（2026-09-12）：套件稳定性加固 + 收官文档
+
+1. **`tests/run-react-suite.mjs` 每项前清理本仓残留 Electron**——修复「父进程被强杀后
+   Electron 子进程孤儿 → 后续 spawn 失联」造成的级联假失败（实测：逐项清理后
+   `main-ui-workflow` 连跑 3/3 全过；此前 10 次内 3 次偶发 `inspector operation result
+   timeout` 均为该环境污染，非代码回归）。
+2. **`electron/main.cjs`（仅 `--regression-host` 路径）inspector 结果等待改为
+   「触发+等待最多 3 轮（每轮 8s）」**，丢弃轮次重新触发 `imagesChange`（原一次性等 10s）。
+3. 收官文档：`docs/d-phase-closing-2026-09-11.md`（DoD 六项实况、架构前后对照、
+   行为差异/风险清单、验证方法）；`REWRITE-PLAN.md` 加归档横幅。

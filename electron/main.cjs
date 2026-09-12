@@ -2016,24 +2016,31 @@ app.whenReady().then(async () => {
               await selectInspectorItems([droppedId]);
               scope.inspector.newName = 'Inspector Renamed';
               scope.inspector.newUrl = 'https://example.test/original-main';
-              const firstInspectorResult = new Promise((resolve, reject) => {
-                const ipc = require('electron').ipcRenderer;
-                const timer = setTimeout(() => {
-                  ipc.off('item:operation-result', onResult);
-                  reject(new Error('inspector operation result timeout for ' + droppedId));
-                }, 10000);
-                const onResult = (_event, value) => {
-                  const items = value && Array.isArray(value.items) ? value.items : [];
-                  if (!items.some((item) => item.id === droppedId)) return;
-                  clearTimeout(timer);
-                  ipc.off('item:operation-result', onResult);
-                  resolve(value);
-                };
-                ipc.on('item:operation-result', onResult);
-              });
-              inspectorActions.imagesChange();
-              const firstInspectorOperation = await firstInspectorResult;
-              if (!firstInspectorOperation || !firstInspectorOperation.ok) throw new Error('inspector update failed: ' + JSON.stringify(firstInspectorOperation));
+              // b1-9bz-D-4：原实现只等一次结果，CI/并发压力下偶发「事件丢失」假失败。
+              // 改为触发+等待最多 3 轮（每轮 8s），丢弃的轮次重新触发 imagesChange。
+              let firstInspectorOperation = null;
+              for (let attempt = 0; attempt < 3 && !firstInspectorOperation; attempt++) {
+                const firstInspectorResult = new Promise((resolve) => {
+                  const ipc = require('electron').ipcRenderer;
+                  const timer = setTimeout(() => {
+                    ipc.off('item:operation-result', onResult);
+                    resolve(null);
+                  }, 8000);
+                  const onResult = (_event, value) => {
+                    const items = value && Array.isArray(value.items) ? value.items : [];
+                    if (!items.some((item) => item.id === droppedId)) return;
+                    clearTimeout(timer);
+                    ipc.off('item:operation-result', onResult);
+                    resolve(value);
+                  };
+                  ipc.on('item:operation-result', onResult);
+                });
+                inspectorActions.imagesChange();
+                firstInspectorOperation = await firstInspectorResult;
+                if (!firstInspectorOperation) await new Promise((resolve) => setTimeout(resolve, 500));
+              }
+              if (!firstInspectorOperation) throw new Error('inspector operation result timeout for ' + droppedId);
+              if (!firstInspectorOperation.ok) throw new Error('inspector update failed: ' + JSON.stringify(firstInspectorOperation));
               const firstUpdatedItem = Array.isArray(firstInspectorOperation.items) ? firstInspectorOperation.items.find((item) => item.id === droppedId) : null;
               if (!firstUpdatedItem || firstUpdatedItem.name !== 'Inspector Renamed' || firstUpdatedItem.url !== 'https://example.test/original-main') {
                 throw new Error('inspector operation returned unexpected item: ' + JSON.stringify(firstInspectorOperation));

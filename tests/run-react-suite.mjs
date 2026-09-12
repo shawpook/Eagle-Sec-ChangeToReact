@@ -4,6 +4,19 @@
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
  */
 import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// 每项前清理本仓残留 Electron（防「父进程被杀 → 子进程孤儿 → 后续 spawn 失败」级联假失败）。
+const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+function killLeftoverElectron() {
+  if (process.platform !== 'win32') return;
+  try {
+    spawnSync('powershell', ['-NoProfile', '-Command',
+      'Get-CimInstance Win32_Process -Filter "Name=\'electron.exe\'" | Where-Object { $_.CommandLine -like "*$env:EAGLE_SUITE_ROOT*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }',
+    ], { encoding: 'utf8', timeout: 20000, env: { ...process.env, EAGLE_SUITE_ROOT: projectRoot } });
+  } catch (err) { /* 清理失败不阻塞 */ }
+}
 
 const tests = [
   'tests/react-rewrite-sentinel.mjs',
@@ -76,6 +89,7 @@ const tests = [
 
 const failed = [];
 for (const t of tests) {
+  killLeftoverElectron();
   process.stdout.write(`RUN ${t} ... `);
   const r = spawnSync(process.execPath, [t], { encoding: 'utf8', timeout: 300000 });
   if (r.status === 0) {

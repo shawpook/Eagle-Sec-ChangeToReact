@@ -1,3 +1,7 @@
+> **[已归档 2026-09-11]** D 阶段结束时点：D-1（dataMachinery 删除）、D-3（套件 65）、D-4（收官文档）
+> 已完成；D-2 部分完成、DoD ①/② 未达。后续（scope 面退役、shims.js）见
+> `docs/d-phase-closing-2026-09-11.md`「剩余路线」。本文件保留为历史计划，不再更新。
+
 # 彻底化全程计划（至收尾）——REWRITE-PLAN v2
 
 > b1-9ba 定稿。目标：把 src/app/react 从「React 面子 + Angular 里子」的权宜架构，

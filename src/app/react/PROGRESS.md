@@ -7806,3 +7806,34 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
    ⚠️ 但探针实测 `window.$bodyScope.__eagleShim === true` 且 `$evalAsync` 即 shim 的 **no-op 实现**
    （`$apply/$watch` 已 undefined）——「no-op 调用却有行为影响」的原因未明（疑似驱动内时序/加载链
    副作用）。**E4/E5 删除 `$evalAsync` 前必须先在驱动侧完成迁移**（改用 store hook 后删）。
+
+---
+
+## E2：raw store 真身（注册式双写）
+
+目标：把 `coreState` 里的「数据面真身」逐组换到 zustand store——`migrateScopeFieldToStore` 让
+body scope 的 get/set 委托 store（读走 store、写 store + `coreState` 镜像），**读写调用点暂不改**（E3 再改），
+每字段带**同值守卫**。新增 store 均在 `main.tsx` 经 `bind*Sync()` 引入以保证注册副作用执行。
+
+| 批 | 提交 | 新 store | 字段数 | 覆盖 |
+|---|---|---|---|---|
+| E2-1 | `aecff77d` | `selectionState` / `itemState` | 18 | `selected/current/lastSelectedIndex`；`raw/allData/images/all/shuffle/trash/itemMappings/folderMappings/smartFolderMappings/selectedMappings/selectedFolderMappings/modifiedMappings/duplicateMappings/lockedImages/lastItemStates` |
+| E2-2 | `7052f173` | `folderState` / `layoutState` / `preferencesState` | 14 | `currentFolder/currentSmartFolder/folders/smartFolders/folderList/tags/currentFolderChildren/navigationHistory/navigationHistoryIndex/startCursor`；`imageSize/containerSize`；`preferences/trialRemain` |
+| E2-3 | `48ec6ff6` | `miscRawState` | 28 | `TagManager/pluginModule/eagle/SavedFilter/currentTagGroup/tagViewMode/keywordSuggestions/globalKeywords/showSuggestions/tagKeyword/containFolders/containTags/filterImportDateMonths/rootDir/libraryPath/libraryName/imagesDir/libraryImagesPath/libraryModificationTime/searchIndex/isRotating/isUILoaded/showDetailImage/subFolders/currentProcessCount/showNTFSWarning/installedPluginMaps/needUpdatePluginMaps` |
+
+- **迁移面 33 → 93 字段**（`__eagleScopeShim.migratedFieldNames()` 实测，探针 `probe-e2-migrated` 验证：
+  写 scope → store 收到、写 store → scope 读到，双向都通）。
+- 默认值口径：对象用 `null`（保留 `s.X && s.X.method()` / `!s.preferences` 之类「未就绪」判据），
+  数组 `[]`、字符串 `''`、布尔 `false`、数字 `0`；`imageSize/containerSize` 用 `{}`（赋值前会读 `.height/.sidebar`）。
+- **勿重复注册**已由其它 store 持有的字段（`layoutOptions` 属 bodyState，已从 layoutState 剔除；
+  `libraryPathPermissionError/localhostError` 属 toastState 等）。
+- **直写 `coreState` 的点必须改经 store**：已修 `bundleGlobals.ts` 的 `coreState.pluginModule = w.pluginModule`
+  （否则被 store 委托遮蔽，插件面板取不到）。注意哨兵单调门：最初改为经 `getBodyScope()` 写入会新增
+  1 处 `getBodyScope` 调用（628 > 基线 627 判定 REGRESSED），遂直接写 `useMiscRawState` + 保留
+  `coreState` 诊断镜像，回到 627。
+- 门禁：`tsc` 508（零新增）+ `probe LOAD_OK` + 每批 8~12 项定向测试全过
+  （d3 组、stage5/6/7a/7b/7c/7d1b、cz1/cz2、library-switch、menu-popup、ui-interactions、
+  sidebar-dnd、residue、main-ui-workflow）。
+
+**E2 余量（转下一批）**：`eagle.filter.*` 嵌套拆平、`inspector.*` 拆平、`selectedFolders/selectedSmartFolders`
+（`$root.*` 面）等——见 `docs/e1-scope-field-map.md` §3 与 `docs/e-phase-plan-2026-09-12.md` §3.2。

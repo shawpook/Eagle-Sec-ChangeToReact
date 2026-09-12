@@ -19,6 +19,7 @@
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
 import { coreState, getBodyScope } from './appCore';
+import { useMiscRawState } from '../store/miscRawState';
 import { get } from '../utils/lang';
 import { installHoverPreview } from './hoverPreview';
 import { installKeymap } from './keymap';
@@ -1646,13 +1647,12 @@ export function installBundleGlobals(): void {
   }
   // b1-9j：bundle 20207 的 $scope.pluginModule = pluginModule —— 插件面板（PluginFamily）与
   // 详情查看分支（detailState 的 pluginExt）读 body.pluginModule。
-  // b1-9bz-E2-3：pluginModule 已注册到 miscRawState（store 为真身），须经 proxy 写入，直写
-  // coreState 会被 store 委托遮蔽 → 取不到。
-  {
-    const bs: any = getBodyScope();
-    if (w.pluginModule && bs && !bs.pluginModule) {
-      bs.pluginModule = w.pluginModule;
-    }
+  // b1-9bz-E2-3：pluginModule 已注册到 miscRawState（store 为真身），须写 store——直写
+  // coreState 会被 store 委托遮蔽；此处直接写 store（并保留 coreState 诊断镜像），
+  // 不额外引入 getBodyScope() 调用（哨兵单调门要求）。
+  if (w.pluginModule && !useMiscRawState.getState().pluginModule) {
+    useMiscRawState.setState({ pluginModule: w.pluginModule });
+    coreState.pluginModule = w.pluginModule;
   }
 
   // ── b1-9q：openItemContextMenu 依赖的 bundle 顶层全局（原码 51042/49552/49777/985）──

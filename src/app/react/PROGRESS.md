@@ -7899,3 +7899,42 @@ body scope 的 get/set 委托 store（读走 store、写 store + `coreState` 镜
    `s.gifViewer.x`）或写未注册字段 —— 需先把**函数面**直调化（`SCOPED_HANDLER`/`scoped`/`call*` 收敛）；
 3. **未注册字段读**：少量低频字段（`gs`/`tabs`/`recentFolders` 等）与函数值属性。
 → E4「删壳」的前置是 2、3 两类清零；1 类需域层函数体迁移（可分批，不阻塞壳的删除但决定最终形态）。
+
+### E3-4…E3-14 收官（getBodyScope 388 → 79，rootAccess 292 → 7）
+
+E3 后段全部走**同为「源翻转 + 调用点改写」的机械化 codemod 循环**（工具在 `tests-tmp/`，不入库）：
+
+| 批 | 内容 | 结果 |
+|---|---|---|
+| **E3-4** | 别名「整条消除」codemod：注册字段读/写直调化 + 恒真守卫（`if(!s)return`/`s&&X`/`!s\|\|X`/`s?A:B`/`void s`）消除；新增 `writeScopeField` 写入口 | getBodyScope 388→273 |
+| **E3-5** | 余量 82 个**状态字段**注册进 `miscRawState`（gifViewer/gifPlayer/selectedTags/isGifReady/orderBy/…） | （为 E3-6 铺路） |
+| **E3-6** | machinery 函数体**去 scope 参数化**：体内 `s.X`→store、删首参、全程序调用点去首实参；`scoped(X)` 收敛为 `X`；诊断表 `__eagleMachinery` 测试契约同步 | getBodyScope 273→224 |
+| **E3-8** | **`$root` 读/写/成员调用**直调化（shim 世界 `$root` 自指）+ 级联 | rootAccess 292→116、getBodyScope 224→204 |
+| **E3-9** | 去参目标面**泛化**到所有「scope 首参」函数（不限 `machinery*` 前缀）+ **自递归豁免** | getBodyScope 204→178 |
+| **E3-11** | 41 个**函数面挂载字段**源翻转（notify/reload/updateSelection/enterDetailMode/…）+ 成员调用按读改写 + **`fileUrlHelper.ts` 硬排除**（E3-3b 回归修复） | getBodyScope 178→144、rootAccess→106 |
+| **E3-12** | `$root` **写/成员调用**直调化 + `selected*Mappings` 注册 + `writeScopeField` 改走 **shim Proxy**（保留 `__eagleCoreState` 诊断镜像，cz1 契约） | rootAccess 106→**7**、getBodyScope 144→136 |
+| **E3-13** | 6 个**恒 undefined** 字段注册（searchFilter/lockImageFilter/`$$listeners`/`$$watchers`/saveFolderDebounce/tagsSuggestionResult）+ 语句位 `++/--/+=/-=` 直调化 | getBodyScope 136→100 |
+| **E3-14** | 19 个**从未赋值**的函数面成员注册（clearAllTags/openHelpCenter/getExifPath/…，`typeof`/`?.` 守卫语义等价）+ 直调 codemod 支持成员调用 | getBodyScope 100→**79** |
+
+期间两处**回归与修复**（均记入教训）：
+- **E3-3b 复发**：`core/fileUrlHelper.ts` 被 `e3-direct-codemod` 再次改写 → preview 窗口 `copy-path`
+  超时。修法：四个 codemod 统一加 `EXCLUDE_FILES = /\/core\/(appCore|fileUrlHelper)\.ts$/` 硬排除。
+- **coreState 镜像丢失**：`writeScopeField` 早期直接写 store、不镜像 coreState → cz1 `cz1-bridged`
+  失败（`c.platform` 变 undefined）。修法：`writeScopeField` 改**经 shim Proxy 写**（注册 writer +
+  镜像），Proxy 缺席时才退化为直接写注册表 → coreState 计数保持 13 不增。
+
+**E3 收官核数**：`getBodyScope 793 → 79`（**-90%**）、`rootAccess 367 → 7`（**-98%**）、
+`scopeApply 200 → 16`（余为 preferences 独立窗口）、`watch/on/broadcast/apply = 0`、
+`evalAsync 4`、`coreState 13`、`jQuery/vendorScriptTags = 0`。
+
+**E3 剩余 79 处为何不做（全部为后续阶段或硬约束）**：
+1. **`main.cjs` / `shims.js` 以 scope 面消费的函数挂载**（`updateSelection`/`zoom`/`changeStar`/
+   `enterDetailMode`/`leaveDetailMode` 等）：驱动脚本非 ESM 无法 import；shims.js 的详情交付门控
+   以 25ms 轮询 `scope.enterDetailMode`。**必须在 E5 迁移驱动/shims 后才能删**（源码注释已标注）。
+2. **`mousetrap`**：shim target 有就绪门桩种子 `{}`，`prop in target` 优先于迁移委托；注册需同时
+   删种子，而 m1-A6 以 `!!shim.mousetrap` 为契约 —— 归 E4。
+3. **`fileUrlHelper.ts`（5 处）**：子窗口实际执行的共享 core 模块，硬排除（E3-3b）。
+4. **`appCore.ts`（4 处）**：`getBodyScope`/`getRootScope` 定义处本身，E4 删壳时一并消失。
+5. **动态元素访问与 `$root` 作值**：`scope[fn]`（ListRegion 派发）、`const root = s.$root` 的
+   `$filter`/`$timeout` 闭包 —— 属「函数面动态分发」，随 E4/E5 收敛。
+

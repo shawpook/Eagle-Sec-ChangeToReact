@@ -6,6 +6,14 @@
 > `src/app/react/REWRITE-PLAN.md`（归档横幅）、`tests/react-rewrite-sentinel.mjs` 基线。
 >
 > **本文件是设计/施工图，不改变代码。** 执行按 §5 竖切批次推进，每批一次提交。
+>
+> **E3 收官更新（2026-09-12 晚，HEAD `507df65b`）**：§0 判据表的「现状」列已被 E3 批次大幅推进 ——
+> `getBodyScope 793 → 79`（-90%）、`rootAccess 367 → 7`（-98%）、`scopeApply 200 → 16`、
+> `watch/on/broadcast/apply = 0`、`jQuery/vendorScriptTags = 0`、`coreState 13`。
+> E3 的 11 个批次（E3-4…E3-14）与剩余 79 处的逐条阻塞原因见
+> `src/app/react/PROGRESS.md`《E3-4…E3-14 收官》节。剩余项均为 **E4/E5 前置**
+> （`main.cjs`/`shims.js` 的 scope 面消费、`mousetrap` 门桩种子、`fileUrlHelper` 子窗硬排除、
+> `appCore` 定义处、动态元素访问/`$root` 作值），不再是「读点改写」能消的。
 
 ---
 

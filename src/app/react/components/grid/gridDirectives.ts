@@ -6,6 +6,7 @@ import { autoscrollChannel } from '../../global/bus';
 import { q, heightOf, setCssEl, offsetOf, addClass, removeClass, onEl, offEl } from '../../utils/domQuery';
 import { machineryGotoBottom } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
+import { useSelectionState } from '../../store/selectionState';
 import { useFolderState } from '../../store/folderState';
 import { useMiscRawState } from '../../store/miscRawState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
@@ -32,9 +33,9 @@ export function initAutoScroll() {
             autoscrollChannel.on(function (event, index) {
 
                 // 暫時做修正，未來有直接滾動 index 的方式再調整
-                if (!$bodyScope.selected || $bodyScope.selected.length === 0) return;
-                var boxId = $bodyScope.selected[$bodyScope.selected.length - 1].id;
-                var height = $bodyScope.boxContianerHeight || heightOf(element),
+                if (!useSelectionState.getState().selected || useSelectionState.getState().selected.length === 0) return;
+                var boxId = useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1].id;
+                var height = useMiscRawState.getState().boxContianerHeight || heightOf(element),
                 // var height = ig._renderer._size.view,
                     box = q(`#box-${boxId}`);
 
@@ -58,7 +59,7 @@ export function initAutoScroll() {
                 }
 
                 setTimeout(function () {
-                    if ($container && $container.scrollTop === 0 && $bodyScope.startCursor !== 0) {
+                    if ($container && $container.scrollTop === 0 && useMiscRawState.getState().startCursor !== 0) {
                         $container.scrollTop = 3;
                     }
                 }, 200);

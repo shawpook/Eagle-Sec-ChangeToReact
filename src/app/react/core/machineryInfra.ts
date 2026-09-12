@@ -15,7 +15,7 @@ import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { addClass, removeClass } from '../utils/domQuery';
-import { getBodyScope } from './appCore';
+import { getDriverApi } from './driverApi';
 import { callExternal } from './externalSupply';
 import { machineryCalcuteFilterResult, machineryColorFilter, machineryContentFilter, machineryExistInSmartFilter, machineryFilterContent, machineryFilterData, machineryGrayColorFilter } from './filterDomain';
 import { machineryCalculateImageBinding, machineryPrependImages, machineryRebindRefresh, machineryRebindRefreshLazy, machineryReload, machinerySortRawData, machineryUpdateItemsView } from './itemDomain';
@@ -40,8 +40,7 @@ let applied = false;
 export function applyDataMachineryScope(): void {
   if (applied) return;
   applied = true;
-  const s = getBodyScope();
-  if (!s) return;
+  const s = getDriverApi();
 
   // b1-9d：controller init 状态面种子（仅 shim 世界——bundle 在世时由 controller init
   // 填充同名默认值，此处调用为恒等幂等）

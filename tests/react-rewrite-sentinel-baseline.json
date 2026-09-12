@@ -1,5 +1,5 @@
 {
-  "generated": "b1-9bz-E5-1",
+  "generated": "b1-9bz-E5-2",
   "counts": {
     "evalAsync": 1,
     "apply": 0,
@@ -10,7 +10,7 @@
     "scopeApply": 0,
     "scopeEvalAsync": 355,
     "callScope": 0,
-    "getBodyScope": 15,
+    "getBodyScope": 0,
     "jQuery": 0,
     "rootAccess": 0,
     "coreState": 0,

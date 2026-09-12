@@ -1,4 +1,3 @@
-import { getBodyScope } from '../../core/appCore';
 import { glRemoveitemsChannel, glResetChannel, glScrolltotopChannel } from '../../global/bus';
 import { machineryRelayout, machineryScrollbarTo } from '../../services/gridService';
 import { useMiscRawState } from '../../store/miscRawState';
@@ -216,10 +215,8 @@ export function installBoxGrid(): () => void {
   if (installed) return () => {};
   installed = true;
 
-  // 原由 ngGridLayout link 设置的全局（bundle:66507-66509）：window.$bodyScope。
-  // v3 getViewportSize 等模块直接读取它，必须保持。
-  // E4：body scope 单例由 appCore 供给（创建即赋值 window.$bodyScope），原轮询兜底退役。
-  if (!w.$bodyScope) w.$bodyScope = getBodyScope();
+  // E5-2：原 ngGridLayout link 设置的 window.$bodyScope 全局已退役——gridDirectives 等
+  // 改直读 store（getScopeFace 仅供应用内部），不再需要为 v3 模块供给全局 scope。
 
   w.resetNgGridLayoutData = (nextItems: any[], cursor?: number, scrollPercentage?: number) => {
     applyReset(nextItems, cursor, scrollPercentage);

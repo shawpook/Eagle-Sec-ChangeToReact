@@ -9,16 +9,23 @@
  *  - 函数面（machinery 挂载、跨窗/驱动供给）不变：`machineryInfra.applyDataMachineryScope`
  *    等直接写本面属性。
  *
- * 保留的最小 Angular 面（测试/驱动契约，E5 随驱动迁移删除）：
- *  `__eagleShim`（shim-only 分支判据）、`$root`/`$parent` 自指、`$eval`、`$evalAsync`、
- *  `$destroy`。诊断出口仍名 `__eagleScopeShim`（冒烟 A6/cz1 契约）。
+ * 保留的最小面：`__eagleShim`（shim-only 分支判据）、`$root`/`$parent` 自指、`$eval`、
+ *  `$evalAsync`、`$destroy`。诊断出口仍名 `__eagleScopeShim`（冒烟 A6/cz1 契约）。
+ *
+ * **E5-2 过渡态**：跨边界消费（main.cjs / shims.js / 子窗口 / 52 个冒烟）改走
+ * `core/driverApi.ts` 的显式 `window.__eagleDriver` 与 `window.__eagleScopeRegistry`
+ * （store 注册表诊断口）已就位；但 src 侧一次性切换会同时打断 52 个测试与跨窗驱动，
+ * 故本批**由主窗入口显式安装 `window.$bodyScope = face` 过渡别名**（E5-3 迁测试观测口、
+ * E5-4 删除）。别名安装**只在主窗**（`main.tsx` → `installScopeAlias()`）：子窗
+ * （preview-window / viewers）以 `window.$bodyScope` 承载**本窗** controllerScope
+ * （`preview-window/controller.ts:2425`），共享 `core/*` 模块必须经 `getWindowScope()`
+ * 取「本窗 scope」，否则会建出空的 store 面并**覆盖子窗自有 scope**。
  */
 import { getMigratedScopeField, getMigratedScopeFieldNames } from './scopeFieldBridge';
 
 export function createBodyScopeFace(): any {
-  // 单例：已达则直接返回（`__eagleScopeShim.factory()` 冒烟直调与 getBodyScope 共享同一面）。
-  const existing = (window as any).$bodyScope;
-  if (existing) return existing;
+  // 单例：内部面已达则直接返回（`__eagleScopeShim.factory()` 冒烟直调与 getScopeFace 共享同一面）。
+  if (internalFace) return internalFace;
   const plain: Record<string, any> = {};
   const face: any = {
     __eagleShim: true,
@@ -58,8 +65,36 @@ export function createBodyScopeFace(): any {
     define(name);
   }
 
-  (window as any).$bodyScope = face;
+  internalFace = face;
   return face;
+}
+
+let internalFace: any = null;
+
+/** 应用内部 scope 面（单例；store 后端，**不写 window**——子窗安全性靠此保证）。 */
+export function getScopeFace(): any {
+  if (!internalFace) createBodyScopeFace();
+  return internalFace;
+}
+
+/** 本窗作用域：子窗（`window.$bodyScope` 由本窗 controller 赋值）优先，缺省回落内部面。
+ *  共享 `core/*` 模块（`fileUrlHelper` 等）在子窗执行时必须走此口，不得直用 `getScopeFace()`。 */
+export function getWindowScope(): any {
+  return (window as any).$bodyScope || getScopeFace();
+}
+
+/** **仅主窗入口调用**：安装过渡别名 `window.$bodyScope = face`（E5-4 删除）。 */
+export function installScopeAlias(): void {
+  (window as any).$bodyScope = getScopeFace();
+}
+
+/** store 注册表诊断口（测试/驱动按名读写字段；非 scope 对象）。 */
+export function installScopeRegistry(): void {
+  (window as any).__eagleScopeRegistry = {
+    read: (name: string) => { const m = getMigratedScopeField(name); return m ? m.read() : undefined; },
+    write: (name: string, value: any) => { const m = getMigratedScopeField(name); if (m) m.write(value); },
+    names: () => getMigratedScopeFieldNames(),
+  };
 }
 
 /** 诊断契约（冒烟 A6/cz1 用）：工厂直曝 + 状态。 */

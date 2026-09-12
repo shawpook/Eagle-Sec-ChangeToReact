@@ -7862,7 +7862,7 @@ body scope 的 get/set 委托 store（读走 store、写 store + `coreState` 镜
 ### E3-2（提交 `61e0cd36`）别名读 AST codemod
 - 工具 `tests-tmp/e3-alias-codemod.cjs`：TypeScript 符号解析定位 `const X = getBodyScope()` 绑定，
   把「注册字段的读」`X.F` 改写为 `store.getState().F`（跳过调用/赋值）；别名改写后若**无任何其它引用**
-  则连声明一起删（这才是减少 `getBodyScope(` 计数处）。
+  则连声明一起删（这才是减少该取用计数处）。
 - 实测 **640 处读 / 84 个声明 / 39 文件**；`getBodyScope 489 → 405`。
 
 ### E3-3（提交 `557e87c1`）合并式 codemod + 字段面补注册
@@ -8033,3 +8033,59 @@ DoD ② 只剩 **`getBodyScope 15` 与 `evalAsync 1`**，两者都等于「scope
 > ⚠️ **未解之谜（E5 前必查）**：E1b 记录「`main.cjs` 的 `scope.$evalAsync()` 提交钩子有则 4/4 过、
 > 无则 4/4 败」，但 shim 世界的 `$evalAsync` 是 no-op。删该钩子前必须先定位这个（疑似时序/加载链
 > 副作用），否则 preview-delivery 会以「看起来无关」的方式回归。
+
+### E5-2 生产侧去 scope（本批）：`driverApi` + 别名单点安装
+
+**结果**：哨兵 `getBodyScope 15 → 0`；`core/scopeShim.ts` 时代最后一个 span 取用口归零；
+`tsc 494`（零新键）；定向回归全绿（见下）。
+
+**做了什么**
+
+1. **新增 `core/driverApi.ts`**：`window.__eagleDriver` 显式白名单（DATA 47 + ACTION 29），
+   `$evalAsync` no-op、`__eagleShim` 判据；两级后端——
+   ① store 注册表命中（数据面 + `notify` 等）直连 store；② 未注册的**运行时函数挂载**
+   （machineryInfra 的 `s.xxx = fn`）回落 `scopeFace.getScopeFace()` 同名 `plain` 槽。
+   `installDriverApi()` 由 `main.tsx` 启动期调用。
+2. **`core/scopeFace.ts`**：`createBodyScopeFace()` **不再写 window**（去掉了 E4-5 的
+   `window.$bodyScope = face`）；新增 `getWindowScope()`（`window.$bodyScope || getScopeFace()`）与
+   `installScopeAlias()`（**仅主窗入口**调用，过渡别名）；新增 `installScopeRegistry()`
+   （`window.__eagleScopeRegistry {read,write,names}`，store 注册表诊断口，E5-3 测试观测面用）。
+3. **`appCore.ts`**：删 `getBodyScope`/`getRootScope`（含死 Angular 分支）；`runInBodyScope`/`findLiveNode`
+   改 `getScopeFace()`。
+4. **`machineryInfra.applyDataMachineryScope`**：`const s = getBodyScope()` → `getDriverApi()`
+   （22 个挂载经①②落 store 面/内部面；探针实测 `faceMountsEqual === true`）。
+5. **`fileUrlHelper.ts`**：`getBodyScope()` → **`getWindowScope()`**（子窗共享模块，不得直用主窗面）。
+6. **`gridDirectives.ts`**：`$bodyScope.selected/boxContianerHeight/startCursor` → store 直读。
+7. **`boxGridEngine.ts`**：删 `window.$bodyScope` 兜底赋值（改由主窗 `installScopeAlias()` 保证）。
+8. **`preview-window/detailHooks.ts`**：`getBodyScope()?.mousetrap` → `controllerScope.mousetrap`
+   （本窗 controllerScope 的同名表，`controller.ts:2418/2425` 保证等价）。
+9. **`electron/main.cjs`**：5 处就绪探针 `window.$bodyScope` → `window.__eagleDriver`
+   （探针只读 `raw` + `listDone`，均在白名单；主窗段；预览窗段本就 `__eaglePreviewController`）。
+10. **`frontend/public/shims.js`**：`$bodyScope` 仍走过渡别名（E5-5 整体退役），但修了两处
+    **E4 去 scope 化后的陈旧调用点**：`M.toggleAll(scope)` → `M.toggleAll()`、
+    `M.rebindRefresh(scope,undefined,undefined,undefined)` → `M.rebindRefresh()`。
+
+**踩坑（重要）**
+
+- **子窗 `window.$bodyScope` 被主窗面覆盖**（本次最大坑）：`fileUrlHelper` 是 preview-window 共享模块，
+  改成 `getScopeFace()` 后会在预览窗**建出空的 store 面并写 `window.$bodyScope`**，覆盖
+  `preview-window/controller.ts:2425` 的 controllerScope → `smoothZoomEngine` 的 `$bodyScope.current`
+  变 undefined → `selectNext` 报 `reading 'height'` 且 preview-delivery 必败。
+  **修法**：面创建与 window 暴露解耦——`getScopeFace()` 不碰 window，跨窗共享模块走 `getWindowScope()`
+  （本窗优先），别名只在主窗入口 `installScopeAlias()` 安装。
+- **`main.cjs` 的探针代码在模板字符串内**：替换注释里不能出现反引号（会截断模板串 →
+  `SyntaxError: missing ) after argument list`，Electron 直接起不来、CDP 探针全灭）。
+- `M.toggleAll(scope)`（E4-2 去 scope 化遗留）会把 scope 当 `$event` → `$event.preventDefault is not a function`
+  → document-viewer 侧栏自动收起失效。修掉后 `DOCUMENT_VIEWER_UI_CLOSED_LOOP_OK`。
+
+**定向回归**（本批实测；全套留待 E5 阶段末）
+
+- 通过：`cz1/cz2/cz3`、`m1`、`stage/stage5/stage7a/stage7d3a`、`d3×8`、`main-ui-workflow`、
+  `preview-delivery`、`sidebar-dnd`、`channel-wiring`、`menu-popup`、`ui-interactions`、`residue`、
+  `txt-update`、`empty-trash`、`native-preview`、`source-mode-ui`、`library-switch-ui`、`drag-start`、
+  `browser-capture-ui`、`video-detail`、`document-viewer-ui`。
+- **预存失败（与 E5-2 无关，baseline 同败，均不在 65 套件内）**：`export-progress-closed-loop`
+  （断言 `file-export-progress`/`eaglepack-export-progress` 两个 Angular 指令 DOM + `isolateScope()`；
+  Angular 退役后这两元素不再存在 → 需改测 React 组件或退役该测）。
+- 环境提示：测试异常退出后会留 Electron 孤儿进程，后续 CDP `fetch failed`——先
+  `Get-Process electron | Stop-Process -Force` 再重跑。

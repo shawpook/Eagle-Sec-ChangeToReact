@@ -1141,7 +1141,7 @@ export function machineryUpdateSelection(): void {
      activeTab/category）经 30ms $timeout 防抖写 scope.inspector.*，7d3a 三断言与
      InspectorTagSelectPanel 的 eagle.inspector.newTags 数据源。适配：$scope→s /
      $rootScope→s.$root / $timeout→getTimeout() / $filter→getFilter() / i18n→w.i18n /
-     eagle→w.eagle / $bodyScope→getBodyScope()。s.inspector 即 eagle.inspector（bundle
+     eagle→w.eagle / 原 $bodyScope 取用→scope 面。s.inspector 即 eagle.inspector（bundle
      21615/54307 `$scope.inspector = eagle.inspector` 同引用） */
   getTimeout().cancel(updateSelectionTimeout);
   updateSelectionTimeout = getTimeout()(function () {

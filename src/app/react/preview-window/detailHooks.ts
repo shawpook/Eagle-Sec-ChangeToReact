@@ -1,7 +1,6 @@
 import { FileUrlHelper } from '../core/fileUrlHelper';
 import { useEffect } from 'react';
 import { controllerScope, applyController } from './controller';
-import { getBodyScope } from '../core/appCore';
 import { notifyController } from './controller';
 import { createEl, setCssEl } from '../utils/domQuery';
 
@@ -366,7 +365,8 @@ export function usePreviewTgaImage(ref: React.RefObject<HTMLImageElement | null>
 
 export function usePreviewMousetrap() {
   useEffect(() => {
-    const mousetrap = getBodyScope()?.mousetrap;
+    // E5-2：预览窗自有 controllerScope 的 mousetrap 表（原经 getBodyScope() 取本窗 scope 面）。
+    const mousetrap = controllerScope.mousetrap;
     if (!mousetrap || typeof mousetrap !== 'object') return;
     const Mousetrap = (window as any).Mousetrap;
     const throttle = (window as any).throttle;

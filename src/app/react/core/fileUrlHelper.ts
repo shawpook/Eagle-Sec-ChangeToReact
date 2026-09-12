@@ -1,7 +1,8 @@
-import { getBodyScope } from './appCore';
+import { getWindowScope } from './scopeFace';
 /**
  * c1：FileUrlHelper 逐字移植（bundle 2287 起对象字面量提取；b1 数据面接管前置）。
- * 机械替换：$bodyScope → getBodyScope()；path → window.require('path')（mock 经 shims
+ * 机械替换：$bodyScope → getWindowScope()（本窗作用域——子窗 preview-window 亦消费本模块，
+ * 不得直用主窗 store 面 getScopeFace()）；path → window.require('path')（mock 经 shims
  * bareModules，Electron 经 nodeIntegration——与 bundle 内同名全局语义一致）。
  * bundle 的 window.FileUrlHelper 在过渡期共存；React 消费方一律改走本模块 import。
  */
@@ -31,14 +32,14 @@ export const FileUrlHelper = {
     getMetadataPath: function (image) {
         try {
             if (!image || !image.name) return "";
-            return path.normalize(`${getBodyScope().libraryImagesPath}/${image.id}.info/metadata.json`);
+            return path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/metadata.json`);
         }
         catch (err) { }
     },
     getRawPath: function (image) {
         try {
             if (!image || !image.name) return "";
-            let rawPath = path.normalize(`${getBodyScope().libraryImagesPath}/${image.id}.info/${image.name}.${image.ext}`);
+            let rawPath = path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/${image.name}.${image.ext}`);
             return rawPath;
         }
         catch (err) { }
@@ -57,7 +58,7 @@ export const FileUrlHelper = {
                 return FileUrlHelper.getRawPath(image);
             }
             else {
-                let thumbnailPath = path.normalize(`${getBodyScope().libraryImagesPath}/${image.id}.info/${image.name}_thumbnail.png`);
+                let thumbnailPath = path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/${image.name}_thumbnail.png`);
                 return thumbnailPath;
             }
         }
@@ -73,8 +74,8 @@ export const FileUrlHelper = {
     getLastestThumbnailUrl: function (image) {
         try {
             let thumbnailUrl = FileUrlHelper.getThumbnailUrl(image);
-            if (getBodyScope().modifiedMappings && getBodyScope().modifiedMappings[image.id]) {
-                thumbnailUrl = `${thumbnailUrl}?v=${getBodyScope().modifiedMappings[image.id]}`;
+            if (getWindowScope().modifiedMappings && getWindowScope().modifiedMappings[image.id]) {
+                thumbnailUrl = `${thumbnailUrl}?v=${getWindowScope().modifiedMappings[image.id]}`;
             }
             return thumbnailUrl;
         }

@@ -433,7 +433,9 @@
       const scope = window.$bodyScope;
       const M = window.__eagleMachinery;
       if (scope && M && typeof M.toggleAll === 'function') {
-        M.toggleAll(scope);
+        // E5-2：machineryToggleAll 已去 scope 化（E4-2，签名 ($event)）——原以 scope 当 $event 传入
+        // 会触发 `$event.preventDefault is not a function`（document-viewer 自动收侧栏失效）。
+        M.toggleAll();
       }
     } catch (err) {
       console.warn('[eagle-shim] document auto-collapse sidebar failed', err);
@@ -1887,7 +1889,9 @@
       const M = window.__eagleMachinery;
       if (scope && M && typeof M.rebindRefresh === 'function') {
         try {
-          M.rebindRefresh(scope, undefined, undefined, undefined);
+          // E5-2：machineryRebindRefresh 已去 scope 化（E4，签名 (muteMode, cache, startCursor)）——
+          // 原 scope 首参会被当作 muteMode 误用。
+          M.rebindRefresh();
           if (typeof scope.scrollToSelectedItem === 'function') scope.scrollToSelectedItem();
         } catch (err) { /* 重载失败不阻塞通知链 */ }
       }

@@ -39,8 +39,8 @@ import { bindUploadSync } from './store/uploadState';
 import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
-import { getBodyScope } from './core/appCore';
-import { exposeScopeFaceDiagnostics } from './core/scopeFace';
+import { getDriverApi, installDriverApi } from './core/driverApi';
+import { exposeScopeFaceDiagnostics, getScopeFace, installScopeAlias, installScopeRegistry } from './core/scopeFace';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -205,26 +205,22 @@ bindMiscRawSync();
 // c2：React 侧 eagle 对象族（bundle 实例仍为权威态，随 c 域切片逐步切换消费方）。
 (window as any).__eagleCoreEagle = coreEagle;
 
-// cZ-1 + c8 → b1-9bz-E4-5：scope 字段访问器桥退役（`bridgeScopeFields`/`coreState` 已删）。
-// 注册字段由 `core/scopeFace.ts` 直连 store；此处仅保留「就绪门 + 域接管」排序。
+// cZ-1 → b1-9bz-E5-2：Angular body-scope 与字段访问器桥均退役。
+//  - 应用内部书写 → `core/scopeFace.getScopeFace()`（store 后端）；
+//  - 跨边界消费（main.cjs / shims.js / 子窗口）→ `core/driverApi` 的 `window.__eagleDriver`
+//    + `__eagleScopeRegistry`（测试诊断口）。
+//  - 过渡态：`window.$bodyScope` / `__eagleCoreState` 仍是同一 store 后端面（E5-3 迁测试
+//    观测口、E5-4 删除），故本批测试与驱动零改动。
+// 此处仅保留「就绪门 + 域接管」排序（域接管须在任何子窗口/驱动调用前完成）。
 function bridgeWhenReady(attempt = 0): void {
-  // 强就绪门：`scope.mousetrap` 现由 miscRawState 默认 `{}` 供给（原 shim 种子等价物），
-  // 域接管照旧在任何子窗口/驱动调用前完成。
-  let scope = getBodyScope();
-  if (scope) {
-    // 归一 window.$bodyScope：保留（子窗口/指令可能赋成子 scope；域接管/冒烟以真身为准）。
-    try {
-      const ang = (window as any).angular;
-      const trueBody = ang && ang.element ? ang.element(document.body).scope() : null;
-      if (trueBody) { (window as any).$bodyScope = trueBody; scope = trueBody; }
-    } catch (err) { /* noop */ }
-  }
-  if (scope && scope.mousetrap) {
-    // b1-9bz-B-8：shimFnsBridge / controllerFns 退役（消费面已全部直 import）。
-    // 仅保留窄口径测试观测钩子（见 core/portsProbe.ts，无运行期供给语义）。
+  installDriverApi();
+  installScopeRegistry();
+  // 强就绪门：域接管前置条件是清单/供给面可用（mousetrap 由 miscRawState 默认 {} 供给）。
+  const ready = !!getDriverApi().mousetrap;
+  if (ready) {
     installPortsProbe();
-    // 诊断别名（cz1/cz2/m1 契约）：即 scope 面本体，写入直接经面落 store。
-    (window as any).__eagleCoreState = scope;
+    // cz1/cz2/m1 诊断契约：字段读写经 scope 面/store 注册表（`__eagleCoreState` 即面本体）。
+    (window as any).__eagleCoreState = getScopeFace();
     applyDataMachineryScope();
     takeoverPreferencesDomain();
     takeoverLibraryDomain();
@@ -248,5 +244,7 @@ installBundleGlobals();
 installApiServerGlobals();
 installInitAPIServer();
 exposeScopeFaceDiagnostics();
+// E5-2 过渡别名：**仅主窗**安装 `window.$bodyScope`（子窗以该键承载本窗 controllerScope）。
+installScopeAlias();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

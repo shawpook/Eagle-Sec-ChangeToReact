@@ -3,7 +3,7 @@
  *
  * E4-5 起：`coreState` 与 `bridgeScopeFields`（Angular 时代的 scope 访问器后端）已删除——
  * scope 面由 `core/scopeFace.ts` 的显式 describeProperty 实现（注册字段直连 store），
- * 本模块只保留 `getBodyScope`/`getRootScope` 取用与 watcher 清扫等运行时工具。
+ * 本模块只保留应用内部 scope 面取用（`getScopeFace`）与 watcher 清扫等运行时工具。
  */
 
 /* ── scope watcher 接管工具（cZ-5/6/4 遗留；bundle 桥已删，本组仅供残留诊断/清扫调用）──
@@ -122,37 +122,16 @@ export function removeChannelListenersBySource(ipc: any, channel: string, signat
   return removed;
 }
 
-// ── b1-9by-D → E4-5：scope 面（scopeFace）惰性创建，环安全 ──
-import { createBodyScopeFace } from './scopeFace';
-
-export function getBodyScope(): any {
-  const w = window as any;
-  if (w.$bodyScope) return w.$bodyScope;
-  const angular = w.angular;
-  if (angular && angular.element) {
-    const scope = angular.element(document.body).scope();
-    if (scope) return scope;
-  }
-  // b1 后 Angular 缺席（angular 由 app.bundle.js 内联定义，无独立 script 标签）→
-  // 显式 scope 面（store 后端；无 Proxy/coreState）。bundle 在世时此分支不可达。
-  if (!angular) {
-    const face = createBodyScopeFace();
-    if (w.__eagleScopeShim) w.__eagleScopeShim.active = true;
-    return face;
-  }
-  return null;
-}
-
-export function getRootScope(): any {
-  const scope = getBodyScope();
-  return scope ? scope.$root : null;
-}
+// ── b1-9bz-E5-2：Angular body-scope 取用（`getBodyScope`）已删除 ──
+// 应用内部书写路径改用 `scopeFace.getScopeFace()`（store 后端，不暴露到 window）；
+// 跨边界（驱动/子窗/harness）改走 `driverApi` 的显式 `window.__eagleDriver`。
+import { getScopeFace } from './scopeFace';
 
 /** D-1 A-1：动态分发点传「需要 body scope 作首参」的 handler 时的标记。
  *
  * call/callSeq/scopeFn 等 helper 内部已持有 scope，见到本标记即以 scope 为首参调用；
  * 这样把 machinery 函数（签名 (s, ...args)）当引用传递时，无需在各调用点新增 scope 取用。
- * 待 scopeShim 退役时随 helper 一并收敛。 */
+ * 待 scoped-handler 面收敛时随 helper 一并删除（E 阶段残余）。 */
 export const SCOPED_HANDLER = Symbol('eagleScopedHandler');
 
 export function scoped<A extends any[], R>(fn: (s: any, ...args: A) => R): (...args: A) => R {
@@ -171,10 +150,8 @@ export function scoped<A extends any[], R>(fn: (s: any, ...args: A) => R): (...a
  * （`$apply` 恒存在），故直调化安全。
  */
 export function runInBodyScope<T = void>(fn: (scope: any) => T): T | undefined {
-  const scope = getBodyScope();
-  if (!scope) return undefined;
   try {
-    return fn(scope);
+    return fn(getScopeFace());
   } catch (err) {
     console.error('[react-scope-bridge]', err);
     return undefined;
@@ -183,9 +160,9 @@ export function runInBodyScope<T = void>(fn: (scope: any) => T): T | undefined {
 
 /** 依据 node id 从活的 sidebarList 中取回 node 实例（事件回调必须传活对象）。 */
 export function findLiveNode(nodeId: string): any {
-  const scope = getBodyScope();
-  if (!scope || !Array.isArray(scope.sidebarList)) return null;
-  return scope.sidebarList.find((node: any) => node && node.id === nodeId) || null;
+  const list = getScopeFace().sidebarList;
+  if (!Array.isArray(list)) return null;
+  return list.find((node: any) => node && node.id === nodeId) || null;
 }
 
 /** 把 Angular ng-class 风格的对象序列化为 class 字符串（保持 key 插入顺序）。 */

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { filterWithColor, hexToRGB } from '../../core/filterDomain';
 
 /**

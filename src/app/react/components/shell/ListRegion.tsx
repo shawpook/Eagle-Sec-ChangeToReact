@@ -4,7 +4,7 @@ import { useListState } from '../../store/listState';
 import { useBodyState } from '../../store/bodyState';
 import { t } from '../../global/eagleGlobals';
 import { initAutoScroll, initScrollToTopSentinel, initBoxContainerScrollbar } from '../grid/gridDirectives';
-import { getBodyScope } from '../../core/appCore';
+import { getMigratedScopeField } from '../../core/scopeFieldBridge';
 import { getSortable, makeSortable } from '../interactions/sortable';
 import { openFileListContextMenu } from '../../services/miscMenuService';
 
@@ -43,9 +43,8 @@ function useHost(id: string): HTMLElement | null {
 /** scope 函数调用（e 为原生事件或合成事件，取 nativeEvent 最接近原 $event 语义）。 */
 function scopeFn(fn: string | ((...a: any[]) => any), ...args: any[]) {
   return (e?: any) => {
-    const scope = getBodyScope();
-    if (!scope) return;
-    const target = typeof fn === 'function' ? fn : scope[fn];
+    // E4：字符串名按注册表解析（原 `scope[fn]` 动态取挂载的等价物）。
+    const target = typeof fn === 'function' ? fn : getMigratedScopeField(fn)?.read();
     if (typeof target !== 'function') return;
     const ev = e && e.nativeEvent ? e.nativeEvent : e;
     target(...(args.length ? args : [ev]));
@@ -344,20 +343,18 @@ export function PanelDropArea() {
 export function BoxContainerListeners() {
   useEffect(() => {
     const box = document.getElementById('box-container');
-    const scope = getBodyScope();
-    if (!box || !scope) return;
+    if (!box) return;
     /* b1-9bz-B：原 `call(fn: string)` 字符串派发退役（scope 面直取，同 DetailToolbar）。
        onDragEnter/Leave/Over/MouseMove 四个在表与 machinery 均无供给，保留 scope 面回退。 */
     const call = (fn: (...a: any[]) => any) => (e: Event) => {
       if (typeof fn === 'function') fn(e);
     };
     const callM = (fn: (...a: any[]) => any) => (e: Event) => {
-      const s = getBodyScope();
-      if (s && typeof fn === 'function') fn(s, e);
+      if (typeof fn === 'function') fn(e);
     };
     const callF = (name: string) => (e: Event) => {
-      const s = getBodyScope();
-      if (s && typeof s[name] === 'function') (s[name] as any)(e);
+      const target = getMigratedScopeField(name)?.read();
+      if (typeof target === 'function') (target as any)(e);
     };
     const onContextMenu = (e: Event) => { e.preventDefault(); call(openFileListContextMenu)(e); };
     box.addEventListener('contextmenu', onContextMenu);

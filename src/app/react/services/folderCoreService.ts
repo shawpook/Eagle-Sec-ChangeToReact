@@ -20,7 +20,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncDetailFromScope } from '../store/detailState';
-import { getBodyScope } from '../core/appCore';
+;
 
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncFolderLock } from '../store/lockState';
@@ -66,9 +66,7 @@ const dialog: any = remote?.dialog;
 const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
 const electronLog: any = (window as any).electronLog || console;
 const $filter: any = (name: string) => {
-  const s: any = getBodyScope();
-  const root = s && s.$root;
-  if (root && root.$filter) return root.$filter(name);
+  // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();
   return inst ? inst(name) : undefined;
 };
@@ -741,7 +739,6 @@ const initLinkVars = () => {
           }, 500);
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function getLibraryHistory(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

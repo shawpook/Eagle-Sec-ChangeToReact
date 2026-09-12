@@ -42,7 +42,7 @@ import { makeResizable } from '../interactions/resizable';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { syncPanelFromScope } from '../../store/panelState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
-import { getBodyScope, runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
+import { runInBodyScope, scoped, SCOPED_HANDLER } from '../../core/appCore';
 
 import { filterWithColor } from '../../core/filterDomain';
 import { removeFromFolder } from '../../services/batchOpsService';
@@ -1414,7 +1414,8 @@ function passwordLocked(snapshot: InspectorSnapshot): boolean {
 }
 
 function liveInspectorFolder() {
-  return (getBodyScope() as any)?.inspector?.inspectorFolder || (getBodyScope() as any)?.inspectorFolder;
+  const ins = useMiscRawState.getState().inspector;
+  return ins?.inspectorFolder || useMiscRawState.getState().inspectorFolder;
 }
 
 /** annotations 的 info-section 有 ng-if="selected.length == 1" 且 ng-show comments>0；

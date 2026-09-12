@@ -3,7 +3,7 @@
  * 函数体为 makeControllerFns 表内壳逐字平移（getScope()→getBodyScope()）。
  */
 
-import { getBodyScope } from '../core/appCore';
+;
 import { IPCHelper } from '../core/ipcHelper';
 import { syncUploadFromScope } from '../store/uploadState';
 
@@ -44,10 +44,7 @@ const dialog: any = _req('@electron/remote')?.dialog;
 const remote: any = _req('@electron/remote');
 
 const $filter: any = (name: string) => {
-  const s: any = getBodyScope();
-  if (s && s.$root && s.$root.$filter) return s.$root.$filter(name);
-  // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（Angular 在世走 injector，
-  // 缺席时为 EagleApp.filter 逐字移植的等价表），否则 `$filter('i18n')(…)` 首行即抛。
+  // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = getFilter();
   return inst ? inst(name) : undefined;
 };
@@ -67,7 +64,6 @@ const initLinkVars = () => {
 
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function cancelAllTasks(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

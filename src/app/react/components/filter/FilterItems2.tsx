@@ -9,7 +9,7 @@ import { KIND_COMPONENTS } from './FilterItems';
 import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';
 import { syncFilterFromScope } from '../../store/filterState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
@@ -30,7 +30,6 @@ function themePathOf(theme: string): string {
 
 const menuIcon = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/context-menu/${icon}`;
 const filter = (): any => useMiscRawState.getState().eagle?.filter;
-const bodyScope = (): any => getBodyScope();
 const runSeq = (fns: Array<(s: any) => void>) =>
   runInBodyScope((s) => { fns.forEach((fn) => fn(s)); });
 

@@ -12,7 +12,7 @@ import { CornerBtns } from '../toolbar/Toolbar';
 import { getIpc, getCurrentWindow, req } from '../detail/detailHooks';
 
 import { syncPanelFromScope } from '../../store/panelState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { changeOrderBy } from '../../core/miscDomain';
 import { switchGridLayout, switchJustifiedLayout, switchListLayout, switchSquareLayout } from '../../services/viewOpsService';
 

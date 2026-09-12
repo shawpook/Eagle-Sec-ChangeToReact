@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
-import { getBodyScope } from '../core/appCore';
+;
 import { usePreferencesState } from './preferencesState';
 import { useMiscRawState } from './miscRawState';
 import { useFolderState } from './folderState';

@@ -6,7 +6,7 @@ import { t } from '../../global/eagleGlobals';
 // b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
 import { cleanLibraryPathPermissionError, cleanLocalhostError, openErrorModal } from '../../core/miscDomain';
 import { cleanAllError } from '../../services/batchOpsService';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 /**
  * 11-pre a2：toast-alert 三块（index.html 96-121 逐字——失败重试提示 / 本地服务器无法

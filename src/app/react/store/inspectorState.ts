@@ -4,7 +4,7 @@ import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
-import { getBodyScope } from '../core/appCore';
+;
 import { getFolderFullPath } from '../core/itemDomain';
 import { useMiscRawState } from './miscRawState';
 import { useSelectionState } from './selectionState';

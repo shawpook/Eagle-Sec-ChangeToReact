@@ -6,7 +6,7 @@ import { useTippy, useSelectAll } from '../hooks';
 import { FilterItemShell, CheckItem,  focusInput } from './FilterItemShell';
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
@@ -15,6 +15,7 @@ import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
 export const KIND_COMPONENTS: Record<string, React.ComponentType<{ snapshot: FilterSnapshot }>> = {};
@@ -31,7 +32,6 @@ function themePathOf(theme: string): string {
 const menuIcon = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/context-menu/${icon}`;
 
 const filter = (): any => useMiscRawState.getState().eagle?.filter;
-const bodyScope = (): any => getBodyScope();
 
 /** `page = 1; filterContent();` / `page = 1; reload();` 等价。 */
 const runSeq = (fns: Array<(s: any) => void>) =>
@@ -164,17 +164,10 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
     if (!color) return;
     clearTimeout(colorChangeTimeout.current);
     colorChangeTimeout.current = setTimeout(() => {
-      const s = bodyScope();
-      const root = s?.$root;
-      if (root?.currentColor) {
-        root.currentColor.$setViewValue(color);
-        root.currentColor.$render();
-        scopeEvalAsync();
-      } else if (s) {
-        s.hexColor = color;
-        filterWithColor(hexToRGB(color));
-        scopeEvalAsync();
-      }
+      // E4：原 `$root.currentColor`（Angular ngModel 控制器）在去 Angular 后恒缺席——直走 hexColor 分支。
+      writeScopeField('hexColor', color);
+      filterWithColor(hexToRGB(color));
+      scopeEvalAsync();
     }, 33);
     const valueInput = document.getElementById('colors-picker-value') as HTMLInputElement | null;
     const colorInput = document.getElementById('colors-picker') as HTMLInputElement | null;
@@ -477,14 +470,14 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   excluded={!!excludes[folder.id]}
                   onClick={(e) => {
                     focusInput(rootRef.current);
-                    const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
+                    const live = useMiscRawState.getState().containFolders?.find((f: any) => f && f.id === folder.id);
                     runInBodyScope((s) => filterWithFolder(live));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                   }}
                   onContextMenu={(e) => {
                     e.stopPropagation();
                     focusInput(rootRef.current);
-                    const live = bodyScope()?.containFolders?.find((f: any) => f && f.id === folder.id);
+                    const live = useMiscRawState.getState().containFolders?.find((f: any) => f && f.id === folder.id);
                     runInBodyScope((s) => excludeWithFolder(live));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                   }}
@@ -542,7 +535,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
   const tagsGroupsSidebar = useMemo(() => {
     const map: Record<string, number> = {};
     try {
-      const mappings = bodyScope()?.TagManager?.tagMappings;
+      const mappings = useMiscRawState.getState().TagManager?.tagMappings;
       snapshot.containTags.forEach((tag) => {
         const origin = mappings && mappings[tag.name];
         if (origin && origin.groups && origin.groups.length > 0) {
@@ -582,7 +575,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
       if (!snapshot.tagKeyword) {
         const groupIndexMap: Record<string, number> = {};
         snapshot.tagGroups.forEach((g, index) => { groupIndexMap[g.id] = index; });
-        const liveGroups = bodyScope()?.TagManager?.groups || [];
+        const liveGroups = useMiscRawState.getState().TagManager?.groups || [];
         result = result.slice().sort((a, b) => {
           const liveA = liveGroups && undefined; // 排序仅依赖 tag 的 group id
           const aGroup = (a as any).groupId;
@@ -634,7 +627,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
     return fn(snapshot.tagKeyword, name) || name;
   };
 
-  const findLiveTag = (name: string) => bodyScope()?.containTags?.find((tg: any) => tg && tg.name === name);
+  const findLiveTag = (name: string) => useMiscRawState.getState().containTags?.find((tg: any) => tg && tg.name === name);
 
   return (
     <FilterItemShell

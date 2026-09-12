@@ -13,7 +13,7 @@
  *   bundle 处理器后重挂。UPDATE_SELECTION/SAVE_FOLDER 留 cZ-6。
  */
 
-import { getBodyScope, removeChannelListenersBySource } from './appCore';
+import { removeChannelListenersBySource } from './appCore';
 import { onFilterRuleChange } from '../services/filterService';
 import { useListState } from '../store/listState';
 import { ipcRenderer } from '../global/eagleGlobals';
@@ -87,11 +87,10 @@ export function takeoverFilterDomain(): void {
   const w = window as any;
   const ipc: any = ipcRenderer();
   if (!ipc || typeof ipc.on !== 'function') return;
-  const s0probe = (): any => getBodyScope();
-
   const diag: any = { takenOver: true, removed: {} as Record<string, number>, watchesRemoved: 0, listenersRemoved: {} as Record<string, number> };
   try {
-    const ws0 = (s0probe() as any).$watchers || [];
+    // E4：Angular watcher 已全树退役（哨兵 watch/watchCollection=0），诊断计数恒 0。
+    const ws0: any[] = [];
     diag.watchersAtTakeover = ws0.length;
     diag.filterWatchersAtTakeover = ws0.filter((x: any) => typeof x.exp === 'string' && String(x.exp).indexOf('eagle.filter') === 0).length;
   } catch (err) { diag.watchersAtTakeover = 'err:' + String(err).slice(0, 80); }
@@ -238,7 +237,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function calculateDateFilter(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

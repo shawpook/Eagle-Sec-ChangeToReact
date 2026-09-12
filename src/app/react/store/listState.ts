@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { useBodyState } from './bodyState';
-import { getBodyScope } from '../core/appCore';
+;
 import { useItemState } from './itemState';
 import { useFolderState } from './folderState';
 import { useMiscRawState } from './miscRawState';

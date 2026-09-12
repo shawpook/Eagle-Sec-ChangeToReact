@@ -4,7 +4,7 @@ import { t } from '../../global/eagleGlobals';
 import { safeZoomData, getIpc, req } from './detailHooks';
 import { q, qa, widthOf, heightOf, offsetOf, outerWidthOf, outerHeightOf, cssGet, setCssEl, setHtmlEl, focusEl, blurEl, onEl, offEl } from '../../utils/domQuery';
 import { syncDetailFromScope } from '../../store/detailState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { saveCrop } from '../../services/imageOpsService';
 import { getRawPath } from '../../core/itemDomain';
 import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from '../../global/bus';

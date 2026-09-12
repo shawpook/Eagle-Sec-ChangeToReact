@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
-import { getBodyScope } from '../core/appCore';
+;
 import { usePreferencesState } from './preferencesState';
 import { useFolderState } from './folderState';
 import { useMiscRawState } from './miscRawState';

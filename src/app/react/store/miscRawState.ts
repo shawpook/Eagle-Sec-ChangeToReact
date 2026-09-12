@@ -267,6 +267,14 @@ interface MiscRawState {
   // E4：键盘绑定表（原 shim target 种子 `{}`；注册后真身在 store，m1-A6 的 `!!shim.mousetrap`
   // 契约由 store 默认 `{}` 继续满足）。
   mousetrap: any;
+  isImporting: any;
+  openWithInfo: any;
+  lastestAddItem: any;
+  email: any;
+  fontFolder: any;
+  draggedFolders: any;
+  draggedSmartFolders: any;
+  draggedQuickAccess: any;
 }
 
 export const useMiscRawState = create<MiscRawState>(() => ({
@@ -512,6 +520,14 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   DISABLE_ZOOM_TYPES: null,
   SUPPORT_FORMATS: null,
   mousetrap: {},
+  isImporting: null,
+  openWithInfo: null,
+  lastestAddItem: null,
+  email: null,
+  fontFolder: null,
+  draggedFolders: [],
+  draggedSmartFolders: [],
+  draggedQuickAccess: null,
 }));
 
 const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
@@ -536,7 +552,7 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'supportRotate', 'supportCrop', 'ratio', 'inspectorFolder', 'currentUrl', 'selectedFolder', 'isAlwaysOnTop',
   'keywords', 'keywords_cn', 'keywords_tw',
   'VIDEO_TYPES', 'AUDIO_TYPES', 'FONT_TYPES', 'URL_TYPES', 'MODEL_TYPES', 'DISABLE_ZOOM_TYPES', 'SUPPORT_FORMATS',
-  'mousetrap',
+  'mousetrap', 'isImporting', 'openWithInfo', 'lastestAddItem', 'email', 'fontFolder', 'draggedFolders', 'draggedSmartFolders', 'draggedQuickAccess',
 ];
 for (const fieldName of MIGRATED) {
   migrateScopeFieldToStore(

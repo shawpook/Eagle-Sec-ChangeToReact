@@ -10,10 +10,9 @@
  * - 放 selectionViewDomain：组件反向 import 域模块会拉偏模块图（实测 stage-smoke 的
  *   theme 断言稳定失败）。叶子模块零依赖，谁 import 都安全。
  */
-import { getBodyScope } from './appCore';
 import { useSelectionState } from '../store/selectionState';
 
-type Listener = (s: any, oldValue: any[]) => void;
+type Listener = (oldValue: any[]) => void;
 
 const listeners = new Set<Listener>();
 let prev: any[] = [];
@@ -32,14 +31,12 @@ function ensurePoll(): void {
   if (timer) return;
   prev = (useSelectionState.getState().selected) ? useSelectionState.getState().selected.slice() : [];
   timer = setInterval(() => {
-    const s: any = getBodyScope();
-    if (!s) return;
     const cur: any[] = useSelectionState.getState().selected || [];
     if (sameSelection(cur, prev)) return;
     const oldValue = prev;
     prev = cur.slice();
     for (const fn of Array.from(listeners)) {
-      try { fn(s, oldValue); } catch (err) { /* noop */ }
+      try { fn(oldValue); } catch (err) { /* noop */ }
     }
   }, 200);
 }

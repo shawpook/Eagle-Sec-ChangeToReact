@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { t } from '../../global/eagleGlobals';
 import { second2time } from '../../app/filters';
 import { getIpc, req } from '../detail/detailHooks';
-import { getRootScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { cancelEmptyTrash as cancelEmptyTrashAction } from '../../services/batchOpsService';
 import { cancelRegenerateThumbnail as cancelRegenerateThumbnailAction } from '../../services/imageOpsService';
 import { addToLibraryChannel, webpConvertStartChannel } from '../../global/bus';

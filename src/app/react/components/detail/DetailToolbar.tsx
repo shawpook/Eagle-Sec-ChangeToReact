@@ -10,7 +10,7 @@ import { req } from './detailHooks';
 import { useMouseGesture } from './detailHooks';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
 import { flipImage, rotateImage, saveCrop } from '../../services/imageOpsService';
 import { flipVideo, rotateVideo, toggleGifPlay } from '../../services/mediaService';

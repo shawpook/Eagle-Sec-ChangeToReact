@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { getBodyScope } from '../../core/appCore';
+import { useBodyState } from '../../store/bodyState';
 
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { autoscrollChannel } from '../../global/bus';
@@ -25,8 +25,6 @@ import { writeScopeField } from '../../core/scopeFieldBridge';
 function deepCopy(v) { return v == null ? v : JSON.parse(JSON.stringify(v)); }
 
 export function initAutoScroll() {
-  const $scope = getBodyScope();
-  const $rootScope = $scope ? $scope.$root : null;
   const element = q('#box-container') as HTMLElement | null;
   const attrs = {};
 
@@ -42,7 +40,7 @@ export function initAutoScroll() {
 
                 if (!box) {
                     console.log("项目不再当前画面中，自动重新定位")
-                    if ($scope.viewMode !== 'random' && $scope.viewMode !== 'duplicate') {
+                    if (useBodyState.getState().viewMode !== 'random' && useBodyState.getState().viewMode !== 'duplicate') {
                         scrollToSelectedItem();
                     }
                     return;

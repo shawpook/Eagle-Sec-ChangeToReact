@@ -15,7 +15,7 @@
  * - **有意略去/等价**：无（本片全部行为域内复刻；$timeout 语义 = setTimeout + $apply）。
  */
 
-import { getBodyScope, persistSweep, removeChannelListenersBySource, sweepForeignWatchers } from './appCore';
+import { persistSweep, removeChannelListenersBySource, sweepForeignWatchers } from './appCore';
 import { detailZoom } from './smoothZoomEngine';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncUploadFromScope } from '../store/uploadState';
@@ -325,27 +325,24 @@ export function takeoverItemDomain(): void {
 
   const electronLog: any = w.electronLog || console;
 
-  const sNow = (): any => getBodyScope();
 
   // ── image.added（23579 逐字）──
   ipc.on('image.added', function (_event: any, newImage: any) {
-    const s = sNow();
-    if (!s) return;
-    if (!s.raw) return;
+    if (!useItemState.getState().raw) return;
     if (newImage && newImage.id && newImage.ext) {
       // 避免重复添加
-      if (newImage.id && s.itemMappings[newImage.id]) { return; }
+      if (newImage.id && useItemState.getState().itemMappings[newImage.id]) { return; }
 
-      if (s.raw) { s.raw.unshift(newImage); }
+      if (useItemState.getState().raw) { useItemState.getState().raw.unshift(newImage); }
       syncListFromScope();
       // b1-9o：raw 变更后失效内容过滤缓存（bundle 导入路径走无缓存 rebindRefresh 隐式重建，
       // shim 世界导入路径不经过 rebindRefresh——缓存不失效则 filterContent 永远吃到旧快照，
       // 11a49 的 a4 空态无法闭合即此）
-      s.contentFilterCache = null;
+      writeScopeField('contentFilterCache', null);
       // 判斷是否需要更新畫面，如果 groupkey 屬於前 3 頁面，就更新
       const key = w.ig.getGroupKeys(false)[0] - 1000000;
       const needUpdateView = key <= 1;
-      s.startCursor = 0;
+      writeScopeField('startCursor', 0);
       machineryPrependImages([newImage], needUpdateView);
       machineryCalculateImageBinding({ ignoreSort: false }, function () {
         ensureMuteRebind() && ensureMuteRebind()();
@@ -357,15 +354,13 @@ export function takeoverItemDomain(): void {
 
   // ── image.removed（23602 逐字）──
   ipc.on('image.removed', function (_event: any, id: any) {
-    const s = sNow();
-    if (!s) return;
-    if (!s.raw) return;
+    if (!useItemState.getState().raw) return;
     // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
-    s.contentFilterCache = null;
-    for (let i = 0; i < s.raw.length; i++) {
-      const img = s.raw[i];
+    writeScopeField('contentFilterCache', null);
+    for (let i = 0; i < useItemState.getState().raw.length; i++) {
+      const img = useItemState.getState().raw[i];
       if (img.id === id) {
-        s.raw.splice(i, 1);
+        useItemState.getState().raw.splice(i, 1);
         syncListFromScope();
         break;
       }
@@ -383,14 +378,12 @@ export function takeoverItemDomain(): void {
 
   // ── image.palette.updated（23627 逐字）──
   ipc.on('image.palette.updated', function (_event: any, newImage: any) {
-    const s = sNow();
-    if (!s) return;
-    if (!s.raw) return;
+    if (!useItemState.getState().raw) return;
     if (!newImage && newImage.palettes) return;
 
     machineryUpdateItemView(newImage);
 
-    const img = s.itemMappings[newImage.id];
+    const img = useItemState.getState().itemMappings[newImage.id];
     if (img && newImage.palettes) {
       img.palettes = newImage.palettes;
       if (newImage.modificationTime) {
@@ -409,9 +402,7 @@ export function takeoverItemDomain(): void {
 
   // ── image.changed.mute（23651 逐字）──
   ipc.on('image.changed.mute', function (_event: any, newImage: any) {
-    const s = sNow();
-    if (!s) return;
-    if (!s.raw) return;
+    if (!useItemState.getState().raw) return;
 
     const item = q("#box-" + newImage.id);
     if (item && newImage.isDeleted) {
@@ -422,7 +413,7 @@ export function takeoverItemDomain(): void {
     }
     scopeEvalAsync();
 
-    const img = s.itemMappings[newImage.id];
+    const img = useItemState.getState().itemMappings[newImage.id];
     if (img) {
       // b1-9i：bundle 在世时此处为 w.angular.extend（浅合并自有可枚举属性）——shim 世界无
       // window.angular（且不得注入，见 b1-9e 雷区记录），Object.assign 语义等价
@@ -435,9 +426,7 @@ export function takeoverItemDomain(): void {
 
   // ── image.changed（23673 逐字；getHashID/hiddenByCurrentFilter 全局）──
   ipc.on('image.changed', function (_event: any, newImage: any) {
-    const s = sNow();
-    if (!s) return;
-    if (!s.raw) return;
+    if (!useItemState.getState().raw) return;
 
     console.log("image.changed");
 
@@ -452,7 +441,7 @@ export function takeoverItemDomain(): void {
     }
     w.hiddenByCurrentFilter([item]);
 
-    const img = s.itemMappings[newImage.id];
+    const img = useItemState.getState().itemMappings[newImage.id];
     if (img && newImage && img.id === newImage.id) {
       // b1-9i：bundle 在世时此处为 w.angular.extend（浅合并自有可枚举属性）——shim 世界无
       // window.angular（且不得注入，见 b1-9e 雷区记录），Object.assign 语义等价
@@ -473,10 +462,8 @@ export function takeoverItemDomain(): void {
 
   // ── update-item-view-by-id（23992 逐字；installedFonts 全局）──
   ipc.on('update-item-view-by-id', function (_e: any, id: any) {
-    const s = sNow();
-    if (!s) return;
-    if (s.itemMappings[id]) {
-      const item = s.itemMappings[id];
+    if (useItemState.getState().itemMappings[id]) {
+      const item = useItemState.getState().itemMappings[id];
       delete item.activating;
       delete item.deactivating;
       machineryUpdateItemView(item);
@@ -497,14 +484,12 @@ export function takeoverItemDomain(): void {
 
   // ── file-uploaded（30427 逐字；readChunk → require，FileUrlHelper 全局，类型表 scope）──
   ipc.on('file-uploaded', function (_e: any, image: any) {
-    const s = sNow();
-    if (!s) return;
 
     if (image && image.id && image.ext) {
-      s.lastestAddItem = image;
-      s.itemMappings[image.id] = image;
+      writeScopeField('lastestAddItem', image);
+      useItemState.getState().itemMappings[image.id] = image;
       // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
-      s.contentFilterCache = null;
+      writeScopeField('contentFilterCache', null);
       // 判斷是否重複，如果重復，就先紀錄在 $scope.duplicateQueue 裡面
       const existsImage = machineryIsDuplicateImage(image);
       const needCheckRepeat = usePreferencesState.getState().preferences.notification.notification.enable !== 'false' && usePreferencesState.getState().preferences.notification.notification.when.repeatImage === 'true';
@@ -522,32 +507,32 @@ export function takeoverItemDomain(): void {
           const newBuff = readChunk.sync(newPath, 0, 4096000);
 
           if (existsBuff.equals(newBuff)) {
-            s.duplicateQueue.push(image);
+            useMiscRawState.getState().duplicateQueue.push(image);
           }
           else {
-            if (s.raw) { s.raw.unshift(image); }
+            if (useItemState.getState().raw) { useItemState.getState().raw.unshift(image); }
             syncListFromScope();
             machineryAddToDuplicateMapping(image);
           }
         }
         catch (err) {
-          if (s.raw) { s.raw.unshift(image); }
+          if (useItemState.getState().raw) { useItemState.getState().raw.unshift(image); }
           syncListFromScope();
-          s.itemMappings[image.id] = image;
+          useItemState.getState().itemMappings[image.id] = image;
           machineryAddToDuplicateMapping(image);
           electronLog && electronLog.error((err as any).stack || err);
         }
       }
       // 否則添加至列表中
       else {
-        if (s.raw) { s.raw.unshift(image); }
+        if (useItemState.getState().raw) { useItemState.getState().raw.unshift(image); }
         syncListFromScope();
         machineryAddToDuplicateMapping(image);
       }
 
-      const VIDEO_TYPES = s.VIDEO_TYPES || {};
-      const AUDIO_TYPES = s.AUDIO_TYPES || {};
-      const FONT_TYPES = s.FONT_TYPES || {};
+      const VIDEO_TYPES = useMiscRawState.getState().VIDEO_TYPES || {};
+      const AUDIO_TYPES = useMiscRawState.getState().AUDIO_TYPES || {};
+      const FONT_TYPES = useMiscRawState.getState().FONT_TYPES || {};
       const filterExtensions = w.eagle.filter.filterExtensions;
       if (VIDEO_TYPES[image.ext]) {
         filterExtensions['video'] = true;
@@ -577,12 +562,12 @@ export function takeoverItemDomain(): void {
       }
     }
 
-    s.finishQueue.push(image);
+    useMiscRawState.getState().finishQueue.push(image);
     syncUploadFromScope();
 
     // Note: 故意不使用 async 來更新畫面，加速畫面性能
-    const progress = s.finishQueue.length / s.uploadQueue.length;
-    setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
+    const progress = useMiscRawState.getState().finishQueue.length / useMiscRawState.getState().uploadQueue.length;
+    setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
     setWidthEl(findEl(q("#upload-queue-progress"), ".current"), progress * 100 + "%");
 
     if (progress < 0.97) {
@@ -593,7 +578,7 @@ export function takeoverItemDomain(): void {
     }
 
     // 仅更新包含此图片的列表
-    if (s.finishQueue.length === s.uploadQueue.length) {
+    if (useMiscRawState.getState().finishQueue.length === useMiscRawState.getState().uploadQueue.length) {
       machineryCalculateImageBinding({}, function () {
         scopeEvalAsync();
       });
@@ -607,10 +592,8 @@ export function takeoverItemDomain(): void {
 
   // ── thumbnail-generated #1（31147 逐字：详情图刷新）──
   ipc.on('thumbnail-generated', function (_e: any, generated: any) {
-    const s = sNow();
-    if (!s) return;
-    if (!generated || !generated.id || !s.selected || !s.selected[0]) return;
-    if (s.selected && s.selected[0] && generated.id === s.selected[0].id) {
+    if (!generated || !generated.id || !useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
+    if (useSelectionState.getState().selected && useSelectionState.getState().selected[0] && generated.id === useSelectionState.getState().selected[0].id) {
       const detailImageEl = q("img#detail-image");
       if (detailImageEl) {
         const rawURL = getRawUrl(generated);
@@ -638,11 +621,9 @@ export function takeoverItemDomain(): void {
 
   // ── thumbnail-generated #2（34281 逐字：封面更新 + 未收录回补 file-uploaded-end）──
   ipc.on('thumbnail-generated', function (_e: any, generated: any) {
-    const s = sNow();
-    if (!s) return;
     console.log("thumbnail-generated");
     if (generated && generated.id) {
-      const existItem = s.itemMappings[generated.id];
+      const existItem = useItemState.getState().itemMappings[generated.id];
       if (existItem) {
         // 更新封面
         domainUpdateItemListView(generated);
@@ -656,9 +637,7 @@ export function takeoverItemDomain(): void {
 
   // ── update-txt-item（31141 逐字）──
   ipc.on('update-txt-item', function (_e: any, params: any) {
-    const s = sNow();
-    if (!s) return;
-    const item = s.itemMappings[params.id];
+    const item = useItemState.getState().itemMappings[params.id];
     if (item) {
       item.text = params.text;
       machineryUpdateTxtItem(item);
@@ -668,10 +647,8 @@ export function takeoverItemDomain(): void {
 
   // ── webp.converted（34267 逐字）──
   ipc.on('webp.converted', function (_e: any, converted: any) {
-    const s = sNow();
-    if (!s) return;
     // 更新封面
-    if (converted && s.itemMappings[converted.id]) {
+    if (converted && useItemState.getState().itemMappings[converted.id]) {
       domainUpdateItemListView(converted);
     }
     scopeEvalAsync();
@@ -679,8 +656,6 @@ export function takeoverItemDomain(): void {
 
   // ── calculateImageBinding（30549 逐字）──
   ipc.on('calculateImageBinding', function () {
-    const s = sNow();
-    if (!s) return;
     machineryCalculateImageBinding({}, function () {
       ensureMuteRebind() && ensureMuteRebind()();
       machineryUpdateSelection();
@@ -690,10 +665,8 @@ export function takeoverItemDomain(): void {
 
   // ── new-folders（30560 逐字）──
   ipc.on('new-folders', function (_e: any, folders: any) {
-    const s = sNow();
-    if (!s) return;
     folders.forEach(function (f: any) {
-      s.folders.push(f);
+      useFolderState.getState().folders.push(f);
     });
 
     machineryUpdateSidebarList();
@@ -728,12 +701,10 @@ export function takeoverItemDomain(): void {
   // 的改法会因触发时机与 flush 不一致导致 1m1 挂 7 个断言。
   let finishQueuePoll: any = null;
   const attachFinishQueueWatch = () => {
-    const s: any = sNow();
-    if (!s) return false;
-    let prevFinishQueue: any[] = (s.finishQueue || []).slice();
+    let prevFinishQueue: any[] = (useMiscRawState.getState().finishQueue || []).slice();
     if (finishQueuePoll) clearInterval(finishQueuePoll);
     finishQueuePoll = setInterval(() => {
-      const cur: any[] = (s.finishQueue || []).slice();
+      const cur: any[] = (useMiscRawState.getState().finishQueue || []).slice();
       if (cur.length === prevFinishQueue.length) return;
       const oldValue = prevFinishQueue;
       prevFinishQueue = cur;
@@ -773,10 +744,7 @@ const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
 
 const $filter: any = (name: string) => {
-  const s: any = getBodyScope();
-  if (s && s.$root && s.$root.$filter) return s.$root.$filter(name);
-  // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（Angular 在世走 injector，
-  // 缺席时为 EagleApp.filter 逐字移植的等价表），否则 `$filter('i18n')(…)` 首行即抛。
+  // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = getFilter();
   return inst ? inst(name) : undefined;
 };
@@ -794,7 +762,6 @@ const initLinkVars = () => {
 
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function openFileWithDefault(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

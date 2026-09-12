@@ -19,7 +19,7 @@ import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '
 
 import { machineryVideoScreenShot } from './mediaService';
 import { syncInspectorFromScope } from '../store/inspectorState';
-import { getBodyScope } from '../core/appCore';
+;
 import { copyAsBase64, copyAsFolderPath, copyAsLink, copyAsPath, copyAsProperity, copyAsThumbnail, openFilesWithDefault, openInFinder, openInPreviewWindow, openItemLocation, openWithOther } from '../core/itemDomain';
 import { duplicateItem, getLibraryHistory } from './folderCoreService';
 import { changeImagesBackground, resetCustomThumbnail, setCustomThumbnail, setCustomThumbnailFromClipboard } from './imageOpsService';
@@ -59,10 +59,7 @@ const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 const remote: any = _req('@electron/remote');
 const $filter: any = (name: string) => {
-  const s: any = getBodyScope();
-  const root = s && s.$root;
-  if (root && root.$filter) return root.$filter(name);
-  // shim 世界无 $rootScope.$filter：退到 machinery 的 getFilter()（controllerFns 同源语义）
+  // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();
   return inst ? inst(name) : undefined;
 };
@@ -1236,7 +1233,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function openItemContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

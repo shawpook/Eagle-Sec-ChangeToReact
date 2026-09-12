@@ -12,14 +12,13 @@ import { useVsRepeat } from './FolderSelectPanels';
 import { themePathOf } from './SelectPanels';
 import { syncSidebarFromScope } from '../../store/sidebarState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
-import { getBodyScope } from '../../core/appCore';
 
 import { scrollToSelectedItem } from '../../services/batchOpsService';
 import { getThumbnailUrl as getThumbnailUrlImpl } from '../../services/imageOpsService';
 import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, openDuplicateScanPanelChannel, rebindRefreshChannel } from '../../global/bus';
 
 import { machineryOpenUnfiled, machineryQuickOpenFolder } from '../../core/libraryDomain';
-import { machineryRebindRefresh } from '../../core/itemDomain';
+import { machineryAddToDuplicateMapping, machineryRebindRefresh } from '../../core/itemDomain';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
@@ -1514,9 +1513,7 @@ export function DuplicateModal() {
   };
 
   const save = () => {
-    const body = getBodyScope();
     const ipc = getIpc();
-    const rootScope = body; // 原：rootScope = angular.element("body").scope()（隐式全局）
 
     if (rootRef.current.applyAll == 'true') {
       saveAll();
@@ -1555,8 +1552,8 @@ export function DuplicateModal() {
         ipc.send('empty-trash', rootRef.current.right.id);
       } else {
         // 將圖片添加至內容列表
-        rootScope.addToDuplicateMapping(rootRef.current.right);
-        rootScope.raw.push(rootRef.current.right);
+        machineryAddToDuplicateMapping(rootRef.current.right);
+        useItemState.getState().raw.push(rootRef.current.right);
       }
       rootRef.current.duplicates.splice(0, 1);
       calculateImageBindingChannel.emit();
@@ -1574,9 +1571,7 @@ export function DuplicateModal() {
   };
 
   const saveAll = () => {
-    const body = getBodyScope();
     const ipc = getIpc();
-    const rootScope = body;
 
     // 如果勾选使用资源库版本
     if (rootRef.current.usingExist == 'true') {
@@ -1618,8 +1613,8 @@ export function DuplicateModal() {
       ipc.send('empty-trash', imageIdString);
     } else {
       rootRef.current.duplicates.forEach((image: any) => {
-        rootScope.addToDuplicateMapping(image);
-        rootScope.raw.push(image);
+        machineryAddToDuplicateMapping(image);
+        useItemState.getState().raw.push(image);
       });
     }
 
@@ -1659,9 +1654,7 @@ export function DuplicateModal() {
   };
 
   const cancelAll = () => {
-    const body = getBodyScope();
     const ipc = getIpc();
-    const rootScope = body;
 
     let imageIdString = '';
     rootRef.current.duplicates.forEach((r: any) => {
@@ -1672,7 +1665,7 @@ export function DuplicateModal() {
     rootRef.current.duplicates = [];
     calculateImageBindingChannel.emit();
     rebindRefreshChannel.emit(false);
-    glResetChannel.emit(rootScope.allData);
+    glResetChannel.emit(useItemState.getState().allData);
     close();
   };
 

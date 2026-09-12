@@ -22,7 +22,7 @@ import { syncFolderLock } from '../store/lockState';
 import { syncListFromScope } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncInspectorFromScope } from '../store/inspectorState';
-import { getBodyScope } from '../core/appCore';
+;
 import { exportFolder, getLibraryHistory, newFolder, openFolder, openSmartFolder } from './folderCoreService';
 import { toggleAllFolderExpand, toggleCurrentLevelFolders, toggleSelectFolder } from './sidebarService';
 import { addToLibraryChannel, editSmartFolderChannel, folderSettingsChannel, newSmartFolderChannel, openMoveFolderModalChannel, setFolderPasswordChannel } from '../global/bus';
@@ -52,9 +52,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
 const $filter: any = (name: string) => {
-  const s: any = getBodyScope();
-  const root = s && s.$root;
-  if (root && root.$filter) return root.$filter(name);
+  // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();
   return inst ? inst(name) : undefined;
 };

@@ -1,7 +1,7 @@
 import { q, hasClass, widthOf, heightOf, setCssEl, onEl } from '../../utils/domQuery';
 import { t } from '../../global/eagleGlobals';
 import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelectPanelOpenChannel } from '../../global/bus';
-import { getBodyScope } from '../../core/appCore';
+;
 
 import { createFolder } from '../../services/folderCoreService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';

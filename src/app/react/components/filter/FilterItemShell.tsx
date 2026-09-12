@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 
 import { machineryUpdateContainerHieght } from '../../services/gridService';

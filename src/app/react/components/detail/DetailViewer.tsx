@@ -20,7 +20,7 @@ import {
   removeComment,
   recomputeCommentRatio,
 } from './commentHooks';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { openItemContextMenu } from '../../services/itemMenuService';
 

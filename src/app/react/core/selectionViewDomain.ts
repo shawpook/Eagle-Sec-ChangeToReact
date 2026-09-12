@@ -12,7 +12,7 @@
  */
 
 import { detailZoom } from './smoothZoomEngine';
-import { getBodyScope, persistSweep, sweepForeignWatchers } from './appCore';
+import { persistSweep, sweepForeignWatchers } from './appCore';
 import { syncDetailFromScope } from '../store/detailState';
 
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
@@ -105,27 +105,26 @@ export function takeoverSelectionViewDomain(): void {
       }
     });
   };
-  onSelectedChanged(function (s: any, oldValue: any) {
-    if (!s) return;
+  onSelectedChanged(function (oldValue: any) {
 
-    s.selectedMappings = {};
-    s.zoomFitSize = 0;
+    writeScopeField('selectedMappings', {});
+    writeScopeField('zoomFitSize', 0);
 
-    s.selected.forEach(function (image: any, index: any) {
+    useSelectionState.getState().selected.forEach(function (image: any, index: any) {
       if (image) {
-        s.selectedMappings[image.id] = true;
+        useItemState.getState().selectedMappings[image.id] = true;
       }
     });
 
-    if (s.selected.length > 0) {
+    if (useSelectionState.getState().selected.length > 0) {
       machineryUpdateSelection();
     }
 
-    if (s.isDetailMode && s.smoothZoomDone) {
+    if (useBodyState.getState().isDetailMode && useBodyState.getState().smoothZoomDone) {
       // 只在「詳情模式中切換圖片」時執行。（bundle 原注：剛進入詳情模式時 smoothZoomDone
       // 為 false，#detail-image 尚未渲染，這些 DOM 操作無意義，且 updateNavigator 會在
       // enterDetailMode 的 $timeout 中重做。）
-      s.showLargeImage = false;
+      writeScopeField('showLargeImage', false);
       machineryRememberVideoCurrentTime(oldValue[0]);
       if (w.AnnotationPreview) w.AnnotationPreview.hide();
       dataSet(q("#detail-image"), "degree", 0);
@@ -137,20 +136,20 @@ export function takeoverSelectionViewDomain(): void {
       }, 300);
     }
 
-    if (s.selected.length === 1) {
-      s.lastSelectedIndex = machineryCurrentIndex() - 1;
+    if (useSelectionState.getState().selected.length === 1) {
+      writeScopeField('lastSelectedIndex', machineryCurrentIndex() - 1);
     }
 
     // 全选
-    if (s.selected.length === s.allData.length) {
-      s.lastSelectedIndex = s.selected.length - 1;
+    if (useSelectionState.getState().selected.length === useItemState.getState().allData.length) {
+      writeScopeField('lastSelectedIndex', useSelectionState.getState().selected.length - 1);
       addClass(".box", "selected");
     }
     else {
-      selectItemsView(s.selected);
+      selectItemsView(useSelectionState.getState().selected);
     }
 
-    var lastItem = s.selected[0];
+    var lastItem = useSelectionState.getState().selected[0];
     if (lastItem) {
       setLastItem(lastItem);
     }
@@ -158,12 +157,11 @@ export function takeoverSelectionViewDomain(): void {
 
   // ── darwin quicklook watch（34265；平台守卫内注册，与 bundle 一致）──
   if (w.process.platform == 'darwin') {
-    onSelectedChanged(w.debounce(function (s: any) {
-      if (!s) return;
+    onSelectedChanged(w.debounce(function () {
       // 如果当前是预览视窗开启状态，切换内容时要自动在开启预览视窗
-      if (s.selected.length === 1 && s.isPreviewing) {
+      if (useSelectionState.getState().selected.length === 1 && useMiscRawState.getState().isPreviewing) {
         const ipc: any = w.$$electronIpc || w.__eagleIpc;
-        if (ipc && ipc.send) ipc.send('quicklook', s.selected[0]);
+        if (ipc && ipc.send) ipc.send('quicklook', useSelectionState.getState().selected[0]);
       }
     }, 300, true));
   }

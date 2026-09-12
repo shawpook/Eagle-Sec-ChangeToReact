@@ -218,15 +218,8 @@ export function installBoxGrid(): () => void {
 
   // 原由 ngGridLayout link 设置的全局（bundle:66507-66509）：window.$bodyScope。
   // v3 getViewportSize 等模块直接读取它，必须保持。
-  const ensureBodyScope = setInterval(() => {
-    if (!w.$bodyScope) {
-      const scope = getBodyScope();
-      if (scope) w.$bodyScope = scope;
-    } else {
-      clearInterval(ensureBodyScope);
-    }
-  }, 200);
-  scopeEventsDereg.push(() => clearInterval(ensureBodyScope));
+  // E4：body scope 单例由 appCore 供给（创建即赋值 window.$bodyScope），原轮询兜底退役。
+  if (!w.$bodyScope) w.$bodyScope = getBodyScope();
 
   w.resetNgGridLayoutData = (nextItems: any[], cursor?: number, scrollPercentage?: number) => {
     applyReset(nextItems, cursor, scrollPercentage);

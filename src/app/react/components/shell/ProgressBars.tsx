@@ -8,7 +8,7 @@ import { second2time } from '../../app/filters';
 import { t } from '../../global/eagleGlobals';
 // b1-9bz-B：callScope 字符串派发退役——改为落点导出直 import（表项本就是同对象指针）
 import { cancelAllTasks } from '../../services/uploadService';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 /**
  * 11-pre a1：文件写入进度条 + 檔案添加進度條（index.html 88-110 逐字）。

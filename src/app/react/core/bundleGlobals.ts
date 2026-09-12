@@ -18,7 +18,7 @@
 
 import { FileUrlHelper } from './fileUrlHelper';
 import { eagle as coreEagle } from './eagleApi';
-import { coreState, getBodyScope } from './appCore';
+import { coreState } from './appCore';
 import { useMiscRawState } from '../store/miscRawState';
 import { get } from '../utils/lang';
 import { installHoverPreview } from './hoverPreview';
@@ -39,6 +39,10 @@ import { machinerySmartZoom } from '../services/viewOpsService';
 import { machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryContentFilter, machineryFilterData } from './filterDomain';
 import { writeScopeField } from './scopeFieldBridge';
+import { useItemState } from '../store/itemState';
+import { useFolderState } from '../store/folderState';
+import { useBodyState } from '../store/bodyState';
+import { useListState } from '../store/listState';
 declare const Buffer: any;
 
 let installed = false;
@@ -739,10 +743,9 @@ function _installMouseTracker(): void {
    顶体 + controller init 挂方法；b1 后由本模块同序重建） */
 function _attachQuickAccessManager(qam: any): void {
   const w = window as any;
-  const s = (): any => getBodyScope();
 
   qam.add = function (type: any, object: any) {
-    s().quickAccess.push({
+    useMiscRawState.getState().quickAccess.push({
       type: type,
       id: object.id
     });
@@ -756,7 +759,7 @@ function _attachQuickAccessManager(qam: any): void {
     if (!objects) return;
     objects.forEach(function (object: any) {
       if (qam.indexOf(object) === -1) {
-        s().quickAccess.push({
+        useMiscRawState.getState().quickAccess.push({
           type: type,
           id: object.id
         });
@@ -771,7 +774,7 @@ function _attachQuickAccessManager(qam: any): void {
   qam.remove = function (type: any, object: any) {
     var idx = qam.indexOf(object);
     if (idx > -1) {
-      s().quickAccess.splice(idx, 1);
+      useMiscRawState.getState().quickAccess.splice(idx, 1);
       machineryUpdateSidebarList();
       qam.save();
       w.electronLog.info(`[app] Remove ${type}(${object.id}) from quick access`);
@@ -784,7 +787,7 @@ function _attachQuickAccessManager(qam: any): void {
     objects.forEach(function (object: any) {
       var idx = qam.indexOf(object);
       if (idx > -1) {
-        s().quickAccess.splice(idx, 1);
+        useMiscRawState.getState().quickAccess.splice(idx, 1);
         w.electronLog.info(`[app] Remove ${type}(${object.id}) from quick access`);
         w.analytics.event('QuickAccess', 'Remove', type);
       }
@@ -795,8 +798,8 @@ function _attachQuickAccessManager(qam: any): void {
 
   qam.removeIndex = function (idx: any) {
     if (idx > -1) {
-      var object = s().quickAccess[idx];
-      s().quickAccess.splice(idx, 1);
+      var object = useMiscRawState.getState().quickAccess[idx];
+      useMiscRawState.getState().quickAccess.splice(idx, 1);
       machineryUpdateSidebarList();
       qam.save();
       w.electronLog.info(`[app] Remove ${object.type}(${object.id}) from quick access`);
@@ -805,11 +808,11 @@ function _attachQuickAccessManager(qam: any): void {
   };
 
   qam.save = function () {
-    s().saveFolder();
+    useMiscRawState.getState().saveFolder();
   };
 
   qam.indexOf = function (object: any) {
-    var arr = s().quickAccess;
+    var arr = useMiscRawState.getState().quickAccess;
     for (var i = 0; i < arr.length; i++) {
       if (object.id === arr[i].id) {
         return i;
@@ -821,9 +824,9 @@ function _attachQuickAccessManager(qam: any): void {
   qam.getItem = function (type: any, id: any) {
     switch (type) {
       case "folder":
-        return s().folderMappings[id];
+        return useItemState.getState().folderMappings[id];
       case "smartFolder":
-        return s().smartFolderMappings[id];
+        return useItemState.getState().smartFolderMappings[id];
     }
   };
 }
@@ -1180,24 +1183,23 @@ function _buildAnalytics(): any {
    ig → w.ig（网格实例，b1-9c 归口）） */
 function _buildScrollbarSaver(): any {
   const w = window as any;
-  const s = (): any => getBodyScope();
   return {
     positionMapping: {},
     getId: function (this: any) {
       var id;
-      if (s().currentFolder) { id = s().currentFolder.id; }
-      else if (s().currentSmartFolder) { id = s().currentSmartFolder.id; }
-      else if (s().viewMode == "all") { id = "all"; }
-      else if (s().viewMode == "unfiled") { id = "unfiled"; }
-      else if (s().viewMode == "untagged") { id = "untagged"; }
-      else if (s().viewMode == "trash") { id = "trash"; }
-      else if (s().viewMode == "random") { id = "random"; }
-      else if (s().viewMode == "recent") { id = "recent"; }
+      if (useFolderState.getState().currentFolder) { id = useFolderState.getState().currentFolder.id; }
+      else if (useFolderState.getState().currentSmartFolder) { id = useFolderState.getState().currentSmartFolder.id; }
+      else if (useBodyState.getState().viewMode == "all") { id = "all"; }
+      else if (useBodyState.getState().viewMode == "unfiled") { id = "unfiled"; }
+      else if (useBodyState.getState().viewMode == "untagged") { id = "untagged"; }
+      else if (useBodyState.getState().viewMode == "trash") { id = "trash"; }
+      else if (useBodyState.getState().viewMode == "random") { id = "random"; }
+      else if (useBodyState.getState().viewMode == "recent") { id = "recent"; }
       return id;
     },
     saveScrollPosition: function (this: any) {
       if (w.eagle.filter.filterBadge > 0) return;
-      if (s().keyword) return;
+      if (useListState.getState().keyword) return;
       if (qa(".box").length + qa(".sub-folder").length === 0) return;
       var scrollTop = q("#box-container")?.scrollTop || 0;
       var obj: any = {};
@@ -1211,7 +1213,7 @@ function _buildScrollbarSaver(): any {
       var startCursor = 0;
       var offsetTop = q(".box-list")?.offsetTop || 0;
       var scrollOffset;
-      if (qa(".sub-folder").length > 0 && s().startCursor === 0) {
+      if (qa(".sub-folder").length > 0 && useFolderState.getState().startCursor === 0) {
         scrollOffset = q("#box-container")?.scrollTop || 0;
       }
       else {
@@ -1229,7 +1231,7 @@ function _buildScrollbarSaver(): any {
     },
     restoreScrollPosition: function (this: any) {
 
-      if (s().viewMode === 'random') return;
+      if (useBodyState.getState().viewMode === 'random') return;
       if (w.eagle.filter.filterBadge > 0) return;
       var id = w.ScrollbarSaver.getId();
 
@@ -1238,7 +1240,7 @@ function _buildScrollbarSaver(): any {
       var obj = w.ScrollbarSaver.positionMapping[id];
       var boxContainer = q("#box-container");
       if (obj) {
-        s().startCursor = obj.cursor || 0;
+        writeScopeField('startCursor', obj.cursor || 0);
         var offset = obj.offset || 0;
         var times = [20, 300];
         for (var i = times[0]; i < times[1]; i += 20) {
@@ -1250,7 +1252,7 @@ function _buildScrollbarSaver(): any {
         }
       }
       else {
-        s().startCursor = 0;
+        writeScopeField('startCursor', 0);
       }
     }
   };

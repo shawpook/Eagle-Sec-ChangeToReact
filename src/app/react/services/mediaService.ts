@@ -1,4 +1,4 @@
-import { getBodyScope } from '../core/appCore';
+;
 
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
@@ -221,7 +221,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function flipVideo(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

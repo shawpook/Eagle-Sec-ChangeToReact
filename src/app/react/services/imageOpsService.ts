@@ -26,7 +26,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncDetailFromScope } from '../store/detailState';
-import { getBodyScope } from '../core/appCore';
+;
 import { flipVideo, rotateVideo } from './mediaService';
 import { uploadFiles } from './uploadService';
 import { updateInspectorChannel } from '../global/bus';
@@ -80,9 +80,7 @@ const sanitize: any = (function () {
   try { return arp ? _req(String(arp) + '/my_modules/sanitize-filename') : undefined; } catch (err) { return undefined; }
 })();
 const $filter: any = (name: string) => {
-  const s: any = getBodyScope();
-  const root = s && s.$root;
-  if (root && root.$filter) return root.$filter(name);
+  // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();
   return inst ? inst(name) : undefined;
 };
@@ -935,7 +933,6 @@ const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function 
 const NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES: any = { tif: true, jpg: true, png: true, bmp: true, webp: true };
 
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function flipHandler(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

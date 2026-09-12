@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
 import { createPortal } from 'react-dom';
 import { useSidebarState, themePath, SidebarNodeSnapshot } from '../../store/sidebarState';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper, longTitle } from '../../app/filters';
 import { clickNode, clickSmartNode, dblclickSidebarFolder, dblclickSidebarSmartFolderGroup, hoverHideSidebar, openFolderExpandContextMenu, preventMiddleClick, sidebarFocus, toggleFolderExpand, toggleSmartFolderExpand } from '../../services/sidebarService';
 import { syncSidebarFromScope } from '../../store/sidebarState';
-import { findLiveNode, getBodyScope, runInBodyScope } from '../../core/appCore';
+import { findLiveNode, runInBodyScope } from '../../core/appCore';
+import { getMigratedScopeField, writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState } from '../../store/miscRawState';
 
 import { machineryOpenQuickSearch } from '../../core/keymapActions';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
@@ -19,6 +22,7 @@ import { dom } from '../../utils/domLite';
 import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';
 import { machineryToggleAll } from '../../services/gridService';
+
 /**
  * 阶段2：侧栏接管。
  *
@@ -156,27 +160,25 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
     let helperEl: HTMLElement | null = null;
 
     const onDragStart = (e: DragEvent) => {
-      const bodyScope = getBodyScope();
-      if (!bodyScope) {
-        e.preventDefault();
-        return;
-      }
-      const $root = bodyScope.$root;
       const dragKey = isSmart ? 'draggedSmartFolders' : 'draggedFolders';
       const nodeEl = (e.currentTarget as HTMLElement).closest('[data-sidebar-node-id]') as HTMLElement | null;
       const id = nodeEl && nodeEl.getAttribute('data-sidebar-node-id');
       const live = findLiveNode(id || '');
-      $root[dragKey] = [];
+      const dragged: any[] = [];
       let last = live;
       const selectedKey = isSmart ? 'selectedSmartFolders' : 'selectedFolders';
-      if ($root[selectedKey] && $root[selectedKey].indexOf(live) > -1) {
-        last = $root[selectedKey][$root[selectedKey].length - 1];
-        $root[selectedKey].forEach((f: any) => $root[dragKey].push(f));
+      const selectedList: any[] = (selectedKey === 'selectedSmartFolders'
+        ? useMiscRawState.getState().selectedSmartFolders
+        : useMiscRawState.getState().selectedFolders) || [];
+      if (live && selectedList.indexOf(live) > -1) {
+        last = selectedList[selectedList.length - 1];
+        selectedList.forEach((f: any) => dragged.push(f));
       } else {
-        $root[dragKey].push(last);
+        dragged.push(last);
       }
-      $root.draggedQuickAccess = live;
-      const count = $root[dragKey].length || 1;
+      writeScopeField(dragKey, dragged);
+      writeScopeField('draggedQuickAccess', live);
+      const count = dragged.length || 1;
       const folderName = (last && last.name) || '';
       const folderIcon = (last && last.icon) || 'folder-close';
       // 原 helper（appendTo:'body' + cursorAt{top:-5,left:-5}）→ setDragImage 离屏渲染等价
@@ -235,14 +237,12 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
         if (!(window as any).dragCheck) return;
         e.preventDefault();
         e.stopPropagation();
-        const bodyScope = getBodyScope();
-        if (!bodyScope) return;
         const nodeEl = (e.target as HTMLElement).closest('[data-sidebar-node-id]') as HTMLElement | null;
         const id = nodeEl && nodeEl.getAttribute('data-sidebar-node-id');
         const target = findLiveNode(id || '');
         if (target) {
-          const dragged = bodyScope.$root[isSmart ? 'draggedSmartFolders' : 'draggedFolders'];
-          const impl = typeof fnEntry === 'function' ? fnEntry : bodyScope[fnEntry];
+          const dragged = getMigratedScopeField(isSmart ? 'draggedSmartFolders' : 'draggedFolders')?.read();
+          const impl = typeof fnEntry === 'function' ? fnEntry : getMigratedScopeField(fnEntry)?.read();
           if (typeof impl !== 'function') return;
           impl(dragged, target, ...(asSiblingBelow ? [true] : []));
           scopeEvalAsync();

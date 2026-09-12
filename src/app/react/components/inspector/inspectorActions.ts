@@ -6,7 +6,7 @@ import { $, safeZoomData, getIpc, req, getCurrentWindow } from '../detail/detail
 import { q, blurOn, selectText } from '../../utils/domQuery';
 import { unescape } from '../../utils/lang';
 import { rememberVideoCurrentTime } from '../../services/mediaService';
-import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';

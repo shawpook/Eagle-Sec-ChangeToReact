@@ -3,7 +3,7 @@
  * 函数体为 makeControllerFns 表内壳逐字平移（getScope()→getBodyScope()）。
  */
 
-import { getBodyScope } from '../core/appCore';
+;
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
 
@@ -46,7 +46,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function focusAppUnlockPassword(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价，统一转发消除重复实现。

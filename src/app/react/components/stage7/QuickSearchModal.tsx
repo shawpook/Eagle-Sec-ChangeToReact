@@ -6,7 +6,7 @@ import { useVirtualWindow } from '../sidebar/Sidebar';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { ExtIcon } from '../inspector/Inspector';
 import { max, uniq } from '../../utils/lang';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { openItemLocation } from '../../core/itemDomain';
 import { openFolder, openSmartFolder } from '../../services/folderCoreService';
@@ -745,9 +745,8 @@ export function QuickSearchModal() {
   const hiddenCount = <span style={{ display: 'none' }} />;
 
   const closeViaScope = () => {
-    const s = getBodyScope();
-    if (s) runInBodyScope(() => closeQuickSearch());
-    else close();
+    // E4：scope 单例恒在 → 直走 runInBodyScope（其内已含 null 守卫与吞错）。
+    runInBodyScope(() => closeQuickSearch());
   };
 
   const renderFolderItem = (folder: any, idx: number, kind: 'folder' | 'smart') => (

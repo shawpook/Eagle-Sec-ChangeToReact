@@ -3,7 +3,7 @@
  * 函数体为 makeControllerFns 表内壳逐字平移（getScope()→getBodyScope()）。
  */
 
-import { getBodyScope } from '../core/appCore';
+;
 import { detailZoom } from '../core/smoothZoomEngine';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
@@ -79,7 +79,6 @@ const initLinkVars = () => {
           };
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function getRatioExp(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

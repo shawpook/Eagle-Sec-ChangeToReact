@@ -8,7 +8,7 @@ import { useAppState } from '../../store/appState';
 import { contentFocus, dblclickContentPanel } from '../../core/miscDomain';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { syncPanelFromScope } from '../../store/panelState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { onSidebarResize } from '../../services/sidebarService';
 import { makeResizable } from '../interactions/resizable';
 
@@ -171,8 +171,7 @@ export function HoverShowSidebar() {
 export function SidebarResizable() {
   useEffect(() => {
     const el = document.getElementById('sidebar');
-    const scope = getBodyScope();
-    if (!el || !scope) return;
+    if (!el) return;
     // D-2f：jQuery-UI → 自研 makeResizable（原 `$.fn.resizable` 缺失即静默降级的守卫一并移除）
     const r = makeResizable(el, {
       maxWidth: 600,

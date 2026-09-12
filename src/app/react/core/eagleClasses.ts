@@ -16,7 +16,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
-import { getBodyScope } from './appCore';
+;
 import { scopeEvalAsync } from './scopeRuntime';
 import { useMiscRawState } from '../store/miscRawState';
 

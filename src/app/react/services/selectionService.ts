@@ -1,4 +1,4 @@
-import { getBodyScope } from '../core/appCore';
+;
 import { cancelCleanSelectedTimeout } from '../services/batchOpsService';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
@@ -144,7 +144,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function onBoxMouseup(...args: any[]) {
     return (function (event: any, image: any) {

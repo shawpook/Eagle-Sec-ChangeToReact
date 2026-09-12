@@ -3,7 +3,7 @@ import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
-import { getBodyScope } from '../core/appCore';
+;
 import { getMigratedScopeField } from '../core/scopeFieldBridge';
 
 import { getGIFPath, getModelPath, getNativeViewerPath, getPDFPath, getRawPath, getRawUrl, getRawViewerPath, getTxtPath, getURLSrc } from '../core/itemDomain';

@@ -6,7 +6,7 @@ import { updateZoomRatio } from '../../services/detailService';
 import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../services/mediaService';
 import { syncDetailFromScope, useDetailState } from '../../store/detailState';
 import { useBodyState } from '../../store/bodyState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { makeResizable } from '../interactions/resizable';
 import { onDetailClick } from '../../services/selectionService';

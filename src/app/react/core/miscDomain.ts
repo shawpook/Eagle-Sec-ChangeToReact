@@ -19,7 +19,7 @@
  *   .then 等价复刻（Angular response {data:...} 包装经适配函数还原）。
  */
 
-import { getBodyScope, getRootScope, removeChannelListenersBySource } from './appCore';
+import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncErrorCount } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
@@ -70,6 +70,7 @@ import { useLockState } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
+import { useItemState } from '../store/itemState';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;
@@ -99,8 +100,6 @@ export function takeoverMiscDomain(): void {
 
   const electronLog: any = w.electronLog || console;
   const swal: any = w.swal;
-  const sNow = (): any => getBodyScope();
-  const rNow = (): any => getRootScope();
   const currentWindow = (): any => (w.electron && w.electron.remote && w.electron.remote.getCurrentWindow && w.electron.remote.getCurrentWindow())
     || (w.require && w.require('@electron/remote') && w.require('@electron/remote').getCurrentWindow && w.require('@electron/remote').getCurrentWindow());
 
@@ -225,9 +224,7 @@ export function takeoverMiscDomain(): void {
       confirmButtonText: params.confirmButtonText,
       cancelButtonText: params.cancelButtonText,
     }).then(function () {
-      const s = sNow();
-      if (!s) return;
-      const showAlert = s.uploadQueue.length > 0 || s.downloadQueueLength > 0 || s.metadataQueueLength > 0 || s.isCleaningTrash || s.isImporting || qaNot(".progress-dialog.open", ".library-loading-dialog").length > 0 || !!q("#saving-progress-bar.open");
+      const showAlert = useMiscRawState.getState().uploadQueue.length > 0 || useMiscRawState.getState().downloadQueueLength > 0 || useMiscRawState.getState().metadataQueueLength > 0 || useBodyState.getState().isCleaningTrash || useMiscRawState.getState().isImporting || qaNot(".progress-dialog.open", ".library-loading-dialog").length > 0 || !!q("#saving-progress-bar.open");
       const doRelaunch = () => {
         ipc.send("save-cache-file");
         const cw = currentWindow();
@@ -265,18 +262,16 @@ export function takeoverMiscDomain(): void {
 
   // ── get-duplicate-map（22319 逐字；backgroundWindowID → window）──
   ipc.on('get-duplicate-map', function (_event: any, items: any) {
-    const s = sNow();
-    if (!s) return;
 
     function isDuplicateImage(image: any): any {
-      if (!s.duplicateMappings) return false;
+      if (!useItemState.getState().duplicateMappings) return false;
       if (image.ext === 'svg') return false;
       if (image.ext === 'tif') return false;
       if (image.ext === 'tiff') return false;
 
       const hashID = w.getHashID(image);
       if (!hashID) return false;
-      return s.duplicateMappings[hashID];
+      return useItemState.getState().duplicateMappings[hashID];
     }
 
     function ignoreDuplicates(duplicates: string[]): Promise<boolean> {
@@ -340,36 +335,30 @@ export function takeoverMiscDomain(): void {
 
   // ── lock-now（22392 逐字）──
   ipc.on('lock-now', function () {
-    const s = sNow();
-    if (!s) return;
     machineryLockApp();
     scopeEvalAsync();
   });
 
   // ── window.maximize / window.unmaximize（22465/22483 逐字）──
   ipc.on('window.maximize', function () {
-    const s = sNow();
-    if (!s) return;
     setTimeout(function () {
-      s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-      s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
+      writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+      writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     }, 200);
-    s.isMaximize = true;
+    writeScopeField('isMaximize', true);
     syncToolbarFromScope();
-    s.lastItemStates = {};
+    writeScopeField('lastItemStates', {});
     scopeEvalAsync();
   });
 
   ipc.on('window.unmaximize', function () {
-    const s = sNow();
-    if (!s) return;
     setTimeout(function () {
-      s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-      s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
+      writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+      writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     }, 200);
-    s.isMaximize = false;
+    writeScopeField('isMaximize', false);
     syncToolbarFromScope();
-    s.lastItemStates = {};
+    writeScopeField('lastItemStates', {});
     scopeEvalAsync();
   });
 
@@ -399,8 +388,6 @@ export function takeoverMiscDomain(): void {
 
   // ── confirm-import-eaglepack（22545 逐字）──
   ipc.on('confirm-import-eaglepack', function (_e: any, params: any) {
-    const s = sNow();
-    if (!s) return;
     if (hasClass(q("#extract-eaglepack-progress"), "open")) return;
 
     const eaglepackPath = params.path;
@@ -432,10 +419,9 @@ export function takeoverMiscDomain(): void {
 
   // ── reload（22574 逐字）──
   ipc.on('reload', function (_e: any, _data: any) {
-    const s = sNow();
     if (typeof w.stopAPIServer === 'function') w.stopAPIServer();
     location.reload();
-    if (s && s.SavedFilter && s.SavedFilter.unwatch) s.SavedFilter.unwatch();
+    if (useMiscRawState.getState().SavedFilter && useMiscRawState.getState().SavedFilter.unwatch) useMiscRawState.getState().SavedFilter.unwatch();
     if (w.eagle && w.eagle.action && w.eagle.action.destroy) w.eagle.action.destroy();
   });
 
@@ -460,11 +446,9 @@ export function takeoverMiscDomain(): void {
 
   // ── before-quit（22597 逐字；swal 语义 + $filter 经 injector）──
   ipc.on('before-quit', function (_e: any, _data: any) {
-    const s = sNow();
-    if (!s) return;
     const doQuit = () => {
       if (typeof w.stopAPIServer === 'function') w.stopAPIServer();
-      if (s.SavedFilter && s.SavedFilter.unwatch) s.SavedFilter.unwatch();
+      if (useMiscRawState.getState().SavedFilter && useMiscRawState.getState().SavedFilter.unwatch) useMiscRawState.getState().SavedFilter.unwatch();
       if (w.eagle && w.eagle.action && w.eagle.action.destroy) w.eagle.action.destroy();
       ipc.send("quit-app");
       const cw = currentWindow();
@@ -472,7 +456,7 @@ export function takeoverMiscDomain(): void {
         cw.hide();
       }
     };
-    const showAlert = s.uploadQueue.length > 0 || s.downloadQueueLength > 0 || s.metadataQueueLength > 0 || s.isCleaningTrash || s.isImporting || qaNot(".progress-dialog.open", ".library-loading-dialog").length > 0 || !!q("#saving-progress-bar.open");
+    const showAlert = useMiscRawState.getState().uploadQueue.length > 0 || useMiscRawState.getState().downloadQueueLength > 0 || useMiscRawState.getState().metadataQueueLength > 0 || useBodyState.getState().isCleaningTrash || useMiscRawState.getState().isImporting || qaNot(".progress-dialog.open", ".library-loading-dialog").length > 0 || !!q("#saving-progress-bar.open");
     if (showAlert) {
       if (!swal) { doQuit(); return; }
       const $filter = getFilter();
@@ -495,79 +479,63 @@ export function takeoverMiscDomain(): void {
 
   // ── update-progress / add-download-task(s) / extension-server-init-failed（22639-22662 逐字）──
   ipc.on('update-progress', function (_e: any, progress: any) {
-    const s = sNow();
-    if (!s) return;
     scopeEvalAsync(function () {
-      s.progress = progress;
+      writeScopeField('progress', progress);
       syncUploadFromScope();
     });
   });
   ipc.on('add-download-task', function () {
-    const s = sNow();
-    if (!s) return;
     scopeEvalAsync(function () {
-      s.uploadQueue.push({});
+      useMiscRawState.getState().uploadQueue.push({});
       syncUploadFromScope();
     });
   });
   ipc.on('add-download-tasks', function (_event: any, count: any) {
-    const s = sNow();
-    if (!s) return;
     scopeEvalAsync(function () {
       for (let i = 0; i < count; i++) {
-        s.uploadQueue.push({});
+        useMiscRawState.getState().uploadQueue.push({});
         syncUploadFromScope();
       }
     });
   });
   ipc.on('extension-server-init-failed', function (_e: any, _total: any) {
-    const s = sNow();
-    if (!s) return;
-    s.localhostError = true;
+    writeScopeField('localhostError', true);
     scopeEvalAsync();
   });
 
   // ── load-open-with（23527 逐字）──
   ipc.on('load-open-with', function (_e: any, openWithInfo: any) {
-    const s = sNow();
-    if (!s) return;
     if (openWithInfo && openWithInfo["png"]) {
       openWithInfo["jpg"] = openWithInfo["jpeg"];
-      s.openWithInfo = openWithInfo;
+      writeScopeField('openWithInfo', openWithInfo);
       scopeEvalAsync();
     }
   });
 
   // ── move-to-folders / rebind-refresh / open-item / go-folder / go-smart-folder（23718-23782）──
   ipc.on('move-to-folders', function (event: any) {
-    const s = sNow();
-    if (!s) return;
-    machineryMoveToFolders(s, event);
+    machineryMoveToFolders(event);
     scopeEvalAsync();
   });
 
   ipc.on('rebind-refresh', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     machineryRebindRefresh();
     scrollToSelectedItem();
   });
 
   ipc.on('open-item', function (_e: any, itemId: any) {
-    const s = sNow();
-    if (!s) return;
-    const item = s.itemMappings[itemId];
+    const item = useItemState.getState().itemMappings[itemId];
     if (item) {
       const folders = item.folders;
       if (folders && folders.length > 0) {
-        const firstFolder = s.folderMappings[folders[0]];
+        const firstFolder = useItemState.getState().folderMappings[folders[0]];
         openFolder(firstFolder);
         setTimeout(function () { machineryChangeSidebarIndex(firstFolder); scopeEvalAsync(); }, 200);
       }
       else {
         machineryOpenAll();
       }
-      s.selected = [];
+      writeScopeField('selected', []);
       syncInspectorFromScope();
       domainTimeout(function () {
         select(undefined, item);
@@ -584,9 +552,7 @@ export function takeoverMiscDomain(): void {
   });
 
   ipc.on('go-folder', function (_e: any, folderId: any) {
-    const s = sNow();
-    if (!s) return;
-    const folder = s.folderMappings[folderId];
+    const folder = useItemState.getState().folderMappings[folderId];
     if (folder) {
       openFolder(folder);
       setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 200);
@@ -600,9 +566,7 @@ export function takeoverMiscDomain(): void {
   });
 
   ipc.on('go-smart-folder', function (_e: any, smartFolderId: any) {
-    const s = sNow();
-    if (!s) return;
-    const smartFolder = s.smartFolderMappings[smartFolderId];
+    const smartFolder = useItemState.getState().smartFolderMappings[smartFolderId];
     if (smartFolder) {
       openSmartFolder(smartFolder);
       setTimeout(function () { machineryChangeSidebarIndex(smartFolder); scopeEvalAsync(); }, 200);
@@ -617,66 +581,50 @@ export function takeoverMiscDomain(): void {
 
   // ── 标签历史 / 文件夹 / 收藏（23783-23882 逐字；TagManager → scope）──
   ipc.on('add-history-tag', function (_e: any, tag: any) {
-    const s = sNow();
-    if (!s) return;
-    s.TagManager.addHistoryTag(tag);
-    s.TagManager.save();
+    useMiscRawState.getState().TagManager.addHistoryTag(tag);
+    useMiscRawState.getState().TagManager.save();
     scopeEvalAsync();
   });
   ipc.on('add-history-tags', function (_e: any, tags: any) {
-    const s = sNow();
-    if (!s) return;
-    s.TagManager.addHistoryTags(tags);
+    useMiscRawState.getState().TagManager.addHistoryTags(tags);
     scopeEvalAsync();
   });
   ipc.on('clear-history-tag', function (_e: any, _tag: any) {
-    const s = sNow();
-    if (!s) return;
-    s.TagManager.historyTags = [];
+    useMiscRawState.getState().TagManager.historyTags = [];
     syncFilterFromScope();
     syncTagManagerFromScope();
-    s.availableHistoryTags = [];
-    s.TagManager.save();
+    writeScopeField('availableHistoryTags', []);
+    useMiscRawState.getState().TagManager.save();
     scopeEvalAsync();
   });
   ipc.on('prepend-folder', function (_e: any, folder: any) {
-    const s = sNow();
-    if (!s) return;
     machineryPrependFolder(folder);
     scopeEvalAsync();
   });
   ipc.on('new-folder', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     newFolder();
     scopeEvalAsync();
   });
   ipc.on('new-smart-folder', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     machineryNewSmartFolder();
     scopeEvalAsync();
   });
 
   // ── 上传队列隐藏 / 揭示图片 / 电源 / 窗口关闭（23877-23940 逐字）──
   ipc.on('hide-upload-queue', function () {
-    const s = sNow();
-    if (!s) return;
-    if (s.uploadQueue.length === 0) {
+    if (useMiscRawState.getState().uploadQueue.length === 0) {
       machineryHideUploadQueue();
       scopeEvalAsync();
     }
   });
 
   ipc.on('open-and-reveal-image', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
-    if (s.lastestAddItem) {
-      const image = s.lastestAddItem;
-      const folders = s.lastestAddItem.folders;
-      if (folders && folders.length > 0 && folders[0] && s.folderMappings[folders[0]]) {
-        openFolder(s.folderMappings[folders[0]]);
-        s.selected = [];
+    if (useMiscRawState.getState().lastestAddItem) {
+      const image = useMiscRawState.getState().lastestAddItem;
+      const folders = useMiscRawState.getState().lastestAddItem.folders;
+      if (folders && folders.length > 0 && folders[0] && useItemState.getState().folderMappings[folders[0]]) {
+        openFolder(useItemState.getState().folderMappings[folders[0]]);
+        writeScopeField('selected', []);
         syncInspectorFromScope();
         domainTimeout(function () {
           select(undefined, image);
@@ -685,7 +633,7 @@ export function takeoverMiscDomain(): void {
       }
       else {
         machineryOpenAll();
-        s.selected = [];
+        writeScopeField('selected', []);
         syncInspectorFromScope();
         domainTimeout(function () {
           select(undefined, image);
@@ -694,7 +642,7 @@ export function takeoverMiscDomain(): void {
       }
     }
     else {
-      s.selected = [];
+      writeScopeField('selected', []);
       syncInspectorFromScope();
       machineryOpenAll();
     }
@@ -723,9 +671,7 @@ export function takeoverMiscDomain(): void {
   });
 
   ipc.on('window-close', function () {
-    const s = sNow();
-    if (!s) return;
-    if (s.isDetailMode) {
+    if (useBodyState.getState().isDetailMode) {
       const video = q(".detail-wrap video") as HTMLVideoElement | null;
       if (video && !video.paused) { video.pause(); }
     }
@@ -733,28 +679,20 @@ export function takeoverMiscDomain(): void {
 
   // ── 偏好 / 幻灯片 / 徽标 / 目录 / 字体 / 揭示（23940-23987 逐字）──
   ipc.on('open-preferences', function (_e: any, params: any) {
-    const s = sNow();
-    if (!s) return;
     if (useLockState.getState().isAppLocked) return;
     ipc.send('open.preferences', params);
   });
 
   ipc.on('toggle-slideshow', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     machineryToggleSlideshow();
     scopeEvalAsync();
   });
 
   ipc.on('leave-slideshow', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     scopeEvalAsync();
   });
 
   ipc.on('show-sidebar-badge', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     usePreferencesState.getState().preferences.general.showSidebarBadge = true;
     syncToolbarFromScope();
     syncBodyFromScope();
@@ -763,8 +701,6 @@ export function takeoverMiscDomain(): void {
   });
 
   ipc.on('hide-sidebar-badge', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     usePreferencesState.getState().preferences.general.showSidebarBadge = false;
     syncToolbarFromScope();
     syncBodyFromScope();
@@ -773,32 +709,24 @@ export function takeoverMiscDomain(): void {
   });
 
   ipc.on('import-folders', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
     importFolders();
     scopeEvalAsync();
   });
 
   ipc.on('activate-font', function (_e: any, item: any) {
-    const s = sNow();
-    if (!s) return;
     activateFont(item, { showNotify: false, updateView: true });
   });
 
   ipc.on('deactivate-font', function (_e: any, item: any) {
-    const s = sNow();
-    if (!s) return;
     deactivateFont(item, { showNotify: false, updateView: true });
   });
 
   ipc.on('reveal-in-eagle', function (_e: any, it: any) {
-    const s = sNow();
-    if (!s) return;
-    const item = s.itemMappings[it.id];
+    const item = useItemState.getState().itemMappings[it.id];
     let folder;
     if (!item) return;
     if (item.folders && item.folders.length > 0) {
-      folder = s.folderMappings[item.folders[0]];
+      folder = useItemState.getState().folderMappings[item.folders[0]];
     }
     machineryQuickOpenFolder(folder, item);
     scopeEvalAsync();
@@ -806,8 +734,6 @@ export function takeoverMiscDomain(): void {
 
   // ── open-unregister（24013 逐字；$http → $.ajax Promise 等价；Registration/machineID = window）──
   ipc.on('open-unregister', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
 
     function unregister({ email, licenseCode, machineID }: any, url: string, callback: any): void {
       // Angular $http.post(...).then(success, failure)：response 带 .data 包装；fetch Promise 同语义
@@ -821,7 +747,7 @@ export function takeoverMiscDomain(): void {
         }),
       }).then(function (r: any) { return r.json(); }).then(function (resp: any) {
         const data = { data: resp };
-        electronLog && electronLog.info(`[app] Unregister successfully, email: ${s.email}`);
+        electronLog && electronLog.info(`[app] Unregister successfully, email: ${useMiscRawState.getState().email}`);
         domainTimeout(function () {
           const result = data.data;
           try { ipc.send('electron-info', result); }
@@ -897,30 +823,22 @@ export function takeoverMiscDomain(): void {
 
   // ── get-current-folder / get-recent-folders / add-recent-folders（24095-24110 逐字）──
   ipc.on('get-current-folder', function (_event: any) {
-    const s = sNow();
-    if (!s) return;
     scopeEvalAsync(function () {
-      ipc.send("current-folder", s.currentFolder);
+      ipc.send("current-folder", useFolderState.getState().currentFolder);
     });
   });
 
   ipc.on('get-recent-folders', function (_event: any) {
-    const s = sNow();
-    if (!s) return;
     const recentFolders = machineryGetRecentFolders();
     ipc.send("get-recent-folders", recentFolders);
   });
 
   ipc.on('add-recent-folders', function (_event: any, folders: any) {
-    const s = sNow();
-    if (!s) return;
     addToRecentFolders(folders);
   });
 
   // ── image-processing-error（30402 逐字）──
   ipc.on('image-processing-error', function (_e: any, errorItem: any) {
-    const s = sNow();
-    if (!s) return;
     // 针对特定文件提供错误帮助
     if (errorItem && errorItem.object) {
       const obj = errorItem.object;
@@ -931,11 +849,11 @@ export function takeoverMiscDomain(): void {
     }
 
     // 针对特定类型（超时）提供错误帮助
-    s.errorList.push(errorItem);
+    useMiscRawState.getState().errorList.push(errorItem);
     syncErrorCount();
-    if (s.errorList.length === 1) {
+    if (useMiscRawState.getState().errorList.length === 1) {
       if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false') {
-        s.errorSound.play();
+        useMiscRawState.getState().errorSound.play();
         openErrorModal();
       }
       setTimeout(() => {
@@ -947,17 +865,15 @@ export function takeoverMiscDomain(): void {
 
   // ── remove-trash-item（36999 逐字）──
   ipc.on('remove-trash-item', function (_e: any) {
-    const s = sNow();
-    if (!s) return;
-    s.currentTrashRemoved++;
-    s.removeProgress = s.currentTrashRemoved / s.trashRemoved * 100;
-    s.removeProgress = (s.removeProgress > 100) ? 100 : s.removeProgress;
+    writeScopeField('currentTrashRemoved', useMiscRawState.getState().currentTrashRemoved + 1);
+    writeScopeField('removeProgress', useMiscRawState.getState().currentTrashRemoved / useMiscRawState.getState().trashRemoved * 100);
+    writeScopeField('removeProgress', (useBodyState.getState().removeProgress > 100) ? 100 : useBodyState.getState().removeProgress);
     scopeEvalAsync();
-    if (s.currentTrashRemoved >= s.trashRemoved || s.removeProgress > 98) {
-      s.isCleaningTrash = false;
+    if (useMiscRawState.getState().currentTrashRemoved >= useMiscRawState.getState().trashRemoved || useBodyState.getState().removeProgress > 98) {
+      writeScopeField('isCleaningTrash', false);
       syncSidebarFromScope();
-      s.trashRemoved = 0;
-      s.currentTrashRemoved = 0;
+      writeScopeField('trashRemoved', 0);
+      writeScopeField('currentTrashRemoved', 0);
       IPCHelper.send('palette-resume');
       scopeEvalAsync();
     }
@@ -978,18 +894,16 @@ export function takeoverMiscDomain(): void {
   });
 
   ipc.on('change.current.theme', function (_e: any, theme: any) {
-    const r = rNow();
-    if (!r) return;
     if (theme.name === "Auto") {
       if (remote.nativeTheme.shouldUseDarkColors) {
-        r.theme = "gray";
+        writeScopeField('theme', "gray");
       }
       else {
-        r.theme = "light";
+        writeScopeField('theme', "light");
       }
     }
     else {
-      r.theme = theme.css || "gray";
+      writeScopeField('theme', theme.css || "gray");
     }
     scopeEvalAsync();
   });
@@ -1007,52 +921,50 @@ export function takeoverMiscDomain(): void {
     '取得推荐标签',
   ]);
   ipc.on('jieba-extract-done', function (_e: any, result: any) {
-    const s = sNow();
-    if (!s) return;
 
     // console.timeEnd("======== 取得推荐标签 ========");
 
-    const selectedTags = w.eagle.inspector.calculateTags(s.selected);
+    const selectedTags = w.eagle.inspector.calculateTags(useSelectionState.getState().selected);
 
     result.forEach(function (term: any) {
-      const idx = s.TagManager.suggestions.indexOf(term.word);
+      const idx = useMiscRawState.getState().TagManager.suggestions.indexOf(term.word);
       // var existIdx = selectedTags.indexOf(term.word);
 
       if (idx == -1 && term.word.split(/d/).length < 3 && term.word.localeLength() >= 2) {
-        s.TagManager.suggestions.push(term.word.capitalize());
+        useMiscRawState.getState().TagManager.suggestions.push(term.word.capitalize());
       }
     });
 
-    s.TagManager.suggestions = s.TagManager.excludeExistTags(selectedTags, s.TagManager.suggestions);
+    useMiscRawState.getState().TagManager.suggestions = useMiscRawState.getState().TagManager.excludeExistTags(selectedTags, useMiscRawState.getState().TagManager.suggestions);
     syncFilterFromScope();
     syncTagManagerFromScope();
     // TagManager.suggestions = TagManager.suggestions.unique();
-    s.TagManager.suggestions = [...new Set(s.TagManager.suggestions)];
+    useMiscRawState.getState().TagManager.suggestions = [...new Set(useMiscRawState.getState().TagManager.suggestions)];
     syncFilterFromScope();
     syncTagManagerFromScope();
 
     // 移除 Stopword
     const sw = w.require('stopword');
-    s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions);
+    useMiscRawState.getState().TagManager.suggestions = sw.removeStopwords(useMiscRawState.getState().TagManager.suggestions);
     syncFilterFromScope();
     syncTagManagerFromScope();
-    s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions, sw.zh);
+    useMiscRawState.getState().TagManager.suggestions = sw.removeStopwords(useMiscRawState.getState().TagManager.suggestions, sw.zh);
     syncFilterFromScope();
     syncTagManagerFromScope();
-    s.TagManager.suggestions = sw.removeStopwords(s.TagManager.suggestions, sw.ja);
+    useMiscRawState.getState().TagManager.suggestions = sw.removeStopwords(useMiscRawState.getState().TagManager.suggestions, sw.ja);
     syncFilterFromScope();
     syncTagManagerFromScope();
 
     // Note: 优先将已经有标签放在最前方，剩下的标签使用标题排序放在后面
-    s.TagManager.suggestions = s.TagManager.suggestions.sort(function (a: any, b: any) {
-      if (s.TagManager.tagMappings[a])
+    useMiscRawState.getState().TagManager.suggestions = useMiscRawState.getState().TagManager.suggestions.sort(function (a: any, b: any) {
+      if (useMiscRawState.getState().TagManager.tagMappings[a])
         return -1;
-      if (s.TagManager.tagMappings[b])
+      if (useMiscRawState.getState().TagManager.tagMappings[b])
         return 1;
       try {
         const na = a.toLowerCase();
         const nb = b.toLowerCase();
-        const languageBCP = (rNow().language || 'en').replace("_", "-");
+        const languageBCP = (useBodyState.getState().language || 'en').replace("_", "-");
         if (na && na) {
           return na.localeCompare(nb, languageBCP, { numeric: true });
         }
@@ -1101,7 +1013,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function changeOrderBy(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
@@ -1514,7 +1425,7 @@ export function updateSuggestions() {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryMoveToFolders(_s: any, _e: any): void {}
+export function machineryMoveToFolders(_e: any): void {}
 
 export function machineryPausePalette(): void {
   const w = window as any;

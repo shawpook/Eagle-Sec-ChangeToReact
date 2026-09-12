@@ -11,7 +11,7 @@ import { ayncsImagesChange } from './FolderModals';
 import { useVirtualWindow } from '../sidebar/Sidebar';
 import { syncErrorCount } from '../../store/toastState';
 import { syncUploadFromScope } from '../../store/uploadState';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';

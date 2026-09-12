@@ -1,7 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { FileUrlHelper } from '../../core/fileUrlHelper';
-import { getBodyScope } from '../../core/appCore';
+;
 import { getRawUrl } from '../../core/itemDomain';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useFolderState } from '../../store/folderState';
+import { usePreferencesState } from '../../store/preferencesState';
+import { useItemState } from '../../store/itemState';
 
 /**
  * b1-9be2：box 条目 JSX —— ng-grid-layout 模板（bundle:66524-66963）逐字 JSX 化。
@@ -78,7 +82,6 @@ const domainNameFilter = (url: string): string => {
 /* ---------- generateItem 计算段（bundle:66524-66963 逐字） ---------- */
 
 function buildTemplateData(item: any): any {
-  const scope = bodyScopeOf();
   const templateData: any = {
     id: item.id,
     ext: item.ext,
@@ -116,14 +119,14 @@ function buildTemplateData(item: any): any {
   if (item.tags && item.tags.length) {
     for (let i = 0; i < item.tags.length; i++) {
       try {
-        templateData.tagsFormated += `<div class="tag color-${scope.TagManager.tagMappings[item.tags[i]].color}">${escapeAttr(item.tags[i])}</div>`;
+        templateData.tagsFormated += `<div class="tag color-${useMiscRawState.getState().TagManager.tagMappings[item.tags[i]].color}">${escapeAttr(item.tags[i])}</div>`;
       } catch (err) {}
     }
   } else {
     templateData.tagsFormated = '-';
   }
 
-  if (scope.currentFolder) {
+  if (useFolderState.getState().currentFolder) {
     templateData.hasSortableHelper = true;
   }
 
@@ -147,7 +150,7 @@ function buildTemplateData(item: any): any {
     if (supportLargeThumb[item.ext] && (!item.orientation || item.orientation === 1)) {
       templateData.rawPath = getRawUrl(item);
     }
-    if ((item?.animated || item.ext === 'gif') && scope.preferences.habits.alwaysPlayGIF === 'on') {
+    if ((item?.animated || item.ext === 'gif') && usePreferencesState.getState().preferences.habits.alwaysPlayGIF === 'on') {
       const rawPath = getRawUrl(item);
       templateData.rawPath = rawPath;
       templateData.thumbnailPath = rawPath;
@@ -206,7 +209,7 @@ function buildTemplateData(item: any): any {
     } catch (err) {}
   }
 
-  if (scope.preferences.habits.hoverZoom === 'on') {
+  if (usePreferencesState.getState().preferences.habits.hoverZoom === 'on') {
     templateData.hoverZoom = true;
   }
 
@@ -248,7 +251,7 @@ function buildTemplateData(item: any): any {
     templateData.css += ' has-annotation ';
   }
 
-  switch (scope.listMetaType) {
+  switch (useMiscRawState.getState().listMetaType) {
     case 'RESOLUTION':
       if (item.duration && VIDEO_TYPES()[item.ext]) templateData.metas = durationFilter(item.duration);
       else if (item.duration && AUDIO_TYPES()[item.ext]) templateData.metas = durationFilter(item.duration);
@@ -275,7 +278,7 @@ function buildTemplateData(item: any): any {
       templateData.metas = '';
       if (item.tags && item.tags.length) {
         templateData.metas = item.tags
-          .map((tag: string) => `<div class="tag color-${scope.TagManager.tagMappings[tag].color}">${escapeAttr(tag)}</div>`)
+          .map((tag: string) => `<div class="tag color-${useMiscRawState.getState().TagManager.tagMappings[tag].color}">${escapeAttr(tag)}</div>`)
           .join('');
       } else {
         templateData.metas = '-';
@@ -288,21 +291,19 @@ function buildTemplateData(item: any): any {
   return templateData;
 }
 
-const bodyScopeOf = () => getBodyScope();
 
 /* ---------- 条目渲染（模板字符串 → JSX 结构逐字段对应） ---------- */
 
 export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
   const data = buildTemplateData(item);
-  const scope = bodyScopeOf();
   const ref = useRef<HTMLDivElement>(null);
 
   // ng-grid 时代 onLayoutComplete 补写的类/属性（bundle:67247-67294 逐字语义）：
   // selected/tagged/pinned 类 + raw/lsrc 属性 —— 渲染时直读 scope。
-  const selected = !!(scope && scope.selectedMappings && scope.selectedMappings[data.id]);
+  const selected = !!(useItemState.getState().selectedMappings && useItemState.getState().selectedMappings[data.id]);
   const pinned =
-    !!(scope && scope.currentFolder && scope.currentFolder.orderBy !== 'RANDOM' &&
-      item.pinned && item.pinned[scope.currentFolder.id]);
+    !!(useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy !== 'RANDOM' &&
+      item.pinned && item.pinned[useFolderState.getState().currentFolder.id]);
 
   useEffect(() => {
     // v4 布局引擎在条目挂载后自行定位；raw 属性按 onLayoutComplete 语义补写
@@ -316,7 +317,7 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
       img.setAttribute('lsrc', data.src || '');
       img.setAttribute('lazysrc', data.thumbnailPath || '');
       const supportLargeThumb: Record<string, boolean> = { jpg: true, png: true, webp: true, bmp: true };
-      if (supportLargeThumb[item.ext] && (!item.orientation || item.orientation === 1) && scope) {
+      if (supportLargeThumb[item.ext] && (!item.orientation || item.orientation === 1)) {
         img.setAttribute('raw', getRawUrl(item));
       }
       const lazysrc = img.getAttribute('lazysrc');

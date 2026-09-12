@@ -14,7 +14,7 @@
 
 import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
-import { getBodyScope } from '../core/appCore';
+;
 import { contextMenuOpenChannel, rebindRefreshcontainsizeChannel } from '../global/bus';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
@@ -287,7 +287,6 @@ const initLinkVars = () => {
   lvInited = true;
 };
 
-const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function changeSidebarIndex(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价（仅 $timeout 取法与

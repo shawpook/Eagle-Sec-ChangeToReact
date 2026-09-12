@@ -22,6 +22,7 @@ import { dom } from '../../utils/domLite';
 import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';
 import { machineryToggleAll } from '../../services/gridService';
+import { useItemState } from '../../store/itemState';
 
 /**
  * 阶段2：侧栏接管。
@@ -353,7 +354,7 @@ function FolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; theme
       className={`item sidebar-folder-item ${node.cls}`}
       style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
       onClick={(e) => { const live = findLiveNode(node.id); clickNode(e, live); }}
-      onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope((s) => openFolderContextMenu(e, live)); }}
+      onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope(() => openFolderContextMenu(e, live)); }}
       onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
       onDoubleClick={(e) => { const live = findLiveNode(node.id); runInBodyScope((s) => s.rename(e, live)); }}
     >
@@ -374,7 +375,7 @@ function FolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; theme
         onClick={(e) => { const live = findLiveNode(node.id); toggleFolderExpand(e, live); }}
         onMouseDown={(e) => e.stopPropagation()}
         onMouseUp={(e) => e.stopPropagation()}
-        onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope((s) => openFolderExpandContextMenu(e, live)); }}
+        onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope(() => openFolderExpandContextMenu(e, live)); }}
       >
         <img src={iconSrc(theme, 'ic-arrow-right.svg')} />
       </div>
@@ -408,7 +409,7 @@ function SmartFolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
       className={`item depth-${(node.styles && node.styles.depth) || 0} sidebar-smart-folder-item ${node.cls}`}
       style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
       onClick={(e) => { const live = findLiveNode(node.id); clickSmartNode(e, live); }}
-      onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope((s) => openSmartFolderContextMenu(e, live)); }}
+      onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope(() => openSmartFolderContextMenu(e, live)); }}
       onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
     >
       <div className="guidelines">
@@ -425,7 +426,7 @@ function SmartFolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
         onClick={(e) => { const live = findLiveNode(node.id); toggleSmartFolderExpand(e, live); }}
         onMouseDown={(e) => e.stopPropagation()}
         onMouseUp={(e) => e.stopPropagation()}
-        onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope((s) => openSmartFolderExpandContextMenu(e, live)); }}
+        onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope(() => openSmartFolderExpandContextMenu(e, live)); }}
       >
         <img src={iconSrc(theme, 'ic-arrow-right.svg')} />
       </div>
@@ -434,7 +435,7 @@ function SmartFolderNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
       </div>
       <div
         className="name"
-        onDoubleClick={(e) => { e.stopPropagation(); const live = findLiveNode(node.id); runInBodyScope((s) => dblclickSidebarSmartFolderGroup(e, live)); }}
+        onDoubleClick={(e) => { e.stopPropagation(); const live = findLiveNode(node.id); runInBodyScope(() => dblclickSidebarSmartFolderGroup(e, live)); }}
         title={longTitle(node.name)}
         dangerouslySetInnerHTML={{ __html: fuzzy(keyword, node.name) }}
       />
@@ -458,12 +459,12 @@ function QuickAccessNode({ node, theme, keyword }: { node: SidebarNodeSnapshot; 
         style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}
         onClick={(e) => {
           const live = findLiveNode(node.id);
-          runInBodyScope((s) => {
-            if (isFolder) openFolder(s.folderMappings[node.id], false, `quickaccess-${node.id}`);
-            else openSmartFolder(s.smartFolderMappings[node.id], false, `quickaccess-${node.id}`);
+          runInBodyScope(() => {
+            if (isFolder) openFolder(useItemState.getState().folderMappings[node.id], false, `quickaccess-${node.id}`);
+            else openSmartFolder(useItemState.getState().smartFolderMappings[node.id], false, `quickaccess-${node.id}`);
           });
         }}
-        onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope((s) => openQuickAccessContextMenu(e, live)); }}
+        onContextMenu={(e) => { const live = findLiveNode(node.id); runInBodyScope(() => openQuickAccessContextMenu(e, live)); }}
         onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
       >
         <div className="icon">
@@ -504,7 +505,7 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
       return (
         <div id="quickAccess-header" className="sidebar-item-label" style={{ zIndex: 100000 - node.index, height: `${node.size}px` }}>
           <div className="sidebar-item-label-warp">
-            <div className="name expandable" onClick={(e) => runInBodyScope((s) => toggleQuickAccessVisible(e))}>
+            <div className="name expandable" onClick={(e) => runInBodyScope(() => toggleQuickAccessVisible(e))}>
               {t('sidebar.quickAccessLabel')}
               <span style={counts.quickAccess > 0 ? undefined : { display: 'none' }}> ({counts.quickAccess})</span>
               <span className={`expand${useSidebarState.getState().snapshot.isExpandQuickAccess ? '' : ' collapse'}`}>
@@ -524,12 +525,12 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
                 tippy=""
                 tippy-placement="bottom"
                 tippy-content={`${t('sidebar.newSmartFolderHint')}${shortcuts(shortcutsWrapper(useSidebarState.getState().snapshot.keybinds['file.create.smartfolder'] || ''))}`}
-                onClick={(e) => runInBodyScope((s) => openNewSmartFolderContextMenu(e))}
+                onClick={(e) => runInBodyScope(() => openNewSmartFolderContextMenu(e))}
               >
                 <img src={iconSrc(theme, 'ic-sidebar-add.svg')} />
               </div>
             </div>
-            <div className="name expandable" onClick={(e) => runInBodyScope((s) => toggleSmartFolderVisible(e))}>
+            <div className="name expandable" onClick={(e) => runInBodyScope(() => toggleSmartFolderVisible(e))}>
               {t('sidebar.smartFolderLabel')}
               <span style={counts.smartFolders > 0 ? undefined : { display: 'none' }}> ({counts.smartFolders})</span>
               <span className={`expand${useSidebarState.getState().snapshot.isExpandSmartFolder ? '' : ' collapse'}`}>
@@ -550,12 +551,12 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
                 tippy=""
                 tippy-placement="bottom"
                 tippy-content={`${t('sidebar.newFolderHint')}${shortcuts(shortcutsWrapper(useSidebarState.getState().snapshot.keybinds['file.create.folder'] || ''))}`}
-                onClick={(e) => runInBodyScope((s) => newFolder(e))}
+                onClick={(e) => runInBodyScope(() => newFolder(e))}
               >
                 <img src={iconSrc(theme, 'ic-sidebar-add.svg')} />
               </div>
             </div>
-            <div className="name expandable" onClick={(e) => runInBodyScope((s) => toggleFolderVisible(e))}>
+            <div className="name expandable" onClick={(e) => runInBodyScope(() => toggleFolderVisible(e))}>
               {t('sidebar.folderLabel')}
               <span style={counts.folders > 0 ? undefined : { display: 'none' }}> ({counts.folders})</span>
               <span className={`expand${useSidebarState.getState().snapshot.isExpandFolder ? '' : ' collapse'}`}>
@@ -581,7 +582,7 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
             if (direct) direct(s);
             else s[meta.open] && s[meta.open]();
           })}
-          onContextMenu={(e) => runInBodyScope((s) => openSidebarVisibleContextMenu(e))}
+          onContextMenu={(e) => runInBodyScope(() => openSidebarVisibleContextMenu(e))}
           onMouseDown={(e) => { if (e.button === 1) preventMiddleClick(e); }}
         >
           <div className="icon">
@@ -591,7 +592,7 @@ function SidebarNodeItem({ node, theme, keyword, viewMode, counts }: {
             {t(meta.labelKey)}
           </div>
           {badgeClickable ? (
-            <div className="badge" onClick={(e) => { e.stopPropagation(); runInBodyScope((s) => openSidebarVisibleContextMenu()); }}>
+            <div className="badge" onClick={(e) => { e.stopPropagation(); runInBodyScope(() => openSidebarVisibleContextMenu()); }}>
               <img src={iconSrc(theme, 'ic-more.svg')} />
             </div>
           ) : (
@@ -626,7 +627,7 @@ const SIMPLE_OPEN_DIRECT: Record<string, (s: any) => void> = {
 function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarState.getState>['snapshot'] }) {
   const { theme, libraryPath, libraryName, keybinds, showSlowNotify, showNTFSWarning, paletteQueuePaused, currentProcessCount } = snapshot;
   return (
-    <div className="sidebar-header" onDoubleClick={(e) => { e.preventDefault(); runInBodyScope((s) => maximize(e)); }}>
+    <div className="sidebar-header" onDoubleClick={(e) => { e.preventDefault(); runInBodyScope(() => maximize(e)); }}>
       {libraryPath ? (
         <div className="sidebar-library-info">
           {!showSlowNotify && showNTFSWarning ? (
@@ -648,7 +649,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
             tippy=""
             tippy-placement="right"
             tippy-content={`${t(paletteQueuePaused ? 'sidebar.state.title.pausing' : 'sidebar.state.title.analysing')} (${currentProcessCount})`}
-            onClick={(e) => { e.stopPropagation(); runInBodyScope((s) => togglePaletteProcessing(e)); }}
+            onClick={(e) => { e.stopPropagation(); runInBodyScope(() => togglePaletteProcessing(e)); }}
           >
             <div className="sm-spiner" style={{ marginTop: 0, display: 'block' }} />
             <div className="pause-icon"><img src={iconSrc(theme, 'ic-status-pause.svg')} /></div>
@@ -658,7 +659,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
               tippy=""
               tippy-placement="right"
               tippy-content={`${t('sidebar.switchLibrary')}${shortcuts(shortcutsWrapper(keybinds['library.switch'] || ''))}`}
-              onClick={(e) => runInBodyScope((s) => switchLibrary(e))}
+              onClick={(e) => runInBodyScope(() => switchLibrary(e))}
               onDoubleClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             >
               <LibraryIcon libraryPath={libraryPath} />
@@ -673,7 +674,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy=""
           tippy-placement="bottom"
           tippy-content={`${t('sidebar.addItems')}${shortcuts(shortcutsWrapper(keybinds['file.create.new'] || ''))}`}
-          onClick={(e) => runInBodyScope((s) => openNewContextMenu(e))}
+          onClick={(e) => runInBodyScope(() => openNewContextMenu(e))}
         >
           <img src={iconSrc(theme, 'ic_add.svg')} />
         </div>
@@ -684,7 +685,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy-content={`${t('sidebar.switchFolderBtn')}<key>J</key>`}
           // 兼容钩子：shims 的 source-mode 拦截器靠 ng-click 属性识别该按钮（shims.js:3711）。
           ng-click="openQuickSearch()"
-          onClick={(e) => runInBodyScope((s) => machineryOpenQuickSearch(e))}
+          onClick={(e) => runInBodyScope(() => machineryOpenQuickSearch(e))}
         >
           <img src={iconSrc(theme, 'ic_switch.svg')} />
         </div>
@@ -694,7 +695,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy-placement="bottom"
           tippy-content={`${t('context.order.toggle>all')}<key>Tab</key>`}
           onContextMenu={(e) => runInBodyScope((s) => s.openSidebarMenu(e))}
-          onClick={(e) => runInBodyScope((s) => machineryToggleAll(e))}
+          onClick={(e) => runInBodyScope(() => machineryToggleAll(e))}
         >
           <img src={iconSrc(theme, 'ic_toggle-sidebar.svg')} />
         </div>
@@ -808,8 +809,8 @@ export function Sidebar() {
   useEffect(() => {
     const host = document.getElementById('sidebar');
     if (!host) return;
-    const onMouseLeave = (e: MouseEvent) => runInBodyScope((s) => hoverHideSidebar(e));
-    const onMouseDown = (e: MouseEvent) => runInBodyScope((s) => sidebarFocus(e));
+    const onMouseLeave = (e: MouseEvent) => runInBodyScope(() => hoverHideSidebar(e));
+    const onMouseDown = (e: MouseEvent) => runInBodyScope(() => sidebarFocus(e));
     host.addEventListener('mouseleave', onMouseLeave);
     host.addEventListener('mousedown', onMouseDown);
     return () => {
@@ -836,7 +837,7 @@ export function Sidebar() {
       <div
         className="icon-btn application-menu-btn fixed"
         style={snapshot.isLoading ? { position: 'absolute', left: '12px', top: '12px' } : { display: 'none', position: 'absolute', left: '12px', top: '12px' }}
-        onClick={(e) => runInBodyScope((s) => openApplicationContextMenu(e))}
+        onClick={(e) => runInBodyScope(() => openApplicationContextMenu(e))}
       >
         <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
       </div>
@@ -923,13 +924,13 @@ function FolderSearchInput({ keyword }: { keyword: string }) {
         setDraft(value);
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-          runInBodyScope((s) => { s.folderKeyword = value; });
+          runInBodyScope(() => { writeScopeField('folderKeyword', value); });
           syncSidebarFromScope();
         }, 50);
       }}
       onBlur={() => {
         clearTimeout(debounceRef.current);
-        runInBodyScope((s) => { s.folderKeyword = draft; });
+        runInBodyScope(() => { writeScopeField('folderKeyword', draft); });
         syncSidebarFromScope();
       }}
     />

@@ -16,6 +16,7 @@ import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
 import { useMiscRawState } from '../../store/miscRawState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useItemState } from '../../store/itemState';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
 export const KIND_COMPONENTS: Record<string, React.ComponentType<{ snapshot: FilterSnapshot }>> = {};
@@ -43,7 +44,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      runInBodyScope((s) => machineryUpdateContainerHieght());
+      runInBodyScope(() => machineryUpdateContainerHieght());
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -219,18 +220,18 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   <div
                     className={`palette none${!gray && !activeHex ? ' active' : ''}`}
                     style={{ backgroundColor: '#ccc' }}
-                    onClick={(e) => { focusInput(rootRef.current); runInBodyScope((s) => filterWithColor()); }}
+                    onClick={(e) => { focusInput(rootRef.current); runInBodyScope(() => filterWithColor()); }}
                   />
                   <div
                     className="palette gray"
-                    onClick={(e) => { focusInput(rootRef.current); runInBodyScope((s) => filterWithHexColor('gray')); }}
+                    onClick={(e) => { focusInput(rootRef.current); runInBodyScope(() => filterWithHexColor('gray')); }}
                   />
                   {COLOR_PALETTES.map(([hex]) => (
                     <div
                       key={hex}
                       className={`palette${hex === activeHex ? ' active' : ''}`}
                       style={{ backgroundColor: hex }}
-                      onClick={(e) => { focusInput(rootRef.current); runInBodyScope((s) => filterWithHexColor(hex)); }}
+                      onClick={(e) => { focusInput(rootRef.current); runInBodyScope(() => filterWithHexColor(hex)); }}
                     />
                   ))}
                 </div>
@@ -245,8 +246,8 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     value={hexDraft}
                     onChange={(e) => {
                       setHexDraft(e.target.value);
-                      runInBodyScope((s) => { s.hexColor = e.target.value; });
-                      runInBodyScope((s) => filterWithHexColor(e.target.value));
+                      runInBodyScope(() => { writeScopeField('hexColor', e.target.value); });
+                      runInBodyScope(() => filterWithHexColor(e.target.value));
                     }}
                   />
                   <div className="fake-color-input" onClick={openColorPicker} style={{ backgroundColor: hexDraft }} />
@@ -268,8 +269,8 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     value={rules.color?.accuracy ?? 20}
                     onChange={(e) => {
                       const v = Number(e.target.value);
-                      runInBodyScope((s) => { s.eagle.filter.filterRules.color.accuracy = v; });
-                      runInBodyScope((s) => filterWithHexColor(s.hexColor));
+                      runInBodyScope(() => { useMiscRawState.getState().eagle.filter.filterRules.color.accuracy = v; });
+                      runInBodyScope(() => filterWithHexColor(useMiscRawState.getState().hexColor));
                     }}
                   />
                 </div>
@@ -363,11 +364,11 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   }, [snapshot.containFolders, snapshot.filterFolderKeyword]);
 
   const onOpen = () => {
-    runInBodyScope((s) => {
-      if (s.eagle.filter.folderFilterLogic === 'OR') {
-        calcuteContainFolders(s.preelaborations);
+    runInBodyScope(() => {
+      if (useMiscRawState.getState().eagle.filter.folderFilterLogic === 'OR') {
+        calcuteContainFolders(useMiscRawState.getState().preelaborations);
       } else {
-        calcuteContainFolders(s.allData);
+        calcuteContainFolders(useItemState.getState().allData);
       }
       scopeEvalAsync();
     });
@@ -382,12 +383,12 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
   };
 
   const changeRule = (rule: string) => {
-    runInBodyScope((s) => {
-      s.eagle.filter.folderFilterLogic = rule;
+    runInBodyScope(() => {
+      useMiscRawState.getState().eagle.filter.folderFilterLogic = rule;
       syncFilterFromScope();
-      const selectedCount = (s.containFolders || []).filter((f: any) => f && f.isSelected).length;
+      const selectedCount = (useMiscRawState.getState().containFolders || []).filter((f: any) => f && f.isSelected).length;
       if (selectedCount > 0) {
-        s.page = 1;
+        writeScopeField('page', 1);
         machineryFilterContent();
       }
     });
@@ -434,7 +435,7 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   setSearchDraft(e.target.value);
                   clearTimeout((window as any).__foldersSearchTimer);
                   (window as any).__foldersSearchTimer = setTimeout(() => {
-                    runInBodyScope((s) => { s.eagle.filter.filterFolderKeyword = e.target.value; });
+                    runInBodyScope(() => { useMiscRawState.getState().eagle.filter.filterFolderKeyword = e.target.value; });
                     syncFilterFromScope();
                   }, 100);
                 }}
@@ -471,14 +472,14 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   onClick={(e) => {
                     focusInput(rootRef.current);
                     const live = useMiscRawState.getState().containFolders?.find((f: any) => f && f.id === folder.id);
-                    runInBodyScope((s) => filterWithFolder(live));
+                    runInBodyScope(() => filterWithFolder(live));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                   }}
                   onContextMenu={(e) => {
                     e.stopPropagation();
                     focusInput(rootRef.current);
                     const live = useMiscRawState.getState().containFolders?.find((f: any) => f && f.id === folder.id);
-                    runInBodyScope((s) => excludeWithFolder(live));
+                    runInBodyScope(() => excludeWithFolder(live));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                   }}
                   nameHtml={substring(fuzzyName(folder.name), 0, 200)}
@@ -609,12 +610,12 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
   };
 
   const changeRule = (rule: string) => {
-    runInBodyScope((s) => {
-      s.eagle.filter.tagFilterLogic = rule;
+    runInBodyScope(() => {
+      useMiscRawState.getState().eagle.filter.tagFilterLogic = rule;
       syncFilterFromScope();
-      const sel = (s.containTags || []).filter((tg: any) => tg && (tg.isSelected || tg.isExcluded)).length;
+      const sel = (useMiscRawState.getState().containTags || []).filter((tg: any) => tg && (tg.isSelected || tg.isExcluded)).length;
       if (sel > 0) {
-        s.page = 1;
+        writeScopeField('page', 1);
         machineryFilterContent();
       }
     });
@@ -663,7 +664,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   setSearchDraft(e.target.value);
                   clearTimeout((window as any).__tagsSearchTimer);
                   (window as any).__tagsSearchTimer = setTimeout(() => {
-                    runInBodyScope((s) => { s.tagKeyword = e.target.value; });
+                    runInBodyScope(() => { writeScopeField('tagKeyword', e.target.value); });
                     syncFilterFromScope();
                   }, 100);
                 }}
@@ -733,14 +734,14 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     onClick={() => {
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      runInBodyScope((s) => filterWithTag(live));
+                      runInBodyScope(() => filterWithTag(live));
                       runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                     }}
                     onContextMenu={(e) => {
                       e.stopPropagation();
                       focusInput(rootRef.current);
                       const live = findLiveTag(tag.name);
-                      runInBodyScope((s) => excludeWithTag(live));
+                      runInBodyScope(() => excludeWithTag(live));
                       runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                     }}
                     nameHtml={substring(fuzzyName(tag.name), 0, 200)}
@@ -752,22 +753,22 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                 <CheckItem
                   checked={tagsList.length > 0 && tagsList.every((tg) => tg.isSelected)}
                   onClick={() => {
-                    runInBodyScope((s) => {
-                      const live = s.containTags || [];
+                    runInBodyScope(() => {
+                      const live = useMiscRawState.getState().containTags || [];
                       const isAllSelected = live.every((tg: any) => tg.isSelected);
                       if (isAllSelected) {
                         live.forEach((tg: any) => {
                           delete tg.isSelected;
-                          const idx = s.eagle.filter.filterRules.tag.includes.indexOf(tg.name);
-                          if (idx > -1) s.eagle.filter.filterRules.tag.includes.splice(idx, 1);
+                          const idx = useMiscRawState.getState().eagle.filter.filterRules.tag.includes.indexOf(tg.name);
+                          if (idx > -1) useMiscRawState.getState().eagle.filter.filterRules.tag.includes.splice(idx, 1);
                         });
                       } else {
                         live.forEach((tg: any) => {
                           tg.isSelected = true;
-                          s.eagle.filter.filterRules.tag.includes.push(tg.name);
+                          useMiscRawState.getState().eagle.filter.filterRules.tag.includes.push(tg.name);
                         });
                       }
-                      s.eagle.filter.filterRules.tag.includes = [...new Set(s.eagle.filter.filterRules.tag.includes)];
+                      useMiscRawState.getState().eagle.filter.filterRules.tag.includes = [...new Set(useMiscRawState.getState().eagle.filter.filterRules.tag.includes)];
                       machineryFilterContent();
                       machineryCalculateFilterCounts();
                     });

@@ -328,7 +328,6 @@ function TextEditor() {
   const parentCall = (fn: string) => {
     const p = (window.parent as any).$bodyScope;
     if (p && typeof p[fn] === 'function') p[fn]();
-    if (p && typeof p.$evalAsync === 'function') p.$evalAsync();
   };
 
   // ── 键盘（wMousetrap 绑定表 + preventEnter + selectall 指令）──

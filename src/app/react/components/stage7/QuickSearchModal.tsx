@@ -599,32 +599,32 @@ export function QuickSearchModal() {
     const w = window as any;
     const mode = modeRef.current;
     if (mode === 'FOLDERS') {
-      runInBodyScope((s: any) => openFolder(target));
+      runInBodyScope(() => openFolder(target));
       addQuickSearchFolderHistory(target.id);
       setTimeout(() => {
-        runInBodyScope((s: any) => {
+        runInBodyScope(() => {
           machineryChangeSidebarIndex(target);
           scopeEvalAsync();
         });
       }, 200);
     } else if (mode === 'TAGS') {
-      runInBodyScope((s: any) => {
-        s.viewMode = undefined;
+      runInBodyScope(() => {
+        writeScopeField('viewMode', undefined);
         openTag(target.name);
       });
     } else if (mode === 'ITEMS') {
-      runInBodyScope((s: any) => {
+      runInBodyScope(() => {
         let folder = null;
         if (target.folders && target.folders[0]) {
-          folder = s.folderMappings[target.folders[0]];
+          folder = useItemState.getState().folderMappings[target.folders[0]];
         }
         openItemLocation(target, folder);
       });
     } else {
-      runInBodyScope((s: any) => openSmartFolder(target));
+      runInBodyScope(() => openSmartFolder(target));
       addQuickSearchSmartFolderHistory(target.id);
       setTimeout(() => {
-        runInBodyScope((s: any) => {
+        runInBodyScope(() => {
           machineryChangeSidebarIndex(target);
           scopeEvalAsync();
         });
@@ -781,8 +781,8 @@ export function QuickSearchModal() {
               className="parent-name"
               onClick={(e) => {
                 e.stopPropagation();
-                runInBodyScope((s: any) =>
-                  kind === 'folder' ? openFolder(s.folderMappings[folder.parent]) : openSmartFolder(s.smartFolderMappings[folder.parent])
+                runInBodyScope(() =>
+                  kind === 'folder' ? openFolder(useItemState.getState().folderMappings[folder.parent]) : openSmartFolder(useItemState.getState().smartFolderMappings[folder.parent])
                 );
                 closeViaScope();
               }}
@@ -838,7 +838,7 @@ export function QuickSearchModal() {
             <span
               key={fi}
               className="parent"
-              onClick={() => runInBodyScope((s: any) => openItemLocation(item, s.folderMappings[folderId]))}
+              onClick={() => runInBodyScope(() => openItemLocation(item, useItemState.getState().folderMappings[folderId]))}
             >
               <a>{iv(useItemState.getState().folderMappings?.[folderId]?.name)} </a>
             </span>

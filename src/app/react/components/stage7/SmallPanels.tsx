@@ -27,6 +27,7 @@ import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/ite
 import { useMiscRawState } from '../../store/miscRawState';
 import { usePreferencesState } from '../../store/preferencesState';
 import { useBodyState } from '../../store/bodyState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段7c-1：小弹窗族接管。
  *
@@ -153,8 +154,8 @@ export function LayoutPanel() {
   }, [open]);
 
   const onLayoutChange = (layout: string) => {
-    runInBodyScope((s) => {
-      s.layout = layout;
+    runInBodyScope(() => {
+      writeScopeField('layout', layout);
       switch (layout) {
         case 'GridLayout':
           switchGridLayout();
@@ -393,7 +394,7 @@ export function LayoutPanel() {
                     tabIndex={-1}
                     value={snapshot.listMetaType}
                     onChange={(e) =>
-                      runInBodyScope((s) => {
+                      runInBodyScope(() => {
                         // b1-9bz-C-4：原经 $watch("listMetaType") 间接触发 —— 改显式调用
                         // machineryChangeMetaItems（其内部本身就写 s.listMetaType）。
                         machineryChangeMetaItems(e.target.value);
@@ -450,8 +451,8 @@ export function LayoutPanel() {
             <div
               className="panel-item"
               onClick={() =>
-                runInBodyScope((s) => {
-                  if (s.inspector && typeof s.inspector.toggle === 'function') s.inspector.toggle();
+                runInBodyScope(() => {
+                  if (useMiscRawState.getState().inspector && typeof useMiscRawState.getState().inspector.toggle === 'function') useMiscRawState.getState().inspector.toggle();
                 })
               }
             >

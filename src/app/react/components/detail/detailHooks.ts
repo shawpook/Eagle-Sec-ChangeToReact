@@ -262,8 +262,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
             return;
           }
           console.log('[mediaElement] Falling back to MPV player');
-          runInBodyScope(function (s) {
-            s.useMpvPlayer = true;
+          runInBodyScope(function () {
+            writeScopeField('useMpvPlayer', true);
             syncDetailFromScope();
           });
         } catch (err) {}
@@ -341,8 +341,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       // 偵測無法播放的影片：metadata 載入但無法解碼
       if ((!video.videoWidth && !video.videoHeight) || !isFinite(video.duration) || video.duration <= 0) {
         console.log('[mediaElement] Unplayable video detected (no dimensions or duration), falling back to MPV');
-        runInBodyScope(function (s) {
-          s.useMpvPlayer = true;
+        runInBodyScope(function () {
+          writeScopeField('useMpvPlayer', true);
           syncDetailFromScope();
         });
         return;
@@ -353,8 +353,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       const frameCheckTimeout = setTimeout(function () {
         if (!frameRendered && !video.paused) {
           console.log('[mediaElement] No frames rendered during playback, falling back to MPV');
-          runInBodyScope(function (s) {
-            s.useMpvPlayer = true;
+          runInBodyScope(function () {
+            writeScopeField('useMpvPlayer', true);
             syncDetailFromScope();
           });
         }
@@ -1035,8 +1035,8 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     const unwatchCurrent = useDetailState.subscribe((state: any) => {
       const id = state.snapshot.current?.id;
       if (id !== lastCurrentId && lastCurrentId !== undefined) {
-        runInBodyScope(function (s: any) {
-          s.useMpvPlayer = false;
+        runInBodyScope(function () {
+          writeScopeField('useMpvPlayer', false);
           syncDetailFromScope();
         });
       }
@@ -1058,8 +1058,8 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         offAllEl(video);
         video.destroy?.();
 
-        runInBodyScope(function (s) {
-          s.useMpvPlayer = false;
+        runInBodyScope(function () {
+          writeScopeField('useMpvPlayer', false);
           syncDetailFromScope();
         });
       } catch (err) {
@@ -2038,7 +2038,7 @@ export function useDetailContainerBehaviors(
     const host = detailContainer();
     if (!host) return;
     const onClick = (event: MouseEvent) => {
-      runInBodyScope((s) => onDetailClick(event));
+      runInBodyScope(() => onDetailClick(event));
     };
     host.addEventListener('click', onClick);
     return () => host.removeEventListener('click', onClick);

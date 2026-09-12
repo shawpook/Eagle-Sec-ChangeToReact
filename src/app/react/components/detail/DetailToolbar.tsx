@@ -29,6 +29,7 @@ import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/m
 import { machineryToggleAll } from '../../services/gridService';
 import { applyDataMachineryScope } from '../../core/machineryInfra';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
  * （面包屑、缩放滑条、webview-toolbar、裁切工具列、插件工具列、通用工具列、
@@ -230,10 +231,10 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
     // D-2f：jQuery-UI sortable → 自研
     const sortable = makeSortable(el, {
       update: () => {
-        runInBodyScope((s) => {
+        runInBodyScope(() => {
           const order = sortableToArray(el, 'data-plugin-index').map(Number);
-          const plugins = s.pluginModule.pinnedPlugins || [];
-          s.pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
+          const plugins = useMiscRawState.getState().pluginModule.pinnedPlugins || [];
+          useMiscRawState.getState().pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
           syncToolbarFromScope();
         });
       },
@@ -293,8 +294,8 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               value={sliderZoomRatio}
               onChange={(e) => {
                 const value = Number(e.target.value);
-                runInBodyScope((s) => {
-                  s.sliderZoomRatio = value;
+                runInBodyScope(() => {
+                  writeScopeField('sliderZoomRatio', value);
                   syncDetailFromScope();
                 });
               }}
@@ -362,7 +363,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
                   tippy-placement="bottom"
                   onClick={() => {
                     const live = useMiscRawState.getState().pluginModule?.pinnedPlugins?.[i];
-                    if (live) runInBodyScope((s) => s.pluginModule.open(live));
+                    if (live) runInBodyScope(() => useMiscRawState.getState().pluginModule.open(live));
                   }}
                 >
                   <img width={20} height={20} src={plugin.icon} />
@@ -639,8 +640,8 @@ export function GifFootbar({ snapshot }: { snapshot: DetailSnapshot }) {
                 key={speed}
                 className={`speed-menu-itme${gifSpeed === speed ? ' active' : ''}`}
                 onClick={(e) =>
-                  runInBodyScope((s) => {
-                    if (typeof s.gifViewer?.setSpeed === 'function') s.gifViewer.setSpeed(speed);
+                  runInBodyScope(() => {
+                    if (typeof useMiscRawState.getState().gifViewer?.setSpeed === 'function') useMiscRawState.getState().gifViewer.setSpeed(speed);
                   })
                 }
               >

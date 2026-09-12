@@ -299,7 +299,7 @@ function WebViewBranch({ snapshot }: { snapshot: DetailSnapshot }) {
         if ((window as any).process?.platform === 'darwin') {
           webview.executeJavaScript(`document.exitFullscreen();`);
         }
-        runInBodyScope((s) => {
+        runInBodyScope(() => {
           machineryToggleSlideshow();
         });
       });
@@ -511,13 +511,13 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
   // iframe 聚焦时 ESC 无法退出详情、无法左右切换）
   useEffect(() => {
     function onMessage(e: any) {
-      runInBodyScope((s) => {
+      runInBodyScope(() => {
         if (e.data === 'Exit' || e.message === 'Exit') {
-          if (typeof s.leaveDetailMode === 'function') machineryLeaveDetailMode();
+          if (typeof useMiscRawState.getState().leaveDetailMode === 'function') machineryLeaveDetailMode();
         } else if (e.data === 'Prev' || e.message === 'Prev') {
-          if (typeof s.selectPrev === 'function') machinerySelectPrev();
+          if (typeof useMiscRawState.getState().selectPrev === 'function') machinerySelectPrev();
         } else if (e.data === 'Next' || e.message === 'Next') {
-          if (typeof s.selectNext === 'function') machinerySelectNext();
+          if (typeof useMiscRawState.getState().selectNext === 'function') machinerySelectNext();
         }
       });
     }

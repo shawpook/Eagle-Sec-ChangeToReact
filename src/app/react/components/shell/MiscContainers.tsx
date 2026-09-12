@@ -45,7 +45,7 @@ export function ColorsPicker() {
         const value = e.target.value;
         if (debounceRef.current) clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(() => {
-          runInBodyScope((s: any) => {
+          runInBodyScope(() => {
             filterWithColor(hexToRGB(value));
           });
         }, 200);

@@ -59,14 +59,14 @@ export function BoxList() {
       const onMouseDown = (e: MouseEvent) => {
         const boxEl = (e.target as HTMLElement | null)?.closest?.('.box') as HTMLElement | null;
         if (boxEl) {
-          runInBodyScope((s) => {
+          runInBodyScope(() => {
             const id = boxEl.getAttribute('data-box-id');
-            const item = id && s.itemMappings ? s.itemMappings[id] : null;
+            const item = id && useItemState.getState().itemMappings ? useItemState.getState().itemMappings[id] : null;
             if (item) select(e, item);
           });
           return;
         }
-        runInBodyScope((s) => cleanSelected(e));
+        runInBodyScope(() => cleanSelected(e));
       };
 
       const boxFrom = (target: EventTarget | null) =>

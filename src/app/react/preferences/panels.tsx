@@ -51,9 +51,9 @@ import { qa, dataSet } from '../utils/domQuery';
 const req = (name: string): any => (window as any).require?.(name);
 
 /** 8e-2 起：数据面为 controller.ts 的 controllerScope（无 Angular）。
- * 保留 getPreferencesScope/scopeApply 两个符号使面板调用点零改动（面板内部使用）。 */
+ * 保留 getPreferencesScope/runPrefsController 两个符号使面板调用点零改动（面板内部使用）。 */
 const getPreferencesScope = (): any => controllerScope;
-const scopeApply = (_scope: any, fn: (s: any) => void) => applyController(fn);
+const runPrefsController = (_scope: any, fn: (s: any) => void) => applyController(fn);
 
 /* ================= scope 桥（签名 watcher：digest 变化 → 快照） ================= */
 
@@ -314,26 +314,26 @@ function GeneralPanelContent(props: { snap: PanelSnap }) {
   const isAppleSilicon = snap.isAppleSilicon;
 
   const themeClick = (theme: any) =>
-    scopeApply(getPreferencesScope(), (s: any) => s.changeTheme(theme));
+    runPrefsController(getPreferencesScope(), (s: any) => s.changeTheme(theme));
   const languageChange = (value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.general.language = value;
       // 原版怪癖（preferences.html:100）：ng-change="languageChange({{'preferences.general.language'}})"
       // 传参是字面量字符串（$scope.changes.language 为死存储，语义无观察面差异）
       s.languageChange('preferences.general.language');
     });
   const zoomChange = (value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.general.zoom = value;
       s.changeZoom(value);
     });
   const launchAtLoginToggle = (checked: boolean) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.launchAtLogin = checked ? 'true' : 'false';
       s.changeAutoLaunch(s.launchAtLogin);
     });
   const setGeneral = (key: string, checked: boolean) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.general[key] = checked ? 'true' : 'false';
     });
 
@@ -527,7 +527,7 @@ function GeneralPanelContent(props: { snap: PanelSnap }) {
                 checked={notificationWhen.repeatImage === 'true'}
                 onChange={(e) => {
                   const checked = e.currentTarget.checked;
-                  scopeApply(getPreferencesScope(), (s: any) => {
+                  runPrefsController(getPreferencesScope(), (s: any) => {
                     s.preferences.notification.notification.when.repeatImage = checked ? 'true' : 'false';
                   });
                 }}
@@ -554,7 +554,7 @@ function GeneralPanelContent(props: { snap: PanelSnap }) {
                 checked={screencapture.useRetina === 'true'}
                 onChange={(e) => {
                   const checked = e.currentTarget.checked;
-                  scopeApply(getPreferencesScope(), (s: any) => {
+                  runPrefsController(getPreferencesScope(), (s: any) => {
                     s.preferences.screencapture.useRetina = checked ? 'true' : 'false';
                   });
                 }}
@@ -589,11 +589,11 @@ function SidebarPanelContent(props: { snap: PanelSnap }) {
   const dblclickSidebarItem = p && p.habits ? p.habits.dblclickSidebarItem : undefined;
 
   const setSidebar = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.sidebar[key] = value;
     });
   const setDblclick = (value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.habits.dblclickSidebarItem = value;
     });
 
@@ -700,7 +700,7 @@ function ControlPanelContent(props: { snap: PanelSnap }) {
   const platform = snap.platform;
 
   const setHabits = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.habits[key] = value;
     });
 
@@ -795,15 +795,15 @@ function HabitsPanelContent(props: { snap: PanelSnap }) {
   const font = p && p.font ? p.font : {};
 
   const setHabits = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.habits[key] = value;
     });
   const setVideo = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.video[key] = value;
     });
   const setFont = (key: string, value: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.font[key] = value;
     });
 
@@ -1337,17 +1337,17 @@ function ShortcutsPanelContent(props: { snap: PanelSnap; shortcutKeyword: string
   const results = computeShortcutResults(shortcutKeyword, snap);
 
   const commitKeybind = (key: string, result: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       s.preferences.shortcuts.keybinds[key] = result;
     });
   const commitPlugin = (plugin: any, result: string) =>
-    scopeApply(getPreferencesScope(), (s: any) => {
+    runPrefsController(getPreferencesScope(), (s: any) => {
       // 原版 ng-model 写 installPlugin.formatShortcut + ng-change onPluginShortcutChange
       plugin.formatShortcut = result;
       s.onPluginShortcutChange && s.onPluginShortcutChange(plugin);
     });
   const restoreDefaults = () =>
-    scopeApply(getPreferencesScope(), (s: any) => s.restoreDefaultShortcuts && s.restoreDefaultShortcuts());
+    runPrefsController(getPreferencesScope(), (s: any) => s.restoreDefaultShortcuts && s.restoreDefaultShortcuts());
 
   const placeholder = pfT('preferencesWindow.shortcutInputPlaceholder');
 

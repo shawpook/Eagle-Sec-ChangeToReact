@@ -355,7 +355,7 @@ function CommentItemBoxSvg({ comment, index }: { comment: any; index: number }) 
           // 原版 $root.removeComment 在预览窗 $rootScope 上不存在（removeComment 属主窗口
           // EagleController，bundle 未加载）→ 原版此点击为 no-op，守卫等价保留。
           applyController((s) => {
-            if (typeof s.$root?.removeComment === 'function') s.$root.removeComment(index, comment);
+            if (typeof s.removeComment === 'function') s.removeComment(index, comment);
           });
         }}
       >

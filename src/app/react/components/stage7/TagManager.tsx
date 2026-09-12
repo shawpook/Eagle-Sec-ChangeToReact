@@ -261,7 +261,7 @@ export function TagManagerPanel() {
       minWidth: 200,
       handles: 'e',
       resize: (event: any, ui: any) => {
-        runInBodyScope((s) => {
+        runInBodyScope(() => {
           onTagSidebarResize(event, ui);
         });
       },
@@ -281,10 +281,10 @@ export function TagManagerPanel() {
       disabled: false,
       helper: 'clone',
       stop: () => {
-        runInBodyScope((s) => {
+        runInBodyScope(() => {
           const order = sortableToArray(el, 'data-group-id');
-          const groups = s.TagManager.groups || [];
-          s.TagManager.groups = order.map((id: string) => groups.find((g: any) => g.id === id)).filter(Boolean);
+          const groups = useMiscRawState.getState().TagManager.groups || [];
+          useMiscRawState.getState().TagManager.groups = order.map((id: string) => groups.find((g: any) => g.id === id)).filter(Boolean);
           syncFilterFromScope();
           syncTagManagerFromScope();
           saveFolder();
@@ -294,7 +294,7 @@ export function TagManagerPanel() {
             w.electronLog && w.electronLog.info(`[app] Sort tag groups`);
           } catch (err) {}
           setTimeout(() => {
-            s.TagManager.calculateTags();
+            useMiscRawState.getState().TagManager.calculateTags();
           }, 500);
         });
       },
@@ -364,8 +364,8 @@ export function TagManagerPanel() {
               onFocus={() => call('tagGroupDescriptionFocus')()}
               onBlur={() => call('tagGroupDescriptionBlur')()}
               onChange={(html) => {
-                runInBodyScope((s) => {
-                  s.currentTagGroup.description = html;
+                runInBodyScope(() => {
+                  useMiscRawState.getState().currentTagGroup.description = html;
                 });
               }}
             />
@@ -518,17 +518,17 @@ export function TagManagerPanel() {
                         onKeyDown={(e) => {
                           e.stopPropagation();
                           e.nativeEvent.stopPropagation();
-                          runInBodyScope((s) => {
-                            s.newGroupName = (e.target as HTMLInputElement).value;
+                          runInBodyScope(() => {
+                            writeScopeField('newGroupName', (e.target as HTMLInputElement).value);
                             syncTagManagerFromScope();
-                            if (typeof s.renameTagGroupKeyup === 'function') renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), s.newGroupName);
+                            if (typeof useMiscRawState.getState().renameTagGroupKeyup === 'function') renameTagGroupKeyup(e.nativeEvent, liveGroup(group.id), useMiscRawState.getState().newGroupName);
                           });
                         }}
                         onBlur={(e) => {
-                          runInBodyScope((s) => {
-                            s.newGroupName = (e.target as HTMLInputElement).value;
+                          runInBodyScope(() => {
+                            writeScopeField('newGroupName', (e.target as HTMLInputElement).value);
                             syncTagManagerFromScope();
-                            if (typeof s.renameTagGroupBlur === 'function') renameTagGroupBlur(liveGroup(group.id), s.newGroupName);
+                            if (typeof useMiscRawState.getState().renameTagGroupBlur === 'function') renameTagGroupBlur(liveGroup(group.id), useMiscRawState.getState().newGroupName);
                           });
                         }}
                         onMouseDown={(e) => e.stopPropagation()}

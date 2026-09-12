@@ -79,9 +79,9 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
       document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
     }
     setTimeout(() => {
-      runInBodyScope((s) => machineryUpdateContainerHieght());
+      runInBodyScope(() => machineryUpdateContainerHieght());
     }, 50);
-    runInBodyScope((s) => {
+    runInBodyScope(() => {
       writeScopeField('currentFocus', 'content');
     });
   };
@@ -158,7 +158,7 @@ export function closeShell(elem: HTMLElement | null) {
     document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
   }
   setTimeout(() => {
-    runInBodyScope((s) => machineryUpdateContainerHieght());
+    runInBodyScope(() => machineryUpdateContainerHieght());
   }, 50);
 }
 

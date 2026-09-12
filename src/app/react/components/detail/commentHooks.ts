@@ -12,6 +12,7 @@ import { makeResizable } from '../interactions/resizable';
 import { useSelectionState } from '../../store/selectionState';
 import { useBodyState } from '../../store/bodyState';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -35,8 +36,8 @@ export function removeComment(index: number) {
 
   const message = t('notify.annotation.remove');
   // 復原
-  runInBodyScope(function (s) {
-    s.notify(
+  runInBodyScope(function () {
+    useMiscRawState.getState().notify(
       {
         message: message,
         duration: 4000,
@@ -207,8 +208,8 @@ export function recomputeCommentRatio() {
   if (!image) return;
   const $image = q('#detail-image');
   if (image && image.width && $image) {
-    runInBodyScope(function (s) {
-      s.ratio = image.width / widthOf($image);
+    runInBodyScope(function () {
+      writeScopeField('ratio', image.width / widthOf($image));
       syncDetailFromScope();
     });
   }
@@ -234,8 +235,8 @@ export function useCommentsContainer(currentId: string | undefined, hasComments:
         const onLoad = function () {
           const image = useSelectionState.getState().current;
           if (!image) return;
-          runInBodyScope(function (s) {
-            s.ratio = image.width / widthOf($image);
+          runInBodyScope(function () {
+            writeScopeField('ratio', image.width / widthOf($image));
             syncDetailFromScope();
           });
           offEl($image, 'load');
@@ -320,14 +321,14 @@ export function useCommentItem(
       const height = ui.element.height();
       const width = ui.element.width();
 
-      runInBodyScope(function (s) {
+      runInBodyScope(function () {
         resizing = false;
-        const comment = s.current?.comments?.[commentIndex];
+        const comment = useSelectionState.getState().current?.comments?.[commentIndex];
         if (comment) {
-          comment.width = width * (s.ratio || 1);
-          comment.height = height * (s.ratio || 1);
+          comment.width = width * (useMiscRawState.getState().ratio || 1);
+          comment.height = height * (useMiscRawState.getState().ratio || 1);
         }
-        ipc.send('image-change', s.current);
+        ipc.send('image-change', useSelectionState.getState().current);
       });
     };
     // D-2f：jQuery-UI resizable → 自研（原 resizestart/resize/resizestop 事件订阅 + handle mousedown 改为回调）

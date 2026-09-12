@@ -17,6 +17,7 @@ import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryFilterContent } from '../../core/filterDomain';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
 const num0 = (value: number | undefined | null): string => {
@@ -36,7 +37,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      runInBodyScope((s) => machineryUpdateContainerHieght());
+      runInBodyScope(() => machineryUpdateContainerHieght());
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -170,13 +171,13 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   excluded={!!excludes[typeItem]}
                   onClick={() => {
                     focusInput(rootRef.current);
-                    runInBodyScope((s) => toggleExtFilter(typeItem));
+                    runInBodyScope(() => toggleExtFilter(typeItem));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                     setTypesKeyword('');
                   }}
                   onContextMenu={(e) => {
                     focusInput(rootRef.current);
-                    runInBodyScope((s) => toggleExtFilterExclude(typeItem));
+                    runInBodyScope(() => toggleExtFilterExclude(typeItem));
                     runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                     setTypesKeyword('');
                   }}
@@ -676,7 +677,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
                 placeholder={t('filter.import>rangePlaceholder')}
                 onBlur={(e) => {
                   const v = e.target.value;
-                  runInBodyScope((s) => { s.eagle.filter.filterRules[kind].model = v; });
+                  runInBodyScope(() => { useMiscRawState.getState().eagle.filter.filterRules[kind].model = v; });
                   runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }}
               />
@@ -1036,9 +1037,9 @@ export function FilterPanel() {
           defaultValue="#ff0000"
           onChange={(e) => {
             const v = e.target.value;
-            runInBodyScope((s) => {
-              s.hexColor = v.toUpperCase();
-              filterWithColor(hexToRGB(s.hexColor));
+            runInBodyScope(() => {
+              writeScopeField('hexColor', v.toUpperCase());
+              filterWithColor(hexToRGB(useMiscRawState.getState().hexColor));
             });
           }}
         />
@@ -1047,7 +1048,7 @@ export function FilterPanel() {
             const Comp = KIND_COMPONENTS[type];
             return Comp ? <Comp key={`${type}-${index}`} snapshot={snapshot} /> : null;
           })}
-          <div className="ic-btn filter-add-btn" onClick={() => runInBodyScope((s) => openFilterAddContextMenu())}>
+          <div className="ic-btn filter-add-btn" onClick={() => runInBodyScope(() => openFilterAddContextMenu())}>
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-add.svg`} />
           </div>
         </div>
@@ -1061,7 +1062,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={t('savedFilter.filterButton')}
             style={snapshot.filterBadge > 0 || snapshot.savedFilterCount > 0 || snapshot.keyword.length > 0 ? undefined : { display: 'none' }}
-            onClick={(e) => runInBodyScope((s) => s.SavedFilter && s.SavedFilter.toggle(e))}
+            onClick={(e) => runInBodyScope(() => useMiscRawState.getState().SavedFilter && useMiscRawState.getState().SavedFilter.toggle(e))}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-saved.svg`} />
           </div>

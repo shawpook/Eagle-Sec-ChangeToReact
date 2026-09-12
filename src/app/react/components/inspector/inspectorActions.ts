@@ -26,6 +26,7 @@ import { useBodyState } from '../../store/bodyState';
 import { useFolderState } from '../../store/folderState';
 import { useLayoutState } from '../../store/layoutState';
 import { useLockState } from '../../store/lockState';
+import { useListState } from '../../store/listState';
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
  *
@@ -88,9 +89,9 @@ function sortTags(original: string[]): string[] {
 export function updateSelection() {
   clearTimeout(updateSelectionTimeout);
   updateSelectionTimeout = setTimeout(function () {
-    runInBodyScope(function (s) {
+    runInBodyScope(function () {
       const eagleIns = (window as any).eagle.inspector;
-      const selected = Array.isArray(s.selected) ? s.selected : [];
+      const selected = Array.isArray(useSelectionState.getState().selected) ? useSelectionState.getState().selected : [];
       const i18n = (window as any).i18n;
       if (selected.length > 1) {
         eagleIns.newNamePlaceholder = i18n.__('inspector.names.multipleTitles');
@@ -117,14 +118,14 @@ export function updateSelection() {
         }
       } else {
         eagleIns.activeTab = 'SIDEBAR';
-        switch (s.viewMode) {
+        switch (useBodyState.getState().viewMode) {
           case 'all':
             eagleIns.category = {
               newName: i18n.__('inspector.names.all'),
               newDescription: '',
               createDate: undefined,
-              imageCount: s.all.length,
-              fileSize: eagleIns.calculateFileSize(s.all),
+              imageCount: useItemState.getState().all.length,
+              fileSize: eagleIns.calculateFileSize(useItemState.getState().all),
               exportable: false,
               editable: false,
             };
@@ -134,8 +135,8 @@ export function updateSelection() {
               newName: i18n.__('inspector.names.unfiled'),
               newDescription: '',
               createDate: undefined,
-              imageCount: s.unfiledCount,
-              fileSize: eagleIns.calculateFileSize(s.allData),
+              imageCount: useListState.getState().unfiledCount,
+              fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
               exportable: false,
               editable: false,
             };
@@ -145,8 +146,8 @@ export function updateSelection() {
               newName: i18n.__('inspector.names.untagged'),
               newDescription: '',
               createDate: undefined,
-              imageCount: s.untaggedCount,
-              fileSize: eagleIns.calculateFileSize(s.allData),
+              imageCount: useListState.getState().untaggedCount,
+              fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
               exportable: false,
               editable: false,
             };
@@ -156,8 +157,8 @@ export function updateSelection() {
               newName: i18n.__('inspector.names.trash'),
               newDescription: '',
               createDate: undefined,
-              imageCount: s.allData.length,
-              fileSize: eagleIns.calculateFileSize(s.allData),
+              imageCount: useItemState.getState().allData.length,
+              fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
               exportable: false,
               editable: false,
             };
@@ -167,8 +168,8 @@ export function updateSelection() {
               newName: i18n.__('inspector.names.duplicate'),
               newDescription: '',
               createDate: undefined,
-              imageCount: s.allData.length,
-              fileSize: eagleIns.calculateFileSize(s.allData),
+              imageCount: useItemState.getState().allData.length,
+              fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
               exportable: false,
               editable: false,
             };
@@ -179,17 +180,17 @@ export function updateSelection() {
                 newName: i18n.__('inspector.names.multipleTitles'),
                 newDescription: '',
                 createDate: undefined,
-                imageCount: s.allData.length,
-                fileSize: eagleIns.calculateFileSize(s.allData),
+                imageCount: useItemState.getState().allData.length,
+                fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
                 exportable: false,
                 editable: false,
               };
-            } else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
-              const selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key) {
+            } else if (useItemState.getState().selectedFolderMappings && Object.keys(useItemState.getState().selectedFolderMappings).length >= 1) {
+              const selectedFolders = Object.keys(useItemState.getState().selectedFolderMappings).map(function (key) {
                 return key;
               });
-              if (selectedFolders[0] && s.folderMappings[selectedFolders[0]]) {
-                eagleIns.inspectorFolder = s.folderMappings[selectedFolders[0]];
+              if (selectedFolders[0] && useItemState.getState().folderMappings[selectedFolders[0]]) {
+                eagleIns.inspectorFolder = useItemState.getState().folderMappings[selectedFolders[0]];
                 eagleIns.category = {
                   newName: eagleIns.inspectorFolder.name,
                   newDescription: eagleIns.inspectorFolder.description || '',
@@ -200,24 +201,24 @@ export function updateSelection() {
                   editable: !(eagleIns.inspectorFolder.password && !eagleIns.inspectorFolder.isUnLock),
                 };
               }
-            } else if (s.currentFolder) {
-              eagleIns.inspectorFolder = s.currentFolder;
+            } else if (useFolderState.getState().currentFolder) {
+              eagleIns.inspectorFolder = useFolderState.getState().currentFolder;
               eagleIns.category = {
                 newName: eagleIns.inspectorFolder.name,
                 newDescription: eagleIns.inspectorFolder.description || '',
                 createDate: eagleIns.inspectorFolder.modificationTime,
-                imageCount: s.allData.length,
-                fileSize: eagleIns.calculateFileSize(s.allData),
+                imageCount: useItemState.getState().allData.length,
+                fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
                 exportable: true,
                 editable: true,
               };
-            } else if (s.currentSmartFolder) {
+            } else if (useFolderState.getState().currentSmartFolder) {
               eagleIns.category = {
-                newName: s.currentSmartFolder.name,
-                newDescription: s.currentSmartFolder.description || '',
-                createDate: s.currentSmartFolder.modificationTime,
-                imageCount: s.allData.length,
-                fileSize: eagleIns.calculateFileSize(s.allData),
+                newName: useFolderState.getState().currentSmartFolder.name,
+                newDescription: useFolderState.getState().currentSmartFolder.description || '',
+                createDate: useFolderState.getState().currentSmartFolder.modificationTime,
+                imageCount: useItemState.getState().allData.length,
+                fileSize: eagleIns.calculateFileSize(useItemState.getState().allData),
                 exportable: true,
                 editable: true,
               };

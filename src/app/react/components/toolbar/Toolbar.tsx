@@ -28,6 +28,7 @@ import { machineryToggleAll } from '../../services/gridService';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useFolderState } from '../../store/folderState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useLayoutState } from '../../store/layoutState';
 /**
  * 阶段3a：工具栏接管。
  *
@@ -154,7 +155,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
 
   // $("#search").on("focus") → $rootScope.currentFocus = "content"（bundle:21830，原直绑元素已被 React 接管）
   const onFocus = (e: any) => {
-    runInBodyScope((s) => {
+    runInBodyScope(() => {
       writeScopeField('currentFocus', 'content');
       searchFocus(e);
     });
@@ -189,25 +190,25 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
             // 随机模式变体：ng-change="search(keyword)"，ng-model-options debounce 200ms
             clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
-              runInBodyScope((s) => {
-                s.keyword = value;
+              runInBodyScope(() => {
+                writeScopeField('keyword', value);
                 search(value);
               });
             }, 200);
           } else {
-            runInBodyScope((s) => { s.keyword = value; });
+            runInBodyScope(() => { writeScopeField('keyword', value); });
           }
         }}
         onKeyDown={(e) => {
-          runInBodyScope((s) => { s.keyword = (e.target as HTMLInputElement).value; });
+          runInBodyScope(() => { writeScopeField('keyword', (e.target as HTMLInputElement).value); });
           call('seachKeyup')(e);
         }}
         onFocus={onFocus}
         onBlur={(e) => {
           if (randomMode) {
             clearTimeout(debounceRef.current);
-            runInBodyScope((s) => {
-              s.keyword = draft;
+            runInBodyScope(() => {
+              writeScopeField('keyword', draft);
               search(draft);
             });
           }
@@ -251,9 +252,9 @@ export function Toolbar() {
     if (!el) return;
     const options = useMiscRawState.getState().pluginModule?.pinPluginSortableOptions;
     const syncModel = () => {
-      runInBodyScope((s) => {
+      runInBodyScope(() => {
         const nodes = Array.from(el.querySelectorAll('.ic-btn'));
-        const plugins = s.pluginModule.pinnedPlugins || [];
+        const plugins = useMiscRawState.getState().pluginModule.pinnedPlugins || [];
         if (nodes.length !== plugins.length) return;
         const order = nodes.map((node) => {
           const icon = node.querySelector('img');
@@ -262,7 +263,7 @@ export function Toolbar() {
         if (order.some((i) => i < 0)) return;
         const current = plugins.map((_: unknown, i: number) => i);
         if (JSON.stringify(order) !== JSON.stringify(current)) {
-          s.pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
+          useMiscRawState.getState().pluginModule.pinnedPlugins = order.map((i: number) => plugins[i]).filter(Boolean);
           syncToolbarFromScope();
         }
       });
@@ -391,8 +392,8 @@ export function Toolbar() {
               value={snapshot.imageSizeHeight}
               onChange={(e) => {
                 const v = Number(e.target.value);
-                runInBodyScope((s) => {
-                  s.imageSize.height = v;
+                runInBodyScope(() => {
+                  useLayoutState.getState().imageSize.height = v;
                   machineryOnImageSizeHeightChanged();
                 });
                 syncToolbarFromScope();
@@ -427,7 +428,7 @@ export function Toolbar() {
                 tippy=""
                 tippy-placement="bottom"
                 tippy-content={plugin.name || ''}
-                onClick={() => { const live = useMiscRawState.getState().pluginModule?.pinnedPlugins?.[i]; if (live) runInBodyScope((s) => s.pluginModule.open(live)); }}
+                onClick={() => { const live = useMiscRawState.getState().pluginModule?.pinnedPlugins?.[i]; if (live) runInBodyScope(() => useMiscRawState.getState().pluginModule.open(live)); }}
               >
                 <img width={20} height={20} src={plugin.icon} />
               </div>

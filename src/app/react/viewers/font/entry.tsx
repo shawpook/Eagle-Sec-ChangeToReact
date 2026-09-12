@@ -96,11 +96,9 @@ function FontViewer() {
 
   const parentCall = (fn: string, ...args: any[]) => {
     if ($parentScope && typeof $parentScope[fn] === 'function') $parentScope[fn](...args);
-    if ($parentScope && typeof $parentScope.$evalAsync === 'function') $parentScope.$evalAsync();
   };
   // 原实现 `$parentScope.$eavlAsync()`（拼写 bug no-op）——语义为触发 parent 刷新
   const parentEval = () => {
-    if ($parentScope && typeof $parentScope.$evalAsync === 'function') $parentScope.$evalAsync();
   };
 
   const applyZoom = (next: number) => {

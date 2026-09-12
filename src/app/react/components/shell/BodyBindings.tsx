@@ -178,7 +178,7 @@ export function SidebarResizable() {
       minWidth: 200,
       handles: 'e',
       resize: function (event: any, ui: any) {
-        runInBodyScope((s: any) => {
+        runInBodyScope(() => {
           onSidebarResize(event, ui);
         });
       },

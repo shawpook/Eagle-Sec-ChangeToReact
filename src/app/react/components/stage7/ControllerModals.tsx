@@ -477,7 +477,7 @@ export function WebsitePanel() {
   };
 
   const toggleAll = (event: any) => {
-    runInBodyScope((s: any) => machineryToggleAll(event));
+    runInBodyScope(() => machineryToggleAll(event));
   };
 
   const openSidebarMenu = (event: any) => {

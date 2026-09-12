@@ -301,8 +301,8 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
       <div
         className="info-section-label"
         onClick={(e) =>
-          runInBodyScope((s) => {
-            s.inspector.showTags = !s.inspector.showTags;
+          runInBodyScope(() => {
+            useMiscRawState.getState().inspector.showTags = !useMiscRawState.getState().inspector.showTags;
             syncInspectorFromScope();
           })
         }
@@ -330,7 +330,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
                 className="ic-btn label-item-remove-btn"
                 onClick={(e) => {
                   e.stopPropagation();
-                  runInBodyScope((s) => s.TagManager.removeTag(tag));
+                  runInBodyScope(() => useMiscRawState.getState().TagManager.removeTag(tag));
                   e.stopPropagation();
                 }}
               >
@@ -419,8 +419,8 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              runInBodyScope((s) => {
-                s.inspector.showFolders = !s.inspector.showFolders;
+              runInBodyScope(() => {
+                useMiscRawState.getState().inspector.showFolders = !useMiscRawState.getState().inspector.showFolders;
                 syncInspectorFromScope();
               })
             }
@@ -472,8 +472,8 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              runInBodyScope((s) => {
-                s.inspector.showFolders = !s.inspector.showFolders;
+              runInBodyScope(() => {
+                useMiscRawState.getState().inspector.showFolders = !useMiscRawState.getState().inspector.showFolders;
                 syncInspectorFromScope();
               })
             }
@@ -632,8 +632,8 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
       disabled: false,
       helper: 'clone',
       update: () => {
-        runInBodyScope((s) => {
-          const item = s.selected?.[0];
+        runInBodyScope(() => {
+          const item = useSelectionState.getState().selected?.[0];
           if (!item) return;
           const order = sortableToArray(el, 'data-comment-index').map(Number);
           item.comments = order.map((i: number) => item.comments[i]).filter(Boolean);
@@ -658,8 +658,8 @@ function InspectorAnnotations({ snapshot }: { snapshot: InspectorSnapshot }) {
       <div
         className="info-section-label"
         onClick={() =>
-          runInBodyScope((s) => {
-            s.inspector.showComments = !s.inspector.showComments;
+          runInBodyScope(() => {
+            useMiscRawState.getState().inspector.showComments = !useMiscRawState.getState().inspector.showComments;
             syncInspectorFromScope();
           })
         }
@@ -706,8 +706,8 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              runInBodyScope((s) => {
-                s.inspector.showProperties = !s.inspector.showProperties;
+              runInBodyScope(() => {
+                useMiscRawState.getState().inspector.showProperties = !useMiscRawState.getState().inspector.showProperties;
                 syncInspectorFromScope();
               })
             }
@@ -798,8 +798,8 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              runInBodyScope((s) => {
-                s.inspector.showProperties = !s.inspector.showProperties;
+              runInBodyScope(() => {
+                useMiscRawState.getState().inspector.showProperties = !useMiscRawState.getState().inspector.showProperties;
                 syncInspectorFromScope();
               })
             }
@@ -1069,10 +1069,10 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
     // D-2f：jQuery-UI sortable → 自研
     const sortable = makeSortable(el, {
       update: () => {
-        runInBodyScope((s) => {
+        runInBodyScope(() => {
           const order = sortableToArray(el, 'data-item-id');
-          const items = s.inspector.inspectorItems || [];
-          s.inspector.inspectorItems = order.map((id: string) => items.find((i: any) => String(i.id) === id)).filter(Boolean);
+          const items = useMiscRawState.getState().inspector.inspectorItems || [];
+          useMiscRawState.getState().inspector.inspectorItems = order.map((id: string) => items.find((i: any) => String(i.id) === id)).filter(Boolean);
           syncInspectorFromScope();
         });
       },
@@ -1086,35 +1086,35 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
   const categoryNameEditable = snapshot.category?.editable;
 
   const writeCategoryName = (html: string) => {
-    runInBodyScope((s) => {
-      s.inspector.category.newName = html;
+    runInBodyScope(() => {
+      useMiscRawState.getState().inspector.category.newName = html;
     });
     inspectorCategoryNameChange();
   };
   const writeCategoryDescription = (html: string) => {
-    runInBodyScope((s) => {
-      s.inspector.category.newDescription = html;
+    runInBodyScope(() => {
+      useMiscRawState.getState().inspector.category.newDescription = html;
     });
     inspectorCategoryDescriptionChange();
   };
   const writeName = (html: string) => {
-    runInBodyScope((s) => {
-      s.inspector.newName = html;
+    runInBodyScope(() => {
+      useMiscRawState.getState().inspector.newName = html;
       syncInspectorFromScope();
     });
     inspectorNameChange();
   };
   const writeAnnotation = (html: string) => {
-    runInBodyScope((s) => {
-      s.inspector.newAnnotation = html;
+    runInBodyScope(() => {
+      useMiscRawState.getState().inspector.newAnnotation = html;
       syncInspectorFromScope();
     });
     annotationChange();
   };
   const [urlDebounce] = useState<any>({ id: 0 });
   const writeUrl = (html: string) => {
-    runInBodyScope((s) => {
-      s.inspector.newUrl = html;
+    runInBodyScope(() => {
+      useMiscRawState.getState().inspector.newUrl = html;
       syncInspectorFromScope();
     });
     // ng-model-options debounce 200
@@ -1185,8 +1185,8 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
           <div
             className="info-section-label"
             onClick={() =>
-              runInBodyScope((s) => {
-                s.inspector.showProperties = !s.inspector.showProperties;
+              runInBodyScope(() => {
+                useMiscRawState.getState().inspector.showProperties = !useMiscRawState.getState().inspector.showProperties;
                 syncInspectorFromScope();
               })
             }

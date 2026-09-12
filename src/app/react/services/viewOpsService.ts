@@ -114,9 +114,8 @@ export function lastZoom(...args: any[]) {
 export function smartZoom(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 委托的 detailSmartZoom 逐行等价
   // （差异仅参数名 __lv_target/target、$ → w.$）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machinerySmartZoom(s, args[0], args[1]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySmartZoom(args[0], args[1]);
 }
 
 export function switchGridLayout(...args: any[]) {
@@ -165,9 +164,8 @@ export function switchSquareLayout(...args: any[]) {
 
 export function updateZoomRatio(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（beginZoomingTransition 与 c3 的 hasTransition 分支逐行一致）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryUpdateZoomRatio(s, args[0], args[1], args[2], args[3]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUpdateZoomRatio(args[0], args[1], args[2], args[3]);
 }
 
 export function zoom(...args: any[]) {
@@ -191,7 +189,7 @@ export function zoomFit(...args: any[]) {
                 syncInspectorFromScope();
                 machineryChangeListHeight();
                 if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
-                    machineryAdjustLayoutWidth(s, 0);
+                    machineryAdjustLayoutWidth(0);
                     __lv_saveListHeight(s.imageSize.height);
                 }
             } else {
@@ -220,16 +218,15 @@ export function zoomFit(...args: any[]) {
                     }, 300);
                 }
 
-                machinerySmartZoom(s, undefined, true);
+                machinerySmartZoom(undefined, true);
             }
         }).apply(null, args);
   }
 
 export function zoomIn(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryZoomIn(s, args[0]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryZoomIn(args[0]);
 }
 
 export function getNext(...args: any[]) {
@@ -385,8 +382,8 @@ export function machinerySetViewMode(viewMode: any): void {
   setViewModeDebounced(viewMode);
 }
 
-export function machinerySmartZoom(s: any, target: any, forceMode: any): void {
-  detailSmartZoom(s, target, forceMode);
+export function machinerySmartZoom(target: any, forceMode: any): void {
+  detailSmartZoom(target, forceMode);
 }
 
 /* toggleZoom（bundle 33990-34012 逐字） */
@@ -401,7 +398,7 @@ export function machineryToggleZoom(s: any, event: any): void {
       s.zoomFitSize = s.imageSize.zoomRatioExp;
     }
     else {
-      machineryZoomActual(s, event);
+      machineryZoomActual(event);
       s.lastZoomMode = "fit";
       syncDetailFromScope();
       s.zoomFitSize = 0;
@@ -422,8 +419,8 @@ export function machineryToggleZoom(s: any, event: any): void {
   localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
 }
 
-export function machineryUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTransition: any): void {
-  detailUpdateZoomRatio(s, ratio, x, y, hasTransition);
+export function machineryUpdateZoomRatio(ratio: any, x: any, y: any, hasTransition: any): void {
+  detailUpdateZoomRatio(ratio, x, y, hasTransition);
 }
 
 /* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
@@ -439,31 +436,31 @@ export function machineryZoom(s: any): void {
     }
   }
   else {
-    machinerySmartZoom(s);
+    machinerySmartZoom();
   }
 }
 
 /* zoomActual（bundle 33915-33937 逐字） */
-export function machineryZoomActual(s: any, event: any): void {
+export function machineryZoomActual(event: any): void {
   const w = window as any;
   event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    s.imageSize.height = 150;
+  if (!useBodyState.getState().isDetailMode) {
+    useLayoutState.getState().imageSize.height = 150;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
     machineryOnImageSizeHeightChanged();
     machineryChangeListHeight();
-    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      machineryAdjustLayoutWidth(s, 0);
-      machinerySaveListHeight(s, s.imageSize.height);
+    if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") {
+      machineryAdjustLayoutWidth(0);
+      machinerySaveListHeight(useLayoutState.getState().imageSize.height);
     }
   } else {
-    s.imageSize.zoomRatio = 100;
+    useLayoutState.getState().imageSize.zoomRatio = 100;
     machineryOnZoomRatioChanged();
-    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
-    machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
+    useLayoutState.getState().imageSize.zoomRatioExp = getRatioExp(useLayoutState.getState().imageSize.zoomRatio);
+    machineryUpdateZoomRatio(100, undefined, undefined, true);
 
     // 如果是視頻格式，尽可能使用视频原来尺寸
     var mpvPlayer = q(".detail-wrap mpv-video") as any;
@@ -560,12 +557,12 @@ export function machineryZoomFitEdge(event: any, hasTransition: any): void {
   });
 }
 
-export function machineryZoomIn(s: any, event: any): void {
-  gridZoomIn(s, event);
+export function machineryZoomIn(event: any): void {
+  gridZoomIn(event);
 }
 
-export function machineryZoomOut(s: any, event: any): void {
-  gridZoomOut(s, event);
+export function machineryZoomOut(event: any): void {
+  gridZoomOut(event);
 }
 
 let setViewModeDebounced: any = null;

@@ -161,7 +161,7 @@ export function emptyTrash(...args: any[]) {
                     s.trash = [];
                     syncSidebarFromScope();
                     syncListFromScope();
-                    machineryUpdateSelection(s);
+                    machineryUpdateSelection();
                     machineryRebindRefresh(s);
                     machineryFindDupclipate(undefined);
 
@@ -263,8 +263,6 @@ export function addToLastUsedFolder(...args: any[]) {
 
 export function cleanSelected(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(event) {
             // 忽略事件传送
             if (event && outerWidthOf(q("#box-container")) <= event.offsetX + 10) {
@@ -275,11 +273,11 @@ export function cleanSelected(...args: any[]) {
             // event && event.stopPropagation();
             if (event.metaKey || event.shiftKey || event.ctrlKey) return;
             __lv_cleanSelectedTimeout = $timeout(function() {
-                s.selected = [];
+                writeScopeField('selected', []);
                 syncInspectorFromScope();
-                s.selectedFolderMappings = {};
+                writeScopeField('selectedFolderMappings', {});
                 syncListFromScope();
-                machineryUpdateSelection(s);
+                machineryUpdateSelection();
             }, 100);
         }).apply(null, args);
 }
@@ -301,8 +299,6 @@ export function copyTags(...args: any[]) {
 
 export function pasteTags(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(event) {
         event && event.preventDefault();
         event && event.stopPropagation();
@@ -315,7 +311,7 @@ export function pasteTags(...args: any[]) {
                     }
                 });
             });
-            machineryUpdateSelection(s);
+            machineryUpdateSelection();
             ayncsImagesChange(useSelectionState.getState().selected);
             hiddenByCurrentFilter(useSelectionState.getState().selected);
             electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${useSelectionState.getState().selected.length} files`);
@@ -404,7 +400,7 @@ export function removeFromFolder(...args: any[]) {
 
         machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
             machineryRebindRefresh(s, true);
-            machineryUpdateSelection(s);
+            machineryUpdateSelection();
         });
 
         s.$root.notify({
@@ -422,10 +418,10 @@ export function removeFromFolder(...args: any[]) {
             if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
                 machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                     machineryRebindRefresh(s);
-                    machineryUpdateSelection(s);
+                    machineryUpdateSelection();
                 });
             } else {
-                machineryUpdateSelection(s);
+                machineryUpdateSelection();
                 machineryRebindRefresh(s, true);
             }
 
@@ -801,6 +797,6 @@ export function machineryRemovePermanently(s: any): void {
   syncInspectorFromScope();
   machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
     machineryRebindRefresh(s, true);
-    machineryUpdateSelection(s);
+    machineryUpdateSelection();
   });
 }

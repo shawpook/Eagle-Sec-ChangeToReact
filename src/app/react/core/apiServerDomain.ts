@@ -800,7 +800,7 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
     w.hiddenByCurrentFilter(items);
     machineryCalculateImageBinding(bs, { ignoreSort: true }, function () {
       machineryRebindRefresh(bs, true, undefined, undefined);
-      machineryUpdateSelection(bs);
+      machineryUpdateSelection();
     });
 
     resolve(undefined);
@@ -1133,7 +1133,6 @@ function machineryRefreshItemThumbnail(params: any): Promise<any> {
 /* listImages（bundle 18729-18845 逐字；SmartFolder 筛选能力复用） */
 function machineryListImages(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     // 使用 SmartFolder 的筛选能力开发此功能
     try {
@@ -1216,7 +1215,7 @@ function machineryListImages(params: any): Promise<any> {
         }
 
         items = items.filter(function (item: any) {
-          return machineryExistInSmartFilter(bs, smartFolder, item);
+          return machineryExistInSmartFilter(smartFolder, item);
         });
       }
 

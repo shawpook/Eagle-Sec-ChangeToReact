@@ -23,8 +23,7 @@ import { usePreferencesState } from '../store/preferencesState';
  */
 
 export function updateSelection(): void {
-  const s = getBodyScope();
-  if (s) machineryUpdateSelection(s);
+  machineryUpdateSelection();
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══

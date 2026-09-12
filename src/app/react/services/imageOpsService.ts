@@ -394,7 +394,7 @@ export function saveCrop(...args: any[]) {
                                             // 强制更新相关 folder 封面
                                             if (croppedImage.folders) {
                                                 croppedImage.folders.forEach(function (fid) {
-                                                    machineryResetFolderCover(s, useItemState.getState().folderMappings[fid]);
+                                                    machineryResetFolderCover(useItemState.getState().folderMappings[fid]);
                                                 });
                                             }
 
@@ -514,8 +514,6 @@ export function regenerateThumbnail(...args: any[]) {
 
 export function calculateImageBinding(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(params = { ignoreSort : false }, callback) {
 
             var duration = 50;
@@ -534,26 +532,26 @@ export function calculateImageBinding(...args: any[]) {
                     if (!useItemState.getState().raw) return;
 
                     if (!params.ignoreSort) {
-                        machinerySortRawData(s, s.orderBy);
+                        machinerySortRawData(useMiscRawState.getState().orderBy);
                     }
 
                     console.time("calculateImageBinding");
                     var __lv_path = require('path');
                     var __lv_tags = {};
                     var exts = {};
-                    s.all = [];
+                    writeScopeField('all', []);
                     syncSidebarFromScope();
-                    s.untagged = [];
-                    s.unfiledCount = 0;
-                    s.untaggedCount = 0;
-                    s.trash = [];
+                    writeScopeField('untagged', []);
+                    writeScopeField('unfiledCount', 0);
+                    writeScopeField('untaggedCount', 0);
+                    writeScopeField('trash', []);
                     syncSidebarFromScope();
                     syncListFromScope();
-                    s.folderMappings = {};
-                    s.tagsSuggestion = [];
-                    s.folderList = [];
+                    writeScopeField('folderMappings', {});
+                    writeScopeField('tagsSuggestion', []);
+                    writeScopeField('folderList', []);
                     syncSidebarFromScope();
-                    s.lockedImages = {};
+                    writeScopeField('lockedImages', {});
 
                     let ancestorsCache = {};
                     let defaultFolderCoverIdMap = {};
@@ -589,13 +587,13 @@ export function calculateImageBinding(...args: any[]) {
                             });
                         }
 
-                        ancestorsCache[folder.id] = machineryGetAncestorFolders(s, folder, [folder]);
+                        ancestorsCache[folder.id] = machineryGetAncestorFolders(folder, [folder]);
 
                         useItemState.getState().folderMappings[folder.id] = folder;
                     });
 
                     eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent) {
-                        folder.extendTags = machineryGetExtendTags(s, folder, []);
+                        folder.extendTags = machineryGetExtendTags(folder, []);
 						folder.covers = [];
                     });
 
@@ -632,7 +630,7 @@ export function calculateImageBinding(...args: any[]) {
                                         }
 
                                         // 祖先们也都 + 1 , 记录在其他栏位上
-                                        var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(s, folder, [folder]);
+                                        var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(folder, [folder]);
                                         ancestors.forEach(function (ancestor) {
                                             // 避免重复加总
                                             if (increaseAncestors[ancestor.id]) {
@@ -785,11 +783,11 @@ export function calculateImageBinding(...args: any[]) {
                     });
 
                     __lv_TagManager.calculateTags();
-                    s.tags = __lv_TagManager.rawdata;
+                    writeScopeField('tags', __lv_TagManager.rawdata);
                     syncSidebarFromScope();
 
                     if (!useFolderState.getState().tags) {
-                        s.tags = [];
+                        writeScopeField('tags', []);
                         syncSidebarFromScope();
                     }
 

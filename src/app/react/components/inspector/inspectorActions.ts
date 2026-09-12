@@ -52,20 +52,20 @@ const isUrlLike = (value: string): boolean => {
 
 let updateSelectionTimeout: any;
 
-function sortTags(scope: any, original: string[]): string[] {
+function sortTags(original: string[]): string[] {
   try {
     if (!original || original.length === 0) return original;
     let tags = [...original];
 
     const tagGroupsIndexMap: Record<string, number> = {};
-    (scope.TagManager.groups || []).forEach((tagGroup: any, index: number) => {
+    (useMiscRawState.getState().TagManager.groups || []).forEach((tagGroup: any, index: number) => {
       tagGroupsIndexMap[tagGroup.id] = index;
     });
-    tagGroupsIndexMap['none'] = (scope.TagManager.groups || []).length;
+    tagGroupsIndexMap['none'] = (useMiscRawState.getState().TagManager.groups || []).length;
 
     tags = tags.sort((tagA, tagB) => {
-      const a = scope.TagManager.tagMappings[tagA];
-      const b = scope.TagManager.tagMappings[tagB];
+      const a = useMiscRawState.getState().TagManager.tagMappings[tagA];
+      const b = useMiscRawState.getState().TagManager.tagMappings[tagB];
       const aName = a.name;
       const bName = b.name;
       const aGroup = a?.groups?.[0] || 'none';
@@ -227,7 +227,7 @@ export function updateSelection() {
 
       // 排序標籤，優先使用群組順序排，皆者使用字母順序排
       if (eagleIns.newTags?.length > 0) {
-        eagleIns.newTags = sortTags(s, eagleIns.newTags);
+        eagleIns.newTags = sortTags(eagleIns.newTags);
       }
     });
   }, 30) as unknown as number;

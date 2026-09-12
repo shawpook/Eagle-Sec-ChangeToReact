@@ -53,6 +53,7 @@ import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { usePreferencesState } from '../store/preferencesState';
+import { useItemState } from '../store/itemState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -438,7 +439,7 @@ export function machineryBuildTagManager(s: any): any {
             syncFilterFromScope();
             syncTagManagerFromScope();
             machineryCalcuteContainTags(s.filtereds);
-            machineryUpdateSelection(s);
+            machineryUpdateSelection();
             machineryUpdateItemsView(s.selected);
 
             w.ayncsImagesChange(changedItems);
@@ -485,7 +486,7 @@ export function machineryBuildTagManager(s: any): any {
 
             machineryCalcuteContainTags(s.filtereds);
             TagManager.addHistoryTag(tag);
-            machineryUpdateSelection(s);
+            machineryUpdateSelection();
 
             machineryUpdateItemsView(s.selected);
 
@@ -537,7 +538,7 @@ export function machineryBuildTagManager(s: any): any {
             }
 
 			machineryCalcuteContainTags(s.filtereds);
-			machineryUpdateSelection(s);
+			machineryUpdateSelection();
 			machineryUpdateItemsView(s.selected);
 
             w.ayncsImagesChange(changedItems);
@@ -2715,7 +2716,7 @@ export function machineryEditTag(s: any, tag: any): void {
     tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s);
-      machineryUpdateSelection(s);
+      machineryUpdateSelection();
     });
 
     var message = getFilter()('i18n')("notify.tag.nameChange", [
@@ -2829,7 +2830,7 @@ export function machineryEnableSubFolderNameEditable(s: any, event: any, folder:
 }
 
 /* 取得继承炼的标签（bundle 32028 逐字；tags.unique() 为 bundle Array 原型扩展，保留原调用） */
-export function machineryGetExtendTags(s: any, folder: any, tags: any[]): any[] {
+export function machineryGetExtendTags(folder: any, tags: any[]): any[] {
   const uniqueTags: any = tags as any;
   try {
     if (folder.tags) {
@@ -2837,9 +2838,9 @@ export function machineryGetExtendTags(s: any, folder: any, tags: any[]): any[] 
         tags.push(tag);
       });
     }
-    const parent = s.folderMappings[folder.parent];
+    const parent = useItemState.getState().folderMappings[folder.parent];
     if (parent && parent.tags && folder.parent) {
-      return machineryGetExtendTags(s, parent, tags);
+      return machineryGetExtendTags(parent, tags);
     }
     else {
       return uniqueTags.unique().reverse();

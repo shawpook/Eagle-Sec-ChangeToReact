@@ -31,6 +31,8 @@ import { machineryToggleSelectSmartFolder } from '../core/selectionViewDomain';
 import { getOffsetScrollbarFn } from './gridService';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
+import { useFolderState } from '../store/folderState';
+import { useItemState } from '../store/itemState';
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
 export function sidebarClickNode(s: any, event: any, folder: any): void {
@@ -132,7 +134,7 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
 }
 
 /* toggleFolderExpand（bundle 42210 邻域逐字：展开收起四分支 + per-node localStorage） */
-export function sidebarToggleFolderExpand(s: any, event: any, folder: any): void {
+export function sidebarToggleFolderExpand(event: any, folder: any): void {
   event.stopPropagation();
 
   if (!folder.children || folder.children.length == 0) return;
@@ -140,13 +142,13 @@ export function sidebarToggleFolderExpand(s: any, event: any, folder: any): void
   // 如果用户点击了 ⌘ + alt，展开/收起所有层级
   if (event.altKey && (event.metaKey || event.ctrlKey)) {
     var expand = !folder.isExpand;
-    machineryToggleAllFolders(s.folders, expand);
+    machineryToggleAllFolders(useFolderState.getState().folders, expand);
   }
   // 如果用户点击 ⌘，展开/收起第一层
   else if (event.metaKey || event.ctrlKey) {
     var expand = !folder.isExpand;
-    var parent = s.folderMappings[folder.parent];
-    var folders = s.folders;
+    var parent = useItemState.getState().folderMappings[folder.parent];
+    var folders = useFolderState.getState().folders;
     if (parent && parent.children) {
       folders = parent.children;
     }
@@ -166,7 +168,7 @@ export function sidebarToggleFolderExpand(s: any, event: any, folder: any): void
 }
 
 /* toggleSmartFolderExpand（bundle 42270 邻域逐字：toggleFolderExpand 的 smartFolder 对称版） */
-export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: any): void {
+export function sidebarToggleSmartFolderExpand(event: any, smartFolder: any): void {
   event.stopPropagation();
 
   if (!smartFolder.children || smartFolder.children.length == 0) return;
@@ -174,13 +176,13 @@ export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: 
   // 如果用户点击了 ⌘ + alt，展开/收起所有层级
   if (event.altKey && (event.metaKey || event.ctrlKey)) {
     var expand = !smartFolder.isExpand;
-    machineryToggleAllSmartFoldersInner(s.smartFolders, expand);
+    machineryToggleAllSmartFoldersInner(useFolderState.getState().smartFolders, expand);
   }
   // 如果用户点击 ⌘，展开/收起第一层
   else if (event.metaKey || event.ctrlKey) {
     var expand = !smartFolder.isExpand;
-    var parent = s.smartFolderMappings[smartFolder.parent];
-    var smartFolders = s.smartFolders;
+    var parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
+    var smartFolders = useFolderState.getState().smartFolders;
     if (parent && parent.children) {
       smartFolders = parent.children;
     }
@@ -201,7 +203,7 @@ export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: 
 }
 
 /* dblclickSidebarFolder（bundle 23420 邻域逐字：偏好分流 collapse / rename） */
-export function sidebarDblclickFolder(s: any, event: any, folder: any): void {
+export function sidebarDblclickFolder(event: any, folder: any): void {
   if (usePreferencesState.getState().preferences.habits.dblclickSidebarItem === 'collapse') {
     toggleFolderExpand(event, folder);
   }
@@ -238,20 +240,17 @@ export function clickSmartNode(event: any, smartFolder: any): void {
 }
 
 export function toggleFolderExpand(event: any, folder: any): void {
-  const s = getBodyScope();
-  if (s) sidebarToggleFolderExpand(s, event, folder);
+  sidebarToggleFolderExpand(event, folder);
   syncSidebarFromScope();
 }
 
 export function toggleSmartFolderExpand(event: any, smartFolder: any): void {
-  const s = getBodyScope();
-  if (s) sidebarToggleSmartFolderExpand(s, event, smartFolder);
+  sidebarToggleSmartFolderExpand(event, smartFolder);
   syncSidebarFromScope();
 }
 
 export function dblclickSidebarFolder(event: any, folder: any): void {
-  const s = getBodyScope();
-  if (s) sidebarDblclickFolder(s, event, folder);
+  sidebarDblclickFolder(event, folder);
   syncSidebarFromScope();
 }
 

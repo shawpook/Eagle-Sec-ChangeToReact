@@ -10,7 +10,7 @@
 import { detailZoom } from '../core/smoothZoomEngine';
 
 import { syncDetailFromScope } from '../store/detailState';
-import { getBodyScope } from '../core/appCore';
+
 import { openFolder } from './folderCoreService';
 import { saveCrop } from './imageOpsService';
 import { q, qa, widthOf, heightOf, addClass, removeClass, cssSet } from '../utils/domQuery';
@@ -20,6 +20,9 @@ import { machineryRenameCurrentFolder } from '../core/libraryDomain';
 import { machineryEnterDetailMode, machineryLeaveDetailMode } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState } from '../store/bodyState';
+import { useLayoutState } from '../store/layoutState';
+import { useSelectionState } from '../store/selectionState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;
@@ -35,13 +38,13 @@ export function beginZoomingTransition(): void {
 
 /* updateZoomRatio（bundle 31391-31418 逐字；smoothZoom = vendor jQuery 插件；
    updateZoomRatioTimeout 域内自管） */
-export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTransition: any): void {
+export function detailUpdateZoomRatio(ratio: any, x: any, y: any, hasTransition: any): void {
   var pageX: any, pageY: any;
 
   if (ratio) {
-    s.imageSize.zoomRatio = ratio;
+    useLayoutState.getState().imageSize.zoomRatio = ratio;
     machineryOnZoomRatioChanged();
-    s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
+    useLayoutState.getState().imageSize.zoomRatioExp = machineryGetRatioExp(useLayoutState.getState().imageSize.zoomRatio);
   }
 
   if (isNumeric(x) && isNumeric(y)) {
@@ -57,7 +60,7 @@ export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTra
   }
 
   detailZoom()?.focusTo( {
-    zoom: s.imageSize.zoomRatioExp,
+    zoom: useLayoutState.getState().imageSize.zoomRatioExp,
     pageX: pageX,
     pageY: pageY,
     speed: 0
@@ -66,10 +69,10 @@ export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTra
 
 /* smartZoom（bundle 31209-31334 逐字；devicesMetrics/isMobileResolution/getImagePixelDensity/
    isMobileWidth 经 window（c18a 供给），zoomRatio 换算走 machinery 版） */
-export function detailSmartZoom(s: any, target: any, forceMode: any): void {
+export function detailSmartZoom(target: any, forceMode: any): void {
   const w = window as any;
-  var current = target || s.current;
-  var ratio = s.imageSize.zoomRatio || 100;
+  var current = target || useSelectionState.getState().current;
+  var ratio = useLayoutState.getState().imageSize.zoomRatio || 100;
   var lastRatio = ratio;
   var $container = q(".content-panel");
   var toolbarHeight = 0;
@@ -77,12 +80,12 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
   var containerHeight;
   var offsetY = 0;
 
-  if (s.isSlideshowMode) {
+  if (useBodyState.getState().isSlideshowMode) {
     toolbarHeight = 0;
     containerWidth = window.innerWidth;
     containerHeight = window.innerHeight - toolbarHeight;
   }
-  else if (s.isInlineMode) {
+  else if (useBodyState.getState().isInlineMode) {
     toolbarHeight = 96;
     containerWidth = window.innerWidth;
     containerHeight = heightOf($container) - toolbarHeight;
@@ -183,15 +186,15 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
   offsetY = offsetY || 0;
 
   if (ratio) {
-    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    useLayoutState.getState().imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
     machineryOnZoomRatioChanged();
-    s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
+    useLayoutState.getState().imageSize.zoomRatioExp = machineryGetRatioExp(useLayoutState.getState().imageSize.zoomRatio);
   }
-  s.showLargeImage = true;
+  writeScopeField('showLargeImage', true);
   detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,
-    zoom: s.imageSize.zoomRatio,
+    zoom: useLayoutState.getState().imageSize.zoomRatio,
     speed: 0
   });
 }
@@ -233,11 +236,9 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
 }
 /* ── React 直调便捷面（无 scope 参数版本）——组件侧直调不绕 scope。 */
 export function smartZoom(target?: any, forceMode?: any): void {
-  const s = getBodyScope();
-  if (s) detailSmartZoom(s, target, forceMode);
+  detailSmartZoom(target, forceMode);
 }
 
 export function updateZoomRatio(ratio?: any, x?: any, y?: any, hasTransition?: any): void {
-  const s = getBodyScope();
-  if (s) detailUpdateZoomRatio(s, ratio, x, y, hasTransition);
+  detailUpdateZoomRatio(ratio, x, y, hasTransition);
 }

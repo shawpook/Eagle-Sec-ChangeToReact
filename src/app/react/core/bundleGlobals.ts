@@ -391,7 +391,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
       if (!willSendItems || willSendItems.length === 0) return;
       console.log("第 %d 更新，目前進度 %d / %d", countOfSend, willSendItems.length + (countOfSend - 1) * once, total);
       var keepItems = await machineryFilterData(bs, willSendItems);
-      keepItems = keepItems.filter((x: any) => machineryContentFilter(bs, x));
+      keepItems = keepItems.filter((x: any) => machineryContentFilter(x));
       var keetItemsMap: any = {};
       keepItems.forEach(function (item: any) {
         keetItemsMap[item.id] = true;

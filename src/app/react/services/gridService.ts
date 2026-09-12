@@ -14,7 +14,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { getBodyScope } from '../core/appCore';
+
 import { detailZoom } from '../core/smoothZoomEngine';
 
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
@@ -45,26 +45,26 @@ import { useLayoutState } from '../store/layoutState';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */
-export function gridSaveListHeight(s: any, height: any): void {
+export function gridSaveListHeight(height: any): void {
   clearTimeout(saveListHeightTimeout);
   saveListHeightTimeout = setTimeout(function () {
-    if (s.currentFolder) {
-      localStorage.setItem("eagle.list.thumbSize." + s.currentFolder.id, height);
-    } else if (s.currentSmartFolder) {
-      localStorage.setItem("eagle.list.thumbSize." + s.currentSmartFolder.id, height);
-    } else if (s.currentTag) {
-      localStorage.setItem("eagle.list.thumbSize." + s.currentTag, height);
-    } else if (s.viewMode === 'all') {
+    if (useFolderState.getState().currentFolder) {
+      localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentFolder.id, height);
+    } else if (useFolderState.getState().currentSmartFolder) {
+      localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentSmartFolder.id, height);
+    } else if (useMiscRawState.getState().currentTag) {
+      localStorage.setItem("eagle.list.thumbSize." + useMiscRawState.getState().currentTag, height);
+    } else if (useBodyState.getState().viewMode === 'all') {
       localStorage.setItem("eagle.list.thumbSize.all", height);
-    } else if (s.viewMode === 'unfiled') {
+    } else if (useBodyState.getState().viewMode === 'unfiled') {
       localStorage.setItem("eagle.list.thumbSize.unfiled", height);
-    } else if (s.viewMode === 'untagged') {
+    } else if (useBodyState.getState().viewMode === 'untagged') {
       localStorage.setItem("eagle.list.thumbSize.untagged", height);
-    } else if (s.viewMode === 'trash') {
+    } else if (useBodyState.getState().viewMode === 'trash') {
       localStorage.setItem("eagle.list.thumbSize.trash", height);
-    } else if (s.viewMode === 'random') {
+    } else if (useBodyState.getState().viewMode === 'random') {
       localStorage.setItem("eagle.list.thumbSize.random", height);
-    } else if (s.viewMode === 'recent') {
+    } else if (useBodyState.getState().viewMode === 'recent') {
       localStorage.setItem("eagle.list.thumbSize.recent", height);
     }
   }, 150);
@@ -72,44 +72,44 @@ export function gridSaveListHeight(s: any, height: any): void {
 
 /* adjustLayoutWidth（bundle 33839-33947 逐字；ig._layout._columnLength 经 window 解析，
    scrollToCurrentItem 经 scope 解析） */
-export function gridAdjustLayoutWidth(s: any, increases: any): void {
+export function gridAdjustLayoutWidth(increases: any): void {
   const w = window as any;
-  if (!s.isItemBindCalculated) return;
+  if (!useMiscRawState.getState().isItemBindCalculated) return;
 
   increases = increases || 0;
   var height;
-  s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-  s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
-  if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+  writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+  writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
+  if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") {
     if (!w.ig._layout._columnLength) return;
-    var containerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+    var containerWidth = widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth;
     containerWidth = containerWidth - 16 - 10 - 6;
     var currentColumn = w.ig._layout._columnLength;
     var newColumn = (currentColumn + increases) || 1;
     var newHeight = parseInt(((containerWidth - 10 * (newColumn + 1))) / newColumn as any);
     height = Math.ceil(newHeight / 5) * 5;
-    if (height > s.MAX_LIST_WIDTH) height = s.MAX_LIST_WIDTH;
+    if (height > useMiscRawState.getState().MAX_LIST_WIDTH) height = useMiscRawState.getState().MAX_LIST_WIDTH;
   }
   else {
     let step = 50;
-    if (s.imageSize.height > 500) {
+    if (useLayoutState.getState().imageSize.height > 500) {
       step = 100;
     }
-    else if (s.imageSize.height < 200) {
+    else if (useLayoutState.getState().imageSize.height < 200) {
       step = 25;
     }
-    height = parseInt((s.imageSize.height + (step * -increases)) / 5 as any) * 5;
+    height = parseInt((useLayoutState.getState().imageSize.height + (step * -increases)) / 5 as any) * 5;
   }
-  if (height > s.MAX_LIST_WIDTH) height = s.MAX_LIST_WIDTH;
+  if (height > useMiscRawState.getState().MAX_LIST_WIDTH) height = useMiscRawState.getState().MAX_LIST_WIDTH;
   if (height < 75) height = 75;
-  s.imageSize.height = parseInt(height);
+  useLayoutState.getState().imageSize.height = parseInt(height);
   syncToolbarFromScope();
   syncBodyFromScope();
   syncDetailFromScope();
   syncInspectorFromScope();
-  if (!height) height = s.imageSize.height;
+  if (!height) height = useLayoutState.getState().imageSize.height;
   if (Number.isFinite(height) && height > 0) {
-    s.lastImageHeight = s.imageSize.height;
+    writeScopeField('lastImageHeight', useLayoutState.getState().imageSize.height);
     setAttr("#box-container", "box-size", height);
     var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
     if (margin === Infinity) margin = 10;
@@ -132,8 +132,8 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
     syncInspectorFromScope();
     machineryChangeListHeight();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      machineryAdjustLayoutWidth(s, 0);
-      gridSaveListHeight(s, s.imageSize.height);
+      machineryAdjustLayoutWidth(0);
+      gridSaveListHeight(s.imageSize.height);
     }
   } else {
     if (s.VIDEO_TYPES[s.current.ext]) {
@@ -161,54 +161,52 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
       }, 300);
     }
 
-    machinerySmartZoom(s, undefined, true);
+    machinerySmartZoom(undefined, true);
   }
 }
 
 /* zoomIn（bundle 33883-33898 逐字：非详情 adjustLayoutWidth(-1)+saveListHeight +
    详情 5 步进 ratioExp 梯度（400/200/100/50/25/10/5 封顶 800）+ updateZoomRatio）；
    zoomOut（33899-33914 逐字：对称梯度 + 非详情多一步 checkListItemsLessThanContainer） */
-export function gridZoomIn(s: any, event: any): void {
+export function gridZoomIn(event: any): void {
   event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    machineryAdjustLayoutWidth(s, -1);
-    gridSaveListHeight(s, s.imageSize.height);
+  if (!useBodyState.getState().isDetailMode) {
+    machineryAdjustLayoutWidth(-1);
+    gridSaveListHeight(useLayoutState.getState().imageSize.height);
   } else {
-    var ratio = Math.ceil(s.imageSize.zoomRatio / 5) * 5;
+    var ratio = Math.ceil(useLayoutState.getState().imageSize.zoomRatio / 5) * 5;
     var ratioExp = getRatioExp(ratio);
     if (ratioExp >= 400) { ratioExp = 800; } else if (ratioExp >= 200) { ratioExp = 400; } else if (ratioExp >= 100) { ratioExp = 200; } else if (ratioExp >= 50) { ratioExp = 100; } else if (ratioExp >= 25) { ratioExp = 50; } else if (ratioExp >= 10) { ratioExp = 25; } else if (ratioExp >= 5) { ratioExp = 10; } else { ratioExp = 5; }
     if (ratioExp > 800) ratioExp = 800;
-    s.imageSize.zoomRatio = getRatioNonExp(ratioExp);
-    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
-    machineryUpdateZoomRatio(s, undefined, undefined, undefined, true);
+    useLayoutState.getState().imageSize.zoomRatio = getRatioNonExp(ratioExp);
+    useLayoutState.getState().imageSize.zoomRatioExp = getRatioExp(useLayoutState.getState().imageSize.zoomRatio);
+    machineryUpdateZoomRatio(undefined, undefined, undefined, true);
   }
 }
 
-export function gridZoomOut(s: any, event: any): void {
+export function gridZoomOut(event: any): void {
   event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    machineryAdjustLayoutWidth(s, 1);
-    gridSaveListHeight(s, s.imageSize.height);
+  if (!useBodyState.getState().isDetailMode) {
+    machineryAdjustLayoutWidth(1);
+    gridSaveListHeight(useLayoutState.getState().imageSize.height);
     machineryCheckListItemsLessThanContainer();
   } else {
-    var ratio = Math.floor(s.imageSize.zoomRatio / 5) * 5;
+    var ratio = Math.floor(useLayoutState.getState().imageSize.zoomRatio / 5) * 5;
     var ratioExp = getRatioExp(ratio);
     if (ratioExp <= 10) { ratioExp = 5; } else if (ratioExp <= 25) { ratioExp = 10; } else if (ratioExp <= 50) { ratioExp = 25; } else if (ratioExp <= 100) { ratioExp = 50; } else if (ratioExp <= 200) { ratioExp = 100; } else if (ratioExp <= 400) { ratioExp = 200; } else if (ratioExp <= 800) { ratioExp = 400; }
-    s.imageSize.zoomRatio = getRatioNonExp(ratioExp);
-    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
-    machineryUpdateZoomRatio(s, undefined, undefined, undefined, true);
+    useLayoutState.getState().imageSize.zoomRatio = getRatioNonExp(ratioExp);
+    useLayoutState.getState().imageSize.zoomRatioExp = getRatioExp(useLayoutState.getState().imageSize.zoomRatio);
+    machineryUpdateZoomRatio(undefined, undefined, undefined, true);
   }
 }
 
 /* React 直调便捷面（无 scope 参数版本）——组件侧（如 BoxList 滚轮）不再绕 callFn。 */
 export function zoomIn(event: any): void {
-  const s = getBodyScope();
-  if (s) gridZoomIn(s, event);
+  gridZoomIn(event);
 }
 
 export function zoomOut(event: any): void {
-  const s = getBodyScope();
-  if (s) gridZoomOut(s, event);
+  gridZoomOut(event);
 }
 
 /* switchLayout（bundle 33790-33846 逐字；body class 四分支 + relayout/offsetScrollbar/
@@ -379,8 +377,8 @@ export function buildScrollbarSaver(): any {
 let changeListHeightTimeout: any = null;
 
 /* b1-9bd：adjustLayoutWidth 实现体归位 services/gridService.ts */
-export function machineryAdjustLayoutWidth(s: any, increases: any): void {
-  gridAdjustLayoutWidth(s, increases);
+export function machineryAdjustLayoutWidth(increases: any): void {
+  gridAdjustLayoutWidth(increases);
 }
 
 export function machineryChangeListHeight(height: any): void {
@@ -551,8 +549,8 @@ export function machineryRememberScrollTops(item: any): void {
   }
 }
 
-export function machinerySaveListHeight(s: any, height: any): void {
-  gridSaveListHeight(s, height);
+export function machinerySaveListHeight(height: any): void {
+  gridSaveListHeight(height);
 }
 
 export function machineryScrollbarTo(element: any, to: any, duration: any): void {

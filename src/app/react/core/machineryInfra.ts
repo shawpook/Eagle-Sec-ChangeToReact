@@ -118,7 +118,7 @@ export function applyDataMachineryScope(): void {
   // 直调 updateSelection（:1858，**无 typeof 守卫**）与 zoom（:2932/3015，try 包裹）——脚本
   // 无法 import ESM，必须以 scope 面供给（同 B-8 跨边界清单）。此前「主窗口无消费面」结论
   // 只扫了 React 树，漏掉 main.cjs；缺 updateSelection 会使 m1 selectItems 直接 TypeError。
-  s.updateSelection = () => machineryUpdateSelection(s);
+  s.updateSelection = () => machineryUpdateSelection();
   s.zoom = () => machineryZoom(s);
   // 同因：main.cjs 主窗工作流还直调 changeStar（:2058/2083）、removeSelected（:2192）、
   // toggleAll（:2319/2325）、addImagesToFolder（:2057）；selectNext/selectPrev 为详情导航

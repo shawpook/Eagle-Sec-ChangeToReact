@@ -173,7 +173,7 @@ export function setFoldersOrder(...args: any[]) {
       folders.forEach(function (folder: any) {
         machinerySetFolderOrder(s, folder, orderBy);
       });
-      machinerySortRawData(s, orderBy);
+      machinerySortRawData(orderBy);
       machineryRebindRefresh(s);
       scopeEvalAsync();
     }).apply(null, args);
@@ -221,7 +221,7 @@ export function lockFolder(...args: any[]) {
       machineryUpdateSidebarList();
       machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
         machineryRebindRefresh(s);
-        machineryUpdateSelection(s);
+        machineryUpdateSelection();
         s.isLoading = false;
       });
     }).apply(null, args);
@@ -605,7 +605,7 @@ export function showListSubfolderContent(...args: any[]) {
       (window as any).electronSettings.set('preferences', preferences).then(function () {});
       machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
         machineryRebindRefresh(s);
-        machineryUpdateSelection(s);
+        machineryUpdateSelection();
         const scrollbar = document.getElementById('box-container-scrollbar');
         if (scrollbar) scrollbar.dispatchEvent(new Event('UPDATE_BOX_SCROLLBAR', { bubbles: true }));
       });
@@ -1166,7 +1166,7 @@ export function setSmartFoldersOrder(...args: any[]) {
       smartFolders.forEach(function (folder: any) {
         machinerySetSmartFolderOrder(s, folder, orderBy);
       });
-      machinerySortRawData(s, orderBy);
+      machinerySortRawData(orderBy);
       machineryRebindRefresh(s);
       scopeEvalAsync();
     }).apply(null, args);
@@ -1329,8 +1329,6 @@ export function copySmartFolderLink(...args: any[]) {
 }
 
 export function smartFolderExportAsPack(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
       var isInSmartFolder = function (sf: any, image: any) {
@@ -1340,14 +1338,14 @@ export function smartFolderExportAsPack(...args: any[]) {
         else if (sf.children && sf.children.length > 0 && sf.conditions && sf.conditions.length === 0) {
           for (let i = 0; i < sf.children.length; i++) {
             let smartFolder = sf.children[i];
-            if (machineryExistInSmartFilter(s, smartFolder, image)) {
+            if (machineryExistInSmartFilter(smartFolder, image)) {
               return true;
             }
           }
           return false;
         }
         else {
-          return machineryExistInSmartFilter(s, useFolderState.getState().currentSmartFolder, image);
+          return machineryExistInSmartFilter(useFolderState.getState().currentSmartFolder, image);
         }
       };
 
@@ -1399,8 +1397,6 @@ export function smartFolderExportAsPack(...args: any[]) {
 }
 
 export function smartFolderExportAsFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
       var isInSmartFolder = function (sf: any, image: any) {
@@ -1410,14 +1406,14 @@ export function smartFolderExportAsFolder(...args: any[]) {
         else if (sf.children && sf.children.length > 0 && sf.conditions && sf.conditions.length === 0) {
           for (let i = 0; i < sf.children.length; i++) {
             let smartFolder = sf.children[i];
-            if (machineryExistInSmartFilter(s, smartFolder, image)) {
+            if (machineryExistInSmartFilter(smartFolder, image)) {
               return true;
             }
           }
           return false;
         }
         else {
-          return machineryExistInSmartFilter(s, useFolderState.getState().currentSmartFolder, image);
+          return machineryExistInSmartFilter(useFolderState.getState().currentSmartFolder, image);
         }
       };
 

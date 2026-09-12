@@ -210,7 +210,7 @@ export function renameFontsWithFullName(...args: any[]) {
                 machineryUpdateItemsView(items);
                 machineryCalculateImageBinding(s, {}, function () {
                     machineryRebindRefresh(s, true);
-                    machineryUpdateSelection(s);
+                    machineryUpdateSelection();
                 });
             }, 10);
         }

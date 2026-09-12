@@ -76,7 +76,7 @@ declare const remote: any;
 
 let done = false;
 
-function domainTimeout(s: any, fn: any, ms?: number): any {
+function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
     try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
@@ -568,7 +568,7 @@ export function takeoverMiscDomain(): void {
       }
       s.selected = [];
       syncInspectorFromScope();
-      domainTimeout(s, function () {
+      domainTimeout(function () {
         select(undefined, item);
         machineryEnterDetailMode(s, undefined, item);
         scrollToSelectedItem();
@@ -677,7 +677,7 @@ export function takeoverMiscDomain(): void {
         openFolder(s.folderMappings[folders[0]]);
         s.selected = [];
         syncInspectorFromScope();
-        domainTimeout(s, function () {
+        domainTimeout(function () {
           select(undefined, image);
           scrollToSelectedItem();
         }, 500);
@@ -686,7 +686,7 @@ export function takeoverMiscDomain(): void {
         machineryOpenAll(s);
         s.selected = [];
         syncInspectorFromScope();
-        domainTimeout(s, function () {
+        domainTimeout(function () {
           select(undefined, image);
           scrollToSelectedItem();
         }, 500);
@@ -821,7 +821,7 @@ export function takeoverMiscDomain(): void {
       }).then(function (r: any) { return r.json(); }).then(function (resp: any) {
         const data = { data: resp };
         electronLog && electronLog.info(`[app] Unregister successfully, email: ${s.email}`);
-        domainTimeout(s, function () {
+        domainTimeout(function () {
           const result = data.data;
           try { ipc.send('electron-info', result); }
           catch (err) { /* noop */ }
@@ -1121,7 +1121,7 @@ export function changeOrderBy(...args: any[]) {
                     syncBodyFromScope();
                     s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
                     localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
-                    machinerySortRawData(s, s.orderBy);
+                    machinerySortRawData(s.orderBy);
                     machineryRebindRefresh(s);
                     scopeEvalAsync();
                     try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
@@ -1234,7 +1234,7 @@ export function leaveDetailMode(...args: any[]) {
                 s.commentRect = undefined;
                 syncDetailFromScope();
                 // 記住上次播放位置
-                machineryRememberVideoCurrentTime(s, s.current); s.current = undefined;
+                machineryRememberVideoCurrentTime(s.current); s.current = undefined;
                 syncDetailFromScope();
                 syncInspectorFromScope();
                 $timeout.cancel(__lv_zoomInitTimeout);
@@ -1608,9 +1608,9 @@ const cgScopes: any[] = [];       // n：scope 桩栈
 const cgStack: any[] = [];        // m：已附加的消息元素栈
 
 /* languageBCP 重算（bundle 20053 逐字；初值 "en"） */
-export function getLanguageBCP(s: any): string {
+export function getLanguageBCP(): string {
   try {
-    const lang = s.language ?? useBodyState.getState().language ?? 'en';
+    const lang = useBodyState.getState().language ?? useBodyState.getState().language ?? 'en';
     return String(lang).replace('_', '-');
   } catch (err) {
     return 'en';
@@ -1788,7 +1788,7 @@ export function machineryLeaveDetailMode(s: any): void {
     s.commentRect = undefined;
     syncDetailFromScope();
     // 記住上次播放位置
-    machineryRememberVideoCurrentTime(s, s.current); s.current = undefined;
+    machineryRememberVideoCurrentTime(s.current); s.current = undefined;
     syncDetailFromScope();
     syncInspectorFromScope();
     $timeout.cancel(zoomInitTimeout);

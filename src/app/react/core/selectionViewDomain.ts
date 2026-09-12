@@ -50,9 +50,10 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
+import { useFolderState } from '../store/folderState';
 let done = false;
 
-function domainTimeout(s: any, fn: any, ms?: number): any {
+function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
     try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
@@ -117,7 +118,7 @@ export function takeoverSelectionViewDomain(): void {
     });
 
     if (s.selected.length > 0) {
-      machineryUpdateSelection(s);
+      machineryUpdateSelection();
     }
 
     if (s.isDetailMode && s.smoothZoomDone) {
@@ -125,7 +126,7 @@ export function takeoverSelectionViewDomain(): void {
       // 為 false，#detail-image 尚未渲染，這些 DOM 操作無意義，且 updateNavigator 會在
       // enterDetailMode 的 $timeout 中重做。）
       s.showLargeImage = false;
-      machineryRememberVideoCurrentTime(s, oldValue[0]);
+      machineryRememberVideoCurrentTime(oldValue[0]);
       if (w.AnnotationPreview) w.AnnotationPreview.hide();
       dataSet(q("#detail-image"), "degree", 0);
       cssSet("#detail-image", {
@@ -201,9 +202,7 @@ export function takeoverSelectionViewDomain(): void {
   // ── $on UPDATE_SELECTION / SAVE_FOLDER（42379/42383 逐字）──
   diag.listenersRemoved['UPDATE_SELECTION'] = removeScopeListener(s0, 'UPDATE_SELECTION');
   updateSelectionChannel.on(function () {
-    const s: any = getBodyScope();
-    if (!s) return;
-    machineryUpdateSelection(s);
+    machineryUpdateSelection();
   });
 
   diag.listenersRemoved['SAVE_FOLDER'] = removeScopeListener(s0, 'SAVE_FOLDER');
@@ -465,7 +464,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
 
             machineryCalculateImageBinding(w.$bodyScope, { ignoreSort: true }, () => {
               machineryRebindRefresh(w.$bodyScope, true, undefined, undefined);
-              machineryUpdateSelection(w.$bodyScope);
+              machineryUpdateSelection();
             });
 
             var message = getFilter()('i18n')("notify.image.moveToFolders", [
@@ -597,7 +596,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
         if (s.currentFolder) {
 
           // 强制重置该文件夹及祖先封面
-          machineryResetFolderCover(s, s.currentFolder);
+          machineryResetFolderCover(s.currentFolder);
 
           var containsMultipleFolder = false;
           for (var i = 0; i < s.selected.length; i++) {
@@ -749,7 +748,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
             ) {
               machineryRebindRefresh(s, true);
             }
-            machineryUpdateSelection(s);
+            machineryUpdateSelection();
             if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
             else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
           });
@@ -929,7 +928,7 @@ export function machinerySelectFolder(s: any, event: any, folder: any): void {
     s.$root.currentFocus = "content";
     s.selected = [];
     syncInspectorFromScope();
-    machineryUpdateSelection(s);
+    machineryUpdateSelection();
   }
 }
 
@@ -1132,7 +1131,7 @@ export function machineryToggleSelectSmartFolder(event: any, smartFolder: any): 
   machineryToggleCurrentLevelSmartFoldersInner(smartFolders, expand);
 }
 
-export function machineryUpdateSelection(s: any): void {
+export function machineryUpdateSelection(): void {
   machineryCalls.updateSelection++;
   const w = window as any;
   // shim 世界保留桥：React inspector 面板经 UPDATE_INSPECTOR 刷新（bundle 54678 版无此广播，
@@ -1149,54 +1148,54 @@ export function machineryUpdateSelection(s: any): void {
   getTimeout().cancel(updateSelectionTimeout);
   updateSelectionTimeout = getTimeout()(function () {
 
-    var selected = s.selected;
+    var selected = useSelectionState.getState().selected;
     if (selected.length > 1) {
-      s.inspector.newNamePlaceholder = w.i18n.__("inspector.names.multipleTitles");
+      useMiscRawState.getState().inspector.newNamePlaceholder = w.i18n.__("inspector.names.multipleTitles");
       syncInspectorFromScope();
-      s.inspector.newUrlPlaceholder = w.i18n.__("inspector.names.multipleUrls");
+      useMiscRawState.getState().inspector.newUrlPlaceholder = w.i18n.__("inspector.names.multipleUrls");
       syncInspectorFromScope();
-      s.inspector.newName = w.eagle.inspector.calculateName(selected);
+      useMiscRawState.getState().inspector.newName = w.eagle.inspector.calculateName(selected);
       syncInspectorFromScope();
-      s.inspector.newUrl = w.eagle.inspector.calculateUrl(selected);
+      useMiscRawState.getState().inspector.newUrl = w.eagle.inspector.calculateUrl(selected);
       syncInspectorFromScope();
-      s.inspector.newTags = w.eagle.inspector.calculateTags(selected);
+      useMiscRawState.getState().inspector.newTags = w.eagle.inspector.calculateTags(selected);
       syncInspectorFromScope();
-      s.inspector.newAnnotation = w.eagle.inspector.calculateAnnotation(selected);
+      useMiscRawState.getState().inspector.newAnnotation = w.eagle.inspector.calculateAnnotation(selected);
       syncInspectorFromScope();
-      s.inspector.folders = w.eagle.inspector.calculateFolders(selected);
-      s.inspector.star = w.eagle.inspector.calculateStar(selected);
+      useMiscRawState.getState().inspector.folders = w.eagle.inspector.calculateFolders(selected);
+      useMiscRawState.getState().inspector.star = w.eagle.inspector.calculateStar(selected);
       syncInspectorFromScope();
-      s.inspector.size = w.eagle.inspector.calculateFileSize(selected);
+      useMiscRawState.getState().inspector.size = w.eagle.inspector.calculateFileSize(selected);
       syncInspectorFromScope();
-      s.inspector.activeTab = "ITEM";
+      useMiscRawState.getState().inspector.activeTab = "ITEM";
       syncInspectorFromScope();
     } else if (selected.length == 1) {
       if (selected[0]) {
-        s.inspector.newNamePlaceholder = getFilter()('i18n')("title");
+        useMiscRawState.getState().inspector.newNamePlaceholder = getFilter()('i18n')("title");
         syncInspectorFromScope();
-        s.inspector.newUrlPlaceholder = "http://";
+        useMiscRawState.getState().inspector.newUrlPlaceholder = "http://";
         syncInspectorFromScope();
-        s.inspector.newName = selected[0].name || "";
+        useMiscRawState.getState().inspector.newName = selected[0].name || "";
         syncInspectorFromScope();
-        s.inspector.newUrl = selected[0].url || "";
+        useMiscRawState.getState().inspector.newUrl = selected[0].url || "";
         syncInspectorFromScope();
-        s.inspector.newTags = selected[0].tags;
+        useMiscRawState.getState().inspector.newTags = selected[0].tags;
         syncInspectorFromScope();
-        s.inspector.newAnnotation = selected[0].annotation || "";
+        useMiscRawState.getState().inspector.newAnnotation = selected[0].annotation || "";
         syncInspectorFromScope();
-        s.inspector.folders = [];
-        s.inspector.star = selected[0].star || 0;
+        useMiscRawState.getState().inspector.folders = [];
+        useMiscRawState.getState().inspector.star = selected[0].star || 0;
         syncInspectorFromScope();
-        s.inspector.activeTab = "ITEM";
+        useMiscRawState.getState().inspector.activeTab = "ITEM";
         syncInspectorFromScope();
       }
     }
     else {
-      s.inspector.activeTab = "SIDEBAR";
+      useMiscRawState.getState().inspector.activeTab = "SIDEBAR";
       syncInspectorFromScope();
-      switch (s.viewMode) {
+      switch (useBodyState.getState().viewMode) {
         case "all":
-          s.inspector.category = {
+          useMiscRawState.getState().inspector.category = {
             newName: w.i18n.__('inspector.names.all'),
             newDescription: "",
             createDate: undefined,
@@ -1208,7 +1207,7 @@ export function machineryUpdateSelection(s: any): void {
           syncInspectorFromScope();
           break;
         case "unfiled":
-          s.inspector.category = {
+          useMiscRawState.getState().inspector.category = {
             newName: w.i18n.__('inspector.names.unfiled'),
             newDescription: "",
             createDate: undefined,
@@ -1220,7 +1219,7 @@ export function machineryUpdateSelection(s: any): void {
           syncInspectorFromScope();
           break;
         case "untagged":
-          s.inspector.category = {
+          useMiscRawState.getState().inspector.category = {
             newName: w.i18n.__('inspector.names.untagged'),
             newDescription: "",
             createDate: undefined,
@@ -1232,7 +1231,7 @@ export function machineryUpdateSelection(s: any): void {
           syncInspectorFromScope();
           break;
         case "trash":
-          s.inspector.category = {
+          useMiscRawState.getState().inspector.category = {
             newName: w.i18n.__('inspector.names.trash'),
             newDescription: "",
             createDate: undefined,
@@ -1244,7 +1243,7 @@ export function machineryUpdateSelection(s: any): void {
           syncInspectorFromScope();
           break;
         case "duplicate":
-          s.inspector.category = {
+          useMiscRawState.getState().inspector.category = {
             newName: getFilter()('i18n')('inspector.names.duplicate'),
             newDescription: "",
             createDate: undefined,
@@ -1257,7 +1256,7 @@ export function machineryUpdateSelection(s: any): void {
           break;
         default:
           if (useMiscRawState.getState().selectedFolders.length > 0) {
-            s.inspector.category = {
+            useMiscRawState.getState().inspector.category = {
               newName: w.i18n.__('inspector.names.multipleTitles'),
               newDescription: "",
               createDate: undefined,
@@ -1268,13 +1267,13 @@ export function machineryUpdateSelection(s: any): void {
             };
             syncInspectorFromScope();
           }
-          else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
-            var selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key) {
+          else if (useItemState.getState().selectedFolderMappings && Object.keys(useItemState.getState().selectedFolderMappings).length >= 1) {
+            var selectedFolders = Object.keys(useItemState.getState().selectedFolderMappings).map(function (key) {
               return key;
             });
-            if (selectedFolders[0] && s.folderMappings[selectedFolders[0]]) {
-              w.eagle.inspector.inspectorFolder = s.folderMappings[selectedFolders[0]];
-              s.inspector.category = {
+            if (selectedFolders[0] && useItemState.getState().folderMappings[selectedFolders[0]]) {
+              w.eagle.inspector.inspectorFolder = useItemState.getState().folderMappings[selectedFolders[0]];
+              useMiscRawState.getState().inspector.category = {
                 newName: w.eagle.inspector.inspectorFolder.name,
                 newDescription: w.eagle.inspector.inspectorFolder.description || "",
                 createDate: w.eagle.inspector.inspectorFolder.modificationTime,
@@ -1286,9 +1285,9 @@ export function machineryUpdateSelection(s: any): void {
               syncInspectorFromScope();
             }
           }
-          else if (s.currentFolder) {
-            w.eagle.inspector.inspectorFolder = s.currentFolder;
-            s.inspector.category = {
+          else if (useFolderState.getState().currentFolder) {
+            w.eagle.inspector.inspectorFolder = useFolderState.getState().currentFolder;
+            useMiscRawState.getState().inspector.category = {
               newName: w.eagle.inspector.inspectorFolder.name,
               newDescription: w.eagle.inspector.inspectorFolder.description || "",
               createDate: w.eagle.inspector.inspectorFolder.modificationTime,
@@ -1299,11 +1298,11 @@ export function machineryUpdateSelection(s: any): void {
             };
             syncInspectorFromScope();
           }
-          else if (s.currentSmartFolder) {
-            s.inspector.category = {
-              newName: s.currentSmartFolder.name,
-              newDescription: s.currentSmartFolder.description || "",
-              createDate: s.currentSmartFolder.modificationTime,
+          else if (useFolderState.getState().currentSmartFolder) {
+            useMiscRawState.getState().inspector.category = {
+              newName: useFolderState.getState().currentSmartFolder.name,
+              newDescription: useFolderState.getState().currentSmartFolder.description || "",
+              createDate: useFolderState.getState().currentSmartFolder.modificationTime,
               imageCount: useItemState.getState().allData.length,
               fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
               exportable: true,
@@ -1315,8 +1314,8 @@ export function machineryUpdateSelection(s: any): void {
     }
 
     // 排序標籤，優先使用群組順序排，皆者使用字母順序排
-    if (s.inspector.newTags.length > 0) {
-      s.inspector.newTags = sortTagsForSelection(s, s.inspector.newTags);
+    if (useMiscRawState.getState().inspector.newTags.length > 0) {
+      useMiscRawState.getState().inspector.newTags = sortTagsForSelection(useMiscRawState.getState().inspector.newTags);
       syncInspectorFromScope();
     }
   }, 30);
@@ -1328,21 +1327,21 @@ let nextTimeout: any = null;
 let prevTimeout: any = null;
 
 /* sortTags（bundle 54828 逐字；$scope→s。try/catch 原码自带——tagMappings 缺项不炸派生） */
-function sortTagsForSelection(s: any, original: any): any {
+function sortTagsForSelection(original: any): any {
   try {
     if (!original || original.length === 0) return;
     let tags = [...original];
 
     const tagGroupsIndexMap: any = {};
-    s.TagManager.groups.forEach((tagGroup: any, index: any) => {
+    useMiscRawState.getState().TagManager.groups.forEach((tagGroup: any, index: any) => {
       tagGroupsIndexMap[tagGroup.id] = index;
     });
 
-    tagGroupsIndexMap['none'] = s.TagManager.groups.length;
+    tagGroupsIndexMap['none'] = useMiscRawState.getState().TagManager.groups.length;
 
     tags = tags.sort((tagA: any, tagB: any) => {
-      const a = s.TagManager.tagMappings[tagA];
-      const b = s.TagManager.tagMappings[tagB];
+      const a = useMiscRawState.getState().TagManager.tagMappings[tagA];
+      const b = useMiscRawState.getState().TagManager.tagMappings[tagB];
       const aName = a.name;
       const bName = b.name;
       const aGroup = a?.groups?.[0] || 'none';

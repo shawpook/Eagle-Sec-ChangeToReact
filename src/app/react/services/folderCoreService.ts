@@ -54,6 +54,7 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { useFolderState } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
@@ -414,7 +415,7 @@ export function addImagesToFolder(...args: any[]) {
             hiddenByCurrentFilter(images);
             machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
                 machineryRebindRefresh(s, true);
-                machineryUpdateSelection(s);
+                machineryUpdateSelection();
             });
 
             var message = $filter('i18n')("notify.image.moveToFolder", [
@@ -437,7 +438,7 @@ export function addImagesToFolder(...args: any[]) {
                 syncInspectorFromScope();
                 machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
                     machineryRebindRefresh(s);
-                    machineryUpdateSelection(s);
+                    machineryUpdateSelection();
                 });
                 ayncsImagesChange(origin);
             });
@@ -449,8 +450,6 @@ export function addImagesToFolder(...args: any[]) {
 
 export function moveFoldersAsSibling(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folders, folder, isBottom) {
 
             if (!folder || !folders || folders.length === 0) return;
@@ -459,7 +458,7 @@ export function moveFoldersAsSibling(...args: any[]) {
             if (folders.indexOf(folder) > -1) return;
             
             // 避免老爸拖拽到子孙
-            var ancestors = machineryGetAncestorFolders(s, folder, []);
+            var ancestors = machineryGetAncestorFolders(folder, []);
             for (let i = 0; i < folders.length; i++) {
                 const ancestor = folders[i];
                 if (ancestors.indexOf(ancestor) > -1) {
@@ -550,7 +549,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                 } catch (err) {};
             }
             catch (err) {
-                s.folders = clone;
+                writeScopeField('folders', clone);
                 electronLog && electronLog.error(err.stack || err);
             }
         }).apply(null, args);
@@ -558,8 +557,6 @@ export function moveFoldersAsSibling(...args: any[]) {
 
 export function moveFoldersToFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folders, folder) {
 
             if (!folder || !folders || folders.length === 0) return;
@@ -568,7 +565,7 @@ export function moveFoldersToFolder(...args: any[]) {
             if (folders.indexOf(folder) > -1) return;
 
             // 避免老爸拖拽到子孙
-            var ancestors = machineryGetAncestorFolders(s, folder, []);
+            var ancestors = machineryGetAncestorFolders(folder, []);
             for (let i = 0; i < folders.length; i++) {
                 const ancestor = folders[i];
                 if (ancestors.indexOf(ancestor) > -1) {
@@ -647,7 +644,7 @@ export function moveFoldersToFolder(...args: any[]) {
                 } catch (err) {};
             }
             catch (err) {
-                s.folders = clone;
+                writeScopeField('folders', clone);
                 electronLog && electronLog.error(err.stack || err);
             }
         }).apply(null, args);
@@ -691,7 +688,7 @@ export function emptyRestore(...args: any[]) {
 
                     machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                         machineryRebindRefresh(s);
-                        machineryUpdateSelection(s);
+                        machineryUpdateSelection();
                         scopeEvalAsync();
                     });
                 });
@@ -831,7 +828,7 @@ export function openFolder(...args: any[]) {
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
-	            var ancestors = machineryGetAncestorFolders(s, folder, []);
+	            var ancestors = machineryGetAncestorFolders(folder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
 	                    machineryExpandFolder(ancestors[i]);
@@ -928,7 +925,7 @@ export function openSmartFolder(...args: any[]) {
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
-	            var ancestors = machineryGetAncestorSmartFolders(s, smartFolder, []);
+	            var ancestors = machineryGetAncestorSmartFolders(smartFolder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
 	                    machineryExpandSmartFolder(ancestors[i]);

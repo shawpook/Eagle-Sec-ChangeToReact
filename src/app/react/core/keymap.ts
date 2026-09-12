@@ -22,6 +22,7 @@ import { useBodyState } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
+import { useSelectionState } from '../store/selectionState';
 /**
  * b1-9bv-A：mousetrap v1.6.3 自研替换（js/vendors/mousetrap.min.js 退役）。
  *
@@ -301,9 +302,9 @@ export function machineryBuildMousetrap(s: any): any {
   const hardcodedShortcuts: any = {
     '*': (folders: any, isExpand: any) => machineryToggleAllFolders(folders, isExpand),
     '/': (folders: any, isExpand: any) => machineryToggleAllFolders(folders, isExpand),
-    '-': (event: any) => machineryZoomOut(s, event),
-    '+': (event: any) => machineryZoomIn(s, event),
-    '=': (event: any) => machineryZoomIn(s, event),
+    '-': (event: any) => machineryZoomOut(event),
+    '+': (event: any) => machineryZoomIn(event),
+    '=': (event: any) => machineryZoomIn(event),
     '0': () => machineryRemoveStar(s),
     '1': (event: any) => machineryChangeTo1Star(s, event),
     '2': (event: any) => machineryChangeTo2Star(s, event),
@@ -315,7 +316,7 @@ export function machineryBuildMousetrap(s: any): any {
     'g': (event: any) => machineryOpenActionsPanel(event),
     'f': (event: any) => machineryOpenInspectorFolderSelectPanel(s, event),
     'j': (event: any) => machineryOpenQuickSearch(event),
-    'n': ($event: any) => machineryNHandler(s, $event),
+    'n': ($event: any) => machineryNHandler($event),
     'm': ($event: any) => machineryMHandler($event),
     'mod+z': () => machineryUndo(s),
     'mod+a': (event: any) => machinerySelectAll(s, event),
@@ -350,8 +351,8 @@ export function machineryBuildMousetrap(s: any): any {
     'alt+left': () => machineryPrevHistory(),
     'mod+s': () => machinerySaveHandler(),
     '`': (event: any) => machineryToggleZoom(s, event),
-    'mod++': (event: any) => machineryZoomIn(s, event),
-    'mod+-': (event: any) => machineryZoomOut(s, event),
+    'mod++': (event: any) => machineryZoomIn(event),
+    'mod+-': (event: any) => machineryZoomOut(event),
     'tab': ($event: any) => machineryToggleAll(s, $event),
     'alt+up': () => machineryOpenParentFolder(),
     'alt+shift+n': (event: any) => machineryCreateTxtFileFromTemplate(event),
@@ -829,15 +830,15 @@ export function machineryModUpHandler(event: any): void {
   }
 }
 
-export function machineryNHandler(s: any, $event: any): void {
+export function machineryNHandler($event: any): void {
   const w = window as any;
-  if (!s.isDetailMode) {
+  if (!useBodyState.getState().isDetailMode) {
     return;
   }
-  if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
+  if (w.VIDEO_TYPES[useSelectionState.getState().current.ext] || w.AUDIO_TYPES[useSelectionState.getState().current.ext]) {
     var video = q(".detail-wrap video") || q(".detail-wrap mpv-video");
     if (video) {
-      machineryAddVideoComment(s, s.current, video);
+      machineryAddVideoComment(useSelectionState.getState().current, video);
     }
   }
 }

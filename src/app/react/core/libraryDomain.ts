@@ -149,7 +149,7 @@ function domainGetMemory(): void {
   } catch (err) { /* noop */ }
 }
 
-function domainDigestDurationTest(s: any): void {
+function domainDigestDurationTest(): void {
   // b1-9av：本函数为 bundle 时代 digest 诊断（Angular injector 面带守卫）——shim 世界
   // 无 window.angular，守卫恒 clearInterval 空转，非哑雷（勿列入 structuredClone 替换清单）
   const w = window as any;
@@ -166,7 +166,6 @@ function domainDigestDurationTest(s: any): void {
       });
     } catch (err) { clearInterval(interval); }
   }, 1000);
-  void s;
   void w;
 }
 
@@ -516,7 +515,7 @@ export function takeoverLibraryDomain(): void {
 
     console.timeEnd("load-library");
     if ((window as any).PERFORMANCE_MONITOR.watchDigest) {
-      domainDigestDurationTest(s);
+      domainDigestDurationTest();
     }
 
     if ((window as any).PERFORMANCE_MONITOR.watchMemoryUsage) {
@@ -805,7 +804,7 @@ export function takeoverLibraryDomain(): void {
             setTimeout(function () {
               const DAY_7 = 604800000;
               if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) &&
-                machineryExistInSmartFilter(s, lastSmartFolder, lastItem)
+                machineryExistInSmartFilter(lastSmartFolder, lastItem)
               ) {
                 s.selected = [lastItem];
                 syncInspectorFromScope();
@@ -1140,14 +1139,14 @@ export function takeoverLibraryDomain(): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryGetAncestorSmartFolders(s: any, folder: any, folders: any[]): any[] {
+export function machineryGetAncestorSmartFolders(folder: any, folders: any[]): any[] {
   const w = window as any;
   try {
-    if (folder.parent && s.smartFolderMappings[folder.parent]) {
-      var parent = s.smartFolderMappings[folder.parent];
+    if (folder.parent && useItemState.getState().smartFolderMappings[folder.parent]) {
+      var parent = useItemState.getState().smartFolderMappings[folder.parent];
       if (parent.id != folder.id) {
         folders.push(parent);
-        return machineryGetAncestorSmartFolders(s, parent, folders);
+        return machineryGetAncestorSmartFolders(parent, folders);
       }
     }
     return folders;
@@ -1379,13 +1378,13 @@ export function machineryBatchRenameSmartFolders(): void {
 }
 
 /* 取得文件夹祖先们（bundle 42508 逐字） */
-export function machineryGetAncestorFolders(s: any, folder: any, folders: any[]): any[] {
+export function machineryGetAncestorFolders(folder: any, folders: any[]): any[] {
   try {
-    if (folder.parent && s.folderMappings[folder.parent]) {
-      const parent = s.folderMappings[folder.parent];
+    if (folder.parent && useItemState.getState().folderMappings[folder.parent]) {
+      const parent = useItemState.getState().folderMappings[folder.parent];
       if (parent.id != folder.id) {
         folders.push(parent);
-        return machineryGetAncestorFolders(s, parent, folders);
+        return machineryGetAncestorFolders(parent, folders);
       }
     }
     folders = [...new Set(folders)];
@@ -2444,7 +2443,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
     else {
       machineryRebindRefresh(s, true);
     }
-    machineryUpdateSelection(s);
+    machineryUpdateSelection();
     if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
   });
@@ -2787,9 +2786,9 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
 
 }
 
-export function machineryResetFolderCover(s: any, folder: any): void {
+export function machineryResetFolderCover(folder: any): void {
   if (!folder) return;
-  var ancestors = machineryGetAncestorFolders(s, folder, [folder]);
+  var ancestors = machineryGetAncestorFolders(folder, [folder]);
   ancestors.push(folder);
   ancestors.forEach(function (f: any) {
     f.covers = [];
@@ -2927,7 +2926,7 @@ export function machinerySmartFolderCount(s: any, smartFolder: any): any {
     var images: any[] = [];
     images = s.raw.filter(function (image: any) {
       if (image.isDeleted) return false;
-      return machineryExistInSmartFilter(s, smartFolder, image);
+      return machineryExistInSmartFilter(smartFolder, image);
     });
     if (Object.keys(s.lockedImages).length > 0) {
       images = images.filter(s.lockImageFilter);
@@ -3034,7 +3033,7 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
     machineryUpdateSidebarList();
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       s.reload();
-      machineryUpdateSelection(s);
+      machineryUpdateSelection();
       s.isLoading = false;
       s.unlockPassword = "";
       scopeEvalAsync();

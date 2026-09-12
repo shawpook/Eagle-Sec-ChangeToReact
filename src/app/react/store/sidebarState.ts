@@ -1,8 +1,13 @@
 import { create } from 'zustand';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
-import { classObjectToString, getBodyScope } from '../core/appCore';
+import { classObjectToString } from '../core/appCore';
 import { getNodeClass, getQuickAccessClass, getSmartFolderClass } from '../services/sidebarService';
+import { useMiscRawState } from './miscRawState';
+import { useItemState } from './itemState';
+import { usePreferencesState } from './preferencesState';
+import { useLayoutState } from './layoutState';
+import { useFolderState } from './folderState';
 
 /**
  * 阶段2：侧栏状态 —— 快照自 EagleController scope（规范 app.bundle.js:20197+）。
@@ -121,9 +126,7 @@ let lastSidebarSnapshot: any = null;
  * re-sync。原 startScopeSync 200ms 轮询退役。
  */
 export function syncSidebarFromScope(): void {
-  const scope: any = getBodyScope();
-  if (!scope) return;
-  const next = buildSnapshot(scope);
+  const next = buildSnapshot();
   if (lastSidebarSnapshot !== null && shallowEqSidebar(next, lastSidebarSnapshot)) return;
   lastSidebarSnapshot = next;
   setSidebarSnapshot(next);
@@ -141,10 +144,10 @@ export function bindSidebarSync(): void {
 
 const themePath = (theme: string) => (theme === 'light' || theme === 'lightgray' ? 'light' : 'dark');
 
-function buildSnapshot(scope: any): SidebarSnapshot {
-  const list = Array.isArray(scope.sidebarList) ? scope.sidebarList : [];
-  const folderMappings = scope.folderMappings || {};
-  const smartFolderMappings = scope.smartFolderMappings || {};
+function buildSnapshot(): SidebarSnapshot {
+  const list = Array.isArray(useMiscRawState.getState().sidebarList) ? useMiscRawState.getState().sidebarList : [];
+  const folderMappings = useItemState.getState().folderMappings || {};
+  const smartFolderMappings = useItemState.getState().smartFolderMappings || {};
   const nodes: SidebarNodeSnapshot[] = list.map((raw: any) => {
     const node: SidebarNodeSnapshot = {
       id: raw.id,
@@ -190,38 +193,38 @@ function buildSnapshot(scope: any): SidebarSnapshot {
     return node;
   });
 
-  const prefs = scope.preferences || {};
+  const prefs = usePreferencesState.getState().preferences || {};
   const shortcuts = prefs.shortcuts || {};
   return {
     ready: true,
     nodes,
-    viewMode: scope.viewMode,
-    currentId: scope.currentId,
-    folderKeyword: scope.folderKeyword || '',
-    isCleaningTrash: !!scope.isCleaningTrash,
-    isUILoaded: !!scope.isUILoaded,
-    isLoading: !!scope.isLoading,
-    isExpandFolder: scope.isExpandFolder !== false,
-    isExpandSmartFolder: scope.isExpandSmartFolder !== false,
-    isExpandQuickAccess: scope.isExpandQuickAccess !== false,
-    sidebarWidth: (scope.containerSize && scope.containerSize.sidebar) || 220,
-    libraryPath: scope.libraryPath || '',
-    libraryName: scope.libraryName || '',
-    showSlowNotify: !!scope.showSlowNotify,
-    showNTFSWarning: !!scope.showNTFSWarning,
-    paletteQueuePaused: !!scope.paletteQueuePaused,
-    currentProcessCount: scope.currentProcessCount || 0,
-    sidebarIndex: typeof scope.sidebarIndex === 'number' ? scope.sidebarIndex : -1,
-    theme: scope.theme || 'gray',
+    viewMode: useBodyState.getState().viewMode,
+    currentId: useMiscRawState.getState().currentId,
+    folderKeyword: useMiscRawState.getState().folderKeyword || '',
+    isCleaningTrash: !!useBodyState.getState().isCleaningTrash,
+    isUILoaded: !!useMiscRawState.getState().isUILoaded,
+    isLoading: !!useBodyState.getState().isLoading,
+    isExpandFolder: useMiscRawState.getState().isExpandFolder !== false,
+    isExpandSmartFolder: useMiscRawState.getState().isExpandSmartFolder !== false,
+    isExpandQuickAccess: useMiscRawState.getState().isExpandQuickAccess !== false,
+    sidebarWidth: (useLayoutState.getState().containerSize && useLayoutState.getState().containerSize.sidebar) || 220,
+    libraryPath: useMiscRawState.getState().libraryPath || '',
+    libraryName: useMiscRawState.getState().libraryName || '',
+    showSlowNotify: !!useMiscRawState.getState().showSlowNotify,
+    showNTFSWarning: !!useMiscRawState.getState().showNTFSWarning,
+    paletteQueuePaused: !!useMiscRawState.getState().paletteQueuePaused,
+    currentProcessCount: useMiscRawState.getState().currentProcessCount || 0,
+    sidebarIndex: typeof useMiscRawState.getState().sidebarIndex === 'number' ? useMiscRawState.getState().sidebarIndex : -1,
+    theme: useBodyState.getState().theme || 'gray',
     counts: {
-      all: Array.isArray(scope.all) ? scope.all.length : 0,
-      unfiled: scope.unfiledCount || 0,
-      untagged: scope.untaggedCount || 0,
-      tags: Array.isArray(scope.tags) ? scope.tags.length : 0,
-      trash: Array.isArray(scope.trash) ? scope.trash.length : 0,
-      quickAccess: Array.isArray(scope.quickAccess) ? scope.quickAccess.length : 0,
-      smartFolders: Array.isArray(scope.smartFolderList) ? scope.smartFolderList.length : 0,
-      folders: Array.isArray(scope.folderList) ? scope.folderList.length : 0,
+      all: Array.isArray(useItemState.getState().all) ? useItemState.getState().all.length : 0,
+      unfiled: useListState.getState().unfiledCount || 0,
+      untagged: useListState.getState().untaggedCount || 0,
+      tags: Array.isArray(useFolderState.getState().tags) ? useFolderState.getState().tags.length : 0,
+      trash: Array.isArray(useItemState.getState().trash) ? useItemState.getState().trash.length : 0,
+      quickAccess: Array.isArray(useMiscRawState.getState().quickAccess) ? useMiscRawState.getState().quickAccess.length : 0,
+      smartFolders: Array.isArray(useMiscRawState.getState().smartFolderList) ? useMiscRawState.getState().smartFolderList.length : 0,
+      folders: Array.isArray(useFolderState.getState().folderList) ? useFolderState.getState().folderList.length : 0,
     },
     keybinds: shortcuts.keybinds || {},
   };

@@ -89,7 +89,7 @@ let domainMuteCalcuteImageBindingTimeoutDuration = 200;
 let domainAddImageTimeLeftInterval: any = null;
 let domainMuteRebind: any = null;
 
-function domainTimeout(s: any, fn: any, ms?: number): any {
+function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
     try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
@@ -278,7 +278,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
     }
   }
   s.finishGenerateQueue.push(generated);
-  machineryRememberVideoCurrentTime(s, s.current);
+  machineryRememberVideoCurrentTime(s.current);
 
   if (s.isDetailMode) {
     if (generated && s.selected && s.selected[0] && generated.id === s.selected[0].id) {
@@ -349,7 +349,7 @@ export function takeoverItemDomain(): void {
       machineryPrependImages([newImage], needUpdateView);
       machineryCalculateImageBinding(s, { ignoreSort: false }, function () {
         ensureMuteRebind(s) && ensureMuteRebind(s)();
-        machineryUpdateSelection(s);
+        machineryUpdateSelection();
       });
     }
     scopeEvalAsync();
@@ -376,7 +376,7 @@ export function takeoverItemDomain(): void {
 
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s, true);
-      machineryUpdateSelection(s);
+      machineryUpdateSelection();
       scopeEvalAsync();
     });
   });
@@ -461,11 +461,11 @@ export function takeoverItemDomain(): void {
       delete img.processingPalette;
     }
 
-    machineryUpdateSelection(s);
+    machineryUpdateSelection();
 
     domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s, true);
-      machineryUpdateSelection(s);
+      machineryUpdateSelection();
       scopeEvalAsync();
     });
     void hashID;
@@ -683,7 +683,7 @@ export function takeoverItemDomain(): void {
     if (!s) return;
     machineryCalculateImageBinding(s, {}, function () {
       ensureMuteRebind(s) && ensureMuteRebind(s)();
-      machineryUpdateSelection(s);
+      machineryUpdateSelection();
     });
     scopeEvalAsync();
   });
@@ -869,7 +869,7 @@ export function getFolderFullPath(...args: any[]) {
             if (folder) {
                 if (folder.parent) {
                     try {
-                        var ancestors = machineryGetAncestorFolders(s, folder, []);
+                        var ancestors = machineryGetAncestorFolders(folder, []);
                         ancestors.unshift(folder);
                         var names = ancestors.reverse().map(function (folder) {
                             return folder.name || "";
@@ -1381,7 +1381,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
 
         if (usePreferencesState.getState().preferences.general.autoSelect !== 'true') {
           if (newItems.length === 1) {
-            domainTimeout(s, function () {
+            domainTimeout(function () {
               scrollToSelectedItem();
             }, 120);
           }
@@ -1398,7 +1398,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
             s.lastSelectedIndex = targetSelectedIndex;
             s.$root.currentFocus = "content";
             if (newItems.length === 1) {
-              domainTimeout(s, function () {
+              domainTimeout(function () {
                 scrollToSelectedItem();
               }, 120);
             }
@@ -1557,7 +1557,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       if (!s.raw) return;
 
       if (!params.ignoreSort) {
-        machinerySortRawData(s, s.orderBy);
+        machinerySortRawData(s.orderBy);
       }
 
       console.time("calculateImageBinding");
@@ -1612,13 +1612,13 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
           });
         }
 
-        ancestorsCache[folder.id] = machineryGetAncestorFolders(s, folder, [folder]);
+        ancestorsCache[folder.id] = machineryGetAncestorFolders(folder, [folder]);
 
         s.folderMappings[folder.id] = folder;
       });
 
       w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any) {
-        folder.extendTags = machineryGetExtendTags(s, folder, []);
+        folder.extendTags = machineryGetExtendTags(folder, []);
         folder.covers = [];
       });
 
@@ -1655,7 +1655,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
                 }
 
                 // 祖先们也都 + 1 , 记录在其他栏位上
-                var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(s, folder, [folder]);
+                var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(folder, [folder]);
                 ancestors.forEach(function (ancestor: any) {
                   // 避免重复加总
                   if (increaseAncestors[ancestor.id]) {
@@ -2975,14 +2975,14 @@ export function machineryReload(s: any): any {
     s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
     machineryRebindRefresh(s);
     machineryRelayout();
-    machineryUpdateSelection(s);
+    machineryUpdateSelection();
     machineryCalculateFilterCounts();
     machineryUpdateSubFolderWidth();
     trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
 
     machineryAutoResizeTagFilter();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
-      machineryAdjustLayoutWidth(s, 0);
+      machineryAdjustLayoutWidth(0);
     }
     s.listDone = true;
 
@@ -3001,100 +3001,100 @@ export function machineryReload(s: any): any {
 }
 
 /* sortRawData（bundle 21621-21708 逐字） */
-export function machinerySortRawData(s: any, orderBy: any): void {
+export function machinerySortRawData(orderBy: any): void {
   console.time("sortRawData");
-  const languageBCP = getLanguageBCP(s);
+  const languageBCP = getLanguageBCP();
   switch (orderBy) {
     case 'NAME':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
       var collator = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
-      s.raw = s.raw.sort(function (a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
         return collator.compare(a.name, b.name);
-      });
+      }));
       syncListFromScope();
       break;
     case 'EXT':
       var collator2 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
-      s.raw = s.raw.sort(function (a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
         return collator2.compare(a.ext, b.ext);
-      });
+      }));
       syncListFromScope();
       break;
     case 'RESOLUTION':
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var ra = a.width * a.height;
         var rb = b.width * b.height;
         if(ra > rb) return 1;
         if(ra < rb) return -1;
         return 0;
-      });
+      }));
       syncListFromScope();
       break;
     case 'FILESIZE':
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var sizeA = parseInt(a.size);
         var sizeB = parseInt(b.size);
         if(sizeA > sizeB) return 1;
         if(sizeA < sizeB) return -1;
         return 0;
-      });
+      }));
       syncListFromScope();
       break;
     case 'RATING':
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var starA = parseInt(a.star) || 0;
         var starB = parseInt(b.star) || 0;
         if(starA > starB) return 1;
         if(starA < starB) return -1;
         return 0;
-      });
+      }));
       syncListFromScope();
       break;
     case 'DURATION':
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var durationA = parseInt(a.duration) || 0;
         var durationB = parseInt(b.duration) || 0;
         if(durationA > durationB) return 1;
         if(durationA < durationB) return -1;
         return 0;
-      });
+      }));
       syncListFromScope();
       break;
     case 'BTIME':
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var btimeA = a.btime || a.modificationTime;
         var btimeB = b.btime || b.modificationTime;
         if(btimeA > btimeB) return -1;
         if(btimeA < btimeB) return 1;
-      });
+      }));
       syncListFromScope();
       break;
     case 'MTIME':
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var mtimeA = a.mtime || a.modificationTime;
         var mtimeB = b.mtime || b.modificationTime;
         if(mtimeA > mtimeB) return -1;
         if(mtimeA < mtimeB) return 1;
-      });
+      }));
       syncListFromScope();
       break;
     case 'TAGS':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
       var collator3 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
-      s.raw = s.raw.sort(function (a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
         const aTag1 = a?.tags?.[0] ?? '';
         const bTag1 = b?.tags?.[0] ?? '';
         return collator3.compare(aTag1, bTag1);
-      });
+      }));
       syncListFromScope();
       break;
     default:
-      s.raw = s.raw.sort(function(a: any, b: any) {
+      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
         var mtimeA = a.modificationTime || a.mtime;
         var mtimeB = b.modificationTime || b.mtime;
         if(mtimeA > mtimeB) return -1;
         if(mtimeA < mtimeB) return 1;
-      });
+      }));
       syncListFromScope();
   }
   updateCurrentOrderAndIncrease();

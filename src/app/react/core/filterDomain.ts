@@ -50,6 +50,8 @@ import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
 import { useItemState } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
+import { useFolderState } from '../store/folderState';
+import { useBodyState } from '../store/bodyState';
 declare const RecentFileManager: any;
 declare const UrlStateService: any;
 declare const analytics: any;
@@ -59,7 +61,7 @@ declare const i18n: any;
 declare const rectSelecting: any;
 let done = false;
 
-function domainTimeout(s: any, fn: any, ms?: number): any {
+function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
     try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
   }, ms || 0);
@@ -194,7 +196,7 @@ export function takeoverFilterDomain(): void {
     rebindRefreshChannel.on(function (mute: any) {
       const s: any = getBodyScope();
       if (!s) return;
-      domainTimeout(s, function () {
+      domainTimeout(function () {
         machineryRebindRefresh(s, mute, undefined, undefined);
       }, 500);
     });
@@ -376,7 +378,7 @@ export function contentFilter(...args: any[]) {
                     if (__lv_image.isDeleted) return false;
                     for (let i = 0; i < useMiscRawState.getState().selectedSmartFolders.length; i++) {
                         let smartFolder = useMiscRawState.getState().selectedSmartFolders[i];
-                		if (machineryExistInSmartFilter(s, smartFolder, __lv_image)) {
+                		if (machineryExistInSmartFilter(smartFolder, __lv_image)) {
                             return true;
                         }
                     }
@@ -390,14 +392,14 @@ export function contentFilter(...args: any[]) {
                 	else if (s.currentSmartFolder.children && s.currentSmartFolder.children.length > 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
                 		for (let i = 0; i < s.currentSmartFolder.children.length; i++) {
     	                    let smartFolder = s.currentSmartFolder.children[i];
-    	            		if (machineryExistInSmartFilter(s, smartFolder, __lv_image)) {
+    	            		if (machineryExistInSmartFilter(smartFolder, __lv_image)) {
     	                        return true;
     	                    }
     	                }
     	                return false;
                 	}
                 	else {
-                		return machineryExistInSmartFilter(s, s.currentSmartFolder, __lv_image);
+                		return machineryExistInSmartFilter(s.currentSmartFolder, __lv_image);
                 	}
                 }
                 switch (s.viewMode) {
@@ -1342,7 +1344,7 @@ export async function machineryCalcuteFilterResult(s: any, data: any[], contentF
         result = contentFilterCache.slice(0);
       }
       else {
-        result = s.raw.filter((x: any) => machineryContentFilter(s, x));
+        result = s.raw.filter((x: any) => machineryContentFilter(x));
         s.contentFilterCache = result.slice(0);
       }
       const filtered = await machineryFilterData(s, result);
@@ -1447,44 +1449,44 @@ export function machineryColorFilter(image: any): boolean {
     return false;
 }
 
-export function machineryContentFilter(s: any, image: any): boolean {
+export function machineryContentFilter(image: any): boolean {
   const w = window as any;
   try {
     if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
       if (image.isDeleted) return false;
       for (let i = 0; i < useMiscRawState.getState().selectedSmartFolders.length; i++) {
         let smartFolder = useMiscRawState.getState().selectedSmartFolders[i];
-        if (machineryExistInSmartFilter(s, smartFolder, image)) {
+        if (machineryExistInSmartFilter(smartFolder, image)) {
           return true;
         }
       }
       return false;
     }
-    else if (s.currentSmartFolder) {
+    else if (useFolderState.getState().currentSmartFolder) {
       if (image.isDeleted) return false;
-      if (s.currentSmartFolder.children && s.currentSmartFolder.children.length === 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
+      if (useFolderState.getState().currentSmartFolder.children && useFolderState.getState().currentSmartFolder.children.length === 0 && useFolderState.getState().currentSmartFolder.conditions && useFolderState.getState().currentSmartFolder.conditions.length === 0) {
         return false;
       }
-      else if (s.currentSmartFolder.children && s.currentSmartFolder.children.length > 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
-        for (let i = 0; i < s.currentSmartFolder.children.length; i++) {
-          let smartFolder = s.currentSmartFolder.children[i];
-          if (machineryExistInSmartFilter(s, smartFolder, image)) {
+      else if (useFolderState.getState().currentSmartFolder.children && useFolderState.getState().currentSmartFolder.children.length > 0 && useFolderState.getState().currentSmartFolder.conditions && useFolderState.getState().currentSmartFolder.conditions.length === 0) {
+        for (let i = 0; i < useFolderState.getState().currentSmartFolder.children.length; i++) {
+          let smartFolder = useFolderState.getState().currentSmartFolder.children[i];
+          if (machineryExistInSmartFilter(smartFolder, image)) {
             return true;
           }
         }
         return false;
       }
       else {
-        return machineryExistInSmartFilter(s, s.currentSmartFolder, image);
+        return machineryExistInSmartFilter(useFolderState.getState().currentSmartFolder, image);
       }
     }
-    switch (s.viewMode) {
+    switch (useBodyState.getState().viewMode) {
       case "all":
         if (!image.isDeleted) return true;
         break;
       case "unfiled":
         if (image.isDeleted) return false;
-        if (!image.folders || image.folders.length === 0 || (image.folders.length === 1 && image.folders[0] && !s.folderMappings[image.folders[0]])) {
+        if (!image.folders || image.folders.length === 0 || (image.folders.length === 1 && image.folders[0] && !useItemState.getState().folderMappings[image.folders[0]])) {
           return true;
         }
         break;
@@ -1514,15 +1516,15 @@ export function machineryContentFilter(s: any, image: any): boolean {
           }
         }
         // 文件夹单选
-        else if (s.currentFolder) {
+        else if (useFolderState.getState().currentFolder) {
           if (image.isDeleted) return false;
-          if (isInFolder(image, s.currentFolder)) {
+          if (isInFolder(image, useFolderState.getState().currentFolder)) {
             return true;
           }
           return false;
-        } else if (s.currentTag) {
+        } else if (useMiscRawState.getState().currentTag) {
           if (image.isDeleted) return false;
-          return image.tags.indexOf(s.currentTag) > -1;
+          return image.tags.indexOf(useMiscRawState.getState().currentTag) > -1;
         }
         return false;
     }
@@ -1534,7 +1536,7 @@ export function machineryContentFilter(s: any, image: any): boolean {
 }
 
 /* existInSmartFilter（bundle 32091-32116 逐字；递归 parent 链） */
-export function machineryExistInSmartFilter(s: any, smartFolder: any, image: any): boolean {
+export function machineryExistInSmartFilter(smartFolder: any, image: any): boolean {
   try {
     var conditions = smartFolder.conditions;
 
@@ -1546,9 +1548,9 @@ export function machineryExistInSmartFilter(s: any, smartFolder: any, image: any
       }
       if (!isMatch) return false;
     }
-    let parent = s.smartFolderMappings[smartFolder.parent];
+    let parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
     if (parent) {
-      return machineryExistInSmartFilter(s, parent, image);
+      return machineryExistInSmartFilter(parent, image);
     }
     else {
       return true;

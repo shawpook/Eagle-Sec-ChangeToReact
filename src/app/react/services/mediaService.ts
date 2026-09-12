@@ -8,6 +8,7 @@ import { q, cssSet, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from
 import { machineryUpdateItemView } from '../core/itemDomain';
 import { machineryToggleSlideshow } from '../core/miscDomain';
 import { useMiscRawState } from '../store/miscRawState';
+import { useSelectionState } from '../store/selectionState';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -21,7 +22,7 @@ import { useMiscRawState } from '../store/miscRawState';
    构造 comment（duration/annotation）→ current.comments 插入 + duration 升序排序 →
    REFRESH_VIDEO_COMMENTS 广播 + updateItemView（scope 解析）+ ipcRenderer 统一表达式
    send('image-change')） */
-export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
+export function mediaAddVideoComment(video: any, videoElem: any): void {
   const w = window as any;
   if (!video || !videoElem) return;
 
@@ -60,12 +61,12 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
       lastModified: Date.now()
     }
 
-    if (!s.current.comments) {
-      s.current.comments = [];
+    if (!useSelectionState.getState().current.comments) {
+      useSelectionState.getState().current.comments = [];
     }
 
-    s.current.comments.push(comment);
-    s.current.comments = s.current.comments.sort(function (a: any, b: any) {
+    useSelectionState.getState().current.comments.push(comment);
+    useSelectionState.getState().current.comments = useSelectionState.getState().current.comments.sort(function (a: any, b: any) {
       var da = a.duration;
       var db = b.duration;
       if (da > db) return 1;
@@ -77,12 +78,12 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
     scopeEvalAsync();
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
-    ipc.send('image-change', s.current);
+    ipc.send('image-change', useSelectionState.getState().current);
   })
 }
 
 /* getVideoPlayer（bundle 36159-36164 逐字，controller 闭包：mpv 优先 native 次之） */
-export function mediaGetVideoPlayer(s: any): any {
+export function mediaGetVideoPlayer(): any {
   const w = window as any;
   var mpv = document.querySelector(".detail-wrap mpv-video");
   if (mpv) return { el: mpv, type: 'mpv' };
@@ -93,11 +94,11 @@ export function mediaGetVideoPlayer(s: any): any {
 
 /* rememberVideoCurrentTime（bundle 31726-31736 逐字：视频类 → getVideoPlayer().el.currentTime
    → eagle.videoPlayer.currentTime.{id} 键） */
-export function mediaRememberVideoCurrentTime(s: any, item: any): void {
+export function mediaRememberVideoCurrentTime(item: any): void {
   const w = window as any;
   if (!item) return;
   if (w.VIDEO_TYPES[item.ext]) {
-    var player = mediaGetVideoPlayer(s);
+    var player = mediaGetVideoPlayer();
     if (player) {
       var currentTime = player.el.currentTime;
       w.localStorage.setItem("eagle.videoPlayer.currentTime." + item.id, currentTime);
@@ -112,7 +113,7 @@ export async function mediaVideoScreenShot(s: any, copyMode: any): Promise<void>
   const w = window as any;
   if (s.current && w.VIDEO_TYPES[s.current.ext]) {
 
-    var player = mediaGetVideoPlayer(s);
+    var player = mediaGetVideoPlayer();
     if (!player) return;
 
     var currentTime = player.el.currentTime;
@@ -179,13 +180,11 @@ export async function mediaVideoScreenShot(s: any, copyMode: any): Promise<void>
 }
 /* ── React 直调便捷面（无 scope 参数版本）——组件侧直调不绕 scope。 */
 export function getVideoPlayer(): any {
-  const s = getBodyScope();
-  return s ? mediaGetVideoPlayer(s) : null;
+  return mediaGetVideoPlayer();
 }
 
 export function rememberVideoCurrentTime(item: any): void {
-  const s = getBodyScope();
-  if (s) mediaRememberVideoCurrentTime(s, item);
+  mediaRememberVideoCurrentTime(item);
 }
 
 export function videoScreenShot(copyMode?: any): Promise<void> {
@@ -195,8 +194,7 @@ export function videoScreenShot(copyMode?: any): Promise<void> {
 }
 
 export function addVideoComment(video: any, videoElem: any): void {
-  const s = getBodyScope();
-  if (s) mediaAddVideoComment(s, video, videoElem);
+  mediaAddVideoComment(video, videoElem);
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -231,7 +229,7 @@ export function flipVideo(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function (event) {
-            var player = machineryGetVideoPlayer(s);
+            var player = machineryGetVideoPlayer();
             if (!player) return;
 
             if (player.type === 'mpv') {
@@ -258,7 +256,7 @@ export function rotateVideo(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function (event) {
-            var player = machineryGetVideoPlayer(s);
+            var player = machineryGetVideoPlayer();
             if (!player) return;
 
             if (player.type === 'mpv') {
@@ -324,7 +322,7 @@ export function setAsVideoThumbnail(...args: any[]) {
     return (async function() {
         if (!s.current) return;
 
-        var player = machineryGetVideoPlayer(s);
+        var player = machineryGetVideoPlayer();
         if (!player) return;
 
         var currentTime = player.el.currentTime;
@@ -452,18 +450,18 @@ export function machineryPrevGifFrame(amount: any = 1): void {
 }
 
 /* addVideoComment（bundle 21182-21237 逐字：-> mediaAddVideoComment） */
-export function machineryAddVideoComment(s: any, video: any, videoElem: any): void {
-  mediaAddVideoComment(s, video, videoElem);
+export function machineryAddVideoComment(video: any, videoElem: any): void {
+  mediaAddVideoComment(video, videoElem);
 }
 
 /* getVideoPlayer（bundle 36159-36164 逐字：mpv 优先 native 次之） */
-export function machineryGetVideoPlayer(s: any): any {
-  return mediaGetVideoPlayer(s);
+export function machineryGetVideoPlayer(): any {
+  return mediaGetVideoPlayer();
 }
 
 /* rememberVideoCurrentTime（bundle 31726-31736 逐字） */
-export function machineryRememberVideoCurrentTime(s: any, item: any): void {
-  mediaRememberVideoCurrentTime(s, item);
+export function machineryRememberVideoCurrentTime(item: any): void {
+  mediaRememberVideoCurrentTime(item);
 }
 
 /* videoScreenShot（bundle 33233-33288 逐字 async） */

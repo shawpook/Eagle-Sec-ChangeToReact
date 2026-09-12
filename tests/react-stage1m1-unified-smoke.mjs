@@ -282,11 +282,11 @@ try {
     ] }] };
     const img = { name: 'Alpha One', ext: 'png', tags: [], folders: [], width: 100, height: 50, size: 1, modificationTime: Date.now() };
     let r1 = null, r2 = null, r3 = null;
-    try { r1 = M.existInSmartFilter(s, folder, img); } catch (err) { r1 = 'err:' + err.message; }
+    try { r1 = M.existInSmartFilter(folder, img); } catch (err) { r1 = 'err:' + err.message; }
     folder.conditions[0].rules[0].value = 'Zeta';
-    try { r2 = M.existInSmartFilter(s, folder, img); } catch (err) { r2 = 'err:' + err.message; }
+    try { r2 = M.existInSmartFilter(folder, img); } catch (err) { r2 = 'err:' + err.message; }
     folder.conditions[0].rules[0] = { property: 'type', method: 'equal', value: 'png' };
-    try { r3 = M.existInSmartFilter(s, folder, img); } catch (err) { r3 = 'err:' + err.message; }
+    try { r3 = M.existInSmartFilter(folder, img); } catch (err) { r3 = 'err:' + err.message; }
     window.__a9 = (M && ruleFnsOk && r1 === true && r2 === false && r3 === true) ? 'ok' : 'fail:' + [ruleFnsOk, r1, r2, r3].join(',');
     return true;
   })()`);

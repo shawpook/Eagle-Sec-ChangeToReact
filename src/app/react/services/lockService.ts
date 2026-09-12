@@ -130,7 +130,7 @@ export function unlockPasswordKeyup(...args: any[]) {
                     machineryUpdateSidebarList();
                     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
                         s.reload();
-                        machineryUpdateSelection(s);
+                        machineryUpdateSelection();
                         s.isLoading = false;
                         s.unlockPassword = "";
                     });

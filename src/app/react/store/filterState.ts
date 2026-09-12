@@ -1,9 +1,11 @@
 import { create } from 'zustand';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
-import { getBodyScope } from '../core/appCore';
+
 
 import { machineryFilterContent } from '../core/filterDomain';
+import { useMiscRawState } from './miscRawState';
+import { usePreferencesState } from './preferencesState';
 /**
  * 阶段3b：筛选面板状态 —— 快照自 EagleController scope + eagle.filter（bundle:312-606 ItemFilter）。
  * filterRules 的变更由各 item 的 click 序列产生（改规则 → page=1 → filterContent → digest → 深比较触发同步）。
@@ -103,9 +105,7 @@ let lastFilterSnapshot: any = null;
  * 触发 re-sync。原 startScopeSync 200ms 轮询退役。
  */
 export function syncFilterFromScope(): void {
-  const scope: any = getBodyScope();
-  if (!scope) return;
-  const next = buildSnapshot(scope);
+  const next = buildSnapshot();
   if (lastFilterSnapshot !== null && shallowEqFilter(next, lastFilterSnapshot)) return;
   lastFilterSnapshot = next;
   setSnapshot(next);
@@ -121,12 +121,12 @@ export function bindFilterSync(): void {
   syncFilterFromScope();
 }
 
-function buildSnapshot(scope: any): FilterSnapshot {
-  const filter = scope.eagle?.filter || {};
-  const preferences = scope.preferences || {};
-  const containFolders = Array.isArray(scope.containFolders) ? scope.containFolders : [];
-  const containTags = Array.isArray(scope.containTags) ? scope.containTags : [];
-  const groups = Array.isArray(scope.TagManager?.groups) ? scope.TagManager.groups : [];
+function buildSnapshot(): FilterSnapshot {
+  const filter = useMiscRawState.getState().eagle?.filter || {};
+  const preferences = usePreferencesState.getState().preferences || {};
+  const containFolders = Array.isArray(useMiscRawState.getState().containFolders) ? useMiscRawState.getState().containFolders : [];
+  const containTags = Array.isArray(useMiscRawState.getState().containTags) ? useMiscRawState.getState().containTags : [];
+  const groups = Array.isArray(useMiscRawState.getState().TagManager?.groups) ? useMiscRawState.getState().TagManager.groups : [];
   return {
     ready: true,
     filterIsOpen: !!filter.isOpen,
@@ -134,11 +134,11 @@ function buildSnapshot(scope: any): FilterSnapshot {
     isLock: !!filter.isLock,
     toolbarTypes: Array.isArray(filter.toolbar) ? filter.toolbar.map((t: any) => t.type) : [],
     pinned: JSON.parse(JSON.stringify(filter.pinned || {})),
-    savedFilterCount: Array.isArray(scope.SavedFilter?.filters) ? scope.SavedFilter.filters.length : 0,
-    savedFilterIsOpen: !!scope.SavedFilter?.isOpen,
-    keyword: scope.keyword || '',
-    filteredsCount: Array.isArray(scope.filtereds) ? scope.filtereds.length : 0,
-    theme: scope.theme || 'gray',
+    savedFilterCount: Array.isArray(useMiscRawState.getState().SavedFilter?.filters) ? useMiscRawState.getState().SavedFilter.filters.length : 0,
+    savedFilterIsOpen: !!useMiscRawState.getState().SavedFilter?.isOpen,
+    keyword: useListState.getState().keyword || '',
+    filteredsCount: Array.isArray(useMiscRawState.getState().filtereds) ? useMiscRawState.getState().filtereds.length : 0,
+    theme: useBodyState.getState().theme || 'gray',
     keybinds: (preferences.shortcuts && preferences.shortcuts.keybinds) || {},
     // 深拷贝：filterRules/counts 由 Angular 原地修改，React 的 useMemo 按引用缓存，
     // 必须换新引用才能让派生值（isEnabled/displayName）重算。
@@ -149,7 +149,7 @@ function buildSnapshot(scope: any): FilterSnapshot {
     tagFilterLogic: filter.tagFilterLogic || 'OR',
     folderFilterLogic: filter.folderFilterLogic || 'OR',
     filterFolderKeyword: filter.filterFolderKeyword || '',
-    tagKeyword: scope.tagKeyword || '',
+    tagKeyword: useMiscRawState.getState().tagKeyword || '',
     containFolders: containFolders
       .filter((f: any) => !!f)
       .map((f: any) => ({ id: f.id, name: f.name, imageCount: f.imageCount || 0, isSelected: !!f.isSelected })),
@@ -163,8 +163,8 @@ function buildSnapshot(scope: any): FilterSnapshot {
         groupColor: tg.group && tg.group.color,
       })),
     tagGroups: groups.map((g: any) => ({ id: g.id, name: g.name, tags: Array.isArray(g.tags) ? g.tags.slice() : [] })),
-    filterImportDateMonths: Array.isArray(scope.filterImportDateMonths)
-      ? scope.filterImportDateMonths.map((o: any) => ({ key: o.key, value: o.value }))
+    filterImportDateMonths: Array.isArray(useMiscRawState.getState().filterImportDateMonths)
+      ? useMiscRawState.getState().filterImportDateMonths.map((o: any) => ({ key: o.key, value: o.value }))
       : [],
   };
 }

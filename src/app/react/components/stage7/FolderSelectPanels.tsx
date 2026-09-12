@@ -922,7 +922,7 @@ export function NewSmartFolderModal() {
       useFolderState.getState().currentSmartFolder.parent = smartFolderRef.current.parent;
     }
     // $filter('filter')(raw, contentFilter)——contentFilter 为函数谓词，等价 raw.filter
-    const result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(body, x));
+    const result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(x));
     const count = result.length;
     setTotalCount(count);
     machineryRebindRefresh(body, undefined, undefined, undefined);

@@ -136,7 +136,6 @@ try {
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.viewMode = 'trash';
-    b.$evalAsync();
     return true;
   })()`);
   await delay(600);
@@ -144,7 +143,6 @@ try {
     const b = window.$bodyScope;
     const ok = b.viewMode === 'trash';
     b.viewMode = 'all';
-    b.$evalAsync();
     return ok;
   })()`);
 

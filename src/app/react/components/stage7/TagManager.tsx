@@ -162,7 +162,6 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
 
       runInBodyScope((sc) => {
         sc.$root.currentFocus = 'content';
-        sc.$evalAsync?.();
       });
     };
 
@@ -179,7 +178,6 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       runInBodyScope((sc) => {
         sc.selectedTags = { ...(sc.selectingTags || {}) };
         sc.selectingTags = {};
-        sc.$evalAsync?.();
       });
     };
 
@@ -220,7 +218,6 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
               sc.selectingTags[tagName] = true;
             }
           }
-          sc.$evalAsync?.();
         });
       }
     };
@@ -266,7 +263,6 @@ export function TagManagerPanel() {
       resize: (event: any, ui: any) => {
         runInBodyScope((s) => {
           onTagSidebarResize(event, ui);
-          s.$evalAsync?.();
         });
       },
     });
@@ -292,7 +288,6 @@ export function TagManagerPanel() {
           syncFilterFromScope();
           syncTagManagerFromScope();
           saveFolder();
-          s.$evalAsync?.();
           const w = window as any;
           w.tagRectSelecting = false;
           try {

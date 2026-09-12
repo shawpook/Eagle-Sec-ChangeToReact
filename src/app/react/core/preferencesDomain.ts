@@ -46,7 +46,7 @@ export function takeoverPreferencesDomain(): void {
       const s = getBodyScope();
       if (s) {
         s.canUseTouchID = checkCanUseTouchID();
-        if (typeof s.$evalAsync === 'function') scopeEvalAsync();
+        scopeEvalAsync();
       }
       refreshTouchID();
     });

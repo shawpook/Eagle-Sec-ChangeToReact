@@ -223,22 +223,15 @@ try {
     if (!d || typeof d.factory !== 'function') { window.__a6 = 'missing'; return true; }
     try {
       const shim = d.factory();
-      shim.testField = 42;
-      const writeOk = window.__eagleCoreState.testField === 42 && shim.testField === 42;
-      let got = null;
-      const off = shim.$on('test:event', (e, v) => { got = v; });
-      shim.$broadcast('test:event', 7);
-      const busOk = got === 7;
-      off();
-      let watched = null;
-      const stop = shim.$watch(() => shim.testField, (v) => { watched = v; });
-      shim.testField = 43;
-      shim.$evalAsync();
-      const watchOk = watched === 43;
-      stop();
-      const rootOk = shim.$root === shim && !!shim.mousetrap && Array.isArray(shim.$watchers);
-      delete window.__eagleCoreState.testField;
-      window.__a6 = (writeOk && busOk && watchOk && rootOk && shim.__eagleShim === true) ? 'ok' : 'fail:' + [writeOk, busOk, watchOk, rootOk].join(',');
+            shim.testField = 42;
+            const writeOk = window.__eagleCoreState.testField === 42 && shim.testField === 42;
+            // E1c 契约：Angular 方法面已退役（$apply/$watch/$evalAsync/$on/$broadcast 均不存在），
+            // 仅剩属性 Proxy + $eval 与占位键
+            const cleaned = shim.$apply === undefined && shim.$watch === undefined
+              && shim.$evalAsync === undefined && shim.$on === undefined && shim.$broadcast === undefined;
+            const rootOk = shim.$root === shim && !!shim.mousetrap && typeof shim.$eval === 'function';
+            delete window.__eagleCoreState.testField;
+            window.__a6 = (writeOk && cleaned && rootOk && shim.__eagleShim === true) ? 'ok' : 'fail:' + [writeOk, cleaned, rootOk].join(',');
     } catch (err) { window.__a6 = 'err:' + err.message; }
     return true;
   })()`);

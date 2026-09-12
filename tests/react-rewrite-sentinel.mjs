@@ -31,6 +31,20 @@ function walk(dir, out = []) {
 const files = walk(reactRoot).filter((f) => /\.(ts|tsx)$/.test(f));
 const contents = files.map((f) => ({ file: f, text: fs.readFileSync(f, 'utf8') }));
 
+// b1-9bz-E1c：Angular-ism 度量改为**注释感知**——只统计活代码。
+// 实测原 raw 计数被注释严重灌水（如 watch 19 中 18 条是注释/文档），既掩盖真实面、
+// 又使 DoD ②「计数归零」不可达。规则与 cForbidden 一致：整行以 // 、* 或 /* 开头即视为注释行。
+// （不解析正则字面量，避免误判；行尾注释不计入，属已知上界。）
+for (const entry of contents) {
+  entry.code = entry.text
+    .split('\n')
+    .filter((line) => {
+      const t = line.trim();
+      return !t.startsWith('//') && !t.startsWith('*') && !t.startsWith('/*');
+    })
+    .join('\n');
+}
+
 // 死频道复活检查忽略行注释（'//' 之后的内容），块注释仍计入（块注释复活语义罕见）。
 function hasLiveMatch(re) {
   for (const { text } of contents) {
@@ -81,7 +95,7 @@ const decreases = [];
 const counts = {};
 for (const [name, re] of Object.entries(metrics)) {
   let n = 0;
-  for (const { text } of contents) n += (text.match(re) || []).length;
+  for (const { code } of contents) n += (code.match(re) || []).length;
   counts[name] = n;
 }
 

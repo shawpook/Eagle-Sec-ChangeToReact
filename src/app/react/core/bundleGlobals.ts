@@ -214,7 +214,7 @@ function _cloneTree(newTree: any[], tree: any, extraInfo: any): void {
 }
 
 /* getHashID（bundle 2127-2273 逐字；依赖 i18n（index.html 内联脚本，b1 存活）、
-   EagleConfig.SUPPORT_FORMATS、pluginModule.previewExtension、VIDEO_TYPES_GLOBAL、_.get） */
+ * EagleConfig.SUPPORT_FORMATS、pluginModule.previewExtension、VIDEO_TYPES_GLOBAL、_.get） */
 function _getHashID(image: any, hasColorInfo: any): any {
   const w = window as any;
   var hashID = '';

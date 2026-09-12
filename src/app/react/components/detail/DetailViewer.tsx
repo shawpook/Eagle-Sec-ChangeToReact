@@ -300,7 +300,6 @@ function WebViewBranch({ snapshot }: { snapshot: DetailSnapshot }) {
         }
         runInBodyScope((s) => {
           machineryToggleSlideshow(s);
-          s.$evalAsync?.();
         });
       });
       webview.addEventListener('did-fail-load', (e: any) => {
@@ -514,13 +513,10 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
       runInBodyScope((s) => {
         if (e.data === 'Exit' || e.message === 'Exit') {
           if (typeof s.leaveDetailMode === 'function') machineryLeaveDetailMode(s);
-          s.$evalAsync?.();
         } else if (e.data === 'Prev' || e.message === 'Prev') {
           if (typeof s.selectPrev === 'function') machinerySelectPrev(s);
-          s.$evalAsync?.();
         } else if (e.data === 'Next' || e.message === 'Next') {
           if (typeof s.selectNext === 'function') machinerySelectNext(s);
-          s.$evalAsync?.();
         }
       });
     }

@@ -186,7 +186,7 @@ export function takeoverFilterDomain(): void {
   }
 
   // ── $on 广播处理器（摘 bundle → 域内重挂；发送方仍在 bundle 未移植路径）──
-  if (s0 && typeof s0.$on === 'function') {
+  if (s0) { // E1c：原以 $on 存在性判就绪；CALCULATE_IMAGE_BINDING/REBIND_REFRESH 已迁 eagleBus
     diag.listenersRemoved['CALCULATE_IMAGE_BINDING'] = removeScopeListener(s0, 'CALCULATE_IMAGE_BINDING');
     calculateImageBindingChannel.on(function (params: any) {
       const s: any = getBodyScope();

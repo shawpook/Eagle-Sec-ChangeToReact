@@ -3,7 +3,7 @@ import { FilterSnapshot, FilterFolderItem } from '../../store/filterState';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper, substring } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
-import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
+import { FilterItemShell, CheckItem,  focusInput } from './FilterItemShell';
 import { ColorPicker } from './ColorPicker';
 import { syncFilterFromScope } from '../../store/filterState';
 import { getBodyScope, runInBodyScope } from '../../core/appCore';

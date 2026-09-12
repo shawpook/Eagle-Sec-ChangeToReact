@@ -842,7 +842,6 @@ export function MousewheelModal() {
     if (!scope) return;
     const off = openMousewheelPreferenceWindowChannel.on(() => {
       setOpen(true);
-      scope.$evalAsync?.();
     });
     return () => off();
   }, []);

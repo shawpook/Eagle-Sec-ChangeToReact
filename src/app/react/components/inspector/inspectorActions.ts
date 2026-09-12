@@ -11,6 +11,7 @@ import { getBodyScope, getRootScope, runInBodyScope } from '../../core/appCore';
 import { copyTags, pasteTags } from '../../services/batchOpsService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
+import { onSelectedChanged } from '../../core/selectionNotify';
 
 import { machineryRelayout } from '../../services/gridService';
 import { machineryCheckOperationSafety } from '../../services/viewOpsService';
@@ -919,18 +920,16 @@ export function bindInspectorEvents(): () => void {
   document.addEventListener('mouseup', onMouseUp);
   offs.push(() => document.removeEventListener('mouseup', onMouseUp));
 
-  // 選擇變化時的 activeTab 副作用（原 $watchCollection("selected")）
-  const offSelected = scope?.$watchCollection?.('selected', () => {
+  // 選擇變化時的 activeTab 副作用（原 $watchCollection("selected")；b1-9bz-C-4 起由
+  // selectionNotify 的 200ms 变更订阅承接——E1c 把最后 1 处 scope watcher 换成它）
+  const applyInspectorActiveTab = () => {
     const eagleIns = (window as any).eagle.inspector;
     const selected = getBodyScope()?.selected;
     if (!selected) return;
-    if (selected.length > 0) {
-      eagleIns.activeTab = 'ITEM';
-    } else {
-      eagleIns.activeTab = 'SIDEBAR';
-    }
-  });
-  if (offSelected) offs.push(() => offSelected());
+    eagleIns.activeTab = selected.length > 0 ? 'ITEM' : 'SIDEBAR';
+  };
+  applyInspectorActiveTab();
+  offs.push(onSelectedChanged(applyInspectorActiveTab));
 
   // 供闭环测试（electron/main.cjs --smoke-main-workflow）等价驱动 inspector 行为
   (window as any).__eagleInspectorActions = { updateSelection, imagesChange, annotationChange };

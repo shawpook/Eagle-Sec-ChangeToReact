@@ -1052,7 +1052,6 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
       handles: 'w',
       resize: (event: any, ui: any) => {
         onInspectorResize(event, ui);
-        getBodyScope()?.$evalAsync?.();
       },
     });
     return () => {

@@ -608,7 +608,7 @@ export function QuickSearchModal() {
       setTimeout(() => {
         runInBodyScope((s: any) => {
           machineryChangeSidebarIndex(s, target);
-          if (typeof s.$evalAsync === 'function') scopeEvalAsync();
+          scopeEvalAsync();
         });
       }, 200);
     } else if (mode === 'TAGS') {
@@ -630,7 +630,7 @@ export function QuickSearchModal() {
       setTimeout(() => {
         runInBodyScope((s: any) => {
           machineryChangeSidebarIndex(s, target);
-          if (typeof s.$evalAsync === 'function') scopeEvalAsync();
+          scopeEvalAsync();
         });
       }, 200);
     }

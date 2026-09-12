@@ -141,7 +141,7 @@ export function ErrorModal() {
               Object.assign(item, error.modifiedData);
               machineryUpdateItemView(body, item);
               updateSelection();
-              if (typeof body.$evalAsync === 'function') scopeEvalAsync();
+              scopeEvalAsync();
               ayncsImagesChange([item]);
             }
           }
@@ -206,7 +206,7 @@ export function ErrorModal() {
       syncErrorCount(errorListRef.current);
       close();
       const body = getBodyScope();
-      if (body && typeof body.$evalAsync === 'function') scopeEvalAsync();
+      scopeEvalAsync();
       bump((v) => v + 1);
     });
   };

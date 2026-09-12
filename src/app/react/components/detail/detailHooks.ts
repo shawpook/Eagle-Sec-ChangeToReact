@@ -1946,7 +1946,6 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
 
           // b1-9bk：直调 detailService（原 scopeApply 绕道；$evalAsync 语义保留）
           updateZoomRatio(ratio, originData.x, originData.y);
-          getBodyScope()?.$evalAsync?.();
         } else {
           updateGestureVisual(event.pageX, event.pageY);
         }
@@ -1971,12 +1970,10 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
             if (endPoint.x > startPoint.x) {
               runInBodyScope(function (sc) {
                 machinerySelectNext(sc, undefined);
-                sc.$evalAsync?.();
               });
             } else {
               runInBodyScope(function (sc) {
                 machinerySelectPrev(sc, undefined);
-                sc.$evalAsync?.();
               });
             }
           }
@@ -1988,7 +1985,6 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
           } else {
             runInBodyScope(function (sc) {
               openItemContextMenu(event, sc.current);
-              sc.$evalAsync?.();
             });
           }
         }
@@ -2158,7 +2154,6 @@ export function useRectSelect() {
         sc.selected = sc.allData.filter(function (image: any) {
           return sc.selectedMappings[image.id];
         });
-        sc.$evalAsync?.();
       });
     };
     window.addEventListener('mouseup', onMouseUp);

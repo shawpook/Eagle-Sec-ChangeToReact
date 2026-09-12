@@ -14,6 +14,7 @@ import { newFolder } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
+import { eagleBus } from '../../global/bus';
 import { dom } from '../../utils/domLite';
 import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';
@@ -293,9 +294,8 @@ function RenameInput({ node, commitFn, autoFocusEvent }: { node: SidebarNodeSnap
 
   useEffect(() => {
     if (!autoFocusEvent) return;
-    const scope = getBodyScope();
-    if (!scope) return;
-    const dereg = scope.$on(autoFocusEvent, () => {
+    // E1c：原 body-scope $on（动态频道名，全树无发送方=死接收）→ eagleBus。
+    const dereg = eagleBus.on(autoFocusEvent, () => {
       setTimeout(() => {
         const el = ref.current;
         if (!el) return;

@@ -55,9 +55,9 @@ export function bridgeScopeFields(scope: any, fields: string[]): void {
 }
 
 
-/* ── scope watcher 接管工具（cZ-5/6/4 共用）──
-   $watch(string) 的 watcher.exp 是字符串；$watchCollection 的 exp 是 $parse 实例
-   （可能带 expensiveChecks interceptor）——依次按 字符串/实例/生成源码串 匹配 */
+/* ── scope watcher 接管工具（cZ-5/6/4 共用；b1-9bz-E4 随 bundle 桥一起删）──
+ * $watch(string) 的 watcher.exp 是字符串；$watchCollection 的 exp 是 $parse 实例
+ * （可能带 expensiveChecks interceptor）——依次按 字符串/实例/生成源码串 匹配 */
 
 /* 注意：不做生成源码串等价——$parse 的 expensiveChecks 包装器对一切表达式共享同一源码 */
 export function matchWatchExp(wch: any, exp: string, parsedList: any[]): boolean {

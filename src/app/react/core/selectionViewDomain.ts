@@ -74,7 +74,7 @@ export function takeoverSelectionViewDomain(): void {
   w.__eagleSelectionViewDomain = diag;
 
   const s0: any = getBodyScope();
-  if (!s0 || typeof s0.$watch !== 'function') return;
+  if (!s0) return; // E1c：原以 $watch 存在性判 scope 就绪；shim 已移除 $watch
 
   // ── watchCollection "selected"（34214 主 watcher；摘 body scope 全部 'selected' watcher）──
   // ── selected 主 watcher（34214-34259 逐字；b1-9l 补挂——此前仅 darwin quicklook 变体注册过

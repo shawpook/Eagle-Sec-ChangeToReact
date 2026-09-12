@@ -3,78 +3,26 @@
  *
  * - **激活判据**：window.angular 由 app.bundle.js 内联定义（无独立 script 标签）——
  *   b1 移除 bundle 后 w.angular 不复存在，getBodyScope() 在此条件下创建 shim 并回填
- *   window.$bodyScope。bundle 在世时永不触发（classic script 先于 React module 执行，
- *   无启动窗口期误激活）。
- * - **属性面**：get/set 全量代理到 coreState（c8 起 scope 桥接字段本就以 coreState 为
- *   读写后端——shim 即该语义的直接化）；未初始化字段由同一批写入方（machinery/域处理器）
- *   按原路径填充，无快照需求。
- * - **函数面**：machinery 24 函数 + 域函数由 dataMachinery scope 替换面在接管时写入
- *   coreState（s.calculateImageBinding = ... 经 Proxy set 落 coreState），shim 天然解析。
- *   bundle 独占函数（relayout/filterContent/zoom 等）post-b1 缺席 = 诚实失败。
- * - **生命周期面**：$evalAsync/$apply/$eval/$watch/$on/$broadcast/emit 仍以实现保留，
- *   但全树已无 $watch/$watchCollection 注册与 $broadcast 发送方（见 sentinel 计数）；
- *   E1b/E1c 将逐项收敛。
+ *   window.$bodyScope。bundle 在世时永不触发。
+ * - **属性面**：get/set 全量代理到 coreState（已注册字段委托对应 store）；未初始化字段由
+ *   同一批写入方（machinery/域处理器）按原路径填充。
+ * - **函数面**：machinery/域函数在该面接管时写入 coreState（经 Proxy set 落 coreState），
+ *   shim 天然解析；bundle 独占函数 post-b1 缺席 = 诚实失败。
  *
- * b1-9bz-E1a：字段迁移注册表与 digest/flush 运行时迁出到中立模块
- * `core/scopeFieldBridge.ts` / `core/scopeRuntime.ts`（本文件仅剩属性 Proxy 与诊断）。
+ * b1-9bz-E1 收口：Angular 方法面已退役——
+ *   E1b 删 `$apply`（`scopeApply` → `runInBodyScope`）；E1c 删 `$watch`/`$watchCollection`/
+ *   watcher 定时器/`$on`/`$broadcast`/`$emit`/`__bus`（全树已无调用方：最后一个 watcher 由
+ *   `selectionNotify` 承接，两个 `$on` 接收方无发送者，已删除/改 eagleBus）。
+ *   `$evalAsync` 保留为**测试/驱动用 no-op 提交钩子**（生产 src 无调用点），E5 随驱动迁移删除。
+ *   现仅剩属性 Proxy + `$eval`/`$evalAsync` 与少量占位键，E4 随 coreState 一起删除。
  */
 
 import { coreState } from '../core/appCore';
 import { getMigratedScopeField, getMigratedScopeFieldNames } from '../core/scopeFieldBridge';
-import { setBodyFlushWatchers } from '../core/scopeRuntime';
 
 export function createBodyScopeShim(): any {
-  const watchers: any[] = [];
-  let flushTimer: any = null;
-
-  function jsonEq(a: any, b: any): boolean {
-    if (a === b) return true;
-    try {
-      return JSON.stringify(a) === JSON.stringify(b);
-    } catch (err) {
-      return false;
-    }
-  }
-
-  function flushWatchers(): void {
-    for (const entry of watchers.slice()) {
-      let val: any;
-      try {
-        val = typeof entry.watcher === 'function' ? entry.watcher() : undefined;
-      } catch (err) {
-        continue;
-      }
-      if (entry.last === SHIM_UNSET || !jsonEq(val, entry.last)) {
-        const old = entry.last === SHIM_UNSET ? undefined : entry.last;
-        entry.last = val;
-        try {
-          entry.listener && entry.listener(val, old);
-        } catch (err) {
-          console.error('[scopeShim] watcher listener failed', err);
-        }
-      }
-    }
-  }
-
-  function ensureFlushTimer(): void {
-    if (flushTimer || watchers.length === 0) return;
-    flushTimer = setInterval(() => {
-      if (watchers.length === 0) {
-        clearInterval(flushTimer);
-        flushTimer = null;
-        return;
-      }
-      flushWatchers();
-    }, 200);
-  }
-
-  setBodyFlushWatchers(flushWatchers);
-
-  const SHIM_UNSET = Symbol('shim-unset');
-
-  // 数据面字段都在 coreState、只经 proxy 可达；$eval / 字符串型 $watch 必须走 proxy 解析，
-  // 否则对着裸 shim 取值恒为 undefined（startScopeSync 的 12 个域快照会永久停在初值——
-  // body 的 is-detail-mode 等类名因此不跟随 scope，详情面板无尺寸、原图闸门超时）。
+  // 数据面字段都在 coreState、只经 proxy 可达；字符串型 $eval 必须走 proxy 解析，
+  // 否则对着裸 shim 取值恒为 undefined。
   let selfProxy: any = null;
   const evalPath = (expr: string): any => expr
     .split('.')
@@ -87,78 +35,28 @@ export function createBodyScopeShim(): any {
     $$phase: undefined,
     // bridgeWhenReady 强就绪门桩（bundle initMousetrap 的 b1 后等价物；域接管只需存在性）
     mousetrap: {},
-    // b1-9o：$watchers 别名指向真实 watcher 数组（此前是永空的死数组——flushWatchers 走
-    // 闭包 watchers，诊断/清点方（1m1-A、filterDomain sweep diag）读 $watchers 恒 0）
-    $watchers: watchers,
 
-    $evalAsync(fn?: any): any {
-      try {
-        if (typeof fn === 'function') fn();
-      } catch (err) {
-        console.error('[scopeShim] $evalAsync fn failed', err);
-      }
-      flushWatchers();
-    },
     $eval(expr: any): any {
       if (typeof expr === 'function') return expr(selfProxy || shim);
       if (typeof expr === 'string') return evalPath(expr);
       return undefined;
     },
-    $on(name: string, fn: any): () => void {
-      const arr = (shim.__bus[name] = shim.__bus[name] || []);
-      arr.push(fn);
-      return () => {
-        const a = shim.__bus[name] || [];
-        const i = a.indexOf(fn);
-        if (i >= 0) a.splice(i, 1);
-      };
-    },
-    $broadcast(name: string, ...args: any[]): any {
-      const arr = shim.__bus[name] || [];
-      arr.slice().forEach((fn: any) => {
-        try {
-          fn({ name, preventDefault() { /* noop */ }, defaultPrevented: false }, ...args);
-        } catch (err) {
-          console.error('[scopeShim] broadcast handler failed', err);
-        }
-      });
-      return shim;
-    },
-    $emit(name: string, ...args: any[]): any {
-      return shim.$broadcast(name, ...args);
-    },
-    $watch(watcher: any, listener?: any, _deep?: any): () => void {
-      // Angular 支持字符串表达式型 watcher（域处理器有此用法）——归一成函数，经 proxy 取值
-      const fn = typeof watcher === 'string' ? () => evalPath(watcher) : watcher;
-      // b1-9o：exp 为诊断元数据（字符串 watcher 保留原表达式，函数 watcher 为 undefined）——
-      // 供 1m1-A 域接管断言按表达式清点（bundle $$watchers.exp 的 shim 等价物），无行为作用
-      const entry = { watcher: fn, listener, last: SHIM_UNSET as any, exp: typeof watcher === 'string' ? watcher : undefined };
-      watchers.push(entry);
-      ensureFlushTimer();
-      // Angular 语义：listener 立即以 (当前值, 当前值) 触发一次
-      try {
-        const val = typeof fn === 'function' ? fn() : undefined;
-        entry.last = val;
-        listener && listener(val, val);
-      } catch (err) {
-        console.error('[scopeShim] initial watcher failed', err);
+    // b1-9bz-E1c：保留为**测试/驱动用 no-op 提交钩子**——全树已无 watcher，故本方法不再有
+    // 生产调用点（sentinel：src 内 `.$evalAsync(` 调用计数为 0，仅本定义计入）。测试驱动
+    // （tests/*.mjs、electron/main.cjs 烟测脚本）以 `s.$evalAsync()` 表达"提交"，E5 迁移
+    // 驱动到 store hook 后随之删除。
+    $evalAsync(fn?: any): any {
+      if (typeof fn === 'function') {
+        try { fn(); } catch (err) { console.error('[scopeShim] $evalAsync fn failed', err); }
       }
-      return () => {
-        const i = watchers.indexOf(entry);
-        if (i >= 0) watchers.splice(i, 1);
-      };
-    },
-    $watchCollection(watcher: any, listener: any): () => void {
-      return shim.$watch(watcher, listener, true);
+      return undefined;
     },
     $destroy(): void { /* noop */ },
-
-    __bus: {} as Record<string, Function[]>,
   };
   shim.$root = shim;
   shim.$parent = shim;
 
-  // 属性面：全量代理到 coreState（函数面字段在 shim 自身，优先命中）
+  // 属性面：全量代理到 coreState（已注册字段优先命中 store 委托）
   const proxy = new Proxy(shim, {
     get(target: any, prop: string) {
       if (prop in target) return target[prop];

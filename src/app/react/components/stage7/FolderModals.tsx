@@ -1831,7 +1831,7 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder);
         cancel();
-        if (typeof body.$evalAsync === 'function') scopeEvalAsync();
+        scopeEvalAsync();
       }
     });
   };
@@ -1857,7 +1857,7 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersToFolder(viewRef.current.selectedFolders, folder);
         cancel();
-        if (typeof body.$evalAsync === 'function') scopeEvalAsync();
+        scopeEvalAsync();
       }
       focusSeach();
     });
@@ -1885,7 +1885,7 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder, true);
         cancel();
-        if (typeof body.$evalAsync === 'function') scopeEvalAsync();
+        scopeEvalAsync();
       }
     });
   };

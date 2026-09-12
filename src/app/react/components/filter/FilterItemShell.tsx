@@ -82,7 +82,6 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
     }, 50);
     runInBodyScope((s) => {
       s.$root.currentFocus = 'content';
-      s.$root.$evalAsync?.();
     });
   };
 
@@ -211,20 +210,6 @@ function selectPrev(elem: HTMLElement | null) {
     if (idx - 1 < 0) items[0].classList.add('active');
     else items[idx]?.classList.add('active');
   }
-}
-
-/** `$scope.$on("Reset_Filter")` 等价：监听 body scope 广播。 */
-export function useScopeEvent(eventName: string, handler: () => void) {
-  const handlerRef = useRef(handler);
-  handlerRef.current = handler;
-  useEffect(() => {
-    const scope = getBodyScope();
-    if (!scope) return;
-    const dereg = scope.$on(eventName, () => handlerRef.current());
-    return () => {
-      try { dereg(); } catch {}
-    };
-  }, [eventName]);
 }
 
 /** 通用 check-item 组件（.check-icon>.checkbox + .name + .badge）。 */

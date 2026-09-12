@@ -4,7 +4,7 @@ import { useFilterState, FilterSnapshot } from '../../store/filterState';
 import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy } from '../hooks';
-import { FilterItemShell, CheckItem, useScopeEvent, focusInput } from './FilterItemShell';
+import { FilterItemShell, CheckItem,  focusInput } from './FilterItemShell';
 import { KIND_COMPONENTS } from './FilterItems';
 import { useToolbarState } from '../../store/toolbarState';
 import { setFilterRule } from '../../services/filterService';

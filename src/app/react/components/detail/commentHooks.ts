@@ -183,7 +183,6 @@ export function useRectComment(enabled: boolean) {
         rect.w = Math.abs(posRef.current.startX - e.pageX) / zoomRatio;
         rect.h = Math.abs(posRef.current.startY - e.pageY) / zoomRatio;
 
-        sc.$evalAsync?.();
       });
     };
 
@@ -240,7 +239,6 @@ export function useCommentsContainer(currentId: string | undefined, hasComments:
           runInBodyScope(function (s) {
             s.ratio = image.width / widthOf($image);
             syncDetailFromScope();
-            s.$evalAsync?.();
           });
           offEl($image, 'load');
         };

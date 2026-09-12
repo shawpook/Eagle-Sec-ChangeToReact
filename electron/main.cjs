@@ -1856,7 +1856,6 @@ app.whenReady().then(async () => {
                 });
                 scope.current = currentItem(ids[0]);
                 scope.updateSelection();
-                scope.$evalAsync();
                 await new Promise((resolve) => setTimeout(resolve, 100));
               };
               const importResultCounts = {};
@@ -2009,7 +2008,6 @@ app.whenReady().then(async () => {
                 scope.selected = ids.map((id) => currentItem(id));
                 scope.current = scope.selected[0] || null;
                 inspectorActions.updateSelection();
-                scope.$evalAsync();
                 await waitFor(() => scope.selected.length === ids.length && scope.selected.every((item, index) => item && item.id === ids[index]), 'inspector selection');
                 await new Promise((resolve) => setTimeout(resolve, 100));
               };
@@ -2762,7 +2760,6 @@ app.whenReady().then(async () => {
               scope.current = videoItem;
               if (typeof scope.updateSelection === 'function') scope.updateSelection();
               scope.enterDetailMode(null, videoItem);
-              scope.$evalAsync();
               await waitFor(() => scope.isDetailMode && scope.current && scope.current.id === videoItem.id, 'detail mode');
               const player = await waitFor(() => {
                 const element = document.querySelector('.detail-wrap video');
@@ -2904,20 +2901,17 @@ app.whenReady().then(async () => {
             }, 'detail image', 15000).catch(() => null);
             try {
               scope.selectNext();
-              scope.$evalAsync();
             } catch (err) {
               throw new Error('selectNext error: ' + (err && err.message || err));
             }
             const nextId = await waitFor(() => scope.current && scope.current.id !== initialId ? scope.current.id : null, 'next navigation');
             try {
               scope.selectPrev();
-              scope.$evalAsync();
             } catch (err) {
               throw new Error('selectPrev error: ' + (err && err.message || err));
             }
             const prevId = await waitFor(() => scope.current && scope.current.id === initialId ? scope.current.id : null, 'previous navigation');
             scope.current = firstItem;
-            scope.$evalAsync();
             await waitFor(() => scope.current && scope.current.id === firstItem.id, 'back to first item');
             const actionResult = (action, trigger) => new Promise((resolve, reject) => {
               const ipc = require('electron').ipcRenderer;
@@ -2944,11 +2938,9 @@ app.whenReady().then(async () => {
             const viewItem = async (item, label, predicate) => {
               if (!item) return null;
               scope.current = item;
-              scope.$evalAsync();
               await new Promise((resolve) => setTimeout(resolve, 300));
               try {
                 scope.zoom();
-                scope.$evalAsync();
               } catch (err) {}
               return waitFor(predicate, label, 20000).catch((err) => ({
                 error: err.message,
@@ -3027,11 +3019,9 @@ app.whenReady().then(async () => {
                 videoFetch = { error: err.message };
               }
               scope.current = videoItem;
-              scope.$evalAsync();
               await new Promise((resolve) => setTimeout(resolve, 300));
               try {
                 scope.zoom();
-                scope.$evalAsync();
               } catch (err) {}
               video = await waitFor(() => {
                 const element = document.querySelector('video');
@@ -3084,7 +3074,6 @@ app.whenReady().then(async () => {
             let badVideo = null;
             if (badVideoItem) {
               scope.current = badVideoItem;
-              scope.$evalAsync();
               await new Promise((resolve) => setTimeout(resolve, 1200));
               const element = document.querySelector('video');
               badVideo = {

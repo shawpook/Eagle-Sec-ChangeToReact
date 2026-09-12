@@ -520,7 +520,7 @@ export function getTimeout(): any {
           try { if (typeof fn === 'function') fn(); } catch (err) { console.error('[shimTimeout] fn failed', err); }
           try {
             const s = getBodyScope();
-            if (s && typeof s.$evalAsync === 'function') scopeEvalAsync();
+            scopeEvalAsync();
           } catch (err) { /* noop */ }
         }, ms || 0);
         return id;

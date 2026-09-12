@@ -12,7 +12,7 @@ import { machineryGotoBottom } from '../../services/gridService';
  * 规范来源 = app.bundle.js 各指令 link 体逐字（提取脚本生成，非手抄）；机械替换仅三处：
  *   1. angular.element("body").scope() → getBodyScope()
  *   2. angular.copy → deepCopy（JSON 法）
- *   3. scope.$on('$destroy') → destroy 收集器（返回 cleanup）；$timeout → setTimeout shim
+ *   3. scope.on('$destroy') → destroy 收集器（返回 cleanup）；$timeout → setTimeout shim
  * 运行期依赖的 bundle 全局（window.ig / resetNgGridLayoutData / HoverPreview /
  * isElementInViewport / jQuery + scrollTo 插件）在 b1 移除 bundle 前继续存在，其去留随
  * b3 bundle 分解处理。文件含 @ts-nocheck：逐字 JS 移植不做 TS 改写。
@@ -72,7 +72,7 @@ export function initScrollToTopSentinel() {
     scrollContainer: element?.getAttribute('scroll-container'),
   };
   const destroyHandlers = [];
-  const scope = { $on: function (name, fn) { if (name === '$destroy') destroyHandlers.push(fn); return function () {}; } };
+  const scope = { on: function (name, fn) { if (name === '$destroy') destroyHandlers.push(fn); return function () {}; } };
   const $timeout = function (fn, ms) { return setTimeout(fn, ms); };
             const targetSelector = attrs.target;
             const threshold = parseInt(attrs.threshold) || 200;
@@ -157,7 +157,7 @@ export function initScrollToTopSentinel() {
             }
             
             // 清理
-            scope.$on('$destroy', function() {
+            scope.on('$destroy', function() {
                 if (observer) {
                     observer.disconnect();
                 }
@@ -1128,7 +1128,7 @@ export function initBoxContainerScrollbar() {
             });
             
             // 清理函數
-            scope.$on('$destroy', function() {
+            scope.on('$destroy', function() {
                 // 清理所有 timeout 和動畫
                 clearTimeout(updateThumbPositionAnimateTimeout);
                 clearTimeout(updateThumbPositionTimeout);

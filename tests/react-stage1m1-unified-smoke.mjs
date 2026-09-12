@@ -225,10 +225,11 @@ try {
       const shim = d.factory();
             shim.testField = 42;
             const writeOk = window.__eagleCoreState.testField === 42 && shim.testField === 42;
-            // E1c 契约：Angular 方法面已退役（$apply/$watch/$evalAsync/$on/$broadcast 均不存在），
+            // E1c 契约：Angular 方法面已退役（$apply/$watch/$watchCollection/$on/$broadcast 均已移除），
             // 仅剩属性 Proxy + $eval 与占位键
-            const cleaned = shim.$apply === undefined && shim.$watch === undefined
-              && shim.$evalAsync === undefined && shim.$on === undefined && shim.$broadcast === undefined;
+            const cleaned = shim.$apply === undefined && shim.$watch === undefined && shim.$watchCollection === undefined
+              && shim.$on === undefined && shim.$broadcast === undefined
+              && typeof shim.$evalAsync === 'function'; // $evalAsync 保留为测试/驱动 no-op 钩子
             const rootOk = shim.$root === shim && !!shim.mousetrap && typeof shim.$eval === 'function';
             delete window.__eagleCoreState.testField;
             window.__a6 = (writeOk && cleaned && rootOk && shim.__eagleShim === true) ? 'ok' : 'fail:' + [writeOk, cleaned, rootOk].join(',');

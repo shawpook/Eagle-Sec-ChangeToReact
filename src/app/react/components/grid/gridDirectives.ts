@@ -172,7 +172,7 @@ export function initScrollToTopSentinel() {
 export function initBoxContainerScrollbar() {
   const element = q('#box-container-scrollbar') as HTMLElement | null;
   const destroyHandlers = [];
-  const scope = { $on: function (name, fn) { if (name === '$destroy') destroyHandlers.push(fn); return function () {}; } };
+  const scope = { on: function (name, fn) { if (name === '$destroy') destroyHandlers.push(fn); return function () {}; } };
   const attrs = {};
 
             var enabledSize = 3;

@@ -111,18 +111,14 @@ try {
     return ok;
   })()`);
 
-  // ── 双向透明（b1-9az 契约修订：已源翻转字段（bodyState 20 + listState 8 + toast 2 +
-  //    lock 1，见各 store MIGRATED_*_FIELDS）store 为源——scope→core 镜像仍成立，core→scope
-  //    方向按设计不再透明（coreState 是镜像）；该方向动态选一个未迁移字段验证——静态字段名
-  //    会随迁移批次失效（keyword 即被批 2 迁移踩中），迁移清单经 __eagleScopeShim 暴露）──
+  // ── 双向透明（b1-9bz-E4-5 契约修订：`coreState` 已删，`__eagleCoreState` 即 scope 面本体。
+  //    注册字段经面直连 store（scope→core 镜像成立）；未注册字段落面的普通属性——用合成名
+  //    验证 core→scope 方向（静态字段名会随注册批次失效）──
   await evalNow(`(() => {
     const b = window.$bodyScope;
     b.theme = 'light';
     window.__t1 = window.__eagleCoreState.theme === 'light';
-    const migrated = (window.__eagleScopeShim && window.__eagleScopeShim.migratedFieldNames) ? window.__eagleScopeShim.migratedFieldNames() : [];
-    const candidates = ['keyword', 'orderBy', 'isUILoaded', 'currentFolderPath'];
-    const field = candidates.find((k) => !migrated.includes(k));
-    if (!field) { window.__t2 = false; return true; }
+    const field = 'cz1ProbeUnregisteredField';
     const saved = window.__eagleCoreState[field];
     window.__eagleCoreState[field] = 'cz1-core-writes';
     window.__t2 = b[field] === 'cz1-core-writes';

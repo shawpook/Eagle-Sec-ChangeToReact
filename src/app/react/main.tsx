@@ -39,8 +39,8 @@ import { bindUploadSync } from './store/uploadState';
 import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
-import { bridgeScopeFields, coreState, getBodyScope } from './core/appCore';
-import { exposeScopeShimDiagnostics } from './global/scopeShim';
+import { getBodyScope } from './core/appCore';
+import { exposeScopeFaceDiagnostics } from './core/scopeFace';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -205,31 +205,14 @@ bindMiscRawSync();
 // c2：React 侧 eagle 对象族（bundle 实例仍为权威态，随 c 域切片逐步切换消费方）。
 (window as any).__eagleCoreEagle = coreEagle;
 
-// cZ-1 + c8：scope 字段存储桥（Angular boot 后执行；字段现值收编进 AppCore）。
-// c8 起核心数据机字段全面并入——AppCore 成为读写后端，scope 经访问器降为透明视图；
-// bundle 机器（calculateImageBinding 等）的赋值/读取经访问器透明进 AppCore（c9 逐步内化）。
-const CZ_BRIDGE_FIELDS = ['theme', 'platform', 'language', 'isLoading', 'isUILoaded',
-  'viewMode', 'keyword', 'layout', 'orderBy', 'trialRemain', 'currentFocus',
-  'preferences', 'vibrancyEnabled', 'canUseTouchID',
-  // ── c8 核心数据机 ──
-  'raw', 'allData', 'images', 'all', 'shuffle', 'trash',
-  'itemMappings', 'folderMappings', 'smartFolderMappings', 'selectedMappings', 'selectedFolderMappings',
-  'duplicateMappings', 'modifiedMappings', 'lockedImages',
-  'selected', 'current', 'currentFolder', 'currentSmartFolder', 'lastSelectedIndex',
-  'folders', 'smartFolders', 'folderList', 'tags',
-  'uploadQueue', 'finishQueue', 'duplicateQueue',
-  'untaggedCount', 'unfiledCount', 'startCursor', 'lastItemStates',
-  'navigationHistory', 'navigationHistoryIndex',
-  'isDetailMode', 'isGrayscaleMode', 'isSlideshowMode', 'showDetailImage',
-  'currentTagGroup', 'tagViewMode'];
+// cZ-1 + c8 → b1-9bz-E4-5：scope 字段访问器桥退役（`bridgeScopeFields`/`coreState` 已删）。
+// 注册字段由 `core/scopeFace.ts` 直连 store；此处仅保留「就绪门 + 域接管」排序。
 function bridgeWhenReady(attempt = 0): void {
-  // 强就绪门：scope.mousetrap 由 EagleController 体内 initMousetrap()（bundle 49328）设置，
-  // 晚于全部 ipc 通道注册（≤24130+）与 watch/$on 注册（34180-42390）——保证各域截肢时
-  // bundle 侧监听已全部就位（window.$bodyScope 的赋值时机是任意指令触发的，不能作准）。
+  // 强就绪门：`scope.mousetrap` 现由 miscRawState 默认 `{}` 供给（原 shim 种子等价物），
+  // 域接管照旧在任何子窗口/驱动调用前完成。
   let scope = getBodyScope();
   if (scope) {
-    // 归一 window.$bodyScope：某些指令会把全局 $bodyScope 赋成子 scope（body 元素自身的
-    // scope 才是 EagleController scope），域接管/冒烟一律以真身为准
+    // 归一 window.$bodyScope：保留（子窗口/指令可能赋成子 scope；域接管/冒烟以真身为准）。
     try {
       const ang = (window as any).angular;
       const trueBody = ang && ang.element ? ang.element(document.body).scope() : null;
@@ -237,14 +220,11 @@ function bridgeWhenReady(attempt = 0): void {
     } catch (err) { /* noop */ }
   }
   if (scope && scope.mousetrap) {
-    // c11：shim 已是 coreState 后端（属性面直接代理），无需重复桥接
-    if (!scope.__eagleShim) {
-      bridgeScopeFields(scope, CZ_BRIDGE_FIELDS);
-    }
     // b1-9bz-B-8：shimFnsBridge / controllerFns 退役（消费面已全部直 import）。
     // 仅保留窄口径测试观测钩子（见 core/portsProbe.ts，无运行期供给语义）。
     installPortsProbe();
-    (window as any).__eagleCoreState = coreState;
+    // 诊断别名（cz1/cz2/m1 契约）：即 scope 面本体，写入直接经面落 store。
+    (window as any).__eagleCoreState = scope;
     applyDataMachineryScope();
     takeoverPreferencesDomain();
     takeoverLibraryDomain();
@@ -267,6 +247,6 @@ void import('./core/externalSupplyRegistrar')
 installBundleGlobals();
 installApiServerGlobals();
 installInitAPIServer();
-exposeScopeShimDiagnostics();
+exposeScopeFaceDiagnostics();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

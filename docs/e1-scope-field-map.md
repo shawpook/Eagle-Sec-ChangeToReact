@@ -1,94 +1,126 @@
-# E1 字段映射表（`$bodyScope` 访问面 → store 归属）
+# E1 字段映射表 v2（AST 精确版：`$bodyScope` 访问面 → store 归属）
 
-> 生成时间：2026-09-12　工具：`tests-tmp/e1-scope-access.py`（别名感知，启发式）
-> 配套：`docs/e-phase-plan-2026-09-12.md`（§3.1/§3.1b/§7）
-> 状态：**初版（启发式，有假阳性）**——切批次前需升级为 AST 精确版（见 §4）。
-
----
-
-## 1. 方法与口径
-
-`getBodyScope()` 全树 **793** 处。直链 `getBodyScope().X` 仅 ~60 名；其余经别名访问：
-
-- `const s = getBodyScope()` **182** 处、`const body =…` **69**、`const scope =…` **28**、
-  `const bodyScope =…` **13**、`pluginModule/item/live/current/b/…` 等零散；
-- `scopeApply(getBodyScope(), (s) => …)` 的回调首参即 scope（**200** 处 `scopeApply`）。
-
-工具按「别名赋值 + `scopeApply` 回调参数 + 直接链」追踪 `alias.<prop>`，汇总字段面。
-**归类访问 2599 处；未归类（作实参/解构/二级别名）≈ 62 处。**
-
-⚠️ **假阳性**：`s`/`scope`/`body` 等别名在嵌套 lambda 中会被同名参数遮蔽
-（`arr.map(item => item.id)` 的 `item`、分页 `page`、`raw`、`id`、`width`、`options`、`snapshot`、
-`target`、`image` 等明显混入）。下表只列**语义明确**的字段；带 ⚠️ 者为高疑似。
+> 生成时间：2026-09-12　工具：`tests-tmp/e1-scope-access.mjs`（TypeScript Compiler API，符号级）
+> 配套：`docs/e-phase-plan-2026-09-12.md`
+> **v2 说明**：v1 是启发式（正则 + 别名猜测，假阳性多）；v2 用 AST + `checker.getSymbolAtLocation`
+> 做符号绑定，覆盖别名赋值、解构、`scopeApply`/`runInBodyScope` 回调首参、可选链 `?.`、
+> `$root` 嵌套链，并区分「读」与「调用」。**本表为 E2/E3 的施工依据。**
 
 ---
 
-## 2. 主字段表（按访问量，语义明确者）
+## 1. 总量（2026-09-12 实测）
 
-| 字段 | 计数 | 文件 | 类别 | 当前后端 | 目标 store / 处置 |
-|---|---:|---:|---|---|---|
-| `$root` | 181 | 24 | state | shim `$root` 自指 → coreState | preferences/lock 等；**C-7 `rootAccess` 专批** |
-| `selected` | 158 | 20 | state | coreState | 选区 store（`selectionViewDomain` 真身）；快照 store 需转真身 |
-| `current` | 116 | 14 | state | coreState | 当前详情项 → `detailState`/`inspectorState` |
-| `imageSize` | 96 | 10 | state | coreState | 布局尺寸 → `panelState`/新 `layoutState` |
-| `currentSmartFolder` | 90 | 13 | state | coreState | `sidebarState`/`filterState` |
-| `folderMappings` | 87 | 18 | state | coreState（镜像缓存） | **新 `itemCacheStore`** |
-| `currentFolder` | 85 | 14 | state | coreState | `appState`（当前库/夹） |
-| `allData` | 78 | 13 | state | coreState（镜像缓存） | **新 `itemCacheStore`** |
-| `TagManager` | 53 | 12 | state | coreState | `tagManagerState`（现为快照 store，需转真身/拆平） |
-| `viewMode` | 50 | 10 | state | ✅ 已注册（bodyState） | 保持 |
-| `isDetailMode` | 48 | 13 | state | ✅ 已注册（bodyState） | 保持 |
-| `folders` | 43 | 13 | state | coreState | `sidebarState` |
-| `theme` | 41 | 10 | state | ✅ 已注册（bodyState） | 保持 |
-| `pluginModule` | 30 | 6 | state | coreState | 插件 store |
-| `inspector` | 27 | 3 | state（嵌套） | coreState | `inspectorState`（§3.2 拆平试点） |
-| `reload` | 24 | 7 | **function** | machinery 挂载面 | 函数面直调（`SCOPED_HANDLER` 收敛） |
-| `gifViewer` | 24 | 4 | **function** | coreState/machinery | 函数面直调 |
-| `smartFolderMappings` | 21 | 9 | state | coreState（镜像缓存） | `itemCacheStore` |
-| `layout` | 21 | 7 | state | ✅ 已注册（bodyState） | 保持 |
-| `keyword` | 21 | 6 | state | ✅ 已注册（listState） | 保持 |
-| `$evalAsync` | 21 | 12 | **Angular-ism** | shim 方法 | **收口批 E-apply** |
-| `itemMappings` | 21 | 10 | state | coreState（镜像缓存） | `itemCacheStore` |
-| `selectedMappings` | 20 | 4 | state | coreState | 选区 store |
-| `notify` | 18 | 11 | **function** | machinery 挂载面 | 函数面直调 |
-| `libraryPath` | 14 | 9 | state | coreState | `appState` |
-| `orderBy` | 14 | 5 | state | coreState（注意与 `currentOrderBy` 区分） | `listState` |
-| `eagle` | 14 | 3 | state（嵌套） | coreState | `filterState`（`eagle.filter.*` 拆平） |
-| `$on` | 14 | 6 | **Angular-ism** | shim `__bus` | **收口批 E-bus** |
-| `isInlineMode`/`isCropMode` | 13/13 | — | state | ✅ 已注册（bodyState） | 保持 |
-| `gifPlayer` | 13 | 2 | **function** | coreState/machinery | 函数面直调 |
-| `currentId` | 12 | 3 | state | coreState | 选区/详情 |
-| `currentTag` | 11 | 3 | state | coreState | `filterState`/`tagManagerState` |
-| `modifiedMappings` | 10 | 3 | state | coreState（镜像缓存） | `itemCacheStore` |
-| `lockedImages` | 10 | 4 | state | coreState | lockState 扩展 |
-| `sidebarList` | 10 | 3 | state | coreState | `sidebarState` |
-| `uploadQueue` | 9 | 5 | state | coreState | ✅ `uploadState`（queueLength 等） |
-| `showSubfolderContent` | 9 | 3 | state | ✅ 已注册（listState） | 保持 |
-| `regenerateThumbnailQueue` | 9 | 3 | state | coreState | 新队列 store |
+| 指标 | 值 |
+|---|---|
+| `getBodyScope()` 调用点（AST） | **764** |
+| 绑定到的 scope 符号 | **518**（别名 182×`s`、69×`body`、28×`scope`、13×`bodyScope`、`sc`/`b`/…） |
+| 直接链 `getBodyScope().X` | **197** |
+| 顶层字段 | **209 个**，访问 **1974** 次 |
+| 叶子名（含嵌套） | 318 |
+| unclassified（作实参传给 machinery 等） | **31**（均非字段读，属函数面传参） |
 
-**高疑似假阳性（不下批次，AST 版复核）**：`page(39)`、`item(65)`、`raw(23)`、`ext(15)`、
-`snapshot(12)`、`id(12)`、`comments(11)`、`options(9)`、`width(8)`、`lastIndex(9)`、
-`hexColor(10)`、`commentRect(10)`、`startCursor(21)`、`rawMetas(18)` 等——多来自
-`s`/`item` 等通用名遮蔽。
+> 顶层字段虽 209 个，但**头部集中**：前 20 个覆盖 ~1400 次访问。E2/E3 按头部优先切批。
 
 ---
 
-## 3. store 形态与处置（对应计划 §3.1b）
+## 2. 顶层字段 → 归属 store（前 60，按访问量）
 
-| store 形态 | store | 字段处置 |
-|---|---|---|
-| **扁平标量** | `bodyState`(22)、`listState`(8)、`lockState`(1)、`toastState`(2)、`uploadState`、`appState` | 可用 `migrateScopeFieldToStore` 逐字段注册式源翻转（现共 33） |
-| **快照** | `inspectorState`/`detailState`/`filterState`/`panelState`/`sidebarState`/`tagManagerState`/`toolbarState`（均 `{snapshot:X}`） | **不能直接注册**：要么把标量子字段拆平为新扁平 store，要么改快照为写入真身并改写全部写入点 |
-| **新建** | `itemCacheStore`（`allData`/`folderMappings`/`smartFolderMappings`/`itemMappings`/`modifiedMappings`）、`layoutState`（`imageSize`/`containerSize.*`） | 按 §3.1 归属表落位 |
+| 读 | 调 | 文件 | 字段 | 归属 store | 备注 |
+|---:|---:|---:|---|---|---|
+| 302 | 13 | 20 | `$root` | 见 §3 | `$root` 即 proxy 自身，嵌套见 §3 |
+| 130 | 10 | 18 | `selected` | **selectionState**（新） | 选区数组 |
+| 101 | 0 | 15 | `folderMappings` | **itemState**（新） | 镜像缓存 |
+| 74 | 13 | 14 | `TagManager` | tagManagerState（扩真身） | 现为快照 store |
+| 72 | 0 | 11 | `current` | **selectionState** | 当前详情项 |
+| 68 | 0 | 13 | `currentFolder` | **folderState**（新） | |
+| 63 | 1 | 8 | `allData` | **itemState** | 全量镜像 |
+| 60 | 0 | 5 | `imageSize` | **layoutState**（新） | `imageSize.height/zoomRatioExp` |
+| 47 | 9 | 11 | `folders` | **folderState** | `folders.forEach/push/...` |
+| 49 | 1 | 2 | `inspector` | inspectorState（拆平） | E2 试点嵌套组 |
+| 46 | 0 | 12 | `currentSmartFolder` | **folderState** | |
+| 36 | 8 | 6 | `pluginModule` | **pluginState**（新） | 含方法调用 |
+| 30 | 3 | 9 | `raw` | **itemState** | 原始列表 |
+| 31 | 0 | 8 | `itemMappings` | **itemState** | |
+| 31 | 0 | 7 | `theme` | bodyState ✅已注册 | |
+| 29 | 0 | 3 | `preferences` | **preferencesState**（新） | `$root.preferences.*` 拆平 |
+| 27 | 0 | 7 | `viewMode` | bodyState ✅ | |
+| 21 | 3 | 6 | `trash` | **itemState** | |
+| 23 | 0 | 7 | `smartFolderMappings` | **itemState** | |
+| 21 | 0 | 11 | `libraryPath` | appState | |
+| 20 | 0 | 6 | `isDetailMode` | bodyState ✅ | |
+| 19 | 0 | 4 | `startCursor` | **navState**（新） | |
+| 9 | 10 | 5 | `$evalAsync` | — | **E1c 清盲区** |
+| 17 | 0 | 4 | `rootDir` | appState | |
+| 14 | 3 | 5 | `keyword` | listState ✅ | |
+| 1 | 12 | 1 | `notify` | — | 函数面（已挂载） |
+| 8 | 4 | 6 | `uploadQueue` | uploadState | |
+| 12 | 0 | 3 | `subFolderSortableOptions` | layoutState / misc | 对象面 |
+| 10 | 2 | 2 | `subFolders` | folderState | |
+| 9 | 3 | 2 | `gifViewer` | — | 函数/对象面 |
+| 10 | 1 | 5 | `all` | **itemState** | |
+| 11 | 0 | 3 | `lockedImages` | **itemState** | |
+| 11 | 0 | 4 | `selectedMappings` | **itemState** | |
+| 9 | 2 | 2 | `regenerateThumbnailQueue` | **queueState**（新）/misc | |
+| 8 | 2 | 1 | `SavedFilter` | filterState | |
+| 9 | 1 | 4 | `folderList` | **folderState** | |
+| 10 | 0 | 3 | `eagle` | filterState | `eagle.filter.*` |
+| 9 | 0 | 2 | `modifiedMappings` | **itemState** | |
+| 9 | 0 | 2 | `lastIndex` | **selectionState** | |
+| 8 | 1 | 5 | `smartFolders` | **folderState** | |
+| 7 | 2 | 2 | `UrlStateService` | misc | |
+| 8 | 0 | 4 | `selectedFolderMappings` | **itemState** | |
+| 8 | 0 | 4 | `unfiledCount` | listState ✅ | |
+| 7 | 0 | 1 | `trialRemain` | **preferencesState** | |
+| 7 | 0 | 2 | `isLoading` | bodyState ✅ | |
+| 7 | 0 | 4 | `imagesDir` | appState | |
+| 7 | 0 | 2 | `showSubfolderContent` | listState ✅ | |
+| 6 | 0 | 2 | `isCropMode` | bodyState ✅ | |
+| 6 | 0 | 4 | `orderBy` | listState（≠`currentOrderBy`） | 需确认归属 |
+| 6 | 0 | 1 | `isRotating` | misc/detailState | |
+| 6 | 0 | 2 | `__eagleShim` | — | shim 自身，E4 随壳删 |
+| 6 | 0 | 1 | `finishGenerateQueue` | queueState | |
+| 5 | 0 | 3 | `lazyLoadManager` | misc | |
+| 5 | 0 | 4 | `untaggedCount` | listState ✅ | |
+| 5 | 0 | 3 | `tags` | folderState/tagManagerState | |
+| 5 | 1 | 1 | `keywordSuggestions` | filterState | |
+| 5 | 0 | 2 | `globalKeywords` | filterState | |
+| 5 | 0 | 1 | `useMpvPlayer` | detailState | |
+| 5 | 0 | 1 | `commentRect` | detailState | |
+| 5 | 0 | 1 | `isCommentMode` | bodyState ✅ | |
+
+其余 ~149 个字段各 ≤4 次，见 `node tests-tmp/e1-scope-access.mjs` 输出。
 
 ---
 
-## 4. 下一步（工具精确化）
+## 3. `$root` 面（302 次，最重）
 
-当前启发式无法区分别名遮蔽，**不足以直接切 C 批**。下一步（E1-tool）：
+`$root` 是 proxy 自身（`scopeShim.ts:203/233`），故 `$root.X` ≡ body scope 的 X。嵌套路径实测：
 
-1. 用 TypeScript Compiler API（项目已有 `typescript`）替换启发式：以
-   `checker.getSymbolAtLocation` 解析符号，`getBodyScope()` 调用点 → 绑定符号 → 该符号的
-   全部 `PropertyAccessExpression`；二级别名、解构、跨函数传递一并覆盖。
-2. 产出**精确**「字段 → (文件, 行)」清单，落回本文件并标注可信度。
-3. 据此重排计划 §4 的 S/C 批次（尤其 `selected`/`current`/`allData` 三大头与其依赖 store 的设计）。
+| 路径 | 次数 | 归属 |
+|---|---:|---|
+| `$root.preferences` | 54 | **preferencesState**（`preferences.general/habits/notification/shortcuts.*` 拆平） |
+| `$root.preferences.sidebar` | 22 | preferencesState |
+| `$root.selectedFolders` | 13 | **selectionState** |
+| `$root.selectedSmartFolders` | 7 | selectionState |
+| `$root.notify` | 12（调） | 函数面（`machineryInfra.ts:141-143` 挂载） |
+| `$root.currentFocus` / `isAppLocked` / `language` / `imagesDir` / `currentColor` | 余量 | selectionState / lockState / bodyState / appState |
+| `$root.undo` / `closeAll` / `initMenu` / `toggleFullScreen` / `removeComment` | 少量 | 函数面，多数**未挂载**（诚实失败/死码） |
+
+→ E3-7 专批：把 `$root.` 全部改写为归属 store；`rootAccess 367 → 0`。
+
+---
+
+## 4. 别名与 unclassified
+
+- 主要别名：`s`(182)、`body`(69)、`scope`(28)、`bodyScope`(13)、`pluginModule`(由 `const pluginModule = getBodyScope()` 得名，易误判)、`sc`(20)、`b`(16)。
+- `scopeApply(getBodyScope(), (s) => …)` 的回调首参已计入（E1b 后改为 `runInBodyScope((s) => …)`，需同步更新提取器识别 `runInBodyScope`，已内置）。
+- **unclassified 31 处**全部是 `getBodyScope()` 作首参传给 `machinery*`（如 `inspectorActions.ts:281 machineryUpdateItemView`、`folderCoreService.ts:745 machinerySetViewMode`、`FolderModals.tsx:155 machineryFilterData`）——属**函数面传参**，不是字段读；E3-8（字符串分发/直调化）时一并处理。
+
+---
+
+## 5. 给 E2/E3 的结论
+
+1. **E2 建 store 的字段优先级**：`selected / folderMappings / current / currentFolder / allData / imageSize / folders / TagManager / currentSmartFolder / raw / itemMappings / trash / smartFolderMappings / all / lockedImages / selectedMappings / modifiedMappings / lastIndex / startCursor / preferences / pluginModule / folderList / smartFolders` + `$root.*` 面。
+2. **E2 试点**：`inspector.*` 嵌套拆平（49 次、仅 2 文件），验证嵌套成本后再铺开。
+3. **E3 切片**：按 §2 文件数列与本地图 `--field <name>` 明细切；头部 6 个字段（`$root/selected/folderMappings/TagManager/current/currentFolder`）覆盖 ~700 次访问，应优先。
+4. **哨兵可判**：`getBodyScope 793 → 0`、`rootAccess 367 → 0`、`scopeEvalAsync 357 → 0`、`scopeApply 200 → 0` 即 DoD ② 的机器判据。

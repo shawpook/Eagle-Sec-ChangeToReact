@@ -42,14 +42,18 @@ function hasLiveMatch(re) {
   return false;
 }
 
+// b1-9bz-E0：度量校正——原正则只认 `$x(`，漏掉可选链 `$x?.(` 形态（实测 19 处
+// `.$evalAsync?.()` + 1 处 `$watchCollection?.(` 长期不计入），是去 scope 面的盲区。
+// 统一放宽为 `$x\s*(?.\\s*)?\(`；新增 scopeEvalAsync（357 处，E 阶段要清的主要包装）。
 const metrics = {
-  evalAsync: /\$evalAsync\(/g,
-  apply: /\$apply\(/g,
-  watch: /\$watch\(/g,
-  watchCollection: /\$watchCollection\(/g,
-  broadcast: /\$broadcast\(/g,
-  on: /\$on\(/g,
+  evalAsync: /\$evalAsync\s*(?:\?\.\s*)?\(/g,
+  apply: /\$apply\s*(?:\?\.\s*)?\(/g,
+  watch: /\$watch\s*(?:\?\.\s*)?\(/g,
+  watchCollection: /\$watchCollection\s*(?:\?\.\s*)?\(/g,
+  broadcast: /\$broadcast\s*(?:\?\.\s*)?\(/g,
+  on: /\$on\s*(?:\?\.\s*)?\(/g,
   scopeApply: /\bscopeApply\(/g,
+  scopeEvalAsync: /\bscopeEvalAsync\(/g,
   callScope: /\bcallScope\(/g,
   getBodyScope: /\bgetBodyScope\(/g,
   jQuery: /\bjQuery\(/g,

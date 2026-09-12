@@ -258,7 +258,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
 
   getOffsetScrollbarFn(s)(30);
   // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
-  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') s.$root.initMenu();
+  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
 }
 
 /* ── b1-9be：@egjs/react-infinitegrid 交换的 window.ig facade 契约（交换批施工依据）──
@@ -636,47 +636,47 @@ export function machineryAutoScroll(index: any): void {
   }, 50);
 }
 
-export function machineryResetPage(s: any): void {
+export function machineryResetPage(): void {
   const w = window as any;
 
   // Note: 切换文件夹时，强制触发 inspector 输入框先进行 change
   // b1-9ba：RESET_PAGE 广播全树无接收者（原接收者随 bundle 摘除退役）——广播体移除，
   // 本函数其余状态复位语义不变。
   (document.activeElement as any)?.blur?.();
-  s.listDone = false;
+  writeScopeField('listDone', false);
   setTimeout(() => { w.ig.clear(); }, 40);
-  s.isOpenWebpagePanel = false;
-  s.currentTag = undefined;
+  writeScopeField('isOpenWebpagePanel', false);
+  writeScopeField('currentTag', undefined);
   syncToolbarFromScope();
-  s.startCursor = 0;
-  s.currentFolder = undefined;
+  writeScopeField('startCursor', 0);
+  writeScopeField('currentFolder', undefined);
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
   w.eagle.inspector.reset();
-  s.currentFolderChildren = undefined;
-  s.currentSmartFolder = undefined;
+  writeScopeField('currentFolderChildren', undefined);
+  writeScopeField('currentSmartFolder', undefined);
   syncPanelFromScope();
   syncListFromScope();
-  s.$root.selectedFoldersMappings = {};
-  s.$root.selectedFolders = [];
+  writeScopeField('selectedFoldersMappings', {});
+  writeScopeField('selectedFolders', []);
   syncListFromScope();
-  s.selectedFolderMappings = {};
+  writeScopeField('selectedFolderMappings', {});
   syncListFromScope();
-  s.$root.selectedSmartFoldersMappings = {};
-  s.$root.selectedSmartFolders = [];
-  s.currentId = undefined;
+  writeScopeField('selectedSmartFoldersMappings', {});
+  writeScopeField('selectedSmartFolders', []);
+  writeScopeField('currentId', undefined);
   syncSidebarFromScope();
-  s.layout = localStorage.getItem(`eagle.list.layout.${s.rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout";
+  writeScopeField('layout', localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout");
 
   if (!w.eagle.filter.isLock) {
     resetFilter();
-    s.keyword = undefined;
+    writeScopeField('keyword', undefined);
   }
   hide("#image-drop-area");
 
-  if (s.duplicateTarget) {
-    s.duplicateTarget = undefined;
+  if (useMiscRawState.getState().duplicateTarget) {
+    writeScopeField('duplicateTarget', undefined);
     machineryFindDupclipate(undefined);
   }
 }
@@ -703,7 +703,7 @@ export function machineryToggleAll(s: any, $event: any): void {
     machineryRelayout();
     getOffsetScrollbarFn(s)(30);
     if (s.isDetailMode) {
-      s.$root.currentFocus = "content";
+      writeScopeField('currentFocus', "content");
     }
     if (s.isDetailMode && s.lastZoomMode === "edge") {
       machineryZoomFitEdge(w.event);

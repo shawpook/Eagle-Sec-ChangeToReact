@@ -25,6 +25,8 @@ import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, mach
 import { machineryBuildTagManager } from './tagManagerDomain';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
+import { writeScopeField } from './scopeFieldBridge';
+import { useLayoutState } from '../store/layoutState';
 
 /**
  * b1-9bz-D-1 B-17：dataMachinery 收尾——挂载基础设施域（scope 面供给层）。
@@ -44,7 +46,7 @@ export function applyDataMachineryScope(): void {
   // b1-9d：controller init 状态面种子（仅 shim 世界——bundle 在世时由 controller init
   // 填充同名默认值，此处调用为恒等幂等）
   if (s.__eagleShim) {
-    machinerySeedControllerState(s);
+    machinerySeedControllerState();
   }
 
   // b1-9d：TagManager 供给（bundle 48351 $scope.TagManager = TagManager 的 shim 等价；
@@ -140,8 +142,8 @@ export function applyDataMachineryScope(): void {
   // c16c：saveFolder
   // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
   // 双写保证 $rootScope.notify 直调与 s.notify 原型链解析都走移植版）
-  const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(s, params, restoreCallbackk);
-  s.$root.notify = notifyFn;
+  const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(params, restoreCallbackk);
+  writeScopeField('notify', notifyFn);
   s.notify = notifyFn;
   // c18a：smartZoom/lastZoom
   // c18b：zoomActual/toggleZoom/zoomFitEdge/updateContainerHieght
@@ -540,96 +542,96 @@ export function getTimeout(): any {
  * 仅在函数入口自增，无任何行为影响。 */
 export const machineryCalls: Record<string, number> = { rebindRefresh: 0, updateSelection: 0, filterContent: 0 };
 
-export function machinerySeedControllerState(s: any): void {
+export function machinerySeedControllerState(): void {
   const w = window as any;
-        s.libraryHistory = [];  // bundle 20535（seed 区间外的 controller init 字段——showTutorial 等消费）
-        s.MAX_LIST_WIDTH = 900;
+        writeScopeField('libraryHistory', []);  // bundle 20535（seed 区间外的 controller init 字段——showTutorial 等消费）
+        writeScopeField('MAX_LIST_WIDTH', 900);
         syncToolbarFromScope();
-        s.MAX_DIMENSION = 120000000;
-        s.isHideMainNav = true;	// 3.0 侧栏
-        s.isHideSidebar = false;
-        s.isHideSubFolder = true;
-        s.isHideNavigator = false;
-        s.unlockPassword = "";
+        writeScopeField('MAX_DIMENSION', 120000000);
+        writeScopeField('isHideMainNav', true);	// 3.0 侧栏
+        writeScopeField('isHideSidebar', false);
+        writeScopeField('isHideSubFolder', true);
+        writeScopeField('isHideNavigator', false);
+        writeScopeField('unlockPassword', "");
         // 音效三件套（bundle 20238-20254 逐字；$.playSound 由 js/vendors/jquery-audio.js 提供，
         // 该插件原内联在 app.bundle.js 内，b1-9d 后由 index.html 独立引入）
-        s.removeSound = {
+        writeScopeField('removeSound', {
             play: function () {
                 w.__eagleAudio.playSound('sounds/remove.wav');
             }
-        };
-        s.duplicateSound = {
+        });
+        writeScopeField('duplicateSound', {
             play: function () {
                 w.__eagleAudio.playSound('sounds/duplicate.wav');
             }
-        };
-        s.errorSound = {
+        });
+        writeScopeField('errorSound', {
             play: function () {
                 w.__eagleAudio.playSound('sounds/error.wav');
             }
-        };
+        });
         // b1-9l：controller init 接线补种三件（b1-9g 台账根因 5 + fx/fc 补种）
         // platform（bundle 20066 `$scope.platform = process.platform`——BodyBindings 的
         // data-platform 属性唯一数据源，shim 世界此前无人写入）
-        s.platform = w.process && w.process.platform ? w.process.platform : undefined;
+        writeScopeField('platform', w.process && w.process.platform ? w.process.platform : undefined);
         // containerSize（bundle 21095-21121 逐字；React 侧 bodyState:159 直接消费
         // scope.containerSize.sidebar、BodyBindings 面板 left = sidebarWidth+1——bundle 默认
         // 240 与 React 旧兜底 220 不一致，以 bundle 为准。$$rebind::refreshContainSize 广播
         // 为 Angular rebind 系统工件，shim 世界由 bodyState 的 watch 自动跟随；
         // #sidebar 的 resizable 指令（index.html:34）b1 后失效，拖拽写回链待办）
-        s.containerSize = { sidebar: 240 };
+        writeScopeField('containerSize', { sidebar: 240 });
         syncSidebarFromScope();
         syncTagManagerFromScope();
         const sidebarSizeRaw = localStorage.getItem("eagle.containerSize.sidebar");
         if (sidebarSizeRaw) {
-            s.containerSize.sidebar = parseInt(sidebarSizeRaw);
+            useLayoutState.getState().containerSize.sidebar = parseInt(sidebarSizeRaw);
             syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
-            if (s.containerSize.sidebar < 200) s.containerSize.sidebar = 200;
+            if (useLayoutState.getState().containerSize.sidebar < 200) useLayoutState.getState().containerSize.sidebar = 200;
             syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
         }
         const tagSidebarRaw = localStorage.getItem("eagle.containerSize.tagSidebar");
         if (tagSidebarRaw) {
-            s.containerSize.tagSidebar = parseInt(tagSidebarRaw);
+            useLayoutState.getState().containerSize.tagSidebar = parseInt(tagSidebarRaw);
             syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
         }
         const tagFilterRaw = localStorage.getItem("eagle.containerSize.tagFilter");
         if (tagFilterRaw) {
-            s.containerSize.tagFilter = parseInt(tagFilterRaw);
+            useLayoutState.getState().containerSize.tagFilter = parseInt(tagFilterRaw);
             syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
         }
         // fixUtils（bundle 20513 `$scope.fixUtils = {}`——fixutil 进度对话框开合状态载体；
         // 缺席时 body.fixUtils.isFixing 赋值直接 TypeError、7d6c 的 fx/fc 对话框永不出现）
-        s.fixUtils = {};
+        writeScopeField('fixUtils', {});
         // containTags（bundle 20533 `$scope.containTags = []`——updateSuggestions/
         // machineryCalcuteFilterBadge 读取；缺席时 search 链在 updateSuggestions 处
         // TypeError 断链、filterContent 永不执行（b1-9o 探针实证））
-        s.containTags = [];
+        writeScopeField('containTags', []);
         syncFilterFromScope();
         // page（bundle 21062 `$scope.page = 1`——rebindRefresh 的
         // `s.filtereds = s.allData.slice(0, s.len * s.page)` 乘数；缺席时 NaN →
         // filtereds 恒空数组（b1-9o 探针实证 a4 空态无法闭合））
-        s.page = 1;
+        writeScopeField('page', 1);
         // historySearchKeywords（bundle 21097-21103 逐字——updateSuggestions 首行读取，
         // 缺席时 search 防抖体 TypeError 断链、filterContent 永不执行（b1-9o 计数探针实证））
         var historySearchKeywords = localStorage.getItem("historySearchKeywords");
         if (historySearchKeywords) {
             try {
-                s.historySearchKeywords = JSON.parse(historySearchKeywords);
+                writeScopeField('historySearchKeywords', JSON.parse(historySearchKeywords));
             }
             catch (err) {
-                s.historySearchKeywords = [];
+                writeScopeField('historySearchKeywords', []);
             }
         }
         else {
-            s.historySearchKeywords = [];
+            writeScopeField('historySearchKeywords', []);
         }
         // initPlugins（bundle 20028 RootController init 调用——scope.inspector.inspectorItems
         // 只由它填充，stage6 的 tags/folders/annotations/information 分区渲染数据源；
@@ -640,94 +642,94 @@ export function machinerySeedControllerState(s: any): void {
         // eagle（b1-9p：bundle $rootScope.eagle 的 shim 等价——scope 链上 'eagle.filter...'
         // 字符串 watcher（evalPath 经 coreState 解析）与 toolbarState 等快照的数据源；
         // 缺席时 watcher 读取抛 TypeError 被 flushWatchers 吞掉、listener 永不触发）
-        s.eagle = w.eagle;
+        writeScopeField('eagle', w.eagle);
         // inspector.width（b1-9o：bundle 由 inspector 面板 resize 维护——React ResizeObserver 前
         // 对齐 inspectorState store 的兜底默认 300（ProgressBars/面板 right = width+1）；
         // s.inspector 即 w.eagle.inspector（bundle 21615 同引用）
         if (w.eagle && w.eagle.inspector && w.eagle.inspector.width === undefined) {
             w.eagle.inspector.width = 300;
         }
-        s.len = 100;
-        s.sidebarList = [];
+        writeScopeField('len', 100);
+        writeScopeField('sidebarList', []);
         syncSidebarFromScope();
-        s.sidebarIndex;
-        s.all = [];
+        useMiscRawState.getState().sidebarIndex;
+        writeScopeField('all', []);
         syncSidebarFromScope();
-        s.trash = [];
+        writeScopeField('trash', []);
         syncSidebarFromScope();
         syncListFromScope();
-        s.untaggedCount = 0;
-        s.unfiledCount = 0;
-        s.images = [];
-        s.selected = [];
+        writeScopeField('untaggedCount', 0);
+        writeScopeField('unfiledCount', 0);
+        writeScopeField('images', []);
+        writeScopeField('selected', []);
         syncInspectorFromScope();
-        s.selectedMappings = {};
-        s.lockedImages = {};
-        s.filtereds = [];
+        writeScopeField('selectedMappings', {});
+        writeScopeField('lockedImages', {});
+        writeScopeField('filtereds', []);
         syncListFromScope();
-        s.allData = [];
+        writeScopeField('allData', []);
         syncListFromScope();
-        s.shuffle = [];
-        s.$root.selectedFolders = [];
+        writeScopeField('shuffle', []);
+        writeScopeField('selectedFolders', []);
         syncListFromScope();
-        s.$root.selectedFoldersMappings = {};
-        s.$root.selectedSmartFolders = [];
-        s.$root.selectedSmartFoldersMappings = {};
-        s.folderMappings = {};
-        s.smartFolderMappings = {};
-        s.uploadQueue = [];
+        writeScopeField('selectedFoldersMappings', {});
+        writeScopeField('selectedSmartFolders', []);
+        writeScopeField('selectedSmartFoldersMappings', {});
+        writeScopeField('folderMappings', {});
+        writeScopeField('smartFolderMappings', {});
+        writeScopeField('uploadQueue', []);
         syncUploadFromScope();
-        s.finishQueue = [];
+        writeScopeField('finishQueue', []);
         syncUploadFromScope();
-        s.finishGenerateQueue = [];
-        s.regenerateThumbnailQueue = [];
+        writeScopeField('finishGenerateQueue', []);
+        writeScopeField('regenerateThumbnailQueue', []);
         
-        s.duplicateQueue = [];
-        s.$root.currentFocus = "sidebar";
-        s.showSubfolderContent = false;
-        s.showOriginalImageWhenLarge = localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false'
+        writeScopeField('duplicateQueue', []);
+        writeScopeField('currentFocus', "sidebar");
+        writeScopeField('showSubfolderContent', false);
+        writeScopeField('showOriginalImageWhenLarge', localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false')
         syncPanelFromScope();
-        s.showName = false;
+        writeScopeField('showName', false);
         syncPanelFromScope();
-        s.showMetas = false;
+        writeScopeField('showMetas', false);
         syncPanelFromScope();
-        s.showAnnotation = true;
+        writeScopeField('showAnnotation', true);
         syncPanelFromScope();
-        s.showFileExtension = true;
+        writeScopeField('showFileExtension', true);
         syncPanelFromScope();
-        s.showFileExtensionLabel = true;
+        writeScopeField('showFileExtensionLabel', true);
         syncPanelFromScope();
-        s.orderBy = localStorage.getItem("eagle.list.orderBy") || "IMPORT";
+        writeScopeField('orderBy', localStorage.getItem("eagle.list.orderBy") || "IMPORT");
         syncBodyFromScope();
-        s.orderByName = w.i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
-        s.isSearchScopeName = true;
-        s.isSearchScopeFolderName = true;
-        s.isSearchScopeFolderDesc = true;
-        s.isSearchScopeExt = true;
-        s.isSearchScopeTag = true;
-        s.isSearchScopeUrl = true;
-        s.isSearchScopeAnnotation = true;
-        s.isSearchScopeNote = true;
-        s.listMetaType = localStorage.getItem("eagle.list.meta.type") || "RESOLUTION";
+        writeScopeField('orderByName', w.i18n.__(`context.order.orderBy>${useMiscRawState.getState().orderBy.toLowerCase()}`));
+        writeScopeField('isSearchScopeName', true);
+        writeScopeField('isSearchScopeFolderName', true);
+        writeScopeField('isSearchScopeFolderDesc', true);
+        writeScopeField('isSearchScopeExt', true);
+        writeScopeField('isSearchScopeTag', true);
+        writeScopeField('isSearchScopeUrl', true);
+        writeScopeField('isSearchScopeAnnotation', true);
+        writeScopeField('isSearchScopeNote', true);
+        writeScopeField('listMetaType', localStorage.getItem("eagle.list.meta.type") || "RESOLUTION");
         syncPanelFromScope();
-        s.sortIncrease = true;
-        s.layout = "";
-        s.layoutOptions = localStorage["eagle.list.layout.options"] || "Fit";
+        writeScopeField('sortIncrease', true);
+        writeScopeField('layout', "");
+        writeScopeField('layoutOptions', localStorage["eagle.list.layout.options"] || "Fit");
         syncPanelFromScope();
-        s.paletteQueuePaused = false;
+        writeScopeField('paletteQueuePaused', false);
         syncSidebarFromScope();
-        s.paletteQueueDelay = 20;
+        writeScopeField('paletteQueueDelay', 20);
         
         // Grid Layout 相关
-        s.itemMappings = {};
-        s.modifiedMappings = {};
-        s.options = {
+        writeScopeField('itemMappings', {});
+        writeScopeField('modifiedMappings', {});
+        writeScopeField('options', {
             page: 60,           // 每页数量
             preload: 1,         // 预先载入页次，如果填写 3 表示载入 page x 3 个内容
             align: "left"     // 瀑布流排版对其方式
-        };
+        });
 
-        s.folderIcons = [
+        writeScopeField('folderIcons', [
 
             // 集合、多媒体、工具
             { type: 'icon' },
@@ -915,79 +917,79 @@ export function machinerySeedControllerState(s: any): void {
             { type: 'icon', icon: 'number18' },
             { type: 'icon', icon: 'number19' },
             { type: 'icon', icon: 'number20' },
-        ];
+        ]);
 
         if (localStorage.getItem("isHideMainNav") == 'true') {
-            s.isHideMainNav = true;
+            writeScopeField('isHideMainNav', true);
         }
 
         if (localStorage.getItem("isHideSidebar") == 'true') {
-            s.isHideSidebar = true;
+            writeScopeField('isHideSidebar', true);
         }
 
         if (localStorage.getItem("isHideSubFolder") == 'false') {
-            s.isHideSubFolder = false;
+            writeScopeField('isHideSubFolder', false);
         }
 
         if (localStorage.getItem("eagle.list.sortIncrease") == 'false') {
-            s.sortIncrease = false;
+            writeScopeField('sortIncrease', false);
         }
 
         if (localStorage.getItem("isHideNavigator") == 'true') {
-            s.isHideNavigator = true;
+            writeScopeField('isHideNavigator', true);
         }
 
-        if (localStorage.getItem("eagle.search.scope.name") === 'false') { s.isSearchScopeName = false; }
-        if (localStorage.getItem("eagle.search.scope.folderName") === 'false') { s.isSearchScopeFolderName = false; }
-        if (localStorage.getItem("eagle.search.scope.folderDesc") === 'false') { s.isSearchScopeFolderDesc = false; }
-        if (localStorage.getItem("eagle.search.scope.ext") === 'false') { s.isSearchScopeExt = false; }
-        if (localStorage.getItem("eagle.search.scope.tag") === 'false') { s.isSearchScopeTag = false; }
-        if (localStorage.getItem("eagle.search.scope.url") === 'false') { s.isSearchScopeUrl = false; }
-        if (localStorage.getItem("eagle.search.scope.annotation") === 'false') { s.isSearchScopeAnnotation = false; }
-        if (localStorage.getItem("eagle.search.scope.note") === 'false') { s.isSearchScopeNote = false; }
+        if (localStorage.getItem("eagle.search.scope.name") === 'false') { writeScopeField('isSearchScopeName', false); }
+        if (localStorage.getItem("eagle.search.scope.folderName") === 'false') { writeScopeField('isSearchScopeFolderName', false); }
+        if (localStorage.getItem("eagle.search.scope.folderDesc") === 'false') { writeScopeField('isSearchScopeFolderDesc', false); }
+        if (localStorage.getItem("eagle.search.scope.ext") === 'false') { writeScopeField('isSearchScopeExt', false); }
+        if (localStorage.getItem("eagle.search.scope.tag") === 'false') { writeScopeField('isSearchScopeTag', false); }
+        if (localStorage.getItem("eagle.search.scope.url") === 'false') { writeScopeField('isSearchScopeUrl', false); }
+        if (localStorage.getItem("eagle.search.scope.annotation") === 'false') { writeScopeField('isSearchScopeAnnotation', false); }
+        if (localStorage.getItem("eagle.search.scope.note") === 'false') { writeScopeField('isSearchScopeNote', false); }
         // b1-9ab：searchFilter 管线（bundle 32182 逐字；machineryFilterContent 的
         // `data.filter(s.searchFilter)` 消费面——此前无定义、非空关键词 TypeError 被吞）
         // b1-9ad：颜色/黑白筛选（bundle 32689/32797 逐字；machineryFilterContent 的
         // data.filter(...) 消费面已改直调 machineryColorFilter/machineryGrayColorFilter）
         w.preferences = (w.electronSettings && w.electronSettings.getPreferences) ? w.electronSettings.getPreferences() : (w.preferences || {});
-        s.showSubfolderContent = w.preferences.showSubfolderContent;
+        writeScopeField('showSubfolderContent', w.preferences.showSubfolderContent);
 
         if (localStorage.getItem("eagle.list.show.name") == 'false') {
-            s.showName = false;
+            writeScopeField('showName', false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-name");
         }
         else {
-            s.showName = true;
+            writeScopeField('showName', true);
             syncPanelFromScope();
             removeClass("#box-container", "hide-box-name");
         }
 
         if (localStorage.getItem("eagle.list.show.meta") == 'false') {
-            s.showMetas = false;
+            writeScopeField('showMetas', false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-metas");
         }
         else {
-            s.showMetas = true;
+            writeScopeField('showMetas', true);
             syncPanelFromScope();
             removeClass("#box-container", "hide-box-metas");
         }
 
         if (localStorage.getItem("eagle.list.show.annotation") == 'false') {
-            s.showAnnotation = false;
+            writeScopeField('showAnnotation', false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-annotation");
         }
 
         if (localStorage.getItem("eagle.list.show.extension") == 'false') {
-            s.showFileExtension = false;
+            writeScopeField('showFileExtension', false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-extension");
         }
 
         if (localStorage.getItem("eagle.list.show.extension_LABEL") == 'false') {
-            s.showFileExtensionLabel = false;
+            writeScopeField('showFileExtensionLabel', false);
             syncPanelFromScope();
             addClass("#box-container", "hide-box-extension-label");
         }
@@ -1004,57 +1006,57 @@ export function machinerySeedControllerState(s: any): void {
         };
         if (localStorage["eagle.list.layout.settings"]) {
             try {
-                s.listLayoutSettings = JSON.parse(localStorage["eagle.list.layout.settings"]);
+                writeScopeField('listLayoutSettings', JSON.parse(localStorage["eagle.list.layout.settings"]));
                 syncBodyFromScope();
             } catch (err) {
-                s.listLayoutSettings = defaultListLayoutSettings;
+                writeScopeField('listLayoutSettings', defaultListLayoutSettings);
                 syncBodyFromScope();
             }
         }
         else {
-            s.listLayoutSettings = defaultListLayoutSettings;
+            writeScopeField('listLayoutSettings', defaultListLayoutSettings);
             syncBodyFromScope();
         }
 
-        s.imageSize = {
+        writeScopeField('imageSize', {
             height: 150,
             zoomRatio: 100,
             subfolderWidth: 150
-        };
+        });
         syncToolbarFromScope();
         syncBodyFromScope();
         syncDetailFromScope();
         syncInspectorFromScope();
-        s.sliderZoomRatio = 100;
+        writeScopeField('sliderZoomRatio', 100);
         syncDetailFromScope();
-        s.lastZoomMode = localStorage["eagle.viewer.lastZoomMode"] || "fit";
+        writeScopeField('lastZoomMode', localStorage["eagle.viewer.lastZoomMode"] || "fit");
         syncDetailFromScope();
-        s.tagsSuggestion = [];
-        s.folders = [];
-        s.smartFolders = [];
-        s.quickAccess = [];
+        writeScopeField('tagsSuggestion', []);
+        writeScopeField('folders', []);
+        writeScopeField('smartFolders', []);
+        writeScopeField('quickAccess', []);
         syncSidebarFromScope();
-        s.isExpandFolder = true;
+        writeScopeField('isExpandFolder', true);
         syncSidebarFromScope();
-        s.isExpandSmartFolder = true;
+        writeScopeField('isExpandSmartFolder', true);
         syncSidebarFromScope();
-        s.isExpandQuickAccess = true;
+        writeScopeField('isExpandQuickAccess', true);
         syncSidebarFromScope();
 
         if (localStorage.getItem("eagle.sidebar.folder.expand") == 'false') {
-            s.isExpandFolder = false;
+            writeScopeField('isExpandFolder', false);
             syncSidebarFromScope();
         }
         if (localStorage.getItem("eagle.sidebar.smartFolder.expand") == 'false') {
-            s.isExpandSmartFolder = false;
+            writeScopeField('isExpandSmartFolder', false);
             syncSidebarFromScope();
         }
         if (localStorage.getItem("eagle.sidebar.quickAccess.expand") == 'false') {
-            s.isExpandQuickAccess = false;
+            writeScopeField('isExpandQuickAccess', false);
             syncSidebarFromScope();
         }
 
-        s.inspector = w.eagle.inspector;
+        writeScopeField('inspector', w.eagle.inspector);
 }
 
 export function scopeSingleton<T>(s: any, key: string, make: () => T): T {

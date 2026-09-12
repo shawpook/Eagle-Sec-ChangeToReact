@@ -18,6 +18,7 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { getBodyScope } from './appCore';
 import { scopeEvalAsync } from './scopeRuntime';
+import { useMiscRawState } from '../store/miscRawState';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }
@@ -2010,7 +2011,7 @@ class AIAction {
                     if (curr.mtimeMs === prev.mtimeMs) return;
                     if (!fs.existsSync(this.#configPath)) return;
                     this.#loadActions();
-                    getBodyScope().$root.initMenu();
+                    useMiscRawState.getState().initMenu();
                     scopeEvalAsync();
                 });
             }

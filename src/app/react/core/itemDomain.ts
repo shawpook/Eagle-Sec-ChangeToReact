@@ -1396,7 +1396,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
             syncInspectorFromScope();
             var targetSelectedIndex = s.allData.indexOf(s.selected[0]);
             s.lastSelectedIndex = targetSelectedIndex;
-            s.$root.currentFocus = "content";
+            writeScopeField('currentFocus', "content");
             if (newItems.length === 1) {
               domainTimeout(function () {
                 scrollToSelectedItem();

@@ -887,7 +887,7 @@ export function takeoverMiscDomain(): void {
 
         setTimeout(function () {
           ipc.send("remove-registration");
-          s.$root.initMenu();
+          useMiscRawState.getState().initMenu();
           electronLog && electronLog.info(`[app] Unregister successfully, email: ${email}`);
         }, 2000);
       });
@@ -1154,7 +1154,7 @@ export function contentFocus(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function($event) {
-            s.$root.currentFocus = "content";
+            writeScopeField('currentFocus', "content");
         }).apply(null, args);
   }
 
@@ -1363,9 +1363,8 @@ export function toggleSmartFolderVisible(...args: any[]) {
 
 export function undo(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 收敛到 machinery（machinery 带 typeof 守卫 + cgNotifyServiceCloseAll 兜底）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryUndo(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUndo();
 }
 
 export function updateCurrentOrderAndIncrease () {
@@ -1848,14 +1847,14 @@ export function machineryLeaveSlideshowMode(s: any): void {
 /* lockApp（bundle 29016-29023 逐字）+ focusAppUnlockPassword（29025-29034 逐字） */
 export function machineryLockApp(s: any): void {
   const w = window as any;
-  s.$root.isAppLocked = true;
-  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') s.$root.initMenu();
+  writeScopeField('isAppLocked', true);
+  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
   setTimeout(function () {
     machineryFocusAppUnlockPassword();
   }, 100);
 }
 
-export function machineryNotify(s: any, params: any, restoreCallbackk: any): void {
+export function machineryNotify(params: any, restoreCallbackk: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 
@@ -1933,14 +1932,14 @@ export function machineryNotify(s: any, params: any, restoreCallbackk: any): voi
     }
 
     if (restoreCallbackk) {
-      s.$root.undo = restoreCallbackk;
+      writeScopeField('undo', restoreCallbackk);
     } else {
-      s.$root.undo = function () { };
+      writeScopeField('undo', function () { });
     }
     // 如果使用者超過時間沒有點擊反悔，就把 callback 移除，避免發生錯亂
     clearTimeout(undoTimeout);
     undoTimeout = setTimeout(function () {
-      s.$root.undo = function () { };
+      writeScopeField('undo', function () { });
     }, duration + 5000);
 
   }, 10);

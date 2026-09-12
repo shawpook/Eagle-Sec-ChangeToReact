@@ -401,7 +401,7 @@ export function removeFromFolder(...args: any[]) {
             machineryUpdateSelection();
         });
 
-        s.$root.notify({
+        useMiscRawState.getState().notify({
             message: message,
             duration: 5000,
         }, function() {
@@ -475,7 +475,7 @@ export function scrollToSelectedItem(...args: any[]) {
                         }
                         cssSet("#box-container", { visibility: "hidden" });
                         s.startCursor = startPage;
-                        s.$root.currentFocus = "content";
+                        writeScopeField('currentFocus', "content");
                         $timeout(function () {
                             // s.selected = originSelected;
                             useSelectionState.getState().selected.forEach(function (item) {
@@ -534,16 +534,14 @@ export function excludeWithTag(...args: any[]) {
 
 export function openTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(tag, ignoreHistory) {
-            machineryResetPage(s);
-            s.$root.currentFocus = "content";
-            s.currentFolder = undefined;
+            machineryResetPage();
+            writeScopeField('currentFocus', "content");
+            writeScopeField('currentFolder', undefined);
             syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
-            s.currentFolderChildren = undefined;
+            writeScopeField('currentFolderChildren', undefined);
             __lv_TagManager.filterWithTags([tag], ignoreHistory);
         }).apply(null, args);
 }
@@ -677,8 +675,6 @@ export function exportSelectedAsFormat(...args: any[]) {
 
 export function exportSelectedToCsv(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         if (useSelectionState.getState().selected.length === 0) return;
 
@@ -759,7 +755,7 @@ export function exportSelectedToCsv(...args: any[]) {
             fs.writeFileSync(filePath, '\uFEFF' + csvContent, 'utf8'); // BOM for Excel
 
             // 顯示成功訊息
-            s.$root.notify({
+            useMiscRawState.getState().notify({
                 message: i18n.__('notify.exporCSV.title'),
                 duration: 5000,
             });

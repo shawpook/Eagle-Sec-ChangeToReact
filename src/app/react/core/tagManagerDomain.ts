@@ -1380,7 +1380,7 @@ export function machineryBuildTagManager(s: any): any {
 
             if (event.button !== 0 && s.selectedTags[tag.name]) return;
 
-            s.$root.currentFocus = 'content';
+            writeScopeField('currentFocus', 'content');
 
             // Shift 多選
             if (event.shiftKey) {
@@ -1458,7 +1458,7 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             s.tagViewModeName = "ALL";
             syncTagManagerFromScope();
-            s.$root.currentFocus = 'tags';
+            writeScopeField('currentFocus', 'tags');
             s.currentTagGroup = undefined;
             syncTagManagerFromScope();
             s.selectedTags = {};
@@ -1474,7 +1474,7 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             s.tagViewModeName = "UNFILED";
             syncTagManagerFromScope();
-            s.$root.currentFocus = 'tags';
+            writeScopeField('currentFocus', 'tags');
             s.currentTagGroup = undefined;
             syncTagManagerFromScope();
             s.selectedTags = {};
@@ -1490,7 +1490,7 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             s.tagViewModeName = "STARRED";
             syncTagManagerFromScope();
-            s.$root.currentFocus = 'tags';
+            writeScopeField('currentFocus', 'tags');
             s.currentTagGroup = undefined;
             syncTagManagerFromScope();
             s.selectedTags = {};
@@ -1505,7 +1505,7 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             s.tagViewModeName = `GROUP-${group.id}`;
             syncTagManagerFromScope();
-            s.$root.currentFocus = 'tags';
+            writeScopeField('currentFocus', 'tags');
             s.currentTagGroup = group;
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
@@ -1653,7 +1653,7 @@ export function machineryBuildTagManager(s: any): any {
                         icon: 'ic-tag-remove.svg',
                         accelerator: (process.platform === 'win32')? 'Del' : '⌘+⌫',
                         click: () => {
-                            machineryRemoveTagGroup(s, tagGroup);
+                            machineryRemoveTagGroup(tagGroup);
                             scopeEvalAsync();
                         }
                     },
@@ -1740,7 +1740,7 @@ export function machineryBuildTagManager(s: any): any {
                     syncTagManagerFromScope();
                 }
                 else {
-                    machineryOpenTagAllGroup(s);
+                    machineryOpenTagAllGroup();
                 }
             };
 
@@ -2724,7 +2724,7 @@ export function machineryEditTag(s: any, tag: any): void {
       { "property": "new", "value": tag.name }
     ]);
     // 復原
-    s.$root.notify({
+    useMiscRawState.getState().notify({
       message: message,
       duration: 2000,
     });
@@ -2732,14 +2732,14 @@ export function machineryEditTag(s: any, tag: any): void {
   }, function () { });
 }
 
-export function machineryEnableSubFolderNameEditable(s: any, event: any, folder: any): void {
+export function machineryEnableSubFolderNameEditable(event: any, folder: any): void {
   const w = window as any;
   const el = ((event && event.target) || null) as HTMLElement;
   if (!folder) return;
   if (hasClass(el, "editable")) return;
   if (!el) return;
 
-  machinerySelectFolder(s, event, folder);
+  machinerySelectFolder(event, folder);
 
   var originalName = textEl(el).trim();
   el.setAttribute("contenteditable", "true");
@@ -2880,8 +2880,8 @@ export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
   w.ScrollbarSaver.saveScrollPosition();
 
   s.viewMode = 'alltags';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
+  writeScopeField('currentFocus', "sidebar");
+  machineryResetPage();
   s.images = [];
   s.isDetailMode = false;
   s.selected = [];
@@ -2897,119 +2897,119 @@ export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
   }, 50);
 }
 
-export function machineryOpenNextGroup(s: any): void {
-  if (s.tagViewMode === "ALL") {
-    machineryOpenUnfiledGroup(s);
+export function machineryOpenNextGroup(): void {
+  if (useMiscRawState.getState().tagViewMode === "ALL") {
+    machineryOpenUnfiledGroup();
   }
-  else if (s.tagViewMode === "UNFILED") {
-    machineryOpenStarredGroup(s);
+  else if (useMiscRawState.getState().tagViewMode === "UNFILED") {
+    machineryOpenStarredGroup();
   }
-  else if (s.tagViewMode === "STARRED") {
-    if (s.TagManager.groups[0]) {
-      machineryOpenTagGroup(s, s.TagManager.groups[0]);
+  else if (useMiscRawState.getState().tagViewMode === "STARRED") {
+    if (useMiscRawState.getState().TagManager.groups[0]) {
+      machineryOpenTagGroup(useMiscRawState.getState().TagManager.groups[0]);
     }
   }
-  else if (s.TagManager.groups.length > 0) {
+  else if (useMiscRawState.getState().TagManager.groups.length > 0) {
     var $visibleGroups = qaVisible(".tag-manager-sidebar .group-item");
     var $currentGroup = q(".tag-manager-sidebar .group-item.active");
     var currentIndex = $currentGroup ? $visibleGroups.indexOf($currentGroup) : -1;
-    var next = s.TagManager.groups[currentIndex + 1];
+    var next = useMiscRawState.getState().TagManager.groups[currentIndex + 1];
     if (next) {
-      machineryOpenTagGroup(s, next);
+      machineryOpenTagGroup(next);
     }
   }
 }
 
-export function machineryOpenPrevGroup(s: any): void {
-  if (s.tagViewMode === "ALL") {
+export function machineryOpenPrevGroup(): void {
+  if (useMiscRawState.getState().tagViewMode === "ALL") {
     return;
   }
-  else if (s.tagViewMode === "UNFILED") {
-    machineryOpenTagAllGroup(s);
+  else if (useMiscRawState.getState().tagViewMode === "UNFILED") {
+    machineryOpenTagAllGroup();
   }
-  else if (s.tagViewMode === "STARRED") {
-    machineryOpenUnfiledGroup(s);
+  else if (useMiscRawState.getState().tagViewMode === "STARRED") {
+    machineryOpenUnfiledGroup();
   }
   else {
     var $visibleGroups = qaVisible(".tag-manager-sidebar .group-item");
     var $currentGroup = q(".tag-manager-sidebar .group-item.active");
     var currentIndex = $currentGroup ? $visibleGroups.indexOf($currentGroup) : -1;
     if (currentIndex === 0) {
-      machineryOpenStarredGroup(s);
+      machineryOpenStarredGroup();
     }
     else if (currentIndex > 0) {
-      var prev = s.TagManager.groups[currentIndex - 1];
+      var prev = useMiscRawState.getState().TagManager.groups[currentIndex - 1];
       if (prev) {
-        machineryOpenTagGroup(s, prev);
+        machineryOpenTagGroup(prev);
       }
     }
   }
 }
 
-export function machineryOpenStarredGroup(s: any): void {
-  if (s.tagViewMode === "STARRED") return;
+export function machineryOpenStarredGroup(): void {
+  if (useMiscRawState.getState().tagViewMode === "STARRED") return;
   tagRectSelecting = false;
-  s.keyword = "";
-  s.tagViewMode = "STARRED";
+  writeScopeField('keyword', "");
+  writeScopeField('tagViewMode', "STARRED");
   syncTagManagerFromScope();
-  s.tagViewModeName = "STARRED";
+  writeScopeField('tagViewModeName', "STARRED");
   syncTagManagerFromScope();
-  s.$root.currentFocus = 'tags';
-  s.currentTagGroup = undefined;
+  writeScopeField('currentFocus', 'tags');
+  writeScopeField('currentTagGroup', undefined);
   syncTagManagerFromScope();
-  s.selectedTags = {};
+  writeScopeField('selectedTags', {});
   syncTagManagerFromScope();
-  s.TagManager.renderTagsResult();
+  useMiscRawState.getState().TagManager.renderTagsResult();
 }
 
-export function machineryOpenTagAllGroup(s: any): void {
-  if (s.tagViewMode === "ALL") return;
+export function machineryOpenTagAllGroup(): void {
+  if (useMiscRawState.getState().tagViewMode === "ALL") return;
   tagRectSelecting = false;
-  s.keyword = "";
-  s.tagViewMode = "ALL";
+  writeScopeField('keyword', "");
+  writeScopeField('tagViewMode', "ALL");
   syncTagManagerFromScope();
-  s.tagViewModeName = "ALL";
+  writeScopeField('tagViewModeName', "ALL");
   syncTagManagerFromScope();
-  s.$root.currentFocus = 'tags';
-  s.currentTagGroup = undefined;
+  writeScopeField('currentFocus', 'tags');
+  writeScopeField('currentTagGroup', undefined);
   syncTagManagerFromScope();
-  s.selectedTags = {};
+  writeScopeField('selectedTags', {});
   syncTagManagerFromScope();
-  s.TagManager.renderTagsResult();
+  useMiscRawState.getState().TagManager.renderTagsResult();
 }
 
-export function machineryOpenTagGroup(s: any, group: any): void {
+export function machineryOpenTagGroup(group: any): void {
   const w = window as any;
   tagRectSelecting = false;
-  s.keyword = "";
-  s.tagViewMode = "GROUP";
+  writeScopeField('keyword', "");
+  writeScopeField('tagViewMode', "GROUP");
   syncTagManagerFromScope();
-  s.tagViewModeName = `GROUP-${group.id}`;
+  writeScopeField('tagViewModeName', `GROUP-${group.id}`);
   syncTagManagerFromScope();
-  s.$root.currentFocus = 'tags';
-  s.currentTagGroup = group;
+  writeScopeField('currentFocus', 'tags');
+  writeScopeField('currentTagGroup', group);
   syncTagManagerFromScope();
-  s.TagManager.renderTagsResult();
+  useMiscRawState.getState().TagManager.renderTagsResult();
   blurEl("input:focus");
-  if (s.currentTagGroup === group) return;
-  s.selectedTags = {};
+  if (useMiscRawState.getState().currentTagGroup === group) return;
+  writeScopeField('selectedTags', {});
   syncTagManagerFromScope();
 }
 
-export function machineryOpenUnfiledGroup(s: any): void {
-  if (s.tagViewMode === "UNFILED") return;
+export function machineryOpenUnfiledGroup(): void {
+  if (useMiscRawState.getState().tagViewMode === "UNFILED") return;
   tagRectSelecting = false;
-  s.keyword = "";
-  s.tagViewMode = "UNFILED";
+  writeScopeField('keyword', "");
+  writeScopeField('tagViewMode', "UNFILED");
   syncTagManagerFromScope();
-  s.tagViewModeName = "UNFILED";
+  writeScopeField('tagViewModeName', "UNFILED");
   syncTagManagerFromScope();
-  s.$root.currentFocus = 'tags';
-  s.currentTagGroup = undefined;
+  writeScopeField('currentFocus', 'tags');
+  writeScopeField('currentTagGroup', undefined);
   syncTagManagerFromScope();
-  s.selectedTags = {};
+  writeScopeField('selectedTags', {});
   syncTagManagerFromScope();
-  s.TagManager.renderTagsResult();
+  useMiscRawState.getState().TagManager.renderTagsResult();
 }
 
 /* openUntagged（bundle 36805-36833 逐字：同 openUnfiled 模板，untagged 键） */
@@ -3026,8 +3026,8 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
 
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'untagged';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
+  writeScopeField('currentFocus', "sidebar");
+  machineryResetPage();
 
   $timeout.cancel(openUntaggedTimeout);
   openUntaggedTimeout = $timeout(function () {
@@ -3088,21 +3088,21 @@ export function machineryRefreshSubfolderList(): void {
   }
 }
 
-export function machineryRemoveTagGroup(s: any, group: any): void {
+export function machineryRemoveTagGroup(group: any): void {
   const w = window as any;
 
   const remove = function (group: any) {
-    var idx = s.TagManager.removeGroup(group.id);
-    if (s.TagManager.groups[idx]) {
-      s.currentTagGroup = s.TagManager.groups[idx];
+    var idx = useMiscRawState.getState().TagManager.removeGroup(group.id);
+    if (useMiscRawState.getState().TagManager.groups[idx]) {
+      writeScopeField('currentTagGroup', useMiscRawState.getState().TagManager.groups[idx]);
       syncTagManagerFromScope();
     }
-    else if (s.TagManager.groups[idx - 1]) {
-      s.currentTagGroup = s.TagManager.groups[idx - 1];
+    else if (useMiscRawState.getState().TagManager.groups[idx - 1]) {
+      writeScopeField('currentTagGroup', useMiscRawState.getState().TagManager.groups[idx - 1]);
       syncTagManagerFromScope();
     }
     else {
-      machineryOpenTagAllGroup(s);
+      machineryOpenTagAllGroup();
     }
   };
 

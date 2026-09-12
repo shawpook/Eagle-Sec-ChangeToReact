@@ -33,9 +33,10 @@ import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState } from '../store/folderState';
 import { useItemState } from '../store/itemState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
-export function sidebarClickNode(s: any, event: any, folder: any): void {
+export function sidebarClickNode(event: any, folder: any): void {
   // b1-9ay：dragCheck 原 bundle 闭包 var，逐字移植丢声明后裸引用在首次拖拽前
   // 是未声明全局——每个侧栏文件夹点击即 ReferenceError 且被 $apply 吞
   // （sweep B6 直调实锤）。Sidebar draggable 经 window.dragCheck 中转。
@@ -44,24 +45,24 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
     return;
   }
   if (event.metaKey || event.ctrlKey) {
-    if (s.currentFolder) {
-      if (useMiscRawState.getState().selectedFolders.indexOf(s.currentFolder) === -1) {
-        useMiscRawState.getState().selectedFolders.push(s.currentFolder);
+    if (useFolderState.getState().currentFolder) {
+      if (useMiscRawState.getState().selectedFolders.indexOf(useFolderState.getState().currentFolder) === -1) {
+        useMiscRawState.getState().selectedFolders.push(useFolderState.getState().currentFolder);
         syncListFromScope();
       }
-      s.$root.selectedFoldersMappings[s.currentFolder.id] = s.currentFolder;
+      useMiscRawState.getState().selectedFoldersMappings[useFolderState.getState().currentFolder.id] = useFolderState.getState().currentFolder;
     }
-    machineryMultipleOpenFolder(s, folder, true);
+    machineryMultipleOpenFolder(folder, true);
   }
   else if (event.shiftKey) {
 
-    if (!s.currentId) return;
+    if (!useMiscRawState.getState().currentId) return;
 
-    var id = s.currentId;
+    var id = useMiscRawState.getState().currentId;
     var curarentFolderId = id.replace("folder-", "");
-    var currentFolder = s.folderMappings[curarentFolderId];
-    var fidx = s.sidebarList.indexOf(currentFolder);
-    var tidx = s.sidebarList.indexOf(folder);
+    var currentFolder = useItemState.getState().folderMappings[curarentFolderId];
+    var fidx = useMiscRawState.getState().sidebarList.indexOf(currentFolder);
+    var tidx = useMiscRawState.getState().sidebarList.indexOf(folder);
 
     if (fidx === -1 || tidx === -1) return;
     if (fidx > tidx) {
@@ -69,18 +70,18 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
     }
 
     for (var i = fidx; i <= tidx; i++) {
-      var item = s.sidebarList[i];
+      var item = useMiscRawState.getState().sidebarList[i];
       if (item.vstype === "folder") {
         var __lv_idx = useMiscRawState.getState().selectedFolders.indexOf(item);
         if (__lv_idx === -1) {
           useMiscRawState.getState().selectedFolders.push(item);
           syncListFromScope();
-          s.$root.selectedFoldersMappings[item.id] = item;
+          useMiscRawState.getState().selectedFoldersMappings[item.id] = item;
         }
       }
     }
-    s.currentFolderChildren = machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders);
-    s.reload();
+    writeScopeField('currentFolderChildren', machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders));
+    useMiscRawState.getState().reload();
   }
   else {
     openFolder(folder, false, 'folder-' + folder.id);
@@ -88,30 +89,30 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
 }
 
 /* clickSmartNode（bundle 22036 邻域逐字：clickNode 的 smartFolder 对称版） */
-export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): void {
+export function sidebarClickSmartNode(event: any, smartFolder: any): void {
   // b1-9ay：同 clickNode——dragCheck 经 window 中转（原 bundle 闭包 var）
   if (event.which == 2 || (window as any).dragCheck) {
     event.stopPropagation();
     return;
   }
   if (event.metaKey || event.ctrlKey) {
-    if (s.currentSmartFolder) {
-      if (useMiscRawState.getState().selectedSmartFolders.indexOf(s.currentSmartFolder) === -1) {
-        useMiscRawState.getState().selectedSmartFolders.push(s.currentSmartFolder);
+    if (useFolderState.getState().currentSmartFolder) {
+      if (useMiscRawState.getState().selectedSmartFolders.indexOf(useFolderState.getState().currentSmartFolder) === -1) {
+        useMiscRawState.getState().selectedSmartFolders.push(useFolderState.getState().currentSmartFolder);
       }
-      s.$root.selectedSmartFoldersMappings[s.currentSmartFolder.id] = s.currentSmartFolder;
+      useMiscRawState.getState().selectedSmartFoldersMappings[useFolderState.getState().currentSmartFolder.id] = useFolderState.getState().currentSmartFolder;
     }
-    machineryMultipleOpenSmartFolder(s, smartFolder, true);
+    machineryMultipleOpenSmartFolder(smartFolder, true);
   }
   else if (event.shiftKey) {
 
-    if (!s.currentId) return;
+    if (!useMiscRawState.getState().currentId) return;
 
-    var id = s.currentId;
+    var id = useMiscRawState.getState().currentId;
     var curarentSmartFolderId = id.replace("smart-folder-", "");
-    var currentSmartFolder = s.smartFolderMappings[curarentSmartFolderId];
-    var fidx = s.sidebarList.indexOf(currentSmartFolder);
-    var tidx = s.sidebarList.indexOf(smartFolder);
+    var currentSmartFolder = useItemState.getState().smartFolderMappings[curarentSmartFolderId];
+    var fidx = useMiscRawState.getState().sidebarList.indexOf(currentSmartFolder);
+    var tidx = useMiscRawState.getState().sidebarList.indexOf(smartFolder);
 
     if (fidx === -1 || tidx === -1) return;
     if (fidx > tidx) {
@@ -119,14 +120,14 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
     }
 
     for (var i = fidx; i <= tidx; i++) {
-      var item = s.sidebarList[i];
+      var item = useMiscRawState.getState().sidebarList[i];
       var __lv_idx = useMiscRawState.getState().selectedSmartFolders.indexOf(item);
       if (__lv_idx === -1) {
         useMiscRawState.getState().selectedSmartFolders.push(item);
-        s.$root.selectedSmartFoldersMappings[item.id] = item;
+        useMiscRawState.getState().selectedSmartFoldersMappings[item.id] = item;
       }
     }
-    s.reload();
+    useMiscRawState.getState().reload();
   }
   else {
     openSmartFolder(smartFolder, false, 'smart-folder-' + smartFolder.id);
@@ -227,15 +228,13 @@ export function updateSidebarList(): void {
 
 /* ── React 直调便捷面（无 scope 参数版本）——Sidebar.tsx 事件处理直调不绕 scopeApply。 */
 export function clickNode(event: any, folder: any): void {
-  const s = getBodyScope();
-  if (s) sidebarClickNode(s, event, folder);
+  sidebarClickNode(event, folder);
   // b1-9by-B：isSelected/currentId 等节点变异后直推快照（原 200ms 轮询退役）
   syncSidebarFromScope();
 }
 
 export function clickSmartNode(event: any, smartFolder: any): void {
-  const s = getBodyScope();
-  if (s) sidebarClickSmartNode(s, event, smartFolder);
+  sidebarClickSmartNode(event, smartFolder);
   syncSidebarFromScope();
 }
 
@@ -315,7 +314,7 @@ export function getNodeClass(...args: any[]) {
     if (!s) return;
     return (function (node) {
             var __lv_result = {
-                'active active-item': (useMiscRawState.getState().selectedFolders.length === 0 && s.currentId == 'folder-' + node.id) || s.$root.selectedFoldersMappings[node.id],
+                'active active-item': (useMiscRawState.getState().selectedFolders.length === 0 && s.currentId == 'folder-' + node.id) || useMiscRawState.getState().selectedFoldersMappings[node.id],
                 'locked': node.password && !node.isUnLock,
                 'collapsed': !node.isExpand && !s.folderKeyword.length,
                 'editable': node.editable,
@@ -392,7 +391,7 @@ export function getSmartFolderClass(...args: any[]) {
                 'editable': smartFolder.editable,
                 'selected': smartFolder.isSelected,
                 'collapsed': !smartFolder.isExpand && !s.folderKeyword.length,
-                'active active-item': (useMiscRawState.getState().selectedSmartFolders.length === 0 && s.currentId == 'smart-folder-' + smartFolder.id) || s.$root.selectedSmartFoldersMappings[smartFolder.id],
+                'active active-item': (useMiscRawState.getState().selectedSmartFolders.length === 0 && s.currentId == 'smart-folder-' + smartFolder.id) || useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id],
                 'color-red': smartFolder.iconColor == 'red',
                 'color-orange': smartFolder.iconColor == 'orange',
                 'color-yellow': smartFolder.iconColor == 'yellow',
@@ -451,7 +450,7 @@ export function sidebarFocus(...args: any[]) {
     if (!s) return;
     return (function($event) {
             $event && $event.stopPropagation();
-            s.$root.currentFocus = "sidebar";
+            writeScopeField('currentFocus', "sidebar");
         }).apply(null, args);
   }
 

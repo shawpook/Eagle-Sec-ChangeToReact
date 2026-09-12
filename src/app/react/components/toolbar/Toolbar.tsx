@@ -155,7 +155,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
   // $("#search").on("focus") → $rootScope.currentFocus = "content"（bundle:21830，原直绑元素已被 React 接管）
   const onFocus = (e: any) => {
     runInBodyScope((s) => {
-      s.$root.currentFocus = 'content';
+      writeScopeField('currentFocus', 'content');
       searchFocus(e);
     });
   };

@@ -1564,7 +1564,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
 
       const isOpenQuickAccess = usePreferencesState.getState().preferences.sidebar.quickAccess != 'false';
       const isAddedQuickAccess = w.QuickAccessManager.indexOf(smartFolder) > -1;
-      const isMultiple = s.$root.selectedSmartFoldersMappings && s.$root.selectedSmartFoldersMappings[smartFolder.id];
+      const isMultiple = useMiscRawState.getState().selectedSmartFoldersMappings && useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id];
       const selectedSmartFolders = useMiscRawState.getState().selectedSmartFolders;
 
       let items: any = null;

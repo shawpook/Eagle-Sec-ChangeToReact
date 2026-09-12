@@ -16,6 +16,8 @@ import { machineryCalculateImageBinding } from '../core/itemDomain';
 import { machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryFocusAppUnlockPassword } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
+import { useMiscRawState } from '../store/miscRawState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const electronSettings: any = (window as any).electronSettings;
@@ -91,10 +93,10 @@ export function unlockAppPasswordKeyup(...args: any[]) {
                         typingPassword === currentPassword || 
                         Registration && Registration.license && typingPassword && typingPassword === Registration.license.code
                     ) {
-                        s.$root.isAppLocked = false;
+                        writeScopeField('isAppLocked', false);
                         setValEl(q("#app-lock-password-input"), "");
                         offEl(q("#app-lock-password-input"), "blur"); // 移除 blur 事件監聽
-                        s.$root.initMenu();
+                        useMiscRawState.getState().initMenu();
                     }
                     else {
                         addClass("#app-lock-password-input", "animation--shake-horizontal constant");

@@ -48,6 +48,8 @@ interface MiscRawState {
   inspector: any;
   listLayoutSettings: any;
   selectedFolders: any;
+  selectedFoldersMappings: any;
+  selectedSmartFoldersMappings: any;
   selectedSmartFolders: any;
   uploadQueue: any;
   finishQueue: any;
@@ -245,6 +247,8 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   inspector: null,
   listLayoutSettings: null,
   selectedFolders: null,
+  selectedFoldersMappings: null,
+  selectedSmartFoldersMappings: null,
   selectedSmartFolders: null,
   uploadQueue: null,
   finishQueue: null,
@@ -414,7 +418,7 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'rootDir', 'libraryPath', 'libraryName', 'imagesDir', 'libraryImagesPath', 'libraryModificationTime',
   'searchIndex', 'isRotating', 'isUILoaded', 'showDetailImage', 'subFolders', 'currentProcessCount',
   'showNTFSWarning',
-  'inspector', 'listLayoutSettings', 'selectedFolders', 'selectedSmartFolders',
+  'inspector', 'listLayoutSettings', 'selectedFolders', 'selectedSmartFolders', 'selectedFoldersMappings', 'selectedSmartFoldersMappings',
   'uploadQueue', 'finishQueue', 'duplicateQueue', 'regenerateThumbnailQueue', 'finishGenerateQueue',
   'subFolderSortableOptions', 'UrlStateService', 'errorList', 'sidebarList', 'quickAccess', 'smartFolderList',
   'isPreviewing', 'filtereds', 'currentComment', 'zoomFitSize', 'lastZoomMode', 'options', 'lazyLoadManager',

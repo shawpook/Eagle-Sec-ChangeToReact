@@ -23,6 +23,7 @@ import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useSelectionState } from '../store/selectionState';
+import { writeScopeField } from './scopeFieldBridge';
 /**
  * b1-9bv-A：mousetrap v1.6.3 自研替换（js/vendors/mousetrap.min.js 退役）。
  *
@@ -314,12 +315,12 @@ export function machineryBuildMousetrap(s: any): any {
     'r': () => machineryRefreshRandom(),
     't': () => machineryOpenInspectorTagSelectPanel(),
     'g': (event: any) => machineryOpenActionsPanel(event),
-    'f': (event: any) => machineryOpenInspectorFolderSelectPanel(s, event),
+    'f': (event: any) => machineryOpenInspectorFolderSelectPanel(event),
     'j': (event: any) => machineryOpenQuickSearch(event),
     'n': ($event: any) => machineryNHandler($event),
     'm': ($event: any) => machineryMHandler($event),
-    'mod+z': () => machineryUndo(s),
-    'mod+a': (event: any) => machinerySelectAll(s, event),
+    'mod+z': () => machineryUndo(),
+    'mod+a': (event: any) => machinerySelectAll(event),
     'mod+c': (event: any) => machineryCopyImages(event),
     'mod+w': ($event: any) => machineryCloseWindowHandler($event),
     'space': (event: any) => machineryQuicklook(s, event),
@@ -451,11 +452,11 @@ export function machineryKeyDownHandler(s: any, event: any): void {
     }
   }
   else if (useBodyState.getState().currentFocus == "sidebar") {
-    s.$root.selectedFolders = [];
+    writeScopeField('selectedFolders', []);
     syncListFromScope();
-    s.$root.selectedFoldersMappings = {};
-    s.$root.selectedSmartFoldersMappings = {};
-    s.$root.selectedSmartFolders = [];
+    writeScopeField('selectedFoldersMappings', {});
+    writeScopeField('selectedSmartFoldersMappings', {});
+    writeScopeField('selectedSmartFolders', []);
     if (s.viewMode == "all") {
       if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
         machineryOpenUnfiled(s);
@@ -470,7 +471,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenRandom(s);
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
-        machineryOpenCommunity(s);
+        machineryOpenCommunity();
       }
       else {
         machineryOpenAllTags(s);
@@ -487,7 +488,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenRandom(s);
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
-        machineryOpenCommunity(s);
+        machineryOpenCommunity();
       }
       else {
         machineryOpenAllTags(s);
@@ -501,7 +502,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenRandom(s);
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
-        machineryOpenCommunity(s);
+        machineryOpenCommunity();
       }
       else {
         machineryOpenAllTags(s);
@@ -512,7 +513,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenRandom(s);
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
-        machineryOpenCommunity(s);
+        machineryOpenCommunity();
       }
       else {
         machineryOpenAllTags(s);
@@ -520,7 +521,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
     }
     else if (s.viewMode == "random") {
       if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
-        machineryOpenCommunity(s);
+        machineryOpenCommunity();
       }
       else {
         machineryOpenAllTags(s);
@@ -564,7 +565,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
     }
   }
   else if (useBodyState.getState().currentFocus == "tags") {
-    machineryOpenNextGroup(s);
+    machineryOpenNextGroup();
   }
 }
 
@@ -576,7 +577,7 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
     machinerySelectPrev(s, event);
   }
   else if (useBodyState.getState().currentFocus == "tags") {
-    s.$root.currentFocus = "sidebar";
+    writeScopeField('currentFocus', "sidebar");
   }
   else {
     if (useMiscRawState.getState().selectedFolders.length > 1) {
@@ -649,7 +650,7 @@ export function machineryKeyRightHandler(s: any, event: any): void {
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, true);
     }
     else if (s.viewMode == "alltags") {
-      s.$root.currentFocus = "tags";
+      writeScopeField('currentFocus', "tags");
     }
   }
 }
@@ -672,11 +673,11 @@ export function machineryKeyUpHandler(s: any, event: any): void {
     }
   }
   else if (useBodyState.getState().currentFocus == "sidebar") {
-    s.$root.selectedFolders = [];
+    writeScopeField('selectedFolders', []);
     syncListFromScope();
-    s.$root.selectedFoldersMappings = {};
-    s.$root.selectedSmartFoldersMappings = {};
-    s.$root.selectedSmartFolders = [];
+    writeScopeField('selectedFoldersMappings', {});
+    writeScopeField('selectedSmartFoldersMappings', {});
+    writeScopeField('selectedSmartFolders', []);
     if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { machineryOpenAll(s) }
       else if (s.viewMode == "untagged") {
         if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
@@ -730,7 +731,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
       }
       else if (s.viewMode == "alltags") {
         if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
-          machineryOpenCommunity(s);
+          machineryOpenCommunity();
         }
         else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
           machineryOpenRandom(s);
@@ -766,7 +767,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
       }
   }
   else if (useBodyState.getState().currentFocus == "tags") {
-    machineryOpenPrevGroup(s);
+    machineryOpenPrevGroup();
   }
 }
 

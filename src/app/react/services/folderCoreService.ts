@@ -806,8 +806,8 @@ export function openFolder(...args: any[]) {
             s.currentSmartFolder = undefined;
             syncPanelFromScope();
             syncListFromScope();
-            s.$root.currentFocus = focus || "sidebar";
-            machineryResetPage(s);
+            writeScopeField('currentFocus', focus || "sidebar");
+            machineryResetPage();
             s.viewMode = undefined;
             s.currentId = currentId || "folder-" + folder.id;
             syncSidebarFromScope();
@@ -906,10 +906,10 @@ export function openSmartFolder(...args: any[]) {
             syncListFromScope();
             eagle.inspector.reset();
             s.currentFolderChildren = undefined;
-            s.$root.selectedSmartFoldersMappings = {};
-            s.$root.selectedSmartFolders = [];
-            s.$root.currentFocus = "sidebar";
-            machineryResetPage(s);
+            writeScopeField('selectedSmartFoldersMappings', {});
+            writeScopeField('selectedSmartFolders', []);
+            writeScopeField('currentFocus', "sidebar");
+            machineryResetPage();
             s.viewMode = undefined;
             s.currentId = currentId || "smart-folder-" + smartFolder.id;
             syncSidebarFromScope();
@@ -1063,8 +1063,8 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
   w.ScrollbarSaver.saveScrollPosition();
 
   s.viewMode = 'all';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
+  writeScopeField('currentFocus', "sidebar");
+  machineryResetPage();
 
   $timeout.cancel(openAllTimeout);
   openAllTimeout = $timeout(function () {
@@ -1095,15 +1095,15 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
   }, 50);
 }
 
-export function machineryOpenCommunity(s: any, ignoreHistory: any): void {
+export function machineryOpenCommunity(ignoreHistory: any): void {
   const w = window as any;
   w.ScrollbarSaver.saveScrollPosition();
-  s.viewMode = 'community';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
-  s.images = [];
-  s.isDetailMode = false;
-  s.selected = [];
+  writeScopeField('viewMode', 'community');
+  writeScopeField('currentFocus', "sidebar");
+  machineryResetPage();
+  writeScopeField('images', []);
+  writeScopeField('isDetailMode', false);
+  writeScopeField('selected', []);
   syncInspectorFromScope();
   if (!ignoreHistory) {
     w.UrlStateService.setState({ view: 'community', folder: null, smartfolder: null, tag: null, color: null });
@@ -1133,8 +1133,8 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
   }
 
   s.viewMode = 'random';
-  machineryResetPage(s);
-  s.$root.currentFocus = "sidebar";
+  machineryResetPage();
+  writeScopeField('currentFocus', "sidebar");
 
   hide("#image-drop-area");
   $timeout.cancel(openRandomTimeout);

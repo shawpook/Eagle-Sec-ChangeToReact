@@ -26,20 +26,22 @@ export function getMigratedScopeField(name: string): { read: () => any; write: (
 /**
  * b1-9bz-E3：写入点直调化的等价入口。
  *
- * 过去 `scope.X = v` 经 shim Proxy 落到「注册 writer + coreState 诊断镜像」。E3 把注册字段的
- * `scope.X = v` 改写为 `writeScopeField('X', v)`，写语义交给 store 的**带同值守卫** writer
- * （b1-9az 教训：无守卫会重渲染整写型 DOM 绑定组件）。
- *
- * **不再镜像 coreState**：注册字段的读取（含 shim Proxy get）一律走 store，coreState 仅是
- * `__eagleCoreState` 诊断面；测试对诊断面的写入/读取仍经 `$bodyScope` Proxy（该路径镜像保留）。
- * 这样 coreState 计数不因本批上升，且与 E4「删除 coreState」方向一致。
+ * 等价于原 `scope.X = v`：**经 shim Proxy 写入**（注册字段走 store 的带同值守卫 writer
+ * + coreState 诊断镜像；未注册字段落 coreState）。直接 `migrated.write(value)` 会丢掉
+ * coreState 镜像——cz1 等烟雾测试以镜像为契约（`__eagleCoreState`），故仍走 Proxy。
+ * Proxy 缺席（bundle 世界 / 子窗口自有 scope）时退化为直接写注册表。
  */
 export function writeScopeField(name: string, value: any): void {
+  const w = window as any;
+  const scope = w.$bodyScope;
+  if (scope && scope.__eagleShim) {
+    scope[name] = value;
+    return;
+  }
   const migrated = migratedFields.get(name);
   if (migrated) {
     migrated.write(value);
     return;
   }
-  // codemod 只对已注册字段生成本调用；未注册字段不应走到这里（显式告警而非静默丢弃）。
-  console.warn('[scopeFieldBridge] writeScopeField on unregistered field:', name);
+  console.warn('[scopeFieldBridge] writeScopeField on unregistered field (no shim):', name);
 }

@@ -381,7 +381,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
   const multi = snapshot.selectedCount > 1;
   const folderIds = single ? snapshot.selectedFirst?.folders || [] : snapshot.folders;
 
-  const openPanel = (e: any) => call(scoped(machineryOpenInspectorFolderSelectPanel), e)(e);
+  const openPanel = (e: any) => call(machineryOpenInspectorFolderSelectPanel, e)(e);
   const folderRow = (folderId: string, i: number) => (
     <div
       key={i}

@@ -18,6 +18,7 @@ import { openTag } from '../../services/batchOpsService';
 import { tagRectSelecting } from '../../core/tagManagerDomain';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *
@@ -162,7 +163,7 @@ function useTagSelect(rootRef: React.RefObject<HTMLElement | null>) {
       (rect.style as any).display = 'block';
 
       runInBodyScope((sc) => {
-        sc.$root.currentFocus = 'content';
+        writeScopeField('currentFocus', 'content');
       });
     };
 

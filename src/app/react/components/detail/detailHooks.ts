@@ -21,6 +21,7 @@ import { useSelectionState } from '../../store/selectionState';
 import { useLayoutState } from '../../store/layoutState';
 import { useItemState } from '../../store/itemState';
 import { usePreferencesState } from '../../store/preferencesState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）
@@ -2119,7 +2120,7 @@ export function useRectSelect() {
 
       rectEl.style.display = '';
       runInBodyScope(function (sc) {
-        sc.$root.currentFocus = 'content';
+        writeScopeField('currentFocus', 'content');
       });
     };
     element.addEventListener('mousedown', onMouseDown);

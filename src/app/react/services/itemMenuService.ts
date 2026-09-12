@@ -43,6 +43,7 @@ import { machineryOpenAll } from './folderCoreService';
 import { machineryToggleSlideshow } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -509,7 +510,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
                                     const folders = item.folders.filter((folderId) => {
-                                        return s.$root.selectedFoldersMappings[folderId];
+                                        return useMiscRawState.getState().selectedFoldersMappings[folderId];
                                     });
                                     folders.forEach((folderId) => {
                                         item.pinned[folderId] = now - index;
@@ -548,7 +549,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
                                     const folders = item.folders.filter((folderId) => {
-                                        return s.$root.selectedFoldersMappings[folderId];
+                                        return useMiscRawState.getState().selectedFoldersMappings[folderId];
                                     });
                                     folders.forEach((folderId) => {
                                         delete item.pinned[folderId];
@@ -1217,7 +1218,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
             ],
             showSearch: true,
         });
-        s.$root.currentFocus = "content";  };
+        writeScopeField('currentFocus', "content");  };
   return run(...args);
 }
 

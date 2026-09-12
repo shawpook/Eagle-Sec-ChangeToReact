@@ -51,6 +51,7 @@ import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState } from '../store/folderState';
+import { writeScopeField } from './scopeFieldBridge';
 let done = false;
 
 function domainTimeout(fn: any, ms?: number): any {
@@ -351,14 +352,14 @@ export function machineryMultipleSelectUp(event: any): void {
   }
 }
 
-export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): void {
+export function machineryOpenInspectorFolderSelectPanel(event: any): void {
   const w = window as any;
   event && event.stopPropagation();
 
-  if (s.selected.length === 0) return;
+  if (useSelectionState.getState().selected.length === 0) return;
 
-  const folders = s.folders;
-  const originalSelectedIds = w.eagle.inspector.calculateFolders(s.selected).reduce((acc: any, cur: any) => {
+  const folders = useFolderState.getState().folders;
+  const originalSelectedIds = w.eagle.inspector.calculateFolders(useSelectionState.getState().selected).reduce((acc: any, cur: any) => {
     acc[cur] = true;
     return acc;
   }, {});
@@ -377,13 +378,13 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
           let folderIds: any[] = [];
           let selectedItems: any[] = [];
 
-          s.selected.forEach((item: any) => {
+          useSelectionState.getState().selected.forEach((item: any) => {
             selectedItems.push(item);
           });
 
           Object.keys(selectedFolderIds).forEach((folderId) => {
-            if (s.folderMappings[folderId] && !originalSelectedIds[folderId]) {
-              selectedFolders.push(s.folderMappings[folderId]);
+            if (useItemState.getState().folderMappings[folderId] && !originalSelectedIds[folderId]) {
+              selectedFolders.push(useItemState.getState().folderMappings[folderId]);
               folderIds.push(folderId);
             }
           });
@@ -411,7 +412,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
           let changedItems: any[] = [];
           let changedMaps: any = {};
 
-          w.eagle.utils.tree.walk(s.folders, 'children', (folder: any, parent: any) => {
+          w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', (folder: any, parent: any) => {
             // 添加新分类
             if (selectedFolderIds[folder.id] && !deselectedFolderIds[folder.id]) {
               selectedItems.forEach((item: any) => {
@@ -438,9 +439,9 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
               selectedItems.forEach((item: any) => {
                 var idx2 = item.folders.indexOf(folder.id);
                 if (idx2 !== -1) {
-                  if (s.currentFolder && s.currentFolder.id === folder.id) {
+                  if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folder.id) {
                     w.ig.remove(q("#box-" + item.id));
-                    s.currentFolder.imagesMappings[item.id] = false;
+                    useFolderState.getState().currentFolder.imagesMappings[item.id] = false;
                   }
                   item.folders.splice(idx2, 1);
                   machineryUpdateFilterCounts(item, -1);
@@ -472,7 +473,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
               { "property": "folderCount", "value": selectedFolders.length }
             ]);
 
-            if (s.selected.length === 1) {
+            if (useSelectionState.getState().selected.length === 1) {
               message = message.replace("images", "image");
             }
             if (selectedFolders.length === 1) {
@@ -484,7 +485,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
             }
 
             // 復原操作
-            s.$root.notify({
+            useMiscRawState.getState().notify({
               message: message,
               duration: 4000,
             }, function () {
@@ -495,9 +496,9 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
                   item.isDeleted = originDeleted[index];
                 }
               });
-              s.selected = origin;
+              writeScopeField('selected', origin);
               syncInspectorFromScope();
-              s.current = origin[0];
+              writeScopeField('current', origin[0]);
               syncDetailFromScope();
               syncInspectorFromScope();
               calculateImageBindingChannel.emit();
@@ -543,7 +544,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
   }
   else if (useBodyState.getState().currentFocus == 'tags') {
     if (s.currentTagGroup) {
-      machineryRemoveTagGroup(s, s.currentTagGroup);
+      machineryRemoveTagGroup(s.currentTagGroup);
     }
   }
   else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
@@ -825,30 +826,30 @@ export function machineryRemoveSelectedSmartFolders(s: any): void {
     useMiscRawState.getState().selectedSmartFolders.forEach(function (smartFolder: any) {
       machineryRemoveSmartFolderInner(s, smartFolder, { ignoreRestore: true });
     });
-    s.$root.selectedSmartFolders = [];
+    writeScopeField('selectedSmartFolders', []);
   }, function () { });
 }
 
 /* selectAll（bundle 46628-46645 逐字） */
-export function machinerySelectAll(s: any, event: any): void {
+export function machinerySelectAll(event: any): void {
   const $timeout = getTimeout();
   event && event.stopPropagation();
-  if (s.viewMode == 'alltags') {
-    s.selectedTags = {};
+  if (useBodyState.getState().viewMode == 'alltags') {
+    writeScopeField('selectedTags', {});
     syncTagManagerFromScope();
-    s.TagManager.tagsResult.tags.forEach((tagName: any) => {
-      s.selectedTags[tagName] = true;
+    useMiscRawState.getState().TagManager.tagsResult.tags.forEach((tagName: any) => {
+      useMiscRawState.getState().selectedTags[tagName] = true;
       syncTagManagerFromScope();
     });
   }
   else {
     var selected: any[] = [];
-    Array.prototype.push.apply(selected, s.allData);
-    s.selected = selected;
+    Array.prototype.push.apply(selected, useItemState.getState().allData);
+    writeScopeField('selected', selected);
     syncInspectorFromScope();
-    s.selectedMappings = {};
+    writeScopeField('selectedMappings', {});
     $timeout.cancel(cleanSelectedTimeout);
-    s.$root.currentFocus = "content";
+    writeScopeField('currentFocus', "content");
   }
 }
 
@@ -917,16 +918,16 @@ export function machinerySelectDown(s: any, event: any): void {
 }
 
 /* selectFolder（bundle 34666-34676 逐字：文件夹单项选中重置面） */
-export function machinerySelectFolder(s: any, event: any, folder: any): void {
+export function machinerySelectFolder(event: any, folder: any): void {
   (document.activeElement as any).blur();
   if (folder) {
-    s.selectedFolderMappings = {};
+    writeScopeField('selectedFolderMappings', {});
     syncListFromScope();
-    s.selectedMappings = {};
-    s.selectedFolderMappings[folder.id] = true;
+    writeScopeField('selectedMappings', {});
+    useItemState.getState().selectedFolderMappings[folder.id] = true;
     syncListFromScope();
-    s.$root.currentFocus = "content";
-    s.selected = [];
+    writeScopeField('currentFocus', "content");
+    writeScopeField('selected', []);
     syncInspectorFromScope();
     machineryUpdateSelection();
   }
@@ -961,7 +962,7 @@ export function machinerySelectNext(s: any, event: any): void {
   syncInspectorFromScope();
   s.selectedFolderMappings = {};
   syncListFromScope();
-  s.$root.currentFocus = "content";
+  writeScopeField('currentFocus', "content");
 
   if (s.isDetailMode) {
     $timeout.cancel(nextTimeout);
@@ -1042,7 +1043,7 @@ export function machinerySelectPrev(s: any, event: any): void {
   }
   s.selectedFolderMappings = {};
   syncListFromScope();
-  s.$root.currentFocus = "content";
+  writeScopeField('currentFocus', "content");
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
     if (!machineryLastZoom()) {

@@ -12,6 +12,7 @@ import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -153,7 +154,7 @@ export function onBoxMouseup(...args: any[]) {
                 // 如果從 sidebar focus 狀態點擊列表已選擇圖片，不該造成已選擇圖片選取狀態消失
                 if (useBodyState.getState().currentFocus !== "content" && s.selected.length > 1) {
                     if (image && s.selectedMappings[image.id]) {
-                        s.$root.currentFocus = "content";
+                        writeScopeField('currentFocus', "content");
                         return;
                     }
                 }
@@ -264,7 +265,7 @@ export function select(...args: any[]) {
             	}
             }
 
-            s.$root.currentFocus = "content";
+            writeScopeField('currentFocus', "content");
             s.selectedFolderMappings = {};
             syncListFromScope();
 

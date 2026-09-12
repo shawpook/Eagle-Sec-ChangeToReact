@@ -203,12 +203,10 @@ export function takeoverLibraryDomain(): void {
 
   // ── initial（22664 逐字）──
   ipc.on('initial', function (_e: any, params: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
-    s.trialRemain = params.trialRemain;
+    writeScopeField('trialRemain', params.trialRemain);
     syncInspectorFromScope();
     w.Registration = params.Registration;
-    s.Registration = params.Registration;
+    writeScopeField('Registration', params.Registration);
     w.machineID = params.machineID;
 
     if (params.Registration && params.Registration.machineID !== params.machineID) {
@@ -262,19 +260,17 @@ export function takeoverLibraryDomain(): void {
         } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
       }, 1000);
     }
-    s.$root.initMenu();
+    useMiscRawState.getState().initMenu();
     scopeEvalAsync();
   });
 
   // ── app-status-welcome（22631 逐字）──
   ipc.on('app-status-welcome', function (_e: any, _params: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
     scopeEvalAsync(function () {
-      s.libraryPath = "";
+      writeScopeField('libraryPath', "");
       syncSidebarFromScope();
-      s.isLoading = false;
-      s.$root.initMenu();
+      writeScopeField('isLoading', false);
+      useMiscRawState.getState().initMenu();
     });
   });
 
@@ -636,7 +632,7 @@ export function takeoverLibraryDomain(): void {
     s.libraryImagesPath = params.imagesDir;
 
     if (s.$root) {
-      s.$root.imagesDir = useMiscRawState.getState().imagesDir;
+      writeScopeField('imagesDir', useMiscRawState.getState().imagesDir);
       s.$root.fontFolder = w.fontFolder;
     }
 
@@ -703,7 +699,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     machineryUpdateSidebarList();
-    if (s.$root && useMiscRawState.getState().initMenu) s.$root.initMenu();
+    if (s.$root && useMiscRawState.getState().initMenu) useMiscRawState.getState().initMenu();
 
     // NOTE: 只能用迂迴的方式處理可能超過 10W 張圖片的狀況，避免使用 JSON.parse 造成大量數據無法傳輸的問題
     electronLog.info(`[app] Load Library: ${useMiscRawState.getState().rootDir}`);
@@ -837,7 +833,7 @@ export function takeoverLibraryDomain(): void {
           case 'untagged': machineryOpenUntagged(s, true); hasUrlState = true; break;
           case 'random': machineryOpenRandom(s, true); hasUrlState = true; break;
           case 'recent': machineryOpenRecent(s, true); hasUrlState = true; break;
-          case 'community': machineryOpenCommunity(s, true); hasUrlState = true; break;
+          case 'community': machineryOpenCommunity(true); hasUrlState = true; break;
           case 'alltags': machineryOpenAllTags(s, true); hasUrlState = true; break;
           case 'trash': machineryOpenTrash(s, true); hasUrlState = true; break;
           case 'folder':
@@ -872,7 +868,7 @@ export function takeoverLibraryDomain(): void {
           else if (s.viewMode == "untagged") { machineryOpenUntagged(s); }
           else if (s.viewMode == "random") { machineryOpenRandom(s); }
           else if (s.viewMode == "recent") { machineryOpenRecent(s); }
-          else if (s.viewMode == "community") { machineryOpenCommunity(s); }
+          else if (s.viewMode == "community") { machineryOpenCommunity(); }
           else if (s.viewMode == "alltags") { machineryOpenAllTags(s); }
           else if (s.viewMode == "trash") { machineryOpenTrash(s); }
           else { machineryOpenAll(s); }
@@ -1276,39 +1272,39 @@ export function machineryImportLinks(): void {
   }, function () { });
 }
 
-export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needReload: any): void {
+export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: any): void {
   resetFilter();
-  s.keyword = "";
-  s.$root.currentFocus = "sidebar";
-  s.viewMode = undefined;
-  s.currentTag = undefined;
+  writeScopeField('keyword', "");
+  writeScopeField('currentFocus', "sidebar");
+  writeScopeField('viewMode', undefined);
+  writeScopeField('currentTag', undefined);
   syncToolbarFromScope();
-  s.startCursor = 0;
-  s.currentFolder = undefined;
+  writeScopeField('startCursor', 0);
+  writeScopeField('currentFolder', undefined);
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
-  s.$root.selectedFolders = [];
+  writeScopeField('selectedFolders', []);
   syncListFromScope();
-  s.$root.selectedFoldersMappings = {};
+  writeScopeField('selectedFoldersMappings', {});
   var idx = useMiscRawState.getState().selectedSmartFolders.indexOf(smartFolder);
   if (idx === -1) {
     useMiscRawState.getState().selectedSmartFolders.push(smartFolder);
-    s.$root.selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
+    useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
     if (needReload) {
-      s.startCursor = 0;
-      s.reload();
+      writeScopeField('startCursor', 0);
+      useMiscRawState.getState().reload();
     }
-    s.currentId = 'smart-folder-' + smartFolder.id;
+    writeScopeField('currentId', 'smart-folder-' + smartFolder.id);
     syncSidebarFromScope();
   }
   else {
     if (useMiscRawState.getState().selectedSmartFolders.length > 1) {
       useMiscRawState.getState().selectedSmartFolders.splice(idx, 1);
-      delete s.$root.selectedSmartFoldersMappings[smartFolder.id];
+      delete useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id];
       if (needReload) {
-        s.startCursor = 0;
-        s.reload();
+        writeScopeField('startCursor', 0);
+        useMiscRawState.getState().reload();
       }
     }
     else {
@@ -1948,47 +1944,47 @@ export function machineryGetSmartFolderList(): any[] {
   return list;
 }
 
-export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any): void {
+export function machineryMultipleOpenFolder(folder: any, needReload: any): void {
   const w = window as any;
   resetFilter();
-  s.keyword = "";
-  s.$root.currentFocus = "sidebar";
-  s.viewMode = undefined;
-  s.currentTag = undefined;
+  writeScopeField('keyword', "");
+  writeScopeField('currentFocus', "sidebar");
+  writeScopeField('viewMode', undefined);
+  writeScopeField('currentTag', undefined);
   syncToolbarFromScope();
-  s.startCursor = 0;
-  s.currentSmartFolder = undefined;
+  writeScopeField('startCursor', 0);
+  writeScopeField('currentSmartFolder', undefined);
   syncPanelFromScope();
   syncListFromScope();
-  s.$root.selectedSmartFolders = [];
-  s.$root.selectedSmartFoldersMappings = {};
+  writeScopeField('selectedSmartFolders', []);
+  writeScopeField('selectedSmartFoldersMappings', {});
   var idx = useMiscRawState.getState().selectedFolders.indexOf(folder);
   if (idx === -1) {
     useMiscRawState.getState().selectedFolders.push(folder);
     syncListFromScope();
-    s.$root.selectedFoldersMappings[folder.id] = folder;
+    useMiscRawState.getState().selectedFoldersMappings[folder.id] = folder;
     if (needReload) {
-      s.startCursor = 0;
-      s.reload();
+      writeScopeField('startCursor', 0);
+      useMiscRawState.getState().reload();
     }
-    s.currentId = 'folder-' + folder.id;
+    writeScopeField('currentId', 'folder-' + folder.id);
     syncSidebarFromScope();
   }
   else {
     if (useMiscRawState.getState().selectedFolders.length > 1) {
       useMiscRawState.getState().selectedFolders.splice(idx, 1);
       syncListFromScope();
-      delete s.$root.selectedFoldersMappings[folder.id];
+      delete useMiscRawState.getState().selectedFoldersMappings[folder.id];
       if (needReload) {
-        s.startCursor = 0;
-        s.reload();
+        writeScopeField('startCursor', 0);
+        useMiscRawState.getState().reload();
       }
     }
     else {
       return;
     }
   }
-  s.currentFolderChildren = machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders);
+  writeScopeField('currentFolderChildren', machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders));
 }
 
 export function machineryOpenNextFolder(): void {
@@ -2116,8 +2112,8 @@ export function machineryOpenRecent(s: any, ignoreHistory: any): void {
 
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'recent';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
+  writeScopeField('currentFocus', "sidebar");
+  machineryResetPage();
 
   $timeout.cancel(openRecentTimeout);
   openRecentTimeout = $timeout(function () {
@@ -2155,8 +2151,8 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
   w.ScrollbarSaver.saveScrollPosition();
 
   s.viewMode = 'trash';
-  machineryResetPage(s);
-  s.$root.currentFocus = "sidebar";
+  machineryResetPage();
+  writeScopeField('currentFocus', "sidebar");
 
   hide("#image-drop-area");
   $timeout.cancel(openTrashTimeout);
@@ -2196,8 +2192,8 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
 
   w.ScrollbarSaver.saveScrollPosition();
   s.viewMode = 'unfiled';
-  s.$root.currentFocus = "sidebar";
-  machineryResetPage(s);
+  writeScopeField('currentFocus', "sidebar");
+  machineryResetPage();
 
   $timeout.cancel(openUnfiledTimeout);
   openUnfiledTimeout = $timeout(function () {
@@ -2731,7 +2727,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
     var e: any = { target: nameEl, preventDefault: function () { }, stopPropagation: function () { }, stopImmediatePropagation: function () { } };
     let folderId = Object.keys(s.selectedFolderMappings)[0];
     let folder = s.folderMappings[folderId];
-    machineryEnableSubFolderNameEditable(s, e, folder);
+    machineryEnableSubFolderNameEditable(e, folder);
   }
   else if (!s.isDetailMode && s.currentFolder && useBodyState.getState().currentFocus === 'sidebar') {
     event && event.preventDefault();

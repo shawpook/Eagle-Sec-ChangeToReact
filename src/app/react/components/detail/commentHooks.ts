@@ -11,6 +11,7 @@ import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from
 import { makeResizable } from '../interactions/resizable';
 import { useSelectionState } from '../../store/selectionState';
 import { useBodyState } from '../../store/bodyState';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -104,8 +105,7 @@ export function useRectComment(enabled: boolean) {
     };
 
     const onMouseUp = function () {
-      const s = getBodyScope();
-      if (!enabledRef.current || !s?.commentRect) return;
+      if (!enabledRef.current || !useMiscRawState.getState().commentRect) return;
 
       const AnnotationPreview = (window as any).AnnotationPreview;
       AnnotationPreview.hovering = false;
@@ -161,12 +161,11 @@ export function useRectComment(enabled: boolean) {
     };
 
     const onMouseMove = function (e: any) {
-      const s = getBodyScope();
       if (!enabledRef.current) return;
       if (!draggingRef.current) return;
       const zoomData = safeZoomData();
       const zoomRatio = zoomData.ratio;
-      if (!s?.commentRect) return;
+      if (!useMiscRawState.getState().commentRect) return;
 
       const flipX = posRef.current.startX > e.pageX;
       const flipY = posRef.current.startY > e.pageY;

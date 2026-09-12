@@ -1070,7 +1070,7 @@ export function AddToFolderModal() {
               const box = document.getElementById(`box-${image.id}`);
               if (box && w.ig && typeof w.ig.remove === 'function') w.ig.remove(box);
               image.folders.splice(idx, 1);
-              machineryUpdateFilterCounts(body, image, true);
+              machineryUpdateFilterCounts(image, true);
               viewRef.current.current.imagesMappings[image.id] = false;
               hasRemoved = true;
             }
@@ -1087,7 +1087,7 @@ export function AddToFolderModal() {
                   viewRef.current.current.imagesMappings[image.id] = false;
                 }
                 image.folders.splice(idx, 1);
-                machineryUpdateFilterCounts(body, image, true);
+                machineryUpdateFilterCounts(image, true);
                 hasRemoved = true;
               }
             });
@@ -1100,7 +1100,7 @@ export function AddToFolderModal() {
     });
 
     if (hasRemoved) {
-      body.lastIndex = machineryGetSelection(body).start;
+      body.lastIndex = machineryGetSelection().start;
 
       // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
       const next = useItemState.getState().allData[body.lastIndex + useSelectionState.getState().selected.length];
@@ -1134,7 +1134,7 @@ export function AddToFolderModal() {
     }
 
     if (body.viewMode === 'unfiled') {
-      const itemElements = machineryGetSelectedItemElements(body, );
+      const itemElements = machineryGetSelectedItemElements( );
       glRemoveitemsChannel.emit(itemElements);
     } else {
       if (w.ig && typeof w.ig.layout === 'function') w.ig.layout(false);

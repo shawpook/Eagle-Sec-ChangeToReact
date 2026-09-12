@@ -105,8 +105,6 @@ $timeout.cancel = function (timer: any): boolean {
    组件侧改直 import，零行为变化。 */
 export function rotateImage(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event, __lv_image) {
 
             if (useBodyState.getState().isCropMode) return;
@@ -155,14 +153,14 @@ export function rotateImage(...args: any[]) {
 
             __lv_lastRotateImage = rotatedImage;
 
-            s.isRotating = true;
+            writeScopeField('isRotating', true);
             __lv_rotateImageSaveTimeout = setTimeout(async function () {
 
                 // 检查度数，如果不为 0 并且设定为写入文件时执行写入动作
                 if (degree % 360 != 0 && usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
                     var rawPath = FileUrlHelper.getRawPath(rotatedImage);
                     if (!rawPath) {
-                        s.isRotating = false;
+                        writeScopeField('isRotating', false);
                         return;
                     }
 
@@ -170,7 +168,7 @@ export function rotateImage(...args: any[]) {
                         fs.accessSync(rawPath, fs.W_OK)
                     }
                     catch (err) {
-                        s.isRotating = false;
+                        writeScopeField('isRotating', false);
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
                         setCssEl(q("#detail-image"), {
@@ -206,16 +204,16 @@ export function rotateImage(...args: any[]) {
                                 if (newWidth && newHeight) {
                                     rotatedImage.width = newWidth;
                                     rotatedImage.height = newHeight;
-                                    machineryUpdateItemView(s, rotatedImage);
-                                    machineryRelayout(s);
+                                    machineryUpdateItemView(rotatedImage);
+                                    machineryRelayout();
                                 }
                             }
                         });
                         
                         // 旋轉成功
-                        s.isRotating = false;
+                        writeScopeField('isRotating', false);
                         delete rotatedImage.orientation;
-                        machineryUpdateItemView(s, rotatedImage);
+                        machineryUpdateItemView(rotatedImage);
                         ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
                         scopeEvalAsync();
                         
@@ -225,7 +223,7 @@ export function rotateImage(...args: any[]) {
                         
                     } catch (err) {
                         // 旋轉失敗，恢復原狀
-                        s.isRotating = false;
+                        writeScopeField('isRotating', false);
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
                         setCssEl(q("#detail-image"), {
@@ -241,7 +239,7 @@ export function rotateImage(...args: any[]) {
                     }
                 }
                 else {
-                    s.isRotating = false;
+                    writeScopeField('isRotating', false);
                 }
             }, 200);
         }).apply(null, args);
@@ -331,7 +329,7 @@ export function saveCrop(...args: any[]) {
             electronLog.info(`[app] Crop image: ${imagePath}`);
 
             if (!fs.existsSync(imagePath)) {
-                machineryCancelCrop(s);
+                machineryCancelCrop();
                 electronLog.error(`[app] Image file does not exist`);
                 return;
             }
@@ -391,7 +389,7 @@ export function saveCrop(...args: any[]) {
                                             fse.removeSync(imagePath + ".bk");
                                             ipcRenderer.send('regenerate-thumbnail', [croppedImage]);
                                             [croppedImage.width, croppedImage.height] = [__lv_width, __lv_height];
-                                            machineryUpdateItemView(s, croppedImage);
+                                            machineryUpdateItemView(croppedImage);
 
                                             // 强制更新相关 folder 封面
                                             if (croppedImage.folders) {
@@ -401,7 +399,7 @@ export function saveCrop(...args: any[]) {
                                             }
 
                                             machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
-                                            machineryRelayout(s);
+                                            machineryRelayout();
                                             scopeEvalAsync();
                                         }
                                         else {
@@ -435,9 +433,8 @@ export function changeStar(...args: any[]) {
 export function updateItemView(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（diff 仅 __lv_*→* 变量名与
   // 全局→w.*；machinery 还在 fs.existsSync 处多一层 fs 守卫，略优）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryUpdateItemView(s, args[0]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUpdateItemView(args[0]);
 }
 
 export function updateSelection(...args: any[]) {
@@ -501,9 +498,8 @@ export function getThumbnailUrl(...args: any[]) {
 
 export function currentIndex(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  return machineryCurrentIndex(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryCurrentIndex();
 }
 
 export function regenerateThumbnail(...args: any[]) {
@@ -1120,7 +1116,7 @@ export function changeImagesBackground(...args: any[]) {
             }
         }
         ayncsImagesChange(images);
-        machineryUpdateItemsView(s, s.selected);
+        machineryUpdateItemsView(s.selected);
         try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
     }).apply(null, args);
   }
@@ -1128,8 +1124,8 @@ export function changeImagesBackground(...args: any[]) {
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* cancelCrop（bundle 36091-36093 逐字） */
-export function machineryCancelCrop(s: any): void {
-  s.isCropMode = false;
+export function machineryCancelCrop(): void {
+  writeScopeField('isCropMode', false);
   syncDetailFromScope();
 }
 
@@ -1142,7 +1138,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
     return;
   }
 
-  machineryCheckOperationSafety(s, function () {
+  machineryCheckOperationSafety(function () {
 
     let changedItems: any[] = [];
 
@@ -1191,7 +1187,7 @@ export function machineryChangeStar(s: any, star: any, showNotify: any, force: a
       w.electronLog && w.electronLog.info(`[app] Add ${star} star, total: ${changedItems.length} files`);
       w.analytics.event('Rating', 'Set', star);
     }
-    machineryUpdateItemsView(s, s.selected);
+    machineryUpdateItemsView(s.selected);
     if (changedItems.length > 0) {
       w.ayncsImagesChange(changedItems);
       w.hiddenByCurrentFilter(changedItems);

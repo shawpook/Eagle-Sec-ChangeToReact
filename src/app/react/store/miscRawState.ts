@@ -85,6 +85,90 @@ interface MiscRawState {
   hsks: any;
   Registration: any;
   AnalyticsHelper: any;
+  // ── b1-9bz-E3-5 增补：machinery 函数体内仍以 `s.X` 访问的其余状态字段（恒为状态值，
+  //    无函数面成员；函数面（notify/reload/... ）留待 E3-7 直调化，不在此注册）。──
+  gifViewer: any;
+  gifPlayer: any;
+  selectedTags: any;
+  removeSound: any;
+  lastIndex: any;
+  isGifReady: any;
+  orderBy: any;
+  currentId: any;
+  duplicateGroupings: any;
+  tagViewModeName: any;
+  colorDistancesMap: any;
+  folderKeyword: any;
+  listMetaType: any;
+  isSearchScopeFolderName: any;
+  isSearchScopeFolderDesc: any;
+  preelaborations: any;
+  paletteQueuePaused: any;
+  addImageStartTime: any;
+  availableHistoryTags: any;
+  lastSelectedTag: any;
+  gifUpadteInterval: any;
+  sidebarIndex: any;
+  canUseTouchID: any;
+  unlockPassword: any;
+  historySearchKeywords: any;
+  boxContianerWidth: any;
+  isSearchScopeName: any;
+  isSearchScopeExt: any;
+  isSearchScopeTag: any;
+  isSearchScopeUrl: any;
+  isSearchScopeAnnotation: any;
+  isSearchScopeNote: any;
+  keywordDebounce: any;
+  MAX_LIST_WIDTH: any;
+  contentFilterCache: any;
+  isExpandQuickAccess: any;
+  isExpandSmartFolder: any;
+  isExpandFolder: any;
+  commentRect: any;
+  duplicateTarget: any;
+  showName: any;
+  showMetas: any;
+  searchRegexGroup: any;
+  addImageTimeLeftInSeconds: any;
+  sliderZoomRatio: any;
+  newGroupName: any;
+  usingGifPlayer: any;
+  paletteQueueDelay: any;
+  lastProcessCount: any;
+  isLibrarySaving: any;
+  saveFolderDebounceTimeout: any;
+  libraryHistory: any;
+  isEnglish: any;
+  initDetailMode: any;
+  untagged: any;
+  lastImageHeight: any;
+  gotoBottomTimeout: any;
+  isOpenWebpagePanel: any;
+  boxContianerHeight: any;
+  isHideMainNav: any;
+  page: any;
+  len: any;
+  showOriginalImageWhenLarge: any;
+  showAnnotation: any;
+  showFileExtension: any;
+  showFileExtensionLabel: any;
+  duplicates: any;
+  showLargeImage: any;
+  usingCache: any;
+  winMenu: any;
+  selectingTags: any;
+  libraryLoadedProgress: any;
+  paletteQueueLength: any;
+  metadataQueueLength: any;
+  downloadQueueLength: any;
+  MAX_DIMENSION: any;
+  duplicateSound: any;
+  errorSound: any;
+  orderByName: any;
+  folderIcons: any;
+  hexColor: any;
+  loadMoreDisable: any;
 }
 
 export const useMiscRawState = create<MiscRawState>(() => ({
@@ -156,6 +240,88 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   hsks: null,
   Registration: null,
   AnalyticsHelper: null,
+  gifViewer: null,
+  gifPlayer: null,
+  selectedTags: null,
+  removeSound: null,
+  lastIndex: null,
+  isGifReady: null,
+  orderBy: null,
+  currentId: null,
+  duplicateGroupings: null,
+  tagViewModeName: null,
+  colorDistancesMap: null,
+  folderKeyword: null,
+  listMetaType: null,
+  isSearchScopeFolderName: null,
+  isSearchScopeFolderDesc: null,
+  preelaborations: null,
+  paletteQueuePaused: null,
+  addImageStartTime: null,
+  availableHistoryTags: null,
+  lastSelectedTag: null,
+  gifUpadteInterval: null,
+  sidebarIndex: null,
+  canUseTouchID: null,
+  unlockPassword: null,
+  historySearchKeywords: null,
+  boxContianerWidth: null,
+  isSearchScopeName: null,
+  isSearchScopeExt: null,
+  isSearchScopeTag: null,
+  isSearchScopeUrl: null,
+  isSearchScopeAnnotation: null,
+  isSearchScopeNote: null,
+  keywordDebounce: null,
+  MAX_LIST_WIDTH: null,
+  contentFilterCache: null,
+  isExpandQuickAccess: null,
+  isExpandSmartFolder: null,
+  isExpandFolder: null,
+  commentRect: null,
+  duplicateTarget: null,
+  showName: null,
+  showMetas: null,
+  searchRegexGroup: null,
+  addImageTimeLeftInSeconds: null,
+  sliderZoomRatio: null,
+  newGroupName: null,
+  usingGifPlayer: null,
+  paletteQueueDelay: null,
+  lastProcessCount: null,
+  isLibrarySaving: null,
+  saveFolderDebounceTimeout: null,
+  libraryHistory: null,
+  isEnglish: null,
+  initDetailMode: null,
+  untagged: null,
+  lastImageHeight: null,
+  gotoBottomTimeout: null,
+  isOpenWebpagePanel: null,
+  boxContianerHeight: null,
+  isHideMainNav: null,
+  page: null,
+  len: null,
+  showOriginalImageWhenLarge: null,
+  showAnnotation: null,
+  showFileExtension: null,
+  showFileExtensionLabel: null,
+  duplicates: null,
+  showLargeImage: null,
+  usingCache: null,
+  winMenu: null,
+  selectingTags: null,
+  libraryLoadedProgress: null,
+  paletteQueueLength: null,
+  metadataQueueLength: null,
+  downloadQueueLength: null,
+  MAX_DIMENSION: null,
+  duplicateSound: null,
+  errorSound: null,
+  orderByName: null,
+  folderIcons: null,
+  hexColor: null,
+  loadMoreDisable: null,
 }));
 
 const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
@@ -172,6 +338,7 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'debugReportStatus', 'fixUtils', 'trashRemoved', 'currentTrashRemoved', 'sortIncrease', 'isContainAlphabet',
   'keyword_cn', 'keyword_tw', 'isKeywordTW', 'isKeywordCN', 'tagsSuggestion', 'showSlowNotify',
   'isItemBindCalculated', 'currentTag', 'progress', 'hsks', 'Registration', 'AnalyticsHelper',
+  'gifViewer', 'gifPlayer', 'selectedTags', 'removeSound', 'lastIndex', 'isGifReady', 'orderBy', 'currentId', 'duplicateGroupings', 'tagViewModeName', 'colorDistancesMap', 'folderKeyword', 'listMetaType', 'isSearchScopeFolderName', 'isSearchScopeFolderDesc', 'preelaborations', 'paletteQueuePaused', 'addImageStartTime', 'availableHistoryTags', 'lastSelectedTag', 'gifUpadteInterval', 'sidebarIndex', 'canUseTouchID', 'unlockPassword', 'historySearchKeywords', 'boxContianerWidth', 'isSearchScopeName', 'isSearchScopeExt', 'isSearchScopeTag', 'isSearchScopeUrl', 'isSearchScopeAnnotation', 'isSearchScopeNote', 'keywordDebounce', 'MAX_LIST_WIDTH', 'contentFilterCache', 'isExpandQuickAccess', 'isExpandSmartFolder', 'isExpandFolder', 'commentRect', 'duplicateTarget', 'showName', 'showMetas', 'searchRegexGroup', 'addImageTimeLeftInSeconds', 'sliderZoomRatio', 'newGroupName', 'usingGifPlayer', 'paletteQueueDelay', 'lastProcessCount', 'isLibrarySaving', 'saveFolderDebounceTimeout', 'libraryHistory', 'isEnglish', 'initDetailMode', 'untagged', 'lastImageHeight', 'gotoBottomTimeout', 'isOpenWebpagePanel', 'boxContianerHeight', 'isHideMainNav', 'page', 'len', 'showOriginalImageWhenLarge', 'showAnnotation', 'showFileExtension', 'showFileExtensionLabel', 'duplicates', 'showLargeImage', 'usingCache', 'winMenu', 'selectingTags', 'libraryLoadedProgress', 'paletteQueueLength', 'metadataQueueLength', 'downloadQueueLength', 'MAX_DIMENSION', 'duplicateSound', 'errorSound', 'orderByName', 'folderIcons', 'hexColor', 'loadMoreDisable',
 ];
 for (const fieldName of MIGRATED) {
   migrateScopeFieldToStore(

@@ -25,8 +25,7 @@ export function machineryColorSimilarityDistance(color1: any, color2: any): any 
   };
 }
 
-export function machineryRgbToHex(s: any, r: any, g: any, b: any): any {
-  void s;
+export function machineryRgbToHex(r: any, g: any, b: any): any {
   if (r === undefined) {
     return false;
   }

@@ -226,7 +226,7 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
       }
 
       let currentIndex = 0;
-      try { currentIndex = machineryCurrentIndex(scope) || 0; } catch (err) {}
+      try { currentIndex = machineryCurrentIndex() || 0; } catch (err) {}
 
       let rect: DetailSnapshot['commentRect'] = null;
       if (scope.commentRect && typeof scope.commentRect === 'object') {

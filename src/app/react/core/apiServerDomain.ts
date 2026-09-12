@@ -545,7 +545,7 @@ function machineryCreateFolder(params: any): Promise<any> {
       useItemState.getState().folderMappings[folder.id] = folder;
       machineryUpdateSidebarList(bs);
       addToRecentFolders([folder.id]);
-      machinerySaveFolder(bs, );
+      machinerySaveFolder( );
       w.electronLog.info(`[api] create folder: ${folderName}(${folder.id})`);
       resolve(folder);
     }
@@ -567,7 +567,7 @@ function machineryRenameFolder(params: any): Promise<any> {
       let originName = folder.name;
       bs.changeFolderName(folder, newName);
       machineryUpdateSidebarList(bs);
-      machinerySaveFolder(bs, );
+      machinerySaveFolder( );
       w.electronLog.info(`[api] rename folder: ${originName} to ${newName}`);
       resolve(folder);
     }
@@ -607,7 +607,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
         folder.description = newDescription;
       }
       machineryUpdateSidebarList(bs);
-      machinerySaveFolder(bs, );
+      machinerySaveFolder( );
       resolve(folder);
     }
   });
@@ -677,7 +677,6 @@ function machineryAddURLs(imageUrls: any[], names: any, websiteUrls: any, tags: 
 /* addItemFromPath（bundle 18322-18365 逐字） */
 function machineryAddItemFromPath(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     var id = w.guid();
     var filePath = params.path;
@@ -713,7 +712,7 @@ function machineryAddItemFromPath(params: any): Promise<any> {
       });
     }
 
-    machineryShowUploadQueue(bs);
+    machineryShowUploadQueue();
     machineryAddPath(filePath, id, name, website, tags, annotation, star, modificationTime, folderIds, cutMode);
     resolve(id);
   });
@@ -722,7 +721,6 @@ function machineryAddItemFromPath(params: any): Promise<any> {
 /* addItemFromPaths（bundle 18367-18425 逐字） */
 function machineryAddItemFromPaths(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     var filePaths = params.paths;
     var cutMode = params.cutMode ?? false;
@@ -749,7 +747,7 @@ function machineryAddItemFromPaths(params: any): Promise<any> {
         ids.push(id);
         machineryAddPath(filePath, id, undefined, undefined, undefined, undefined, undefined, undefined, folderIds, cutMode);
       });
-      machineryShowUploadQueue(bs);
+      machineryShowUploadQueue();
       resolve(ids);
     }
     // v2 支持独立设置标签等属性
@@ -766,7 +764,7 @@ function machineryAddItemFromPaths(params: any): Promise<any> {
         var modificationTime = item.modificationTime;
         machineryAddPath(filePath, id, name, website, tags, annotation, star, modificationTime, folderIds);
       });
-      machineryShowUploadQueue(bs);
+      machineryShowUploadQueue();
       resolve(ids);
     }
     else {
@@ -796,7 +794,7 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
     items.forEach(function (item: any) {
       item.isDeleted = true;
       item.deletedTime = now;
-      machineryUpdateFilterCounts(bs, item, -1, now);
+      machineryUpdateFilterCounts(item, -1, now);
     });
 
     w.ayncsImagesChange(items);
@@ -813,7 +811,6 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
 /* addBookmarkItem（bundle 18455-18512 逐字） */
 function machineryAddBookmarkItem(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
 
     if (!params.url) reject(undefined);
@@ -834,7 +831,7 @@ function machineryAddBookmarkItem(params: any): Promise<any> {
     name = name.substr(0, 128);
     name = w.sanitize(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
 
-    machineryShowUploadQueue(bs);
+    machineryShowUploadQueue();
 
     var data: any = {
       id: w.guid(),
@@ -878,7 +875,6 @@ function machineryAddBookmarkItem(params: any): Promise<any> {
 /* addItemFromURL（bundle 18514-18558 逐字） */
 function machineryAddItemFromURL(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     if (!params.url) reject(undefined);
     var url = params.url;
@@ -903,7 +899,7 @@ function machineryAddItemFromURL(params: any): Promise<any> {
     }
     name = name.substr(0, 128);
     name = w.sanitize(name).replace(/%/g, "").replace(/&lt;/g, "").replace(/&gt;/g, "").trim();
-    machineryShowUploadQueue(bs);
+    machineryShowUploadQueue();
     if (url.length < 200) {
       w.electronLog.info(`[api] add url: ${url}`);
     }
@@ -929,7 +925,6 @@ function machineryAddItemFromURL(params: any): Promise<any> {
 /* addItemFromURLs（bundle 18560-18592 逐字） */
 function machineryAddItemFromURLs(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     var items = params.items;
     if (!params.items) reject(undefined);
@@ -945,7 +940,7 @@ function machineryAddItemFromURLs(params: any): Promise<any> {
         return useItemState.getState().folderMappings[id];
       });
     }
-    machineryShowUploadQueue(bs);
+    machineryShowUploadQueue();
     items.forEach(function (item: any) {
       var url = item.url;
       var name = item.name ?? w.guid();
@@ -1154,7 +1149,7 @@ function machineryListImages(params: any): Promise<any> {
       var reverse = orderBy.indexOf("-") > -1;
       var items = [...useItemState.getState().raw];
 
-      items = machinerySortData(bs, items, orderBy.replace("-", ""));
+      items = machinerySortData(items, orderBy.replace("-", ""));
       if (reverse) {
         items.reverse();
       }
@@ -1241,7 +1236,7 @@ function machineryListImages(params: any): Promise<any> {
       else if (200 < items.length) {
         items.length = 200;
       }
-      items = machinerySortData(bs, items, "IMPORT");
+      items = machinerySortData(items, "IMPORT");
       resolve(items);
     }
     catch (err) {

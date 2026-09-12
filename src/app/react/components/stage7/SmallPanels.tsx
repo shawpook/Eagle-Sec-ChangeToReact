@@ -395,7 +395,7 @@ export function LayoutPanel() {
                       runInBodyScope((s) => {
                         // b1-9bz-C-4：原经 $watch("listMetaType") 间接触发 —— 改显式调用
                         // machineryChangeMetaItems（其内部本身就写 s.listMetaType）。
-                        machineryChangeMetaItems(s, e.target.value);
+                        machineryChangeMetaItems(e.target.value);
                       })
                     }
                   >

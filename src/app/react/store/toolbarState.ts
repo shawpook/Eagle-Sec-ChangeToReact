@@ -98,7 +98,7 @@ function buildToolbarSnapshot(scope: any): ToolbarSnapshot {
       const currentFolder = scope.currentFolder || null;
       const currentSmartFolder = scope.currentSmartFolder || null;
       let selectedTagsCount = 0;
-      try { selectedTagsCount = (machineryGetSelectedTags(scope) || []).length; } catch (err) { selectedTagsCount = 0; }
+      try { selectedTagsCount = (machineryGetSelectedTags() || []).length; } catch (err) { selectedTagsCount = 0; }
       let canGoBack = false;
       let canGoForward = false;
       try {

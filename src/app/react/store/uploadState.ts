@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ipcRenderer, t } from '../global/eagleGlobals';
-import { getBodyScope } from '../core/appCore';
+
 import { useMiscRawState } from './miscRawState';
 
 /**
@@ -75,13 +75,11 @@ function attachBackgroundState(): void {
  * （原 200ms 轮询快照退役；ProgressDialogs 的 rootRef.* 为组件本地态不经此）。
  */
 export function syncUploadFromScope(): void {
-  const s: any = getBodyScope();
-  if (!s) return;
   useUploadState.getState().set({
     queueLength: (useMiscRawState.getState().uploadQueue && useMiscRawState.getState().uploadQueue.length) || 0,
     finishCount: (useMiscRawState.getState().finishQueue && useMiscRawState.getState().finishQueue.length) || 0,
     progress: typeof useMiscRawState.getState().progress === 'number' ? useMiscRawState.getState().progress : 0,
-    timeLeft: s.addImageTimeLeftInSeconds || 0,
+    timeLeft: useMiscRawState.getState().addImageTimeLeftInSeconds || 0,
   });
 }
 

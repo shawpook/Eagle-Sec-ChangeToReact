@@ -1934,7 +1934,7 @@ export class FolderSelectPanel extends SelectPanel {
     };
 
     let recentFolderIdx = 0;
-    const recentFolderIds = machineryGetRecentFolders(getBodyScope(), undefined)
+    const recentFolderIds = machineryGetRecentFolders(undefined)
       .reduce((acc: any, cur: any) => {
         acc[cur.id] = recentFolderIdx++;
         return acc;

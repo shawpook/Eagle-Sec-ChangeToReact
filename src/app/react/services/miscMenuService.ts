@@ -177,18 +177,18 @@ export function openFilterAddContextMenu(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-            machineryOpenFilter(s);
+            machineryOpenFilter();
             clickEl("#filter-toolbar-overlay");
 
             const pinFilter = (id, pinned) => {
                 eagle.filter.pinned[id] = pinned;
                 eagle.filter.savePinned();
-                setTimeout(function () { machineryUpdateContainerHieght(s); }, 50);
+                setTimeout(function () { machineryUpdateContainerHieght(); }, 50);
             };
 
             const openFilter = (id) => {
                 clickEl(`#${id}-filter-item`);
-                setTimeout(function () { machineryUpdateContainerHieght(s); }, 50);
+                setTimeout(function () { machineryUpdateContainerHieght(); }, 50);
             }
 
             let items = [
@@ -524,7 +524,7 @@ export function openNewContextMenu(...args: any[]) {
                         keywords: 'smart folder dir new create 資料夾 文件夾 新建 建立 新增 智能 智慧',
                         icon: 'ic-smart-folder-new.svg',
                         click: function() {
-                            machineryNewSmartFolder(s);
+                            machineryNewSmartFolder();
                             scopeEvalAsync();
                         }
                     },
@@ -548,7 +548,7 @@ export function openNewContextMenu(...args: any[]) {
                         keywords: '',
                         icon: 'ic-import-links.svg',
                         click: function() {
-                            machineryImportLinks(s);
+                            machineryImportLinks();
                         }
                     },
                     // 導入 eaglepack
@@ -609,7 +609,7 @@ export function openNewContextMenu(...args: any[]) {
                                     label: i18n.__("context.import.findDuplicate>all"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
-                                        machineryOpenDuplicate(s);
+                                        machineryOpenDuplicate();
                                         scopeEvalAsync();
                                     }
                                 },
@@ -618,7 +618,7 @@ export function openNewContextMenu(...args: any[]) {
                                     label: i18n.__("context.import.findDuplicate>currentList"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
-                                        machineryOpenDuplicate(s, {
+                                        machineryOpenDuplicate({
                                             currentPage: true
                                         });
                                         scopeEvalAsync();
@@ -629,7 +629,7 @@ export function openNewContextMenu(...args: any[]) {
                                     label: i18n.__("context.import.findDuplicate>selected"),
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
-                                        machineryOpenDuplicate(s, {
+                                        machineryOpenDuplicate({
                                             selected: true
                                         });
                                         scopeEvalAsync();
@@ -647,25 +647,25 @@ export function openNewContextMenu(...args: any[]) {
                         label: "Sketch " + i18n.__("general.document"),
                         keywords: 'template 模板 file',
                         icon: '/templates/ic-sketch.png',
-                        click: function() { machineryNewFileFromTemplate(s, "sketch"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("sketch"); scopeEvalAsync(); }
                     },
                     {
                         label: "Photoshop " + i18n.__("general.document"),
                         icon: '/templates/ic-photoshop.png',
                         keywords: 'template 模板 file adobe psd photoshop',
-                        click: function() { machineryNewFileFromTemplate(s, "psd"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("psd"); scopeEvalAsync(); }
                     },
                     {
                         label: "Illustrator " + i18n.__("general.document"),
                         icon: '/templates/ic-illustration.png',
                         keywords: 'template 模板 file adobe ai illustrator',
-                        click: function() { machineryNewFileFromTemplate(s, "ai"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("ai"); scopeEvalAsync(); }
                     },
                     {
                         label: "XD " + i18n.__("general.document"),
                         icon: '/templates/ic-xd.png',
                         keywords: 'template 模板 file adobe xd',
-                        click: function() { machineryNewFileFromTemplate(s, "xd"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("xd"); scopeEvalAsync(); }
                     },
                     {
                         role: 'separator'
@@ -676,60 +676,60 @@ export function openNewContextMenu(...args: any[]) {
                         label: i18n.__("general.txtDocument"),
                         icon: '/templates/ic-txt.png',
                         keywords: 'template 模板 file note txt text',
-                        click: function() { machineryNewFileFromTemplate(s, "txt"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("txt"); scopeEvalAsync(); }
                     },
                     {
                         label: "Word " + i18n.__("general.document"),
                         icon: '/templates/ic-word.png',
                         keywords: 'template 模板 file office microsoft doc docx word',
-                        click: function() { machineryNewFileFromTemplate(s, "docx"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("docx"); scopeEvalAsync(); }
                     },
                     {
                         label: "PowerPoint " + i18n.__("general.document"),
                         icon: '/templates/ic-powerpoint.png',
                         keywords: 'template 模板 file office microsoft ppt pptx powerpoint',
-                        click: function() { machineryNewFileFromTemplate(s, "pptx"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("pptx"); scopeEvalAsync(); }
                     },
                     {
                         label: "Excel " + i18n.__("general.document"),
                         icon: '/templates/ic-excel.png',
                         keywords: 'template 模板 file office microsoft xls xlsx csv excel',
-                        click: function() { machineryNewFileFromTemplate(s, "xlsx"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("xlsx"); scopeEvalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Keynote " + i18n.__("general.document"),
                         icon: '/templates/ic-keynote.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { machineryNewFileFromTemplate(s, "key"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("key"); scopeEvalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Pages " + i18n.__("general.document"),
                         icon: '/templates/ic-pages.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { machineryNewFileFromTemplate(s, "pages"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("pages"); scopeEvalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Numbers " + i18n.__("general.document"),
                         icon: '/templates/ic-numbers.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { machineryNewFileFromTemplate(s, "numbers"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("numbers"); scopeEvalAsync(); }
                     },
                     {
                         visible: process.platform == 'darwin' && installedApplications["mindnode"].isInstalled,
                         label: "MindNode " + i18n.__("general.document"),
                         icon: '/templates/ic-mindnode.png',
                         keywords: 'template 模板 file mind 脑图 心智图',
-                        click: function() { machineryNewFileFromTemplate(s, "mindnode"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("mindnode"); scopeEvalAsync(); }
                     },
                     {
                         visible: (process.platform == 'darwin')? installedApplications["xmind"].isInstalled : true,
                         label: "XMind " + i18n.__("general.document"),
                         icon: '/templates/ic-xmind.png',
                         keywords: 'template 模板 file mind 脑图 心智图',
-                        click: function() { machineryNewFileFromTemplate(s, "xmind"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("xmind"); scopeEvalAsync(); }
                     },
                     {
                         role: 'separator'
@@ -744,14 +744,14 @@ export function openNewContextMenu(...args: any[]) {
                         label: i18n.__('context.import.others>artstation'),
                         icon: '/templates/ic-artstation.png',
                         accelerator: preferences.shortcuts.keybinds['file.import.artstation'] || 'Ctrl+Alt+Shift+S',
-                        click: function() { machineryOpenArtstation(s); }
+                        click: function() { machineryOpenArtstation(); }
                     },
                     {
                         visible: preferences?.general?.language === "zh_CN",
                         label: i18n.__('context.import.others>huaban'),
                         keywords: 'huaban 花瓣',
                         icon: '/templates/ic-huaban.png',
-                        click: function() { machineryOpenHuaban(s); }
+                        click: function() { machineryOpenHuaban(); }
                     }
                 ],
                 showSearch: true,

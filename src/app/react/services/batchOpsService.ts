@@ -163,7 +163,7 @@ export function emptyTrash(...args: any[]) {
                     syncListFromScope();
                     machineryUpdateSelection(s);
                     machineryRebindRefresh(s);
-                    machineryFindDupclipate(s, undefined);
+                    machineryFindDupclipate(undefined);
 
                     // 更新進度
                     s.removeProgress = 0;
@@ -223,18 +223,18 @@ export function addToLastUsedFolder(...args: any[]) {
     const s = getBodyScope();
     if (!s) return;
     return (function () {
-        machineryCheckOperationSafety(s, function () {
-            var recentFolders = machineryGetRecentFolders(s);
+        machineryCheckOperationSafety(function () {
+            var recentFolders = machineryGetRecentFolders();
             if (!recentFolders || recentFolders.length === 0) return;
             if (!recentFolders[0] || !useSelectionState.getState().selected[0]) return;
             var folder = recentFolders[0];
             addToRecentFolders([folder.id]);
             addImagesToFolder(useSelectionState.getState().selected, folder);
             if (s.viewMode === 'unfiled') {
-                var itemElements = machineryGetSelectedItemElements(s);
+                var itemElements = machineryGetSelectedItemElements();
                 glRemoveitemsChannel.emit(itemElements);
                 // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-                s.lastIndex = machineryGetSelection(s).start;
+                s.lastIndex = machineryGetSelection().start;
                 var next = useItemState.getState().allData[s.lastIndex + useSelectionState.getState().selected.length];
                 var prev = useItemState.getState().allData[s.lastIndex - 1];
                 if (next) {
@@ -361,7 +361,7 @@ export function removeFromFolder(...args: any[]) {
 
         // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
         if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
-            s.lastIndex = machineryGetSelection(s).start;
+            s.lastIndex = machineryGetSelection().start;
             var next = useItemState.getState().allData[s.lastIndex + useSelectionState.getState().selected.length];
             var prev = useItemState.getState().allData[s.lastIndex - 1];
             if (next) {
@@ -388,13 +388,13 @@ export function removeFromFolder(...args: any[]) {
 
             if (useBodyState.getState().isDetailMode) {
                 $timeout(function() {
-                    machineryForceFitImageSize(s, useSelectionState.getState().current);
+                    machineryForceFitImageSize(useSelectionState.getState().current);
                     machineryZoom(s);
                 }, 100);
             }
             ScrollbarSaver.saveScrollPosition();
 
-            var itemElements = machineryGetSelectedItemElements(s);
+            var itemElements = machineryGetSelectedItemElements();
             glRemoveitemsChannel.emit(itemElements);
         }
 
@@ -436,16 +436,14 @@ export function removeFromFolder(...args: any[]) {
 
 export function getSelectedTags(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  return machineryGetSelectedTags(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryGetSelectedTags();
 }
 
 export function getSelectedItemElements(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  return machineryGetSelectedItemElements(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryGetSelectedItemElements();
 }
 
 export function scrollToSelectedItem(...args: any[]) {
@@ -479,7 +477,7 @@ export function scrollToSelectedItem(...args: any[]) {
                         // 東西不在畫面上，強制更新畫面然後定位
                         if (!q(`#box-${__lv_target.id}`) || startPage !== useFolderState.getState().startCursor) {
                             machineryRebindRefresh(s, undefined, undefined, startPage);
-                            machineryRelayout(s);    
+                            machineryRelayout();    
                         }
                         cssSet("#box-container", { visibility: "hidden" });
                         s.startCursor = startPage;
@@ -489,7 +487,7 @@ export function scrollToSelectedItem(...args: any[]) {
                             useSelectionState.getState().selected.forEach(function (item) {
                                 select(undefined, item);
                             })
-                            machineryAutoScroll(s);
+                            machineryAutoScroll();
                             setTimeout(function () {
                                 cssSet("#box-container", { visibility: "initial" });
                             }, 50);
@@ -797,7 +795,7 @@ export function machineryRemovePermanently(s: any): void {
 
   w.ayncsImagesRemove(images);
 
-  var itemElements = machineryGetSelectedItemElements(s);
+  var itemElements = machineryGetSelectedItemElements();
   glRemoveitemsChannel.emit(itemElements);
   s.selected = [];
   syncInspectorFromScope();

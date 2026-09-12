@@ -131,8 +131,8 @@ export function createFolder(...args: any[]) {
             addToRecentFolders([folder.id]);
             machineryUpdateSidebarList(s);
             machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
-                machineryRefreshSubfolderList(s);
-                machinerySaveFolder(s);
+                machineryRefreshSubfolderList();
+                machinerySaveFolder();
                 if (callback) callback(folder);
                 if (folder.parent) {
                     electronLog && electronLog.info(`[app] New sub-folder: ${folder.id}, parent: ${folder.parent}`);
@@ -239,14 +239,14 @@ export function newFolder(...args: any[]) {
 			addToRecentFolders([folder.id]);
 			
             setTimeout(function() { 
-                machineryChangeSidebarIndex(s, folder); 
+                machineryChangeSidebarIndex(folder); 
                 scopeEvalAsync();
                 setTimeout(function() { const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el); }, 100);
                 setTimeout(function() { const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el); }, 200);
             }, 150);
 
             setTimeout(function() { 
-                machineryChangeSidebarIndex(s, folder); 
+                machineryChangeSidebarIndex(folder); 
                 scopeEvalAsync();
                 setTimeout(function() { 
                     if (!q("#folder-input-" + folder.id + ":focus")) {
@@ -263,8 +263,8 @@ export function newFolder(...args: any[]) {
             }
             setTimeout(function() {
                 machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
-                    machineryRefreshSubfolderList(s);
-                    machinerySaveFolder(s);
+                    machineryRefreshSubfolderList();
+                    machinerySaveFolder();
                     if (folder.parent) {
                         electronLog && electronLog.info(`[app] New sub-folder: ${folder.id}, parent: ${folder.parent}`);
                     }
@@ -365,7 +365,7 @@ export function newFolderWidthSelection(...args: any[]) {
             });
             openFolder(folder);
             setTimeout(function() {
-                machinerySaveFolder(s);
+                machinerySaveFolder();
             }, 1000);
             electronLog && electronLog.info(`[app] Create new folder ${folder.name}(${folder.id}) with ${useSelectionState.getState().selected.length} files`);
             analytics.event('Folder', 'Create-With-Images', folder.name);
@@ -468,7 +468,7 @@ export function moveFoldersAsSibling(...args: any[]) {
             }
 
             var moved = {};
-            var children = machineryGetFolderParentChilder(s, folder);
+            var children = machineryGetFolderParentChilder(folder);
             var __lv_idx = -1;
 
             if (!children) return;
@@ -544,7 +544,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                     }
                 }
                 machineryUpdateSidebarList(s);
-                machinerySaveFolder(s);
+                machinerySaveFolder();
                 try {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) sibling`);
                 } catch (err) {};
@@ -641,7 +641,7 @@ export function moveFoldersToFolder(...args: any[]) {
 
                 folder.isExpand = true;
                 machineryUpdateSidebarList(s);
-                machinerySaveFolder(s);
+                machinerySaveFolder();
                 try {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) children`);
                 } catch (err) {};
@@ -678,7 +678,7 @@ export function emptyRestore(...args: any[]) {
                     useItemState.getState().trash.forEach(function(image: any) {
                         image.isDeleted = false;
                         changes.push(image);
-                        machineryUpdateFilterCounts(s, image, -1, now);
+                        machineryUpdateFilterCounts(image, -1, now);
                         // ipcRenderer.send('image-change', image);
                     });
                     if (changes.length > 0) {
@@ -746,7 +746,7 @@ const initLinkVars = () => {
                   localStorage.removeItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`);
               }
               else {
-              	machinerySetViewMode(getBodyScope(), "all");
+              	machinerySetViewMode("all");
                   localStorage.setItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`, folderId);
               }
           }, 500);
@@ -821,7 +821,7 @@ export function openFolder(...args: any[]) {
                 syncPanelFromScope();
                 syncFolderLock();
                 syncListFromScope();
-                s.currentFolderChildren = machineryGetChildFoldersMap(s, folder);
+                s.currentFolderChildren = machineryGetChildFoldersMap(folder);
             }
 
 			if (localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
@@ -1081,13 +1081,13 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
     syncInspectorFromScope();
     s.imageSize.height = parseInt(s.imageSize.height);
     // b1-9bz-C-4：原 $watch("imageSize.height") 在 flush 时触发 —— 改为写入点直调
-    machineryOnImageSizeHeightChanged(s);
+    machineryOnImageSizeHeightChanged();
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    machineryUpdateListHeight(s, s.imageSize.height);
+    machinerySetLastFolder(undefined);
+    machineryUpdateListHeight(s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
     s.reload();
@@ -1155,7 +1155,7 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
+    machinerySetLastFolder(undefined);
     setScrollTop("#sidebar-item-container", 0);
     s.reload();
     if (callback) {

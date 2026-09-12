@@ -132,7 +132,7 @@ function removeBoxAudioPlayer (event) {
     var $scope = _w.$bodyScope || angular.element("body").scope();
     var $box = dom(".box").has(event.target);
     disarmHoverSentinel($box);
-    var image = machineryGetItemByElement($scope, $box[0]);
+    var image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
 
@@ -193,7 +193,7 @@ var HoverPreview = {
         clearTimeout(HoverPreview.showTimeout);
         var $hoverImage = HoverPreview.$container.find("img");
         var $imageWraper = HoverPreview.$container.find(".image-wraper");
-        var image = machineryGetItemByElement(_w.$bodyScope, HoverPreview.lastElem.parentElement);
+        var image = machineryGetItemByElement(HoverPreview.lastElem.parentElement);
         if (image.noPreview) return;
         var thumbnailPath = FileUrlHelper.getLastestThumbnailUrl(image);
         var offset = dom(HoverPreview.lastElem).offset();
@@ -589,7 +589,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = dom(".box").has(this);
-    var image = machineryGetItemByElement($scope, $box[0]);
+    var image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
     if (image.noPreview) return;
@@ -935,7 +935,7 @@ function removeBoxVideoPlayer(event) {
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = dom(".box").has(this);
     disarmHoverSentinel($box);
-    var image = machineryGetItemByElement($scope, $box[0]);
+    var image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
 
@@ -974,7 +974,7 @@ dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail
 
     var $scope = _w.$bodyScope;   // b1-9bu-B：去 Angular（b1-9d 同款——_w.$bodyScope 即 bundle 世界同对象）
     var $box = dom(".box").has(this);
-    var image = machineryGetItemByElement($scope, $box[0]);
+    var image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
     if (image.noPreview) return;
@@ -1214,7 +1214,7 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
 
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
-    let image = machineryGetItemByElement($scope, $box[0]);
+    let image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
 
@@ -1416,7 +1416,7 @@ dom("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(e
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
-    let image = machineryGetItemByElement($scope, $box[0]);
+    let image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
 
@@ -1509,7 +1509,7 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
 
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
-    let image = machineryGetItemByElement($scope, $box[0]);
+    let image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
 
@@ -1710,7 +1710,7 @@ dom("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(eve
     let $scope = _w.$bodyScope;   // b1-9bu-C：去 Angular（b1-9d 同款）
     let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
-    let image = machineryGetItemByElement($scope, $box[0]);
+    let image = machineryGetItemByElement($box[0]);
 
     if (!image) return;
 

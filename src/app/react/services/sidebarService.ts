@@ -75,7 +75,7 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
         }
       }
     }
-    s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
+    s.currentFolderChildren = machineryGetChildFoldersMaps(s.$root.selectedFolders);
     s.reload();
   }
   else {
@@ -204,7 +204,7 @@ export function sidebarDblclickFolder(s: any, event: any, folder: any): void {
     toggleFolderExpand(event, folder);
   }
   else {
-    machineryRenameFolder(s, event, folder);
+    machineryRenameFolder(event, folder);
   }
 }
 
@@ -291,9 +291,8 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 export function changeSidebarIndex(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价（仅 $timeout 取法与
   // 局部变量名不同），统一转发消除重复实现。
-    const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryChangeSidebarIndex(s, args[0]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryChangeSidebarIndex(args[0]);
 }
 
 export function dblclickSidebarSmartFolderGroup(...args: any[]) {
@@ -305,7 +304,7 @@ export function dblclickSidebarSmartFolderGroup(...args: any[]) {
         		toggleSmartFolderExpand(event, folder);
         	}
         	else {
-        		machineryRenameSmartFolder(s, event, folder);
+        		machineryRenameSmartFolder(event, folder);
         	}
         }).apply(null, args);
   }
@@ -467,10 +466,10 @@ export function onSidebarResize(...args: any[]) {
             syncSidebarFromScope();
             syncTagManagerFromScope();
             rebindRefreshcontainsizeChannel.emit();
-            machineryUpdateSliderPosition(s);
+            machineryUpdateSliderPosition();
             clearTimeout(__lv_onSidebarResizeTimeout);
             __lv_onSidebarResizeTimeout = setTimeout(function () {
-                machineryRelayout(s);
+                machineryRelayout();
                 getOffsetScrollbarFn(s)(30);
                 localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
             }, 500);
@@ -511,7 +510,7 @@ export function toggleAllFolderExpand(...args: any[]) {
       if (s2.folders && s2.folders.length > 0) {
         var expand = !s2.folders[0].isExpand;
         if (folder) {
-          setTimeout(function () { machineryChangeSidebarIndex(s2, folder); scopeEvalAsync(); }, 100);
+          setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 100);
           if (folder.parent) {
             var parent = s2.folderMappings[folder.parent];
             if (parent) {

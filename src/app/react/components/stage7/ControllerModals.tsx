@@ -22,6 +22,7 @@ import { machineryToggleAll } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段7d-1b：ErrorModalController（bundle 76136-76270）+ WebsitePanelController
  * （bundle 74094-74144，含 websitePanelWebview 指令 74147-74189）接管。
@@ -103,7 +104,6 @@ export function ErrorModal() {
   /* retryAll（76169-76228 逐字） */
   const retryAll = () => {
     const w = window as any;
-    const body = getBodyScope();
     const urlFiles: any[] = [];
     const localFiles: any[] = [];
     errorListRef.current.forEach((error) => {
@@ -139,7 +139,7 @@ export function ErrorModal() {
             const item = useItemState.getState().itemMappings[error.modifiedData.id];
             if (item) {
               Object.assign(item, error.modifiedData);
-              machineryUpdateItemView(body, item);
+              machineryUpdateItemView(item);
               updateSelection();
               scopeEvalAsync();
               ayncsImagesChange([item]);
@@ -446,8 +446,7 @@ export function WebsitePanel() {
       if (webview && String(webview.src || '').indexOf('community-') === -1) {
         webview.setAttribute('src', `${url}`);
       }
-      const body = getBodyScope();
-      if (body) body.isOpenWebpagePanel = true;
+      writeScopeField('isOpenWebpagePanel', true);
       bump((v) => v + 1);
     });
     return () => off();

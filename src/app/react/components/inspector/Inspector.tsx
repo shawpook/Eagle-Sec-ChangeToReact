@@ -208,7 +208,7 @@ function PreviewImage({
       onDragEnd={(e) => (window as any).onDragEndContainer(e.nativeEvent)}
       onDragStart={(e) => (window as any).onDragStartContainer(e.nativeEvent)}
       onDrop={(e) => (window as any).onDropInspector(e.nativeEvent)}
-      onClick={() => call(scoped(machineryAutoScroll))()}
+      onClick={() => call(machineryAutoScroll)()}
     >
       {isSvg && <div className="svg" style={{ backgroundImage: `url('${image.lastThumbnailUrl}')` }} />}
       {isTxt && (
@@ -313,7 +313,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
         </div>
       </div>
       <div className="info-section-container">
-        <div className="label-container" onClick={(e) => { e.stopPropagation(); call(scoped(machineryOpenInspectorTagSelectPanel))(e); }}>
+        <div className="label-container" onClick={(e) => { e.stopPropagation(); call(machineryOpenInspectorTagSelectPanel)(e); }}>
           {newTags.map((tag, i) => (
             <div
               key={i}
@@ -346,7 +346,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
               tippy-content={`${t('inspector.tagInputPlaceholder')}<key>T</key>`}
               onClick={(e) => {
                 e.stopPropagation();
-                call(scoped(machineryOpenInspectorTagSelectPanel))(e);
+                call(machineryOpenInspectorTagSelectPanel)(e);
               }}
             >
               <img src={iconSrc(theme, 'ic-inspector-add-label.svg')} />
@@ -361,7 +361,7 @@ function InspectorTags({ snapshot }: { snapshot: InspectorSnapshot }) {
               tippy-content={`${t('inspector.tagInputPlaceholder')}<key>T</key>`}
               onClick={(e) => {
                 e.stopPropagation();
-                call(scoped(machineryOpenInspectorTagSelectPanel))(e);
+                call(machineryOpenInspectorTagSelectPanel)(e);
               }}
             >
               <img src={iconSrc(theme, 'ic-inspector-add-label.svg')} />

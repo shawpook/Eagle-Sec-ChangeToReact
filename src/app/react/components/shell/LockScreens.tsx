@@ -9,9 +9,10 @@ import { t } from '../../global/eagleGlobals';
 import { focusAppUnlockPassword, focusUnlockPassword, unlockAppPasswordKeydown, unlockAppPasswordKeyup, unlockPasswordKeyup } from '../../services/lockService';
 
 import { CornerBtns } from '../toolbar/Toolbar';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 
 import { machineryUnlockFolderWithTouchID } from '../../core/libraryDomain';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 11-pre a3：文件夹密码锁 + 应用锁屏（index.html 156-170 / 424-444 逐字）。
  *
@@ -71,8 +72,7 @@ export function FolderLockScreen() {
             type="password"
             placeholder={t('pages.unlock.placeholder')}
             onInput={(e) => {
-              const scope = getBodyScope();
-              if (scope) scope.unlockPassword = (e.target as HTMLInputElement).value;
+              writeScopeField('unlockPassword', (e.target as HTMLInputElement).value);
             }}
             onFocus={(e) => (e.target as HTMLInputElement).select()}
             onKeyUp={(e) => runInBodyScope(() => unlockPasswordKeyup(e))}

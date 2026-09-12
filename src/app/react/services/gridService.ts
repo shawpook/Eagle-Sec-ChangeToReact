@@ -38,6 +38,10 @@ import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useItemState } from '../store/itemState';
+import { useSelectionState } from '../store/selectionState';
+import { useMiscRawState } from '../store/miscRawState';
+import { useLayoutState } from '../store/layoutState';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */
@@ -109,9 +113,9 @@ export function gridAdjustLayoutWidth(s: any, increases: any): void {
     setAttr("#box-container", "box-size", height);
     var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
     if (margin === Infinity) margin = 10;
-    machineryRelayout(s, margin);
+    machineryRelayout(margin);
 
-    machineryScrollToCurrentItem(s);
+    machineryScrollToCurrentItem();
   }
 }
 
@@ -126,7 +130,7 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machineryChangeListHeight(s);
+    machineryChangeListHeight();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
       machineryAdjustLayoutWidth(s, 0);
       gridSaveListHeight(s, s.imageSize.height);
@@ -185,7 +189,7 @@ export function gridZoomOut(s: any, event: any): void {
   if (!s.isDetailMode) {
     machineryAdjustLayoutWidth(s, 1);
     gridSaveListHeight(s, s.imageSize.height);
-    machineryCheckListItemsLessThanContainer(s);
+    machineryCheckListItemsLessThanContainer();
   } else {
     var ratio = Math.floor(s.imageSize.zoomRatio / 5) * 5;
     var ratioExp = getRatioExp(ratio);
@@ -219,7 +223,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "GridLayout";
       removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
-      machineryRelayout(s);
+      machineryRelayout();
       // $scope.adjustLayoutWidth(0);
       w.electronLog && w.electronLog.info("[app] Layout: Waterfall");
       break;
@@ -230,7 +234,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "SquareLayout";
       removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
-      machineryRelayout(s);
+      machineryRelayout();
       // $scope.adjustLayoutWidth(0);
       w.electronLog && w.electronLog.info("[app] Layout: Grid");
       break;
@@ -241,7 +245,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "ListLayout";
       removeClass("#box-container", allLayout); addClass("#box-container", "list-layout");
-      machineryRelayout(s);
+      machineryRelayout();
       w.electronLog && w.electronLog.info("[app] Layout: List");
       break;
     default:
@@ -250,7 +254,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       });
       s.layout = "JustifiedLayout";
       removeClass("#box-container", allLayout); addClass("#box-container", "justified-layout");
-      machineryRelayout(s);
+      machineryRelayout();
       w.electronLog && w.electronLog.info("[app] Layout: Justified");
   }
 
@@ -271,7 +275,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* updateSliderPosition（bundle 33689-33705：函数体全被注释——no-op 原样保留注释） */
-export function machineryUpdateSliderPosition(s: any): void {
+export function machineryUpdateSliderPosition(): void {
   // var $breadcrumbs = $(".content-panel .toolbar .breadcrumbs ul");
   // var $right = $(".content-panel .toolbar .right:visible");
   // var $slider = $(".sliders-bar:visible");
@@ -379,98 +383,98 @@ export function machineryAdjustLayoutWidth(s: any, increases: any): void {
   gridAdjustLayoutWidth(s, increases);
 }
 
-export function machineryChangeListHeight(s: any, height: any): void {
+export function machineryChangeListHeight(height: any): void {
   const w = window as any;
-  if (!height) height = s.imageSize.height;
+  if (!height) height = useLayoutState.getState().imageSize.height;
   if (Number.isFinite(height) && height > 0) {
 
     height = parseInt(height / 5 as any) * 5;
 
-    s.lastImageHeight = s.imageSize.height;
+    writeScopeField('lastImageHeight', useLayoutState.getState().imageSize.height);
 
     clearTimeout(changeListHeightTimeout);
     changeListHeightTimeout = setTimeout(function () {
-      if (s.currentFolder) {
-        w.localStorage.setItem("eagle.list.thumbSize." + s.currentFolder.id, height as any);
-      } else if (s.currentSmartFolder) {
-        w.localStorage.setItem("eagle.list.thumbSize." + s.currentSmartFolder.id, height as any);
-      } else if (s.currentTag) {
-        w.localStorage.setItem("eagle.list.thumbSize." + s.currentTag, height as any);
-      } else if (s.viewMode === 'all') {
+      if (useFolderState.getState().currentFolder) {
+        w.localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentFolder.id, height as any);
+      } else if (useFolderState.getState().currentSmartFolder) {
+        w.localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentSmartFolder.id, height as any);
+      } else if (useMiscRawState.getState().currentTag) {
+        w.localStorage.setItem("eagle.list.thumbSize." + useMiscRawState.getState().currentTag, height as any);
+      } else if (useBodyState.getState().viewMode === 'all') {
         w.localStorage.setItem("eagle.list.thumbSize.all", height as any);
-      } else if (s.viewMode === 'unfiled') {
+      } else if (useBodyState.getState().viewMode === 'unfiled') {
         w.localStorage.setItem("eagle.list.thumbSize.unfiled", height as any);
-      } else if (s.viewMode === 'untagged') {
+      } else if (useBodyState.getState().viewMode === 'untagged') {
         w.localStorage.setItem("eagle.list.thumbSize.untagged", height as any);
-      } else if (s.viewMode === 'trash') {
+      } else if (useBodyState.getState().viewMode === 'trash') {
         w.localStorage.setItem("eagle.list.thumbSize.trash", height as any);
-      } else if (s.viewMode === 'random') {
+      } else if (useBodyState.getState().viewMode === 'random') {
         w.localStorage.setItem("eagle.list.thumbSize.random", height as any);
-      } else if (s.viewMode === 'recent') {
+      } else if (useBodyState.getState().viewMode === 'recent') {
         w.localStorage.setItem("eagle.list.thumbSize.recent", height as any);
       }
     }, 500);
 
     setAttr("#box-container", "box-size", height as any);
-    machineryRelayout(s);
+    machineryRelayout();
 
-    machineryScrollToCurrentItem(s);
+    machineryScrollToCurrentItem();
   }
 }
 
 /* currentIndex（bundle 28993-28997 逐字：selected[0] 在 allData 的位次 +1） */
-export function machineryCurrentIndex(s: any): any {
-  if (!s.allData) return undefined;
-  return s.allData.indexOf(s.selected[0]) + 1;
+export function machineryCurrentIndex(): any {
+  if (!useItemState.getState().allData) return undefined;
+  return useItemState.getState().allData.indexOf(useSelectionState.getState().selected[0]) + 1;
 }
 
 /* getArroundBox（bundle 35091-35097 逐字，controller 闭包） */
-export function machineryGetArroundBox(s: any, index: any): any {
+export function machineryGetArroundBox(index: any): any {
   var arroundStart = (index - 20 >= 0) ? index - 20 : 0;
-  var arroundEnd = (index + 20 > s.allData.length) ? s.allData.length : index + 20;
+  var arroundEnd = (index + 20 > useItemState.getState().allData.length) ? useItemState.getState().allData.length : index + 20;
   var $arround = qa(".box").slice(arroundStart, arroundEnd);
   return $arround;
 }
 
-export function machineryGotoBottom(s: any): void {
+export function machineryGotoBottom(): void {
   const w = window as any;
-  if (s.allData.length < s.options.page) {
+  if (useItemState.getState().allData.length < useMiscRawState.getState().options.page) {
     var offset = (q("#box-container") as HTMLElement | null)?.scrollHeight;
     setScrollTop("#box-container", offset as any);
   }
   else {
-    var endCursor = Math.ceil(s.allData.length / s.options.page) - 1 || 0;
-    w.resetNgGridLayoutData(s.allData, endCursor);
+    var endCursor = Math.ceil(useItemState.getState().allData.length / useMiscRawState.getState().options.page) - 1 || 0;
+    w.resetNgGridLayoutData(useItemState.getState().allData, endCursor);
     var times = [100, 400];
     for (var i = times[0]; i < times[1]; i += 100) {
-      s.gotoBottomTimeout = setTimeout(function () { setScrollTop("#box-container", 1000000); }, i);
+      writeScopeField('gotoBottomTimeout', setTimeout(function () { setScrollTop("#box-container", 1000000); }, i));
     }
   }
 }
 
-export function machineryGotoTop(s: any): void {
+export function machineryGotoTop(): void {
   const w = window as any;
-  if (s.allData.length < s.options.page) {
+  if (useItemState.getState().allData.length < useMiscRawState.getState().options.page) {
     setScrollTop("#box-container", 0);
   }
   else {
-    clearTimeout(s.gotoBottomTimeout);
-    w.resetNgGridLayoutData(s.allData, 0);
+    clearTimeout(useMiscRawState.getState().gotoBottomTimeout);
+    w.resetNgGridLayoutData(useItemState.getState().allData, 0);
     setScrollTop("#box-container", 0);
   }
 }
 
-export function machineryOffsetScrollbar(s: any): any {
+export function machineryOffsetScrollbar(): any {
   const w = window as any;
   return debounce(function offsetScrollbar(delay: any, forceScroll: any) {
-    machineryOffsetScrollbarImm(s, delay, forceScroll);
+    machineryOffsetScrollbarImm(delay, forceScroll);
   }, 100, true);
 }
 
-export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any): void {
+export function machineryOffsetScrollbarImm(delay: any, forceScroll: any): void {
   setTimeout(function () {
     var container = q("#box-container") as HTMLElement | null;
-    if (s.selected.length > 0) {
+    if (useSelectionState.getState().selected.length > 0) {
       var $current = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
       if (container && $current) {
         var offsetTop = container.clientHeight / 2 - $current.offsetHeight / 2;
@@ -493,18 +497,18 @@ export function machineryOffsetScrollbarImm(s: any, delay: any, forceScroll: any
       }
     }
   }, delay || 1);
-  machineryUpdateContainerHieght(s);
+  machineryUpdateContainerHieght();
 }
 
-export function machineryRelayout(s: any, margin: any): void {
+export function machineryRelayout(margin: any): void {
   const w = window as any;
-  if (!s.isItemBindCalculated) return;
+  if (!useMiscRawState.getState().isItemBindCalculated) return;
   var $container = q("#box-container");
-  var currentImageSize = s.imageSize.height;
+  var currentImageSize = useLayoutState.getState().imageSize.height;
   setAttr("#box-container", "box-size", Math.floor(currentImageSize / 5) * 5);
   const ig = w.ig;
   if (!ig) return;
-  if (s.layout === "JustifiedLayout") {
+  if (useBodyState.getState().layout === "JustifiedLayout") {
     var cw = widthOf($container);
     ig.setLayout('JustifiedLayout', {
       minSize: currentImageSize * 1 - 10,
@@ -515,7 +519,7 @@ export function machineryRelayout(s: any, margin: any): void {
     ig.layout(true);
     ig._watcher._onCheck();
   }
-  else if (s.layout === "ListLayout") {
+  else if (useBodyState.getState().layout === "ListLayout") {
     ig.setLayout('GridLayout', {
       margin: 0,
       align: "left",
@@ -536,12 +540,12 @@ export function machineryRelayout(s: any, margin: any): void {
   ig._updateContainerHeight();
 }
 
-export function machineryRememberScrollTops(s: any, item: any): void {
+export function machineryRememberScrollTops(item: any): void {
   const w = window as any;
-  if (s.isInlineMode) return;
-  if (s.lastZoomMode === "edge") return;
+  if (useBodyState.getState().isInlineMode) return;
+  if (useMiscRawState.getState().lastZoomMode === "edge") return;
   if (item && item.id) {
-    s.lastItemStates[item.id] = {
+    useItemState.getState().lastItemStates[item.id] = {
       data: detailZoom()?.getChangedData()
     }
   }
@@ -573,7 +577,7 @@ export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): vo
 }
 
 /* updateContainerHieght（bundle 34078-34119 逐字；typo 逐字保留） */
-export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay: any = 1): void {
+export function machineryUpdateContainerHieght(hasAnimation: any, delay: any = 1): void {
   const w = window as any;
   let duration = 170;
   if (!hasAnimation) duration = 1;
@@ -608,7 +612,7 @@ export function machineryUpdateContainerHieght(s: any, hasAnimation: any, delay:
 }
 
 /* updateListHeight（bundle 33712-33719 逐字；50ms 防抖） */
-export function machineryUpdateListHeight(s: any, height: any): void {
+export function machineryUpdateListHeight(height: any): void {
   const w = window as any;
   clearTimeout(updateListHeightTimeout);
   updateListHeightTimeout = setTimeout(function () {
@@ -617,7 +621,7 @@ export function machineryUpdateListHeight(s: any, height: any): void {
 }
 
 /* updateListSlider（bundle 31350-31352：**函数体为空——no-op 原样**） */
-export function machineryUpdateListSlider(s: any, size: any): void {
+export function machineryUpdateListSlider(size: any): void {
 
 }
 
@@ -625,9 +629,9 @@ let updateListHeightTimeout: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getOffsetScrollbarFn(s: any): any { return scopeSingleton(s, 'offsetScrollbar', () => machineryOffsetScrollbar(s)); }
+export function getOffsetScrollbarFn(s: any): any { return scopeSingleton(s, 'offsetScrollbar', () => machineryOffsetScrollbar()); }
 
-export function machineryAutoScroll(s: any, index: any): void {
+export function machineryAutoScroll(index: any): void {
   const $timeout = getTimeout();
   $timeout(function () {
     autoscrollChannel.emit(index);
@@ -675,7 +679,7 @@ export function machineryResetPage(s: any): void {
 
   if (s.duplicateTarget) {
     s.duplicateTarget = undefined;
-    machineryFindDupclipate(s, undefined);
+    machineryFindDupclipate(undefined);
   }
 }
 
@@ -698,13 +702,13 @@ export function machineryToggleAll(s: any, $event: any): void {
     window.dispatchEvent(new Event("orientationchange"));
     s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
     s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
-    machineryRelayout(s);
+    machineryRelayout();
     getOffsetScrollbarFn(s)(30);
     if (s.isDetailMode) {
       s.$root.currentFocus = "content";
     }
     if (s.isDetailMode && s.lastZoomMode === "edge") {
-      machineryZoomFitEdge(s, w.event);
+      machineryZoomFitEdge(w.event);
     }
     // if ($scope.layout === "GridLayout" || $scope.layout === "SquareLayout") {
     //     var currentColumn = ig._layout._columnLength;

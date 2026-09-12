@@ -13,5 +13,5 @@ import { machinerySaveFolder } from '../core/libraryDomain';
 
 export function saveFolder(): void {
   const s = getBodyScope();
-  if (s && typeof s.saveFolder === 'function') machinerySaveFolder(s);
+  if (s && typeof s.saveFolder === 'function') machinerySaveFolder();
 }

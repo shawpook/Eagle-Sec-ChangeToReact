@@ -86,7 +86,7 @@ export function deactivateFont(...args: any[]) {
                     eagle.filter.filterCounts['fontActivated']['deactivated']++;
                 }
                 if (updateView) {
-                    machineryUpdateItemsView(s, [font]);
+                    machineryUpdateItemsView([font]);
                 }
             }
             else {
@@ -99,7 +99,7 @@ export function deactivateFont(...args: any[]) {
                     fontExt: font.ext
                 });
                 font.deactivating = true;
-                machineryUpdateItemsView(s, [font]);
+                machineryUpdateItemsView([font]);
             }
 
             ipcRenderer.send('electron-info', `[app] Unstall font: ${rawPath}`);
@@ -138,7 +138,7 @@ export function activateFont(...args: any[]) {
                     eagle.filter.filterCounts['fontActivated']['deactivated']--;
                 }
                 if (updateView) {
-                    machineryUpdateItemsView(s, [font]);
+                    machineryUpdateItemsView([font]);
                 }
             }
             else {
@@ -151,7 +151,7 @@ export function activateFont(...args: any[]) {
                     fontPath: rawPath
                 });
                 font.activating = true;
-                machineryUpdateItemsView(s, [font]);
+                machineryUpdateItemsView([font]);
             }
 
             ipcRenderer.send('electron-info', `[app] Install font: ${rawPath}`);
@@ -174,7 +174,7 @@ export function renameFontsWithFullName(...args: any[]) {
     if (!s) return;
     return (function (items) {
         if (items && items.length > 0) {
-            machineryCheckOperationSafety(s, function () {
+            machineryCheckOperationSafety(function () {
                 var updates = [];
                 var lng = usePreferencesState.getState().preferences.general.language;
                 var preferLng = 'en';
@@ -207,7 +207,7 @@ export function renameFontsWithFullName(...args: any[]) {
                 });
                 ayncsImagesChange(updates);
                 hiddenByCurrentFilter(updates);
-                machineryUpdateItemsView(s, items);
+                machineryUpdateItemsView(items);
                 machineryCalculateImageBinding(s, {}, function () {
                     machineryRebindRefresh(s, true);
                     machineryUpdateSelection(s);
@@ -230,7 +230,7 @@ export function activateFonts(...args: any[]) {
             activateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
-            machineryUpdateItemsView(s, items);
+            machineryUpdateItemsView(items);
         }
         s.notify({
             message: $filter('i18n')("notify.fonts.activate", [
@@ -252,7 +252,7 @@ export function deactivateFonts(...args: any[]) {
             deactivateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
-            machineryUpdateItemsView(s, items);
+            machineryUpdateItemsView(items);
         }
 
         s.notify({
@@ -267,11 +267,9 @@ export function deactivateFonts(...args: any[]) {
 
 export function changeFontDefaultLang(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (items, lang) {
         if (items && items.length > 0) {
-            machineryCheckOperationSafety(s, function () {
+            machineryCheckOperationSafety(function () {
                 items.forEach(function (item) {
                     item.fontMetas.preferLng = lang;
                 });
@@ -348,7 +346,7 @@ export function filterWithTag(...args: any[]) {
             }
 
             machineryFilterContent(s);
-            machineryCalculateFilterCounts(s);
+            machineryCalculateFilterCounts();
         }).apply(null, args);
 }
 

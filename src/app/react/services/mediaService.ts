@@ -7,6 +7,7 @@ import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, cssSet, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
 import { machineryUpdateItemView } from '../core/itemDomain';
 import { machineryToggleSlideshow } from '../core/miscDomain';
+import { useMiscRawState } from '../store/miscRawState';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -72,7 +73,7 @@ export function mediaAddVideoComment(s: any, video: any, videoElem: any): void {
       return 0;
     })
     refreshVideoCommentsChannel.emit();
-    machineryUpdateItemView(s, video);
+    machineryUpdateItemView(video);
     scopeEvalAsync();
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
@@ -423,29 +424,29 @@ export function loadSubtitles(...args: any[]) {
 
 /* nextGifFrame/prevGifFrame（bundle 32838-32863 逐字：gifPlayer/gifViewer 经 scope 解析；
    **next 帧越界上界为 total-1、prev 下界 0——bundle 原样**） */
-export function machineryNextGifFrame(s: any, amount: any = 1): void {
-  if (s.gifPlayer && s.isGifReady) {
-    s.gifPlayer.pause();
-    s.gifViewer.playing = false;
+export function machineryNextGifFrame(amount: any = 1): void {
+  if (useMiscRawState.getState().gifPlayer && useMiscRawState.getState().isGifReady) {
+    useMiscRawState.getState().gifPlayer.pause();
+    useMiscRawState.getState().gifViewer.playing = false;
     syncDetailFromScope();
-    var curr = s.gifPlayer.get_current_frame();
-    var total = s.gifViewer.frames.length;
+    var curr = useMiscRawState.getState().gifPlayer.get_current_frame();
+    var total = useMiscRawState.getState().gifViewer.frames.length;
     var idx = curr + amount;
     if (idx > total) idx = total - 1;
-    s.gifPlayer.move_to(idx);
+    useMiscRawState.getState().gifPlayer.move_to(idx);
     scopeEvalAsync();
   }
 }
 
-export function machineryPrevGifFrame(s: any, amount: any = 1): void {
-  if (s.gifPlayer && s.isGifReady) {
-    s.gifPlayer.pause();
-    s.gifViewer.playing = false;
+export function machineryPrevGifFrame(amount: any = 1): void {
+  if (useMiscRawState.getState().gifPlayer && useMiscRawState.getState().isGifReady) {
+    useMiscRawState.getState().gifPlayer.pause();
+    useMiscRawState.getState().gifViewer.playing = false;
     syncDetailFromScope();
-    var curr = s.gifPlayer.get_current_frame();
+    var curr = useMiscRawState.getState().gifPlayer.get_current_frame();
     var idx = curr - amount;
     if (idx < 0) idx = 0;
-    s.gifPlayer.move_to(idx);
+    useMiscRawState.getState().gifPlayer.move_to(idx);
     scopeEvalAsync();
   }
 }

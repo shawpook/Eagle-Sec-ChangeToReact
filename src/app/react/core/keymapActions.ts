@@ -14,6 +14,10 @@ import { openQuickSearchModalChannel, resizeCropToolChannel } from '../global/bu
 import { clickEl } from '../utils/domQuery';
 
 import { machinerySaveHandler } from './keymap';
+import { useBodyState } from '../store/bodyState';
+import { useMiscRawState } from '../store/miscRawState';
+import { useSelectionState } from '../store/selectionState';
+import { writeScopeField } from './scopeFieldBridge';
 /** destoryMousetrap（bundle 49326-49330 邻域逐字：清空 scope.mousetrap 表并解绑全局键）。 */
 export function machineryDestoryMousetrap(s: any): void {
   const w = window as any;
@@ -27,9 +31,9 @@ export function machineryDestoryMousetrap(s: any): void {
 }
 
 /* ── mod+shift+方向：裁剪工具缩放（bundle 逐字）── */
-export function machineryModShiftUpHandler(s: any, event: any): void {
+export function machineryModShiftUpHandler(event: any): void {
   event && event.preventDefault();
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: -10
@@ -38,9 +42,9 @@ export function machineryModShiftUpHandler(s: any, event: any): void {
   }
 }
 
-export function machineryModShiftDownHandler(s: any, event: any): void {
+export function machineryModShiftDownHandler(event: any): void {
   event && event.preventDefault();
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     resizeCropToolChannel.emit({
       horizontal: 0,
       vertical: 10
@@ -49,9 +53,9 @@ export function machineryModShiftDownHandler(s: any, event: any): void {
   }
 }
 
-export function machineryModShiftLeftHandler(s: any, event: any): void {
+export function machineryModShiftLeftHandler(event: any): void {
   event && event.preventDefault();
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     resizeCropToolChannel.emit({
       horizontal: -10,
       vertical: 0
@@ -60,9 +64,9 @@ export function machineryModShiftLeftHandler(s: any, event: any): void {
   }
 }
 
-export function machineryModShiftRightHandler(s: any, event: any): void {
+export function machineryModShiftRightHandler(event: any): void {
   event && event.preventDefault();
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     resizeCropToolChannel.emit({
       horizontal: 10,
       vertical: 0
@@ -72,35 +76,35 @@ export function machineryModShiftRightHandler(s: any, event: any): void {
 }
 
 /* closeWindowHandler（bundle 逐字；macOS quicklook 预览） */
-export function machineryCloseWindowHandler(s: any, $event: any): void {
+export function machineryCloseWindowHandler($event: any): void {
   const w = window as any;
-  if (s.isPreviewing) {
+  if (useMiscRawState.getState().isPreviewing) {
     if (w.process.platform == 'darwin') {
       w.event && w.event.stopPropagation();
       w.event && w.event.preventDefault();
-      w.IPCHelper.send('quicklook', s.selected[0]);
-      s.isPreviewing = false;
+      w.IPCHelper.send('quicklook', useSelectionState.getState().selected[0]);
+      writeScopeField('isPreviewing', false);
     }
   }
 }
 
 /* mHandler（bundle 30825-30834 逐字：详情内视频/音频静音切换） */
-export function machineryMHandler(s: any, $event: any): void {
+export function machineryMHandler($event: any): void {
   const w = window as any;
-  if (!s.isDetailMode) {
+  if (!useBodyState.getState().isDetailMode) {
     return;
   }
-  if (w.VIDEO_TYPES[s.current.ext] || w.AUDIO_TYPES[s.current.ext]) {
+  if (w.VIDEO_TYPES[useSelectionState.getState().current.ext] || w.AUDIO_TYPES[useSelectionState.getState().current.ext]) {
     clickEl(".vjs-mute-control");
   }
 }
 
 /* openQuickSearch（bundle 32512-32514 逐字） */
-export function machineryOpenQuickSearch(s: any, event: any): void {
+export function machineryOpenQuickSearch(event: any): void {
   openQuickSearchModalChannel.emit();
 }
 
 /* openActionsPanel（bundle 43279-43282 逐字；eagle.action 经 window） */
-export function machineryOpenActionsPanel(s: any, event: any): void {
-  (window as any).eagle.action.open(s.selected);
+export function machineryOpenActionsPanel(event: any): void {
+  (window as any).eagle.action.open(useSelectionState.getState().selected);
 }

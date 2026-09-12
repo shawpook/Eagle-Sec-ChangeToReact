@@ -684,7 +684,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy-content={`${t('sidebar.switchFolderBtn')}<key>J</key>`}
           // 兼容钩子：shims 的 source-mode 拦截器靠 ng-click 属性识别该按钮（shims.js:3711）。
           ng-click="openQuickSearch()"
-          onClick={(e) => runInBodyScope((s) => machineryOpenQuickSearch(s, e))}
+          onClick={(e) => runInBodyScope((s) => machineryOpenQuickSearch(e))}
         >
           <img src={iconSrc(theme, 'ic_switch.svg')} />
         </div>

@@ -10,10 +10,11 @@
  *   —— owner 溯源后 theme/preferences 落点正确）。
  */
 
-import { amputateChannel, getBodyScope } from './appCore';
+import { amputateChannel } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { refreshTouchID } from '../store/lockState';
 import { scopeEvalAsync } from './scopeRuntime';
+import { writeScopeField } from './scopeFieldBridge';
 
 function checkCanUseTouchID(): boolean {
   try {
@@ -43,9 +44,8 @@ export function takeoverPreferencesDomain(): void {
   const reattach = amputateChannel(ipc, 'preferences-updated');
   if (reattach) {
     reattach(function () {
-      const s = getBodyScope();
-      if (s) {
-        s.canUseTouchID = checkCanUseTouchID();
+      {
+        writeScopeField('canUseTouchID', checkCanUseTouchID());
         scopeEvalAsync();
       }
       refreshTouchID();

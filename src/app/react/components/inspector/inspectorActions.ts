@@ -286,7 +286,7 @@ export function imagesChange() {
 
     if (hasChanged) {
       changedItems.push(cloneImage);
-      machineryUpdateItemView(getBodyScope(), cloneImage);
+      machineryUpdateItemView(cloneImage);
 
       if (!useItemState.getState().modifiedMappings[image.id]) {
         useItemState.getState().modifiedMappings[image.id] = 1;
@@ -341,7 +341,7 @@ export function annotationChange() {
 
   const items = [...useSelectionState.getState().selected];
 
-  machineryCheckOperationSafety(getBodyScope(), () => {
+  machineryCheckOperationSafety(() => {
     items.forEach((image: any) => {
       image.annotation = annotation;
     });
@@ -353,7 +353,7 @@ export function annotationChange() {
 }
 
 export function urlChange() {
-  machineryCheckOperationSafety(getBodyScope(), () => {
+  machineryCheckOperationSafety(() => {
     const eagleIns = (window as any).eagle.inspector;
     const changedItems: any[] = [];
 
@@ -376,7 +376,7 @@ export function urlChange() {
       const cloneImage = JSON.parse(JSON.stringify(image));
       if (hasChanged) {
         changedItems.push(cloneImage);
-        machineryUpdateItemView(getBodyScope(), cloneImage);
+        machineryUpdateItemView(cloneImage);
 
         if (!useItemState.getState().modifiedMappings[image.id]) {
           useItemState.getState().modifiedMappings[image.id] = 1;
@@ -646,7 +646,7 @@ export function editVideoComment(event: any, image: any, comment: any) {
     comment.annotation = result;
     getIpc().send('image-change', image);
     refreshVideoCommentsChannel.emit();
-    machineryUpdateItemView(getBodyScope(), video);
+    machineryUpdateItemView(video);
     scopeEvalAsync();
   });
 }
@@ -661,7 +661,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
 
       video.comments.splice(idx, 1);
       ipc.send('image-change', video);
-      machineryUpdateItemView(getBodyScope(), video);
+      machineryUpdateItemView(video);
       rebindRefreshChannel.emit(true);
       refreshVideoCommentsChannel.emit();
 
@@ -672,7 +672,7 @@ export function removeVideoComment(event: any, video: any, comment: any) {
         video.comments = originComments;
         rebindRefreshChannel.emit(true);
         refreshVideoCommentsChannel.emit();
-        machineryUpdateItemView(getBodyScope(), video);
+        machineryUpdateItemView(video);
         ipc.send('image-change', video);
       });
     }
@@ -867,7 +867,7 @@ export function onInspectorResize(event: any, ui: any) {
     clearTimeout((window as any).__eagleInspectorResizeTimeout);
     (window as any).eagle.inspector.width = ui.size.width;
     (window as any).__eagleInspectorResizeTimeout = setTimeout(() => {
-      machineryRelayout(getBodyScope(), undefined);
+      machineryRelayout(undefined);
       getOffsetScrollbarFn(getBodyScope())(30);
     }, 500);
   }
@@ -911,7 +911,7 @@ export function bindInspectorEvents(): () => void {
     const inspectorEl = document.querySelector('.inspector');
     if (!inspectorEl || !inspectorEl.contains(target)) return;
     if (button === 1) {
-      machineryOpenPluginPanel(getBodyScope(), undefined);
+      machineryOpenPluginPanel(undefined);
       scopeEvalAsync();
     } else if (button !== 0) {
       openItemContextMenu(event, useSelectionState.getState().selected?.[0]);

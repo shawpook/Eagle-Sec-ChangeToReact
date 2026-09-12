@@ -297,7 +297,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={shortcuts('<key>⌘</key><key>←</key>')}
           ng-click="prevHistory($event)"
-          onClick={call(scoped(machineryPrevHistory))}
+          onClick={call(machineryPrevHistory)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-prev.svg')} />
         </div>
@@ -307,7 +307,7 @@ export function Toolbar() {
           tippy-placement="bottom"
           tippy-content={shortcuts('<key>⌘</key><key>→</key>')}
           ng-click="nextHistory($event)"
-          onClick={call(scoped(machineryNextHistory))}
+          onClick={call(machineryNextHistory)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-next.svg')} />
         </div>
@@ -338,7 +338,7 @@ export function Toolbar() {
               className={snapshot.currentFolder.parent ? 'has-parent' : ''}
               ng-click="openFolder(currentFolder)"
               title={snapshot.currentFolderPath}
-              onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [openFolder, liveCurrentFolder()], [scoped(machineryChangeSidebarIndex), liveCurrentFolder()])}
+              onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [openFolder, liveCurrentFolder()], [machineryChangeSidebarIndex, liveCurrentFolder()])}
               onContextMenu={(e) => call('openFolderFullPathContextMenu', liveCurrentFolder())(e)}
             >
               {snapshot.currentFolder.name}
@@ -393,7 +393,7 @@ export function Toolbar() {
                 const v = Number(e.target.value);
                 runInBodyScope((s) => {
                   s.imageSize.height = v;
-                  machineryOnImageSizeHeightChanged(s);
+                  machineryOnImageSizeHeightChanged();
                 });
                 syncToolbarFromScope();
                 syncBodyFromScope();
@@ -442,7 +442,7 @@ export function Toolbar() {
           tippy-content={`${t('general.plugin')} <key>P</key>`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="openPluginPanel($event)"
-          onClick={call(scoped(machineryOpenPluginPanel))}
+          onClick={call(machineryOpenPluginPanel)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-plugin.svg')} />
           <div style={snapshot.needUpdatePluginCount > 0 ? undefined : { display: 'none' }} className="badge-count" />
@@ -467,7 +467,7 @@ export function Toolbar() {
           tippy-content={`${t('appmenu.actions')} <key>G</key>`}
           style={viewMode === 'alltags' ? { display: 'none' } : undefined}
           ng-click="openActionsPanel($event)"
-          onClick={call(scoped(machineryOpenActionsPanel))}
+          onClick={call(machineryOpenActionsPanel)}
         >
           <img src={iconSrc(snapshot.theme, 'ic-toolbar-action.svg')} />
         </div>

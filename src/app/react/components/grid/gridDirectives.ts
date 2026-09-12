@@ -8,6 +8,7 @@ import { machineryGotoBottom } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * b 系列前置：网格容器四 Angular 指令逐字移植（rectSelect / autoScroll /
  * scrollToTopSentinel / boxContainerScrollbar）。
@@ -179,7 +180,6 @@ export function initBoxContainerScrollbar() {
   const attrs = {};
 
             var enabledSize = 3;
-            var $bodyScope = getBodyScope();
             var $boxContainer = q("#box-container") as HTMLElement | null;
             var $scrollThumb = element ? (element.querySelector(".box-container-scrollbar-thumb") as HTMLElement | null) : null;
             // var $scrollHints = element.find(".box-container-scrollbar-hints");
@@ -226,7 +226,7 @@ export function initBoxContainerScrollbar() {
                         orderBy = useFolderState.getState().currentFolder.orderBy;
                     }
                     else {
-                        orderBy = $bodyScope.orderBy;
+                        orderBy = useMiscRawState.getState().orderBy;
                     }
                 }
                 else if (useFolderState.getState().currentSmartFolder) {
@@ -234,11 +234,11 @@ export function initBoxContainerScrollbar() {
                         orderBy = useFolderState.getState().currentSmartFolder.orderBy;
                     }
                     else {
-                        orderBy = $bodyScope.orderBy;
+                        orderBy = useMiscRawState.getState().orderBy;
                     }
                 }
                 else {
-                    orderBy = $bodyScope.orderBy;
+                    orderBy = useMiscRawState.getState().orderBy;
                 }
             });
 
@@ -551,7 +551,7 @@ export function initBoxContainerScrollbar() {
                     return;
                 }
 
-                $bodyScope.startCursor = targetPage;
+                writeScopeField('startCursor', targetPage);
                 var pageLength = getTotalPageCount();
                 var percentage = targetPage / pageLength * 100;
 
@@ -566,7 +566,7 @@ export function initBoxContainerScrollbar() {
                 
                 goToPageTimeout = setTimeout(function () {
                     if (targetPage >= pageLength) {
-                        machineryGotoBottom($bodyScope);
+                        machineryGotoBottom();
                     }
                     else {
                         // 測量執行時間
@@ -992,7 +992,7 @@ export function initBoxContainerScrollbar() {
                                 }
                                 delete HoverPreview.lastElem;
                                 // 直接傳遞百分比參數，實現一氣呵成的滾動
-                                $bodyScope.startCursor = targetPage;
+                                writeScopeField('startCursor', targetPage);
                                 // 測量拖拽時的執行時間
                                 measureExecutionTime(function() {
                                     resetNgGridLayoutData(useItemState.getState().allData, targetPage, lastDecimalPart);
@@ -1030,7 +1030,7 @@ export function initBoxContainerScrollbar() {
                             scrollAnimationFrame = null;
                         }
                         delete HoverPreview.lastElem;
-                        $bodyScope.startCursor = lastTargetPage;
+                        writeScopeField('startCursor', lastTargetPage);
                         // 測量拖拽結束時的執行時間
                         measureExecutionTime(function() {
                             resetNgGridLayoutData(useItemState.getState().allData, lastTargetPage, lastDecimalPart);
@@ -1123,7 +1123,7 @@ export function initBoxContainerScrollbar() {
                     }
                 } else {
                     // 不同頁面，使用新的一氣呵成方式跳轉
-                    $bodyScope.startCursor = targetPage;
+                    writeScopeField('startCursor', targetPage);
                     measureExecutionTime(function() {
                         resetNgGridLayoutData(useItemState.getState().allData, targetPage, decimalPart);
                     });

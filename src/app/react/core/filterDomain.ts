@@ -48,6 +48,8 @@ import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './ta
 
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
+import { useItemState } from '../store/itemState';
+import { useMiscRawState } from '../store/miscRawState';
 declare const RecentFileManager: any;
 declare const UrlStateService: any;
 declare const analytics: any;
@@ -139,14 +141,12 @@ export function takeoverFilterDomain(): void {
   const s0toggle: any = getBodyScope();
   if (s0toggle) {
     s0toggle.toggleFilter = function () {
-      const s: any = getBodyScope();
-      if (!s) return;
       w.eagle.filter.isOpen = !w.eagle.filter.isOpen;
       syncFilterFromScope();
       if (!w.eagle.filter.isOpen) {
         document.querySelectorAll("[filter-item].open").forEach((el) => el.classList.remove("open"));
       }
-      machineryUpdateContainerHieght(s, true);
+      machineryUpdateContainerHieght(true);
       if (w.eagle.filter.isOpen) { w.electronLog && w.electronLog.info("[app] Filter: ON"); }
       else { w.electronLog && w.electronLog.info("[app] Filter: OFF"); }
     };
@@ -331,7 +331,7 @@ export function calcuteContainFolders(...args: any[]) {
     if (!s) return;
     return (function (data) {
 
-            var __lv_result = machineryCalcuteContainFolders(s, data);
+            var __lv_result = machineryCalcuteContainFolders(data);
             var foldersMappings = __lv_result.containFoldersMappings;
             
             s.containFolders = [];
@@ -475,7 +475,7 @@ export function excludeWithFolder(...args: any[]) {
             }
 
             machineryFilterContent(s);
-            machineryCalculateFilterCounts(s);
+            machineryCalculateFilterCounts();
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
   }
@@ -513,7 +513,7 @@ export function filterWithColor(...args: any[]) {
             else {
                 eagle.filter.filterRules.color.gray = false;
                 eagle.filter.filterRules.color.value = color;
-                var hexColor = machineryRgbToHex(s, eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2]);
+                var hexColor = machineryRgbToHex(eagle.filter.filterRules.color.value[0], eagle.filter.filterRules.color.value[1], eagle.filter.filterRules.color.value[2]);
                 // b1-9bj：原 ColorPickerSetColor 随 vendor 退役——自研 picker 经 props 从
                 // rules.color.value 派生，此处写面即外部同步
                 if (hexColor.length > 6) {
@@ -523,7 +523,7 @@ export function filterWithColor(...args: any[]) {
             eagle.filter.isOpen = true;
             syncFilterFromScope();
             s.isDetailMode = false;
-            machineryUpdateContainerHieght(s);
+            machineryUpdateContainerHieght();
             s.page = 1;
 
             // Add URL state management for color filtering
@@ -540,7 +540,7 @@ export function filterWithColor(...args: any[]) {
 
             $timeout(function () {
                 machineryFilterContent(s);
-                machineryCalculateFilterCounts(s);
+                machineryCalculateFilterCounts();
             }, 50);
             analytics.event('Filter', 'Color');
         }).apply(null, args);
@@ -572,7 +572,7 @@ export function filterWithFolder(...args: any[]) {
             }
 
             machineryFilterContent(s);
-            machineryCalculateFilterCounts(s);
+            machineryCalculateFilterCounts();
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
   }
@@ -631,9 +631,8 @@ export function hexToRGB(...args: any[]) {
 
 export function openQuickSearch(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryOpenQuickSearch(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryOpenQuickSearch();
 }
 
 export function resetFilter(...args: any[]) {
@@ -659,7 +658,7 @@ export function resetFilter(...args: any[]) {
             removeClass("[filter-item].open", "open");
             s.startCursor = 0;
             resetFilterChannel.emit();
-            machineryCalculateFilterCounts(s);
+            machineryCalculateFilterCounts();
         }).apply(null, args);
   }
 
@@ -736,7 +735,7 @@ export function search(...args: any[]) {
                     updateSuggestions();
                     s.startCursor = 0;
                     machineryFilterContent(s);
-                    machineryCalculateFilterCounts(s);
+                    machineryCalculateFilterCounts();
                 }
                 else {
                     s.TagManager.renderTagsResult();
@@ -802,9 +801,8 @@ export function toggleExtFilterExclude(...args: any[]) {
 export function updateFilterCounts(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（diff 仅参数名 __lv_image/image
   // 与 eagle → w.eagle）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryUpdateFilterCounts(s, args[0], args[1], args[2]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryUpdateFilterCounts(args[0], args[1], args[2]);
 }
 
 export function parseKeywordsWithOR(keywordStr) {
@@ -967,7 +965,7 @@ export function parseKeywordsWithOR(keywordStr) {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryCalcuteContainFolders(s: any, data: any): any {
+export function machineryCalcuteContainFolders(data: any): any {
   const w = window as any;
   var foldersCount: any = {};
   var foldersMappings: any = {};
@@ -987,7 +985,7 @@ export function machineryCalcuteContainFolders(s: any, data: any): any {
   }
 
   var folders = Object.keys(foldersCount).map(function (key: any) {
-    var folder = s.folderMappings[key];
+    var folder = useItemState.getState().folderMappings[key];
     if (!folder) return;
     var index = foldersCount[key];
 
@@ -1207,16 +1205,16 @@ function getMatchFunctionTable(): any {
   };
 }
 
-export function machineryCalculateFilterCounts(s: any): void {
+export function machineryCalculateFilterCounts(): void {
   const w = window as any;
   clearTimeout(calculateFilterCountsTimeout);
   calculateFilterCountsTimeout = setTimeout(function () {
     console.time("calculateFilterCounts");
     w.eagle.filter.resetFilterCounts();
     let now = Date.now();
-    for (let i = 0; i < s.allData.length; i++) {
-      const image = s.allData[i];
-      machineryUpdateFilterCounts(s, image, 1, now);
+    for (let i = 0; i < useItemState.getState().allData.length; i++) {
+      const image = useItemState.getState().allData[i];
+      machineryUpdateFilterCounts(image, 1, now);
     }
     console.timeEnd("calculateFilterCounts");
     scopeEvalAsync();
@@ -1356,7 +1354,7 @@ export async function machineryCalcuteFilterResult(s: any, data: any[], contentF
 }
 
 /* colorFilter（bundle 32689-32781 逐字） */
-export function machineryColorFilter(s: any, image: any): boolean {
+export function machineryColorFilter(image: any): boolean {
     const w = window as any;
     try {
         // 防呆
@@ -1394,7 +1392,7 @@ export function machineryColorFilter(s: any, image: any): boolean {
                                         image.palettes[1].color[2] === filterColor[2];
 
                 if (isMatchPalette0 || isMatchPalette1) {
-                    s.colorDistancesMap[image.id] = 0.01;
+                    useMiscRawState.getState().colorDistancesMap[image.id] = 0.01;
                     return true;
                 }
             }
@@ -1405,7 +1403,7 @@ export function machineryColorFilter(s: any, image: any): boolean {
         if (ratio0 > 33) {
             let d1 = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, image.palettes[0].color);
             if (d1.d2000 < acceptAccuracy1 && d1.d76 < acceptAccuracy1 + 50) {
-                s.colorDistancesMap[image.id] = d1.d76;
+                useMiscRawState.getState().colorDistancesMap[image.id] = d1.d76;
                 return true;
             }
             if (ratio0 > 50) {
@@ -1414,7 +1412,7 @@ export function machineryColorFilter(s: any, image: any): boolean {
                     if (image.palettes[1] && image.palettes[1].ratio > 8) {
                         let d2 = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, image.palettes[1].color);
                         if (d2.d2000 < acceptAccuracy1 && d2.d76 < acceptAccuracy1 + 50) {
-                            s.colorDistancesMap[image.id] = d2.d76 + 5;
+                            useMiscRawState.getState().colorDistancesMap[image.id] = d2.d76 + 5;
                             return true;
                         }
                     }
@@ -1424,7 +1422,7 @@ export function machineryColorFilter(s: any, image: any): boolean {
         if (image.palettes[1] && image.palettes[1].ratio > 33) {
             let d2 = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, image.palettes[1].color);
             if (d2.d2000 < acceptAccuracy1 && d2.d76 < acceptAccuracy1 + 50) {
-                s.colorDistancesMap[image.id] = d2.d76;
+                useMiscRawState.getState().colorDistancesMap[image.id] = d2.d76;
                 return true;
             }
         }
@@ -1435,7 +1433,7 @@ export function machineryColorFilter(s: any, image: any): boolean {
             if (palette.marked) {
                 var md = machineryColorSimilarityDistance(w.eagle.filter.filterRules.color.value, palette.color);
                 if (md.d2000 < 30) {
-                    s.colorDistancesMap[image.id] = md.d76;
+                    useMiscRawState.getState().colorDistancesMap[image.id] = md.d76;
                     return true;
                 }
             }
@@ -1578,13 +1576,13 @@ export function machineryFilterContent(s: any, type?: any): void {
 /* filterData（bundle 27654-28504 装配；三分片顺序执行） */
 export async function machineryFilterData(s: any, data: any[]): Promise<any[]> {
   const w = window as any;
-  data = machineryFilterDataPart1(s, w, data);
+  data = machineryFilterDataPart1(w, data);
   data = machineryFilterDataPart2(s, w, data);
   data = await machineryFilterDataPart3(s, w, data);
   return data;
 }
 
-function machineryFilterDataPart1(s: any, w: any, data: any[]): any[] {
+function machineryFilterDataPart1(w: any, data: any[]): any[] {
 
   if (Object.keys(w.eagle.filter.filterRules.import.selectedMonths).length > 0) {
     data = data.filter(function (image: any) {
@@ -2061,7 +2059,7 @@ function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
 
   // 颜色筛选
   if (w.eagle.filter.filterRules.color.value) {
-    data = data.filter((x: any) => machineryColorFilter(s, x));
+    data = data.filter((x: any) => machineryColorFilter(x));
   }
 
   // 黑白图片过滤
@@ -2130,10 +2128,10 @@ function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
 }
 
 /* focusSeach（bundle 29192-29195 逐字，typo 原样） */
-export function machineryFocusSeach(s: any): void {
+export function machineryFocusSeach(): void {
   const w = window as any;
   focusEl("#search"); selectEl("#search");
-  s.showSuggestions = true;
+  writeScopeField('showSuggestions', true);
   syncToolbarFromScope();
 }
 
@@ -2187,23 +2185,23 @@ function machineryIsMatchCondition(condition: any, image: any): boolean {
   return false;
 }
 
-export function machineryOpenFilter(s: any): void {
+export function machineryOpenFilter(): void {
   const w = window as any;
   if (!w.eagle.filter.isOpen) {
     w.eagle.filter.isOpen = true;
     syncFilterFromScope();
-    machineryUpdateContainerHieght(s, true);
+    machineryUpdateContainerHieght(true);
   }
 }
 
 /* searchInAll（bundle 29201-29205 逐字：openAll(true) + focusSeach **typo 逐字**） */
 export function machinerySearchInAll(s: any): void {
   machineryOpenAll(s, true, function () {
-    machineryFocusSeach(s);
+    machineryFocusSeach();
   });
 }
 
-export function machineryToggleFilterByType(s: any): any {
+export function machineryToggleFilterByType(): any {
   const w = window as any;
   return throttle(function (filterType: any, event: any) {
     event && event.preventDefault();
@@ -2214,7 +2212,7 @@ export function machineryToggleFilterByType(s: any): any {
       return;
     }
 
-    machineryOpenFilter(s);
+    machineryOpenFilter();
     const filterId = FILTER_ID_MAP[filterType];
     if (filterId) {
       clickEl("#" + filterId);
@@ -2222,7 +2220,7 @@ export function machineryToggleFilterByType(s: any): any {
   }, 300);
 }
 
-export function machineryUpdateFilterCounts(s: any, image: any, inc: any, now: any): void {
+export function machineryUpdateFilterCounts(image: any, inc: any, now: any): void {
   const w = window as any;
 
   if (!image) return;
@@ -2329,7 +2327,7 @@ let shimFilterInst: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType(s)); }
+export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType()); }
 
 // ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
 let imageSearchController: any = null;
@@ -2556,7 +2554,7 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
   // 文件夹有自己的排序方式
   if (!s.$root.selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
     if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
-      data = machinerySortData(s, data, s.currentFolder.orderBy);
+      data = machinerySortData(data, s.currentFolder.orderBy);
     }
     if (!s.currentFolder.sortIncrease) {
       data = data.reverse();
@@ -2566,7 +2564,7 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
   // 智能文件夹有自己的排序方式
   else if (s.currentSmartFolder && s.currentSmartFolder.orderBy) {
     if (s.currentSmartFolder.orderBy !== s.orderBy || s.currentSmartFolder.orderBy === "RANDOM") {
-      data = machinerySortData(s, data, s.currentSmartFolder.orderBy);
+      data = machinerySortData(data, s.currentSmartFolder.orderBy);
     }
     if (!s.currentSmartFolder.sortIncrease) {
       data = data.reverse();

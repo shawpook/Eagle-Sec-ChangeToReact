@@ -86,7 +86,7 @@ export function applyDataMachineryScope(): void {
         machineryUpdateSidebarList(s);
         const $timeout = getTimeout();
         $timeout && $timeout(function () {
-          machinerySaveFolder(s);
+          machinerySaveFolder();
         }, 500);
       },
     };

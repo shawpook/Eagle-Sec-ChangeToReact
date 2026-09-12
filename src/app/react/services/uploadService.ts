@@ -143,7 +143,7 @@ export function uploadFiles(...args: any[]) {
     return (function($__lv_files, folder) {
 
             if ($__lv_files.length === 0) {
-                machineryHideUploadQueue(s);
+                machineryHideUploadQueue();
                 return;
             }
 
@@ -264,7 +264,7 @@ export function uploadUrls(...args: any[]) {
                 }
             });
             if (__lv_files.length > 0) {
-                machineryShowUploadQueue(s);
+                machineryShowUploadQueue();
             }
             ipcRenderer.send('upload-urls', __lv_files);
         }).apply(null, args);
@@ -358,7 +358,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
         }
 
         console.time("拖曳档案事件");
-        machineryShowUploadQueue(s);
+        machineryShowUploadQueue();
 
         var fds = [];
         var notSupportFiles = [];   // 不支持添加的文件
@@ -420,7 +420,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
                     });
                 }
                 else {
-                    machineryHideUploadQueue(s);
+                    machineryHideUploadQueue();
                 }
             }
             else {
@@ -430,7 +430,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
         }
 
         if (fds.length == 0 && files.length == 1 && notSupportFiles.length > 0) {
-            machineryHideUploadQueue(s);
+            machineryHideUploadQueue();
         }
         else {
             // let reason = (w.process.platform === 'darwin')? w.i18n.__("Dialog.NotSupport.Format.Descript.Mac") :  w.i18n.__("Dialog.NotSupport.Format.Descript.Windows");
@@ -462,7 +462,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
     else if (!w.dragging && dragUrl) {
         if (w.is.url(dragUrl)) {
         // if (w.is.url(dragUrl) && dragUrl.indexOf("data:image" !== -1)) {
-            machineryShowUploadQueue(s);
+            machineryShowUploadQueue();
         }
         if (w.is.url(dragUrl)) {
             s.uploadUrl(dragUrl, folder);
@@ -478,7 +478,7 @@ export function machineryOnDropContainer(s: any, event: any): void {
         else {
             var $filter = getFilter();
             var html = (w.process.platform === 'darwin')? $filter('i18n')("Dialog.NotSupport.Format.Descript.Mac") :  $filter('i18n')("Dialog.NotSupport.Format.Descript.Windows");
-            machineryHideUploadQueue(s);
+            machineryHideUploadQueue();
             w.swal({
                 title: w.i18n.__("Dialog.NotSupport.Format.Title"),
                 html: html,

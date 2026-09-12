@@ -23,6 +23,9 @@ import { machineryGetSelection } from '../core/selectionViewDomain';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
 import { useMiscRawState } from '../store/miscRawState';
+import { useSelectionState } from '../store/selectionState';
+import { useLayoutState } from '../store/layoutState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
 let saveListHeightTimeout: any = null;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -122,7 +125,7 @@ export function switchGridLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout(s, "GridLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "GridLayout");
+            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "GridLayout");
         }).apply(null, args);
   }
 
@@ -133,7 +136,7 @@ export function switchJustifiedLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout(s, "JustifiedLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
+            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
         }).apply(null, args);
   }
 
@@ -144,7 +147,7 @@ export function switchListLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout(s, "ListLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "ListLayout");
+            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "ListLayout");
         }).apply(null, args);
   }
 
@@ -155,7 +158,7 @@ export function switchSquareLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout(s, "SquareLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s, s.currentFolder || s.currentSmartFolder, "SquareLayout");
+            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "SquareLayout");
         }).apply(null, args);
   }
 
@@ -185,7 +188,7 @@ export function zoomFit(...args: any[]) {
                 syncBodyFromScope();
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                machineryChangeListHeight(s);
+                machineryChangeListHeight();
                 if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
                     machineryAdjustLayoutWidth(s, 0);
                     __lv_saveListHeight(s.imageSize.height);
@@ -233,7 +236,7 @@ export function getNext(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-        var selection = machineryGetSelection(s);
+        var selection = machineryGetSelection();
         var start = selection.start;
         var end = selection.end;
         return s.allData[end + 1] || s.allData[end - 1];
@@ -243,24 +246,24 @@ export function getNext(...args: any[]) {
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* saveLayout（bundle 37280-37286 逐字：localStorage bracket 赋值原样） */
-export function machinerySaveLayout(s: any, folder: any, layout: any): void {
+export function machinerySaveLayout(folder: any, layout: any): void {
   const w = window as any;
   if (folder) {
     w.localStorage[`eagle.list.layout.${folder.id}`] = layout;
   }
   else {
-    w.localStorage[`eagle.list.layout.${s.rootDir}`] = layout;
+    w.localStorage[`eagle.list.layout.${useMiscRawState.getState().rootDir}`] = layout;
   }
 }
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryCheckOperationSafety(s: any, callback: any, amount: any = 100): void {
+export function machineryCheckOperationSafety(callback: any, amount: any = 100): void {
   const w = window as any;
   try {
-    if (s.selected && s.selected.length >= amount) {
+    if (useSelectionState.getState().selected && useSelectionState.getState().selected.length >= amount) {
       var html = getFilter()('i18n')("Dialog.BulkAction.Descript", [
-        { "property": "count", "value": s.selected.length },
+        { "property": "count", "value": useSelectionState.getState().selected.length },
       ]);
       w.swal({
         html: `
@@ -292,7 +295,7 @@ export function machineryCheckOperationSafety(s: any, callback: any, amount: any
 }
 
 /* checkOperationSafety2（bundle 26823-26855 逐字：count 参数版） */
-export function machineryCheckOperationSafety2(s: any, count: any, callback: any, amount: any = 100): void {
+export function machineryCheckOperationSafety2(count: any, callback: any, amount: any = 100): void {
   const w = window as any;
   try {
     if (count >= amount) {
@@ -356,7 +359,7 @@ export function machineryLastZoom(s: any): boolean {
     detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
     var ratio = parseInt(state.data.rA * 100 as any);
     s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
-    machineryOnZoomRatioChanged(s);
+    machineryOnZoomRatioChanged();
     s.imageSize.zoomRatioExp = ratio;
     return true;
   }
@@ -364,18 +367,18 @@ export function machineryLastZoom(s: any): boolean {
 }
 
 /** imageSize.zoomRatio 变化后的统一处理（原 $watch("imageSize.zoomRatio") 的 listener）。 */
-export function machineryOnZoomRatioChanged(s: any): void {
-  if (!s || !s.imageSize) return;
-  s.sliderZoomRatio = s.imageSize.zoomRatio;
+export function machineryOnZoomRatioChanged(): void {
+  if (!useLayoutState.getState().imageSize) return;
+  writeScopeField('sliderZoomRatio', useLayoutState.getState().imageSize.zoomRatio);
   syncDetailFromScope();
 }
 
-export function machinerySetViewMode(s: any, viewMode: any): void {
+export function machinerySetViewMode(viewMode: any): void {
   const w = window as any;
   if (!viewMode) return;
   if (!setViewModeDebounced) {
     setViewModeDebounced = debounce(function (vm: any) {
-      localStorage.setItem(`eagle.viewMode.${s.rootDir}`, vm);
+      localStorage.setItem(`eagle.viewMode.${useMiscRawState.getState().rootDir}`, vm);
     }, 500);
   }
   setViewModeDebounced(viewMode);
@@ -405,7 +408,7 @@ export function machineryToggleZoom(s: any, event: any): void {
   }
   else {
     if (s.lastZoomMode !== "edge") {
-      machineryZoomFitEdge(s, event, true);
+      machineryZoomFitEdge(event, true);
       s.lastZoomMode = "edge";
       syncDetailFromScope();
     }
@@ -428,7 +431,7 @@ export function machineryZoom(s: any): void {
   if (!s.isDetailMode) return;
   if (s.lastZoomMode === "edge") {
     if (s.current && !w.VIDEO_TYPES[s.current.ext]) {
-      machineryZoomFitEdge(s);
+      machineryZoomFitEdge();
     }
     else {
       machineryZoomFit(s);
@@ -449,15 +452,15 @@ export function machineryZoomActual(s: any, event: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machineryOnImageSizeHeightChanged(s);
-    machineryChangeListHeight(s);
+    machineryOnImageSizeHeightChanged();
+    machineryChangeListHeight();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
       machineryAdjustLayoutWidth(s, 0);
       machinerySaveListHeight(s, s.imageSize.height);
     }
   } else {
     s.imageSize.zoomRatio = 100;
-    machineryOnZoomRatioChanged(s);
+    machineryOnZoomRatioChanged();
     s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
     machineryUpdateZoomRatio(s, 100, undefined, undefined, true);
 
@@ -487,7 +490,7 @@ export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
 }
 
 /* zoomFitEdge（bundle 34015-34077 逐字） */
-export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): void {
+export function machineryZoomFitEdge(event: any, hasTransition: any): void {
   const w = window as any;
   event && event.preventDefault && event.preventDefault();
 
@@ -498,8 +501,8 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
     }, 300);
   }
 
-  var current = s.current;
-  var ratio = s.imageSize.zoomRatio || 100;
+  var current = useSelectionState.getState().current;
+  var ratio = useLayoutState.getState().imageSize.zoomRatio || 100;
   var lastRatio = ratio;
   var $container = q(".content-panel");
   var toolbarHeight = 40;
@@ -507,12 +510,12 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
   var containerHeight;
   var offsetY = 0;
 
-  if (s.isSlideshowMode) {
+  if (useBodyState.getState().isSlideshowMode) {
     toolbarHeight = 0;
     containerWidth = window.innerWidth;
     containerHeight = window.innerHeight - toolbarHeight;
   }
-  else if (s.isInlineMode) {
+  else if (useBodyState.getState().isInlineMode) {
     toolbarHeight = 96;
     containerWidth = window.innerWidth;
     containerHeight = heightOf($container) - toolbarHeight;
@@ -542,12 +545,12 @@ export function machineryZoomFitEdge(s: any, event: any, hasTransition: any): vo
   offsetY = offsetY || 0;
 
   if (ratio) {
-    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
-    machineryOnZoomRatioChanged(s);
-    s.imageSize.zoomRatioExp = ratio;
-    s.zoomFitSize = ratio;
+    useLayoutState.getState().imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    machineryOnZoomRatioChanged();
+    useLayoutState.getState().imageSize.zoomRatioExp = ratio;
+    writeScopeField('zoomFitSize', ratio);
   }
-  s.showLargeImage = true;
+  writeScopeField('showLargeImage', true);
   detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,

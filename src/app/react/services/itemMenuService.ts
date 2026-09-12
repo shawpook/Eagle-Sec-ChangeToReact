@@ -244,7 +244,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         machineryCalculateImageBinding(s, { ignoreSort: true }, () => {
                             machineryRebindRefresh(s, true);
                         });
-                        const itemElements = machineryGetSelectedItemElements(s);
+                        const itemElements = machineryGetSelectedItemElements();
                         glRemoveitemsChannel.emit(itemElements);
                         ayncsImagesChange(items);
                         try { electronLog && electronLog.info(`[app] Restore ${items.length} files from trash`); } catch (err) {};
@@ -397,7 +397,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 // 添加到上一次使用的文件夾
                 // addToLastUsedFolder
                 {
-                    disabled: machineryGetRecentFolders(s).length === 0,
+                    disabled: machineryGetRecentFolders().length === 0,
                     label: i18n.__('appmenu.find>addToLastFolder'),
                     keywords: 'add to last used folder 添加至上次使用的文件夾',
                     icon: 'ic-folder-last-used.svg',
@@ -500,7 +500,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     icon: 'ic-pin.svg',
                     click: () => {
                         // TODO 需重構獨立成 function
-                        machineryCheckOperationSafety(s, () => {
+                        machineryCheckOperationSafety(() => {
                             var now = Date.now();
                             s.selected.forEach((item, index) => {
                                 if (!item.pinned) { item.pinned = {} };
@@ -539,7 +539,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     icon: 'ic-unpin.svg',
                     click: () => {
                         // TODO 需重構獨立成 function
-                        machineryCheckOperationSafety(s, () => {
+                        machineryCheckOperationSafety(() => {
                             var now = Date.now();
                             s.selected.forEach((item, index) => {
                                 if (!item.pinned) return;

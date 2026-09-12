@@ -186,7 +186,6 @@ export function QuickSearchModal() {
   const searchFilterForQuickSeach = (kw: string) => (image: any) => {
     try {
       const w = window as any;
-      const body = getBodyScope();
       let isMatch = false;
       const keywords = String(kw).toLowerCase().split(' ');
 
@@ -223,21 +222,21 @@ export function QuickSearchModal() {
           } catch (err) {}
         }
 
-        if (name && body.isSearchScopeName) {
+        if (name && useMiscRawState.getState().isSearchScopeName) {
           allText += `${name}`;
         }
 
-        if (ext && body.isSearchScopeExt) {
+        if (ext && useMiscRawState.getState().isSearchScopeExt) {
           allText += `.${ext} `;
         }
 
-        if (url && body.isSearchScopeUrl) {
+        if (url && useMiscRawState.getState().isSearchScopeUrl) {
           if (useListState.getState().keyword.length >= 2) {
             allText += `${url} `;
           }
         }
 
-        if (annotation && body.isSearchScopeNote) {
+        if (annotation && useMiscRawState.getState().isSearchScopeNote) {
           allText += `${annotation} `;
         }
 
@@ -280,7 +279,7 @@ export function QuickSearchModal() {
         }
 
         let annotations = '';
-        if (body.isSearchScopeAnnotation) {
+        if (useMiscRawState.getState().isSearchScopeAnnotation) {
           if (image.comments) {
             image.comments.forEach((comment: any) => {
               annotations += comment.annotation;
@@ -290,7 +289,7 @@ export function QuickSearchModal() {
         }
 
         let tagsString = '';
-        if (body.isSearchScopeTag && image.tags && image.tags.length > 0) {
+        if (useMiscRawState.getState().isSearchScopeTag && image.tags && image.tags.length > 0) {
           for (let ti = 0; ti < image.tags.length; ti++) {
             if (image.tags[ti]) {
               tagsString += `${image.tags[ti]} `;
@@ -302,16 +301,16 @@ export function QuickSearchModal() {
         // 这个很花时间，如果图片名称就已经符合条件，应立即 return 不该等到这个时间
         let folderNames = ' ';
         let folderDescriptions = ' ';
-        if (body.isSearchScopeFolderDesc || body.isSearchScopeFolderName) {
+        if (useMiscRawState.getState().isSearchScopeFolderDesc || useMiscRawState.getState().isSearchScopeFolderName) {
           if (image.folders && image.folders.length > 0) {
             for (let fi = 0; fi < image.folders.length; fi++) {
               const folderId = image.folders[fi];
               const folder = useItemState.getState().folderMappings[folderId];
               if (folder) {
-                if (body.isSearchScopeFolderName && folder && folder.name) {
+                if (useMiscRawState.getState().isSearchScopeFolderName && folder && folder.name) {
                   folderNames += `${folder.name} `;
                 }
-                if (body.isSearchScopeFolderDesc && folder.description) {
+                if (useMiscRawState.getState().isSearchScopeFolderDesc && folder.description) {
                   folderDescriptions += `${folder.description} `;
                 }
               }
@@ -604,7 +603,7 @@ export function QuickSearchModal() {
       addQuickSearchFolderHistory(target.id);
       setTimeout(() => {
         runInBodyScope((s: any) => {
-          machineryChangeSidebarIndex(s, target);
+          machineryChangeSidebarIndex(target);
           scopeEvalAsync();
         });
       }, 200);
@@ -626,7 +625,7 @@ export function QuickSearchModal() {
       addQuickSearchSmartFolderHistory(target.id);
       setTimeout(() => {
         runInBodyScope((s: any) => {
-          machineryChangeSidebarIndex(s, target);
+          machineryChangeSidebarIndex(target);
           scopeEvalAsync();
         });
       }, 200);

@@ -65,6 +65,7 @@ import { getTimeout } from './machineryInfra';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
+import { writeScopeField } from './scopeFieldBridge';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;
@@ -310,7 +311,7 @@ export function takeoverMiscDomain(): void {
       return;
     }
     try {
-      machineryFindDupclipate(s, undefined);
+      machineryFindDupclipate(undefined);
       const duplicatesItemsMap: Record<string, boolean> = {};
       items.forEach(function (item: any) {
         if (isDuplicateImage(item)) {
@@ -557,7 +558,7 @@ export function takeoverMiscDomain(): void {
       if (folders && folders.length > 0) {
         const firstFolder = s.folderMappings[folders[0]];
         openFolder(firstFolder);
-        setTimeout(function () { machineryChangeSidebarIndex(s, firstFolder); scopeEvalAsync(); }, 200);
+        setTimeout(function () { machineryChangeSidebarIndex(firstFolder); scopeEvalAsync(); }, 200);
       }
       else {
         machineryOpenAll(s);
@@ -584,7 +585,7 @@ export function takeoverMiscDomain(): void {
     const folder = s.folderMappings[folderId];
     if (folder) {
       openFolder(folder);
-      setTimeout(function () { machineryChangeSidebarIndex(s, folder); scopeEvalAsync(); }, 200);
+      setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 200);
       scopeEvalAsync();
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
@@ -600,7 +601,7 @@ export function takeoverMiscDomain(): void {
     const smartFolder = s.smartFolderMappings[smartFolderId];
     if (smartFolder) {
       openSmartFolder(smartFolder);
-      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); scopeEvalAsync(); }, 200);
+      setTimeout(function () { machineryChangeSidebarIndex(smartFolder); scopeEvalAsync(); }, 200);
       scopeEvalAsync();
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
@@ -649,7 +650,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('new-smart-folder', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    machineryNewSmartFolder(s);
+    machineryNewSmartFolder();
     scopeEvalAsync();
   });
 
@@ -658,7 +659,7 @@ export function takeoverMiscDomain(): void {
     const s = sNow();
     if (!s) return;
     if (s.uploadQueue.length === 0) {
-      machineryHideUploadQueue(s);
+      machineryHideUploadQueue();
       scopeEvalAsync();
     }
   });
@@ -902,7 +903,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('get-recent-folders', function (_event: any) {
     const s = sNow();
     if (!s) return;
-    const recentFolders = machineryGetRecentFolders(s);
+    const recentFolders = machineryGetRecentFolders();
     ipc.send("get-recent-folders", recentFolders);
   });
 
@@ -1220,7 +1221,7 @@ export function leaveDetailMode(...args: any[]) {
             syncDetailFromScope();
             if (s.isDetailMode) {
                 
-                machineryRememberScrollTops(s, s.current);
+                machineryRememberScrollTops(s.current);
 
                 s.isDetailMode = false;
                 s.showDetailImage = false;
@@ -1242,7 +1243,7 @@ export function leaveDetailMode(...args: any[]) {
                 }, 50);
 
                 s.isInlineMode = false;
-                machineryFadeOutDetailMode(s);
+                machineryFadeOutDetailMode();
                 detailZoom()?.cleanBitmapViewer();
                 detailZoom()?.clearPreloadData();
                 
@@ -1325,10 +1326,10 @@ export function togglePaletteProcessing(...args: any[]) {
     if (!s) return;
     return (function () {
             if (s.paletteQueuePaused) {
-                machineryResumePalette(s);
+                machineryResumePalette();
             }
             else {
-                machineryPausePalette(s);
+                machineryPausePalette();
             }
         }).apply(null, args);
   }
@@ -1538,17 +1539,17 @@ export function updateSuggestions() {
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 export function machineryMoveToFolders(_s: any, _e: any): void {}
 
-export function machineryPausePalette(s: any): void {
+export function machineryPausePalette(): void {
   const w = window as any;
-  s.paletteQueuePaused = true;
+  writeScopeField('paletteQueuePaused', true);
   syncSidebarFromScope();
   removeClass("#background-state-spinner .sm-spiner", "has-animation");
   w.IPCHelper.send('change-palette-pause');
 }
 
-export function machineryResumePalette(s: any): void {
+export function machineryResumePalette(): void {
   const w = window as any;
-  s.paletteQueuePaused = false;
+  writeScopeField('paletteQueuePaused', false);
   syncSidebarFromScope();
   addClass("#background-state-spinner .sm-spiner", "has-animation");
   w.IPCHelper.send('change-palette-resume');
@@ -1613,7 +1614,7 @@ export function getLanguageBCP(s: any): string {
   }
 }
 
-export function machineryCheckTouchIDSupport(s: any): void {
+export function machineryCheckTouchIDSupport(): void {
   const w = window as any;
   let systemPreferences: any = null;
   try {
@@ -1621,10 +1622,10 @@ export function machineryCheckTouchIDSupport(s: any): void {
   } catch (err) { /* noop */ }
   if (w.process && w.process.platform === 'darwin' && systemPreferences && systemPreferences.canPromptTouchID) {
     try {
-      s.canUseTouchID = systemPreferences.canPromptTouchID();
+      writeScopeField('canUseTouchID', systemPreferences.canPromptTouchID());
     } catch (err) {
       console.error('檢查 Touch ID 支援時發生錯誤:', err);
-      s.canUseTouchID = false;
+      writeScopeField('canUseTouchID', false);
     }
   }
 }
@@ -1716,10 +1717,10 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
       }
       cssSet("#detail-container", { opacity: 1 });
       setTimeout(function () {
-        machineryPreloadImage(s, "next");
+        machineryPreloadImage("next");
       }, 200);
     }
-    machineryAddToRecentFile(s, s.current);
+    machineryAddToRecentFile(s.current);
     w.removePlayingAudios();
     w.HoverPreview.hide();
   }, duration);
@@ -1745,7 +1746,7 @@ export function machineryEnterSlideshowMode(s: any): void {
 }
 
 /* fadeOutDetailMode（bundle 31672-31678 逐字：selected 首盒 popdown 100ms） */
-export function machineryFadeOutDetailMode(s: any): void {
+export function machineryFadeOutDetailMode(): void {
   var $box = q(".box.selected");
   if ($box) $box.classList.add("popdown");
   setTimeout(function () {
@@ -1753,7 +1754,7 @@ export function machineryFadeOutDetailMode(s: any): void {
   }, 100);
 }
 
-export function machineryFocusAppUnlockPassword(s: any): void {
+export function machineryFocusAppUnlockPassword(): void {
   setTimeout(() => {
     focusEl("#app-lock-password-input");
   }, 24);
@@ -1774,7 +1775,7 @@ export function machineryLeaveDetailMode(s: any): void {
   syncDetailFromScope();
   if (s.isDetailMode) {
 
-    machineryRememberScrollTops(s, s.current);
+    machineryRememberScrollTops(s.current);
 
     s.isDetailMode = false;
     s.showDetailImage = false;
@@ -1796,7 +1797,7 @@ export function machineryLeaveDetailMode(s: any): void {
     }, 50);
 
     s.isInlineMode = false;
-    machineryFadeOutDetailMode(s);
+    machineryFadeOutDetailMode();
     detailZoom()?.cleanBitmapViewer();
     detailZoom()?.clearPreloadData();
 
@@ -1847,7 +1848,7 @@ export function machineryLockApp(s: any): void {
   s.$root.isAppLocked = true;
   if (s.$root && typeof s.$root.initMenu === 'function') s.$root.initMenu();
   setTimeout(function () {
-    machineryFocusAppUnlockPassword(s);
+    machineryFocusAppUnlockPassword();
   }, 100);
 }
 
@@ -1943,7 +1944,7 @@ export function machineryNotify(s: any, params: any, restoreCallbackk: any): voi
 }
 
 /* openPluginPanel（bundle 37324 逐字：OPEN_PLUGIN_PANEL 广播，含 // return 注释逐字） */
-export function machineryOpenPluginPanel(s: any, event: any): void {
+export function machineryOpenPluginPanel(event: any): void {
   // return;
   openPluginPanelChannel.emit();
 }

@@ -994,7 +994,7 @@ export function NewSmartFolderModal() {
       updateSidebarList();
       openSmartFolder(smartFolder);
       setTimeout(() => {
-        machineryChangeSidebarIndex(body, smartFolder);
+        machineryChangeSidebarIndex(smartFolder);
       }, 400);
       try {
         if (w().electronLog) w().electronLog.info(`[app] Create new smart-folder: ${smartFolder.name}(${smartFolder.id})`);
@@ -1010,7 +1010,7 @@ export function NewSmartFolderModal() {
         updateSidebarList();
         openSmartFolder(smartFolderRef.current);
         setTimeout(() => {
-          machineryChangeSidebarIndex(body, smartFolderRef.current);
+          machineryChangeSidebarIndex(smartFolderRef.current);
         }, 400);
         try {
           if (w().electronLog) w().electronLog.info(`[app] Edit smart-folder: ${smartFolderRef.current.name}(${smartFolderRef.current.id})`);

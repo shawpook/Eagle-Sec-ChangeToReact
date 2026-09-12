@@ -46,9 +46,8 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function focusAppUnlockPassword(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价，统一转发消除重复实现。
-    const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryFocusAppUnlockPassword(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryFocusAppUnlockPassword();
 }
 
 export function focusUnlockPassword(...args: any[]) {

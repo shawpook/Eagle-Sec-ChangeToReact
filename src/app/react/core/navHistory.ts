@@ -3,7 +3,8 @@ import { openFolder } from '../services/folderCoreService';
 import { q, qaVisible } from '../utils/domQuery';
 import { machineryOpenTrash } from './libraryDomain';
 import { openSmartFolder } from '../services/folderCoreService';
-import { cgNotifyServiceCloseAll, machineryLeaveDetailMode } from './miscDomain';/**
+import { cgNotifyServiceCloseAll, machineryLeaveDetailMode } from './miscDomain';
+import { useMiscRawState } from '../store/miscRawState';/**
  * b1-9bz-D-1 B-16：导航历史域（从 dataMachinery.ts 归位）。
  * 函数体逐字平移；依赖经 import 解析。
  */
@@ -13,21 +14,21 @@ import { cgNotifyServiceCloseAll, machineryLeaveDetailMode } from './miscDomain'
 /* back（bundle 30889-30896 逐字） */
 export function machineryBack(s: any): void {
   if (!s.isDetailMode) {
-    machineryPrevHistory(s);
+    machineryPrevHistory();
   }
   else {
     machineryLeaveDetailMode(s);
   }
 }
 
-export function machineryNextHistory(s: any): void {
+export function machineryNextHistory(): void {
   const w = window as any;
-  if (s.UrlStateService.canGoForward) {
+  if (useMiscRawState.getState().UrlStateService.canGoForward) {
     w.currentWindow.webContents.goForward();
   }
 }
 
-export function machineryOpenNextQuickAccess(s: any): void {
+export function machineryOpenNextQuickAccess(): void {
   var $quickAccessItems = qaVisible(".sidebar-quick-access-item");
   var $current = q(".sidebar-quick-access-item.active");
   var currentIndex = $current ? $quickAccessItems.indexOf($current) : -1;
@@ -36,7 +37,7 @@ export function machineryOpenNextQuickAccess(s: any): void {
     $quickAccessItems[currentIndex + 1].click();
   }
   else {
-    var listItems = s.sidebarList;
+    var listItems = useMiscRawState.getState().sidebarList;
     var folders = listItems.filter(function (item: any) {
       return item.vstype === 'folder';
     });
@@ -65,9 +66,9 @@ export function machineryOpenPrevQuickAccess(s: any): void {
   }
 }
 
-export function machineryPrevHistory(s: any): void {
+export function machineryPrevHistory(): void {
   const w = window as any;
-  if (s.UrlStateService.canGoBack) {
+  if (useMiscRawState.getState().UrlStateService.canGoBack) {
     w.currentWindow.webContents.goBack();
   }
 }

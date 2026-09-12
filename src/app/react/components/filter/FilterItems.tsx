@@ -43,7 +43,7 @@ const runSeq = (fns: Array<(s: any) => void>) =>
 function useDisplayNameSideEffect(displayName: string) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      runInBodyScope((s) => machineryUpdateContainerHieght(s));
+      runInBodyScope((s) => machineryUpdateContainerHieght());
     }, 300);
     return () => clearTimeout(timer);
   }, [displayName]);
@@ -150,7 +150,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
     const f = filter();
     f.filterRules.color.value = undefined;
     f.filterRules.color.gray = false;
-    runSeq([(s) => { s.page = 1; s.reload(); machineryCalculateFilterCounts(s); }]);
+    runSeq([(s) => { s.page = 1; s.reload(); machineryCalculateFilterCounts(); }]);
   };
 
   const activeHex = rgbToHexFn(value?.[0], value?.[1], value?.[2]);
@@ -776,7 +776,7 @@ function TagsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                       }
                       s.eagle.filter.filterRules.tag.includes = [...new Set(s.eagle.filter.filterRules.tag.includes)];
                       machineryFilterContent(s);
-                      machineryCalculateFilterCounts(s);
+                      machineryCalculateFilterCounts();
                     });
                   }}
                   name={t('filter.tags>selectAll')}

@@ -1974,7 +1974,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         } else if (!state.isZooming && Math.abs(endPoint.x - startPoint.x) < 2 && Math.abs(endPoint.y - startPoint.y) < 2) {
           if (event && event.button === 1) {
             runInBodyScope(function (sc) {
-              machineryOpenPluginPanel(sc, undefined);
+              machineryOpenPluginPanel(undefined);
             });
           } else {
             runInBodyScope(function (sc) {

@@ -62,6 +62,10 @@ import { useListState } from '../store/listState';
 import { useFolderState } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
+import { useItemState } from '../store/itemState';
+import { useBodyState } from '../store/bodyState';
+import { writeScopeField } from './scopeFieldBridge';
+import { useLayoutState } from '../store/layoutState';
 declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;
@@ -142,8 +146,8 @@ function domainUpdateItemListView(s: any, generated: any): void {
       s.modifiedMappings[generated.id]++;
     }
 
-    machineryUpdateFilterCounts(s, image, -1, Date.now());
-    machineryUpdateFilterCounts(s, generated, 1, Date.now());
+    machineryUpdateFilterCounts(image, -1, Date.now());
+    machineryUpdateFilterCounts(generated, 1, Date.now());
 
     image.width = generated.width;
     image.height = generated.height;
@@ -221,20 +225,20 @@ function domainUpdateItemListView(s: any, generated: any): void {
       originOrientation !== generated.orientation ||
       aspectRatio !== currentAspectRatio
     ) {
-      machineryUpdateItemView(s, image);
-      machineryRelayout(s);
+      machineryUpdateItemView(image);
+      machineryRelayout();
       getOffsetScrollbarFn(s)(30);
       refreshThumb = true;
     }
 
     if (generated.duration !== image.duration) {
       image.duration = generated.duration;
-      machineryUpdateItemView(s, image);
+      machineryUpdateItemView(image);
     }
 
     if (generated.bpm !== image.bpm) {
       image.bpm = generated.bpm;
-      machineryUpdateItemView(s, image);
+      machineryUpdateItemView(image);
     }
 
     if (refreshThumb && !image.noPreview) {
@@ -341,7 +345,7 @@ export function takeoverItemDomain(): void {
       const key = w.ig.getGroupKeys(false)[0] - 1000000;
       const needUpdateView = key <= 1;
       s.startCursor = 0;
-      machineryPrependImages(s, [newImage], needUpdateView);
+      machineryPrependImages([newImage], needUpdateView);
       machineryCalculateImageBinding(s, { ignoreSort: false }, function () {
         ensureMuteRebind(s) && ensureMuteRebind(s)();
         machineryUpdateSelection(s);
@@ -383,7 +387,7 @@ export function takeoverItemDomain(): void {
     if (!s.raw) return;
     if (!newImage && newImage.palettes) return;
 
-    machineryUpdateItemView(s, newImage);
+    machineryUpdateItemView(newImage);
 
     const img = s.itemMappings[newImage.id];
     if (img && newImage.palettes) {
@@ -413,7 +417,7 @@ export function takeoverItemDomain(): void {
       glRemoveitemsChannel.emit([item]);
     }
     else {
-      machineryUpdateItemView(s, newImage);
+      machineryUpdateItemView(newImage);
     }
     scopeEvalAsync();
 
@@ -443,7 +447,7 @@ export function takeoverItemDomain(): void {
       glRemoveitemsChannel.emit([item]);
     }
     else {
-      machineryUpdateItemView(s, newImage);
+      machineryUpdateItemView(newImage);
     }
     w.hiddenByCurrentFilter([item]);
 
@@ -474,7 +478,7 @@ export function takeoverItemDomain(): void {
       const item = s.itemMappings[id];
       delete item.activating;
       delete item.deactivating;
-      machineryUpdateItemView(s, item);
+      machineryUpdateItemView(item);
       if (item.fontMetas && item.fontMetas.postScriptName) {
         const key = Object.keys(item.fontMetas.postScriptName)[0];
         const postScriptName = item.fontMetas.postScriptName && item.fontMetas.postScriptName[key];
@@ -501,7 +505,7 @@ export function takeoverItemDomain(): void {
       // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
       s.contentFilterCache = null;
       // 判斷是否重複，如果重復，就先紀錄在 $scope.duplicateQueue 裡面
-      const existsImage = machineryIsDuplicateImage(s, image);
+      const existsImage = machineryIsDuplicateImage(image);
       const needCheckRepeat = s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage === 'true';
 
       if (existsImage && needCheckRepeat) {
@@ -522,14 +526,14 @@ export function takeoverItemDomain(): void {
           else {
             if (s.raw) { s.raw.unshift(image); }
             syncListFromScope();
-            machineryAddToDuplicateMapping(s, image);
+            machineryAddToDuplicateMapping(image);
           }
         }
         catch (err) {
           if (s.raw) { s.raw.unshift(image); }
           syncListFromScope();
           s.itemMappings[image.id] = image;
-          machineryAddToDuplicateMapping(s, image);
+          machineryAddToDuplicateMapping(image);
           electronLog && electronLog.error((err as any).stack || err);
         }
       }
@@ -537,7 +541,7 @@ export function takeoverItemDomain(): void {
       else {
         if (s.raw) { s.raw.unshift(image); }
         syncListFromScope();
-        machineryAddToDuplicateMapping(s, image);
+        machineryAddToDuplicateMapping(image);
       }
 
       const VIDEO_TYPES = s.VIDEO_TYPES || {};
@@ -621,7 +625,7 @@ export function takeoverItemDomain(): void {
 
           dataSet(detailImageEl, "degree", 0);
 
-          machineryForceFitImageSize(s, generated);
+          machineryForceFitImageSize(generated);
           setCssEl(detailImageEl, {
             "display": "block"
           });
@@ -656,7 +660,7 @@ export function takeoverItemDomain(): void {
     const item = s.itemMappings[params.id];
     if (item) {
       item.text = params.text;
-      machineryUpdateTxtItem(s, item);
+      machineryUpdateTxtItem(item);
       scopeEvalAsync();
     }
   });
@@ -696,10 +700,10 @@ export function takeoverItemDomain(): void {
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s);
       scopeEvalAsync();
-      machinerySaveFolder(s);
+      machinerySaveFolder();
     });
 
-    machinerySaveFolder(s);
+    machinerySaveFolder();
     electronLog && electronLog.info(`[app] New ${folders.length} folders`);
   });
 
@@ -1049,7 +1053,7 @@ export function openInFinder(...args: any[]) {
             const s = getScope();
             if (!s) return;
             if (s.selected.length > 0) {
-                machineryCheckOperationSafety(s, function () {
+                machineryCheckOperationSafety(function () {
                     s.selected.forEach(function (file, index) {
                         if (index > 30) return;
                         var folderPath = path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
@@ -1133,7 +1137,7 @@ export function openFilesWithDefault(...args: any[]) {
         const s = getScope();
         if (!s) return;
         if (q(".swal2-container")) { return; }
-        machineryCheckOperationSafety(s, function () {
+        machineryCheckOperationSafety(function () {
             files.forEach(function (file, index) {
                 if (!file || !file.id) return;
                 if (index < 40) {
@@ -1317,7 +1321,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
         syncUploadFromScope();
         s.uploadQueue = [];
         syncUploadFromScope();
-        machineryHideUploadQueue(s);
+        machineryHideUploadQueue();
       }
       return;
     }
@@ -1345,7 +1349,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
       syncUploadFromScope();
       setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
       setWidthEl(findEl(q("#upload-queue-progress"), ".current"), s.finishQueue.length / s.uploadQueue.length * 100 + "%");
-      machineryHideUploadQueue(s);
+      machineryHideUploadQueue();
 
       // 判斷是否有重複的圖片
       if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
@@ -1364,7 +1368,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
       // 如果沒有啟動重複通知，一律圖片直接添加上來
       else {
         s.duplicateQueue.forEach(function (img: any) {
-          machineryAddToDuplicateMapping(s, img);
+          machineryAddToDuplicateMapping(img);
           if (s.raw) { s.raw.unshift(img); }
           syncListFromScope();
         });
@@ -1460,16 +1464,16 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryAddToDuplicateMapping(s: any, image: any): void {
+export function machineryAddToDuplicateMapping(image: any): void {
   const w = window as any;
   var hashID = w.getHashID(image);
-  if (!s.duplicateMappings) s.duplicateMappings = {};
-  s.duplicateMappings[hashID] = image;
+  if (!useItemState.getState().duplicateMappings) writeScopeField('duplicateMappings', {});
+  useItemState.getState().duplicateMappings[hashID] = image;
 }
 
-export function machineryIsDuplicateImage(s: any, image: any): any {
+export function machineryIsDuplicateImage(image: any): any {
   const w = window as any;
-  if (!s.duplicateMappings) return false;
+  if (!useItemState.getState().duplicateMappings) return false;
   if (image.ext === 'svg') return false;
   if (image.ext === 'tif') return false;
   if (image.ext === 'tiff') return false;
@@ -1477,18 +1481,18 @@ export function machineryIsDuplicateImage(s: any, image: any): any {
   var hashID = w.getHashID(image);
   if (!hashID) return false;
   // 垃圾桶文件不纳入考量
-  if (s.duplicateMappings[hashID] && s.duplicateMappings[hashID].isDeleted) return false;
-  return s.duplicateMappings[hashID];
+  if (useItemState.getState().duplicateMappings[hashID] && useItemState.getState().duplicateMappings[hashID].isDeleted) return false;
+  return useItemState.getState().duplicateMappings[hashID];
 }
 
-export function machineryOpenDuplicate(s: any, options: any = {}): void {
+export function machineryOpenDuplicate(options: any = {}): void {
   if (options?.selected) {
     openDuplicateScanPanelChannel.emit({
-      items: [...s.selected],
+      items: [...useSelectionState.getState().selected],
       onMergedCallback: () => {
-        s.selected = s.selected.filter((item: any) => {
+        writeScopeField('selected', useSelectionState.getState().selected.filter((item: any) => {
           return !item.isDeleted;
-        });
+        }));
         syncInspectorFromScope();
         scopeEvalAsync();
       },
@@ -1496,17 +1500,17 @@ export function machineryOpenDuplicate(s: any, options: any = {}): void {
   }
   else if (options?.currentPage) {
     openDuplicateScanPanelChannel.emit({
-      items: [...s.allData],
+      items: [...useItemState.getState().allData],
     });
   }
   else {
     openDuplicateScanPanelChannel.emit({
-      items: [...s.all],
+      items: [...useItemState.getState().all],
     });
   }
 }
 
-export function machineryUpdateTxtItem(s: any, item: any): void {
+export function machineryUpdateTxtItem(item: any): void {
   const w = window as any;
   var paragraphs = item.text.split("\n");
   var paragraphsHTML = "";
@@ -1515,7 +1519,7 @@ export function machineryUpdateTxtItem(s: any, item: any): void {
     paragraphsHTML += `<p>${paragraph.trim()}</p>`;
   });
   setHtml("#box-" + item.id + " .txt-content div", paragraphsHTML);
-  if (s.selected.length === 0 && s.selected[0] === item) {
+  if (useSelectionState.getState().selected.length === 0 && useSelectionState.getState().selected[0] === item) {
     setHtml(".inspector .txt-content div", paragraphsHTML);
   }
 }
@@ -1821,34 +1825,34 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
   }, duration);
 }
 
-function machineryCalcuteAddImageTimeLeft(s: any): void {
+function machineryCalcuteAddImageTimeLeft(): void {
   const w = window as any;
-  if (s.uploadQueue.length > 0) {
-    if (!s.addImageStartTime) {
-      s.addImageStartTime = Date.now();
+  if (useMiscRawState.getState().uploadQueue.length > 0) {
+    if (!useMiscRawState.getState().addImageStartTime) {
+      writeScopeField('addImageStartTime', Date.now());
     }
-    var elapsedTime = (new Date().getTime()) - s.addImageStartTime;
-    var chunksPerTime = s.finishQueue.length / elapsedTime;
-    var estimatedTotalTime = s.uploadQueue.length / chunksPerTime;
+    var elapsedTime = (new Date().getTime()) - useMiscRawState.getState().addImageStartTime;
+    var chunksPerTime = useMiscRawState.getState().finishQueue.length / elapsedTime;
+    var estimatedTotalTime = useMiscRawState.getState().uploadQueue.length / chunksPerTime;
     var remain = parseInt((estimatedTotalTime - elapsedTime) / 1000 as any);
     if (w.is.number(remain)) {
-      s.addImageTimeLeftInSeconds = remain;
+      writeScopeField('addImageTimeLeftInSeconds', remain);
       syncUploadFromScope();
     }
   }
 }
 
 /* changeMetaItems（bundle 37273-37278 逐字） */
-export function machineryChangeMetaItems(s: any, type: any): void {
+export function machineryChangeMetaItems(type: any): void {
   const w = window as any;
-  s.listMetaType = type;
+  writeScopeField('listMetaType', type);
   syncPanelFromScope();
-  w.localStorage.setItem("eagle.list.meta.type", s.listMetaType);
-  machineryUpdateItemsView(s, s.allData);
-  w.electronLog && w.electronLog.info(`[app] Change list display info: ${s.listMetaType}`);
+  w.localStorage.setItem("eagle.list.meta.type", useMiscRawState.getState().listMetaType);
+  machineryUpdateItemsView(useItemState.getState().allData);
+  w.electronLog && w.electronLog.info(`[app] Change list display info: ${useMiscRawState.getState().listMetaType}`);
 }
 
-export function machineryCheckListItemsLessThanContainer(s: any): void {
+export function machineryCheckListItemsLessThanContainer(): void {
   const w = window as any;
   if (!w.ig) return;
   if (w.ig.getItems().length < 180) {
@@ -1870,7 +1874,7 @@ export function machineryCheckListItemsLessThanContainer(s: any): void {
 export function machineryCopyImages(s: any, event: any): void {
   const w = window as any;
   if (s.viewMode === 'alltags') {
-    var selectedTags = machineryGetSelectedTags(s);
+    var selectedTags = machineryGetSelectedTags();
     if (selectedTags && selectedTags.length > 0) {
       w.electron.clipboard.writeText(selectedTags.join(","));
       s.notify({
@@ -1922,13 +1926,13 @@ export function machineryCopyImages(s: any, event: any): void {
   }
 }
 
-export function machineryCreateTxtFileFromTemplate(s: any, event: any): void {
+export function machineryCreateTxtFileFromTemplate(event: any): void {
   event && event.preventDefault();
-  machineryNewFileFromTemplate(s, "txt");
+  machineryNewFileFromTemplate("txt");
   scopeEvalAsync();
 }
 
-export function machineryEnableImageNameEditable(s: any, event: any, $name: any): void {
+export function machineryEnableImageNameEditable(event: any, $name: any): void {
   const w = window as any;
   const el = (($name as any) instanceof HTMLElement ? $name : ($name && $name[0])) as HTMLElement;
   if (!el) return;
@@ -2088,33 +2092,33 @@ export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] 
   return result;
 }
 
-export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo: any): void {
+export function machineryFindDupclipate(currentFolder: any, hasColorInfo: any): void {
   const w = window as any;
   var duplicates: any[] = [];
   var pushedMapping: any = {};
   var duplicateMappings: any = {};
 
-  s.duplicates = [];
-  s.duplicateGroupings = {};
+  writeScopeField('duplicates', []);
+  writeScopeField('duplicateGroupings', {});
 
-  if (!s.raw) return;
+  if (!useItemState.getState().raw) return;
 
   if (!hasColorInfo) {
-    duplicateMappings = s.duplicateMappings;
+    duplicateMappings = useItemState.getState().duplicateMappings;
   }
   else {
     duplicateMappings = {};
   }
 
-  s.duplicateTarget = currentFolder;
+  writeScopeField('duplicateTarget', currentFolder);
 
   // 全部圖片
   if (!currentFolder) {
     // 建立查詢表
     w.eagle.filter.filterExtensions = {};
     w.eagle.filter.filterCamerasMapping = {};
-    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
-      var image = s.raw[rindex];
+    for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
+      var image = useItemState.getState().raw[rindex];
 
       // Note: 这部分原来放在 rebindRefresh 中，因为不需要重复计算，故放在这里
       if (w.VIDEO_TYPES[image.ext]) {
@@ -2177,10 +2181,10 @@ export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo
 
       // NOTE: 如果是用户主动扫描，才计算图片去重复
       if (hasColorInfo) {
-        if (!s.duplicateGroupings[hashID]) {
-          s.duplicateGroupings[hashID] = [];
+        if (!useMiscRawState.getState().duplicateGroupings[hashID]) {
+          useMiscRawState.getState().duplicateGroupings[hashID] = [];
         }
-        s.duplicateGroupings[hashID].push(image);
+        useMiscRawState.getState().duplicateGroupings[hashID].push(image);
       }
 
       // 如果有東西，裡面的東西跟自己都是那個重複者
@@ -2210,7 +2214,7 @@ export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo
   }
   else {
 
-    var images = machineryGetFolderImages(s, currentFolder, s.showSubfolderContent);
+    var images = machineryGetFolderImages(currentFolder, useListState.getState().showSubfolderContent);
     for (var rindex2 = images.length - 1; rindex2 >= 0; rindex2--) {
 
       var image2 = images[rindex2];
@@ -2222,10 +2226,10 @@ export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo
       if (image2.isDeleted) continue;
 
       if (hasColorInfo) {
-        if (!s.duplicateGroupings[hashID2]) {
-          s.duplicateGroupings[hashID2] = [];
+        if (!useMiscRawState.getState().duplicateGroupings[hashID2]) {
+          useMiscRawState.getState().duplicateGroupings[hashID2] = [];
         }
-        s.duplicateGroupings[hashID2].push(image2);
+        useMiscRawState.getState().duplicateGroupings[hashID2].push(image2);
       }
 
       // 如果有東西，裡面的東西跟自己都是那個重複者
@@ -2242,21 +2246,21 @@ export function machineryFindDupclipate(s: any, currentFolder: any, hasColorInfo
     }
   }
 
-  s.duplicates = duplicates;
+  writeScopeField('duplicates', duplicates);
 
   if (hasColorInfo) {
-    var duplicateGroupings = Object.keys(s.duplicateGroupings).map(function (key: any) { return s.duplicateGroupings[key]; });
+    var duplicateGroupings = Object.keys(useMiscRawState.getState().duplicateGroupings).map(function (key: any) { return useMiscRawState.getState().duplicateGroupings[key]; });
     duplicateGroupings = duplicateGroupings.filter(function (group: any) {
       return group.length > 1;
     });
-    s.duplicateGroupings = duplicateGroupings;
+    writeScopeField('duplicateGroupings', duplicateGroupings);
   }
 }
 
-export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: any): void {
+export function machineryForceFitImageSize(image: any, usingThumbnail: any): void {
   const w = window as any;
   if (!image) return;
-  if (!s.isDetailMode) return;
+  if (!useBodyState.getState().isDetailMode) return;
   if (qa("#detail-image").length === 0) return;
   cssSet("#detail-image", {
     width: image.width,
@@ -2273,23 +2277,23 @@ export function machineryForceFitImageSize(s: any, image: any, usingThumbnail: a
   }
 }
 
-export function machineryGetItemByElement(s: any, element: any): any {
+export function machineryGetItemByElement(element: any): any {
   if (!element) return "";
   // var id = element.id.replace("box-", "");
   var id = element.getAttribute("data-box-id");
-  return s.itemMappings[id];
+  return useItemState.getState().itemMappings[id];
 }
 
-export function machineryHideUploadQueue(s: any): void {
+export function machineryHideUploadQueue(): void {
   const w = window as any;
-  if (s.uploadQueue.length === 0) {
+  if (useMiscRawState.getState().uploadQueue.length === 0) {
     removeClass("#upload-queue-progress", "open");
     removeClass("body", "is-uploading");
     w.updateWindowProgressBar(-1);
   }
 }
 
-export function machineryNewFileFromTemplate(s: any, ext: any): void {
+export function machineryNewFileFromTemplate(ext: any): void {
   const w = window as any;
   const fs = w.require('fs');
   const path = w.require('path');
@@ -2309,15 +2313,15 @@ export function machineryNewFileFromTemplate(s: any, ext: any): void {
       lastModified: Date.now()
     };
 
-    if (s.currentFolder && s.currentFolder.id) {
-      file.folders = [s.currentFolder.id];
-      if (s.currentFolder.extendTags) {
-        file.tags = s.currentFolder.extendTags;
+    if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id) {
+      file.folders = [useFolderState.getState().currentFolder.id];
+      if (useFolderState.getState().currentFolder.extendTags) {
+        file.tags = useFolderState.getState().currentFolder.extendTags;
         file.tags = [...new Set(file.tags)];
       }
     }
     uploadFiles([file]);
-    machineryShowUploadQueue(s);
+    machineryShowUploadQueue();
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
     ipc.send('electron-info', `[app] Create file from [Untitled.${ext}]`);
@@ -2328,11 +2332,11 @@ export function machineryNewFileFromTemplate(s: any, ext: any): void {
 }
 
 /** imageSize.height 变化后的统一处理（原 $watch("imageSize.height") 的 listener）。 */
-export function machineryOnImageSizeHeightChanged(s: any): void {
-  if (!s || !s.imageSize) return;
-  machineryUpdateSubFolderWidth(s);
-  machineryUpdateListSlider(s, s.imageSize.height);
-  if (s.imageSize.height > 600 && s.showOriginalImageWhenLarge) {
+export function machineryOnImageSizeHeightChanged(): void {
+  if (!useLayoutState.getState().imageSize) return;
+  machineryUpdateSubFolderWidth();
+  machineryUpdateListSlider(useLayoutState.getState().imageSize.height);
+  if (useLayoutState.getState().imageSize.height > 600 && useMiscRawState.getState().showOriginalImageWhenLarge) {
     machineryEnlargeThumbnails();
   }
   else {
@@ -2340,7 +2344,7 @@ export function machineryOnImageSizeHeightChanged(s: any): void {
   }
 }
 
-export function machineryPreloadImage(s: any, mode: any): void {
+export function machineryPreloadImage(mode: any): void {
   const w = window as any;
   const supportFoamts: any = {
     "jpg": true,
@@ -2356,9 +2360,9 @@ export function machineryPreloadImage(s: any, mode: any): void {
   };
   clearTimeout(preloadImageTimeout);
   preloadImageTimeout = setTimeout(function () {
-    const idx = machineryCurrentIndex(s);
-    const nextImage = s.allData[idx];
-    const preImage = s.allData[idx - 2];
+    const idx = machineryCurrentIndex();
+    const nextImage = useItemState.getState().allData[idx];
+    const preImage = useItemState.getState().allData[idx - 2];
     if (mode === "next") {
       if (nextImage && supportFoamts[nextImage?.ext]) {
         detailZoom()?.preload( nextImage);
@@ -2372,17 +2376,17 @@ export function machineryPreloadImage(s: any, mode: any): void {
   }, 100);
 }
 
-export function machineryPrependImages(s: any, images: any[], updateView: any): void {
+export function machineryPrependImages(images: any[], updateView: any): void {
   for (var i = 0; i < images.length; i++) {
-    s.itemMappings[images[i].id] = images[i];
+    useItemState.getState().itemMappings[images[i].id] = images[i];
   }
 
   if (images[0].id) {
-    s.allData.unshift(images[0]);
+    useItemState.getState().allData.unshift(images[0]);
     syncListFromScope();
     clearTimeout(prependImagesTimeout);
     prependImagesTimeout = setTimeout(function () {
-      machineryResetImageData(s, images);
+      machineryResetImageData(images);
     }, 500);
   }
 }
@@ -2403,10 +2407,10 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
 
   // 计算这批图片里面出现的标签
   if (w.eagle.filter.tagFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "EQUAL") {
-    machineryCalcuteContainTags(s, s.preelaborations);
+    machineryCalcuteContainTags(s.preelaborations);
   }
   else if (w.eagle.filter.tagFilterLogic === "AND") {
-    machineryCalcuteContainTags(s, data);
+    machineryCalcuteContainTags(data);
   }
 
   // 计算 Filter Badge 数量
@@ -2451,7 +2455,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   s.filtereds = s.allData.slice(0, s.len * s.page);
   syncListFromScope();
 
-  machineryRefreshSubfolderList(s);
+  machineryRefreshSubfolderList();
 
   // 減少重複計算，將原先計算智能文件夾數量功能，放在這裡
   if (s.$root.selectedSmartFolders.length === 0 && s.currentSmartFolder) {
@@ -2480,7 +2484,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
     if (w.eagle.filter.filterBadge > 0) s.startCursor = 0;
     w.resetNgGridLayoutData(s.allData, startCursor || s.startCursor);
   }
-  machineryUpdateItemsView(s, s.selected);
+  machineryUpdateItemsView(s.selected);
   trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
   if (w.HoverPreview.isShow) {
     w.HoverPreview.hide();
@@ -2497,45 +2501,45 @@ export function machineryRebindRefreshLazy(s: any): void {
   }, 1000);
 }
 
-export function machineryRemoveFromDuplicateMapping(s: any, image: any): void {
+export function machineryRemoveFromDuplicateMapping(image: any): void {
   const w = window as any;
   var hashID = w.getHashID(image);
-  delete s.duplicateMappings[hashID];
+  delete useItemState.getState().duplicateMappings[hashID];
 }
 
-export function machineryRenameImages(s: any): void {
+export function machineryRenameImages(): void {
   const w = window as any;
-  if (s.selected.length > 1) {
+  if (useSelectionState.getState().selected.length > 1) {
     openRenameChannel.emit({
       type: "IMAGE",
-      images: s.selected
+      images: useSelectionState.getState().selected
     });
   }
   else {
-    var imageId = s.selected[0].id;
+    var imageId = useSelectionState.getState().selected[0].id;
     var $box = q(`#box-${imageId}`);
     if ($box) {
       const boxEl = $box;
       setTimeout(() => {
-        machineryEnableImageNameEditable(s, w.event, boxEl.querySelector(".name"));
+        machineryEnableImageNameEditable(w.event, boxEl.querySelector(".name"));
       }, 50);
     }
   }
 }
 
 /* resetImageData（bundle 30540-30548 逐字；controller 闭包函数 → 域内移植） */
-function machineryResetImageData(s: any, images: any[]): void {
+function machineryResetImageData(images: any[]): void {
   const w = window as any;
-  if (s.viewMode == "all" || (s.currentFolder && images[0].folders[0] && images[0].folders.indexOf(s.currentFolder.id) > -1) || (images[0].folders && images[0].folders.length === 0 && s.viewMode == "unfiled")) {
-    w.resetNgGridLayoutData(s.allData, 0);
+  if (useBodyState.getState().viewMode == "all" || (useFolderState.getState().currentFolder && images[0].folders[0] && images[0].folders.indexOf(useFolderState.getState().currentFolder.id) > -1) || (images[0].folders && images[0].folders.length === 0 && useBodyState.getState().viewMode == "unfiled")) {
+    w.resetNgGridLayoutData(useItemState.getState().allData, 0);
     scopeEvalAsync();
   }
 }
 
 /* scrollToCurrentItem（bundle 34118-34130 逐字：selected 末盒 posy 属性 → 容器居中定位） */
-export function machineryScrollToCurrentItem(s: any): void {
+export function machineryScrollToCurrentItem(): void {
   const w = window as any;
-  if (s.selected.length > 0) {
+  if (useSelectionState.getState().selected.length > 0) {
     var $lastItem = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
     if ($lastItem) {
       let y = $lastItem.getAttribute("posy");
@@ -2547,17 +2551,17 @@ export function machineryScrollToCurrentItem(s: any): void {
   }
 }
 
-export function machineryShowUploadQueue(s: any): void {
+export function machineryShowUploadQueue(): void {
   const w = window as any;
-  if (!s.addImageStartTime) {
-    s.addImageStartTime = Date.now();
+  if (!useMiscRawState.getState().addImageStartTime) {
+    writeScopeField('addImageStartTime', Date.now());
   }
   addClass("body", "is-uploading");
   addClass("#upload-queue-progress", "open");
   removeClass("#upload-queue-progress .progressbar", "ng-hide");
-  setHtml("#upload-queue-progress .message .percentage", s.finishQueue.length + "/" + s.uploadQueue.length);
+  setHtml("#upload-queue-progress .message .percentage", useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
   addImageTimeLeftInterval = setInterval(function () {
-    machineryCalcuteAddImageTimeLeft(s);
+    machineryCalcuteAddImageTimeLeft();
     scopeEvalAsync();
   }, 1000);
 }
@@ -2583,7 +2587,7 @@ export function machineryShrinkThumbnails(): void {
 
 let machineryShrinkThumbnailsTimeout: any = null;
 
-export function machinerySortData(s: any, data: any, orderBy: any): any {
+export function machinerySortData(data: any, orderBy: any): any {
   const w = window as any;
   let clone = data.slice();
   console.time("sortRawData");
@@ -2641,7 +2645,7 @@ export function machinerySortData(s: any, data: any, orderBy: any): any {
       console.time("MANUAL");
       // Note: 使用 mapping 先记录 order 数据，在 sort 函式就不需要使用 _.get 来获取，这样能提升 20x 性能
       var orderMappings: any = {};
-      var folderId = s.currentFolder.id;
+      var folderId = useFolderState.getState().currentFolder.id;
       for (var i = 0; i < data.length; i++) {
         var item = data[i];
         if (item.order && item.order[folderId]) { orderMappings[item.id] = item.order[folderId] }
@@ -2698,13 +2702,13 @@ export function machinerySortData(s: any, data: any, orderBy: any): any {
 }
 
 /* toggleCommentMode（bundle 21166-21169 逐字） */
-export function machineryToggleCommentMode(s: any, event: any): void {
+export function machineryToggleCommentMode(event: any): void {
   event.preventDefault();
-  s.isCommentMode = !s.isCommentMode;
+  writeScopeField('isCommentMode', !useBodyState.getState().isCommentMode);
   syncDetailFromScope();
 }
 
-export function machineryUpdateItemView(s: any, item: any): void {
+export function machineryUpdateItemView(item: any): void {
   const w = window as any;
   const fs = w.require && w.require('fs');
 
@@ -2721,7 +2725,7 @@ export function machineryUpdateItemView(s: any, item: any): void {
     var $propResolution = findEl(".prop.resolution");
     var $propRating = findEl(".prop.rating");
     var $propSize = findEl(".prop.size");
-    var isSelected = s.selectedMappings[id];
+    var isSelected = useItemState.getState().selectedMappings[id];
     var tags = item.tags || [];
     var isTagged = tags.length > 0;
     var $annotationCount = findEl(".annotation-count");
@@ -2738,7 +2742,7 @@ export function machineryUpdateItemView(s: any, item: any): void {
     if (item.tags && item.tags.length) {
       var tags2 = item.tags.map(function (tag: any) {
         try {
-          return `<div class="tag color-${s.TagManager.tagMappings[tag].color}">${tag}</div>`;
+          return `<div class="tag color-${useMiscRawState.getState().TagManager.tagMappings[tag].color}">${tag}</div>`;
         } catch (err) { /* noop */ }
       });
       tagsFormated = tags2.join("");
@@ -2748,8 +2752,8 @@ export function machineryUpdateItemView(s: any, item: any): void {
     $element.setAttribute("data-width", item.width);
 
     if (textEl($name) !== item.name) {
-      if (!s.modifiedMappings[item.id]) s.modifiedMappings[item.id] = 0;
-      s.modifiedMappings[item.id]++;
+      if (!useItemState.getState().modifiedMappings[item.id]) useItemState.getState().modifiedMappings[item.id] = 0;
+      useItemState.getState().modifiedMappings[item.id]++;
       let src = w.FileUrlHelper.getLastestThumbnailUrl(item);
       var $img = findEl(".thumbnail img");
       if ($img) {
@@ -2779,7 +2783,7 @@ export function machineryUpdateItemView(s: any, item: any): void {
 
     var metas = '';
     const $filter = getFilter();
-    switch (s.listMetaType) {
+    switch (useMiscRawState.getState().listMetaType) {
       case 'RESOLUTION':
         if (item.duration && w.VIDEO_TYPES[item.ext]) {
           metas = $filter('duration')(item.duration);
@@ -2929,12 +2933,12 @@ export function machineryUpdateItemView(s: any, item: any): void {
 }
 
 /* updateItemsView（bundle 35065-35072 逐字；updateItemView 仍由 bundle 承载经 scope 解析） */
-export function machineryUpdateItemsView(s: any, items: any[]): void {
+export function machineryUpdateItemsView(items: any[]): void {
   const w = window as any;
   removeClass(".box.selected", "selected");
   for (var i = items.length - 1; i >= 0; i--) {
     var item = items[i];
-    machineryUpdateItemView(s, item);
+    machineryUpdateItemView(item);
   }
 }
 
@@ -2969,13 +2973,13 @@ export function machineryReload(s: any): any {
     s.lastImageHeight = s.imageSize.height;
     s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
     machineryRebindRefresh(s);
-    machineryRelayout(s);
+    machineryRelayout();
     machineryUpdateSelection(s);
-    machineryCalculateFilterCounts(s);
-    machineryUpdateSubFolderWidth(s);
+    machineryCalculateFilterCounts();
+    machineryUpdateSubFolderWidth();
     trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
 
-    machineryAutoResizeTagFilter(s);
+    machineryAutoResizeTagFilter();
     if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
       machineryAdjustLayoutWidth(s, 0);
     }

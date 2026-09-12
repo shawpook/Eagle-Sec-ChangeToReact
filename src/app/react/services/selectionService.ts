@@ -246,7 +246,7 @@ export function select(...args: any[]) {
                 }
 				else if (s.$root.preferences.habits.middleBtn === "openPluginPanel") {
 					event && event.preventDefault();
-					machineryOpenPluginPanel(s);
+					machineryOpenPluginPanel();
 				}
                 return;
             }
@@ -322,7 +322,7 @@ export function select(...args: any[]) {
                 s.selected.push(__lv_image);
                 syncInspectorFromScope();
                 s.selectedMappings[__lv_image.id] = true;
-                var selection = machineryGetSelection(s);
+                var selection = machineryGetSelection();
 
                 var __lv_start = selection.start;
                 var end = selection.end;

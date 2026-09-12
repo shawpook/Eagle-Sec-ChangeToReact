@@ -100,9 +100,8 @@ function wQueryFocusFolderInput(folderId: any) {
 /* b1-9ap/b1-9aq 台账区 + 三 builder（逐字；fns/getScope 为闭包注入） */
 export function checkOperationSafety2(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（$filter→getFilter()、swal/i18n→w.*）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryCheckOperationSafety2(s, args[0], args[1], args[2]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryCheckOperationSafety2(args[0], args[1], args[2]);
 }
 
 export function refreshSubfolderList(...args: any[]) {
@@ -204,7 +203,7 @@ export function setFolderSortIncrease(...args: any[]) {
       if (s.currentFolder === folder && !ignoreReload) {
         s.reload();
       }
-      machinerySaveFolder(s);
+      machinerySaveFolder();
     }).apply(null, args);
 }
 
@@ -256,9 +255,8 @@ export function settingFolder(...args: any[]) {
 
 export function renameFolder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryRenameFolder(s, args[0], args[1]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryRenameFolder(args[0], args[1]);
 }
 
 export function batchRenameFolders(...args: any[]) {
@@ -310,7 +308,7 @@ export function cloneFolder(...args: any[]) {
         children.splice(idx + 1, 0, newFolder);
         useItemState.getState().folderMappings[newFolder.id] = newFolder;
         machineryUpdateSidebarList(s);
-        machinerySaveFolder(s);
+        machinerySaveFolder();
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
       machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
@@ -318,8 +316,6 @@ export function cloneFolder(...args: any[]) {
 }
 
 export function changeFolderIcon(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any, icon: any) {
       const w = window as any;
       if (!icon) {
@@ -328,15 +324,13 @@ export function changeFolderIcon(...args: any[]) {
       else {
         folder.icon = icon;
       }
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
     }).apply(null, args);
 }
 
 export function changeSelectedFoldersIcon(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, icon: any) {
       const w = window as any;
       if (useMiscRawState.getState().selectedFolders.length === 0) return;
@@ -348,7 +342,7 @@ export function changeSelectedFoldersIcon(...args: any[]) {
           folder.icon = icon;
         }
       });
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
     }).apply(null, args);
@@ -366,7 +360,7 @@ export function changeFolderColor(...args: any[]) {
         folder.iconColor = color;
       }
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
     }).apply(null, args);
@@ -387,7 +381,7 @@ export function changeSelectedFoldersColor(...args: any[]) {
         }
       });
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
     }).apply(null, args);
@@ -657,7 +651,7 @@ export function openFolderContextMenu(...args: any[]) {
           accelerator: history.dir,
           icon: 'ic-library-logo.svg',
           click: () => {
-            const items2 = machineryGetFolderImages(s, folder, true);
+            const items2 = machineryGetFolderImages(folder, true);
             addToLibraryChannel.emit({
               folder: folder,
               items: items2,
@@ -911,7 +905,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              machineryRenameFolder(s, event, folder);
+              machineryRenameFolder(event, folder);
               scopeEvalAsync();
             }
           },
@@ -1207,7 +1201,7 @@ export function setSmartFolderSortIncrease(...args: any[]) {
       if (s.currentSmartFolder === folder) {
         s.reload();
       }
-      machinerySaveFolder(s);
+      machinerySaveFolder();
     }).apply(null, args);
 }
 
@@ -1219,8 +1213,6 @@ export function batchRenameSmartFolders(...args: any[]) {
 }
 
 export function changeSmartFolderIcon(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any, icon: any) {
       const w = window as any;
       if (!icon) {
@@ -1229,7 +1221,7 @@ export function changeSmartFolderIcon(...args: any[]) {
       else {
         smartFolder.icon = icon;
       }
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${smartFolder.name}(${smartFolder.id}) icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
     }).apply(null, args);
@@ -1247,7 +1239,7 @@ export function changeSmartFolderColor(...args: any[]) {
         smartFolder.iconColor = color;
       }
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change smart-folder: ${smartFolder.name}(${smartFolder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
     }).apply(null, args);
@@ -1268,7 +1260,7 @@ export function changeSelectedSmartFoldersIcon(...args: any[]) {
         }
       });
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
     }).apply(null, args);
@@ -1289,7 +1281,7 @@ export function changeSelectedSmartFoldersColor(...args: any[]) {
         }
       });
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
     }).apply(null, args);
@@ -1324,7 +1316,7 @@ export function cloneSmartFolder(...args: any[]) {
         children.splice(idx, 0, newFolder);
         useItemState.getState().smartFolderMappings[newFolder.id] = newFolder;
         machineryUpdateSidebarList(s);
-        machinerySaveFolder(s);
+        machinerySaveFolder();
         try { w.electronLog && w.electronLog.info(`[app] Clone smart-folder: ${smartFolder.name}(${smartFolder.id}), new smart-folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
     }).apply(null, args);
@@ -1332,9 +1324,8 @@ export function cloneSmartFolder(...args: any[]) {
 
 export function renameSmartFolder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryRenameSmartFolder(s, args[0], args[1]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryRenameSmartFolder(args[0], args[1]);
 }
 
 export function copySmartFolderLink(...args: any[]) {
@@ -1524,9 +1515,8 @@ export function smartFolderExportAsFolder(...args: any[]) {
 
 export function newSmartFolder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  return machineryNewSmartFolder(s, args[0], args[1]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryNewSmartFolder(args[0], args[1]);
 }
 
 export function newChildSmartFolder(...args: any[]) {
@@ -1550,7 +1540,7 @@ export function newSmartFolderGroup(...args: any[]) {
       };
       useFolderState.getState().smartFolders.push(smartFolderGroup);
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       w.analytics.event('SmartFolder', 'CreateGroup');
       return smartFolderGroup;
     }).apply(null, args);
@@ -1564,8 +1554,6 @@ export function prependFolder(...args: any[]) {
 }
 
 export function openNewSmartFolderContextMenu(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any) {
       ContextMenu.open({
         items: [
@@ -1574,7 +1562,7 @@ export function openNewSmartFolderContextMenu(...args: any[]) {
             icon: 'ic-smart-folder-new.svg',
             accelerator: preferences.shortcuts.keybinds['file.create.smartfolder'],
             click: () => {
-              machineryNewSmartFolder(s, event);
+              machineryNewSmartFolder(event);
               scopeEvalAsync();
             }
           },
@@ -1585,7 +1573,7 @@ export function openNewSmartFolderContextMenu(...args: any[]) {
               var smartFolderGroup = newSmartFolderGroup(event);
               openSmartFolder(smartFolderGroup);
               $timeout(function () {
-                machineryRenameSmartFolder(s, event, smartFolderGroup);
+                machineryRenameSmartFolder(event, smartFolderGroup);
               }, 150);
               scopeEvalAsync();
             }
@@ -1783,7 +1771,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '資料夾 文件夾 新建 建立 新增 智能 智慧 new create smart',
             icon: 'ic-smart-folder-new.svg',
             click: function () {
-              machineryNewSmartFolder(s, event, smartFolder);
+              machineryNewSmartFolder(event, smartFolder);
               scopeEvalAsync();
             }
           },
@@ -1804,7 +1792,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              machineryRenameSmartFolder(s, event, smartFolder);
+              machineryRenameSmartFolder(event, smartFolder);
               scopeEvalAsync();
             }
           },
@@ -2047,7 +2035,7 @@ export function reorderFolderByTitle(...args: any[]) {
     }).then(function () {
       reorderFolderByTitleClosure(folders, reverse);
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       scopeEvalAsync();
       try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
     });
@@ -2077,7 +2065,7 @@ export function reorderAllFolderByTitle(...args: any[]) {
         reorderFolderByTitleClosure(folder.children, reverse);
       });
       machineryUpdateSidebarList(s);
-      machinerySaveFolder(s);
+      machinerySaveFolder();
       scopeEvalAsync();
       try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}
     });

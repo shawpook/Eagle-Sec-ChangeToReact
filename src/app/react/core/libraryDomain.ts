@@ -71,6 +71,8 @@ import { useItemState } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useFolderState } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
+import { useSelectionState } from '../store/selectionState';
+import { useBodyState } from '../store/bodyState';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -245,7 +247,7 @@ export function takeoverLibraryDomain(): void {
               if (!lastOpenTrialModalTime) {
                 lastOpenTrialModalTime = now;
                 localStorage["lastOpenTrialModalTime"] = now;
-                machineryOpenTrialModal(s, usePreferencesState.getState().trialRemain);
+                machineryOpenTrialModal(usePreferencesState.getState().trialRemain);
               }
               else {
                 lastOpenTrialModalTime = parseInt(lastOpenTrialModalTime);
@@ -253,7 +255,7 @@ export function takeoverLibraryDomain(): void {
                   console.log("12小时内暂时不再跳出");
                   return;
                 }
-                machineryOpenTrialModal(s, usePreferencesState.getState().trialRemain);
+                machineryOpenTrialModal(usePreferencesState.getState().trialRemain);
                 localStorage["lastOpenTrialModalTime"] = now;
               }
             }
@@ -781,7 +783,7 @@ export function takeoverLibraryDomain(): void {
 
         if (lastFolder && !lastFolder?.password) {
           openFolder(lastFolder);
-          machineryChangeSidebarIndex(s, lastFolder);
+          machineryChangeSidebarIndex(lastFolder);
           if (lastFolder.orderBy !== "RANDOM") {
             setTimeout(function () {
               const DAY_7 = 604800000;
@@ -934,18 +936,18 @@ export function takeoverLibraryDomain(): void {
 
     setTimeout(function () {
       // 建立重复核对表
-      machineryFindDupclipate(s, undefined);
+      machineryFindDupclipate(undefined);
       machineryUpdateSidebarList(s);
 
       domainAyncsUpdateSmartFoldersCount(s, useMiscRawState.getState().smartFolderList, () => { /* noop */ });
 
-      setTimeout(function () { machineryUpdateContainerHieght(s); }, 300);
+      setTimeout(function () { machineryUpdateContainerHieght(); }, 300);
       scopeEvalAsync();
 
     }, 1000);
 
     if (w.eagle && w.eagle.filter && w.eagle.filter.isOpen) {
-      setTimeout(function () { machineryUpdateContainerHieght(s); }, 300);
+      setTimeout(function () { machineryUpdateContainerHieght(); }, 300);
     }
 
     s.navigationHistory = [];
@@ -1127,7 +1129,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     // NOTE: 判斷是否為首次開啟，如果是，就顯示教學提示
-    machineryShowTutorial(s);
+    machineryShowTutorial();
 
     electronLog.info(`[app] Library loaded`);
     // 保险 digest 排程：bundle 原处理器依赖后续应用活动触发 $timeout 派工；React 域在
@@ -1156,7 +1158,7 @@ export function machineryGetAncestorSmartFolders(s: any, folder: any, folders: a
   }
 }
 
-export function machineryGetChildFoldersMap(s: any, folder: any): any {
+export function machineryGetChildFoldersMap(folder: any): any {
   const w = window as any;
   var childs: any = {};
   w.eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
@@ -1166,16 +1168,16 @@ export function machineryGetChildFoldersMap(s: any, folder: any): any {
 }
 
 /* getFolderParentChilder（bundle 40842-40848 逐字，typo 原样：父级 children / 根层回落） */
-export function machineryGetFolderParentChilder(s: any, folder: any): any {
-  if (folder.parent && s.folderMappings[folder.parent]) {
-    return s.folderMappings[folder.parent].children;
+export function machineryGetFolderParentChilder(folder: any): any {
+  if (folder.parent && useItemState.getState().folderMappings[folder.parent]) {
+    return useItemState.getState().folderMappings[folder.parent].children;
   }
   else {
-    return s.folders;
+    return useFolderState.getState().folders;
   }
 }
 
-export function machineryImportLinks(s: any): void {
+export function machineryImportLinks(): void {
   const w = window as any;
 
   var inputValue = '';
@@ -1232,7 +1234,7 @@ export function machineryImportLinks(s: any): void {
   }).then(function (result: any) {
     // 批量處理鏈接
     const links = result.split('\n').map((line: any) => line.trim()).filter((line: any) => line.length > 0);
-    const currentFolderId = s.currentFolder?.id;
+    const currentFolderId = useFolderState.getState().currentFolder?.id;
     const folderIds = currentFolderId ? [currentFolderId] : [];
 
     links.forEach((link: any) => {
@@ -1261,7 +1263,7 @@ export function machineryImportLinks(s: any): void {
           const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
           ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
         }
-        s.uploadQueue.push({});
+        useMiscRawState.getState().uploadQueue.push({});
         syncUploadFromScope();
       };
       fetch(link, { method: "HEAD", signal: controller.signal })
@@ -1316,15 +1318,15 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
   }
 }
 
-export function machineryNewSmartFolder(s: any, event: any, smartFolder: any): void {
+export function machineryNewSmartFolder(event: any, smartFolder: any): void {
   newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
 }
 
-export function machineryOpenArtstation(s: any): void {
+export function machineryOpenArtstation(): void {
   importArtstationChannel.emit();
 }
 
-export function machineryOpenHuaban(s: any): void {
+export function machineryOpenHuaban(): void {
   const w = window as any;
   w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/402-import-from-huaban");
 }
@@ -1345,7 +1347,7 @@ export function machineryOpenPinterest(s: any): void {
 }
 
 /* openTrialModal（bundle 37xxx 逐字：ipcRenderer 统一表达式 send('open-trial-modal')） */
-export function machineryOpenTrialModal(s: any, trialRemain: any): void {
+export function machineryOpenTrialModal(trialRemain: any): void {
   const w = window as any;
   if (trialRemain) {
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
@@ -1396,7 +1398,7 @@ export function machineryGetAncestorFolders(s: any, folder: any, folders: any[])
   }
 }
 
-export function machineryGetChildFoldersMaps(s: any, folders: any): any {
+export function machineryGetChildFoldersMaps(folders: any): any {
   const w = window as any;
   var childs: any = {};
   for (var i = 0; i < folders.length; i++) {
@@ -1408,12 +1410,12 @@ export function machineryGetChildFoldersMaps(s: any, folders: any): any {
   return childs;
 }
 
-export function machineryGetFolderImages(s: any, folder: any, includeSubFolder: any): any[] {
+export function machineryGetFolderImages(folder: any, includeSubFolder: any): any[] {
   const w = window as any;
   var images: any[] = [];
-  for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
+  for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
     try {
-      var image = s.raw[rindex];
+      var image = useItemState.getState().raw[rindex];
       if (image.isDeleted) continue;
       var isContain = image.folders.indexOf(folder.id) > -1;
       if (includeSubFolder) {
@@ -1436,7 +1438,7 @@ export function machineryGetFolderImages(s: any, folder: any, includeSubFolder: 
 }
 
 /* getRecentFolders（bundle 31969-31988 逐字） */
-export function machineryGetRecentFolders(s: any, length: any): any[] {
+export function machineryGetRecentFolders(length: any): any[] {
   var len = length;
   if (!length) len = 8;
   var recentMoveFolders: any = localStorage.getItem("recentMoveFolders");
@@ -1449,11 +1451,11 @@ export function machineryGetRecentFolders(s: any, length: any): any[] {
   }
 
   recentMoveFolders = recentMoveFolders.filter(function (folderId: any) {
-    return !!s.folderMappings[folderId];
+    return !!useItemState.getState().folderMappings[folderId];
   });
 
   var recentFolders = recentMoveFolders.map(function (folderId: any) {
-    return s.folderMappings[folderId];
+    return useItemState.getState().folderMappings[folderId];
   });
 
   recentFolders = [...new Set(recentFolders)];
@@ -1478,11 +1480,11 @@ export function machineryRefreshRandom(s: any): void {
   }
 }
 
-export function machineryRenameFolder(s: any, event: any, folder: any): void {
+export function machineryRenameFolder(event: any, folder: any): void {
   const w = window as any;
   // if (folder.password && !folder.isUnLock) return;
-  s.viewMode = undefined;
-  s.currentFolder = folder;
+  writeScopeField('viewMode', undefined);
+  writeScopeField('currentFolder', folder);
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
@@ -1498,10 +1500,10 @@ export function machineryRenameFolder(s: any, event: any, folder: any): void {
   }, 200);
 }
 
-export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any): void {
+export function machineryRenameSmartFolder(event: any, smartFolder: any): void {
   const w = window as any;
-  s.viewMode = undefined;
-  s.currentSmartFolder = smartFolder;
+  writeScopeField('viewMode', undefined);
+  writeScopeField('currentSmartFolder', smartFolder);
   syncPanelFromScope();
   syncListFromScope();
   smartFolder.editable = true;
@@ -1516,7 +1518,7 @@ export function machineryRenameSmartFolder(s: any, event: any, smartFolder: any)
   }, 200);
 }
 
-export function machinerySaveFolder(s: any): void {
+export function machinerySaveFolder(): void {
   const w = window as any;
   console.time("$scope.saveFolder");
 
@@ -1532,13 +1534,13 @@ export function machinerySaveFolder(s: any): void {
   };
 
   var folders: any[] = [];
-  w.cloneTree(folders, s.folders);
+  w.cloneTree(folders, useFolderState.getState().folders);
 
   w.eagle.utils.tree.walk(folders, 'children', function (folder: any, parent: any, depth: any) {
     folder.name = nfc(folder.name);
   });
 
-  const smartFolders = s.smartFolders.map(function (smartFolder: any) {
+  const smartFolders = useFolderState.getState().smartFolders.map(function (smartFolder: any) {
     var clone: any = {
       id: smartFolder.id,
       icon: smartFolder.icon,
@@ -1562,7 +1564,7 @@ export function machinerySaveFolder(s: any): void {
     smartFolder.name = nfc(smartFolder.name);
   });
 
-  const groups = s.TagManager.groups.map(function (group: any) {
+  const groups = useMiscRawState.getState().TagManager.groups.map(function (group: any) {
     var g: any = {
       id: group.id,
       name: nfc(group.name),
@@ -1577,14 +1579,14 @@ export function machinerySaveFolder(s: any): void {
     return g;
   });
 
-  const quickAccess = s.quickAccess.map(function (item: any) {
+  const quickAccess = useMiscRawState.getState().quickAccess.map(function (item: any) {
     return {
       type: item.type,
       id: item.id
     };
   });
 
-  const libraryPath = s.libraryPath;
+  const libraryPath = useMiscRawState.getState().libraryPath;
 
     // IPCHelper（bundle 3471 const = 脚本级词法绑定，window/ESM 均不可达）——send 语义等价
   // 复刻（bundle 3473-3482：ipcRenderer.send + electronLog + try/catch 静默）
@@ -1697,11 +1699,11 @@ export function buildRecentFileManager(): any {
   return RecentFileManager;
 }
 
-export function machineryAddToRecentFile(s: any, item: any): void {
+export function machineryAddToRecentFile(item: any): void {
   const w = window as any;
   // 記錄在最近使用
   setTimeout(function () {
-    if (s.current !== item) {
+    if (useSelectionState.getState().current !== item) {
       console.log("已換人，無須記錄")
     }
     else {
@@ -1712,15 +1714,15 @@ export function machineryAddToRecentFile(s: any, item: any): void {
 }
 
 /* changeSidebarIndex（bundle 36656-36665 逐字） */
-export function machineryChangeSidebarIndex(s: any, node: any): void {
+export function machineryChangeSidebarIndex(node: any): void {
   const $timeout = getTimeout();
-  const folder = s.folderMappings[node?.id];
-  const idx = s.sidebarList.indexOf(folder);
+  const folder = useItemState.getState().folderMappings[node?.id];
+  const idx = useMiscRawState.getState().sidebarList.indexOf(folder);
   if (idx !== -1) {
-    s.sidebarIndex = -1;
+    writeScopeField('sidebarIndex', -1);
     syncSidebarFromScope();
     $timeout(function () {
-      s.sidebarIndex = idx;
+      writeScopeField('sidebarIndex', idx);
       syncSidebarFromScope();
     }, 1);
   }
@@ -1743,7 +1745,7 @@ export function machineryExpandSmartFolder(s: any, smartFolder: any): void {
 }
 
 /* getAllChildFolder（bundle 42498-42505 逐字：tree.walk 全子树收集 + Set 去重） */
-export function machineryGetAllChildFolder(s: any, fd: any): any[] {
+export function machineryGetAllChildFolder(fd: any): any[] {
   const w = window as any;
   let folders: any[] = [];
   w.eagle.utils.tree.walk(fd.children, 'children', function (folder: any, parent: any, depth: any) {
@@ -1753,13 +1755,13 @@ export function machineryGetAllChildFolder(s: any, fd: any): any[] {
   return folders;
 }
 
-export function machineryGetFolderList(s: any): any[] {
+export function machineryGetFolderList(): any[] {
   const w = window as any;
   let list: any[] = [];
-  let isFiltering = !!s.folderKeyword;
+  let isFiltering = !!useMiscRawState.getState().folderKeyword;
   let guidelinesMap: any = {};
 
-  w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any, depth: any) {
+  w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder: any, parent: any, depth: any) {
 
     // 計算 guidelines 顏色及數量
     let guidelines: any[] = [];
@@ -1841,9 +1843,9 @@ export function machineryGetFolderList(s: any): any[] {
 }
 
 /* getQuickAccessList（bundle 42634-42643 逐字：quickAccess 逐项 size=27 + vstype 标记） */
-export function machineryGetQuickAccessList(s: any): any[] {
+export function machineryGetQuickAccessList(): any[] {
   var list: any[] = [];
-  s.quickAccess.forEach(function (item: any) {
+  useMiscRawState.getState().quickAccess.forEach(function (item: any) {
     item.size = 27;
     item.vstype = 'quickAccess';
     list.push(item);
@@ -1851,16 +1853,16 @@ export function machineryGetQuickAccessList(s: any): any[] {
   return list;
 }
 
-export function machineryGetSmartFolderList(s: any): any[] {
+export function machineryGetSmartFolderList(): any[] {
   const w = window as any;
   let list: any[] = [];
-  let isFiltering = !!s.folderKeyword;
+  let isFiltering = !!useMiscRawState.getState().folderKeyword;
   let guidelinesMap: any = {};
 
-  s.smartFolderList = [];
+  writeScopeField('smartFolderList', []);
   syncSidebarFromScope();
 
-  w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+  w.eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
 
     // 計算 guidelines 顏色及數量
     let guidelines: any[] = [];
@@ -1884,10 +1886,10 @@ export function machineryGetSmartFolderList(s: any): any[] {
     }
 
     // 列表版本 SmartFolders
-    s.smartFolderList.push(smartFolder);
+    useMiscRawState.getState().smartFolderList.push(smartFolder);
     syncSidebarFromScope();
 
-    s.smartFolderMappings[smartFolder.id] = smartFolder;
+    useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
 
     smartFolder.depth = depth;
     smartFolder.size = 27;
@@ -1987,35 +1989,35 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
       return;
     }
   }
-  s.currentFolderChildren = machineryGetChildFoldersMaps(s, s.$root.selectedFolders);
+  s.currentFolderChildren = machineryGetChildFoldersMaps(s.$root.selectedFolders);
 }
 
-export function machineryOpenNextFolder(s: any): void {
+export function machineryOpenNextFolder(): void {
   var nextFolder;
-  var listItems = s.sidebarList;
+  var listItems = useMiscRawState.getState().sidebarList;
   var folders = listItems.filter(function (item: any) {
     return item.vstype === 'folder';
   });
-  var idx = folders.indexOf(s.currentFolder);
+  var idx = folders.indexOf(useFolderState.getState().currentFolder);
   nextFolder = folders[idx + 1];
 
   if (nextFolder) {
     openFolder(nextFolder);
-    machineryChangeSidebarIndex(s, nextFolder);
+    machineryChangeSidebarIndex(nextFolder);
   }
 }
 
-export function machineryOpenNextSmartFolder(s: any): void {
+export function machineryOpenNextSmartFolder(): void {
   var nextSmartFolder;
-  var listItems = s.sidebarList;
+  var listItems = useMiscRawState.getState().sidebarList;
   var smartFolders = listItems.filter(function (item: any) {
     return item.vstype === 'smartFolder' || item.vstype === 'smartFolderGroup';
   });
-  var idx = smartFolders.indexOf(s.currentSmartFolder);
+  var idx = smartFolders.indexOf(useFolderState.getState().currentSmartFolder);
   nextSmartFolder = smartFolders[idx + 1];
   if (nextSmartFolder) {
     openSmartFolder(nextSmartFolder);
-    machineryChangeSidebarIndex(s, nextSmartFolder);
+    machineryChangeSidebarIndex(nextSmartFolder);
   }
   else {
     var folders = listItems.filter(function (item: any) {
@@ -2023,15 +2025,15 @@ export function machineryOpenNextSmartFolder(s: any): void {
     });
     if (folders.length > 0) {
       openFolder(folders[0]);
-      machineryChangeSidebarIndex(s, folders[0]);
+      machineryChangeSidebarIndex(folders[0]);
     }
   }
 }
 
 /* openParentFolder（bundle 38384-38388 逐字；openFolder 经 scope 解析） */
-export function machineryOpenParentFolder(s: any): void {
-  if (s.currentFolder && s.currentFolder.parent) {
-    openFolder(s.folderMappings[s.currentFolder.parent]);
+export function machineryOpenParentFolder(): void {
+  if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.parent) {
+    openFolder(useItemState.getState().folderMappings[useFolderState.getState().currentFolder.parent]);
   }
 }
 
@@ -2048,7 +2050,7 @@ export function machineryOpenPrevFolder(s: any): void {
 
   if (prevFolder) {
     openFolder(prevFolder);
-    machineryChangeSidebarIndex(s, prevFolder);
+    machineryChangeSidebarIndex(prevFolder);
   }
   else {
     var quickAccessItems = listItems.filter(function (item: any) {
@@ -2059,7 +2061,7 @@ export function machineryOpenPrevFolder(s: any): void {
     });
     if (smartFolders.length > 0 && smartFolders[smartFolders.length - 1]) {
       openSmartFolder(smartFolders[smartFolders.length - 1]);
-      machineryChangeSidebarIndex(s, smartFolders[smartFolders.length - 1]);
+      machineryChangeSidebarIndex(smartFolders[smartFolders.length - 1]);
     }
     else if (quickAccessItems.length > 0 && quickAccessItems[quickAccessItems.length - 1]) {
       clickEl("#quick-access-" + quickAccessItems[quickAccessItems.length - 1].id);
@@ -2081,7 +2083,7 @@ export function machineryOpenPrevSmartFolder(s: any): void {
   prevSmartFolder = smartFolders[idx - 1];
   if (prevSmartFolder) {
     openSmartFolder(prevSmartFolder);
-    machineryChangeSidebarIndex(s, prevSmartFolder);
+    machineryChangeSidebarIndex(prevSmartFolder);
   } else {
     // 如果有 quick access 就进入 quick access 若无，进入 Trash
     if (s.$root.preferences.sidebar.quickAccess != 'false') {
@@ -2133,8 +2135,8 @@ export function machineryOpenRecent(s: any, ignoreHistory: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    machineryUpdateListHeight(s, s.imageSize.height);
+    machinerySetLastFolder(undefined);
+    machineryUpdateListHeight(s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
     s.reload();
@@ -2173,8 +2175,8 @@ export function machineryOpenTrash(s: any, ignoreHistory: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    machineryUpdateListHeight(s, s.imageSize.height);
+    machinerySetLastFolder(undefined);
+    machineryUpdateListHeight(s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
     s.reload();
@@ -2213,8 +2215,8 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    machineryUpdateListHeight(s, s.imageSize.height);
+    machinerySetLastFolder(undefined);
+    machineryUpdateListHeight(s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
     s.reload();
@@ -2228,7 +2230,7 @@ export function machineryPrependFolder(s: any, folder: any): void {
   machineryUpdateSidebarList(s);
   setTimeout(function () {
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-      machinerySaveFolder(s);
+      machinerySaveFolder();
     });
   }, 1000);
 }
@@ -2244,7 +2246,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
     machineryOpenAll(s);
   }
   setTimeout(function () {
-    machineryChangeSidebarIndex(s, folder);
+    machineryChangeSidebarIndex(folder);
     scopeEvalAsync();
   }, 200);
   // 自动定位
@@ -2262,7 +2264,7 @@ export function machineryQuickOpenFolder(s: any, folder: any, t: any): void {
           syncInspectorFromScope();
           $timeout(function () {
             callExternal('select', undefined, target);
-            machineryAutoScroll(s, undefined);
+            machineryAutoScroll(undefined);
             setTimeout(function () {
               cssSet("#box-container", { visibility: "initial" });
             }, 100);
@@ -2309,7 +2311,7 @@ export function machineryRemoveFolder(s: any, folder: any, params: any = {}): vo
         confirmButtonText: getFilter()('i18n')('dialog.removeFolder.button'),
         cancelButtonText: getFilter()('i18n')("general.cancel"),
       }).then(function (result: any) {
-        machineryCheckOperationSafety2(s, folder.descendantImageCount, function () {
+        machineryCheckOperationSafety2(folder.descendantImageCount, function () {
           _p.isDeleteImages = (result == 1);
           machineryRemoveFolderInner(s, folder, _p);
           scopeEvalAsync();
@@ -2358,10 +2360,10 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
       image.isDeleted = true;
       image.deletedTime = now;
     }
-    machineryUpdateFilterCounts(s, image, -1, now);
+    machineryUpdateFilterCounts(image, -1, now);
   });
 
-  machineryAutoScroll(s, undefined);
+  machineryAutoScroll(undefined);
 
   if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
     s.removeSound && s.removeSound.play && s.removeSound.play();
@@ -2381,7 +2383,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
       image.isDeleted = false;
       image.folders = originFolders[index];
       delete image.deletedTime;
-      machineryUpdateFilterCounts(s, image, 1, now);
+      machineryUpdateFilterCounts(image, 1, now);
     });
     s.selected = origin;
     syncInspectorFromScope();
@@ -2402,7 +2404,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
   w.hiddenByCurrentFilter(s.selected);
 
   // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-  s.lastIndex = machineryGetSelection(s).start;
+  s.lastIndex = machineryGetSelection().start;
   var next = s.allData[s.lastIndex + s.selected.length];
   var prev = s.allData[s.lastIndex - 1];
   if (next) {
@@ -2427,15 +2429,15 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
     machineryLeaveDetailMode(s);
   }
   $timeout(function () {
-    machineryForceFitImageSize(s, s.current, undefined);
+    machineryForceFitImageSize(s.current, undefined);
     machineryZoom(s);
   }, 100);
   w.ScrollbarSaver.saveScrollPosition();
 
-  var itemElements = machineryGetSelectedItemElements(s);
+  var itemElements = machineryGetSelectedItemElements();
   glRemoveitemsChannel.emit(itemElements);
 
-  machineryAutoScroll(s, undefined);
+  machineryAutoScroll(undefined);
 
   machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
     if (s.currentFolder && s.currentFolder.orderBy === "RANDOM") { }
@@ -2558,7 +2560,7 @@ export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages
   delete s.folderMappings[folder.id];
   machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
     scopeEvalAsync();
-    s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+    s.saveFolderDebounce && machinerySaveFolderDebounce();
     if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${s.all.length} files, trash remain: ${s.trash.length} files`); }
   });
@@ -2594,7 +2596,7 @@ export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages
 
       scopeEvalAsync();
       machineryUpdateSidebarList(s);
-      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+      s.saveFolderDebounce && machinerySaveFolderDebounce();
       w.ayncsImagesChange(originalImages);
     });
   }
@@ -2682,7 +2684,7 @@ export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { igno
   machineryUpdateSidebarList(s);
 
   $timeout(function () {
-    s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+    s.saveFolderDebounce && machinerySaveFolderDebounce();
   }, 1000);
 
   w.electronLog && w.electronLog.info(`[app] Remove smart-folder: ${smartFolder.name}(${smartFolder.id})`);
@@ -2705,7 +2707,7 @@ export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { igno
       });
       machineryUpdateSidebarList(s);
       openSmartFolder(smartFolder);
-      s.saveFolderDebounce && machinerySaveFolderDebounce(s);
+      s.saveFolderDebounce && machinerySaveFolderDebounce();
       scopeEvalAsync();
     });
   }
@@ -2715,7 +2717,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
   const w = window as any;
   if (s.selected.length > 0 && s.$root.currentFocus !== "sidebar") {
     if (!s.isDetailMode) {
-      machineryRenameImages(s);
+      machineryRenameImages();
     }
     else {
       focusEl("#inspector-name");
@@ -2738,7 +2740,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
       machineryBatchRenameFolders(s);
     }
     else {
-      machineryRenameFolder(s, event, s.currentFolder);
+      machineryRenameFolder(event, s.currentFolder);
     }
   } else if (!s.isDetailMode && s.currentSmartFolder && s.$root.currentFocus === 'sidebar') {
     event && event.preventDefault();
@@ -2746,12 +2748,12 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
       machineryBatchRenameSmartFolders(s);
     }
     else {
-      machineryRenameSmartFolder(s, event, s.currentSmartFolder);
+      machineryRenameSmartFolder(event, s.currentSmartFolder);
     }
   } else if (!s.isDetailMode && s.currentTagGroup) {
 
     // 先檢查是否有選中的標籤
-    var selectedTagKeys = machineryGetSelectedTags(s);
+    var selectedTagKeys = machineryGetSelectedTags();
     if (selectedTagKeys.length > 0) {
       // 有選中標籤時，重命名標籤
       if (selectedTagKeys.length === 1) {
@@ -2778,7 +2780,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
       // 沒有選中標籤時，重命名標籤群組
       const $timeout = getTimeout();
       $timeout && $timeout(function () {
-        machineryRenameTagGroup(s, s.currentTagGroup);
+        machineryRenameTagGroup(s.currentTagGroup);
       }, 50);
     }
   }
@@ -2794,14 +2796,14 @@ export function machineryResetFolderCover(s: any, folder: any): void {
   });
 }
 
-export function machinerySaveFolderDebounce(s: any): void {
+export function machinerySaveFolderDebounce(): void {
   const w = window as any;
-  s.isLibrarySaving = true;
-  clearTimeout(s.saveFolderDebounceTimeout);
-  s.saveFolderDebounceTimeout = setTimeout(() => {
-    machinerySaveFolder(s);
-    s.isLibrarySaving = false;
-  }, 1000);
+  writeScopeField('isLibrarySaving', true);
+  clearTimeout(useMiscRawState.getState().saveFolderDebounceTimeout);
+  writeScopeField('saveFolderDebounceTimeout', setTimeout(() => {
+    machinerySaveFolder();
+    writeScopeField('isLibrarySaving', false);
+  }, 1000));
 }
 
 export function machinerySetFolderCover(s: any): void {
@@ -2817,7 +2819,7 @@ export function machinerySetFolderCover(s: any): void {
     message: message,
     duration: 750
   });
-  machinerySaveFolder(s);
+  machinerySaveFolder();
 }
 
 export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignoreReload: any): void {
@@ -2836,19 +2838,19 @@ export function machinerySetFolderOrder(s: any, folder: any, orderBy: any, ignor
   if (s.currentFolder === folder && !ignoreReload) {
     s.reload();
   }
-  machinerySaveFolder(s);
+  machinerySaveFolder();
 }
 
-export function machinerySetLastFolder(s: any, folderId: any): void {
+export function machinerySetLastFolder(folderId: any): void {
   const w = window as any;
   if (!setLastFolderDebounced) {
     setLastFolderDebounced = debounce(function (fid: any) {
       if (!fid) {
-        localStorage.removeItem(`eagle.lastFolder.${s.rootDir}`);
+        localStorage.removeItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`);
       }
       else {
-        machinerySetViewMode(s, "all");
-        localStorage.setItem(`eagle.lastFolder.${s.rootDir}`, fid);
+        machinerySetViewMode("all");
+        localStorage.setItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`, fid);
       }
     }, 500);
   }
@@ -2871,20 +2873,20 @@ export function machinerySetSmartFolderOrder(s: any, folder: any, orderBy: any):
   if (s.currentSmartFolder === folder) {
     s.reload();
   }
-  machinerySaveFolder(s);
+  machinerySaveFolder();
 }
 
-export function machineryShowTutorial(s: any): void {
+export function machineryShowTutorial(): void {
   const w = window as any;
-  if (s.all.length === 0 && s.libraryHistory.length === 1 && s.folders.length === 0) {
+  if (useItemState.getState().all.length === 0 && useMiscRawState.getState().libraryHistory.length === 1 && useFolderState.getState().folders.length === 0) {
     if (w.localStorage["eagle.show.tutorial"] !== "true") {
-      const theme = getFilter()('themePath')(s.theme);
+      const theme = getFilter()('themePath')(useBodyState.getState().theme);
 
       w.swal({
         html: `
                             <div class="alert">
                                 <div class="alert-image">
-                                    <img width="384" height="216" src="assets/images/${theme}/illustrations/illustration-tutorial-${s.platform}.png" style="width: calc(100% + 32px);margin-bottom: 12px;aspect-ratio: 768/432;margin-left: -16px;margin-right: -16px;margin-top: -16px;">
+                                    <img width="384" height="216" src="assets/images/${theme}/illustrations/illustration-tutorial-${useBodyState.getState().platform}.png" style="width: calc(100% + 32px);margin-bottom: 12px;aspect-ratio: 768/432;margin-left: -16px;margin-right: -16px;margin-top: -16px;">
                                 </div>
                                 <h4 class="alert-title">${w.i18n.__('dialog.tutorial.title')}</h4>
                                 <p class="alert-desc">${w.i18n.__('dialog.tutorial.desc')}</p>
@@ -2952,7 +2954,7 @@ export function machineryToggleAllSmartFolderExpand(s: any, event: any, selected
   if (s.smartFolders && s.smartFolders.length > 0) {
     var expand = !s.smartFolders[0].isExpand;
     if (smartFolder) {
-      setTimeout(function () { machineryChangeSidebarIndex(s, smartFolder); scopeEvalAsync(); }, 100);
+      setTimeout(function () { machineryChangeSidebarIndex(smartFolder); scopeEvalAsync(); }, 100);
       if (smartFolder.parent) {
         var parent = s.smartFolderMappings[smartFolder.parent];
         if (parent) {
@@ -3068,9 +3070,9 @@ export function machineryUpdateSidebarList(s: any): void {
     var communityItem = { vstype: 'community', size: 27 };
     var allTagsItem = { vstype: 'allTags', size: 27 };
     var trashItem = { vstype: 'trash', size: 27 };
-    var folders = machineryGetFolderList(s);
-    var smartFolders = machineryGetSmartFolderList(s);
-    var quickAccess = machineryGetQuickAccessList(s);
+    var folders = machineryGetFolderList();
+    var smartFolders = machineryGetSmartFolderList();
+    var quickAccess = machineryGetQuickAccessList();
     var quickAccessLabel = { vstype: 'label-qucik-access', size: 25 };
     var smartFolderLabel = { vstype: 'label-smart-folder', size: 25 };
     var folderLabel = { vstype: 'label-folder', size: 25 };

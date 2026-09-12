@@ -78,7 +78,7 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
       document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
     }
     setTimeout(() => {
-      runInBodyScope((s) => machineryUpdateContainerHieght(s));
+      runInBodyScope((s) => machineryUpdateContainerHieght());
     }, 50);
     runInBodyScope((s) => {
       s.$root.currentFocus = 'content';
@@ -157,7 +157,7 @@ export function closeShell(elem: HTMLElement | null) {
     document.getElementById('filter-toolbar-overlay')?.classList.remove('show');
   }
   setTimeout(() => {
-    runInBodyScope((s) => machineryUpdateContainerHieght(s));
+    runInBodyScope((s) => machineryUpdateContainerHieght());
   }, 50);
 }
 

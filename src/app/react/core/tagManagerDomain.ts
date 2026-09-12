@@ -48,6 +48,10 @@ import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryResetPage } from '../services/gridService';
 import { applyDataMachineryScope } from './machineryInfra';
 import { useMiscRawState } from '../store/miscRawState';
+import { useLayoutState } from '../store/layoutState';
+import { writeScopeField } from './scopeFieldBridge';
+import { useFolderState } from '../store/folderState';
+import { useListState } from '../store/listState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -342,7 +346,7 @@ export function machineryBuildTagManager(s: any): any {
         };
 
         TagManager.saveGroup = function () {
-            machinerySaveFolder(s);
+            machinerySaveFolder();
         };
 
         TagManager.isSelected = function (tag: any) {
@@ -432,9 +436,9 @@ export function machineryBuildTagManager(s: any): any {
             s.TagManager.isDirty = true;
             syncFilterFromScope();
             syncTagManagerFromScope();
-            machineryCalcuteContainTags(s, s.filtereds);
+            machineryCalcuteContainTags(s.filtereds);
             machineryUpdateSelection(s);
-            machineryUpdateItemsView(s, s.selected);
+            machineryUpdateItemsView(s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -478,11 +482,11 @@ export function machineryBuildTagManager(s: any): any {
             syncFilterFromScope();
             syncTagManagerFromScope();
 
-            machineryCalcuteContainTags(s, s.filtereds);
+            machineryCalcuteContainTags(s.filtereds);
             TagManager.addHistoryTag(tag);
             machineryUpdateSelection(s);
 
-            machineryUpdateItemsView(s, s.selected);
+            machineryUpdateItemsView(s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -531,9 +535,9 @@ export function machineryBuildTagManager(s: any): any {
                 });
             }
 
-			machineryCalcuteContainTags(s, s.filtereds);
+			machineryCalcuteContainTags(s.filtereds);
 			machineryUpdateSelection(s);
-			machineryUpdateItemsView(s, s.selected);
+			machineryUpdateItemsView(s.selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -709,7 +713,7 @@ export function machineryBuildTagManager(s: any): any {
                     return false;
                 });
                 var total = images.length;
-                var folderTags = machineryCalcuteContainTags(s, images).containTags || [];
+                var folderTags = machineryCalcuteContainTags(images).containTags || [];
                 folderTags.forEach(function (tag: any) {
                     tag.ratio = tag.imageCount / total;
                     result.push(tag);
@@ -738,7 +742,7 @@ export function machineryBuildTagManager(s: any): any {
                 return match == tags.length;
             });
             var total = images.length - 1;
-            var result = machineryCalcuteContainTags(s, images).containTags;
+            var result = machineryCalcuteContainTags(images).containTags;
             result = result.filter(function (tag: any) {
                 for (var i = 0; i < tags.length; i++) {
                     if (tags[i] === tag.name) {
@@ -1327,7 +1331,7 @@ export function machineryBuildTagManager(s: any): any {
             if (tags?.length === 0) return;
             var group = TagManager.groupMappings[groupID];
             if (!group) return;
-            machineryCheckOperationSafety2(s, tags.length, function () {
+            machineryCheckOperationSafety2(tags.length, function () {
                 tags.forEach(function (tag: any) {
                     var idx = group.tags.indexOf(tag);
                     if (idx !== -1) {
@@ -1438,7 +1442,7 @@ export function machineryBuildTagManager(s: any): any {
             syncTagManagerFromScope();
             s.currentTagGroup = newGroup;
             syncTagManagerFromScope();
-            machineryRenameTagGroup(s, newGroup);
+            machineryRenameTagGroup(newGroup);
             s.selectedTags = {};
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
@@ -1636,7 +1640,7 @@ export function machineryBuildTagManager(s: any): any {
                         icon: 'ic-rename.svg',
                         accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${process.platform}`],
                         click: () => {
-                            machineryRenameTagGroup(s, tagGroup);
+                            machineryRenameTagGroup(tagGroup);
                             scopeEvalAsync();
                         }
                     },
@@ -2319,28 +2323,28 @@ export function machineryBuildTagManager(s: any): any {
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* autoResizeTagFilter（bundle 43119-43128 逐字；controller 闭包函数 → 域内移植） */
-export function machineryAutoResizeTagFilter(s: any): void {
+export function machineryAutoResizeTagFilter(): void {
   const w = window as any;
-  var tagsLength = s.containTags.length;
+  var tagsLength = useMiscRawState.getState().containTags.length;
   var height = tagsLength * 24 + 54;
-  if (s.containerSize && s.containerSize.tagFilter) {
-    if (s.containerSize.tagFilter > height) {
+  if (useLayoutState.getState().containerSize && useLayoutState.getState().containerSize.tagFilter) {
+    if (useLayoutState.getState().containerSize.tagFilter > height) {
       cssSet(".tags-filter", { height: height });
     }
     else {
-      cssSet(".tags-filter", { height: s.containerSize.tagFilter });
+      cssSet(".tags-filter", { height: useLayoutState.getState().containerSize.tagFilter });
     }
   }
 }
 
 /* $scope.calcuteContainTags（bundle 27155-27194 逐字） */
-export function machineryCalcuteContainTags(s: any, data: any[]): void {
+export function machineryCalcuteContainTags(data: any[]): void {
   const w = window as any;
-  var result = machineryCalcuteContainTagsInner(s, data);
+  var result = machineryCalcuteContainTagsInner(data);
 
   // 建立群组列表
   var tagsMappings = result.containTagsMappings;
-  s.TagManager.groups.forEach(function (group: any) {
+  useMiscRawState.getState().TagManager.groups.forEach(function (group: any) {
     var groupObject = [];
     group.tags.forEach(function (tag: any) {
       if (tagsMappings[tag]) {
@@ -2351,7 +2355,7 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
     });
   });
 
-  s.containTags = [];
+  writeScopeField('containTags', []);
   syncFilterFromScope();
 
   var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
@@ -2360,13 +2364,13 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
   });
 
   result.containTags.forEach(function (tag: any) {
-    s.containTags.push(tag);
+    useMiscRawState.getState().containTags.push(tag);
     syncFilterFromScope();
   });
 
   // 显示未标签功能
   if (result.noTagsCount > 0) {
-    s.containTags.unshift({
+    useMiscRawState.getState().containTags.unshift({
       isSelected: w.eagle.filter.filterRules.tag.no,
       name: w.i18n.__("Filter.NoTags"),
       imageCount: result.noTagsCount,
@@ -2378,7 +2382,7 @@ export function machineryCalcuteContainTags(s: any, data: any[]): void {
 }
 
 /* calcuteContainTags 闭包版（bundle 27196-27292 逐字） */
-function machineryCalcuteContainTagsInner(s: any, data: any[]): any {
+function machineryCalcuteContainTagsInner(data: any[]): any {
   const w = window as any;
   var tagsCount: any = {};
   var tagsMappings: any = {};
@@ -2419,7 +2423,7 @@ function machineryCalcuteContainTagsInner(s: any, data: any[]): any {
       isSelected: idx > -1,
       isExcluded: eidx > -1,
       name: key,
-      pinyin: s.TagManager.tagMappings[key] && s.TagManager.tagMappings[key].pinyin,
+      pinyin: useMiscRawState.getState().TagManager.tagMappings[key] && useMiscRawState.getState().TagManager.tagMappings[key].pinyin,
       imageCount: tagsCount[key],
       index: index
     };
@@ -2704,7 +2708,7 @@ export function machineryEditTag(s: any, tag: any): void {
       text: newName
     });
 
-    machinerySaveFolder(s);
+    machinerySaveFolder();
 
     tag.name = newName;
     tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
@@ -3038,8 +3042,8 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    machinerySetLastFolder(s, undefined);
-    machineryUpdateListHeight(s, s.imageSize.height);
+    machinerySetLastFolder(undefined);
+    machineryUpdateListHeight(s.imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
     s.reload();
@@ -3047,37 +3051,37 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
   }, 50);
 }
 
-export function machineryRefreshSubfolderList(s: any): void {
+export function machineryRefreshSubfolderList(): void {
   // 过滤子文件夹
-  if (s.currentFolder) {
-    if (s.showSubfolderContent) {
-      s.subFolders = machineryGetAllChildFolder(s, s.currentFolder);
+  if (useFolderState.getState().currentFolder) {
+    if (useListState.getState().showSubfolderContent) {
+      writeScopeField('subFolders', machineryGetAllChildFolder(useFolderState.getState().currentFolder));
       syncListFromScope();
-      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
+      if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
     }
     else {
-      s.subFolders = s.currentFolder.children;
+      writeScopeField('subFolders', useFolderState.getState().currentFolder.children);
       syncListFromScope();
-      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = false;
+      if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = false;
     }
-    if (s.keyword) {
-      s.subFolders = s.subFolders.filter(function (folder: any) {
-        if (folder.name.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+    if (useListState.getState().keyword) {
+      writeScopeField('subFolders', useMiscRawState.getState().subFolders.filter(function (folder: any) {
+        if (folder.name.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
           return true;
         }
         if (folder && folder.tags) {
           var folderTags = folder.tags.join("");
-          if (folderTags.toLowerCase().indexOf(s.keyword.toLowerCase()) > -1) {
+          if (folderTags.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
             return true;
           }
         }
-      });
+      }));
       syncListFromScope();
-      if (s.subFolderSortableOptions) s.subFolderSortableOptions.disabled = true;
+      if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
     }
   }
   else {
-    s.subFolders = [];
+    writeScopeField('subFolders', []);
     syncListFromScope();
   }
 }
@@ -3127,11 +3131,11 @@ export function machineryRemoveTagGroup(s: any, group: any): void {
 }
 
 /* renameTagGroup（bundle 48582-48592 逐字：双 100/200ms focus 双写原样） */
-export function machineryRenameTagGroup(s: any, group: any): void {
+export function machineryRenameTagGroup(group: any): void {
   const w = window as any;
-  s.currentTagGroup = group;
+  writeScopeField('currentTagGroup', group);
   syncTagManagerFromScope();
-  s.newGroupName = group.name;
+  writeScopeField('newGroupName', group.name);
   syncTagManagerFromScope();
   group.editable = true;
   setTimeout(function () {
@@ -3144,20 +3148,20 @@ export function machineryRenameTagGroup(s: any, group: any): void {
   }, 200);
 }
 
-export function machineryUpdateSubFolderWidth(s: any): void {
+export function machineryUpdateSubFolderWidth(): void {
   const w = window as any;
   const boxContainer = q("#box-container");
   if (!boxContainer) return;
   var containerWidth = boxContainer.clientWidth;
-  var column = parseInt(containerWidth / s.imageSize.height as any);
+  var column = parseInt(containerWidth / useLayoutState.getState().imageSize.height as any);
   if (!column) column = 1;
   var result = parseInt((containerWidth - 38 - (column * 10)) / column as any);
   result = parseInt(result / 5 as any) * 5;
   if (result < 90) result = 90;
-  if (result >= s.MAX_LIST_WIDTH) {
-    result = s.MAX_LIST_WIDTH;
+  if (result >= useMiscRawState.getState().MAX_LIST_WIDTH) {
+    result = useMiscRawState.getState().MAX_LIST_WIDTH;
   }
-  s.imageSize.subfolderWidth = result;
+  useLayoutState.getState().imageSize.subfolderWidth = result;
 }
 
 export let openUntaggedTimeout: any = null;

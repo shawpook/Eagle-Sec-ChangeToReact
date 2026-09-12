@@ -14,7 +14,7 @@ import {
 } from './boxGridEngine';
 import { BoxItem } from './boxItem';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
-import { getBodyScope, runInBodyScope } from '../../core/appCore';
+import { runInBodyScope } from '../../core/appCore';
 import { cleanSelected } from '../../services/batchOpsService';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
@@ -197,8 +197,7 @@ export function BoxList() {
       onRequestAppend={(e: any) => { e.ready && e.ready(); }}
       onRequestPrepend={(e: any) => { e.ready && e.ready(); }}
       onRenderComplete={() => {
-        const s = getBodyScope();
-        if (!s || !s.lazyLoadManager) return;
+        if (!useMiscRawState.getState().lazyLoadManager) return;
         const lzm = useMiscRawState.getState().lazyLoadManager;
         const container = gridRef.current && gridRef.current.getContainerElement && gridRef.current.getContainerElement();
         if (!container) return;

@@ -38,7 +38,7 @@ export function detailUpdateZoomRatio(s: any, ratio: any, x: any, y: any, hasTra
 
   if (ratio) {
     s.imageSize.zoomRatio = ratio;
-    machineryOnZoomRatioChanged(s);
+    machineryOnZoomRatioChanged();
     s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
   }
 
@@ -182,7 +182,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
 
   if (ratio) {
     s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
-    machineryOnZoomRatioChanged(s);
+    machineryOnZoomRatioChanged();
     s.imageSize.zoomRatioExp = machineryGetRatioExp(s.imageSize.zoomRatio);
   }
   s.showLargeImage = true;

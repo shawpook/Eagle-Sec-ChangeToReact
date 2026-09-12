@@ -135,7 +135,7 @@ export function takeoverSelectionViewDomain(): void {
     }
 
     if (s.selected.length === 1) {
-      s.lastSelectedIndex = machineryCurrentIndex(s) - 1;
+      s.lastSelectedIndex = machineryCurrentIndex() - 1;
     }
 
     // 全选
@@ -170,11 +170,10 @@ export function takeoverSelectionViewDomain(): void {
   // 由 machineryOnImageSizeHeightChanged 统一入口在写入点调用（Toolbar 滑条 / openAll /
   // zoomActual）。保留 Angular $watch「注册即触发一次」的语义。
   {
-    const s: any = getBodyScope();
-    if (s) {
+    {
       // 原 watcher 首次触发发生在 flush（域接管之后、scope 已就绪）；此处为同步接管路径，
       // 直接调用可能早于 scope 就绪 —— 用 try/catch 兜住，避免中断后续通道注册。
-      try { machineryOnImageSizeHeightChanged(s); } catch (err) { /* noop */ }
+      try { machineryOnImageSizeHeightChanged(); } catch (err) { /* noop */ }
     }
   }
 
@@ -182,9 +181,8 @@ export function takeoverSelectionViewDomain(): void {
   // 由 machineryOnZoomRatioChanged 在 5 个写入点调用（dataMachinery ×3 + detailService ×2）。
   // 保留 Angular $watch「注册即触发一次」的语义（try/catch 兜住：接管时 scope 可能未就绪）。
   {
-    const s: any = getBodyScope();
-    if (s) {
-      try { machineryOnZoomRatioChanged(s); } catch (err) { /* noop */ }
+    {
+      try { machineryOnZoomRatioChanged(); } catch (err) { /* noop */ }
     }
   }
 
@@ -193,9 +191,8 @@ export function takeoverSelectionViewDomain(): void {
   // （SmallPanels 的元信息下拉）已改为直接调 machineryChangeMetaItems。
   // 另：Angular $watch 注册时会以 (当前值, 当前值) 立即触发一次 listener —— 保留该语义。
   {
-    const s: any = getBodyScope();
-    if (s) {
-      try { machineryChangeMetaItems(s, s.listMetaType); } catch (err) { /* noop */ }
+    {
+      try { machineryChangeMetaItems(useMiscRawState.getState().listMetaType); } catch (err) { /* noop */ }
     }
   }
 
@@ -209,9 +206,7 @@ export function takeoverSelectionViewDomain(): void {
 
   diag.listenersRemoved['SAVE_FOLDER'] = removeScopeListener(s0, 'SAVE_FOLDER');
   saveFolderChannel.on(function () {
-    const s: any = getBodyScope();
-    if (!s) return;
-    machinerySaveFolder(s);
+    machinerySaveFolder();
   });
 }
 
@@ -224,8 +219,8 @@ let cleanSelectedTimeout: any = null;
 let lastMoveToTrashCheckbox: any = 1;
 
 /* getSelectedItemElements（bundle 21864-21876 逐字） */
-export function machineryGetSelectedItemElements(s: any): any[] {
-  var items = machineryGetSelectedItems(s);
+export function machineryGetSelectedItemElements(): any[] {
+  var items = machineryGetSelectedItems();
   items = items.map(function (item: any) {
     // if (!item.el) {
     //     item.el = $(item.content)[0];
@@ -236,11 +231,11 @@ export function machineryGetSelectedItemElements(s: any): any[] {
   return items;
 }
 
-export function machineryGetSelectedItems(s: any): any[] {
+export function machineryGetSelectedItems(): any[] {
   const w = window as any;
   var items = w.ig.getItems(true);
   items = items.filter(function (item: any) {
-    return s.selectedMappings[item.id];
+    return useItemState.getState().selectedMappings[item.id];
     // if (item && item.el && item.el.id) {
     //     var id = item.el.id.replace("box-", "");
     //     return $scope.selectedMappings[id] !== undefined;
@@ -250,16 +245,16 @@ export function machineryGetSelectedItems(s: any): any[] {
 }
 
 /* getSelectedTags（bundle 38865-38869 逐字） */
-export function machineryGetSelectedTags(s: any): string[] {
-  if (!s.selectedTags) return [];
-  return Object.keys(s.selectedTags);
+export function machineryGetSelectedTags(): string[] {
+  if (!useMiscRawState.getState().selectedTags) return [];
+  return Object.keys(useMiscRawState.getState().selectedTags);
 }
 
 /* getSelection（bundle 36632-36649 逐字） */
-export function machineryGetSelection(s: any): any {
+export function machineryGetSelection(): any {
   var arr: any[] = [];
-  s.selected.forEach(function (image: any) {
-    var idx = s.allData.indexOf(image);
+  useSelectionState.getState().selected.forEach(function (image: any) {
+    var idx = useItemState.getState().allData.indexOf(image);
     if (idx != -1) {
       arr.push(idx);
     }
@@ -293,7 +288,7 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
     return;
   }
   if (s.isDetailMode) return;
-  var selection = machineryGetSelection(s);
+  var selection = machineryGetSelection();
   var start = selection.start;
   var end = selection.end + 1;
 
@@ -303,14 +298,14 @@ export function machineryMultipleSelectNext(s: any, event: any): void {
     if (idx !== -1) {
       s.selected.splice(idx, 1);
       syncInspectorFromScope();
-      machineryAutoScroll(s, s.lastSelectedIndex);
+      machineryAutoScroll(s.lastSelectedIndex);
     }
   }
   else {
     if (s.allData[end]) {
       s.selected.push(s.allData[end]);
       syncInspectorFromScope();
-      machineryAutoScroll(s, end);
+      machineryAutoScroll(end);
     }
   }
 }
@@ -322,7 +317,7 @@ export function machineryMultipleSelectPrev(s: any, event: any): void {
     return;
   }
   if (s.isDetailMode) return;
-  var selection = machineryGetSelection(s);
+  var selection = machineryGetSelection();
   var start = selection.start;
   var end = selection.end;
 
@@ -332,14 +327,14 @@ export function machineryMultipleSelectPrev(s: any, event: any): void {
     if (idx !== -1) {
       s.selected.splice(idx, 1);
       syncInspectorFromScope();
-      machineryAutoScroll(s, s.lastSelectedIndex);
+      machineryAutoScroll(s.lastSelectedIndex);
     }
   }
   else {
     if (s.allData[start - 1]) {
       s.selected.push(s.allData[start - 1]);
       syncInspectorFromScope();
-      machineryAutoScroll(s, start - 1);
+      machineryAutoScroll(start - 1);
     }
   }
 }
@@ -375,7 +370,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
       if (!result?.isDirty) return;
 
       const { selectedFolderIds, deselectedFolderIds } = result;
-      machineryCheckOperationSafety(s, () => {
+      machineryCheckOperationSafety(() => {
         try {
           let selectedFolders: any[] = [];
           let folderIds: any[] = [];
@@ -447,7 +442,7 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
                     s.currentFolder.imagesMappings[item.id] = false;
                   }
                   item.folders.splice(idx2, 1);
-                  machineryUpdateFilterCounts(s, item, -1);
+                  machineryUpdateFilterCounts(item, -1);
                   item.isDeleted = false;
                   hasChanged = true;
                   changedItems.push(item);
@@ -521,8 +516,8 @@ export function machineryOpenInspectorFolderSelectPanel(s: any, event: any): voi
   });
 }
 
-export function machineryOpenInspectorTagSelectPanel(s: any): void {
-  if (s.selected.length === 0) return;
+export function machineryOpenInspectorTagSelectPanel(): void {
+  if (useSelectionState.getState().selected.length === 0) return;
   inspectorTagSelectPanelOpenChannel.emit();
 }
 
@@ -562,7 +557,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
     }
   }
   else if (s.viewMode === 'alltags' && s.currentTagGroup) {
-    var selectedTags = machineryGetSelectedTags(s);
+    var selectedTags = machineryGetSelectedTags();
     if (selectedTags && selectedTags.length > 0) {
       s.TagManager.removeTagsFromGroup(s.currentTagGroup.id, selectedTags);
     }
@@ -594,8 +589,8 @@ export function machineryRemoveSelected(s: any, event: any): void {
       });
     }
     else {
-      machineryCheckOperationSafety(s, function () {
-        s.lastIndex = machineryGetSelection(s).start;
+      machineryCheckOperationSafety(function () {
+        s.lastIndex = machineryGetSelection().start;
 
         if (s.currentFolder) {
 
@@ -654,7 +649,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
             image.isDeleted = true;
             image.deletedTime = Date.now();
             origin.push(image);
-            machineryUpdateFilterCounts(s, image, -1, now);
+            machineryUpdateFilterCounts(image, -1, now);
           });
 
           var message = getFilter()('i18n')("notify.image.remove", [
@@ -670,7 +665,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
             origin.forEach(function (image: any) {
               image.isDeleted = false;
               delete image.deletedTime;
-              machineryUpdateFilterCounts(s, image, 1, now);
+              machineryUpdateFilterCounts(image, 1, now);
             });
             s.selected = origin;
             syncInspectorFromScope();
@@ -704,7 +699,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
           w.hiddenByCurrentFilter(s.selected);
 
           // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-          s.lastIndex = machineryGetSelection(s).start;
+          s.lastIndex = machineryGetSelection().start;
           var next = s.allData[s.lastIndex + s.selected.length];
           var prev = s.allData[s.lastIndex - 1];
 
@@ -733,17 +728,17 @@ export function machineryRemoveSelected(s: any, event: any): void {
           }
 
           $timeout(function () {
-            machineryForceFitImageSize(s, s.current);
+            machineryForceFitImageSize(s.current);
             machineryZoom(s);
           }, 100);
 
           w.ScrollbarSaver.saveScrollPosition();
 
-          var itemElements = machineryGetSelectedItemElements(s);
+          var itemElements = machineryGetSelectedItemElements();
           glRemoveitemsChannel.emit(itemElements);
 
-          s.lastSelectedIndex = machineryCurrentIndex(s) - 1;
-          machineryAutoScroll(s);
+          s.lastSelectedIndex = machineryCurrentIndex() - 1;
+          machineryAutoScroll();
 
           machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
             if (
@@ -794,7 +789,7 @@ export function machineryRemoveSelectedFolders(s: any): void {
     confirmButtonText: getFilter()('i18n')('dialog.removeFolder.button'),
     cancelButtonText: getFilter()('i18n')("general.cancel"),
   }).then(function (result: any) {
-    machineryCheckOperationSafety2(s, s.$root.selectedFolders.length, function () {
+    machineryCheckOperationSafety2(s.$root.selectedFolders.length, function () {
       var isDeleteImages = (result == 1);
       s.$root.selectedFolders.forEach(function (folder: any) {
         if (folder.password && !folder.isUnLock) return;
@@ -858,9 +853,9 @@ export function machinerySelectAll(s: any, event: any): void {
 
 export function machinerySelectDown(s: any, event: any): void {
   event && event.preventDefault();
-  var selection = machineryGetSelection(s);
+  var selection = machineryGetSelection();
   var end = selection.end || 0;
-  var $arround = machineryGetArroundBox(s, end);
+  var $arround = machineryGetArroundBox(end);
   var $box = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
   var boxOffest = offsetOf($box || null);
   if (!boxOffest) return;
@@ -894,7 +889,7 @@ export function machinerySelectDown(s: any, event: any): void {
     }
   });
   if (target) {
-    var image = machineryGetItemByElement(s, target);
+    var image = machineryGetItemByElement(target);
     s.selected = [image];
     syncInspectorFromScope();
     s.selectedFolderMappings = {};
@@ -904,10 +899,10 @@ export function machinerySelectDown(s: any, event: any): void {
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    machineryAutoScroll(s, target);
+    machineryAutoScroll(target);
   }
   if (s.isDetailMode) {
-    machineryForceFitImageSize(s, s.selected[0], true);
+    machineryForceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
@@ -944,12 +939,12 @@ export function machinerySelectNext(s: any, event: any): void {
     return;
   }
 
-  var selection = machineryGetSelection(s);
+  var selection = machineryGetSelection();
   var start = selection.start;
   var end = selection.end + 1;
 
   if (s.isDetailMode) {
-    machineryRememberScrollTops(s, s.current);
+    machineryRememberScrollTops(s.current);
   }
 
   if (!s.allData[end]) {
@@ -969,7 +964,7 @@ export function machinerySelectNext(s: any, event: any): void {
 
   if (s.isDetailMode) {
     $timeout.cancel(nextTimeout);
-    machineryForceFitImageSize(s, s.selected[0], true);
+    machineryForceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
@@ -977,7 +972,7 @@ export function machinerySelectNext(s: any, event: any): void {
     syncDetailFromScope();
   }
 
-  machineryAutoScroll(s, end);
+  machineryAutoScroll(end);
 
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
@@ -989,9 +984,9 @@ export function machinerySelectNext(s: any, event: any): void {
         machineryZoom(s);
       }
       var nextImage = s.allData[end + 1];
-      machineryPreloadImage(s, "next");
+      machineryPreloadImage("next");
     }, 100);
-    machineryAddToRecentFile(s, s.current);
+    machineryAddToRecentFile(s.current);
   }
 }
 
@@ -1003,7 +998,7 @@ export function machinerySelectPrev(s: any, event: any): void {
     return;
   }
 
-  var selection = machineryGetSelection(s);
+  var selection = machineryGetSelection();
   var start = selection.start;
   var end = selection.end + 1;
 
@@ -1016,7 +1011,7 @@ export function machinerySelectPrev(s: any, event: any): void {
 
   if (s.isDetailMode) {
     detailZoom()?.cleanBitmapViewer();
-    machineryRememberScrollTops(s, s.current);
+    machineryRememberScrollTops(s.current);
     s.isGifReady = false;
     syncDetailFromScope();
   }
@@ -1027,22 +1022,22 @@ export function machinerySelectPrev(s: any, event: any): void {
     s.selected.push(s.allData[start - 1]);
     syncInspectorFromScope();
     if (s.isDetailMode) {
-      machineryForceFitImageSize(s, s.selected[0], true);
+      machineryForceFitImageSize(s.selected[0], true);
       s.current = s.selected[0];
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    machineryAutoScroll(s, start - 1);
+    machineryAutoScroll(start - 1);
   } else {
     s.selected = [];
     syncInspectorFromScope();
     s.selected.push(s.allData[0]);
     syncInspectorFromScope();
-    machineryForceFitImageSize(s, s.selected[0], true);
+    machineryForceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();
-    machineryAutoScroll(s, 0);
+    machineryAutoScroll(0);
   }
   s.selectedFolderMappings = {};
   syncListFromScope();
@@ -1057,16 +1052,16 @@ export function machinerySelectPrev(s: any, event: any): void {
       if (!machineryLastZoom(s)) {
         machineryZoom(s);
       }
-      machineryPreloadImage(s, "prev");
+      machineryPreloadImage("prev");
     }, 100);
-    machineryAddToRecentFile(s, s.current);
+    machineryAddToRecentFile(s.current);
   }
 }
 
 export function machinerySelectUp(s: any, event: any): void {
   event && event.preventDefault();
 
-  var selection = machineryGetSelection(s);
+  var selection = machineryGetSelection();
   var start = selection.start;
   var $box = q(".box.selected");
   var boxOffest = offsetOf($box);
@@ -1102,7 +1097,7 @@ export function machinerySelectUp(s: any, event: any): void {
     }
   });
   if (target) {
-    var image = machineryGetItemByElement(s, target);
+    var image = machineryGetItemByElement(target);
     s.selected = [image];
     syncInspectorFromScope();
     s.selectedFolderMappings = {};
@@ -1112,10 +1107,10 @@ export function machinerySelectUp(s: any, event: any): void {
       syncDetailFromScope();
       syncInspectorFromScope();
     }
-    machineryAutoScroll(s, target);
+    machineryAutoScroll(target);
   }
   if (s.isDetailMode) {
-    machineryForceFitImageSize(s, s.selected[0], true);
+    machineryForceFitImageSize(s.selected[0], true);
     s.current = s.selected[0];
     syncDetailFromScope();
     syncInspectorFromScope();

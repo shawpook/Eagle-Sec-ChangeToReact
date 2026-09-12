@@ -555,6 +555,13 @@ export function EaglepackExportProgress() {
     setHost(document.getElementById('eagle-eaglepack-export-progress-host'));
   }, []);
 
+  // b1-9bz-E5-4：同上（archive 侧：isArchiving/percent/progress/total）。
+  useEffect(() => {
+    const w = window as any;
+    w.__eagleExportScopes = w.__eagleExportScopes || {};
+    Object.defineProperty(w.__eagleExportScopes, 'archive', { configurable: true, get: () => rootRef.current });
+  }, []);
+
   useEffect(() => {
     const calculateProgress = () => {
       if (rootRef.current.curr === 0) return;
@@ -757,6 +764,15 @@ export function FileExportProgress() {
 
   useEffect(() => {
     setHost(document.getElementById('eagle-file-export-progress-host'));
+  }, []);
+
+  // b1-9bz-E5-4：export-progress 冒烟观测口（原 main.cjs 经
+  // `angular.element(document.querySelector('file-export-progress')).isolateScope()` 读
+  // isExporting/curr/total；Angular 指令退役后该 DOM 元素不存在）——暴露活引用，读写同一对象。
+  useEffect(() => {
+    const w = window as any;
+    w.__eagleExportScopes = w.__eagleExportScopes || {};
+    Object.defineProperty(w.__eagleExportScopes, 'file', { configurable: true, get: () => rootRef.current });
   }, []);
 
   useEffect(() => {

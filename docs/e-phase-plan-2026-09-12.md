@@ -1,5 +1,18 @@
 # E 阶段规划：`$bodyScope` / `scopeShim` / `coreState` 退役（DoD ①、②）
 
+> **E5 收官更新（2026-09-12 深夜）**：**DoD ①、② 均达标** —— 哨兵
+> **`getBodyScope 793 → 0`、`evalAsync 6 → 0`**、`scopeApply/rootAccess/coreState = 0`、
+> `watch/watchCollection/on/broadcast/apply = 0`、`jQuery/vendorScriptTags = 0`，基线棘轮锁定。
+> **主窗 `window.$bodyScope` 已删除**；跨边界供给改为 `core/driverApi.ts` 的显式
+> `window.__eagleDriver`（白名单 DATA/ACTION，store + 面两级后端）与 `window.__eagleScopeRegistry`
+> （诊断口）；测试观测口 `__eagleProbe` 由 `tests/react-cdp-harness.mjs` 按文档惰性注入
+> （52 个测试零改动）。子窗（preview-window / viewers）仍以 `window.$bodyScope` 承载本窗
+> controllerScope（`getWindowScope()` 取本窗面）。**全套 65/65 ALL GREEN**（`main-ui-workflow`
+> 走既有一次重试，属 main.cjs 自陈的 `updateMany` 后端负载 flake）。
+> `$evalAsync` 之谜已解：E1b 记录的「有则过、无则败」是**预览窗 controllerScope** 的
+> `$evalAsync`（其实现调 `notify()` 触发预览窗 React 重渲染），不是主窗 no-op 钩子。
+> **E5-5（`shims.js` 整体退役）为独立 D-2 项目**，评估见 PROGRESS《E5-5 评估》。
+
 > **E4 收官更新（2026-09-12 夜）**：**DoD ① 已达标** —— `global/scopeShim.ts` 已删除、
 > `appCore.coreState` 已删除（哨兵 `coreState 13 → 0`）。scope 面改为 `core/scopeFace.ts`
 > 的**显式 store 后端**（注册字段 `Object.defineProperty` 直连 store；无 Proxy、无 coreState）。
@@ -8,8 +21,7 @@
 > 剩余 15 处 `getBodyScope()` 与逐条原因见 `src/app/react/PROGRESS.md`《E4：删壳》节——
 > 全部为 **E5 前置**（`appCore` 定义处、`fileUrlHelper` 子窗硬排除、`machineryInfra` 跨窗/驱动
 > 供给、`main.tsx` 就绪门、`boxGridEngine` 的 `window.$bodyScope` 兜底、`preview-window`
-> 自有面）。**下一步 E5**：迁移 `electron/main.cjs`、`frontend/public/shims.js` 与
-> `$evalAsync` 提交钩子 → `$bodyScope` 不再作为运行时对象存在（DoD ② 收口）。
+> 自有面）。**E5 已全部完成**（见上）。
 
 > 生成时间：2026-09-12　工作目录：`H:\dev\Eagle-Sec-development - 副本`　分支：`react-in-place`
 > 起点 HEAD：`aa173cb`（D 阶段收官，全套 65/65 `REACT SUITE ALL GREEN`）

@@ -2616,11 +2616,14 @@ app.whenReady().then(async () => {
                 const bodyScope = window.__eagleDriver || null;
                 return bodyScope && Array.isArray(bodyScope.raw) && bodyScope.listDone ? bodyScope : null;
               }, 'main scope', 25000);
-              const fileElement = document.querySelector('file-export-progress');
-              const archiveElement = document.querySelector('eaglepack-export-progress');
-              if (!fileElement || !archiveElement) throw new Error('Original export progress directives are missing');
-              const fileScope = angular.element(fileElement).isolateScope();
-              const archiveScope = angular.element(archiveElement).isolateScope();
+              // b1-9bz-E5-4：原以 Angular 指令元素 + isolateScope() 观测；指令退役后 React 组件
+              // （ProgressDialogs.FileExportProgress/EaglepackExportProgress）经
+              // window.__eagleExportScopes 暴露同名活引用（isExporting/curr/total、isArchiving/percent/progress/total
+              // 语义与 isolateScope 一致——读写同一对象）。
+              const exportScopes = window.__eagleExportScopes;
+              if (!exportScopes || !exportScopes.file || !exportScopes.archive) throw new Error('Export progress scopes are missing');
+              const fileScope = exportScopes.file;
+              const archiveScope = exportScopes.archive;
               const items = scope.raw.filter((item) => item && !item.isDeleted && (item.name === 'Progress Export A' || item.name === 'Progress Export B'));
               if (items.length < 2) throw new Error('Export progress smoke requires the two named items');
               const ipc = require('electron').ipcRenderer;

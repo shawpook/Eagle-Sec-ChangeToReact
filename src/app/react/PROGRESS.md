@@ -8127,3 +8127,69 @@ DoD ② 只剩 **`getBodyScope 15` 与 `evalAsync 1`**，两者都等于「scope
 `native-preview` 定向过；`main-ui-workflow` 为**已知 flake**（A/B：E5-3 3 次过 1、E5-4 3 次过 2，
 同区失败消息 `inspector operation result timeout` / `multi inspector persistence timeout`，
 main.cjs 注释自陈 `updateMany` 走后端 HTTP 负载下整体失败）。
+
+**E5-4 补记：`export-progress` 预存失败已修**（独立于哨兵 DoD ②，属 `test:full` 非 65 套件）
+`main.cjs --smoke-export-progress` 原以 Angular 指令元素 + `isolateScope()` 观测
+（`file-export-progress` / `eaglepack-export-progress`），Angular 退役后 DOM 元素不复存在。
+修法：`ProgressDialogs.tsx` 的 `FileExportProgress` / `EaglepackExportProgress` 各加一个 effect，
+经 `Object.defineProperty(window.__eagleExportScopes, 'file'|'archive', { get: () => rootRef.current })`
+暴露**活引用**（读写同一对象，语义与 isolateScope 一致）；main.cjs 冒烟改读该口。
+`EXPORT_PROGRESS_CLOSED_LOOP_OK`。至此 `test:full` 中已知失败清零（65 套件 + document-viewer-ui /
+video-detail / browser-capture-ui / export-progress 均过）。
+
+---
+
+## E5：收官结论
+
+| 指标 | E4 末 | E5 末 | DoD |
+|---|---|---|---|
+| 哨兵 `getBodyScope` | 15 | **0** | ② |
+| 哨兵 `evalAsync` | 4 | **0** | ② |
+| 哨兵 `scopeApply` / `rootAccess` / `coreState` | 0 / 1 / 0 | **0 / 0 / 0** | ①/② |
+| 主窗 `window.$bodyScope` | 存在（store 后端面） | **不存在** | ② |
+| `tsc --noEmit` | 508（E4 初） | **493** | 零新键 |
+| React 全套 | 65/65 | **65/65 ALL GREEN** | — |
+
+**跨边界供给的新形态**（取代 `$bodyScope`）：
+- `window.__eagleDriver`（`core/driverApi.ts`）——显式白名单：DATA 50 + ACTION 29；
+  两级后端（store 注册表 → 未注册者回落 `scopeFace` 的 plain 槽，即 machinery 函数挂载）。
+  消费方：`electron/main.cjs`、`frontend/public/shims.js`、viewer iframe（font/text-editor/gif）、
+  `src/app/js/services/lazy-load-manager.js`、`frontend/public/vendor/eagle-match-rules.js`。
+- `window.__eagleScopeRegistry`（诊断口）——`read/write/names`，两级回落；harness 的
+  `__eagleProbe` 即建于其上。
+- `getWindowScope()`（`core/scopeFace.ts`）——**应用内**跨窗共享模块用：`window.$bodyScope ||
+  getScopeFace()`；子窗（preview-window / viewers）自有 `$bodyScope` 保留。
+- `window.__eagleCoreState` —— 仍为面本体（cz1/cz2/m1 诊断契约），非运行时供给面。
+
+### E5-5 评估：`frontend/public/shims.js` 整体退役（D-2 收口，**未执行**）
+
+**为什么单列**：shims.js 不是「残留 scope 代码」，而是**浏览器/冒烟 harness 的全栈替身**，
+且同时承担**生产 Electron 的通道桥**。4007 行 + `mock-data.js` 453 行；由
+`frontend/vite.preview.config.mjs` 在 **dev 与 build 双路径**注入（主 app head 与另一入口各一处）。
+
+职责清单（实测 grep）：
+1. **通道桥（生产相关）**：`desktopSendChannels` 表把渲染层的 ipc `send` 转发到 `desktopApi`
+   ——其中 `images-change` → `desktopApi.item.updateMany`（**main-ui-workflow / channel-wiring /
+   empty-trash / txt-update 的持久化依赖此路**）、`library.create`/`library.switch`、
+   `folders-change` → `updateStructure`、`empty-trash` → `duplicates.emptyTrash`、`read-win-files`/
+   `paste-image`/`paste-paths` → `clipboard.import`、`open-preview-window` 等。
+2. **详情原图交付门控**：25ms 轮询包装 `enterDetailMode`/`leaveDetailMode`（`__eagleOriginalGate`）、
+   `waitForDetailOriginal` + `DetailWorker` —— **preview-delivery / d3-detail-mode / d3-loading 依赖**。
+3. **浏览器预览 mock**：`window.__mockLibrary` / `__mockLibraryCache`、`window.fetch` 改写
+   （`/api/*` → backend）、`desktopApi` 缺席时的内存实现、capture 轮询、`preview:action-result`。
+4. **逐页 mock**：viewer 页（font/text-editor/gif）的 `window.__bodyScope = {...}` 门面。
+5. **document viewer（OrcaBox workspace）** 与若干 DOM poke/isolate-scope 重置。
+
+**3 个测试直读 shims 源码字符串**：`empty-trash`（`channel === 'empty-trash'`、
+`'remove-trash-item'`）、`txt-update`（`channel === 'update-txt-item'`）、`native-preview`。
+
+**建议分解（每步可独立验证，逐步替换 → 最后删文件）**：
+1. 把①通道桥抽成 `core/channelBridge.ts`（React 侧静态 import；语义零变化），套件全绿后再动别处。
+2. 把②详情交付门控的等价实现落到 React detail 生命周期（preview-delivery 定向验证）。
+3. 把③④迁入**仅测试/dev**模块（`import.meta.env.DEV` 或 vite 注入的独立 `dev-shims`），
+   生产 build 不含 mock；`mock-data.js` 作为 fixture 保留。
+4. 3 个源码字符串断言改**行为断言**；vite 配置摘除 shims 注入；删 `shims.js`。
+
+**风险与建议**：① 与 ② 是全套件（含非 65 项）的地基，误删会以「看起来无关」的方式大面积回归；
+当前 `main-ui-workflow` 已在 `updateMany` 后端路径上呈现负载 flake，正是该路径的既有脆弱点。
+**建议**：E5-5 作为独立 D-2 立项，按上述 4 步各自提交 + 定向回归，不要与 E5 的其他改动混批。

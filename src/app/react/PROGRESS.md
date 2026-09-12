@@ -7751,3 +7751,6 @@ imageOpsService/folderCoreService/uploadService/batchOpsService + utils/normaliz
 5. **flake 实测收敛**（2026-09-12）：清场后 `main-ui-workflow` 单独连跑 4/4 全过、
    `react-stage-smoke → main-ui-workflow` 判别序列 1/1 过；此前 4/4 连败系孤儿 Electron
    污染叠加，非代码回归。收口提交 `6a4ebc0`（D-4c）。
+6. **D 阶段收官门禁通过**（2026-09-12）：`node tests/run-react-suite.mjs` = **65/65
+   `REACT SUITE ALL GREEN`**（exit 0，RETRY 0 / FAIL 0，含首项哨兵 `SENTINEL_OK`）。
+   至此 D-1~D-4 全部达成；DoD ①/② 转入 E 阶段（见 `docs/e-phase-plan-2026-09-12.md`）。

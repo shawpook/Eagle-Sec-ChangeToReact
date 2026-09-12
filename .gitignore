@@ -29,3 +29,6 @@ Thumbs.db
 !src/my_modules/*/dist/
 !src/my_modules/*/dist/**
 tests-tmp/
+
+# 本地 agent 工作状态（与 .claude/.zcode 同类，不入库）
+.workbuddy/

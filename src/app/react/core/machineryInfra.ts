@@ -1059,15 +1059,15 @@ export function machinerySeedControllerState(): void {
         writeScopeField('inspector', w.eagle.inspector);
 }
 
-export function scopeSingleton<T>(s: any, key: string, make: () => T): T {
-  let m = singletonByScope.get(s);
-  if (!m) { m = new Map(); singletonByScope.set(s, m); }
-  if (!m.has(key)) m.set(key, make());
-  return m.get(key) as T;
+// b1-9bz-E4：scope 单例表去 scope 键——主窗只有一个 body scope，按 key 的模块级 Map 与
+// WeakMap<scope,Map> 语义等价（原实现是 bundle 「每 scope 一份」的直译）。
+export function scopeSingleton<T>(key: string, make: () => T): T {
+  if (!singletonByKey.has(key)) singletonByKey.set(key, make());
+  return singletonByKey.get(key) as T;
 }
 
 let shimTimeoutInst: any = null;
 
-const singletonByScope = new WeakMap<object, Map<string, any>>();
+const singletonByKey = new Map<string, any>();
 
 let timeoutCache: any = null;

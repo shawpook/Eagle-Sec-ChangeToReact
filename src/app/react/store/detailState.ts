@@ -4,6 +4,7 @@ import { useFilterState } from './filterState';
 import { useListState } from './listState';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
+import { getMigratedScopeField } from '../core/scopeFieldBridge';
 
 import { getGIFPath, getModelPath, getNativeViewerPath, getPDFPath, getRawPath, getRawUrl, getRawViewerPath, getTxtPath, getURLSrc } from '../core/itemDomain';
 import { getThumbnailUrl } from '../services/imageOpsService';
@@ -176,9 +177,10 @@ export const useDetailState = create<{ snapshot: DetailSnapshot }>(() => ({ snap
 const setSnapshot = (snapshot: DetailSnapshot) => useDetailState.setState({ snapshot });
 
 /** 安全调用 scope 上的纯函数 getter（不可用時返回空串）。 */
-function callGetter(scope: any, name: string | ((...a: any[]) => any), arg?: any): string {
+function callGetter(name: string | ((...a: any[]) => any), arg?: any): string {
   try {
-    const fn = typeof name === 'function' ? name : scope[name];
+    // E4：字符串形态的 getter 名按注册表解析（原 `scope[name]` 的等价物；未注册 = 未挂载）。
+    const fn = typeof name === 'function' ? name : getMigratedScopeField(name)?.read();
     if (typeof fn !== 'function') return '';
     const value = arg !== undefined ? fn(arg) : fn();
     return value == null ? '' : String(value);
@@ -261,18 +263,18 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
         inspectorRenaming: !!inspector.isRenaming,
         inspectorWidth: inspector.width || 0,
         current: currentSnap,
-        rawUrl: current ? callGetter(scope, getRawUrl, current) : '',
-        thumbnailUrl: current ? callGetter(scope, getThumbnailUrl, current) : '',
-        lastestThumbnailUrl: current ? callGetter(scope, 'getLastestThumbnailPath', current) : '',
-        rawPath: current ? callGetter(scope, getRawPath, current) : '',
-        pdfPath: current ? callGetter(scope, getPDFPath) : '',
-        gifPath: current ? callGetter(scope, getGIFPath) : '',
-        nativeViewerPath: current ? callGetter(scope, getNativeViewerPath) : '',
-        urlSrc: current ? callGetter(scope, getURLSrc) : '',
-        rawViewerPath: current ? callGetter(scope, getRawViewerPath) : '',
-        fontPath: current ? callGetter(scope, getFontPath) : '',
-        txtPath: current ? callGetter(scope, getTxtPath) : '',
-        modelPath: current ? callGetter(scope, getModelPath) : '',
+        rawUrl: current ? callGetter(getRawUrl, current) : '',
+        thumbnailUrl: current ? callGetter(getThumbnailUrl, current) : '',
+        lastestThumbnailUrl: current ? callGetter('getLastestThumbnailPath', current) : '',
+        rawPath: current ? callGetter(getRawPath, current) : '',
+        pdfPath: current ? callGetter(getPDFPath) : '',
+        gifPath: current ? callGetter(getGIFPath) : '',
+        nativeViewerPath: current ? callGetter(getNativeViewerPath) : '',
+        urlSrc: current ? callGetter(getURLSrc) : '',
+        rawViewerPath: current ? callGetter(getRawViewerPath) : '',
+        fontPath: current ? callGetter(getFontPath) : '',
+        txtPath: current ? callGetter(getTxtPath) : '',
+        modelPath: current ? callGetter(getModelPath) : '',
         pluginExt,
         pluginAllowZoom,
         pluginViewerUrl,

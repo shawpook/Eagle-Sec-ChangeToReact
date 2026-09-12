@@ -33,8 +33,8 @@ export function createBodyScopeShim(): any {
     $root: null,
     $parent: null,
     $$phase: undefined,
-    // bridgeWhenReady 强就绪门桩（bundle initMousetrap 的 b1 后等价物；域接管只需存在性）
-    mousetrap: {},
+    // b1-9bz-E4：`mousetrap` 就绪门桩种子已删除——真身改由 miscRawState 持有（默认 `{}`，
+    // m1-A6 的 `!!shim.mousetrap` 契约不变），避免 `prop in target` 遮蔽迁移委托的读写分裂。
 
     $eval(expr: any): any {
       if (typeof expr === 'function') return expr(selfProxy || shim);

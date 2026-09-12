@@ -234,9 +234,9 @@ export function installKeymap(): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getPageDownHandlerFn(s: any): any { return scopeSingleton(s, 'pageDownHandler', () => machineryPageDownHandler()); }
+export function getPageDownHandlerFn(s: any): any { return scopeSingleton('pageDownHandler', () => machineryPageDownHandler()); }
 
-export function getPageUpHandlerFn(s: any): any { return scopeSingleton(s, 'pageUpHandler', () => machineryPageUpHandler()); }
+export function getPageUpHandlerFn(s: any): any { return scopeSingleton('pageUpHandler', () => machineryPageUpHandler()); }
 
 export function machineryBuildMousetrap(s: any): any {
   const w = window as any;

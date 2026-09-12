@@ -2321,7 +2321,7 @@ let shimFilterInst: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 'toggleFilterByType', () => machineryToggleFilterByType()); }
+export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton('toggleFilterByType', () => machineryToggleFilterByType()); }
 
 // ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
 let imageSearchController: any = null;

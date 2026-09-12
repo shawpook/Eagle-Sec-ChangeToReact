@@ -627,7 +627,7 @@ let updateListHeightTimeout: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getOffsetScrollbarFn(s: any): any { return scopeSingleton(s, 'offsetScrollbar', () => machineryOffsetScrollbar()); }
+export function getOffsetScrollbarFn(s: any): any { return scopeSingleton('offsetScrollbar', () => machineryOffsetScrollbar()); }
 
 export function machineryAutoScroll(index: any): void {
   const $timeout = getTimeout();

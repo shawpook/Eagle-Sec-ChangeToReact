@@ -238,6 +238,35 @@ interface MiscRawState {
   folderIcons: any;
   hexColor: any;
   loadMoreDisable: any;
+  // ── b1-9bz-E4-1 增补：E4 字段面扫描余量（详情/面板/筛选/工具栏/检查器状态）──
+  appVersion: any;
+  buildVersion: any;
+  buildNumber: any;
+  tagViewLayoutMode: any;
+  currentFolderPath: any;
+  useMpvPlayer: any;
+  supportRotate: any;
+  supportCrop: any;
+  ratio: any;
+  inspectorFolder: any;
+  currentUrl: any;
+  selectedFolder: any;
+  isAlwaysOnTop: any;
+  keywords: any;
+  keywords_cn: any;
+  keywords_tw: any;
+  // bundle 时代由 controller 挂到 scope 的类型表（b1 后 `scope.X` 恒 undefined；注册以保留
+  // 「falsy」真值语义，供详情快照 buildDetailSnapshot 去参数化——窗口全局 `window.X` 不变）。
+  VIDEO_TYPES: any;
+  AUDIO_TYPES: any;
+  FONT_TYPES: any;
+  URL_TYPES: any;
+  MODEL_TYPES: any;
+  DISABLE_ZOOM_TYPES: any;
+  SUPPORT_FORMATS: any;
+  // E4：键盘绑定表（原 shim target 种子 `{}`；注册后真身在 store，m1-A6 的 `!!shim.mousetrap`
+  // 契约由 store 默认 `{}` 继续满足）。
+  mousetrap: any;
 }
 
 export const useMiscRawState = create<MiscRawState>(() => ({
@@ -459,6 +488,30 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   folderIcons: null,
   hexColor: null,
   loadMoreDisable: null,
+  appVersion: null,
+  buildVersion: null,
+  buildNumber: null,
+  tagViewLayoutMode: null,
+  currentFolderPath: null,
+  useMpvPlayer: null,
+  supportRotate: null,
+  supportCrop: null,
+  ratio: null,
+  inspectorFolder: null,
+  currentUrl: null,
+  selectedFolder: null,
+  isAlwaysOnTop: null,
+  keywords: null,
+  keywords_cn: null,
+  keywords_tw: null,
+  VIDEO_TYPES: null,
+  AUDIO_TYPES: null,
+  FONT_TYPES: null,
+  URL_TYPES: null,
+  MODEL_TYPES: null,
+  DISABLE_ZOOM_TYPES: null,
+  SUPPORT_FORMATS: null,
+  mousetrap: {},
 }));
 
 const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
@@ -479,6 +532,11 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'searchFilter', 'lockImageFilter', '$$listeners', '$$watchers', 'saveFolderDebounce', 'tagsSuggestionResult',
   'undo', 'closeAll', 'initMenu', 'notify', 'reload', 'toggleFilter', 'updateSelection', 'zoom', 'changeStar', 'removeSelected', 'toggleAll', 'selectNext', 'selectPrev', 'enterDetailMode', 'leaveDetailMode', 'onDropContainer', 'activateFont', 'deactivateFont', 'escHandler', 'copyAsPath', 'getRawPath', 'getRawUrl', 'select', 'addImagesToFolder', 'selectTag', 'createTagGroup', 'openTagAllGroup', 'openUnfiledGroup', 'openStarredGroup', 'openTagGroup', 'addStarredTags', 'addGroupTags', 'openTagGroupContextMenu', 'renameTagGroup', 'changeTagGroupColor', 'removeTagGroup', 'renameTagGroupBlur', 'renameTagGroupKeyup', 'tagGroupDescriptionChange', 'tagGroupDescriptionFocus', 'tagGroupDescriptionBlur',
   'gifViewer', 'gifPlayer', 'selectedTags', 'removeSound', 'lastIndex', 'isGifReady', 'orderBy', 'currentId', 'duplicateGroupings', 'tagViewModeName', 'colorDistancesMap', 'folderKeyword', 'listMetaType', 'isSearchScopeFolderName', 'isSearchScopeFolderDesc', 'preelaborations', 'paletteQueuePaused', 'addImageStartTime', 'availableHistoryTags', 'lastSelectedTag', 'gifUpadteInterval', 'sidebarIndex', 'canUseTouchID', 'unlockPassword', 'historySearchKeywords', 'boxContianerWidth', 'isSearchScopeName', 'isSearchScopeExt', 'isSearchScopeTag', 'isSearchScopeUrl', 'isSearchScopeAnnotation', 'isSearchScopeNote', 'keywordDebounce', 'MAX_LIST_WIDTH', 'contentFilterCache', 'isExpandQuickAccess', 'isExpandSmartFolder', 'isExpandFolder', 'commentRect', 'duplicateTarget', 'showName', 'showMetas', 'searchRegexGroup', 'addImageTimeLeftInSeconds', 'sliderZoomRatio', 'newGroupName', 'usingGifPlayer', 'paletteQueueDelay', 'lastProcessCount', 'isLibrarySaving', 'saveFolderDebounceTimeout', 'libraryHistory', 'isEnglish', 'initDetailMode', 'untagged', 'lastImageHeight', 'gotoBottomTimeout', 'isOpenWebpagePanel', 'boxContianerHeight', 'isHideMainNav', 'page', 'len', 'showOriginalImageWhenLarge', 'showAnnotation', 'showFileExtension', 'showFileExtensionLabel', 'duplicates', 'showLargeImage', 'usingCache', 'winMenu', 'selectingTags', 'libraryLoadedProgress', 'paletteQueueLength', 'metadataQueueLength', 'downloadQueueLength', 'MAX_DIMENSION', 'duplicateSound', 'errorSound', 'orderByName', 'folderIcons', 'hexColor', 'loadMoreDisable',
+  'appVersion', 'buildVersion', 'buildNumber', 'tagViewLayoutMode', 'currentFolderPath', 'useMpvPlayer',
+  'supportRotate', 'supportCrop', 'ratio', 'inspectorFolder', 'currentUrl', 'selectedFolder', 'isAlwaysOnTop',
+  'keywords', 'keywords_cn', 'keywords_tw',
+  'VIDEO_TYPES', 'AUDIO_TYPES', 'FONT_TYPES', 'URL_TYPES', 'MODEL_TYPES', 'DISABLE_ZOOM_TYPES', 'SUPPORT_FORMATS',
+  'mousetrap',
 ];
 for (const fieldName of MIGRATED) {
   migrateScopeFieldToStore(

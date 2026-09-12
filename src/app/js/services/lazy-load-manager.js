@@ -363,9 +363,9 @@
                 }
                 
                 // 處理大尺寸圖片的特殊邏輯
-                // b1-9d：去 Angular 後 window.angular 缺席；window.$bodyScope 由 main.tsx
-                // 在兩個世界歸一為同一物件（bundle 在世時語義零改變）。
-                const $bodyScope = window.$bodyScope || angular.element('body').scope();
+                // b1-9d → b1-9bz-E5-4：去 Angular 後改讀顯式驅動面 window.__eagleDriver（main.tsx 裝）；
+                // 過渡期回落 window.$bodyScope（angular 分支已刪——angular 恆缺席）。
+                const $bodyScope = window.__eagleDriver || window.$bodyScope || null;
                 if ($bodyScope && $bodyScope.imageSize && $bodyScope.imageSize.height > 440) {
                     const rawSrc = img.getAttribute('raw');
                     if (rawSrc) {
@@ -446,8 +446,8 @@
                 }
                 
                 const boxId = box.getAttribute('data-box-id');
-                // b1-9d：同上——window.$bodyScope 優先，angular 缺席時不拋。
-                const $bodyScope = window.$bodyScope || angular.element('body').scope();
+                // b1-9d → b1-9bz-E5-4：同上——__eagleDriver 優先，過渡期回落 window.$bodyScope。
+                const $bodyScope = window.__eagleDriver || window.$bodyScope || null;
                 
                 if (!$bodyScope || !$bodyScope.itemMappings) {
                     reject(new Error('Scope not available'));

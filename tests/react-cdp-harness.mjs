@@ -194,22 +194,27 @@ export async function bootStack({
     if (!page) throw new Error('CDP page connect failed after retries');
     await page.send('Runtime.enable');
     await page.send('Page.enable');
-    // b1-9bz-E5-3：测试观测口 `window.__eagleProbe`（name→值 的 scope 外观，**仅测试期**）。
-    // 应用在 E5-4 起不再暴露主窗 `window.$bodyScope`；本探针经 `__eagleScopeRegistry`
-    // （app 侧诊断口，注册表 + 面属性两级）读写，并补齐测试惯用的 `$evalAsync` no-op 钩子。
-    // 过渡期（应用仍装别名时）直接复用应用面，保证行为等价。
-    await page.send('Runtime.evaluate', {
-      expression: `(() => {
-        try {
-          if (window.$bodyScope) { window.__eagleProbe = window.$bodyScope; return true; }
+    // b1-9bz-E5-3/E5-4：测试观测口 `window.__eagleProbe`（name→值 的 scope 外观，**仅测试期**）。
+    // 应用自 E5-4 起不再暴露主窗 `window.$bodyScope`；本探针经 `__eagleScopeRegistry`（app 侧
+    // 诊断口，注册表 + 面属性两级）读写，并补齐测试惯用的 `$evalAsync` no-op 钩子。
+    // **必须按文档注入**（addScriptToEvaluateOnNewDocument）：启动期窗口会导航，页内一次性
+    // 注入会被新文档清掉。注入的是**惰性访问器**——registry 由 main.tsx 稍后创建，读取时才构建。
+    const probeSource = `(() => {
+      try {
+        if (window.__eagleProbeHooked) return true;
+        window.__eagleProbeHooked = true;
+        let cached = null;
+        let built = false;
+        const build = () => {
+          if (built) return cached;
           const reg = window.__eagleScopeRegistry;
-          if (!reg) { window.__eagleProbe = null; return false; }
+          if (!reg) return null;
           const noop = () => undefined;
-          const probe = new Proxy({}, {
+          let probe = null;
+          probe = new Proxy({}, {
             get: (_t, k) => {
               if (typeof k !== 'string') return undefined;
-              if (k === '$evalAsync' || k === '$eval') return noop;
-              if (k === '$destroy') return noop;
+              if (k === '$evalAsync' || k === '$eval' || k === '$destroy') return noop;
               if (k === '$root' || k === '$parent') return probe;
               if (k === '__eagleShim') return true;
               return reg.read(k);
@@ -218,13 +223,26 @@ export async function bootStack({
             deleteProperty: (_t, k) => { if (typeof k === 'string') reg.write(k, undefined); return true; },
             has: (_t, k) => typeof k === 'string' && (reg.names().includes(k) || reg.read(k) !== undefined),
           });
-          window.__eagleProbe = probe;
-          window.$bodyScope = probe;
-          return true;
-        } catch (err) { window.__eagleProbe = null; return false; }
-      })()`,
-      returnByValue: true,
-    });
+          cached = probe;
+          built = true;
+          return probe;
+        };
+        Object.defineProperty(window, '$bodyScope', {
+          configurable: true,
+          get() { return cached || build() || undefined; },
+          set(v) { cached = v; built = true; },
+        });
+        Object.defineProperty(window, '__eagleProbe', {
+          configurable: true,
+          get() { return cached || build() || undefined; },
+        });
+        return true;
+      } catch (err) { window.__eagleProbeHooked = 'err:' + (err && err.message); return false; }
+    })()`;
+    try {
+      await page.send('Page.addScriptToEvaluateOnNewDocument', { source: probeSource });
+    } catch (err) { /* 老版本协议不支持时退化为当前文档注入 */ }
+    await page.send('Runtime.evaluate', { expression: probeSource, returnByValue: true });
     return { apiPort, thumbnailPort, extensionPort, vitePort, debugPort, backend, vite, electron, page, targets: [] };
   } catch (err) {
     await stop(backend);

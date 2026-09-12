@@ -53,7 +53,9 @@ function isMatchFolderNameRule (rule, item) {
 
 	for (let i = 0; i < item.folders.length; i++) {
 		const folderId = item.folders[i];
-		const folder = $bodyScope.folderMappings[folderId];
+		// b1-9bz-E5-4：原裸 $bodyScope 全局 → 显式驱动面（主窗 main.tsx 装 __eagleDriver）。
+		const _bs = window.__eagleDriver || window.$bodyScope || null;
+		const folder = _bs && _bs.folderMappings ? _bs.folderMappings[folderId] : null;
 		let name = folder?.name;
 		if (!name) name = "";
 		name = name.toLowerCase();

@@ -8089,3 +8089,41 @@ DoD ② 只剩 **`getBodyScope 15` 与 `evalAsync 1`**，两者都等于「scope
   Angular 退役后这两元素不再存在 → 需改测 React 组件或退役该测）。
 - 环境提示：测试异常退出后会留 Electron 孤儿进程，后续 CDP `fetch failed`——先
   `Get-Process electron | Stop-Process -Force` 再重跑。
+
+### E5-4 收官：删主窗 `$bodyScope` 别名 + `$evalAsync` → **DoD ② 达标**（本批）
+
+**结果**：哨兵 **`getBodyScope 0`、`evalAsync 0`**（+ `scopeApply/rootAccess/coreState 0`）——
+「Angular 提交钩子与 scope 面」在主窗归零；`tsc 493`（零新键）；全套（见下）。
+
+**做了什么**
+
+1. `scopeFace.createBodyScopeFace` 删 `$evalAsync`（最后一项 Angular 提交钩子）；`installScopeAlias`
+   删除——**主窗不再暴露 `window.$bodyScope`**。`__eagleCoreState` 仍为面本体（cz1/cz2/m1 诊断契约）。
+2. `main.tsx` 去掉 `installScopeAlias()` 调用。
+3. **测试观测口迁 harness**：`tests/react-cdp-harness.mjs` 用
+   `Page.addScriptToEvaluateOnNewDocument` 注入**惰性访问器**（`$bodyScope` / `__eagleProbe`），
+   registry 就绪后按需构建一个 Proxy（`get/set/delete/has` → `__eagleScopeRegistry` 两级；
+   `$evalAsync/$eval/$destroy` no-op、`$root/$parent` 自指、`__eagleShim` true）。
+   → 52 个测试**零改动**继续以 `window.$bodyScope` 观测。
+   *踩坑*：一次性 `Runtime.evaluate` 注入会被启动期导航清掉（`$bodyScope` 恒 undefined、
+   探针丢失）——必须按文档注入。
+4. **遗留 classic script 迁移**（不带模块系统、裸 `$bodyScope` 全局解析）：
+   - `src/app/js/services/lazy-load-manager.js`（index.html 第二条 script）：2 处
+     `window.$bodyScope || angular.element(...)` → `window.__eagleDriver || window.$bodyScope || null`
+     （原式在 angular 缺席时本就 ReferenceError）；
+   - `frontend/public/vendor/eagle-match-rules.js`（bundleGlobals fetch+evaluate）：`isMatchFolderNameRule`
+     的裸 `$bodyScope.folderMappings` → `(window.__eagleDriver || window.$bodyScope).folderMappings`
+     ——**这是 main-ui-workflow 多选 inspector 批次写入错位/超时的根因**。
+   - 其余 `src/app/js/**` 中带 `$bodyScope` 的文件（debug-reporter / directives / lib/api…）**均未被加载**
+     （index.html 仅 4 个 script 标签 + 1 个 vendor fetch），确认不影响运行期。
+5. `m1-A6` 契约修订：`shim.$evalAsync === undefined`（改为断言「已退役」，由 harness 探针提供钩子）。
+
+**`$evalAsync` 未解之谜（结论）**：E1b 记录的「`main.cjs` 的 `scope.$evalAsync()` 有则过、无则败」
+里的 `scope` 是 **`window.__eaglePreviewController`**（预览窗自有 controllerScope），其
+`$evalAsync` 实现调 `notify()`（触发预览窗 React 重渲染）——**不是 no-op，也不是主窗面**。
+主窗面的 `$evalAsync`（本轮删除）确为 no-op，无生产消费。谜团解除。
+
+**验证**：`cz1/cz2/cz3`、`m1`、`preview-delivery`、`document-viewer-ui`、`txt-update`、
+`native-preview` 定向过；`main-ui-workflow` 为**已知 flake**（A/B：E5-3 3 次过 1、E5-4 3 次过 2，
+同区失败消息 `inspector operation result timeout` / `multi inspector persistence timeout`，
+main.cjs 注释自陈 `updateMany` 走后端 HTTP 负载下整体失败）。

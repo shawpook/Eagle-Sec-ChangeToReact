@@ -40,7 +40,7 @@ import { bindToastSync } from './store/toastState';
 import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
 import { getDriverApi, installDriverApi } from './core/driverApi';
-import { exposeScopeFaceDiagnostics, getScopeFace, installScopeAlias, installScopeRegistry } from './core/scopeFace';
+import { exposeScopeFaceDiagnostics, getScopeFace, installScopeRegistry } from './core/scopeFace';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -244,7 +244,5 @@ installBundleGlobals();
 installApiServerGlobals();
 installInitAPIServer();
 exposeScopeFaceDiagnostics();
-// E5-2 过渡别名：**仅主窗**安装 `window.$bodyScope`（子窗以该键承载本窗 controllerScope）。
-installScopeAlias();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

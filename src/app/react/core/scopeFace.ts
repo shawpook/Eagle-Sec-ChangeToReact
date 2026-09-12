@@ -9,17 +9,16 @@
  *  - 函数面（machinery 挂载、跨窗/驱动供给）不变：`machineryInfra.applyDataMachineryScope`
  *    等直接写本面属性。
  *
- * 保留的最小面：`__eagleShim`（shim-only 分支判据）、`$root`/`$parent` 自指、`$eval`、
- *  `$evalAsync`、`$destroy`。诊断出口仍名 `__eagleScopeShim`（冒烟 A6/cz1 契约）。
+ * 保留的最小面：`__eagleShim`（shim-only 分支判据）、`$root`/`$parent` 自指、`$eval`、`$destroy`。
+ *  诊断出口仍名 `__eagleScopeShim`（冒烟 A6/cz1 契约）。
  *
- * **E5-2 过渡态**：跨边界消费（main.cjs / shims.js / 子窗口 / 52 个冒烟）改走
- * `core/driverApi.ts` 的显式 `window.__eagleDriver` 与 `window.__eagleScopeRegistry`
- * （store 注册表诊断口）已就位；但 src 侧一次性切换会同时打断 52 个测试与跨窗驱动，
- * 故本批**由主窗入口显式安装 `window.$bodyScope = face` 过渡别名**（E5-3 迁测试观测口、
- * E5-4 删除）。别名安装**只在主窗**（`main.tsx` → `installScopeAlias()`）：子窗
- * （preview-window / viewers）以 `window.$bodyScope` 承载**本窗** controllerScope
- * （`preview-window/controller.ts:2425`），共享 `core/*` 模块必须经 `getWindowScope()`
- * 取「本窗 scope」，否则会建出空的 store 面并**覆盖子窗自有 scope**。
+ * **E5-4 起主窗不再暴露 `window.$bodyScope`**：跨边界消费走 `core/driverApi.ts` 的显式
+ * `window.__eagleDriver`（main.cjs / shims.js / viewer iframe）与 `window.__eagleScopeRegistry`
+ * （诊断/测试按名读写）；测试观测口 `__eagleProbe` 由 `tests/react-cdp-harness.mjs` 安装
+ * （自带 `$evalAsync` no-op，故本面不再保留该提交钩子）。子窗（preview-window / viewers）
+ * 仍以 `window.$bodyScope` 承载**本窗** controllerScope（`preview-window/controller.ts:2425`），
+ * 共享 `core/*` 模块必须经 `getWindowScope()` 取「本窗 scope」，否则会建出空的 store 面并
+ * **覆盖子窗自有 scope**。
  */
 import { getMigratedScopeField, getMigratedScopeFieldNames } from './scopeFieldBridge';
 
@@ -34,13 +33,6 @@ export function createBodyScopeFace(): any {
     $$phase: undefined,
     $eval(expr: any): any {
       if (typeof expr === 'function') return expr(face);
-      return undefined;
-    },
-    // 测试/驱动用 no-op 提交钩子（E5 随驱动迁移删除；preview-delivery 依赖其存在性）。
-    $evalAsync(fn?: any): any {
-      if (typeof fn === 'function') {
-        try { fn(); } catch (err) { console.error('[scopeFace] $evalAsync fn failed', err); }
-      }
       return undefined;
     },
     $destroy(): void { /* noop */ },
@@ -86,10 +78,6 @@ export function getWindowScope(): any {
   return (window as any).$bodyScope || getScopeFace();
 }
 
-/** **仅主窗入口调用**：安装过渡别名 `window.$bodyScope = face`（E5-4 删除）。 */
-export function installScopeAlias(): void {
-  (window as any).$bodyScope = getScopeFace();
-}
 
 /** store 注册表诊断口（测试/驱动按名读写字段；非 scope 对象，但读不到注册字段时回落面属性）。 */
 export function installScopeRegistry(): void {

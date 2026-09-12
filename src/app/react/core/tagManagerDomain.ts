@@ -54,6 +54,7 @@ import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
+import { useBodyState } from '../store/bodyState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -544,7 +545,7 @@ export function machineryBuildTagManager(s: any): any {
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
             q("#tag-search-input")?.focus();
-            machineryCalculateImageBinding(s, {ignoreSort : true}, () => {});
+            machineryCalculateImageBinding({ignoreSort : true}, () => {});
             w.electronLog.info(`[app] Remove tag [${tag}] from ${changedItems.length} files`);
         };
 
@@ -1254,7 +1255,7 @@ export function machineryBuildTagManager(s: any): any {
                 // 如果移除图片标签，那就需要重新计算整体关系
                 if (isRemoveTags) {
                     TagManager.removeTagsPermanently(group.tags);
-                    machineryCalculateImageBinding(s, { ignoreSort: true });
+                    machineryCalculateImageBinding({ ignoreSort: true });
                     try {
                         w.electronLog.info(`[app] Remove tag group(${group.id}) also remove includes tags`);
                     } catch (err: any) {};
@@ -1548,7 +1549,7 @@ export function machineryBuildTagManager(s: any): any {
                             });
                         }
                         s.TagManager.removeStarredTags(remove);
-                        machineryCalculateImageBinding(s, { ignoreSort: true }, () => {});
+                        machineryCalculateImageBinding({ ignoreSort: true }, () => {});
                     }
                 });
             }, 50);
@@ -1586,7 +1587,7 @@ export function machineryBuildTagManager(s: any): any {
                             });
                         }
                         s.TagManager.removeTagsFromGroup(group.id, remove);
-                        machineryCalculateImageBinding(s, { ignoreSort: true }, () => {});
+                        machineryCalculateImageBinding({ ignoreSort: true }, () => {});
                     }
                 });
             }, 50);
@@ -2559,9 +2560,9 @@ export function machineryConvertToRegexGroup(keywords: any, keywords_cn: any, ke
     return regexGroup;
 }
 
-export function machineryEditTag(s: any, tag: any): void {
+export function machineryEditTag(tag: any): void {
   const w = window as any;
-  const TagManager = s.TagManager;
+  const TagManager = useMiscRawState.getState().TagManager;
   w.swal({
     title: w.i18n.__("Context.Tag.Edit.Title"),
     html: w.i18n.__("Context.Tag.Edit.Descript"),
@@ -2606,8 +2607,8 @@ export function machineryEditTag(s: any, tag: any): void {
     var changed: any[] = [];
 
     // $scope.raw.forEach(function(image) {
-    for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
-      var image = s.raw[rindex];
+    for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
+      var image = useItemState.getState().raw[rindex];
       if (image && image.tags) {
         var idx = image.tags.indexOf(tag.name);
         if (idx !== -1 && newName) {
@@ -2668,7 +2669,7 @@ export function machineryEditTag(s: any, tag: any): void {
     // 更新所有文件夹智能标签
     var originFolders: any[] = [];
     var originFoldersTags: any[] = [];
-    w.eagle.utils.tree.walk(s.folders, 'children', function (folder: any, parent: any) {
+    w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder: any, parent: any) {
       if (folder && folder.tags) {
         var idx = folder.tags.indexOf(tag.name);
         if (idx !== -1 && newName) {
@@ -2683,7 +2684,7 @@ export function machineryEditTag(s: any, tag: any): void {
     // 更新智能文件夹的标签属性
     var originConditions: any[] = [];
     var originSmartFolders: any[] = [];
-    w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+    w.eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
       if (!smartFolder.conditions) return;
       originSmartFolders.push(smartFolder);
       originConditions.push(structuredClone(smartFolder.conditions));
@@ -2705,7 +2706,7 @@ export function machineryEditTag(s: any, tag: any): void {
       });
     });
 
-    s.tagsSuggestion.push({
+    useMiscRawState.getState().tagsSuggestion.push({
       value: newName,
       text: newName
     });
@@ -2714,8 +2715,8 @@ export function machineryEditTag(s: any, tag: any): void {
 
     tag.name = newName;
     tag.pinyin = w.tinyPinyin.convertToPinyin(tag.name);
-    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-      machineryRebindRefresh(s);
+    machineryCalculateImageBinding({ ignoreSort: true }, function () {
+      machineryRebindRefresh();
       machineryUpdateSelection();
     });
 
@@ -2872,28 +2873,28 @@ export function machineryMatchWithRegexGroup(text: any, regexGroup: any): any {
            regexGroup.anyMatch.length > 0;
 }
 
-export function machineryOpenAllTags(s: any, ignoreHistory: any): void {
+export function machineryOpenAllTags(ignoreHistory: any): void {
   const w = window as any;
   const $timeout = getTimeout();
-  if (s.viewMode === 'alltags' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) return;
+  if (useBodyState.getState().viewMode === 'alltags' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) return;
 
   w.ScrollbarSaver.saveScrollPosition();
 
-  s.viewMode = 'alltags';
+  writeScopeField('viewMode', 'alltags');
   writeScopeField('currentFocus', "sidebar");
   machineryResetPage();
-  s.images = [];
-  s.isDetailMode = false;
-  s.selected = [];
+  writeScopeField('images', []);
+  writeScopeField('isDetailMode', false);
+  writeScopeField('selected', []);
   syncInspectorFromScope();
   if (!ignoreHistory) {
     w.UrlStateService.setState({ view: 'alltags', folder: null, smartfolder: null, tag: null, color: null });
   }
 
-  machineryRebindRefresh(s);
+  machineryRebindRefresh();
   w.analytics.screenView('AllTags');
   $timeout(() => {
-    s.TagManager.renderTagsResult();
+    useMiscRawState.getState().TagManager.renderTagsResult();
   }, 50);
 }
 

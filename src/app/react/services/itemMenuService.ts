@@ -244,8 +244,8 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         s.selected.forEach((item) => {
                             item.isDeleted = false;
                         });
-                        machineryCalculateImageBinding(s, { ignoreSort: true }, () => {
-                            machineryRebindRefresh(s, true);
+                        machineryCalculateImageBinding({ ignoreSort: true }, () => {
+                            machineryRebindRefresh(true);
                         });
                         const itemElements = machineryGetSelectedItemElements();
                         glRemoveitemsChannel.emit(itemElements);
@@ -528,7 +528,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 message: message,
                                 duration: 1500
                             });
-                            machineryRebindRefresh(s);
+                            machineryRebindRefresh();
                             // scrollToSelectedItem();
                             scopeEvalAsync();
                         });
@@ -572,7 +572,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             });
                             s.selected = [getNext()];
                             syncInspectorFromScope();
-                            machineryRebindRefresh(s);
+                            machineryRebindRefresh();
                             // scrollToSelectedItem();
                             scopeEvalAsync();
                         });
@@ -1207,7 +1207,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             cancelButtonText: i18n.__("general.cancel"),
                         }).then(() => {
                             scopeEvalAsync(() => {
-                                machineryRemovePermanently(s);
+                                machineryRemovePermanently();
                                 if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
                                     s.removeSound.play();
                                 }

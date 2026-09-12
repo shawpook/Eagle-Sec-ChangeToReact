@@ -215,7 +215,7 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
     }
   }
   if (useBodyState.getState().currentFocus == "sidebar" || useBodyState.getState().currentFocus == "tags") {
-    machineryRenameCurrentFolder(s, $event);
+    machineryRenameCurrentFolder($event);
   }
   else {
     if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {

@@ -167,14 +167,12 @@ export function resetFolderPassword(...args: any[]) {
 }
 
 export function setFoldersOrder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (folders: any, orderBy: any, ignoreReload: any) {
       folders.forEach(function (folder: any) {
         machinerySetFolderOrder(folder, orderBy);
       });
       machinerySortRawData(orderBy);
-      machineryRebindRefresh(s);
+      machineryRebindRefresh();
       scopeEvalAsync();
     }).apply(null, args);
 }
@@ -205,21 +203,19 @@ export function setFolderSortIncrease(...args: any[]) {
 }
 
 export function lockFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, f: any) {
       var folder = f || useFolderState.getState().currentFolder;
       if (!folder) return;
       if (!folder.isUnLock || !folder.password) return;
       delete folder.isUnLock;
-      s.isLoading = true;
-      s.selected = [];
+      writeScopeField('isLoading', true);
+      writeScopeField('selected', []);
       syncInspectorFromScope();
       machineryUpdateSidebarList();
-      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-        machineryRebindRefresh(s);
+      machineryCalculateImageBinding({ ignoreSort: true }, function () {
+        machineryRebindRefresh();
         machineryUpdateSelection();
-        s.isLoading = false;
+        writeScopeField('isLoading', false);
       });
     }).apply(null, args);
 }
@@ -263,8 +259,6 @@ export function batchRenameFolders(...args: any[]) {
 }
 
 export function cloneFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any) {
       var resetFolder = function (fd: any) {
         delete fd.$$hashKey;
@@ -307,7 +301,7 @@ export function cloneFolder(...args: any[]) {
         machinerySaveFolder();
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
-      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
+      machineryCalculateImageBinding({ ignoreSort: true }, function () {});
     }).apply(null, args);
 }
 
@@ -591,15 +585,13 @@ export function copyFolderLink(...args: any[]) {
 }
 
 export function showListSubfolderContent(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
       const w = window as any;
-      s.showSubfolderContent = !useListState.getState().showSubfolderContent;
+      writeScopeField('showSubfolderContent', !useListState.getState().showSubfolderContent);
       preferences.showSubfolderContent = useListState.getState().showSubfolderContent;
       (window as any).electronSettings.set('preferences', preferences).then(function () {});
-      machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-        machineryRebindRefresh(s);
+      machineryCalculateImageBinding({ ignoreSort: true }, function () {
+        machineryRebindRefresh();
         machineryUpdateSelection();
         const scrollbar = document.getElementById('box-container-scrollbar');
         if (scrollbar) scrollbar.dispatchEvent(new Event('UPDATE_BOX_SCROLLBAR', { bubbles: true }));
@@ -1155,14 +1147,12 @@ export function openFolderContextMenu(...args: any[]) {
 }
 
 export function setSmartFoldersOrder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (smartFolders: any, orderBy: any, ignoreReload: any) {
       smartFolders.forEach(function (folder: any) {
         machinerySetSmartFolderOrder(folder, orderBy);
       });
       machinerySortRawData(orderBy);
-      machineryRebindRefresh(s);
+      machineryRebindRefresh();
       scopeEvalAsync();
     }).apply(null, args);
 }
@@ -1518,9 +1508,8 @@ export function newSmartFolderGroup(...args: any[]) {
 
 export function prependFolder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（原 c3 体为纯包装）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  return machineryPrependFolder(s, args[0]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  return machineryPrependFolder(args[0]);
 }
 
 export function openNewSmartFolderContextMenu(...args: any[]) {
@@ -1962,7 +1951,7 @@ function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
       countOfSend += 1;
 
       for (let i = 0; i < arr.length; i++) {
-        arr[i].imageCount = machinerySmartFolderCount(s, arr[i]);
+        arr[i].imageCount = machinerySmartFolderCount(arr[i]);
         if (!arr[i].pinyin) {
           arr[i].pinyin = (window as any).tinyPinyin.convertToPinyin(arr[i].name);
         }

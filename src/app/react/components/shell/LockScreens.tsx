@@ -79,7 +79,7 @@ export function FolderLockScreen() {
           />
           {/* Touch ID 按鈕 - 整合在輸入框內 */}
           {canUseTouchID && (
-            <button className="ic-btn touchid-btn-inline" onClick={(e) => runInBodyScope((s) => machineryUnlockFolderWithTouchID(s, e))}>
+            <button className="ic-btn touchid-btn-inline" onClick={(e) => runInBodyScope((s) => machineryUnlockFolderWithTouchID(e))}>
               <img src={`assets/images/${themePath}/icons/ic-touchid.svg`} width={20} height={20} />
             </button>
           )}

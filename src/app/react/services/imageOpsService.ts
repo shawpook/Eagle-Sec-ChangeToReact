@@ -398,7 +398,7 @@ export function saveCrop(...args: any[]) {
                                                 });
                                             }
 
-                                            machineryCalculateImageBinding(s, { ignoreSort: true }, function () {});
+                                            machineryCalculateImageBinding({ ignoreSort: true }, function () {});
                                             machineryRelayout();
                                             scopeEvalAsync();
                                         }

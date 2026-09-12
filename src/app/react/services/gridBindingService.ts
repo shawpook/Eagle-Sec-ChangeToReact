@@ -1,4 +1,4 @@
-import { getBodyScope } from '../core/appCore';
+
 
 import { machineryCalculateImageBinding } from '../core/itemDomain';
 import { getFilter } from '../core/filterDomain';
@@ -13,6 +13,5 @@ import { getFilter } from '../core/filterDomain';
  */
 
 export function calculateImageBinding(params?: any, callback?: () => void): void {
-  const s = getBodyScope();
-  if (s) machineryCalculateImageBinding(s, params, callback);
+  machineryCalculateImageBinding(params, callback);
 }

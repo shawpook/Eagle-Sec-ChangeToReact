@@ -660,7 +660,6 @@ export function FolderPasswordModal() {
   };
 
   const save = () => {
-    const s = getBodyScope();
     const Registration = useMiscRawState.getState().Registration;
     const electronLog = (window as any).electronLog;
     if (mode === 'new') {
@@ -671,7 +670,7 @@ export function FolderPasswordModal() {
         folder.passwordTips = passwordTips;
         updateSidebarList();
         calculateImageBinding({ ignoreSort: true }, () => {
-          machineryRebindRefresh(s);
+          machineryRebindRefresh();
         });
         saveFolder();
         close();
@@ -687,7 +686,7 @@ export function FolderPasswordModal() {
           folder.isUnlock = false;
           folder.passwordTips = passwordTips;
           calculateImageBinding({ ignoreSort: true }, () => {
-            machineryRebindRefresh(s);
+            machineryRebindRefresh();
           });
           saveFolder();
           close();
@@ -706,7 +705,7 @@ export function FolderPasswordModal() {
         delete folder.passwordTips;
         updateSidebarList();
         calculateImageBinding({ ignoreSort: true }, () => {
-          machineryRebindRefresh(s);
+          machineryRebindRefresh();
         });
         saveFolder();
         close();

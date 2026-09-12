@@ -777,7 +777,6 @@ function machineryAddItemFromPaths(params: any): Promise<any> {
 /* moveItemsToTrash（bundle 18427-18452 逐字） */
 function machineryMoveItemsToTrash(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
 
     var ids = params.itemIds;
@@ -798,8 +797,8 @@ function machineryMoveItemsToTrash(params: any): Promise<any> {
 
     w.ayncsImagesChange(items);
     w.hiddenByCurrentFilter(items);
-    machineryCalculateImageBinding(bs, { ignoreSort: true }, function () {
-      machineryRebindRefresh(bs, true, undefined, undefined);
+    machineryCalculateImageBinding({ ignoreSort: true }, function () {
+      machineryRebindRefresh(true, undefined, undefined);
       machineryUpdateSelection();
     });
 

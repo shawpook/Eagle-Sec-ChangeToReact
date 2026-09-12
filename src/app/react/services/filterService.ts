@@ -1,4 +1,4 @@
-import { getBodyScope } from '../core/appCore';
+
 
 import { machineryFilterContent } from '../core/filterDomain';
 /**
@@ -43,8 +43,7 @@ export function setFilterRule(group: string, key: string, value: any): void {
 /** React 直调便捷面：写规则后触发一次 filterContent（无订阅依赖的独立调用面）。 */
 export function setFilterRuleAndApply(group: string, key: string, value: any): void {
   setFilterRule(group, key, value);
-  const s = getBodyScope();
-  if (s) machineryFilterContent(s);
+  machineryFilterContent();
 }
 
 // 闭环测试（CDP Runtime.evaluate）可直接访问（b1-9bi 起 setFilterRule 是 12 条数值

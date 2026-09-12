@@ -172,13 +172,13 @@ function TypesItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   onClick={() => {
                     focusInput(rootRef.current);
                     runInBodyScope((s) => toggleExtFilter(typeItem));
-                    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                    runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                     setTypesKeyword('');
                   }}
                   onContextMenu={(e) => {
                     focusInput(rootRef.current);
                     runInBodyScope((s) => toggleExtFilterExclude(typeItem));
-                    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                    runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                     setTypesKeyword('');
                   }}
                   name={typeItem}
@@ -235,7 +235,7 @@ function ShapeItem({ snapshot }: { snapshot: FilterSnapshot }) {
 
   const toggle = (ruleKey: string) => {
     shape[ruleKey] = !shape[ruleKey];
-    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+    runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
   };
 
   const clearShape = (e: React.MouseEvent) => {
@@ -383,7 +383,7 @@ function RatingItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   onClick={() => {
                     focusInput(rootRef.current);
                     filter().filterRules.rating[k] = !filter().filterRules.rating[k];
-                    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                    runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                   }}
                   name={nameFor(k)}
                   badge={num0(snapshot.counts?.rating?.[k])}
@@ -451,7 +451,7 @@ function FontsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   const f = filter().filterRules.font;
                   f.activated = !f.activated;
                   f.deactivated = false;
-                  runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                  runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }}
                 name={t('filter.fontActivated>activated')}
                 badge={num0(counts.activated)}
@@ -465,7 +465,7 @@ function FontsItem({ snapshot }: { snapshot: FilterSnapshot }) {
                   const f = filter().filterRules.font;
                   f.deactivated = !f.deactivated;
                   f.activated = false;
-                  runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                  runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }}
                 name={t('filter.fontActivated>deactivated')}
                 badge={num0(counts.deactivated)}
@@ -531,7 +531,7 @@ function CameraItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     const rules = filter().filterRules.camera;
                     if (rules[camera]) delete rules[camera];
                     else rules[camera] = true;
-                    runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                    runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                   }}
                   name={camera}
                   badge={num0(snapshot.counts?.camera?.[camera])}
@@ -597,7 +597,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
     r.today = r.yesterday = r.last7day = r.last30day = r.last90day = r.last365day = r.usingRange = false;
     runSeq([(s) => {
       s.page = 1;
-      if (isImport) machineryFilterContent(s);
+      if (isImport) machineryFilterContent();
       s.reload && s.reload();
       if (isImport) { s.filterImportDateMonths = []; s.filterModifyDateMonths = []; }
       syncFilterFromScope();
@@ -642,7 +642,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
                 onClick={() => {
                   focusInput(rootRef.current);
                   filter().filterRules[kind][ruleKey] = !filter().filterRules[kind][ruleKey];
-                  runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                  runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }}
                 name={t(labelKey)}
                 badge={num0(snapshot.counts?.[kind]?.[countKey])}
@@ -655,7 +655,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
                 onClick={() => {
                   focusInput(rootRef.current);
                   toggleMonth(obj.key);
-                  runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                  runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }}
                 name={obj.key}
                 badge={num0(obj.value)}
@@ -666,7 +666,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
               onClick={() => {
                 filter().filterRules[kind].usingRange = !filter().filterRules[kind].usingRange;
                 setTimeout(() => (document.getElementById('filter-date-picker') as HTMLElement | null)?.focus?.(), 100);
-                runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
               }}
               name={t('filter.import>range')}
             />
@@ -678,7 +678,7 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
                 onBlur={(e) => {
                   const v = e.target.value;
                   runInBodyScope((s) => { s.eagle.filter.filterRules[kind].model = v; });
-                  runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                  runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }}
               />
             ) : null}
@@ -726,7 +726,7 @@ function DurationItem({ snapshot }: { snapshot: FilterSnapshot }) {
                       value={rule.unit || 's'}
                       onChange={(e) => {
                         filter().filterRules.duration.unit = e.target.value;
-                        runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                        runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                       }}
                     >
                       <option value="s">{t('modal.smartFolder.ruleValue.s')}</option>
@@ -818,7 +818,7 @@ function SizeItem({ snapshot }: { snapshot: FilterSnapshot }) {
                       value={rule.unit || 'kb'}
                       onChange={(e) => {
                         filter().filterRules.file.unit = e.target.value;
-                        runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                        runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                       }}
                     >
                       <option value="kb">KB</option>
@@ -958,7 +958,7 @@ function KeywordFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind:
                 const r = filter().filterRules[kind];
                 r.has = !r.has;
                 r.no = false;
-                runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
               }}
               name={t(meta.has)}
             />
@@ -969,7 +969,7 @@ function KeywordFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind:
                 const r = filter().filterRules[kind];
                 r.no = !r.no;
                 r.has = false;
-                runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
               }}
               name={t(meta.no)}
             />
@@ -986,7 +986,7 @@ function KeywordFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind:
                 clearTimeout((window as any).__kwTimer);
                 (window as any).__kwTimer = setTimeout(() => {
                   filter().filterRules[kind].keywords = e.target.value;
-                  runSeq([(s) => { s.page = 1; machineryFilterContent(s); }]);
+                  runSeq([(s) => { s.page = 1; machineryFilterContent(); }]);
                 }, 300);
               }}
             />
@@ -1082,7 +1082,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={`${t('Filter.Reset')}${shortcuts(shortcutsWrapper(snapshot.keybinds['find.filter.reset'] || ''))}`}
             style={snapshot.filterBadge > 0 || snapshot.keyword ? undefined : { display: 'none' }}
-            onClick={() => runSeq([(s) => { resetFilter(); machineryFilterContent(s); }])}
+            onClick={() => runSeq([(s) => { resetFilter(); machineryFilterContent(); }])}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-reset.svg`} />
           </div>

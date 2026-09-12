@@ -162,7 +162,7 @@ export function emptyTrash(...args: any[]) {
                     syncSidebarFromScope();
                     syncListFromScope();
                     machineryUpdateSelection();
-                    machineryRebindRefresh(s);
+                    machineryRebindRefresh();
                     machineryFindDupclipate(undefined);
 
                     // 更新進度
@@ -396,8 +396,8 @@ export function removeFromFolder(...args: any[]) {
             s.removeSound.play();
         }
 
-        machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
-            machineryRebindRefresh(s, true);
+        machineryCalculateImageBinding({ ignoreSort: true }, function() {
+            machineryRebindRefresh(true);
             machineryUpdateSelection();
         });
 
@@ -414,13 +414,13 @@ export function removeFromFolder(...args: any[]) {
 
             // 如果這張圖片就在這個資料夾，畫面需要更新
             if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
-                machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
-                    machineryRebindRefresh(s);
+                machineryCalculateImageBinding({ ignoreSort: true }, function() {
+                    machineryRebindRefresh();
                     machineryUpdateSelection();
                 });
             } else {
                 machineryUpdateSelection();
-                machineryRebindRefresh(s, true);
+                machineryRebindRefresh(true);
             }
 
             ayncsImagesChange(origins);
@@ -442,8 +442,6 @@ export function getSelectedItemElements(...args: any[]) {
 
 export function scrollToSelectedItem(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function() {
             var __lv_target = useSelectionState.getState().selected[0];
             // 自动定位
@@ -470,11 +468,11 @@ export function scrollToSelectedItem(...args: any[]) {
                         console.log(qa(`#box-${__lv_target.id}`).length);
                         // 東西不在畫面上，強制更新畫面然後定位
                         if (!q(`#box-${__lv_target.id}`) || startPage !== useFolderState.getState().startCursor) {
-                            machineryRebindRefresh(s, undefined, undefined, startPage);
+                            machineryRebindRefresh(undefined, undefined, startPage);
                             machineryRelayout();    
                         }
                         cssSet("#box-container", { visibility: "hidden" });
-                        s.startCursor = startPage;
+                        writeScopeField('startCursor', startPage);
                         writeScopeField('currentFocus', "content");
                         $timeout(function () {
                             // s.selected = originSelected;
@@ -496,8 +494,6 @@ export function scrollToSelectedItem(...args: any[]) {
 
 export function excludeWithTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (tag) {
             // 已存在
             if (tag.isNoTags) {
@@ -526,9 +522,9 @@ export function excludeWithTag(...args: any[]) {
                 }
             }
 
-            s.tagKeyword = "";
+            writeScopeField('tagKeyword', "");
             syncFilterFromScope();
-            machineryFilterContent(s);
+            machineryFilterContent();
         }).apply(null, args);
 }
 
@@ -770,15 +766,15 @@ export function exportSelectedToCsv(...args: any[]) {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryRemovePermanently(s: any): void {
+export function machineryRemovePermanently(): void {
   const w = window as any;
-  if (s.viewMode !== "trash") { return; }
-  var images = s.selected;
+  if (useBodyState.getState().viewMode !== "trash") { return; }
+  var images = useSelectionState.getState().selected;
 
   images.forEach(function (r: any) {
-    var idx = s.raw.indexOf(r);
+    var idx = useItemState.getState().raw.indexOf(r);
     if (idx != -1) {
-      s.raw.splice(idx, 1);
+      useItemState.getState().raw.splice(idx, 1);
       syncListFromScope();
     }
   });
@@ -787,10 +783,10 @@ export function machineryRemovePermanently(s: any): void {
 
   var itemElements = machineryGetSelectedItemElements();
   glRemoveitemsChannel.emit(itemElements);
-  s.selected = [];
+  writeScopeField('selected', []);
   syncInspectorFromScope();
-  machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-    machineryRebindRefresh(s, true);
+  machineryCalculateImageBinding({ ignoreSort: true }, function () {
+    machineryRebindRefresh(true);
     machineryUpdateSelection();
   });
 }

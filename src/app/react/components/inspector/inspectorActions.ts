@@ -311,7 +311,7 @@ export function imagesChange() {
         if (fontName) fontName.textContent = String(eagleIns.newName);
       }
     }
-    machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
+    machineryRebindRefresh(true, undefined, undefined);
   }
 }
 
@@ -347,7 +347,7 @@ export function annotationChange() {
     });
     (window as any).ayncsImagesChange(items);
     (window as any).hiddenByCurrentFilter(items);
-    machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
+    machineryRebindRefresh(true, undefined, undefined);
     (window as any).electronLog.info(`[app] Change file comemnt, total: ${items.length} files`);
   });
 }
@@ -400,7 +400,7 @@ export function urlChange() {
           if (fontName) fontName.textContent = String(eagleIns.newName);
         }
       }
-      machineryRebindRefresh(getBodyScope(), true, undefined, undefined);
+      machineryRebindRefresh(true, undefined, undefined);
     }
   });
 }
@@ -702,7 +702,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           label: t('Context.Tag.Edit.Title'),
           icon: 'ic-rename.svg',
           click: () => {
-            machineryEditTag(getBodyScope(), useMiscRawState.getState().TagManager.tagMappings[tag]);
+            machineryEditTag(useMiscRawState.getState().TagManager.tagMappings[tag]);
             scopeEvalAsync();
           },
         },

@@ -61,13 +61,13 @@ function domainTimeout(fn: any, ms?: number): any {
 }
 
 
-function removeScopeListener(s: any, evt: string): number {
+function removeScopeListener(evt: string): number {
   let removed = 0;
   try {
-    const listeners = s.$$listeners && s.$$listeners[evt];
+    const listeners = useMiscRawState.getState().$$listeners && useMiscRawState.getState().$$listeners[evt];
     if (Array.isArray(listeners)) {
       removed = listeners.length;
-      s.$$listeners[evt] = [];
+      useMiscRawState.getState().$$listeners[evt] = [];
     }
   } catch (err) { /* noop */ }
   return removed;
@@ -81,8 +81,7 @@ export function takeoverSelectionViewDomain(): void {
   const diag: any = { takenOver: true, watchesRemoved: {} as Record<string, number>, listenersRemoved: {} as Record<string, number> };
   w.__eagleSelectionViewDomain = diag;
 
-  const s0: any = getBodyScope();
-  if (!s0) return; // E1c：原以 $watch 存在性判 scope 就绪；shim 已移除 $watch
+ // E1c：原以 $watch 存在性判 scope 就绪；shim 已移除 $watch
 
   // ── watchCollection "selected"（34214 主 watcher；摘 body scope 全部 'selected' watcher）──
   // ── selected 主 watcher（34214-34259 逐字；b1-9l 补挂——此前仅 darwin quicklook 变体注册过
@@ -201,12 +200,12 @@ export function takeoverSelectionViewDomain(): void {
   }
 
   // ── $on UPDATE_SELECTION / SAVE_FOLDER（42379/42383 逐字）──
-  diag.listenersRemoved['UPDATE_SELECTION'] = removeScopeListener(s0, 'UPDATE_SELECTION');
+  diag.listenersRemoved['UPDATE_SELECTION'] = removeScopeListener('UPDATE_SELECTION');
   updateSelectionChannel.on(function () {
     machineryUpdateSelection();
   });
 
-  diag.listenersRemoved['SAVE_FOLDER'] = removeScopeListener(s0, 'SAVE_FOLDER');
+  diag.listenersRemoved['SAVE_FOLDER'] = removeScopeListener('SAVE_FOLDER');
   saveFolderChannel.on(function () {
     machinerySaveFolder();
   });
@@ -463,8 +462,8 @@ export function machineryOpenInspectorFolderSelectPanel(event: any): void {
               glRemoveitemsChannel.emit(w.$bodyScope.getSelectedItemElements());
             }
 
-            machineryCalculateImageBinding(w.$bodyScope, { ignoreSort: true }, () => {
-              machineryRebindRefresh(w.$bodyScope, true, undefined, undefined);
+            machineryCalculateImageBinding({ ignoreSort: true }, () => {
+              machineryRebindRefresh(true, undefined, undefined);
               machineryUpdateSelection();
             });
 
@@ -586,7 +585,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
         cancelButtonText: w.i18n.__("general.cancel"),
       }).then(function () {
         scopeEvalAsync(function () {
-          machineryRemovePermanently(s);
+          machineryRemovePermanently();
         });
       });
     }
@@ -676,11 +675,11 @@ export function machineryRemoveSelected(s: any, event: any): void {
               syncDetailFromScope();
               syncInspectorFromScope();
             }
-            machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+            machineryCalculateImageBinding({ ignoreSort: true }, function () {
               if (
                 s.viewMode !== 'random'
               ) {
-                machineryRebindRefresh(s);
+                machineryRebindRefresh();
               }
               w.ScrollbarSaver.restoreScrollPosition();
             });
@@ -742,12 +741,12 @@ export function machineryRemoveSelected(s: any, event: any): void {
           s.lastSelectedIndex = machineryCurrentIndex() - 1;
           machineryAutoScroll();
 
-          machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
+          machineryCalculateImageBinding({ ignoreSort: true }, function () {
             if (
               s.viewMode !== 'random' ||
               (s.currentFolder && s.currentFolder.orderBy !== "RANDOM")
             ) {
-              machineryRebindRefresh(s, true);
+              machineryRebindRefresh(true);
             }
             machineryUpdateSelection();
             if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }

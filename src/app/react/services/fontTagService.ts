@@ -166,8 +166,6 @@ export function activateFont(...args: any[]) {
 
 export function renameFontsWithFullName(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (items) {
         if (items && items.length > 0) {
             machineryCheckOperationSafety(function () {
@@ -204,8 +202,8 @@ export function renameFontsWithFullName(...args: any[]) {
                 ayncsImagesChange(updates);
                 hiddenByCurrentFilter(updates);
                 machineryUpdateItemsView(items);
-                machineryCalculateImageBinding(s, {}, function () {
-                    machineryRebindRefresh(s, true);
+                machineryCalculateImageBinding({}, function () {
+                    machineryRebindRefresh(true);
                     machineryUpdateSelection();
                 });
             }, 10);
@@ -296,8 +294,6 @@ export function getFontPath(...args: any[]) {
 
 export function filterWithTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (tag) {
 
             if (tag.isExcluded) {
@@ -337,7 +333,7 @@ export function filterWithTag(...args: any[]) {
                 setScrollTop("#filter-panel .tags-container", 0);
             }
 
-            machineryFilterContent(s);
+            machineryFilterContent();
             machineryCalculateFilterCounts();
         }).apply(null, args);
 }

@@ -23,6 +23,7 @@ import { machineryRebindRefresh } from '../../core/itemDomain';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
  *
@@ -275,7 +276,6 @@ function MergeEditor({
       stateRef.current.isMerging = true;
       stateRef.current.mergeProgress = 0;
 
-      const body = getBodyScope();
       const changed: any[] = [];
       const trash: any[] = [];
       selectedGroups.forEach((group: any) => {
@@ -310,11 +310,11 @@ function MergeEditor({
 
       ayncsImagesChange(changed);
       calculateImageBinding({}, function () {
-        body.notify({
+        useMiscRawState.getState().notify({
           message: t('notify.removeDuplicate.successMsg'),
           duration: 750,
         });
-        machineryRebindRefresh(body, undefined, undefined, undefined);
+        machineryRebindRefresh(undefined, undefined, undefined);
         updateSelection();
         stateRef.current.isMerging = false;
         onMerged({

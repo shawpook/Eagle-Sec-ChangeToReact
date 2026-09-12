@@ -96,18 +96,18 @@ function domainTimeout(fn: any, ms?: number): any {
 }
 
 /* muteRebind（bundle 27014 逐字；throttle 为 bundle 顶层 var → window） */
-function ensureMuteRebind(s: any): any {
+function ensureMuteRebind(): any {
   const w = window as any;
   if (!domainMuteRebind && w.throttle) {
     domainMuteRebind = w.throttle(function () {
-      machineryRebindRefresh(s, true);
+      machineryRebindRefresh(true);
     }, 3000, true);
   }
   return domainMuteRebind;
 }
 
 /* muteCalcuteImageBinding（bundle 28672 逐字） */
-function domainMuteCalcuteImageBinding(s: any, params: any, callback: any): void {
+function domainMuteCalcuteImageBinding(params: any, callback: any): void {
   if (!domainMuteCalcuteImageBindingTimeout) {
     domainMuteCalcuteImageBindingTimeoutDuration = 200;
     console.log(`muteCalcuteImageBindingTimeoutDuration = 200;`);
@@ -118,7 +118,7 @@ function domainMuteCalcuteImageBinding(s: any, params: any, callback: any): void
   }
   clearTimeout(domainMuteCalcuteImageBindingTimeout);
   domainMuteCalcuteImageBindingTimeout = setTimeout(function () {
-    machineryCalculateImageBinding(s, params, callback);
+    machineryCalculateImageBinding(params, callback);
     domainMuteCalcuteImageBindingTimeout = undefined;
   }, params.timeout || domainMuteCalcuteImageBindingTimeoutDuration);
 }
@@ -193,7 +193,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
     if (image.noPreview !== generated.noPreview) {
       image.noPreview = generated.noPreview;
       if (image.noPreview) {
-        machineryRebindRefresh(s);
+        machineryRebindRefresh();
       }
     }
 
@@ -347,8 +347,8 @@ export function takeoverItemDomain(): void {
       const needUpdateView = key <= 1;
       s.startCursor = 0;
       machineryPrependImages([newImage], needUpdateView);
-      machineryCalculateImageBinding(s, { ignoreSort: false }, function () {
-        ensureMuteRebind(s) && ensureMuteRebind(s)();
+      machineryCalculateImageBinding({ ignoreSort: false }, function () {
+        ensureMuteRebind() && ensureMuteRebind()();
         machineryUpdateSelection();
       });
     }
@@ -374,8 +374,8 @@ export function takeoverItemDomain(): void {
     const removedBoxEl = q("#box-" + id);
     if (w.ig && w.ig.remove && removedBoxEl) w.ig.remove(removedBoxEl);
 
-    domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
-      machineryRebindRefresh(s, true);
+    domainMuteCalcuteImageBinding({ ignoreSort: true }, function () {
+      machineryRebindRefresh(true);
       machineryUpdateSelection();
       scopeEvalAsync();
     });
@@ -428,7 +428,7 @@ export function takeoverItemDomain(): void {
       // window.angular（且不得注入，见 b1-9e 雷区记录），Object.assign 语义等价
       Object.assign(img, newImage);
       delete img.processingPalette;
-      ensureMuteRebind(s) && ensureMuteRebind(s)();
+      ensureMuteRebind() && ensureMuteRebind()();
       return;
     }
   });
@@ -463,8 +463,8 @@ export function takeoverItemDomain(): void {
 
     machineryUpdateSelection();
 
-    domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
-      machineryRebindRefresh(s, true);
+    domainMuteCalcuteImageBinding({ ignoreSort: true }, function () {
+      machineryRebindRefresh(true);
       machineryUpdateSelection();
       scopeEvalAsync();
     });
@@ -594,12 +594,12 @@ export function takeoverItemDomain(): void {
 
     // 仅更新包含此图片的列表
     if (s.finishQueue.length === s.uploadQueue.length) {
-      machineryCalculateImageBinding(s, {}, function () {
+      machineryCalculateImageBinding({}, function () {
         scopeEvalAsync();
       });
     }
     else {
-      domainMuteCalcuteImageBinding(s, { ignoreSort: true }, function () {
+      domainMuteCalcuteImageBinding({ ignoreSort: true }, function () {
         scopeEvalAsync();
       });
     }
@@ -681,8 +681,8 @@ export function takeoverItemDomain(): void {
   ipc.on('calculateImageBinding', function () {
     const s = sNow();
     if (!s) return;
-    machineryCalculateImageBinding(s, {}, function () {
-      ensureMuteRebind(s) && ensureMuteRebind(s)();
+    machineryCalculateImageBinding({}, function () {
+      ensureMuteRebind() && ensureMuteRebind()();
       machineryUpdateSelection();
     });
     scopeEvalAsync();
@@ -698,8 +698,8 @@ export function takeoverItemDomain(): void {
 
     machineryUpdateSidebarList();
 
-    machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-      machineryRebindRefresh(s);
+    machineryCalculateImageBinding({ ignoreSort: true }, function () {
+      machineryRebindRefresh();
       scopeEvalAsync();
       machinerySaveFolder();
     });
@@ -737,7 +737,7 @@ export function takeoverItemDomain(): void {
       if (cur.length === prevFinishQueue.length) return;
       const oldValue = prevFinishQueue;
       prevFinishQueue = cur;
-      try { handleFinishQueueChanged(s, cur, oldValue); } catch (err) { /* noop */ }
+      try { handleFinishQueueChanged(cur, oldValue); } catch (err) { /* noop */ }
     }, 200);
     return true;
   };
@@ -1313,71 +1313,71 @@ export function isInFolder (__lv_image, folder) {
         }
 
 /* b1-9bz-C-4：finishQueue 变更处理（原 $watchCollection 的 handler，原样提取） */
-function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
+function handleFinishQueueChanged(newValue: any, oldValue: any): void {
   const w: any = window as any;
 
-    if (!s.raw || s.raw.length === 0) {
-      if (s.finishQueue.length > 0 && s.finishQueue.length === s.uploadQueue.length) {
-        s.finishQueue = [];
+    if (!useItemState.getState().raw || useItemState.getState().raw.length === 0) {
+      if (useMiscRawState.getState().finishQueue.length > 0 && useMiscRawState.getState().finishQueue.length === useMiscRawState.getState().uploadQueue.length) {
+        writeScopeField('finishQueue', []);
         syncUploadFromScope();
-        s.uploadQueue = [];
+        writeScopeField('uploadQueue', []);
         syncUploadFromScope();
         machineryHideUploadQueue();
       }
       return;
     }
 
-    if (s.finishQueue.length > 0 && s.finishQueue.length >= s.uploadQueue.length) {
+    if (useMiscRawState.getState().finishQueue.length > 0 && useMiscRawState.getState().finishQueue.length >= useMiscRawState.getState().uploadQueue.length) {
       // 清除倒数计时工具
-      s.addImageStartTime = undefined;
+      writeScopeField('addImageStartTime', undefined);
       clearInterval(domainAddImageTimeLeftInterval);
 
-      var total = s.uploadQueue.length;
+      var total = useMiscRawState.getState().uploadQueue.length;
       // 以队列最后一张图判断，是否要刷新使用者当前查看的列表
-      var lastImage = s.finishQueue[s.finishQueue.length - 1];
+      var lastImage = useMiscRawState.getState().finishQueue[useMiscRawState.getState().finishQueue.length - 1];
 
       // 自动选择新增的图片
       var newItems: any[] = [];
-      s.finishQueue.forEach(function (image: any) {
+      useMiscRawState.getState().finishQueue.forEach(function (image: any) {
         if (image && image.id) {
           newItems.push(image);
         }
       });
 
-      s.finishQueue = [];
+      writeScopeField('finishQueue', []);
       syncUploadFromScope();
-      s.uploadQueue = [];
+      writeScopeField('uploadQueue', []);
       syncUploadFromScope();
-      setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
-      setWidthEl(findEl(q("#upload-queue-progress"), ".current"), s.finishQueue.length / s.uploadQueue.length * 100 + "%");
+      setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
+      setWidthEl(findEl(q("#upload-queue-progress"), ".current"), useMiscRawState.getState().finishQueue.length / useMiscRawState.getState().uploadQueue.length * 100 + "%");
       machineryHideUploadQueue();
 
       // 判斷是否有重複的圖片
       if (usePreferencesState.getState().preferences.notification.notification.enable !== 'false' && usePreferencesState.getState().preferences.notification.notification.when.repeatImage != 'false') {
-        if (s.duplicateQueue.length > 0) {
+        if (useMiscRawState.getState().duplicateQueue.length > 0) {
           openDuplicateChannel.emit({
-            currentFolder: s.currentFolder,
-            mappings: s.duplicateMappings,
-            duplicates: s.duplicateQueue
+            currentFolder: useFolderState.getState().currentFolder,
+            mappings: useItemState.getState().duplicateMappings,
+            duplicates: useMiscRawState.getState().duplicateQueue
           });
           if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false') {
-            s.duplicateSound && s.duplicateSound.play();
+            useMiscRawState.getState().duplicateSound && useMiscRawState.getState().duplicateSound.play();
           }
-          s.duplicateQueue = [];
+          writeScopeField('duplicateQueue', []);
         }
       }
       // 如果沒有啟動重複通知，一律圖片直接添加上來
       else {
-        s.duplicateQueue.forEach(function (img: any) {
+        useMiscRawState.getState().duplicateQueue.forEach(function (img: any) {
           machineryAddToDuplicateMapping(img);
-          if (s.raw) { s.raw.unshift(img); }
+          if (useItemState.getState().raw) { useItemState.getState().raw.unshift(img); }
           syncListFromScope();
         });
-        s.duplicateQueue = [];
+        writeScopeField('duplicateQueue', []);
       }
 
       function autoSelectUploadedItems() {
-        if (s.isDetailMode) return;
+        if (useBodyState.getState().isDetailMode) return;
 
         if (usePreferencesState.getState().preferences.general.autoSelect !== 'true') {
           if (newItems.length === 1) {
@@ -1389,13 +1389,13 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
         }
 
         // 避免几百几千个？
-        if (s.viewMode !== 'random') {
+        if (useBodyState.getState().viewMode !== 'random') {
           var MAX_AUTO_SELECT = 1000;
           if (newItems && newItems.length <= MAX_AUTO_SELECT) {
-            s.selected = newItems;
+            writeScopeField('selected', newItems);
             syncInspectorFromScope();
-            var targetSelectedIndex = s.allData.indexOf(s.selected[0]);
-            s.lastSelectedIndex = targetSelectedIndex;
+            var targetSelectedIndex = useItemState.getState().allData.indexOf(useSelectionState.getState().selected[0]);
+            writeScopeField('lastSelectedIndex', targetSelectedIndex);
             writeScopeField('currentFocus', "content");
             if (newItems.length === 1) {
               domainTimeout(function () {
@@ -1406,41 +1406,41 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
         }
       }
 
-      machineryCalculateImageBinding(s, {}, function () {
+      machineryCalculateImageBinding({}, function () {
         // NOTE: 图片添加完成后，如果添加的图片不是使用者正在查看的文件夹，不需要刷新画面
-        if (s.currentFolder) {
+        if (useFolderState.getState().currentFolder) {
           try {
             if (!lastImage || !lastImage.folders) {
-              s.reload(true);
+              useMiscRawState.getState().reload(true);
               autoSelectUploadedItems();
               return;
             }
-            const needReload = isInFolder(lastImage, s.currentFolder);
+            const needReload = isInFolder(lastImage, useFolderState.getState().currentFolder);
             if (needReload) {
-              s.startCursor = 0;
-              s.reload(true);
+              writeScopeField('startCursor', 0);
+              useMiscRawState.getState().reload(true);
               autoSelectUploadedItems();
             }
           }
           catch (err: any) {
-            s.reload(true);
+            useMiscRawState.getState().reload(true);
             autoSelectUploadedItems();
             electronLog && electronLog.error(err.stack || err);
           }
         }
-        else if (s.currentSmartFolder) {
-          s.reload(true);
+        else if (useFolderState.getState().currentSmartFolder) {
+          useMiscRawState.getState().reload(true);
         }
         // 如果来自全部图片、未归类、未分类，一律进行刷新
-        else if (s.viewMode == "all" || s.viewMode == "unfiled" || s.viewMode == "untagged") {
-          s.startCursor = 0;
-          s.reload(true);
+        else if (useBodyState.getState().viewMode == "all" || useBodyState.getState().viewMode == "unfiled" || useBodyState.getState().viewMode == "untagged") {
+          writeScopeField('startCursor', 0);
+          useMiscRawState.getState().reload(true);
           autoSelectUploadedItems();
         }
       });
 
       try {
-        if (s.finishQueue.length > 2) {
+        if (useMiscRawState.getState().finishQueue.length > 2) {
           if (w.process.platform == 'darwin') {
             window.setTimeout(function () { w.remote.app.dock.bounce("critical"); }, 1000);
           } else {
@@ -1538,7 +1538,7 @@ export let calculateImageBindingTimeout: any = null;
 let checkListItemsLessThanContainerTimeout: any = null;
 
 /* calculateImageBinding（bundle 28684-28965 逐字） */
-export function machineryCalculateImageBinding(s: any, params: any, callback: any): void {
+export function machineryCalculateImageBinding(params: any, callback: any): void {
   const w = window as any;
   var duration = 50;
   if (calculateImageBindingTimeout) {
@@ -1546,7 +1546,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
   } else {
     duration = 1;
   }
-  const TagManager = s.TagManager;
+  const TagManager = useMiscRawState.getState().TagManager;
   if (TagManager && TagManager.azGroups) {
     const $timeout = getTimeout();
     $timeout && $timeout.cancel(calculateImageBindingTimeout);
@@ -1554,40 +1554,40 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
   const $timeout = getTimeout();
   calculateImageBindingTimeout = $timeout(function () {
     try {
-      if (!s.raw) return;
+      if (!useItemState.getState().raw) return;
 
       if (!params.ignoreSort) {
-        machinerySortRawData(s.orderBy);
+        machinerySortRawData(useMiscRawState.getState().orderBy);
       }
 
       console.time("calculateImageBinding");
       /* var path = require('path');（原文未使用，略去——无副作用） */
       var tags: any = {};
       var exts: any = {};
-      s.all = [];
+      writeScopeField('all', []);
       syncSidebarFromScope();
-      s.untagged = [];
-      s.unfiledCount = 0;
-      s.untaggedCount = 0;
-      s.trash = [];
+      writeScopeField('untagged', []);
+      writeScopeField('unfiledCount', 0);
+      writeScopeField('untaggedCount', 0);
+      writeScopeField('trash', []);
       syncSidebarFromScope();
       syncListFromScope();
-      s.folderMappings = {};
-      s.tagsSuggestion = [];
-      s.folderList = [];
+      writeScopeField('folderMappings', {});
+      writeScopeField('tagsSuggestion', []);
+      writeScopeField('folderList', []);
       syncSidebarFromScope();
-      s.lockedImages = {};
+      writeScopeField('lockedImages', {});
 
       const ancestorsCache: any = {};
       const defaultFolderCoverIdMap: any = {};
 
-      w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any, depth: any) {
+      w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder: any, parent: any, depth: any) {
         if (folder && parent) {
           folder.parent = parent.id;
         }
 
         // 列表版本 Folders
-        s.folderList.push(folder);
+        useFolderState.getState().folderList.push(folder);
         syncSidebarFromScope();
 
         // 去除重複的資料夾
@@ -1605,7 +1605,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
         if (folder.tags && folder.tags.length > 0) {
           folder.tags.forEach(function(tag: any) {
-            s.tagsSuggestion.push({
+            useMiscRawState.getState().tagsSuggestion.push({
               value: tag,
               text: tag
             });
@@ -1614,29 +1614,29 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
         ancestorsCache[folder.id] = machineryGetAncestorFolders(folder, [folder]);
 
-        s.folderMappings[folder.id] = folder;
+        useItemState.getState().folderMappings[folder.id] = folder;
       });
 
-      w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any) {
+      w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder: any, parent: any) {
         folder.extendTags = machineryGetExtendTags(folder, []);
         folder.covers = [];
       });
 
 
-      w.eagle.utils.tree.walk(s.smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
-        s.smartFolderMappings[smartFolder.id] = smartFolder;
+      w.eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
+        useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
       });
 
       // 重新建立圖片關係
-      for (var rindex = 0; rindex < s.raw.length; rindex++) {
-        var image = s.raw[rindex];
+      for (var rindex = 0; rindex < useItemState.getState().raw.length; rindex++) {
+        var image = useItemState.getState().raw[rindex];
 
-        if (!s.itemMappings[image.id]) {
-          s.itemMappings[image.id] = image;
+        if (!useItemState.getState().itemMappings[image.id]) {
+          useItemState.getState().itemMappings[image.id] = image;
         }
 
         if (image.isDeleted) {
-          s.trash.push(image);
+          useItemState.getState().trash.push(image);
           syncSidebarFromScope();
           syncListFromScope();
         }
@@ -1646,12 +1646,12 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
           if (image.folders && image.folders.length > 0) {
             var increaseAncestors: any = {};
             image.folders.forEach(function(folderId: any) {
-              var folder = s.folderMappings[folderId];
+              var folder = useItemState.getState().folderMappings[folderId];
               if (folder) {
                 folder.imageCount++;
 
                 if (folder.password && !folder.isUnLock) {
-                  s.lockedImages[image.id] = true;
+                  useItemState.getState().lockedImages[image.id] = true;
                 }
 
                 // 祖先们也都 + 1 , 记录在其他栏位上
@@ -1666,39 +1666,39 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
                   increaseAncestors[ancestor.id] = true;
 
                   if (ancestor.password && !ancestor.isUnLock) {
-                    s.lockedImages[image.id] = true;
+                    useItemState.getState().lockedImages[image.id] = true;
                   }
                 });
               }
             });
           }
 
-          if (!s.lockedImages[image.id]) {
-            s.all.push(image);
+          if (!useItemState.getState().lockedImages[image.id]) {
+            useItemState.getState().all.push(image);
             syncSidebarFromScope();
             exts[image.ext] = true;
             if (image.tags && image.tags.length == 0) {
-              s.untaggedCount++;
+              writeScopeField('untaggedCount', useListState.getState().untaggedCount + 1);
             }
 
             if (!image.folders) {
-              s.unfiledCount++;
+              writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
             }
             else if (image.folders.length === 0) {
-              s.unfiledCount++;
+              writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
             }
             else {
               // 修复异常 folders
-              if (image.folders.length === 1 && !s.folderMappings[image.folders[0]]) {
-                if (s.libraryModificationTime && image.lastModified && image.lastModified < s.libraryModificationTime) {
+              if (image.folders.length === 1 && !useItemState.getState().folderMappings[image.folders[0]]) {
+                if (useMiscRawState.getState().libraryModificationTime && image.lastModified && image.lastModified < useMiscRawState.getState().libraryModificationTime) {
                   image.folders = [];
-                  s.unfiledCount++;
+                  writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
                 }
               }
               else if (image.folders[0] === null || image.folders[1] === null) {
                 image.folders = [...new Set(image.folders)].filter(function (obj: any) { return obj != null; });
                 if (image.folders.length === 0) {
-                  s.unfiledCount++;
+                  writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
                   try {
                     w.electronLog && w.electronLog.error(`[app] ${image.id} 's folder properity is incorrect[2], move to Uncategorized`);
                   } catch (err) { /* noop */ }
@@ -1714,7 +1714,7 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
 
 
         if (!image.isDeleted && image.tags && image.tags.length > 0) {
-          if (!s.lockedImages[image.id]) {
+          if (!useItemState.getState().lockedImages[image.id]) {
             image.tags.forEach(function(tag: any) {
               var tagName = tag;
               if (!tagName || tagName.length > 500) return;
@@ -1736,11 +1736,11 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
           for (var i = 0; i < image.folders.length; i++) {
             if (image.isDeleted) continue;
             if (image.noPreview) continue;
-            if (s.lockedImages[image.id]) continue;
+            if (useItemState.getState().lockedImages[image.id]) continue;
             // txt 不支持做为封面
             if (image.ext === 'txt') continue;
             var folderId = image.folders[i];
-            var folder = s.folderMappings[folderId];
+            var folder = useItemState.getState().folderMappings[folderId];
             if (folder) {
               if (!defaultFolderCoverIdMap[folderId]) {
                 defaultFolderCoverIdMap[folderId] = image.id;
@@ -1763,12 +1763,12 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       syncFilterFromScope();
 
       // 如果祖先门没有封面，补上封面
-      w.eagle.utils.tree.walk(s.folders, 'children', function(folder: any, parent: any) {
+      w.eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder: any, parent: any) {
         try {
           let converId = folder.coverId || defaultFolderCoverIdMap[folder.id];
           if (!folder.covers) folder.covers = [];
-          if (converId && s.itemMappings[converId]) {
-            var coverImage = s.itemMappings[converId];
+          if (converId && useItemState.getState().itemMappings[converId]) {
+            var coverImage = useItemState.getState().itemMappings[converId];
             var thumbnailPath = w.FileUrlHelper.getThumbnailUrl(coverImage);
             let pos = "";
             if (coverImage.fontMetas) {
@@ -1807,11 +1807,11 @@ export function machineryCalculateImageBinding(s: any, params: any, callback: an
       });
 
       TagManager.calculateTags();
-      s.tags = TagManager.rawdata;
+      writeScopeField('tags', TagManager.rawdata);
       syncSidebarFromScope();
 
-      if (!s.tags) {
-        s.tags = [];
+      if (!useFolderState.getState().tags) {
+        writeScopeField('tags', []);
         syncSidebarFromScope();
       }
 
@@ -2392,23 +2392,23 @@ export function machineryPrependImages(images: any[], updateView: any): void {
   }
 }
 
-export async function machineryRebindRefresh(s: any, muteMode: any, contentFilterCache: any, startCursor: any): Promise<void> {
+export async function machineryRebindRefresh(muteMode: any, contentFilterCache: any, startCursor: any): Promise<void> {
   machineryCalls.rebindRefresh++;
   const w = window as any;
 
-  if (!s.isItemBindCalculated) return;
-  if (!s.raw) return;
+  if (!useMiscRawState.getState().isItemBindCalculated) return;
+  if (!useItemState.getState().raw) return;
   console.time("rebindRefresh");
   var data: any[] = [];
 
   console.time("calcuteFilterResult");
-  data = await machineryCalcuteFilterResult(s, data, contentFilterCache);
+  data = await machineryCalcuteFilterResult(data, contentFilterCache);
   console.timeEnd("calcuteFilterResult");
 
 
   // 计算这批图片里面出现的标签
   if (w.eagle.filter.tagFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "EQUAL") {
-    machineryCalcuteContainTags(s.preelaborations);
+    machineryCalcuteContainTags(useMiscRawState.getState().preelaborations);
   }
   else if (w.eagle.filter.tagFilterLogic === "AND") {
     machineryCalcuteContainTags(data);
@@ -2419,8 +2419,8 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
 
   // 置顶排序
   console.time("sort:置顶");
-  if (s.currentFolder && s.currentFolder.orderBy !== "RANDOM") {
-    let currentFolderId = s.currentFolder.id;
+  if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy !== "RANDOM") {
+    let currentFolderId = useFolderState.getState().currentFolder.id;
     // 原码 comparator 在 ta/tb 皆空时隐式返回 undefined（quirk 逐字保留），故 return 标注 any
     data = data.sort(function (a: any, b: any): any {
       var ta = a.pinned ? a.pinned[currentFolderId] : undefined;
@@ -2440,52 +2440,52 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   }
   console.timeEnd("sort:置顶");
 
-  s.allData = data;
+  writeScopeField('allData', data);
   syncListFromScope();
 
   // Note: 2019/08/05 避免拖拽順序使用 $scope.itemMappings 獲取的內容跟真實內容不一致，造成拖拽無法使用
   // 這段代碼主要用來刷新頁面上出現元件的有效性
-  if (s.currentFolder) {
+  if (useFolderState.getState().currentFolder) {
     try {
-      for (let i = 0; i < s.allData.length; i++) {
-        s.itemMappings[s.allData[i].id] = s.allData[i];
+      for (let i = 0; i < useItemState.getState().allData.length; i++) {
+        useItemState.getState().itemMappings[useItemState.getState().allData[i].id] = useItemState.getState().allData[i];
       }
     } catch (err) { /* noop */ }
   }
 
-  s.filtereds = s.allData.slice(0, s.len * s.page);
+  writeScopeField('filtereds', useItemState.getState().allData.slice(0, useMiscRawState.getState().len * useMiscRawState.getState().page));
   syncListFromScope();
 
   machineryRefreshSubfolderList();
 
   // 減少重複計算，將原先計算智能文件夾數量功能，放在這裡
-  if (useMiscRawState.getState().selectedSmartFolders.length === 0 && s.currentSmartFolder) {
-    if (s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length > 0) {
-      s.currentSmartFolder.imageCount = s.allData.length;
+  if (useMiscRawState.getState().selectedSmartFolders.length === 0 && useFolderState.getState().currentSmartFolder) {
+    if (useFolderState.getState().currentSmartFolder.conditions && useFolderState.getState().currentSmartFolder.conditions.length > 0) {
+      useFolderState.getState().currentSmartFolder.imageCount = useItemState.getState().allData.length;
     }
   }
 
-  let currentViewDataLength = s.allData.length;
+  let currentViewDataLength = useItemState.getState().allData.length;
   if (currentViewDataLength < 200) {
-    s.keywordDebounce = 50;
+    writeScopeField('keywordDebounce', 50);
   }
   else if (currentViewDataLength < 50000) {
-    s.keywordDebounce = 200;
+    writeScopeField('keywordDebounce', 200);
   }
   else if (currentViewDataLength < 100000) {
-    s.keywordDebounce = 250;
+    writeScopeField('keywordDebounce', 250);
   }
   else {
-    s.keywordDebounce = 300;
+    writeScopeField('keywordDebounce', 300);
   }
 
   console.timeEnd("rebindRefresh");
 
   if (!muteMode) {
-    if (w.eagle.filter.filterBadge > 0) s.startCursor = 0;
-    w.resetNgGridLayoutData(s.allData, startCursor || s.startCursor);
+    if (w.eagle.filter.filterBadge > 0) writeScopeField('startCursor', 0);
+    w.resetNgGridLayoutData(useItemState.getState().allData, startCursor || useFolderState.getState().startCursor);
   }
-  machineryUpdateItemsView(s.selected);
+  machineryUpdateItemsView(useSelectionState.getState().selected);
   trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
   if (w.HoverPreview.isShow) {
     w.HoverPreview.hide();
@@ -2494,11 +2494,11 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
 }
 
 /* rebindRefreshLazy（bundle 27007-27013 逐字；1000ms 防抖，rebindRefreshLazyTimeout 域内自管） */
-export function machineryRebindRefreshLazy(s: any): void {
+export function machineryRebindRefreshLazy(): void {
   const $timeout = getTimeout();
   $timeout.cancel(rebindRefreshLazyTimeout);
   rebindRefreshLazyTimeout = $timeout(function () {
-    machineryRebindRefresh(s);
+    machineryRebindRefresh();
   }, 1000);
 }
 
@@ -2973,7 +2973,7 @@ export function machineryReload(s: any): any {
     s.loadMoreDisable = false;
     s.lastImageHeight = s.imageSize.height;
     s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-    machineryRebindRefresh(s);
+    machineryRebindRefresh();
     machineryRelayout();
     machineryUpdateSelection();
     machineryCalculateFilterCounts();

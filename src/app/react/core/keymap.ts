@@ -474,7 +474,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenCommunity();
       }
       else {
-        machineryOpenAllTags(s);
+        machineryOpenAllTags();
       }
     }
     else if (s.viewMode == "unfiled") {
@@ -491,7 +491,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenCommunity();
       }
       else {
-        machineryOpenAllTags(s);
+        machineryOpenAllTags();
       }
     }
     else if (s.viewMode == "untagged") {
@@ -505,7 +505,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenCommunity();
       }
       else {
-        machineryOpenAllTags(s);
+        machineryOpenAllTags();
       }
     }
     else if (s.viewMode == "recent") {
@@ -516,7 +516,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenCommunity();
       }
       else {
-        machineryOpenAllTags(s);
+        machineryOpenAllTags();
       }
     }
     else if (s.viewMode == "random") {
@@ -524,11 +524,11 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenCommunity();
       }
       else {
-        machineryOpenAllTags(s);
+        machineryOpenAllTags();
       }
     }
     else if (s.viewMode == "community") {
-      machineryOpenAllTags(s);
+      machineryOpenAllTags();
     }
     else if (s.viewMode == "alltags") { machineryOpenTrash(s) } else if (s.viewMode == "trash") {
 
@@ -750,7 +750,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         }
       }
       else if (s.viewMode == "trash") {
-        machineryOpenAllTags(s)
+        machineryOpenAllTags()
       }
       else {
         if (s.currentId) {

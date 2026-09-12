@@ -69,13 +69,13 @@ function domainTimeout(fn: any, ms?: number): any {
 
 
 /* 按事件名摘除 scope $$listener（幂等；返回摘除数） */
-function removeScopeListener(s: any, evt: string): number {
+function removeScopeListener(evt: string): number {
   let removed = 0;
   try {
-    const listeners = s.$$listeners && s.$$listeners[evt];
+    const listeners = useMiscRawState.getState().$$listeners && useMiscRawState.getState().$$listeners[evt];
     if (Array.isArray(listeners)) {
       removed = listeners.length;
-      s.$$listeners[evt] = [];
+      useMiscRawState.getState().$$listeners[evt] = [];
     }
   } catch (err) { /* noop */ }
   return removed;
@@ -158,22 +158,19 @@ export function takeoverFilterDomain(): void {
   // bundle 摘除已无对端竞争，轮询式变更探测由 filterService 的显式写通知替代；
   // shape 双条件（width && height 才 filterContent）原语义保留。1m1 的 a7 契约同步改为
   // 「scope 零 watcher + 订阅在」（diag.ruleSubscribed）。
-  const s0: any = getBodyScope();
   onFilterRuleChange((group: string, _key: string) => {
-    const s: any = getBodyScope();
-    if (!s) return;
     if (group === 'shape') {
       const shape = w.eagle.filter.filterRules.shape || {};
-      if (shape.width && shape.height) machineryFilterContent(s);
+      if (shape.width && shape.height) machineryFilterContent();
       return;
     }
-    machineryFilterContent(s);
+    machineryFilterContent();
   });
   diag.ruleSubscribed = true;
 
   // keyword watcher（bundle 33653 → listState 订阅；keyword 已是委托字段——scope 写经
   // 委托进 store，store 订阅即全量触发面；变更差值守卫对齐原 watcher 的 last 比较语义）
-  if (s0) {
+  {
     useListState.subscribe((state: any, prev: any) => {
       if (state && prev && state.keyword !== prev.keyword) {
         search(state.keyword);
@@ -183,20 +180,16 @@ export function takeoverFilterDomain(): void {
   }
 
   // ── $on 广播处理器（摘 bundle → 域内重挂；发送方仍在 bundle 未移植路径）──
-  if (s0) { // E1c：原以 $on 存在性判就绪；CALCULATE_IMAGE_BINDING/REBIND_REFRESH 已迁 eagleBus
-    diag.listenersRemoved['CALCULATE_IMAGE_BINDING'] = removeScopeListener(s0, 'CALCULATE_IMAGE_BINDING');
+  { // E1c：原以 $on 存在性判就绪；CALCULATE_IMAGE_BINDING/REBIND_REFRESH 已迁 eagleBus
+    diag.listenersRemoved['CALCULATE_IMAGE_BINDING'] = removeScopeListener('CALCULATE_IMAGE_BINDING');
     calculateImageBindingChannel.on(function (params: any) {
-      const s: any = getBodyScope();
-      if (!s) return;
-      machineryCalculateImageBinding(s, params);
+      machineryCalculateImageBinding(params);
     });
 
-    diag.listenersRemoved['REBIND_REFRESH'] = removeScopeListener(s0, 'REBIND_REFRESH');
+    diag.listenersRemoved['REBIND_REFRESH'] = removeScopeListener('REBIND_REFRESH');
     rebindRefreshChannel.on(function (mute: any) {
-      const s: any = getBodyScope();
-      if (!s) return;
       domainTimeout(function () {
-        machineryRebindRefresh(s, mute, undefined, undefined);
+        machineryRebindRefresh(mute, undefined, undefined);
       }, 500);
     });
   }
@@ -475,7 +468,7 @@ export function excludeWithFolder(...args: any[]) {
                 setScrollTop("#filter-folder-list", 0);
             }
 
-            machineryFilterContent(s);
+            machineryFilterContent();
             machineryCalculateFilterCounts();
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
@@ -489,7 +482,7 @@ export function filterContent(...args: any[]) {
             if (!s.isItemBindCalculated) return;
             // 重新计算画面图片列表
             s.shuffle = [];
-            machineryRebindRefresh(s, undefined, s.contentFilterCache);
+            machineryRebindRefresh(undefined, s.contentFilterCache);
             scopeEvalAsync();
             setScrollTop("#box-container", 0);
         }).apply(null, args);
@@ -540,7 +533,7 @@ export function filterWithColor(...args: any[]) {
             }
 
             $timeout(function () {
-                machineryFilterContent(s);
+                machineryFilterContent();
                 machineryCalculateFilterCounts();
             }, 50);
             analytics.event('Filter', 'Color');
@@ -572,7 +565,7 @@ export function filterWithFolder(...args: any[]) {
                 setScrollTop("#filter-folder-list", 0);
             }
 
-            machineryFilterContent(s);
+            machineryFilterContent();
             machineryCalculateFilterCounts();
             analytics.event('Filter', 'Folder');
         }).apply(null, args);
@@ -735,7 +728,7 @@ export function search(...args: any[]) {
                     
                     updateSuggestions();
                     s.startCursor = 0;
-                    machineryFilterContent(s);
+                    machineryFilterContent();
                     machineryCalculateFilterCounts();
                 }
                 else {
@@ -1334,8 +1327,8 @@ export function machineryCalcuteFilterBadge(): void {
 }
 
 /* calcuteFilterResult（bundle 27634-27653 逐字） */
-export async function machineryCalcuteFilterResult(s: any, data: any[], contentFilterCache: any): Promise<any[]> {
-  s.colorDistancesMap = {};
+export async function machineryCalcuteFilterResult(data: any[], contentFilterCache: any): Promise<any[]> {
+  writeScopeField('colorDistancesMap', {});
   return new Promise<any[]>(async (resolve, reject) => {
     try {
       let result: any[];
@@ -1343,10 +1336,10 @@ export async function machineryCalcuteFilterResult(s: any, data: any[], contentF
         result = contentFilterCache.slice(0);
       }
       else {
-        result = s.raw.filter((x: any) => machineryContentFilter(x));
-        s.contentFilterCache = result.slice(0);
+        result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(x));
+        writeScopeField('contentFilterCache', result.slice(0));
       }
-      const filtered = await machineryFilterData(s, result);
+      const filtered = await machineryFilterData(result);
       resolve(filtered);
     } catch (err) {
       reject(err);
@@ -1560,26 +1553,26 @@ export function machineryExistInSmartFilter(smartFolder: any, image: any): boole
   }
 }
 
-export function machineryFilterContent(s: any, type?: any): void {
+export function machineryFilterContent(type?: any): void {
   machineryCalls.filterContent++;
   const w = window as any;
   // b1-9by-B：规则流汇聚点——eagle.filter 规则深变异经本函数收口后直推 filter 快照
   syncFilterFromScope();
-  if (!s.isItemBindCalculated) return;
+  if (!useMiscRawState.getState().isItemBindCalculated) return;
   // 重新计算画面图片列表
-  s.shuffle = [];
-  machineryRebindRefresh(s, undefined, s.contentFilterCache);
+  writeScopeField('shuffle', []);
+  machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
   scopeEvalAsync();
   setScrollTop("#box-container", 0);
   void type;
 }
 
 /* filterData（bundle 27654-28504 装配；三分片顺序执行） */
-export async function machineryFilterData(s: any, data: any[]): Promise<any[]> {
+export async function machineryFilterData(data: any[]): Promise<any[]> {
   const w = window as any;
   data = machineryFilterDataPart1(w, data);
-  data = machineryFilterDataPart2(s, w, data);
-  data = await machineryFilterDataPart3(s, w, data);
+  data = machineryFilterDataPart2(w, data);
+  data = await machineryFilterDataPart3(w, data);
   return data;
 }
 
@@ -1892,7 +1885,7 @@ function machineryFilterDataPart1(w: any, data: any[]): any[] {
   return data;
 }
 
-function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
+function machineryFilterDataPart2(w: any, data: any[]): any[] {
 
   // 图片注释筛选
   // 有注释
@@ -2070,10 +2063,10 @@ function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
     console.timeEnd("grayColorFilter");
   }
 
-  if (w.eagle.filter.filterRules.color.value && s.viewMode !== "random") {
+  if (w.eagle.filter.filterRules.color.value && useBodyState.getState().viewMode !== "random") {
     data = data.sort(function (a: any, b: any) {
-      var da = s.colorDistancesMap[a.id] || 100;
-      var db = s.colorDistancesMap[b.id] || 100;
+      var da = useMiscRawState.getState().colorDistancesMap[a.id] || 100;
+      var db = useMiscRawState.getState().colorDistancesMap[b.id] || 100;
       if (da > db) return 1;
       if (da < db) return -1;
       return 0;
@@ -2081,14 +2074,14 @@ function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
   }
 
   // 关键字筛选
-  if (s.keyword) {
+  if (useListState.getState().keyword) {
     console.time("$scope.searchFilter");
-    data = data.filter(s.searchFilter);
+    data = data.filter(useMiscRawState.getState().searchFilter);
     console.timeEnd("$scope.searchFilter");
   }
 
   // 已刪除時間排序
-  if (s.viewMode === 'trash') {
+  if (useBodyState.getState().viewMode === 'trash') {
     data = getFilter()('orderBy')(data, function (image: any) {
       if (image.deletedTime) {
         return -image.deletedTime;
@@ -2096,33 +2089,33 @@ function machineryFilterDataPart2(s: any, w: any, data: any[]): any[] {
       return -image.modificationTime;
     });
   }
-  else if (s.viewMode === 'random') {
+  else if (useBodyState.getState().viewMode === 'random') {
     console.time("shuffle");
-    if (s.shuffle.length > 0) {
-      data = s.shuffle.filter(function (item: any) {
-        return s.itemMappings[item.id] && !s.itemMappings[item.id].isDeleted;
+    if (useItemState.getState().shuffle.length > 0) {
+      data = useItemState.getState().shuffle.filter(function (item: any) {
+        return useItemState.getState().itemMappings[item.id] && !useItemState.getState().itemMappings[item.id].isDeleted;
       });
     }
     else {
       (data as any).shuffle();
-      s.shuffle = data;
+      writeScopeField('shuffle', data);
     }
     console.timeEnd("shuffle");
   }
 
-  s.preelaborations = [];
+  writeScopeField('preelaborations', []);
   if (w.eagle.filter.filterBadge > 0) {
     if (w.eagle.filter.folderFilterLogic === "OR" || w.eagle.filter.tagFilterLogic === "OR") {
       data.forEach(function (image: any) {
-        s.preelaborations.push(image);
+        useMiscRawState.getState().preelaborations.push(image);
       });
     }
     else {
-      s.preelaborations = data;
+      writeScopeField('preelaborations', data);
     }
   }
   else {
-    s.preelaborations = data;
+    writeScopeField('preelaborations', data);
   }
 
   return data;
@@ -2333,7 +2326,7 @@ export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton(s, 
 // ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
 let imageSearchController: any = null;
 
-export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Promise<any[]> {
+export async function machineryFilterDataPart3(w: any, data: any[]): Promise<any[]> {
 
   // 如果是 OR 逻辑需要保留所有 tags filter 的结果，为了计算 containTags
   if (w.eagle.filter.tagFilterLogic === "OR") {
@@ -2374,7 +2367,7 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
       });
 
       if (w.eagle.filter.filterRules.tag.no) {
-        s.preelaborations.forEach(function (image: any) {
+        useMiscRawState.getState().preelaborations.forEach(function (image: any) {
           if (!image.tags || image.tags.length === 0) {
             data.push(image);
           }
@@ -2548,30 +2541,30 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
   }
 
   // 如果沒有使用加密文件夾，就不需要判斷這件事情
-  if (Object.keys(s.lockedImages).length > 0) {
-    data = data.filter(s.lockImageFilter);
+  if (Object.keys(useItemState.getState().lockedImages).length > 0) {
+    data = data.filter(useMiscRawState.getState().lockImageFilter);
   }
 
   // 文件夹有自己的排序方式
-  if (!useMiscRawState.getState().selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
-    if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
-      data = machinerySortData(data, s.currentFolder.orderBy);
+  if (!useMiscRawState.getState().selectedFolders.length && useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy) {
+    if (useMiscRawState.getState().orderBy !== "IMPORT" || useFolderState.getState().currentFolder.orderBy !== useMiscRawState.getState().orderBy) {
+      data = machinerySortData(data, useFolderState.getState().currentFolder.orderBy);
     }
-    if (!s.currentFolder.sortIncrease) {
+    if (!useFolderState.getState().currentFolder.sortIncrease) {
       data = data.reverse();
     }
   }
 
   // 智能文件夹有自己的排序方式
-  else if (s.currentSmartFolder && s.currentSmartFolder.orderBy) {
-    if (s.currentSmartFolder.orderBy !== s.orderBy || s.currentSmartFolder.orderBy === "RANDOM") {
-      data = machinerySortData(data, s.currentSmartFolder.orderBy);
+  else if (useFolderState.getState().currentSmartFolder && useFolderState.getState().currentSmartFolder.orderBy) {
+    if (useFolderState.getState().currentSmartFolder.orderBy !== useMiscRawState.getState().orderBy || useFolderState.getState().currentSmartFolder.orderBy === "RANDOM") {
+      data = machinerySortData(data, useFolderState.getState().currentSmartFolder.orderBy);
     }
-    if (!s.currentSmartFolder.sortIncrease) {
+    if (!useFolderState.getState().currentSmartFolder.sortIncrease) {
       data = data.reverse();
     }
   }
-  else if (!s.sortIncrease && !w.eagle.filter.filterRules.color.value) {
+  else if (!useMiscRawState.getState().sortIncrease && !w.eagle.filter.filterRules.color.value) {
     data = data.reverse();
   }
 
@@ -2642,7 +2635,7 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
     }
   }
 
-  if (s.viewMode === 'recent') {
+  if (useBodyState.getState().viewMode === 'recent') {
     data = data.sort(function (a: any, b: any) {
       return w.RecentFileManager.recentFilesOrder[a.id] - w.RecentFileManager.recentFilesOrder[b.id];
     });

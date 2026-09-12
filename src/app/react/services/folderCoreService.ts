@@ -74,8 +74,6 @@ const $filter: any = (name: string) => {
 /* 7 fns（逐字；fns/getScope 为闭包注入） */
 export function createFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function ({ name, parentID, sibling, position = "top", callback }) {
 
             if (name === undefined) return;
@@ -131,7 +129,7 @@ export function createFolder(...args: any[]) {
             useItemState.getState().folderMappings[folder.id] = folder;
             addToRecentFolders([folder.id]);
             machineryUpdateSidebarList();
-            machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
+            machineryCalculateImageBinding({ ignoreSort: true }, function() {
                 machineryRefreshSubfolderList();
                 machinerySaveFolder();
                 if (callback) callback(folder);
@@ -148,8 +146,6 @@ export function createFolder(...args: any[]) {
 
 export function newFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(parent, isSubFolder, isSiblingFolder, ignoreAutoOpen) {
 
             var __lv_folderId = guid();
@@ -263,7 +259,7 @@ export function newFolder(...args: any[]) {
                 openFolder(folder);
             }
             setTimeout(function() {
-                machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
+                machineryCalculateImageBinding({ ignoreSort: true }, function() {
                     machineryRefreshSubfolderList();
                     machinerySaveFolder();
                     if (folder.parent) {
@@ -280,8 +276,6 @@ export function newFolder(...args: any[]) {
 
 export function newFolderWidthSelection(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         swal({
             html: `
@@ -361,8 +355,8 @@ export function newFolderWidthSelection(...args: any[]) {
             });
             ayncsImagesChange(useSelectionState.getState().selected);
             hiddenByCurrentFilter(useSelectionState.getState().selected);
-            machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
-                machineryRebindRefresh(s);
+            machineryCalculateImageBinding({ ignoreSort: true }, function() {
+                machineryRebindRefresh();
             });
             openFolder(folder);
             setTimeout(function() {
@@ -376,8 +370,6 @@ export function newFolderWidthSelection(...args: any[]) {
 
 export function addImagesToFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (images, folder) {
 
             var origin = [];
@@ -413,8 +405,8 @@ export function addImagesToFolder(...args: any[]) {
             });
             ayncsImagesChange(images);
             hiddenByCurrentFilter(images);
-            machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-                machineryRebindRefresh(s, true);
+            machineryCalculateImageBinding({ ignoreSort: true }, function () {
+                machineryRebindRefresh(true);
                 machineryUpdateSelection();
             });
 
@@ -424,7 +416,7 @@ export function addImagesToFolder(...args: any[]) {
             ]);
             if (images.length === 1) { message = message.replace("images", "image"); }
 
-            s.notify({
+            useMiscRawState.getState().notify({
                 message: message,
                 duration: 4000,
             }, function () {
@@ -432,12 +424,12 @@ export function addImagesToFolder(...args: any[]) {
                     image.folders = originFolders[index];
                     image.tags = originTags[index];
                 });
-                s.images = origin;
-                s.current = origin[0];
+                writeScopeField('images', origin);
+                writeScopeField('current', origin[0]);
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
-                    machineryRebindRefresh(s);
+                machineryCalculateImageBinding({ ignoreSort: true }, function () {
+                    machineryRebindRefresh();
                     machineryUpdateSelection();
                 });
                 ayncsImagesChange(origin);
@@ -651,8 +643,6 @@ export function moveFoldersToFolder(...args: any[]) {
 }
 
 export function emptyRestore(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
             if (useItemState.getState().trash && useItemState.getState().trash.length > 0) {
                 swal({
@@ -682,12 +672,12 @@ export function emptyRestore(...args: any[]) {
                         ayncsImagesChange(changes);
                         try { electronLog && electronLog.info(`[app] Restore ${changes.length} files from trash`); } catch (err) {};
                     }
-                    s.trash = [];
+                    writeScopeField('trash', []);
                     syncSidebarFromScope();
                     syncListFromScope();
 
-                    machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
-                        machineryRebindRefresh(s);
+                    machineryCalculateImageBinding({ ignoreSort: true }, function() {
+                        machineryRebindRefresh();
                         machineryUpdateSelection();
                         scopeEvalAsync();
                     });
@@ -860,7 +850,7 @@ export function openFolder(...args: any[]) {
                 s.reload();
             }
             else {
-                machineryRebindRefresh(s);
+                machineryRebindRefresh();
             }
             if (s.currentFolder) {
                 __lv_setLastFolder(s.currentFolder.id);
@@ -873,7 +863,7 @@ export function openFolder(...args: any[]) {
                 if (s.canUseTouchID) {
                     // 延遲一下以確保 UI 已渲染
                     $timeout(function () {
-                        machineryUnlockFolderWithTouchID(s);
+                        machineryUnlockFolderWithTouchID();
                     }, 500);
                 }
             }
@@ -976,9 +966,8 @@ export function openUnfiled(...args: any[]) {
 
 export function smartFolderCount(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machinerySmartFolderCount(s, args[0]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machinerySmartFolderCount(args[0]);
 }
 
 export function switchLibrary(...args: any[]) {

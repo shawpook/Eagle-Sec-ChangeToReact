@@ -548,7 +548,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('rebind-refresh', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    machineryRebindRefresh(s);
+    machineryRebindRefresh();
     scrollToSelectedItem();
   });
 
@@ -641,7 +641,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('prepend-folder', function (_e: any, folder: any) {
     const s = sNow();
     if (!s) return;
-    machineryPrependFolder(s, folder);
+    machineryPrependFolder(folder);
     scopeEvalAsync();
   });
   ipc.on('new-folder', function (_e: any) {
@@ -1122,7 +1122,7 @@ export function changeOrderBy(...args: any[]) {
                     s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
                     localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
                     machinerySortRawData(s.orderBy);
-                    machineryRebindRefresh(s);
+                    machineryRebindRefresh();
                     scopeEvalAsync();
                     try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
                 }

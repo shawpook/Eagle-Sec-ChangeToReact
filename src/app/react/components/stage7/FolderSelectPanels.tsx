@@ -9,7 +9,7 @@ import { q, widthOf, setCssEl, offsetOf } from '../../utils/domQuery';
 import { fuzzyMatchHtml } from './ContextMenu';
 import { deepCopy, FolderSelectPanel } from './selectPanelEngine';
 import { TagsInput } from './SelectPanels';
-import { getBodyScope } from '../../core/appCore';
+
 
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
@@ -21,6 +21,7 @@ import { machineryContentFilter } from '../../core/filterDomain';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { useFolderState } from '../../store/folderState';
+import { writeScopeField } from '../../core/scopeFieldBridge';
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
  *
@@ -912,12 +913,11 @@ export function NewSmartFolderModal() {
   };
 
   const recalculateResult = () => {
-    const body = getBodyScope();
 
-    body.currentSmartFolder = {
+    writeScopeField('currentSmartFolder', {
       name: '',
       conditions: conditionsRef.current,
-    };
+    });
     if (smartFolderRef.current && smartFolderRef.current.parent) {
       useFolderState.getState().currentSmartFolder.parent = smartFolderRef.current.parent;
     }
@@ -925,7 +925,7 @@ export function NewSmartFolderModal() {
     const result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(x));
     const count = result.length;
     setTotalCount(count);
-    machineryRebindRefresh(body, undefined, undefined, undefined);
+    machineryRebindRefresh(undefined, undefined, undefined);
     // digest 等价：强制重渲染展示 conditions/rules 的原地变更
     bumpAll();
   };
@@ -952,7 +952,6 @@ export function NewSmartFolderModal() {
   };
 
   const save = () => {
-    const body = getBodyScope();
 
     if (!folderNameRef.current) {
       setIsNoFolderName(true);
@@ -989,7 +988,7 @@ export function NewSmartFolderModal() {
       }
 
       children.splice(idx, 0, smartFolder);
-      smartFolder.imageCount = machinerySmartFolderCount(body, smartFolder);
+      smartFolder.imageCount = machinerySmartFolderCount(smartFolder);
       useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
       updateSidebarList();
       openSmartFolder(smartFolder);
@@ -1005,7 +1004,7 @@ export function NewSmartFolderModal() {
       smartFolderRef.current.name = folderNameRef.current;
       smartFolderRef.current.conditions = conditionsRef.current;
       smartFolderRef.current.modificationTime = Date.now();
-      smartFolderRef.current.imageCount = machinerySmartFolderCount(body, smartFolderRef.current);
+      smartFolderRef.current.imageCount = machinerySmartFolderCount(smartFolderRef.current);
       if (smartFolderRef.current) {
         updateSidebarList();
         openSmartFolder(smartFolderRef.current);
@@ -1022,7 +1021,7 @@ export function NewSmartFolderModal() {
         setTimeout(() => {
           // 原版 $scope.smartFolderCount 经 scope 原型链解析到 body.smartFolderCount
           w().eagle.utils.tree.walk(smartFolderRef.current.children, 'children', (csf: any, parent: any, depth: any) => {
-            csf.imageCount = machinerySmartFolderCount(body, csf);
+            csf.imageCount = machinerySmartFolderCount(csf);
           });
           bumpAll();
         }, 200);
@@ -1036,17 +1035,16 @@ export function NewSmartFolderModal() {
   };
 
   const cancel = () => {
-    const body = getBodyScope();
     const input = document.getElementById('smart-folder-name-input');
     if (input) input.setAttribute('tabindex', '-1');
     if (isEditModeRef.current) {
-      body.currentSmartFolder = smartFolderRef.current || undefined;
+      writeScopeField('currentSmartFolder', smartFolderRef.current || undefined);
     } else {
-      body.currentSmartFolder = originSmartFolderRef.current || undefined;
+      writeScopeField('currentSmartFolder', originSmartFolderRef.current || undefined);
     }
     isEditModeRef.current = undefined;
     setIsOpen(false);
-    machineryRebindRefresh(body, undefined, undefined, undefined);
+    machineryRebindRefresh(undefined, undefined, undefined);
     scopeEvalAsync();
   };
 

@@ -390,7 +390,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
     try {
       if (!willSendItems || willSendItems.length === 0) return;
       console.log("第 %d 更新，目前進度 %d / %d", countOfSend, willSendItems.length + (countOfSend - 1) * once, total);
-      var keepItems = await machineryFilterData(bs, willSendItems);
+      var keepItems = await machineryFilterData(willSendItems);
       keepItems = keepItems.filter((x: any) => machineryContentFilter(x));
       var keetItemsMap: any = {};
       keepItems.forEach(function (item: any) {
@@ -422,7 +422,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
         if (hiddenElements.length > 0) {
           glRemoveitemsChannel.emit(hiddenElements);
           if (bs.currentSmartFolder) {
-            bs.currentSmartFolder.imageCount = machinerySmartFolderCount(bs, bs.currentSmartFolder);
+            bs.currentSmartFolder.imageCount = machinerySmartFolderCount(bs.currentSmartFolder);
             scopeEvalAsync();
           }
         }

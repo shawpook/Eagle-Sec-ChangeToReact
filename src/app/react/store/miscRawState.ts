@@ -87,6 +87,12 @@ interface MiscRawState {
   hsks: any;
   Registration: any;
   AnalyticsHelper: any;
+  searchFilter: any;
+  lockImageFilter: any;
+  $$listeners: any;
+  $$watchers: any;
+  saveFolderDebounce: any;
+  tagsSuggestionResult: any;
   // ── b1-9bz-E3-11：函数面挂载字段源翻转（值是函数的状态字段；scope.X = fn 写、scope.X() 读）──
   undo: any;
   closeAll: any;
@@ -286,6 +292,12 @@ export const useMiscRawState = create<MiscRawState>(() => ({
   hsks: null,
   Registration: null,
   AnalyticsHelper: null,
+  searchFilter: null,
+  lockImageFilter: null,
+  $$listeners: null,
+  $$watchers: null,
+  saveFolderDebounce: null,
+  tagsSuggestionResult: null,
   undo: null,
   closeAll: null,
   initMenu: null,
@@ -425,6 +437,7 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'debugReportStatus', 'fixUtils', 'trashRemoved', 'currentTrashRemoved', 'sortIncrease', 'isContainAlphabet',
   'keyword_cn', 'keyword_tw', 'isKeywordTW', 'isKeywordCN', 'tagsSuggestion', 'showSlowNotify',
   'isItemBindCalculated', 'currentTag', 'progress', 'hsks', 'Registration', 'AnalyticsHelper',
+  'searchFilter', 'lockImageFilter', '$$listeners', '$$watchers', 'saveFolderDebounce', 'tagsSuggestionResult',
   'undo', 'closeAll', 'initMenu', 'notify', 'reload', 'toggleFilter', 'updateSelection', 'zoom', 'changeStar', 'removeSelected', 'toggleAll', 'selectNext', 'selectPrev', 'enterDetailMode', 'leaveDetailMode', 'onDropContainer', 'activateFont', 'deactivateFont', 'escHandler', 'copyAsPath', 'getRawPath', 'getRawUrl', 'select', 'addImagesToFolder', 'selectTag', 'createTagGroup', 'openTagAllGroup', 'openUnfiledGroup', 'openStarredGroup', 'openTagGroup', 'addStarredTags', 'addGroupTags', 'openTagGroupContextMenu', 'renameTagGroup', 'changeTagGroupColor', 'removeTagGroup', 'renameTagGroupBlur', 'renameTagGroupKeyup', 'tagGroupDescriptionChange', 'tagGroupDescriptionFocus', 'tagGroupDescriptionBlur',
   'gifViewer', 'gifPlayer', 'selectedTags', 'removeSound', 'lastIndex', 'isGifReady', 'orderBy', 'currentId', 'duplicateGroupings', 'tagViewModeName', 'colorDistancesMap', 'folderKeyword', 'listMetaType', 'isSearchScopeFolderName', 'isSearchScopeFolderDesc', 'preelaborations', 'paletteQueuePaused', 'addImageStartTime', 'availableHistoryTags', 'lastSelectedTag', 'gifUpadteInterval', 'sidebarIndex', 'canUseTouchID', 'unlockPassword', 'historySearchKeywords', 'boxContianerWidth', 'isSearchScopeName', 'isSearchScopeExt', 'isSearchScopeTag', 'isSearchScopeUrl', 'isSearchScopeAnnotation', 'isSearchScopeNote', 'keywordDebounce', 'MAX_LIST_WIDTH', 'contentFilterCache', 'isExpandQuickAccess', 'isExpandSmartFolder', 'isExpandFolder', 'commentRect', 'duplicateTarget', 'showName', 'showMetas', 'searchRegexGroup', 'addImageTimeLeftInSeconds', 'sliderZoomRatio', 'newGroupName', 'usingGifPlayer', 'paletteQueueDelay', 'lastProcessCount', 'isLibrarySaving', 'saveFolderDebounceTimeout', 'libraryHistory', 'isEnglish', 'initDetailMode', 'untagged', 'lastImageHeight', 'gotoBottomTimeout', 'isOpenWebpagePanel', 'boxContianerHeight', 'isHideMainNav', 'page', 'len', 'showOriginalImageWhenLarge', 'showAnnotation', 'showFileExtension', 'showFileExtensionLabel', 'duplicates', 'showLargeImage', 'usingCache', 'winMenu', 'selectingTags', 'libraryLoadedProgress', 'paletteQueueLength', 'metadataQueueLength', 'downloadQueueLength', 'MAX_DIMENSION', 'duplicateSound', 'errorSound', 'orderByName', 'folderIcons', 'hexColor', 'loadMoreDisable',
 ];

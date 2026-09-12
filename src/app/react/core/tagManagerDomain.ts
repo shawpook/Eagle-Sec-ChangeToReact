@@ -52,6 +52,7 @@ import { useLayoutState } from '../store/layoutState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
+import { usePreferencesState } from '../store/preferencesState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -1346,7 +1347,7 @@ export function machineryBuildTagManager(s: any): any {
                 try {
                     w.electronLog.info(`[app] Remove tag: ${JSON.stringify(tags)} from tag group: ${group.name}(${group.id})`);
                 } catch (err: any) {};
-                if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+                if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
                     s.removeSound.play();
                 }
             }, 1);
@@ -1638,7 +1639,7 @@ export function machineryBuildTagManager(s: any): any {
                         label: w.i18n.__('context.tagGroup.rename'),
                         keywords: '重命名 rename 名前を変更する tag group',
                         icon: 'ic-rename.svg',
-                        accelerator: s.$root.preferences.shortcuts.keybinds[`edit.rename.${process.platform}`],
+                        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds[`edit.rename.${process.platform}`],
                         click: () => {
                             machineryRenameTagGroup(tagGroup);
                             scopeEvalAsync();

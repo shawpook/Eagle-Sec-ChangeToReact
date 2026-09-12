@@ -129,7 +129,7 @@ export function createFolder(...args: any[]) {
 
             useItemState.getState().folderMappings[folder.id] = folder;
             addToRecentFolders([folder.id]);
-            machineryUpdateSidebarList(s);
+            machineryUpdateSidebarList();
             machineryCalculateImageBinding(s, { ignoreSort: true }, function() {
                 machineryRefreshSubfolderList();
                 machinerySaveFolder();
@@ -255,7 +255,7 @@ export function newFolder(...args: any[]) {
                 }, 100);
             }, 250);
 
-            machineryUpdateSidebarList(s);
+            machineryUpdateSidebarList();
 
             // Note: 如果用戶當前選擇多個文件，表示正在分類，這時候不要跳轉是比較好的選擇
             if (useSelectionState.getState().selected.length === 0 && !ignoreAutoOpen) {
@@ -350,7 +350,7 @@ export function newFolderWidthSelection(...args: any[]) {
             };
             useFolderState.getState().folders.splice(useFolderState.getState().folders.length, 0, folder);
             useItemState.getState().folderMappings[folder.id] = folder;
-            machineryUpdateSidebarList(s);
+            machineryUpdateSidebarList();
             addToRecentFolders([folder.id]);
 
             // 添加圖片
@@ -543,7 +543,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                         }
                     }
                 }
-                machineryUpdateSidebarList(s);
+                machineryUpdateSidebarList();
                 machinerySaveFolder();
                 try {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) sibling`);
@@ -640,7 +640,7 @@ export function moveFoldersToFolder(...args: any[]) {
                 }
 
                 folder.isExpand = true;
-                machineryUpdateSidebarList(s);
+                machineryUpdateSidebarList();
                 machinerySaveFolder();
                 try {
                     electronLog && electronLog.info(`[app] Drag ${folders.length} folders as ${folder.name}(${folder.id}) children`);
@@ -834,7 +834,7 @@ export function openFolder(...args: any[]) {
 	            var ancestors = machineryGetAncestorFolders(s, folder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
-	                    machineryExpandFolder(s, ancestors[i]);
+	                    machineryExpandFolder(ancestors[i]);
 	                }
 	            }
             }
@@ -931,7 +931,7 @@ export function openSmartFolder(...args: any[]) {
 	            var ancestors = machineryGetAncestorSmartFolders(s, smartFolder, []);
 	            if (ancestors.length > 0) {
 	                for (var i = 0; i < ancestors.length; i++) {
-	                    machineryExpandSmartFolder(s, ancestors[i]);
+	                    machineryExpandSmartFolder(ancestors[i]);
 	                }
 	            }
             }

@@ -372,10 +372,10 @@ export function contentFilter(...args: any[]) {
     if (!s) return;
     return (function(__lv_image) {
             try {
-                if (s.$root.selectedSmartFolders.length > 0) {
+                if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
                     if (__lv_image.isDeleted) return false;
-                    for (let i = 0; i < s.$root.selectedSmartFolders.length; i++) {
-                        let smartFolder = s.$root.selectedSmartFolders[i];
+                    for (let i = 0; i < useMiscRawState.getState().selectedSmartFolders.length; i++) {
+                        let smartFolder = useMiscRawState.getState().selectedSmartFolders[i];
                 		if (machineryExistInSmartFilter(s, smartFolder, __lv_image)) {
                             return true;
                         }
@@ -427,10 +427,10 @@ export function contentFilter(...args: any[]) {
                         break;
                     default:
                         // 文件夹多选
-                        if (s.$root.selectedFolders.length > 0) {
+                        if (useMiscRawState.getState().selectedFolders.length > 0) {
                             if (__lv_image.isDeleted) return false;
-                            for (var i = 0; i < s.$root.selectedFolders.length; i++) {
-                                var folder = s.$root.selectedFolders[i];
+                            for (var i = 0; i < useMiscRawState.getState().selectedFolders.length; i++) {
+                                var folder = useMiscRawState.getState().selectedFolders[i];
                                 if (isInFolder(__lv_image, folder)) {
                                     return true;
                                 }
@@ -1450,10 +1450,10 @@ export function machineryColorFilter(image: any): boolean {
 export function machineryContentFilter(s: any, image: any): boolean {
   const w = window as any;
   try {
-    if (s.$root.selectedSmartFolders.length > 0) {
+    if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
       if (image.isDeleted) return false;
-      for (let i = 0; i < s.$root.selectedSmartFolders.length; i++) {
-        let smartFolder = s.$root.selectedSmartFolders[i];
+      for (let i = 0; i < useMiscRawState.getState().selectedSmartFolders.length; i++) {
+        let smartFolder = useMiscRawState.getState().selectedSmartFolders[i];
         if (machineryExistInSmartFilter(s, smartFolder, image)) {
           return true;
         }
@@ -1504,10 +1504,10 @@ export function machineryContentFilter(s: any, image: any): boolean {
         break;
       default:
         // 文件夹多选
-        if (s.$root.selectedFolders.length > 0) {
+        if (useMiscRawState.getState().selectedFolders.length > 0) {
           if (image.isDeleted) return false;
-          for (var i = 0; i < s.$root.selectedFolders.length; i++) {
-            var folder = s.$root.selectedFolders[i];
+          for (var i = 0; i < useMiscRawState.getState().selectedFolders.length; i++) {
+            var folder = useMiscRawState.getState().selectedFolders[i];
             if (isInFolder(image, folder)) {
               return true;
             }
@@ -2552,7 +2552,7 @@ export async function machineryFilterDataPart3(s: any, w: any, data: any[]): Pro
   }
 
   // 文件夹有自己的排序方式
-  if (!s.$root.selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
+  if (!useMiscRawState.getState().selectedFolders.length && s.currentFolder && s.currentFolder.orderBy) {
     if (s.orderBy !== "IMPORT" || s.currentFolder.orderBy !== s.orderBy) {
       data = machinerySortData(data, s.currentFolder.orderBy);
     }

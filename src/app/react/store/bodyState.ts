@@ -3,6 +3,7 @@ import { usePanelState } from './panelState';
 import { useFilterState } from './filterState';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { getBodyScope } from '../core/appCore';
+import { usePreferencesState } from './preferencesState';
 
 /**
  * 11-pre a8：body 绑定层状态源（body ng-class 28 项 + class 插值 + theme/platform/vibrancy
@@ -123,8 +124,8 @@ let bound = false;
 function buildBodySnapshot(scope: any): Partial<BodyState> {
       const currentFolderOrderBy = scope.currentFolder && scope.currentFolder.orderBy;
       const filterBadge = (scope.eagle && scope.eagle.filter && scope.eagle.filter.filterBadge) || 0;
-      const general = (scope.$root && scope.$root.preferences && scope.$root.preferences.general) || {};
-      const habits = (scope.$root && scope.$root.preferences && scope.$root.preferences.habits) || {};
+      const general = (scope.$root && usePreferencesState.getState().preferences && usePreferencesState.getState().preferences.general) || {};
+      const habits = (scope.$root && usePreferencesState.getState().preferences && usePreferencesState.getState().preferences.habits) || {};
       const props = (scope.listLayoutSettings && scope.listLayoutSettings.props) || {};
       return {
         imageHeight: (scope.imageSize && scope.imageSize.height) || 0,

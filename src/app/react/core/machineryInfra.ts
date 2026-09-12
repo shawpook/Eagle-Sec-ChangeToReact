@@ -83,7 +83,7 @@ export function applyDataMachineryScope(): void {
       tolerance: "pointer",
       helper: 'clone',
       update: function (e: any, ui: any) {
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
         const $timeout = getTimeout();
         $timeout && $timeout(function () {
           machinerySaveFolder();

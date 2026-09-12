@@ -66,6 +66,9 @@ import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
 import { writeScopeField } from './scopeFieldBridge';
+import { useLockState } from '../store/lockState';
+import { usePreferencesState } from '../store/preferencesState';
+import { useBodyState } from '../store/bodyState';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;
@@ -731,7 +734,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('open-preferences', function (_e: any, params: any) {
     const s = sNow();
     if (!s) return;
-    if (s.$root.isAppLocked) return;
+    if (useLockState.getState().isAppLocked) return;
     ipc.send('open.preferences', params);
   });
 
@@ -751,7 +754,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('show-sidebar-badge', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.$root.preferences.general.showSidebarBadge = true;
+    usePreferencesState.getState().preferences.general.showSidebarBadge = true;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
@@ -761,7 +764,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('hide-sidebar-badge', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    s.$root.preferences.general.showSidebarBadge = false;
+    usePreferencesState.getState().preferences.general.showSidebarBadge = false;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
@@ -930,7 +933,7 @@ export function takeoverMiscDomain(): void {
     s.errorList.push(errorItem);
     syncErrorCount();
     if (s.errorList.length === 1) {
-      if (s.$root.preferences.notification.soundEffect.enable != 'false') {
+      if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false') {
         s.errorSound.play();
         openErrorModal();
       }
@@ -1316,7 +1319,7 @@ export function toggleFolderVisible(...args: any[]) {
             s.isExpandFolder = !s.isExpandFolder;
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.folder.expand", s.isExpandFolder);
-            machineryUpdateSidebarList(s);
+            machineryUpdateSidebarList();
         }).apply(null, args);
   }
 
@@ -1342,7 +1345,7 @@ export function toggleQuickAccessVisible(...args: any[]) {
             s.isExpandQuickAccess = !s.isExpandQuickAccess;
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.quickAccess.expand", s.isExpandQuickAccess);
-            machineryUpdateSidebarList(s);
+            machineryUpdateSidebarList();
         }).apply(null, args);
   }
 
@@ -1354,7 +1357,7 @@ export function toggleSmartFolderVisible(...args: any[]) {
             s.isExpandSmartFolder = !s.isExpandSmartFolder;
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.smartFolder.expand", s.isExpandSmartFolder);
-            machineryUpdateSidebarList(s);
+            machineryUpdateSidebarList();
         }).apply(null, args);
   }
 
@@ -1387,7 +1390,7 @@ export function updateCurrentOrderAndIncrease () {
                 orderBy = useFolderState.getState().currentSmartFolder.orderBy;
             }
             else {
-                orderBy = getBodyScope().orderBy;
+                orderBy = useMiscRawState.getState().orderBy;
                 sortIncrease = useMiscRawState.getState().sortIncrease;
             }
             getBodyScope().currentOrderBy = orderBy;
@@ -1403,7 +1406,7 @@ export function updateSuggestions() {
                 keyword = useListState.getState().keyword.toLowerCase();
             }
 
-            getBodyScope().hsks = getBodyScope().historySearchKeywords.filter(function (word) {
+            getBodyScope().hsks = useMiscRawState.getState().historySearchKeywords.filter(function (word) {
                 if (!keyword || keyword == "") return true;
                 if (word) {
                     return fuzzy_match(word, keyword).length > 0;
@@ -1469,7 +1472,7 @@ export function updateSuggestions() {
             getBodyScope().keyword_tw = chineseConvert.cn2tw(keyword);
             getBodyScope().isKeywordTW = keyword === useMiscRawState.getState().keyword_tw;
             getBodyScope().isKeywordCN = keyword === useMiscRawState.getState().keyword_cn;
-            getBodyScope().isEnglish = getBodyScope().isKeywordTW === useMiscRawState.getState().isKeywordCN;
+            getBodyScope().isEnglish = useMiscRawState.getState().isKeywordTW === useMiscRawState.getState().isKeywordCN;
 
             if (keyword.length === 1 && useMiscRawState.getState().isContainAlphabet) {
                 suggestions = dataset.filter(function(suggestion) {
@@ -1479,7 +1482,7 @@ export function updateSuggestions() {
             else {
                 suggestions = dataset.filter(function(suggestion) {
                     var __lv_idx = suggestion.word.toLowerCase().indexOf(keyword);
-                    if (getBodyScope().isEnglish) {
+                    if (useMiscRawState.getState().isEnglish) {
                         return (__lv_idx > -1);
                     }
                     else if (useMiscRawState.getState().isKeywordTW) {
@@ -1607,7 +1610,7 @@ const cgStack: any[] = [];        // m：已附加的消息元素栈
 /* languageBCP 重算（bundle 20053 逐字；初值 "en"） */
 export function getLanguageBCP(s: any): string {
   try {
-    const lang = s.language ?? s.$root?.language ?? 'en';
+    const lang = s.language ?? useBodyState.getState().language ?? 'en';
     return String(lang).replace('_', '-');
   } catch (err) {
     return 'en';
@@ -1690,7 +1693,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
             syncDetailFromScope();
             s.smoothZoomDone = true;
             syncDetailFromScope();
-            if (!machineryLastZoom(s)) {
+            if (!machineryLastZoom()) {
               machineryZoom(s, image);
             }
             detailZoom()?.updateNavigator( s.current);
@@ -1699,7 +1702,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
             show(".smooth_zoom_preloader");
 
             // 如果用户没有设置过 mousewheel 偏好
-            if (!s.$root.preferences.habits.scrollBehaviorTour) {
+            if (!usePreferencesState.getState().preferences.habits.scrollBehaviorTour) {
               q(".smooth_zoom_preloader")?.addEventListener("wheel", function () {
                 openMousewheelPreferenceWindowChannel.emit();
               }, { once: true });
@@ -1712,7 +1715,7 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
       syncDetailFromScope();
       detailZoom()?.updateNavigator( s.current);
       window.dispatchEvent(new Event("orientationchange"));
-      if (!machineryLastZoom(s)) {
+      if (!machineryLastZoom()) {
         machineryZoom(s, image);
       }
       cssSet("#detail-container", { opacity: 1 });
@@ -1968,7 +1971,7 @@ export function machineryQuicklook(s: any, event: any): void {
   }
   else {
     // 如果用户设定是预览
-    if (s.$root.preferences.habits.keyspace === "preview") {
+    if (usePreferencesState.getState().preferences.habits.keyspace === "preview") {
       if (s.selected.length > 0) {
         addClass(".content-panel.detail-mode", "inline-mode");
         setTimeout(function () {
@@ -1978,7 +1981,7 @@ export function machineryQuicklook(s: any, event: any): void {
         w.analytics.event('QuickLook', 'Open');
       }
     }
-    else if (s.$root.preferences.habits.keyspace === "preview-native") {
+    else if (usePreferencesState.getState().preferences.habits.keyspace === "preview-native") {
       if (s.selected.length > 0) {
         if (w.process.platform == 'darwin' && !s.isDetailMode) {
           s.isPreviewing = !s.isPreviewing;

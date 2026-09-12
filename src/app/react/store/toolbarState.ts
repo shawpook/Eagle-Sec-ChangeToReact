@@ -8,6 +8,7 @@ import { getBodyScope } from '../core/appCore';
 
 
 import { machineryGetSelectedTags } from '../core/selectionViewDomain';
+import { useMiscRawState } from './miscRawState';
 /**
  * 阶段3a：工具栏状态 —— 快照自 EagleController scope（规范 index.html:141-273 模板所需字段）。
  */
@@ -114,8 +115,8 @@ function buildToolbarSnapshot(scope: any): ToolbarSnapshot {
         currentFolder: currentFolder ? { name: currentFolder.name, parent: currentFolder.parent, orderBy: currentFolder.orderBy } : null,
         currentFolderPath: scope.currentFolderPath || '',
         currentSmartFolder: currentSmartFolder ? { name: currentSmartFolder.name, orderBy: currentSmartFolder.orderBy } : null,
-        selectedFoldersCount: Array.isArray(scope.$root.selectedFolders) ? scope.$root.selectedFolders.length : 0,
-        selectedSmartFoldersCount: Array.isArray(scope.$root.selectedSmartFolders) ? scope.$root.selectedSmartFolders.length : 0,
+        selectedFoldersCount: Array.isArray(useMiscRawState.getState().selectedFolders) ? useMiscRawState.getState().selectedFolders.length : 0,
+        selectedSmartFoldersCount: Array.isArray(useMiscRawState.getState().selectedSmartFolders) ? useMiscRawState.getState().selectedSmartFolders.length : 0,
         selectedTagsCount,
         tagsCount: Array.isArray(scope.tags) ? scope.tags.length : 0,
         hasCurrentTag: !!scope.currentTag,

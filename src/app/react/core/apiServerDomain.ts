@@ -517,7 +517,6 @@ function machineryGetRecentFoldersAPI(): Promise<any> {
 /* createFolder（bundle 18176-18199 逐字） */
 function machineryCreateFolder(params: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const bs: any = getBodyScope();
     const w = window as any;
     var folderName = params.folderName;
     var parent = params.parent;
@@ -543,7 +542,7 @@ function machineryCreateFolder(params: any): Promise<any> {
         useFolderState.getState().folders.splice(useFolderState.getState().folders.length, 0, folder);
       }
       useItemState.getState().folderMappings[folder.id] = folder;
-      machineryUpdateSidebarList(bs);
+      machineryUpdateSidebarList();
       addToRecentFolders([folder.id]);
       machinerySaveFolder( );
       w.electronLog.info(`[api] create folder: ${folderName}(${folder.id})`);
@@ -566,7 +565,7 @@ function machineryRenameFolder(params: any): Promise<any> {
     else {
       let originName = folder.name;
       bs.changeFolderName(folder, newName);
-      machineryUpdateSidebarList(bs);
+      machineryUpdateSidebarList();
       machinerySaveFolder( );
       w.electronLog.info(`[api] rename folder: ${originName} to ${newName}`);
       resolve(folder);
@@ -606,7 +605,7 @@ function machineryUpdateFolder(params: any): Promise<any> {
       if (newDescription) {
         folder.description = newDescription;
       }
-      machineryUpdateSidebarList(bs);
+      machineryUpdateSidebarList();
       machinerySaveFolder( );
       resolve(folder);
     }

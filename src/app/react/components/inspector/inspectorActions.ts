@@ -174,7 +174,7 @@ export function updateSelection() {
             };
             break;
           default:
-            if (s.$root.selectedFolders.length > 0) {
+            if (useMiscRawState.getState().selectedFolders.length > 0) {
               eagleIns.category = {
                 newName: i18n.__('inspector.names.multipleTitles'),
                 newDescription: '',
@@ -797,7 +797,7 @@ export function openHelpContextMenu() {
         icon: 'ic-settings.svg',
         keywords: 'preferences 偏好设置 偏好設置 設定 設置 settings',
         accelerator: (window as any).preferences.shortcuts.keybinds['app.preferences'] || 'CmdOrCtrl+,',
-        enabled: !getRootScope()?.isAppLocked,
+        enabled: !useLockState.getState().isAppLocked,
         click: () => {
           if (useLockState.getState().isAppLocked) return;
           ipc.send('open.preferences');

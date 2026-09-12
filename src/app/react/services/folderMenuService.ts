@@ -218,7 +218,7 @@ export function lockFolder(...args: any[]) {
       s.isLoading = true;
       s.selected = [];
       syncInspectorFromScope();
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
         machineryRebindRefresh(s);
         machineryUpdateSelection(s);
@@ -261,9 +261,8 @@ export function renameFolder(...args: any[]) {
 
 export function batchRenameFolders(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryBatchRenameFolders(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryBatchRenameFolders();
 }
 
 export function cloneFolder(...args: any[]) {
@@ -307,7 +306,7 @@ export function cloneFolder(...args: any[]) {
       if (idx > -1) {
         children.splice(idx + 1, 0, newFolder);
         useItemState.getState().folderMappings[newFolder.id] = newFolder;
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
         machinerySaveFolder();
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
@@ -349,8 +348,6 @@ export function changeSelectedFoldersIcon(...args: any[]) {
 }
 
 export function changeFolderColor(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any, color: any) {
       const w = window as any;
       if (!color) {
@@ -359,7 +356,7 @@ export function changeFolderColor(...args: any[]) {
       else {
         folder.iconColor = color;
       }
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
@@ -367,8 +364,6 @@ export function changeFolderColor(...args: any[]) {
 }
 
 export function changeSelectedFoldersColor(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, color: any) {
       const w = window as any;
       if (useMiscRawState.getState().selectedFolders.length === 0) return;
@@ -380,7 +375,7 @@ export function changeSelectedFoldersColor(...args: any[]) {
           folder.iconColor = color;
         }
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
@@ -760,7 +755,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              machineryBatchRenameFolders(s, event);
+              machineryBatchRenameFolders(event);
               scopeEvalAsync();
             }
           },
@@ -1207,9 +1202,8 @@ export function setSmartFolderSortIncrease(...args: any[]) {
 
 export function batchRenameSmartFolders(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryBatchRenameSmartFolders(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryBatchRenameSmartFolders();
 }
 
 export function changeSmartFolderIcon(...args: any[]) {
@@ -1228,8 +1222,6 @@ export function changeSmartFolderIcon(...args: any[]) {
 }
 
 export function changeSmartFolderColor(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any, color: any) {
       const w = window as any;
       if (!color) {
@@ -1238,7 +1230,7 @@ export function changeSmartFolderColor(...args: any[]) {
       else {
         smartFolder.iconColor = color;
       }
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change smart-folder: ${smartFolder.name}(${smartFolder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
@@ -1246,8 +1238,6 @@ export function changeSmartFolderColor(...args: any[]) {
 }
 
 export function changeSelectedSmartFoldersIcon(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, icon: any) {
       const w = window as any;
       if (useMiscRawState.getState().selectedSmartFolders.length === 0) return;
@@ -1259,7 +1249,7 @@ export function changeSelectedSmartFoldersIcon(...args: any[]) {
           smartFolder.icon = icon;
         }
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
@@ -1267,8 +1257,6 @@ export function changeSelectedSmartFoldersIcon(...args: any[]) {
 }
 
 export function changeSelectedSmartFoldersColor(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, color: any) {
       const w = window as any;
       if (useMiscRawState.getState().selectedSmartFolders.length === 0) return;
@@ -1280,7 +1268,7 @@ export function changeSelectedSmartFoldersColor(...args: any[]) {
           smartFolder.iconColor = color;
         }
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
@@ -1288,8 +1276,6 @@ export function changeSelectedSmartFoldersColor(...args: any[]) {
 }
 
 export function cloneSmartFolder(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
       var newFolder = JSON.parse(JSON.stringify(smartFolder));
@@ -1315,7 +1301,7 @@ export function cloneSmartFolder(...args: any[]) {
       if (idx > -1) {
         children.splice(idx, 0, newFolder);
         useItemState.getState().smartFolderMappings[newFolder.id] = newFolder;
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
         machinerySaveFolder();
         try { w.electronLog && w.electronLog.info(`[app] Clone smart-folder: ${smartFolder.name}(${smartFolder.id}), new smart-folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
@@ -1526,8 +1512,6 @@ export function newChildSmartFolder(...args: any[]) {
 }
 
 export function newSmartFolderGroup(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any) {
       const w = window as any;
       var smartFolderGroup = {
@@ -1539,7 +1523,7 @@ export function newSmartFolderGroup(...args: any[]) {
         icon: 'grid'
       };
       useFolderState.getState().smartFolders.push(smartFolderGroup);
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       w.analytics.event('SmartFolder', 'CreateGroup');
       return smartFolderGroup;
@@ -1718,7 +1702,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              machineryBatchRenameSmartFolders(s, event);
+              machineryBatchRenameSmartFolders(event);
               scopeEvalAsync();
             }
           },
@@ -2034,7 +2018,7 @@ export function reorderFolderByTitle(...args: any[]) {
       cancelButtonText: i18n.__('general.cancel'),
     }).then(function () {
       reorderFolderByTitleClosure(folders, reverse);
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       scopeEvalAsync();
       try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
@@ -2064,7 +2048,7 @@ export function reorderAllFolderByTitle(...args: any[]) {
       treeWalkSafe(s.folders, 'children', function (folder: any, parent: any) {
         reorderFolderByTitleClosure(folder.children, reverse);
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       machinerySaveFolder();
       scopeEvalAsync();
       try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}

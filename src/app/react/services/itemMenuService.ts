@@ -41,6 +41,8 @@ import { machineryGetSelectedItemElements, machineryRemoveSelected } from '../co
 import { machineryRemovePermanently } from './batchOpsService';
 import { machineryOpenAll } from './folderCoreService';
 import { machineryToggleSlideshow } from '../core/miscDomain';
+import { usePreferencesState } from '../store/preferencesState';
+import { useMiscRawState } from '../store/miscRawState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -409,7 +411,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 },
                 // 添加至文件夹...
                 {
-                    accelerator: s.$root.preferences.shortcuts.keybinds['find.add.to'] || 'CmdOrCtrl+Shift+J',
+                    accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['find.add.to'] || 'CmdOrCtrl+Shift+J',
                     label: i18n.__('context.image.addToFolder'),
                     keywords: 'add to folder 添加至文件夾 添加到資料夾',
                     icon: 'ic-folder-add-to.svg',
@@ -504,7 +506,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             var now = Date.now();
                             s.selected.forEach((item, index) => {
                                 if (!item.pinned) { item.pinned = {} };
-                                if (s.$root.selectedFolders?.length > 0) {
+                                if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
                                     const folders = item.folders.filter((folderId) => {
                                         return s.$root.selectedFoldersMappings[folderId];
@@ -543,7 +545,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             var now = Date.now();
                             s.selected.forEach((item, index) => {
                                 if (!item.pinned) return;
-                                if (s.$root.selectedFolders?.length > 0) {
+                                if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
                                     const folders = item.folders.filter((folderId) => {
                                         return s.$root.selectedFoldersMappings[folderId];
@@ -646,7 +648,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 },
                 // 复制文件路径
                 {
-                    accelerator: s.$root.preferences.shortcuts.keybinds['edit.copy.path'],
+                    accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.copy.path'],
                     label: i18n.__('context.image.copyItemPath'),
                     keywords: 'copy path 複製 路徑',
                     icon: 'ic-file-copy-path.svg',
@@ -664,7 +666,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         items: [
                             // 复制链接
                             {
-                                accelerator: s.$root.preferences.shortcuts.keybinds['edit.copy.eaglelink'],
+                                accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.copy.eaglelink'],
                                 label: i18n.__("appmenu.edit>copyAsLink"),
                                 keywords: `${i18n.__("context.image.copy")} copy link 拷貝 複製 鏈接 連結`,
                                 icon: '',
@@ -675,7 +677,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             },
                             // 文件夹路径
                             {
-                                accelerator: s.$root.preferences.shortcuts.keybinds['edit.copy.folderpath'],
+                                accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.copy.folderpath'],
                                 label: i18n.__("context.image.copyAsFolderPath"),
                                 keywords: `${i18n.__("context.image.copy")} copy folder path 拷貝 複製 文件夾 資料夾 路徑`,
                                 icon: '',
@@ -686,7 +688,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             },
                             // 缩略图
                             {
-                                accelerator: s.$root.preferences.shortcuts.keybinds['edit.copy.thumbnail'],
+                                accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.copy.thumbnail'],
                                 label: i18n.__("context.image.copyAsThumbnail"),
                                 keywords: `${i18n.__("context.image.copy")} copy thumbnail 拷貝 複製 縮略圖`,
                                 icon: '',
@@ -698,7 +700,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             // Base64
                             {
                                 disabled: isMultiple,
-                                accelerator: s.$root.preferences.shortcuts.keybinds['edit.copy.base64'],
+                                accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.copy.base64'],
                                 label: 'Base64',
                                 keywords: `${i18n.__("context.image.copy")} copy 拷貝 複製`,
                                 icon: '',
@@ -709,7 +711,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             },
                             // 名称
                             {
-                                accelerator: s.$root.preferences.shortcuts.keybinds['edit.copy.name'],
+                                accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.copy.name'],
                                 label: i18n.__("context.image.copyAsName"),
                                 keywords: `${i18n.__("context.image.copy")} copy name 拷貝 複製 名稱`,
                                 icon: '',
@@ -762,7 +764,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 // 创建副本(單選)
                 {
                     visible: !isMultiple,
-                    accelerator: s.$root.preferences.shortcuts.keybinds['edit.duplicate'],
+                    accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['edit.duplicate'],
                     label: i18n.__("context.image.clone"),
                     keywords: 'clone duplicate 複製 副本',
                     icon: 'ic-copy-duplicate.svg',
@@ -1205,7 +1207,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         }).then(() => {
                             scopeEvalAsync(() => {
                                 machineryRemovePermanently(s);
-                                if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+                                if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
                                     s.removeSound.play();
                                 }
                             });

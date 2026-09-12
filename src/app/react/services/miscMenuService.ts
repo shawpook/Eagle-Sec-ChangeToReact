@@ -504,8 +504,6 @@ export function openFilterAddContextMenu(...args: any[]) {
 
 export function openNewContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function() {
             ContextMenu.open({
                 items: [
@@ -738,7 +736,7 @@ export function openNewContextMenu(...args: any[]) {
                         accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.import.pinterest'],
                         label: "Pinterest",
                         icon: '/templates/ic-pinterest.png',
-                        click: function() { machineryOpenPinterest(s); }
+                        click: function() { machineryOpenPinterest(); }
                     },
                     {
                         label: i18n.__('context.import.others>artstation'),
@@ -906,8 +904,6 @@ export function openSidebarVisibleContextMenu(...args: any[]) {
 
 export function openSmartFolderExpandContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(event, smartFolder) {
             event.stopPropagation();
             ContextMenu.open({
@@ -916,7 +912,7 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                         label: i18n.__("Context.Expand.Folder"),
                         icon: 'ic-expand.svg',
                         click: () => {
-                            machineryToggleSelectSmartFolder(s, event, smartFolder);
+                            machineryToggleSelectSmartFolder(event, smartFolder);
                             scopeEvalAsync();
                         }
                     },
@@ -924,7 +920,7 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                         label: i18n.__("Context.Expand.SameLevel.Folders"),
                         icon: 'ic-expand-same.svg',
                         click: () => {
-                            machineryToggleCurrentLevelSmartFolders(s, event, smartFolder);
+                            machineryToggleCurrentLevelSmartFolders(event, smartFolder);
                             scopeEvalAsync();
                         }
                     },
@@ -932,7 +928,7 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                         label: i18n.__("Context.Expand.All.Folders"),
                         icon: 'ic-expand-all.svg',
                         click: () => {
-                            machineryToggleAllSmartFolderExpand(s, event, smartFolder);
+                            machineryToggleAllSmartFolderExpand(event, smartFolder);
                             scopeEvalAsync();
                         }
                     },

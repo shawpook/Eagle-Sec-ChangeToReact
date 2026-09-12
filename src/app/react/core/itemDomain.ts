@@ -66,6 +66,7 @@ import { useItemState } from '../store/itemState';
 import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
+import { usePreferencesState } from '../store/preferencesState';
 declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;
@@ -506,7 +507,7 @@ export function takeoverItemDomain(): void {
       s.contentFilterCache = null;
       // 判斷是否重複，如果重復，就先紀錄在 $scope.duplicateQueue 裡面
       const existsImage = machineryIsDuplicateImage(image);
-      const needCheckRepeat = s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage === 'true';
+      const needCheckRepeat = usePreferencesState.getState().preferences.notification.notification.enable !== 'false' && usePreferencesState.getState().preferences.notification.notification.when.repeatImage === 'true';
 
       if (existsImage && needCheckRepeat) {
         // 使用 md5 判断是否真的重复
@@ -695,7 +696,7 @@ export function takeoverItemDomain(): void {
       s.folders.push(f);
     });
 
-    machineryUpdateSidebarList(s);
+    machineryUpdateSidebarList();
 
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s);
@@ -896,7 +897,7 @@ export function getGIFPath(...args: any[]) {
             if (s.current) {
                 var gifPath = FileUrlHelper.getRawPath(s.current);
                 var gifUrl = FileUrlHelper.getRawUrl(s.current);
-                var renderBehavior = s.$root.preferences.habits.renderBehavior;
+                var renderBehavior = usePreferencesState.getState().preferences.habits.renderBehavior;
                 return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(s.current.name + ".gif") + `&render=${renderBehavior}`;
             }
         }).apply(null, args);
@@ -1352,14 +1353,14 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
       machineryHideUploadQueue();
 
       // 判斷是否有重複的圖片
-      if (s.$root.preferences.notification.notification.enable !== 'false' && s.$root.preferences.notification.notification.when.repeatImage != 'false') {
+      if (usePreferencesState.getState().preferences.notification.notification.enable !== 'false' && usePreferencesState.getState().preferences.notification.notification.when.repeatImage != 'false') {
         if (s.duplicateQueue.length > 0) {
           openDuplicateChannel.emit({
             currentFolder: s.currentFolder,
             mappings: s.duplicateMappings,
             duplicates: s.duplicateQueue
           });
-          if (s.$root.preferences.notification.soundEffect.enable != 'false') {
+          if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false') {
             s.duplicateSound && s.duplicateSound.play();
           }
           s.duplicateQueue = [];
@@ -1378,7 +1379,7 @@ function handleFinishQueueChanged(s: any, newValue: any, oldValue: any): void {
       function autoSelectUploadedItems() {
         if (s.isDetailMode) return;
 
-        if (s.$root.preferences.general.autoSelect !== 'true') {
+        if (usePreferencesState.getState().preferences.general.autoSelect !== 'true') {
           if (newItems.length === 1) {
             domainTimeout(s, function () {
               scrollToSelectedItem();
@@ -1884,22 +1885,22 @@ export function machineryCopyImages(s: any, event: any): void {
     }
   }
   else {
-    if (s.$root.currentFocus == "sidebar") {
-      if (s.$root.selectedFolders.length > 0) {
+    if (useBodyState.getState().currentFocus == "sidebar") {
+      if (useMiscRawState.getState().selectedFolders.length > 0) {
         let copyText = "";
-        s.$root.selectedFolders.forEach(function (folder: any, index: any) {
+        useMiscRawState.getState().selectedFolders.forEach(function (folder: any, index: any) {
           copyText += folder.name;
-          if (index < s.$root.selectedFolders.length - 1) {
+          if (index < useMiscRawState.getState().selectedFolders.length - 1) {
             copyText += "\n";
           }
         });
         w.electron.clipboard.writeText(copyText);
       }
-      else if (s.$root.selectedSmartFolders.length > 0) {
+      else if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
         let copyText = "";
-        s.$root.selectedSmartFolders.forEach(function (folder: any, index: any) {
+        useMiscRawState.getState().selectedSmartFolders.forEach(function (folder: any, index: any) {
           copyText += folder.name;
-          if (index < s.$root.selectedSmartFolders.length - 1) {
+          if (index < useMiscRawState.getState().selectedSmartFolders.length - 1) {
             copyText += "\n";
           }
         });
@@ -2458,7 +2459,7 @@ export async function machineryRebindRefresh(s: any, muteMode: any, contentFilte
   machineryRefreshSubfolderList();
 
   // 減少重複計算，將原先計算智能文件夾數量功能，放在這裡
-  if (s.$root.selectedSmartFolders.length === 0 && s.currentSmartFolder) {
+  if (useMiscRawState.getState().selectedSmartFolders.length === 0 && s.currentSmartFolder) {
     if (s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length > 0) {
       s.currentSmartFolder.imageCount = s.allData.length;
     }

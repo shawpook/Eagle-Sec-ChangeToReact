@@ -26,6 +26,8 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { useLayoutState } from '../store/layoutState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { usePreferencesState } from '../store/preferencesState';
+import { useItemState } from '../store/itemState';
 // 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
 let saveListHeightTimeout: any = null;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -105,9 +107,8 @@ export function getRatioNonExp(...args: any[]) {
 
 export function lastZoom(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryLastZoom(s);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryLastZoom();
 }
 
 export function smartZoom(...args: any[]) {
@@ -348,19 +349,19 @@ export function machineryGetRatioNonExp(ratio: any): number {
 }
 
 /* lastZoom（bundle 31288-31305 逐字；lastItemStates 经 scope 解析） */
-export function machineryLastZoom(s: any): boolean {
+export function machineryLastZoom(): boolean {
   const w = window as any;
-  if (s.lastZoomMode === "edge") return false;
-  if (s.$root.preferences.habits.rememberLastZoom === "off") return false;
-  if (!s.current) return false;
-  if (s.isInlineMode) return false;
-  var state = s.lastItemStates[s.current.id];
+  if (useMiscRawState.getState().lastZoomMode === "edge") return false;
+  if (usePreferencesState.getState().preferences.habits.rememberLastZoom === "off") return false;
+  if (!useSelectionState.getState().current) return false;
+  if (useBodyState.getState().isInlineMode) return false;
+  var state = useItemState.getState().lastItemStates[useSelectionState.getState().current.id];
   if (state && state.data && state.data.tX !== undefined) {
     detailZoom()?.goTo( state.data.tX, state.data.tY, state.data.rA);
     var ratio = parseInt(state.data.rA * 100 as any);
-    s.imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
+    useLayoutState.getState().imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
     machineryOnZoomRatioChanged();
-    s.imageSize.zoomRatioExp = ratio;
+    useLayoutState.getState().imageSize.zoomRatioExp = ratio;
     return true;
   }
   return false;

@@ -10,6 +10,8 @@ import { machineryGetSelection, machineryUpdateSelection } from '../core/selecti
 import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../core/miscDomain';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
+import { useBodyState } from '../store/bodyState';
+import { usePreferencesState } from '../store/preferencesState';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -150,7 +152,7 @@ export function onBoxMouseup(...args: any[]) {
             if (event && event.button === 0) {
 
                 // 如果從 sidebar focus 狀態點擊列表已選擇圖片，不該造成已選擇圖片選取狀態消失
-                if (s.$root.currentFocus !== "content" && s.selected.length > 1) {
+                if (useBodyState.getState().currentFocus !== "content" && s.selected.length > 1) {
                     if (image && s.selectedMappings[image.id]) {
                         s.$root.currentFocus = "content";
                         return;
@@ -199,7 +201,7 @@ export function onBoxListDblClick(...args: any[]) {
                 return;
             }
             else {
-                if (s.$root.preferences.habits.doubleclick !== 'external') {
+                if (usePreferencesState.getState().preferences.habits.doubleclick !== 'external') {
                     machineryEnterDetailMode(s, event, item);
                 }
                 else {
@@ -236,7 +238,7 @@ export function select(...args: any[]) {
 
             // 中键点击
             if (event && event.button === 1) {
-                if (s.$root.preferences.habits.middleBtn === "openNewWindow") {
+                if (usePreferencesState.getState().preferences.habits.middleBtn === "openNewWindow") {
                     event && event.preventDefault();
                     if (!AUDIO_TYPES[__lv_image.ext]) {
 						openInNewWindow([__lv_image]);
@@ -244,7 +246,7 @@ export function select(...args: any[]) {
 	                    analytics.event('NewWindow', 'Open', __lv_image.ext);
                     }
                 }
-				else if (s.$root.preferences.habits.middleBtn === "openPluginPanel") {
+				else if (usePreferencesState.getState().preferences.habits.middleBtn === "openPluginPanel") {
 					event && event.preventDefault();
 					machineryOpenPluginPanel();
 				}
@@ -257,7 +259,7 @@ export function select(...args: any[]) {
                 HoverPreview.lastElem = undefined;
             }
 
-            if (s.$root.currentFocus !== "content" && s.selected.length > 1) {
+            if (useBodyState.getState().currentFocus !== "content" && s.selected.length > 1) {
             	if (__lv_image && s.selectedMappings[__lv_image.id]) {
             		return;
             	}

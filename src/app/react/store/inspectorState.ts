@@ -6,6 +6,7 @@ import { useListState } from './listState';
 import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
 import { getFolderFullPath } from '../core/itemDomain';
+import { useMiscRawState } from './miscRawState';
 
 /**
  * 阶段6：检查器状态 —— 快照自 EagleController scope + eagle.inspector 全局对象。
@@ -302,7 +303,7 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
               imageCount: inspectorFolder.imageCount,
             }
           : null,
-        selectedFolderCount: Array.isArray(scope.$root.selectedFolders) ? scope.$root.selectedFolders.length : 0,
+        selectedFolderCount: Array.isArray(useMiscRawState.getState().selectedFolders) ? useMiscRawState.getState().selectedFolders.length : 0,
         selectedFoldersFirstId: Object.keys(scope.selectedFolderMappings || {})[0] || '',
         items,
         selectedWindow: selected.slice(previewStart, previewStart + 5).map(snapshotItem),

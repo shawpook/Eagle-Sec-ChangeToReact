@@ -48,6 +48,8 @@ import { useItemState } from '../store/itemState';
 import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
+import { useBodyState } from '../store/bodyState';
+import { usePreferencesState } from '../store/preferencesState';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {
@@ -271,68 +273,68 @@ export function machineryGetSelection(): any {
 }
 
 /* multipleSelectDown（bundle 35964-35972 逐字：ListLayout 委派 multipleSelectNext） */
-export function machineryMultipleSelectDown(s: any, event: any): void {
-  if (s.isCropMode) {
+export function machineryMultipleSelectDown(event: any): void {
+  if (useBodyState.getState().isCropMode) {
     moveCropToolChannel.emit({ horizontal: 0, vertical: 10 });
     return;
   }
-  if (s.layout === "ListLayout") {
-    machineryMultipleSelectNext(s, event);
+  if (useBodyState.getState().layout === "ListLayout") {
+    machineryMultipleSelectNext(event);
   }
 }
 
-export function machineryMultipleSelectNext(s: any, event: any): void {
-  if (s.$root.currentFocus == 'sidebar') return;
-  if (s.isCropMode) {
+export function machineryMultipleSelectNext(event: any): void {
+  if (useBodyState.getState().currentFocus == 'sidebar') return;
+  if (useBodyState.getState().isCropMode) {
     moveCropToolChannel.emit({ horizontal: 10, vertical: 0 });
     return;
   }
-  if (s.isDetailMode) return;
+  if (useBodyState.getState().isDetailMode) return;
   var selection = machineryGetSelection();
   var start = selection.start;
   var end = selection.end + 1;
 
-  if (start < s.lastSelectedIndex) {
-    let startItem = s.allData[start];
-    let idx = s.selected.indexOf(startItem);
+  if (start < useSelectionState.getState().lastSelectedIndex) {
+    let startItem = useItemState.getState().allData[start];
+    let idx = useSelectionState.getState().selected.indexOf(startItem);
     if (idx !== -1) {
-      s.selected.splice(idx, 1);
+      useSelectionState.getState().selected.splice(idx, 1);
       syncInspectorFromScope();
-      machineryAutoScroll(s.lastSelectedIndex);
+      machineryAutoScroll(useSelectionState.getState().lastSelectedIndex);
     }
   }
   else {
-    if (s.allData[end]) {
-      s.selected.push(s.allData[end]);
+    if (useItemState.getState().allData[end]) {
+      useSelectionState.getState().selected.push(useItemState.getState().allData[end]);
       syncInspectorFromScope();
       machineryAutoScroll(end);
     }
   }
 }
 
-export function machineryMultipleSelectPrev(s: any, event: any): void {
-  if (s.$root.currentFocus == 'sidebar') return;
-  if (s.isCropMode) {
+export function machineryMultipleSelectPrev(event: any): void {
+  if (useBodyState.getState().currentFocus == 'sidebar') return;
+  if (useBodyState.getState().isCropMode) {
     moveCropToolChannel.emit({ horizontal: -10, vertical: 0 });
     return;
   }
-  if (s.isDetailMode) return;
+  if (useBodyState.getState().isDetailMode) return;
   var selection = machineryGetSelection();
   var start = selection.start;
   var end = selection.end;
 
-  if (end > s.lastSelectedIndex) {
-    let endItem = s.allData[end];
-    let idx = s.selected.indexOf(endItem);
+  if (end > useSelectionState.getState().lastSelectedIndex) {
+    let endItem = useItemState.getState().allData[end];
+    let idx = useSelectionState.getState().selected.indexOf(endItem);
     if (idx !== -1) {
-      s.selected.splice(idx, 1);
+      useSelectionState.getState().selected.splice(idx, 1);
       syncInspectorFromScope();
-      machineryAutoScroll(s.lastSelectedIndex);
+      machineryAutoScroll(useSelectionState.getState().lastSelectedIndex);
     }
   }
   else {
-    if (s.allData[start - 1]) {
-      s.selected.push(s.allData[start - 1]);
+    if (useItemState.getState().allData[start - 1]) {
+      useSelectionState.getState().selected.push(useItemState.getState().allData[start - 1]);
       syncInspectorFromScope();
       machineryAutoScroll(start - 1);
     }
@@ -340,13 +342,13 @@ export function machineryMultipleSelectPrev(s: any, event: any): void {
 }
 
 /* multipleSelectUp（bundle 35898-35906 逐字：ListLayout 委派 multipleSelectPrev） */
-export function machineryMultipleSelectUp(s: any, event: any): void {
-  if (s.isCropMode) {
+export function machineryMultipleSelectUp(event: any): void {
+  if (useBodyState.getState().isCropMode) {
     moveCropToolChannel.emit({ horizontal: 0, vertical: -10 });
     return;
   }
-  if (s.layout === "ListLayout") {
-    machineryMultipleSelectPrev(s, event);
+  if (useBodyState.getState().layout === "ListLayout") {
+    machineryMultipleSelectPrev(event);
   }
 }
 
@@ -527,11 +529,11 @@ export function machineryRemoveSelected(s: any, event: any): void {
   event?.preventDefault();
   event?.stopPropagation();
 
-  if (s.$root.currentFocus == 'sidebar') {
-    if (s.$root.selectedFolders.length > 0) {
+  if (useBodyState.getState().currentFocus == 'sidebar') {
+    if (useMiscRawState.getState().selectedFolders.length > 0) {
       machineryRemoveSelectedFolders(s);
     }
-    else if (s.$root.selectedSmartFolders.length > 0) {
+    else if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
       machineryRemoveSelectedSmartFolders(s);
     }
     else if (s.currentFolder) {
@@ -540,7 +542,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
       machineryRemoveSmartFolder(s, s.currentSmartFolder);
     }
   }
-  else if (s.$root.currentFocus == 'tags') {
+  else if (useBodyState.getState().currentFocus == 'tags') {
     if (s.currentTagGroup) {
       machineryRemoveTagGroup(s, s.currentTagGroup);
     }
@@ -692,7 +694,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
             }, 100)
           }
 
-          if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+          if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteImage == 'true') {
             s.removeSound && s.removeSound.play && s.removeSound.play();
           }
           w.ayncsImagesChange(s.selected);
@@ -761,10 +763,10 @@ export function machineryRemoveSelected(s: any, event: any): void {
 
 export function machineryRemoveSelectedFolders(s: any): void {
   const w = window as any;
-  if (s.$root.selectedFolders.length === 0) return;
+  if (useMiscRawState.getState().selectedFolders.length === 0) return;
 
   var removeConfirmMsg = getFilter()('i18n')("dialog.removeFolder.descMultiple", [
-    { "property": "count", "value": s.$root.selectedFolders.length },
+    { "property": "count", "value": useMiscRawState.getState().selectedFolders.length },
   ]);
   w.swal({
     html: `
@@ -789,9 +791,9 @@ export function machineryRemoveSelectedFolders(s: any): void {
     confirmButtonText: getFilter()('i18n')('dialog.removeFolder.button'),
     cancelButtonText: getFilter()('i18n')("general.cancel"),
   }).then(function (result: any) {
-    machineryCheckOperationSafety2(s.$root.selectedFolders.length, function () {
+    machineryCheckOperationSafety2(useMiscRawState.getState().selectedFolders.length, function () {
       var isDeleteImages = (result == 1);
-      s.$root.selectedFolders.forEach(function (folder: any) {
+      useMiscRawState.getState().selectedFolders.forEach(function (folder: any) {
         if (folder.password && !folder.isUnLock) return;
         machineryRemoveFolderInner(s, folder, { isDeleteImages: isDeleteImages, ignoreRestore: true });
       });
@@ -801,10 +803,10 @@ export function machineryRemoveSelectedFolders(s: any): void {
 
 export function machineryRemoveSelectedSmartFolders(s: any): void {
   const w = window as any;
-  if (s.$root.selectedSmartFolders.length === 0) return;
+  if (useMiscRawState.getState().selectedSmartFolders.length === 0) return;
 
   var removeConfirmMsg = getFilter()('i18n')("dialog.removeSmartFolder.descMultiple", [
-    { "property": "count", "value": s.$root.selectedSmartFolders.length },
+    { "property": "count", "value": useMiscRawState.getState().selectedSmartFolders.length },
   ]);
   w.swal({
     html: `
@@ -821,7 +823,7 @@ export function machineryRemoveSelectedSmartFolders(s: any): void {
     confirmButtonText: w.i18n.__('dialog.removeSmartFolder.button'),
     cancelButtonText: w.i18n.__("general.cancel"),
   }).then(function (result: any) {
-    s.$root.selectedSmartFolders.forEach(function (smartFolder: any) {
+    useMiscRawState.getState().selectedSmartFolders.forEach(function (smartFolder: any) {
       machineryRemoveSmartFolderInner(s, smartFolder, { ignoreRestore: true });
     });
     s.$root.selectedSmartFolders = [];
@@ -909,7 +911,7 @@ export function machinerySelectDown(s: any, event: any): void {
     s.isGifReady = false;
     syncDetailFromScope();
     detailZoom()?.updateNavigator( s.current);
-    if (!machineryLastZoom(s)) {
+    if (!machineryLastZoom()) {
       machineryZoom(s);
     }
   }
@@ -976,11 +978,11 @@ export function machinerySelectNext(s: any, event: any): void {
 
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
-    if (!machineryLastZoom(s)) {
+    if (!machineryLastZoom()) {
       machineryZoom(s);
     }
     nextTimeout = $timeout(function () {
-      if (!machineryLastZoom(s)) {
+      if (!machineryLastZoom()) {
         machineryZoom(s);
       }
       var nextImage = s.allData[end + 1];
@@ -1044,12 +1046,12 @@ export function machinerySelectPrev(s: any, event: any): void {
   s.$root.currentFocus = "content";
   if (s.current) {
     detailZoom()?.updateNavigator( s.current);
-    if (!machineryLastZoom(s)) {
+    if (!machineryLastZoom()) {
       machineryZoom(s);
     }
     $timeout.cancel(prevTimeout);
     prevTimeout = $timeout(function () {
-      if (!machineryLastZoom(s)) {
+      if (!machineryLastZoom()) {
         machineryZoom(s);
       }
       machineryPreloadImage("prev");
@@ -1117,17 +1119,17 @@ export function machinerySelectUp(s: any, event: any): void {
     s.isGifReady = false;
     syncDetailFromScope();
     detailZoom()?.updateNavigator( s.current);
-    if (!machineryLastZoom(s)) {
+    if (!machineryLastZoom()) {
       machineryZoom(s);
     }
   }
 }
 
-export function machineryToggleSelectSmartFolder(s: any, event: any, smartFolder: any): void {
+export function machineryToggleSelectSmartFolder(event: any, smartFolder: any): void {
   var expand = !smartFolder.isExpand;
   var smartFolders = smartFolder.children;
   smartFolder.isExpand = expand;
-  machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+  machineryToggleCurrentLevelSmartFoldersInner(smartFolders, expand);
 }
 
 export function machineryUpdateSelection(s: any): void {
@@ -1254,7 +1256,7 @@ export function machineryUpdateSelection(s: any): void {
           syncInspectorFromScope();
           break;
         default:
-          if (s.$root.selectedFolders.length > 0) {
+          if (useMiscRawState.getState().selectedFolders.length > 0) {
             s.inspector.category = {
               newName: w.i18n.__('inspector.names.multipleTitles'),
               newDescription: "",

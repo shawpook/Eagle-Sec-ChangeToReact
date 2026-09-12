@@ -332,7 +332,7 @@ export function takeoverLibraryDomain(): void {
 
     s.smartFolders = newLibrary.smartFolders || [];
 
-    machineryUpdateSidebarList(s);
+    machineryUpdateSidebarList();
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machineryRebindRefresh(s);
       scopeEvalAsync();
@@ -703,7 +703,7 @@ export function takeoverLibraryDomain(): void {
       });
     }
 
-    machineryUpdateSidebarList(s);
+    machineryUpdateSidebarList();
     if (s.$root && s.$root.initMenu) s.$root.initMenu();
 
     // NOTE: 只能用迂迴的方式處理可能超過 10W 張圖片的狀況，避免使用 JSON.parse 造成大量數據無法傳輸的問題
@@ -882,7 +882,7 @@ export function takeoverLibraryDomain(): void {
 
       s.isLoading = false;
       s.libraryLoadedProgress = 0;
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
 
       const loadedTime = params.loadedTime;
       let performanceName = "Cache-Load";
@@ -937,7 +937,7 @@ export function takeoverLibraryDomain(): void {
     setTimeout(function () {
       // 建立重复核对表
       machineryFindDupclipate(undefined);
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
 
       domainAyncsUpdateSmartFoldersCount(s, useMiscRawState.getState().smartFolderList, () => { /* noop */ });
 
@@ -1292,9 +1292,9 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
   s.$root.selectedFolders = [];
   syncListFromScope();
   s.$root.selectedFoldersMappings = {};
-  var idx = s.$root.selectedSmartFolders.indexOf(smartFolder);
+  var idx = useMiscRawState.getState().selectedSmartFolders.indexOf(smartFolder);
   if (idx === -1) {
-    s.$root.selectedSmartFolders.push(smartFolder);
+    useMiscRawState.getState().selectedSmartFolders.push(smartFolder);
     s.$root.selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
     if (needReload) {
       s.startCursor = 0;
@@ -1304,8 +1304,8 @@ export function machineryMultipleOpenSmartFolder(s: any, smartFolder: any, needR
     syncSidebarFromScope();
   }
   else {
-    if (s.$root.selectedSmartFolders.length > 1) {
-      s.$root.selectedSmartFolders.splice(idx, 1);
+    if (useMiscRawState.getState().selectedSmartFolders.length > 1) {
+      useMiscRawState.getState().selectedSmartFolders.splice(idx, 1);
       delete s.$root.selectedSmartFoldersMappings[smartFolder.id];
       if (needReload) {
         s.startCursor = 0;
@@ -1331,9 +1331,9 @@ export function machineryOpenHuaban(): void {
   w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/402-import-from-huaban");
 }
 
-export function machineryOpenPinterest(s: any): void {
+export function machineryOpenPinterest(): void {
   const w = window as any;
-  switch (s.$root.preferences.general.language) {
+  switch (usePreferencesState.getState().preferences.general.language) {
     case 'zh_CN':
       w.electron.shell.openExternal("https://docs-cn.eagle.cool/article/828-import-from-pinterest");
       break;
@@ -1358,8 +1358,8 @@ export function machineryOpenTrialModal(trialRemain: any): void {
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* batchRenameFolders（bundle 41631-41639）/ batchRenameSmartFolders（41654-41662）逐字 */
-export function machineryBatchRenameFolders(s: any): void {
-  var selectedFolders = s.$root.selectedFolders;
+export function machineryBatchRenameFolders(): void {
+  var selectedFolders = useMiscRawState.getState().selectedFolders;
   if (selectedFolders.length === 0) return;
 
   openRenameChannel.emit({
@@ -1368,8 +1368,8 @@ export function machineryBatchRenameFolders(s: any): void {
   });
 }
 
-export function machineryBatchRenameSmartFolders(s: any): void {
-  var selectedSmartFolders = s.$root.selectedSmartFolders;
+export function machineryBatchRenameSmartFolders(): void {
+  var selectedSmartFolders = useMiscRawState.getState().selectedSmartFolders;
   if (selectedSmartFolders.length === 0) return;
 
   openRenameChannel.emit({
@@ -1728,19 +1728,19 @@ export function machineryChangeSidebarIndex(node: any): void {
   }
 }
 
-export function machineryExpandFolder(s: any, folder: any): void {
+export function machineryExpandFolder(folder: any): void {
   const w = window as any;
   if (!folder) return;
   folder.isExpand = true;
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
   w.localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, true);
 }
 
-export function machineryExpandSmartFolder(s: any, smartFolder: any): void {
+export function machineryExpandSmartFolder(smartFolder: any): void {
   const w = window as any;
   if (!smartFolder) return;
   smartFolder.isExpand = true;
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
   w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + smartFolder.id, true);
 }
 
@@ -1963,9 +1963,9 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
   syncListFromScope();
   s.$root.selectedSmartFolders = [];
   s.$root.selectedSmartFoldersMappings = {};
-  var idx = s.$root.selectedFolders.indexOf(folder);
+  var idx = useMiscRawState.getState().selectedFolders.indexOf(folder);
   if (idx === -1) {
-    s.$root.selectedFolders.push(folder);
+    useMiscRawState.getState().selectedFolders.push(folder);
     syncListFromScope();
     s.$root.selectedFoldersMappings[folder.id] = folder;
     if (needReload) {
@@ -1976,8 +1976,8 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
     syncSidebarFromScope();
   }
   else {
-    if (s.$root.selectedFolders.length > 1) {
-      s.$root.selectedFolders.splice(idx, 1);
+    if (useMiscRawState.getState().selectedFolders.length > 1) {
+      useMiscRawState.getState().selectedFolders.splice(idx, 1);
       syncListFromScope();
       delete s.$root.selectedFoldersMappings[folder.id];
       if (needReload) {
@@ -1989,7 +1989,7 @@ export function machineryMultipleOpenFolder(s: any, folder: any, needReload: any
       return;
     }
   }
-  s.currentFolderChildren = machineryGetChildFoldersMaps(s.$root.selectedFolders);
+  s.currentFolderChildren = machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders);
 }
 
 export function machineryOpenNextFolder(): void {
@@ -2086,7 +2086,7 @@ export function machineryOpenPrevSmartFolder(s: any): void {
     machineryChangeSidebarIndex(prevSmartFolder);
   } else {
     // 如果有 quick access 就进入 quick access 若无，进入 Trash
-    if (s.$root.preferences.sidebar.quickAccess != 'false') {
+    if (usePreferencesState.getState().preferences.sidebar.quickAccess != 'false') {
       var quickAccessItems = listItems.filter(function (item: any) {
         return item.vstype === 'quickAccess';
       });
@@ -2227,7 +2227,7 @@ export function machineryOpenUnfiled(s: any, ignoreHistory: any): void {
 export function machineryPrependFolder(s: any, folder: any): void {
   s.folders.unshift(folder);
   s.folderMappings[folder.id] = folder;
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
   setTimeout(function () {
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       machinerySaveFolder();
@@ -2365,7 +2365,7 @@ export function machineryRemoveFolderContents(s: any, params: any): void {
 
   machineryAutoScroll(undefined);
 
-  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteImage == 'true') {
+  if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteImage == 'true') {
     s.removeSound && s.removeSound.play && s.removeSound.play();
   }
 
@@ -2544,7 +2544,7 @@ export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages
   }
 
   // 播放删除音效
-  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+  if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
     s.removeSound && s.removeSound.play && s.removeSound.play();
   }
 
@@ -2554,7 +2554,7 @@ export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages
       w.QuickAccessManager.remove("folder", child);
     });
   }
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 
   // 移除记录
   delete s.folderMappings[folder.id];
@@ -2595,7 +2595,7 @@ export function machineryRemoveFolderInner(s: any, folder: any, { isDeleteImages
       });
 
       scopeEvalAsync();
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       s.saveFolderDebounce && machinerySaveFolderDebounce();
       w.ayncsImagesChange(originalImages);
     });
@@ -2678,10 +2678,10 @@ export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { igno
   }
 
   // 如果声音效果是开启的
-  if (s.$root.preferences.notification.soundEffect.enable != 'false' && s.$root.preferences.notification.soundEffect.when.deleteFolder == 'true') {
+  if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
     s.removeSound && s.removeSound.play && s.removeSound.play();
   }
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 
   $timeout(function () {
     s.saveFolderDebounce && machinerySaveFolderDebounce();
@@ -2705,7 +2705,7 @@ export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { igno
       w.eagle.utils.tree.walk(s.smartFolders, 'children', function (sf: any, parent: any, depth: any) {
         s.smartFolderMappings[sf.id] = sf;
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       openSmartFolder(smartFolder);
       s.saveFolderDebounce && machinerySaveFolderDebounce();
       scopeEvalAsync();
@@ -2715,7 +2715,7 @@ export function machineryRemoveSmartFolderInner(s: any, smartFolder: any, { igno
 
 export function machineryRenameCurrentFolder(s: any, event: any): void {
   const w = window as any;
-  if (s.selected.length > 0 && s.$root.currentFocus !== "sidebar") {
+  if (s.selected.length > 0 && useBodyState.getState().currentFocus !== "sidebar") {
     if (!s.isDetailMode) {
       machineryRenameImages();
     }
@@ -2726,7 +2726,7 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
       }, 100);
     }
   }
-  else if (s.$root.currentFocus !== "sidebar" && s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
+  else if (useBodyState.getState().currentFocus !== "sidebar" && s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
     var nameEl = q(".sub-folder.selected .name");
     if (!nameEl) return;
     var e: any = { target: nameEl, preventDefault: function () { }, stopPropagation: function () { }, stopImmediatePropagation: function () { } };
@@ -2734,18 +2734,18 @@ export function machineryRenameCurrentFolder(s: any, event: any): void {
     let folder = s.folderMappings[folderId];
     machineryEnableSubFolderNameEditable(s, e, folder);
   }
-  else if (!s.isDetailMode && s.currentFolder && s.$root.currentFocus === 'sidebar') {
+  else if (!s.isDetailMode && s.currentFolder && useBodyState.getState().currentFocus === 'sidebar') {
     event && event.preventDefault();
-    if (s.$root.selectedFolders.length > 1) {
-      machineryBatchRenameFolders(s);
+    if (useMiscRawState.getState().selectedFolders.length > 1) {
+      machineryBatchRenameFolders();
     }
     else {
       machineryRenameFolder(event, s.currentFolder);
     }
-  } else if (!s.isDetailMode && s.currentSmartFolder && s.$root.currentFocus === 'sidebar') {
+  } else if (!s.isDetailMode && s.currentSmartFolder && useBodyState.getState().currentFocus === 'sidebar') {
     event && event.preventDefault();
-    if (s.$root.selectedSmartFolders.length > 1) {
-      machineryBatchRenameSmartFolders(s);
+    if (useMiscRawState.getState().selectedSmartFolders.length > 1) {
+      machineryBatchRenameSmartFolders();
     }
     else {
       machineryRenameSmartFolder(event, s.currentSmartFolder);
@@ -2937,7 +2937,7 @@ export function machinerySmartFolderCount(s: any, smartFolder: any): any {
   }
 }
 
-export function machineryToggleAllFolders(s: any, folders: any, isExpand: any): void {
+export function machineryToggleAllFolders(folders: any, isExpand: any): void {
   const w = window as any;
   w.eagle.utils.tree.walk(folders, 'children', function (f: any, parent: any) {
     if (f.isExpand !== isExpand) {
@@ -2945,31 +2945,31 @@ export function machineryToggleAllFolders(s: any, folders: any, isExpand: any): 
       w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
     }
   });
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
-export function machineryToggleAllSmartFolderExpand(s: any, event: any, selectedSmartFolder: any): void {
+export function machineryToggleAllSmartFolderExpand(event: any, selectedSmartFolder: any): void {
   const w = window as any;
-  var smartFolder = selectedSmartFolder || s.currentSmartFolder;
-  if (s.smartFolders && s.smartFolders.length > 0) {
-    var expand = !s.smartFolders[0].isExpand;
+  var smartFolder = selectedSmartFolder || useFolderState.getState().currentSmartFolder;
+  if (useFolderState.getState().smartFolders && useFolderState.getState().smartFolders.length > 0) {
+    var expand = !useFolderState.getState().smartFolders[0].isExpand;
     if (smartFolder) {
       setTimeout(function () { machineryChangeSidebarIndex(smartFolder); scopeEvalAsync(); }, 100);
       if (smartFolder.parent) {
-        var parent = s.smartFolderMappings[smartFolder.parent];
+        var parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
         if (parent) {
           expand = !parent.isExpand;
         }
       }
     }
-    if (!expand) s.sidebarIndex = 0;
+    if (!expand) writeScopeField('sidebarIndex', 0);
     syncSidebarFromScope();
-    machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
-    machineryUpdateSidebarList(s);
+    machineryToggleAllSmartFoldersInner(useFolderState.getState().smartFolders, expand);
+    machineryUpdateSidebarList();
   }
 }
 
-export function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+export function machineryToggleAllSmartFoldersInner(smartFolders: any, isExpand: any): void {
   const w = window as any;
   w.eagle.utils.tree.walk(smartFolders, 'children', function (f: any, parent: any) {
     if (f.isExpand !== isExpand) {
@@ -2977,10 +2977,10 @@ export function machineryToggleAllSmartFoldersInner(s: any, smartFolders: any, i
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
     }
   });
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
-export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpand: any): void {
+export function machineryToggleCurrentLevelFolders(folders: any, isExpand: any): void {
   const w = window as any;
   folders.forEach(function (f: any) {
     if (f.isExpand !== isExpand) {
@@ -2988,20 +2988,20 @@ export function machineryToggleCurrentLevelFolders(s: any, folders: any, isExpan
       w.localStorage.setItem("eagle.sidebar.folder.expand." + f.id, f.isExpand);
     }
   });
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
-export function machineryToggleCurrentLevelSmartFolders(s: any, event: any, smartFolder: any): void {
+export function machineryToggleCurrentLevelSmartFolders(event: any, smartFolder: any): void {
   var expand = !smartFolder.isExpand;
-  var parent = s.smartFolderMappings[smartFolder.parent];
-  var smartFolders = s.smartFolders;
+  var parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
+  var smartFolders = useFolderState.getState().smartFolders;
   if (parent && parent.children) {
     smartFolders = parent.children;
   }
-  machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+  machineryToggleCurrentLevelSmartFoldersInner(smartFolders, expand);
 }
 
-export function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolders: any, isExpand: any): void {
+export function machineryToggleCurrentLevelSmartFoldersInner(smartFolders: any, isExpand: any): void {
   const w = window as any;
   smartFolders.forEach(function (f: any) {
     if (f.isExpand !== isExpand) {
@@ -3009,7 +3009,7 @@ export function machineryToggleCurrentLevelSmartFoldersInner(s: any, smartFolder
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + f.id, f.isExpand);
     }
   });
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
 export async function machineryUnlockFolderWithTouchID(s: any, event: any): Promise<void> {
@@ -3031,7 +3031,7 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
     syncFolderLock();
     syncListFromScope();
     s.isLoading = true;
-    machineryUpdateSidebarList(s);
+    machineryUpdateSidebarList();
     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
       s.reload();
       machineryUpdateSelection(s);
@@ -3056,7 +3056,7 @@ export async function machineryUnlockFolderWithTouchID(s: any, event: any): Prom
   }
 }
 
-export function machineryUpdateSidebarList(s: any): void {
+export function machineryUpdateSidebarList(): void {
   const $timeout = getTimeout();
   $timeout.cancel(updateSidebarListTimeout);
   updateSidebarListTimeout = $timeout(function () {
@@ -3077,32 +3077,32 @@ export function machineryUpdateSidebarList(s: any): void {
     var smartFolderLabel = { vstype: 'label-smart-folder', size: 25 };
     var folderLabel = { vstype: 'label-folder', size: 25 };
 
-    folders = machineryFilterSidebarItem(folders, s.folderKeyword);
-    smartFolders = machineryFilterSidebarItem(smartFolders, s.folderKeyword);
+    folders = machineryFilterSidebarItem(folders, useMiscRawState.getState().folderKeyword);
+    smartFolders = machineryFilterSidebarItem(smartFolders, useMiscRawState.getState().folderKeyword);
 
     list.push(allItem);
-    if (s.$root.preferences.sidebar.unfiled != 'false') {
+    if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
       list.push(unfiledItem);
     }
-    if (s.$root.preferences.sidebar.untagged != 'false') {
+    if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
       list.push(untaggedItem);
     }
-    if (s.$root.preferences.sidebar.recent != 'false') {
+    if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
       list.push(recentItem);
     }
-    if (s.$root.preferences.sidebar.random != 'false') {
+    if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
       list.push(randomItem);
     }
-    if (s.$root.preferences.sidebar.community2 != 'false') {
+    if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
       list.push(communityItem);
     }
     list.push(allTagsItem);
     list.push(trashItem);
 
-    if (s.quickAccess.length > 0 && s.$root.preferences.sidebar.quickAccess != 'false') {
+    if (useMiscRawState.getState().quickAccess.length > 0 && usePreferencesState.getState().preferences.sidebar.quickAccess != 'false') {
       list.push({ vstype: 'separator', size: 14 });
       list.push(quickAccessLabel);
-      if (s.isExpandQuickAccess && s.quickAccess.length > 0) {
+      if (useMiscRawState.getState().isExpandQuickAccess && useMiscRawState.getState().quickAccess.length > 0) {
         list = list.concat(quickAccess);
         list.push({ vstype: 'separator', size: 14 });
       }
@@ -3111,29 +3111,29 @@ export function machineryUpdateSidebarList(s: any): void {
       list.push({ vstype: 'separator', size: 14 });
     }
 
-    if (s.$root.preferences.sidebar.smartFolder != 'false') {
-      if (!s.folderKeyword) {
+    if (usePreferencesState.getState().preferences.sidebar.smartFolder != 'false') {
+      if (!useMiscRawState.getState().folderKeyword) {
         list.push(smartFolderLabel);
       }
       else if (smartFolders.length > 0) {
         list.push(smartFolderLabel);
       }
       if (smartFolders.length > 0) {
-        if (s.isExpandSmartFolder) {
+        if (useMiscRawState.getState().isExpandSmartFolder) {
           list = list.concat(smartFolders);
           list.push({ vstype: 'separator', size: 14 });
         }
       }
     }
 
-    if (s.$root.preferences.sidebar.folder != 'false') {
-      if (!s.folderKeyword) {
+    if (usePreferencesState.getState().preferences.sidebar.folder != 'false') {
+      if (!useMiscRawState.getState().folderKeyword) {
         list.push(folderLabel);
       }
       else if (folders.length > 0) {
         list.push(folderLabel);
       }
-      if (s.isExpandFolder) {
+      if (useMiscRawState.getState().isExpandFolder) {
         list = list.concat(folders);
       }
     }
@@ -3142,7 +3142,7 @@ export function machineryUpdateSidebarList(s: any): void {
       node.index = index;
     });
 
-    s.sidebarList = list;
+    writeScopeField('sidebarList', list);
     syncSidebarFromScope();
   }, 20);
 }

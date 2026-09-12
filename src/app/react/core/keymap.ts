@@ -21,6 +21,7 @@ import { machineryOpenAllTags, machineryOpenNextGroup, machineryOpenPrevGroup, m
 import { useBodyState } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
+import { usePreferencesState } from '../store/preferencesState';
 /**
  * b1-9bv-A：mousetrap v1.6.3 自研替换（js/vendors/mousetrap.min.js 退役）。
  *
@@ -298,8 +299,8 @@ export function machineryBuildMousetrap(s: any): any {
 
   // 添加硬編碼的快捷鍵（未在 preferences 中定義或沒有對應設定的）
   const hardcodedShortcuts: any = {
-    '*': (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand),
-    '/': (folders: any, isExpand: any) => machineryToggleAllFolders(s, folders, isExpand),
+    '*': (folders: any, isExpand: any) => machineryToggleAllFolders(folders, isExpand),
+    '/': (folders: any, isExpand: any) => machineryToggleAllFolders(folders, isExpand),
     '-': (event: any) => machineryZoomOut(s, event),
     '+': (event: any) => machineryZoomIn(s, event),
     '=': (event: any) => machineryZoomIn(s, event),
@@ -331,11 +332,11 @@ export function machineryBuildMousetrap(s: any): any {
     'left': (event: any) => machineryKeyLeftHandler(s, event),
     'right': (event: any) => machineryKeyRightHandler(s, event),
     'up': (event: any) => machineryKeyUpHandler(s, event),
-    'shift+up': (event: any) => machineryMultipleSelectUp(s, event),
+    'shift+up': (event: any) => machineryMultipleSelectUp(event),
     'down': (event: any) => machineryKeyDownHandler(s, event),
-    'shift+down': (event: any) => machineryMultipleSelectDown(s, event),
-    'shift+right': (event: any) => machineryMultipleSelectNext(s, event),
-    'shift+left': (event: any) => machineryMultipleSelectPrev(s, event),
+    'shift+down': (event: any) => machineryMultipleSelectDown(event),
+    'shift+right': (event: any) => machineryMultipleSelectNext(event),
+    'shift+left': (event: any) => machineryMultipleSelectPrev(event),
     'mod+up': (event: any) => machineryModUpHandler(event),
     'mod+down': (event: any) => machineryModDownHandler(event),
     'mod+left': (event: any) => machineryModLeftHandler(event),
@@ -435,7 +436,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
-  if (s.$root.currentFocus == "content") {
+  if (useBodyState.getState().currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
         moveCropToolChannel.emit({ horizontal: 0, vertical: 1 });
@@ -448,26 +449,26 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       machinerySelectDown(s, event);
     }
   }
-  else if (s.$root.currentFocus == "sidebar") {
+  else if (useBodyState.getState().currentFocus == "sidebar") {
     s.$root.selectedFolders = [];
     syncListFromScope();
     s.$root.selectedFoldersMappings = {};
     s.$root.selectedSmartFoldersMappings = {};
     s.$root.selectedSmartFolders = [];
     if (s.viewMode == "all") {
-      if (s.$root.preferences.sidebar.unfiled != 'false') {
+      if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
         machineryOpenUnfiled(s);
       }
-      else if (s.$root.preferences.sidebar.untagged != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
         machineryOpenUntagged(s);
       }
-      else if (s.$root.preferences.sidebar.recent != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
         machineryOpenRecent(s);
       }
-      else if (s.$root.preferences.sidebar.random != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
         machineryOpenRandom(s);
       }
-      else if (s.$root.preferences.sidebar.community2 != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity(s);
       }
       else {
@@ -475,16 +476,16 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       }
     }
     else if (s.viewMode == "unfiled") {
-      if (s.$root.preferences.sidebar.untagged != 'false') {
+      if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
         machineryOpenUntagged(s);
       }
-      else if (s.$root.preferences.sidebar.recent != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
         machineryOpenRecent(s);
       }
-      else if (s.$root.preferences.sidebar.random != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
         machineryOpenRandom(s);
       }
-      else if (s.$root.preferences.sidebar.community2 != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity(s);
       }
       else {
@@ -492,13 +493,13 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       }
     }
     else if (s.viewMode == "untagged") {
-      if (s.$root.preferences.sidebar.recent != 'false') {
+      if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
         machineryOpenRecent(s);
       }
-      else if (s.$root.preferences.sidebar.random != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
         machineryOpenRandom(s);
       }
-      else if (s.$root.preferences.sidebar.community2 != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity(s);
       }
       else {
@@ -506,10 +507,10 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       }
     }
     else if (s.viewMode == "recent") {
-      if (s.$root.preferences.sidebar.random != 'false') {
+      if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
         machineryOpenRandom(s);
       }
-      else if (s.$root.preferences.sidebar.community2 != 'false') {
+      else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity(s);
       }
       else {
@@ -517,7 +518,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       }
     }
     else if (s.viewMode == "random") {
-      if (s.$root.preferences.sidebar.community2 != 'false') {
+      if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity(s);
       }
       else {
@@ -561,7 +562,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       }
     }
   }
-  else if (s.$root.currentFocus == "tags") {
+  else if (useBodyState.getState().currentFocus == "tags") {
     machineryOpenNextGroup(s);
   }
 }
@@ -570,15 +571,15 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
-  if (s.$root.currentFocus == "content") {
+  if (useBodyState.getState().currentFocus == "content") {
     machinerySelectPrev(s, event);
   }
-  else if (s.$root.currentFocus == "tags") {
+  else if (useBodyState.getState().currentFocus == "tags") {
     s.$root.currentFocus = "sidebar";
   }
   else {
-    if (s.$root.selectedFolders.length > 1) {
-      s.$root.selectedFolders.forEach(function (folder: any) {
+    if (useMiscRawState.getState().selectedFolders.length > 1) {
+      useMiscRawState.getState().selectedFolders.forEach(function (folder: any) {
         if (folder.children && folder.children.length > 0) {
           if (folder.isExpand !== false) {
             folder.isExpand = false;
@@ -586,27 +587,27 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
           }
         }
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
     }
     else if (s.currentFolder) {
       if (!s.currentFolder.children || s.currentFolder.children.length == 0) {
         s.currentFolder.isExpand = true;
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
       }
       else {
         s.currentFolder.isExpand = false;
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
       }
       w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, false);
     }
     else if (s.currentSmartFolder) {
       if (!s.currentSmartFolder.children || s.currentSmartFolder.children.length == 0) {
         s.currentSmartFolder.isExpand = true;
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
       }
       else {
         s.currentSmartFolder.isExpand = false;
-        machineryUpdateSidebarList(s);
+        machineryUpdateSidebarList();
       }
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, false);
     }
@@ -621,12 +622,12 @@ export function machineryKeyRightHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
-  if (s.$root.currentFocus == "content") {
+  if (useBodyState.getState().currentFocus == "content") {
     machinerySelectNext(s, event);
   }
   else {
-    if (s.$root.selectedFolders.length > 1) {
-      s.$root.selectedFolders.forEach(function (folder: any) {
+    if (useMiscRawState.getState().selectedFolders.length > 1) {
+      useMiscRawState.getState().selectedFolders.forEach(function (folder: any) {
         if (folder.children && folder.children.length > 0) {
           if (folder.isExpand !== true) {
             folder.isExpand = true;
@@ -634,16 +635,16 @@ export function machineryKeyRightHandler(s: any, event: any): void {
           }
         }
       });
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
     }
     else if (s.currentFolder) {
       s.currentFolder.isExpand = true;
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, true);
     }
     else if (s.currentSmartFolder) {
       s.currentSmartFolder.isExpand = true;
-      machineryUpdateSidebarList(s);
+      machineryUpdateSidebarList();
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, true);
     }
     else if (s.viewMode == "alltags") {
@@ -656,7 +657,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
-  if (s.$root.currentFocus == "content") {
+  if (useBodyState.getState().currentFocus == "content") {
     if (s.isDetailMode && !s.isInlineMode) {
       if (s.isCropMode) {
         moveCropToolChannel.emit({ horizontal: 0, vertical: -1 });
@@ -669,7 +670,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
       machinerySelectUp(s, event);
     }
   }
-  else if (s.$root.currentFocus == "sidebar") {
+  else if (useBodyState.getState().currentFocus == "sidebar") {
     s.$root.selectedFolders = [];
     syncListFromScope();
     s.$root.selectedFoldersMappings = {};
@@ -677,7 +678,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
     s.$root.selectedSmartFolders = [];
     if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { machineryOpenAll(s) }
       else if (s.viewMode == "untagged") {
-        if (s.$root.preferences.sidebar.unfiled != 'false') {
+        if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
           machineryOpenUnfiled(s);
         }
         else {
@@ -685,10 +686,10 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         }
       }
       else if (s.viewMode == "recent") {
-        if (s.$root.preferences.sidebar.untagged != 'false') {
+        if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
           machineryOpenUntagged(s);
         }
-        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
           machineryOpenUnfiled(s);
         }
         else {
@@ -696,13 +697,13 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         }
       }
       else if (s.viewMode == "random") {
-        if (s.$root.preferences.sidebar.recent != 'false') {
+        if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
           machineryOpenRecent(s);
         }
-        else if (s.$root.preferences.sidebar.untagged != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
           machineryOpenUntagged(s);
         }
-        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
           machineryOpenUnfiled(s);
         }
         else {
@@ -710,16 +711,16 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         }
       }
       else if (s.viewMode == "community") {
-        if (s.$root.preferences.sidebar.random != 'false') {
+        if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
           machineryOpenRandom(s);
         }
-        else if (s.$root.preferences.sidebar.recent != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
           machineryOpenRecent(s);
         }
-        else if (s.$root.preferences.sidebar.untagged != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
           machineryOpenUntagged(s);
         }
-        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
           machineryOpenUnfiled(s);
         }
         else {
@@ -727,19 +728,19 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         }
       }
       else if (s.viewMode == "alltags") {
-        if (s.$root.preferences.sidebar.community2 != 'false') {
+        if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
           machineryOpenCommunity(s);
         }
-        else if (s.$root.preferences.sidebar.random != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
           machineryOpenRandom(s);
         }
-        else if (s.$root.preferences.sidebar.recent != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
           machineryOpenRecent(s);
         }
-        else if (s.$root.preferences.sidebar.untagged != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
           machineryOpenUntagged(s);
         }
-        else if (s.$root.preferences.sidebar.unfiled != 'false') {
+        else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
           machineryOpenUnfiled(s);
         }
         else {
@@ -763,7 +764,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         }
       }
   }
-  else if (s.$root.currentFocus == "tags") {
+  else if (useBodyState.getState().currentFocus == "tags") {
     machineryOpenPrevGroup(s);
   }
 }

@@ -15,6 +15,7 @@ import { machineryUpdateSidebarList } from '../core/libraryDomain';
 import { machineryCalculateImageBinding } from '../core/itemDomain';
 import { machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryFocusAppUnlockPassword } from '../core/miscDomain';
+import { usePreferencesState } from '../store/preferencesState';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const electronSettings: any = (window as any).electronSettings;
@@ -78,7 +79,7 @@ export function unlockAppPasswordKeyup(...args: any[]) {
     return (function (event) {
 
             var keyCode = event.keyCode;
-            var password = s.$root.preferences.privacy.password;
+            var password = usePreferencesState.getState().preferences.privacy.password;
             var typingPassword = valOf(q("#app-lock-password-input"));
             var currentPassword = window.atob(password);
 
@@ -126,7 +127,7 @@ export function unlockPasswordKeyup(...args: any[]) {
                     syncFolderLock();
                     syncListFromScope();
                     s.isLoading = true;
-                    machineryUpdateSidebarList(s);
+                    machineryUpdateSidebarList();
                     machineryCalculateImageBinding(s, { ignoreSort: true }, function () {
                         s.reload();
                         machineryUpdateSelection(s);

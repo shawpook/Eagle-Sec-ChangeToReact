@@ -746,7 +746,7 @@ function _attachQuickAccessManager(qam: any): void {
       type: type,
       id: object.id
     });
-    machineryUpdateSidebarList(s());
+    machineryUpdateSidebarList();
     qam.save();
     w.electronLog.info(`[app] Add ${type}(${object.id}) to quick access`);
     w.analytics.event('QuickAccess', 'Add', type);
@@ -764,7 +764,7 @@ function _attachQuickAccessManager(qam: any): void {
         w.analytics.event('QuickAccess', 'Add', type);
       }
     });
-    machineryUpdateSidebarList(s());
+    machineryUpdateSidebarList();
     qam.save();
   };
 
@@ -772,7 +772,7 @@ function _attachQuickAccessManager(qam: any): void {
     var idx = qam.indexOf(object);
     if (idx > -1) {
       s().quickAccess.splice(idx, 1);
-      machineryUpdateSidebarList(s());
+      machineryUpdateSidebarList();
       qam.save();
       w.electronLog.info(`[app] Remove ${type}(${object.id}) from quick access`);
       w.analytics.event('QuickAccess', 'Remove', type);
@@ -789,7 +789,7 @@ function _attachQuickAccessManager(qam: any): void {
         w.analytics.event('QuickAccess', 'Remove', type);
       }
     });
-    machineryUpdateSidebarList(s());
+    machineryUpdateSidebarList();
     qam.save();
   };
 
@@ -797,7 +797,7 @@ function _attachQuickAccessManager(qam: any): void {
     if (idx > -1) {
       var object = s().quickAccess[idx];
       s().quickAccess.splice(idx, 1);
-      machineryUpdateSidebarList(s());
+      machineryUpdateSidebarList();
       qam.save();
       w.electronLog.info(`[app] Remove ${object.type}(${object.id}) from quick access`);
       w.analytics.event('QuickAccess', 'Remove', object.type);

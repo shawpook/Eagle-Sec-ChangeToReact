@@ -29,6 +29,8 @@ import { machineryRelayout } from './gridService';
 import { machineryChangeSidebarIndex, machineryMultipleOpenFolder, machineryToggleAllFolders, machineryToggleAllSmartFolderExpand, machineryToggleAllSmartFoldersInner, machineryToggleCurrentLevelFolders, machineryToggleCurrentLevelSmartFoldersInner, machineryUpdateSidebarList } from '../core/libraryDomain';
 import { machineryToggleSelectSmartFolder } from '../core/selectionViewDomain';
 import { getOffsetScrollbarFn } from './gridService';
+import { useMiscRawState } from '../store/miscRawState';
+import { usePreferencesState } from '../store/preferencesState';
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
 export function sidebarClickNode(s: any, event: any, folder: any): void {
@@ -41,8 +43,8 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
   }
   if (event.metaKey || event.ctrlKey) {
     if (s.currentFolder) {
-      if (s.$root.selectedFolders.indexOf(s.currentFolder) === -1) {
-        s.$root.selectedFolders.push(s.currentFolder);
+      if (useMiscRawState.getState().selectedFolders.indexOf(s.currentFolder) === -1) {
+        useMiscRawState.getState().selectedFolders.push(s.currentFolder);
         syncListFromScope();
       }
       s.$root.selectedFoldersMappings[s.currentFolder.id] = s.currentFolder;
@@ -67,15 +69,15 @@ export function sidebarClickNode(s: any, event: any, folder: any): void {
     for (var i = fidx; i <= tidx; i++) {
       var item = s.sidebarList[i];
       if (item.vstype === "folder") {
-        var __lv_idx = s.$root.selectedFolders.indexOf(item);
+        var __lv_idx = useMiscRawState.getState().selectedFolders.indexOf(item);
         if (__lv_idx === -1) {
-          s.$root.selectedFolders.push(item);
+          useMiscRawState.getState().selectedFolders.push(item);
           syncListFromScope();
           s.$root.selectedFoldersMappings[item.id] = item;
         }
       }
     }
-    s.currentFolderChildren = machineryGetChildFoldersMaps(s.$root.selectedFolders);
+    s.currentFolderChildren = machineryGetChildFoldersMaps(useMiscRawState.getState().selectedFolders);
     s.reload();
   }
   else {
@@ -92,8 +94,8 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
   }
   if (event.metaKey || event.ctrlKey) {
     if (s.currentSmartFolder) {
-      if (s.$root.selectedSmartFolders.indexOf(s.currentSmartFolder) === -1) {
-        s.$root.selectedSmartFolders.push(s.currentSmartFolder);
+      if (useMiscRawState.getState().selectedSmartFolders.indexOf(s.currentSmartFolder) === -1) {
+        useMiscRawState.getState().selectedSmartFolders.push(s.currentSmartFolder);
       }
       s.$root.selectedSmartFoldersMappings[s.currentSmartFolder.id] = s.currentSmartFolder;
     }
@@ -116,9 +118,9 @@ export function sidebarClickSmartNode(s: any, event: any, smartFolder: any): voi
 
     for (var i = fidx; i <= tidx; i++) {
       var item = s.sidebarList[i];
-      var __lv_idx = s.$root.selectedSmartFolders.indexOf(item);
+      var __lv_idx = useMiscRawState.getState().selectedSmartFolders.indexOf(item);
       if (__lv_idx === -1) {
-        s.$root.selectedSmartFolders.push(item);
+        useMiscRawState.getState().selectedSmartFolders.push(item);
         s.$root.selectedSmartFoldersMappings[item.id] = item;
       }
     }
@@ -138,7 +140,7 @@ export function sidebarToggleFolderExpand(s: any, event: any, folder: any): void
   // 如果用户点击了 ⌘ + alt，展开/收起所有层级
   if (event.altKey && (event.metaKey || event.ctrlKey)) {
     var expand = !folder.isExpand;
-    machineryToggleAllFolders(s, s.folders, expand);
+    machineryToggleAllFolders(s.folders, expand);
   }
   // 如果用户点击 ⌘，展开/收起第一层
   else if (event.metaKey || event.ctrlKey) {
@@ -148,19 +150,19 @@ export function sidebarToggleFolderExpand(s: any, event: any, folder: any): void
     if (parent && parent.children) {
       folders = parent.children;
     }
-    machineryToggleCurrentLevelFolders(s, folders, expand);
+    machineryToggleCurrentLevelFolders(folders, expand);
   }
   else if (event.altKey) {
     var expand = !folder.isExpand;
     var folders = folder.children;
     folder.isExpand = expand;
-    machineryToggleCurrentLevelFolders(s, folders, expand);
+    machineryToggleCurrentLevelFolders(folders, expand);
   }
   else {
     folder.isExpand = !folder.isExpand;
     localStorage.setItem("eagle.sidebar.folder.expand." + folder.id, folder.isExpand);
   }
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
 /* toggleSmartFolderExpand（bundle 42270 邻域逐字：toggleFolderExpand 的 smartFolder 对称版） */
@@ -172,7 +174,7 @@ export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: 
   // 如果用户点击了 ⌘ + alt，展开/收起所有层级
   if (event.altKey && (event.metaKey || event.ctrlKey)) {
     var expand = !smartFolder.isExpand;
-    machineryToggleAllSmartFoldersInner(s, s.smartFolders, expand);
+    machineryToggleAllSmartFoldersInner(s.smartFolders, expand);
   }
   // 如果用户点击 ⌘，展开/收起第一层
   else if (event.metaKey || event.ctrlKey) {
@@ -182,25 +184,25 @@ export function sidebarToggleSmartFolderExpand(s: any, event: any, smartFolder: 
     if (parent && parent.children) {
       smartFolders = parent.children;
     }
-    machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+    machineryToggleCurrentLevelSmartFoldersInner(smartFolders, expand);
   }
   else if (event.altKey) {
     var expand = !smartFolder.isExpand;
     var smartFolders = smartFolder.children;
     smartFolder.isExpand = expand;
-    machineryToggleCurrentLevelSmartFoldersInner(s, smartFolders, expand);
+    machineryToggleCurrentLevelSmartFoldersInner(smartFolders, expand);
   }
   else {
     smartFolder.isExpand = !smartFolder.isExpand;
     localStorage.setItem("eagle.sidebar.smartFolder.expand." + smartFolder.id, smartFolder.isExpand);
   }
 
-  machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
 /* dblclickSidebarFolder（bundle 23420 邻域逐字：偏好分流 collapse / rename） */
 export function sidebarDblclickFolder(s: any, event: any, folder: any): void {
-  if (s.$root.preferences.habits.dblclickSidebarItem === 'collapse') {
+  if (usePreferencesState.getState().preferences.habits.dblclickSidebarItem === 'collapse') {
     toggleFolderExpand(event, folder);
   }
   else {
@@ -218,8 +220,7 @@ export function sidebarPreventMiddleClick(event: any): void {
 /* ── b1-9bb 承接：updateSidebarList 组件侧桥（实现体仍在 machinery，20ms 防抖重建
    s.sidebarList；S2-bh/bf 评估把主体迁入）── */
 export function updateSidebarList(): void {
-  const s = getBodyScope();
-  if (s) machineryUpdateSidebarList(s);
+  machineryUpdateSidebarList();
 }
 
 /* ── React 直调便捷面（无 scope 参数版本）——Sidebar.tsx 事件处理直调不绕 scopeApply。 */
@@ -300,7 +301,7 @@ export function dblclickSidebarSmartFolderGroup(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function (event, folder) {
-        	if (s.$root.preferences.habits.dblclickSidebarItem === 'collapse') {
+        	if (usePreferencesState.getState().preferences.habits.dblclickSidebarItem === 'collapse') {
         		toggleSmartFolderExpand(event, folder);
         	}
         	else {
@@ -315,7 +316,7 @@ export function getNodeClass(...args: any[]) {
     if (!s) return;
     return (function (node) {
             var __lv_result = {
-                'active active-item': (s.$root.selectedFolders.length === 0 && s.currentId == 'folder-' + node.id) || s.$root.selectedFoldersMappings[node.id],
+                'active active-item': (useMiscRawState.getState().selectedFolders.length === 0 && s.currentId == 'folder-' + node.id) || s.$root.selectedFoldersMappings[node.id],
                 'locked': node.password && !node.isUnLock,
                 'collapsed': !node.isExpand && !s.folderKeyword.length,
                 'editable': node.editable,
@@ -392,7 +393,7 @@ export function getSmartFolderClass(...args: any[]) {
                 'editable': smartFolder.editable,
                 'selected': smartFolder.isSelected,
                 'collapsed': !smartFolder.isExpand && !s.folderKeyword.length,
-                'active active-item': (s.$root.selectedSmartFolders.length === 0 && s.currentId == 'smart-folder-' + smartFolder.id) || s.$root.selectedSmartFoldersMappings[smartFolder.id],
+                'active active-item': (useMiscRawState.getState().selectedSmartFolders.length === 0 && s.currentId == 'smart-folder-' + smartFolder.id) || s.$root.selectedSmartFoldersMappings[smartFolder.id],
                 'color-red': smartFolder.iconColor == 'red',
                 'color-orange': smartFolder.iconColor == 'orange',
                 'color-yellow': smartFolder.iconColor == 'yellow',
@@ -520,23 +521,21 @@ export function toggleAllFolderExpand(...args: any[]) {
         }
         if (!expand) s2.sidebarIndex = 0;
         toggleAllFolders(s2.folders, expand);
-        machineryUpdateSidebarList(s2);
+        machineryUpdateSidebarList();
       }
     }).apply(null, args);
   }
 
 export function toggleSelectSmartFolder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryToggleSelectSmartFolder(s, args[0], args[1]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryToggleSelectSmartFolder(args[0], args[1]);
 }
 
 export function toggleAllSmartFolderExpand(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 收敛到 machinery（c3 体调了未定义的 toggleAllSmartFolders）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryToggleAllSmartFolderExpand(s, args[0], args[1]);
+   // 原 c3 体的 scope 守卫，逐字保留
+  machineryToggleAllSmartFolderExpand(args[0], args[1]);
 }
 
 export function openFolderExpandContextMenu(...args: any[]) {

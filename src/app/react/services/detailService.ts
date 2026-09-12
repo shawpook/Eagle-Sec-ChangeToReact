@@ -18,6 +18,8 @@ import { isNumeric } from '../utils/lang';
 import { machineryGetRatioExp, machineryGetRatioNonExp, machineryOnZoomRatioChanged } from './viewOpsService';
 import { machineryRenameCurrentFolder } from '../core/libraryDomain';
 import { machineryEnterDetailMode, machineryLeaveDetailMode } from '../core/miscDomain';
+import { usePreferencesState } from '../store/preferencesState';
+import { useBodyState } from '../store/bodyState';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;
@@ -99,7 +101,7 @@ export function detailSmartZoom(s: any, target: any, forceMode: any): void {
   });
 
   // 不使用智能縮放
-  if (s.$root.preferences.habits.defaultRatio != "auto" && !forceMode) {
+  if (usePreferencesState.getState().preferences.habits.defaultRatio != "auto" && !forceMode) {
     ratio = 100;
     offsetY = toolbarHeight / 2 * 100 / ratio;
   }
@@ -209,7 +211,7 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
       syncDetailFromScope();
     }
   }
-  if (s.$root.currentFocus == "sidebar" || s.$root.currentFocus == "tags") {
+  if (useBodyState.getState().currentFocus == "sidebar" || useBodyState.getState().currentFocus == "tags") {
     machineryRenameCurrentFolder(s, $event);
   }
   else {

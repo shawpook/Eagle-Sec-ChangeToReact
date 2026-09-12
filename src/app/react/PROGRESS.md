@@ -7874,10 +7874,25 @@ body scope 的 get/set 委托 store（读走 store、写 store + `coreState` 镜
   写入点与调用点仍不碰。
 - 实测 **149 处读 / 26 文件**；`getBodyScope 405 → 382`、`rootAccess 360 → 292`（`$root.` 字面量随改写消失）。
 
-**E3 阶段累计**：`getBodyScope 627 → 382`（-39%）、`rootAccess 360 → 292`（-19%）、
+### E3-3b（提交 `41e13bd6`）回退共享 core 模块的读点改写 —— **重要约束**
+- 症状：全套 `preview-delivery` 稳定失败 `copy-path action timeout`（3/3）。
+- 根因：`core/fileUrlHelper.ts` 被 **preview 窗口** import；子窗口里 `getBodyScope()` 返回的是
+  **该窗口自己的 scope**（shims 为子窗构建的 `$bodyScope`），而 codemod 把它改成了主窗 store
+  (`useMiscRawState.getState().libraryImagesPath`)。子窗模块图里该 store 从未被 machinery 填充 →
+  路径为空串 → shims 的 `isCurrentPreviewRawPath(text)` 判假 → 不派发 `preview:action-result` → 超时。
+- 处置：回退 `core/fileUrlHelper.ts` 与 `core/appCore.ts`（子窗 import 的共享 core 模块），
+  `getBodyScope` 基线 382 → 388。验证：`preview-delivery` + `native-preview` + `stage9a2/9a3` 全过。
+- **约束（后续 E3/E4 必须遵守）**：子窗口（`preview-window` / `collect-window` / `viewers` /
+  `preferences`）import 的模块——实测直接 import 的有 `core/appCore`、`core/fileUrlHelper`、
+  `core/keymap`、`core/smoothZoomEngine`、`core/tippyLite`，且经 `keymap` 可传递到更多 `core/*`
+  ——**不得**改读主窗 store（=「窗口本地 scope」与「主窗 store」不是同一状态）。已改写者本轮
+  仅这两个文件，已回退；其余 `core/*` 改写目前在所有子窗测试下未见异常，但**这是潜在风险，
+  E4 前需逐模块确认「是否会子窗执行」**。
+
+**E3 阶段累计**：`getBodyScope 627 → 388`（-38%）、`rootAccess 360 → 292`（-19%）、
 `scopeEvalAsync 356` 未动、`coreState 13`、`scopeApply 16`（preferences 窗口）。
 
-**E3 未竟与原因（重要）**：剩下的 382 处 `getBodyScope()` 分三类，都不是「机械替换」能消的：
+**E3 未竟与原因（重要）**：剩下的 388 处 `getBodyScope()` 分三类，都不是「机械替换」能消的：
 1. **传参型**（约 31 处）：`machineryX(getBodyScope(), ...)` —— machinery 函数签名以 `s` 为首参并
    在体内大量 `s.X`；要消除必须把这些函数体改写为读 store（域层上万行，属 E3-8 主体）；
 2. **别名仍有其它引用**：同一 `s` 既读注册字段、又调用挂载函数（`s.reload()`/`s.notify()`/

@@ -7858,3 +7858,29 @@ body scope 的 get/set 委托 store（读走 store、写 store + `coreState` 镜
 按 `docs/e-phase-plan-2026-09-12.md` §4 的 C-1…C-6 切片推进（密度序：`inspectorActions` 53 /
 `detailHooks` 47 / `folderMenuService` 45 / `miscDomain` 42 / `Sidebar` 41 …），
 每批改后压 `getBodyScope`/`rootAccess` 并棘轮基线。
+
+### E3-2（提交 `61e0cd36`）别名读 AST codemod
+- 工具 `tests-tmp/e3-alias-codemod.cjs`：TypeScript 符号解析定位 `const X = getBodyScope()` 绑定，
+  把「注册字段的读」`X.F` 改写为 `store.getState().F`（跳过调用/赋值）；别名改写后若**无任何其它引用**
+  则连声明一起删（这才是减少 `getBodyScope(` 计数处）。
+- 实测 **640 处读 / 84 个声明 / 39 文件**；`getBodyScope 489 → 405`。
+
+### E3-3（提交 `557e87c1`）合并式 codemod + 字段面补注册
+- 补注册 40+ 字段（`inspector` / `listLayoutSettings` / `selectedFolders` / `uploadQueue` /
+  `filtereds` / `currentComment` / `zoomFitSize` / `UrlStateService` / `sidebarList` / `errorList` …），
+  注册面 93 → 136。
+- 工具 `tests-tmp/e3-codemod-v2.cjs`：一次处理 `X.F` / `X.$root.F` / `getBodyScope().F` /
+  `getBodyScope().$root.F` / `getRootScope().F` 四种形态（`~450` 行 AST 逻辑），
+  写入点与调用点仍不碰。
+- 实测 **149 处读 / 26 文件**；`getBodyScope 405 → 382`、`rootAccess 360 → 292`（`$root.` 字面量随改写消失）。
+
+**E3 阶段累计**：`getBodyScope 627 → 382`（-39%）、`rootAccess 360 → 292`（-19%）、
+`scopeEvalAsync 356` 未动、`coreState 13`、`scopeApply 16`（preferences 窗口）。
+
+**E3 未竟与原因（重要）**：剩下的 382 处 `getBodyScope()` 分三类，都不是「机械替换」能消的：
+1. **传参型**（约 31 处）：`machineryX(getBodyScope(), ...)` —— machinery 函数签名以 `s` 为首参并
+   在体内大量 `s.X`；要消除必须把这些函数体改写为读 store（域层上万行，属 E3-8 主体）；
+2. **别名仍有其它引用**：同一 `s` 既读注册字段、又调用挂载函数（`s.reload()`/`s.notify()`/
+   `s.gifViewer.x`）或写未注册字段 —— 需先把**函数面**直调化（`SCOPED_HANDLER`/`scoped`/`call*` 收敛）；
+3. **未注册字段读**：少量低频字段（`gs`/`tabs`/`recentFolders` 等）与函数值属性。
+→ E4「删壳」的前置是 2、3 两类清零；1 类需域层函数体迁移（可分批，不阻塞壳的删除但决定最终形态）。

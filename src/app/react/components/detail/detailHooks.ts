@@ -835,7 +835,6 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
 
     video.addEventListener('dblclick', function () {
       if (!isInPreviewWindow) {
-        const s = getBodyScope();
         machineryLeaveDetailMode();
       } else {
         useMiscRawState.getState().toggleFullScreen();
@@ -1652,7 +1651,6 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
     };
 
     video.addEventListener('dblclick', function () {
-      const s = getBodyScope();
       machineryLeaveDetailMode();
     });
 

@@ -97,8 +97,6 @@ let lastTmSnapshot: any = null;
  * 原 startScopeSync 200ms 轮询退役。
  */
 export function syncTagManagerFromScope(): void {
-  const scope: any = getBodyScope();
-  if (!scope) return;
   const next = buildTmSnapshot();
   if (lastTmSnapshot !== null && shallowEqTm(next, lastTmSnapshot)) return;
   lastTmSnapshot = next;

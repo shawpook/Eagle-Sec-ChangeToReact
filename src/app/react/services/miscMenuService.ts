@@ -105,8 +105,6 @@ export function openApplicationContextMenu(...args: any[]) {
    组件侧改直 import，零行为变化。 */
 export function openRatioContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function() {
             ContextMenu.open({
                 items: [
@@ -174,8 +172,6 @@ export function openOrderMenu(...args: any[]) {
 
 export function openFilterAddContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
             machineryOpenFilter();
             clickEl("#filter-toolbar-overlay");

@@ -798,12 +798,10 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function openFileWithDefault(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (file: any) {
             if (!file || !file.id) return;
             if (q(".swal2-container")) { return; }
-            var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+            var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + file.id + ".info/");
             var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
             IPCHelper.send('open-with-default', rawPath);
             RecentFileManager.addFile(file);
@@ -812,8 +810,6 @@ export function openFileWithDefault(...args: any[]) {
 
 export function copyAsLink(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event, items) {
             if (!items || !items[0]) return;
             let text = ``;
@@ -829,7 +825,7 @@ export function copyAsLink(...args: any[]) {
             });
 
             clipboard.writeText(text);
-            s.notify({
+            useMiscRawState.getState().notify({
                 message: i18n.__("notify.colorCopySuccess"),
                 duration: 750
             });
@@ -838,13 +834,11 @@ export function copyAsLink(...args: any[]) {
 
 export function copyAsPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
-            if (!s.selected || !s.selected[0]) return;
+            if (!useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
             let copyText = "";
-            s.selected.forEach(function (item, index) {
-                var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + item.id + ".info/");
+            useSelectionState.getState().selected.forEach(function (item, index) {
+                var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + item.id + ".info/");
                 var rawPath = __lv_path.normalize(folderPath + item.name + "." + item.ext);
                 if (index == 0) {
                     copyText += rawPath;
@@ -854,7 +848,7 @@ export function copyAsPath(...args: any[]) {
                 }
             });
             clipboard.writeText(copyText);
-            s.notify({
+            useMiscRawState.getState().notify({
                 message: $filter('i18n')("notify.copyPath.successMsg"),
                 duration: 750
             });
@@ -863,8 +857,6 @@ export function copyAsPath(...args: any[]) {
 
 export function getFolderFullPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (folder) {
             if (folder) {
                 if (folder.parent) {
@@ -891,27 +883,23 @@ export function getFolderFullPath(...args: any[]) {
 
 export function getGIFPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.current) {
-                var gifPath = FileUrlHelper.getRawPath(s.current);
-                var gifUrl = FileUrlHelper.getRawUrl(s.current);
+            if (useSelectionState.getState().current) {
+                var gifPath = FileUrlHelper.getRawPath(useSelectionState.getState().current);
+                var gifUrl = FileUrlHelper.getRawUrl(useSelectionState.getState().current);
                 var renderBehavior = usePreferencesState.getState().preferences.habits.renderBehavior;
-                return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(s.current.name + ".gif") + `&render=${renderBehavior}`;
+                return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(useSelectionState.getState().current.name + ".gif") + `&render=${renderBehavior}`;
             }
         }).apply(null, args);
   }
 
 export function getModelPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.current) {
-                var rawUrl = FileUrlHelper.getRawUrl(s.current);
+            if (useSelectionState.getState().current) {
+                var rawUrl = FileUrlHelper.getRawUrl(useSelectionState.getState().current);
 				rawUrl = rawUrl.replaceAll(',', '%2C');
-                var type = s.current.ext;
+                var type = useSelectionState.getState().current.ext;
 				return `model-viewer/website/index.html#model=${rawUrl}`;
             }
         }).apply(null, args);
@@ -919,50 +907,42 @@ export function getModelPath(...args: any[]) {
 
 export function getNativeViewerPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.current) {
-                var __lv_filePath = s.imagesDir + s.current.id + ".info/";
-                return "native-viewer/index.html?path=" + encodeURIComponent(__lv_filePath) + "&name=" + encodeURIComponent(s.current.name + "." + s.current.ext) + "&ext=" + s.current.ext + "&width=" + s.current.width + "&height=" + s.current.height + "&id=" + s.current.id;
+            if (useSelectionState.getState().current) {
+                var __lv_filePath = useMiscRawState.getState().imagesDir + useSelectionState.getState().current.id + ".info/";
+                return "native-viewer/index.html?path=" + encodeURIComponent(__lv_filePath) + "&name=" + encodeURIComponent(useSelectionState.getState().current.name + "." + useSelectionState.getState().current.ext) + "&ext=" + useSelectionState.getState().current.ext + "&width=" + useSelectionState.getState().current.width + "&height=" + useSelectionState.getState().current.height + "&id=" + useSelectionState.getState().current.id;
             }
         }).apply(null, args);
   }
 
 export function getPDFPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.current) {
-            	var pdfPath = FileUrlHelper.getRawUrl(s.current);
+            if (useSelectionState.getState().current) {
+            	var pdfPath = FileUrlHelper.getRawUrl(useSelectionState.getState().current);
                 var locale = preferences.general.language.replace("_", "-");
-                return `pdf-viewer/web/viewer.html?path=${encodeURIComponent(pdfPath)}&locale=${locale}&theme=${s.theme}`;
+                return `pdf-viewer/web/viewer.html?path=${encodeURIComponent(pdfPath)}&locale=${locale}&theme=${useBodyState.getState().theme}`;
             }
         }).apply(null, args);
   }
 
 export function getRawPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (__lv_image) {
-            if (!__lv_image || !s.imagesDir) return;
-            if (!s.modifiedMappings[__lv_image.id]) {
-                return "file://" +  getRawPath(s.imagesDir, __lv_image);
+            if (!__lv_image || !useMiscRawState.getState().imagesDir) return;
+            if (!useItemState.getState().modifiedMappings[__lv_image.id]) {
+                return "file://" +  getRawPath(useMiscRawState.getState().imagesDir, __lv_image);
             }
             else {
-                return "file://" +  getRawPath(s.imagesDir, __lv_image) + "?v=" + s.modifiedMappings[__lv_image.id];
+                return "file://" +  getRawPath(useMiscRawState.getState().imagesDir, __lv_image) + "?v=" + useItemState.getState().modifiedMappings[__lv_image.id];
             }
         }).apply(null, args);
   }
 
 export function getRawUrl(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (__lv_image) {
-            if (!s.imagesDir || !__lv_image) return;
+            if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             let rawUrl = FileUrlHelper.getRawUrl(__lv_image);
             if (!EagleConfig.SUPPORT_FORMATS[__lv_image.ext]) {
                 rawUrl = FileUrlHelper.getThumbnailUrl(__lv_image);
@@ -976,12 +956,10 @@ export function getRawUrl(...args: any[]) {
 
 export function getRawViewerPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.current) {
-                var __lv_image = s.current;
-                var rawPath = s.imagesDir + s.current.id + ".info/";
+            if (useSelectionState.getState().current) {
+                var __lv_image = useSelectionState.getState().current;
+                var rawPath = useMiscRawState.getState().imagesDir + useSelectionState.getState().current.id + ".info/";
                 return `./raw-viewer/index.html?orientation=${__lv_image.orientation}&path=${encodeURIComponent(rawPath)}&name=${encodeURIComponent(__lv_image.name)}&ext=${__lv_image.ext}&width=${__lv_image.width}&height=${__lv_image.height}`;
             }
         }).apply(null, args);
@@ -989,21 +967,17 @@ export function getRawViewerPath(...args: any[]) {
 
 export function getTxtPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.current) {
-                return `./text-editor/text-editor.html?id=${s.current.id}&theme=${s.theme}&name=${s.current.name}&language=${s.language}`;
+            if (useSelectionState.getState().current) {
+                return `./text-editor/text-editor.html?id=${useSelectionState.getState().current.id}&theme=${useBodyState.getState().theme}&name=${useSelectionState.getState().current.name}&language=${useBodyState.getState().language}`;
             }
         }).apply(null, args);
   }
 
 export function getURLSrc(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-            let item = s.current;
+            let item = useSelectionState.getState().current;
         	if (item.ext === "url") {
         		var embed;
         		if (item.medium === "youtube") {
@@ -1018,18 +992,16 @@ export function getURLSrc(...args: any[]) {
         		return embed;
         	}
             else {
-                return FileUrlHelper.getRawUrl(s.current);
+                return FileUrlHelper.getRawUrl(useSelectionState.getState().current);
             }
         }).apply(null, args);
   }
 
 export function openItemLocation(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (item, folder) {
             resetFilter();
-            s.keyword = "";
+            writeScopeField('keyword', "");
             machineryQuickOpenFolder(folder, item);
         }).apply(null, args);
   }
@@ -1037,10 +1009,8 @@ export function openItemLocation(...args: any[]) {
 export function openWithOther(...args: any[]) {
     if (!__cc_openWithOther) {
       __cc_openWithOther = debounce(function () {
-        const s = getScope();
-        if (!s) return;
-        if (s.selected.length > 0) {
-            __cf_ipcRenderer.send('open-with-dialog', FileUrlHelper.getRawPath(s.selected[0]));
+        if (useSelectionState.getState().selected.length > 0) {
+            __cf_ipcRenderer.send('open-with-dialog', FileUrlHelper.getRawPath(useSelectionState.getState().selected[0]));
         }
       }, 200, true);
     }
@@ -1051,13 +1021,11 @@ export function openInFinder(...args: any[]) {
     if (!__cc_openInFinder) {
       __cc_openInFinder = (function () {
         function openInFinderImpl() {
-            const s = getScope();
-            if (!s) return;
-            if (s.selected.length > 0) {
+            if (useSelectionState.getState().selected.length > 0) {
                 machineryCheckOperationSafety(function () {
-                    s.selected.forEach(function (file, index) {
+                    useSelectionState.getState().selected.forEach(function (file, index) {
                         if (index > 30) return;
-                        var folderPath = path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+                        var folderPath = path.normalize(useMiscRawState.getState().libraryPath + "/images/" + file.id + ".info/");
                         var rawPath = path.normalize(folderPath + file.name + "." + file.ext);
                         if (fs.existsSync(rawPath)) {
                             __cf_ipcRenderer.send('show-item-in-folder', rawPath);
@@ -1074,12 +1042,10 @@ export function openInFinder(...args: any[]) {
             }
         };
         return debounce(function () {
-            const s = getScope();
-            if (!s) return;
 
             // 禁止在任何 Modal 开启时，使用这个功能，避免快捷键冲突
             if (q(".modal.open, .import-modal.open")) return;
-            if (!s.selected.length) return;
+            if (!useSelectionState.getState().selected.length) return;
 
             var btnLable;
 
@@ -1135,14 +1101,12 @@ export function openInFinder(...args: any[]) {
 export function openFilesWithDefault(...args: any[]) {
     if (!__cc_openFilesWithDefault) {
       __cc_openFilesWithDefault = debounce(function(files) {
-        const s = getScope();
-        if (!s) return;
         if (q(".swal2-container")) { return; }
         machineryCheckOperationSafety(function () {
             files.forEach(function (file, index) {
                 if (!file || !file.id) return;
                 if (index < 40) {
-                    var folderPath = __lv_path.normalize(s.libraryPath + "/images/" + file.id + ".info/");
+                    var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + file.id + ".info/");
                     var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
                     __cf_ipcRenderer.send('open-with-default', rawPath);
                 }
@@ -1156,11 +1120,9 @@ export function openFilesWithDefault(...args: any[]) {
 
 export function openInPreviewWindow(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-        if (s.selected.length <= 20000) {
-            var items = s.selected.filter(function (item) {
+        if (useSelectionState.getState().selected.length <= 20000) {
+            var items = useSelectionState.getState().selected.filter(function (item) {
                 return (EagleConfig.SUPPORT_FORMATS[item.ext] || pluginModule?.previewExtension.thumbnailPluginMap[item.ext]) && !AUDIO_TYPES[item.ext];
             });
             if (items.length > 0) {
@@ -1174,12 +1136,10 @@ export function openInPreviewWindow(...args: any[]) {
 
 export function copyAsProperity(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (properity) {
-        if (!s.selected || !s.selected[0]) return;
+        if (!useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
         let copyText = "";
-        s.selected.forEach(function (item, index) {
+        useSelectionState.getState().selected.forEach(function (item, index) {
             if (index == 0) {
                 copyText += `${item[properity] || ""}`;
             }
@@ -1188,7 +1148,7 @@ export function copyAsProperity(...args: any[]) {
             }
         });
         clipboard.writeText(copyText);
-        s.notify({
+        useMiscRawState.getState().notify({
             message: $filter('i18n')("notify.copyPath.successMsg"),
             duration: 750
         });
@@ -1197,13 +1157,11 @@ export function copyAsProperity(...args: any[]) {
 
 export function copyAsFolderPath(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
-        if (!s.selected || !s.selected[0]) return;
+        if (!useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
         let copyText = "";
-        s.selected.forEach(function (item, index) {
-            var folderPath = path.normalize(s.libraryPath + "/images/" + item.id + ".info/");
+        useSelectionState.getState().selected.forEach(function (item, index) {
+            var folderPath = path.normalize(useMiscRawState.getState().libraryPath + "/images/" + item.id + ".info/");
             if (index == 0) {
                 copyText += folderPath;
             }
@@ -1212,7 +1170,7 @@ export function copyAsFolderPath(...args: any[]) {
             }
         });
         clipboard.writeText(copyText);
-        s.notify({
+        useMiscRawState.getState().notify({
             message: $filter('i18n')("notify.copyPath.successMsg"),
             duration: 750
         });
@@ -1221,18 +1179,16 @@ export function copyAsFolderPath(...args: any[]) {
 
 export function copyAsThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
         // b1-9ae：同上——undefined → send 走 main（b1-9aa copy-thumbnails handler → CF_HDROP）
         if ((window as any).backgroundWindowID === undefined) {
-            __cf_ipcRenderer.send('copy-thumbnails', s.selected);
+            __cf_ipcRenderer.send('copy-thumbnails', useSelectionState.getState().selected);
         }
         else {
-            __cf_ipcRenderer.sendTo((window as any).backgroundWindowID, 'copy-thumbnails', s.selected);
+            __cf_ipcRenderer.sendTo((window as any).backgroundWindowID, 'copy-thumbnails', useSelectionState.getState().selected);
         }
         setTimeout(function () {
-            s.notify({
+            useMiscRawState.getState().notify({
                 message: $filter('i18n')("previewWindow.copied"),
                 duration: 1000
             });
@@ -1242,11 +1198,9 @@ export function copyAsThumbnail(...args: any[]) {
 
 export function copyAsBase64(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-        let item = s.selected[0];
-        let folderPath = path.normalize(s.libraryPath + "/images/" + item.id + ".info/");
+        let item = useSelectionState.getState().selected[0];
+        let folderPath = path.normalize(useMiscRawState.getState().libraryPath + "/images/" + item.id + ".info/");
         let rawPath = path.normalize(`${folderPath}${item.name}.${item.ext}`);
         let thumbPath = path.normalize(`${folderPath}${item.name}_thumbnail.png`);
         let imageType = { jpg: true, jfif: true, insp: true, png: true, webp: true, gif: true };
@@ -1265,7 +1219,7 @@ export function copyAsBase64(...args: any[]) {
             }
 
             clipboard.writeText(`data:image/${type};base64,${base64}`);
-            s.notify({
+            useMiscRawState.getState().notify({
                 message: $filter('i18n')("previewWindow.copied"),
                 duration: 1000
             });

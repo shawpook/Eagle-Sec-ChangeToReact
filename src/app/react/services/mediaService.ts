@@ -225,8 +225,6 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function flipVideo(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
             var player = machineryGetVideoPlayer();
             if (!player) return;
@@ -252,8 +250,6 @@ export function flipVideo(...args: any[]) {
 
 export function rotateVideo(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
             var player = machineryGetVideoPlayer();
             if (!player) return;
@@ -283,19 +279,17 @@ export function rotateVideo(...args: any[]) {
 
 export function toggleGifPlay(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            if (s.gifPlayer && s.isGifReady) {
-                if (s.gifViewer.playing) {
-                    s.gifPlayer.pause();
-                    s.gifViewer.playing = false;
+            if (useMiscRawState.getState().gifPlayer && useMiscRawState.getState().isGifReady) {
+                if (useMiscRawState.getState().gifViewer.playing) {
+                    useMiscRawState.getState().gifPlayer.pause();
+                    useMiscRawState.getState().gifViewer.playing = false;
                     syncDetailFromScope();
                     scopeEvalAsync();
                 }
                 else {
-                    s.gifPlayer.play();
-                    s.gifViewer.playing = true;
+                    useMiscRawState.getState().gifPlayer.play();
+                    useMiscRawState.getState().gifViewer.playing = true;
                     syncDetailFromScope();
                     scopeEvalAsync();
                 }
@@ -309,17 +303,14 @@ export function toggleGifPlay(...args: any[]) {
 
 export function toggleSlideshow(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价，统一转发消除重复实现。
-    const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+   // 原 c3 体的 scope 守卫，逐字保留
   machineryToggleSlideshow();
 }
 
 export function setAsVideoThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (async function() {
-        if (!s.current) return;
+        if (!useSelectionState.getState().current) return;
 
         var player = machineryGetVideoPlayer();
         if (!player) return;
@@ -341,23 +332,23 @@ export function setAsVideoThumbnail(...args: any[]) {
                 var newFilePath = EAGLE_THUMBNAIL_TEMP_PATH + "/" + guid() + ".jpg";
                 fs.writeFileSync(newFilePath, decode.data);
 
-                s.current.thumbnailAt = currentTime;
+                useSelectionState.getState().current.thumbnailAt = currentTime;
                 // b1-9ae：后台窗已除名——backgroundWindowID undefined → 走 main（b1-9aa handler），
                 // 与 bundle 26409 条件模式同型（undefined → send 分支）
                 if ((window as any).backgroundWindowID === undefined) {
                     ipcRenderer.send('set-custom-thumbnail', {
-                        item: s.current,
+                        item: useSelectionState.getState().current,
                         thumbnailPath: newFilePath,
-                        width: s.current.width,
-                        height: s.current.height
+                        width: useSelectionState.getState().current.width,
+                        height: useSelectionState.getState().current.height
                     });
                 }
                 else {
                     ipcRenderer.sendTo((window as any).backgroundWindowID, 'set-custom-thumbnail', {
-                        item: s.current,
+                        item: useSelectionState.getState().current,
                         thumbnailPath: newFilePath,
-                        width: s.current.width,
-                        height: s.current.height
+                        width: useSelectionState.getState().current.width,
+                        height: useSelectionState.getState().current.height
                     });
                 }
             } catch (err) {
@@ -365,9 +356,9 @@ export function setAsVideoThumbnail(...args: any[]) {
             }
         }
         else {
-            s.current.thumbnailAt = currentTime;
+            useSelectionState.getState().current.thumbnailAt = currentTime;
             IPCHelper.send('regenerate-video-thumbnail', {
-                video: s.current,
+                video: useSelectionState.getState().current,
                 startAt: currentTime
             });
         }
@@ -376,10 +367,8 @@ export function setAsVideoThumbnail(...args: any[]) {
 
 export function loadSubtitles(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-        const item = s.current;
+        const item = useSelectionState.getState().current;
         // 1. show file choose dialog
         dialog.showOpenDialog(currentWindow, {
             title: "Load Subtitles",

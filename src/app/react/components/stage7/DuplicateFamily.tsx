@@ -1467,10 +1467,9 @@ export function DuplicateModal() {
   };
 
   const revealInUnfiled = (item: any) => {
-    const body = getBodyScope();
     machineryOpenUnfiled(undefined);
     setTimeout(() => {
-      body.selected = [item];
+      writeScopeField('selected', [item]);
       syncInspectorFromScope();
       scrollToSelectedItem();
     }, 500);
@@ -1697,7 +1696,6 @@ export function DuplicateModal() {
   const right = rootRef.current.right;
   const usingExist = rootRef.current.usingExist;
   const applyAll = rootRef.current.applyAll;
-  const body = getBodyScope();
   const folderMappings = rootRef.current.folderMappings || useItemState.getState().folderMappings || {};
 
   const videoExts = 'ts|3gp|360|afx|vap|eva|mp4|mov|m4v|webm|mkv|avi|wmv|mpg|mts|flv|m2ts|f4v'.split('|');
@@ -1710,7 +1708,7 @@ export function DuplicateModal() {
         <div className={`image ${item.ext}${isNew && usingExist === 'true' ? ' fade' : ''}`}>
           {/* 原版怪癖：右側 iframe 的 ng-src 傳入的是 left（getExifPath(left)），逐字保留 */}
           {item.orientation && item.orientation !== 1 && (
-            <iframe src={body?.getExifPath(isNew ? rootRef.current.left : item)} frameBorder={0} />
+            <iframe src={useMiscRawState.getState().getExifPath(isNew ? rootRef.current.left : item)} frameBorder={0} />
           )}
           {!(item.orientation && item.orientation !== 1) && <img src={getThumbnailUrlImpl(item)} alt="" />}
           {!!item.noPreview && <ExtIcon itemId={item.id} />}
@@ -1734,7 +1732,7 @@ export function DuplicateModal() {
         {!isNew && (
           <div className="folder">
             {item.folders.length > 0 && (
-              <span onClick={() => body && machineryQuickOpenFolder(folderMappings[item.folders[0]], item)}>{folderMappings[item.folders[0]]?.name}</span>
+              <span onClick={() => machineryQuickOpenFolder(folderMappings[item.folders[0]], item)}>{folderMappings[item.folders[0]]?.name}</span>
             )}
             {item.folders.length === 0 && (
               <span onClick={() => revealInUnfiled(item)}>{t('modal.duplicate.unfiled')}</span>

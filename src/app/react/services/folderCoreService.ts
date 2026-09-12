@@ -745,11 +745,9 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function getLibraryHistory(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (length) {
             let result = [];
-            s.libraryHistory.forEach(function (history, index) {
+            useMiscRawState.getState().libraryHistory.forEach(function (history, index) {
 
                 var libraryName = __lv_path.basename(history).replace('.library', '');
                 var libraryPath = __lv_path.dirname(history).replace(/\\$/g, "").replace(/\/$/, "");
@@ -775,19 +773,17 @@ export function getLibraryHistory(...args: any[]) {
 
 export function openFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(fd, ignoreHistory, currentId, ignoreReload, focus) {
-            const folder = s.folderMappings[fd?.id];
+            const folder = useItemState.getState().folderMappings[fd?.id];
 
             if (!folder) return;
             
             // Skip if already in the same folder, but NOT when navigating from URL (ignoreHistory = true)
             // Also check viewMode to ensure we're not coming from a different view type
-            if (!ignoreHistory && s.currentFolder === folder && !s.viewMode && (s.allData.length > 0 || s.subFolders.length > 0) && eagle.filter.filterRules.color.value == undefined &&
-                eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
+            if (!ignoreHistory && useFolderState.getState().currentFolder === folder && !useBodyState.getState().viewMode && (useItemState.getState().allData.length > 0 || useMiscRawState.getState().subFolders.length > 0) && eagle.filter.filterRules.color.value == undefined &&
+                eagle.filter.filterRules.import.type == 'undefined' && useMiscRawState.getState().currentId === currentId
             ) {
-                if (s.isDetailMode) {
+                if (useBodyState.getState().isDetailMode) {
                     machineryLeaveDetailMode();
                 }
                 return;
@@ -795,27 +791,27 @@ export function openFolder(...args: any[]) {
 
             ScrollbarSaver.saveScrollPosition();
 
-            s.currentSmartFolder = undefined;
+            writeScopeField('currentSmartFolder', undefined);
             syncPanelFromScope();
             syncListFromScope();
             writeScopeField('currentFocus', focus || "sidebar");
             machineryResetPage();
-            s.viewMode = undefined;
-            s.currentId = currentId || "folder-" + folder.id;
+            writeScopeField('viewMode', undefined);
+            writeScopeField('currentId', currentId || "folder-" + folder.id);
             syncSidebarFromScope();
-            s.currentFolderPath = getFolderFullPath(folder);
+            writeScopeField('currentFolderPath', getFolderFullPath(folder));
             syncToolbarFromScope();
-            if (s.currentFolder != folder) {
-                s.currentFolder = folder;
+            if (useFolderState.getState().currentFolder != folder) {
+                writeScopeField('currentFolder', folder);
                 syncPanelFromScope();
                 syncFolderLock();
                 syncListFromScope();
-                s.currentFolderChildren = machineryGetChildFoldersMap(folder);
+                writeScopeField('currentFolderChildren', machineryGetChildFoldersMap(folder));
             }
 
-			if (localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
-                if (s.layout !== localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
-                    machinerySwitchLayout(localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
+			if (localStorage[`eagle.list.layout.${useFolderState.getState().currentFolder.id}`]) {
+                if (useBodyState.getState().layout !== localStorage[`eagle.list.layout.${useFolderState.getState().currentFolder.id}`]) {
+                    machinerySwitchLayout(localStorage[`eagle.list.layout.${useFolderState.getState().currentFolder.id}`]);
                 }
 			}
 
@@ -835,34 +831,34 @@ export function openFolder(...args: any[]) {
                     smartfolder: null,
                     tag: null,
                     color: null,
-                    page: s.page
+                    page: useMiscRawState.getState().page
                 });
             }
 
             var __lv_height = localStorage.getItem("eagle.list.thumbSize." + folder.id) || 150;
             __lv_height = parseInt(__lv_height);
-            s.imageSize.height = parseInt(__lv_height / 5) * 5;
+            useLayoutState.getState().imageSize.height = parseInt(__lv_height / 5) * 5;
             syncToolbarFromScope();
             syncBodyFromScope();
             syncDetailFromScope();
             syncInspectorFromScope();
-            __lv_updateListHeight(s.imageSize.height);
+            __lv_updateListHeight(useLayoutState.getState().imageSize.height);
             if (!ignoreReload) {
                 ScrollbarSaver.restoreScrollPosition();
-                s.reload();
+                useMiscRawState.getState().reload();
             }
             else {
                 machineryRebindRefresh();
             }
-            if (s.currentFolder) {
-                __lv_setLastFolder(s.currentFolder.id);
+            if (useFolderState.getState().currentFolder) {
+                __lv_setLastFolder(useFolderState.getState().currentFolder.id);
             }
 
             analytics.screenView('Folder');
             
             // 如果文件夾有密碼且未解鎖，並且支援 Touch ID，自動觸發 Touch ID 驗證
-            if (s.currentFolder && s.currentFolder.password && !s.currentFolder.isUnLock) {
-                if (s.canUseTouchID) {
+            if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.password && !useFolderState.getState().currentFolder.isUnLock) {
+                if (useMiscRawState.getState().canUseTouchID) {
                     // 延遲一下以確保 UI 已渲染
                     $timeout(function () {
                         machineryUnlockFolderWithTouchID();
@@ -874,14 +870,12 @@ export function openFolder(...args: any[]) {
 
 export function openSmartFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(smartFolder, ignoreHistory, currentId) {
             if (!smartFolder) return;
-            if (s.currentSmartFolder === smartFolder && s.allData.length > 0 && eagle.filter.filterRules.color.value == undefined &&
-                eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
+            if (useFolderState.getState().currentSmartFolder === smartFolder && useItemState.getState().allData.length > 0 && eagle.filter.filterRules.color.value == undefined &&
+                eagle.filter.filterRules.import.type == 'undefined' && useMiscRawState.getState().currentId === currentId
             ) {
-                if (s.isDetailMode) {
+                if (useBodyState.getState().isDetailMode) {
                     machineryLeaveDetailMode();
                 }
                 return;
@@ -889,31 +883,31 @@ export function openSmartFolder(...args: any[]) {
 
             ScrollbarSaver.saveScrollPosition();
 
-            if (s.currentFolder) { s.currentFolder.editable = false; }
-            if (s.currentSmartFolder) { s.currentSmartFolder.editable = false; }
+            if (useFolderState.getState().currentFolder) { useFolderState.getState().currentFolder.editable = false; }
+            if (useFolderState.getState().currentSmartFolder) { useFolderState.getState().currentSmartFolder.editable = false; }
 
-            s.currentFolder = undefined;
+            writeScopeField('currentFolder', undefined);
             syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
             eagle.inspector.reset();
-            s.currentFolderChildren = undefined;
+            writeScopeField('currentFolderChildren', undefined);
             writeScopeField('selectedSmartFoldersMappings', {});
             writeScopeField('selectedSmartFolders', []);
             writeScopeField('currentFocus', "sidebar");
             machineryResetPage();
-            s.viewMode = undefined;
-            s.currentId = currentId || "smart-folder-" + smartFolder.id;
+            writeScopeField('viewMode', undefined);
+            writeScopeField('currentId', currentId || "smart-folder-" + smartFolder.id);
             syncSidebarFromScope();
 
-            if (s.currentSmartFolder != smartFolder) {
-                s.currentSmartFolder = smartFolder;
+            if (useFolderState.getState().currentSmartFolder != smartFolder) {
+                writeScopeField('currentSmartFolder', smartFolder);
                 syncPanelFromScope();
                 syncListFromScope();
             }
 
-			if (localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]) {
-				machinerySwitchLayout(localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
+			if (localStorage[`eagle.list.layout.${useFolderState.getState().currentSmartFolder.id}`]) {
+				machinerySwitchLayout(localStorage[`eagle.list.layout.${useFolderState.getState().currentSmartFolder.id}`]); 
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
@@ -936,23 +930,23 @@ export function openSmartFolder(...args: any[]) {
                         color: null
                     });
                 }
-                s.imageSize.height = localStorage.getItem("eagle.list.thumbSize." + smartFolder.id) || 150;
+                useLayoutState.getState().imageSize.height = localStorage.getItem("eagle.list.thumbSize." + smartFolder.id) || 150;
                 syncToolbarFromScope();
                 syncBodyFromScope();
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                s.imageSize.height = parseInt(s.imageSize.height);
+                useLayoutState.getState().imageSize.height = parseInt(useLayoutState.getState().imageSize.height);
                 syncToolbarFromScope();
                 syncBodyFromScope();
                 syncDetailFromScope();
                 syncInspectorFromScope();
-                __lv_updateListHeight(s.imageSize.height);
+                __lv_updateListHeight(useLayoutState.getState().imageSize.height);
                 ScrollbarSaver.restoreScrollPosition();
-                s.reload();
+                useMiscRawState.getState().reload();
                 analytics.screenView('SmartFolder');
 
-                if (s.currentSmartFolder) {
-	                __lv_setLastFolder(s.currentSmartFolder.id);
+                if (useFolderState.getState().currentSmartFolder) {
+	                __lv_setLastFolder(useFolderState.getState().currentSmartFolder.id);
 	            }
 
             }, 25);
@@ -961,8 +955,7 @@ export function openSmartFolder(...args: any[]) {
 
 export function openUnfiled(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（s.leaveDetailMode/resetPage/reload 挂载即 machinery 版）。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+   // 原 c3 体的 scope 守卫，逐字保留
   machineryOpenUnfiled(args[0]);
 }
 
@@ -974,8 +967,6 @@ export function smartFolderCount(...args: any[]) {
 
 export function switchLibrary(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
             var shortcutMode = event.button === undefined;
             var openFixUtils = event && (event.altKey || event.metaKey || event.ctrlKey);
@@ -992,21 +983,17 @@ export function switchLibrary(...args: any[]) {
 
 export function duplicateItem(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
             event && event.preventDefault();
             event && event.stopPropagation();
-            if (s.selected[0]) {
-                ipcRenderer.send('duplicate-file', s.selected[0].id);
+            if (useSelectionState.getState().selected[0]) {
+                ipcRenderer.send('duplicate-file', useSelectionState.getState().selected[0].id);
             }
         }).apply(null, args);
   }
 
 export function exportFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(callback) {
         dialog.showOpenDialog(currentWindow, {
             title: $filter('i18n')('dialog.exportAsFolder.title'),
@@ -1028,8 +1015,6 @@ export function exportFolder(...args: any[]) {
 
 export function checkDiskSpace(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(path, needSpace, callback) {
         callback && callback();
     }).apply(null, args);

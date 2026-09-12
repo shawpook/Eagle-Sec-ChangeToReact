@@ -163,8 +163,6 @@ let lastToolbarSnapshot: any = null;
 
 /** b1-9by-C：快照直写收敛——原 startScopeSync 200ms 轮询退役。 */
 export function syncToolbarFromScope(): void {
-  const scope: any = getBodyScope();
-  if (!scope) return;
   const next = buildToolbarSnapshot();
   if (lastToolbarSnapshot !== null && shallowEqToolbar(next, lastToolbarSnapshot)) return;
   lastToolbarSnapshot = next;

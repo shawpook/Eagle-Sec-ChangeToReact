@@ -317,8 +317,6 @@ export function flipImage(...args: any[]) {
    组件侧改直 import，零行为变化。 */
 export function saveCrop(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function (saveAsNewFile) {
             var cropAreaEl = q("#crop-image-tool .crop-area");
             var [top, left] = [cssGet(cropAreaEl, "top").replace("px", ""), cssGet(cropAreaEl, "left").replace("px", "")];
@@ -357,7 +355,7 @@ export function saveCrop(...args: any[]) {
                                     merged: true
                                 };
                                 uploadFiles([newFile]);
-                                s.isCropMode = false;
+                                writeScopeField('isCropMode', false);
                                 syncDetailFromScope();
                                 machineryLeaveDetailMode();
                                 scopeEvalAsync();
@@ -406,7 +404,7 @@ export function saveCrop(...args: any[]) {
                                             fse.copySync(imagePath + ".bk", imagePath, { preserveTimestamps: true });
                                             fse.removeSync(imagePath + ".bk");
                                         }
-                                        s.isCropMode = false;
+                                        writeScopeField('isCropMode', false);
                                         syncDetailFromScope();
                                         scopeEvalAsync();
                                     });
@@ -414,7 +412,7 @@ export function saveCrop(...args: any[]) {
                         }, 200);
                     }
                     else {
-                        s.isCropMode = false;
+                        writeScopeField('isCropMode', false);
                         syncDetailFromScope();
                     }
                 });
@@ -941,38 +939,32 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function flipHandler(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function ($event) {
-        	if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
-        		flipVideo($event, s.current);
+        	if (VIDEO_TYPES[useSelectionState.getState().current.ext] || AUDIO_TYPES[useSelectionState.getState().current.ext]) {
+        		flipVideo($event, useSelectionState.getState().current);
         	}
         	else {
-        		flipImage($event, s.current, true);
+        		flipImage($event, useSelectionState.getState().current, true);
         	}
         }).apply(null, args);
   }
 
 export function rotateHandler(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function ($event) {
-        	if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
-        		rotateVideo($event, s.current);
+        	if (VIDEO_TYPES[useSelectionState.getState().current.ext] || AUDIO_TYPES[useSelectionState.getState().current.ext]) {
+        		rotateVideo($event, useSelectionState.getState().current);
         	}
         	else {
-        		rotateImage($event, s.current);
+        		rotateImage($event, useSelectionState.getState().current);
         	}
         }).apply(null, args);
   }
 
 export function setCustomThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-        let item = s.selected[0];
+        let item = useSelectionState.getState().selected[0];
         if (!item || NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES[item.ext]) return;
         dialog.showOpenDialog(currentWindow, {
             title: "Choose thumbnail",
@@ -1026,10 +1018,8 @@ export function setCustomThumbnail(...args: any[]) {
 
 export function setCustomThumbnailFromClipboard(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (async function() {
-        let item = s.selected[0];
+        let item = useSelectionState.getState().selected[0];
         if (!item || NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES[item.ext]) return;
         let newFilePath = `${EAGLE_THUMBNAIL_TEMP_PATH}/${guid()}.png`;
         let clipboardData = await getClipboardImage();
@@ -1083,20 +1073,16 @@ export function setCustomThumbnailFromClipboard(...args: any[]) {
 
 export function resetCustomThumbnail(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-        delete s.selected[0].customThumbnail;
-        s.regenerateThumbnailQueue.push(s.selected[0]);
+        delete useSelectionState.getState().selected[0].customThumbnail;
+        useMiscRawState.getState().regenerateThumbnailQueue.push(useSelectionState.getState().selected[0]);
         scopeEvalAsync();
-        ayncsImagesGenerateThumbnail([s.selected[0]]);
+        ayncsImagesGenerateThumbnail([useSelectionState.getState().selected[0]]);
     }).apply(null, args);
   }
 
 export function changeImagesBackground(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (images, color) {
         if (!images || images.length === 0) return;
         for (let i = 0; i < images.length; i++) {
@@ -1109,7 +1095,7 @@ export function changeImagesBackground(...args: any[]) {
             }
         }
         ayncsImagesChange(images);
-        machineryUpdateItemsView(s.selected);
+        machineryUpdateItemsView(useSelectionState.getState().selected);
         try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
     }).apply(null, args);
   }

@@ -604,8 +604,6 @@ export function showListSubfolderContent(...args: any[]) {
 }
 
 export function openFolderContextMenu(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, folder: any) {
       const w = window as any;
 
@@ -614,7 +612,7 @@ export function openFolderContextMenu(...args: any[]) {
       const disabled = !!folder.password && !folder.isUnLock;
       const isOpenQuickAccess = usePreferencesState.getState().preferences.sidebar.quickAccess != 'false';
       const isAddedQuickAccess = w.QuickAccessManager.indexOf(folder) > -1;
-      const isMultiple = s.selectedFoldersMappings[folder.id];
+      const isMultiple = useMiscRawState.getState().selectedFoldersMappings[folder.id];
       const selectedFolders = useMiscRawState.getState().selectedFolders;
 
       let items: any = null;
@@ -1544,8 +1542,6 @@ export function openNewSmartFolderContextMenu(...args: any[]) {
 }
 
 export function openSmartFolderContextMenu(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function (event: any, smartFolder: any) {
       const w = window as any;
 
@@ -1937,7 +1933,6 @@ function reorderFolderByTitleClosure(folders: any, reverse: any) {
 }
 
 function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
-  const s = getScope();
   if (!smartFolders || smartFolders.length === 0) return;
   setTimeout(() => {
     let total = smartFolders.length;
@@ -1975,8 +1970,6 @@ function ayncsUpdateSmartFoldersCount(smartFolders: any, callback: any) {
 }
 
 export function reorderFolderByTitle(...args: any[]) {
-  const s = getScope();
-  if (!s) return;
   return (function (folders: any, reverse: any) {
     swal({
       html: `
@@ -2002,8 +1995,6 @@ export function reorderFolderByTitle(...args: any[]) {
 };
 
 export function reorderAllFolderByTitle(...args: any[]) {
-  const s = getScope();
-  if (!s) return;
   return (function (reverse: any) {
     swal({
       html: `
@@ -2019,8 +2010,8 @@ export function reorderAllFolderByTitle(...args: any[]) {
       confirmButtonText: i18n.__('dialog.reorderFolder.sortBtn'),
       cancelButtonText: i18n.__('general.cancel'),
     }).then(function () {
-      reorderFolderByTitleClosure(s.folders, reverse);
-      treeWalkSafe(s.folders, 'children', function (folder: any, parent: any) {
+      reorderFolderByTitleClosure(useFolderState.getState().folders, reverse);
+      treeWalkSafe(useFolderState.getState().folders, 'children', function (folder: any, parent: any) {
         reorderFolderByTitleClosure(folder.children, reverse);
       });
       machineryUpdateSidebarList();
@@ -2032,9 +2023,7 @@ export function reorderAllFolderByTitle(...args: any[]) {
 };
 
 export function refreshSmartFolderCount(...args: any[]) {
-  const s = getScope();
-  if (!s) return;
   return (function () {
-    ayncsUpdateSmartFoldersCount(s.smartFolderList, () => {});
+    ayncsUpdateSmartFoldersCount(useMiscRawState.getState().smartFolderList, () => {});
   }).apply(null, args);
 };

@@ -105,8 +105,6 @@ let lastSnapshot: any = null;
  * viewMode/isLoading/layout 不在此列（useBodyState 镜像，见 bindListSync）。
  */
 export function syncListFromScope(): void {
-  const s: any = getBodyScope();
-  if (!s) return;
   const next = {
     filteredsCount: (useMiscRawState.getState().filtereds && useMiscRawState.getState().filtereds.length) || 0,
     allDataCount: (useItemState.getState().allData && useItemState.getState().allData.length) || 0,
@@ -117,7 +115,7 @@ export function syncListFromScope(): void {
     trashCount: (useItemState.getState().trash && useItemState.getState().trash.length) || 0,
     rawCount: (useItemState.getState().raw && useItemState.getState().raw.length) || 0,
     subFoldersCount: (useMiscRawState.getState().subFolders && useMiscRawState.getState().subFolders.length) || 0,
-    noSelectedFolders: !(s.$root && useMiscRawState.getState().selectedFolders && useMiscRawState.getState().selectedFolders.length > 0),
+    noSelectedFolders: !(useMiscRawState.getState().selectedFolders && useMiscRawState.getState().selectedFolders.length > 0),
     subFolders: useMiscRawState.getState().subFolders ? useMiscRawState.getState().subFolders.slice() : [],
     selectedFolderMappings: { ...(useItemState.getState().selectedFolderMappings || {}) },
   };

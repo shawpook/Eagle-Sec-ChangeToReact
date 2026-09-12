@@ -119,8 +119,6 @@ function buildPanelSnapshot(): PanelSnapshot {
  * 原 startScopeSync 200ms 轮询退役。
  */
 export function syncPanelFromScope(): void {
-  const scope: any = getBodyScope();
-  if (!scope) return;
   const next = buildPanelSnapshot();
   if (lastSnapshot !== null && shallowEq(next, lastSnapshot)) return;
   lastSnapshot = next;

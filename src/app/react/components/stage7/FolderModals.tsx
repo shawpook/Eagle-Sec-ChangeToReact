@@ -26,6 +26,7 @@ import { useFolderState } from '../../store/folderState';
 import { useSelectionState } from '../../store/selectionState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
 import { useMiscRawState } from '../../store/miscRawState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
  * （bundle 75637-76134）接管，模板 = index.html 411-617 逐字转写。
@@ -1019,7 +1020,6 @@ export function AddToFolderModal() {
   /* save（75466-75628 逐字） */
   const save = () => {
     const w = window as any;
-    const body = getBodyScope();
     const selectedFolders: any[] = [];
 
     const origin: any[] = [];
@@ -1101,29 +1101,29 @@ export function AddToFolderModal() {
     });
 
     if (hasRemoved) {
-      body.lastIndex = machineryGetSelection().start;
+      writeScopeField('lastIndex', machineryGetSelection().start);
 
       // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-      const next = useItemState.getState().allData[body.lastIndex + useSelectionState.getState().selected.length];
-      const prev = useItemState.getState().allData[body.lastIndex - 1];
+      const next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
+      const prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
       if (next) {
-        body.selected = [next];
+        writeScopeField('selected', [next]);
         syncInspectorFromScope();
-        body.current = next;
+        writeScopeField('current', next);
         syncDetailFromScope();
         syncInspectorFromScope();
         // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
         smartZoom();
       } else if (prev) {
-        body.selected = [prev];
+        writeScopeField('selected', [prev]);
         syncInspectorFromScope();
-        body.current = prev;
+        writeScopeField('current', prev);
         syncDetailFromScope();
         syncInspectorFromScope();
         // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
         smartZoom();
       } else {
-        body.selected = [];
+        writeScopeField('selected', []);
         syncInspectorFromScope();
         machineryLeaveDetailMode();
       }
@@ -1134,7 +1134,7 @@ export function AddToFolderModal() {
       hiddenByCurrentFilter(viewRef.current.images);
     }
 
-    if (body.viewMode === 'unfiled') {
+    if (useBodyState.getState().viewMode === 'unfiled') {
       const itemElements = machineryGetSelectedItemElements( );
       glRemoveitemsChannel.emit(itemElements);
     } else {

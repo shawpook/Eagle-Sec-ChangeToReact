@@ -1105,24 +1105,22 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function changeOrderBy(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (orderBy) {
-            if (s.currentFolder) {
-                machinerySetFolderOrder(s.currentFolder, orderBy);
-                try { electronLog && electronLog.info(`[app] Change folder order to “${s.currentFolder.name}(${s.currentFolder.id})” order by: ${orderBy}`); } catch (err) {};
+            if (useFolderState.getState().currentFolder) {
+                machinerySetFolderOrder(useFolderState.getState().currentFolder, orderBy);
+                try { electronLog && electronLog.info(`[app] Change folder order to “${useFolderState.getState().currentFolder.name}(${useFolderState.getState().currentFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
-            else if (s.currentSmartFolder) {
-                machinerySetSmartFolderOrder(s.currentSmartFolder, orderBy);
-                try { electronLog && electronLog.info(`[app] Change smart-folder order to “${s.currentSmartFolder.name}(${s.currentSmartFolder.id})” order by: ${orderBy}`); } catch (err) {};
+            else if (useFolderState.getState().currentSmartFolder) {
+                machinerySetSmartFolderOrder(useFolderState.getState().currentSmartFolder, orderBy);
+                try { electronLog && electronLog.info(`[app] Change smart-folder order to “${useFolderState.getState().currentSmartFolder.name}(${useFolderState.getState().currentSmartFolder.id})” order by: ${orderBy}`); } catch (err) {};
             }
             else {
                 if (orderBy) {
-                    s.orderBy = orderBy;
+                    writeScopeField('orderBy', orderBy);
                     syncBodyFromScope();
-                    s.orderByName = i18n.__(`context.order.orderBy>${s.orderBy.toLowerCase()}`);
-                    localStorage.setItem(`eagle.list.orderBy.${s.rootDir}`, s.orderBy);
-                    machinerySortRawData(s.orderBy);
+                    writeScopeField('orderByName', i18n.__(`context.order.orderBy>${useMiscRawState.getState().orderBy.toLowerCase()}`));
+                    localStorage.setItem(`eagle.list.orderBy.${useMiscRawState.getState().rootDir}`, useMiscRawState.getState().orderBy);
+                    machinerySortRawData(useMiscRawState.getState().orderBy);
                     machineryRebindRefresh();
                     scopeEvalAsync();
                     try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
@@ -1134,26 +1132,20 @@ export function changeOrderBy(...args: any[]) {
 
 export function cleanLibraryPathPermissionError(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
-            s.libraryPathPermissionError = false;
+            writeScopeField('libraryPathPermissionError', false);
         }).apply(null, args);
   }
 
 export function cleanLocalhostError(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
-            s.localhostError = false;
+            writeScopeField('localhostError', false);
         }).apply(null, args);
   }
 
 export function contentFocus(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function($event) {
             writeScopeField('currentFocus', "content");
         }).apply(null, args);
@@ -1161,10 +1153,8 @@ export function contentFocus(...args: any[]) {
 
 export function dblclickContentPanel(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-            if (!s.isCropMode) {
+            if (!useBodyState.getState().isCropMode) {
                 machineryLeaveDetailMode();
             }    
         }).apply(null, args);
@@ -1172,28 +1162,26 @@ export function dblclickContentPanel(...args: any[]) {
 
 export function escHandler(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function($event) {
             if (q(".swal2-container")) return;
             if (q(".select-panel.open:not(.pinned)")) {
                 removeClass(".select-panel.open", "open");
                 return;
             }
-            s.selectedFolder = undefined;
-            if (s.isSlideshowMode) {
-                s.isSlideshowMode = false;
+            writeScopeField('selectedFolder', undefined);
+            if (useBodyState.getState().isSlideshowMode) {
+                writeScopeField('isSlideshowMode', false);
                 __cf_ipcRenderer.send("leave-slideshow");
                 return;
             }
-            if (!s.isDetailMode) {
+            if (!useBodyState.getState().isDetailMode) {
                 if (document.activeElement?.tagName !== "INPUT") {
                     cleanSelected($event);
                 }
             } 
             else {
-                if (s.isCropMode) {
-                    s.isCropMode = false;
+                if (useBodyState.getState().isCropMode) {
+                    writeScopeField('isCropMode', false);
                     syncDetailFromScope();
                 }
                 else if (AnnotationPreview.isShow) {
@@ -1203,10 +1191,10 @@ export function escHandler(...args: any[]) {
                     machineryLeaveDetailMode();
                 }
             }
-            if (s.isPreviewing) {
+            if (useMiscRawState.getState().isPreviewing) {
                 if (process.platform == 'darwin') {
-                    __cf_ipcRenderer.send('quicklook', s.selected[0]);
-                    s.isPreviewing = false;
+                    __cf_ipcRenderer.send('quicklook', useSelectionState.getState().selected[0]);
+                    writeScopeField('isPreviewing', false);
                 }
                 return;
             }
@@ -1215,83 +1203,79 @@ export function escHandler(...args: any[]) {
 
 export function leaveDetailMode(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
 
-            s.isCropMode = false;
+            writeScopeField('isCropMode', false);
             syncDetailFromScope();
-            s.usingGifPlayer = false;
+            writeScopeField('usingGifPlayer', false);
             syncDetailFromScope();
-            if (s.isDetailMode) {
+            if (useBodyState.getState().isDetailMode) {
                 
-                machineryRememberScrollTops(s.current);
+                machineryRememberScrollTops(useSelectionState.getState().current);
 
-                s.isDetailMode = false;
-                s.showDetailImage = false;
+                writeScopeField('isDetailMode', false);
+                writeScopeField('showDetailImage', false);
                 syncDetailFromScope();
-                s.smoothZoomDone = false;
+                writeScopeField('smoothZoomDone', false);
                 syncDetailFromScope();
-                s.commentRect = undefined;
+                writeScopeField('commentRect', undefined);
                 syncDetailFromScope();
                 // 記住上次播放位置
-                machineryRememberVideoCurrentTime(s.current); s.current = undefined;
+                machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeScopeField('current', undefined);
                 syncDetailFromScope();
                 syncInspectorFromScope();
                 $timeout.cancel(__lv_zoomInitTimeout);
 
                 setTimeout(function() {
-                    if (s.isDetailMode) return;
+                    if (useBodyState.getState().isDetailMode) return;
                     removeClass(".content-panel.detail-mode", "inline-mode open");
                     setScrollLeft(".smooth_zoom_preloader", 0);
                 }, 50);
 
-                s.isInlineMode = false;
+                writeScopeField('isInlineMode', false);
                 machineryFadeOutDetailMode();
                 detailZoom()?.cleanBitmapViewer();
                 detailZoom()?.clearPreloadData();
                 
-                if (s.isGifReady === true) {
-                    s.isGifReady = false;
+                if (useMiscRawState.getState().isGifReady === true) {
+                    writeScopeField('isGifReady', false);
                     syncDetailFromScope();
-                    delete s.gifViewer.frames;
-                    s.gifViewer.frames = [];
+                    delete useMiscRawState.getState().gifViewer.frames;
+                    useMiscRawState.getState().gifViewer.frames = [];
                     syncDetailFromScope();
-                    s.gifViewer.mousedownTime = 0;
+                    useMiscRawState.getState().gifViewer.mousedownTime = 0;
                     syncDetailFromScope();
-                    s.gifViewer.mousedownX = 0;
+                    useMiscRawState.getState().gifViewer.mousedownX = 0;
                     syncDetailFromScope();
-                    s.gifViewer.mousedownY = 0;
+                    useMiscRawState.getState().gifViewer.mousedownY = 0;
                     syncDetailFromScope();
-                    s.gifViewer.range = undefined;
+                    useMiscRawState.getState().gifViewer.range = undefined;
                     syncDetailFromScope();
-                    s.gifPlayer = undefined;
+                    writeScopeField('gifPlayer', undefined);
                     syncDetailFromScope();
                 }
 
                 // b1-8：initMousetrap 为 bundle 闭包链（destoryMousetrap/buildMousetrap）——
                 // strangling 期 bundle 自管重绑定 / post-b1 bridgeWhenReady 等价；此处跳过不阻塞清理
                 try { initMousetrap(); } catch (err) { /* b1-8b 接装前可达性缺失，忽略 */ }
-                clearInterval(s.gifUpadteInterval);
+                clearInterval(useMiscRawState.getState().gifUpadteInterval);
             }
         }).apply(null, args);
   }
 
 export function maximize(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
             if (process.platform == 'darwin') {
                 var isMax = remote.systemPreferences.getUserDefault("AppleActionOnDoubleClick", "string") !== 'Minimize';
                 if (isMax) {
                     if (!currentWindow.isMaximized()) {
                         currentWindow.maximize();
-                        s.isMaximize = true;
+                        writeScopeField('isMaximize', true);
                         syncToolbarFromScope();
                     } else {
                         currentWindow.unmaximize();
-                        s.isMaximize = false;
+                        writeScopeField('isMaximize', false);
                         syncToolbarFromScope();
                     }
                 } else {
@@ -1303,33 +1287,27 @@ export function maximize(...args: any[]) {
 
 export function openErrorModal(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             openErrorChannel.emit({
-                errorList: s.errorList
+                errorList: useMiscRawState.getState().errorList
             });
         }).apply(null, args);
   }
 
 export function toggleFolderVisible(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-            s.isExpandFolder = !s.isExpandFolder;
+            writeScopeField('isExpandFolder', !useMiscRawState.getState().isExpandFolder);
             syncSidebarFromScope();
-            localStorage.setItem("eagle.sidebar.folder.expand", s.isExpandFolder);
+            localStorage.setItem("eagle.sidebar.folder.expand", useMiscRawState.getState().isExpandFolder);
             machineryUpdateSidebarList();
         }).apply(null, args);
   }
 
 export function togglePaletteProcessing(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-            if (s.paletteQueuePaused) {
+            if (useMiscRawState.getState().paletteQueuePaused) {
                 machineryResumePalette();
             }
             else {
@@ -1340,24 +1318,20 @@ export function togglePaletteProcessing(...args: any[]) {
 
 export function toggleQuickAccessVisible(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-            s.isExpandQuickAccess = !s.isExpandQuickAccess;
+            writeScopeField('isExpandQuickAccess', !useMiscRawState.getState().isExpandQuickAccess);
             syncSidebarFromScope();
-            localStorage.setItem("eagle.sidebar.quickAccess.expand", s.isExpandQuickAccess);
+            localStorage.setItem("eagle.sidebar.quickAccess.expand", useMiscRawState.getState().isExpandQuickAccess);
             machineryUpdateSidebarList();
         }).apply(null, args);
   }
 
 export function toggleSmartFolderVisible(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
-            s.isExpandSmartFolder = !s.isExpandSmartFolder;
+            writeScopeField('isExpandSmartFolder', !useMiscRawState.getState().isExpandSmartFolder);
             syncSidebarFromScope();
-            localStorage.setItem("eagle.sidebar.smartFolder.expand", s.isExpandSmartFolder);
+            localStorage.setItem("eagle.sidebar.smartFolder.expand", useMiscRawState.getState().isExpandSmartFolder);
             machineryUpdateSidebarList();
         }).apply(null, args);
   }

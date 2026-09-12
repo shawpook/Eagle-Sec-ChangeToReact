@@ -83,8 +83,6 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function getRatioExp(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (ratio) {
             if (ratio > 100) {
                 ratio = 100 + (ratio - 100) * 7;
@@ -95,8 +93,6 @@ export function getRatioExp(...args: any[]) {
 
 export function getRatioNonExp(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (ratio) {
             if (ratio > 100) {
                 ratio = (ratio - 100) / 7 + 100;
@@ -120,45 +116,37 @@ export function smartZoom(...args: any[]) {
 
 export function switchGridLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             machinerySwitchLayout("GridLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "GridLayout");
+            machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "GridLayout");
         }).apply(null, args);
   }
 
 export function switchJustifiedLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             machinerySwitchLayout("JustifiedLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
+            machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "JustifiedLayout");
         }).apply(null, args);
   }
 
 export function switchListLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             machinerySwitchLayout("ListLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "ListLayout");
+            machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "ListLayout");
         }).apply(null, args);
   }
 
 export function switchSquareLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             machinerySwitchLayout("SquareLayout");
             scopeEvalAsync();
-            machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "SquareLayout");
+            machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "SquareLayout");
         }).apply(null, args);
   }
 
@@ -170,30 +158,27 @@ export function updateZoomRatio(...args: any[]) {
 
 export function zoom(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
-  const s = getBodyScope();
-  if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
+   // 原 c3 体的 scope 守卫，逐字保留
   machineryZoom();
 }
 
 export function zoomFit(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(event, noAnimation) {
             event && event.preventDefault && event.preventDefault();
-            if (!s.isDetailMode) {
-                s.imageSize.height = 150;
+            if (!useBodyState.getState().isDetailMode) {
+                useLayoutState.getState().imageSize.height = 150;
                 syncToolbarFromScope();
                 syncBodyFromScope();
                 syncDetailFromScope();
                 syncInspectorFromScope();
                 machineryChangeListHeight();
-                if (s.layout === "GridLayout" || s.layout === "SquareLayout") { 
+                if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") { 
                     machineryAdjustLayoutWidth(0);
-                    __lv_saveListHeight(s.imageSize.height);
+                    __lv_saveListHeight(useLayoutState.getState().imageSize.height);
                 }
             } else {
-                if (s.VIDEO_TYPES[s.current.ext]) {
+                if (useMiscRawState.getState().VIDEO_TYPES[useSelectionState.getState().current.ext]) {
                     // 如果是視頻格式，撐滿畫面
                     var mpvPlayer = q(".detail-wrap mpv-video");
                     if (mpvPlayer) {
@@ -204,12 +189,12 @@ export function zoomFit(...args: any[]) {
                     }
                     return;
                 }
-                s.zoomFitSize = 0;
-                s.lastZoomMode = "fit";
+                writeScopeField('zoomFitSize', 0);
+                writeScopeField('lastZoomMode', "fit");
                 syncDetailFromScope();
-                localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
-                s.imageSize.zoomRatio = 100;
-                s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
+                localStorage["eagle.viewer.lastZoomMode"] = useMiscRawState.getState().lastZoomMode;
+                useLayoutState.getState().imageSize.zoomRatio = 100;
+                useLayoutState.getState().imageSize.zoomRatioExp = getRatioExp(useLayoutState.getState().imageSize.zoomRatio);
 
                 if (!noAnimation) {
                     addClass("#detail-container", "zooming");
@@ -231,13 +216,11 @@ export function zoomIn(...args: any[]) {
 
 export function getNext(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
         var selection = machineryGetSelection();
         var start = selection.start;
         var end = selection.end;
-        return s.allData[end + 1] || s.allData[end - 1];
+        return useItemState.getState().allData[end + 1] || useItemState.getState().allData[end - 1];
     }).apply(null, args);
   }
 

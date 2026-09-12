@@ -13,6 +13,7 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useItemState } from '../store/itemState';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -146,28 +147,26 @@ const initLinkVars = () => {
 const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) 注入的等价别名
 
 export function onBoxMouseup(...args: any[]) {
-    const s = getScope();
-    if (!s) return;
     return (function (event: any, image: any) {
             if (event && event.button === 0) {
 
                 // 如果從 sidebar focus 狀態點擊列表已選擇圖片，不該造成已選擇圖片選取狀態消失
-                if (useBodyState.getState().currentFocus !== "content" && s.selected.length > 1) {
-                    if (image && s.selectedMappings[image.id]) {
+                if (useBodyState.getState().currentFocus !== "content" && useSelectionState.getState().selected.length > 1) {
+                    if (image && useItemState.getState().selectedMappings[image.id]) {
                         writeScopeField('currentFocus', "content");
                         return;
                     }
                 }
-                if (image && s.selectedMappings[image.id]) {
+                if (image && useItemState.getState().selectedMappings[image.id]) {
                     // 如果點擊這些按鍵，就許消選取
                     if (event) {
                         if (event.metaKey || event.shiftKey || event.ctrlKey) {}
                         // 符合系统操作逻辑
                         else {
-                            var targetSelectedIndex = s.allData.indexOf(image);
-                            s.selected = [image];
+                            var targetSelectedIndex = useItemState.getState().allData.indexOf(image);
+                            writeScopeField('selected', [image]);
                             syncInspectorFromScope();
-                            s.lastSelectedIndex = targetSelectedIndex;
+                            writeScopeField('lastSelectedIndex', targetSelectedIndex);
                         }
                     }
                     return;
@@ -178,8 +177,6 @@ export function onBoxMouseup(...args: any[]) {
 
 export function onBoxListDblClick(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event: any, item: any, isName: any, $element: any) {
             if (isName) {
                 enableImageNameEditable(event, $element);
@@ -215,8 +212,6 @@ export function onBoxListDblClick(...args: any[]) {
 
 export function onDetailClick(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function($event, __lv_image) {
             if ($event.which == 2) {
                 ipcRenderer.send('toggle-slideshow');
@@ -226,8 +221,6 @@ export function onDetailClick(...args: any[]) {
 
 export function select(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(event, __lv_image) {
 
         	if (event && event.button >= 3) {
@@ -259,14 +252,14 @@ export function select(...args: any[]) {
                 HoverPreview.lastElem = undefined;
             }
 
-            if (useBodyState.getState().currentFocus !== "content" && s.selected.length > 1) {
-            	if (__lv_image && s.selectedMappings[__lv_image.id]) {
+            if (useBodyState.getState().currentFocus !== "content" && useSelectionState.getState().selected.length > 1) {
+            	if (__lv_image && useItemState.getState().selectedMappings[__lv_image.id]) {
             		return;
             	}
             }
 
             writeScopeField('currentFocus', "content");
-            s.selectedFolderMappings = {};
+            writeScopeField('selectedFolderMappings', {});
             syncListFromScope();
 
             blurEl("input:focus");
@@ -274,8 +267,8 @@ export function select(...args: any[]) {
 
             cancelCleanSelectedTimeout();
 
-            if (s.isPreviewing) {
-                s.isPreviewing = false;
+            if (useMiscRawState.getState().isPreviewing) {
+                writeScopeField('isPreviewing', false);
                 currentWindow.closeFilePreview();
             }
             window.getSelection().removeAllRanges();
@@ -285,7 +278,7 @@ export function select(...args: any[]) {
             }
 
             // 如果點擊的內容已經選取
-            if (__lv_image && s.selectedMappings[__lv_image.id]) {
+            if (__lv_image && useItemState.getState().selectedMappings[__lv_image.id]) {
                 // 如果點擊這些按鍵，就許消選取
                 if (event) {
 
@@ -300,37 +293,37 @@ export function select(...args: any[]) {
 
                     if (cancelSelect) {
                     	if (event.button !== 2) {
-	                        var __lv_idx = s.selected.indexOf(__lv_image);
-	                        s.selected.splice(__lv_idx, 1);
+	                        var __lv_idx = useSelectionState.getState().selected.indexOf(__lv_image);
+	                        useSelectionState.getState().selected.splice(__lv_idx, 1);
 	                        syncInspectorFromScope();
-	                        delete s.selectedMappings[__lv_image.id];
+	                        delete useItemState.getState().selectedMappings[__lv_image.id];
                         }
                     }
                 }
                 return;
             }
 
-            var targetSelectedIndex = s.allData.indexOf(__lv_image);
+            var targetSelectedIndex = useItemState.getState().allData.indexOf(__lv_image);
 
             if (event && !event.metaKey && !event.shiftKey && !event.ctrlKey) {
-                s.selected = [];
+                writeScopeField('selected', []);
                 syncInspectorFromScope();
-                s.lastSelectedIndex = targetSelectedIndex;
+                writeScopeField('lastSelectedIndex', targetSelectedIndex);
             }
             if (event && (event.metaKey || event.ctrlKey) ) {
-                s.lastSelectedIndex = targetSelectedIndex;
+                writeScopeField('lastSelectedIndex', targetSelectedIndex);
             }
             if (event && event.shiftKey) {
-                s.selected.push(__lv_image);
+                useSelectionState.getState().selected.push(__lv_image);
                 syncInspectorFromScope();
-                s.selectedMappings[__lv_image.id] = true;
+                useItemState.getState().selectedMappings[__lv_image.id] = true;
                 var selection = machineryGetSelection();
 
                 var __lv_start = selection.start;
                 var end = selection.end;
 
-                if (s.lastSelectedIndex >= 0) {
-                    __lv_start = s.lastSelectedIndex;
+                if (useSelectionState.getState().lastSelectedIndex >= 0) {
+                    __lv_start = useSelectionState.getState().lastSelectedIndex;
                 }
 
                 if (targetSelectedIndex >= 0) {
@@ -344,40 +337,40 @@ export function select(...args: any[]) {
                 var invert = selection.invert;
                 if (!invert) {
                     for (var i = __lv_start; i <= end; i++) {
-                        if (s.allData[i]) {
-                            var alidx = s.selected.indexOf(s.allData[i]);
+                        if (useItemState.getState().allData[i]) {
+                            var alidx = useSelectionState.getState().selected.indexOf(useItemState.getState().allData[i]);
                             if (alidx !== -1) {
-                                s.selected.splice(alidx, 1);
+                                useSelectionState.getState().selected.splice(alidx, 1);
                                 syncInspectorFromScope();
                             }
-                            s.selected.push(s.allData[i]);
+                            useSelectionState.getState().selected.push(useItemState.getState().allData[i]);
                             syncInspectorFromScope();
-                            s.selectedMappings[s.allData[i].id] = true;
+                            useItemState.getState().selectedMappings[useItemState.getState().allData[i].id] = true;
                         }
                     }
                 }
                 else {
                     for (var i = end; i >= __lv_start; i--) {
-                        if (s.allData[i]) {
-                            var alidx = s.selected.indexOf(s.allData[i]);
+                        if (useItemState.getState().allData[i]) {
+                            var alidx = useSelectionState.getState().selected.indexOf(useItemState.getState().allData[i]);
                             if (alidx !== -1) {
-                                s.selected.splice(alidx, 1);
+                                useSelectionState.getState().selected.splice(alidx, 1);
                                 syncInspectorFromScope();
                             }
-                            s.selected.push(s.allData[i]);
+                            useSelectionState.getState().selected.push(useItemState.getState().allData[i]);
                             syncInspectorFromScope();
-                            s.selectedMappings[s.allData[i].id] = true;
+                            useItemState.getState().selectedMappings[useItemState.getState().allData[i].id] = true;
                         }
                     }
                 }
-            } else if (!s.selectedMappings[__lv_image.id]) {
-                if (__lv_image && s.selected.indexOf(__lv_image) === -1) {
-                    s.selected.push(__lv_image);
+            } else if (!useItemState.getState().selectedMappings[__lv_image.id]) {
+                if (__lv_image && useSelectionState.getState().selected.indexOf(__lv_image) === -1) {
+                    useSelectionState.getState().selected.push(__lv_image);
                     syncInspectorFromScope();
-                    s.selectedMappings[__lv_image.id] = true;
+                    useItemState.getState().selectedMappings[__lv_image.id] = true;
                 }
             }
-            s.selected = [...new Set(s.selected)];
+            writeScopeField('selected', [...new Set(useSelectionState.getState().selected)]);
             syncInspectorFromScope();
         }).apply(null, args);
   }

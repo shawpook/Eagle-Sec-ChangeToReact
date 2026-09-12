@@ -170,8 +170,6 @@ let lastBodySnapshot: any = null;
 
 /** b1-9by-C：快照直写收敛——原 startScopeSync 200ms 轮询退役。 */
 export function syncBodyFromScope(): void {
-  const scope: any = getBodyScope();
-  if (!scope) return;
   const next = buildBodySnapshot();
   if (lastBodySnapshot !== null && shallowEqBody(next, lastBodySnapshot)) return;
   lastBodySnapshot = next;

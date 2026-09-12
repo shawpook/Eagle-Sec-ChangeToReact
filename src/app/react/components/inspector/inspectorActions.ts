@@ -518,7 +518,6 @@ export function copyComment(event: any, image: any, comment: any) {
 }
 
 export function openComment(event: any, image: any, comment: any) {
-  const bodyScope = getBodyScope();
   if (!useBodyState.getState().isDetailMode) {
     machineryEnterDetailMode(event, image);
     setTimeout(function () {
@@ -583,7 +582,6 @@ export function removeImageComment(item: any, index: number) {
 }
 
 export function openVideoComment(event: any, image: any, comment: any) {
-  const bodyScope = getBodyScope();
   if (!useBodyState.getState().isDetailMode) {
     machineryEnterDetailMode(event, image);
     setTimeout(function () {
@@ -603,7 +601,6 @@ export function openVideoComment(event: any, image: any, comment: any) {
 }
 
 export function editVideoComment(event: any, image: any, comment: any) {
-  const bodyScope = getBodyScope();
   if (!useBodyState.getState().isDetailMode) {
     machineryEnterDetailMode(event, image);
     setTimeout(function () {

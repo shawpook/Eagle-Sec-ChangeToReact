@@ -115,8 +115,6 @@ export function cancelEmptyTrash(...args: any[]) {
 }
 
 export function emptyTrash(...args: any[]) {
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
             if (useItemState.getState().trash && useItemState.getState().trash.length > 0) {
                 swal({
@@ -158,7 +156,7 @@ export function emptyTrash(...args: any[]) {
                     try { electronLog && electronLog.info(`[app] Empty trash`); } catch (err) {};
                     ayncsImagesRemove(useItemState.getState().trash);
 
-                    s.trash = [];
+                    writeScopeField('trash', []);
                     syncSidebarFromScope();
                     syncListFromScope();
                     machineryUpdateSelection();
@@ -166,17 +164,17 @@ export function emptyTrash(...args: any[]) {
                     machineryFindDupclipate(undefined);
 
                     // 更新進度
-                    s.removeProgress = 0;
-                    s.currentTrashRemoved = 0;
-                    s.trashRemoved += removeCount;
-                    s.isCleaningTrash = true;
+                    writeScopeField('removeProgress', 0);
+                    writeScopeField('currentTrashRemoved', 0);
+                    writeScopeField('trashRemoved', useMiscRawState.getState().trashRemoved + (removeCount));
+                    writeScopeField('isCleaningTrash', true);
                     syncSidebarFromScope();
                     // 觸發 AI Search 全量同步
                     eagle.aiSearch.fullSync();
 
                     // 如果声音效果是开启的
                     if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
-                        s.removeSound.play();
+                        useMiscRawState.getState().removeSound.play();
                     }
                 });
             }
@@ -220,8 +218,6 @@ export function addToRecentFolders(...args: any[]) {
 
 export function addToLastUsedFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function () {
         machineryCheckOperationSafety(function () {
             var recentFolders = machineryGetRecentFolders();
@@ -230,29 +226,29 @@ export function addToLastUsedFolder(...args: any[]) {
             var folder = recentFolders[0];
             addToRecentFolders([folder.id]);
             addImagesToFolder(useSelectionState.getState().selected, folder);
-            if (s.viewMode === 'unfiled') {
+            if (useBodyState.getState().viewMode === 'unfiled') {
                 var itemElements = machineryGetSelectedItemElements();
                 glRemoveitemsChannel.emit(itemElements);
                 // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-                s.lastIndex = machineryGetSelection().start;
-                var next = useItemState.getState().allData[s.lastIndex + useSelectionState.getState().selected.length];
-                var prev = useItemState.getState().allData[s.lastIndex - 1];
+                writeScopeField('lastIndex', machineryGetSelection().start);
+                var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
+                var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
                 if (next) {
-                    s.selected = [next];
+                    writeScopeField('selected', [next]);
                     syncInspectorFromScope();
-                    s.current = next;
+                    writeScopeField('current', next);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
                 else if (prev) {
-                    s.selected = [prev];
+                    writeScopeField('selected', [prev]);
                     syncInspectorFromScope();
-                    s.current = prev;
+                    writeScopeField('current', prev);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
                 else {
-                    s.selected = [];
+                    writeScopeField('selected', []);
                     syncInspectorFromScope();
                     machineryLeaveDetailMode();
                 }
@@ -319,8 +315,6 @@ export function pasteTags(...args: any[]) {
 
 export function removeFromFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getBodyScope();
-    if (!s) return;
     return (function(event, folderId) {
 
         if (event && event.stopPropagation) {
@@ -355,27 +349,27 @@ export function removeFromFolder(...args: any[]) {
 
         // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
         if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
-            s.lastIndex = machineryGetSelection().start;
-            var next = useItemState.getState().allData[s.lastIndex + useSelectionState.getState().selected.length];
-            var prev = useItemState.getState().allData[s.lastIndex - 1];
+            writeScopeField('lastIndex', machineryGetSelection().start);
+            var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
+            var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
             if (next) {
-                s.selected = [next];
+                writeScopeField('selected', [next]);
                 syncInspectorFromScope();
                 if (useBodyState.getState().isDetailMode) {
-                    s.current = next;
+                    writeScopeField('current', next);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
             } else if (prev) {
-                s.selected = [prev];
+                writeScopeField('selected', [prev]);
                 syncInspectorFromScope();
                 if (useBodyState.getState().isDetailMode) {
-                    s.current = prev;
+                    writeScopeField('current', prev);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
             } else {
-                s.selected = [];
+                writeScopeField('selected', []);
                 syncInspectorFromScope();
                 machineryLeaveDetailMode();
             }
@@ -393,7 +387,7 @@ export function removeFromFolder(...args: any[]) {
         }
 
         if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteImage == 'true') {
-            s.removeSound.play();
+            useMiscRawState.getState().removeSound.play();
         }
 
         machineryCalculateImageBinding({ ignoreSort: true }, function() {

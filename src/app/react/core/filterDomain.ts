@@ -118,8 +118,6 @@ export function takeoverFilterDomain(): void {
 
   // show-and-search（23705）
   ipc.on('show-and-search', function (_e: any) {
-    const s: any = getBodyScope();
-    if (!s) return;
     const currentWindow: any = (w.electron && w.electron.remote && w.electron.remote.getCurrentWindow && w.electron.remote.getCurrentWindow())
       || (w.require && w.require('@electron/remote') && w.require('@electron/remote').getCurrentWindow && w.require('@electron/remote').getCurrentWindow());
     if (currentWindow) {
@@ -244,8 +242,6 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function calculateDateFilter(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
 
             eagle.filter.filterCounts.import = {
@@ -274,8 +270,8 @@ export function calculateDateFilter(...args: any[]) {
             let todayTime = today.getTime();
             let yesterdayTime = todayTime - DATE_1_DAY;
 
-            for (let i = 0; i < s.allData.length; i++) {
-                const __lv_image = s.allData[i];
+            for (let i = 0; i < useItemState.getState().allData.length; i++) {
+                const __lv_image = useItemState.getState().allData[i];
                 if (__lv_image.modificationTime > todayTime) eagle.filter.filterCounts['import']['today']++;
                 else if (__lv_image.modificationTime < todayTime && __lv_image.modificationTime > yesterdayTime) eagle.filter.filterCounts['import']['yesterday']++;
                 if (__lv_now - __lv_image.modificationTime < DATE_7_DAY) eagle.filter.filterCounts['import']['7day']++;
@@ -321,18 +317,16 @@ export function calculateDateFilter(...args: any[]) {
 
 export function calcuteContainFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (data) {
 
             var __lv_result = machineryCalcuteContainFolders(data);
             var foldersMappings = __lv_result.containFoldersMappings;
             
-            s.containFolders = [];
+            writeScopeField('containFolders', []);
             syncFilterFromScope();
 
             if (__lv_result.noFoldersCount > 0) {
-                s.containFolders.push({
+                useMiscRawState.getState().containFolders.push({
                     id: "NoFolders",
                     name: i18n.__('general.pages.unfiled'),
                     isNoFolder: true,
@@ -341,10 +335,10 @@ export function calcuteContainFolders(...args: any[]) {
                 syncFilterFromScope();
             }
 
-            eagle.utils.tree.walk(s.folders, 'children', function (folder, parent, depth) {
+            eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder, parent, depth) {
                 var __lv_folderId = folder.id;
                 if (foldersMappings[__lv_folderId]) {
-                    s.containFolders.push(foldersMappings[__lv_folderId]);
+                    useMiscRawState.getState().containFolders.push(foldersMappings[__lv_folderId]);
                     syncFilterFromScope();
                 }
             });
@@ -353,8 +347,6 @@ export function calcuteContainFolders(...args: any[]) {
 
 export function closeQuickSearch(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
             closeQuickSearchModalChannel.emit();
         }).apply(null, args);
@@ -362,8 +354,6 @@ export function closeQuickSearch(...args: any[]) {
 
 export function contentFilter(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(__lv_image) {
             try {
                 if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
@@ -376,14 +366,14 @@ export function contentFilter(...args: any[]) {
                     }
                     return false;
                 }
-                else if (s.currentSmartFolder) {
+                else if (useFolderState.getState().currentSmartFolder) {
                 	if (__lv_image.isDeleted) return false;
-                	if (s.currentSmartFolder.children && s.currentSmartFolder.children.length === 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
+                	if (useFolderState.getState().currentSmartFolder.children && useFolderState.getState().currentSmartFolder.children.length === 0 && useFolderState.getState().currentSmartFolder.conditions && useFolderState.getState().currentSmartFolder.conditions.length === 0) {
                 		return false;
                 	}
-                	else if (s.currentSmartFolder.children && s.currentSmartFolder.children.length > 0 && s.currentSmartFolder.conditions && s.currentSmartFolder.conditions.length === 0) {
-                		for (let i = 0; i < s.currentSmartFolder.children.length; i++) {
-    	                    let smartFolder = s.currentSmartFolder.children[i];
+                	else if (useFolderState.getState().currentSmartFolder.children && useFolderState.getState().currentSmartFolder.children.length > 0 && useFolderState.getState().currentSmartFolder.conditions && useFolderState.getState().currentSmartFolder.conditions.length === 0) {
+                		for (let i = 0; i < useFolderState.getState().currentSmartFolder.children.length; i++) {
+    	                    let smartFolder = useFolderState.getState().currentSmartFolder.children[i];
     	            		if (machineryExistInSmartFilter(smartFolder, __lv_image)) {
     	                        return true;
     	                    }
@@ -391,16 +381,16 @@ export function contentFilter(...args: any[]) {
     	                return false;
                 	}
                 	else {
-                		return machineryExistInSmartFilter(s.currentSmartFolder, __lv_image);
+                		return machineryExistInSmartFilter(useFolderState.getState().currentSmartFolder, __lv_image);
                 	}
                 }
-                switch (s.viewMode) {
+                switch (useBodyState.getState().viewMode) {
                     case "all":
                         if (!__lv_image.isDeleted) return true;
                         break;
                     case "unfiled":
                         if (__lv_image.isDeleted) return false;
-                        if (!__lv_image.folders || __lv_image.folders.length === 0 || (__lv_image.folders.length === 1 && __lv_image.folders[0] && !s.folderMappings[__lv_image.folders[0]])) {
+                        if (!__lv_image.folders || __lv_image.folders.length === 0 || (__lv_image.folders.length === 1 && __lv_image.folders[0] && !useItemState.getState().folderMappings[__lv_image.folders[0]])) {
                             return true;
                         }
                         break;
@@ -431,15 +421,15 @@ export function contentFilter(...args: any[]) {
                             }
                         }
                         // 文件夹单选
-                        else if (s.currentFolder) {
+                        else if (useFolderState.getState().currentFolder) {
                             if (__lv_image.isDeleted) return false;
-                            if (isInFolder(__lv_image, s.currentFolder)) {
+                            if (isInFolder(__lv_image, useFolderState.getState().currentFolder)) {
                                 return true;
                             }
                             return false;
-                        } else if (s.currentTag) {
+                        } else if (useMiscRawState.getState().currentTag) {
                             if (__lv_image.isDeleted) return false;
-                            return __lv_image.tags.indexOf(s.currentTag) > -1;
+                            return __lv_image.tags.indexOf(useMiscRawState.getState().currentTag) > -1;
                         }
                         return false;
                 }
@@ -453,8 +443,6 @@ export function contentFilter(...args: any[]) {
 
 export function excludeWithFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (folder) {
             if (eagle.filter.filterRules.folder.excludes[folder.id]) {
                 delete eagle.filter.filterRules.folder.excludes[folder.id];
@@ -476,13 +464,11 @@ export function excludeWithFolder(...args: any[]) {
 
 export function filterContent(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(type) {
-            if (!s.isItemBindCalculated) return;
+            if (!useMiscRawState.getState().isItemBindCalculated) return;
             // 重新计算画面图片列表
-            s.shuffle = [];
-            machineryRebindRefresh(undefined, s.contentFilterCache);
+            writeScopeField('shuffle', []);
+            machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
             scopeEvalAsync();
             setScrollTop("#box-container", 0);
         }).apply(null, args);
@@ -490,19 +476,17 @@ export function filterContent(...args: any[]) {
 
 export function filterWithColor(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(color, ignoreHistory) {
 
             if (!color || eagle.filter.filterRules.color.value == color) {
                 eagle.filter.filterRules.color.value = undefined;
                 eagle.filter.filterRules.color.gray = false;
-                s.hexColor = "";
+                writeScopeField('hexColor', "");
             }
             else if (color === "gray") {
                 eagle.filter.filterRules.color.value = undefined;
                 eagle.filter.filterRules.color.gray = true;
-                s.hexColor = "";
+                writeScopeField('hexColor', "");
             }
             else {
                 eagle.filter.filterRules.color.gray = false;
@@ -511,14 +495,14 @@ export function filterWithColor(...args: any[]) {
                 // b1-9bj：原 ColorPickerSetColor 随 vendor 退役——自研 picker 经 props 从
                 // rules.color.value 派生，此处写面即外部同步
                 if (hexColor.length > 6) {
-                    s.hexColor = hexColor;
+                    writeScopeField('hexColor', hexColor);
                 }
             }
             eagle.filter.isOpen = true;
             syncFilterFromScope();
-            s.isDetailMode = false;
+            writeScopeField('isDetailMode', false);
             machineryUpdateContainerHieght();
-            s.page = 1;
+            writeScopeField('page', 1);
 
             // Add URL state management for color filtering
             if (!ignoreHistory && (eagle.filter.filterRules.color.value || eagle.filter.filterRules.color.gray)) {
@@ -542,8 +526,6 @@ export function filterWithColor(...args: any[]) {
 
 export function filterWithFolder(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (folder) {
 
             if (eagle.filter.filterRules.folder.excludes[folder.id]) {
@@ -573,12 +555,10 @@ export function filterWithFolder(...args: any[]) {
 
 export function filterWithHexColor(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(hex) {
             if (hex.length === 6 && !hex.startsWith("#") && /^[0-9A-F]{6}$/i.test(hex) ) {
                 hex = "#" + hex;
-                s.hexColor = hex;
+                writeScopeField('hexColor', hex);
             }
             if (hex && hex.length == 7) {
                 var rgb = hexToRGB(hex);
@@ -592,8 +572,6 @@ export function filterWithHexColor(...args: any[]) {
 
 export function getDateFilterCountsArray(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (type) {
             try {
                 var arr = [];
@@ -613,8 +591,6 @@ export function getDateFilterCountsArray(...args: any[]) {
 
 export function hexToRGB(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(hex, alpha) {
             var r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
@@ -631,8 +607,6 @@ export function openQuickSearch(...args: any[]) {
 
 export function resetFilter(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             eagle.filter.isLock = false;
             syncFilterFromScope();
@@ -641,16 +615,16 @@ export function resetFilter(...args: any[]) {
 
             eagle.filter.resetFilterRules();
 
-            s.containTags = [];
+            writeScopeField('containTags', []);
             syncFilterFromScope();
-            s.containFolders = [];
+            writeScopeField('containFolders', []);
             syncFilterFromScope();
 
             eagle.filter.filterRules.import.selectedMonths = {};
             eagle.filter.filterRules.mtime.selectedMonths = {};
 
             removeClass("[filter-item].open", "open");
-            s.startCursor = 0;
+            writeScopeField('startCursor', 0);
             resetFilterChannel.emit();
             machineryCalculateFilterCounts();
         }).apply(null, args);
@@ -658,33 +632,31 @@ export function resetFilter(...args: any[]) {
 
 export function search(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
             $timeout.cancel(__lv_keywordModelTimeout);
             __lv_keywordModelTimeout = $timeout(function () {
-                if (s.keyword === undefined) return;
-                if (s.viewMode !=='alltags') {
-                    var keyword = s.keyword.toLowerCase();
-                    s.isContainAlphabet = keyword.match(/^[A-Za-z0-9]+$/);
+                if (useListState.getState().keyword === undefined) return;
+                if (useBodyState.getState().viewMode !=='alltags') {
+                    var keyword = useListState.getState().keyword.toLowerCase();
+                    writeScopeField('isContainAlphabet', keyword.match(/^[A-Za-z0-9]+$/));
                     
                     // 使用新的解析函數支援 OR 語法
-                    let keywordStr = s.keyword; // 保留原始大小寫以識別 OR
-                    s.keywords = parseKeywordsWithOR(keywordStr);
+                    let keywordStr = useListState.getState().keyword; // 保留原始大小寫以識別 OR
+                    writeScopeField('keywords', parseKeywordsWithOR(keywordStr));
                     
                     // 將所有關鍵字轉為小寫（但保留結構）
-                    s.keywords = s.keywords.map(kw => {
+                    writeScopeField('keywords', useMiscRawState.getState().keywords.map(kw => {
                         if (Array.isArray(kw)) {
                             return kw.map(k => k.toLowerCase());
                         } else {
                             return kw.toLowerCase();
                         }
-                    });
+                    }));
 
                     // 處理繁簡體轉換
-                    if (keyword && !s.isContainAlphabet) {
+                    if (keyword && !useMiscRawState.getState().isContainAlphabet) {
                         // 需要處理 OR 群組的繁簡體轉換
-                        s.keywords_cn = s.keywords.map(kw => {
+                        writeScopeField('keywords_cn', useMiscRawState.getState().keywords.map(kw => {
                             if (Array.isArray(kw)) {
                                 // OR 群組
                                 return kw.map(k => {
@@ -700,9 +672,9 @@ export function search(...args: any[]) {
                                 let converted = chineseConvert.tw2cn(cleanK);
                                 return kw.startsWith('"') ? `"${converted}"` : converted;
                             }
-                        });
+                        }));
                         
-                        s.keywords_tw = s.keywords.map(kw => {
+                        writeScopeField('keywords_tw', useMiscRawState.getState().keywords.map(kw => {
                             if (Array.isArray(kw)) {
                                 // OR 群組
                                 return kw.map(k => {
@@ -716,23 +688,23 @@ export function search(...args: any[]) {
                                 let converted = chineseConvert.cn2tw(cleanK);
                                 return kw.startsWith('"') ? `"${converted}"` : converted;
                             }
-                        });
+                        }));
                     }
                     else {
-                        s.keywords_cn = [];
-                        s.keywords_tw = [];
+                        writeScopeField('keywords_cn', []);
+                        writeScopeField('keywords_tw', []);
                     }
                     
                     // 清除 RegEx 快取，下次搜尋時會重新建立
-                    s.searchRegexGroup = null;
+                    writeScopeField('searchRegexGroup', null);
                     
                     updateSuggestions();
-                    s.startCursor = 0;
+                    writeScopeField('startCursor', 0);
                     machineryFilterContent();
                     machineryCalculateFilterCounts();
                 }
                 else {
-                    s.TagManager.renderTagsResult();
+                    useMiscRawState.getState().TagManager.renderTagsResult();
                 }
                 clearTimeout(__lv_searchTimeout);
                 __lv_searchTimeout = setTimeout(function () {
@@ -740,32 +712,28 @@ export function search(...args: any[]) {
                         analytics.event('Search', 'Keyword', keyword);
                     }
                 }, 1000);
-            }, s.keywordDebounce);
+            }, useMiscRawState.getState().keywordDebounce);
         }).apply(null, args);
   }
 
 export function searchFocus(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             // 標籤管理模式下，不需要顯示搜尋建議
-            if (s.viewMode === 'alltags') {
-                s.showSuggestions = false;
+            if (useBodyState.getState().viewMode === 'alltags') {
+                writeScopeField('showSuggestions', false);
                 syncToolbarFromScope();
                 return;
             }
             if (rectSelecting) return;
             updateSuggestions();
-            s.showSuggestions = true;
+            writeScopeField('showSuggestions', true);
             syncToolbarFromScope();
         }).apply(null, args);
   }
 
 export function toggleExtFilter(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (__lv_ext) {
             delete eagle.filter.filterRules.type.excludes[__lv_ext];
             if (!eagle.filter.filterRules.type.includes[__lv_ext]) {
@@ -779,8 +747,6 @@ export function toggleExtFilter(...args: any[]) {
 
 export function toggleExtFilterExclude(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (__lv_ext) {
             delete eagle.filter.filterRules.type.includes[__lv_ext];
             if (!eagle.filter.filterRules.type.excludes[__lv_ext]) {

@@ -26,6 +26,7 @@ import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../.
 import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';
 import { useMiscRawState } from '../../store/miscRawState';
 import { usePreferencesState } from '../../store/preferencesState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段7c-1：小弹窗族接管。
  *
@@ -486,18 +487,17 @@ export function NotificationModal() {
   }, []);
 
   const getPageUrl = () => {
-    const s = getBodyScope() || {};
-    const version = encodeURIComponent(s.appVersion || '');
-    const buildVersion = encodeURIComponent(s.buildVersion || '');
+    const version = encodeURIComponent(useMiscRawState.getState().appVersion || '');
+    const buildVersion = encodeURIComponent(useMiscRawState.getState().buildVersion || '');
     switch (snapshot.language) {
       case 'zh_CN':
-        return `https://core.eagle.cool/app-notifications?theme=${s.theme}&version=${version}&buildVersion=${buildVersion}`;
+        return `https://core.eagle.cool/app-notifications?theme=${useBodyState.getState().theme}&version=${version}&buildVersion=${buildVersion}`;
       case 'zh_TW':
-        return `https://tw.eagle.cool/app-notifications?theme=${s.theme}&version=${version}&buildVersion=${buildVersion}`;
+        return `https://tw.eagle.cool/app-notifications?theme=${useBodyState.getState().theme}&version=${version}&buildVersion=${buildVersion}`;
       case 'ja_JP':
-        return `https://jp.eagle.cool/app-notifications?theme=${s.theme}&version=${version}&buildVersion=${buildVersion}`;
+        return `https://jp.eagle.cool/app-notifications?theme=${useBodyState.getState().theme}&version=${version}&buildVersion=${buildVersion}`;
       default:
-        return `https://en.eagle.cool/app-notifications?theme=${s.theme}&version=${version}&buildVersion=${buildVersion}`;
+        return `https://en.eagle.cool/app-notifications?theme=${useBodyState.getState().theme}&version=${version}&buildVersion=${buildVersion}`;
     }
   };
 

@@ -18,6 +18,7 @@ import { machineryFocusAppUnlockPassword } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useFolderState } from '../store/folderState';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const electronSettings: any = (window as any).electronSettings;
@@ -55,8 +56,6 @@ export function focusAppUnlockPassword(...args: any[]) {
 
 export function focusUnlockPassword(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function () {
             setTimeout(() => {
                 focusOn(q("#lock-password-input"));
@@ -66,8 +65,6 @@ export function focusUnlockPassword(...args: any[]) {
 
 export function unlockAppPasswordKeydown(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
             event && event.stopPropagation();
             return false;
@@ -76,8 +73,6 @@ export function unlockAppPasswordKeydown(...args: any[]) {
 
 export function unlockAppPasswordKeyup(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
 
             var keyCode = event.keyCode;
@@ -111,30 +106,28 @@ export function unlockAppPasswordKeyup(...args: any[]) {
 
 export function unlockPasswordKeyup(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event) {
 
             var keyCode = event.keyCode;
-            var folder = s.currentFolder;
+            var folder = useFolderState.getState().currentFolder;
             var currentPassword = window.atob(folder.password);
 
             if (keyCode === 13) {
-                console.log(s.unlockPassword);
+                console.log(useMiscRawState.getState().unlockPassword);
                 if (
-                    s.unlockPassword === currentPassword ||
-                    Registration && Registration.license && s.unlockPassword && s.unlockPassword === Registration.license.code
+                    useMiscRawState.getState().unlockPassword === currentPassword ||
+                    Registration && Registration.license && useMiscRawState.getState().unlockPassword && useMiscRawState.getState().unlockPassword === Registration.license.code
                 ) {
-                    s.currentFolder.isUnLock = true;
+                    useFolderState.getState().currentFolder.isUnLock = true;
                     syncFolderLock();
                     syncListFromScope();
-                    s.isLoading = true;
+                    writeScopeField('isLoading', true);
                     machineryUpdateSidebarList();
                     machineryCalculateImageBinding({ ignoreSort: true }, function () {
-                        s.reload();
+                        useMiscRawState.getState().reload();
                         machineryUpdateSelection();
-                        s.isLoading = false;
-                        s.unlockPassword = "";
+                        writeScopeField('isLoading', false);
+                        writeScopeField('unlockPassword', "");
                     });
                 }
                 else {

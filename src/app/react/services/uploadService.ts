@@ -15,6 +15,8 @@ import { getFilter } from '../core/filterDomain';
 import { scopeEvalAsync } from '../core/scopeRuntime';
 import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
+import { useItemState } from '../store/itemState';
+import { writeScopeField } from '../core/scopeFieldBridge';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -69,12 +71,10 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function cancelAllTasks(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function() {
-            s.uploadQueue = [];
+            writeScopeField('uploadQueue', []);
             syncUploadFromScope();
-            s.finishQueue = [];
+            writeScopeField('finishQueue', []);
             syncUploadFromScope();
 
             (window as any).IPCHelper.send('cancel.all');
@@ -86,15 +86,15 @@ export function cancelAllTasks(...args: any[]) {
                 var images = [];
                 var ONE_DAY = 1000 * 60 * 60 * 24;
                 var __lv_now = Date.now();
-                for (var rindex = 0; rindex < s.raw.length; rindex++) {
-                    var __lv_image = s.raw[rindex];
+                for (var rindex = 0; rindex < useItemState.getState().raw.length; rindex++) {
+                    var __lv_image = useItemState.getState().raw[rindex];
                     // 不需要判断超过 1 天的图片
                     if (__lv_now - __lv_image.modificationTime > ONE_DAY) { break; }
                     if (__lv_image.hasOwnProperty("processingPalette") && !__lv_image.palettes) {
                         images.push(__lv_image);
                     }
                 }
-                console.log(`发现 ${images.length} 张图片需要刷新缩略图, 省略了 ${s.raw.length - rindex} 次判断`);
+                console.log(`发现 ${images.length} 张图片需要刷新缩略图, 省略了 ${useItemState.getState().raw.length - rindex} 次判断`);
                 if (images.length > 0) {
                     ipcRenderer.send('check.image.palette', images);
                 }
@@ -110,8 +110,6 @@ export function cancelAllTasks(...args: any[]) {
 
 export function importFolders(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (currentFolder) {
             dialog.showOpenDialog(currentWindow, {
                 title: $filter('i18n')('dialog.importLocalFolder.title'),
@@ -140,8 +138,6 @@ export function importFolders(...args: any[]) {
 
 export function uploadFiles(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function($__lv_files, folder) {
 
             if ($__lv_files.length === 0) {
@@ -194,7 +190,7 @@ export function uploadFiles(...args: any[]) {
                     }
                 }
 
-                s.uploadQueue.push(__lv_image);
+                useMiscRawState.getState().uploadQueue.push(__lv_image);
                 syncUploadFromScope();
             }
             console.timeEnd("s.uploadFiles.初始化");
@@ -204,22 +200,20 @@ export function uploadFiles(...args: any[]) {
             });
 
             console.timeEnd("s.uploadFiles.ipcRenderer.send");
-            setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), s.finishQueue.length + "/" + s.uploadQueue.length);
-            setWidthEl(findEl(q("#upload-queue-progress"), ".current"), s.finishQueue.length/s.uploadQueue.length*100 + "%");
+            setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
+            setWidthEl(findEl(q("#upload-queue-progress"), ".current"), useMiscRawState.getState().finishQueue.length/useMiscRawState.getState().uploadQueue.length*100 + "%");
         }).apply(null, args);
   }
 
 export function uploadUrls(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(urls, __lv_fds, params) {
             var folders = [];
             let extendTags = [];
 
             if (__lv_fds && __lv_fds.length > 0) {
                 folders = __lv_fds.map(function (fd) {
-                    return s.folderMappings[fd];
+                    return useItemState.getState().folderMappings[fd];
                 });
             }
 
@@ -247,7 +241,7 @@ export function uploadUrls(...args: any[]) {
 
                 __lv_tags = [...new Set(__lv_tags)];
                 console.log(`before: ${fileName.length}`)
-                fileName = fileName.substr(0, remainingFilenameLength(s.libraryPath));
+                fileName = fileName.substr(0, remainingFilenameLength(useMiscRawState.getState().libraryPath));
                 console.log(`after: ${fileName.length}`)
 
 				fileName = sanitize(fileName).replace(/%/g, "").replace(/&lt;/g,"").replace(/&gt;/g,"").trim();

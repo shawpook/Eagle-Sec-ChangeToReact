@@ -370,7 +370,6 @@ export function WebsitePanel() {
   useEffect(() => {
     const webview = webviewRef.current;
     if (!webview) return;
-    const body = getBodyScope();
 
     const onDomReady = () => {
       try {
@@ -387,7 +386,7 @@ export function WebsitePanel() {
       window.focus();
       if (webview.src.indexOf('file:///') > -1) {
         webview.clearHistory();
-        webview.loadURL(`${body?.currentUrl}`);
+        webview.loadURL(`${useMiscRawState.getState().currentUrl}`);
       }
     };
 

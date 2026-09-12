@@ -34,6 +34,8 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState } from '../store/folderState';
 import { useItemState } from '../store/itemState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useBodyState } from '../store/bodyState';
+import { useLayoutState } from '../store/layoutState';
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
 export function sidebarClickNode(event: any, folder: any): void {
@@ -296,8 +298,6 @@ export function changeSidebarIndex(...args: any[]) {
 
 export function dblclickSidebarSmartFolderGroup(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (event, folder) {
         	if (usePreferencesState.getState().preferences.habits.dblclickSidebarItem === 'collapse') {
         		toggleSmartFolderExpand(event, folder);
@@ -310,13 +310,11 @@ export function dblclickSidebarSmartFolderGroup(...args: any[]) {
 
 export function getNodeClass(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (node) {
             var __lv_result = {
-                'active active-item': (useMiscRawState.getState().selectedFolders.length === 0 && s.currentId == 'folder-' + node.id) || useMiscRawState.getState().selectedFoldersMappings[node.id],
+                'active active-item': (useMiscRawState.getState().selectedFolders.length === 0 && useMiscRawState.getState().currentId == 'folder-' + node.id) || useMiscRawState.getState().selectedFoldersMappings[node.id],
                 'locked': node.password && !node.isUnLock,
-                'collapsed': !node.isExpand && !s.folderKeyword.length,
+                'collapsed': !node.isExpand && !useMiscRawState.getState().folderKeyword.length,
                 'editable': node.editable,
                 'selected': node.isSelected,
                 'editable': node.editable,
@@ -332,7 +330,7 @@ export function getNodeClass(...args: any[]) {
             __lv_result[`depth-${node.styles.depth}`] = true;
             __lv_result[`icon-${node.icon}`] = true;
             __lv_result[`color-${node.iconColor}`] = true;
-			let parent = s.folderMappings[node.parent];
+			let parent = useItemState.getState().folderMappings[node.parent];
 			if (parent) {
 				__lv_result[`parent-color-${parent?.iconColor}`] = true;
 			}
@@ -342,23 +340,21 @@ export function getNodeClass(...args: any[]) {
 
 export function getQuickAccessClass(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (item) {
             var node;
             if (item.type === 'folder') {
-                node = s.folderMappings[item.id];
+                node = useItemState.getState().folderMappings[item.id];
             }
             else {
-                node = s.smartFolderMappings[item.id];
+                node = useItemState.getState().smartFolderMappings[item.id];
             }
             
             if (!node) return;
 
             var __lv_result = {
-                'active active-item': s.currentId === ('quickaccess-' + node.id),
+                'active active-item': useMiscRawState.getState().currentId === ('quickaccess-' + node.id),
                 'locked': node.password && !node.isUnLock,
-                'collapsed': !node.isExpand && !s.folderKeyword.length,
+                'collapsed': !node.isExpand && !useMiscRawState.getState().folderKeyword.length,
                 'selected': node.isSelected,
                 'editable': node.editable,
                 'empty-node': node.children && node.children.length == 0,
@@ -383,15 +379,13 @@ export function getQuickAccessClass(...args: any[]) {
 
 export function getSmartFolderClass(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function (smartFolder) {
             
             var __lv_result = {
                 'editable': smartFolder.editable,
                 'selected': smartFolder.isSelected,
-                'collapsed': !smartFolder.isExpand && !s.folderKeyword.length,
-                'active active-item': (useMiscRawState.getState().selectedSmartFolders.length === 0 && s.currentId == 'smart-folder-' + smartFolder.id) || useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id],
+                'collapsed': !smartFolder.isExpand && !useMiscRawState.getState().folderKeyword.length,
+                'active active-item': (useMiscRawState.getState().selectedSmartFolders.length === 0 && useMiscRawState.getState().currentId == 'smart-folder-' + smartFolder.id) || useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id],
                 'color-red': smartFolder.iconColor == 'red',
                 'color-orange': smartFolder.iconColor == 'orange',
                 'color-yellow': smartFolder.iconColor == 'yellow',
@@ -406,7 +400,7 @@ export function getSmartFolderClass(...args: any[]) {
                 'last': smartFolder.styles && smartFolder.styles.last,
             };
             __lv_result['icon-' + smartFolder.icon] = true;
-			let parent = s.smartFolderMappings[smartFolder.parent];
+			let parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
 			if (parent) {
 				__lv_result[`parent-color-${parent?.iconColor}`] = true;
 			}
@@ -416,8 +410,6 @@ export function getSmartFolderClass(...args: any[]) {
 
 export function hoverHideSidebar(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function ($event) {
             $event && $event.stopPropagation();
             if (hasClass(q("#sidebar"), "hover-show")) {
@@ -431,11 +423,9 @@ export function hoverHideSidebar(...args: any[]) {
 
 export function hoverShowSidebar(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function ($event) {
             $event && $event.stopPropagation();
-            if (s.isHideSidebar) {
+            if (useBodyState.getState().isHideSidebar) {
                 if (!hasClass(q("#sidebar"), "hover-show")) {
                     addClass("#sidebar", "slide-in");
                     addClass("#sidebar", "hover-show");
@@ -446,8 +436,6 @@ export function hoverShowSidebar(...args: any[]) {
 
 export function sidebarFocus(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function($event) {
             $event && $event.stopPropagation();
             writeScopeField('currentFocus', "sidebar");
@@ -456,11 +444,9 @@ export function sidebarFocus(...args: any[]) {
 
 export function onSidebarResize(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    const s = getScope();
-    if (!s) return;
     return (function(e, ui) {
         if (ui && ui.size.width >= 200) {
-            s.containerSize.sidebar = ui.size.width;
+            useLayoutState.getState().containerSize.sidebar = ui.size.width;
             syncBodyFromScope();
             syncSidebarFromScope();
             syncTagManagerFromScope();
@@ -477,8 +463,6 @@ export function onSidebarResize(...args: any[]) {
   }
 
 export function toggleSelectFolder(...args: any[]) {
-    const s2 = getScope();
-    if (!s2) return;
     return (function (event, folderArg) {
       var expand = !folderArg.isExpand;
       var folders = folderArg.children;
@@ -488,12 +472,10 @@ export function toggleSelectFolder(...args: any[]) {
   }
 
 export function toggleCurrentLevelFolders(...args: any[]) {
-    const s2 = getScope();
-    if (!s2) return;
     return (function (event, folderArg) {
       var expand = !folderArg.isExpand;
-      var parent = s2.folderMappings[folderArg.parent];
-      var folders = s2.folders;
+      var parent = useItemState.getState().folderMappings[folderArg.parent];
+      var folders = useFolderState.getState().folders;
       if (parent && parent.children) {
         folders = parent.children;
       }
@@ -502,23 +484,21 @@ export function toggleCurrentLevelFolders(...args: any[]) {
   }
 
 export function toggleAllFolderExpand(...args: any[]) {
-    const s2 = getScope();
-    if (!s2) return;
     return (function (event, folderArg) {
-      var folder = folderArg || s2.currentFolder;
-      if (s2.folders && s2.folders.length > 0) {
-        var expand = !s2.folders[0].isExpand;
+      var folder = folderArg || useFolderState.getState().currentFolder;
+      if (useFolderState.getState().folders && useFolderState.getState().folders.length > 0) {
+        var expand = !useFolderState.getState().folders[0].isExpand;
         if (folder) {
           setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 100);
           if (folder.parent) {
-            var parent = s2.folderMappings[folder.parent];
+            var parent = useItemState.getState().folderMappings[folder.parent];
             if (parent) {
               expand = !parent.isExpand;
             }
           }
         }
-        if (!expand) s2.sidebarIndex = 0;
-        toggleAllFolders(s2.folders, expand);
+        if (!expand) writeScopeField('sidebarIndex', 0);
+        toggleAllFolders(useFolderState.getState().folders, expand);
         machineryUpdateSidebarList();
       }
     }).apply(null, args);
@@ -537,8 +517,6 @@ export function toggleAllSmartFolderExpand(...args: any[]) {
 }
 
 export function openFolderExpandContextMenu(...args: any[]) {
-    const s2 = getScope();
-    if (!s2) return;
     return (function (eventArg, folderArg) {
       eventArg.stopPropagation();
       const folderEl = eventArg && eventArg.currentTarget;

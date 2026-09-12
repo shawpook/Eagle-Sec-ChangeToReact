@@ -20,6 +20,8 @@ import { machineryAdjustLayoutWidth, machineryChangeListHeight, machinerySwitchL
 import { machineryOnImageSizeHeightChanged } from '../core/itemDomain';
 import { getFilter } from '../core/filterDomain';
 import { machineryGetSelection } from '../core/selectionViewDomain';
+import { useFolderState } from '../store/folderState';
+import { useBodyState } from '../store/bodyState';
 // 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
 let saveListHeightTimeout: any = null;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -48,23 +50,23 @@ const initLinkVars = () => {
         __lv_saveListHeight = function (height: any) {
               clearTimeout(saveListHeightTimeout);
               saveListHeightTimeout = setTimeout(function() {
-                  if (getBodyScope().currentFolder) {
-                      localStorage.setItem("eagle.list.thumbSize." + getBodyScope().currentFolder.id, height);
-                  } else if (getBodyScope().currentSmartFolder) {
-                      localStorage.setItem("eagle.list.thumbSize." + getBodyScope().currentSmartFolder.id, height);
+                  if (useFolderState.getState().currentFolder) {
+                      localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentFolder.id, height);
+                  } else if (useFolderState.getState().currentSmartFolder) {
+                      localStorage.setItem("eagle.list.thumbSize." + useFolderState.getState().currentSmartFolder.id, height);
                   } else if (getBodyScope().currentTag) {
                       localStorage.setItem("eagle.list.thumbSize." + getBodyScope().currentTag, height);
-                  } else if (getBodyScope().viewMode === 'all') {
+                  } else if (useBodyState.getState().viewMode === 'all') {
                       localStorage.setItem("eagle.list.thumbSize.all", height);
-                  } else if (getBodyScope().viewMode === 'unfiled') {
+                  } else if (useBodyState.getState().viewMode === 'unfiled') {
                       localStorage.setItem("eagle.list.thumbSize.unfiled", height);
-                  } else if (getBodyScope().viewMode === 'untagged') {
+                  } else if (useBodyState.getState().viewMode === 'untagged') {
                       localStorage.setItem("eagle.list.thumbSize.untagged", height);
-                  } else if (getBodyScope().viewMode === 'trash') {
+                  } else if (useBodyState.getState().viewMode === 'trash') {
                       localStorage.setItem("eagle.list.thumbSize.trash", height);
-                  } else if (getBodyScope().viewMode === 'random') {
+                  } else if (useBodyState.getState().viewMode === 'random') {
                       localStorage.setItem("eagle.list.thumbSize.random", height);
-                  } else if (getBodyScope().viewMode === 'recent') {
+                  } else if (useBodyState.getState().viewMode === 'recent') {
                       localStorage.setItem("eagle.list.thumbSize.recent", height);
                   }
               }, 150);

@@ -20,6 +20,7 @@ import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, ope
 
 import { machineryOpenUnfiled, machineryQuickOpenFolder } from '../../core/libraryDomain';
 import { machineryRebindRefresh } from '../../core/itemDomain';
+import { useItemState } from '../../store/itemState';
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
  *
@@ -1504,7 +1505,7 @@ export function DuplicateModal() {
           tags.push(tag);
         });
       }
-      const parent = rootRef.current.folderMappings?.[folder.parent] ?? getBodyScope().folderMappings[folder.parent];
+      const parent = rootRef.current.folderMappings?.[folder.parent] ?? useItemState.getState().folderMappings[folder.parent];
       if (parent && parent.tags && folder.parent) {
         return getExtendTags(parent, tags);
       } else {

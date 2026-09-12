@@ -13,21 +13,21 @@ import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
  * E3 再逐域把读点改为 `useItemState.getState()`。
  */
 interface ItemState {
-  raw: any[];
-  allData: any[];
-  images: any[];
-  all: any[];
-  shuffle: any[];
-  trash: any[];
-  itemMappings: Record<string, any>;
-  folderMappings: Record<string, any>;
-  smartFolderMappings: Record<string, any>;
-  selectedMappings: Record<string, boolean>;
-  selectedFolderMappings: Record<string, boolean>;
-  modifiedMappings: Record<string, any>;
-  duplicateMappings: Record<string, any>;
-  lockedImages: Record<string, any>;
-  lastItemStates: Record<string, any>;
+  raw: any;
+  allData: any;
+  images: any;
+  all: any;
+  shuffle: any;
+  trash: any;
+  itemMappings: any;
+  folderMappings: any;
+  smartFolderMappings: any;
+  selectedMappings: any;
+  selectedFolderMappings: any;
+  modifiedMappings: any;
+  duplicateMappings: any;
+  lockedImages: any;
+  lastItemStates: any;
 }
 
 export const useItemState = create<ItemState>(() => ({

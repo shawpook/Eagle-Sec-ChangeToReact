@@ -9,6 +9,7 @@ import { saveCrop } from '../../services/imageOpsService';
 import { getRawPath } from '../../core/itemDomain';
 import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from '../../global/bus';
 import { makeResizable } from '../interactions/resizable';
+import { useSelectionState } from '../../store/selectionState';
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -16,7 +17,7 @@ import { makeResizable } from '../interactions/resizable';
  * （70198-70248）的逐字移植。
  */
 
-const liveCurrent = () => getBodyScope()?.current;
+const liveCurrent = () => useSelectionState.getState().current;
 
 /** commentsContainer link 內賦值到 $rootScope 的 removeComment（72400-72423）。 */
 export function removeComment(index: number) {
@@ -232,9 +233,9 @@ export function useCommentsContainer(currentId: string | undefined, hasComments:
     // 原 $watch("image.id") → 圖片載入後重算 ratio
     if (hasComments) {
       const $image = q('#detail-image');
-      if (getBodyScope()?.current?.width && $image) {
+      if (useSelectionState.getState().current?.width && $image) {
         const onLoad = function () {
-          const image = getBodyScope()?.current;
+          const image = useSelectionState.getState().current;
           if (!image) return;
           runInBodyScope(function (s) {
             s.ratio = image.width / widthOf($image);
@@ -1295,7 +1296,7 @@ export function useRetryWhenError(
         if (retryCount === 0) {
           return;
         }
-        const item = getBodyScope()?.current;
+        const item = useSelectionState.getState().current;
         if (!item) return;
         const helper = FileUrlHelper;
         const newPath = mode === 'raw' ? helper.getRawUrl(item) : helper.getThumbnailUrl(item);

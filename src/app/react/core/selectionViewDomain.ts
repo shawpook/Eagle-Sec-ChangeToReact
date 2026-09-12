@@ -44,6 +44,8 @@ import { machineryRemovePermanently } from '../services/batchOpsService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryAutoScroll } from '../services/gridService';
 import { getTimeout, machineryCalls } from './machineryInfra';
+import { useItemState } from '../store/itemState';
+import { useListState } from '../store/listState';
 let done = false;
 
 function domainTimeout(s: any, fn: any, ms?: number): any {
@@ -1204,8 +1206,8 @@ export function machineryUpdateSelection(s: any): void {
             newName: w.i18n.__('inspector.names.all'),
             newDescription: "",
             createDate: undefined,
-            imageCount: getBodyScope().all.length,
-            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().all),
+            imageCount: useItemState.getState().all.length,
+            fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().all),
             exportable: false,
             editable: false
           };
@@ -1216,8 +1218,8 @@ export function machineryUpdateSelection(s: any): void {
             newName: w.i18n.__('inspector.names.unfiled'),
             newDescription: "",
             createDate: undefined,
-            imageCount: getBodyScope().unfiledCount,
-            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            imageCount: useListState.getState().unfiledCount,
+            fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
             exportable: false,
             editable: false
           };
@@ -1228,8 +1230,8 @@ export function machineryUpdateSelection(s: any): void {
             newName: w.i18n.__('inspector.names.untagged'),
             newDescription: "",
             createDate: undefined,
-            imageCount: getBodyScope().untaggedCount,
-            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            imageCount: useListState.getState().untaggedCount,
+            fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
             exportable: false,
             editable: false
           };
@@ -1240,8 +1242,8 @@ export function machineryUpdateSelection(s: any): void {
             newName: w.i18n.__('inspector.names.trash'),
             newDescription: "",
             createDate: undefined,
-            imageCount: getBodyScope().allData.length,
-            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            imageCount: useItemState.getState().allData.length,
+            fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
             exportable: false,
             editable: false
           };
@@ -1252,8 +1254,8 @@ export function machineryUpdateSelection(s: any): void {
             newName: getFilter()('i18n')('inspector.names.duplicate'),
             newDescription: "",
             createDate: undefined,
-            imageCount: getBodyScope().allData.length,
-            fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+            imageCount: useItemState.getState().allData.length,
+            fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
             exportable: false,
             editable: false
           };
@@ -1265,8 +1267,8 @@ export function machineryUpdateSelection(s: any): void {
               newName: w.i18n.__('inspector.names.multipleTitles'),
               newDescription: "",
               createDate: undefined,
-              imageCount: getBodyScope().allData.length,
-              fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+              imageCount: useItemState.getState().allData.length,
+              fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
               exportable: false,
               editable: false
             };
@@ -1296,8 +1298,8 @@ export function machineryUpdateSelection(s: any): void {
               newName: w.eagle.inspector.inspectorFolder.name,
               newDescription: w.eagle.inspector.inspectorFolder.description || "",
               createDate: w.eagle.inspector.inspectorFolder.modificationTime,
-              imageCount: getBodyScope().allData.length,
-              fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+              imageCount: useItemState.getState().allData.length,
+              fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
               exportable: true,
               editable: true
             };
@@ -1308,8 +1310,8 @@ export function machineryUpdateSelection(s: any): void {
               newName: s.currentSmartFolder.name,
               newDescription: s.currentSmartFolder.description || "",
               createDate: s.currentSmartFolder.modificationTime,
-              imageCount: getBodyScope().allData.length,
-              fileSize: w.eagle.inspector.calculateFileSize(getBodyScope().allData),
+              imageCount: useItemState.getState().allData.length,
+              fileSize: w.eagle.inspector.calculateFileSize(useItemState.getState().allData),
               exportable: true,
               editable: true
             };

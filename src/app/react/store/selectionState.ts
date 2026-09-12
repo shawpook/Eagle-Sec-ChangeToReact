@@ -12,9 +12,9 @@ import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
  * 过渡语义：读写两侧调用点暂不改写（E3 逐域改）；本批只把「真身」从 coreState 换到 store。
  */
 interface SelectionState {
-  selected: any[];
+  selected: any;
   current: any;
-  lastSelectedIndex: number;
+  lastSelectedIndex: any;
 }
 
 export const useSelectionState = create<SelectionState>(() => ({

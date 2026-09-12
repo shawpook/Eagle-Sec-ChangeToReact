@@ -43,6 +43,7 @@ import { machineryCheckOperationSafety } from '../services/viewOpsService';
 import { getFilter } from '../core/filterDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machinerySortRawData } from '../core/itemDomain';
+import { useMiscRawState } from '../store/miscRawState';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
@@ -870,7 +871,7 @@ export function replaceFile(...args: any[]) {
         });
 
         function executeFileReplacement(item, newFilePath) {
-            const libraryPath = getBodyScope().libraryPath;
+            const libraryPath = useMiscRawState.getState().libraryPath;
             const currentFilePath = path.join(libraryPath, 'images', item.id + '.info', item.name + '.' + item.ext);
             const backupFilePath = currentFilePath + '.bk';
 

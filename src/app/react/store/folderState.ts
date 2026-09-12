@@ -14,14 +14,14 @@ import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 interface FolderState {
   currentFolder: any;
   currentSmartFolder: any;
-  folders: any[];
-  smartFolders: any[];
-  folderList: any[];
-  tags: any[];
-  currentFolderChildren: any[];
-  navigationHistory: any[];
-  navigationHistoryIndex: number;
-  startCursor: number;
+  folders: any;
+  smartFolders: any;
+  folderList: any;
+  tags: any;
+  currentFolderChildren: any;
+  navigationHistory: any;
+  navigationHistoryIndex: any;
+  startCursor: any;
 }
 
 export const useFolderState = create<FolderState>(() => ({

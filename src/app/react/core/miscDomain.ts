@@ -62,6 +62,9 @@ import { machinerySortRawData } from './itemDomain';
 import { machineryUndo } from './navHistory';
 import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
 import { getTimeout } from './machineryInfra';
+import { useFolderState } from '../store/folderState';
+import { useListState } from '../store/listState';
+import { useMiscRawState } from '../store/miscRawState';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;
@@ -1364,23 +1367,23 @@ export function undo(...args: any[]) {
 export function updateCurrentOrderAndIncrease () {
         	var orderBy;
             var sortIncrease;
-            if (getBodyScope().currentFolder) {
-                orderBy = getBodyScope().currentFolder.orderBy;
-                if (getBodyScope().currentFolder.orderBy) {
-                    sortIncrease = getBodyScope().currentFolder.sortIncrease;
+            if (useFolderState.getState().currentFolder) {
+                orderBy = useFolderState.getState().currentFolder.orderBy;
+                if (useFolderState.getState().currentFolder.orderBy) {
+                    sortIncrease = useFolderState.getState().currentFolder.sortIncrease;
                 }
                 else {
                     sortIncrease = getBodyScope().sortIncrease;
                 }
             }
-            else if (getBodyScope().currentSmartFolder) {
-                if (getBodyScope().currentSmartFolder.orderBy) {
-                    sortIncrease = getBodyScope().currentSmartFolder.sortIncrease;
+            else if (useFolderState.getState().currentSmartFolder) {
+                if (useFolderState.getState().currentSmartFolder.orderBy) {
+                    sortIncrease = useFolderState.getState().currentSmartFolder.sortIncrease;
                 }
                 else {
                     sortIncrease = getBodyScope().sortIncrease;
                 }
-                orderBy = getBodyScope().currentSmartFolder.orderBy;
+                orderBy = useFolderState.getState().currentSmartFolder.orderBy;
             }
             else {
                 orderBy = getBodyScope().orderBy;
@@ -1395,8 +1398,8 @@ export function updateSuggestions() {
             getBodyScope().searchIndex = -1;
             syncToolbarFromScope();
             var keyword = "";
-            if (getBodyScope().keyword) {
-                keyword = getBodyScope().keyword.toLowerCase();
+            if (useListState.getState().keyword) {
+                keyword = useListState.getState().keyword.toLowerCase();
             }
 
             getBodyScope().hsks = getBodyScope().historySearchKeywords.filter(function (word) {
@@ -1412,7 +1415,7 @@ export function updateSuggestions() {
             var dataset = [];
             var currPageTags = [];
             var allCount = $bodyScope.all.length;
-            getBodyScope().containTags.forEach(function (tag) {
+            useMiscRawState.getState().containTags.forEach(function (tag) {
             	if (tag.imageCount && !tag.isNoTags) {
 	            	currPageTags.push({
 	            		word: tag.name.toLowerCase(),
@@ -1449,7 +1452,7 @@ export function updateSuggestions() {
 	            // }
             	getBodyScope().keywordSuggestions = suggestions;
             	syncToolbarFromScope();
-                getBodyScope().keywordSuggestions = getBodyScope().keywordSuggestions.filter((suggestion) => {
+                getBodyScope().keywordSuggestions = useMiscRawState.getState().keywordSuggestions.filter((suggestion) => {
                     return getBodyScope().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
                 });
                 syncToolbarFromScope();
@@ -1457,8 +1460,8 @@ export function updateSuggestions() {
             	return;
             }
 
-            if (getBodyScope().globalKeywords && getBodyScope().globalKeywords.length) {
-            	dataset = currPageTags.concat(getBodyScope().globalKeywords);
+            if (useMiscRawState.getState().globalKeywords && useMiscRawState.getState().globalKeywords.length) {
+            	dataset = currPageTags.concat(useMiscRawState.getState().globalKeywords);
             }
 
             getBodyScope().keyword_cn = chineseConvert.tw2cn(keyword);
@@ -1514,7 +1517,7 @@ export function updateSuggestions() {
             }
             
             if (suggestions.length > 0) {
-                if (suggestions.length === 1 && suggestions[0].word == getBodyScope().keyword) {
+                if (suggestions.length === 1 && suggestions[0].word == useListState.getState().keyword) {
 
                 }
                 else {

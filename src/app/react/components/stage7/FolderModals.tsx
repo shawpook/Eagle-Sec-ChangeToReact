@@ -21,6 +21,8 @@ import { machinerySmartFolderCount } from '../../core/libraryDomain';
 import { machineryContentFilter, machineryFilterData, machineryUpdateFilterCounts } from '../../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelection } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../../core/miscDomain';
+import { useItemState } from '../../store/itemState';
+import { useFolderState } from '../../store/folderState';
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
  * （bundle 75637-76134）接管，模板 = index.html 411-617 逐字转写。
@@ -176,14 +178,14 @@ export function hiddenByCurrentFilter(items: any[]) {
         });
 
         // 从当前筛选结果移除项目
-        getBodyScope().allData = getBodyScope().allData.filter((item: any) => {
+        getBodyScope().allData = useItemState.getState().allData.filter((item: any) => {
           return !hiddenItemMap[item.id];
         });
 
         if (hiddenElements.length > 0) {
           glRemoveitemsChannel.emit(hiddenElements);
-          if (getBodyScope().currentSmartFolder) {
-            getBodyScope().currentSmartFolder.imageCount = machinerySmartFolderCount(getBodyScope(), getBodyScope().currentSmartFolder);
+          if (useFolderState.getState().currentSmartFolder) {
+            useFolderState.getState().currentSmartFolder.imageCount = machinerySmartFolderCount(getBodyScope(), useFolderState.getState().currentSmartFolder);
             scopeEvalAsync();
           }
         }

@@ -52,6 +52,10 @@ import { machineryQuickOpenFolder } from '../../core/libraryDomain';
 import { machineryOpenInspectorFolderSelectPanel, machineryOpenInspectorTagSelectPanel } from '../../core/selectionViewDomain';
 import { machineryChangeStar } from '../../services/imageOpsService';
 import { machineryAutoScroll } from '../../services/gridService';
+import { useItemState } from '../../store/itemState';
+import { useSelectionState } from '../../store/selectionState';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useFolderState } from '../../store/folderState';
 /**
  * 阶段6：检查器接管。
  *
@@ -108,7 +112,7 @@ export function ExtIcon({ itemId }: { itemId: string }) {
   useEffect(() => {
     const el = hostRef.current;
     if (!el || !itemId) return;
-    const item = getBodyScope()?.itemMappings?.[itemId];
+    const item = useItemState.getState().itemMappings?.[itemId];
     if (!item) return;
     const rawPath = FileUrlHelper.getRawPath(item);
     el.innerHTML = `<div class="ext-icon"><img></div>`;
@@ -143,7 +147,7 @@ function useCommentVideo(videoRef: React.RefObject<HTMLVideoElement | null>, com
     const onHover = () => {
       if (!isLoadRef.current) {
         isLoadRef.current = true;
-        video.src = getRawUrl(getBodyScope().selected[0]);
+        video.src = getRawUrl(useSelectionState.getState().selected[0]);
         const onLoaded = () => {
           if (duration) {
             video.currentTime = duration;
@@ -244,7 +248,7 @@ function ThumbImg({ image }: { image: SelectedItemSnapshot }) {
     const handler = (window as any)._?.debounce(function () {
       try {
         if (retryCount === 0) return;
-        const item = getBodyScope()?.selected?.find?.((s: any) => s?.id === image.id);
+        const item = useSelectionState.getState().selected?.find?.((s: any) => s?.id === image.id);
         if (!item) return;
         const helper = FileUrlHelper;
         const newPath = helper.getThumbnailUrl(item);
@@ -386,12 +390,12 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
       style={snapshot.folderName[folderId] ? undefined : { display: 'none' }}
       onContextMenu={(e) => {
         e.stopPropagation();
-        const live = getBodyScope()?.folderMappings?.[folderId];
+        const live = useItemState.getState().folderMappings?.[folderId];
         if (live) call('openFolderFullPathContextMenu', e.nativeEvent, live)(e);
       }}
       onClick={(e) => {
         e.stopPropagation();
-        const live = getBodyScope()?.folderMappings?.[folderId];
+        const live = useItemState.getState().folderMappings?.[folderId];
         if (live) call(scoped(machineryQuickOpenFolder), live)(e);
       }}
     >
@@ -568,7 +572,7 @@ function AnnotationComment({
           </div>
         )}
         <div className="remove" onClick={() => {
-          const live = getBodyScope()?.selected?.[0];
+          const live = useSelectionState.getState().selected?.[0];
           if (live) removeImageComment(live, index);
         }}>
           <img src={iconSrc(theme, 'ic-inspector-comment-remove.svg')} />
@@ -593,7 +597,7 @@ function AnnotationComment({
       <div
         className="remove"
         onClick={(e) => {
-          const live = getBodyScope()?.selected?.[0];
+          const live = useSelectionState.getState().selected?.[0];
           if (live) removeVideoComment(e.nativeEvent, live, comment);
         }}
       >
@@ -602,7 +606,7 @@ function AnnotationComment({
       <div
         className="ic-btn edit"
         onClick={(e) => {
-          const live = getBodyScope()?.selected?.[0];
+          const live = useSelectionState.getState().selected?.[0];
           if (live) editVideoComment(e.nativeEvent, live, comment);
         }}
       >
@@ -915,13 +919,13 @@ function InspectorPluginView({ snapshot, plugin }: { snapshot: InspectorSnapshot
     const st = stateRef.current;
 
     function init() {
-      const item = getBodyScope()?.selected?.[0];
+      const item = useSelectionState.getState().selected?.[0];
       if (!item) return;
 
       const webviewId = `inspector-plugin-${plugin?.manifest?.id}`;
       const $webview = q(`#${webviewId}`);
-      const src = getBodyScope()?.pluginModule?.previewExtension?.getInspectorPluginURL(plugin, item);
-      const hasInspectorPlugin = getBodyScope()?.pluginModule?.previewExtension?.hasInspectorPlugin(item);
+      const src = useMiscRawState.getState().pluginModule?.previewExtension?.getInspectorPluginURL(plugin, item);
+      const hasInspectorPlugin = useMiscRawState.getState().pluginModule?.previewExtension?.hasInspectorPlugin(item);
       if (!hasInspectorPlugin) return;
 
       if ($webview) {
@@ -1253,10 +1257,10 @@ function Inspector({ snapshot }: { snapshot: InspectorSnapshot }) {
                       {t('inspector.selection>export')}
                     </div>
                   ) : null}
-                  {getBodyScope()?.currentSmartFolder ? (
+                  {useFolderState.getState().currentSmartFolder ? (
                     <div
                       className="ic-btn export-btn has-bg"
-                      onClick={(e) => call('openSmartFolderExportContextMenu', e.nativeEvent, getBodyScope().currentSmartFolder)(e)}
+                      onClick={(e) => call('openSmartFolderExportContextMenu', e.nativeEvent, useFolderState.getState().currentSmartFolder)(e)}
                     >
                       <img src={iconSrc(theme, 'ic-inspector-export.svg')} />
                       {t('inspector.selection>export')}

@@ -18,6 +18,8 @@ import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryChangeSidebarIndex, machinerySmartFolderCount } from '../../core/libraryDomain';
 import { machineryRebindRefresh } from '../../core/itemDomain';
 import { machineryContentFilter } from '../../core/filterDomain';
+import { useItemState } from '../../store/itemState';
+import { useBodyState } from '../../store/bodyState';
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
  *
@@ -523,7 +525,7 @@ export function FoldersInput({
   const onReplaceRef = useRef(onFolderIdsReplace);
   onReplaceRef.current = onFolderIdsReplace;
   // link 期一次性捕获（$scope.folderMappings = $bodyScope.folderMappings，对象引用原地变更）
-  const folderMappingsRef = useRef<any>(getBodyScope()?.folderMappings);
+  const folderMappingsRef = useRef<any>(useItemState.getState().folderMappings);
 
   const [, setBump] = useState(0);
 
@@ -672,7 +674,7 @@ export function NewSmartFolderModal() {
   // angular.element(instance._input).scope().rule → instance._input.__eagleRule）
   const dateOptsRef = useRef<any>(null);
   if (!dateOptsRef.current) {
-    const lang = String(getBodyScope()?.language ?? '');
+    const lang = String(useBodyState.getState().language ?? '');
     const locale = lang.indexOf('zh') > -1 ? 'zh' : 'en';
     dateOptsRef.current = {
       dateOpts1: {

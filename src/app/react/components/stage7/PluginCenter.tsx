@@ -8,6 +8,7 @@ import { openAppContextMenu } from './selectPanelEngine';
 import { themePathOf } from './SelectPanels';
 import { getBodyScope } from '../../core/appCore';
 import { openPluginCenterChannel, openPluginCenterDetailChannel, refreshPluginCenterChannel } from '../../global/bus';
+import { useMiscRawState } from '../../store/miscRawState';
 
 /**
  * 阶段7d-5b：pluginCenter 接管（bundle 62140-62723 附近；镜像 js/directives/plugin-center.js
@@ -350,7 +351,7 @@ export function PluginCenter() {
 
   // calculateNeedUpdate（镜像 499-514 逐字）
   const calculateNeedUpdate = () => {
-    const pluginModule = getBodyScope()?.pluginModule;
+    const pluginModule = useMiscRawState.getState().pluginModule;
     const versionCompare = w().require('compare-versions');
     rootRef.current.needUpdatePlugins = [];
     pluginModule.needUpdatePluginMaps = {};
@@ -475,7 +476,7 @@ export function PluginCenter() {
   // onInstalledClick（镜像 431-469 逐字）
   const onInstalledClick = (event: any, plugin: any) => {
     event.stopPropagation();
-    const pluginModule = getBodyScope().pluginModule;
+    const pluginModule = useMiscRawState.getState().pluginModule;
     const installed = pluginModule.installedPluginMaps[plugin.id];
     if (!installed) return;
     const isDisabled = pluginModule.isPluginDisabled(plugin.id);
@@ -728,7 +729,7 @@ export function PluginCenter() {
   const isSortDropdownOpen = rootRef.current.isSortDropdownOpen;
   const officialPluginMap = rootRef.current.officialPluginMap;
   const tabIndicatorStyle = rootRef.current.tabIndicatorStyle || {};
-  const pluginModule = getBodyScope()?.pluginModule || {};
+  const pluginModule = useMiscRawState.getState().pluginModule || {};
   const body = getBodyScope();
   const theme = themePathOf((body?.theme as string) || 'dark');
   const detail = pluginDetails[currentPluginId];

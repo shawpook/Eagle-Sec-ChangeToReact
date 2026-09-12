@@ -11,6 +11,8 @@ import { getBodyScope, getRootScope } from '../../core/appCore';
 import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { widthOf, heightOf } from '../../utils/domQuery';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useBodyState } from '../../store/bodyState';
 
 /**
  * 阶段7d-5a：pluginPanel + pluginCreator 接管（pluginCenter 见 7d-5b）。
@@ -190,7 +192,7 @@ export function PluginPanel() {
   };
 
   const calculateList = () => {
-    const pluginModule = getBodyScope()?.pluginModule;
+    const pluginModule = useMiscRawState.getState().pluginModule;
     const searchKeyword = rootRef.current.searchKeyword;
     const typeFilter = rootRef.current.typeFilter;
 
@@ -355,7 +357,7 @@ export function PluginPanel() {
   const onItemClick = (item: any) => {
     ngSafe(() => {
       if (item.isDisabled) return;
-      const pluginModule = getBodyScope()?.pluginModule;
+      const pluginModule = useMiscRawState.getState().pluginModule;
       const plugin = item?.plugin;
       if (!item.executable) {
         const body = getBodyScope();
@@ -420,17 +422,17 @@ export function PluginPanel() {
 
   const pinPlugin = (event: any, item: any) => {
     event.stopPropagation();
-    getBodyScope().pluginModule.pinPlugin(item.plugin);
+    useMiscRawState.getState().pluginModule.pinPlugin(item.plugin);
   };
 
   const unpinPlugin = (event: any, item: any) => {
     event.stopPropagation();
-    getBodyScope().pluginModule.unpinPlugin(item.plugin);
+    useMiscRawState.getState().pluginModule.unpinPlugin(item.plugin);
   };
 
   const openSubmenu = (event: any, item: any) => {
     event.stopPropagation();
-    const pluginModule = getBodyScope()?.pluginModule;
+    const pluginModule = useMiscRawState.getState().pluginModule;
     const newPlugin = pluginModule.needUpdatePluginMaps[item.plugin.manifest.id];
     const ipcRenderer = getIpc();
 
@@ -595,7 +597,7 @@ export function PluginPanel() {
             const remote = w().require('@electron/remote');
             const dialog = remote.dialog;
             const currentWindow = remote.getCurrentWindow();
-            const pluginModule = getBodyScope()?.pluginModule;
+            const pluginModule = useMiscRawState.getState().pluginModule;
             const result = await dialog.showOpenDialog(currentWindow, {
               properties: ['openDirectory'],
             });
@@ -769,7 +771,7 @@ export function PluginPanel() {
   const listItems: any[] = rootRef.current.listItems || [];
   const currentIndex = rootRef.current.currentIndex;
   const typeFilter = rootRef.current.typeFilter;
-  const pluginModule = getBodyScope()?.pluginModule || {};
+  const pluginModule = useMiscRawState.getState().pluginModule || {};
 
   const renderPluginItem = (item: any, index: number, searchMode: boolean) => (
     <div
@@ -1028,7 +1030,7 @@ export function PluginCreator() {
     const fs = w().require('fs');
     const fse = w().require('fs-extra');
     const crypto = w().crypto || w().require('crypto');
-    const pluginModule = getBodyScope()?.pluginModule;
+    const pluginModule = useMiscRawState.getState().pluginModule;
 
     dialog
       .showOpenDialog(currentWindow, {
@@ -1076,7 +1078,7 @@ export function PluginCreator() {
               manifest.id = crypto.randomUUID();
               manifest.name = pluginName;
               fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 4), 'utf8');
-              const themePath = themePathOf(getBodyScope().theme);
+              const themePath = themePathOf(useBodyState.getState().theme);
               w().swal({
                 html: `
 										<div class="alert">

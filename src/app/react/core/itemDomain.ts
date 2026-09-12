@@ -58,6 +58,8 @@ import { machineryCalculateFilterCounts } from './filterDomain';
 import { getLanguageBCP, machineryLeaveDetailMode, updateCurrentOrderAndIncrease } from './miscDomain';
 import { machineryAutoResizeTagFilter } from './tagManagerDomain';
 import { getTimeout, machineryCalls } from './machineryInfra';
+import { useListState } from '../store/listState';
+import { useFolderState } from '../store/folderState';
 declare const $bodyScope: any;
 declare const RecentFileManager: any;
 declare const __cc_openFilesWithDefault: any;
@@ -1276,13 +1278,13 @@ export function isInFolder (__lv_image, folder) {
                 }
                 // 状况1: 该资料夹本身包含图片
                 var isContain = __lv_image.folders.indexOf(folder.id) > -1;
-                if (getBodyScope().showSubfolderContent) {
+                if (useListState.getState().showSubfolderContent) {
                     // 状况2: 该资料夹不包含图片，但该资料夹的子文件夹包含
                     // 加速版本作法，更快判断图片是否存在于子文件夹
-                    if (getBodyScope().currentFolderChildren) {
+                    if (useFolderState.getState().currentFolderChildren) {
                         for (var i = 0; i < __lv_image.folders.length; i++) {
                             var __lv_folderId = __lv_image.folders[i];
-                            if (getBodyScope().currentFolderChildren[__lv_folderId]) {
+                            if (useFolderState.getState().currentFolderChildren[__lv_folderId]) {
                                 return true;
                             }
                         }

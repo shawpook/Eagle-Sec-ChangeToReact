@@ -22,27 +22,27 @@ interface MiscRawState {
   eagle: any;
   SavedFilter: any;
   currentTagGroup: any;
-  tagViewMode: string;
-  keywordSuggestions: any[];
-  globalKeywords: any[];
-  showSuggestions: boolean;
-  tagKeyword: string;
+  tagViewMode: any;
+  keywordSuggestions: any;
+  globalKeywords: any;
+  showSuggestions: any;
+  tagKeyword: any;
   containFolders: any;
   containTags: any;
   filterImportDateMonths: any;
-  rootDir: string;
-  libraryPath: string;
-  libraryName: string;
-  imagesDir: string;
-  libraryImagesPath: string;
-  libraryModificationTime: number;
+  rootDir: any;
+  libraryPath: any;
+  libraryName: any;
+  imagesDir: any;
+  libraryImagesPath: any;
+  libraryModificationTime: any;
   searchIndex: any;
-  isRotating: boolean;
-  isUILoaded: boolean;
-  showDetailImage: boolean;
-  subFolders: any[];
-  currentProcessCount: number;
-  showNTFSWarning: boolean;
+  isRotating: any;
+  isUILoaded: any;
+  showDetailImage: any;
+  subFolders: any;
+  currentProcessCount: any;
+  showNTFSWarning: any;
 }
 
 export const useMiscRawState = create<MiscRawState>(() => ({

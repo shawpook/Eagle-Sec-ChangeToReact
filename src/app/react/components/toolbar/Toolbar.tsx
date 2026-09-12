@@ -25,6 +25,8 @@ import { machineryOpenAll } from '../../services/folderCoreService';
 import { machineryOpenPluginPanel } from '../../core/miscDomain';
 import { machineryNextHistory, machineryPrevHistory } from '../../core/navHistory';
 import { machineryToggleAll } from '../../services/gridService';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useFolderState } from '../../store/folderState';
 /**
  * 阶段3a：工具栏接管。
  *
@@ -426,7 +428,7 @@ export function Toolbar() {
                 tippy=""
                 tippy-placement="bottom"
                 tippy-content={plugin.name || ''}
-                onClick={() => { const live = getBodyScope()?.pluginModule?.pinnedPlugins?.[i]; if (live) runInBodyScope((s) => s.pluginModule.open(live)); }}
+                onClick={() => { const live = useMiscRawState.getState().pluginModule?.pinnedPlugins?.[i]; if (live) runInBodyScope((s) => s.pluginModule.open(live)); }}
               >
                 <img width={20} height={20} src={plugin.icon} />
               </div>
@@ -542,8 +544,8 @@ export function Toolbar() {
 }
 
 /** 从活 scope 取 currentFolder/currentSmartFolder（事件回调需活对象）。 */
-function liveCurrentFolder(): any { return getBodyScope()?.currentFolder; }
-function liveCurrentSmartFolder(): any { return getBodyScope()?.currentSmartFolder; }
+function liveCurrentFolder(): any { return useFolderState.getState().currentFolder; }
+function liveCurrentSmartFolder(): any { return useFolderState.getState().currentSmartFolder; }
 
 /* ---------------- 搜寻自动提示（index.html:130-139） ---------------- */
 

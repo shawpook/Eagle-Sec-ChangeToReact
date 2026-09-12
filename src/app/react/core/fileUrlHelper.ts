@@ -1,4 +1,6 @@
+import { useMiscRawState } from '../store/miscRawState';
 import { getBodyScope } from './appCore';
+import { useItemState } from '../store/itemState';
 /**
  * c1：FileUrlHelper 逐字移植（bundle 2287 起对象字面量提取；b1 数据面接管前置）。
  * 机械替换：$bodyScope → getBodyScope()；path → window.require('path')（mock 经 shims
@@ -31,14 +33,14 @@ export const FileUrlHelper = {
     getMetadataPath: function (image) {
         try {
             if (!image || !image.name) return "";
-            return path.normalize(`${getBodyScope().libraryImagesPath}/${image.id}.info/metadata.json`);
+            return path.normalize(`${useMiscRawState.getState().libraryImagesPath}/${image.id}.info/metadata.json`);
         }
         catch (err) { }
     },
     getRawPath: function (image) {
         try {
             if (!image || !image.name) return "";
-            let rawPath = path.normalize(`${getBodyScope().libraryImagesPath}/${image.id}.info/${image.name}.${image.ext}`);
+            let rawPath = path.normalize(`${useMiscRawState.getState().libraryImagesPath}/${image.id}.info/${image.name}.${image.ext}`);
             return rawPath;
         }
         catch (err) { }
@@ -57,7 +59,7 @@ export const FileUrlHelper = {
                 return FileUrlHelper.getRawPath(image);
             }
             else {
-                let thumbnailPath = path.normalize(`${getBodyScope().libraryImagesPath}/${image.id}.info/${image.name}_thumbnail.png`);
+                let thumbnailPath = path.normalize(`${useMiscRawState.getState().libraryImagesPath}/${image.id}.info/${image.name}_thumbnail.png`);
                 return thumbnailPath;
             }
         }
@@ -73,8 +75,8 @@ export const FileUrlHelper = {
     getLastestThumbnailUrl: function (image) {
         try {
             let thumbnailUrl = FileUrlHelper.getThumbnailUrl(image);
-            if (getBodyScope().modifiedMappings && getBodyScope().modifiedMappings[image.id]) {
-                thumbnailUrl = `${thumbnailUrl}?v=${getBodyScope().modifiedMappings[image.id]}`;
+            if (useItemState.getState().modifiedMappings && useItemState.getState().modifiedMappings[image.id]) {
+                thumbnailUrl = `${thumbnailUrl}?v=${useItemState.getState().modifiedMappings[image.id]}`;
             }
             return thumbnailUrl;
         }

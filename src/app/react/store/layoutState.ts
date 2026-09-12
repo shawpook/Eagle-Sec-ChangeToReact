@@ -10,8 +10,8 @@ import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
  * （读 `.height` 返回 undefined 而非抛错）。
  */
 interface LayoutState {
-  imageSize: Record<string, any>;
-  containerSize: Record<string, any>;
+  imageSize: any;
+  containerSize: any;
 }
 
 export const useLayoutState = create<LayoutState>(() => ({

@@ -14,6 +14,7 @@ import { filterWithTag } from '../../services/fontTagService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
+import { useMiscRawState } from '../../store/miscRawState';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
 
 export const KIND_COMPONENTS: Record<string, React.ComponentType<{ snapshot: FilterSnapshot }>> = {};
@@ -29,7 +30,7 @@ function themePathOf(theme: string): string {
 
 const menuIcon = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/context-menu/${icon}`;
 
-const filter = (): any => getBodyScope()?.eagle?.filter;
+const filter = (): any => useMiscRawState.getState().eagle?.filter;
 const bodyScope = (): any => getBodyScope();
 
 /** `page = 1; filterContent();` / `page = 1; reload();` 等价。 */

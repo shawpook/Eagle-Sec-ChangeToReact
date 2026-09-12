@@ -10,7 +10,7 @@ import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
  */
 interface PreferencesState {
   preferences: any;
-  trialRemain: number;
+  trialRemain: any;
 }
 
 export const usePreferencesState = create<PreferencesState>(() => ({

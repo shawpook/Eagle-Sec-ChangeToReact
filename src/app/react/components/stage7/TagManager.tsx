@@ -16,6 +16,7 @@ import { getBodyScope, runInBodyScope } from '../../core/appCore';
 import { onTagSidebarResize, renameTagGroupBlur, renameTagGroupKeyup } from '../../services/fontTagService';
 import { openTag } from '../../services/batchOpsService';
 import { tagRectSelecting } from '../../core/tagManagerDomain';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段7b：标签管理接管（tag-manager 指令 + tag-select 指令）。
  *
@@ -327,8 +328,8 @@ export function TagManagerPanel() {
   const visible = !snapshot.isDetailMode && snapshot.viewMode === 'alltags';
   const { theme } = snapshot;
 
-  const liveMapping = (tag: string) => getBodyScope()?.TagManager?.tagMappings?.[tag];
-  const liveGroup = (id: string) => getBodyScope()?.TagManager?.groups?.find?.((g: any) => g.id === id);
+  const liveMapping = (tag: string) => useMiscRawState.getState().TagManager?.tagMappings?.[tag];
+  const liveGroup = (id: string) => useMiscRawState.getState().TagManager?.groups?.find?.((g: any) => g.id === id);
 
   const windowed = snapshot.display.slice(win.startIndex, win.endIndex);
 

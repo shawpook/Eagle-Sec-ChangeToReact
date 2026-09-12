@@ -16,6 +16,7 @@ import { openFilterAddContextMenu } from '../../services/miscMenuService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryFilterContent } from '../../core/filterDomain';
+import { useMiscRawState } from '../../store/miscRawState';
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
 const num0 = (value: number | undefined | null): string => {
@@ -28,7 +29,7 @@ function themePathOf(theme: string): string {
 }
 
 const menuIcon = (theme: string, icon: string) => `assets/images/${themePathOf(theme)}/icons/context-menu/${icon}`;
-const filter = (): any => getBodyScope()?.eagle?.filter;
+const filter = (): any => useMiscRawState.getState().eagle?.filter;
 const bodyScope = (): any => getBodyScope();
 const runSeq = (fns: Array<(s: any) => void>) =>
   runInBodyScope((s) => { fns.forEach((fn) => fn(s)); });

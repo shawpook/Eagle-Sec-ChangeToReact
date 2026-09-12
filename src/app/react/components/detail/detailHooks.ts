@@ -17,6 +17,8 @@ import { q, qa, widthOf, heightOf, offsetOf, setCssEl, cssSet, addClass, removeC
 
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
+import { useSelectionState } from '../../store/selectionState';
+import { useLayoutState } from '../../store/layoutState';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）
@@ -137,7 +139,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     function initComments() {
       const _vc = q('.vjs-progress-control .video-comments');
       if (_vc) _vc.innerHTML = '';
-      const current = getBodyScope()?.current;
+      const current = useSelectionState.getState().current;
       if (current && current.comments && current.comments.length > 0) {
         const container = q('.vjs-progress-control');
         const comments = createEl(`<div class="video-comments"></div>`);
@@ -250,7 +252,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         try {
           console.log('[mediaElement] Video playback error:', event.target.error);
           const oldPath = video.currentSrc;
-          const current = getBodyScope()?.current;
+          const current = useSelectionState.getState().current;
           const newPath = current ? FileUrlHelper.getRawUrl(current) : '';
           if (oldPath !== newPath) {
             setTimeout(function () {
@@ -374,8 +376,8 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         });
       }
 
-      const currentTime = getBodyScope()?.current
-        ? localStorage.getItem('eagle.videoPlayer.currentTime.' + getBodyScope().current.id)
+      const currentTime = useSelectionState.getState().current
+        ? localStorage.getItem('eagle.videoPlayer.currentTime.' + useSelectionState.getState().current.id)
         : undefined;
       const rootPreferences = (getBodyScope()?.$root?.preferences || {}) as any;
       const autoPlay = rootPreferences.video?.autoPlay != 'false';
@@ -473,7 +475,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         element.querySelectorAll('track').forEach((t) => t.remove());
 
         // 載入字幕
-        const current = getBodyScope()?.current;
+        const current = useSelectionState.getState().current;
         if (!current) return;
         const fs = req('fs');
         const pathMod = req('path');
@@ -639,7 +641,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         playbackRates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8],
         disableSeekBar: true,
       }).ready(function (this: any) {
-        if (!getBodyScope()?.isDetailMode) {
+        if (!useBodyState.getState().isDetailMode) {
           return;
         }
         player = this;
@@ -673,7 +675,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           noteBtn.addClass('vjs-icon-note');
           noteBtn.on('click', function () {
             video.pause();
-            addVideoComment(getBodyScope()?.current, video);
+            addVideoComment(useSelectionState.getState().current, video);
           });
           const noteBtnEl = noteBtn.el_ as HTMLElement;
           noteBtnEl.remove();
@@ -1051,7 +1053,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         if (unwatchCurrent) unwatchCurrent();
         if (unwatchComments) unwatchComments();
 
-        const current = getBodyScope()?.current;
+        const current = useSelectionState.getState().current;
         if (current && video.currentTime) {
           localStorage.setItem('eagle.videoPlayer.currentTime.' + current.id, video.currentTime);
         }
@@ -1069,7 +1071,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
 
     // ===== loadedmetadata 初始化偏好設定 =====
     const onLoadedMetadata = function () {
-      if (!getBodyScope()?.isDetailMode && !isInPreviewWindow) {
+      if (!useBodyState.getState().isDetailMode && !isInPreviewWindow) {
         return;
       }
 
@@ -1087,7 +1089,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         video.loop = localStorage.getItem('eagle.videoPlayer.loop') === 'true';
       }
 
-      const current = getBodyScope()?.current;
+      const current = useSelectionState.getState().current;
       if (rememberPosition && current) {
         const savedTime = localStorage.getItem('eagle.videoPlayer.currentTime.' + current.id);
         if (savedTime) {
@@ -1112,7 +1114,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         if (!isInPreviewWindow) {
           noteManager.setOnAdd(function () {
             video.pause();
-            addVideoComment(getBodyScope()?.current, video);
+            addVideoComment(useSelectionState.getState().current, video);
           });
         } else {
           noteManager.hideButton();
@@ -1141,8 +1143,8 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     // ===== 筆記更新事件 =====
     const unwatchComments = refreshVideoCommentsChannel.on(function () {
       const noteManager = video.plugins ? video.plugins.get('eagle-notes') : null;
-      if (noteManager && getBodyScope()?.current) {
-        noteManager.setComments(getBodyScope().current.comments || [], video.duration);
+      if (noteManager && useSelectionState.getState().current) {
+        noteManager.setComments(useSelectionState.getState().current.comments || [], video.duration);
       }
     });
 
@@ -1392,7 +1394,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
       'error',
       (window as any)._?.debounce(function () {
         try {
-          const current = getBodyScope()?.current;
+          const current = useSelectionState.getState().current;
           const newPath = current ? FileUrlHelper.getRawUrl(current) : '';
           video.setAttribute('src', newPath);
           console.log('视频名称更新，重新定位新图片位置: ' + newPath);
@@ -1451,7 +1453,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         volume: parseInt(volume2) / 100,
         playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2],
       }).ready(function (this: any) {
-        if (!getBodyScope()?.isDetailMode) {
+        if (!useBodyState.getState().isDetailMode) {
           return;
         }
         const player = this;
@@ -1921,7 +1923,7 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
         event.stopPropagation();
         downTime.value = Date.now();
         startPoint = { x: event.pageX, y: event.pageY };
-        originData.ratio = getBodyScope()?.imageSize?.zoomRatio ?? 100;
+        originData.ratio = useLayoutState.getState().imageSize?.zoomRatio ?? 100;
         originData.x = event.pageX;
         originData.y = event.pageY;
         maxDistanceX = 0;

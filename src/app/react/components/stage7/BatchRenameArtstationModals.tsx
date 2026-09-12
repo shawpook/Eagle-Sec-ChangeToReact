@@ -16,6 +16,7 @@ import { openFolder } from '../../services/folderCoreService';
 import { addToRecentFolders } from '../../services/batchOpsService';
 import { uploadUrls } from '../../services/uploadService';
 import { calculateImageBindingChannel, importArtstationChannel, importImagesChannel, openRenameChannel } from '../../global/bus';
+import { useItemState } from '../../store/itemState';
 
 /**
  * 阶段7d-2：batchRenameModal + artstationImportModal 接管。
@@ -413,7 +414,7 @@ export function ArtstationImportModal() {
       }
 
       if (selectedFolderIds[0]) {
-        openFolder(getBodyScope().folderMappings[selectedFolderIds[0]]);
+        openFolder(useItemState.getState().folderMappings[selectedFolderIds[0]]);
       }
 
       addToRecentFolders(selectedFolderIds);

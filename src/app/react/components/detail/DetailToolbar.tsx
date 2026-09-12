@@ -28,6 +28,7 @@ import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionVi
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { applyDataMachineryScope } from '../../core/machineryInfra';
+import { useMiscRawState } from '../../store/miscRawState';
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
  * （面包屑、缩放滑条、webview-toolbar、裁切工具列、插件工具列、通用工具列、
@@ -360,7 +361,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
                   tippy-content={plugin.name || ''}
                   tippy-placement="bottom"
                   onClick={() => {
-                    const live = getBodyScope()?.pluginModule?.pinnedPlugins?.[i];
+                    const live = useMiscRawState.getState().pluginModule?.pinnedPlugins?.[i];
                     if (live) runInBodyScope((s) => s.pluginModule.open(live));
                   }}
                 >

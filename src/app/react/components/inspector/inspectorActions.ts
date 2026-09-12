@@ -19,6 +19,11 @@ import { machineryRebindRefresh, machineryUpdateItemView } from '../../core/item
 import { machineryEditTag } from '../../core/tagManagerDomain';
 import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
 import { getOffsetScrollbarFn } from '../../services/gridService';
+import { useMiscRawState } from '../../store/miscRawState';
+import { useSelectionState } from '../../store/selectionState';
+import { useItemState } from '../../store/itemState';
+import { useBodyState } from '../../store/bodyState';
+import { useFolderState } from '../../store/folderState';
 /**
  * 阶段6：检查器行为转写 —— inspector 指令 link（bundle 54273-55300）逐字移植。
  *
@@ -231,12 +236,12 @@ export function updateSelection() {
 export function imagesChange() {
   const eagleIns = (window as any).eagle.inspector;
   let name = eagleIns.newName;
-  name = String(name ?? '').substr(0, req((window as any).appRoot.path + '/app/js/utils/remainingFilenameLength.js')(getBodyScope()?.libraryPath));
+  name = String(name ?? '').substr(0, req((window as any).appRoot.path + '/app/js/utils/remainingFilenameLength.js')(useMiscRawState.getState().libraryPath));
   name = (window as any).sanitize(name).replace(/%/g, '').replace(/&lt;/g, '').replace(/&gt;/g, '').trim();
   name = unescape(name);
 
   // 禁止清除名稱，一定要有文字
-  if (name === '' && getBodyScope().selected.length === 1) {
+  if (name === '' && useSelectionState.getState().selected.length === 1) {
     updateSelection();
     return;
   }
@@ -250,7 +255,7 @@ export function imagesChange() {
 
   const changedItems: any[] = [];
 
-  getBodyScope().selected.forEach(function (image: any) {
+  useSelectionState.getState().selected.forEach(function (image: any) {
     let hasChanged = false;
 
     if (typeof eagleIns.newUrl === 'string' && image.url !== eagleIns.newUrl) {
@@ -281,10 +286,10 @@ export function imagesChange() {
       changedItems.push(cloneImage);
       machineryUpdateItemView(getBodyScope(), cloneImage);
 
-      if (!getBodyScope().modifiedMappings[image.id]) {
-        getBodyScope().modifiedMappings[image.id] = 1;
+      if (!useItemState.getState().modifiedMappings[image.id]) {
+        useItemState.getState().modifiedMappings[image.id] = 1;
       } else {
-        getBodyScope().modifiedMappings[image.id]++;
+        useItemState.getState().modifiedMappings[image.id]++;
       }
     }
   });
@@ -293,11 +298,11 @@ export function imagesChange() {
     (window as any).ayncsImagesChange(changedItems);
     (window as any).hiddenByCurrentFilter(changedItems);
 
-    (window as any).electronLog.info(`[app] Change items info from inspctor, total: ${getBodyScope().selected.length} files`);
+    (window as any).electronLog.info(`[app] Change items info from inspctor, total: ${useSelectionState.getState().selected.length} files`);
 
     // 避免修改影片名稱造成影片重頭播放
-    if (getBodyScope().isDetailMode) {
-      rememberVideoCurrentTime(getBodyScope()?.current);
+    if (useBodyState.getState().isDetailMode) {
+      rememberVideoCurrentTime(useSelectionState.getState().current);
       if (q('#font-viewer')) {
         const iframe = q('iframe#font-viewer') as HTMLIFrameElement | null;
         const fontName = iframe?.contentDocument?.querySelector('.font-name span') as HTMLElement | null;
@@ -333,7 +338,7 @@ export function annotationChange() {
   annotation = String(annotation ?? '').substr(0, 20480);
   annotation = unescape(annotation);
 
-  const items = [...getBodyScope().selected];
+  const items = [...useSelectionState.getState().selected];
 
   machineryCheckOperationSafety(getBodyScope(), () => {
     items.forEach((image: any) => {
@@ -351,7 +356,7 @@ export function urlChange() {
     const eagleIns = (window as any).eagle.inspector;
     const changedItems: any[] = [];
 
-    getBodyScope().selected.forEach(function (image: any) {
+    useSelectionState.getState().selected.forEach(function (image: any) {
       let hasChanged = false;
 
       if (typeof eagleIns.newUrl === 'string' && image.url !== eagleIns.newUrl) {
@@ -372,10 +377,10 @@ export function urlChange() {
         changedItems.push(cloneImage);
         machineryUpdateItemView(getBodyScope(), cloneImage);
 
-        if (!getBodyScope().modifiedMappings[image.id]) {
-          getBodyScope().modifiedMappings[image.id] = 1;
+        if (!useItemState.getState().modifiedMappings[image.id]) {
+          useItemState.getState().modifiedMappings[image.id] = 1;
         } else {
-          getBodyScope().modifiedMappings[image.id]++;
+          useItemState.getState().modifiedMappings[image.id]++;
         }
       }
     });
@@ -384,10 +389,10 @@ export function urlChange() {
       (window as any).ayncsImagesChange(changedItems);
       (window as any).hiddenByCurrentFilter(changedItems);
 
-      (window as any).electronLog.info(`[app] Change items info from inspctor, total: ${getBodyScope().selected.length} files`);
+      (window as any).electronLog.info(`[app] Change items info from inspctor, total: ${useSelectionState.getState().selected.length} files`);
 
-      if (getBodyScope().isDetailMode) {
-        rememberVideoCurrentTime(getBodyScope()?.current);
+      if (useBodyState.getState().isDetailMode) {
+        rememberVideoCurrentTime(useSelectionState.getState().current);
         if (q('#font-viewer')) {
           const iframe = q('iframe#font-viewer') as HTMLIFrameElement | null;
           const fontName = iframe?.contentDocument?.querySelector('.font-name span') as HTMLElement | null;
@@ -409,7 +414,7 @@ export function inspectorCategoryNameChange() {
   if (eagleIns.inspectorFolder) {
     target = eagleIns.inspectorFolder;
   } else {
-    target = getBodyScope()?.currentSmartFolder;
+    target = useFolderState.getState().currentSmartFolder;
   }
   if (name === '') {
     eagleIns.category.newName = target.name;
@@ -442,7 +447,7 @@ export function inspectorCategoryDescriptionChange() {
   if (eagleIns.inspectorFolder) {
     target = eagleIns.inspectorFolder;
   } else {
-    target = getBodyScope()?.currentSmartFolder;
+    target = useFolderState.getState().currentSmartFolder;
   }
   if (target) {
     target.description = description;
@@ -690,7 +695,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           label: t('Context.Tag.FilterWithTags'),
           icon: 'ic-tag-filter.svg',
           click: () => {
-            getBodyScope().TagManager.filterWithTags([tag]);
+            useMiscRawState.getState().TagManager.filterWithTags([tag]);
             scopeEvalAsync();
           },
         },
@@ -699,7 +704,7 @@ export function tagsInputMouseDown(event: any, tag?: string) {
           label: t('Context.Tag.Edit.Title'),
           icon: 'ic-rename.svg',
           click: () => {
-            machineryEditTag(getBodyScope(), getBodyScope().TagManager.tagMappings[tag]);
+            machineryEditTag(getBodyScope(), useMiscRawState.getState().TagManager.tagMappings[tag]);
             scopeEvalAsync();
           },
         },
@@ -913,7 +918,7 @@ export function bindInspectorEvents(): () => void {
       machineryOpenPluginPanel(getBodyScope(), undefined);
       scopeEvalAsync();
     } else if (button !== 0) {
-      openItemContextMenu(event, getBodyScope()?.selected?.[0]);
+      openItemContextMenu(event, useSelectionState.getState().selected?.[0]);
       scopeEvalAsync();
     }
   };
@@ -924,7 +929,7 @@ export function bindInspectorEvents(): () => void {
   // selectionNotify 的 200ms 变更订阅承接——E1c 把最后 1 处 scope watcher 换成它）
   const applyInspectorActiveTab = () => {
     const eagleIns = (window as any).eagle.inspector;
-    const selected = getBodyScope()?.selected;
+    const selected = useSelectionState.getState().selected;
     if (!selected) return;
     eagleIns.activeTab = selected.length > 0 ? 'ITEM' : 'SIDEBAR';
   };

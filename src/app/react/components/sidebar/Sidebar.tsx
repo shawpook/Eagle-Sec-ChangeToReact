@@ -617,8 +617,8 @@ const SIMPLE_META: Record<string, { open: string; mask: string; labelKey: string
 
 /** D-1 A-1：已直调化的 open 名字（其余仍走 scope 动态下标）。 */
 const SIMPLE_OPEN_DIRECT: Record<string, (s: any) => void> = {
-  openAll: (s) => machineryOpenAll(s, undefined, undefined),
-  openUnfiled: (s) => machineryOpenUnfiled(s, undefined),
+  openAll: (s) => machineryOpenAll(undefined, undefined),
+  openUnfiled: (s) => machineryOpenUnfiled(undefined),
 };
 
 /* ============ 侧栏头部（index.html 81-133） ============ */
@@ -694,7 +694,7 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy-placement="bottom"
           tippy-content={`${t('context.order.toggle>all')}<key>Tab</key>`}
           onContextMenu={(e) => runInBodyScope((s) => s.openSidebarMenu(e))}
-          onClick={(e) => runInBodyScope((s) => machineryToggleAll(s, e))}
+          onClick={(e) => runInBodyScope((s) => machineryToggleAll(e))}
         >
           <img src={iconSrc(theme, 'ic_toggle-sidebar.svg')} />
         </div>

@@ -234,18 +234,18 @@ export function installKeymap(): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getPageDownHandlerFn(s: any): any { return scopeSingleton('pageDownHandler', () => machineryPageDownHandler()); }
+export function getPageDownHandlerFn(): any { return scopeSingleton('pageDownHandler', () => machineryPageDownHandler()); }
 
-export function getPageUpHandlerFn(s: any): any { return scopeSingleton('pageUpHandler', () => machineryPageUpHandler()); }
+export function getPageUpHandlerFn(): any { return scopeSingleton('pageUpHandler', () => machineryPageUpHandler()); }
 
-export function machineryBuildMousetrap(s: any): any {
+export function machineryBuildMousetrap(): any {
   const w = window as any;
   const bindings: any = {};
 
   // 建立快捷鍵名稱到處理函數的映射
   const shortcutHandlerMap: any = {
     'player.playAndPause': () => {
-      machineryQuicklook(s);
+      machineryQuicklook();
     },
     'player.prev1frame': () => {
       machineryPrevGifFrame(1);
@@ -261,22 +261,22 @@ export function machineryBuildMousetrap(s: any): any {
     },
     'player.speed.up': () => {
       let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
-      if (s.current.ext == 'gif') {
-        let currnt = s.gifViewer.speed;
+      if (useSelectionState.getState().current.ext == 'gif') {
+        let currnt = useMiscRawState.getState().gifViewer.speed;
         let idx = playbackRates.indexOf(currnt);
         if (idx !== -1 && playbackRates[idx + 1]) {
-          s.gifViewer.setSpeed(playbackRates[idx + 1]);
+          useMiscRawState.getState().gifViewer.setSpeed(playbackRates[idx + 1]);
         }
       }
     },
     'player.speed.down': () => {
       let playbackRates = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 3, 4, 8];
-      if (s.isDetailMode) {
-        if (s.current.ext == 'gif') {
-          let currnt = s.gifViewer.speed;
+      if (useBodyState.getState().isDetailMode) {
+        if (useSelectionState.getState().current.ext == 'gif') {
+          let currnt = useMiscRawState.getState().gifViewer.speed;
           let idx = playbackRates.indexOf(currnt);
           if (idx !== -1 && playbackRates[idx - 1]) {
-            s.gifViewer.setSpeed(playbackRates[idx - 1]);
+            useMiscRawState.getState().gifViewer.setSpeed(playbackRates[idx - 1]);
           }
         }
       }
@@ -323,19 +323,19 @@ export function machineryBuildMousetrap(s: any): any {
     'mod+a': (event: any) => machinerySelectAll(event),
     'mod+c': (event: any) => machineryCopyImages(event),
     'mod+w': ($event: any) => machineryCloseWindowHandler($event),
-    'space': (event: any) => machineryQuicklook(s, event),
-    'shift+space': getPageUpHandlerFn(s),
+    'space': (event: any) => machineryQuicklook(event),
+    'shift+space': getPageUpHandlerFn(),
     'c': (event: any) => machineryKeyCHandler(event),
     'p': (event: any) => machineryKeyPHandler(event),
-    'a': (event: any) => machineryKeyLeftHandler(s, event),
-    'd': (event: any) => machineryKeyRightHandler(s, event),
-    'w': (event: any) => machineryKeyUpHandler(s, event),
-    's': (event: any) => machineryKeyDownHandler(s, event),
-    'left': (event: any) => machineryKeyLeftHandler(s, event),
-    'right': (event: any) => machineryKeyRightHandler(s, event),
-    'up': (event: any) => machineryKeyUpHandler(s, event),
+    'a': (event: any) => machineryKeyLeftHandler(event),
+    'd': (event: any) => machineryKeyRightHandler(event),
+    'w': (event: any) => machineryKeyUpHandler(event),
+    's': (event: any) => machineryKeyDownHandler(event),
+    'left': (event: any) => machineryKeyLeftHandler(event),
+    'right': (event: any) => machineryKeyRightHandler(event),
+    'up': (event: any) => machineryKeyUpHandler(event),
     'shift+up': (event: any) => machineryMultipleSelectUp(event),
-    'down': (event: any) => machineryKeyDownHandler(s, event),
+    'down': (event: any) => machineryKeyDownHandler(event),
     'shift+down': (event: any) => machineryMultipleSelectDown(event),
     'shift+right': (event: any) => machineryMultipleSelectNext(event),
     'shift+left': (event: any) => machineryMultipleSelectPrev(event),
@@ -347,19 +347,19 @@ export function machineryBuildMousetrap(s: any): any {
     'mod+shift+down': (event: any) => machineryModShiftDownHandler(event),
     'mod+shift+left': (event: any) => machineryModShiftLeftHandler(event),
     'mod+shift+right': (event: any) => machineryModShiftRightHandler(event),
-    'backspace': () => machineryBack(s),
+    'backspace': () => machineryBack(),
     'alt+right': () => machineryNextHistory(),
     'alt+left': () => machineryPrevHistory(),
     'mod+s': () => machinerySaveHandler(),
-    '`': (event: any) => machineryToggleZoom(s, event),
+    '`': (event: any) => machineryToggleZoom(event),
     'mod++': (event: any) => machineryZoomIn(event),
     'mod+-': (event: any) => machineryZoomOut(event),
-    'tab': ($event: any) => machineryToggleAll(s, $event),
+    'tab': ($event: any) => machineryToggleAll($event),
     'alt+up': () => machineryOpenParentFolder(),
     'alt+shift+n': (event: any) => machineryCreateTxtFileFromTemplate(event),
     'alt+shift+c': () => machinerySetFolderCover(),
-    'enter': ($event: any, isInline: any) => machineryToggleDetailMode(s, $event, isInline),
-    'del': (event: any) => machineryRemoveSelected(s, event),
+    'enter': ($event: any, isInline: any) => machineryToggleDetailMode($event, isInline),
+    'del': (event: any) => machineryRemoveSelected(event),
   };
 
   // 合併硬編碼快捷鍵（如果沒有被 preferences 覆蓋）
@@ -403,25 +403,25 @@ export function machineryHomeHandler(event: any): void {
 
 /* destoryMousetrap（bundle 49316-49325 逐字；destory 原码 typo 逐字保留） */
 /* initMousetrap（bundle 49326-49330 逐字） */
-export function machineryInitMousetrap(s: any): void {
-  machineryDestoryMousetrap(s);
-  s.mousetrap = machineryBuildMousetrap(s);
+export function machineryInitMousetrap(): void {
+  machineryDestoryMousetrap();
+  writeScopeField('mousetrap', machineryBuildMousetrap());
   // b1-9av：mousetrap 绑定消费端补移植（bundle 49326-49341 逐字——原由 mgo-mousetrap
   // 指令 + 本函数双承载，Angular 消亡后 map 无人 bind，全键盘层死：Enter/方向键/Del/
   // Mod+Z/空格 quicklook 等）。applyWrapper 逐字：throttle 25 + $evalAsync。
   const w = window as any;
   const Mousetrap = w.Mousetrap;
-  if (!Mousetrap || !s.mousetrap) return;
+  if (!Mousetrap || !useMiscRawState.getState().mousetrap) return;
   const applyWrapper = function (func: any) {
     return w.throttle(function (e: any) {
       func(e);
       scopeEvalAsync();
     }, 25);
   };
-  for (var key in s.mousetrap) {
-    if (s.mousetrap.hasOwnProperty(key)) {
+  for (var key in useMiscRawState.getState().mousetrap) {
+    if (useMiscRawState.getState().mousetrap.hasOwnProperty(key)) {
       Mousetrap.unbind(key);
-      Mousetrap.bind(key, applyWrapper(s.mousetrap[key]));
+      Mousetrap.bind(key, applyWrapper(useMiscRawState.getState().mousetrap[key]));
     }
   }
 }
@@ -434,13 +434,13 @@ export function machineryKeyCHandler(event: any): void {
   }
 }
 
-export function machineryKeyDownHandler(s: any, event: any): void {
+export function machineryKeyDownHandler(event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
   if (useBodyState.getState().currentFocus == "content") {
-    if (s.isDetailMode && !s.isInlineMode) {
-      if (s.isCropMode) {
+    if (useBodyState.getState().isDetailMode && !useBodyState.getState().isInlineMode) {
+      if (useBodyState.getState().isCropMode) {
         moveCropToolChannel.emit({ horizontal: 0, vertical: 1 });
         return;
       }
@@ -448,7 +448,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         detailZoom()?.moveY( 150);
       }
     } else {
-      machinerySelectDown(s, event);
+      machinerySelectDown(event);
     }
   }
   else if (useBodyState.getState().currentFocus == "sidebar") {
@@ -457,18 +457,18 @@ export function machineryKeyDownHandler(s: any, event: any): void {
     writeScopeField('selectedFoldersMappings', {});
     writeScopeField('selectedSmartFoldersMappings', {});
     writeScopeField('selectedSmartFolders', []);
-    if (s.viewMode == "all") {
+    if (useBodyState.getState().viewMode == "all") {
       if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
-        machineryOpenUnfiled(s);
+        machineryOpenUnfiled();
       }
       else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
-        machineryOpenUntagged(s);
+        machineryOpenUntagged();
       }
       else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
-        machineryOpenRecent(s);
+        machineryOpenRecent();
       }
       else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
-        machineryOpenRandom(s);
+        machineryOpenRandom();
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity();
@@ -477,15 +477,15 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenAllTags();
       }
     }
-    else if (s.viewMode == "unfiled") {
+    else if (useBodyState.getState().viewMode == "unfiled") {
       if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
-        machineryOpenUntagged(s);
+        machineryOpenUntagged();
       }
       else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
-        machineryOpenRecent(s);
+        machineryOpenRecent();
       }
       else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
-        machineryOpenRandom(s);
+        machineryOpenRandom();
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity();
@@ -494,12 +494,12 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenAllTags();
       }
     }
-    else if (s.viewMode == "untagged") {
+    else if (useBodyState.getState().viewMode == "untagged") {
       if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
-        machineryOpenRecent(s);
+        machineryOpenRecent();
       }
       else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
-        machineryOpenRandom(s);
+        machineryOpenRandom();
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity();
@@ -508,9 +508,9 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenAllTags();
       }
     }
-    else if (s.viewMode == "recent") {
+    else if (useBodyState.getState().viewMode == "recent") {
       if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
-        machineryOpenRandom(s);
+        machineryOpenRandom();
       }
       else if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity();
@@ -519,7 +519,7 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenAllTags();
       }
     }
-    else if (s.viewMode == "random") {
+    else if (useBodyState.getState().viewMode == "random") {
       if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
         machineryOpenCommunity();
       }
@@ -527,12 +527,12 @@ export function machineryKeyDownHandler(s: any, event: any): void {
         machineryOpenAllTags();
       }
     }
-    else if (s.viewMode == "community") {
+    else if (useBodyState.getState().viewMode == "community") {
       machineryOpenAllTags();
     }
-    else if (s.viewMode == "alltags") { machineryOpenTrash(s) } else if (s.viewMode == "trash") {
+    else if (useBodyState.getState().viewMode == "alltags") { machineryOpenTrash() } else if (useBodyState.getState().viewMode == "trash") {
 
-      var listItems = s.sidebarList;
+      var listItems = useMiscRawState.getState().sidebarList;
       var folders = listItems.filter(function (item: any) {
         return item.vstype === 'folder';
       });
@@ -553,13 +553,13 @@ export function machineryKeyDownHandler(s: any, event: any): void {
       }
     }
     else {
-      if (s.currentId.indexOf("smart-folder") > -1) {
+      if (useMiscRawState.getState().currentId.indexOf("smart-folder") > -1) {
         machineryOpenNextSmartFolder();
       }
-      else if (s.currentId.indexOf("quick") > -1) {
+      else if (useMiscRawState.getState().currentId.indexOf("quick") > -1) {
         machineryOpenNextQuickAccess();
       }
-      else if (s.currentId.indexOf("folder") > -1) {
+      else if (useMiscRawState.getState().currentId.indexOf("folder") > -1) {
         machineryOpenNextFolder();
       }
     }
@@ -569,12 +569,12 @@ export function machineryKeyDownHandler(s: any, event: any): void {
   }
 }
 
-export function machineryKeyLeftHandler(s: any, event: any): void {
+export function machineryKeyLeftHandler(event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
   if (useBodyState.getState().currentFocus == "content") {
-    machinerySelectPrev(s, event);
+    machinerySelectPrev(event);
   }
   else if (useBodyState.getState().currentFocus == "tags") {
     writeScopeField('currentFocus', "sidebar");
@@ -591,27 +591,27 @@ export function machineryKeyLeftHandler(s: any, event: any): void {
       });
       machineryUpdateSidebarList();
     }
-    else if (s.currentFolder) {
-      if (!s.currentFolder.children || s.currentFolder.children.length == 0) {
-        s.currentFolder.isExpand = true;
+    else if (useFolderState.getState().currentFolder) {
+      if (!useFolderState.getState().currentFolder.children || useFolderState.getState().currentFolder.children.length == 0) {
+        useFolderState.getState().currentFolder.isExpand = true;
         machineryUpdateSidebarList();
       }
       else {
-        s.currentFolder.isExpand = false;
+        useFolderState.getState().currentFolder.isExpand = false;
         machineryUpdateSidebarList();
       }
-      w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, false);
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + useFolderState.getState().currentFolder.id, false);
     }
-    else if (s.currentSmartFolder) {
-      if (!s.currentSmartFolder.children || s.currentSmartFolder.children.length == 0) {
-        s.currentSmartFolder.isExpand = true;
+    else if (useFolderState.getState().currentSmartFolder) {
+      if (!useFolderState.getState().currentSmartFolder.children || useFolderState.getState().currentSmartFolder.children.length == 0) {
+        useFolderState.getState().currentSmartFolder.isExpand = true;
         machineryUpdateSidebarList();
       }
       else {
-        s.currentSmartFolder.isExpand = false;
+        useFolderState.getState().currentSmartFolder.isExpand = false;
         machineryUpdateSidebarList();
       }
-      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, false);
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + useFolderState.getState().currentSmartFolder.id, false);
     }
   }
 }
@@ -620,12 +620,12 @@ export function machineryKeyPHandler(event: any): void {
   machineryOpenPluginPanel(event);
 }
 
-export function machineryKeyRightHandler(s: any, event: any): void {
+export function machineryKeyRightHandler(event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
   if (useBodyState.getState().currentFocus == "content") {
-    machinerySelectNext(s, event);
+    machinerySelectNext(event);
   }
   else {
     if (useMiscRawState.getState().selectedFolders.length > 1) {
@@ -639,29 +639,29 @@ export function machineryKeyRightHandler(s: any, event: any): void {
       });
       machineryUpdateSidebarList();
     }
-    else if (s.currentFolder) {
-      s.currentFolder.isExpand = true;
+    else if (useFolderState.getState().currentFolder) {
+      useFolderState.getState().currentFolder.isExpand = true;
       machineryUpdateSidebarList();
-      w.localStorage.setItem("eagle.sidebar.folder.expand." + s.currentFolder.id, true);
+      w.localStorage.setItem("eagle.sidebar.folder.expand." + useFolderState.getState().currentFolder.id, true);
     }
-    else if (s.currentSmartFolder) {
-      s.currentSmartFolder.isExpand = true;
+    else if (useFolderState.getState().currentSmartFolder) {
+      useFolderState.getState().currentSmartFolder.isExpand = true;
       machineryUpdateSidebarList();
-      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + s.currentSmartFolder.id, true);
+      w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + useFolderState.getState().currentSmartFolder.id, true);
     }
-    else if (s.viewMode == "alltags") {
+    else if (useBodyState.getState().viewMode == "alltags") {
       writeScopeField('currentFocus', "tags");
     }
   }
 }
 
-export function machineryKeyUpHandler(s: any, event: any): void {
+export function machineryKeyUpHandler(event: any): void {
   const w = window as any;
   event && event.preventDefault();
   if (qa(".swal2-container").length > 0) return;
   if (useBodyState.getState().currentFocus == "content") {
-    if (s.isDetailMode && !s.isInlineMode) {
-      if (s.isCropMode) {
+    if (useBodyState.getState().isDetailMode && !useBodyState.getState().isInlineMode) {
+      if (useBodyState.getState().isCropMode) {
         moveCropToolChannel.emit({ horizontal: 0, vertical: -1 });
         return;
       }
@@ -669,7 +669,7 @@ export function machineryKeyUpHandler(s: any, event: any): void {
         detailZoom()?.moveY( -150);
       }
     } else {
-      machinerySelectUp(s, event);
+      machinerySelectUp(event);
     }
   }
   else if (useBodyState.getState().currentFocus == "sidebar") {
@@ -678,90 +678,90 @@ export function machineryKeyUpHandler(s: any, event: any): void {
     writeScopeField('selectedFoldersMappings', {});
     writeScopeField('selectedSmartFoldersMappings', {});
     writeScopeField('selectedSmartFolders', []);
-    if (s.viewMode == "all") { } else if (s.viewMode == "unfiled") { machineryOpenAll(s) }
-      else if (s.viewMode == "untagged") {
+    if (useBodyState.getState().viewMode == "all") { } else if (useBodyState.getState().viewMode == "unfiled") { machineryOpenAll() }
+      else if (useBodyState.getState().viewMode == "untagged") {
         if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
-          machineryOpenUnfiled(s);
+          machineryOpenUnfiled();
         }
         else {
-          machineryOpenAll(s);
+          machineryOpenAll();
         }
       }
-      else if (s.viewMode == "recent") {
+      else if (useBodyState.getState().viewMode == "recent") {
         if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
-          machineryOpenUntagged(s);
+          machineryOpenUntagged();
         }
         else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
-          machineryOpenUnfiled(s);
+          machineryOpenUnfiled();
         }
         else {
-          machineryOpenAll(s);
+          machineryOpenAll();
         }
       }
-      else if (s.viewMode == "random") {
+      else if (useBodyState.getState().viewMode == "random") {
         if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
-          machineryOpenRecent(s);
+          machineryOpenRecent();
         }
         else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
-          machineryOpenUntagged(s);
+          machineryOpenUntagged();
         }
         else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
-          machineryOpenUnfiled(s);
+          machineryOpenUnfiled();
         }
         else {
-          machineryOpenAll(s);
+          machineryOpenAll();
         }
       }
-      else if (s.viewMode == "community") {
+      else if (useBodyState.getState().viewMode == "community") {
         if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
-          machineryOpenRandom(s);
+          machineryOpenRandom();
         }
         else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
-          machineryOpenRecent(s);
+          machineryOpenRecent();
         }
         else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
-          machineryOpenUntagged(s);
+          machineryOpenUntagged();
         }
         else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
-          machineryOpenUnfiled(s);
+          machineryOpenUnfiled();
         }
         else {
-          machineryOpenAll(s);
+          machineryOpenAll();
         }
       }
-      else if (s.viewMode == "alltags") {
+      else if (useBodyState.getState().viewMode == "alltags") {
         if (usePreferencesState.getState().preferences.sidebar.community2 != 'false') {
           machineryOpenCommunity();
         }
         else if (usePreferencesState.getState().preferences.sidebar.random != 'false') {
-          machineryOpenRandom(s);
+          machineryOpenRandom();
         }
         else if (usePreferencesState.getState().preferences.sidebar.recent != 'false') {
-          machineryOpenRecent(s);
+          machineryOpenRecent();
         }
         else if (usePreferencesState.getState().preferences.sidebar.untagged != 'false') {
-          machineryOpenUntagged(s);
+          machineryOpenUntagged();
         }
         else if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
-          machineryOpenUnfiled(s);
+          machineryOpenUnfiled();
         }
         else {
-          machineryOpenAll(s);
+          machineryOpenAll();
         }
       }
-      else if (s.viewMode == "trash") {
+      else if (useBodyState.getState().viewMode == "trash") {
         machineryOpenAllTags()
       }
       else {
-        if (s.currentId) {
-          if (s.currentId.indexOf("smart-folder") > -1) {
-            machineryOpenPrevSmartFolder(s);
+        if (useMiscRawState.getState().currentId) {
+          if (useMiscRawState.getState().currentId.indexOf("smart-folder") > -1) {
+            machineryOpenPrevSmartFolder();
           }
-          else if (s.currentId.indexOf("quick") > -1) {
-            machineryOpenPrevQuickAccess(s);
+          else if (useMiscRawState.getState().currentId.indexOf("quick") > -1) {
+            machineryOpenPrevQuickAccess();
           }
-          else if (s.currentId.indexOf("folder") > -1) {
-            machineryOpenPrevFolder(s);
+          else if (useMiscRawState.getState().currentId.indexOf("folder") > -1) {
+            machineryOpenPrevFolder();
           }
         }
       }

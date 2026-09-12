@@ -53,7 +53,7 @@ export function applyDataMachineryScope(): void {
   // bundle 在世时 s.TagManager 已存在，零调用）
   if (s.__eagleShim && !useMiscRawState.getState().TagManager) {
     const w = window as any;
-    w.TagManager = machineryBuildTagManager(s);
+    w.TagManager = machineryBuildTagManager();
     syncFilterFromScope();
     syncTagManagerFromScope();
     s.TagManager = w.TagManager;
@@ -101,7 +101,7 @@ export function applyDataMachineryScope(): void {
   // 写入点 / 各组件均已 import 直调；调用观测改用 __eagleMachinery.calls 计数。
   // c9c：updateItemsView/switchLayout/prependImages/reload（reload = 一次性创建的 leading-edge
   // 防抖实例，与 bundle controller init 同语义）
-  s.reload = machineryReload(s);
+  s.reload = machineryReload();
   // c9d：缩放/放映/计数/最近文件夹（getRatioExp/getRatioNonExp 纯函数被 updateZoomRatio
   // 与 React 域 24 处调用面共用）
   // D-1 A-2：toggleSlideshow 挂载已退役（DetailViewer/miscDomain/itemMenuService/mediaService 均 import 直调）
@@ -121,15 +121,15 @@ export function applyDataMachineryScope(): void {
   // 无法 import ESM，必须以 scope 面供给（同 B-8 跨边界清单）。此前「主窗口无消费面」结论
   // 只扫了 React 树，漏掉 main.cjs；缺 updateSelection 会使 m1 selectItems 直接 TypeError。
   s.updateSelection = () => machineryUpdateSelection();
-  s.zoom = () => machineryZoom(s);
+  s.zoom = () => machineryZoom();
   // 同因：main.cjs 主窗工作流还直调 changeStar（:2058/2083）、removeSelected（:2192）、
   // toggleAll（:2319/2325）、addImagesToFolder（:2057）；selectNext/selectPrev 为详情导航
   // 的 bundle scope 面（DetailViewer 以 typeof 守卫消费），一并恢复以保 parity。
   s.changeStar = (...a: any[]) => (machineryChangeStar as any)(...a);
-  s.removeSelected = (...a: any[]) => (machineryRemoveSelected as any)(s, ...a);
-  s.toggleAll = (...a: any[]) => (machineryToggleAll as any)(s, ...a);
-  s.selectNext = (...a: any[]) => (machinerySelectNext as any)(s, ...a);
-  s.selectPrev = (...a: any[]) => (machinerySelectPrev as any)(s, ...a);
+  s.removeSelected = (...a: any[]) => (machineryRemoveSelected as any)(...a);
+  s.toggleAll = (...a: any[]) => (machineryToggleAll as any)(...a);
+  s.selectNext = (...a: any[]) => (machinerySelectNext as any)(...a);
+  s.selectPrev = (...a: any[]) => (machinerySelectPrev as any)(...a);
   // c15b：adjustLayoutWidth/zoomFit
   // c15c：getSelection/changeSidebarIndex/resetPage/calculateFilterCounts
   // c15d：openAll + ScrollbarSaver（if-absent；bundle 在世沿用其隐式全局绑定）
@@ -137,8 +137,8 @@ export function applyDataMachineryScope(): void {
   // c16a：enterDetailMode/leaveDetailMode（**保留挂载**：frontend/public/shims.js 以 25ms 轮询
   // 包装 scope.enterDetailMode/leaveDetailMode 实现详情原图交付门控——属全局消费面，
   // D-2 退役 shims.js 前不可删；应用内真实入口已走 import 直调。）
-  s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode(s, $event, image);
-  s.leaveDetailMode = () => machineryLeaveDetailMode(s);
+  s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode($event, image);
+  s.leaveDetailMode = () => machineryLeaveDetailMode();
   // c16c：saveFolder
   // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
   // 双写保证 $rootScope.notify 直调与 s.notify 原型链解析都走移植版）
@@ -223,7 +223,7 @@ export function applyDataMachineryScope(): void {
   try {
     const wm = window as any;
     if (s.__eagleShim && wm.Mousetrap) {
-      machineryInitMousetrap(s);
+      machineryInitMousetrap();
     }
   } catch (err: any) {
     console.error('[data-machinery] keyboard init failed', err);

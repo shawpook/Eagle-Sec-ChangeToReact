@@ -44,6 +44,10 @@ import { machineryToggleSlideshow } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useSelectionState } from '../store/selectionState';
+import { useBodyState } from '../store/bodyState';
+import { useFolderState } from '../store/folderState';
+import { useItemState } from '../store/itemState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -64,35 +68,35 @@ const $filter: any = (name: string) => {
 };
 
 /* openItemContextMenu（bundle 43452-44603 逐字；适配面见文件头） */
-export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promise<any> {
+export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> {
   const run = async (event: any, target: any) => {
 
         if (event?.target?.tagName === 'INPUT') return;
 
         event.stopPropagation();
 
-        if (s.selected.indexOf(target) === -1) return;
+        if (useSelectionState.getState().selected.indexOf(target) === -1) return;
         removePlayingAudios();
         
-        const item = target || s.current;
-        const items = s.selected;
-        const viewMode = s.viewMode;
+        const item = target || useSelectionState.getState().current;
+        const items = useSelectionState.getState().selected;
+        const viewMode = useBodyState.getState().viewMode;
         const isMultiple = items.length > 1;
         const isSupportFormat = EagleConfig.SUPPORT_FORMATS[item.ext];
         const isFullScreen = currentWindow.isFullScreen();
-        const isDetailMode = s.isDetailMode;
-        const isInFolderList = !!s.currentFolder;
+        const isDetailMode = useBodyState.getState().isDetailMode;
+        const isInFolderList = !!useFolderState.getState().currentFolder;
         const canPreview = (isSupportFormat || pluginModule?.previewExtension.thumbnailPluginMap[item.ext]);
 
         // 檔案可以打開的資料夾
         const openInFolderMenuItems = item?.folders?.reduce((acc, folderId) => {
-            const folder = s.folderMappings[folderId];
+            const folder = useItemState.getState().folderMappings[folderId];
             if (!folder) return acc;
             acc.push({
                 label: folder.name,
                 keywords: 'open 打開 location 位置 eagle',
                 click: () => {
-                    openItemLocation(s.selected[0], folder);
+                    openItemLocation(useSelectionState.getState().selected[0], folder);
                     scopeEvalAsync();
                 }
             });
@@ -103,7 +107,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
         let canPin = false;
         if (isInFolderList) {
             canPin = items.slice(0, 100).reduce((acc, item) => {
-                if (!item.pinned || !item.pinned[s?.currentFolder?.id]) {
+                if (!item.pinned || !item.pinned[useFolderState.getState().currentFolder?.id]) {
                     acc = false;
                 }
                 return acc;
@@ -241,7 +245,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'restore 還原 戻す',
                     icon: 'ic-trash-restore.svg',
                     click: () => {
-                        s.selected.forEach((item) => {
+                        useSelectionState.getState().selected.forEach((item) => {
                             item.isDeleted = false;
                         });
                         machineryCalculateImageBinding({ ignoreSort: true }, () => {
@@ -348,7 +352,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'open default application 開啟 打開 默認 預設 應用',
                     icon: 'ic-open-default.svg',
                     click: () => {
-                        openFilesWithDefault(s.selected);
+                        openFilesWithDefault(useSelectionState.getState().selected);
                         scopeEvalAsync();
                     },
                 },
@@ -505,7 +509,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         // TODO 需重構獨立成 function
                         machineryCheckOperationSafety(() => {
                             var now = Date.now();
-                            s.selected.forEach((item, index) => {
+                            useSelectionState.getState().selected.forEach((item, index) => {
                                 if (!item.pinned) { item.pinned = {} };
                                 if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
@@ -517,14 +521,14 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                     });
                                 }
                                 else {
-                                    item.pinned[s.currentFolder.id] = now - index;
+                                    item.pinned[useFolderState.getState().currentFolder.id] = now - index;
                                 }
                             });
-                            ayncsImagesChange(s.selected);
+                            ayncsImagesChange(useSelectionState.getState().selected);
                             var message = $filter('i18n')("notify.pinned.pin", [
-                                { "property": "count", "value": s.selected.length },
+                                { "property": "count", "value": useSelectionState.getState().selected.length },
                             ]);
-                            s.notify({
+                            useMiscRawState.getState().notify({
                                 message: message,
                                 duration: 1500
                             });
@@ -544,7 +548,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                         // TODO 需重構獨立成 function
                         machineryCheckOperationSafety(() => {
                             var now = Date.now();
-                            s.selected.forEach((item, index) => {
+                            useSelectionState.getState().selected.forEach((item, index) => {
                                 if (!item.pinned) return;
                                 if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
@@ -556,21 +560,21 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                     });
                                 }
                                 else {
-                                    delete item.pinned[s.currentFolder.id];
+                                    delete item.pinned[useFolderState.getState().currentFolder.id];
                                 }
                                 if (Object.keys(item.pinned).length === 0) {
                                     delete item.pinned;
                                 }
                             });
-                            ayncsImagesChange(s.selected);
+                            ayncsImagesChange(useSelectionState.getState().selected);
                             var message = $filter('i18n')("notify.pinned.unpin", [
-                                { "property": "count", "value": s.selected.length },
+                                { "property": "count", "value": useSelectionState.getState().selected.length },
                             ]);
-                            s.notify({
+                            useMiscRawState.getState().notify({
                                 message: message,
                                 duration: 1500
                             });
-                            s.selected = [getNext()];
+                            writeScopeField('selected', [getNext()]);
                             syncInspectorFromScope();
                             machineryRebindRefresh();
                             // scrollToSelectedItem();
@@ -758,7 +762,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'merge combine 拼圖 合併',
                     icon: 'ic-file-combine.svg',
                     click: () => {
-                        eagle.combineImages.open(s.selected);
+                        eagle.combineImages.open(useSelectionState.getState().selected);
                         scopeEvalAsync();
                     }
                 },
@@ -889,7 +893,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                     keywords: 'enter slide show presentation 簡報 演示 進入',
                     icon: 'ic-slideshow-on.svg',
                     click: () => {
-                        machineryToggleSlideshow(s);
+                        machineryToggleSlideshow();
                     }
                 },
                 // 離開全螢幕
@@ -906,13 +910,13 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 // 顯示導航器（詳情模式）
                 {
                     visible: isDetailMode,
-                    checked: !s.isHideNavigator,
+                    checked: !useBodyState.getState().isHideNavigator,
                     label: i18n.__("appmenu.view>showNavigator"),
                     keywords: 'show navigator 導航器 顯示',
                     icon: 'ic-navigator.svg',
                     click: () => {
-                        s.isHideNavigator = !s.isHideNavigator;
-                        localStorage["isHideNavigator"] = s.isHideNavigator;
+                        writeScopeField('isHideNavigator', !useBodyState.getState().isHideNavigator);
+                        localStorage["isHideNavigator"] = useBodyState.getState().isHideNavigator;
                         scopeEvalAsync();
                     },
                 },
@@ -973,14 +977,14 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 },
                 // 黑白预览
                 {
-                    checked: s.isGrayscaleMode,
+                    checked: useBodyState.getState().isGrayscaleMode,
                     accelerator: preferences.shortcuts.keybinds['view.grayscale'],
                     label: i18n.__('appmenu.view>grayscale'),
                     keywords: 'grayscale black 黑白 预览 預覽',
                     icon: 'ic-grayscale.svg',
                     keepOpen: true,
                     click: () => {
-                        s.isGrayscaleMode = !s.isGrayscaleMode;
+                        writeScopeField('isGrayscaleMode', !useBodyState.getState().isGrayscaleMode);
                         scopeEvalAsync();
                     }
                 },
@@ -1001,14 +1005,14 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                                 visible: item.ext === 'webp',
                                 label: "PNG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert png 轉換`,
-                                click: () => { webpConvertStartChannel.emit({ images: s.selected, format: "png" }); scopeEvalAsync(); }
+                                click: () => { webpConvertStartChannel.emit({ images: useSelectionState.getState().selected, format: "png" }); scopeEvalAsync(); }
                             },
                             // JPG
                             {
                                 visible: item.ext === 'webp',
                                 label: "JPG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert jpg 轉換`,
-                                click: () => { webpConvertStartChannel.emit({ images: s.selected, format: "jpg" }); scopeEvalAsync(); }
+                                click: () => { webpConvertStartChannel.emit({ images: useSelectionState.getState().selected, format: "jpg" }); scopeEvalAsync(); }
                             },
                         ]
                     }
@@ -1162,25 +1166,25 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                 },
                 // 從文件夾中移除
                 {
-                    visible: !!s.currentFolder,
-                    accelerator: preferences.shortcuts.keybinds[`edit.remove.folder.${s.platform}`],
+                    visible: !!useFolderState.getState().currentFolder,
+                    accelerator: preferences.shortcuts.keybinds[`edit.remove.folder.${useBodyState.getState().platform}`],
                     label: i18n.__('context.image.removeFromFolder'),
                     keywords: 'remove from folder delete 從文件夾中移除 從資料夾中移除',
                     icon: 'ic-file-remove-folder.svg',
                     click: () => {
-                        removeFromFolder(event, s.currentFolder.id);
+                        removeFromFolder(event, useFolderState.getState().currentFolder.id);
                         scopeEvalAsync();
                     },
                 },
                 // 丢到回收站
                 {
                     visible: viewMode !== 'trash',
-                    accelerator: preferences.shortcuts.keybinds[`edit.remove.trash.${s.platform}`],
+                    accelerator: preferences.shortcuts.keybinds[`edit.remove.trash.${useBodyState.getState().platform}`],
                     label: i18n.__('context.image.moveToTrash'),
                     keywords: 'move to trash remove delete 丟到回收站 垃圾桶',
                     icon: 'ic-file-move-trash.svg',
                     click: () => {
-                        machineryRemoveSelected(s);
+                        machineryRemoveSelected();
                         scopeEvalAsync();
                     },
                 },
@@ -1209,7 +1213,7 @@ export async function itemMenuOpenItemContextMenu(s: any, ...args: any[]): Promi
                             scopeEvalAsync(() => {
                                 machineryRemovePermanently();
                                 if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
-                                    s.removeSound.play();
+                                    useMiscRawState.getState().removeSound.play();
                                 }
                             });
                         });
@@ -1236,5 +1240,5 @@ const getScope = getBodyScope;  // b1-9bz-A：原 makeControllerFns(getScope) �
 
 export function openItemContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    return itemMenuOpenItemContextMenu(getScope(), ...args);
+    return itemMenuOpenItemContextMenu(...args);
   }

@@ -1125,7 +1125,7 @@ export function AddToFolderModal() {
       } else {
         body.selected = [];
         syncInspectorFromScope();
-        machineryLeaveDetailMode(body);
+        machineryLeaveDetailMode();
       }
     }
 

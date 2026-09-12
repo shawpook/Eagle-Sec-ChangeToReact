@@ -69,6 +69,7 @@ import { writeScopeField } from './scopeFieldBridge';
 import { useLockState } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState } from '../store/bodyState';
+import { useSelectionState } from '../store/selectionState';
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;
@@ -341,7 +342,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('lock-now', function () {
     const s = sNow();
     if (!s) return;
-    machineryLockApp(s);
+    machineryLockApp();
     scopeEvalAsync();
   });
 
@@ -564,13 +565,13 @@ export function takeoverMiscDomain(): void {
         setTimeout(function () { machineryChangeSidebarIndex(firstFolder); scopeEvalAsync(); }, 200);
       }
       else {
-        machineryOpenAll(s);
+        machineryOpenAll();
       }
       s.selected = [];
       syncInspectorFromScope();
       domainTimeout(function () {
         select(undefined, item);
-        machineryEnterDetailMode(s, undefined, item);
+        machineryEnterDetailMode(undefined, item);
         scrollToSelectedItem();
       }, 250);
       scopeEvalAsync();
@@ -683,7 +684,7 @@ export function takeoverMiscDomain(): void {
         }, 500);
       }
       else {
-        machineryOpenAll(s);
+        machineryOpenAll();
         s.selected = [];
         syncInspectorFromScope();
         domainTimeout(function () {
@@ -695,7 +696,7 @@ export function takeoverMiscDomain(): void {
     else {
       s.selected = [];
       syncInspectorFromScope();
-      machineryOpenAll(s);
+      machineryOpenAll();
     }
     scopeEvalAsync();
   });
@@ -741,7 +742,7 @@ export function takeoverMiscDomain(): void {
   ipc.on('toggle-slideshow', function (_e: any) {
     const s = sNow();
     if (!s) return;
-    machineryToggleSlideshow(s);
+    machineryToggleSlideshow();
     scopeEvalAsync();
   });
 
@@ -799,7 +800,7 @@ export function takeoverMiscDomain(): void {
     if (item.folders && item.folders.length > 0) {
       folder = s.folderMappings[item.folders[0]];
     }
-    machineryQuickOpenFolder(s, folder, item);
+    machineryQuickOpenFolder(folder, item);
     scopeEvalAsync();
   });
 
@@ -1164,7 +1165,7 @@ export function dblclickContentPanel(...args: any[]) {
     if (!s) return;
     return (function () {
             if (!s.isCropMode) {
-                machineryLeaveDetailMode(s);
+                machineryLeaveDetailMode();
             }    
         }).apply(null, args);
   }
@@ -1199,7 +1200,7 @@ export function escHandler(...args: any[]) {
                 	AnnotationPreview.hide();
                 }
                 else {
-                    machineryLeaveDetailMode(s);
+                    machineryLeaveDetailMode();
                 }
             }
             if (s.isPreviewing) {
@@ -1632,31 +1633,31 @@ export function machineryCheckTouchIDSupport(): void {
   }
 }
 
-export function machineryEnterDetailMode(s: any, $event: any, image: any): void {
+export function machineryEnterDetailMode($event: any, image: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   cssSet("#detail-container", { opacity: 0 });
 
   var duration = 100;
-  if (s.isInlineMode) {
+  if (useBodyState.getState().isInlineMode) {
     duration = 50;
   }
 
-  if (s.selected.length <= 0) return;
-  image = image || s.selected[s.selected.length - 1];
-  s.isDetailMode = true;
-  s.current = image;
+  if (useSelectionState.getState().selected.length <= 0) return;
+  image = image || useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1];
+  writeScopeField('isDetailMode', true);
+  writeScopeField('current', image);
   syncDetailFromScope();
   syncInspectorFromScope();
-  s.selected = [image];
+  writeScopeField('selected', [image]);
   syncInspectorFromScope();
-  s.showDetailImage = true;
+  writeScopeField('showDetailImage', true);
   syncDetailFromScope();
   // 移除 $scope.zoom(image) — 此時 Angular 尚未跑 digest，
   // body 還沒有 is-detail-mode class，$(".content-panel").width() 讀到的是列表模式尺寸，
   // 算出的 zoom 一定是錯的。正確的 zoom 會在下方 $timeout 回調中執行。
   w.eagle.inspector.activeTab = "ITEM";
-  s.smoothZoomDone = false;
+  writeScopeField('smoothZoomDone', false);
   syncDetailFromScope();
   // bundle 依赖 Angular digest：ng-click 处理器返回后本轮 digest 立即把 body 的
   // is-detail-mode 落到 DOM，100ms 后的 smoothZoom 初始化才量得到详情面板尺寸。
@@ -1667,8 +1668,8 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
 
   $timeout.cancel(zoomInitTimeout);
   zoomInitTimeout = $timeout(function () {
-    if (!s.initDetailMode) {
-      s.initDetailMode = true;
+    if (!useMiscRawState.getState().initDetailMode) {
+      writeScopeField('initDetailMode', true);
       syncDetailFromScope();
       ensureDetailZoom({
         width: '100%',
@@ -1688,14 +1689,14 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
         on_IMAGE_LOAD: function () {
           $timeout(function () {
             window.dispatchEvent(new Event("orientationchange"));
-            s.showDetailImage = true;
+            writeScopeField('showDetailImage', true);
             syncDetailFromScope();
-            s.smoothZoomDone = true;
+            writeScopeField('smoothZoomDone', true);
             syncDetailFromScope();
             if (!machineryLastZoom()) {
-              machineryZoom(s, image);
+              machineryZoom(image);
             }
-            detailZoom()?.updateNavigator( s.current);
+            detailZoom()?.updateNavigator( useSelectionState.getState().current);
 
             cssSet("#detail-container", { opacity: 1 });
             show(".smooth_zoom_preloader");
@@ -1710,38 +1711,38 @@ export function machineryEnterDetailMode(s: any, $event: any, image: any): void 
         }
       });
     } else {
-      s.smoothZoomDone = true;
+      writeScopeField('smoothZoomDone', true);
       syncDetailFromScope();
-      detailZoom()?.updateNavigator( s.current);
+      detailZoom()?.updateNavigator( useSelectionState.getState().current);
       window.dispatchEvent(new Event("orientationchange"));
       if (!machineryLastZoom()) {
-        machineryZoom(s, image);
+        machineryZoom(image);
       }
       cssSet("#detail-container", { opacity: 1 });
       setTimeout(function () {
         machineryPreloadImage("next");
       }, 200);
     }
-    machineryAddToRecentFile(s.current);
+    machineryAddToRecentFile(useSelectionState.getState().current);
     w.removePlayingAudios();
     w.HoverPreview.hide();
   }, duration);
 }
 
-export function machineryEnterSlideshowMode(s: any): void {
+export function machineryEnterSlideshowMode(): void {
   const w = window as any;
   const $timeout = getTimeout();
-  if (s.isSlideshowMode) return;
+  if (useBodyState.getState().isSlideshowMode) return;
   const duration = (w.process.platform === 'darwin') ? 300 : 100;
-  if ((!s.selected.length as any) === 0) return;
+  if ((!useSelectionState.getState().selected.length as any) === 0) return;
   w.currentWindow.setFullScreen(true);
-  machineryEnterDetailMode(s, null, s.selected[0]);
-  s.isSlideshowMode = true;
+  machineryEnterDetailMode(null, useSelectionState.getState().selected[0]);
+  writeScopeField('isSlideshowMode', true);
   $timeout(function () {
     window.dispatchEvent(new Event("orientationchange"));
     window.dispatchEvent(new Event("resize"));
     $timeout(function () {
-      machineryZoom(s, undefined);
+      machineryZoom(undefined);
     }, duration);
   }, 700);
   w.electronLog && w.electronLog.info(`[app] Enter slideshow mode.`);
@@ -1767,88 +1768,88 @@ export function machineryFocusAppUnlockPassword(): void {
   });
 }
 
-export function machineryLeaveDetailMode(s: any): void {
+export function machineryLeaveDetailMode(): void {
   const w = window as any;
   const $timeout = getTimeout();
 
-  s.isCropMode = false;
+  writeScopeField('isCropMode', false);
   syncDetailFromScope();
-  s.usingGifPlayer = false;
+  writeScopeField('usingGifPlayer', false);
   syncDetailFromScope();
-  if (s.isDetailMode) {
+  if (useBodyState.getState().isDetailMode) {
 
-    machineryRememberScrollTops(s.current);
+    machineryRememberScrollTops(useSelectionState.getState().current);
 
-    s.isDetailMode = false;
-    s.showDetailImage = false;
+    writeScopeField('isDetailMode', false);
+    writeScopeField('showDetailImage', false);
     syncDetailFromScope();
-    s.smoothZoomDone = false;
+    writeScopeField('smoothZoomDone', false);
     syncDetailFromScope();
-    s.commentRect = undefined;
+    writeScopeField('commentRect', undefined);
     syncDetailFromScope();
     // 記住上次播放位置
-    machineryRememberVideoCurrentTime(s.current); s.current = undefined;
+    machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeScopeField('current', undefined);
     syncDetailFromScope();
     syncInspectorFromScope();
     $timeout.cancel(zoomInitTimeout);
 
     setTimeout(function () {
-      if (s.isDetailMode) return;
+      if (useBodyState.getState().isDetailMode) return;
       removeClass(".content-panel.detail-mode", "inline-mode open");
       setScrollLeft(".smooth_zoom_preloader", 0);
     }, 50);
 
-    s.isInlineMode = false;
+    writeScopeField('isInlineMode', false);
     machineryFadeOutDetailMode();
     detailZoom()?.cleanBitmapViewer();
     detailZoom()?.clearPreloadData();
 
-    if (s.isGifReady === true) {
-      s.isGifReady = false;
+    if (useMiscRawState.getState().isGifReady === true) {
+      writeScopeField('isGifReady', false);
       syncDetailFromScope();
-      delete s.gifViewer.frames;
-      s.gifViewer.frames = [];
+      delete useMiscRawState.getState().gifViewer.frames;
+      useMiscRawState.getState().gifViewer.frames = [];
       syncDetailFromScope();
-      s.gifViewer.mousedownTime = 0;
+      useMiscRawState.getState().gifViewer.mousedownTime = 0;
       syncDetailFromScope();
-      s.gifViewer.mousedownX = 0;
+      useMiscRawState.getState().gifViewer.mousedownX = 0;
       syncDetailFromScope();
-      s.gifViewer.mousedownY = 0;
+      useMiscRawState.getState().gifViewer.mousedownY = 0;
       syncDetailFromScope();
-      s.gifViewer.range = undefined;
+      useMiscRawState.getState().gifViewer.range = undefined;
       syncDetailFromScope();
-      s.gifPlayer = undefined;
+      writeScopeField('gifPlayer', undefined);
       syncDetailFromScope();
     }
 
-    w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap(s);
-    clearInterval(s.gifUpadteInterval);
+    w.initMousetrap ? w.initMousetrap() : machineryInitMousetrap();
+    clearInterval(useMiscRawState.getState().gifUpadteInterval);
   }
 }
 
 /* leaveSlideshowMode（bundle 23841-23856 逐字：**setFullScreen(false) 双写——bundle 原样**） */
-export function machineryLeaveSlideshowMode(s: any): void {
+export function machineryLeaveSlideshowMode(): void {
   const w = window as any;
   const $timeout = getTimeout();
   const duration = (w.process.platform === 'darwin') ? 300 : 100;
   w.currentWindow.setFullScreen(false);
-  s.isSlideshowMode = false;
+  writeScopeField('isSlideshowMode', false);
   w.currentWindow.setFullScreen(false);
   $timeout(function () {
     window.dispatchEvent(new Event("orientationchange"));
     window.dispatchEvent(new Event("resize"));
     $timeout(function () {
-      machineryZoom(s, undefined);
+      machineryZoom(undefined);
     }, duration);
   }, 700);
   w.electronLog && w.electronLog.info(`[app] Leave slideshow mode.`);
 }
 
 /* lockApp（bundle 29016-29023 逐字）+ focusAppUnlockPassword（29025-29034 逐字） */
-export function machineryLockApp(s: any): void {
+export function machineryLockApp(): void {
   const w = window as any;
   writeScopeField('isAppLocked', true);
-  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
+  if (typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
   setTimeout(function () {
     machineryFocusAppUnlockPassword();
   }, 100);
@@ -1951,12 +1952,12 @@ export function machineryOpenPluginPanel(event: any): void {
   openPluginPanelChannel.emit();
 }
 
-export function machineryQuicklook(s: any, event: any): void {
+export function machineryQuicklook(event: any): void {
   const w = window as any;
   if (qa(".swal2-container").length > 0) {
     return;
   }
-  if (s.isCropMode) return;
+  if (useBodyState.getState().isCropMode) return;
   event && event.preventDefault();
   // if ($scope.isDetailMode && !$scope.isInlineMode && VIDEO_TYPES[$scope.current.ext]) {
   //     $scope.toggleVideoPlay();
@@ -1965,46 +1966,46 @@ export function machineryQuicklook(s: any, event: any): void {
   //     $scope.toggleVideoPlay();
   // }
   // else
-  if (s.isDetailMode && !s.isInlineMode && (s.current.ext == 'gif')) {
+  if (useBodyState.getState().isDetailMode && !useBodyState.getState().isInlineMode && (useSelectionState.getState().current.ext == 'gif')) {
     toggleGifPlay();
   }
   else {
     // 如果用户设定是预览
     if (usePreferencesState.getState().preferences.habits.keyspace === "preview") {
-      if (s.selected.length > 0) {
+      if (useSelectionState.getState().selected.length > 0) {
         addClass(".content-panel.detail-mode", "inline-mode");
         setTimeout(function () {
           addClass(".content-panel.detail-mode", "open");
         }, 30);
-        machineryToggleDetailMode(s, event, true);
+        machineryToggleDetailMode(event, true);
         w.analytics.event('QuickLook', 'Open');
       }
     }
     else if (usePreferencesState.getState().preferences.habits.keyspace === "preview-native") {
-      if (s.selected.length > 0) {
-        if (w.process.platform == 'darwin' && !s.isDetailMode) {
-          s.isPreviewing = !s.isPreviewing;
-          w.IPCHelper.send('quicklook', s.selected[0]);
+      if (useSelectionState.getState().selected.length > 0) {
+        if (w.process.platform == 'darwin' && !useBodyState.getState().isDetailMode) {
+          writeScopeField('isPreviewing', !useMiscRawState.getState().isPreviewing);
+          w.IPCHelper.send('quicklook', useSelectionState.getState().selected[0]);
         }
       }
     }
     // 如果用户设定是滚动页面
     else {
-      getPageDownHandlerFn(s)(event);
+      getPageDownHandlerFn()(event);
     }
   }
 }
 
-export function machineryToggleDetailMode(s: any, $event: any, isInline: any): void {
-  detailToggleDetailMode(s, $event, isInline);
+export function machineryToggleDetailMode($event: any, isInline: any): void {
+  detailToggleDetailMode($event, isInline);
 }
 
 /* toggleSlideshow（bundle 23816-23823 逐字；enter/leaveSlideshowMode 经 scope 解析） */
-export function machineryToggleSlideshow(s: any): void {
-  if (!s.isSlideshowMode) {
-    machineryEnterSlideshowMode(s);
+export function machineryToggleSlideshow(): void {
+  if (!useBodyState.getState().isSlideshowMode) {
+    machineryEnterSlideshowMode();
   } else {
-    machineryLeaveSlideshowMode(s);
+    machineryLeaveSlideshowMode();
   }
 }
 

@@ -55,6 +55,8 @@ import { useItemState } from '../store/itemState';
 import { useFolderState } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useBodyState } from '../store/bodyState';
+import { useLayoutState } from '../store/layoutState';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
@@ -786,7 +788,7 @@ export function openFolder(...args: any[]) {
                 eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
             ) {
                 if (s.isDetailMode) {
-                    machineryLeaveDetailMode(s);
+                    machineryLeaveDetailMode();
                 }
                 return;
             }
@@ -813,7 +815,7 @@ export function openFolder(...args: any[]) {
 
 			if (localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
                 if (s.layout !== localStorage[`eagle.list.layout.${s.currentFolder.id}`]) {
-                    machinerySwitchLayout(s, localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
+                    machinerySwitchLayout(localStorage[`eagle.list.layout.${s.currentFolder.id}`]);
                 }
 			}
 
@@ -880,7 +882,7 @@ export function openSmartFolder(...args: any[]) {
                 eagle.filter.filterRules.import.type == 'undefined' && s.currentId === currentId
             ) {
                 if (s.isDetailMode) {
-                    machineryLeaveDetailMode(s);
+                    machineryLeaveDetailMode();
                 }
                 return;
             }
@@ -911,7 +913,7 @@ export function openSmartFolder(...args: any[]) {
             }
 
 			if (localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]) {
-				machinerySwitchLayout(s, localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
+				machinerySwitchLayout(localStorage[`eagle.list.layout.${s.currentSmartFolder.id}`]); 
 			}
 
             if (!currentId || currentId.indexOf("quickaccess-") === -1) {
@@ -961,7 +963,7 @@ export function openUnfiled(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价（s.leaveDetailMode/resetPage/reload 挂载即 machinery 版）。
   const s = getBodyScope();
   if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryOpenUnfiled(s, args[0]);
+  machineryOpenUnfiled(args[0]);
 }
 
 export function smartFolderCount(...args: any[]) {
@@ -1035,37 +1037,37 @@ export function checkDiskSpace(...args: any[]) {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): void {
+export function machineryOpenAll(ignoreHistory: any, callback: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 
-  if (s.viewMode === 'all' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+  if (useBodyState.getState().viewMode === 'all' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (callback) {
       callback();
     }
-    if (s.isDetailMode) {
-      machineryLeaveDetailMode(s);
+    if (useBodyState.getState().isDetailMode) {
+      machineryLeaveDetailMode();
     }
     return;
   }
 
   w.ScrollbarSaver.saveScrollPosition();
 
-  s.viewMode = 'all';
+  writeScopeField('viewMode', 'all');
   writeScopeField('currentFocus', "sidebar");
   machineryResetPage();
 
   $timeout.cancel(openAllTimeout);
   openAllTimeout = $timeout(function () {
     if (!ignoreHistory) {
-      s.UrlStateService.setState({ view: 'all', folder: null, smartfolder: null, tag: null, color: null });
+      useMiscRawState.getState().UrlStateService.setState({ view: 'all', folder: null, smartfolder: null, tag: null, color: null });
     }
-    s.imageSize.height = localStorage.getItem("eagle.list.thumbSize.all") || 150;
+    useLayoutState.getState().imageSize.height = localStorage.getItem("eagle.list.thumbSize.all") || 150;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.imageSize.height = parseInt(s.imageSize.height);
+    useLayoutState.getState().imageSize.height = parseInt(useLayoutState.getState().imageSize.height);
     // b1-9bz-C-4：原 $watch("imageSize.height") 在 flush 时触发 —— 改为写入点直调
     machineryOnImageSizeHeightChanged();
     syncToolbarFromScope();
@@ -1073,10 +1075,10 @@ export function machineryOpenAll(s: any, ignoreHistory: any, callback: any): voi
     syncDetailFromScope();
     syncInspectorFromScope();
     machinerySetLastFolder(undefined);
-    machineryUpdateListHeight(s.imageSize.height);
+    machineryUpdateListHeight(useLayoutState.getState().imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
-    s.reload();
+    useMiscRawState.getState().reload();
     if (callback) {
       callback();
     }
@@ -1105,23 +1107,23 @@ export function machineryOpenCommunity(ignoreHistory: any): void {
   };
   let baseUrl = `https://community-${lng2locale[w.preferences.general.language] || "en"}.eagle.cool`;
   openUrlInPanelChannel.emit(`${baseUrl}`);
-  machineryLeaveDetailMode(w.$bodyScope);
+  machineryLeaveDetailMode();
 }
 
-export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): void {
+export function machineryOpenRandom(ignoreHistory: any, callback: any): void {
   const w = window as any;
   const $timeout = getTimeout();
-  if (s.viewMode === 'random' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+  if (useBodyState.getState().viewMode === 'random' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (callback) {
       callback();
     }
-    if (s.isDetailMode) {
-      machineryLeaveDetailMode(s);
+    if (useBodyState.getState().isDetailMode) {
+      machineryLeaveDetailMode();
     }
     return;
   }
 
-  s.viewMode = 'random';
+  writeScopeField('viewMode', 'random');
   machineryResetPage();
   writeScopeField('currentFocus', "sidebar");
 
@@ -1131,19 +1133,19 @@ export function machineryOpenRandom(s: any, ignoreHistory: any, callback: any): 
     if (!ignoreHistory) {
       w.UrlStateService.setState({ view: 'random', folder: null, smartfolder: null, tag: null, color: null });
     }
-    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.random") || 150;
+    useLayoutState.getState().imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.random") || 150;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.imageSize.height = parseInt(s.imageSize.height);
+    useLayoutState.getState().imageSize.height = parseInt(useLayoutState.getState().imageSize.height);
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
     machinerySetLastFolder(undefined);
     setScrollTop("#sidebar-item-container", 0);
-    s.reload();
+    useMiscRawState.getState().reload();
     if (callback) {
       callback();
     }

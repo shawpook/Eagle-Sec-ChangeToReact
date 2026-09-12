@@ -254,7 +254,7 @@ export function addToLastUsedFolder(...args: any[]) {
                 else {
                     s.selected = [];
                     syncInspectorFromScope();
-                    machineryLeaveDetailMode(s);
+                    machineryLeaveDetailMode();
                 }
             }
         });
@@ -377,13 +377,13 @@ export function removeFromFolder(...args: any[]) {
             } else {
                 s.selected = [];
                 syncInspectorFromScope();
-                machineryLeaveDetailMode(s);
+                machineryLeaveDetailMode();
             }
 
             if (useBodyState.getState().isDetailMode) {
                 $timeout(function() {
                     machineryForceFitImageSize(useSelectionState.getState().current);
-                    machineryZoom(s);
+                    machineryZoom();
                 }, 100);
             }
             ScrollbarSaver.saveScrollPosition();

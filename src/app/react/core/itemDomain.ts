@@ -124,27 +124,27 @@ function domainMuteCalcuteImageBinding(params: any, callback: any): void {
 }
 
 /* updateItemListView（bundle 34300 逐字；FileUrlHelper/VIDEO_TYPES/AUDIO_TYPES 全局） */
-function domainUpdateItemListView(s: any, generated: any): void {
+function domainUpdateItemListView(generated: any): void {
   const w = window as any;
   const FileUrlHelper = w.FileUrlHelper;
-  const VIDEO_TYPES = s.VIDEO_TYPES || {};
-  const AUDIO_TYPES = s.AUDIO_TYPES || {};
-  if (!generated || !s.itemMappings[generated.id]) return;
+  const VIDEO_TYPES = useMiscRawState.getState().VIDEO_TYPES || {};
+  const AUDIO_TYPES = useMiscRawState.getState().AUDIO_TYPES || {};
+  if (!generated || !useItemState.getState().itemMappings[generated.id]) return;
 
   const $imgEl = q("#box-" + generated.id + " img");
-  const image = s.itemMappings[generated.id];
+  const image = useItemState.getState().itemMappings[generated.id];
   const originWidth = image.width;
   const originHeight = image.height;
   const originOrientation = image.orientation;
 
   if (!image) return;
 
-  if (s.itemMappings[generated.id]) {
-    if (!s.modifiedMappings[generated.id]) {
-      s.modifiedMappings[generated.id] = 1;
+  if (useItemState.getState().itemMappings[generated.id]) {
+    if (!useItemState.getState().modifiedMappings[generated.id]) {
+      useItemState.getState().modifiedMappings[generated.id] = 1;
     }
     else {
-      s.modifiedMappings[generated.id]++;
+      useItemState.getState().modifiedMappings[generated.id]++;
     }
 
     machineryUpdateFilterCounts(image, -1, Date.now());
@@ -228,7 +228,7 @@ function domainUpdateItemListView(s: any, generated: any): void {
     ) {
       machineryUpdateItemView(image);
       machineryRelayout();
-      getOffsetScrollbarFn(s)(30);
+      getOffsetScrollbarFn()(30);
       refreshThumb = true;
     }
 
@@ -277,16 +277,16 @@ function domainUpdateItemListView(s: any, generated: any): void {
       }
     }
   }
-  s.finishGenerateQueue.push(generated);
-  machineryRememberVideoCurrentTime(s.current);
+  useMiscRawState.getState().finishGenerateQueue.push(generated);
+  machineryRememberVideoCurrentTime(useSelectionState.getState().current);
 
-  if (s.isDetailMode) {
-    if (generated && s.selected && s.selected[0] && generated.id === s.selected[0].id) {
-      if (VIDEO_TYPES[s.current.ext] || AUDIO_TYPES[s.current.ext]) {
+  if (useBodyState.getState().isDetailMode) {
+    if (generated && useSelectionState.getState().selected && useSelectionState.getState().selected[0] && generated.id === useSelectionState.getState().selected[0].id) {
+      if (VIDEO_TYPES[useSelectionState.getState().current.ext] || AUDIO_TYPES[useSelectionState.getState().current.ext]) {
         /* 原码空分支（视频当前时间的特殊处理占位），逐字保留 */
       }
       else {
-        detailZoom()?.updateNavigator( s.current);
+        detailZoom()?.updateNavigator( useSelectionState.getState().current);
       }
     }
   }
@@ -645,7 +645,7 @@ export function takeoverItemDomain(): void {
       const existItem = s.itemMappings[generated.id];
       if (existItem) {
         // 更新封面
-        domainUpdateItemListView(s, generated);
+        domainUpdateItemListView(generated);
       }
       else {
         ipc.send("file-uploaded-end", generated);
@@ -672,7 +672,7 @@ export function takeoverItemDomain(): void {
     if (!s) return;
     // 更新封面
     if (converted && s.itemMappings[converted.id]) {
-      domainUpdateItemListView(s, converted);
+      domainUpdateItemListView(converted);
     }
     scopeEvalAsync();
   });
@@ -1030,7 +1030,7 @@ export function openItemLocation(...args: any[]) {
     return (function (item, folder) {
             resetFilter();
             s.keyword = "";
-            machineryQuickOpenFolder(s, folder, item);
+            machineryQuickOpenFolder(folder, item);
         }).apply(null, args);
   }
 
@@ -2953,26 +2953,26 @@ export let rebindRefreshLazyTimeout: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryReload(s: any): any {
+export function machineryReload(): any {
   const w = window as any;
   return debounce(function reload(keepDetailMode: any) {
-    s.hexColor = undefined;
-    s.unlockPassword = "";
+    writeScopeField('hexColor', undefined);
+    writeScopeField('unlockPassword', "");
 
     if (!keepDetailMode) {
-      if (s.isDetailMode) {
-        machineryLeaveDetailMode(s);
+      if (useBodyState.getState().isDetailMode) {
+        machineryLeaveDetailMode();
       }
 
-      if (s.selected.length > 0) {
-        s.selected = [];
+      if (useSelectionState.getState().selected.length > 0) {
+        writeScopeField('selected', []);
         syncInspectorFromScope();
       }
     }
 
-    s.loadMoreDisable = false;
-    s.lastImageHeight = s.imageSize.height;
-    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
+    writeScopeField('loadMoreDisable', false);
+    writeScopeField('lastImageHeight', useLayoutState.getState().imageSize.height);
+    writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
     machineryRebindRefresh();
     machineryRelayout();
     machineryUpdateSelection();
@@ -2981,10 +2981,10 @@ export function machineryReload(s: any): any {
     trigger("#box-container-scrollbar", "UPDATE_BOX_SCROLLBAR");
 
     machineryAutoResizeTagFilter();
-    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+    if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") {
       machineryAdjustLayoutWidth(0);
     }
-    s.listDone = true;
+    writeScopeField('listDone', true);
 
     if (scrollTopValue("#box-container") !== 0) {
       setScrollTop("#box-container", 0);

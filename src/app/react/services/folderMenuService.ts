@@ -809,7 +809,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '資料夾 文件夾 刪除 移除 remove delete folder dir',
             icon: 'ic-folder-remove.svg',
             click: () => {
-              machineryRemoveSelectedFolders(s);
+              machineryRemoveSelectedFolders();
               scopeEvalAsync();
             }
           },
@@ -1126,7 +1126,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '資料夾 文件夾 刪除 移除 remove delete folder dir',
             icon: 'ic-folder-remove.svg',
             click: () => {
-              machineryRemoveFolder(s, folder);
+              machineryRemoveFolder(folder);
               scopeEvalAsync();
             }
           },
@@ -1716,7 +1716,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '資料夾 文件夾 刪除 移除 remove delete smart folder dir',
             icon: 'ic-smart-folder-remove.svg',
             click: () => {
-              machineryRemoveSelectedSmartFolders(s);
+              machineryRemoveSelectedSmartFolders();
               scopeEvalAsync();
             }
           },
@@ -1892,7 +1892,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '資料夾 文件夾 刪除 移除 remove delete smart folder dir',
             icon: 'ic-smart-folder-remove.svg',
             click: () => {
-              machineryRemoveSmartFolder(s, smartFolder);
+              machineryRemoveSmartFolder(smartFolder);
               scopeEvalAsync();
             }
           },

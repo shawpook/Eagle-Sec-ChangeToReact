@@ -123,7 +123,7 @@ export function switchGridLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            machinerySwitchLayout(s, "GridLayout");
+            machinerySwitchLayout("GridLayout");
             scopeEvalAsync();
             machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "GridLayout");
         }).apply(null, args);
@@ -134,7 +134,7 @@ export function switchJustifiedLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            machinerySwitchLayout(s, "JustifiedLayout");
+            machinerySwitchLayout("JustifiedLayout");
             scopeEvalAsync();
             machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "JustifiedLayout");
         }).apply(null, args);
@@ -145,7 +145,7 @@ export function switchListLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            machinerySwitchLayout(s, "ListLayout");
+            machinerySwitchLayout("ListLayout");
             scopeEvalAsync();
             machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "ListLayout");
         }).apply(null, args);
@@ -156,7 +156,7 @@ export function switchSquareLayout(...args: any[]) {
     const s = getScope();
     if (!s) return;
     return (function () {
-            machinerySwitchLayout(s, "SquareLayout");
+            machinerySwitchLayout("SquareLayout");
             scopeEvalAsync();
             machinerySaveLayout(s.currentFolder || s.currentSmartFolder, "SquareLayout");
         }).apply(null, args);
@@ -172,7 +172,7 @@ export function zoom(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价，统一转发消除重复实现。
   const s = getBodyScope();
   if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryZoom(s);
+  machineryZoom();
 }
 
 export function zoomFit(...args: any[]) {
@@ -387,36 +387,36 @@ export function machinerySmartZoom(target: any, forceMode: any): void {
 }
 
 /* toggleZoom（bundle 33990-34012 逐字） */
-export function machineryToggleZoom(s: any, event: any): void {
+export function machineryToggleZoom(event: any): void {
   const w = window as any;
-  if (!s.isDetailMode) return;
-  if (s.VIDEO_TYPES[s.current.ext]) {
-    if (s.lastZoomMode !== "edge") {
-      machineryZoomFit(s, event);
-      s.lastZoomMode = "edge";
+  if (!useBodyState.getState().isDetailMode) return;
+  if (useMiscRawState.getState().VIDEO_TYPES[useSelectionState.getState().current.ext]) {
+    if (useMiscRawState.getState().lastZoomMode !== "edge") {
+      machineryZoomFit(event);
+      writeScopeField('lastZoomMode', "edge");
       syncDetailFromScope();
-      s.zoomFitSize = s.imageSize.zoomRatioExp;
+      writeScopeField('zoomFitSize', useLayoutState.getState().imageSize.zoomRatioExp);
     }
     else {
       machineryZoomActual(event);
-      s.lastZoomMode = "fit";
+      writeScopeField('lastZoomMode', "fit");
       syncDetailFromScope();
-      s.zoomFitSize = 0;
+      writeScopeField('zoomFitSize', 0);
     }
   }
   else {
-    if (s.lastZoomMode !== "edge") {
+    if (useMiscRawState.getState().lastZoomMode !== "edge") {
       machineryZoomFitEdge(event, true);
-      s.lastZoomMode = "edge";
+      writeScopeField('lastZoomMode', "edge");
       syncDetailFromScope();
     }
     else {
-      machineryZoomFit(s, event);
-      s.lastZoomMode = "fit";
+      machineryZoomFit(event);
+      writeScopeField('lastZoomMode', "fit");
       syncDetailFromScope();
     }
   }
-  localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
+  localStorage["eagle.viewer.lastZoomMode"] = useMiscRawState.getState().lastZoomMode;
 }
 
 export function machineryUpdateZoomRatio(ratio: any, x: any, y: any, hasTransition: any): void {
@@ -424,15 +424,15 @@ export function machineryUpdateZoomRatio(ratio: any, x: any, y: any, hasTransiti
 }
 
 /* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
-export function machineryZoom(s: any): void {
+export function machineryZoom(): void {
   const w = window as any;
-  if (!s.isDetailMode) return;
-  if (s.lastZoomMode === "edge") {
-    if (s.current && !w.VIDEO_TYPES[s.current.ext]) {
+  if (!useBodyState.getState().isDetailMode) return;
+  if (useMiscRawState.getState().lastZoomMode === "edge") {
+    if (useSelectionState.getState().current && !w.VIDEO_TYPES[useSelectionState.getState().current.ext]) {
       machineryZoomFitEdge();
     }
     else {
-      machineryZoomFit(s);
+      machineryZoomFit();
     }
   }
   else {
@@ -483,8 +483,8 @@ export function machineryZoomActual(event: any): void {
 }
 
 /* b1-9bd：zoomFit 实现体归位 services/gridService.ts */
-export function machineryZoomFit(s: any, event: any, noAnimation: any): void {
-  gridZoomFit(s, event, noAnimation);
+export function machineryZoomFit(event: any, noAnimation: any): void {
+  gridZoomFit(event, noAnimation);
 }
 
 /* zoomFitEdge（bundle 34015-34077 逐字） */

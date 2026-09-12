@@ -11,6 +11,11 @@ import { getThumbnailUrl } from '../services/imageOpsService';
 import { getFontPath } from '../services/fontTagService';
 
 import { machineryCurrentIndex } from '../services/gridService';
+import { usePreferencesState } from './preferencesState';
+import { useSelectionState } from './selectionState';
+import { useMiscRawState } from './miscRawState';
+import { useLayoutState } from './layoutState';
+import { useItemState } from './itemState';
 /**
  * 阶段5：详情模式与查看器状态 —— 快照自 EagleController scope。
  *
@@ -189,14 +194,14 @@ function callGetter(name: string | ((...a: any[]) => any), arg?: any): string {
   }
 }
 
-function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
-      const preferences = scope.preferences || {};
+function buildDetailSnapshot(): Partial<DetailSnapshot> {
+      const preferences = usePreferencesState.getState().preferences || {};
       const keybinds = (preferences.shortcuts && preferences.shortcuts.keybinds) || {};
-      const habits = (scope.$root?.preferences || preferences).habits || {};
-      const current = scope.current || null;
-      const inspector = scope.inspector || {};
-      const imageSize = scope.imageSize || {};
-      const pinned = Array.isArray(scope.pluginModule?.pinnedPlugins) ? scope.pluginModule.pinnedPlugins : [];
+      const habits = (usePreferencesState.getState().preferences || preferences).habits || {};
+      const current = useSelectionState.getState().current || null;
+      const inspector = useMiscRawState.getState().inspector || {};
+      const imageSize = useLayoutState.getState().imageSize || {};
+      const pinned = Array.isArray(useMiscRawState.getState().pluginModule?.pinnedPlugins) ? useMiscRawState.getState().pluginModule.pinnedPlugins : [];
 
       let currentSnap: DetailCurrentSnapshot | null = null;
       let pluginExt = '';
@@ -217,13 +222,13 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
           comments: Array.isArray(current.comments) ? JSON.parse(JSON.stringify(current.comments)) : [],
         };
         try {
-          pluginExt = String(scope.pluginModule?.previewExtension?.getViewerPluginExt(current) ?? '');
+          pluginExt = String(useMiscRawState.getState().pluginModule?.previewExtension?.getViewerPluginExt(current) ?? '');
         } catch (err) { pluginExt = ''; }
         try {
-          pluginAllowZoom = !!scope.pluginModule?.previewExtension?.allowZoom(current.ext);
+          pluginAllowZoom = !!useMiscRawState.getState().pluginModule?.previewExtension?.allowZoom(current.ext);
         } catch (err) { pluginAllowZoom = false; }
         try {
-          pluginViewerUrl = String(scope.pluginModule?.previewExtension?.getViewerPluginURL(current) ?? '');
+          pluginViewerUrl = String(useMiscRawState.getState().pluginModule?.previewExtension?.getViewerPluginURL(current) ?? '');
         } catch (err) { pluginViewerUrl = ''; }
       }
 
@@ -231,34 +236,34 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
       try { currentIndex = machineryCurrentIndex() || 0; } catch (err) {}
 
       let rect: DetailSnapshot['commentRect'] = null;
-      if (scope.commentRect && typeof scope.commentRect === 'object') {
-        rect = JSON.parse(JSON.stringify(scope.commentRect));
+      if (useMiscRawState.getState().commentRect && typeof useMiscRawState.getState().commentRect === 'object') {
+        rect = JSON.parse(JSON.stringify(useMiscRawState.getState().commentRect));
       }
 
       return {
         ready: true,
-        isDetailMode: !!scope.isDetailMode,
-        isInlineMode: !!scope.isInlineMode,
-        isCommentMode: !!scope.isCommentMode,
-        isCropMode: !!scope.isCropMode,
-        initDetailMode: !!scope.initDetailMode,
-        useMpvPlayer: !!scope.useMpvPlayer,
-        showDetailImage: !!scope.showDetailImage,
-        smoothZoomDone: !!scope.smoothZoomDone,
-        usingGifPlayer: !!scope.usingGifPlayer,
-        isGifReady: !!scope.isGifReady,
-        gifEnabled: habits.gifViewer === 'on' || !!scope.usingGifPlayer,
-        gifPlaying: !!(scope.gifViewer && scope.gifViewer.playing),
-        gifSpeed: (scope.gifViewer && scope.gifViewer.speed) || 1,
-        theme: scope.theme || 'gray',
-        language: scope.language || 'en',
-        supportRotate: scope.supportRotate !== false,
-        supportCrop: scope.supportCrop !== false,
-        maxDimension: scope.MAX_DIMENSION ?? 120000000,
+        isDetailMode: !!useBodyState.getState().isDetailMode,
+        isInlineMode: !!useBodyState.getState().isInlineMode,
+        isCommentMode: !!useBodyState.getState().isCommentMode,
+        isCropMode: !!useBodyState.getState().isCropMode,
+        initDetailMode: !!useMiscRawState.getState().initDetailMode,
+        useMpvPlayer: !!useMiscRawState.getState().useMpvPlayer,
+        showDetailImage: !!useMiscRawState.getState().showDetailImage,
+        smoothZoomDone: !!useBodyState.getState().smoothZoomDone,
+        usingGifPlayer: !!useMiscRawState.getState().usingGifPlayer,
+        isGifReady: !!useMiscRawState.getState().isGifReady,
+        gifEnabled: habits.gifViewer === 'on' || !!useMiscRawState.getState().usingGifPlayer,
+        gifPlaying: !!(useMiscRawState.getState().gifViewer && useMiscRawState.getState().gifViewer.playing),
+        gifSpeed: (useMiscRawState.getState().gifViewer && useMiscRawState.getState().gifViewer.speed) || 1,
+        theme: useBodyState.getState().theme || 'gray',
+        language: useBodyState.getState().language || 'en',
+        supportRotate: useMiscRawState.getState().supportRotate !== false,
+        supportCrop: useMiscRawState.getState().supportCrop !== false,
+        maxDimension: useMiscRawState.getState().MAX_DIMENSION ?? 120000000,
         renderPixelated: habits.renderBehavior === 'pixelated',
         keybinds,
         currentIndex,
-        allDataCount: Array.isArray(scope.allData) ? scope.allData.length : 0,
+        allDataCount: Array.isArray(useItemState.getState().allData) ? useItemState.getState().allData.length : 0,
         inspectorHide: !!inspector.isHideInspector,
         inspectorRenaming: !!inspector.isRenaming,
         inspectorWidth: inspector.width || 0,
@@ -280,31 +285,31 @@ function buildDetailSnapshot(scope: any): Partial<DetailSnapshot> {
         pluginViewerUrl,
         pluginIsViewer: (() => {
           try {
-            const map = scope.pluginModule?.previewExtension?.viewerPluginMap;
+            const map = useMiscRawState.getState().pluginModule?.previewExtension?.viewerPluginMap;
             return !!(current && map && map[current.ext]);
           } catch (err) {
             return false;
           }
         })(),
-        isUrlType: !!(current && scope.URL_TYPES && scope.URL_TYPES[current.ext]),
-        isFontType: !!(current && scope.FONT_TYPES && scope.FONT_TYPES[current.ext]),
-        isVideoType: !!(current && scope.VIDEO_TYPES && scope.VIDEO_TYPES[current.ext]),
-        isAudioType: !!(current && scope.AUDIO_TYPES && scope.AUDIO_TYPES[current.ext]),
-        isModelType: !!(current && scope.MODEL_TYPES && scope.MODEL_TYPES[current.ext]),
+        isUrlType: !!(current && useMiscRawState.getState().URL_TYPES && useMiscRawState.getState().URL_TYPES[current.ext]),
+        isFontType: !!(current && useMiscRawState.getState().FONT_TYPES && useMiscRawState.getState().FONT_TYPES[current.ext]),
+        isVideoType: !!(current && useMiscRawState.getState().VIDEO_TYPES && useMiscRawState.getState().VIDEO_TYPES[current.ext]),
+        isAudioType: !!(current && useMiscRawState.getState().AUDIO_TYPES && useMiscRawState.getState().AUDIO_TYPES[current.ext]),
+        isModelType: !!(current && useMiscRawState.getState().MODEL_TYPES && useMiscRawState.getState().MODEL_TYPES[current.ext]),
         isPdf: !!current && current.ext === 'pdf',
         isGif: !!current && current.ext === 'gif',
-        disableZoom: !!(current && scope.DISABLE_ZOOM_TYPES && scope.DISABLE_ZOOM_TYPES[current.ext]),
-        notSupportFormat: !!(current && scope.SUPPORT_FORMATS && !scope.SUPPORT_FORMATS[current.ext]),
+        disableZoom: !!(current && useMiscRawState.getState().DISABLE_ZOOM_TYPES && useMiscRawState.getState().DISABLE_ZOOM_TYPES[current.ext]),
+        notSupportFormat: !!(current && useMiscRawState.getState().SUPPORT_FORMATS && !useMiscRawState.getState().SUPPORT_FORMATS[current.ext]),
         commentRect: rect,
-        ratio: scope.ratio || 0,
+        ratio: useMiscRawState.getState().ratio || 0,
         zoomRatio: imageSize.zoomRatio ?? 100,
         zoomRatioExp: imageSize.zoomRatioExp ?? 100,
         imageSizeHeight: imageSize.height || 200,
-        sliderZoomRatio: scope.sliderZoomRatio ?? 100,
-        lastZoomMode: scope.lastZoomMode || '',
-        viewMode: scope.viewMode || 'all',
+        sliderZoomRatio: useMiscRawState.getState().sliderZoomRatio ?? 100,
+        lastZoomMode: useMiscRawState.getState().lastZoomMode || '',
+        viewMode: useBodyState.getState().viewMode || 'all',
         pinnedPlugins: pinned.map((p: any) => ({ name: p?.manifest?.name, icon: p?.icon })),
-        needUpdatePluginCount: scope.pluginModule?.needUpdatePluginCount || 0,
+        needUpdatePluginCount: useMiscRawState.getState().pluginModule?.needUpdatePluginCount || 0,
       } as DetailSnapshot;
 }
 
@@ -323,7 +328,7 @@ let lastDetailSnapshot: any = null;
 export function syncDetailFromScope(): void {
   const scope: any = getBodyScope();
   if (!scope) return;
-  const next = buildDetailSnapshot(scope);
+  const next = buildDetailSnapshot();
   if (lastDetailSnapshot !== null && shallowEqDetail(next, lastDetailSnapshot)) return;
   lastDetailSnapshot = next;
   useDetailState.setState({ snapshot: next as DetailSnapshot });

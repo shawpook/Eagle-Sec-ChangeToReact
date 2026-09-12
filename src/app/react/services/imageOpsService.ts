@@ -359,7 +359,7 @@ export function saveCrop(...args: any[]) {
                                 uploadFiles([newFile]);
                                 s.isCropMode = false;
                                 syncDetailFromScope();
-                                machineryLeaveDetailMode(s);
+                                machineryLeaveDetailMode();
                                 scopeEvalAsync();
                             });
                             return;

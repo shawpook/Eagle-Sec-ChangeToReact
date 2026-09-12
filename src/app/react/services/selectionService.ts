@@ -202,7 +202,7 @@ export function onBoxListDblClick(...args: any[]) {
             }
             else {
                 if (usePreferencesState.getState().preferences.habits.doubleclick !== 'external') {
-                    machineryEnterDetailMode(s, event, item);
+                    machineryEnterDetailMode(event, item);
                 }
                 else {
                     // 使用预设软体开启

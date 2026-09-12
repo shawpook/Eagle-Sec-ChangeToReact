@@ -1468,7 +1468,7 @@ export function DuplicateModal() {
 
   const revealInUnfiled = (item: any) => {
     const body = getBodyScope();
-    machineryOpenUnfiled(body, undefined);
+    machineryOpenUnfiled(undefined);
     setTimeout(() => {
       body.selected = [item];
       syncInspectorFromScope();
@@ -1734,7 +1734,7 @@ export function DuplicateModal() {
         {!isNew && (
           <div className="folder">
             {item.folders.length > 0 && (
-              <span onClick={() => body && machineryQuickOpenFolder(body, folderMappings[item.folders[0]], item)}>{folderMappings[item.folders[0]]?.name}</span>
+              <span onClick={() => body && machineryQuickOpenFolder(folderMappings[item.folders[0]], item)}>{folderMappings[item.folders[0]]?.name}</span>
             )}
             {item.folders.length === 0 && (
               <span onClick={() => revealInUnfiled(item)}>{t('modal.duplicate.unfiled')}</span>

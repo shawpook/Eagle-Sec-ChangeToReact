@@ -311,7 +311,7 @@ export function toggleSlideshow(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版逐行等价，统一转发消除重复实现。
     const s = getBodyScope();
   if (!s) return;   // 原 c3 体的 scope 守卫，逐字保留
-  machineryToggleSlideshow(s);
+  machineryToggleSlideshow();
 }
 
 export function setAsVideoThumbnail(...args: any[]) {

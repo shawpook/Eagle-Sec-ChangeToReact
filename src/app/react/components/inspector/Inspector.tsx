@@ -396,7 +396,7 @@ function InspectorFolders({ snapshot }: { snapshot: InspectorSnapshot }) {
       onClick={(e) => {
         e.stopPropagation();
         const live = useItemState.getState().folderMappings?.[folderId];
-        if (live) call(scoped(machineryQuickOpenFolder), live)(e);
+        if (live) call(machineryQuickOpenFolder, live)(e);
       }}
     >
       <span className="label-item-name">{snapshot.folderName[folderId]}</span>

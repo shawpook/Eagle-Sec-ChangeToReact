@@ -55,10 +55,11 @@ import { useListState } from '../store/listState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
 import { useBodyState } from '../store/bodyState';
+import { useSelectionState } from '../store/selectionState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
-export function machineryBuildTagManager(s: any): any {
+export function machineryBuildTagManager(): any {
   const w: any = window as any;
         var TagManager: any = {
             rawdata: [],            // 純粹的標籤內容
@@ -198,31 +199,31 @@ export function machineryBuildTagManager(s: any): any {
 
             const getTagData = () => {
 
-                let groups = (s.currentTagGroup)? [s.currentTagGroup] : s.TagManager.currentGroups || [];
+                let groups = (useMiscRawState.getState().currentTagGroup)? [useMiscRawState.getState().currentTagGroup] : useMiscRawState.getState().TagManager.currentGroups || [];
                 let tags = [];
                 const tagsMap = {};
 
-                switch (s.tagViewMode) {
+                switch (useMiscRawState.getState().tagViewMode) {
                     case "ALL":
-                        tags = s.TagManager.tagNames || [];
+                        tags = useMiscRawState.getState().TagManager.tagNames || [];
                         break;
                     case "UNFILED":
-                        tags = s.TagManager.unfiledTags || [];
+                        tags = useMiscRawState.getState().TagManager.unfiledTags || [];
                         break;
                     case "STARRED":
-                        tags = s.TagManager.starredTags;
+                        tags = useMiscRawState.getState().TagManager.starredTags;
                         groups = [{
                             id: "starred",
                             name: w.i18n.__("pages.allTags.sidebar.starred"),
-                            tags: s.TagManager.starredTags
+                            tags: useMiscRawState.getState().TagManager.starredTags
                         }];
                         break;
                     case "GROUP":
-                        tags = s.currentTagGroup.tags || [];
+                        tags = useMiscRawState.getState().currentTagGroup.tags || [];
                         break;
                 }
 
-                const keyword = s?.keyword?.toLowerCase();
+                const keyword = useListState.getState().keyword?.toLowerCase();
                 tags = tags.filter(( tagName: any) => {
                     if (!keyword) return true;
                     if (typeof tagName !== "string") return false;
@@ -252,7 +253,7 @@ export function machineryBuildTagManager(s: any): any {
                 let filteredGroups;
                 
                 // 如果是群組列表，無論有無標籤都應顯示
-                if (s.tagViewMode === "GROUP" || s.tagViewMode === "STARRED") {
+                if (useMiscRawState.getState().tagViewMode === "GROUP" || useMiscRawState.getState().tagViewMode === "STARRED") {
                     filteredGroups = groups;
                 }
                 else {
@@ -264,7 +265,7 @@ export function machineryBuildTagManager(s: any): any {
                     });
                 }
                 const containerWidth = widthOf(q(".tag-manager-container"));
-                const n = (s.tagViewLayoutMode === "LIST")? 0 : Math.max(0, parseInt(((containerWidth - 32) / 200) as any) - 1);
+                const n = (useMiscRawState.getState().tagViewLayoutMode === "LIST")? 0 : Math.max(0, parseInt(((containerWidth - 32) / 200) as any) - 1);
                 const columnCount = parseInt((containerWidth / 200) as any);
                 const columnWidth = parseInt((containerWidth / columnCount) as any);
 
@@ -374,7 +375,7 @@ export function machineryBuildTagManager(s: any): any {
 
         TagManager.toggleTag = function toggleTag (event, tag) {
 
-			var selectedTags = w.eagle.inspector.calculateTags(s.selected);
+			var selectedTags = w.eagle.inspector.calculateTags(useSelectionState.getState().selected);
 			var idx = selectedTags.indexOf(tag);
 			if (idx === -1) {
 				var tags = tag.split(/[，,;、]+/);
@@ -396,21 +397,21 @@ export function machineryBuildTagManager(s: any): any {
 			}
 
             if (!TagManager.historyTags) TagManager.historyTags = [];
-            if (s.availableHistoryTags.indexOf(tag) === -1) {
-                s.availableHistoryTags.unshift(tag);
+            if (useMiscRawState.getState().availableHistoryTags.indexOf(tag) === -1) {
+                useMiscRawState.getState().availableHistoryTags.unshift(tag);
             }
         };
 
         TagManager.addTags = function addTags (tags) {
             if (!tags || tags.length === 0) return;
-            if (s.selected.length === 0) return;
+            if (useSelectionState.getState().selected.length === 0) return;
 
             let changedItems: any[] = [];
 
             tags.forEach(( tag: any) => {
                 tag = tag.trim();
                 tag = tag.substr(0, 1024);
-                s.selected.forEach(function (item: any) {
+                useSelectionState.getState().selected.forEach(function (item: any) {
                     const idx = item.tags.indexOf(tag);
                     if (idx === -1) {
                         item.tags.push(tag);
@@ -436,12 +437,12 @@ export function machineryBuildTagManager(s: any): any {
 
             changedItems = [...new Set(changedItems)];
             
-            s.TagManager.isDirty = true;
+            useMiscRawState.getState().TagManager.isDirty = true;
             syncFilterFromScope();
             syncTagManagerFromScope();
-            machineryCalcuteContainTags(s.filtereds);
+            machineryCalcuteContainTags(useMiscRawState.getState().filtereds);
             machineryUpdateSelection();
-            machineryUpdateItemsView(s.selected);
+            machineryUpdateItemsView(useSelectionState.getState().selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -452,10 +453,10 @@ export function machineryBuildTagManager(s: any): any {
             if (tag === undefined || tag === "" ) return;
 
             let changedItems: any[] = [];
-            if (s.selected.length > 0) {
+            if (useSelectionState.getState().selected.length > 0) {
                 var tag = tag.trim();
                 tag = tag.substr(0, 1024);
-                s.selected.forEach(function (image: any) {
+                useSelectionState.getState().selected.forEach(function (image: any) {
                     var idx = image.tags.indexOf(tag);
                     if (idx === -1) {
                         image.tags.push(tag);
@@ -464,7 +465,7 @@ export function machineryBuildTagManager(s: any): any {
                     }
                 });
             }
-            s.tagsSuggestion.push({
+            useMiscRawState.getState().tagsSuggestion.push({
                 value: tag,
                 text: tag
             });
@@ -481,15 +482,15 @@ export function machineryBuildTagManager(s: any): any {
             else {
                 TagManager.tagMappings[tag].imageCount++;
             }
-            s.TagManager.isDirty = true;
+            useMiscRawState.getState().TagManager.isDirty = true;
             syncFilterFromScope();
             syncTagManagerFromScope();
 
-            machineryCalcuteContainTags(s.filtereds);
+            machineryCalcuteContainTags(useMiscRawState.getState().filtereds);
             TagManager.addHistoryTag(tag);
             machineryUpdateSelection();
 
-            machineryUpdateItemsView(s.selected);
+            machineryUpdateItemsView(useSelectionState.getState().selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -500,8 +501,8 @@ export function machineryBuildTagManager(s: any): any {
         TagManager.removeTag = function (tag: any) {
 
             let changedItems: any[] = [];
-            if (s.selected.length > 0) {
-                s.selected.forEach(function (image: any) {
+            if (useSelectionState.getState().selected.length > 0) {
+                useSelectionState.getState().selected.forEach(function (image: any) {
                     var idx = image.tags.indexOf(tag);
                     if (idx > -1) {
                         image.tags.splice(idx, 1);
@@ -509,7 +510,7 @@ export function machineryBuildTagManager(s: any): any {
                         if (TagManager.tagMappings[tag] && TagManager.tagMappings[tag].imageCount) {
                             TagManager.tagMappings[tag].imageCount--;
                             if (TagManager.tagMappings[tag].imageCount === 0) {
-                            	s.TagManager.isDirty = true;
+                            	useMiscRawState.getState().TagManager.isDirty = true;
                             	syncFilterFromScope();
                             	syncTagManagerFromScope();
                                 delete TagManager.tagMappings[tag];
@@ -517,10 +518,10 @@ export function machineryBuildTagManager(s: any): any {
 					           	if (historyIdx > -1) {
 					           		TagManager.historyTags.splice(historyIdx, 1);
 					           	}
-                                if (s.tagsSuggestionResult) {
-    					           	let suggestionIdx = s.tagsSuggestionResult.indexOf(tag);
+                                if (useMiscRawState.getState().tagsSuggestionResult) {
+    					           	let suggestionIdx = useMiscRawState.getState().tagsSuggestionResult.indexOf(tag);
     					           	if (suggestionIdx > -1) {
-    					           		s.tagsSuggestionResult.splice(suggestionIdx, 1);
+    					           		useMiscRawState.getState().tagsSuggestionResult.splice(suggestionIdx, 1);
     					           	}
                                 }
                             }
@@ -538,9 +539,9 @@ export function machineryBuildTagManager(s: any): any {
                 });
             }
 
-			machineryCalcuteContainTags(s.filtereds);
+			machineryCalcuteContainTags(useMiscRawState.getState().filtereds);
 			machineryUpdateSelection();
-			machineryUpdateItemsView(s.selected);
+			machineryUpdateItemsView(useSelectionState.getState().selected);
 
             w.ayncsImagesChange(changedItems);
             w.hiddenByCurrentFilter(changedItems);
@@ -572,7 +573,7 @@ export function machineryBuildTagManager(s: any): any {
             }).then(function () {
                 w.electronLog.info(`[app] Empty history tags: ${JSON.stringify(TagManager.historyTags)}`);
                 TagManager.historyTags = [];
-                s.availableHistoryTags = [];
+                writeScopeField('availableHistoryTags', []);
                 scopeEvalAsync();
                 TagManager.save();
             });
@@ -697,7 +698,7 @@ export function machineryBuildTagManager(s: any): any {
 
         // 取得所有标签
         TagManager.getTags = function () {
-            return s.tags;
+            return useFolderState.getState().tags;
         };
 
         // 取得文件夹包含标签
@@ -706,7 +707,7 @@ export function machineryBuildTagManager(s: any): any {
             var result = [];
 
             folderIds.forEach(function (folderId: any) {
-                var images = s.raw.filter(function (image: any) {
+                var images = useItemState.getState().raw.filter(function (image: any) {
                     try {
                         if (image && image.folders) {
                             return image.folders && image.folders.indexOf(folderId) > -1;
@@ -733,7 +734,7 @@ export function machineryBuildTagManager(s: any): any {
                 tags.splice(tags.indexOf("Screenshot"), 1);
             }
 
-            var images = s.raw.filter(function (image: any) {
+            var images = useItemState.getState().raw.filter(function (image: any) {
                 var match = 0;
                 for (var i = 0; i < tags.length; i++) {
                     if (image && image.tags) {
@@ -814,8 +815,8 @@ export function machineryBuildTagManager(s: any): any {
                 selectedTags[tag] = true;
             })
 
-            for (var rindex = s.raw.length - 1; rindex >= 0; rindex--) {
-                var image = s.raw[rindex];
+            for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
+                var image = useItemState.getState().raw[rindex];
                 var originTagCount = image.tags.length;
                 image.tags = image.tags.filter(function (tag: any) {
                     return !selectedTags[tag];
@@ -853,7 +854,7 @@ export function machineryBuildTagManager(s: any): any {
                 if (image.folders) {
                     image.folders.forEach(function (folderId: any) {
                         folderIdsMap[folderId] = true;
-                        var folder = s.folderMappings[folderId];
+                        var folder = useItemState.getState().folderMappings[folderId];
                         if (folder && folder.name) {
                             var ancestors = getAncestorFolders(folder, []);
                             if (ancestors && ancestors.length > 0) {
@@ -1000,7 +1001,7 @@ export function machineryBuildTagManager(s: any): any {
                 tag.groups = [];
                 delete tag.color;
 
-                s.tagsSuggestion.push({
+                useMiscRawState.getState().tagsSuggestion.push({
                     value: tag.name,
                     text: tag.name
                 });
@@ -1110,7 +1111,7 @@ export function machineryBuildTagManager(s: any): any {
 
                 if (!tag) return;
 
-                s.tagsSuggestion.push({
+                useMiscRawState.getState().tagsSuggestion.push({
                     value: tag.name,
                     text: tag.name
                 });
@@ -1174,12 +1175,12 @@ export function machineryBuildTagManager(s: any): any {
             });
 
             if (!TagManager.historyTags) TagManager.historyTags = [];
-            s.availableHistoryTags = TagManager.historyTags.filter(function (tag: any) {
+            writeScopeField('availableHistoryTags', TagManager.historyTags.filter(function (tag: any) {
                 if (!TagManager.tagMappings[tag] || TagManager.tagMappings[tag].imageCount === 0) {
                     return false;
                 }
                 return true;
-            });
+            }));
 
             TagManager.changeGroupBy(TagManager.groupBy);
         };
@@ -1350,36 +1351,36 @@ export function machineryBuildTagManager(s: any): any {
                     w.electronLog.info(`[app] Remove tag: ${JSON.stringify(tags)} from tag group: ${group.name}(${group.id})`);
                 } catch (err: any) {};
                 if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
-                    s.removeSound.play();
+                    useMiscRawState.getState().removeSound.play();
                 }
             }, 1);
         };
 
         TagManager.filterWithTags = function (tags: any, ignoreHistory: any) {
-            s.viewMode = '';
-            machineryOpenAll(s, false, function () {
+            writeScopeField('viewMode', '');
+            machineryOpenAll(false, function () {
                 getTimeout()(function () {
                     w.eagle.filter.isOpen = true;
                     syncFilterFromScope();
                     w.eagle.filter.tagFilterLogic = "OR";
                     syncFilterFromScope();
-                    s.filterWithTags(tags);
+                    useMiscRawState.getState().filterWithTags(tags);
                     // b1-9ba：Update_Tags_Filter 廣播全樹無接收者（原接收者隨 bundle 摘除
                     // 退役）——廣播體移除，filterWithTags 直呼語義不變。
                 }, 200);
             });
         };
 
-        s.TagManager = TagManager;
+        writeScopeField('TagManager', TagManager);
         syncFilterFromScope();
         syncTagManagerFromScope();
 
         // selectTag（bundle 38870-38926 逐字；b1-9k 补端口——TagManager.tsx 标签点击
         // onClick=call('selectTag')，缺席时静默 no-op → 标签选中/多选整条死）
-        s.selectTag = function (event, tag) {
+        writeScopeField('selectTag', function (event, tag) {
             event.stopPropagation();
 
-            if (event.button !== 0 && s.selectedTags[tag.name]) return;
+            if (event.button !== 0 && useMiscRawState.getState().selectedTags[tag.name]) return;
 
             writeScopeField('currentFocus', 'content');
 
@@ -1393,7 +1394,7 @@ export function machineryBuildTagManager(s: any): any {
                     if (item.type === "row") {
                         const tags = item.tags;
                         tags.forEach((tagName) => {
-                            if (tagName === s.lastSelectedTag || tagName === tag.name) {
+                            if (tagName === useMiscRawState.getState().lastSelectedTag || tagName === tag.name) {
                                 found++;
                                 selectedTags.push(tagName);
                                 return;
@@ -1409,123 +1410,123 @@ export function machineryBuildTagManager(s: any): any {
                 });
 
                 selectedTags.forEach((tagName) => {
-                    if (s.selectedTags[tagName]) return;
-                    s.selectedTags[tagName] = true;
+                    if (useMiscRawState.getState().selectedTags[tagName]) return;
+                    useMiscRawState.getState().selectedTags[tagName] = true;
                     syncTagManagerFromScope();
                 });
 
-                s.lastSelectedTag = tag.name;
+                writeScopeField('lastSelectedTag', tag.name);
                 return;
             }
 
             if (event.metaKey || event.ctrlKey) {
-                if (s.selectedTags[tag.name]) {
-                    delete s.selectedTags[tag.name];
+                if (useMiscRawState.getState().selectedTags[tag.name]) {
+                    delete useMiscRawState.getState().selectedTags[tag.name];
                 }
                 else {
-                    s.selectedTags[tag.name] = true;
+                    useMiscRawState.getState().selectedTags[tag.name] = true;
                     syncTagManagerFromScope();
                 }
-                s.lastSelectedTag = tag.name;
+                writeScopeField('lastSelectedTag', tag.name);
             }
             else {
-                s.selectedTags = {};
+                writeScopeField('selectedTags', {});
                 syncTagManagerFromScope();
-                s.selectedTags[tag.name] = true;
+                useMiscRawState.getState().selectedTags[tag.name] = true;
                 syncTagManagerFromScope();
-                s.lastSelectedTag = tag.name;
+                writeScopeField('lastSelectedTag', tag.name);
             }
-        };
+        });
 
-        s.createTagGroup = function () {
+        writeScopeField('createTagGroup', function () {
             var newGroup = TagManager.createGroup($filter('i18n')('general.untitled.tagGroup'));
-            s.tagViewMode = "GROUP";
+            writeScopeField('tagViewMode', "GROUP");
             syncTagManagerFromScope();
-            s.tagViewModeName = `GROUP-${newGroup.id}`;
+            writeScopeField('tagViewModeName', `GROUP-${newGroup.id}`);
             syncTagManagerFromScope();
-            s.currentTagGroup = newGroup;
+            writeScopeField('currentTagGroup', newGroup);
             syncTagManagerFromScope();
             machineryRenameTagGroup(newGroup);
-            s.selectedTags = {};
+            writeScopeField('selectedTags', {});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
-        };
+        });
 
-        s.openTagAllGroup = function () {
-            if (s.tagViewMode === "ALL") return;
+        writeScopeField('openTagAllGroup', function () {
+            if (useMiscRawState.getState().tagViewMode === "ALL") return;
             (window as any).tagRectSelecting = false;
-            s.keyword = "";
-            s.tagViewMode = "ALL";
+            writeScopeField('keyword', "");
+            writeScopeField('tagViewMode', "ALL");
             syncTagManagerFromScope();
-            s.tagViewModeName = "ALL";
+            writeScopeField('tagViewModeName', "ALL");
             syncTagManagerFromScope();
             writeScopeField('currentFocus', 'tags');
-            s.currentTagGroup = undefined;
+            writeScopeField('currentTagGroup', undefined);
             syncTagManagerFromScope();
-            s.selectedTags = {};
+            writeScopeField('selectedTags', {});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
-        };
+        });
 
-        s.openUnfiledGroup = function () {
-            if (s.tagViewMode === "UNFILED") return;
+        writeScopeField('openUnfiledGroup', function () {
+            if (useMiscRawState.getState().tagViewMode === "UNFILED") return;
             (window as any).tagRectSelecting = false;
-            s.keyword = "";
-            s.tagViewMode = "UNFILED";
+            writeScopeField('keyword', "");
+            writeScopeField('tagViewMode', "UNFILED");
             syncTagManagerFromScope();
-            s.tagViewModeName = "UNFILED";
+            writeScopeField('tagViewModeName', "UNFILED");
             syncTagManagerFromScope();
             writeScopeField('currentFocus', 'tags');
-            s.currentTagGroup = undefined;
+            writeScopeField('currentTagGroup', undefined);
             syncTagManagerFromScope();
-            s.selectedTags = {};
+            writeScopeField('selectedTags', {});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
-        };
+        });
 
-        s.openStarredGroup = function () {
-            if (s.tagViewMode === "STARRED") return;
+        writeScopeField('openStarredGroup', function () {
+            if (useMiscRawState.getState().tagViewMode === "STARRED") return;
             (window as any).tagRectSelecting = false;
-            s.keyword = "";
-            s.tagViewMode = "STARRED";
+            writeScopeField('keyword', "");
+            writeScopeField('tagViewMode', "STARRED");
             syncTagManagerFromScope();
-            s.tagViewModeName = "STARRED";
+            writeScopeField('tagViewModeName', "STARRED");
             syncTagManagerFromScope();
             writeScopeField('currentFocus', 'tags');
-            s.currentTagGroup = undefined;
+            writeScopeField('currentTagGroup', undefined);
             syncTagManagerFromScope();
-            s.selectedTags = {};
+            writeScopeField('selectedTags', {});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
-        };
+        });
 
-        s.openTagGroup = function (group: any) {
+        writeScopeField('openTagGroup', function (group: any) {
             (window as any).tagRectSelecting = false;
-            s.keyword = "";
-            s.tagViewMode = "GROUP";
+            writeScopeField('keyword', "");
+            writeScopeField('tagViewMode', "GROUP");
             syncTagManagerFromScope();
-            s.tagViewModeName = `GROUP-${group.id}`;
+            writeScopeField('tagViewModeName', `GROUP-${group.id}`);
             syncTagManagerFromScope();
             writeScopeField('currentFocus', 'tags');
-            s.currentTagGroup = group;
+            writeScopeField('currentTagGroup', group);
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
             q("input:focus")?.blur();
-            if (s.currentTagGroup === group) return;
-            s.selectedTags = {};
+            if (useMiscRawState.getState().currentTagGroup === group) return;
+            writeScopeField('selectedTags', {});
             syncTagManagerFromScope();
-        };
+        });
 
         
-        s.addStarredTags = () => {
+        writeScopeField('addStarredTags', () => {
             getTimeout()(() => {
-                const originSelected = s.TagManager.starredTags.reduce((acc, cur: any) => {
+                const originSelected = useMiscRawState.getState().TagManager.starredTags.reduce((acc, cur: any) => {
                     acc[cur] = true;
                     return acc;
                 }, {});
 
                 GeneralTagSelectPanel.open({
-                    tagManager: s.TagManager,
+                    tagManager: useMiscRawState.getState().TagManager,
                     selectedTags: originSelected,
                     pinSelected: false,
                     onChanged: ( result: any) => {
@@ -1540,7 +1541,7 @@ export function machineryBuildTagManager(s: any): any {
                                 add.push(tag);
                             });
                         }
-                        s.TagManager.addStarredTags(add);
+                        useMiscRawState.getState().TagManager.addStarredTags(add);
 
                         let remove = [];
                         if (Object.keys(deselectedTags).length > 0) {
@@ -1548,14 +1549,14 @@ export function machineryBuildTagManager(s: any): any {
                                 remove.push(tag);
                             });
                         }
-                        s.TagManager.removeStarredTags(remove);
+                        useMiscRawState.getState().TagManager.removeStarredTags(remove);
                         machineryCalculateImageBinding({ ignoreSort: true }, () => {});
                     }
                 });
             }, 50);
-        };
+        });
 
-        s.addGroupTags = ( group: any) => {
+        writeScopeField('addGroupTags', ( group: any) => {
             getTimeout()(() => {
                 const originSelected = group.tags.reduce((acc, cur: any) => {
                     acc[cur] = true;
@@ -1563,7 +1564,7 @@ export function machineryBuildTagManager(s: any): any {
                 }, {});
 
                 GeneralTagSelectPanel.open({
-                    tagManager: s.TagManager,
+                    tagManager: useMiscRawState.getState().TagManager,
                     selectedTags: originSelected,
                     pinSelected: false,
                     onChanged: ( result: any) => {
@@ -1578,7 +1579,7 @@ export function machineryBuildTagManager(s: any): any {
                                 add.push(tag);
                             });
                         }
-                        s.TagManager.addTagsToGroup(group.id, add, true);
+                        useMiscRawState.getState().TagManager.addTagsToGroup(group.id, add, true);
 
                         let remove = [];
                         if (Object.keys(deselectedTags).length > 0) {
@@ -1586,14 +1587,14 @@ export function machineryBuildTagManager(s: any): any {
                                 remove.push(tag);
                             });
                         }
-                        s.TagManager.removeTagsFromGroup(group.id, remove);
+                        useMiscRawState.getState().TagManager.removeTagsFromGroup(group.id, remove);
                         machineryCalculateImageBinding({ ignoreSort: true }, () => {});
                     }
                 });
             }, 50);
-        };
+        });
 
-        s.openTagGroupContextMenu = (event, tagGroup: any) => {
+        writeScopeField('openTagGroupContextMenu', (event, tagGroup: any) => {
 
             let historyLibraryMenu = {};
             historyLibraryMenu.items = getLibraryHistory().filter(( history: any) => {
@@ -1671,7 +1672,7 @@ export function machineryBuildTagManager(s: any): any {
                     {
                         role: 'color',
                         click: ( color: any) => {
-                            s.changeTagGroupColor(event, tagGroup, color);
+                            useMiscRawState.getState().changeTagGroupColor(event, tagGroup, color);
                             scopeEvalAsync();
                         }
                     }
@@ -1684,12 +1685,12 @@ export function machineryBuildTagManager(s: any): any {
                 },
                 showSearch: true
             });
-        };        
+        });        
 
-        s.renameTagGroup = function (group: any) {
-            s.currentTagGroup = group;
+        writeScopeField('renameTagGroup', function (group: any) {
+            writeScopeField('currentTagGroup', group);
             syncTagManagerFromScope();
-            s.newGroupName = group.name;
+            writeScopeField('newGroupName', group.name);
             syncTagManagerFromScope();
             group.editable = true;
             setTimeout(function() {
@@ -1700,9 +1701,9 @@ export function machineryBuildTagManager(s: any): any {
                 q("#group-input-" + group.id)?.focus();
                 (q("#group-input-" + group.id) as HTMLInputElement)?.select();
             }, 200);
-        };
+        });
 
-        s.changeTagGroupColor = function (event: any, tagGroup: any, color: any) {
+        writeScopeField('changeTagGroupColor', function (event: any, tagGroup: any, color: any) {
             if (!color) {
                 delete tagGroup.color;
             }
@@ -1726,18 +1727,18 @@ export function machineryBuildTagManager(s: any): any {
             TagManager.saveGroup();
             try { w.electronLog && w.electronLog.info(`[app] Change tag group: ${tagGroup.name}(${tagGroup.id}) color to: ${color}`); } catch (err: any) {};
             w.analytics.event('ChangeColor', 'TagGroup', color);
-        };
+        });
 
-        s.removeTagGroup = function (group: any) {
+        writeScopeField('removeTagGroup', function (group: any) {
 
             const remove = function (group: any) {
                 var idx = TagManager.removeGroup(group.id);
                 if (TagManager.groups[idx]) {
-                    s.currentTagGroup = TagManager.groups[idx];
+                    writeScopeField('currentTagGroup', TagManager.groups[idx]);
                     syncTagManagerFromScope();
                 }
                 else if (TagManager.groups[idx - 1]) {
-                    s.currentTagGroup = TagManager.groups[idx - 1];
+                    writeScopeField('currentTagGroup', TagManager.groups[idx - 1]);
                     syncTagManagerFromScope();
                 }
                 else {
@@ -1769,16 +1770,16 @@ export function machineryBuildTagManager(s: any): any {
                 remove(group);
                 scopeEvalAsync();
             }
-        };
+        });
 
-        s.renameTagGroupBlur = function (group: any, newName: any) {
+        writeScopeField('renameTagGroupBlur', function (group: any, newName: any) {
             if (newName) {
                 TagManager.renameGroup(group.id, newName);
                 delete group.editable;
             }
-        };
+        });
 
-        s.renameTagGroupKeyup = function (event: any, group: any, newName: any) {
+        writeScopeField('renameTagGroupKeyup', function (event: any, group: any, newName: any) {
             event.stopPropagation();
             // event.preventDefault();
             if (event.keyCode === 13) {
@@ -1790,38 +1791,38 @@ export function machineryBuildTagManager(s: any): any {
                 group.editable = false;
             }
             return false;
-        };
+        });
 
         // 標籤群組描述變更（使用防抖保存）
         var tagGroupDescriptionChangeTimeout;
         var tagGroupDescriptionOriginal; // 記錄 focus 時的原始值
 
-        s.tagGroupDescriptionChange = function () {
-            if (!s.currentTagGroup) return;
+        writeScopeField('tagGroupDescriptionChange', function () {
+            if (!useMiscRawState.getState().currentTagGroup) return;
 
             getTimeout().cancel(tagGroupDescriptionChangeTimeout);
             tagGroupDescriptionChangeTimeout = getTimeout()(function () {
                 TagManager.saveGroup();
             }, 1000);
-        };
+        });
 
         // 標籤群組描述聚焦事件 - 記錄原始值
-        s.tagGroupDescriptionFocus = function () {
-            if (!s.currentTagGroup) return;
-            tagGroupDescriptionOriginal = s.currentTagGroup.description || '';
-        };
+        writeScopeField('tagGroupDescriptionFocus', function () {
+            if (!useMiscRawState.getState().currentTagGroup) return;
+            tagGroupDescriptionOriginal = useMiscRawState.getState().currentTagGroup.description || '';
+        });
 
         // 標籤群組描述失焦事件 - 只在值改變時才保存
-        s.tagGroupDescriptionBlur = function () {
-            if (!s.currentTagGroup) return;
+        writeScopeField('tagGroupDescriptionBlur', function () {
+            if (!useMiscRawState.getState().currentTagGroup) return;
 
             getTimeout().cancel(tagGroupDescriptionChangeTimeout);
 
             // 使用 getTimeout() 確保在 contenteditable directive 更新 model 之後再比較
             getTimeout()(function () {
-                if (!s.currentTagGroup) return;
+                if (!useMiscRawState.getState().currentTagGroup) return;
 
-                var currentValue = s.currentTagGroup.description || '';
+                var currentValue = useMiscRawState.getState().currentTagGroup.description || '';
                 if (currentValue === tagGroupDescriptionOriginal) {
                     // 值沒有改變，不需要保存
                     return;
@@ -1830,16 +1831,16 @@ export function machineryBuildTagManager(s: any): any {
                 TagManager.saveGroup();
 
                 try {
-                    w.electronLog && w.electronLog.info(`[app] Change tag group description: ${s.currentTagGroup.name}(${s.currentTagGroup.id})`);
+                    w.electronLog && w.electronLog.info(`[app] Change tag group description: ${useMiscRawState.getState().currentTagGroup.name}(${useMiscRawState.getState().currentTagGroup.id})`);
                 } catch (err: any) {};
             }, 0);
-        };
+        });
 
         ipcRenderer.on('jieba-extract-done', function (e: any, result: any) {
 
             // console.timeEnd("======== 取得推荐标签 ========");
 
-            var selectedTags = w.eagle.inspector.calculateTags(s.selected);
+            var selectedTags = w.eagle.inspector.calculateTags(useSelectionState.getState().selected);
 
             result.forEach(function (term: any) {
                 var idx = TagManager.suggestions.indexOf(term.word);
@@ -1881,10 +1882,10 @@ export function machineryBuildTagManager(s: any): any {
         });
 
         // GIF Viewer
-        s.gifPlayer;
-        s.gifUpadteInterval;
+        useMiscRawState.getState().gifPlayer;
+        useMiscRawState.getState().gifUpadteInterval;
 
-        s.gifViewer = {
+        writeScopeField('gifViewer', {
             frames: [],
             mousedownTime: 0,
             mousedownX: 0,
@@ -1892,9 +1893,9 @@ export function machineryBuildTagManager(s: any): any {
             range: undefined,
             speed: 1,
             setThumbnail: function () {
-                if (!s.isGifReady) return;
-                var curr = s.gifPlayer.get_current_frame();
-                var f = s.gifPlayer.get_frame(curr);
+                if (!useMiscRawState.getState().isGifReady) return;
+                var curr = useMiscRawState.getState().gifPlayer.get_current_frame();
+                var f = useMiscRawState.getState().gifPlayer.get_frame(curr);
                 if (!f) return;
                 var b64 = f.base64;
                 var canvas = document.createElement('canvas');
@@ -1926,84 +1927,84 @@ export function machineryBuildTagManager(s: any): any {
 
                     var base64string = canvas.toDataURL();
                     IPCHelper.send('regenerate-gif-thumbnail', {
-                        gif: s.current,
+                        gif: useSelectionState.getState().current,
                         base64string: base64string
                     });
                 };
                 image.src = f.base64;
             },
             setSpeed: function (speed: any = 1) {
-                if (!s.gifPlayer) return;
-                s.gifViewer.speed = speed;
+                if (!useMiscRawState.getState().gifPlayer) return;
+                useMiscRawState.getState().gifViewer.speed = speed;
                 syncDetailFromScope();
                 scopeEvalAsync();
-                s.gifPlayer.set_speed(speed);
+                useMiscRawState.getState().gifPlayer.set_speed(speed);
                 setText(".gif-toolbar-btn.speed span", `${speed}x`);
             },
             mousedown: function (event: any) {
                 if (event.button !== 0) return;
-                s.gifViewer.mousedownX = event.clientX;
+                useMiscRawState.getState().gifViewer.mousedownX = event.clientX;
                 syncDetailFromScope();
-                s.gifViewer.mousedownY = event.clientY;
+                useMiscRawState.getState().gifViewer.mousedownY = event.clientY;
                 syncDetailFromScope();
-                s.gifViewer.mousedownTime = Date.now();
+                useMiscRawState.getState().gifViewer.mousedownTime = Date.now();
                 syncDetailFromScope();
             },
             mouseup: function (event: any) {
                 if (event.button !== 0) return;
                 // 判断是点击或是拖拽
-                if (Date.now() - s.gifViewer.mousedownTime < 333 && Math.abs(s.gifViewer.mousedownX - event.clientX) < 5 && Math.abs(s.gifViewer.mousedownY - event.clientY) < 5)  {
+                if (Date.now() - useMiscRawState.getState().gifViewer.mousedownTime < 333 && Math.abs(useMiscRawState.getState().gifViewer.mousedownX - event.clientX) < 5 && Math.abs(useMiscRawState.getState().gifViewer.mousedownY - event.clientY) < 5)  {
                     toggleGifPlay();
                     scopeEvalAsync();
                 }
             },
             cancelRange: function () {
-                if (s.gifViewer.range !== undefined) {
-                    s.gifViewer.range = undefined;
+                if (useMiscRawState.getState().gifViewer.range !== undefined) {
+                    useMiscRawState.getState().gifViewer.range = undefined;
                     syncDetailFromScope();
                     cssSet(".gif-toolbar .resize-bar", {
                         left: "0%",
                         width: "100%"
                     });
-                    if (s.gifPlayer) {
-                        s.gifPlayer.move_to(0);
+                    if (useMiscRawState.getState().gifPlayer) {
+                        useMiscRawState.getState().gifPlayer.move_to(0);
                     }
                 }
             },
             nextFrame: function () {
-                var curr = s.gifPlayer.get_current_frame();
+                var curr = useMiscRawState.getState().gifPlayer.get_current_frame();
                 var index = curr + 1;
-                if (index + 1 > s.gifViewer.frames.length - 1) index = s.gifViewer.frames.length - 1;
-                s.gifViewer.setFrame(index);
-                s.gifPlayer.pause();
+                if (index + 1 > useMiscRawState.getState().gifViewer.frames.length - 1) index = useMiscRawState.getState().gifViewer.frames.length - 1;
+                useMiscRawState.getState().gifViewer.setFrame(index);
+                useMiscRawState.getState().gifPlayer.pause();
             },
             prevFrame: function () {
-                var curr = s.gifPlayer.get_current_frame();
+                var curr = useMiscRawState.getState().gifPlayer.get_current_frame();
                 var index = curr - 1;
                 if (index - 1 < 0) index = 0;
-                s.gifViewer.setFrame(index);
-                s.gifPlayer.pause();
+                useMiscRawState.getState().gifViewer.setFrame(index);
+                useMiscRawState.getState().gifPlayer.pause();
             },
             setFrame: function (index: any) {
-                s.gifPlayer.move_to(index);
+                useMiscRawState.getState().gifPlayer.move_to(index);
             },
             onProgress: function (progress: any, length: any) {
-                clearInterval(s.gifUpadteInterval);
-                if (s.isGifReady === true) {
-                    s.isGifReady = false;
+                clearInterval(useMiscRawState.getState().gifUpadteInterval);
+                if (useMiscRawState.getState().isGifReady === true) {
+                    writeScopeField('isGifReady', false);
                     syncDetailFromScope();
-                    delete s.gifViewer.frames;
-                    s.gifViewer.frames = [];
+                    delete useMiscRawState.getState().gifViewer.frames;
+                    useMiscRawState.getState().gifViewer.frames = [];
                     syncDetailFromScope();
-                    s.gifViewer.mousedownTime = 0;
+                    useMiscRawState.getState().gifViewer.mousedownTime = 0;
                     syncDetailFromScope();
-                    s.gifViewer.mousedownX = 0;
+                    useMiscRawState.getState().gifViewer.mousedownX = 0;
                     syncDetailFromScope();
-                    s.gifViewer.mousedownY = 0;
+                    useMiscRawState.getState().gifViewer.mousedownY = 0;
                     syncDetailFromScope();
-                    s.gifViewer.range = undefined;
+                    useMiscRawState.getState().gifViewer.range = undefined;
                     syncDetailFromScope();
-                    s.gifPlayer = undefined;
+                    writeScopeField('gifPlayer', undefined);
                     syncDetailFromScope();
                     scopeEvalAsync();
                 }
@@ -2011,20 +2012,20 @@ export function machineryBuildTagManager(s: any): any {
                 setText(".gif-toolbar .message span", `${parseInt((progress * 100) as any)}%`)
             },
             onFinished: function (result: any) {
-                s.gifViewer.range = undefined;
+                useMiscRawState.getState().gifViewer.range = undefined;
                 syncDetailFromScope();
-                s.gifPlayer = result.gifPlayer;
+                writeScopeField('gifPlayer', result.gifPlayer);
                 syncDetailFromScope();
-                s.isGifReady = true;
+                writeScopeField('isGifReady', true);
                 syncDetailFromScope();
-                s.gifViewer.frames = result.frames;
+                useMiscRawState.getState().gifViewer.frames = result.frames;
                 syncDetailFromScope();
-                s.gifViewer.playing = result.playing;
+                useMiscRawState.getState().gifViewer.playing = result.playing;
                 syncDetailFromScope();
-                s.gifViewer.setSpeed(1);
+                useMiscRawState.getState().gifViewer.setSpeed(1);
                 scopeEvalAsync();
                 const resizableBarEl = q(".gif-toolbar .resize-bar");
-                setText(".gif-toolbar .total-frame", `/ ${s.gifViewer.frames.length}`);
+                setText(".gif-toolbar .total-frame", `/ ${useMiscRawState.getState().gifViewer.frames.length}`);
 
                 const prevBar = resizableBarEl ? getResizable(resizableBarEl) : undefined;
                 if (prevBar) prevBar.destroy();
@@ -2052,8 +2053,8 @@ export function machineryBuildTagManager(s: any): any {
                     start: function (event: any, ui: any) {
                         gifPlayerLastResizeLeft = parseInt((ui.element.css("left")) as any);
                         gifPlayerLastResizeWidth = ui.element.width();
-                        gifPlayerResizeOriginalState = s.gifPlayer.get_playing();
-                        s.gifPlayer.pause();
+                        gifPlayerResizeOriginalState = useMiscRawState.getState().gifPlayer.get_playing();
+                        useMiscRawState.getState().gifPlayer.pause();
                         gifPlayerToolbarOffset = offsetLeftOf(q(".gif-toolbar .progress-bar"));
                     },
                     resize: function (event: any, ui: any) {
@@ -2062,12 +2063,12 @@ export function machineryBuildTagManager(s: any): any {
 
                         var currentPosX = event.pageX - gifPlayerToolbarOffset;
                         var width = widthOf(q(".gif-toolbar .progress-bar"));
-                        var index = Math.round(currentPosX / width * s.gifViewer.frames.length) + 1;
+                        var index = Math.round(currentPosX / width * useMiscRawState.getState().gifViewer.frames.length) + 1;
                         // if (!index) return;
-                        if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
+                        if (index -1  >= useMiscRawState.getState().gifViewer.frames.length) index = useMiscRawState.getState().gifViewer.frames.length;
                         if (!gifPlayerProgressDown) {
                             var img = q("#thumbnail-preview img") as HTMLImageElement;
-                            var f = s.gifPlayer.get_frame(index - 1);
+                            var f = useMiscRawState.getState().gifPlayer.get_frame(index - 1);
                             if (!f) return;
                             img.src = f.base64;
 
@@ -2085,15 +2086,15 @@ export function machineryBuildTagManager(s: any): any {
                         }
                         else {
                             cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "none" });
-                            cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%` });
-                            s.gifPlayer.move_to(index - 1);
-                            s.gifPlayer.pause();
+                            cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (useMiscRawState.getState().gifViewer.frames.length - 1) * 100 }%` });
+                            useMiscRawState.getState().gifPlayer.move_to(index - 1);
+                            useMiscRawState.getState().gifPlayer.pause();
                         }
 
                     },
                     stop: function (event: any, ui: any) {
                         gifPlayerResizing = false;
-                        var frames = s.gifViewer.frames;
+                        var frames = useMiscRawState.getState().gifViewer.frames;
                         var parentWidth = widthOf(q(".gif-toolbar .progress-bar"));
                         var left = parseInt((ui.element.css("left")) as any);
                         var width = ui.element.width();
@@ -2105,39 +2106,39 @@ export function machineryBuildTagManager(s: any): any {
                         });
 
                         // 移動 start
-                        var index = s.gifPlayer.get_current_frame();
+                        var index = useMiscRawState.getState().gifPlayer.get_current_frame();
                         if (index < 0) index = 0;
                         if (gifPlayerLastResizeLeft !== left) {
-                            if (s.gifViewer.range === undefined) {
-                                s.gifViewer.range = [index, s.gifViewer.frames.length];
+                            if (useMiscRawState.getState().gifViewer.range === undefined) {
+                                useMiscRawState.getState().gifViewer.range = [index, useMiscRawState.getState().gifViewer.frames.length];
                                 syncDetailFromScope();
                             }
                             else {
-                                s.gifViewer.range = [index, s.gifViewer.range[1]];
+                                useMiscRawState.getState().gifViewer.range = [index, useMiscRawState.getState().gifViewer.range[1]];
                                 syncDetailFromScope();
                             }
                         }
                         // 移動 end
                         else if (gifPlayerLastResizeWidth !== width) {
-                            if (s.gifViewer.range === undefined) {
-                                s.gifViewer.range = [0, index + 1];
+                            if (useMiscRawState.getState().gifViewer.range === undefined) {
+                                useMiscRawState.getState().gifViewer.range = [0, index + 1];
                                 syncDetailFromScope();
                             }
                             else {
-                                s.gifViewer.range = [s.gifViewer.range[0], index + 1];
+                                useMiscRawState.getState().gifViewer.range = [useMiscRawState.getState().gifViewer.range[0], index + 1];
                                 syncDetailFromScope();
                             }
                         }
 
-                        if (s.gifViewer.range && s.gifViewer.range[0] > s.gifViewer.range[1]) {
-                            s.gifViewer.range = [s.gifViewer.range[1], s.gifViewer.range[0]];
+                        if (useMiscRawState.getState().gifViewer.range && useMiscRawState.getState().gifViewer.range[0] > useMiscRawState.getState().gifViewer.range[1]) {
+                            useMiscRawState.getState().gifViewer.range = [useMiscRawState.getState().gifViewer.range[1], useMiscRawState.getState().gifViewer.range[0]];
                             syncDetailFromScope();
                         }
-                        console.log(s.gifViewer.range);
+                        console.log(useMiscRawState.getState().gifViewer.range);
 
                         show("#gif-progress-indicator");
                         if (!isVisible(q(".gif-toolbar-btn.play-btn"))) {
-                            s.gifPlayer.play();
+                            useMiscRawState.getState().gifPlayer.play();
                         }
 
                         gifPlayerProgressDown = false;
@@ -2147,21 +2148,21 @@ export function machineryBuildTagManager(s: any): any {
                 });
 
 
-                s.gifUpadteInterval = setInterval(function () {
+                writeScopeField('gifUpadteInterval', setInterval(function () {
                     try {
-                        var c = s.gifPlayer.get_current_frame();
-                        var length = s.gifPlayer.get_length();
+                        var c = useMiscRawState.getState().gifPlayer.get_current_frame();
+                        var length = useMiscRawState.getState().gifPlayer.get_length();
 
-                        if (s.gifViewer.range && !gifPlayerResizing && !gifPlayerProgressDown) {
-                            var start = s.gifViewer.range[0];
-                            var end = s.gifViewer.range[1];
+                        if (useMiscRawState.getState().gifViewer.range && !gifPlayerResizing && !gifPlayerProgressDown) {
+                            var start = useMiscRawState.getState().gifViewer.range[0];
+                            var end = useMiscRawState.getState().gifViewer.range[1];
                             if (c <= start) { 
                                 c = start; 
-                                s.gifPlayer.move_to(c);
+                                useMiscRawState.getState().gifPlayer.move_to(c);
                             }
                             if (c >= end) { 
                                 c = start; 
-                                s.gifPlayer.move_to(c);
+                                useMiscRawState.getState().gifPlayer.move_to(c);
                             }
                         }
 
@@ -2172,12 +2173,12 @@ export function machineryBuildTagManager(s: any): any {
                         updateGifIndicator(c + 1);
                     }
                     catch (err: any) {}
-                }, 50);
+                }, 50));
             }
-        };
+        });
         syncDetailFromScope();
         var updateGifIndicator = function (index: any) {
-            var percent = (index - 1) / (s.gifViewer.frames.length - 1) * 100;
+            var percent = (index - 1) / (useMiscRawState.getState().gifViewer.frames.length - 1) * 100;
             if (percent < 0) percent = 0;
             var value = `${ percent }%`;
             if (cssGet(q("#gif-progress-indicator"), 'left') !== value) {
@@ -2196,25 +2197,25 @@ export function machineryBuildTagManager(s: any): any {
         document.body.addEventListener('mousedown', function (event: any) {
         	var self = delegateTarget(event, ".gif-toolbar .progress-bar");
         	if (!self) return;
-            if (event.button === 0 && s.gifPlayer) {
+            if (event.button === 0 && useMiscRawState.getState().gifPlayer) {
                 gifPlayerProgressDown = true;
-                gifPlayerOriginalState = s.gifPlayer.get_playing();
+                gifPlayerOriginalState = useMiscRawState.getState().gifPlayer.get_playing();
                 hide("#thumbnail-preview");
 
-                if (s.isGifReady) {
+                if (useMiscRawState.getState().isGifReady) {
                     var width = widthOf(self);
                     var currentPosX = event.offsetX;
-                    var index = Math.round(currentPosX / width * s.gifViewer.frames.length) + 1;
+                    var index = Math.round(currentPosX / width * useMiscRawState.getState().gifViewer.frames.length) + 1;
                     if (!index) return;
-                    if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
-                    if (s.gifViewer.range !== undefined) {
-                        if (index -1 > s.gifViewer.range[1] || index -1 < s.gifViewer.range[0]) {
+                    if (index -1  >= useMiscRawState.getState().gifViewer.frames.length) index = useMiscRawState.getState().gifViewer.frames.length;
+                    if (useMiscRawState.getState().gifViewer.range !== undefined) {
+                        if (index -1 > useMiscRawState.getState().gifViewer.range[1] || index -1 < useMiscRawState.getState().gifViewer.range[0]) {
                             return;
                         }
                     }
-                    cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%` });
-                    s.gifPlayer.move_to(index - 1);
-                    s.gifPlayer.pause();
+                    cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (useMiscRawState.getState().gifViewer.frames.length - 1) * 100 }%` });
+                    useMiscRawState.getState().gifPlayer.move_to(index - 1);
+                    useMiscRawState.getState().gifPlayer.pause();
 
                     var startX = event.pageX;
 		            	if (gifDragMove) document.body.removeEventListener("mousemove", gifDragMove);
@@ -2223,21 +2224,21 @@ export function machineryBuildTagManager(s: any): any {
 		            		var offsetX = event.pageX - startX;
 		            		var x = currentPosX + offsetX;
 		            		var width2 = widthOf(self);
-		                    var index = Math.round(x / width2 * s.gifViewer.frames.length) + 1;
-		                    if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
+		                    var index = Math.round(x / width2 * useMiscRawState.getState().gifViewer.frames.length) + 1;
+		                    if (index -1  >= useMiscRawState.getState().gifViewer.frames.length) index = useMiscRawState.getState().gifViewer.frames.length;
 		                    if (index < 1) index = 1;
 		            		cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "none" });
-			                cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (s.gifViewer.frames.length - 1) * 100 }%` });
-			                s.gifPlayer.move_to(index - 1);
-			                s.gifPlayer.pause();
+			                cssSet("#gif-progress-indicator", { left: `${ (index - 1) / (useMiscRawState.getState().gifViewer.frames.length - 1) * 100 }%` });
+			                useMiscRawState.getState().gifPlayer.move_to(index - 1);
+			                useMiscRawState.getState().gifPlayer.pause();
 		            	};
 
 		            	gifDragEnd = function (event: any) {
             			if (event.button === 0) {
             				event.stopPropagation();
 			                gifPlayerProgressDown = false;
-			                if (gifPlayerOriginalState && s.gifPlayer) {
-			                    s.gifPlayer.play();
+			                if (gifPlayerOriginalState && useMiscRawState.getState().gifPlayer) {
+			                    useMiscRawState.getState().gifPlayer.play();
 			                }
 			            }
 			            cssSet(".gif-toolbar .progress-bar .ui-resizable-handle", { "pointer-events": "" });
@@ -2255,8 +2256,8 @@ export function machineryBuildTagManager(s: any): any {
             if (event.button === 0) {
             }
             else if (event.button === 2) {
-            	s.gifPlayer.pause();
-                s.openGifContextMenu(event);
+            	useMiscRawState.getState().gifPlayer.pause();
+                useMiscRawState.getState().openGifContextMenu(event);
             }
         });
 
@@ -2274,14 +2275,14 @@ export function machineryBuildTagManager(s: any): any {
 
         document.body.addEventListener('wheel', function (e: any) {
         	if (!delegateTarget(e, ".gif-toolbar .progress-bar")) return;
-        	s.gifPlayer.pause();
+        	useMiscRawState.getState().gifPlayer.pause();
         	var delta = e.deltaY;
         	var ne = delta < 0 ? 1 : (delta > 0 ? -1 : 1);
         	if (ne > 0) {
-        		s.gifViewer.nextFrame();
+        		useMiscRawState.getState().gifViewer.nextFrame();
         	}
         	else {
-        		s.gifViewer.prevFrame();
+        		useMiscRawState.getState().gifViewer.prevFrame();
         	}
         }, { passive: true });
 
@@ -2292,14 +2293,14 @@ export function machineryBuildTagManager(s: any): any {
                 var currentPosX = event.offsetX;
 
                 // 显示缩略图
-                if (s.isGifReady) {
+                if (useMiscRawState.getState().isGifReady) {
                     var width = widthOf(self);
-                    var index = Math.round(currentPosX / width * s.gifViewer.frames.length) + 1;
+                    var index = Math.round(currentPosX / width * useMiscRawState.getState().gifViewer.frames.length) + 1;
                     // if (!index) return;
-                    if (index -1  >= s.gifViewer.frames.length) index = s.gifViewer.frames.length;
+                    if (index -1  >= useMiscRawState.getState().gifViewer.frames.length) index = useMiscRawState.getState().gifViewer.frames.length;
                     if (!gifPlayerProgressDown) {
                         var img = q("#thumbnail-preview img") as HTMLImageElement;
-                        var f = s.gifPlayer.get_frame(index - 1);
+                        var f = useMiscRawState.getState().gifPlayer.get_frame(index - 1);
                         if (!f) return;
                         img.src = f.base64;
 
@@ -3013,19 +3014,19 @@ export function machineryOpenUnfiledGroup(): void {
 }
 
 /* openUntagged（bundle 36805-36833 逐字：同 openUnfiled 模板，untagged 键） */
-export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
+export function machineryOpenUntagged(ignoreHistory: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 
-  if (s.viewMode === 'untagged' && s.allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
-    if (s.isDetailMode) {
-      machineryLeaveDetailMode(s);
+  if (useBodyState.getState().viewMode === 'untagged' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
+    if (useBodyState.getState().isDetailMode) {
+      machineryLeaveDetailMode();
     }
     return;
   }
 
   w.ScrollbarSaver.saveScrollPosition();
-  s.viewMode = 'untagged';
+  writeScopeField('viewMode', 'untagged');
   writeScopeField('currentFocus', "sidebar");
   machineryResetPage();
 
@@ -3034,21 +3035,21 @@ export function machineryOpenUntagged(s: any, ignoreHistory: any): void {
     if (!ignoreHistory) {
       w.UrlStateService.setState({ view: 'untagged', folder: null, smartfolder: null, tag: null, color: null });
     }
-    s.imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.untagged") || 150;
+    useLayoutState.getState().imageSize.height = w.localStorage.getItem("eagle.list.thumbSize.untagged") || 150;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.imageSize.height = parseInt(s.imageSize.height);
+    useLayoutState.getState().imageSize.height = parseInt(useLayoutState.getState().imageSize.height);
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
     machinerySetLastFolder(undefined);
-    machineryUpdateListHeight(s.imageSize.height);
+    machineryUpdateListHeight(useLayoutState.getState().imageSize.height);
     w.ScrollbarSaver.restoreScrollPosition();
     setScrollTop("#sidebar-item-container", 0);
-    s.reload();
+    useMiscRawState.getState().reload();
     w.analytics.screenView('Untagged');
   }, 50);
 }

@@ -126,7 +126,7 @@ export function takeoverFilterDomain(): void {
       currentWindow.show();
       currentWindow.focus();
     }
-    machinerySearchInAll(s);
+    machinerySearchInAll();
     scopeEvalAsync();
   });
 
@@ -2189,8 +2189,8 @@ export function machineryOpenFilter(): void {
 }
 
 /* searchInAll（bundle 29201-29205 逐字：openAll(true) + focusSeach **typo 逐字**） */
-export function machinerySearchInAll(s: any): void {
-  machineryOpenAll(s, true, function () {
+export function machinerySearchInAll(): void {
+  machineryOpenAll(true, function () {
     machineryFocusSeach();
   });
 }
@@ -2321,7 +2321,7 @@ let shimFilterInst: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getToggleFilterByTypeFn(s: any): any { return scopeSingleton('toggleFilterByType', () => machineryToggleFilterByType()); }
+export function getToggleFilterByTypeFn(): any { return scopeSingleton('toggleFilterByType', () => machineryToggleFilterByType()); }
 
 // ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
 let imageSearchController: any = null;
@@ -2644,16 +2644,16 @@ export async function machineryFilterDataPart3(w: any, data: any[]): Promise<any
   return data;
 }
 
-function machinerySearchFilter(s: any, image: any): any {
+function machinerySearchFilter(image: any): any {
     const w = window as any;
     try {
         // 如果還沒有建立 RegEx 群組，先建立
-        if (!s.searchRegexGroup) {
-            s.searchRegexGroup = machineryConvertToRegexGroup(
-                s.keywords,
-                s.keywords_cn,
-                s.keywords_tw
-            );
+        if (!useMiscRawState.getState().searchRegexGroup) {
+            writeScopeField('searchRegexGroup', machineryConvertToRegexGroup(
+                useMiscRawState.getState().keywords,
+                useMiscRawState.getState().keywords_cn,
+                useMiscRawState.getState().keywords_tw
+            ));
         }
 
         // 建構要搜尋的文字內容
@@ -2672,24 +2672,24 @@ function machinerySearchFilter(s: any, image: any): any {
             allText += `${image.rawMetas.camera} `;
         }
 
-        if (name && s.isSearchScopeName) {
+        if (name && useMiscRawState.getState().isSearchScopeName) {
             allText += `${name} `;
         }
 
-        if (ext && s.isSearchScopeExt) {
+        if (ext && useMiscRawState.getState().isSearchScopeExt) {
             allText += `.${ext} `;
         }
 
-        if (url && s.isSearchScopeUrl && s.keyword.length >= 2) {
+        if (url && useMiscRawState.getState().isSearchScopeUrl && useListState.getState().keyword.length >= 2) {
             allText += `${url} `;
         }
 
-        if (annotation && s.isSearchScopeNote) {
+        if (annotation && useMiscRawState.getState().isSearchScopeNote) {
             allText += `${annotation} `;
         }
 
         // 標註
-        if (s.isSearchScopeAnnotation && image.comments) {
+        if (useMiscRawState.getState().isSearchScopeAnnotation && image.comments) {
             image.comments.forEach(function (comment: any) {
                 allText += `${comment.annotation} `;
             });
@@ -2702,28 +2702,28 @@ function machinerySearchFilter(s: any, image: any): any {
                            get(image.fontMetas, `fullName.en`, "");
             allText += `${fullName} `;
 
-            if (s.keyword.length > 2 && image.fontMetas.postScriptName) {
+            if (useListState.getState().keyword.length > 2 && image.fontMetas.postScriptName) {
                 allText += `${JSON.stringify(image.fontMetas)} `;
             }
         }
 
         // 標籤
-        if (s.isSearchScopeTag && image.tags && image.tags.length > 0) {
+        if (useMiscRawState.getState().isSearchScopeTag && image.tags && image.tags.length > 0) {
             image.tags.forEach(function (tag: any) {
                 if (tag) allText += `${tag} `;
             });
         }
 
         // 資料夾
-        if ((s.isSearchScopeFolderDesc || s.isSearchScopeFolderName) &&
+        if ((useMiscRawState.getState().isSearchScopeFolderDesc || useMiscRawState.getState().isSearchScopeFolderName) &&
             image.folders && image.folders.length > 0) {
             image.folders.forEach(function (folderId: any) {
-                var folder = s.folderMappings[folderId];
+                var folder = useItemState.getState().folderMappings[folderId];
                 if (folder) {
-                    if (s.isSearchScopeFolderName && folder.name) {
+                    if (useMiscRawState.getState().isSearchScopeFolderName && folder.name) {
                         allText += `${folder.name} `;
                     }
-                    if (s.isSearchScopeFolderDesc && folder.description) {
+                    if (useMiscRawState.getState().isSearchScopeFolderDesc && folder.description) {
                         allText += `${folder.description} `;
                     }
                 }
@@ -2731,13 +2731,13 @@ function machinerySearchFilter(s: any, image: any): any {
         }
 
         // 使用 RegEx 群組進行匹配
-        const regexMatch = machineryMatchWithRegexGroup(allText.toLowerCase(), s.searchRegexGroup);
+        const regexMatch = machineryMatchWithRegexGroup(allText.toLowerCase(), useMiscRawState.getState().searchRegexGroup);
 
         // 如果 regex 已經匹配，直接返回 true
         if (regexMatch) return true;
 
         // 否則使用 indexOf 進行簡單字串匹配（處理包含特殊字符的情況）
-        const keywordForIndexOf = s.keyword.toLowerCase();
+        const keywordForIndexOf = useListState.getState().keyword.toLowerCase();
         return allText.toLowerCase().indexOf(keywordForIndexOf) > -1;
     }
     catch (err) {

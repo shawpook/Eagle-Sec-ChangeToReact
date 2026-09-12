@@ -522,7 +522,7 @@ export function machineryOpenInspectorTagSelectPanel(): void {
   inspectorTagSelectPanelOpenChannel.emit();
 }
 
-export function machineryRemoveSelected(s: any, event: any): void {
+export function machineryRemoveSelected(event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   event?.preventDefault();
@@ -530,44 +530,44 @@ export function machineryRemoveSelected(s: any, event: any): void {
 
   if (useBodyState.getState().currentFocus == 'sidebar') {
     if (useMiscRawState.getState().selectedFolders.length > 0) {
-      machineryRemoveSelectedFolders(s);
+      machineryRemoveSelectedFolders();
     }
     else if (useMiscRawState.getState().selectedSmartFolders.length > 0) {
-      machineryRemoveSelectedSmartFolders(s);
+      machineryRemoveSelectedSmartFolders();
     }
-    else if (s.currentFolder) {
-      machineryRemoveFolder(s, s.currentFolder);
-    } else if (s.currentSmartFolder) {
-      machineryRemoveSmartFolder(s, s.currentSmartFolder);
+    else if (useFolderState.getState().currentFolder) {
+      machineryRemoveFolder(useFolderState.getState().currentFolder);
+    } else if (useFolderState.getState().currentSmartFolder) {
+      machineryRemoveSmartFolder(useFolderState.getState().currentSmartFolder);
     }
   }
   else if (useBodyState.getState().currentFocus == 'tags') {
-    if (s.currentTagGroup) {
-      machineryRemoveTagGroup(s.currentTagGroup);
+    if (useMiscRawState.getState().currentTagGroup) {
+      machineryRemoveTagGroup(useMiscRawState.getState().currentTagGroup);
     }
   }
-  else if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length > 0) {
-    var selectedFolders = Object.keys(s.selectedFolderMappings).map(function (key: any) {
+  else if (useItemState.getState().selectedFolderMappings && Object.keys(useItemState.getState().selectedFolderMappings).length > 0) {
+    var selectedFolders = Object.keys(useItemState.getState().selectedFolderMappings).map(function (key: any) {
       return key;
     });
     var folderId = selectedFolders[0];
-    if (folderId && s.folderMappings[folderId]) {
-      machineryRemoveFolder(s, s.folderMappings[folderId], {
+    if (folderId && useItemState.getState().folderMappings[folderId]) {
+      machineryRemoveFolder(useItemState.getState().folderMappings[folderId], {
         ignoreSelectNext: true
       });
     }
   }
-  else if (s.viewMode === 'alltags' && s.currentTagGroup) {
+  else if (useBodyState.getState().viewMode === 'alltags' && useMiscRawState.getState().currentTagGroup) {
     var selectedTags = machineryGetSelectedTags();
     if (selectedTags && selectedTags.length > 0) {
-      s.TagManager.removeTagsFromGroup(s.currentTagGroup.id, selectedTags);
+      useMiscRawState.getState().TagManager.removeTagsFromGroup(useMiscRawState.getState().currentTagGroup.id, selectedTags);
     }
   }
   else {
 
-    if (s.selected.length <= 0) return;
+    if (useSelectionState.getState().selected.length <= 0) return;
 
-    if (s.viewMode == "trash") {
+    if (useBodyState.getState().viewMode == "trash") {
       w.swal({
         html: `
                             <div class="alert">
@@ -591,16 +591,16 @@ export function machineryRemoveSelected(s: any, event: any): void {
     }
     else {
       machineryCheckOperationSafety(function () {
-        s.lastIndex = machineryGetSelection().start;
+        writeScopeField('lastIndex', machineryGetSelection().start);
 
-        if (s.currentFolder) {
+        if (useFolderState.getState().currentFolder) {
 
           // 强制重置该文件夹及祖先封面
-          machineryResetFolderCover(s.currentFolder);
+          machineryResetFolderCover(useFolderState.getState().currentFolder);
 
           var containsMultipleFolder = false;
-          for (var i = 0; i < s.selected.length; i++) {
-            var img = s.selected[i];
+          for (var i = 0; i < useSelectionState.getState().selected.length; i++) {
+            var img = useSelectionState.getState().selected[i];
             if (img && img.folders && img.folders.length > 1) {
               containsMultipleFolder = true;
               break;
@@ -635,18 +635,18 @@ export function machineryRemoveSelected(s: any, event: any): void {
             }).then(function (result: any) {
               var isForceToTrash = (result === '2');
               lastMoveToTrashCheckbox = result;
-              machineryRemoveFolderContents(s, { isForceToTrash: isForceToTrash });
+              machineryRemoveFolderContents({ isForceToTrash: isForceToTrash });
               scopeEvalAsync();
             }, function () { });
           }
           else {
-            machineryRemoveFolderContents(s, { isForceToTrash: true });
+            machineryRemoveFolderContents({ isForceToTrash: true });
           }
-        } else if (s.currentTag || s.currentSmartFolder || s.viewMode === 'all' || s.viewMode === 'unfiled' || s.viewMode === 'untagged' || s.viewMode === 'recent' || s.viewMode === 'random') {
+        } else if (useMiscRawState.getState().currentTag || useFolderState.getState().currentSmartFolder || useBodyState.getState().viewMode === 'all' || useBodyState.getState().viewMode === 'unfiled' || useBodyState.getState().viewMode === 'untagged' || useBodyState.getState().viewMode === 'recent' || useBodyState.getState().viewMode === 'random') {
 
           var origin: any[] = [];
           let now = Date.now();
-          s.selected.forEach(function (image: any) {
+          useSelectionState.getState().selected.forEach(function (image: any) {
             image.isDeleted = true;
             image.deletedTime = Date.now();
             origin.push(image);
@@ -654,11 +654,11 @@ export function machineryRemoveSelected(s: any, event: any): void {
           });
 
           var message = getFilter()('i18n')("notify.image.remove", [
-            { "property": "count", "value": s.selected.length },
+            { "property": "count", "value": useSelectionState.getState().selected.length },
           ]);
-          if (s.selected.length === 1) { message = message.replace("images", "image"); }
+          if (useSelectionState.getState().selected.length === 1) { message = message.replace("images", "image"); }
 
-          (useMiscRawState.getState().notify || s.notify).call(s.$root, {
+          (useMiscRawState.getState().notify || useMiscRawState.getState().notify).call(undefined, {
             message: message,
             duration: 4000,
           }, function () {
@@ -668,16 +668,16 @@ export function machineryRemoveSelected(s: any, event: any): void {
               delete image.deletedTime;
               machineryUpdateFilterCounts(image, 1, now);
             });
-            s.selected = origin;
+            writeScopeField('selected', origin);
             syncInspectorFromScope();
-            if (s.isDetailMode) {
-              s.current = origin[0];
+            if (useBodyState.getState().isDetailMode) {
+              writeScopeField('current', origin[0]);
               syncDetailFromScope();
               syncInspectorFromScope();
             }
             machineryCalculateImageBinding({ ignoreSort: true }, function () {
               if (
-                s.viewMode !== 'random'
+                useBodyState.getState().viewMode !== 'random'
               ) {
                 machineryRebindRefresh();
               }
@@ -687,50 +687,50 @@ export function machineryRemoveSelected(s: any, event: any): void {
             w.hiddenByCurrentFilter(origin);
           });
 
-          if (s.isDetailMode) {
+          if (useBodyState.getState().isDetailMode) {
             $timeout(function () {
-              machineryZoom(s);
+              machineryZoom();
             }, 100)
           }
 
           if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteImage == 'true') {
-            s.removeSound && s.removeSound.play && s.removeSound.play();
+            useMiscRawState.getState().removeSound && useMiscRawState.getState().removeSound.play && useMiscRawState.getState().removeSound.play();
           }
-          w.ayncsImagesChange(s.selected);
-          w.hiddenByCurrentFilter(s.selected);
+          w.ayncsImagesChange(useSelectionState.getState().selected);
+          w.hiddenByCurrentFilter(useSelectionState.getState().selected);
 
           // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-          s.lastIndex = machineryGetSelection().start;
-          var next = s.allData[s.lastIndex + s.selected.length];
-          var prev = s.allData[s.lastIndex - 1];
+          writeScopeField('lastIndex', machineryGetSelection().start);
+          var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
+          var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
 
           if (next) {
-            s.selected = [next];
+            writeScopeField('selected', [next]);
             syncInspectorFromScope();
-            if (s.isDetailMode) {
-              s.current = next;
+            if (useBodyState.getState().isDetailMode) {
+              writeScopeField('current', next);
               syncDetailFromScope();
               syncInspectorFromScope();
             }
           } else if (prev) {
-            s.selected = [prev];
+            writeScopeField('selected', [prev]);
             syncInspectorFromScope();
-            if (s.isDetailMode) {
-              s.current = prev;
+            if (useBodyState.getState().isDetailMode) {
+              writeScopeField('current', prev);
               syncDetailFromScope();
               syncInspectorFromScope();
             }
           } else {
-            s.selected = [];
+            writeScopeField('selected', []);
             syncInspectorFromScope();
-            if (s.isDetailMode) {
-              machineryLeaveDetailMode(s);
+            if (useBodyState.getState().isDetailMode) {
+              machineryLeaveDetailMode();
             }
           }
 
           $timeout(function () {
-            machineryForceFitImageSize(s.current);
-            machineryZoom(s);
+            machineryForceFitImageSize(useSelectionState.getState().current);
+            machineryZoom();
           }, 100);
 
           w.ScrollbarSaver.saveScrollPosition();
@@ -738,19 +738,19 @@ export function machineryRemoveSelected(s: any, event: any): void {
           var itemElements = machineryGetSelectedItemElements();
           glRemoveitemsChannel.emit(itemElements);
 
-          s.lastSelectedIndex = machineryCurrentIndex() - 1;
+          writeScopeField('lastSelectedIndex', machineryCurrentIndex() - 1);
           machineryAutoScroll();
 
           machineryCalculateImageBinding({ ignoreSort: true }, function () {
             if (
-              s.viewMode !== 'random' ||
-              (s.currentFolder && s.currentFolder.orderBy !== "RANDOM")
+              useBodyState.getState().viewMode !== 'random' ||
+              (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy !== "RANDOM")
             ) {
               machineryRebindRefresh(true);
             }
             machineryUpdateSelection();
-            if (s.currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${s.currentFolder.name}(${s.currentFolder.id}), folder remain ${s.currentFolder.imageCount} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
-            else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${s.all.length} files, trash remain ${s.trash.length} files`); }
+            if (useFolderState.getState().currentFolder) { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files from ${useFolderState.getState().currentFolder.name}(${useFolderState.getState().currentFolder.id}), folder remain ${useFolderState.getState().currentFolder.imageCount} files, all remain ${useItemState.getState().all.length} files, trash remain ${useItemState.getState().trash.length} files`); }
+            else { w.electronLog && w.electronLog.info(`[app] Remove ${itemElements.length} files, all remain ${useItemState.getState().all.length} files, trash remain ${useItemState.getState().trash.length} files`); }
           });
         } else {
           return;
@@ -760,7 +760,7 @@ export function machineryRemoveSelected(s: any, event: any): void {
   }
 }
 
-export function machineryRemoveSelectedFolders(s: any): void {
+export function machineryRemoveSelectedFolders(): void {
   const w = window as any;
   if (useMiscRawState.getState().selectedFolders.length === 0) return;
 
@@ -794,13 +794,13 @@ export function machineryRemoveSelectedFolders(s: any): void {
       var isDeleteImages = (result == 1);
       useMiscRawState.getState().selectedFolders.forEach(function (folder: any) {
         if (folder.password && !folder.isUnLock) return;
-        machineryRemoveFolderInner(s, folder, { isDeleteImages: isDeleteImages, ignoreRestore: true });
+        machineryRemoveFolderInner(folder, { isDeleteImages: isDeleteImages, ignoreRestore: true });
       });
     }, 1);
   }, function () { });
 }
 
-export function machineryRemoveSelectedSmartFolders(s: any): void {
+export function machineryRemoveSelectedSmartFolders(): void {
   const w = window as any;
   if (useMiscRawState.getState().selectedSmartFolders.length === 0) return;
 
@@ -823,7 +823,7 @@ export function machineryRemoveSelectedSmartFolders(s: any): void {
     cancelButtonText: w.i18n.__("general.cancel"),
   }).then(function (result: any) {
     useMiscRawState.getState().selectedSmartFolders.forEach(function (smartFolder: any) {
-      machineryRemoveSmartFolderInner(s, smartFolder, { ignoreRestore: true });
+      machineryRemoveSmartFolderInner(smartFolder, { ignoreRestore: true });
     });
     writeScopeField('selectedSmartFolders', []);
   }, function () { });
@@ -852,7 +852,7 @@ export function machinerySelectAll(event: any): void {
   }
 }
 
-export function machinerySelectDown(s: any, event: any): void {
+export function machinerySelectDown(event: any): void {
   event && event.preventDefault();
   var selection = machineryGetSelection();
   var end = selection.end || 0;
@@ -870,7 +870,7 @@ export function machinerySelectDown(s: any, event: any): void {
     if (!offset) return;
     var bx = offset.left;
     var by = offset.top;
-    if (s.layout === "GridLayout") {
+    if (useBodyState.getState().layout === "GridLayout") {
       var td = Math.abs(by - boxCenterY);
       if (boxCenterX == bx && by > boxCenterY) {
         if (td < d) {
@@ -891,27 +891,27 @@ export function machinerySelectDown(s: any, event: any): void {
   });
   if (target) {
     var image = machineryGetItemByElement(target);
-    s.selected = [image];
+    writeScopeField('selected', [image]);
     syncInspectorFromScope();
-    s.selectedFolderMappings = {};
+    writeScopeField('selectedFolderMappings', {});
     syncListFromScope();
-    if (s.isDetailMode) {
-      s.current = s.selected[0];
+    if (useBodyState.getState().isDetailMode) {
+      writeScopeField('current', useSelectionState.getState().selected[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
     machineryAutoScroll(target);
   }
-  if (s.isDetailMode) {
-    machineryForceFitImageSize(s.selected[0], true);
-    s.current = s.selected[0];
+  if (useBodyState.getState().isDetailMode) {
+    machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
+    writeScopeField('current', useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.isGifReady = false;
+    writeScopeField('isGifReady', false);
     syncDetailFromScope();
-    detailZoom()?.updateNavigator( s.current);
+    detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {
-      machineryZoom(s);
+      machineryZoom();
     }
   }
 }
@@ -932,10 +932,10 @@ export function machinerySelectFolder(event: any, folder: any): void {
   }
 }
 
-export function machinerySelectNext(s: any, event: any): void {
+export function machinerySelectNext(event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     moveCropToolChannel.emit({ horizontal: 1, vertical: 0 });
     return;
   }
@@ -944,11 +944,11 @@ export function machinerySelectNext(s: any, event: any): void {
   var start = selection.start;
   var end = selection.end + 1;
 
-  if (s.isDetailMode) {
-    machineryRememberScrollTops(s.current);
+  if (useBodyState.getState().isDetailMode) {
+    machineryRememberScrollTops(useSelectionState.getState().current);
   }
 
-  if (!s.allData[end]) {
+  if (!useItemState.getState().allData[end]) {
     show("#is-last-item");
     setTimeout(() => { hide("#is-last-item"); }, 500);
     return;
@@ -957,44 +957,44 @@ export function machinerySelectNext(s: any, event: any): void {
     detailZoom()?.cleanBitmapViewer();
   }
 
-  s.selected = [s.allData[end]];
+  writeScopeField('selected', [useItemState.getState().allData[end]]);
   syncInspectorFromScope();
-  s.selectedFolderMappings = {};
+  writeScopeField('selectedFolderMappings', {});
   syncListFromScope();
   writeScopeField('currentFocus', "content");
 
-  if (s.isDetailMode) {
+  if (useBodyState.getState().isDetailMode) {
     $timeout.cancel(nextTimeout);
-    machineryForceFitImageSize(s.selected[0], true);
-    s.current = s.selected[0];
+    machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
+    writeScopeField('current', useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.isGifReady = false;
+    writeScopeField('isGifReady', false);
     syncDetailFromScope();
   }
 
   machineryAutoScroll(end);
 
-  if (s.current) {
-    detailZoom()?.updateNavigator( s.current);
+  if (useSelectionState.getState().current) {
+    detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {
-      machineryZoom(s);
+      machineryZoom();
     }
     nextTimeout = $timeout(function () {
       if (!machineryLastZoom()) {
-        machineryZoom(s);
+        machineryZoom();
       }
-      var nextImage = s.allData[end + 1];
+      var nextImage = useItemState.getState().allData[end + 1];
       machineryPreloadImage("next");
     }, 100);
-    machineryAddToRecentFile(s.current);
+    machineryAddToRecentFile(useSelectionState.getState().current);
   }
 }
 
-export function machinerySelectPrev(s: any, event: any): void {
+export function machinerySelectPrev(event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     moveCropToolChannel.emit({ horizontal: -1, vertical: 0 });
     return;
   }
@@ -1008,58 +1008,58 @@ export function machinerySelectPrev(s: any, event: any): void {
     setTimeout(() => { hide("#is-first-item"); }, 500);
     return;
   }
-  if (s.allData.length == 0) { return; }
+  if (useItemState.getState().allData.length == 0) { return; }
 
-  if (s.isDetailMode) {
+  if (useBodyState.getState().isDetailMode) {
     detailZoom()?.cleanBitmapViewer();
-    machineryRememberScrollTops(s.current);
-    s.isGifReady = false;
+    machineryRememberScrollTops(useSelectionState.getState().current);
+    writeScopeField('isGifReady', false);
     syncDetailFromScope();
   }
 
-  if (s.allData[start - 1]) {
-    s.selected = [];
+  if (useItemState.getState().allData[start - 1]) {
+    writeScopeField('selected', []);
     syncInspectorFromScope();
-    s.selected.push(s.allData[start - 1]);
+    useSelectionState.getState().selected.push(useItemState.getState().allData[start - 1]);
     syncInspectorFromScope();
-    if (s.isDetailMode) {
-      machineryForceFitImageSize(s.selected[0], true);
-      s.current = s.selected[0];
+    if (useBodyState.getState().isDetailMode) {
+      machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
+      writeScopeField('current', useSelectionState.getState().selected[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
     machineryAutoScroll(start - 1);
   } else {
-    s.selected = [];
+    writeScopeField('selected', []);
     syncInspectorFromScope();
-    s.selected.push(s.allData[0]);
+    useSelectionState.getState().selected.push(useItemState.getState().allData[0]);
     syncInspectorFromScope();
-    machineryForceFitImageSize(s.selected[0], true);
-    s.current = s.selected[0];
+    machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
+    writeScopeField('current', useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
     machineryAutoScroll(0);
   }
-  s.selectedFolderMappings = {};
+  writeScopeField('selectedFolderMappings', {});
   syncListFromScope();
   writeScopeField('currentFocus', "content");
-  if (s.current) {
-    detailZoom()?.updateNavigator( s.current);
+  if (useSelectionState.getState().current) {
+    detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {
-      machineryZoom(s);
+      machineryZoom();
     }
     $timeout.cancel(prevTimeout);
     prevTimeout = $timeout(function () {
       if (!machineryLastZoom()) {
-        machineryZoom(s);
+        machineryZoom();
       }
       machineryPreloadImage("prev");
     }, 100);
-    machineryAddToRecentFile(s.current);
+    machineryAddToRecentFile(useSelectionState.getState().current);
   }
 }
 
-export function machinerySelectUp(s: any, event: any): void {
+export function machinerySelectUp(event: any): void {
   event && event.preventDefault();
 
   var selection = machineryGetSelection();
@@ -1078,7 +1078,7 @@ export function machinerySelectUp(s: any, event: any): void {
     if (!offset) return;
     var bx = offset.left;
     var by = offset.top;
-    if (s.layout === "GridLayout") {
+    if (useBodyState.getState().layout === "GridLayout") {
       var td = Math.abs(boxCenterY - by);
       if (boxCenterX == bx && boxCenterY > by) {
         if (td < d) {
@@ -1099,27 +1099,27 @@ export function machinerySelectUp(s: any, event: any): void {
   });
   if (target) {
     var image = machineryGetItemByElement(target);
-    s.selected = [image];
+    writeScopeField('selected', [image]);
     syncInspectorFromScope();
-    s.selectedFolderMappings = {};
+    writeScopeField('selectedFolderMappings', {});
     syncListFromScope();
-    if (s.isDetailMode) {
-      s.current = s.selected[0];
+    if (useBodyState.getState().isDetailMode) {
+      writeScopeField('current', useSelectionState.getState().selected[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
     machineryAutoScroll(target);
   }
-  if (s.isDetailMode) {
-    machineryForceFitImageSize(s.selected[0], true);
-    s.current = s.selected[0];
+  if (useBodyState.getState().isDetailMode) {
+    machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
+    writeScopeField('current', useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
-    s.isGifReady = false;
+    writeScopeField('isGifReady', false);
     syncDetailFromScope();
-    detailZoom()?.updateNavigator( s.current);
+    detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {
-      machineryZoom(s);
+      machineryZoom();
     }
   }
 }

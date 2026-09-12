@@ -288,7 +288,7 @@ export function Toolbar() {
             <img src={iconSrc(snapshot.theme, 'ic-app-menu.svg')} />
           </div>
         ) : null}
-        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call(scoped(machineryToggleAll))} onContextMenu={call('openSidebarMenu')}>
+        <div id="toggle-all-btn" className="ic-btn" ng-click="toggleAll($event)" onClick={call(machineryToggleAll)} onContextMenu={call('openSidebarMenu')}>
           <img src={iconSrc(snapshot.theme, 'ic_toggle-sidebar.svg')} />
         </div>
         <div
@@ -313,8 +313,8 @@ export function Toolbar() {
         </div>
 
         <ul>
-          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [scoped(machineryOpenAll)])}>{t('general.pages.all')}</li>
-          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [scoped(machineryOpenUnfiled)])}>{t('general.pages.unfiled')}</li>
+          <li style={viewMode === 'all' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [machineryOpenAll])}>{t('general.pages.all')}</li>
+          <li style={viewMode === 'unfiled' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], [machineryOpenUnfiled])}>{t('general.pages.unfiled')}</li>
           <li style={viewMode === 'untagged' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openUntagged'])}>{t('general.pages.untagged')}</li>
           <li style={viewMode === 'recent' ? undefined : { display: 'none' }} onClick={callSeq(['resetKeyword'], [resetFilter], ['filterContent'], ['openRecent'])}>{t('general.pages.recent')}</li>
 

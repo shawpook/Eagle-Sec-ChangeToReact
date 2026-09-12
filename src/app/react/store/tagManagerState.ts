@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
 import { getBodyScope } from '../core/appCore';
+import { useMiscRawState } from './miscRawState';
+import { useLayoutState } from './layoutState';
 
 /**
  * 阶段7b：标签管理（tag-manager 指令 + TagManager 服务渲染结果）状态快照。
@@ -97,7 +99,7 @@ let lastTmSnapshot: any = null;
 export function syncTagManagerFromScope(): void {
   const scope: any = getBodyScope();
   if (!scope) return;
-  const next = buildTmSnapshot(scope);
+  const next = buildTmSnapshot();
   if (lastTmSnapshot !== null && shallowEqTm(next, lastTmSnapshot)) return;
   lastTmSnapshot = next;
   setSnapshot(next);
@@ -113,8 +115,8 @@ export function bindTagManagerSync(): void {
   syncTagManagerFromScope();
 }
 
-function buildTmSnapshot(scope: any): TagManagerSnapshot {
-      const tm = scope.TagManager || {};
+function buildTmSnapshot(): TagManagerSnapshot {
+      const tm = useMiscRawState.getState().TagManager || {};
       const groups = Array.isArray(tm.groups) ? tm.groups : [];
       const tagMappings: Record<string, { name?: string; color?: string; imageCount?: number }> = {};
       const mappings = tm.tagMappings || {};
@@ -123,18 +125,18 @@ function buildTmSnapshot(scope: any): TagManagerSnapshot {
         tagMappings[key] = { name: m?.name, color: m?.color, imageCount: m?.imageCount };
       }
       const tagsResult = tm.tagsResult || {};
-      const currentTagGroup = scope.currentTagGroup || null;
+      const currentTagGroup = useMiscRawState.getState().currentTagGroup || null;
 
       return {
         ready: true,
-        theme: scope.theme || 'gray',
-        viewMode: scope.viewMode,
-        isDetailMode: !!scope.isDetailMode,
-        tagViewMode: scope.tagViewMode || 'ALL',
-        tagViewModeName: scope.tagViewModeName || '',
-        tagViewLayoutMode: scope.tagViewLayoutMode || 'INLINE',
-        keyword: scope.keyword || '',
-        newGroupName: scope.newGroupName || '',
+        theme: useBodyState.getState().theme || 'gray',
+        viewMode: useBodyState.getState().viewMode,
+        isDetailMode: !!useBodyState.getState().isDetailMode,
+        tagViewMode: useMiscRawState.getState().tagViewMode || 'ALL',
+        tagViewModeName: useMiscRawState.getState().tagViewModeName || '',
+        tagViewLayoutMode: useMiscRawState.getState().tagViewLayoutMode || 'INLINE',
+        keyword: useListState.getState().keyword || '',
+        newGroupName: useMiscRawState.getState().newGroupName || '',
         currentTagGroup: currentTagGroup
           ? {
               id: currentTagGroup.id,
@@ -144,8 +146,8 @@ function buildTmSnapshot(scope: any): TagManagerSnapshot {
               color: currentTagGroup.color,
             }
           : null,
-        selectedTags: scope.selectedTags ? JSON.parse(JSON.stringify(scope.selectedTags)) : {},
-        selectingTags: scope.selectingTags ? JSON.parse(JSON.stringify(scope.selectingTags)) : {},
+        selectedTags: useMiscRawState.getState().selectedTags ? JSON.parse(JSON.stringify(useMiscRawState.getState().selectedTags)) : {},
+        selectingTags: useMiscRawState.getState().selectingTags ? JSON.parse(JSON.stringify(useMiscRawState.getState().selectingTags)) : {},
         groups: groups.map((g: any) => ({
           id: g.id,
           name: g.name,
@@ -162,6 +164,6 @@ function buildTmSnapshot(scope: any): TagManagerSnapshot {
           ? tagsResult.display.map((row: any) => ({ ...row, tags: Array.isArray(row.tags) ? [...row.tags] : undefined }))
           : [],
         tagMappings,
-        tagSidebarWidth: scope.containerSize?.tagSidebar || 200,
+        tagSidebarWidth: useLayoutState.getState().containerSize?.tagSidebar || 200,
   };
 }

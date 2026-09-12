@@ -121,22 +121,22 @@ export function gridAdjustLayoutWidth(increases: any): void {
 
 /* zoomFit（bundle 33949-33985 逐字；changeListHeight/adjustLayoutWidth/smartZoom/
    zoomFitEdge 经 scope 解析） */
-export function gridZoomFit(s: any, event: any, noAnimation: any): void {
+export function gridZoomFit(event: any, noAnimation: any): void {
   const w = window as any;
   event && event.preventDefault && event.preventDefault();
-  if (!s.isDetailMode) {
-    s.imageSize.height = 150;
+  if (!useBodyState.getState().isDetailMode) {
+    useLayoutState.getState().imageSize.height = 150;
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
     syncInspectorFromScope();
     machineryChangeListHeight();
-    if (s.layout === "GridLayout" || s.layout === "SquareLayout") {
+    if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") {
       machineryAdjustLayoutWidth(0);
-      gridSaveListHeight(s.imageSize.height);
+      gridSaveListHeight(useLayoutState.getState().imageSize.height);
     }
   } else {
-    if (s.VIDEO_TYPES[s.current.ext]) {
+    if (useMiscRawState.getState().VIDEO_TYPES[useSelectionState.getState().current.ext]) {
       // 如果是視頻格式，撐滿畫面
       var mpvPlayer = q(".detail-wrap mpv-video") as any;
       if (mpvPlayer) {
@@ -147,12 +147,12 @@ export function gridZoomFit(s: any, event: any, noAnimation: any): void {
       }
       return;
     }
-    s.zoomFitSize = 0;
-    s.lastZoomMode = "fit";
+    writeScopeField('zoomFitSize', 0);
+    writeScopeField('lastZoomMode', "fit");
     syncDetailFromScope();
-    localStorage["eagle.viewer.lastZoomMode"] = s.lastZoomMode;
-    s.imageSize.zoomRatio = 100;
-    s.imageSize.zoomRatioExp = getRatioExp(s.imageSize.zoomRatio);
+    localStorage["eagle.viewer.lastZoomMode"] = useMiscRawState.getState().lastZoomMode;
+    useLayoutState.getState().imageSize.zoomRatio = 100;
+    useLayoutState.getState().imageSize.zoomRatioExp = getRatioExp(useLayoutState.getState().imageSize.zoomRatio);
 
     if (!noAnimation) {
       addClass("#detail-container", "zooming");
@@ -211,7 +211,7 @@ export function zoomOut(event: any): void {
 
 /* switchLayout（bundle 33790-33846 逐字；body class 四分支 + relayout/offsetScrollbar/
    initMenu 仍经 scope 解析；forceLayout 参数原实现未消费，逐字保留签名） */
-export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
+export function gridSwitchLayout(layout: any, forceLayout: any): void {
   const w = window as any;
   var allLayout = "grid-layout justified-layout list-layout";
   switch (layout) {
@@ -219,7 +219,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       window.requestAnimationFrame(() => {
         removeClass("body", "is-square-layout is-list-layout");
       });
-      s.layout = "GridLayout";
+      writeScopeField('layout', "GridLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
       machineryRelayout();
       // $scope.adjustLayoutWidth(0);
@@ -230,7 +230,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
         removeClass("body", "is-square-layout is-list-layout");
         addClass("body", "is-square-layout");
       });
-      s.layout = "SquareLayout";
+      writeScopeField('layout', "SquareLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
       machineryRelayout();
       // $scope.adjustLayoutWidth(0);
@@ -241,7 +241,7 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
         removeClass("body", "is-square-layout is-list-layout");
         addClass("body", "is-list-layout");
       });
-      s.layout = "ListLayout";
+      writeScopeField('layout', "ListLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "list-layout");
       machineryRelayout();
       w.electronLog && w.electronLog.info("[app] Layout: List");
@@ -250,15 +250,15 @@ export function gridSwitchLayout(s: any, layout: any, forceLayout: any): void {
       window.requestAnimationFrame(() => {
         removeClass("body", "is-square-layout is-list-layout");
       });
-      s.layout = "JustifiedLayout";
+      writeScopeField('layout', "JustifiedLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "justified-layout");
       machineryRelayout();
       w.electronLog && w.electronLog.info("[app] Layout: Justified");
   }
 
-  getOffsetScrollbarFn(s)(30);
+  getOffsetScrollbarFn()(30);
   // b1-9d：initMenu 为 bundle 顶层函数（$rootScope.initMenu）——shim 世界无此成员，守卫
-  if (s.$root && typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
+  if (typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
 }
 
 /* ── b1-9be：@egjs/react-infinitegrid 交换的 window.ig facade 契约（交换批施工依据）──
@@ -570,8 +570,8 @@ export function machineryScrollbarTo(element: any, to: any, duration: any): void
   animateScroll();
 }
 
-export function machinerySwitchLayout(s: any, layout: any, forceLayout: any): void {
-  gridSwitchLayout(s, layout, forceLayout);
+export function machinerySwitchLayout(layout: any, forceLayout: any): void {
+  gridSwitchLayout(layout, forceLayout);
 }
 
 /* updateContainerHieght（bundle 34078-34119 逐字；typo 逐字保留） */
@@ -627,7 +627,7 @@ let updateListHeightTimeout: any = null;
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function getOffsetScrollbarFn(s: any): any { return scopeSingleton('offsetScrollbar', () => machineryOffsetScrollbar()); }
+export function getOffsetScrollbarFn(): any { return scopeSingleton('offsetScrollbar', () => machineryOffsetScrollbar()); }
 
 export function machineryAutoScroll(index: any): void {
   const $timeout = getTimeout();
@@ -681,31 +681,31 @@ export function machineryResetPage(): void {
   }
 }
 
-export function machineryToggleAll(s: any, $event: any): void {
+export function machineryToggleAll($event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if ($event) {
     $event.preventDefault();
     $event.stopPropagation();
   }
-  if (s.isHideSidebar) {
-    w.eagle.inspector.isHideInspector = s.isHideSidebar = false;
+  if (useBodyState.getState().isHideSidebar) {
+    w.eagle.inspector.isHideInspector = writeScopeField('isHideSidebar', false);
     syncPanelFromScope();
   } else {
-    w.eagle.inspector.isHideInspector = s.isHideSidebar = true;
+    w.eagle.inspector.isHideInspector = writeScopeField('isHideSidebar', true);
     syncPanelFromScope();
   }
   $timeout(function () {
-    s.lastItemStates = {};
+    writeScopeField('lastItemStates', {});
     window.dispatchEvent(new Event("orientationchange"));
-    s.boxContianerWidth = widthOf(q("#box-container")) || s.boxContianerWidth;
-    s.boxContianerHeight = heightOf(q("#box-container")) || s.boxContianerHeight;
+    writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+    writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     machineryRelayout();
-    getOffsetScrollbarFn(s)(30);
-    if (s.isDetailMode) {
+    getOffsetScrollbarFn()(30);
+    if (useBodyState.getState().isDetailMode) {
       writeScopeField('currentFocus', "content");
     }
-    if (s.isDetailMode && s.lastZoomMode === "edge") {
+    if (useBodyState.getState().isDetailMode && useMiscRawState.getState().lastZoomMode === "edge") {
       machineryZoomFitEdge(w.event);
     }
     // if ($scope.layout === "GridLayout" || $scope.layout === "SquareLayout") {
@@ -715,8 +715,8 @@ export function machineryToggleAll(s: any, $event: any): void {
     //     $scope.adjustLayoutWidth(targetColumn - currentColumn);
     // }
   }, 100);
-  w.localStorage.setItem("isHideSidebar", s.isHideSidebar);
-  if (s.isHideSidebar) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
+  w.localStorage.setItem("isHideSidebar", useBodyState.getState().isHideSidebar);
+  if (useBodyState.getState().isHideSidebar) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
   else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
   if (w.eagle.inspector.isHideInspector) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
   else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }

@@ -300,7 +300,7 @@ function WebViewBranch({ snapshot }: { snapshot: DetailSnapshot }) {
           webview.executeJavaScript(`document.exitFullscreen();`);
         }
         runInBodyScope((s) => {
-          machineryToggleSlideshow(s);
+          machineryToggleSlideshow();
         });
       });
       webview.addEventListener('did-fail-load', (e: any) => {
@@ -513,11 +513,11 @@ export function DetailContainerInterior({ snapshot }: { snapshot: DetailSnapshot
     function onMessage(e: any) {
       runInBodyScope((s) => {
         if (e.data === 'Exit' || e.message === 'Exit') {
-          if (typeof s.leaveDetailMode === 'function') machineryLeaveDetailMode(s);
+          if (typeof s.leaveDetailMode === 'function') machineryLeaveDetailMode();
         } else if (e.data === 'Prev' || e.message === 'Prev') {
-          if (typeof s.selectPrev === 'function') machinerySelectPrev(s);
+          if (typeof s.selectPrev === 'function') machinerySelectPrev();
         } else if (e.data === 'Next' || e.message === 'Next') {
-          if (typeof s.selectNext === 'function') machinerySelectNext(s);
+          if (typeof s.selectNext === 'function') machinerySelectNext();
         }
       });
     }

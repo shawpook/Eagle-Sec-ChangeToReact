@@ -520,7 +520,7 @@ export function copyComment(event: any, image: any, comment: any) {
 export function openComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
   if (!useBodyState.getState().isDetailMode) {
-    machineryEnterDetailMode(bodyScope, event, image);
+    machineryEnterDetailMode(event, image);
     setTimeout(function () {
       openComment(event, image, comment);
     }, 500);
@@ -585,7 +585,7 @@ export function removeImageComment(item: any, index: number) {
 export function openVideoComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
   if (!useBodyState.getState().isDetailMode) {
-    machineryEnterDetailMode(bodyScope, event, image);
+    machineryEnterDetailMode(event, image);
     setTimeout(function () {
       openVideoComment(event, image, comment);
     }, 500);
@@ -605,7 +605,7 @@ export function openVideoComment(event: any, image: any, comment: any) {
 export function editVideoComment(event: any, image: any, comment: any) {
   const bodyScope = getBodyScope();
   if (!useBodyState.getState().isDetailMode) {
-    machineryEnterDetailMode(bodyScope, event, image);
+    machineryEnterDetailMode(event, image);
     setTimeout(function () {
       editVideoComment(event, image, comment);
     }, 500);
@@ -868,7 +868,7 @@ export function onInspectorResize(event: any, ui: any) {
     (window as any).eagle.inspector.width = ui.size.width;
     (window as any).__eagleInspectorResizeTimeout = setTimeout(() => {
       machineryRelayout(undefined);
-      getOffsetScrollbarFn(getBodyScope())(30);
+      getOffsetScrollbarFn()(30);
     }, 500);
   }
 }

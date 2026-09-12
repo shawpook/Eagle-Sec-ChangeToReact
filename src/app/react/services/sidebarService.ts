@@ -469,7 +469,7 @@ export function onSidebarResize(...args: any[]) {
             clearTimeout(__lv_onSidebarResizeTimeout);
             __lv_onSidebarResizeTimeout = setTimeout(function () {
                 machineryRelayout();
-                getOffsetScrollbarFn(s)(30);
+                getOffsetScrollbarFn()(30);
                 localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
             }, 500);
         }

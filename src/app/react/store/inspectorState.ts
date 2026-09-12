@@ -7,6 +7,9 @@ import { useBodyState } from './bodyState';
 import { getBodyScope } from '../core/appCore';
 import { getFolderFullPath } from '../core/itemDomain';
 import { useMiscRawState } from './miscRawState';
+import { useSelectionState } from './selectionState';
+import { useItemState } from './itemState';
+import { usePreferencesState } from './preferencesState';
 
 /**
  * 阶段6：检查器状态 —— 快照自 EagleController scope + eagle.inspector 全局对象。
@@ -202,15 +205,15 @@ function snapshotItem(item: any): SelectedItemSnapshot {
   };
 }
 
-function buildInspectorSnapshot(scope: any): InspectorSnapshot {
-      const ins = scope.inspector || {};
-      const selected = Array.isArray(scope.selected) ? scope.selected : [];
-      const tagMappings = scope.TagManager?.tagMappings || {};
+function buildInspectorSnapshot(): InspectorSnapshot {
+      const ins = useMiscRawState.getState().inspector || {};
+      const selected = Array.isArray(useSelectionState.getState().selected) ? useSelectionState.getState().selected : [];
+      const tagMappings = useMiscRawState.getState().TagManager?.tagMappings || {};
       const tagColor: Record<string, string> = {};
       for (const tag of Object.keys(tagMappings)) {
         tagColor[tag] = tagMappings[tag]?.color;
       }
-      const folderMappings = scope.folderMappings || {};
+      const folderMappings = useItemState.getState().folderMappings || {};
       const folderName: Record<string, string> = {};
       const folderColor: Record<string, string> = {};
       const folderFullPath: Record<string, string> = {};
@@ -249,7 +252,7 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
             copy.visible = (() => {
               // 原 hasInspectorPlugin（bundle:54366-54383）
               try {
-                const pluginModule = (scope as any).pluginModule;
+                const pluginModule = useMiscRawState.getState().pluginModule;
                 let foundPlugins: any[] = [];
                 if (selected.length === 1) {
                   const item = selected[0];
@@ -274,9 +277,9 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
 
       return {
         ready: true,
-        theme: scope.theme || 'gray',
-        viewMode: scope.viewMode,
-        trialRemain: scope.trialRemain || 0,
+        theme: useBodyState.getState().theme || 'gray',
+        viewMode: useBodyState.getState().viewMode,
+        trialRemain: usePreferencesState.getState().trialRemain || 0,
         width: ins.width || 300,
         activeTab: ins.activeTab || 'SIDEBAR',
         isRenaming: !!ins.isRenaming,
@@ -304,7 +307,7 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
             }
           : null,
         selectedFolderCount: Array.isArray(useMiscRawState.getState().selectedFolders) ? useMiscRawState.getState().selectedFolders.length : 0,
-        selectedFoldersFirstId: Object.keys(scope.selectedFolderMappings || {})[0] || '',
+        selectedFoldersFirstId: Object.keys(useItemState.getState().selectedFolderMappings || {})[0] || '',
         items,
         selectedWindow: selected.slice(previewStart, previewStart + 5).map(snapshotItem),
         selectedIndexMappings,
@@ -314,8 +317,8 @@ function buildInspectorSnapshot(scope: any): InspectorSnapshot {
         folderName,
         folderColor,
         folderFullPath,
-        isDetailMode: !!scope.isDetailMode,
-        currentExt: scope.current?.ext || '',
+        isDetailMode: !!useBodyState.getState().isDetailMode,
+        currentExt: useSelectionState.getState().current?.ext || '',
       } as InspectorSnapshot;
 }
 
@@ -334,7 +337,7 @@ let lastInspectorSnapshot: any = null;
 export function syncInspectorFromScope(): void {
   const scope: any = getBodyScope();
   if (!scope) return;
-  const next = buildInspectorSnapshot(scope);
+  const next = buildInspectorSnapshot();
   if (lastInspectorSnapshot !== null && shallowEqInspector(next, lastInspectorSnapshot)) return;
   lastInspectorSnapshot = next;
   useInspectorState.setState({ snapshot: next as InspectorSnapshot });

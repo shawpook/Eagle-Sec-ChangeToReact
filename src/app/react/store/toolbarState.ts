@@ -9,6 +9,10 @@ import { getBodyScope } from '../core/appCore';
 
 import { machineryGetSelectedTags } from '../core/selectionViewDomain';
 import { useMiscRawState } from './miscRawState';
+import { usePreferencesState } from './preferencesState';
+import { useFolderState } from './folderState';
+import { useItemState } from './itemState';
+import { useLayoutState } from './layoutState';
 /**
  * 阶段3a：工具栏状态 —— 快照自 EagleController scope（规范 index.html:141-273 模板所需字段）。
  */
@@ -94,54 +98,54 @@ export const useToolbarState = create<{ snapshot: ToolbarSnapshot }>(() => ({ sn
 
 const setSnapshot = (snapshot: ToolbarSnapshot) => useToolbarState.setState({ snapshot });
 
-function buildToolbarSnapshot(scope: any): ToolbarSnapshot {
-      const preferences = scope.preferences || {};
-      const currentFolder = scope.currentFolder || null;
-      const currentSmartFolder = scope.currentSmartFolder || null;
+function buildToolbarSnapshot(): ToolbarSnapshot {
+      const preferences = usePreferencesState.getState().preferences || {};
+      const currentFolder = useFolderState.getState().currentFolder || null;
+      const currentSmartFolder = useFolderState.getState().currentSmartFolder || null;
       let selectedTagsCount = 0;
       try { selectedTagsCount = (machineryGetSelectedTags() || []).length; } catch (err) { selectedTagsCount = 0; }
       let canGoBack = false;
       let canGoForward = false;
       try {
-        canGoBack = !!scope.UrlStateService.canGoBack();
-        canGoForward = !!scope.UrlStateService.canGoForward();
+        canGoBack = !!useMiscRawState.getState().UrlStateService.canGoBack();
+        canGoForward = !!useMiscRawState.getState().UrlStateService.canGoForward();
       } catch (err) { /* UrlStateService 未就绪 */ }
-      const pinned = Array.isArray(scope.pluginModule?.pinnedPlugins) ? scope.pluginModule.pinnedPlugins : [];
+      const pinned = Array.isArray(useMiscRawState.getState().pluginModule?.pinnedPlugins) ? useMiscRawState.getState().pluginModule.pinnedPlugins : [];
       return {
         ready: true,
-        viewMode: scope.viewMode,
-        keyword: scope.keyword || '',
-        allDataCount: Array.isArray(scope.allData) ? scope.allData.length : 0,
+        viewMode: useBodyState.getState().viewMode,
+        keyword: useListState.getState().keyword || '',
+        allDataCount: Array.isArray(useItemState.getState().allData) ? useItemState.getState().allData.length : 0,
         currentFolder: currentFolder ? { name: currentFolder.name, parent: currentFolder.parent, orderBy: currentFolder.orderBy } : null,
-        currentFolderPath: scope.currentFolderPath || '',
+        currentFolderPath: useMiscRawState.getState().currentFolderPath || '',
         currentSmartFolder: currentSmartFolder ? { name: currentSmartFolder.name, orderBy: currentSmartFolder.orderBy } : null,
         selectedFoldersCount: Array.isArray(useMiscRawState.getState().selectedFolders) ? useMiscRawState.getState().selectedFolders.length : 0,
         selectedSmartFoldersCount: Array.isArray(useMiscRawState.getState().selectedSmartFolders) ? useMiscRawState.getState().selectedSmartFolders.length : 0,
         selectedTagsCount,
-        tagsCount: Array.isArray(scope.tags) ? scope.tags.length : 0,
-        hasCurrentTag: !!scope.currentTag,
-        isDetailMode: !!scope.isDetailMode,
-        isInlineMode: !!scope.isInlineMode,
-        isHideSidebar: !!scope.isHideSidebar,
-        isMaximize: !!scope.isMaximize,
-        isAlwaysOnTop: !!scope.isAlwaysOnTop,
-        inspectorHide: !!(scope.inspector && scope.inspector.isHideInspector),
-        imageSizeHeight: (scope.imageSize && scope.imageSize.height) || 200,
-        maxListWidth: scope.MAX_LIST_WIDTH || 300,
-        filterIsOpen: !!(scope.eagle && scope.eagle.filter && scope.eagle.filter.isOpen),
-        filterBadge: (scope.eagle && scope.eagle.filter && scope.eagle.filter.filterBadge) || 0,
-        tagViewLayoutMode: scope.tagViewLayoutMode || 'INLINE',
+        tagsCount: Array.isArray(useFolderState.getState().tags) ? useFolderState.getState().tags.length : 0,
+        hasCurrentTag: !!useMiscRawState.getState().currentTag,
+        isDetailMode: !!useBodyState.getState().isDetailMode,
+        isInlineMode: !!useBodyState.getState().isInlineMode,
+        isHideSidebar: !!useBodyState.getState().isHideSidebar,
+        isMaximize: !!useBodyState.getState().isMaximize,
+        isAlwaysOnTop: !!useMiscRawState.getState().isAlwaysOnTop,
+        inspectorHide: !!(useMiscRawState.getState().inspector && useMiscRawState.getState().inspector.isHideInspector),
+        imageSizeHeight: (useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) || 200,
+        maxListWidth: useMiscRawState.getState().MAX_LIST_WIDTH || 300,
+        filterIsOpen: !!(useMiscRawState.getState().eagle && useMiscRawState.getState().eagle.filter && useMiscRawState.getState().eagle.filter.isOpen),
+        filterBadge: (useMiscRawState.getState().eagle && useMiscRawState.getState().eagle.filter && useMiscRawState.getState().eagle.filter.filterBadge) || 0,
+        tagViewLayoutMode: useMiscRawState.getState().tagViewLayoutMode || 'INLINE',
         pinnedPlugins: pinned.map((p: any) => ({ name: p?.manifest?.name, icon: p?.icon })),
-        needUpdatePluginCount: scope.pluginModule?.needUpdatePluginCount || 0,
-        theme: scope.theme || 'gray',
-        platform: scope.platform || 'win32',
+        needUpdatePluginCount: useMiscRawState.getState().pluginModule?.needUpdatePluginCount || 0,
+        theme: useBodyState.getState().theme || 'gray',
+        platform: useBodyState.getState().platform || 'win32',
         canGoBack,
         canGoForward,
         randomOrderBy: !!(currentFolder && currentFolder.orderBy === 'RANDOM') || !!(currentSmartFolder && currentSmartFolder.orderBy === 'RANDOM'),
-        showSuggestions: !!scope.showSuggestions,
-        keywordSuggestions: Array.isArray(scope.keywordSuggestions) ? scope.keywordSuggestions : [],
-        hsks: Array.isArray(scope.hsks) ? scope.hsks : [],
-        searchIndex: typeof scope.searchIndex === 'number' ? scope.searchIndex : -1,
+        showSuggestions: !!useMiscRawState.getState().showSuggestions,
+        keywordSuggestions: Array.isArray(useMiscRawState.getState().keywordSuggestions) ? useMiscRawState.getState().keywordSuggestions : [],
+        hsks: Array.isArray(useMiscRawState.getState().hsks) ? useMiscRawState.getState().hsks : [],
+        searchIndex: typeof useMiscRawState.getState().searchIndex === 'number' ? useMiscRawState.getState().searchIndex : -1,
         keybinds: (preferences.shortcuts && preferences.shortcuts.keybinds) || {},
       } as ToolbarSnapshot;
 }
@@ -161,7 +165,7 @@ let lastToolbarSnapshot: any = null;
 export function syncToolbarFromScope(): void {
   const scope: any = getBodyScope();
   if (!scope) return;
-  const next = buildToolbarSnapshot(scope);
+  const next = buildToolbarSnapshot();
   if (lastToolbarSnapshot !== null && shallowEqToolbar(next, lastToolbarSnapshot)) return;
   lastToolbarSnapshot = next;
   useToolbarState.setState({ snapshot: next as ToolbarSnapshot });

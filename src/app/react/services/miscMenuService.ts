@@ -123,7 +123,7 @@ export function openRatioContextMenu(...args: any[]) {
                     { label: '800%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 800, click: () => { machineryUpdateZoomRatio(getRatioNonExp(800), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 800; scopeEvalAsync(); } },
                     { role: 'separator' },
                     { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { machineryZoomActual(); scopeEvalAsync(); } },
-                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { machineryZoomFit(s); scopeEvalAsync(); } },
+                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { machineryZoomFit(); scopeEvalAsync(); } },
                 ],
                 showSearch: false,
             });            
@@ -252,7 +252,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                         scopeEvalAsync();
                     },
                     click: () => {
-                        getToggleFilterByTypeFn(s)('shape');
+                        getToggleFilterByTypeFn()('shape');
                         scopeEvalAsync();
                     }
                 },

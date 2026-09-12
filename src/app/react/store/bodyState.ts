@@ -4,6 +4,10 @@ import { useFilterState } from './filterState';
 import { migrateScopeFieldToStore } from '../core/scopeFieldBridge';
 import { getBodyScope } from '../core/appCore';
 import { usePreferencesState } from './preferencesState';
+import { useFolderState } from './folderState';
+import { useMiscRawState } from './miscRawState';
+import { useLayoutState } from './layoutState';
+import { useListState } from './listState';
 
 /**
  * 11-pre a8：body 绑定层状态源（body ng-class 28 项 + class 插值 + theme/platform/vibrancy
@@ -121,14 +125,14 @@ for (const fieldName of MIGRATED_SCOPE_FIELDS) {
 
 let bound = false;
 
-function buildBodySnapshot(scope: any): Partial<BodyState> {
-      const currentFolderOrderBy = scope.currentFolder && scope.currentFolder.orderBy;
-      const filterBadge = (scope.eagle && scope.eagle.filter && scope.eagle.filter.filterBadge) || 0;
-      const general = (scope.$root && usePreferencesState.getState().preferences && usePreferencesState.getState().preferences.general) || {};
-      const habits = (scope.$root && usePreferencesState.getState().preferences && usePreferencesState.getState().preferences.habits) || {};
-      const props = (scope.listLayoutSettings && scope.listLayoutSettings.props) || {};
+function buildBodySnapshot(): Partial<BodyState> {
+      const currentFolderOrderBy = useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy;
+      const filterBadge = (useMiscRawState.getState().eagle && useMiscRawState.getState().eagle.filter && useMiscRawState.getState().eagle.filter.filterBadge) || 0;
+      const general = (usePreferencesState.getState().preferences && usePreferencesState.getState().preferences.general) || {};
+      const habits = (usePreferencesState.getState().preferences && usePreferencesState.getState().preferences.habits) || {};
+      const props = (useMiscRawState.getState().listLayoutSettings && useMiscRawState.getState().listLayoutSettings.props) || {};
       return {
-        imageHeight: (scope.imageSize && scope.imageSize.height) || 0,
+        imageHeight: (useLayoutState.getState().imageSize && useLayoutState.getState().imageSize.height) || 0,
         listPropResolution: !!props.resolution,
         listPropDateImported: !!props.dateImported,
         listPropTags: !!props.tags,
@@ -136,20 +140,20 @@ function buildBodySnapshot(scope: any): Partial<BodyState> {
         listPropExtension: !!props.extension,
         listPropFileSize: !!props.fileSize,
         boxSortable: !!(
-          scope.currentFolder
+          useFolderState.getState().currentFolder
           && ((currentFolderOrderBy === 'MANUAL' || currentFolderOrderBy === 'IMPORT')
-            || (!currentFolderOrderBy && scope.orderBy === 'IMPORT'))
+            || (!currentFolderOrderBy && useMiscRawState.getState().orderBy === 'IMPORT'))
           && !filterBadge
-          && !scope.keyword
+          && !useListState.getState().keyword
         ),
-        isHideInspector: !!(scope.inspector && scope.inspector.isHideInspector),
-        filterOpen: !!(scope.eagle && scope.eagle.filter && scope.eagle.filter.isOpen),
+        isHideInspector: !!(useMiscRawState.getState().inspector && useMiscRawState.getState().inspector.isHideInspector),
+        filterOpen: !!(useMiscRawState.getState().eagle && useMiscRawState.getState().eagle.filter && useMiscRawState.getState().eagle.filter.isOpen),
         hideBadge: general.showSidebarBadge == 'false',
         hideZoomBtn: habits.hoverZoom == 'off',
         showTransparentGrid: habits.transparency == 'show',
-        hasCurrentComment: !!scope.currentComment,
-        sidebarWidth: (scope.containerSize && scope.containerSize.sidebar) || 220,
-        inspectorWidth: (scope.inspector && scope.inspector.width) || 300,
+        hasCurrentComment: !!useMiscRawState.getState().currentComment,
+        sidebarWidth: (useLayoutState.getState().containerSize && useLayoutState.getState().containerSize.sidebar) || 220,
+        inspectorWidth: (useMiscRawState.getState().inspector && useMiscRawState.getState().inspector.width) || 300,
       } as Partial<BodyState>;
 }
 
@@ -168,7 +172,7 @@ let lastBodySnapshot: any = null;
 export function syncBodyFromScope(): void {
   const scope: any = getBodyScope();
   if (!scope) return;
-  const next = buildBodySnapshot(scope);
+  const next = buildBodySnapshot();
   if (lastBodySnapshot !== null && shallowEqBody(next, lastBodySnapshot)) return;
   lastBodySnapshot = next;
   useBodyState.setState(next as any);

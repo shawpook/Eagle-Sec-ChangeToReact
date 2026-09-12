@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { useBodyState } from './bodyState';
 import { useListState } from './listState';
 import { getBodyScope } from '../core/appCore';
+import { usePreferencesState } from './preferencesState';
+import { useMiscRawState } from './miscRawState';
+import { useFolderState } from './folderState';
 
 /**
  * 阶段7c-1：小弹窗族（layout-panel / notification / new-version / folder-password /
@@ -78,33 +81,33 @@ function shallowEq(a: any, b: any): boolean {
 let lastSnapshot: any = null;
 
 /** b1-9by-B：原 startScopeSync 内联 build 平移（逐字）。 */
-function buildPanelSnapshot(scope: any): PanelSnapshot {
-  const preferences = scope.preferences || (window as any).preferences || {};
+function buildPanelSnapshot(): PanelSnapshot {
+  const preferences = usePreferencesState.getState().preferences || (window as any).preferences || {};
   const pjson = (window as any).__eaglePjson || null;
   return {
     ready: true,
-    theme: scope.theme || 'gray',
-    platform: scope.platform || 'win32',
+    theme: useBodyState.getState().theme || 'gray',
+    platform: useBodyState.getState().platform || 'win32',
     language: preferences?.general?.language || 'en',
-    appVersion: scope.appVersion || pjson?.version || '',
-    buildVersion: scope.buildVersion || pjson?.buildVersion || '',
-    buildNumber: scope.buildNumber ?? pjson?.buildNumber ?? 0,
-    layout: scope.layout || 'JustifiedLayout',
-    layoutOptions: scope.layoutOptions || 'Fit',
-    showOriginalImageWhenLarge: !!scope.showOriginalImageWhenLarge,
-    currentOrderBy: scope.currentOrderBy || 'IMPORT',
-    currentSortIncrease: scope.currentSortIncrease !== false,
-    showName: !!scope.showName,
-    showMetas: !!scope.showMetas,
-    listMetaType: scope.listMetaType || 'RESOLUTION',
-    showFileExtension: !!scope.showFileExtension,
-    showFileExtensionLabel: !!scope.showFileExtensionLabel,
-    showAnnotation: !!scope.showAnnotation,
-    showSubfolderContent: !!scope.showSubfolderContent,
-    isHideSidebar: !!scope.isHideSidebar,
-    inspectorHide: !!(scope.inspector && scope.inspector.isHideInspector),
-    currentFolder: scope.currentFolder ? { id: scope.currentFolder.id, orderBy: scope.currentFolder.orderBy } : null,
-    currentSmartFolder: scope.currentSmartFolder ? { id: scope.currentSmartFolder.id, orderBy: scope.currentSmartFolder.orderBy } : null,
+    appVersion: useMiscRawState.getState().appVersion || pjson?.version || '',
+    buildVersion: useMiscRawState.getState().buildVersion || pjson?.buildVersion || '',
+    buildNumber: useMiscRawState.getState().buildNumber ?? pjson?.buildNumber ?? 0,
+    layout: useBodyState.getState().layout || 'JustifiedLayout',
+    layoutOptions: useBodyState.getState().layoutOptions || 'Fit',
+    showOriginalImageWhenLarge: !!useMiscRawState.getState().showOriginalImageWhenLarge,
+    currentOrderBy: useListState.getState().currentOrderBy || 'IMPORT',
+    currentSortIncrease: useListState.getState().currentSortIncrease !== false,
+    showName: !!useMiscRawState.getState().showName,
+    showMetas: !!useMiscRawState.getState().showMetas,
+    listMetaType: useMiscRawState.getState().listMetaType || 'RESOLUTION',
+    showFileExtension: !!useMiscRawState.getState().showFileExtension,
+    showFileExtensionLabel: !!useMiscRawState.getState().showFileExtensionLabel,
+    showAnnotation: !!useMiscRawState.getState().showAnnotation,
+    showSubfolderContent: !!useListState.getState().showSubfolderContent,
+    isHideSidebar: !!useBodyState.getState().isHideSidebar,
+    inspectorHide: !!(useMiscRawState.getState().inspector && useMiscRawState.getState().inspector.isHideInspector),
+    currentFolder: useFolderState.getState().currentFolder ? { id: useFolderState.getState().currentFolder.id, orderBy: useFolderState.getState().currentFolder.orderBy } : null,
+    currentSmartFolder: useFolderState.getState().currentSmartFolder ? { id: useFolderState.getState().currentSmartFolder.id, orderBy: useFolderState.getState().currentSmartFolder.orderBy } : null,
   } as PanelSnapshot;
 }
 
@@ -118,7 +121,7 @@ function buildPanelSnapshot(scope: any): PanelSnapshot {
 export function syncPanelFromScope(): void {
   const scope: any = getBodyScope();
   if (!scope) return;
-  const next = buildPanelSnapshot(scope);
+  const next = buildPanelSnapshot();
   if (lastSnapshot !== null && shallowEq(next, lastSnapshot)) return;
   lastSnapshot = next;
   setSnapshot(next);

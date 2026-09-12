@@ -836,7 +836,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
     video.addEventListener('dblclick', function () {
       if (!isInPreviewWindow) {
         const s = getBodyScope();
-        machineryLeaveDetailMode(s);
+        machineryLeaveDetailMode();
       } else {
         useMiscRawState.getState().toggleFullScreen();
         scopeEvalAsync();
@@ -1186,7 +1186,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
     // ===== 雙擊處理 =====
     const onDblClick = function () {
       if (!isInPreviewWindow) {
-        machineryLeaveDetailMode(getBodyScope());
+        machineryLeaveDetailMode();
       } else {
         useMiscRawState.getState().toggleFullScreen();
         scopeEvalAsync();
@@ -1653,7 +1653,7 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
 
     video.addEventListener('dblclick', function () {
       const s = getBodyScope();
-      machineryLeaveDetailMode(s);
+      machineryLeaveDetailMode();
     });
 
     let direction: string = '';
@@ -1965,11 +1965,11 @@ export function useMouseGesture(ref: React.RefObject<HTMLElement | null>, select
           if (Date.now() - downTime.value <= 1000 && Math.abs(endPoint.x - startPoint.x) > (maxDistanceX * 2) / 3) {
             if (endPoint.x > startPoint.x) {
               runInBodyScope(function (sc) {
-                machinerySelectNext(sc, undefined);
+                machinerySelectNext(undefined);
               });
             } else {
               runInBodyScope(function (sc) {
-                machinerySelectPrev(sc, undefined);
+                machinerySelectPrev(undefined);
               });
             }
           }

@@ -19,12 +19,12 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from './scopeFieldBridge';
 /** destoryMousetrap（bundle 49326-49330 邻域逐字：清空 scope.mousetrap 表并解绑全局键）。 */
-export function machineryDestoryMousetrap(s: any): void {
+export function machineryDestoryMousetrap(): void {
   const w = window as any;
-  if (!s.mousetrap) return;
+  if (!useMiscRawState.getState().mousetrap) return;
 
-  for (var key in s.mousetrap) {
-    if (s.mousetrap.hasOwnProperty(key)) {
+  for (var key in useMiscRawState.getState().mousetrap) {
+    if (useMiscRawState.getState().mousetrap.hasOwnProperty(key)) {
       w.Mousetrap.unbind(key);
     }
   }

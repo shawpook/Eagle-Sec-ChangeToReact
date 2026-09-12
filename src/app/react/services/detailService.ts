@@ -23,6 +23,7 @@ import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { useItemState } from '../store/itemState';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;
@@ -201,16 +202,16 @@ export function detailSmartZoom(target: any, forceMode: any): void {
 
 /* toggleDetailMode（bundle 31005-31029 逐字；saveCrop/renameCurrentFolder/openFolder
    经 scope 解析） */
-export function detailToggleDetailMode(s: any, $event: any, isInline: any): void {
+export function detailToggleDetailMode($event: any, isInline: any): void {
   if (qa(".swal2-container").length > 0) return;
-  if (s.isCropMode) {
+  if (useBodyState.getState().isCropMode) {
     saveCrop();
     return;
   }
   if (isInline !== undefined) {
-    s.isInlineMode = !!isInline;
-    if (s.isInlineMode) {
-      s.isCommentMode = false;
+    writeScopeField('isInlineMode', !!isInline);
+    if (useBodyState.getState().isInlineMode) {
+      writeScopeField('isCommentMode', false);
       syncDetailFromScope();
     }
   }
@@ -218,18 +219,18 @@ export function detailToggleDetailMode(s: any, $event: any, isInline: any): void
     machineryRenameCurrentFolder($event);
   }
   else {
-    if (s.selectedFolderMappings && Object.keys(s.selectedFolderMappings).length >= 1) {
-      var folderId = Object.keys(s.selectedFolderMappings)[0];
-      if (s.folderMappings[folderId]) {
-        openFolder(s.folderMappings[folderId]);
+    if (useItemState.getState().selectedFolderMappings && Object.keys(useItemState.getState().selectedFolderMappings).length >= 1) {
+      var folderId = Object.keys(useItemState.getState().selectedFolderMappings)[0];
+      if (useItemState.getState().folderMappings[folderId]) {
+        openFolder(useItemState.getState().folderMappings[folderId]);
       }
     }
     else {
-      if (s.isDetailMode) {
-        machineryLeaveDetailMode(s, $event);
+      if (useBodyState.getState().isDetailMode) {
+        machineryLeaveDetailMode($event);
       }
       else {
-        machineryEnterDetailMode(s, $event, null);
+        machineryEnterDetailMode($event, null);
       }
     }
   }

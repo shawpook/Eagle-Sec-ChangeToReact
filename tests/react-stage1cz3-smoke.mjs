@@ -142,7 +142,7 @@ try {
 
   // ── 2. initial 重挂（trialRemain 用 999 避开试用弹窗分支）──
   await evalNow(`(() => {
-    const ipc = window.eagleDesktop?.ipc || window.$$electronIpc || window.__eagleIpc;
+    const ipc = window.__eagleIpc || window.eagleDesktop?.ipc || window.$electronIpc;
     window.__cz3InitialCount = window.__cz3lc(ipc, 'initial');
     ipc.emit('initial', { trialRemain: 999, Registration: { activated: true, machineID: 'm-cz3' }, machineID: 'm-cz3', errorMsg: '' });
     return true;
@@ -158,7 +158,7 @@ try {
 
   // ── 3. app-status-welcome 重挂 ──
   await evalNow(`(() => {
-    const ipc = window.eagleDesktop?.ipc || window.$$electronIpc || window.__eagleIpc;
+    const ipc = window.__eagleIpc || window.eagleDesktop?.ipc || window.$electronIpc;
     window.__cz3WelcomeCount = window.__cz3lc(ipc, 'app-status-welcome');
     ipc.emit('app-status-welcome', {});
     return true;
@@ -171,7 +171,7 @@ try {
 
   // ── 4. dirs-loaded / cache-loaded 重挂 ──
   await evalNow(`(() => {
-    const ipc = window.eagleDesktop?.ipc || window.$$electronIpc || window.__eagleIpc;
+    const ipc = window.__eagleIpc || window.eagleDesktop?.ipc || window.$electronIpc;
     window.__cz3DirsCount = window.__cz3lc(ipc, 'app-status-library-dirs-loaded');
     window.__cz3CacheCount = window.__cz3lc(ipc, 'app-status-library-cache-loaded');
     ipc.emit('app-status-library-dirs-loaded', 3);
@@ -184,7 +184,7 @@ try {
 
   // ── 5. library.changed 重挂（逐字 parent 行为：folder.parent === undefined）──
   await evalNow(`(() => {
-    const ipc = window.eagleDesktop?.ipc || window.$$electronIpc || window.__eagleIpc;
+    const ipc = window.__eagleIpc || window.eagleDesktop?.ipc || window.$electronIpc;
     ipc.emit('library.changed', {
       folders: [{ id: 'cz3-folder', name: 'CZ3 Test' }],
       smartFolders: [{ id: 'cz3-smart', name: 'CZ3 Smart' }],

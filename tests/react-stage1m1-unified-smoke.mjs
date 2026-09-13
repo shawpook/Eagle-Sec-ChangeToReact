@@ -98,7 +98,7 @@ try {
     return r;
   };
 
-  const ipcExpr = `window.eagleDesktop?.ipc || window.$electronIpc || window.__eagleIpc`;
+  const ipcExpr = `window.__eagleIpc || window.eagleDesktop?.ipc || window.$electronIpc`;
 
   // 捕获页面 console（shims emit 吞错后 warn 输出，带原始 stack）
   await page.send('Runtime.enable');
@@ -115,7 +115,7 @@ try {
   const aDiag = await evalNow(`(() => {
     const L = window.__eagleLibraryDomain, I = window.__eagleItemDomain, F = window.__eagleFilterDomain, S = window.__eagleSelectionViewDomain, M = window.__eagleMiscDomain;
     const s = window.$bodyScope;
-    const ipc = window.eagleDesktop?.ipc || window.$electronIpc || window.__eagleIpc;
+    const ipc = window.__eagleIpc || window.eagleDesktop?.ipc || window.$electronIpc;
     // shims 的自定义 EventEmitter 无 listenerCount——listeners 为 Map 时取 Map 计数（cz3 同法）
     const lc = (ch) => {
       if (!ipc) return -1;

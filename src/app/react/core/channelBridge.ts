@@ -1,3 +1,5 @@
+import { getIpcWriteState } from './ipcWriteState';
+
 /**
  * P1 接缝：跨边界 IPC 总线的唯一取用口 + 通道路由。
  *
@@ -58,6 +60,43 @@ function clone<T>(v: T): T {
 function routeDesktop(bus: any, channel: string, params: any): boolean {
   const d = desktopApi();
   if (!d) return false;
+
+  // P1-c-2：item 持久化路径（用户决策：与 shims 消费方共享同一写队列/发布器）——
+  // 语义逐字对齐 shims 原分支：入队时保存快照（clone，后续 live 变更不改已排队请求）；
+  // 串行写（enqueueWrite 与 capture 轮询/缩略图回填 await 的是同一队列）；updateMany 返回体
+  // 逐条回发 image.changed（itemDomain 合并回 itemMappings 的**唯一**改名回写路径）；isDeleted
+  // 触发 duplicates.merge；item:operation-result 成败各一；失败不断链（后续写入照常）。
+  if (channel === 'images-change' || channel === 'image-change') {
+    if (!d.item || typeof d.item.updateMany !== 'function') return false;
+    const items = channel === 'images-change' ? params : [params];
+    const snapshots = (Array.isArray(items) ? items : []).filter((item: any) => item && item.id).map((item: any) => clone(item));
+    const state = getIpcWriteState();
+    state.enqueueWrite(() =>
+      Promise.resolve(d.item.updateMany(snapshots))
+        .then((updated: any) => {
+          state.mergeCachedItems(updated);
+          (Array.isArray(updated) ? updated : [updated]).forEach((item: any) => {
+            if (item && item.id) state.emitEvent('image.changed', item);
+          });
+          const keep = snapshots.find((item: any) => !item.isDeleted);
+          const trash = snapshots.filter((item: any) => item.isDeleted);
+          if (keep && trash.length > 0 && d.duplicates) {
+            Promise.resolve(d.duplicates.merge({
+              keepId: keep.id,
+              removeIds: trash.map((item: any) => item.id),
+              keep,
+            })).catch((err: any) => state.emitEvent('duplicate-merge-error', { error: err && err.message }));
+          }
+          state.emitEvent('item:operation-result', { ok: true, action: channel, items: updated });
+          return updated;
+        })
+        .catch((err: any) => {
+          state.emitEvent('item:operation-result', { ok: false, action: channel, error: err && err.message });
+          return [];
+        })
+    );
+    return true;
+  }
 
   if (channel === 'folders-change') {
     if (!d.library || typeof d.library.updateStructure !== 'function') return false;

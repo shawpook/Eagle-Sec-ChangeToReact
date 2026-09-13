@@ -42,6 +42,7 @@ import { eagle as coreEagle } from './core/eagleApi';
 import { getDriverApi, installDriverApi } from './core/driverApi';
 import { exposeScopeFaceDiagnostics, getScopeFace, installScopeRegistry } from './core/scopeFace';
 import { installDetailDeliveryGate } from './core/detailDeliveryGate';
+import { installIpcWriteState } from './core/ipcWriteState';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -248,5 +249,8 @@ exposeScopeFaceDiagnostics();
 // P2：详情原图交付门控。原先由 shims 以 25ms 轮询包装 scope 面 → React UI 各入口直调
 // machineryEnterDetailMode（非同一函数对象）故不生效；现由 React 直接挂钩 enter/leave。
 installDetailDeliveryGate();
+// P1-c-2：写路径共享状态唯一实例（shims 消费方经 window.__eagleIpcWriteState 取同一
+// 队列/计数器/发布器；channelBridge 的 images-change 分支亦用此实例）。
+installIpcWriteState();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

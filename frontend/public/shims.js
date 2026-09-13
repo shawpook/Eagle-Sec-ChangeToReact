@@ -802,10 +802,180 @@
     }
     return emitIpc(channel, ...args);
   };
-  const customThumbnailItemIds = new Set();
   const desktopSendChannels = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
-  const paletteAnalysisRequests = new Map();
-  let itemUpdateQueue = Promise.resolve();
+
+  // P1-c-2：共享写路径状态。主窗 React 启动期安装 window.__eagleIpcWriteState（唯一实例，
+  // core/ipcWriteState.ts）；本文件所有消费方经 writeState() 取用同一实例（队列/计数器/发布器
+  // 不得各留一套）。无 React 的窗口（viewer 等）惰性自建等价实例——窗内仍唯一，不产生跨窗分裂。
+  function installLocalWriteStateFallback() {
+    const fallback = { customThumbnailItemIds: new Set() };
+    let writeChain = Promise.resolve();
+    fallback.enqueueWrite = function (fn) {
+      const run = writeChain.catch(() => undefined).then(fn);
+      writeChain = run.catch(() => undefined);
+      return run;
+    };
+    fallback.whenWriteQueueIdle = function () { return writeChain.catch(() => undefined); };
+    let pendingLocalImports = 0;
+    let settledLocalImports = 0;
+    fallback.trackLocalImport = function (promise) {
+      pendingLocalImports += 1;
+      const settle = () => { pendingLocalImports -= 1; settledLocalImports += 1; };
+      return promise.then(
+        (value) => { settle(); return value; },
+        (err) => { settle(); throw err; },
+      );
+    };
+    fallback.importCounters = function () { return { pending: pendingLocalImports, settled: settledLocalImports }; };
+    fallback.emitEvent = function (channel, payload) {
+      if (ipcRenderer && typeof ipcRenderer.emit === 'function') ipcRenderer.emit(channel, payload);
+    };
+    fallback.mergeCachedItems = function (updatedItems) {
+      const cached = window.__mockLibraryCache || [];
+      const updates = Array.isArray(updatedItems) ? updatedItems : [updatedItems];
+      updates.forEach((updated) => {
+        if (!updated || !updated.id) return;
+        const index = cached.findIndex((entry) => entry.id === updated.id);
+        if (index >= 0) Object.assign(cached[index], updated);
+        else cached.unshift(updated);
+      });
+      window.__mockLibraryCache = cached;
+      return cached;
+    };
+    fallback.thumbnailTaskSnapshot = async function (taskId) {
+      const d = desktopApi;
+      if (d && d.thumbnail && typeof d.thumbnail.status === 'function') return d.thumbnail.status(taskId);
+      const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+      const response = await fetch(`${apiBase}/api/item/thumbnailTask/status?taskId=${encodeURIComponent(String(taskId || ''))}`);
+      const payload = await response.json();
+      if (!response.ok || !payload || payload.status !== 'success') throw new Error(payload && payload.message ? payload.message : 'Thumbnail status failed');
+      return payload.data;
+    };
+    fallback.libraryItemsSnapshot = async function () {
+      const d = desktopApi;
+      if (d && d.library && typeof d.library.current === 'function') {
+        const library = await d.library.current();
+        return Array.isArray(library.items) ? library.items : [];
+      }
+      const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+      const response = await fetch(`${apiBase}/api/library/current?includeItems=true`);
+      const payload = await response.json();
+      if (!response.ok || !payload || payload.status !== 'success') throw new Error(payload && payload.message ? payload.message : 'Library refresh failed');
+      return Array.isArray(payload.data.items) ? payload.data.items : [];
+    };
+    fallback.refreshImportedThumbnails = async function (items) {
+      const list = (Array.isArray(items) ? items : [items]).filter((item) => item && item.id);
+      for (const item of list) {
+        try {
+          let complete = false;
+          const deadline = Date.now() + 30000;
+          while (Date.now() < deadline) {
+            if (item.thumbnailTask) {
+              const task = await fallback.thumbnailTaskSnapshot(item.thumbnailTask).catch(() => null);
+              if (task && task.status === 'complete') { complete = true; break; }
+              if (task && (task.status === 'failed' || task.status === 'cancelled' || task.error)) break;
+            } else {
+              const probeItems = await fallback.libraryItemsSnapshot();
+              const probe = probeItems.find((entry) => entry && entry.id === item.id);
+              if (probe && !probe.processingThumbnail && !probe.noThumbnail) { complete = true; break; }
+            }
+            await new Promise((resolve) => setTimeout(resolve, 200));
+          }
+          if (!complete) continue;
+          await fallback.whenWriteQueueIdle();
+          const libraryItems = await fallback.libraryItemsSnapshot();
+          const updated = libraryItems.find((entry) => entry && entry.id === item.id);
+          if (updated && !updated.processingThumbnail) {
+            if (!Number(updated.width) || !Number(updated.height)) {
+              updated.width = Number(item.width) || 480;
+              updated.height = Number(item.height) || 480;
+            }
+            fallback.mergeCachedItems(updated);
+            fallback.emitEvent('thumbnail-generated', {
+              id: updated.id, name: updated.name, ext: updated.ext,
+              width: updated.width, height: updated.height,
+              noThumbnail: updated.noThumbnail, processingThumbnail: false,
+              modificationTime: updated.modificationTime,
+            });
+          }
+        } catch (err) {
+          console.warn('[eagle-shim] imported thumbnail refresh failed', err);
+        }
+      }
+    };
+    fallback.emitImportedItems = function (items, channel) {
+      const imported = (Array.isArray(items) ? items : [items])
+        .filter((item) => item && item.id)
+        .map((item) => {
+          if (!item.width && !item.height && textThumbnailExtensions.has(String(item.ext || '').toLowerCase())) {
+            item.width = 480;
+            item.height = 480;
+          }
+          return item;
+        });
+      fallback.mergeCachedItems(imported);
+      imported.forEach((item) => fallback.emitEvent('file-uploaded', item));
+      if (imported.length > 0) fallback.emitEvent('file-uploaded-end', {});
+      fallback.emitEvent('import:operation-result', { ok: true, channel, items: imported });
+      fallback.scheduleMissingPaletteAnalysis(imported);
+      void fallback.refreshImportedThumbnails(imported);
+      return imported;
+    };
+    function canAnalyzePalette(item) {
+      return Boolean(item && item.id && !item.isDeleted && !item.noPreview && Number(item.width) > 0 && Number(item.height) > 0);
+    }
+    const paletteAnalysisRequests = new Map();
+    fallback.analyzeItemPalette = function (item, options) {
+      const force = Boolean(options && options.force);
+      if (!canAnalyzePalette(item) || (!force && Array.isArray(item.palettes))) return Promise.resolve(item);
+      if (paletteAnalysisRequests.has(item.id)) return paletteAnalysisRequests.get(item.id);
+      item.processingPalette = true;
+      fallback.mergeCachedItems(item);
+      const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
+      const request = fetch(`${apiBase}/api/item/refreshPalette`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: item.id }),
+      })
+        .then(async (response) => {
+          const result = await response.json();
+          if (!response.ok || !result || result.status !== 'success') throw new Error(result && result.message ? result.message : 'Palette analysis failed');
+          const updated = result.data && result.data.item ? result.data.item : result.data;
+          if (updated && updated.id) {
+            const belongsToCurrentLibrary = (window.__mockLibraryCache || []).some((entry) => entry && entry.id === updated.id);
+            if (belongsToCurrentLibrary) {
+              fallback.mergeCachedItems(updated);
+              fallback.emitEvent('image.palette.updated', updated);
+            }
+            return updated;
+          }
+          return item;
+        })
+        .catch((err) => {
+          delete item.processingPalette;
+          const belongsToCurrentLibrary = (window.__mockLibraryCache || []).some((entry) => entry && entry.id === item.id);
+          if (belongsToCurrentLibrary) fallback.mergeCachedItems(item);
+          console.warn('[eagle-shim] palette analysis failed for ' + item.id, err);
+          return item;
+        })
+        .finally(() => paletteAnalysisRequests.delete(item.id));
+      paletteAnalysisRequests.set(item.id, request);
+      return request;
+    };
+    fallback.scheduleMissingPaletteAnalysis = function (items) {
+      const list = Array.isArray(items) ? items : [items];
+      list.forEach((item) => {
+        if (canAnalyzePalette(item) && !Array.isArray(item.palettes)) fallback.analyzeItemPalette(item);
+      });
+    };
+    window.__eagleIpcWriteState = fallback;
+  }
+  function writeState() {
+    const state = window.__eagleIpcWriteState;
+    if (!state) installLocalWriteStateFallback();
+    return window.__eagleIpcWriteState;
+  }
+
 
   // 本地导入在飞计数。capture 轮询（startCapturePolling）以「库里出现了 known/cache/raw
   // 都没有的条目」判定为外部捕获并补发 file-uploaded；而本地导入的条目在 invoke 回到
@@ -813,65 +983,6 @@
   // 同一 id 各发一次 file-uploaded，itemDomain 因此两次 unshift（实测抢跑差 50~250ms，
   // m1 的 `* drop import inserted duplicate item IDs` 即此）。轮询在 await 之后据此整轮跳过，
   // 条目落地后统一由 emitImportedItems 发布。
-  let pendingLocalImports = 0;
-  let settledLocalImports = 0;
-  function trackLocalImport(promise) {
-    pendingLocalImports += 1;
-    const settle = () => { pendingLocalImports -= 1; settledLocalImports += 1; };
-    return promise.then(
-      (value) => { settle(); return value; },
-      (err) => { settle(); throw err; },
-    );
-  }
-
-  function mergeCachedItems(updatedItems) {
-    const cached = window.__mockLibraryCache || [];
-    const updates = Array.isArray(updatedItems) ? updatedItems : [updatedItems];
-    updates.forEach((updated) => {
-      if (!updated || !updated.id) return;
-      const index = cached.findIndex((entry) => entry.id === updated.id);
-      if (index >= 0) Object.assign(cached[index], updated);
-      else cached.unshift(updated);
-    });
-    window.__mockLibraryCache = cached;
-    try {
-      if (window.angular) {
-        const scope = angular.element(document.body).scope();
-        updates.forEach((updated) => {
-          if (!updated || !updated.id) return;
-          const targets = [
-            scope && scope.itemMappings && scope.itemMappings[updated.id],
-            ...(scope && Array.isArray(scope.raw) ? scope.raw.filter((item) => item.id === updated.id) : []),
-            ...(scope && Array.isArray(scope.allData) ? scope.allData.filter((item) => item.id === updated.id) : []),
-          ].filter(Boolean);
-          [...new Set(targets)].forEach((target) => Object.assign(target, updated));
-        });
-        if (scope && typeof scope.$evalAsync === 'function') scope.$evalAsync();
-      }
-    } catch (err) {
-      console.warn('[eagle-shim] failed to synchronize updated items', err);
-    }
-    return cached;
-  }
-
-  function emitImportedItems(items, channel) {
-    const imported = (Array.isArray(items) ? items : [items])
-      .filter((item) => item && item.id)
-      .map((item) => {
-        if (!item.width && !item.height && textThumbnailExtensions.has(String(item.ext || '').toLowerCase())) {
-          item.width = 480;
-          item.height = 480;
-        }
-        return item;
-      });
-    mergeCachedItems(imported);
-    imported.forEach((item) => ipcRenderer.emit('file-uploaded', item));
-    if (imported.length > 0) mockEmit('file-uploaded-end', {});
-    mockEmit('import:operation-result', { ok: true, channel, items: imported });
-    scheduleMissingPaletteAnalysis(imported);
-    refreshImportedThumbnails(imported);
-    return imported;
-  }
 
   async function browserUploadLocalFiles(files) {
     const list = Array.isArray(files) ? files : [];
@@ -923,7 +1034,7 @@
   function browserImportLocalFiles(files, channel = 'upload-local-files') {
     return browserUploadLocalFiles(files)
       .then((items) => {
-        emitImportedItems(items, channel);
+        writeState().emitImportedItems(items, channel);
         return items;
       })
       .catch((err) => {
@@ -944,7 +1055,7 @@
     if (!response.ok || !payload || payload.status !== 'success') {
       throw new Error(payload && payload.message ? payload.message : `URL import failed: HTTP ${response.status}`);
     }
-    emitImportedItems([payload.data], channel);
+    writeState().emitImportedItems([payload.data], channel);
     return payload.data;
   }
 
@@ -965,98 +1076,11 @@
     if (!response.ok || !payload || payload.status !== 'success') {
       throw new Error(payload && payload.message ? payload.message : `URL batch import failed: HTTP ${response.status}`);
     }
-    emitImportedItems(payload.data, channel);
+    writeState().emitImportedItems(payload.data, channel);
     return payload.data;
   }
 
-  async function thumbnailTaskSnapshot(taskId) {
-    if (desktopApi && desktopApi.thumbnail && typeof desktopApi.thumbnail.status === 'function') {
-      return desktopApi.thumbnail.status(taskId);
-    }
-    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
-    const response = await fetch(`${apiBase}/api/item/thumbnailTask/status?taskId=${encodeURIComponent(String(taskId || ''))}`);
-    const payload = await response.json();
-    if (!response.ok || !payload || payload.status !== 'success') {
-      throw new Error(payload && payload.message ? payload.message : `Thumbnail status failed: HTTP ${response.status}`);
-    }
-    return payload.data;
-  }
 
-  async function libraryItemsSnapshot() {
-    if (desktopApi && desktopApi.library && typeof desktopApi.library.current === 'function') {
-      const library = await desktopApi.library.current();
-      return Array.isArray(library.items) ? library.items : [];
-    }
-    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
-    const response = await fetch(`${apiBase}/api/library/current?includeItems=true`);
-    const payload = await response.json();
-    if (!response.ok || !payload || payload.status !== 'success') {
-      throw new Error(payload && payload.message ? payload.message : `Library refresh failed: HTTP ${response.status}`);
-    }
-    return Array.isArray(payload.data.items) ? payload.data.items : [];
-  }
-
-  async function refreshImportedThumbnails(items) {
-    // 原按 item.thumbnailTask 过滤——后端任务完成后即删除该字段，导入返回体若已晚于任务
-    // 完成，条目会被整段跳过、thumbnail-generated 永不触发（m1 markdown 阶段间歇失败）。
-    // 改：有 taskId 走任务轮询；无 taskId 则以库快照判定缩略图是否落定（noThumbnail 清除）。
-    const list = (Array.isArray(items) ? items : [items]).filter((item) => item && item.id);
-    for (const item of list) {
-      try {
-        let complete = false;
-        const deadline = Date.now() + 30000;
-        while (Date.now() < deadline) {
-          if (item.thumbnailTask) {
-            const task = await thumbnailTaskSnapshot(item.thumbnailTask).catch(() => null);
-            if (task && task.status === 'complete') {
-              complete = true;
-              break;
-            }
-            if (task && (task.status === 'failed' || task.status === 'cancelled' || task.error)) break;
-          } else {
-            const probeItems = await libraryItemsSnapshot();
-            const probe = probeItems.find((entry) => entry && entry.id === item.id);
-            if (probe && !probe.processingThumbnail && !probe.noThumbnail) {
-              complete = true;
-              break;
-            }
-          }
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
-        if (!complete) continue;
-        // 用户编辑（annotation/star/tags…）经 itemUpdateQueue 串行写回；若在其落库前取库快照，
-        // 这里 emit 的整条 item 会被 itemDomain 的 thumbnail-generated 处理器
-        // Object.assign 回 scope（bundle 逐字实现），既把内存改动回滚，也让随后 in-flight 的
-        // 写回克隆到旧值持久化（m1 multi inspector persistence 间歇失败）。先排空写回队列。
-        await itemUpdateQueue.catch(() => undefined);
-        const libraryItems = await libraryItemsSnapshot();
-        const updated = libraryItems.find((entry) => entry && entry.id === item.id);
-        if (updated && !updated.processingThumbnail) {
-          if (!Number(updated.width) || !Number(updated.height)) {
-            updated.width = Number(item.width) || 480;
-            updated.height = Number(item.height) || 480;
-          }
-          mergeCachedItems(updated);
-          // 只发缩略图相关字段：itemDomain 的 thumbnail-generated 处理器会
-          // Object.assign(existItem, generated)（bundle 逐字），整条库快照会把用户在轮询窗口内
-          // 改的 annotation/star/tags/folders 覆盖回旧值，并让 in-flight 的 images-change
-          // 克隆到旧值持久化（m1 multi inspector persistence 间歇失败的真源头）。
-          mockEmit('thumbnail-generated', {
-            id: updated.id,
-            name: updated.name,
-            ext: updated.ext,
-            width: updated.width,
-            height: updated.height,
-            noThumbnail: updated.noThumbnail,
-            processingThumbnail: false,
-            modificationTime: updated.modificationTime,
-          });
-        }
-      } catch (err) {
-        console.warn('[eagle-shim] imported thumbnail refresh failed', err);
-      }
-    }
-  }
 
   function installBrowserDropImport() {
     if (desktopApi || isElectronRuntime) return;
@@ -1135,64 +1159,6 @@
     setInterval(patchNonMediaMeta, 300);
   }
 
-  function canAnalyzePalette(item) {
-    return Boolean(
-      item &&
-      item.id &&
-      !item.isDeleted &&
-      !item.noPreview &&
-      Number(item.width) > 0 &&
-      Number(item.height) > 0
-    );
-  }
-
-  function analyzeItemPalette(item, options) {
-    const force = Boolean(options && options.force);
-    if (!canAnalyzePalette(item) || (!force && Array.isArray(item.palettes))) return Promise.resolve(item);
-    if (paletteAnalysisRequests.has(item.id)) return paletteAnalysisRequests.get(item.id);
-
-    item.processingPalette = true;
-    mergeCachedItems(item);
-    const apiBase = (window.__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
-    const request = fetch(`${apiBase}/api/item/refreshPalette`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: item.id }),
-    })
-      .then(async (response) => {
-        const result = await response.json();
-        if (!response.ok || !result || result.status !== 'success') {
-          throw new Error(result && result.message ? result.message : `Palette analysis failed: HTTP ${response.status}`);
-        }
-        const updated = result.data && result.data.item ? result.data.item : result.data;
-        if (updated && updated.id) {
-          const belongsToCurrentLibrary = (window.__mockLibraryCache || []).some((entry) => entry && entry.id === updated.id);
-          if (belongsToCurrentLibrary) {
-            mergeCachedItems(updated);
-            mockEmit('image.palette.updated', updated);
-          }
-          return updated;
-        }
-        return item;
-      })
-      .catch((err) => {
-        delete item.processingPalette;
-        const belongsToCurrentLibrary = (window.__mockLibraryCache || []).some((entry) => entry && entry.id === item.id);
-        if (belongsToCurrentLibrary) mergeCachedItems(item);
-        console.warn(`[eagle-shim] palette analysis failed for ${item.id}`, err);
-        return item;
-      })
-      .finally(() => paletteAnalysisRequests.delete(item.id));
-    paletteAnalysisRequests.set(item.id, request);
-    return request;
-  }
-
-  function scheduleMissingPaletteAnalysis(items) {
-    const list = Array.isArray(items) ? items : [items];
-    list.forEach((item) => {
-      if (canAnalyzePalette(item) && !Array.isArray(item.palettes)) analyzeItemPalette(item);
-    });
-  }
 
   function previewCurrentItemId() {
     const scope = bodyScope();
@@ -1304,7 +1270,7 @@
     }
     if (channel === 'regenerate-palette') {
       const items = Array.isArray(params) ? params : [];
-      items.forEach((item) => analyzeItemPalette(item, { force: true }));
+      items.forEach((item) => writeState().analyzeItemPalette(item, { force: true }));
       return;
     }
     if (channel === 'chnage-preferences' && params && typeof params === 'object') {
@@ -1373,7 +1339,7 @@
           if (library) {
             window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
             if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
-            scheduleMissingPaletteAnalysis(library.items || []);
+            writeState().scheduleMissingPaletteAnalysis((library.items || []));
           }
           mockEmit('library:changed', library);
           mockEmit('library:operation-result', { ok: true, action: actionName, library });
@@ -1405,7 +1371,7 @@
           const library = result.data;
           window.__mockLibrary = { ...(window.__mockLibrary || {}), ...library };
           if (Array.isArray(library.items)) window.__mockLibraryCache = library.items.slice();
-          scheduleMissingPaletteAnalysis(library.items || []);
+          writeState().scheduleMissingPaletteAnalysis((library.items || []));
           mockEmit('library:changed', library);
           mockEmit('library:operation-result', { ok: true, action: actionName, library });
         })
@@ -1432,45 +1398,10 @@
       }
       return;
     }
-    if (desktopApi && desktopApi.item && (channel === 'images-change' || channel === 'image-change')) {
-      const items = channel === 'images-change' ? params : [params];
-      const snapshots = (Array.isArray(items) ? items : []).filter((item) => item && item.id).map((item) => structuredClone(item));
-      itemUpdateQueue = itemUpdateQueue
-        .catch(() => undefined)
-        .then(() => desktopApi.item.updateMany(snapshots))
-        .then((updated) => {
-          mergeCachedItems(updated);
-          // b1-9i：bundle 时代 images-change/image-change 由主进程（磁盘改名等）处理完后回发
-          // 'image.changed'，渲染层 itemDomain 处理器把最终条目合并回 itemMappings——内存面
-          // 唯一的改名回写路径（React 组件只把 name 写进克隆、live 对象靠此回声更新）。
-          // shim 世界本拦截段扮演主进程角色，updateMany 返回体即处理结果，回发等价回声。
-          (Array.isArray(updated) ? updated : [updated]).forEach((item) => {
-            if (item && item.id) mockEmit('image.changed', item);
-          });
-          const keep = snapshots.find((item) => !item.isDeleted);
-          const trash = snapshots.filter((item) => item.isDeleted);
-          if (keep && trash.length > 0 && desktopApi.duplicates) {
-            desktopApi.duplicates.merge({
-              keepId: keep.id,
-              removeIds: trash.map((item) => item.id),
-              keep,
-            }).catch((err) => {
-              mockEmit('duplicate-merge-error', { error: err.message });
-            });
-          }
-          mockEmit('item:operation-result', { ok: true, action: channel, items: updated });
-          return updated;
-        })
-        .catch((err) => {
-          mockEmit('item:operation-result', { ok: false, action: channel, error: err.message });
-          return [];
-        });
-      return;
-    }
     if (desktopApi && desktopApi.clipboard && (channel === 'read-win-files' || channel === 'paste-image' || channel === 'paste-paths')) {
       const payload = params && params.params ? { ...params.params, folder: params.folder || params.params.folder } : (params || {});
       if (channel === 'paste-paths') payload.files = Array.isArray(params && params.files) ? params.files : [];
-      trackLocalImport(desktopApi.clipboard.import(payload)).then((items) => emitImportedItems(items, channel)).catch((err) => {
+      writeState().trackLocalImport(desktopApi.clipboard.import(payload)).then((items) => writeState().writeState().emitImportedItems(items, channel)).catch((err) => {
         mockEmit('import:operation-result', { ok: false, channel, error: err.message });
         mockEmit('file-uploaded-end', { error: err.message });
       });
@@ -1522,7 +1453,7 @@
         }).then((result) => {
           const updated = result && result.item ? result.item : result;
           if (updated && updated.id) {
-            customThumbnailItemIds.add(updated.id);
+            writeState().customThumbnailItemIds.add(updated.id);
             const items = window.__mockLibraryCache || [];
             const index = items.findIndex((entry) => entry.id === updated.id);
             if (index >= 0) items[index] = updated;
@@ -1566,14 +1497,14 @@
         const items = Array.isArray(params) ? params : [];
         items.forEach((item) => {
           const itemId = item && item.id;
-          const shouldReset = Boolean(itemId && (item.customThumbnail || customThumbnailItemIds.has(itemId)));
+          const shouldReset = Boolean(itemId && (item.customThumbnail || writeState().customThumbnailItemIds.has(itemId)));
           const action = shouldReset
             ? desktopApi.thumbnail.resetCustom({ itemId })
             : desktopApi.thumbnail.refresh({ itemId });
           Promise.resolve(action).then((result) => {
             const updated = result && result.item ? result.item : result;
             if (updated && updated.id) {
-              if (!updated.customThumbnail) customThumbnailItemIds.delete(updated.id);
+              if (!updated.customThumbnail) writeState().customThumbnailItemIds.delete(updated.id);
               const cached = window.__mockLibraryCache || [];
               const index = cached.findIndex((entry) => entry.id === updated.id);
               if (index >= 0) cached[index] = updated;
@@ -1603,11 +1534,11 @@
       if (channel === 'upload-urls') action = desktopApi.import.urls(params || []);
       if (channel === 'import-folders') action = desktopApi.import.folders(params || {});
       if (action) {
-        trackLocalImport(Promise.resolve(action))
+        writeState().trackLocalImport(Promise.resolve(action))
           .then((result) => {
             const batches = channel === 'import-folders' && Array.isArray(result) ? result : [result];
             const items = batches.flatMap((batch) => Array.isArray(batch) ? batch : Array.isArray(batch && batch.items) ? batch.items : batch && batch.id ? [batch] : []);
-            emitImportedItems(items, channel);
+            writeState().emitImportedItems(items, channel);
             if (channel === 'import-folders') {
               desktopApi.library.current().then((library) => {
                 window.__mockLibrary = { ...window.__mockLibrary, ...library };
@@ -1729,7 +1660,7 @@
     // invoke 整体 resolve 后批量出现。file-uploaded 先并 cache 再过总线（emit 覆写处的
     // store 感知去重守卫使其与 emitImportedItems 收尾 emit 幂等，条目流式插入网格）。
     desktopApi.onIpc('file-uploaded', (item) => {
-      if (item && item.id) mergeCachedItems(item);
+      if (item && item.id) writeState().mergeCachedItems(item);
       mockEmit('file-uploaded', item);
     });
     // set-custom-thumbnail 的承诺链回程（apiServerDomain machinerySetCustomThumbnail 等
@@ -3061,11 +2992,13 @@
     });
     const tick = async () => {
       try {
-        const importGeneration = settledLocalImports;
+        const importCountersAtTick = writeState().importCounters();
+        const importGeneration = importCountersAtTick.settled;
         const library = await desktopApi.library.current();
         // 本地导入在飞/本轮 await 期间刚落地：这批条目由 emitImportedItems 独家发布，
         // 轮询整轮跳过，否则同 id 双发（见 trackLocalImport 处注释）。
-        if (pendingLocalImports > 0 || settledLocalImports !== importGeneration) return;
+        const { pending: pendingImports, settled: settledImports } = writeState().importCounters();
+        if (pendingImports > 0 || settledImports !== importGeneration) return;
         const items = Array.isArray(library.items) ? library.items : [];
         const nextPath = library.path || library.rootDir || '';
         if (capturePollLibraryPath && capturePollLibraryPath !== nextPath) known.clear();
@@ -3083,7 +3016,7 @@
         const fresh = items.filter((item) => item && item.id && !known.has(item.id) && !cachedIds.has(item.id) && !rawIds.has(item.id));
         if (fresh.length > 0) {
           fresh.forEach((item) => known.add(item.id));
-          emitImportedItems(fresh, 'browser-capture');
+          writeState().emitImportedItems(fresh, 'browser-capture');
           mockEmit('library:changed', library);
         }
       } catch (err) {
@@ -3829,9 +3762,9 @@
         };
         window.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : [];
         window.__mockLibraryCache.forEach((item) => {
-          if (item && item.customThumbnail) customThumbnailItemIds.add(item.id);
+          if (item && item.customThumbnail) writeState().customThumbnailItemIds.add(item.id);
         });
-        scheduleMissingPaletteAnalysis(window.__mockLibraryCache);
+        writeState().scheduleMissingPaletteAnalysis(window.__mockLibraryCache);
         const storedHistory = readSetting('libraryHistory');
         settingsMemory.libraryHistory = [library.path, ...(Array.isArray(storedHistory) ? storedHistory : [])].filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
         startCapturePolling();

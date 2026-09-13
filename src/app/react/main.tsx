@@ -44,6 +44,7 @@ import { exposeScopeFaceDiagnostics, getScopeFace, installScopeRegistry } from '
 import { installDetailDeliveryGate } from './core/detailDeliveryGate';
 import { installIpcWriteState } from './core/ipcWriteState';
 import { installReturnBridge } from './core/returnBridge';
+import { installDocumentViewer } from './core/documentViewer';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -256,5 +257,7 @@ installIpcWriteState();
 // P1-c-4：主进程回程扇出迁入 React（置 __eagleReturnBridgeInstalled；shims 同块的
 // 0ms 延迟注册检测该标记后跳过，保证单注册）。须早于 shims 的 timer 派发。
 installReturnBridge();
+// P4：documentViewer 编排自 shims 迁入（驱动面 enterDetailMode 文档扩展名挂钩 + 工作区容器）。
+installDocumentViewer();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

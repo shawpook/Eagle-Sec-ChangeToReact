@@ -22,6 +22,7 @@
 import { removeChannelListenersBySource } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { getWindowScope } from './scopeFace';
+import { onDetailEnter, onDetailLeave } from './detailDeliveryGate';
 import { syncErrorCount } from '../store/toastState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -1499,6 +1500,11 @@ export function machineryEnterDetailMode($event: any, image: any): void {
     duration = 50;
   }
 
+  // P2：详情原图交付门控。与 shims 原包装体同序——在选区守卫之前，只要目标可解析（显式传入
+  // 或取选区末项）就先加门控，再走原逻辑（原实现亦如此：无选区时门控状态已置、随后原函数早退）。
+  onDetailEnter(image || (useSelectionState.getState().selected.length
+    ? useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1]
+    : null));
   if (useSelectionState.getState().selected.length <= 0) return;
   image = image || useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1];
   writeScopeField('isDetailMode', true);
@@ -1626,6 +1632,8 @@ export function machineryFocusAppUnlockPassword(): void {
 export function machineryLeaveDetailMode(): void {
   const w = window as any;
   const $timeout = getTimeout();
+  // P2：退出详情立即解除原图交付门控（与 shims 原包装体同序：先解除再走原逻辑）。
+  onDetailLeave();
 
   writeScopeField('isCropMode', false);
   syncDetailFromScope();

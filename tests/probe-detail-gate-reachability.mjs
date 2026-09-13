@@ -1,11 +1,15 @@
 /**
- * 探针（诊断，不入套件）：详情原图交付门控的可达性。
+ * 探针（诊断，不入套件）：详情原图交付门控的可达性 + P2 改动后的双入口生效。
  *
- * 结论（2026-09-14 实跑）：门控包装的是 scope 面/驱动面的 `enterDetailMode`
+ * 发现（2026-09-14，P2 前置）：门控包装的是 scope 面/驱动面的 `enterDetailMode`
  * （`driverApi.ACTION_FIELDS` 白名单 + `miscRawState` store 字段），而 React UI 的所有入口
  * 都直接调用 import 的 `machineryEnterDetailMode`（`selectionService.ts:200` 网格双击、
  * `inspectorActions`、`detailService`、`miscDomain` 等），两者不是同一函数对象 ——
- * 故 UI 路径**当前不经过门控**（`pathA` 无 state 变化，`pathB` 驱动面才有）。
+ * 故改造前 UI 路径**不经过门控**（pathA 无变化，pathB 驱动面才有）。
+ *
+ * P2 改动（同日）：门控迁入 `core/detailDeliveryGate.ts`，由 `machineryEnterDetailMode` /
+ * `machineryLeaveDetailMode` 内部直接挂钩 —— 本探针现应看到 **pathA 与 pathB 都写入门控状态**
+ * （`mode:'waiting'`、`itemId` 非空、`lockedAt>0`）。
  *
  * 详见 `docs/e5-5-shims-retirement-plan.md` §0.1。
  * 用法：node tests/probe-detail-gate-reachability.mjs

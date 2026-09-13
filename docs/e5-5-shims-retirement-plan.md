@@ -79,6 +79,31 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 > document viewer 分支此前有意与「原版详情流」并存；React 已有自己的 pdf/office viewer 路由，
 > 恢复前需先确认不会与 React 侧路由重复。建议此项先做一轮**实机走查**再定。
 
+### 0.2 P2 已落地（2026-09-14，选项 ①）
+
+经确认采用**恢复接线**。实际落地（提交见收官文档 §6.1）：
+
+- **新增 `src/app/react/core/detailDeliveryGate.ts`**：`detailRenderState` / `detailPreparedTiles` /
+  `detailCanvasSignature` / `releaseDetailImage` / `waitForDetailOriginal` / `DetailWorker` 包装 +
+  门控样式，全部自 shims 逐字迁入；对外只三个口：`installDetailDeliveryGate()`（启动期装样式与
+  Worker 探针）、`onDetailEnter(target)`（位图类条目加 `eagle-detail-awaiting-original` + 15s 超时）、
+  `onDetailLeave()`（解除）。读面用 `getDriverApi()`（与 shims `bodyScope()` 原解析一致）。
+- **挂钩点**：`miscDomain.machineryEnterDetailMode` 在**选区守卫之前**调 `onDetailEnter(image || 选区末项)`
+  （与 shims 原包装体同序：显式传 item 时即便无选区也先置门控）；`machineryLeaveDetailMode` 首行
+  `onDetailLeave()`。**不再轮询、不再包 scope 面**。
+- **`main.tsx`** 启动期 `installDetailDeliveryGate()`；**shims.js 删 177 行**（原门控 + 25ms 包装体）。
+- **document 分支保持原样（未接 React）**：`shims.js` 保留 `document viewer` 全段，并补了一个
+  **仅驱动面**的 `documentViewerHookTimer`（25ms，`__eagleDocumentEntry` 守卫）——驱动面调
+  `scope.enterDetailMode` 时对文档扩展名开工作区；UI 面点击文档仍走各自 viewer 路由（与迁移前
+  逐字一致，未新增接线）。**若整体删掉该分支，`--smoke-document-viewer` 会因找不到
+  `#eagle-document-viewer-container` 而超时**——这是它与本批绑定的唯一原因。
+- **验证**：`tests/probe-detail-gate-reachability.mjs` 现 pathA（UI 用面）与 pathB（驱动面）
+  都写入门控状态；`preview-delivery` / `d3-detail-mode` / `main-ui-workflow` / `ui-interactions` /
+  `document-viewer-ui` 全绿；哨兵 `SENTINEL_OK`、tsc 492 零新增键。
+- **遗留**：门控重新生效属**可见行为变化**（详情页先隐原图至画布稳定 3 帧 / 原图 URL 一致），
+  需实机走查确认观感符合原版。
+
+
 
 
 ---

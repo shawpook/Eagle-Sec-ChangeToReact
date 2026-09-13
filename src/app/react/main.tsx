@@ -41,6 +41,7 @@ import { bindLockSync } from './store/lockState';
 import { eagle as coreEagle } from './core/eagleApi';
 import { getDriverApi, installDriverApi } from './core/driverApi';
 import { exposeScopeFaceDiagnostics, getScopeFace, installScopeRegistry } from './core/scopeFace';
+import { installDetailDeliveryGate } from './core/detailDeliveryGate';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -244,5 +245,8 @@ installBundleGlobals();
 installApiServerGlobals();
 installInitAPIServer();
 exposeScopeFaceDiagnostics();
+// P2：详情原图交付门控。原先由 shims 以 25ms 轮询包装 scope 面 → React UI 各入口直调
+// machineryEnterDetailMode（非同一函数对象）故不生效；现由 React 直接挂钩 enter/leave。
+installDetailDeliveryGate();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

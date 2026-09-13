@@ -53,183 +53,10 @@
     'mp4', 'm4v', 'webm', 'mkv', 'avi', 'mov', 'mpg', 'mts', 'wmv', 'flv', 'ts',
     'f4v', '3gp', '360', 'afx', 'eva', 'vap',
   ]);
-  const detailRenderState = {
-    itemId: '',
-    lockedAt: 0,
-    releasedAt: 0,
-    tileCount: 0,
-    mode: '',
-    previousItemId: '',
-    initialCanvasSignature: '',
-    tilesPrepared: false,
-    canvasCandidate: '',
-    canvasStableFrames: 0,
-    timeout: 0,
-  };
-  const detailPreparedTiles = new Map();
-  window.__eagleDetailDeliveryState = detailRenderState;
-
-  // 详情页先隐藏缩略图，等原图画布稳定后再显示，避免出现模糊到清晰的跳变。
-  const detailStyle = document.createElement('style');
-  detailStyle.textContent = 'body.eagle-detail-awaiting-original #detail-container { opacity: 0 !important; }';
-  document.head.appendChild(detailStyle);
-
-  // 对画布分区取样，连续多帧签名一致时才视为原图渲染稳定。
-  function detailCanvasSignature() {
-    const canvas = document.querySelector('#bitmap-viewer canvas');
-    if (!canvas || canvas.width < 2 || canvas.height < 2) return '';
-    try {
-      const context = canvas.getContext('2d');
-      let signature = `${canvas.width}x${canvas.height}:`;
-      let hasPixels = false;
-      for (let y = 1; y < 6; y += 1) {
-        for (let x = 1; x < 6; x += 1) {
-          const pixel = context.getImageData(
-            Math.min(canvas.width - 1, Math.floor((canvas.width * x) / 6)),
-            Math.min(canvas.height - 1, Math.floor((canvas.height * y) / 6)),
-            1,
-            1
-          ).data;
-          if (pixel[3] > 0) hasPixels = true;
-          signature += `${pixel[0].toString(16)}${pixel[1].toString(16)}${pixel[2].toString(16)}${pixel[3].toString(16)};`;
-        }
-      }
-      return hasPixels ? signature : '';
-    } catch (err) {
-      return '';
-    }
-  }
-
-  function releaseDetailImage(itemId, mode) {
-    const scope = bodyScope();
-    if (!scope || !scope.isDetailMode || !scope.current || scope.current.id !== itemId) return false;
-    detailRenderState.mode = mode;
-    detailRenderState.releasedAt = performance.now();
-    document.body.classList.remove('eagle-detail-awaiting-original');
-    return true;
-  }
-
-  function waitForDetailOriginal(itemId, tiles) {
-    const deadline = performance.now() + 5000;
-    const check = () => {
-      const scope = bodyScope();
-      if (!scope || !scope.isDetailMode || !scope.current || scope.current.id !== itemId) {
-        document.body.classList.remove('eagle-detail-awaiting-original');
-        return;
-      }
-      const canvasSignature = detailCanvasSignature();
-      const canvasUpdated = canvasSignature && (
-        tiles ||
-        detailRenderState.previousItemId === itemId ||
-        (detailRenderState.tilesPrepared && canvasSignature !== detailRenderState.initialCanvasSignature)
-      );
-      if (canvasUpdated) {
-        if (detailRenderState.canvasCandidate === canvasSignature) detailRenderState.canvasStableFrames += 1;
-        else {
-          detailRenderState.canvasCandidate = canvasSignature;
-          detailRenderState.canvasStableFrames = 1;
-        }
-        if (detailRenderState.canvasStableFrames >= 3) {
-          releaseDetailImage(itemId, 'canvas');
-          return;
-        }
-      }
-      const image = document.querySelector('#detail-image');
-      const rawUrl = typeof scope.getRawUrl === 'function' ? String(scope.getRawUrl(scope.current) || '') : '';
-      const source = image ? String(image.currentSrc || image.src || '') : '';
-      if (image && image.complete && image.naturalWidth > 1 && rawUrl && source === rawUrl) {
-        requestAnimationFrame(() => requestAnimationFrame(() => releaseDetailImage(itemId, 'image')));
-        return;
-      }
-      if (performance.now() < deadline) requestAnimationFrame(check);
-    };
-    requestAnimationFrame(check);
-  }
-
-  // 记录原图瓦片完成状态，同时覆盖预加载后打开和同一图片重复打开的场景。
-  if (typeof window.Worker === 'function' && !window.__eagleDetailWorkerProbeInstalled) {
-    const NativeWorker = window.Worker;
-    class DetailWorker extends NativeWorker {
-      constructor(url, options) {
-        super(url, options);
-        this.__eagleBitmapWorker = /(?:^|\/)bitmapWorker\.js(?:[?#]|$)/i.test(String(url || ''));
-        this.__eagleBitmapItemId = '';
-        if (this.__eagleBitmapWorker) {
-          this.addEventListener('message', (event) => {
-            const itemId = this.__eagleBitmapItemId;
-            if (!itemId || !event.data) return;
-            if (Array.isArray(event.data.tiles)) {
-              detailPreparedTiles.set(itemId, event.data.tiles.length);
-              if (detailRenderState.itemId === itemId) {
-                detailRenderState.tileCount = event.data.tiles.length;
-                setTimeout(() => waitForDetailOriginal(itemId, true), 0);
-              }
-            } else if (event.data.usingImgTag && detailRenderState.itemId === itemId) {
-              setTimeout(() => waitForDetailOriginal(itemId, false), 0);
-            }
-          });
-        }
-      }
-
-      postMessage(message, transfer) {
-        if (this.__eagleBitmapWorker && message && message.item && message.item.id) {
-          this.__eagleBitmapItemId = message.item.id;
-        }
-        if (arguments.length > 1) return super.postMessage(message, transfer);
-        return super.postMessage(message);
-      }
-    }
-    window.Worker = DetailWorker;
-    window.__eagleDetailWorkerProbeInstalled = true;
-  }
-
-  const detailHookTimer = setInterval(() => {
-    const scope = bodyScope();
-    if (!scope || typeof scope.enterDetailMode !== 'function' || scope.enterDetailMode.__eagleOriginalGate) return;
-    const enterDetailMode = scope.enterDetailMode;
-    originalDetailModeEntry = enterDetailMode;
-    scope.enterDetailMode = function (event, item) {
-      const target = item || (Array.isArray(this.selected) ? this.selected[this.selected.length - 1] : null);
-      const extension = String(target && target.ext || '').toLowerCase();
-      if (target && documentViewerEnabled() && documentViewerExtensions.has(extension)) {
-        // Unified in-app document workspace: open the isolated viewer overlay
-        // instead of the original detail flow or the system default app.
-        openDocumentViewer(target, 'workspace');
-        return;
-      }
-      if (target && detailBitmapExtensions.has(extension)) {
-        detailRenderState.previousItemId = detailRenderState.itemId;
-        detailRenderState.itemId = target.id;
-        detailRenderState.lockedAt = performance.now();
-        detailRenderState.releasedAt = 0;
-        detailRenderState.tileCount = detailPreparedTiles.get(target.id) || 0;
-        detailRenderState.initialCanvasSignature = detailCanvasSignature();
-        detailRenderState.tilesPrepared = detailPreparedTiles.has(target.id);
-        detailRenderState.canvasCandidate = '';
-        detailRenderState.canvasStableFrames = 0;
-        detailRenderState.mode = 'waiting';
-        document.body.classList.add('eagle-detail-awaiting-original');
-        clearTimeout(detailRenderState.timeout);
-        detailRenderState.timeout = setTimeout(() => {
-          if (detailRenderState.itemId !== target.id || detailRenderState.releasedAt) return;
-          detailRenderState.mode = 'timeout';
-          document.body.classList.remove('eagle-detail-awaiting-original');
-        }, 15000);
-        setTimeout(() => waitForDetailOriginal(target.id, false), 0);
-      }
-      return enterDetailMode.apply(this, arguments);
-    };
-    scope.enterDetailMode.__eagleOriginalGate = true;
-    if (typeof scope.leaveDetailMode === 'function') {
-      const leaveDetailMode = scope.leaveDetailMode;
-      scope.leaveDetailMode = function () {
-        closeDocumentViewer();
-        document.body.classList.remove('eagle-detail-awaiting-original');
-        return leaveDetailMode.apply(this, arguments);
-      };
-    }
-    clearInterval(detailHookTimer);
-  }, 25);
+  // ── 详情原图交付门控已迁至 src/app/react/core/detailDeliveryGate.ts（P2，2026-09-14）──
+  // 原实现以 25ms 轮询包装 scope 面/驱动面的 enterDetailMode/leaveDetailMode；实测 React UI 各入口
+  // 直接调用 import 的 machineryEnterDetailMode（非同一函数对象）故门控在 UI 路径下不生效。
+  // 现由 React 在 machineryEnterDetailMode/leaveDetailMode 内部直接挂钩（见该模块与计划文档 §0.1）。
 
   // ── Unified in-app document viewer (OrcaBox workspace) ───────────────────
   let originalDetailModeEntry = null;
@@ -552,6 +379,40 @@
 
   // Close the viewer when the shell reloads.
   window.addEventListener('beforeunload', () => closeDocumentViewer());
+
+  // ── 文档工作区入口（仅驱动面）──
+  // P2（2026-09-14）：位图原图交付门控已迁至 src/app/react/core/detailDeliveryGate.ts（由 React
+  // 在 machineryEnterDetailMode 内部直接挂钩，UI 路径同样生效）。此处仅保留原包装体的
+  // 「文档扩展名 → 开 document workspace」分支——它只对**驱动面**有意义（`--smoke-document-viewer`
+  // 等驱动脚本调用 scope.enterDetailMode 时开工作区）；UI 面点击文档仍走各自 viewer 路由，
+  // 与迁移前一致、未新增接线。
+  const documentViewerHookTimer = setInterval(() => {
+    const scope = bodyScope();
+    if (!scope || typeof scope.enterDetailMode !== 'function' || scope.enterDetailMode.__eagleDocumentEntry) return;
+    const enterDetailMode = scope.enterDetailMode;
+    originalDetailModeEntry = enterDetailMode;
+    scope.enterDetailMode = function (event, item) {
+      const target = item || (Array.isArray(this.selected) ? this.selected[this.selected.length - 1] : null);
+      const extension = String(target && target.ext || '').toLowerCase();
+      if (target && documentViewerEnabled() && documentViewerExtensions.has(extension)) {
+        // Unified in-app document workspace: open the isolated viewer overlay
+        // instead of the original detail flow or the system default app.
+        openDocumentViewer(target, 'workspace');
+        return;
+      }
+      return enterDetailMode.apply(this, arguments);
+    };
+    scope.enterDetailMode.__eagleDocumentEntry = true;
+    if (typeof scope.leaveDetailMode === 'function' && !scope.leaveDetailMode.__eagleDocumentEntry) {
+      const leaveDetailMode = scope.leaveDetailMode;
+      scope.leaveDetailMode = function () {
+        closeDocumentViewer();
+        return leaveDetailMode.apply(this, arguments);
+      };
+      scope.leaveDetailMode.__eagleDocumentEntry = true;
+    }
+    clearInterval(documentViewerHookTimer);
+  }, 25);
 
   const browserFetch = typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
   if (browserFetch) {

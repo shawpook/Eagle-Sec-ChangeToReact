@@ -298,10 +298,12 @@ function uploadFilesFromFolder(tree: any, parent: any) {
 
   machineryUpdateSidebarList();
   openFolder(folder);
-  scopeEvalAsync();
+  // 原 bundle 53074/53099 的 digest flush（`$evalAsync`）——`scopeEvalAsync` 的
+  // `flushScopeWatchers` 自 E4 删 scopeShim 起无注入者、恒 no-op（见 core/scopeRuntime.ts），
+  // 故收尾时删去这两处调用；副作用由 openFolder / machineryChangeSidebarIndex 的 store 写入承担。
   machinerySaveFolderDebounce();
   machineryCalculateImageBinding({ ignoreSort: true }, function () { });
-  setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 200);
+  setTimeout(function () { machineryChangeSidebarIndex(folder); }, 200);
 
   // 開始上傳圖片
   const fds: any[] = [];

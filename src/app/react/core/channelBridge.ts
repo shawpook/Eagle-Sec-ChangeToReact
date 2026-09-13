@@ -396,6 +396,7 @@ function createFacade(bus: any): any {
   const facade: any = {
     __eagleChannelBridge: true,
     send(channel: string, params?: any) {
+      recordSent(channel, params);
       const n = nativeIpc();
       if (n && isNativeSend(channel)) return n.send(channel, params);
       if (routeDesktop(bus, channel, params)) return;
@@ -404,6 +405,7 @@ function createFacade(bus: any): any {
     // shims 的 sendTo 语义是「忽略 id、落到 send」（见 shims.js 的 sendTo 覆写），故原生分支同样
     // 直接 send —— 用 ipcRenderer.sendTo 会改变投递目标（发给某个 webContents 而非主进程）。
     sendTo(id: any, channel: string, params?: any) {
+      recordSent(channel, params);
       const n = nativeIpc();
       if (n && isNativeSend(channel)) return n.send(channel, params);
       if (routeDesktop(bus, channel, params)) return;
@@ -433,6 +435,21 @@ function createFacade(bus: any): any {
 }
 
 let facade: any = null;
+
+/** b1-9bz-E7：接缝发送观测环（诊断/测试取证面——P1-c-3 后 images-change 等频道不再落 shims
+ *  总线，冒烟测试的 ipc spy 需改读本环；P5 删 shims 总线后它是唯一发送观测面）。容量 400，够
+ *  冒烟取证、不构成业务依赖。 */
+function recordSent(channel: string, params?: any): void {
+  try {
+    const w = window as any;
+    if (!w.__eagleIpcSentLog) w.__eagleIpcSentLog = [];
+    const log = w.__eagleIpcSentLog;
+    log.push({ channel, args: params === undefined ? [] : [params], at: Date.now() });
+    if (log.length > 400) log.splice(0, log.length - 400);
+  } catch (err) {
+    // 观测环永不影响发送主链。
+  }
+}
 
 /** 取当前窗口的 IPC 接缝（单例）。返回 null 表示总线尚未安装（早于 shims 的调用）。 */
 export function getIpcBus(): any {

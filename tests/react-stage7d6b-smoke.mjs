@@ -275,7 +275,7 @@ try {
   );
   await assertExpr(
     'fe-show-item-in-folder',
-    `(window.__ipcCalls || []).some(c => c.channel === 'show-item-in-folder' && c.args[0] === '/tmp/exported-dir')`
+    `((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).some(c => c.channel === 'show-item-in-folder' && c.args[0] === '/tmp/exported-dir')`
   );
   await page.send('Runtime.evaluate', {
     expression: `(() => {
@@ -318,7 +318,7 @@ try {
   );
   await assertExpr(
     'fe-cancel-ipc',
-    `(window.__ipcCalls || []).some(c => c.channel === 'cancel.all')`
+    `((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).some(c => c.channel === 'cancel.all')`
   );
 
   // ── add-library：ADD_TO_LIBRARY 单项（库不存在 → error-box，弹窗保持 open） ──
@@ -357,7 +357,7 @@ try {
   );
   await assertExpr(
     'al-electron-info-ipc',
-    `(window.__ipcCalls || []).some(c => c.channel === 'electron-info' && String(c.args[0]).indexOf('User interrupt') > -1)`
+    `((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).some(c => c.channel === 'electron-info' && String(c.args[0]).indexOf('User interrupt') > -1)`
   );
   // 多项 → swal BulkAction 确认 → addToLibrary
   await page.send('Runtime.evaluate', {

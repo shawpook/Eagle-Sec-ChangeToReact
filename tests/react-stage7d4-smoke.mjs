@@ -222,7 +222,7 @@ try {
   await assertExpr(
     'dm-show-spy',
     `(() => {
-      const shows = (window.__ipcCalls || []).filter((c) => c.channel === 'show');
+      const shows = ((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).filter((c) => c.channel === 'show');
       return shows.length >= 1;
     })()`
   );
@@ -236,10 +236,14 @@ try {
     returnByValue: true,
   });
   await delay(1200);
+  const __dmp = await page.send('Runtime.evaluate', {
+    expression: "(() => { const calls = ((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])); return { channels: calls.map((c) => c.channel), calc: window.__calcBindings, open: !!document.querySelector('#eagle-duplicate-modal-host .duplicate-modal.open') }; })()",
+    returnByValue: true });
+  console.log('D4PROBE ' + JSON.stringify(__dmp.result && __dmp.result.value));
   await assertExpr(
     'dm-save-dataplane',
     `(() => {
-      const calls = window.__ipcCalls || [];
+      const calls = ((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || []));
       const imagesChange = calls.filter((c) => c.channel === 'images-change');
       const emptyTrash = calls.filter((c) => c.channel === 'empty-trash');
       if (imagesChange.length !== 1) return false;
@@ -276,7 +280,7 @@ try {
   await assertExpr(
     'dm-cancel-dataplane',
     `(() => {
-      const calls = window.__ipcCalls || [];
+      const calls = ((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || []));
       const emptyTrash = calls.filter((c) => c.channel === 'empty-trash');
       return emptyTrash.length >= 2 && !document.querySelector('#eagle-duplicate-modal-host .duplicate-modal.open');
     })()`

@@ -168,7 +168,7 @@ try {
   );
   await assertExpr(
     'et-cancel-palette-resume',
-    `(window.__ipcCalls || []).some(c => c.channel === 'palette-resume')`
+    `((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).some(c => c.channel === 'palette-resume')`
   );
 
   // ── library-load：handler 钩子驱动状态机 ──
@@ -272,7 +272,7 @@ try {
   );
   await assertExpr(
     'lm-cancel-ipc',
-    `(window.__ipcCalls || []).some(c => c.channel === 'cancel.all')`
+    `((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).some(c => c.channel === 'cancel.all')`
   );
   await page.send('Runtime.evaluate', {
     expression: `(() => {
@@ -297,7 +297,7 @@ try {
   });
   await assertExpr(
     'lm-reload-app-ipc',
-    `(window.__ipcCalls || []).some(c => c.channel === 'reload-app')`
+    `((window.__ipcCalls || []).concat(window.__eagleIpcSentLog || [])).some(c => c.channel === 'reload-app')`
   );
 
   // ── eaglepack-import ──

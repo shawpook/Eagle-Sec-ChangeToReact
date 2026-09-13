@@ -149,6 +149,7 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 断言这 21 频道「走接缝、不泄漏回 shims 总线」并校验合成事件；`react-stage8e-smoke` 绿。
 
 **③ P1-c-4 已落地（E6-10，`527b3653`）**：按下方施工切线执行完成——`core/returnBridge.ts` + main.tsx 安装 + shims 注册体 0ms 延迟 + 标记跳过；m1/cz1/main-ui-workflow 直接复跑绿。**④ P4-a 已落地（E8，`bb3a7b31`）**：documentViewer 编排（约 354 行）迁 `core/documentViewer.ts`（bodyScope → getWindowScope；shims 段删除；emit 覆写处的 viewer 卸载改经 `window.__eagleCloseDocumentViewer` 全局桥）。document-viewer 两测 + main-ui-workflow 直接复跑绿。
+**⑤ P4-b/P5 已落地（E9）**：**shims.js + mock-data.js 已删除**。启动契约全量迁 `core/shimsLegacy.ts`（shims IIFE 原样 + 内联 boot guard 化复制 + 种子门控），10 入口第一 import，vite 注入摘除，index/preview-window/collect 内联 require 链摘除，focusSearch 密码弹窗守卫，3 个源码字符串测试契约面改指 shimsLegacy。**REACT SUITE ALL GREEN 66/66**。shims 退役计划至此**全部完成**——遗留的 `shimsLegacy.ts`（~2.9k 行）作为 React 模块图内的启动契约/浏览器兼容层，其内部的 Angular 死代码清扫与 browser arms 独立拆分留作后续纯重构（无行为差异）。
 **④ 仍未落地（P4/P5，按工程风险排序延后）**：
 - **P1-c-4（回程扇出 + 总线实体 React 化）**：`desktopApi.onIpc` 的 5 频道 + 9 频道循环 +
   export/import/library/item 回程 + `onRebindRefresh` + `preview.onInit` 缓冲（`shims.js:1622-1735`）

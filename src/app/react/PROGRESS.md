@@ -8264,10 +8264,12 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - **E7 配套（`25972605`/`dad7b24e` 后续）**：差分回执基线改取发送时 live 对象（stage6 改名回写回归修正）；detailHooks.getIpc 取用顺序反转（接缝优先——批量改名/评注等经 shims 原始总线的发送自 P1-c-2 起落黑洞，stage7d2 br-image-dataplane 即此，二分实证非新引入）；facade 发送观测环 `window.__eagleIpcSentLog`（P1-c-3 后接缝化频道不落总线，冒烟取证面统一改读，P5 后为唯一观测面）；stage1c3/7d4/7d6a/7d6b 取证面更新。
   验证：**REACT SUITE ALL GREEN（65/65）**（E6-9 后 63/65 → 取证面修正后全绿）。
 - **E8（`bb3a7b31`，P4-a）**：documentViewer 编排自 shims 迁入 `core/documentViewer.ts`（约 354 行；bodyScope → getWindowScope；工作区容器/测量 observers/handshake 回退/驱动面文档扩展名挂钩逐字）。shims 的 emit 覆写中 viewer 卸载改经 `window.__eagleCloseDocumentViewer` 全局桥（块外残留调用点，迁移时发现并修复——ReferenceError 会炸断 library:changed 监听链）。shims 现 ~2.59k 行。P5 新勘察：index.html 解析期内联 boot（app-root-path/i18n/EagleConfig 经 shims require 链）+ 非 React 页 pdf-viewer/web/viewer.html、thumbnail.html 为删除阻碍面，已入档退役计划 §0.4。
+- **E9（P4-b/P5，本批）**：**shims.js + mock-data.js 删除**。新增 `core/shimsLegacy.ts`（shims 整段 IIFE 原样迁移 + 内联 boot 的 guard 化等价复制 appRoot/MockI18n/EagleConfig/settings/preferences + mock 种子 !eagleDesktop 门控并入）；10 个 React 入口第一 import 供给启动契约；vite 摘除 mock-data/shims 注入（transformIndexHtml Eagle 分支一并摘除）；index/preview-window/collect 内联 boot 的 require 链摘除（module dance 保留）；preferences/controller.focusSearch 加密码弹窗守卫（openPreferences 200ms 定时器与弹窗 autofocus 竞速偷焦——P5 boot 时序漂移暴露，6 连跑修复验证）；empty-trash/txt-update/native-preview 三测试源码契约面改指 shimsLegacy。
+  验证：**REACT SUITE ALL GREEN（66/66）**（P5 后）。
 
 **当前实测状态**：哨兵 `SENTINEL_OK`；`tsc --noEmit` 492（零新增错误键）；套件 66 项（新增
 `react-ipc-bridge-routing`）。**仍失败/未决**：`main-ui-workflow` 剩余**低频** identity 变体
 （`no-target-id`，m1 族，6 轮 1 次；写路径回退/重复 id 两个根因已修，见 E7）；
 `npm test`/`test:isolated` 宿主限制（`roadmap-panels` 的 `fs.cpSync` 缺陷）；
 `browser-capture-electron-extension-e2e` 端口占用 BLOCKED；P2 详情门控为可见行为变化待实机走查；
-shims.js 本体（现约 3.3k 行）与 `mock-data.js` 仍在（P1-c-3…e / P4 / P5 未落地）。
+**shims.js 与 mock-data.js 已删除**（E9，P4-b/P5 完成）：启动契约迁 `core/shimsLegacy.ts`（React 模块图内，~2.9k 行）——其 Angular 死代码清扫与 browser arms 独立拆分留作后续纯重构（无行为差异）。

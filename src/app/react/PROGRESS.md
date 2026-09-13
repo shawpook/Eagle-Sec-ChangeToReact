@@ -8245,10 +8245,24 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   SourceModeSidebar（树/管理页签）；shims source-mode 块删除）。收口验收
   `tests/source-mode-browse-closed-loop.mjs`（3 根+嵌套目录+真实点击）3/3 稳定绿；后端 rescan
   增 env 门控测试旋钮 `EAGLE_SOURCE_RESCAN_FAIL`。
+- **E7（`5a3a98be` + `dad7b24e`，main-ui-workflow 根因定位批）**：把「基线亦失败、根因待定位」
+  转为**已定位并修复**。方法与证据：6 轮带渲染层 send/sendTo 探针的载荷取证（每轮失败时最后一次
+  updateMany 载荷陈旧即停）+ 对 live 对象 `annotation` 的属性 setter 抓栈。结论与修复：
+  ① 回归 A（`919d7ef5` 引入）shims 剪贴板分支误写 `writeState().writeState()` → TypeError，
+  剪贴板健康时必炸；② 根因 C（既有）：`mergeCachedItems` 的 `Object.assign(cached[i], updated)`
+  写到 live 对象本体（React 下 cache 条目与 live store 同引用），导入期调度的调色板分析携带导入
+  初值合并把在飞编辑打回（栈：mergeCachedItems → Object.assign → annotation setter）→ 修复：
+  cache 一律存副本 + 调色板分析限定字段域 + 接缝回执改「相对入队快照的差分」（itemDomain 用
+  live+差分合并视图渲染、仅应用差分字段）；③ 根因 D（既有）：capture 轮询跨 tick 落定的导入
+  双发 file-uploaded，消费者缺幂等 → 补轮询跨 tick 守卫 + file-uploaded 同 id 幂等守卫；
+  ④ 回归 B：driver restore 直发 shims 总线（P1-c-2 已删分支）→ 改走接缝。
+  驱动侧配套（`dad7b24e`）：restore 走接缝、`syncLiveFromBackend`（等价 bundle 回声）、
+  `setInspectorField`（跨 `machineryUpdateSelection` 30ms 防抖窗口校验重写）。
+  验证：main-ui-workflow 连续 6 轮 **4 绿**（改前 0 绿），含重启校验的完整闭环通过。
 
 **当前实测状态**：哨兵 `SENTINEL_OK`；`tsc --noEmit` 492（零新增错误键）；套件 66 项（新增
-`react-ipc-bridge-routing`）。**仍失败/未决**：`main-ui-workflow` 当日持续失败（基线亦失败、
-根因待定位，见收官文档 §6.3；不得以加宽重试/放宽断言宣布全绿）；`npm test`/`test:isolated`
-宿主限制（`roadmap-panels` 的 `fs.cpSync` 缺陷）；`browser-capture-electron-extension-e2e`
-端口占用 BLOCKED；P2 详情门控为可见行为变化待实机走查；shims.js 本体（现约 3.3k 行）与
-`mock-data.js` 仍在（P1-c-3…e / P4 / P5 未落地）。
+`react-ipc-bridge-routing`）。**仍失败/未决**：`main-ui-workflow` 剩余**低频** identity 变体
+（`no-target-id`，m1 族，6 轮 1 次；写路径回退/重复 id 两个根因已修，见 E7）；
+`npm test`/`test:isolated` 宿主限制（`roadmap-panels` 的 `fs.cpSync` 缺陷）；
+`browser-capture-electron-extension-e2e` 端口占用 BLOCKED；P2 详情门控为可见行为变化待实机走查；
+shims.js 本体（现约 3.3k 行）与 `mock-data.js` 仍在（P1-c-3…e / P4 / P5 未落地）。

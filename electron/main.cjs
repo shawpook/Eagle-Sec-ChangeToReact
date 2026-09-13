@@ -2560,23 +2560,23 @@ app.whenReady().then(async () => {
               }
               await new Promise((resolve) => setTimeout(resolve, 150));
               const windowActionsOk = win.isMaximized() !== initialMaximized;
-              const bodyScope = angular.element(document.body).scope();
-              if (bodyScope && typeof bodyScope.openApplicationContextMenu === 'function') {
-                bodyScope.openApplicationContextMenu();
-              }
+              // b1-9bz-E5 收尾：此处原为 angular.element(document.body).scope() 取 scope 后调
+              // openApplicationContextMenu()，并断言 DOM .context-menu.open。Angular 退役后该式恒
+              // ReferenceError（冒烟整体中止）；且应用菜单是 Electron 原生 Menu.popup——不可被 CDP
+              // 观察、触发会阻塞会话（menu-popup-closed-loop 用 __EAGLE_MENU_SMOKE + smoke:menu-popup
+              // 捕获模板，已覆盖其打开与内容）。本冒烟的菜单面断言收敛为主侧 menuOk
+              // （Menu.getApplicationMenu() 非空），不再做 DOM 菜单断言。
               await new Promise((resolve) => setTimeout(resolve, 150));
-              const menuOpened = !!document.querySelector('.context-menu.open') && document.querySelectorAll('.context-menu.open .context-menu-item').length > 0;
               return {
                 thumbOk: typeof thumb === 'string' && thumb.startsWith('data:image/png'),
                 listOk: list.length > 0,
                 clipboardOk: typeof clip === 'string' && clip.startsWith('data:image/png'),
                 windowApiOk: typeof win.minimize === 'function' && typeof win.maximize === 'function' && typeof win.close === 'function' && typeof win.isMaximized() === 'boolean',
                 windowActionsOk,
-                menuOpened,
               };
             })()`
           );
-          console.log(result.thumbOk && result.listOk && result.clipboardOk && result.windowApiOk && result.windowActionsOk && result.menuOpened && menuOk && frameOk ? 'DESKTOP_SMOKE_OK' : `DESKTOP_SMOKE_FAIL ${JSON.stringify({ ...result, menuOk, frameOk })}`);
+          console.log(result.thumbOk && result.listOk && result.clipboardOk && result.windowApiOk && result.windowActionsOk && menuOk && frameOk ? 'DESKTOP_SMOKE_OK' : `DESKTOP_SMOKE_FAIL ${JSON.stringify({ ...result, menuOk, frameOk })}`);
         } catch (err) {
           console.error(`DESKTOP_SMOKE_ERROR ${err.message}`);
         }

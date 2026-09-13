@@ -52,7 +52,10 @@ await page.send('Runtime.enable');
 await page.send('Page.enable');
 
 const pages = [
-  ['main', `${origin}/src/app/index.html`, 6000, () => getComputedStyle(document.body).display !== 'none' && !!document.querySelector('#main-app') && document.body.innerText.includes('智能文件夹') && document.querySelectorAll('img').length > 20],
+  // b1-9bz-E5 收尾：main 是本循环第一页，除应用自身渲染外还要等 vite 对整棵 app 模块图做**冷**
+  // 转换（后续页共享缓存故更快）+ 200+ 张懒加载缩略图挂载；实测稳定态 img=203，
+  // 但 6s 常不足（固定 sleep 无轮询）。放宽到 25s，判据不变。
+  ['main', `${origin}/src/app/index.html`, 25000, () => getComputedStyle(document.body).display !== 'none' && !!document.querySelector('#main-app') && document.body.innerText.includes('智能文件夹') && document.querySelectorAll('img').length > 20],
   ['preferences', `${origin}/src/app/preferences.html`, 6000, () => document.body.innerText.replace(/\s+/g, ' ').length > 200],
   ['workbench', `${origin}/workbench.html`, 4000, () => document.body.innerText.includes('Eagle Reverse Workbench') && document.querySelectorAll('.item-card').length > 0],
   ['roadmap', `${origin}/roadmap.html`, 4000, () => document.body.innerText.includes('Eagle Roadmap Panels') && document.querySelectorAll('nav button').length >= 6],

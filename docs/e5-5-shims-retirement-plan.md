@@ -127,6 +127,37 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 本批已做安全切片：删除上述 4 个不可达函数（-83 行，`node --check` 通过、`source-mode-ui-closed-loop`
 复跑绿）。块本体迁移与交互补建留待独立批次。
 
+### 0.4 E7 / E6-9 进度更正（2026-09-14，本会话）
+
+> 本节为**当前实测**，覆盖 §0 开头「仍未落地」列表的相应项。
+
+**① E7（批次 0，提交 `5a3a98be` + `dad7b24e` + `e0019925`）**：把 `main-ui-workflow` 的
+「基线亦失败、根因待定位」转为**已定位并修复**。定位手段：渲染层 `send`/`sendTo` 载荷探针（每轮失败
+时最后一次 `updateMany` 载荷陈旧即停）+ live 对象 `annotation` 属性 setter 抓栈。四个根因：
+- 回归 A（`919d7ef5`）：shims 剪贴板分支 `writeState().writeState()` TypeError；
+- 根因 C（既有）：`mergeCachedItems` 的 `Object.assign` 写到 live 对象本体（React 下 cache 条目与
+  live store 同引用），导入期调度的调色板分析携带导入初值合并把在飞编辑打回 →
+  cache 一律存副本 + 调色板分析限定字段域 + 接缝回执改「相对入队快照的差分」（itemDomain 以
+  live+差分合并视图渲染）；
+- 根因 D（既有）：capture 轮询跨 tick 落定的导入双发 `file-uploaded` + 消费者无幂等 → 重复 id；
+- 回归 B：driver restore 直发 shims 总线（P1-c-2 删分支后落黑洞）→ 改走接缝。
+验证：连续 6 轮 **4 绿**（改前 0 绿）。**剩余**：`no-target-id` identity 变体（m1 族，6 轮 1 次）留档。
+
+**② E6-9（批次 1，提交 `2d61c1a8`，P1-c-3）**：设置族（`core/settings.ts` 新增）、
+`regenerate-palette`、库族、缩略图族、剪贴板导入族、导入族共 **21 个频道**迁入 `routeDesktop`，
+语义逐字对齐 shims（含 `.catch`/合成事件/失败分支）。`tests/react-ipc-bridge-routing` 扩展为
+断言这 21 频道「走接缝、不泄漏回 shims 总线」并校验合成事件；`react-stage8e-smoke` 绿。
+
+**③ 仍未落地（本会话预算不足以安全完成，按工程风险延后）**：
+- **P1-c-4（回程扇出 + 总线实体 React 化）**：`desktopApi.onIpc` 的 5 频道 + 9 频道循环 +
+  export/import/library/item 回程 + `onRebindRefresh` + `preview.onInit` 缓冲（`shims.js:1622-1735`）
+  未迁。**迁移即删**（否则与 shims 双发），而 React 安装晚于 shims 加载会丢冷启动主进程事件，
+  需配套缓冲兜底与全量回程测试——属结构性交接，非机械搬迁。
+- **P4（browser arms 隔离）/ P5（删 `shims.js` + `mock-data.js`、`runtimeGlobals` 启动契约、
+  3 个源码字符串测试改写）**：依赖 P1-c-4。
+- shims 对应分支**暂留**：浏览器态（无 `desktopApi`）与 preferences 窗内 `req('electron')` 直发仍
+  依赖之；删除随 P4/P5 落地。
+
 
 
 

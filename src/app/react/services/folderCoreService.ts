@@ -26,7 +26,7 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncFolderLock } from '../store/lockState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { debounce } from '../utils/func';
+import { debounce, throttle } from '../utils/func';
 import { getFolderFullPath } from '../core/itemDomain';
 import { addToRecentFolders } from './batchOpsService';
 import { scopeEvalAsync } from '../core/scopeRuntime';
@@ -47,7 +47,7 @@ import { hide, setScrollTop } from '../utils/domQuery';
 import { machineryOnImageSizeHeightChanged } from '../core/itemDomain';
 import { machinerySetLastFolder } from '../core/libraryDomain';
 
-import { machineryLeaveDetailMode } from '../core/miscDomain';
+import { machineryLeaveDetailMode, machineryNotify } from '../core/miscDomain';
 import { machineryResetPage } from './gridService';
 import { getTimeout } from '../core/machineryInfra';
 import { useMiscRawState } from '../store/miscRawState';
@@ -1020,8 +1020,8 @@ export function checkDiskSpace(...args: any[]) {
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 export function machineryOpenAll(ignoreHistory: any, callback: any): void {
-  const w = window as any;
-  const $timeout = getTimeout();
+    const w = window as any;
+    const $timeout = getTimeout();
 
   if (useBodyState.getState().viewMode === 'all' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
     if (callback) {
@@ -1142,3 +1142,92 @@ export let openAllTimeout: any = null;
 //    openUnfiledTimeout 36773 / openUntaggedTimeout 36804 / openRecentTimeout 36835 /
 //    openTrashTimeout 36968）──
 let openRandomTimeout: any = null;
+
+// ═══ F12：行内改名提交（bundle 42290-42367 逐字移植；原 $scope.changeFolderName /
+//    $scope.changeSmartFolderName 在 controller 初始化即挂载，React 侧 RenameInput 经
+//    scope[commitFn] 派发——此前未移植导致提交静默 TypeError，改名不落盘）═══
+
+/* changeFolderName（bundle 42290 逐字；_.throttle 50 → utils/func throttle 同语义） */
+export const machineryChangeFolderName = throttle(function changeFolderName (folder: any, name: string) {
+  const w = window as any;
+
+  if (!name) return;
+  name = name.substr(0, 1024);
+
+  if (!folder || !name || folder.name == name) {
+    folder.editable = false;
+    return;
+  }
+  var originFolder = JSON.parse(JSON.stringify(folder));
+  folder.editable = false;
+  folder.name = name;
+
+  if (useBodyState.getState().currentFocus && useFolderState.getState().currentFolder === folder) {
+    writeScopeField('currentFolderPath', getFolderFullPath(folder));
+  }
+
+  if (typeof folder.name === "string") {
+    folder.pinyin = w.tinyPinyin.convertToPinyin(folder.name);
+  }
+  machinerySaveFolder();
+  machineryUpdateSelection();
+
+  if (originFolder.name != "Untitle") {
+
+    var message = getFilter()('i18n')("notify.folder.nameChange", [
+      { "property": "origin", "value": originFolder.name },
+      { "property": "new", "value": folder.name },
+    ]);
+
+    machineryNotify({
+      message: message,
+      duration: 4000,
+    }, function() {
+      folder.name = originFolder.name;
+      if (typeof folder.name === "string") {
+        folder.pinyin = w.tinyPinyin.convertToPinyin(folder.name);
+      }
+      machinerySaveFolder();
+    });
+
+    try {
+      w.electronLog && w.electronLog.info(`[app] Change folder name: ${originFolder.name}(${folder.id}) > ${name}`);
+      w.analytics.event('Folder', 'Rename', name);
+    } catch (err) {}
+  }
+}, 50);
+
+/* changeSmartFolderName（bundle 42338 逐字） */
+export function machineryChangeSmartFolderName(smartFolder: any, name: string): void {
+  const w = window as any;
+
+  if (!name) return;
+  name = name.substr(0, 1024);
+
+  if (!smartFolder || !name || smartFolder.name == name) return;
+  var originSmartFolder = JSON.parse(JSON.stringify(smartFolder));
+  smartFolder.name = name;
+  smartFolder.pinyin = w.tinyPinyin.convertToPinyin(smartFolder.name);
+  machinerySaveFolder();
+  if (originSmartFolder.name != "Untitle") {
+
+    var message = getFilter()('i18n')("notify.folder.nameChange", [
+      { "property": "origin", "value": originSmartFolder.name },
+      { "property": "new", "value": smartFolder.name },
+    ]);
+
+    machineryNotify({
+      message: message,
+      duration: 4000,
+    }, function() {
+      smartFolder.name = originSmartFolder.name;
+      smartFolder.pinyin = w.tinyPinyin.convertToPinyin(smartFolder.name);
+      machinerySaveFolder();
+    });
+
+    try {
+      w.electronLog && w.electronLog.info(`[app] Change smart-folder name: ${originSmartFolder.name}(${smartFolder.id}) > ${name}`);
+      w.analytics.event('SmartFolder', 'Rename', name);
+    } catch (err) {}
+  }
+}

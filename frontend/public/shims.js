@@ -921,7 +921,16 @@
     if (channel === 'file-uploaded' && args[0] && args[0].id) {
       try {
         const scope = window.angular ? angular.element(document.body).scope() : null;
-        if (scope && Array.isArray(scope.raw) && scope.raw.some((item) => item && item.id === args[0].id)) return true;
+        // 实机 QA（2026-09-13）：Angular 退役后 scope 恒 null、守卫空转——补 React 侧
+        // store 观测口（__eagleScopeRegistry.read('raw')，与 useItemState.raw 同一数组），
+        // 使逐文件桥接与 emitImportedItems 收尾 emit 之间幂等。
+        let rawList = scope && Array.isArray(scope.raw) ? scope.raw : null;
+        if (!rawList) {
+          const registry = window.__eagleScopeRegistry;
+          const viaRegistry = registry && typeof registry.read === 'function' ? registry.read('raw') : null;
+          if (Array.isArray(viaRegistry)) rawList = viaRegistry;
+        }
+        if (rawList && rawList.some((item) => item && item.id === args[0].id)) return true;
       } catch (err) {
         // Fall through to the normal event dispatch.
       }
@@ -1855,6 +1864,17 @@
     ]) {
       desktopApi.onIpc(channel, (value) => mockEmit(channel, value));
     }
+    // 实机 QA（2026-09-13）：main 逐文件导入回程未桥接 → 导入期间进度条停 0/N、条目只能等
+    // invoke 整体 resolve 后批量出现。file-uploaded 先并 cache 再过总线（emit 覆写处的
+    // store 感知去重守卫使其与 emitImportedItems 收尾 emit 幂等，条目流式插入网格）。
+    desktopApi.onIpc('file-uploaded', (item) => {
+      if (item && item.id) mergeCachedItems(item);
+      mockEmit('file-uploaded', item);
+    });
+    // set-custom-thumbnail 的承诺链回程（apiServerDomain machinerySetCustomThumbnail 等
+    // thumbnail-generated resolve）+ rebind-refresh 刷新面（miscDomain:522 监听）。
+    desktopApi.onIpc('thumbnail-generated', (value) => mockEmit('thumbnail-generated', value));
+    desktopApi.onIpc('rebind-refresh', (value) => mockEmit('rebind-refresh', value));
   }
   if (desktopApi && desktopApi.export) {
     if (typeof desktopApi.export.onProgress === 'function') {
@@ -2785,7 +2805,65 @@
       spawnSync: () => ({ stdout: BrowserBuffer.from(''), status: 0 }),
       spawn: () => ({ on() {}, stdout: { on() {} }, stderr: { on() {} } }),
     },
-    'fs-extra': nativeFs || fsModule,
+    // 实机 QA（2026-09-13）：fs-extra 不可简单映射为 fs——扩展 API（moveSync/removeSync/
+    // copySync/copy…）是渲染层多处功能（text-editor 保存、字体标签、图片备份/复制、插件
+    // 安装、导出）的依赖；映射成 fs 后这些调用 TypeError 被异步回调吞掉（实测 txt 保存
+    // 临时文件已写出但 moveSync 从未执行）。Electron 下优先取真实 fs-extra
+    // （src/node_modules 可解析）；浏览器回退在 fs mock 上补齐用到的扩展方法。
+    'fs-extra': (() => {
+      if (nativeRequire) {
+        try {
+          const real = nativeRequire('fs-extra');
+          if (real && typeof real.moveSync === 'function') return real;
+        } catch (err) { /* fall through to fs-based facade */ }
+      }
+      const base = nativeFs || fsModule;
+      if (!base || base.__eagleFseFacade) return base;
+      const fse = Object.assign({}, base);
+      fse.__eagleFseFacade = true;
+      if (typeof fse.removeSync !== 'function') {
+        fse.removeSync = (target) => base.rmSync ? base.rmSync(target, { recursive: true, force: true })
+          : (base.rmdirSync ? base.rmdirSync(target, { recursive: true, force: true }) : undefined);
+      }
+      if (typeof fse.remove !== 'function') fse.remove = (target, cb) => { try { fse.removeSync(target); } catch (err) { /* 与 fs-extra 一致：异步版经 cb 报错 */ } cb && cb(); };
+      if (typeof fse.copySync !== 'function') {
+        fse.copySync = (src, dest, opts) => {
+          const stat = base.statSync(src);
+          if (stat.isDirectory()) {
+            base.mkdirSync(dest, { recursive: true });
+            for (const entry of base.readdirSync(src)) fse.copySync(base.join(src, entry), base.join(dest, entry), opts);
+          } else {
+            const { preserveTimestamps } = opts || {};
+            base.copyFileSync(src, dest);
+            if (preserveTimestamps) {
+              base.utimesSync(dest, stat.atime, stat.mtime);
+            }
+          }
+        };
+      }
+      if (typeof fse.copy !== 'function') fse.copy = (src, dest, opts, cb) => {
+        const callback = typeof opts === 'function' ? opts : cb;
+        try { fse.copySync(src, dest, typeof opts === 'function' ? undefined : opts); callback && callback(null); }
+        catch (err) { callback && callback(err); }
+      };
+      if (typeof fse.moveSync !== 'function') {
+        fse.moveSync = (src, dest, opts) => {
+          try {
+            base.renameSync(src, dest);
+          } catch (err) {
+            if (err && (err.code === 'EXDEV' || err.code === 'EPERM')) {
+              fse.copySync(src, dest, opts);
+              fse.removeSync(src);
+            } else {
+              throw err;
+            }
+          }
+        };
+      }
+      if (typeof fse.ensureDirSync !== 'function') fse.ensureDirSync = (dir) => base.mkdirSync(dir, { recursive: true });
+      if (typeof fse.ensureDir !== 'function') fse.ensureDir = (dir, cb) => { try { fse.ensureDirSync(dir); cb && cb(null); } catch (err) { cb && cb(err); } };
+      return fse;
+    })(),
     'async': {
       each() {},
       eachOf() {},

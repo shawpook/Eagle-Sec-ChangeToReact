@@ -20,6 +20,7 @@
  */
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
+import { ContextMenu } from '../core/contextMenuDomain';
 
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
@@ -780,5 +781,53 @@ export function machineryRemovePermanently(): void {
   machineryCalculateImageBinding({ ignoreSort: true }, function () {
     machineryRebindRefresh(true);
     machineryUpdateSelection();
+  });
+}
+
+// ═══ F13：openImageExportContextMenu（bundle 44657-44700 逐字移植）——
+//    Inspector 导出按钮此前 call('openImageExportContextMenu') 字符串派发无实现、静默 no-op ═══
+export function openImageExportContextMenu(event: any): void {
+  event && event.stopPropagation();
+  if (useSelectionState.getState().selected.length === 0) return;
+  ContextMenu.open({
+    items: [
+      {
+        label: i18n.__("context.image.export>eaglepack"),
+        keywords: 'export eaglepack 導出 エクスポート',
+        icon: 'ic-export-eaglepack.svg',
+        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.export.item.eaglepack'],
+        click: () => {
+          exportSelectedAsEaglepack();
+        }
+      },
+      {
+        label: i18n.__("context.image.export>computer"),
+        keywords: 'export computer local 導出 エクスポート 本地',
+        icon: 'ic-export-computer.svg',
+        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.export.item.computer'],
+        click: () => {
+          exportSelectedAsFolder();
+        }
+      },
+      {
+        label: i18n.__("context.image.exportAsFormat"),
+        keywords: 'export format 導出 エクスポート',
+        icon: 'ic-export-format.svg',
+        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.export.item.as'],
+        click: () => {
+          exportSelectedAsFormat();
+        }
+      },
+      {
+        label: i18n.__("context.image.exportToCsv"),
+        keywords: 'export csv 導出 匯出',
+        icon: 'ic-export-csv.svg',
+        accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds['file.export.csv'],
+        click: () => {
+          exportSelectedToCsv();
+        }
+      }
+    ],
+    showSearch: false,
   });
 }

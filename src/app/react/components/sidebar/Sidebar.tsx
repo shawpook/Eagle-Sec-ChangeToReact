@@ -12,15 +12,18 @@ import { useMiscRawState } from '../../store/miscRawState';
 
 import { machineryOpenQuickSearch } from '../../core/keymapActions';
 import { maximize, toggleFolderVisible, togglePaletteProcessing, toggleQuickAccessVisible, toggleSmartFolderVisible } from '../../core/miscDomain';
+import { machineryOpenRecent, machineryOpenTrash } from '../../core/libraryDomain';
+import { machineryOpenAllTags, machineryOpenUntagged } from '../../core/tagManagerDomain';
 import { moveFoldersAsSibling, moveFoldersToFolder, openFolder, openSmartFolder, switchLibrary } from '../../services/folderCoreService';
 import { newFolder } from '../../services/folderCoreService';
+import { machineryOpenRandom, machineryOpenCommunity } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
 import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { eagleBus } from '../../global/bus';
 import { dom } from '../../utils/domLite';
-import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryOpenAll } from '../../services/folderCoreService';
+import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
 
@@ -318,6 +321,8 @@ function RenameInput({ node, commitFn, autoFocusEvent }: { node: SidebarNodeSnap
       // smart folder 的 ng-blur 额外把 editable 关掉（index.html 智能文件夹 input）。
       if (commitFn === 'changeSmartFolderName') live.editable = false;
     });
+    // 原 Angular digest 提交后重绘行名/收起输入框；React 侧显式 re-sync
+    syncSidebarFromScope();
   };
 
   return (
@@ -616,10 +621,20 @@ const SIMPLE_META: Record<string, { open: string; mask: string; labelKey: string
   trash: { open: 'openTrash', mask: 'ic_trashbin.png', labelKey: 'general.pages.trash' },
 };
 
-/** D-1 A-1：已直调化的 open 名字（其余仍走 scope 动态下标）。 */
+/** D-1 A-1：已直调化的 open 名字（其余仍走 scope 动态下标）。
+ *  实机 QA（2026-09-13）：scope 面上从未挂载 openRandom/openRecent/openTrash/openUntagged/
+ *  openCommunity/openAllTags（只存在于 __eagleDataMachinery 字符串路由表）——
+ *  `s[meta.open]` 恒 undefined → 侧栏平铺项除「全部/未分类」外点击全部静默无反应。
+ *  全部补为直调（与 keymap 既有 import 同源）。 */
 const SIMPLE_OPEN_DIRECT: Record<string, (s: any) => void> = {
   openAll: (s) => machineryOpenAll(undefined, undefined),
   openUnfiled: (s) => machineryOpenUnfiled(undefined),
+  openRandom: (s) => machineryOpenRandom(undefined, undefined),
+  openRecent: (s) => machineryOpenRecent(undefined),
+  openTrash: (s) => machineryOpenTrash(undefined),
+  openUntagged: (s) => machineryOpenUntagged(undefined),
+  openCommunity: (s) => machineryOpenCommunity(undefined),
+  openAllTags: (s) => machineryOpenAllTags(undefined),
 };
 
 /* ============ 侧栏头部（index.html 81-133） ============ */

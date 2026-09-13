@@ -30,7 +30,7 @@ import { q, qa, widthOf, cssGet, cssSet, hide, show, setText, textOf, isVisible,
 import { machinerySaveFolder } from './libraryDomain';
 import { machineryCheckOperationSafety2 } from '../services/viewOpsService';
 import { machineryCalculateImageBinding, machineryUpdateItemsView } from './itemDomain';
-import { getFilter as machineryGetFilter } from './filterDomain';
+import { getFilter as machineryGetFilter, machineryFilterContent } from './filterDomain';
 import { machineryUpdateListHeight } from '../services/gridService';
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -1375,6 +1375,27 @@ export function machineryBuildTagManager(): any {
         writeScopeField('TagManager', TagManager);
         syncFilterFromScope();
         syncTagManagerFromScope();
+
+        // filterWithTags（bundle 27136 逐字补端口）——原 controller 初始化即挂载；
+        // store 字段此前恒 null，TagManager.filterWithTags 回调里 `filterWithTags(tags)`
+        // 抛 TypeError 被 $timeout 吞掉 → 标签管理双击浏览/按标签过滤整条死（F14）。
+        writeScopeField('filterWithTags', function (tags: any) {
+            const wc = window as any;
+            wc.eagle.filter.filterRules.tag.includes = [];
+            (useMiscRawState.getState().containTags || []).forEach(function (tagObject: any) {
+                tags.forEach(function (tagName: any) {
+                    if (tagObject.name === tagName) {
+                        wc.eagle.filter.filterRules.tag.includes.push(tagName);
+                        tagObject.isSelected = true;
+                    }
+                    else {
+                        tagObject.isSelected = false;
+                    }
+                });
+            });
+            writeScopeField('tagKeyword', "");
+            machineryFilterContent();
+        });
 
         // selectTag（bundle 38870-38926 逐字；b1-9k 补端口——TagManager.tsx 标签点击
         // onClick=call('selectTag')，缺席时静默 no-op → 标签选中/多选整条死）

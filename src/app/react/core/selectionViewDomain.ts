@@ -653,6 +653,11 @@ export function machineryRemoveSelected(event: any): void {
             machineryUpdateFilterCounts(image, -1, now);
           });
 
+          // 实机 QA（2026-09-13）：待删元素必须在「自动选中下一项」之前捕获
+          // （原版依赖 $watch 异步重建 selectedMappings 的时序；React 侧同步重建，
+          // 延后捕获会拿到替换后的选区 → gl:removeItems 空集、已删条目残留网格）。
+          var itemElements = machineryGetSelectedItemElements();
+
           var message = getFilter()('i18n')("notify.image.remove", [
             { "property": "count", "value": useSelectionState.getState().selected.length },
           ]);
@@ -735,7 +740,6 @@ export function machineryRemoveSelected(event: any): void {
 
           w.ScrollbarSaver.saveScrollPosition();
 
-          var itemElements = machineryGetSelectedItemElements();
           glRemoveitemsChannel.emit(itemElements);
 
           writeScopeField('lastSelectedIndex', machineryCurrentIndex() - 1);

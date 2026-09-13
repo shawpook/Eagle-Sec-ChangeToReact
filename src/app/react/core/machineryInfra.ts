@@ -19,7 +19,8 @@ import { getDriverApi } from './driverApi';
 import { callExternal } from './externalSupply';
 import { machineryCalcuteFilterResult, machineryColorFilter, machineryContentFilter, machineryExistInSmartFilter, machineryFilterContent, machineryFilterData, machineryGrayColorFilter } from './filterDomain';
 import { machineryCalculateImageBinding, machineryPrependImages, machineryRebindRefresh, machineryRebindRefreshLazy, machineryReload, machinerySortRawData, machineryUpdateItemsView } from './itemDomain';
-import { buildRecentFileManager, machineryGetRecentFolders, machinerySaveFolder, machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
+import { buildRecentFileManager, machineryGetRecentFolders, machinerySaveFolder, machinerySaveFolderDebounce, machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
+import { machineryChangeFolderName, machineryChangeSmartFolderName } from '../services/folderCoreService';
 import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
@@ -138,8 +139,16 @@ export function applyDataMachineryScope(): void {
   // D-2 退役 shims.js 前不可删；应用内真实入口已走 import 直调。）
   s.enterDetailMode = ($event: any, image: any) => machineryEnterDetailMode($event, image);
   s.leaveDetailMode = () => machineryLeaveDetailMode();
-  // c16c：saveFolder
-  // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
+  // c16c：saveFolder —— 原 controller 初始化即挂载（bundle 42393/42399：saveFolder 直存版
+  // + saveFolderDebounce 1s 防抖版，无守卫）。此前 store 字段恒 null，folderService 守卫、
+  // libraryDomain 4 处 `saveFolderDebounce && …`、tagManagerDomain 直调全部静默 no-op
+  // （实机 QA F11：智能文件夹/文件夹结构改动不落盘）。
+  writeScopeField('saveFolder', () => machinerySaveFolder());
+  writeScopeField('saveFolderDebounce', () => machinerySaveFolderDebounce());
+  // c16c-2：changeFolderName/changeSmartFolderName（bundle 42290/42338 初始化即挂载）——
+  // Sidebar RenameInput 经 scope[commitFn] 派发，未挂载时提交静默 TypeError（F12）。
+  writeScopeField('changeFolderName', machineryChangeFolderName);
+  writeScopeField('changeSmartFolderName', machineryChangeSmartFolderName);  // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
   // 双写保证 $rootScope.notify 直调与 s.notify 原型链解析都走移植版）
   const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(params, restoreCallbackk);
   writeScopeField('notify', notifyFn);

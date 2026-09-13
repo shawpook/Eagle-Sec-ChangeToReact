@@ -10,7 +10,9 @@ import { syncUploadFromScope } from '../store/uploadState';
 import { q, findEl, removeClass, setHtmlEl, setWidthEl } from '../utils/domQuery';
 
 
-import { machineryHideUploadQueue, machineryShowUploadQueue } from '../core/itemDomain';
+import { machineryHideUploadQueue, machineryShowUploadQueue, machineryCalculateImageBinding } from '../core/itemDomain';
+import { machineryUpdateSidebarList, machinerySaveFolderDebounce, machineryChangeSidebarIndex } from '../core/libraryDomain';
+import { openFolder } from './folderCoreService';
 import { getFilter } from '../core/filterDomain';
 import { scopeEvalAsync } from '../core/scopeRuntime';
 import { useFolderState } from '../store/folderState';
@@ -131,6 +133,213 @@ export function importFolders(...args: any[]) {
             });
         }).apply(null, args);
   }
+
+/* ── 文件夹导入链（bundle 53152 uploadFolderToSidebar / 53200 uploadFilesFromFolder /
+   8097 getFolderList / 8137 walkTreeSync / 8186 treeDepth / 8109 createFolderStruture 逐字移植；
+   eagle.utils.tree.walk 以本地等价实现）。uploadFolderToSidebar 此前未随 React 迁移，
+   importFolders 调用时 ReferenceError 被 promise 吞掉 → 「导入本地文件夹」静默无效果。
+   scope 面 → store/machinery 等价：$scope.folders → useFolderState().folders（原位 mutation，
+   同 newFolder 既有模式）；updateSidebarList / openFolder / saveFolderDebounce /
+   calculateImageBinding / changeSidebarIndex / uploadFiles / showUploadQueue → machinery 与本模块。 */
+
+function eagleTreeWalk(tree: any, property: string, callback: (node: any, parent: any, depth: number) => void, parentNode: any = null, depth = 0): void {
+  if (tree === undefined) return;
+  if (Array.isArray(tree)) {
+    for (let i = 0; i < tree.length; i++) eagleTreeWalk(tree[i], property, callback, parentNode, depth);
+  } else {
+    callback(tree, parentNode, depth);
+    if (tree[property]) eagleTreeWalk(tree[property], property, callback, tree, depth + 1);
+  }
+}
+
+function walkTreeSync(dir: string, tree?: any): any {
+  const w = window as any;
+  const pathModule = _req('path');
+  const fs = _req('fs');
+  const files = fs.readdirSync(dir);
+  tree = tree || { id: guid(), dir: dir, files: [], folders: [] };
+  files.forEach(function (file: string) {
+    const filepath = pathModule.join(dir, file);
+    try {
+      const ext = w.getExt({ path: filepath });
+      if (ext) {
+        if (!w.junk.is(file)) tree.files.push(filepath);
+      } else {
+        if (w.IS_DIRECTORY.check(filepath) && !filepath.endsWith('.mindnode') && !filepath.endsWith('.key') && !filepath.endsWith('.pxd')) {
+          const folder = { id: guid(), dir: filepath, files: [], folders: [] };
+          tree.folders.push(folder);
+          walkTreeSync(filepath, folder);
+        } else if (!w.junk.is(file)) {
+          tree.files.push(filepath);
+        }
+      }
+    } catch (err) {
+      // 某些資料夾可能無法呼叫 statSync 例如 .asar 結尾的（bundle 同语义）
+    }
+  });
+  return tree;
+}
+
+function treeDepth(tree: any, property: string, depth: number, counter: any): number {
+  depth = depth ? depth : 1;
+  tree.depth = depth;
+  if (counter.depth < depth) counter.depth = depth;
+  tree[property].forEach(function (node: any) {
+    if (counter.depth < depth + 1) { counter.depth = depth + 1; counter.path = node.dir; }
+    treeDepth(node, property, depth + 1, counter);
+    counter.files += node.files.length;
+  });
+  return depth;
+}
+
+function getFolderListOf(dir: string) {
+  const tree = walkTreeSync(dir);
+  const counter = { depth: 1, files: 0 };
+  treeDepth(tree, 'folders', 1, counter);
+  return { tree: tree, depth: counter.depth, fileCount: counter.files };
+}
+
+function createFolderStructure(newTree: any, tree: any): void {
+  const collator = new Intl.Collator('zh-CN', { numeric: true, sensitivity: 'base' });
+  const arr = Array.isArray(tree) ? tree : tree['folders'];
+  if (arr && Array.isArray(arr)) {
+    arr.forEach(function (node: any) {
+      const newNode = {
+        id: node.id,
+        name: _req('path').basename(node.dir),
+        children: [],
+        modificationTime: Date.now(),
+        tags: [],
+        isExpand: node.depth <= 1,
+      };
+      newTree.children.push(newNode);
+      createFolderStructure(newNode, node);
+    });
+    newTree.children = newTree.children.sort(function (a: any, b: any) {
+      return collator.compare(a.name, b.name);
+    });
+  }
+}
+
+export function uploadFolderToSidebar(path: string, parent: any) {
+  const w = window as any;
+  if (w.IS_DIRECTORY.check(path)) {
+    const folderInfo = getFolderListOf(path);
+    // 阶层过多警告
+    if (folderInfo.depth >= 15 || folderInfo.fileCount >= 100000) {
+      w.swal({
+        html: `
+                    <div class="alert">
+                        <div class="alert-icon error"></div>
+                        <h4 class="alert-title">${i18n.__("dialog.dropTooManyLevel.title")}</h4>
+                        <p class="alert-desc">${i18n.__("dialog.dropTooManyLevel.desc")}</p>
+                    </div>
+                `,
+        showCloseButton: false, showCancelButton: false, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: i18n.__("dialog.dropTooManyLevel.button"),
+        cancelButtonText: i18n.__("general.cancel"),
+      }).then(function () { });
+    }
+    // 文件数量过多警告
+    else if (folderInfo.fileCount >= 2000) {
+      const message = $filter('i18n')("dialog.dropTooManyFolder.desc", [
+        { "property": "count", "value": folderInfo.fileCount }
+      ]);
+      w.swal({
+        html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${i18n.__("dialog.dropTooManyFolder.title")}</h4>
+                        <p class="alert-desc">${message}</p>
+                    </div>
+                `,
+        showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+        width: 400,
+        customClass: "alert-box",
+        cancelButtonColor: "#777777",
+        confirmButtonText: i18n.__("dialog.dropTooManyFolder.button"),
+        cancelButtonText: i18n.__("general.cancel"),
+      }).then(function () {
+        uploadFilesFromFolder(folderInfo.tree, parent);
+      });
+    }
+    else {
+      uploadFilesFromFolder(folderInfo.tree, parent);
+    }
+  }
+}
+
+function uploadFilesFromFolder(tree: any, parent: any) {
+  const w = window as any;
+  const pathModule = _req('path');
+
+  // 建立对应结构的文件夾
+  const folder: any = {
+    id: tree.id,
+    name: pathModule.basename(tree.dir),
+    children: [],
+    modificationTime: Date.now(),
+    tags: [],
+    isExpand: true,
+  };
+
+  createFolderStructure(folder, tree);
+
+  if (parent && parent.id) {
+    folder.parent = parent.id;
+    parent.children.push(folder);
+  }
+  else {
+    useFolderState.getState().folders.push(folder);
+  }
+
+  machineryUpdateSidebarList();
+  openFolder(folder);
+  scopeEvalAsync();
+  machinerySaveFolderDebounce();
+  machineryCalculateImageBinding({ ignoreSort: true }, function () { });
+  setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 200);
+
+  // 開始上傳圖片
+  const fds: any[] = [];
+  eagleTreeWalk({ folders: [tree], files: [] }, 'folders', function (node: any) {
+    const files = node.files;
+    const folderId = node.id;
+    const now = Date.now();
+    for (let i = 0; i < files.length; i++) {
+      const filePath = files[i];
+      const file: any = {
+        name: pathModule.basename(filePath),
+        path: filePath,
+        lastModified: now,
+        folders: [folderId]
+      };
+      const ext = w.getExt(file);
+      if (ext) {
+        file.type = "image/" + ext;
+        fds.push(file);
+      }
+      else {
+        if (!w.IS_DIRECTORY.check(filePath) || filePath.endsWith(".mindnode") || filePath.endsWith(".key") || filePath.endsWith(".pxd")) {
+          fds.push(file);
+        }
+      }
+    }
+  });
+
+  if (fds.length > 0) {
+    // Windows 拖拽顺序无法对应当前 explorer，所以这里自己做了排序
+    if (process.platform === 'win32') { w.sortByAZ(fds); }
+    uploadFiles(fds);
+    machineryShowUploadQueue();
+  }
+  const electronLog = w.electronLog;
+  electronLog && electronLog.info(`[app] Add local folder: ${tree.dir}, total: ${fds.length} files`);
+  w.analytics && w.analytics.event('LocalFolders', 'Import');
+}
 
 export function uploadFiles(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }

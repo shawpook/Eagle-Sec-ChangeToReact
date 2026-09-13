@@ -1485,6 +1485,8 @@ export function machineryRenameFolder(event: any, folder: any): void {
   syncListFromScope();
   folder.editable = true;
   folder.newFolderName = folder.name;
+  // 原 Angular digest 兜底 editable class 重算；React 侧必须显式 re-sync（否则行内改名框不出现）
+  syncSidebarFromScope();
   setTimeout(function () {
     focusEl("#folder-input-" + folder.id);
     selectEl("#folder-input-" + folder.id);
@@ -1503,6 +1505,8 @@ export function machineryRenameSmartFolder(event: any, smartFolder: any): void {
   syncListFromScope();
   smartFolder.editable = true;
   smartFolder.newFolderName = smartFolder.name;
+  // 同 machineryRenameFolder：editable 变异后显式 re-sync 侧栏快照
+  syncSidebarFromScope();
   setTimeout(function () {
     focusEl("#folder-input-" + smartFolder.id);
     selectEl("#folder-input-" + smartFolder.id);
@@ -2360,6 +2364,12 @@ export function machineryRemoveFolderContents(params: any): void {
 
   machineryAutoScroll(undefined);
 
+  // 实机 QA（2026-09-13）：待删元素必须在「自动选中下一项」之前捕获——原版 Angular 的
+  // selectedMappings 由 $watch 在下一次 digest 重建（异步），此处同步捕获时旧映射仍在；
+  // React 侧 onSelectedChanged 同步重建 selectedMappings，若延后捕获将只拿到 next 一项，
+  // 导致已删条目残留在网格（gl:removeItems 空集）。
+  var itemElements = machineryGetSelectedItemElements();
+
   if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteImage == 'true') {
     useMiscRawState.getState().removeSound && useMiscRawState.getState().removeSound.play && useMiscRawState.getState().removeSound.play();
   }
@@ -2429,7 +2439,6 @@ export function machineryRemoveFolderContents(params: any): void {
   }, 100);
   w.ScrollbarSaver.saveScrollPosition();
 
-  var itemElements = machineryGetSelectedItemElements();
   glRemoveitemsChannel.emit(itemElements);
 
   machineryAutoScroll(undefined);

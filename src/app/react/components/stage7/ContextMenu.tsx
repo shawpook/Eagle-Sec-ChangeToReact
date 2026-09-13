@@ -403,7 +403,11 @@ function MenuItems({
       {menu.sortable && menu.items?.length ? (
         <div className="context-menu-items">
           <div ref={itemsRef}>
-            {menu.items.map((item: any, index: number) => renderItem(item, index, 'sortable'))}
+            {menu.items.map((item: any, index: number) => (
+              <div className="context-menu-item-wrap" key={index}>
+                {renderItem(item, index, 'sortable')}
+              </div>
+            ))}
           </div>
           <div className="context-empty" style={menu.items.length === 0 ? undefined : { display: 'none' }}>
             {t('context.noResult')}
@@ -413,7 +417,11 @@ function MenuItems({
 
       {!menu.sortable ? (
         <div className="context-menu-items">
-          {menu.items?.map((item: any, index: number) => renderItem(item, index, 'plain'))}
+          {menu.items?.map((item: any, index: number) => (
+            <div className="context-menu-item-wrap" key={index}>
+              {renderItem(item, index, 'plain')}
+            </div>
+          ))}
           <div className="context-empty" style={menu.items?.length === 0 ? undefined : { display: 'none' }}>
             {t('context.noResult')}
           </div>
@@ -473,8 +481,10 @@ function SubmenuPane({
 
       offsetY = Math.min(offsetY, elementTop);
 
+      // 原版语义（bundle 16350）：top/left 用 $menuItem.position()（offsetParent 相对），
+      // offset()（页面相对）只用于边界检查——left 误用 offset.left 会叠加菜单自身 left 造成子菜单飞位。
       const top = position.top - offsetY;
-      const left = Math.max(-offset.left + 20, offset.left + outerWidthOf($menuItem) - offsetX - 4);
+      const left = Math.max(-offset.left + 20, position.left + outerWidthOf($menuItem) - offsetX - 4);
 
       element.style.opacity = '1';
       element.style.top = `${top}px`;

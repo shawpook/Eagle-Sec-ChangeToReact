@@ -2061,7 +2061,15 @@ function machineryFilterDataPart2(w: any, data: any[]): any[] {
       });
     }
     else {
-      (data as any).shuffle();
+      // 实机 QA（2026-09-13）：原版依赖 bundle 2594 的 Array.prototype.shuffle polyfill，
+      // React 侧未移植 → 此处 TypeError 被异步链吞掉、随机模式恒空白。以 Fisher–Yates
+      // 等价实现就地洗牌（不改写全局原型）。
+      for (let top = data.length - 1; top > 0; top--) {
+        const current = Math.floor(Math.random() * (top + 1));
+        const tmp = data[current];
+        data[current] = data[top];
+        data[top] = tmp;
+      }
       writeScopeField('shuffle', data);
     }
     console.timeEnd("shuffle");
@@ -2709,5 +2717,11 @@ function machinerySearchFilter(image: any): any {
     }
     return false;
 }
+
+// 实机 QA（2026-09-13）：machinerySearchFilter 定义后从未挂到 store 的 searchFilter 槽
+// （原版 bundle 32182 在控制器初始化时 $scope.searchFilter = fn）——
+// machineryFilterContent 的 `data.filter(s.searchFilter)` 拿到 null，
+// 非空关键词时 TypeError 被异步链吞掉 → 搜索永不过滤（关键词恒返回全量列表）。
+useMiscRawState.getState().searchFilter = machinerySearchFilter;
 
 let semanticSearchController: any = null;

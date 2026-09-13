@@ -37,6 +37,7 @@ import {
   onInspectorResize,
   bindInspectorEvents,
 } from './inspectorActions';
+import { openImageExportContextMenu } from '../../services/batchOpsService';
 import { req } from '../detail/detailHooks';
 import { makeResizable } from '../interactions/resizable';
 import { makeSortable, sortableToArray } from '../interactions/sortable';
@@ -784,7 +785,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
             </div>
 
             <div className="export-container">
-              <div className="ic-btn export-btn has-bg" onClick={call('openImageExportContextMenu')}>
+              <div className="ic-btn export-btn has-bg" onClick={call(openImageExportContextMenu)}>
                 <img src={iconSrc(theme, 'ic-inspector-export.svg')} />
                 {t('context.image.export')}
               </div>
@@ -842,7 +843,7 @@ function InspectorInformation({ snapshot }: { snapshot: InspectorSnapshot }) {
               </div>
             </div>
             <div className="export-container">
-              <div className="ic-btn export-btn has-bg" onClick={call('openImageExportContextMenu')}>
+              <div className="ic-btn export-btn has-bg" onClick={call(openImageExportContextMenu)}>
                 <img src={iconSrc(theme, 'ic-inspector-export.svg')} />
                 {t('context.image.export')}
               </div>

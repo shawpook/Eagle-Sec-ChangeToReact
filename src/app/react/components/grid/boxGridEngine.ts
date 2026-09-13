@@ -223,12 +223,17 @@ export function installBoxGrid(): () => void {
   };
 
   const attach = () => {
-    scopeEventsDereg.push(glResetChannel.on((_e: unknown, nextItems: any[], cursor?: number) => {
+    // 实机 QA（2026-09-13）：eagleBus 的 emit/on 均为单 payload 语义（无 Angular $on 的
+    // 「事件对象首参」）——此前 handler 仍写 (_e, payload) 旧签名，payload 落在 _e 上、
+    // 第二参恒 undefined：gl:removeItems 变空集（删除后条目残留网格）、gl:reset 变
+    // applyReset(undefined)（网格清空）。统一改为 payload 首参签名。
+    scopeEventsDereg.push(glResetChannel.on((nextItems: any[], cursor?: number) => {
       applyReset(nextItems, cursor);
     }));
     scopeEventsDereg.push(glScrolltotopChannel.on(() => applyReset(state.items, state.startCursor)));
-    scopeEventsDereg.push(glRemoveitemsChannel.on((_e: unknown, itemElements: any[]) => {
-      (itemElements || []).forEach((item) => facadeRemove(item));
+    scopeEventsDereg.push(glRemoveitemsChannel.on((itemElements: any) => {
+      const list = Array.isArray(itemElements) ? itemElements : [];
+      list.forEach((item) => facadeRemove(item));
     }));
     return true;
   };

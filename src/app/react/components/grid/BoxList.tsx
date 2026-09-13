@@ -18,6 +18,7 @@ import { runInBodyScope } from '../../core/appCore';
 import { cleanSelected } from '../../services/batchOpsService';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
+import { useFolderState } from '../../store/folderState';
 import { useLayoutState } from '../../store/layoutState';
 import { useMiscRawState } from '../../store/miscRawState';
 /**
@@ -144,11 +145,50 @@ export function BoxList() {
   // v4 React 包装器只同步 children/光标，不驱动测量定位（Renderer.updated 仅走 setState
   // 环）—— 引擎通知后显式 renderItems 触发测量+定位+renderComplete（v3 append 后自动布局
   // 的等价驱动点）。
+  // 实机 QA（2026-09-13）：v4 布局管线依赖 ResizeObserver 异步测量，视图切换（文件夹/
+  // 智能文件夹/恢复会话）插入全新 children 时，提交期的这次调用会停在「条目已挂载、
+  // 观察回调未回」的窗口 → 整网格塌陷在原点（transform 缺失），直到下一次无关重渲染才恢复。
+  // 补：rAF 自纠错重试，直至首个条目被 v4 写入 inline 定位（或次数耗尽——防死循环）。
   useEffect(() => {
     const grid = gridRef.current;
-    if (engine.items.length > 0 && grid && grid.renderItems) {
-      try { grid.renderItems(); } catch (err) {}
-    }
+    if (engine.items.length === 0 || !grid || !grid.renderItems) return;
+    try { grid.renderItems(); } catch (err) {}
+    let raf = 0;
+    let tries = 0;
+    const settle = () => {
+      tries += 1;
+      const container = grid.getContainerElement && grid.getContainerElement();
+      const first = container && (container.querySelector('.box[data-box-id]') as HTMLElement | null);
+      const positioned = !!first && (first.getAttribute('style') || '').indexOf('absolute') !== -1;
+      if (!positioned) {
+        try { grid.renderItems(); } catch (err) {}
+        if (tries < 30) raf = requestAnimationFrame(settle);
+      }
+    };
+    raf = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(raf);
+  });
+
+  // 启动竞态兜底（实机 QA 2026-09-13）：boot 时 rebind 与 UI 挂载竞速，若引擎从未收到
+  // reset（rebindRefresh 早退或 muteMode 路径），allData 已就绪而 engine.items 恒空 →
+  // 网格永久空白且无后续事件可自愈。挂载后短窗轮询该形态并补发一次 reset
+  // （allData 即当前视图计算列表，语义与 rebindRefresh 尾部的 reset 一致）。
+  useEffect(() => {
+    if (engine.items.length > 0) return;
+    const w = window as any;
+    if (typeof w.resetNgGridLayoutData !== 'function') return;
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      const allData = useItemState.getState().allData;
+      if (allData && allData.length > 0 && useMiscRawState.getState().isItemBindCalculated) {
+        clearInterval(timer);
+        w.resetNgGridLayoutData(allData, useFolderState.getState().startCursor || 0);
+      } else if (tries > 60) {
+        clearInterval(timer);
+      }
+    }, 250);
+    return () => clearInterval(timer);
   });
 
   // 容器布局类 + box-size 属性反射（bundle:66610-66638 / 6859 逐字语义）

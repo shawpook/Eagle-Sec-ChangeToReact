@@ -50,7 +50,11 @@ export function safeZoomData(): any {
 export const videojs = () => (window as any).videojs;
 
 export const req = (name: string): any => (window as any).require?.(name);
-export const getIpc = (): any => req('electron')?.ipcRenderer || ipcRenderer();
+/** b1-9bz-E7：取用顺序反转——接缝（getIpcBus facade）优先。原实现先取 `req('electron').ipcRenderer`
+ *  （shims 原始总线），而 P1-c-2 起 images-change 等频道唯一落点在接缝 routeDesktop，shims 对应
+ *  分支已删 → 经此发送的调用点（批量改名/评注等）全部落 console.debug 黑洞（stage7d2
+ *  br-image-dataplane 即此）。facade 缺席（极早时序）才回落 shims 总线。 */
+export const getIpc = (): any => ipcRenderer() || req('electron')?.ipcRenderer;
 export const getCurrentWindow = (): any =>
   req('electron')?.remote?.getCurrentWindow?.() || req('@electron/remote')?.getCurrentWindow?.();
 

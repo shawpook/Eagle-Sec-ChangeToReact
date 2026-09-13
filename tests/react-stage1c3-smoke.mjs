@@ -133,10 +133,17 @@ try {
     b.finishQueue = [];
     window.__sentinelCalled = false;
     b.cancelAllTasks = function () { window.__sentinelCalled = true; };
-    const ipc = window.__eagleIpc || window.electron.ipcRenderer;
+    // P1-c-1 后 cancel.all 唯一落点 = 接缝 routeDesktop → d.export.cancel（不再落 shims 总线），
+    // 取证面随之改 spy 接缝动作；无 desktopApi 的世界保留总线 spy 兜底。
     window.__cancelSpy = 0;
-    const origSend = ipc.send.bind(ipc);
-    ipc.send = (ch, p) => { if (ch === 'cancel.all') window.__cancelSpy++; return origSend(ch, p); };
+    if (window.eagleDesktop && window.eagleDesktop.export && typeof window.eagleDesktop.export.cancel === 'function') {
+      const origCancel = window.eagleDesktop.export.cancel.bind(window.eagleDesktop.export);
+      window.eagleDesktop.export.cancel = (...a) => { window.__cancelSpy += 1; return origCancel(...a); };
+    } else {
+      const ipc = window.__eagleIpc || window.electron.ipcRenderer;
+      const origSend = ipc.send.bind(ipc);
+      ipc.send = (ch, p) => { if (ch === 'cancel.all') window.__cancelSpy += 1; return origSend(ch, p); };
+    }
     return true;
   })()`);
   await evalNow(`(() => {

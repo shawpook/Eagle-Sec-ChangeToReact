@@ -426,23 +426,28 @@ export function takeoverItemDomain(): void {
 
     console.log("image.changed");
 
-    const hashID = w.getHashID(newImage);
+    // b1-9bz-E7：接缝回执为「相对入队快照的差分」（见 channelBridge）——状态合并只应用差分
+    // 字段（不覆盖更晚的本地编辑）；DOM 渲染/哈希取「live + 差分」合并视图，避免局部回执
+    // 渲染出缺字段的视图。
+    const img = useItemState.getState().itemMappings[newImage.id];
+    const hasLive = Boolean(img && newImage && img.id === newImage.id);
+    const merged = hasLive ? { ...img, ...newImage } : newImage;
+    const hashID = w.getHashID(merged);
 
     const item = q("#box-" + newImage.id);
-    if (item && newImage.isDeleted) {
+    if (item && merged.isDeleted) {
       glRemoveitemsChannel.emit([item]);
     }
     else {
-      machineryUpdateItemView(newImage);
+      machineryUpdateItemView(merged);
     }
     w.hiddenByCurrentFilter([item]);
 
-    const img = useItemState.getState().itemMappings[newImage.id];
-    if (img && newImage && img.id === newImage.id) {
+    if (hasLive) {
       // b1-9i：bundle 在世时此处为 w.angular.extend（浅合并自有可枚举属性）——shim 世界无
       // window.angular（且不得注入，见 b1-9e 雷区记录），Object.assign 语义等价
       Object.assign(img, newImage);
-      img.star = newImage.star;
+      img.star = merged.star;
       delete img.processingPalette;
     }
 
@@ -481,6 +486,17 @@ export function takeoverItemDomain(): void {
   ipc.on('file-uploaded', function (_e: any, image: any) {
 
     if (image && image.id && image.ext) {
+      // b1-9bz-E7 修复（main-ui-workflow 定位）：幂等防重。bundle 时代「一条导入一次发布」由主进程
+      // 保证；React/接缝时代导入路径与 capture 轮询可能对同一 id 各发一次（轮询跨 tick 落定窗口），
+      // 本处理器原样 unshift → scope.raw 出现重复 id（`* drop import inserted duplicate item IDs`，
+      // 基线亦失败族）。同 id 已在 raw 中时直接忽略重复发布（新 id 上传不受影响）。
+      const rawList = useItemState.getState().raw;
+      if (Array.isArray(rawList) && rawList.some((entry: any) => entry && entry.id === image.id)) {
+        if (!useItemState.getState().itemMappings[image.id]) {
+          useItemState.getState().itemMappings[image.id] = image;
+        }
+        return;
+      }
       writeScopeField('lastestAddItem', image);
       useItemState.getState().itemMappings[image.id] = image;
       // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）

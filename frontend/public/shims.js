@@ -1401,7 +1401,7 @@
     if (desktopApi && desktopApi.clipboard && (channel === 'read-win-files' || channel === 'paste-image' || channel === 'paste-paths')) {
       const payload = params && params.params ? { ...params.params, folder: params.folder || params.params.folder } : (params || {});
       if (channel === 'paste-paths') payload.files = Array.isArray(params && params.files) ? params.files : [];
-      writeState().trackLocalImport(desktopApi.clipboard.import(payload)).then((items) => writeState().writeState().emitImportedItems(items, channel)).catch((err) => {
+      writeState().trackLocalImport(desktopApi.clipboard.import(payload)).then((items) => writeState().emitImportedItems(items, channel)).catch((err) => {
         mockEmit('import:operation-result', { ok: false, channel, error: err.message });
         mockEmit('file-uploaded-end', { error: err.message });
       });
@@ -2990,6 +2990,12 @@
     (window.__mockLibraryCache || []).forEach((item) => {
       if (item && item.id) known.add(item.id);
     });
+    // b1-9bz-E7（main-ui-workflow 定位）：原守卫只覆盖「轮询 await 期间导入在飞」的窗口——
+    // 两 tick 之间完成落定的导入（秒级小文件场景）会让轮询读到后端已有、cache/raw 尚未合并
+    // 的条目 → 与导入路径的 emitImportedItems 双发 file-uploaded → itemDomain 两次 unshift →
+    // scope.raw 重复 id。补「settled 跨 tick 变化即本轮回跳过」判定：凡有导入在本轮前后落定，
+    // 该批条目均由导入路径独家发布。
+    let lastSettledImports = writeState().importCounters().settled;
     const tick = async () => {
       try {
         const importCountersAtTick = writeState().importCounters();
@@ -2998,7 +3004,9 @@
         // 本地导入在飞/本轮 await 期间刚落地：这批条目由 emitImportedItems 独家发布，
         // 轮询整轮跳过，否则同 id 双发（见 trackLocalImport 处注释）。
         const { pending: pendingImports, settled: settledImports } = writeState().importCounters();
-        if (pendingImports > 0 || settledImports !== importGeneration) return;
+        const importsSettledSinceLastTick = settledImports !== lastSettledImports;
+        lastSettledImports = settledImports;
+        if (pendingImports > 0 || settledImports !== importGeneration || importsSettledSinceLastTick) return;
         const items = Array.isArray(library.items) ? library.items : [];
         const nextPath = library.path || library.rootDir || '';
         if (capturePollLibraryPath && capturePollLibraryPath !== nextPath) known.clear();

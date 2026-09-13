@@ -59,15 +59,22 @@ export function emitEvent(channel: string, payload?: any): void {
 }
 
 /** 合并更新条目到 `__mockLibraryCache`（原 shims 版的 Angular scope 镜像依赖已死的 window.angular，
- *  React 下恒不执行，故不迁入；哨兵亦禁 `$evalAsync` 形态）。 */
+ *  React 下恒不执行，故不迁入；哨兵亦禁 `$evalAsync` 形态）。
+ *
+ *  b1-9bz-E7 修复（main-ui-workflow 定位）：cache 条目一律存**副本**，绝不与 live store 对象同引用。
+ *  旧实现 unshift 原对象 → cache 与 live 同引用 → 后续任何 `mergeCachedItems(陈旧条目)`（例如导入期
+ *  调度的调色板分析携带导入初值）经 `Object.assign` 直接改到 live 对象上，把在飞编辑打回初值
+ *  （实测栈：mergeCachedItems → Object.assign → annotation setter）。cache 语义本就是「后端库镜像」，
+ *  与 live 解引用后，live 侧更新由 image.changed / image.palette.updated / thumbnail-generated
+ *  等事件承担。 */
 export function mergeCachedItems(updatedItems: any): any[] {
   const cached = (window as any).__mockLibraryCache || [];
   const updates = Array.isArray(updatedItems) ? updatedItems : [updatedItems];
   updates.forEach((updated: any) => {
     if (!updated || !updated.id) return;
     const index = cached.findIndex((entry: any) => entry.id === updated.id);
-    if (index >= 0) Object.assign(cached[index], updated);
-    else cached.unshift(updated);
+    if (index >= 0 && cached[index] !== updated) Object.assign(cached[index], updated);
+    else if (index < 0) cached.unshift({ ...updated });
   });
   (window as any).__mockLibraryCache = cached;
   return cached;
@@ -195,7 +202,9 @@ export function analyzeItemPalette(item: any, options?: any): Promise<any> {
   if (paletteAnalysisRequests.has(item.id)) return paletteAnalysisRequests.get(item.id)!;
 
   item.processingPalette = true;
-  mergeCachedItems(item);
+  // b1-9bz-E7：调色板分析只拥有 palettes/processingPalette/modificationTime 字段域——
+  // 不用整条 item 合并（item 是调度时的快照，整条合并会覆盖更晚的本地编辑）。
+  mergeCachedItems({ id: item.id, processingPalette: true, palettes: item.palettes });
   const apiBase = ((window as any).__EAGLE_API_BASE_URL || 'http://localhost:41695').replace(/\/$/, '');
   const request = fetch(`${apiBase}/api/item/refreshPalette`, {
     method: 'POST',
@@ -211,7 +220,7 @@ export function analyzeItemPalette(item: any, options?: any): Promise<any> {
       if (updated && updated.id) {
         const belongsToCurrentLibrary = ((window as any).__mockLibraryCache || []).some((entry: any) => entry && entry.id === updated.id);
         if (belongsToCurrentLibrary) {
-          mergeCachedItems(updated);
+          mergeCachedItems({ id: updated.id, palettes: updated.palettes, modificationTime: updated.modificationTime });
           emitEvent('image.palette.updated', updated);
         }
         return updated;
@@ -221,7 +230,7 @@ export function analyzeItemPalette(item: any, options?: any): Promise<any> {
     .catch((err) => {
       delete item.processingPalette;
       const belongsToCurrentLibrary = ((window as any).__mockLibraryCache || []).some((entry: any) => entry && entry.id === item.id);
-      if (belongsToCurrentLibrary) mergeCachedItems(item);
+      if (belongsToCurrentLibrary) mergeCachedItems({ id: item.id, processingPalette: undefined });
       console.warn(`[ipcWriteState] palette analysis failed for ${item.id}`, err);
       return item;
     })

@@ -66,6 +66,12 @@ function routeDesktop(bus: any, channel: string, params: any): boolean {
   // 串行写（enqueueWrite 与 capture 轮询/缩略图回填 await 的是同一队列）；updateMany 返回体
   // 逐条回发 image.changed（itemDomain 合并回 itemMappings 的**唯一**改名回写路径）；isDeleted
   // 触发 duplicates.merge；item:operation-result 成败各一；失败不断链（后续写入照常）。
+  //
+  // b1-9bz-E7 修复（main-ui-workflow 定位）：回执改为**相对发送快照的差分**。写队列串行，
+  // 但用户在等待窗口内的本地编辑（如注解）会在下一条写发出后仍留在 live 对象上；旧实现整条
+  // 回发 → itemDomain 的 Object.assign 把「上一条写的后端快照」覆盖到在飞编辑上，
+  // 表现为 updateMany 载荷偶发回退成导入初值（基线亦失败族）。差分 = 本条写相对入队快照真正
+  // 改变的字段，应用时不会动更晚的本地编辑。
   if (channel === 'images-change' || channel === 'image-change') {
     if (!d.item || typeof d.item.updateMany !== 'function') return false;
     const items = channel === 'images-change' ? params : [params];
@@ -76,7 +82,19 @@ function routeDesktop(bus: any, channel: string, params: any): boolean {
         .then((updated: any) => {
           state.mergeCachedItems(updated);
           (Array.isArray(updated) ? updated : [updated]).forEach((item: any) => {
-            if (item && item.id) state.emitEvent('image.changed', item);
+            if (!item || !item.id) return;
+            const snapshot = snapshots.find((entry: any) => entry.id === item.id);
+            let echo: any = item;
+            if (snapshot) {
+              echo = { id: item.id };
+              let changed = false;
+              for (const key of Object.keys(item)) {
+                if (key === 'id' || key === 'lastModified' || key === 'modificationTime') continue;
+                if (snapshot[key] !== item[key]) { echo[key] = item[key]; changed = true; }
+              }
+              if (!changed) return;
+            }
+            state.emitEvent('image.changed', echo);
           });
           const keep = snapshots.find((item: any) => !item.isDeleted);
           const trash = snapshots.filter((item: any) => item.isDeleted);

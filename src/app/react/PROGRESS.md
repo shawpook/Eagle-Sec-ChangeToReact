@@ -8259,6 +8259,10 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   驱动侧配套（`dad7b24e`）：restore 走接缝、`syncLiveFromBackend`（等价 bundle 回声）、
   `setInspectorField`（跨 `machineryUpdateSelection` 30ms 防抖窗口校验重写）。
   验证：main-ui-workflow 连续 6 轮 **4 绿**（改前 0 绿），含重启校验的完整闭环通过。
+- **E6-9（`2d61c1a8`，P1-c-3）**：设置族（新增 `core/settings.ts`：preferences/theme/zoom/shortcut/scrollBehavior/broadcast，merge 逐字对齐 shims、落盘经全局 electronSettings 零改动）、`regenerate-palette`、库族、缩略图族、剪贴板导入族、导入族共 **21 个频道**迁入 routeDesktop（语义逐字对齐含失败分支）；`react-ipc-bridge-routing` 扩展断言 21 频道走接缝不泄漏回总线。
+- **E6-10（`527b3653`，P1-c-4）**：主进程回程扇出迁入 React——新增 `core/returnBridge.ts`（installReturnBridge 逐字端口 shims 的 desktopApi.onIpc 块：9 频道直通/file-uploaded 先并 cache/thumbnail-generated/rebind-refresh/export·import·library·item onX/onRebindRefresh/preview.onInit 缓冲）；main.tsx 安装并置 `__eagleReturnBridgeInstalled`，shims 同块注册体延迟 0ms timer 检测标记跳过（单注册无双发，deferred module 先于 timer 执行的时序论证见代码注释）。
+- **E7 配套（`25972605`/`dad7b24e` 后续）**：差分回执基线改取发送时 live 对象（stage6 改名回写回归修正）；detailHooks.getIpc 取用顺序反转（接缝优先——批量改名/评注等经 shims 原始总线的发送自 P1-c-2 起落黑洞，stage7d2 br-image-dataplane 即此，二分实证非新引入）；facade 发送观测环 `window.__eagleIpcSentLog`（P1-c-3 后接缝化频道不落总线，冒烟取证面统一改读，P5 后为唯一观测面）；stage1c3/7d4/7d6a/7d6b 取证面更新。
+  验证：**REACT SUITE ALL GREEN（65/65）**（E6-9 后 63/65 → 取证面修正后全绿）。
 
 **当前实测状态**：哨兵 `SENTINEL_OK`；`tsc --noEmit` 492（零新增错误键）；套件 66 项（新增
 `react-ipc-bridge-routing`）。**仍失败/未决**：`main-ui-workflow` 剩余**低频** identity 变体

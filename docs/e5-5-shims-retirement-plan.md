@@ -148,7 +148,7 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 语义逐字对齐 shims（含 `.catch`/合成事件/失败分支）。`tests/react-ipc-bridge-routing` 扩展为
 断言这 21 频道「走接缝、不泄漏回 shims 总线」并校验合成事件；`react-stage8e-smoke` 绿。
 
-**③ 仍未落地（本会话预算不足以安全完成，按工程风险延后）**：
+**③ P1-c-4 已落地（E6-10，`527b3653`）**：按下方施工切线执行完成——`core/returnBridge.ts` + main.tsx 安装 + shims 注册体 0ms 延迟 + 标记跳过；m1/cz1/main-ui-workflow 直接复跑绿。**④ 仍未落地（P4/P5，按工程风险排序延后）**：
 - **P1-c-4（回程扇出 + 总线实体 React 化）**：`desktopApi.onIpc` 的 5 频道 + 9 频道循环 +
   export/import/library/item 回程 + `onRebindRefresh` + `preview.onInit` 缓冲（`shims.js:1622-1735`）
   未迁。**迁移即删**（否则与 shims 双发），而 React 安装晚于 shims 加载会丢冷启动主进程事件，

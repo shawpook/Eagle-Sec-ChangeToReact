@@ -38,6 +38,78 @@ function nativeIpc(): any {
   return d && d.ipc && typeof d.ipc.send === 'function' ? d.ipc : null;
 }
 
+/** preload 的具名桌面 API（`window.eagleDesktop`）；浏览器/测试态为 null。 */
+function desktopApi(): any {
+  const d = (window as any).eagleDesktop;
+  return d && typeof d === 'object' ? d : null;
+}
+
+function clone<T>(v: T): T {
+  return typeof (globalThis as any).structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
+}
+
+/**
+ * 已迁入接缝的 desktopApi 路由频道（P1-c-1）。
+ *
+ * 判据：仅当 `eagleDesktop` 存在且具备对应子 API 时才接管（Electron 态）；否则返回 false 回落
+ * shims 总线（浏览器 mock / fetch 兜底）。**接管即不再交 shims**（单路由不变量）。
+ * 语义逐字对齐 `shims.js` 的对应分支（含 `.catch` 与合成事件）。
+ */
+function routeDesktop(bus: any, channel: string, params: any): boolean {
+  const d = desktopApi();
+  if (!d) return false;
+
+  if (channel === 'folders-change') {
+    if (!d.library || typeof d.library.updateStructure !== 'function') return false;
+    Promise.resolve(d.library.updateStructure(params || {})).then((library: any) => {
+      if (library) {
+        const w = window as any;
+        w.__mockLibrary = { ...(w.__mockLibrary || {}), ...library };
+        if (Array.isArray(library.items)) w.__mockLibraryCache = library.items.slice();
+      }
+    }).catch((err: any) => {
+      bus.emit('library:operation-result', { ok: false, action: channel, error: err && err.message });
+    });
+    return true;
+  }
+
+  if (channel === 'open-preview-window') {
+    if (!d.preview || typeof d.preview.open !== 'function') return false;
+    const images = Array.isArray(params && params.images)
+      ? params.images.filter((item: any) => item && item.id).map((item: any) => clone(item))
+      : [];
+    Promise.resolve(d.preview.open({ images })).then((result: any) => {
+      bus.emit('preview:operation-result', { ok: true, result });
+    }).catch((err: any) => bus.emit('preview:operation-result', { ok: false, error: err && err.message }));
+    return true;
+  }
+
+  if (channel === 'export-images' || channel === 'export-as-folder' || channel === 'cancel.all') {
+    if (!d.export) return false;
+    if (channel === 'export-images') {
+      const exportParams = params || {};
+      if (String(exportParams.savePath || '').toLowerCase().endsWith('.eaglepack')) {
+        if (typeof d.export.eaglepack !== 'function') return false;
+        Promise.resolve(d.export.eaglepack(exportParams)).catch(() => {});
+      } else {
+        if (typeof d.export.images !== 'function') return false;
+        Promise.resolve(d.export.images(exportParams)).catch(() => {});
+      }
+      return true;
+    }
+    if (channel === 'export-as-folder') {
+      if (typeof d.export.asFolder !== 'function') return false;
+      Promise.resolve(d.export.asFolder(params || {})).catch(() => {});
+      return true;
+    }
+    if (typeof d.export.cancel !== 'function') return false;
+    Promise.resolve(d.export.cancel()).catch(() => {});
+    return true;
+  }
+
+  return false;
+}
+
 /** shims 建的总线实体。 */
 function rawBus(): any {
   const w = window as any;
@@ -62,6 +134,7 @@ function createFacade(bus: any): any {
     send(channel: string, params?: any) {
       const n = nativeIpc();
       if (n && isNativeSend(channel)) return n.send(channel, params);
+      if (routeDesktop(bus, channel, params)) return;
       return bus.send(channel, params);
     },
     // shims 的 sendTo 语义是「忽略 id、落到 send」（见 shims.js 的 sendTo 覆写），故原生分支同样
@@ -69,6 +142,7 @@ function createFacade(bus: any): any {
     sendTo(id: any, channel: string, params?: any) {
       const n = nativeIpc();
       if (n && isNativeSend(channel)) return n.send(channel, params);
+      if (routeDesktop(bus, channel, params)) return;
       return typeof bus.sendTo === 'function' ? bus.sendTo(id, channel, params) : bus.send(channel, params);
     },
     // invoke 必须先走 shims：它覆写了 invoke 以承接 `nativeImage.createThumbnailFromPath` 等。

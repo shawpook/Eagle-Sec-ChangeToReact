@@ -148,7 +148,8 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 语义逐字对齐 shims（含 `.catch`/合成事件/失败分支）。`tests/react-ipc-bridge-routing` 扩展为
 断言这 21 频道「走接缝、不泄漏回 shims 总线」并校验合成事件；`react-stage8e-smoke` 绿。
 
-**③ P1-c-4 已落地（E6-10，`527b3653`）**：按下方施工切线执行完成——`core/returnBridge.ts` + main.tsx 安装 + shims 注册体 0ms 延迟 + 标记跳过；m1/cz1/main-ui-workflow 直接复跑绿。**④ 仍未落地（P4/P5，按工程风险排序延后）**：
+**③ P1-c-4 已落地（E6-10，`527b3653`）**：按下方施工切线执行完成——`core/returnBridge.ts` + main.tsx 安装 + shims 注册体 0ms 延迟 + 标记跳过；m1/cz1/main-ui-workflow 直接复跑绿。**④ P4-a 已落地（E8，`bb3a7b31`）**：documentViewer 编排（约 354 行）迁 `core/documentViewer.ts`（bodyScope → getWindowScope；shims 段删除；emit 覆写处的 viewer 卸载改经 `window.__eagleCloseDocumentViewer` 全局桥）。document-viewer 两测 + main-ui-workflow 直接复跑绿。
+**④ 仍未落地（P4/P5，按工程风险排序延后）**：
 - **P1-c-4（回程扇出 + 总线实体 React 化）**：`desktopApi.onIpc` 的 5 频道 + 9 频道循环 +
   export/import/library/item 回程 + `onRebindRefresh` + `preview.onInit` 缓冲（`shims.js:1622-1735`）
   未迁。**迁移即删**（否则与 shims 双发），而 React 安装晚于 shims 加载会丢冷启动主进程事件，
@@ -170,6 +171,7 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
      式缓冲兜底——若实测存在，可把 shims timer 提到 25ms 并在 timer 内补派发挂起事件）。
   4. 验证：`tests/react-ipc-bridge-routing`（假 desktopApi 走 onIpc 面）、main-ui-workflow、
      thumbnail/custom-thumbnail/library-switch 族；哨兵 + tsc。
+- **P5 新增阻碍面（2026-09-14 勘察）**：`nodeIntegration:true` + `src/app/index.html` 解析期内联 boot（`require('app-root-path')`/`window.i18n`/`window.EagleConfig`，经 shims require 链）必须随 runtimeGlobals 重构一并迁出；非 React 页 `src/app/pdf-viewer/web/viewer.html`（pdf.js 自包含页）与空页 `thumbnail.html` 仍被 vite 通用分支注入 shims——删 shims.js 前需为它们改道（pdf.js 不依赖 shims，可零注入；`thumbnail.html` 空页零注入即可）。
 - **P4（browser arms 隔离）/ P5（删 `shims.js` + `mock-data.js`、`runtimeGlobals` 启动契约、
   3 个源码字符串测试改写）**：依赖 P1-c-4。
 - shims 对应分支**暂留**：浏览器态（无 `desktopApi`）与 preferences 窗内 `req('electron')` 直发仍

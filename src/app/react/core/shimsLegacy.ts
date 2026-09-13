@@ -1,3 +1,468 @@
+// @ts-nocheck
+// b1-9bz-E9（P5）：shims.js 全量迁入 React 模块图（frontend/public/shims.js 删除）。
+// 语义零改动：整段 IIFE 原样执行（module eval 时序 = DCL 链，先于 onDidFinishLoad 驱动）。
+// 每窗入口必须把本模块放在第一个 import（为后续 React 模块供给 window.require/process/
+// Buffer/global/electron/electronSettings/i18n/EagleConfig/总线等启动契约）。
+// b1-9bz-E9（P4-b）：mock 库种子（原 frontend/public/mock-data.js 全量）——浏览器开发态专用。
+// Electron 态（preload 提供 eagleDesktop）零注入：真实库事件负责 __mockLibrary(Cache)，
+// 种子在此只会被整体覆盖（行为等价、去掉无谓内存与捕获窗口）。
+if (!(window as any).eagleDesktop) {
+(function () {
+  'use strict';
+
+  const day = 86400000;
+  const now = Date.now();
+
+  const items = [
+    {
+      id: 'MOCK0001',
+      name: 'Welcome Library',
+      ext: 'png',
+      width: 1536,
+      height: 960,
+      size: 50538,
+      url: 'https://eagle.cool',
+      website: 'eagle.cool',
+      annotation: '原版欢迎页素材，用于主界面快速预览。',
+      tags: ['UI', '欢迎', 'Eagle'],
+      folders: ['FOLDER-ROOT', 'FOLDER-WELCOME'],
+      star: 5,
+      modificationTime: now - day,
+      lastModified: now - day,
+      palettes: [{ color: [26, 27, 30] }, { color: [255, 255, 255] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0002',
+      name: 'Welcome Extension',
+      ext: 'png',
+      width: 1536,
+      height: 960,
+      size: 74499,
+      url: 'https://eagle.cool/extensions',
+      website: 'eagle.cool',
+      annotation: '浏览器扩展引导素材。',
+      tags: ['UI', '扩展', '引导'],
+      folders: ['FOLDER-ROOT', 'FOLDER-WELCOME'],
+      star: 4,
+      modificationTime: now - 2 * day,
+      lastModified: now - 2 * day,
+      palettes: [{ color: [32, 34, 38] }, { color: [242, 243, 246] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0003',
+      name: 'Welcome Hero',
+      ext: 'png',
+      width: 1920,
+      height: 1080,
+      size: 369087,
+      url: 'https://eagle.cool',
+      website: 'eagle.cool',
+      annotation: 'Eagle 欢迎页首屏视觉。',
+      tags: ['UI', '欢迎', 'Hero'],
+      folders: ['FOLDER-ROOT', 'FOLDER-WELCOME'],
+      star: 5,
+      modificationTime: now - 3 * day,
+      lastModified: now - 3 * day,
+      palettes: [{ color: [15, 17, 22] }, { color: [126, 88, 255] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0004',
+      name: 'Tutorial',
+      ext: 'png',
+      width: 1280,
+      height: 720,
+      size: 114819,
+      url: 'https://docs-cn.eagle.cool',
+      website: 'docs-cn.eagle.cool',
+      annotation: '教程插图，可复用为收藏图。',
+      tags: ['教程', '帮助', 'UI'],
+      folders: ['FOLDER-ROOT', 'FOLDER-WELCOME'],
+      star: 4,
+      modificationTime: now - 4 * day,
+      lastModified: now - 4 * day,
+      palettes: [{ color: [245, 246, 248] }, { color: [88, 101, 242] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0005',
+      name: 'Empty Folder',
+      ext: 'png',
+      width: 1280,
+      height: 800,
+      size: 73742,
+      url: '',
+      website: '',
+      annotation: '空文件夹状态插画。',
+      tags: ['空状态', '文件夹'],
+      folders: ['FOLDER-ROOT', 'FOLDER-EMPTY'],
+      star: 4,
+      modificationTime: now - 5 * day,
+      lastModified: now - 5 * day,
+      palettes: [{ color: [250, 250, 252] }, { color: [166, 175, 191] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0006',
+      name: 'Empty Library',
+      ext: 'png',
+      width: 1280,
+      height: 800,
+      size: 67036,
+      url: '',
+      website: '',
+      annotation: '空资源库状态插画。',
+      tags: ['空状态', '资源库'],
+      folders: ['FOLDER-ROOT', 'FOLDER-EMPTY'],
+      star: 3,
+      modificationTime: now - 6 * day,
+      lastModified: now - 6 * day,
+      palettes: [{ color: [248, 249, 251] }, { color: [199, 204, 214] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0007',
+      name: 'Empty Search',
+      ext: 'png',
+      width: 1280,
+      height: 800,
+      size: 55788,
+      url: '',
+      website: '',
+      annotation: '空搜索结果状态。',
+      tags: ['空状态', '搜索'],
+      folders: ['FOLDER-ROOT', 'FOLDER-EMPTY'],
+      star: 3,
+      modificationTime: now - 7 * day,
+      lastModified: now - 7 * day,
+      palettes: [{ color: [249, 250, 251] }, { color: [150, 156, 168] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0008',
+      name: 'Empty Trash',
+      ext: 'png',
+      width: 1280,
+      height: 800,
+      size: 100736,
+      url: '',
+      website: '',
+      annotation: '回收站空状态插画。',
+      tags: ['空状态', '回收站'],
+      folders: ['FOLDER-ROOT', 'FOLDER-EMPTY'],
+      star: 3,
+      modificationTime: now - 8 * day,
+      lastModified: now - 8 * day,
+      palettes: [{ color: [248, 248, 250] }, { color: [180, 182, 192] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0009',
+      name: 'AI SDK Intro',
+      ext: 'png',
+      width: 1600,
+      height: 900,
+      size: 412522,
+      url: 'https://developer.eagle.cool',
+      website: 'developer.eagle.cool',
+      annotation: 'AI SDK 介绍图。',
+      tags: ['插件', 'AI', '开发'],
+      folders: ['FOLDER-ROOT', 'FOLDER-PLUGIN'],
+      star: 5,
+      modificationTime: now - 9 * day,
+      lastModified: now - 9 * day,
+      palettes: [{ color: [23, 27, 35] }, { color: [53, 143, 255] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0010',
+      name: 'MCP Intro',
+      ext: 'png',
+      width: 1600,
+      height: 900,
+      size: 79779,
+      url: 'https://developer.eagle.cool/plugin-api',
+      website: 'developer.eagle.cool',
+      annotation: 'MCP 插件介绍素材。',
+      tags: ['插件', 'MCP', '开发'],
+      folders: ['FOLDER-ROOT', 'FOLDER-PLUGIN'],
+      star: 5,
+      modificationTime: now - 10 * day,
+      lastModified: now - 10 * day,
+      palettes: [{ color: [250, 251, 253] }, { color: [73, 111, 255] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0011',
+      name: 'Plugin Created',
+      ext: 'png',
+      width: 1280,
+      height: 720,
+      size: 7092,
+      url: 'https://developer.eagle.cool',
+      website: 'developer.eagle.cool',
+      annotation: '插件创建完成提示图。',
+      tags: ['插件', '创建'],
+      folders: ['FOLDER-ROOT', 'FOLDER-PLUGIN'],
+      star: 4,
+      modificationTime: now - 11 * day,
+      lastModified: now - 11 * day,
+      palettes: [{ color: [255, 255, 255] }, { color: [255, 202, 66] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0012',
+      name: 'Duplicate Merged',
+      ext: 'png',
+      width: 1280,
+      height: 720,
+      size: 22103,
+      url: '',
+      website: '',
+      annotation: '重复文件合并示意图。',
+      tags: ['重复文件', '工具'],
+      folders: ['FOLDER-ROOT', 'FOLDER-PLUGIN'],
+      star: 4,
+      modificationTime: now - 12 * day,
+      lastModified: now - 12 * day,
+      palettes: [{ color: [244, 245, 248] }, { color: [51, 119, 255] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0013',
+      name: 'Register Remain',
+      ext: 'png',
+      width: 800,
+      height: 500,
+      size: 11318,
+      url: '',
+      website: '',
+      annotation: '注册/试用剩余天数插画。',
+      tags: ['授权', '注册', 'UI'],
+      folders: ['FOLDER-ROOT'],
+      star: 2,
+      modificationTime: now - 13 * day,
+      lastModified: now - 13 * day,
+      palettes: [{ color: [248, 249, 251] }, { color: [255, 214, 102] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0014',
+      name: 'Register Expired',
+      ext: 'png',
+      width: 800,
+      height: 500,
+      size: 12809,
+      url: '',
+      website: '',
+      annotation: '授权过期插画。',
+      tags: ['授权', '注册', 'UI'],
+      folders: ['FOLDER-ROOT'],
+      star: 2,
+      modificationTime: now - 14 * day,
+      lastModified: now - 14 * day,
+      palettes: [{ color: [255, 249, 249] }, { color: [255, 108, 108] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0015',
+      name: 'Not Supported Format',
+      ext: 'png',
+      width: 800,
+      height: 500,
+      size: 6235,
+      url: '',
+      website: '',
+      annotation: '不支持格式的提示插画。',
+      tags: ['格式', '提示'],
+      folders: ['FOLDER-ROOT', 'FOLDER-EMPTY'],
+      star: 2,
+      modificationTime: now - 15 * day,
+      lastModified: now - 15 * day,
+      palettes: [{ color: [255, 255, 255] }, { color: [150, 155, 165] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0016',
+      name: 'Lock Screen',
+      ext: 'png',
+      width: 1280,
+      height: 800,
+      size: 108080,
+      url: '',
+      website: '',
+      annotation: '锁定屏视觉素材。',
+      tags: ['锁定', 'UI'],
+      folders: ['FOLDER-ROOT', 'FOLDER-WELCOME'],
+      star: 3,
+      modificationTime: now - 16 * day,
+      lastModified: now - 16 * day,
+      palettes: [{ color: [28, 30, 35] }, { color: [255, 255, 255] }],
+      noThumbnail: false,
+      isDeleted: false,
+    },
+    {
+      id: 'MOCK0017',
+      name: 'Trashed Item',
+      ext: 'png',
+      width: 1280,
+      height: 800,
+      size: 100736,
+      url: '',
+      website: '',
+      annotation: '已移入回收站的预览素材。',
+      tags: ['回收站', '示例'],
+      folders: [],
+      star: 1,
+      modificationTime: now - 17 * day,
+      lastModified: now - 17 * day,
+      palettes: [{ color: [248, 248, 250] }, { color: [190, 190, 195] }],
+      noThumbnail: false,
+      isDeleted: true,
+    },
+  ];
+
+  const folders = [
+    {
+      id: 'FOLDER-ROOT',
+      name: '设计参考',
+      description: '从原版资源中整理的界面素材',
+      children: [
+        {
+          id: 'FOLDER-WELCOME',
+          name: '欢迎 / 引导',
+          description: '欢迎页、教程与扩展引导',
+          children: [],
+          modificationTime: now - 4 * day,
+          tags: ['UI', '欢迎'],
+          icon: 'folder',
+          iconColor: '#5B8DEF',
+          coverId: 'MOCK0001',
+          orderBy: 'IMPORT',
+          sortIncrease: false,
+        },
+        {
+          id: 'FOLDER-EMPTY',
+          name: '空状态',
+          description: '空资源库、空文件夹、空搜索等状态',
+          children: [],
+          modificationTime: now - 8 * day,
+          tags: ['UI', '空状态'],
+          icon: 'folder',
+          iconColor: '#7B68EE',
+          coverId: 'MOCK0005',
+          orderBy: 'IMPORT',
+          sortIncrease: false,
+        },
+        {
+          id: 'FOLDER-PLUGIN',
+          name: '插件 / 工具',
+          description: '插件中心、AI 与重复文件工具素材',
+          children: [],
+          modificationTime: now - 12 * day,
+          tags: ['插件', '工具'],
+          icon: 'folder',
+          iconColor: '#F2994A',
+          coverId: 'MOCK0009',
+          orderBy: 'IMPORT',
+          sortIncrease: false,
+        },
+      ],
+      modificationTime: now - 12 * day,
+      tags: ['设计'],
+      icon: 'folder',
+      iconColor: '#5B8DEF',
+      coverId: 'MOCK0001',
+      orderBy: 'IMPORT',
+      sortIncrease: false,
+    },
+  ];
+
+  const smartFolders = [
+    {
+      id: 'SMART-STAR',
+      name: '五星收藏',
+      description: '自动收集评分为 5 的素材',
+      icon: 'star',
+      iconColor: '#F7B955',
+      modificationTime: now - 3 * day,
+      conditions: [{ field: 'star', operator: '=', value: 5 }],
+      orderBy: 'IMPORT',
+      sortIncrease: false,
+      children: [],
+    },
+    {
+      id: 'SMART-UI',
+      name: 'UI 参考',
+      description: '包含 UI 标签的素材',
+      icon: 'grid',
+      iconColor: '#7B68EE',
+      modificationTime: now - 6 * day,
+      conditions: [{ field: 'tags', operator: 'contains', value: 'UI' }],
+      orderBy: 'IMPORT',
+      sortIncrease: false,
+      children: [],
+    },
+  ];
+
+  const tagsGroups = [
+    {
+      id: 'TAGGROUP-DESIGN',
+      name: '设计',
+      tags: ['UI', '欢迎', '空状态', '插件', '工具'],
+      color: '#5B8DEF',
+      modificationTime: now - 2 * day,
+    },
+    {
+      id: 'TAGGROUP-WORKFLOW',
+      name: '流程',
+      tags: ['注册', '授权', '回收站', '教程', '搜索'],
+      color: '#F2994A',
+      modificationTime: now - 5 * day,
+    },
+  ];
+
+  const quickAccess = [
+    { type: 'folder', id: 'FOLDER-ROOT' },
+    { type: 'smartFolder', id: 'SMART-STAR' },
+  ];
+
+  const rootDir = '/mock-library/Eagle Reverse Demo.library';
+  const imagesDir = '/mock-library/Eagle Reverse Demo.library/images/';
+
+  window.__mockLibrary = {
+    rootDir,
+    imagesDir,
+    libraryName: 'Eagle Reverse Demo',
+    folders,
+    smartFolders,
+    quickAccess,
+    tagsGroups,
+    items,
+  };
+
+  window.__mockLibraryCache = items.slice();
+})();
+
+}
+
 (function () {
   'use strict';
 
@@ -1272,17 +1737,8 @@
       }
     });
     desktopApi.onIpc('close-export-task', (value) => {
-      const element = document.querySelector('file-export-progress');
-      if (element && window.angular) {
-        const fileScope = angular.element(element).isolateScope();
-        if (fileScope) {
-          fileScope.isExporting = false;
-          fileScope.total = 0;
-          fileScope.curr = 0;
-          fileScope.timeLeftInSeconds = 0;
-          fileScope.$evalAsync();
-        }
-      }
+      // b1-9bz-E9：angular 面板复位分支删除（window.angular 在 React 世界恒缺席 → 死代码；
+      // 哨兵 C-6 禁项 scope.$evalAsync）。总线事件扇出保留。
       mockEmit('close-export-task', value);
     });
     for (const channel of [
@@ -2100,19 +2556,8 @@
     if (preferences.general && typeof window.languageBCP !== 'undefined') {
       window.languageBCP = String(preferences.general.language || 'en').replace('_', '-');
     }
-    try {
-      if (window.angular && angular.element(document.body).scope) {
-        const scope = angular.element(document.body).scope();
-        if (scope) {
-          scope.preferences = preferences;
-          if (preferences.theme && scope.theme !== undefined) scope.theme = preferences.theme.css || 'gray';
-          if (preferences.general && scope.language !== undefined) scope.language = preferences.general.language || 'en';
-          if (typeof scope.$evalAsync === 'function') scope.$evalAsync();
-        }
-      }
-    } catch (err) {
-      // Angular may not be ready on pages that only use the shim.
-    }
+    // b1-9bz-E9：angular scope 同步分支删除（window.angular 在 React 世界恒缺席 → 死代码；
+    // 哨兵 C-6 禁项 scope.$evalAsync）。事件扇出已覆盖全部 React 消费面。
   }
 
   function broadcastIpc(channel, params) {
@@ -2935,5 +3380,22 @@
     installBrowserDropImport();
     installNonMediaMetaPatcher();
     startLifecycle();
+  }
+
+  // b1-9bz-E9（P5）：index.html / preview-window.html / collect-window/index.html 解析期内联
+  // boot 的等价复制（原依赖本 IIFE 已替换的 window.require mock 链：
+  //   appRoot=require('app-root-path') → {path:'/src'}; i18n=new(require('/src/i18n'))=MockI18n;
+  //   EagleConfig=require('/src/config.js')=loadJsModule CommonJS 包装）。
+  // guard 化：inline 仍在的过渡期由 inline 先设（parse 早于 module eval），此处跳过；
+  // inline 摘除后由本块供给。
+  try {
+    if (!window.appRoot) window.appRoot = require('app-root-path');
+    if (!window.i18n) window.i18n = new (require(appRootModule.path + '/i18n'))();
+    if (!window.EagleConfig) window.EagleConfig = require(appRootModule.path + '/config.js');
+    // collect-window 内联 boot 的等价供给（原经 require('/src/my_modules/electron-settings')）
+    if (!window.settings) window.settings = require(appRootModule.path + '/my_modules/electron-settings');
+    if (!window.preferences) window.preferences = window.settings.getPreferences();
+  } catch (err) {
+    console.warn('[eagle-shim] legacy boot replication failed', err);
   }
 })();

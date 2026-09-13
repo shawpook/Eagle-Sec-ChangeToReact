@@ -10,8 +10,7 @@
     <link rel="stylesheet" href="css/preview-window.css">
 
     <script>
-    var appRoot = require('app-root-path');
-    window.i18n = new(require(appRoot + '/i18n'));
+    // b1-9bz-E9（P5）：appRoot/i18n 内联 boot 摘除——shimsLegacy 等价供给。
     </script>
 
     <!-- 阶段9a：preview-window.js（classic script）顶层 const 原本形成全局词法绑定，供页面级

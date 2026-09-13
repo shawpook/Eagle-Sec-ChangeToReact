@@ -1,3 +1,4 @@
+import '../core/shimsLegacy';
 import { createRoot } from 'react-dom/client';
 import { useEffect } from 'react';
 import CollectShell from './shell';

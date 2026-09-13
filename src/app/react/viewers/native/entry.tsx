@@ -10,6 +10,7 @@
  * psd 族无引擎 UNSUPPORTED）成功落 finalFile 轮询自取，失败回发 native-preview-failed
  * 停轮询 + ready 优雅降级；darwin invoke 经 shim 直通 → main nativeImage 原生缩图。
  */
+import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 

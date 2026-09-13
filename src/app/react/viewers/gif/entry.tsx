@@ -6,6 +6,7 @@
  * （主窗 tagManagerDomain / 预览窗 preview-window controller 两侧已供）+ 载入中途
  * 打开时的进度位置模拟（startTime 差值 → move_to）+ 150ms 后 body.loaded。
  */
+import '../../core/shimsLegacy';
 import { useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 

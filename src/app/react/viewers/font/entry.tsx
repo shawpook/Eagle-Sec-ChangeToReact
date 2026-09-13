@@ -12,6 +12,7 @@
  * 语言判定（support/ja/zh 分支 + preferLng 覆盖）逐字。mediumEditor 指令为模板未用死代码
  * 不移植（运行时 30ms 后的 MediumEditor 初始化才是活面）。
  */
+import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { fontI18nStrings, fontTranslation, buildAlphabetHTML } from './fontContent';

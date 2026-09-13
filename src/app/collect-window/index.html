@@ -17,13 +17,8 @@
 		<div id="eagle-collect-react-host"></div>
 
 		<script>
-			const appRoot = require('app-root-path');
-			const settings = require(appRoot + '/my_modules/electron-settings');
-			const preferences = settings.getPreferences();
-			// 供 React 模块作用域读取（classic 顶层 const 是全局词法绑定，不落 window）
-			window.appRoot = appRoot;
-			window.settings = settings;
-			window.preferences = preferences;
+			// b1-9bz-E9（P5）：require 链 boot 摘除——appRoot/settings/preferences 由 shimsLegacy
+			//（React 入口第一 import）等价供给（electronSettings mock 同一实例）。
 			window.eagle = {};
 		</script>
 		<script src="js/lib/api/utils.js"></script>

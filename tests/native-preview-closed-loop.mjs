@@ -133,7 +133,8 @@ try {
   const mainSource = fs.readFileSync(path.join(projectRoot, 'electron', 'main.cjs'), 'utf8');
   if (!mainSource.includes("ipcMain.on('generate-hight-resolution-thumbnail'")) throw new Error('generate-hight-resolution-thumbnail handler not registered');
   if (!mainSource.includes("ipcMain.handle('nativeImage.createThumbnailFromPath'")) throw new Error('nativeImage.createThumbnailFromPath handler not registered');
-  const shimSource = fs.readFileSync(path.join(projectRoot, 'frontend', 'public', 'shims.js'), 'utf8');
+  // b1-9bz-E9：shims.js 删除，源码契约面改指 shimsLegacy（同段代码原样迁移）
+  const shimSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'shimsLegacy.ts'), 'utf8');
   if (!shimSource.includes("channel === 'generate-hight-resolution-thumbnail'")) throw new Error('generate-hight-resolution-thumbnail send passthrough missing');
   if (!shimSource.includes("'native-preview-failed',")) throw new Error('native-preview-failed onIpc bridge missing');
   const backendSource = fs.readFileSync(path.join(projectRoot, 'backend', 'src', 'server.js'), 'utf8');

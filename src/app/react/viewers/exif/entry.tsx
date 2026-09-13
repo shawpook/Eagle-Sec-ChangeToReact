@@ -5,6 +5,7 @@
  * 本页为被动渲染 iframe（详情面板/预览窗内嵌），壳的 body pointer-events:none 原样保留。
  * 缺参时 parseInt 产生 NaN → rNaN 类与原实现一致（无 r 类命中、走 default 适配分支）。
  */
+import '../../core/shimsLegacy';
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 

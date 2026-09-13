@@ -14,6 +14,7 @@
  * window.parent.ipcRenderer 修正。
  * changeName（模板内 UI 已注释、全仓零调用方）为死代码不移植。
  */
+import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 

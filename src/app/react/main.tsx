@@ -1,3 +1,4 @@
+import './core/shimsLegacy';
 import { createRoot } from 'react-dom/client';
 import { AppRoot } from './app/AppRoot';
 import { SavingProgressBar, UploadQueueProgressBar } from './components/shell/ProgressBars';

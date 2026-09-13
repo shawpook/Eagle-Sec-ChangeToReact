@@ -60,9 +60,10 @@ try {
   // 静态接线审计：main 侧监听 + shim 直通 + 桥登记三处齐全
   const mainSource = fs.readFileSync(path.join(projectRoot, 'electron', 'main.cjs'), 'utf8');
   if (!mainSource.includes("ipcMain.on('update-txt-item'")) throw new Error('update-txt-item handler not registered in main.cjs');
-  const shimSource = fs.readFileSync(path.join(projectRoot, 'frontend', 'public', 'shims.js'), 'utf8');
-  if (!shimSource.includes("channel === 'update-txt-item'")) throw new Error('update-txt-item send passthrough missing in shims.js');
-  if (!shimSource.includes("'update-txt-item',")) throw new Error('update-txt-item onIpc bridge missing in shims.js');
+  // b1-9bz-E9：shims.js 删除，源码契约面改指 shimsLegacy（同段代码原样迁移）
+  const shimSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'shimsLegacy.ts'), 'utf8');
+  if (!shimSource.includes("channel === 'update-txt-item'")) throw new Error('update-txt-item send passthrough missing in shimsLegacy');
+  if (!shimSource.includes("'update-txt-item',")) throw new Error('update-txt-item onIpc bridge missing in shimsLegacy');
 
   console.log(`TXT_UPDATE_CLOSED_LOOP_OK ${JSON.stringify(result)}`);
 } catch (err) {

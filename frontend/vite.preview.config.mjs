@@ -23,10 +23,13 @@ const REACT_REFRESH_PREAMBLE = `<script type="module">
       window.__vite_plugin_react_preamble_installed__ = true
     </script>`;
 
+// b1-9bz-E9（P5）：mock-data.js / shims.js 注入摘除——启动契约（require/process/i18n/
+// electronSettings/总线/种子）已全量迁 src/app/react/core/shimsLegacy.ts，由各 React 入口
+// 第一 import 供给。仅保留后端地址内联配置。
 function injectPreviewScripts(html) {
   return html.replace(
     '<head>',
-    `<head>\n    <script>window.__EAGLE_API_BASE_URL=${JSON.stringify(apiTarget)};window.__EAGLE_EXTENSION_BASE_URL=${JSON.stringify(extensionTarget)};</script>\n    <script src="/mock-data.js"></script>\n    <script src="/shims.js"></script>`
+    `<head>\n    <script>window.__EAGLE_API_BASE_URL=${JSON.stringify(apiTarget)};window.__EAGLE_EXTENSION_BASE_URL=${JSON.stringify(extensionTarget)};</script>`
   );
 }
 
@@ -196,13 +199,9 @@ export default defineConfig({
         if (html.includes('<title>Eagle Document Viewer</title>')) {
           return injectViewerConfig(html);
         }
-        if (!html.includes('<title>Eagle</title>')) {
-          return html;
-        }
-        return html.replace(
-          '<head>',
-          '<head>\n    <script src="/mock-data.js"></script>\n    <script src="/shims.js"></script>'
-        );
+        // b1-9bz-E9（P5）：`<title>Eagle</title>` 分支的 mock-data/shims 注入摘除
+        // （启动契约在 React 入口 shimsLegacy）。
+        return html;
       },
     },
   ],

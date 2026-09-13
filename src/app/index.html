@@ -230,9 +230,8 @@
     <script>
         if (typeof module === 'object') { window.module = module; module = undefined; }
         if (window.module) module = window.module;
-        var appRoot = require('app-root-path');
-        window.i18n = new(require(appRoot + '/i18n'));
-        window.EagleConfig = require(appRoot + '/config.js');
+        // b1-9bz-E9（P5）：appRoot/i18n/EagleConfig 内联 boot 摘除——shimsLegacy（React 入口
+        // 第一 import）以同一 require 链等价供给（appRoot={path:'/src'} + MockI18n + config.js）。
     </script>
     <!-- b1-9bx2：flatpickr v3.0.6（window.flatpickr 函数选择器 + window.FlatpickrInstance
          构造器）+ l10n/zh.js 退役——自研月历（react/core/flatpickrLite.ts）经

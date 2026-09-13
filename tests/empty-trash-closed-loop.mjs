@@ -115,9 +115,10 @@ try {
   if (!mainSource.includes("ipcMain.on('empty-trash'")) throw new Error('empty-trash handler not registered in main.cjs');
   if (!mainSource.includes("ipcMain.on('cancel-empty-trash'")) throw new Error('cancel-empty-trash handler not registered in main.cjs');
   if (!mainSource.includes('/api/item/emptyTrash')) throw new Error('empty-trash handler does not call /api/item/emptyTrash');
-  const shimSource = fs.readFileSync(path.join(projectRoot, 'frontend', 'public', 'shims.js'), 'utf8');
-  if (!shimSource.includes("channel === 'empty-trash'")) throw new Error('empty-trash send passthrough missing in shims.js');
-  if (!shimSource.includes("'remove-trash-item',")) throw new Error('remove-trash-item onIpc bridge missing in shims.js');
+  // b1-9bz-E9：shims.js 删除，源码契约面改指 shimsLegacy（同段代码原样迁移）
+  const shimSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'shimsLegacy.ts'), 'utf8');
+  if (!shimSource.includes("channel === 'empty-trash'")) throw new Error('empty-trash send passthrough missing in shimsLegacy');
+  if (!shimSource.includes("'remove-trash-item',")) throw new Error('remove-trash-item onIpc bridge missing in shimsLegacy');
 
   console.log(`EMPTY_TRASH_CLOSED_LOOP_OK ${JSON.stringify({ itemIds })}`);
 } catch (err) {

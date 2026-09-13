@@ -5,6 +5,7 @@
  * 先行加载，window.dcraw 直用）；fs/os/app-root-path/my_modules/url 经 parent require
  * （iframe 继承 nodeIntegration，与原实现同通道）。window.parent.focus() 原样保留。
  */
+import '../../core/shimsLegacy';
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 

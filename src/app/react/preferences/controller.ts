@@ -441,6 +441,10 @@ export const controllerScope: any = {
   },
 
   focusSearch($event?: any) {
+    // b1-9bz-E9：密码弹窗打开时不抢焦点。openPreferences 的 200ms focusSearch 定时器与
+    // 弹窗 100ms autofocus 竞速（谁后到谁赢），弹窗场景下偷走密码输入框焦点
+    // （stage8e2 password-modal-focus 偶发）。弹窗关闭后 focusSearch 照常。
+    if (this.password && this.password.isOpen) return;
     const el = document.getElementById('sidebar-search') as HTMLInputElement | null;
     if (el) el.focus();
   },

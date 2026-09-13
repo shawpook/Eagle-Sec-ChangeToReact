@@ -8207,3 +8207,48 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - 收尾：删 QA 提交引入的 2 处 no-op `scopeEvalAsync`，恢复哨兵单调门（提交 `098c9aa0`）。
 - 收尾：`electron --smoke-desktop` 去 Angular 遗留 + `screenshot-regression` main 页就绪预算
   （提交 `920c247f`）。
+
+## 收尾期（2026-09-14，E6-1…E6-8 / P0+P6+P1-a/b/c-1/c-2+P2+P3-a/b）
+
+> 本段的「通过/全绿」均为**当前实现上的实测**；与历史记录（改写收官文档 §7 的 65 套件清单、
+> main-ui-workflow 早前全绿）相互独立，如两者冲突以**当前实测**为准。总账见
+> `docs/rewrite-closing-2026-09-13.md` §6.1 进度表与 §6.3。
+
+- **E6-1（`bb538f9e`）**：`scopeEvalAsync 355 → 0`（删 `core/scopeRuntime.ts`；294 处 standalone
+  no-op、13 处死 finally 包装、34 处行内 no-op、37 处 import、12 处传 fn 改直调）；
+  退役 `window.__eagleDataMachinery`（238 行死标记表，m1 契约 A3/A8/A10 改断 `__eagleMachinery`
+  导出）；`docs/plan.md` 悬挂引用改指 git 历史；附着实测 runner `tests/run-attached-nonsuite.mjs`
+  入树。门禁 10 套件绿。
+- **全量套件（E6-1 后）**：64/65 绿；`d3-search-empty` 为测试自身 boot 竞态假失败（非空态判据依赖
+  异步就绪的 `allDataCount`），修复后串行 5/5、并发 3/3（`558b1052`）。
+- **E6-2（`070b32fa`，P2）**：详情原图交付门控迁 React（`core/detailDeliveryGate.ts`，由
+  `machineryEnterDetailMode`（选区守卫前）/`machineryLeaveDetailMode` 直接挂钩），shims 删 177 行
+  + 25ms 包装体；document-workspace 分支按约定不接 React、保留为仅驱动面的
+  `documentViewerHookTimer`（`--smoke-document-viewer` 依赖）。**可见行为变化，待实机走查**。
+  探针 `tests/probe-detail-gate-reachability.mjs` 证 UI 面/驱动面双入口均生效。
+- **E6-3（`dfd95ab8`，P1-a）**：`core/channelBridge.getIpcBus()` 收口主窗 17 文件 24 处取总线表达式。
+- **E6-4（`85aa4ac0`，P3-a）**：source-mode 4 个不可达函数删除（-83 行，纯删除）。
+- **E6-5（`df043f08`，P1-b）**：preload 通用 `ipc` 桥 + 接缝 facade（事件面前转 shims 总线、发送面
+  按通道二分；`eagleGlobals.ipcRenderer()` 返 facade）。**回归教训**：P1-b 门禁未含 m1/cz3，
+  其 `ipc.emit` 被新解析到无 emit 的 preload ipc —— 独立修复 `b3019028`（测试总线取用优先
+  `__eagleIpc`）。
+- **E6-6（`b9be8f5d`，P1-c-1）**：迁 5 个无副作用 desktopApi 频道（folders-change/open-preview-
+  window/export-images/export-as-folder/cancel.all）入 facade；`tests/react-ipc-bridge-routing.mjs`
+  注入式单路由断言入套件。
+- **E6-7（`919d7ef5`，P1-c-2）**：item 持久化路径迁入接缝。新增 `core/ipcWriteState.ts`（共享写队列/
+  导入计数/merge/emit/缩略图回填/调色板，`window.__eagleIpcWriteState` 唯一实例），channelBridge
+  接管 images-change/image-change，shims 消费方全改 `writeState()` 同实例。**先验收后迁移**：
+  写路径替身测试（main→backend 边界 `EAGLE_WRITE_STUB_DIR`）与真实持久化测试（临时库+重启读回）
+  基线各 3/3 → 迁移后各 3/3，断言含单路由/入队快照/顺序/延迟/失败隔离/多选/六项编辑读回。
+- **E6-8（`4d21ab7d`，P3-b）**：来源文件夹模式功能补建 + React/store 迁移（store/sourceModeState、
+  core/sourceMode（真正按根+目录（含子目录）过滤 + generation 守卫 + 重扫/移除/退出还原语义）、
+  SourceModeSidebar（树/管理页签）；shims source-mode 块删除）。收口验收
+  `tests/source-mode-browse-closed-loop.mjs`（3 根+嵌套目录+真实点击）3/3 稳定绿；后端 rescan
+  增 env 门控测试旋钮 `EAGLE_SOURCE_RESCAN_FAIL`。
+
+**当前实测状态**：哨兵 `SENTINEL_OK`；`tsc --noEmit` 492（零新增错误键）；套件 66 项（新增
+`react-ipc-bridge-routing`）。**仍失败/未决**：`main-ui-workflow` 当日持续失败（基线亦失败、
+根因待定位，见收官文档 §6.3；不得以加宽重试/放宽断言宣布全绿）；`npm test`/`test:isolated`
+宿主限制（`roadmap-panels` 的 `fs.cpSync` 缺陷）；`browser-capture-electron-extension-e2e`
+端口占用 BLOCKED；P2 详情门控为可见行为变化待实机走查；shims.js 本体（现约 3.3k 行）与
+`mock-data.js` 仍在（P1-c-3…e / P4 / P5 未落地）。

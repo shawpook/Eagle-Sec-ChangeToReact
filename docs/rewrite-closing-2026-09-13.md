@@ -136,6 +136,18 @@ React 单源状态 + 自研总线承担全部 UI；主窗不再存在 `window.$b
 **风险**：①② 是全套件（含非 65 项）地基，误删会以「看起来无关」的方式大面积回归；
 `main-ui-workflow` 在 `updateMany` 后端路径上本就有负载 flake，正是该路径的既有脆弱点。
 
+**施工进度（2026-09-14 续：收尾批 E6-1，提交 `bb538f9e`）**
+
+| 项 | 状态 |
+|---|---|
+| P0 预置 | ✅ 基线（哨兵 `SENTINEL_OK` / tsc 492 / 附着实测 runner 入树） |
+| P6 scope 残留 | ✅ `scopeEvalAsync 355 → 0`、删 `core/scopeRuntime.ts`、退役 `window.__eagleDataMachinery`（m1 契约同步改写）、`docs/plan.md` 悬挂引用改指 git 历史 |
+| P1 通道桥 | ⬜ 未落地 —— **前提已更正**：React 约 40 文件经 shims 总线发消息、`eagleGlobals.ipcRenderer()` 必落 shims；须先给 `preload.cjs` 加通用 `ipc` 桥并把总线 + 回程（`desktopApi.onIpc` 扇出）整体迁 React，而非「搬 16 段路由」。逐分支复核结论见 `docs/e5-5-shims-retirement-plan.md` §0 |
+| P2 详情门控 | ⬜ `shims.js:56-555`（门控 56-232 + document viewer 234-555）为自洽簇，依赖 `bodyScope()`/`__mockLibraryCache`/DOM；可整体迁 React 模块 |
+| P3 source-mode UI | ⬜ `shims.js:3450-4041`。注意：**该块在 React 下是活的** —— `Sidebar.tsx:699` 有意保留 `ng-click` 兼容钩子供 `installModeSwitch`（`:4023`）识别；但 `openSourceFolderInAngular` 依赖已死的 `window.angular`，`handleSourceSelect/Rescan/Remove` 无调用点（半失效态） |
+| P4 浏览器 mock 隔离 | ⬜ 未落地 |
+| P5 删 shims.js | ⬜ 未落地；3 个读 shims 源码字符串的测试（`empty-trash`/`txt-update`/`native-preview`）其断言**只能在 P1 产出 channelBridge 后**改指新接缝，故 P5-pre 不能在 P1 前完成 |
+
 ### 6.2 其它有意保留 / 可继续清理
 
 | 项 | 说明 |

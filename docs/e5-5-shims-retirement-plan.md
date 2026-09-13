@@ -6,6 +6,52 @@
 
 ---
 
+## 0. 施工现状与分类更正（2026-09-14）
+
+**本会话已落地（收尾批 E6-1，提交 `bb538f9e`）**：P0 基线（哨兵 / tsc 492 / 附着实测 runner
+`tests/run-attached-nonsuite.mjs` 入树）；P6 scope 残留清扫（`scopeEvalAsync 355 → 0`、删
+`core/scopeRuntime.ts`、退役 `window.__eagleDataMachinery`）。门禁 10 项套件全绿。
+
+**§3 分类更正（重要，勿按原 §3.1 施工）**：§3.1 的「A 类 = 分支体不引用 mock 符号」是按 §1 那
+**7 个符号**（`desktopApi` / `mockEmit` / `nativeRequire` / `__mockLibraryCache` /
+`previewCurrentItemId` / `emitImportedItems` / `trackLocalImport`）自动切分的，**漏掉了 shims 本地
+helper**（`savePreferences` / `applyPreferencesToCurrentDocument` / `broadcastIpc` /
+`analyzeItemPalette` / `scheduleMissingPaletteAnalysis` / `browserImport*` / `bodyScope` /
+`isCurrentPreviewRawPath` / `dragStartItemIds` / `runPreviewAction` / `mergeCachedItems`）。逐分支
+复核 `ipcRenderer.send`（`shims.js:1376-1792`）后，真正**纯原生直通**的只有 8 段：
+
+| 分支 | 行 | 备注 |
+|---|---|---|
+| `smoke:*` | 1379-1386 | 纯 native send |
+| `update-txt-item` | 1389-1396 | 纯 native send |
+| `empty-trash` / `cancel-empty-trash` | 1401-1408 | 纯 native send |
+| `generate-hight-resolution-thumbnail` | 1413-1420 | 纯 native send |
+| `open-with-default`（string 参数且非预览窗） | 1425-1432 | 纯 native send（同频道另有预览窗分支 → 频道级 MIXED） |
+| `duplicate-file` / `copy-thumbnails` | 1436-1443 | 纯 native send |
+| `open.preferences`（native 半段） | 1489-1497 | native send，失败回落 `window.open` |
+| `update-main-window-id` / `check-for-update` | 1790 | 空操作直通 |
+
+其余原列 A 类频道**均引用 shims 本地 helper**，不能只搬路由：`regenerate-palette`→`analyzeItemPalette`；
+`chnage-preferences` / `change-theme` / `change-zoom` / `chnage-shortcut` / `chnage-scrollBehavior`
+→`savePreferences`+`applyPreferencesToCurrentDocument`；`lock-now`→`broadcastIpc`；
+`update-preferences`→`applyPreferencesToCurrentDocument`；`create-library` / `open-library` /
+`add-to-history-and-open` / `folders-change`→写 `__mockLibrary(Cache)`；`upload-*`→`browserImport*`
+（browser）/ `trackLocalImport`+`emitImportedItems`（desktop）；`empty-trash`（desktop 半段）→`desktopApi.duplicates`。
+
+**消费面实测（决定 P1 规模）**：React 侧**约 40 个文件**经 `window.__eagleIpc` / `$$electronIpc` /
+`window.ipcRenderer`（三者均为 shims 建的本地 EventEmitter 总线）发消息，另有 13 处以
+`eagleGlobals.ipcRenderer()` 取用；`eagleGlobals.ipcRenderer()` 因 preload 无 `ipc` 键而**必然回落到
+shims 总线**。且 Electron 恒经 `main.cjs:8` 加载 vite 预览服（`http://localhost:5176`），故 **shims 在
+Electron 生产路径同样是承重件**，不是可选 mock。因此 P1 的前提不是「搬 16 段路由」，而是
+**先给 `preload.cjs` 加通用 `ipc` 桥 + 把总线/回程（`desktopApi.onIpc` 扇出）整体迁到 React**，
+再把 shims 降级为仅浏览器 mock 传输。
+
+**仍未落地**：P1（通道桥）、P2（详情原图交付门控）、P3（source-mode UI）、P4（浏览器 mock 隔离）、
+P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「后续三步」。
+
+
+---
+
 ## 1. 现状量化（实测）
 
 | 项 | 量 |

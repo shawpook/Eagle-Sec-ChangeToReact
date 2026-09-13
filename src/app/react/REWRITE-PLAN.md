@@ -1,6 +1,10 @@
-> **[已归档 2026-09-11]** D 阶段结束时点：D-1（dataMachinery 删除）、D-3（套件 65）、D-4（收官文档）
-> 已完成；D-2 部分完成、DoD ①/② 未达。后续（scope 面退役、shims.js）见
-> `docs/d-phase-closing-2026-09-11.md`「剩余路线」。本文件保留为历史计划，不再更新。
+> **[已归档 2026-09-11；收官复核 2026-09-13]** 本计划 §四「收尾 DoD」五项除 D-2 的
+> `frontend/public/shims.js` 退役外**均已达标**（①六项删除 grep-zero 活代码 0、②哨兵
+> Angular-ism/jQuery 全零、③index.html vendor 0、④套件 65/65、⑤收官文档）。
+> 阶段记录：D → `docs/d-phase-closing-2026-09-11.md`；E（scope 面/digest 退役 DoD ①②）
+> → `docs/e-phase-plan-2026-09-12.md`（顶部 E5 收官 banner）；实机 QA → `docs/manual-qa-2026-09-13.md`；
+> **总收官/审计 → `docs/rewrite-closing-2026-09-13.md`**（含 shims.js 退役四步分解与全部遗留）。
+> 逐批权威记录见 `src/app/react/PROGRESS.md`。本文件保留为历史计划，不再更新。
 
 # 彻底化全程计划（至收尾）——REWRITE-PLAN v2
 

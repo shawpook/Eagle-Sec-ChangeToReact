@@ -8193,3 +8193,17 @@ video-detail / browser-capture-ui / export-progress 均过）。
 **风险与建议**：① 与 ② 是全套件（含非 65 项）的地基，误删会以「看起来无关」的方式大面积回归；
 当前 `main-ui-workflow` 已在 `updateMany` 后端路径上呈现负载 flake，正是该路径的既有脆弱点。
 **建议**：E5-5 作为独立 D-2 立项，按上述 4 步各自提交 + 定向回归，不要与 E5 的其他改动混批。
+
+---
+
+## 改写收官（2026-09-13）
+
+**总收官/审计文档：`docs/rewrite-closing-2026-09-13.md`** —— DoD 五项实况、架构前后对照、
+E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗留清单（含 `shims.js` 退役四步分解）、
+验证方法与本次实跑结果（65 套件 + 非套件全表）。
+
+收官期本文件追加记录：
+- E5-4 补记：`export-progress` 冒烟观测口改 React 活引用（提交 `df82265c`）。
+- 收尾：删 QA 提交引入的 2 处 no-op `scopeEvalAsync`，恢复哨兵单调门（提交 `098c9aa0`）。
+- 收尾：`electron --smoke-desktop` 去 Angular 遗留 + `screenshot-regression` main 页就绪预算
+  （提交 `920c247f`）。

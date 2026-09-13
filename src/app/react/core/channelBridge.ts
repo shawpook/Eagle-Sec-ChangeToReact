@@ -1,5 +1,6 @@
 import { getIpcWriteState } from './ipcWriteState';
 import { savePreferences, applyPreferencesToCurrentDocument, broadcastIpc } from './settings';
+import { getScopeFace } from './scopeFace';
 
 /**
  * P1 接缝：跨边界 IPC 总线的唯一取用口 + 通道路由。
@@ -62,6 +63,18 @@ function replaceCachedItem(updated: any): void {
   const items = w.__mockLibraryCache || [];
   const index = items.findIndex((entry: any) => entry && entry.id === updated.id);
   if (index >= 0) items[index] = updated;
+}
+
+/** E7：发送时点的 live 条目。发送参数可能是调用方的克隆（如 imagesChange 的改名克隆）——
+ *  回执差分的基线必须是 live（改名回写靠它：快照=新名、live=旧名 → 差分出 name）；若发送对象
+ *  本身就是 live（注解/星标直改），差分自然为空、不回发。无 scope 面时退化为发送快照。 */
+function liveItemById(id: string): any {
+  try {
+    const face: any = getScopeFace();
+    return face && face.itemMappings ? face.itemMappings[id] || null : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 /**
@@ -165,14 +178,14 @@ function routeDesktop(bus: any, channel: string, params: any): boolean {
           state.mergeCachedItems(updated);
           (Array.isArray(updated) ? updated : [updated]).forEach((item: any) => {
             if (!item || !item.id) return;
-            const snapshot = snapshots.find((entry: any) => entry.id === item.id);
+            const baseline = liveItemById(item.id) || snapshots.find((entry: any) => entry.id === item.id);
             let echo: any = item;
-            if (snapshot) {
+            if (baseline) {
               echo = { id: item.id };
               let changed = false;
               for (const key of Object.keys(item)) {
                 if (key === 'id' || key === 'lastModified' || key === 'modificationTime') continue;
-                if (snapshot[key] !== item[key]) { echo[key] = item[key]; changed = true; }
+                if (baseline[key] !== item[key]) { echo[key] = item[key]; changed = true; }
               }
               if (!changed) return;
             }

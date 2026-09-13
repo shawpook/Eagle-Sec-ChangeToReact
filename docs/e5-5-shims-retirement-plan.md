@@ -49,6 +49,37 @@ Electron 生产路径同样是承重件**，不是可选 mock。因此 P1 的前
 **仍未落地**：P1（通道桥）、P2（详情原图交付门控）、P3（source-mode UI）、P4（浏览器 mock 隔离）、
 P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「后续三步」。
 
+### 0.1 P2 实测更正：门控在 React UI 路径下**当前不生效**（2026-09-14 探针实证）
+
+原 §「后续步骤 2」把 P2 当作「把门控搬到 React detail 生命周期」的中性搬迁。实测否定了这个前提：
+
+- 门控包装的是 `bodyScope()`＝`window.__eagleDriver` 的 `enterDetailMode`。该名在
+  `driverApi.ACTION_FIELDS` 白名单内，且 `enterDetailMode` 已被 `miscRawState` 注册为 store 字段，
+  故包装写入的是 **store 侧那个箭头挂载**（`machineryInfra.ts:139` 的 `s.enterDetailMode = ($e,img) => machineryEnterDetailMode(...)`）。
+- 但 **React UI 的所有入口都直接调用 import 的 `machineryEnterDetailMode`**，不经 scope 面：
+  `selectionService.ts:200`（网格双击）、`inspectorActions.ts:521/585/604`、`miscDomain.ts:537/1594`、
+  `detailService.ts:233`。`window.__eagleMachinery.enterDetailMode`（= 该导入函数）与驱动面那个
+  **不是同一函数对象**。
+- 探针 `tests/probe-detail-gate-reachability.mjs`（隔离栈 + CDP，实跑）：
+  `{sameObject:false, machineryHasGateFlag:false, driverHasGateFlag:true}`
+  Path A（machinery 导出＝UI 用面）→ `{itemId:'', mode:'', lockedAt:0}`（门控未跑）；
+  Path B（driver API＝main.cjs 驱动脚本用面）→ `{itemId:'ITEM-…', mode:'waiting', lockedAt:5572.9}`（门控生效）。
+- 连带结论：`openDocumentViewer` 只被门控包装体调用，故**应用内 document workspace 在 React UI 下同样不可达**；
+  React 侧全仓无 `document-viewer` 引用（图片/文档走各自 viewer）。
+
+**故 P2 不是搬迁，而是「行为接线决策」**，需在二者间选一：
+
+1. **恢复门控（计划原意）**：把交付门控（`shims.js:56-232` 的 `detailRenderState`/`DetailWorker`/canvas 签名/
+   `waitForDetailOriginal`）移入 React，并在 `machineryEnterDetailMode`/`machineryLeaveDetailMode`
+   内部调用（而非包 scope 面），再删 shims 包装体。**注意这是可见行为变化**（详情页先隐原图到画布稳定；
+   主窗/预览窗的 `enterDetailMode` 语义都会变），需实机走查确认。
+2. **判死删除**：承认该门控与 document viewer 属已失效遗留，直接从 shims 删除（但 main.cjs
+   `:2146/2302/2767` 的驱动脚本仍走 driver 面，删除前需确认其不依赖门控行为）。
+
+> document viewer 分支此前有意与「原版详情流」并存；React 已有自己的 pdf/office viewer 路由，
+> 恢复前需先确认不会与 React 侧路由重复。建议此项先做一轮**实机走查**再定。
+
+
 
 ---
 

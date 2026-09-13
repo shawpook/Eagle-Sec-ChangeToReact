@@ -28,6 +28,24 @@ const channelsSmokeMode = process.argv.includes('--smoke-channels') || process.e
 // （原型补丁实测无效），改由渲染层 smoke 分支序列化菜单模板后经 IPC 通报（原生 popup
 // 无法被 CDP 观察且会阻塞会话）；捕获经 smoke:menu-popups 供闭环测试断言
 const menuPopupSmokeMode = process.argv.includes('--smoke-menu') || process.env.EAGLE_MENU_SMOKE === '1';
+// P1-c-2 验证（2026-09-14）：写路径替身烟测 —— 真实 renderer/channelBridge/preload/IPC 回程，
+// 仅在 main→backend 边界（/api/item/updateMany）注入可控替身（EAGLE_WRITE_STUB_DIR），
+// 驱动脚本见 electron/smoke/write-path-driver.js（断言在测试侧对照 stub 请求日志进行）。
+const writePathSmokeMode = process.argv.includes('--smoke-write-path');
+// 同批验证②：真实后端 + 临时库的编辑→重启读回（electron/smoke/persistence-driver.js，
+// EAGLE_PERSISTENCE_PHASE=edit|check 两阶段）。
+const persistenceSmokeMode = process.argv.includes('--smoke-persistence');
+const writePathStubDir = process.env.EAGLE_WRITE_STUB_DIR || '';
+let writePathStubSeq = 0;
+function writePathStubReadControl() {
+  try { return JSON.parse(fs.readFileSync(path.join(writePathStubDir, 'control.json'), 'utf8')) || {}; } catch (err) { return {}; }
+}
+function writePathStubWriteControl(control) {
+  try { fs.writeFileSync(path.join(writePathStubDir, 'control.json'), JSON.stringify(control)); } catch (err) { /* ignore */ }
+}
+function writePathStubAppend(entry) {
+  try { fs.appendFileSync(path.join(writePathStubDir, 'requests.jsonl'), JSON.stringify(entry) + '\n'); } catch (err) { /* ignore */ }
+}
 const menuPopupCaptures = [];
 const menuPopupOutFile = process.env.EAGLE_MENU_SMOKE_OUT || '';
 const dragStartCalls = [];
@@ -198,6 +216,19 @@ function copyWinFilesToClipboard(paths) {
 }
 
 async function apiRequest(route, options = {}) {
+  // P1-c-2 验证①：write-path 替身 —— 仅拦截 /api/item/updateMany（main→backend 边界），
+  // 其余请求全部真实转发。替身按 control.json 施加延迟/失败并回显请求快照（等价真实后端 data）。
+  if (writePathSmokeMode && route === '/api/item/updateMany') {
+    const control = writePathStubReadControl();
+    const seq = ++writePathStubSeq;
+    writePathStubAppend({ seq, ts: Date.now(), body: options.body || null });
+    if (control.failNext > 0) {
+      writePathStubWriteControl({ ...control, failNext: Number(control.failNext) - 1 });
+      throw new Error('stub-failure seq=' + seq);
+    }
+    if (Number(control.delayMs) > 0) await new Promise((r) => setTimeout(r, Number(control.delayMs)));
+    return Array.isArray(options.body && options.body.items) ? options.body.items : [];
+  }
   const target = new URL(`${apiBase}${route}`);
   const body = options.body ? JSON.stringify(options.body) : '';
   const response = await new Promise((resolve, reject) => {
@@ -803,6 +834,15 @@ function createWindow(options = {}) {
 }
 
 function registerIpc() {
+  if (writePathSmokeMode) {
+    // 渲染层驱动经 preload 通用 ipc 桥控制 updateMany 替身（EAGLE_WRITE_STUB_DIR/control.json）。
+    ipcMain.on('write-stub:control', (_event, control) => {
+      writePathStubWriteControl({ failNext: 0, delayMs: 0, ...(control || {}) });
+    });
+    ipcMain.on('write-stub:reset', () => {
+      try { fs.writeFileSync(path.join(writePathStubDir, 'requests.jsonl'), ''); } catch (err) { /* ignore */ }
+    });
+  }
   ipcMain.handle('window:action', (event, action, value) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) return false;
@@ -1667,7 +1707,7 @@ async function loadServicePlugins() {
   }
 }
 
-if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode || channelsSmokeMode) {
+if (smokeMode || pluginSmokeMode || desktopSmokeMode || librarySmokeMode || mainWorkflowSmokeMode || documentViewerSmokeMode || browserCaptureUiSmokeMode || previewDeliverySmokeMode || exportProgressSmokeMode || videoDetailSmokeMode || regressionHostMode || dragSmokeMode || channelsSmokeMode || writePathSmokeMode || persistenceSmokeMode) {
   app.setPath('userData', process.env.EAGLE_ELECTRON_USER_DATA_DIR || path.join(os.tmpdir(), `eagle-reverse-smoke-${process.pid}`));
 }
 
@@ -3378,6 +3418,49 @@ app.whenReady().then(async () => {
           console.log(`CHANNELS_SMOKE_OK ${JSON.stringify(results)}`);
         } catch (err) {
           console.error(`CHANNELS_SMOKE_ERROR ${err.stack || err.message}`);
+        }
+        clearTimeout(timeout);
+        app.quit();
+      },
+    });
+    return;
+  }
+  // P1-c-2 验证①/②：写路径替身烟测（--smoke-write-path）与真实持久化烟测（--smoke-persistence）。
+  // 驱动脚本 electron/smoke/*-driver.js 在真实页面上下文执行；断言在测试侧进行。
+  if (writePathSmokeMode || persistenceSmokeMode) {
+    const isWrite = writePathSmokeMode;
+    const timeout = setTimeout(() => {
+      console.error(isWrite ? 'WRITE_PATH_SMOKE_TIMEOUT' : 'PERSIST_SMOKE_TIMEOUT');
+      app.quit();
+    }, 180000);
+    createWindow({
+      show: false,
+      onDidFinishLoad: async (win) => {
+        try {
+          const driverFile = isWrite ? 'write-path-driver.js' : 'persistence-driver.js';
+          let driverSource = fs.readFileSync(path.join(__dirname, 'smoke', driverFile), 'utf8');
+          if (!isWrite) {
+            // 渲染层 process 是 shims mock（无 env）——由主进程把实参注入页面。
+            const persistEnv = {
+              phase: process.env.EAGLE_PERSISTENCE_PHASE || 'edit',
+              folderId: process.env.EAGLE_PERSISTENCE_FOLDER_ID || '',
+              expectedIds: (process.env.EAGLE_PERSISTENCE_IDS || '').split(',').map((s) => s.trim()).filter(Boolean),
+            };
+            driverSource = `window.__persistEnv = ${JSON.stringify(persistEnv)};\n` + driverSource;
+          }
+          const report = await win.webContents.executeJavaScript(driverSource);
+          if (isWrite) {
+            const requests = fs.existsSync(path.join(writePathStubDir, 'requests.jsonl'))
+              ? fs.readFileSync(path.join(writePathStubDir, 'requests.jsonl'), 'utf8')
+                .split('\n').filter(Boolean)
+                .map((line) => { try { return JSON.parse(line); } catch (err) { return { bad: line }; } })
+              : [];
+            console.log(`WRITE_PATH_SMOKE_DONE ${JSON.stringify({ report, requests })}`);
+          } else {
+            console.log(`PERSIST_SMOKE_DONE ${JSON.stringify(report)}`);
+          }
+        } catch (err) {
+          console.error(isWrite ? `WRITE_PATH_SMOKE_ERROR ${err.stack || err.message}` : `PERSIST_SMOKE_ERROR ${err.stack || err.message}`);
         }
         clearTimeout(timeout);
         app.quit();

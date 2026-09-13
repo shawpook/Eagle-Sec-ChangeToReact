@@ -153,6 +153,23 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
   export/import/library/item 回程 + `onRebindRefresh` + `preview.onInit` 缓冲（`shims.js:1622-1735`）
   未迁。**迁移即删**（否则与 shims 双发），而 React 安装晚于 shims 加载会丢冷启动主进程事件，
   需配套缓冲兜底与全量回程测试——属结构性交接，非机械搬迁。
+  **施工切线（已定，可直接执行）**：
+  1. 新增 `core/returnBridge.ts` → `installReturnBridge()`：端口逐字搬 `shims.js:1622-1735`
+     （`show-item-in-folder` 带 `__lastExportJobId` 的特殊分支、`close-export-task` 的 angular
+     面板复位（React 下 angular 恒缺席→保留 mockEmit 即可）、9 频道循环、`file-uploaded` 先并
+     cache 再过总线、`thumbnail-generated`/`rebind-refresh`、export/import/library/item 的
+     `onX`、`onRebindRefresh`（bodyScope→`getWindowScope()`+`__eagleMachinery.rebindRefresh`）、
+     `preview.onInit` 缓冲轮询）。事件一律 `getIpcBus().emit`（= shims 总线，React 监听同实体）。
+  2. `main.tsx` 在 `installDriverApi()` 之前调用 `installReturnBridge()`，并置
+     `window.__eagleReturnBridgeInstalled = true`。
+  3. shims 侧把 `if (desktopApi && typeof desktopApi.onIpc === 'function') { … }` 的注册体改为
+     `setTimeout(() => { if (window.__eagleReturnBridgeInstalled) return; …原注册体… }, 0)`。
+     时序论证：shims 同步解析期 schedule 的 0ms timer 属宏任务，DCL 前的 deferred module
+     （React 入口）先执行 → React 先注册、shims timer 到点后跳过；preload 队列的主进程事件在
+     DCL 完成后才可派发（早于 shims timer 派发且晚于 React 安装的概率窗口由 preview.onInit
+     式缓冲兜底——若实测存在，可把 shims timer 提到 25ms 并在 timer 内补派发挂起事件）。
+  4. 验证：`tests/react-ipc-bridge-routing`（假 desktopApi 走 onIpc 面）、main-ui-workflow、
+     thumbnail/custom-thumbnail/library-switch 族；哨兵 + tsc。
 - **P4（browser arms 隔离）/ P5（删 `shims.js` + `mock-data.js`、`runtimeGlobals` 启动契约、
   3 个源码字符串测试改写）**：依赖 P1-c-4。
 - shims 对应分支**暂留**：浏览器态（无 `desktopApi`）与 preferences 窗内 `req('electron')` 直发仍

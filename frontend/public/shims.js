@@ -1619,7 +1619,13 @@
     }
     return Promise.resolve(false);
   };
-  if (desktopApi && typeof desktopApi.onIpc === 'function') {
+  // b1-9bz-E7（P1-c-4）：回程扇出已迁 `core/returnBridge.ts`（React 入口安装并置
+  // __eagleReturnBridgeInstalled）。shims 的注册体延迟到 0ms timer：deferred module（React 入口）
+  // 在 DCL 链内先执行 → 检测到标记即跳过，保证单注册（无双发）；pre-seam 世界（无 React 入口的
+  // 页面）timer 到点后照常注册，行为不变。
+  setTimeout(() => {
+    if (window.__eagleReturnBridgeInstalled) return;
+    if (!(desktopApi && typeof desktopApi.onIpc === 'function')) return;
     desktopApi.onIpc('show-item-in-folder', (value) => {
       if (desktopApi.export && desktopApi.export.reveal && window.__lastExportJobId) {
         runPreviewAction('show-item-in-folder', desktopApi.export.reveal(window.__lastExportJobId));
@@ -1667,7 +1673,6 @@
     // thumbnail-generated resolve）+ rebind-refresh 刷新面（miscDomain:522 监听）。
     desktopApi.onIpc('thumbnail-generated', (value) => mockEmit('thumbnail-generated', value));
     desktopApi.onIpc('rebind-refresh', (value) => mockEmit('rebind-refresh', value));
-  }
   if (desktopApi && desktopApi.export) {
     if (typeof desktopApi.export.onProgress === 'function') {
       desktopApi.export.onProgress((progress) => {
@@ -1733,7 +1738,7 @@
       setTimeout(() => clearInterval(retry), 10000);
     });
   }
-
+  }, 0);
   const windowApi = () => (window.eagleDesktop && window.eagleDesktop.window) || null;
   const windowListeners = new Map();
   const windowState = (() => {

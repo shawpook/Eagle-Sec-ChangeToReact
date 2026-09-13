@@ -43,6 +43,7 @@ import { getDriverApi, installDriverApi } from './core/driverApi';
 import { exposeScopeFaceDiagnostics, getScopeFace, installScopeRegistry } from './core/scopeFace';
 import { installDetailDeliveryGate } from './core/detailDeliveryGate';
 import { installIpcWriteState } from './core/ipcWriteState';
+import { installReturnBridge } from './core/returnBridge';
 import { takeoverPreferencesDomain } from './core/preferencesDomain';
 
 import { installPortsProbe } from './core/portsProbe';
@@ -252,5 +253,8 @@ installDetailDeliveryGate();
 // P1-c-2：写路径共享状态唯一实例（shims 消费方经 window.__eagleIpcWriteState 取同一
 // 队列/计数器/发布器；channelBridge 的 images-change 分支亦用此实例）。
 installIpcWriteState();
+// P1-c-4：主进程回程扇出迁入 React（置 __eagleReturnBridgeInstalled；shims 同块的
+// 0ms 延迟注册检测该标记后跳过，保证单注册）。须早于 shims 的 timer 派发。
+installReturnBridge();
 bridgeWhenReady();
 (window as any).__eagleDetailState = useDetailState;

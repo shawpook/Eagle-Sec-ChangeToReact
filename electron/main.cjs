@@ -1879,6 +1879,29 @@ app.whenReady().then(async () => {
                 }
               };
               const currentItem = (id) => (scope.itemMappings && scope.itemMappings[id]) || scope.raw.find((item) => item.id === id);
+              // b1-9bz-E7（main-ui-workflow 定位）：imagesChange 只把改名写进克隆与后端，live 对象
+              // 保留旧名（回声同步时机抖动）——后续步的 updateMany 载荷会携带旧名，被后端当补丁打回
+              // （name 回退断言超时）。等价 bundle 回声语义：每个持久化等待点后把后端条目原地并入 live。
+              const syncLiveFromBackend = async (id) => {
+                const current = await window.eagleDesktop.library.current();
+                const it = current.items.find((entry) => entry && entry.id === id);
+                const live = currentItem(id);
+                if (it && live) Object.assign(live, it);
+                return it;
+              };
+              // b1-9bz-E7（同因）：machineryUpdateSelection 的 30ms 防抖会在驱动写入 inspector.new*
+              // 之后把字段覆盖回 selected 当前值——imagesChange 读到空名会早退不发（no-event）。
+              // 写入后跨过防抖窗口校验，被覆盖则重写，稳定后调用方再触发动作。
+              const setInspectorField = (key, value) => new Promise((resolve) => {
+                const attempt = () => {
+                  scope.inspector[key] = value;
+                  setTimeout(() => {
+                    if (scope.inspector[key] !== value) attempt();
+                    else resolve();
+                  }, 40);
+                };
+                attempt();
+              });
               const selectItems = async (ids) => {
                 scope.selected = [];
                 scope.selectedMappings = {};
@@ -2054,8 +2077,8 @@ app.whenReady().then(async () => {
                 await new Promise((resolve) => setTimeout(resolve, 100));
               };
               await selectInspectorItems([droppedId]);
-              scope.inspector.newName = 'Inspector Renamed';
-              scope.inspector.newUrl = 'https://example.test/original-main';
+              await setInspectorField('newName', 'Inspector Renamed');
+              await setInspectorField('newUrl', 'https://example.test/original-main');
               // b1-9bz-D-4：原实现只等一次结果，CI/并发压力下偶发「事件丢失/操作失败」假失败。
               // 改为触发+等待最多 5 轮（每轮 8s），超时轮次重新触发 imagesChange
               // （shim 的 updateMany 走后端 HTTP，负载下可能整体失败——ok:false 也会本轮等满后重试）。
@@ -2083,6 +2106,8 @@ app.whenReady().then(async () => {
                   };
                   ipc.on('item:operation-result', onResult);
                 });
+                await setInspectorField('newName', 'Inspector Renamed');
+                await setInspectorField('newUrl', 'https://example.test/original-main');
                 inspectorActions.imagesChange();
                 firstInspectorOperation = await firstInspectorResult;
                 if (!firstInspectorOperation) {
@@ -2101,14 +2126,16 @@ app.whenReady().then(async () => {
                 const item = current.items.find((entry) => entry.id === droppedId);
                 return item && item.name === 'Inspector Renamed' && item.url === 'https://example.test/original-main';
               }, 'inspector name and URL persistence');
+              await syncLiveFromBackend(droppedId);
 
-              scope.inspector.newAnnotation = '原版检查器真实持久化';
+              await setInspectorField('newAnnotation', '原版检查器真实持久化');
               inspectorActions.annotationChange();
               await waitFor(async () => {
                 const current = await window.eagleDesktop.library.current();
                 const item = current.items.find((entry) => entry.id === droppedId);
                 return item && item.annotation === '原版检查器真实持久化';
               }, 'inspector annotation persistence');
+              await syncLiveFromBackend(droppedId);
 
               scope.TagManager.addTags(['main-ui', 'persisted']);
               const workflowFolder = await waitFor(() => scope.folders.find((folder) => folder.id === workflowFolderId), 'workflow folder');
@@ -2120,6 +2147,7 @@ app.whenReady().then(async () => {
                 const item = current.items.find((entry) => entry.id === droppedId);
                 return item && item.name === 'Inspector Renamed' && item.url === 'https://example.test/original-main' && item.annotation === '原版检查器真实持久化' && item.star === 4 && item.tags.includes('main-ui') && item.folders.includes(workflowFolder.id) ? item : null;
               }, 'inspector tags folder and star persistence');
+              await syncLiveFromBackend(droppedId);
 
               await selectInspectorItems(clipboardItem ? [droppedId, clipboardItem.id] : [droppedId]);
               // b1-9f 取证探针贴回（PROGRESS b1-9f 节配方）：multi inspector persistence 复发
@@ -2135,7 +2163,7 @@ app.whenReady().then(async () => {
                   selVals: scope.selected && scope.selected.map((it) => it && [String(it.id).slice(-4), it.star, it.annotation]),
                 };
               })();
-              scope.inspector.newAnnotation = '多选备注持久化';
+              await setInspectorField('newAnnotation', '多选备注持久化');
               inspectorActions.annotationChange();
               scope.TagManager.addTag('batch-ui');
               scope.changeStar(3, false, true);
@@ -2257,7 +2285,14 @@ app.whenReady().then(async () => {
               const trashedItem = currentItem(droppedId);
               trashedItem.isDeleted = false;
               delete trashedItem.deletedTime;
-              require('electron').ipcRenderer.send('images-change', [trashedItem]);
+              // b1-9bz-E7：P1-c-2 后 images-change 唯一落点 = 接缝 routeDesktop（单路由不变量）。原直发
+              // shims 总线（require('electron') 是 shims mock），分支已删 → 落 console.debug 黑洞。
+              {
+                const restoreBridge = window.__eagleIpcBridge && typeof window.__eagleIpcBridge.send === 'function'
+                  ? window.__eagleIpcBridge
+                  : (window.$electronIpc || window.__eagleIpc);
+                restoreBridge.send('images-change', [trashedItem]);
+              }
               await waitFor(async () => {
                 const current = await window.eagleDesktop.library.current();
                 return current.items.find((item) => item.id === droppedId && !item.isDeleted);

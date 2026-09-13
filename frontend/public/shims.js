@@ -3713,21 +3713,6 @@
     return virtual;
   }
 
-  function openSourceFolderInAngular(folder) {
-    const tryOpen = () => {
-      try {
-        if (!window.angular) return;
-        const scope = angular.element(document.body).scope();
-        if (scope && typeof scope.openFolder === 'function') {
-          scope.openFolder(folder, true);
-          if (typeof scope.$evalAsync === 'function') scope.$evalAsync();
-        }
-      } catch (err) {
-        console.warn('[eagle-shim] source folder open failed', err);
-      }
-    };
-    setTimeout(tryOpen, 650);
-  }
 
   async function openSourceMode() {
     if (sourceModeState.active) return;
@@ -3761,75 +3746,7 @@
     }
   }
 
-  async function handleSourceSelectFolder(sourceRootId, relativePath) {
-    sourceRootId = String(sourceRootId || '');
-    relativePath = String(relativePath || '.');
-    const previousRootId = sourceModeState.currentRootId;
-    sourceModeState.currentRootId = sourceRootId;
-    sourceModeState.currentRelativePath = relativePath;
-    try {
-      await sourceModeApi('/api/source-mode/state', {
-        method: 'POST',
-        body: JSON.stringify({
-          mode: 'source',
-          selectedSourceRootId: sourceRootId,
-          selectedRelativePath: relativePath,
-        }),
-      });
-      if (sourceRootId && previousRootId !== sourceRootId) {
-        await refreshSourceModeVirtualLibrary(sourceRootId);
-      }
-      const folders = (window.__mockLibrary && window.__mockLibrary.folders) || [];
-      const folder = findSourceFolder(folders, relativePath);
-      if (folder) openSourceFolderInAngular(folder);
-      renderSourceModeSidebar();
-    } catch (err) {
-      console.warn('[eagle-shim] source select folder failed', err);
-    }
-  }
 
-  async function handleRescanRoot(rootId) {
-    try {
-      const d = desktopApi && desktopApi.sourceMode;
-      if (d && typeof d.rescan === 'function') {
-        await d.rescan(rootId, null);
-      } else {
-        await sourceModeApi('/api/source-roots/rescan', {
-          method: 'POST',
-          body: JSON.stringify({ id: rootId, relativePath: null }),
-        });
-      }
-      sourceModeState.roots = await sourceModeApi('/api/source-roots');
-      renderSourceModeSidebar();
-    } catch (err) {
-      console.warn('[eagle-shim] source rescan failed', err);
-    }
-  }
-
-  async function handleRemoveRoot(rootId) {
-    try {
-      const d = desktopApi && desktopApi.sourceMode;
-      if (d && typeof d.remove === 'function') {
-        await d.remove(rootId);
-      } else {
-        await sourceModeApi('/api/source-roots/remove', {
-          method: 'POST',
-          body: JSON.stringify({ id: rootId }),
-        });
-      }
-      const roots = await sourceModeApi('/api/source-roots');
-      sourceModeState.roots = roots;
-      if (sourceModeState.currentRootId === rootId) {
-        const nextRoot = roots[0] || null;
-        sourceModeState.currentRootId = nextRoot ? nextRoot.id : '';
-        sourceModeState.currentRelativePath = '.';
-        if (nextRoot) await refreshSourceModeVirtualLibrary(nextRoot.id);
-      }
-      renderSourceModeSidebar();
-    } catch (err) {
-      console.warn('[eagle-shim] source remove failed', err);
-    }
-  }
 
   async function handleSourceAdd() {
     try {

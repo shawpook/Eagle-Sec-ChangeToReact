@@ -103,6 +103,27 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 - **遗留**：门控重新生效属**可见行为变化**（详情页先隐原图至画布稳定 3 帧 / 原图 URL 一致），
   需实机走查确认观感符合原版。
 
+### 0.3 P3 实测更正：source-mode UI 是**功能补建**，不是搬迁
+
+`shims.js` 的 source-mode 块（现约 `3311-3856`，594 行）在 React 下**部分可用**：
+`installModeSwitch`（靠 `Sidebar.tsx:699` 有意保留的 `ng-click` 钩子识别切换按钮）可开/关，
+`#source-mode-add-folder` → `handleSourceAdd` 可加来源。
+
+但实测：`renderSourceModeSidebar` 渲染的交互属性
+—— 目录行 `data-source-folder` / `data-source-relative-path`、`data-source-action="toggle-root"`、
+`data-source-rescan`、`data-source-remove` —— **全仓无任何监听器**（shims 内没有，React 侧
+`grep data-source` 零命中）；而唯一意图实现这些交互的 `handleSourceSelectFolder` /
+`handleRescanRoot` / `handleRemoveRoot`（+ 它们调用的 `openSourceFolderInAngular`，其内部还依赖
+已死的 `window.angular`）**零调用点**。
+
+结论：source-mode 的「浏览来源素材 / 重扫 / 移除」从未接线。因此 P3 落地前需先定这几个交互的
+语义（点目录行应如何把来源素材投到网格？重扫/移除后 UI 如何刷新？与 `desktopApi.sourceMode` 的
+`rescan/remove/pickAndAdd` 契约如何对应？）——属**功能设计**，非机械搬迁。
+
+本批已做安全切片：删除上述 4 个不可达函数（-83 行，`node --check` 通过、`source-mode-ui-closed-loop`
+复跑绿）。块本体迁移与交互补建留待独立批次。
+
+
 
 
 

@@ -57,6 +57,7 @@ import { machineryPreloadImage } from './itemDomain';
 import { machineryAddToRecentFile } from './libraryDomain';
 import { ensureDetailZoom } from './smoothZoomEngine';
 import { getFilter } from './filterDomain';
+import { getIpcBus } from './channelBridge';
 
 import { machinerySortRawData } from './itemDomain';
 import { machineryUndo } from './navHistory';
@@ -957,7 +958,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 
 const electronLog: any = (window as any).electronLog || console;
 
-const __cf_ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const __cf_ipcRenderer: any = getIpcBus();
 
 const systemPreferences: any = _req('@electron/remote')?.systemPreferences;
 

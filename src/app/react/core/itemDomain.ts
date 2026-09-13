@@ -58,6 +58,7 @@ import { getLanguageBCP, machineryLeaveDetailMode, updateCurrentOrderAndIncrease
 import { machineryAutoResizeTagFilter } from './tagManagerDomain';
 import { getTimeout, machineryCalls } from './machineryInfra';
 import { getWindowScope } from './scopeFace';
+import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
 import { useFolderState } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
@@ -720,7 +721,7 @@ const electronSettings: any = (window as any).electronSettings;
 
 const electronLog: any = (window as any).electronLog || console;
 
-const __cf_ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const __cf_ipcRenderer: any = getIpcBus();
 
 const clipboard: any = _req('electron')?.clipboard || (window as any).clipboard;
 
@@ -1822,7 +1823,7 @@ export function machineryCopyImages(event: any): void {
       }
     }
     else if (useSelectionState.getState().selected.length > 0) {
-      const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+      const ipc = getIpcBus();
       ipc.sendTo(w.backgroundWindowID, 'copy-images', useSelectionState.getState().selected);
       w.RecentFileManager.addFiles(useSelectionState.getState().selected);
       setTimeout(function () {
@@ -2230,7 +2231,7 @@ export function machineryNewFileFromTemplate(ext: any): void {
     uploadFiles([file]);
     machineryShowUploadQueue();
 
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    const ipc = getIpcBus();
     ipc.send('electron-info', `[app] Create file from [Untitled.${ext}]`);
   }
   catch (err: any) {

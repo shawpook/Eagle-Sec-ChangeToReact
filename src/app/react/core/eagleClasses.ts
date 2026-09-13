@@ -18,13 +18,14 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 ;
 import { useMiscRawState } from '../store/miscRawState';
+import { getIpcBus } from './channelBridge';
 
 const _req: any = (name: string) => {
   try { return (window as any).require(name); } catch (err) { return undefined; }
 };
 const electronLog: any = (window as any).electronLog || console;
 const i18n: any = (window as any).i18n;
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const swal: any = (...args: any[]) => (window as any).swal(...args);
 
 class Inspector {

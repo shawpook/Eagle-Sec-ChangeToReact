@@ -56,13 +56,14 @@ import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
+import { getIpcBus } from '../core/channelBridge';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const electronLog: any = (window as any).electronLog || console;
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。

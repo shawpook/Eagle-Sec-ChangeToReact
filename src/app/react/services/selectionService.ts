@@ -13,6 +13,7 @@ import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useItemState } from '../store/itemState';
+import { getIpcBus } from '../core/channelBridge';
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -39,7 +40,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 
 const electronSettings: any = (window as any).electronSettings;
 
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
 

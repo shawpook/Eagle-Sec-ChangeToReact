@@ -58,6 +58,7 @@ import { setScrollTop, clickEl, hide } from '../utils/domQuery';
 import { glRemoveitemsChannel } from '../global/bus';
 import { debounce } from '../utils/func';
 import { machineryCalculateImageBinding, machineryFilterSidebarItem, machineryFindDupclipate, machineryForceFitImageSize, machineryRebindRefresh, machineryRenameImages, rebindRefreshLazyTimeout } from './itemDomain';
+import { getIpcBus } from './channelBridge';
 import { getFilter, machineryExistInSmartFilter, machineryUpdateFilterCounts } from './filterDomain';
 import { machineryEditTag, machineryEnableSubFolderNameEditable, machineryOpenAllTags, machineryOpenUntagged, machineryRenameTagGroup } from './tagManagerDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from './selectionViewDomain';
@@ -1239,7 +1240,7 @@ export function machineryImportLinks(): void {
             modificationTime: Date.now(),
             folders: folderIds,
           };
-          const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+          const ipc = getIpcBus();
           ipc.sendTo(w.backgroundWindowID, 'url-from-extension', data);
         }
         useMiscRawState.getState().uploadQueue.push({});
@@ -1329,7 +1330,7 @@ export function machineryOpenPinterest(): void {
 export function machineryOpenTrialModal(trialRemain: any): void {
   const w = window as any;
   if (trialRemain) {
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    const ipc = getIpcBus();
     ipc.send('open-trial-modal', trialRemain);
   }
 }
@@ -1574,7 +1575,7 @@ export function machinerySaveFolder(): void {
     // IPCHelper（bundle 3471 const = 脚本级词法绑定，window/ESM 均不可达）——send 语义等价
   // 复刻（bundle 3473-3482：ipcRenderer.send + electronLog + try/catch 静默）
   try {
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    const ipc = getIpcBus();
     ipc.send('folders-change', {
       // NOTE: 把資源庫路徑寫死，避免更新到其他資源庫路徑
       libraryDir: libraryPath,

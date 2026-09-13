@@ -34,6 +34,7 @@ import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
+import { getIpcBus } from '../core/channelBridge';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
@@ -49,7 +50,7 @@ const initLinkVars = () => {
 const i18n: any = (window as any).i18n;
 const eagle: any = (window as any).eagle;
 const swal: any = (...args: any[]) => (window as any).swal(...args);
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const fs: any = _req('fs');
 const sanitize: any = (function () {
   const arp: any = _req('app-root-path');

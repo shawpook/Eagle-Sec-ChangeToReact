@@ -18,6 +18,7 @@ import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { getIpcBus } from '../core/channelBridge';
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -36,7 +37,7 @@ const sanitize: any = (function () {
 
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 
 const i18n: any = (window as any).i18n;
 
@@ -487,7 +488,7 @@ export function machineryOnDropContainer(event: any): void {
     event && event.stopPropagation();
 
     var fsPath = w.require('path');
-    var ipcRenderer = w.require('electron').ipcRenderer;
+    var ipcRenderer = getIpcBus();
     var folder = useFolderState.getState().currentFolder;
     var dragUrl: any = undefined;
     if (event.dataTransfer) {

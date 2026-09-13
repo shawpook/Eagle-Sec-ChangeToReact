@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useAppState } from '../store/appState';
+import { getIpcBus } from '../core/channelBridge';
 
 /**
  * 阶段1：壳与全局状态（被动初始化器）。
@@ -22,7 +23,7 @@ export function AppRoot() {
 
     const onStorage = () => refreshFromGlobals();
     // Electron 真实环境偏好更新通过 IPC broadcast 推送。
-    const ipc = (window as any).$$electronIpc || (window as any).__eagleIpc;
+    const ipc = getIpcBus();
     const onUpdatePrefs = () => refreshFromGlobals();
     // RootController（bundle:20072-20090）同款事件：主题偏好变化带完整 theme 对象。
     const onThemeChange = (_e: unknown, themePref?: { name?: string; css?: string }) =>

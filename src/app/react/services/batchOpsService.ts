@@ -52,6 +52,7 @@ import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { getIpcBus } from '../core/channelBridge';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -75,7 +76,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
 const electronLog: any = (window as any).electronLog || console;
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();

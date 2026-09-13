@@ -45,6 +45,7 @@ import { useItemState } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
+import { getIpcBus } from '../core/channelBridge';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -52,7 +53,7 @@ const eagle: any = (window as any).eagle;
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 const remote: any = _req('@electron/remote');
 const Menu: any = remote?.Menu;
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const dialog: any = remote?.dialog;
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。

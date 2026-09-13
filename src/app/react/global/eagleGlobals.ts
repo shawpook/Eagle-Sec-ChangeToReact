@@ -5,6 +5,8 @@
  * localStorage 键全部原样保留。因此这里只做「取引用」，绝不重新实现偏好读写 / IPC 通道。
  */
 
+import { getIpcBus } from '../core/channelBridge';
+
 export interface EagleGlobals {
   i18n: any;
   eagle: any;
@@ -41,7 +43,7 @@ export function eagleDesktop(): any {
 export function ipcRenderer(): any {
   const desktop = eagleDesktop();
   if (desktop && desktop.ipc) return desktop.ipc;
-  return (window as any).$$electronIpc || (window as any).__eagleIpc;
+  return getIpcBus();
 }
 
 export const t = (key: string, pairs?: Array<{ property: string; value: string }>): string => {

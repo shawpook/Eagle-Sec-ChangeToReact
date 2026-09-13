@@ -52,6 +52,7 @@ import { useBodyState } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
+import { getIpcBus } from './channelBridge';
 let done = false;
 
 function domainTimeout(fn: any, ms?: number): any {
@@ -160,7 +161,7 @@ export function takeoverSelectionViewDomain(): void {
     onSelectedChanged(w.debounce(function () {
       // 如果当前是预览视窗开启状态，切换内容时要自动在开启预览视窗
       if (useSelectionState.getState().selected.length === 1 && useMiscRawState.getState().isPreviewing) {
-        const ipc: any = w.$$electronIpc || w.__eagleIpc;
+        const ipc: any = getIpcBus();
         if (ipc && ipc.send) ipc.send('quicklook', useSelectionState.getState().selected[0]);
       }
     }, 300, true));

@@ -48,6 +48,7 @@ import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
 import { useItemState } from '../store/itemState';
+import { getIpcBus } from '../core/channelBridge';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -55,7 +56,7 @@ const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function 
 const FONT_TYPES: any = {}; (EagleConfig.FONT_FORMATS || []).forEach(function (ext: string) { FONT_TYPES[ext] = true; });
 const NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES: any = { tif: true, jpg: true, png: true, bmp: true, webp: true };
 const electronLog: any = (window as any).electronLog || console;
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 const remote: any = _req('@electron/remote');
 const $filter: any = (name: string) => {

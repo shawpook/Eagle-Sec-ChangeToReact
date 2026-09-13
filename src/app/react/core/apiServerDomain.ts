@@ -34,6 +34,7 @@ import { useFolderState } from '../store/folderState';
 import { useItemState } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
+import { getIpcBus } from './channelBridge';
 let installed = false;
 
 /* ── 支撑工具（bundle 顶层逐字；if-absent 接装 window）────────────────── */
@@ -184,7 +185,7 @@ let apiAPIServer: any = null;
 
 function apiIpc(): any {
   const w = window as any;
-  return w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+  return getIpcBus();
 }
 
 /* getAPIFolders（bundle 17881-17925 逐字） */

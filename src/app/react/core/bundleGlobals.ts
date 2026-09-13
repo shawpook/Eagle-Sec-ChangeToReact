@@ -42,6 +42,7 @@ import { useItemState } from '../store/itemState';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
 import { useListState } from '../store/listState';
+import { getIpcBus } from './channelBridge';
 declare const Buffer: any;
 
 let installed = false;
@@ -448,7 +449,7 @@ function _hiddenByCurrentFilter(items: any[]): void {
    为 window live binding——libraryDomain 域接管其赋值点） */
 function _ayncsImagesChange(images: any[]): void {
   const w = window as any;
-  const ipc: any = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+  const ipc: any = getIpcBus();
   if (!images || images.length === 0) return;
   setTimeout(() => {
     let total = images.length;
@@ -532,7 +533,7 @@ function _stopAPIServer(): void {
    为 window live binding——libraryDomain 域接管其赋值点；app/currentWindow 经 @electron/remote） */
 function _checkBackgroundHeartbeat(): void {
   const w = window as any;
-  const ipc: any = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+  const ipc: any = getIpcBus();
   // 理论上不该被呼叫，如果被呼叫 N 次，很有可能后台已经崩溃了，应在前台进行提示
   try {
     w.heartbeatStopCount++;
@@ -676,7 +677,7 @@ function _ayncsImagesRemove(images: any[]): void {
           imageIdString += r.id + ",";
         }
       });
-      const ipc = w.__eagleIpc || w.ipcRenderer;
+      const ipc = getIpcBus();
       if (w.backgroundWindowID === undefined) {
         ipc.send('empty-trash', imageIdString);
       }
@@ -1438,7 +1439,7 @@ export function installBundleGlobals(): void {
   // 可达依赖 vite IIFE 加载共享全局词法；b1 后 bundle 死亡，由本处 if-absent 供给）。
   // IPCHelper（bundle 3471-3489 逐字；send/sendTo = ipc 统一表达式 + electronLog + try/catch 静默）
   if (!w.IPCHelper) {
-    const ipcRef = () => w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    const ipcRef = () => getIpcBus();
     w.IPCHelper = {
       send: function (channel: string, params: any, ignoreLogging: any) {
         try {

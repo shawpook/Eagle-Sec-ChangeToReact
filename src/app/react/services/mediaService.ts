@@ -8,6 +8,7 @@ import { machineryUpdateItemView } from '../core/itemDomain';
 import { machineryToggleSlideshow } from '../core/miscDomain';
 import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
+import { getIpcBus } from '../core/channelBridge';
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -75,7 +76,7 @@ export function mediaAddVideoComment(video: any, videoElem: any): void {
     refreshVideoCommentsChannel.emit();
     machineryUpdateItemView(video);
 
-    const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+    const ipc = getIpcBus();
     ipc.send('image-change', useSelectionState.getState().current);
   })
 }
@@ -171,7 +172,7 @@ export async function mediaVideoScreenShot(copyMode: any): Promise<void> {
         folders: useSelectionState.getState().current.folders || [],
         base64data: base64,
       };
-      const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
+      const ipc = getIpcBus();
       ipc.sendTo(w.backgroundWindowID, 'screencapture-from-extension', data);
     }
   }
@@ -204,7 +205,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 
 const electronLog: any = (window as any).electronLog || console;
 
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 
 const dialog: any = _req('@electron/remote')?.dialog;
 

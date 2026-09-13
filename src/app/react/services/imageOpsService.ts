@@ -50,6 +50,7 @@ import { useItemState } from '../store/itemState';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { getIpcBus } from '../core/channelBridge';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
@@ -71,7 +72,7 @@ const swal: any = (...args: any[]) => (window as any).swal(...args);
 const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
-const ipcRenderer: any = (window as any).__eagleIpc || (window as any).electron?.ipcRenderer;
+const ipcRenderer: any = getIpcBus();
 const electronLog: any = (window as any).electronLog || console;
 const fs: any = _req('fs');
 const sanitize: any = (function () {

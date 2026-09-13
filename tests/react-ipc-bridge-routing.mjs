@@ -45,6 +45,27 @@ try {
         images: () => Promise.resolve({}), eaglepack: () => Promise.resolve({}),
         asFolder: () => Promise.resolve({}), cancel: () => Promise.resolve({}),
       },
+      // P1-c-3 族（library/thumbnail/import/clipboard）
+      updateManyCalls: [],
+      item: { updateMany: (items) => { probe.updateMany += (items || []).length; return Promise.resolve(items || []); } },
+      library: {
+        updateStructure: () => Promise.resolve({ rootDir: '/tmp/lib' }),
+        create: () => Promise.resolve({ rootDir: '/tmp/new' }),
+        switch: () => Promise.resolve({ rootDir: '/tmp/sw' }),
+      },
+      thumbnail: {
+        setCustom: () => Promise.resolve({ id: 't1' }),
+        refresh: () => Promise.resolve({ id: 't1' }),
+        resetCustom: () => Promise.resolve({ id: 't1' }),
+        status: () => Promise.resolve({ status: 'complete' }),
+      },
+      import: {
+        files: () => Promise.resolve({ id: 'i1' }),
+        url: () => Promise.resolve({ id: 'i1' }),
+        urls: () => Promise.resolve([{ id: 'i1' }]),
+        folders: () => Promise.resolve([{ id: 'i1' }]),
+      },
+      clipboard: { import: () => Promise.resolve([{ id: 'c1' }]) },
     };
 
     bridge.send('update-txt-item', { id: 'x' });
@@ -59,6 +80,28 @@ try {
     bridge.send('export-images', { savePath: 'a' });
     bridge.send('export-as-folder', {});
     bridge.send('cancel.all', 0);
+    // P1-c-3：设置族（偏好经全局 electronSettings；此处只断言「不再交 shims 总线」）
+    bridge.send('chnage-preferences', { general: { language: 'zh_CN' } });
+    bridge.send('change-theme', { name: 'DARK', css: 'dark' });
+    bridge.send('change-zoom', '1');
+    bridge.send('chnage-shortcut', { screenCaptureShortcut: 'A', windowCaptureShortcut: 'B' });
+    bridge.send('chnage-scrollBehavior', 'fast');
+    bridge.send('update-preferences', {});
+    bridge.send('lock-now', {});
+    bridge.send('regenerate-palette', [{ id: 'p1' }]);
+    // P1-c-3：库族 / 缩略图族 / 导入族 / 剪贴板族
+    bridge.send('create-library', { name: 'L' });
+    bridge.send('open-library', '/tmp/lib');
+    bridge.send('add-to-history-and-open', '/tmp/lib');
+    bridge.send('set-custom-thumbnail', { item: { id: 't1' }, thumbnailPath: '/tmp/t.png' });
+    bridge.send('regenerate-video-thumbnail', { video: { id: 't1' } });
+    bridge.send('regenerate-thumbnail', [{ id: 't1' }]);
+    bridge.send('upload-local-files', { files: [{ path: '/tmp/a.png' }] });
+    bridge.send('upload-url', { url: 'http://x' });
+    bridge.send('upload-urls', [{ url: 'http://x' }]);
+    bridge.send('import-folders', { paths: ['/tmp/d'] });
+    bridge.send('read-win-files', { folder: null, params: {} });
+    bridge.send('paste-paths', { files: ['/tmp/a.png'], folder: null });
 
     let eventHit = 0;
     bridge.on('probe:bridge-event', () => { eventHit += 1; });
@@ -81,12 +124,21 @@ try {
   extra.phase2 = p2;
 
   const nativeExpect = ['update-txt-item', 'empty-trash', 'smoke:menu-popup', 'duplicate-file'];
-  const busExpect = ['images-change', 'image-change'];
-  const desktopExpect = ['folders-change', 'open-preview-window', 'export-images', 'export-as-folder', 'cancel.all'];
+  const busExpect = [];
+  const desktopExpect = [
+    'folders-change', 'open-preview-window', 'export-images', 'export-as-folder', 'cancel.all',
+    // P1-c-3 族
+    'chnage-preferences', 'change-theme', 'change-zoom', 'chnage-shortcut', 'chnage-scrollBehavior',
+    'update-preferences', 'lock-now', 'regenerate-palette',
+    'create-library', 'open-library', 'add-to-history-and-open',
+    'set-custom-thumbnail', 'regenerate-video-thumbnail', 'regenerate-thumbnail',
+    'upload-local-files', 'upload-url', 'upload-urls', 'import-folders',
+    'read-win-files', 'paste-paths',
+  ];
   const missingNative = nativeExpect.filter((c) => !res.nativeSent.includes(c));
   const missingBus = busExpect.filter((c) => !res.busSent.includes(c));
   const leakedToBus = desktopExpect.filter((c) => res.busSent.includes(c));
-  const doubled = res.nativeSent.filter((c) => busExpect.includes(c));
+  const doubled = res.nativeSent.filter((c) => desktopExpect.includes(c));
   if (missingNative.length) throw new Error('native routing missing: ' + JSON.stringify(missingNative));
   if (missingBus.length) throw new Error('shims routing missing: ' + JSON.stringify(missingBus));
   if (leakedToBus.length) throw new Error('desktop channels leaked to shims (single-route violated): ' + JSON.stringify(leakedToBus));

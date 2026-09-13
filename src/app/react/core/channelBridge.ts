@@ -1,4 +1,5 @@
 import { getIpcWriteState } from './ipcWriteState';
+import { savePreferences, applyPreferencesToCurrentDocument, broadcastIpc } from './settings';
 
 /**
  * P1 接缝：跨边界 IPC 总线的唯一取用口 + 通道路由。
@@ -40,6 +41,10 @@ function nativeIpc(): any {
   return d && d.ipc && typeof d.ipc.send === 'function' ? d.ipc : null;
 }
 
+/** 库族频道（P1-c-3）：`create-library` / `open-library` / `add-to-history-and-open`（对齐 shims
+ *  `desktopSendChannels`；`open-library` 与 `add-to-history-and-open` 同走 `library.switch`）。 */
+const LIBRARY_SEND_CHANNELS = new Set(['create-library', 'open-library', 'add-to-history-and-open']);
+
 /** preload 的具名桌面 API（`window.eagleDesktop`）；浏览器/测试态为 null。 */
 function desktopApi(): any {
   const d = (window as any).eagleDesktop;
@@ -48,6 +53,15 @@ function desktopApi(): any {
 
 function clone<T>(v: T): T {
   return typeof (globalThis as any).structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
+}
+
+/** P1-c-3：整条替换 `__mockLibraryCache` 中同 id 条目（shims 缩略图族原语义）。 */
+function replaceCachedItem(updated: any): void {
+  if (!updated || !updated.id) return;
+  const w = window as any;
+  const items = w.__mockLibraryCache || [];
+  const index = items.findIndex((entry: any) => entry && entry.id === updated.id);
+  if (index >= 0) items[index] = updated;
 }
 
 /**
@@ -60,6 +74,74 @@ function clone<T>(v: T): T {
 function routeDesktop(bus: any, channel: string, params: any): boolean {
   const d = desktopApi();
   if (!d) return false;
+
+  // P1-c-3：设置族迁入接缝。判据不看 desktopApi 子 API（偏好持久化经全局 electronSettings），
+  // 但走到这里即 Electron 态；浏览器态由 shims 分支承接（同一 electronSettings mock）。
+  if (channel === 'chnage-preferences' && params && typeof params === 'object') {
+    savePreferences(params);
+    return true;
+  }
+  if (channel === 'change-theme' && params && typeof params === 'object') {
+    savePreferences({ theme: params });
+    return true;
+  }
+  if (channel === 'change-zoom' && params) {
+    savePreferences({ general: { zoom: String(params) } });
+    return true;
+  }
+  if (channel === 'chnage-shortcut' && params && typeof params === 'object') {
+    savePreferences({
+      shortcuts: {
+        keybinds: {
+          'global.capture.area': params.screenCaptureShortcut || '',
+          'global.capture.window': params.windowCaptureShortcut || '',
+        },
+      },
+    });
+    return true;
+  }
+  if (channel === 'chnage-scrollBehavior' && params) {
+    savePreferences({ habits: { scrollBehavior: String(params) } });
+    return true;
+  }
+  if (channel === 'update-preferences') {
+    applyPreferencesToCurrentDocument();
+    return true;
+  }
+  if (channel === 'lock-now') {
+    broadcastIpc('lock-now');
+    return true;
+  }
+
+  // P1-c-3：调色板重算（走共享写状态的分析器，与导入期调度同一实现）。
+  if (channel === 'regenerate-palette') {
+    const items = Array.isArray(params) ? params : [];
+    const state = getIpcWriteState();
+    items.forEach((item: any) => state.analyzeItemPalette(item, { force: true }));
+    return true;
+  }
+
+  // P1-c-3：库族（create/open/add-to-history-and-open）——语义对齐 shims 的 desktopApi 分支。
+  if (LIBRARY_SEND_CHANNELS.has(channel)) {
+    if (!d.library) return false;
+    const action = channel === 'create-library'
+      ? d.library.create(params || {})
+      : d.library.switch(params);
+    const actionName = channel === 'create-library' ? 'create' : 'open';
+    Promise.resolve(action)
+      .then((library: any) => {
+        if (library) {
+          const w = window as any;
+          w.__mockLibrary = { ...(w.__mockLibrary || {}), ...library };
+          if (Array.isArray(library.items)) w.__mockLibraryCache = library.items.slice();
+          getIpcWriteState().scheduleMissingPaletteAnalysis((library.items || []));
+        }
+        bus.emit('library:changed', library);
+        bus.emit('library:operation-result', { ok: true, action: actionName, library });
+      })
+      .catch((err: any) => bus.emit('library:operation-result', { ok: false, action: actionName, error: err && err.message }));
+    return true;
+  }
 
   // P1-c-2：item 持久化路径（用户决策：与 shims 消费方共享同一写队列/发布器）——
   // 语义逐字对齐 shims 原分支：入队时保存快照（clone，后续 live 变更不改已排队请求）；
@@ -127,6 +209,118 @@ function routeDesktop(bus: any, channel: string, params: any): boolean {
     }).catch((err: any) => {
       bus.emit('library:operation-result', { ok: false, action: channel, error: err && err.message });
     });
+    return true;
+  }
+
+  // P1-c-3：缩略图族（语义对齐 shims 对应分支：替换 cache 条目 + 合成 thumbnail-generated）。
+  if (channel === 'set-custom-thumbnail') {
+    if (!d.thumbnail || typeof d.thumbnail.setCustom !== 'function') return false;
+    const item = params && params.item;
+    const state = getIpcWriteState();
+    Promise.resolve(d.thumbnail.setCustom({
+      itemId: item && item.id,
+      filePath: params && params.thumbnailPath,
+      width: params && params.width,
+      height: params && params.height,
+    })).then((result: any) => {
+      const updated = result && result.item ? result.item : result;
+      if (updated && updated.id) {
+        state.customThumbnailItemIds.add(updated.id);
+        replaceCachedItem(updated);
+        state.emitEvent('thumbnail-generated', updated);
+      }
+    }).catch((err: any) => bus.emit('thumbnail-operation-error', { action: channel, error: err && err.message }));
+    return true;
+  }
+  if (channel === 'regenerate-video-thumbnail') {
+    if (!d.thumbnail || typeof d.thumbnail.refresh !== 'function') return false;
+    const video = params && params.video;
+    const itemId = video && video.id;
+    if (!itemId) return true;
+    const state = getIpcWriteState();
+    const refresh = () => d.thumbnail.refresh({ itemId, startAt: params.startAt ?? video.thumbnailAt });
+    const automaticTaskId = video.thumbnailTask;
+    const waitForAutomatic = automaticTaskId
+      ? new Promise<void>((resolve, reject) => {
+        const poll = () => d.thumbnail.status(automaticTaskId).then((status: any) => {
+          if (status.status === 'complete') resolve();
+          else if (status.status === 'failed' || status.status === 'cancelled') reject(new Error(status.error || status.code || 'Automatic thumbnail failed'));
+          else setTimeout(poll, 50);
+        }).catch(reject);
+        poll();
+      })
+      : Promise.resolve();
+    waitForAutomatic.then(refresh).then((result: any) => {
+      const updated = result && result.item ? result.item : result;
+      if (updated && updated.id) {
+        replaceCachedItem(updated);
+        state.emitEvent('thumbnail-generated', updated);
+      }
+    }).catch((err: any) => bus.emit('thumbnail-operation-error', { action: channel, error: err && err.message }));
+    return true;
+  }
+  if (channel === 'regenerate-thumbnail') {
+    if (!d.thumbnail || typeof d.thumbnail.refresh !== 'function') return false;
+    const items = Array.isArray(params) ? params : [];
+    const state = getIpcWriteState();
+    items.forEach((item: any) => {
+      const itemId = item && item.id;
+      const shouldReset = Boolean(itemId && (item.customThumbnail || state.customThumbnailItemIds.has(itemId)));
+      const action = shouldReset
+        ? d.thumbnail.resetCustom({ itemId })
+        : d.thumbnail.refresh({ itemId });
+      Promise.resolve(action).then((result: any) => {
+        const updated = result && result.item ? result.item : result;
+        if (updated && updated.id) {
+          if (!updated.customThumbnail) state.customThumbnailItemIds.delete(updated.id);
+          replaceCachedItem(updated);
+          state.emitEvent('thumbnail-generated', updated);
+        }
+      }).catch((err: any) => bus.emit('thumbnail-operation-error', { action: channel, error: err && err.message }));
+    });
+    return true;
+  }
+
+  // P1-c-3：剪贴板导入族（与导入族共用 trackLocalImport/emitImportedItems 语义）。
+  if (channel === 'read-win-files' || channel === 'paste-image' || channel === 'paste-paths') {
+    if (!d.clipboard || typeof d.clipboard.import !== 'function') return false;
+    const payload = params && params.params ? { ...params.params, folder: params.folder || params.params.folder } : (params || {});
+    if (channel === 'paste-paths') payload.files = Array.isArray(params && params.files) ? params.files : [];
+    const state = getIpcWriteState();
+    state.trackLocalImport(Promise.resolve(d.clipboard.import(payload)))
+      .then((items: any) => state.emitImportedItems(items, channel))
+      .catch((err: any) => {
+        state.emitEvent('import:operation-result', { ok: false, channel, error: err && err.message });
+        state.emitEvent('file-uploaded-end', { error: err && err.message });
+      });
+    return true;
+  }
+
+  // P1-c-3：导入族（本地文件/URL/文件夹）。
+  if (channel === 'upload-local-files' || channel === 'upload-url' || channel === 'upload-urls' || channel === 'import-folders') {
+    if (!d.import) return false;
+    let action: any = null;
+    if (channel === 'upload-local-files') action = d.import.files(params || {});
+    if (channel === 'upload-url') action = d.import.url(params || {});
+    if (channel === 'upload-urls') action = d.import.urls(params || []);
+    if (channel === 'import-folders') action = d.import.folders(params || {});
+    if (!action) return false;
+    const state = getIpcWriteState();
+    state.trackLocalImport(Promise.resolve(action))
+      .then((result: any) => {
+        const batches = channel === 'import-folders' && Array.isArray(result) ? result : [result];
+        const items = batches.flatMap((batch: any) => Array.isArray(batch) ? batch : Array.isArray(batch && batch.items) ? batch.items : batch && batch.id ? [batch] : []);
+        state.emitImportedItems(items, channel);
+        if (channel === 'import-folders' && d.library && typeof d.library.current === 'function') {
+          d.library.current().then((library: any) => {
+            const w = window as any;
+            w.__mockLibrary = { ...w.__mockLibrary, ...library };
+            w.__mockLibraryCache = Array.isArray(library.items) ? library.items.slice() : w.__mockLibraryCache;
+            bus.emit('library:changed', library);
+          }).catch(() => {});
+        }
+      })
+      .catch((err: any) => state.emitEvent('import:operation-result', { ok: false, channel, error: err && err.message }));
     return true;
   }
 

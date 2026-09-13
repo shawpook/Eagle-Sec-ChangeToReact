@@ -3,7 +3,6 @@
 import { IPCHelper } from '../core/ipcHelper';
 import { syncDetailFromScope } from '../store/detailState';
 import { refreshVideoCommentsChannel } from '../global/bus';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, cssSet, dataGet, dataSet, addClassEl, removeClassEl, setCssEl } from '../utils/domQuery';
 import { machineryUpdateItemView } from '../core/itemDomain';
 import { machineryToggleSlideshow } from '../core/miscDomain';
@@ -75,7 +74,6 @@ export function mediaAddVideoComment(video: any, videoElem: any): void {
     })
     refreshVideoCommentsChannel.emit();
     machineryUpdateItemView(video);
-    scopeEvalAsync();
 
     const ipc = w.__eagleIpc || (w.electron && w.electron.ipcRenderer);
     ipc.send('image-change', useSelectionState.getState().current);
@@ -284,13 +282,11 @@ export function toggleGifPlay(...args: any[]) {
                     useMiscRawState.getState().gifPlayer.pause();
                     useMiscRawState.getState().gifViewer.playing = false;
                     syncDetailFromScope();
-                    scopeEvalAsync();
                 }
                 else {
                     useMiscRawState.getState().gifPlayer.play();
                     useMiscRawState.getState().gifViewer.playing = true;
                     syncDetailFromScope();
-                    scopeEvalAsync();
                 }
                 cssSet(".gif-viewer", { opacity: 0.8 });
                 setTimeout(function () {
@@ -419,7 +415,6 @@ export function machineryNextGifFrame(amount: any = 1): void {
     var idx = curr + amount;
     if (idx > total) idx = total - 1;
     useMiscRawState.getState().gifPlayer.move_to(idx);
-    scopeEvalAsync();
   }
 }
 
@@ -432,7 +427,6 @@ export function machineryPrevGifFrame(amount: any = 1): void {
     var idx = curr - amount;
     if (idx < 0) idx = 0;
     useMiscRawState.getState().gifPlayer.move_to(idx);
-    scopeEvalAsync();
   }
 }
 

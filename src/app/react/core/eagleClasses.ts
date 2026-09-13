@@ -17,7 +17,6 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 ;
-import { scopeEvalAsync } from './scopeRuntime';
 import { useMiscRawState } from '../store/miscRawState';
 
 const _req: any = (name: string) => {
@@ -107,7 +106,6 @@ class Inspector {
         this.isHideInspector = !this.isHideInspector;
         setTimeout(() => {
             useMiscRawState.getState().whenLayoutChange();
-            scopeEvalAsync();
         }, 100);
         if (eagle.inspector.isHideInspector) { electronLog && electronLog.info("[app] Inspector: OFF"); }
         else { electronLog && electronLog.info("[app] Inspector: ON"); }
@@ -1136,7 +1134,6 @@ class AISearch {
                 ipcRenderer.send('open.preferences', {
                     panel: "ai-search"
                 });
-                scopeEvalAsync();
             }
         });
 
@@ -1145,7 +1142,6 @@ class AISearch {
                 this.isInstalled = false;
                 this.isReady = false;
                 this.stopWatching();
-                scopeEvalAsync();
             }
         });
     }
@@ -1439,7 +1435,6 @@ class AISearch {
                 isError: this.isError,
                 status: this.status
             });
-            scopeEvalAsync();
         }
     }
 
@@ -1524,7 +1519,6 @@ class AISearch {
 
                 this.isStarting = false;
                 this.isReady = false;
-                scopeEvalAsync();
                 
                 // 顯示錯誤訊息
                 swal({
@@ -1896,14 +1890,12 @@ class CustomExport {
         ipcRenderer.on('plugin-installed', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
-                scopeEvalAsync();
             }
         });
 
         ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
-                scopeEvalAsync();
             }
         });
     }
@@ -1930,14 +1922,12 @@ class CombineImages {
         ipcRenderer.on('plugin-installed', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
-                scopeEvalAsync();
             }
         });
 
         ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
-                scopeEvalAsync();
             }
         });
     }
@@ -1970,14 +1960,12 @@ class AIAction {
         ipcRenderer.on('plugin-installed', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = true;
-                scopeEvalAsync();
             }
         });
 
         ipcRenderer.on('plugin-uninstalled', (event, pluginId) => {
             if (pluginId === this.#pluginId) {
                 this.isInstalled = false;
-                scopeEvalAsync();
             }
         });
     }
@@ -2012,7 +2000,6 @@ class AIAction {
                     if (!fs.existsSync(this.#configPath)) return;
                     this.#loadActions();
                     useMiscRawState.getState().initMenu();
-                    scopeEvalAsync();
                 });
             }
         } catch (err) {}

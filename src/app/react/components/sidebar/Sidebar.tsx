@@ -19,7 +19,6 @@ import { newFolder } from '../../services/folderCoreService';
 import { machineryOpenRandom, machineryOpenCommunity } from '../../services/folderCoreService';
 import { openFolderContextMenu, openNewSmartFolderContextMenu, openSmartFolderContextMenu } from '../../services/folderMenuService';
 import { openApplicationContextMenu, openNewContextMenu, openQuickAccessContextMenu, openSidebarVisibleContextMenu, openSmartFolderExpandContextMenu } from '../../services/miscMenuService';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { eagleBus } from '../../global/bus';
 import { dom } from '../../utils/domLite';
 import { machineryOpenAll } from '../../services/folderCoreService';
@@ -249,7 +248,6 @@ function initSidebarDrag(root: HTMLElement, kind: 'folder' | 'smartFolder' | 'qu
           const impl = typeof fnEntry === 'function' ? fnEntry : getMigratedScopeField(fnEntry)?.read();
           if (typeof impl !== 'function') return;
           impl(dragged, target, ...(asSiblingBelow ? [true] : []));
-          scopeEvalAsync();
         }
       };
       zone.addEventListener('dragover', onOver);
@@ -623,7 +621,7 @@ const SIMPLE_META: Record<string, { open: string; mask: string; labelKey: string
 
 /** D-1 A-1：已直调化的 open 名字（其余仍走 scope 动态下标）。
  *  实机 QA（2026-09-13）：scope 面上从未挂载 openRandom/openRecent/openTrash/openUntagged/
- *  openCommunity/openAllTags（只存在于 __eagleDataMachinery 字符串路由表）——
+ *  openCommunity/openAllTags（旧版仅登记在已退役的字符串路由表里）——
  *  `s[meta.open]` 恒 undefined → 侧栏平铺项除「全部/未分类」外点击全部静默无反应。
  *  全部补为直调（与 keymap 既有 import 同源）。 */
 const SIMPLE_OPEN_DIRECT: Record<string, (s: any) => void> = {

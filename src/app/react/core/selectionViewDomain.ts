@@ -18,7 +18,6 @@ import { syncDetailFromScope } from '../store/detailState';
 
 import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { saveFolderChannel, updateSelectionChannel } from '../global/bus';
-import { scopeEvalAsync } from './scopeRuntime';
 import { onSelectedChanged } from './selectionNotify';
 import { addClass, removeClass, cssSet, q, dataSet } from '../utils/domQuery';
 
@@ -57,7 +56,7 @@ let done = false;
 
 function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+    if (typeof fn === 'function') fn();
   }, ms || 0);
 }
 
@@ -584,9 +583,9 @@ export function machineryRemoveSelected(event: any): void {
         confirmButtonText: w.i18n.__('dialog.permanentlyDelay.button'),
         cancelButtonText: w.i18n.__("general.cancel"),
       }).then(function () {
-        scopeEvalAsync(function () {
+        (function () {
           machineryRemovePermanently();
-        });
+        })();
       });
     }
     else {
@@ -636,7 +635,6 @@ export function machineryRemoveSelected(event: any): void {
               var isForceToTrash = (result === '2');
               lastMoveToTrashCheckbox = result;
               machineryRemoveFolderContents({ isForceToTrash: isForceToTrash });
-              scopeEvalAsync();
             }, function () { });
           }
           else {

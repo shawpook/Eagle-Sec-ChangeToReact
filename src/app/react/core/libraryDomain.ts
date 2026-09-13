@@ -49,7 +49,6 @@ import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { filterWithColor, resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { closeTagsPopupChannel, importArtstationChannel, newSmartFolderChannel, openRenameChannel } from '../global/bus';
-import { scopeEvalAsync } from './scopeRuntime';
 import { q, cssSet, setTextEl, addClassEl, removeClassEl, hideEl, showEl, addClass, removeClass, focusEl, selectEl } from '../utils/domQuery';
 import { machinerySwitchLayout, machineryUpdateContainerHieght, machineryUpdateListHeight } from '../services/gridService';
 import { machinerySetViewMode, machineryZoom, machineryCheckOperationSafety2 } from '../services/viewOpsService';
@@ -117,7 +116,6 @@ function domainAyncsUpdateSmartFoldersCount(smartFolders: any, callback: any): v
         }
       }
 
-      scopeEvalAsync();
 
       loop();
     }
@@ -163,7 +161,6 @@ function domainDigestDurationTest(): void {
       }
       w.angular.element(document).injector().invoke(function ($rootScope: any) {
         const a = performance.now();
-        scopeEvalAsync();
         console.log(`$digest duration: ${performance.now() - a}`);
       });
     } catch (err) { clearInterval(interval); }
@@ -236,56 +233,51 @@ export function takeoverLibraryDomain(): void {
       try { ga4track.setUserProperty('paid_user', 'no'); } catch (err) { /* noop */ }
       // 原 $timeout 语义：延时执行 + digest
       setTimeout(() => {
-        try {
-          if (usePreferencesState.getState().trialRemain && usePreferencesState.getState().trialRemain > 0 && usePreferencesState.getState().trialRemain < 30) {
-            const popupDays = [1, 3, 7, 14, 21, 28];
-            if (popupDays.indexOf(usePreferencesState.getState().trialRemain) > -1) {
-              let lastOpenTrialModalTime = localStorage["lastOpenTrialModalTime"] || undefined;
-              const now = Date.now();
-              const HALF_DAY = 1000 * 60 * 60 * 12;
-              if (!lastOpenTrialModalTime) {
-                lastOpenTrialModalTime = now;
-                localStorage["lastOpenTrialModalTime"] = now;
-                machineryOpenTrialModal(usePreferencesState.getState().trialRemain);
+        if (usePreferencesState.getState().trialRemain && usePreferencesState.getState().trialRemain > 0 && usePreferencesState.getState().trialRemain < 30) {
+          const popupDays = [1, 3, 7, 14, 21, 28];
+          if (popupDays.indexOf(usePreferencesState.getState().trialRemain) > -1) {
+            let lastOpenTrialModalTime = localStorage["lastOpenTrialModalTime"] || undefined;
+            const now = Date.now();
+            const HALF_DAY = 1000 * 60 * 60 * 12;
+            if (!lastOpenTrialModalTime) {
+              lastOpenTrialModalTime = now;
+              localStorage["lastOpenTrialModalTime"] = now;
+              machineryOpenTrialModal(usePreferencesState.getState().trialRemain);
+            }
+            else {
+              lastOpenTrialModalTime = parseInt(lastOpenTrialModalTime);
+              if (now - lastOpenTrialModalTime < HALF_DAY) {
+                console.log("12小时内暂时不再跳出");
+                return;
               }
-              else {
-                lastOpenTrialModalTime = parseInt(lastOpenTrialModalTime);
-                if (now - lastOpenTrialModalTime < HALF_DAY) {
-                  console.log("12小时内暂时不再跳出");
-                  return;
-                }
-                machineryOpenTrialModal(usePreferencesState.getState().trialRemain);
-                localStorage["lastOpenTrialModalTime"] = now;
-              }
+              machineryOpenTrialModal(usePreferencesState.getState().trialRemain);
+              localStorage["lastOpenTrialModalTime"] = now;
             }
           }
-        } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+        }
       }, 1000);
     }
     useMiscRawState.getState().initMenu();
-    scopeEvalAsync();
   });
 
   // ── app-status-welcome（22631 逐字）──
   ipc.on('app-status-welcome', function (_e: any, _params: any) {
-    scopeEvalAsync(function () {
+    (function () {
       writeScopeField('libraryPath', "");
       syncSidebarFromScope();
       writeScopeField('isLoading', false);
       useMiscRawState.getState().initMenu();
-    });
+    })();
   });
 
   // ── app-status-library-dirs-loaded（22753 逐字）──
   ipc.on('app-status-library-dirs-loaded', function (_e: any, _count: any) {
     writeScopeField('isLoading', true);
-    scopeEvalAsync();
   });
 
   // ── app-status-library-cache-loaded（22758 逐字）──
   ipc.on('app-status-library-cache-loaded', function (_e: any) {
     writeScopeField('isLoading', true);
-    scopeEvalAsync();
   });
 
   // ── library.changed（23535 逐字；parent = window.parent，原码行为保留）──
@@ -331,7 +323,6 @@ export function takeoverLibraryDomain(): void {
     machineryUpdateSidebarList();
     machineryCalculateImageBinding({ ignoreSort: true }, function () {
       machineryRebindRefresh();
-      scopeEvalAsync();
     });
   });
 
@@ -437,7 +428,6 @@ export function takeoverLibraryDomain(): void {
     writeScopeField('isLoading', false);
     writeScopeField('startCursor', 0);
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
-    scopeEvalAsync();
 
     clearInterval(w.heartbeatInterval);
     if (domainHeartbeatInterval) { clearInterval(domainHeartbeatInterval); domainHeartbeatInterval = null; }
@@ -789,7 +779,6 @@ export function takeoverLibraryDomain(): void {
                 writeScopeField('selected', [lastItem]);
                 syncInspectorFromScope();
                 scrollToSelectedItem();
-                scopeEvalAsync();
               }
             }, 100);
           }
@@ -805,7 +794,6 @@ export function takeoverLibraryDomain(): void {
                 writeScopeField('selected', [lastItem]);
                 syncInspectorFromScope();
                 scrollToSelectedItem();
-                scopeEvalAsync();
               }
             }, 100);
           }
@@ -818,7 +806,6 @@ export function takeoverLibraryDomain(): void {
                 writeScopeField('selected', [lastItem]);
                 syncInspectorFromScope();
                 scrollToSelectedItem();
-                scopeEvalAsync();
               }
             }, 100);
           });
@@ -937,7 +924,6 @@ export function takeoverLibraryDomain(): void {
       domainAyncsUpdateSmartFoldersCount(useMiscRawState.getState().smartFolderList, () => { /* noop */ });
 
       setTimeout(function () { machineryUpdateContainerHieght(); }, 300);
-      scopeEvalAsync();
 
     }, 1000);
 
@@ -1058,7 +1044,6 @@ export function takeoverLibraryDomain(): void {
     }).catch(() => {
       if (useToastState.getState().localhostError !== true) {
         writeScopeField('localhostError', true);
-        scopeEvalAsync();
       }
       electronLog.error(`[app] Local server: disabled`);
       electronLog.error("---------------------------------------");
@@ -1129,7 +1114,6 @@ export function takeoverLibraryDomain(): void {
     electronLog.info(`[app] Library loaded`);
     // 保险 digest 排程：bundle 原处理器依赖后续应用活动触发 $timeout 派工；React 域在
     // 事件驱动的测试/静默场景下补一次 $evalAsync，保证 binding 派工即时可flush
-    scopeEvalAsync();
   });
 }
 
@@ -2246,7 +2230,6 @@ export function machineryQuickOpenFolder(folder: any, t: any): void {
   }
   setTimeout(function () {
     machineryChangeSidebarIndex(folder);
-    scopeEvalAsync();
   }, 200);
   // 自动定位
   if (target) {
@@ -2268,7 +2251,6 @@ export function machineryQuickOpenFolder(folder: any, t: any): void {
               cssSet("#box-container", { visibility: "initial" });
             }, 100);
           }, 500);
-          scopeEvalAsync();
         }
       }
     }, 200);
@@ -2313,7 +2295,6 @@ export function machineryRemoveFolder(folder: any, params: any = {}): void {
         machineryCheckOperationSafety2(folder.descendantImageCount, function () {
           _p.isDeleteImages = (result == 1);
           machineryRemoveFolderInner(folder, _p);
-          scopeEvalAsync();
         }, 50);
       }, function () { });
     }, 100);
@@ -2563,7 +2544,6 @@ export function machineryRemoveFolderInner(folder: any, { isDeleteImages, ignore
   // 移除记录
   delete useItemState.getState().folderMappings[folder.id];
   machineryCalculateImageBinding({ ignoreSort: true }, function () {
-    scopeEvalAsync();
     useMiscRawState.getState().saveFolderDebounce && machinerySaveFolderDebounce();
     if (isDeleteImages) { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${useItemState.getState().all.length} files, trash remain: ${useItemState.getState().trash.length} files`); }
     else { w.electronLog && w.electronLog.info(`[app] Delete folder: ${folder.name}(${folder.id}), just remove folder not contains ${originalImages.length} files, all remain ${useItemState.getState().all.length} files, trash remain: ${useItemState.getState().trash.length} files`); }
@@ -2598,7 +2578,6 @@ export function machineryRemoveFolderInner(folder: any, { isDeleteImages, ignore
         w.electronLog && w.electronLog.info(`[app] Resotre deleted folder: ${folder.name}(${folder.id}), contains ${originalImages.length} files, all remain ${useItemState.getState().all.length} files, trash remain ${useItemState.getState().trash.length} files`);
       });
 
-      scopeEvalAsync();
       machineryUpdateSidebarList();
       useMiscRawState.getState().saveFolderDebounce && machinerySaveFolderDebounce();
       w.ayncsImagesChange(originalImages);
@@ -2712,7 +2691,6 @@ export function machineryRemoveSmartFolderInner(smartFolder: any, { ignoreSelect
       machineryUpdateSidebarList();
       openSmartFolder(smartFolder);
       useMiscRawState.getState().saveFolderDebounce && machinerySaveFolderDebounce();
-      scopeEvalAsync();
     });
   }
 }
@@ -2958,7 +2936,7 @@ export function machineryToggleAllSmartFolderExpand(event: any, selectedSmartFol
   if (useFolderState.getState().smartFolders && useFolderState.getState().smartFolders.length > 0) {
     var expand = !useFolderState.getState().smartFolders[0].isExpand;
     if (smartFolder) {
-      setTimeout(function () { machineryChangeSidebarIndex(smartFolder); scopeEvalAsync(); }, 100);
+      setTimeout(function () { machineryChangeSidebarIndex(smartFolder); }, 100);
       if (smartFolder.parent) {
         var parent = useItemState.getState().smartFolderMappings[smartFolder.parent];
         if (parent) {
@@ -3041,7 +3019,6 @@ export async function machineryUnlockFolderWithTouchID(event: any): Promise<void
       machineryUpdateSelection();
       writeScopeField('isLoading', false);
       writeScopeField('unlockPassword', "");
-      scopeEvalAsync();
     });
   } catch (err) {
     // 驗證失敗或用戶取消

@@ -4,7 +4,6 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
 
 import { openFileWithDefault, openFilesWithDefault } from '../core/itemDomain';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, hasClass, textEl, setAttrEl, addClassEl, removeClassEl, setHtmlEl, focusOn, selectText, onEl, offAllEl, blurEl } from '../utils/domQuery';
 import { machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../core/miscDomain';
@@ -122,7 +121,6 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
       console.log(`${originalName} > ${name}`);
       ayncsImagesChange([image]);
       hiddenByCurrentFilter([image]);
-      scopeEvalAsync();
       try { electronLog && electronLog.info(`[app] Change list item's name: ${originalName}(${image.id}) > ${newName}`); } catch (err) {}
     }
   }, 200, true));
@@ -204,7 +202,6 @@ export function onBoxListDblClick(...args: any[]) {
                     // 使用预设软体开启
                     openFileWithDefault(item);
                 }
-                scopeEvalAsync();
             }
     }).apply(null, args);
   }

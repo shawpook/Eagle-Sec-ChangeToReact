@@ -14,7 +14,6 @@ import { BitmapViewer } from './bitmapViewer';
 import { syncDetailFromScope } from '../store/detailState';
 import { getRawUrl } from './itemDomain';
 import { getThumbnailUrl, startDrag } from '../services/imageOpsService';
-import { scopeEvalAsync } from './scopeRuntime';
 import { getWindowScope } from './scopeFace';
 // b1-9bz-E5-3：原裸全局 body scope → 本窗 scope 面访问器（主窗 store 面 / 预览窗 controllerScope）。
 // 逐字搬迁体大量使用该裸全局，访问器取值即本窗面。
@@ -1873,7 +1872,6 @@ if (!self._mousedown) return;
 			// console.log($scope.imageSize.zoomRatio)
 			// clearTimeout(mousewheelTimeout);
 			// mousewheelTimeout = setTimeout(function () {
-				scopeEvalAsync();
 			// }, 50);
 
 			return false;
@@ -2758,7 +2756,6 @@ if (!self._mousedown) return;
 					if (dom("#detail-image").attr("src") !== rawURL) {
 						dom("#detail-image").attr("src", rawURL);
 					}
-					scopeEvalAsync();
 					self.Animate(true);
 					return;
 				}
@@ -2787,7 +2784,6 @@ if (!self._mousedown) return;
 								syncDetailFromScope();
 								dom("#detail-image").attr("src", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAQSURBVHgBAQUA+v8AAAAAAAAFAAFkeJU4AAAAAElFTkSuQmCC");
 							}
-							scopeEvalAsync();
 							self.Animate(true);
 						} catch (e) {
 							self.bitmapViewer.clear();
@@ -2802,7 +2798,6 @@ if (!self._mousedown) return;
 				syncDetailFromScope();
 				$rootScope.supportRotate = false;
 				syncDetailFromScope();
-				scopeEvalAsync();
 				self.bitmapViewer.clear();
 			}
 		},

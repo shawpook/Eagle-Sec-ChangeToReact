@@ -24,7 +24,6 @@ import { toggleGifPlay } from '../services/mediaService';
 import { getLibraryHistory } from '../services/folderCoreService';
 import { getResizable, makeResizable } from '../components/interactions/resizable';
 import { addToLibraryChannel } from '../global/bus';
-import { scopeEvalAsync } from './scopeRuntime';
 import { q, qa, widthOf, cssGet, cssSet, hide, show, setText, textOf, isVisible, offsetLeftOf, addClass, removeClass, delegateTarget } from '../utils/domQuery';
 
 import { machinerySaveFolder } from './libraryDomain';
@@ -394,7 +393,6 @@ export function machineryBuildTagManager(): any {
 			}
 			else {
 				TagManager.removeTag(tag);
-				scopeEvalAsync();
 			}
 
             if (!TagManager.historyTags) TagManager.historyTags = [];
@@ -575,7 +573,6 @@ export function machineryBuildTagManager(): any {
                 w.electronLog.info(`[app] Empty history tags: ${JSON.stringify(TagManager.historyTags)}`);
                 TagManager.historyTags = [];
                 writeScopeField('availableHistoryTags', []);
-                scopeEvalAsync();
                 TagManager.save();
             });
         };
@@ -1641,7 +1638,6 @@ export function machineryBuildTagManager(): any {
                                 library: history
                             });
 
-                            scopeEvalAsync();
                         }
                     }
                 }
@@ -1656,7 +1652,6 @@ export function machineryBuildTagManager(): any {
                         icon: 'ic-tag-filter.svg',
                         click: () => {
                             TagManager.filterWithTags(tagGroup.tags, false);
-                            scopeEvalAsync();
                         }
                     },
                     { role: 'separator' },
@@ -1668,7 +1663,6 @@ export function machineryBuildTagManager(): any {
                         accelerator: usePreferencesState.getState().preferences.shortcuts.keybinds[`edit.rename.${process.platform}`],
                         click: () => {
                             machineryRenameTagGroup(tagGroup);
-                            scopeEvalAsync();
                         }
                     },
                     // 刪除群組
@@ -1679,7 +1673,6 @@ export function machineryBuildTagManager(): any {
                         accelerator: (process.platform === 'win32')? 'Del' : '⌘+⌫',
                         click: () => {
                             machineryRemoveTagGroup(tagGroup);
-                            scopeEvalAsync();
                         }
                     },
                     // 添加至其它資源庫
@@ -1696,7 +1689,6 @@ export function machineryBuildTagManager(): any {
                         role: 'color',
                         click: ( color: any) => {
                             useMiscRawState.getState().changeTagGroupColor(event, tagGroup, color);
-                            scopeEvalAsync();
                         }
                     }
                 ],
@@ -1786,12 +1778,10 @@ export function machineryBuildTagManager(): any {
                     cancelButtonText: w.i18n.__("general.cancel"),
                 }).then(function () {
                     remove(group);
-                    scopeEvalAsync();
                 });
             }
             else {
                 remove(group);
-                scopeEvalAsync();
             }
         });
 
@@ -1901,7 +1891,6 @@ export function machineryBuildTagManager(): any {
                 catch (err: any) {}
                 return 0;
             });
-            scopeEvalAsync();
         });
 
         // GIF Viewer
@@ -1960,7 +1949,6 @@ export function machineryBuildTagManager(): any {
                 if (!useMiscRawState.getState().gifPlayer) return;
                 useMiscRawState.getState().gifViewer.speed = speed;
                 syncDetailFromScope();
-                scopeEvalAsync();
                 useMiscRawState.getState().gifPlayer.set_speed(speed);
                 setText(".gif-toolbar-btn.speed span", `${speed}x`);
             },
@@ -1978,7 +1966,6 @@ export function machineryBuildTagManager(): any {
                 // 判断是点击或是拖拽
                 if (Date.now() - useMiscRawState.getState().gifViewer.mousedownTime < 333 && Math.abs(useMiscRawState.getState().gifViewer.mousedownX - event.clientX) < 5 && Math.abs(useMiscRawState.getState().gifViewer.mousedownY - event.clientY) < 5)  {
                     toggleGifPlay();
-                    scopeEvalAsync();
                 }
             },
             cancelRange: function () {
@@ -2029,7 +2016,6 @@ export function machineryBuildTagManager(): any {
                     syncDetailFromScope();
                     writeScopeField('gifPlayer', undefined);
                     syncDetailFromScope();
-                    scopeEvalAsync();
                 }
                 updateGifProgressbar(progress);
                 setText(".gif-toolbar .message span", `${parseInt((progress * 100) as any)}%`)
@@ -2046,7 +2032,6 @@ export function machineryBuildTagManager(): any {
                 useMiscRawState.getState().gifViewer.playing = result.playing;
                 syncDetailFromScope();
                 useMiscRawState.getState().gifViewer.setSpeed(1);
-                scopeEvalAsync();
                 const resizableBarEl = q(".gif-toolbar .resize-bar");
                 setText(".gif-toolbar .total-frame", `/ ${useMiscRawState.getState().gifViewer.frames.length}`);
 
@@ -2834,7 +2819,6 @@ export function machineryEnableSubFolderNameEditable(event: any, folder: any): v
       setHtmlEl(el, `${name}`);
       folder.name = name;
       useMiscRawState.getState().saveFolder();
-      scopeEvalAsync();
       try { w.electronLog && w.electronLog.info(`[app] Change sub-folder name: ${originalName}(${folder.id}) > ${newName}`); } catch (err) { }
     }
   }, 500, true));
@@ -3147,12 +3131,10 @@ export function machineryRemoveTagGroup(group: any): void {
       cancelButtonText: w.i18n.__("general.cancel"),
     }).then(function () {
       remove(group);
-      scopeEvalAsync();
     });
   }
   else {
     remove(group);
-    scopeEvalAsync();
   }
 }
 

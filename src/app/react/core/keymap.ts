@@ -1,5 +1,4 @@
 import { scopeSingleton } from './machineryInfra';
-import { scopeEvalAsync } from './scopeRuntime';
 import { beginZoomingTransition } from '../services/detailService';
 import { machineryOpenAll, machineryOpenCommunity, machineryOpenRandom, openFolder, openSmartFolder } from '../services/folderCoreService';
 import { machineryGotoBottom, machineryGotoTop, machineryScrollbarTo, machineryToggleAll } from '../services/gridService';
@@ -415,7 +414,6 @@ export function machineryInitMousetrap(): void {
   const applyWrapper = function (func: any) {
     return w.throttle(function (e: any) {
       func(e);
-      scopeEvalAsync();
     }, 25);
   };
   for (var key in useMiscRawState.getState().mousetrap) {

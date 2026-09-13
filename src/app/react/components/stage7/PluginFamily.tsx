@@ -9,7 +9,6 @@ import { fuzzyMatchHtml } from './ContextMenu';
 import { themePathOf } from './SelectPanels';
 
 import { openPluginCenterChannel, openPluginCenterDetailChannel, openPluginCreatorChannel, openPluginPanelChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { widthOf, heightOf } from '../../utils/domQuery';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
@@ -510,7 +509,6 @@ export function PluginPanel() {
           label: `${t('modal.pluginPanel.contextMenu.install')} (${newPlugin?.lasteVersion?.version})`,
           click: () => {
             openPluginCenter('update');
-            scopeEvalAsync();
           },
         },
         {
@@ -523,7 +521,6 @@ export function PluginPanel() {
           click: () => {
             closeRef.current();
             openPluginCenterDetailChannel.emit(item.plugin.manifest.id);
-            scopeEvalAsync();
           },
         },
         {
@@ -586,7 +583,6 @@ export function PluginPanel() {
           icon: 'ic-folder-new-folder.svg',
           click: () => {
             openPluginCreatorChannel.emit();
-            scopeEvalAsync();
           },
         },
         {

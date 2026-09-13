@@ -14,7 +14,6 @@ import { syncDetailFromScope } from '../../store/detailState';
 import { runInBodyScope } from '../../core/appCore';
 import { moveFoldersAsSibling, moveFoldersToFolder } from '../../services/folderCoreService';
 import { calculateImageBindingChannel, glRemoveitemsChannel, openAddFolderModalChannel, openMoveFolderModalChannel, rebindRefreshChannel, updateSelectionChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 
 import { machinerySmartFolderCount } from '../../core/libraryDomain';
@@ -190,7 +189,6 @@ export function hiddenByCurrentFilter(items: any[]) {
           glRemoveitemsChannel.emit(hiddenElements);
           if (useFolderState.getState().currentSmartFolder) {
             useFolderState.getState().currentSmartFolder.imageCount = machinerySmartFolderCount(useFolderState.getState().currentSmartFolder);
-            scopeEvalAsync();
           }
         }
       }
@@ -1824,7 +1822,6 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder);
         cancel();
-        scopeEvalAsync();
       }
     });
   };
@@ -1849,7 +1846,6 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersToFolder(viewRef.current.selectedFolders, folder);
         cancel();
-        scopeEvalAsync();
       }
       focusSeach();
     });
@@ -1876,7 +1872,6 @@ export function MoveFolderModal() {
       if (folder) {
         moveFoldersAsSibling(viewRef.current.selectedFolders, folder, true);
         cancel();
-        scopeEvalAsync();
       }
     });
   };

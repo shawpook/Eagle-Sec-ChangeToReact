@@ -15,7 +15,6 @@ import { runInBodyScope } from '../../core/appCore';
 
 import { uploadFiles } from '../../services/uploadService';
 import { cleanAllErrorChannel, openErrorChannel, openUrlInPanelChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryUpdateItemView } from '../../core/itemDomain';
 import { machineryToggleAll } from '../../services/gridService';
@@ -141,7 +140,6 @@ export function ErrorModal() {
               Object.assign(item, error.modifiedData);
               machineryUpdateItemView(item);
               updateSelection();
-              scopeEvalAsync();
               ayncsImagesChange([item]);
             }
           }
@@ -204,7 +202,6 @@ export function ErrorModal() {
       errorListRef.current.length = 0;
       syncErrorCount(errorListRef.current);
       close();
-            scopeEvalAsync();
       bump((v) => v + 1);
     });
   };

@@ -29,7 +29,6 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { debounce, throttle } from '../utils/func';
 import { getFolderFullPath } from '../core/itemDomain';
 import { addToRecentFolders } from './batchOpsService';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, focusOn, selectText, offsetTopOf, setAttr } from '../utils/domQuery';
 import { machineryGetAncestorSmartFolders, machineryGetChildFoldersMap, machineryGetFolderParentChilder } from '../core/libraryDomain';
 import { machineryGetAncestorFolders, machinerySaveFolder } from '../core/libraryDomain';
@@ -237,14 +236,12 @@ export function newFolder(...args: any[]) {
 			
             setTimeout(function() { 
                 machineryChangeSidebarIndex(folder); 
-                scopeEvalAsync();
                 setTimeout(function() { const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el); }, 100);
                 setTimeout(function() { const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el); }, 200);
             }, 150);
 
             setTimeout(function() { 
                 machineryChangeSidebarIndex(folder); 
-                scopeEvalAsync();
                 setTimeout(function() { 
                     if (!q("#folder-input-" + folder.id + ":focus")) {
                         const el = q("#folder-input-" + folder.id); focusOn(el); selectText(el);
@@ -679,7 +676,6 @@ export function emptyRestore(...args: any[]) {
                     machineryCalculateImageBinding({ ignoreSort: true }, function() {
                         machineryRebindRefresh();
                         machineryUpdateSelection();
-                        scopeEvalAsync();
                     });
                 });
             }
@@ -693,7 +689,7 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 const FixUtils: any = {};
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+  if (typeof fn === 'function') fn();
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
 // 同款注释）。本落点此前只有调用形态 → openSmartFolder/openUnfiled 的

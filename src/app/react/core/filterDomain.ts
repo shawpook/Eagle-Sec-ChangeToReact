@@ -30,7 +30,6 @@ import { updateSuggestions } from './miscDomain';
 
 import { machineryRgbToHex } from '../utils/color';
 import { calculateImageBindingChannel, closeQuickSearchModalChannel, rebindRefreshChannel, resetFilterChannel } from '../global/bus';
-import { scopeEvalAsync } from './scopeRuntime';
 import { setScrollTop, removeClass } from '../utils/domQuery';
 
 import { machineryUpdateContainerHieght } from '../services/gridService';
@@ -63,7 +62,7 @@ let done = false;
 
 function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+    if (typeof fn === 'function') fn();
   }, ms || 0);
 }
 
@@ -124,14 +123,13 @@ export function takeoverFilterDomain(): void {
       currentWindow.focus();
     }
     machinerySearchInAll();
-    scopeEvalAsync();
   });
 
   // filter-folder（23712）
   ipc.on('filter-folder', function (_event: any) {
-    scopeEvalAsync(function () {
+    (function () {
       (document.getElementById('folder-search') as HTMLElement | null)?.focus();
-    });
+    })();
   });
 
   // ── toggleFilter（30898 逐字；b1-9k 补端口——Toolbar 筛选按钮 onClick=call('toggleFilter')，
@@ -211,7 +209,7 @@ const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function 
 const FONT_TYPES: any = {}; (EagleConfig.FONT_FORMATS || []).forEach(function (ext: string) { FONT_TYPES[ext] = true; });
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+  if (typeof fn === 'function') fn();
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态，被 60+ 处移植代码
 // 消费（__lv_keywordModelTimeout / __lv_nextTimeout / __lv_calculateImageBindingTimeout …）。
@@ -467,7 +465,6 @@ export function filterContent(...args: any[]) {
             // 重新计算画面图片列表
             writeScopeField('shuffle', []);
             machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
-            scopeEvalAsync();
             setScrollTop("#box-container", 0);
         }).apply(null, args);
   }
@@ -1175,7 +1172,6 @@ export function machineryCalculateFilterCounts(): void {
       machineryUpdateFilterCounts(image, 1, now);
     }
     console.timeEnd("calculateFilterCounts");
-    scopeEvalAsync();
   }, 500);
 }
 
@@ -1526,7 +1522,6 @@ export function machineryFilterContent(type?: any): void {
   // 重新计算画面图片列表
   writeScopeField('shuffle', []);
   machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
-  scopeEvalAsync();
   setScrollTop("#box-container", 0);
   void type;
 }

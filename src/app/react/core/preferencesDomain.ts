@@ -13,7 +13,6 @@
 import { amputateChannel } from './appCore';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { refreshTouchID } from '../store/lockState';
-import { scopeEvalAsync } from './scopeRuntime';
 import { writeScopeField } from './scopeFieldBridge';
 
 function checkCanUseTouchID(): boolean {
@@ -46,7 +45,6 @@ export function takeoverPreferencesDomain(): void {
     reattach(function () {
       {
         writeScopeField('canUseTouchID', checkCanUseTouchID());
-        scopeEvalAsync();
       }
       refreshTouchID();
     });

@@ -13,7 +13,6 @@ import { TagsInput } from './SelectPanels';
 
 import { openSmartFolder } from '../../services/folderCoreService';
 import { editSmartFolderChannel, folderSelectPanelOpenChannel, newSmartFolderChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryChangeSidebarIndex, machinerySmartFolderCount } from '../../core/libraryDomain';
 import { machineryRebindRefresh } from '../../core/itemDomain';
@@ -1045,7 +1044,6 @@ export function NewSmartFolderModal() {
     isEditModeRef.current = undefined;
     setIsOpen(false);
     machineryRebindRefresh(undefined, undefined, undefined);
-    scopeEvalAsync();
   };
 
   useEffect(() => {

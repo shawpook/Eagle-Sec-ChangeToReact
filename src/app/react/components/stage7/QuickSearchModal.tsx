@@ -13,7 +13,6 @@ import { openFolder, openSmartFolder } from '../../services/folderCoreService';
 import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
 import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryChangeSidebarIndex } from '../../core/libraryDomain';
 import { useListState } from '../../store/listState';
 import { useItemState } from '../../store/itemState';
@@ -604,7 +603,6 @@ export function QuickSearchModal() {
       setTimeout(() => {
         runInBodyScope(() => {
           machineryChangeSidebarIndex(target);
-          scopeEvalAsync();
         });
       }, 200);
     } else if (mode === 'TAGS') {
@@ -626,7 +624,6 @@ export function QuickSearchModal() {
       setTimeout(() => {
         runInBodyScope(() => {
           machineryChangeSidebarIndex(target);
-          scopeEvalAsync();
         });
       }, 200);
     }

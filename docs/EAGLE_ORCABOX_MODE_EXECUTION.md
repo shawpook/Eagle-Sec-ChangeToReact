@@ -4,7 +4,7 @@
 > 参考仓库：`H:\dev\orcabox-Sec-development`
 > 文档用途：把 Eagle 的“资源库内导入/管理”模式与 OrcaBox 的“本地来源文件夹索引/管理”模式整合进同一应用，并把原版侧栏的“切换文件夹”按钮改为模式切换入口。
 >
-> **实际执行调整**：左栏不使用 iframe 套壳。改为直接修改 Eagle 原 `#sidebar`：进入来源模式时隐藏原 `.sidebar-header` 与 `.sidebar-container`，在原侧栏内部注入 `#eagle-source-mode-sidebar`（来源树/添加/管理/返回），退出时恢复原侧栏。详细执行见 `docs/plan.md`。
+> **实际执行调整**：左栏不使用 iframe 套壳。改为直接修改 Eagle 原 `#sidebar`：进入来源模式时隐藏原 `.sidebar-header` 与 `.sidebar-container`，在原侧栏内部注入 `#eagle-source-mode-sidebar`（来源树/添加/管理/返回），退出时恢复原侧栏。详细执行见 git 历史 `d736dba0:docs/plan.md`（原 `docs/plan.md` 已随仓库卫生清理删除，内容可在该提交取回）。
 
 ## 1. 结论摘要
 

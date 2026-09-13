@@ -22,7 +22,6 @@ import { syncUploadFromScope } from '../store/uploadState';
 ;
 import { addToRecentFolders } from '../services/batchOpsService';
 import { uploadFiles, uploadUrls } from '../services/uploadService';
-import { scopeEvalAsync } from './scopeRuntime';
 
 import { isNumeric } from '../utils/lang';
 
@@ -260,7 +259,6 @@ function machineryUnlockFolder(params: any): Promise<any> {
     else if (folder.password === window.btoa(password)) {
       folder.isUnLock = true;
       resolve(undefined);
-      scopeEvalAsync();
     }
     else {
       reject(`Password is incorrect.`);

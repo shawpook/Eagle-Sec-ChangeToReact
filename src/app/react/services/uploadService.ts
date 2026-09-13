@@ -14,7 +14,6 @@ import { machineryHideUploadQueue, machineryShowUploadQueue, machineryCalculateI
 import { machineryUpdateSidebarList, machinerySaveFolderDebounce, machineryChangeSidebarIndex } from '../core/libraryDomain';
 import { openFolder } from './folderCoreService';
 import { getFilter } from '../core/filterDomain';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
@@ -298,9 +297,9 @@ function uploadFilesFromFolder(tree: any, parent: any) {
 
   machineryUpdateSidebarList();
   openFolder(folder);
-  // 原 bundle 53074/53099 的 digest flush（`$evalAsync`）——`scopeEvalAsync` 的
-  // `flushScopeWatchers` 自 E4 删 scopeShim 起无注入者、恒 no-op（见 core/scopeRuntime.ts），
-  // 故收尾时删去这两处调用；副作用由 openFolder / machineryChangeSidebarIndex 的 store 写入承担。
+  // 原 bundle 53074/53099 的 digest flush（`$evalAsync`）在 scope watcher 归零后恒为 no-op，
+  // 收尾时已随 flush 包装一并清除；副作用由 openFolder / machineryChangeSidebarIndex 的
+  // store 写入承担。
   machinerySaveFolderDebounce();
   machineryCalculateImageBinding({ ignoreSort: true }, function () { });
   setTimeout(function () { machineryChangeSidebarIndex(folder); }, 200);
@@ -653,7 +652,6 @@ export function machineryOnDropContainer(event: any): void {
             uploadFiles(fds, folder);
             if (folder) { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to ${folder.name}(${folder.id})(Center), path: ${fds[0].path}`); }
             else { w.electronLog && w.electronLog.info(`[app] Drop ${fds.length} files to All(Center), path: ${fds[0].path}`); }
-            scopeEvalAsync();
         }
         console.timeEnd("拖曳档案事件");
     }

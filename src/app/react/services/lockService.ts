@@ -7,7 +7,6 @@
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
 
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, focusOn, valOf, setValEl, addClass, removeClass, offEl } from '../utils/domQuery';
 
 
@@ -26,7 +25,7 @@ const electronSettings: any = (window as any).electronSettings;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+  if (typeof fn === 'function') fn();
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
 // 同款注释）——本落点当前无 cancel 消费面，但移植体与社会面共享同一 shim 语义，补平以防后续

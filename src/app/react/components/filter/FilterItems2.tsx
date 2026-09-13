@@ -13,7 +13,6 @@ import { runInBodyScope } from '../../core/appCore';
 
 import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRGB, resetFilter, toggleExtFilter, toggleExtFilterExclude } from '../../core/filterDomain';
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryFilterContent } from '../../core/filterDomain';
 import { useMiscRawState } from '../../store/miscRawState';
@@ -585,7 +584,6 @@ function DateFilterItem({ snapshot, kind }: { snapshot: FilterSnapshot; kind: 'i
       s.filterImportDateMonths = getDateFilterCountsArray('date');
       syncFilterFromScope();
       s.filterModifyDateMonths = getDateFilterCountsArray('mtime');
-      scopeEvalAsync();
     });
   };
 
@@ -1072,7 +1070,7 @@ export function FilterPanel() {
             tippy-placement="bottom"
             tippy-content={t('Filter.Lock')}
             style={snapshot.filterBadge > 0 || snapshot.keyword ? undefined : { display: 'none' }}
-            onClick={() => { if (filter()) filter().isLock = !filter().isLock; runSeq([(s) => s.$evalAsync && scopeEvalAsync()]); }}
+            onClick={() => { if (filter()) filter().isLock = !filter().isLock; }}
           >
             <img src={`assets/images/${themePathOf(snapshot.theme)}/icons/ic-filter-lock.svg`} />
           </div>

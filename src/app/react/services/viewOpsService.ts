@@ -10,7 +10,6 @@ import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, qa, cssSet, addClass, removeClass, widthOf, heightOf } from '../utils/domQuery';
 import { debounce } from '../utils/func';
 import { detailUpdateZoomRatio, detailSmartZoom } from './detailService';
@@ -117,7 +116,6 @@ export function switchGridLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
             machinerySwitchLayout("GridLayout");
-            scopeEvalAsync();
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "GridLayout");
         }).apply(null, args);
   }
@@ -126,7 +124,6 @@ export function switchJustifiedLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
             machinerySwitchLayout("JustifiedLayout");
-            scopeEvalAsync();
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "JustifiedLayout");
         }).apply(null, args);
   }
@@ -135,7 +132,6 @@ export function switchListLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
             machinerySwitchLayout("ListLayout");
-            scopeEvalAsync();
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "ListLayout");
         }).apply(null, args);
   }
@@ -144,7 +140,6 @@ export function switchSquareLayout(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
             machinerySwitchLayout("SquareLayout");
-            scopeEvalAsync();
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "SquareLayout");
         }).apply(null, args);
   }
@@ -262,7 +257,6 @@ export function machineryCheckOperationSafety(callback: any, amount: any = 100):
         allowEnterKey: false,
       }).then(function (result: any) {
         callback && callback();
-        scopeEvalAsync();
       });
     }
     else {
@@ -299,7 +293,6 @@ export function machineryCheckOperationSafety2(count: any, callback: any, amount
         cancelButtonText: w.i18n.__("general.cancel"),
       }).then(function (result: any) {
         callback && callback();
-        scopeEvalAsync();
       });
     }
     else {

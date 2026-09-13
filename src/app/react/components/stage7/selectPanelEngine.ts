@@ -4,7 +4,6 @@ import { contextMenuOpenChannel, folderSelectPanelOpenChannel, inspectorTagSelec
 ;
 
 import { createFolder } from '../../services/folderCoreService';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 
 import { machineryGetRecentFolders } from '../../core/libraryDomain';
 import { useMiscRawState } from '../../store/miscRawState';
@@ -19,7 +18,7 @@ import { useMiscRawState } from '../../store/miscRawState';
  * - FolderSelectPanel = bundle 55801-56356（7d-1c-2）
  *
  * 移植约定：
- * - 原 class 内的 scopeEvalAsync() 由 notify 回调替代（组件层传入 React 重渲染触发器）。
+ * - 原 class 内的 由 notify 回调替代（组件层传入 React 重渲染触发器）。
  * - $panel/$input 与原版一致按 document 级 CSS 选择器取 jQuery 集合（general-tag-select-panel
  *   的 panelSelector/searchInputSelector 即文档级）。
  * - angular.copy → JSON 深拷贝；i18n.__ → t()；tinyPinyin/chineseConvert/pinyinlite/

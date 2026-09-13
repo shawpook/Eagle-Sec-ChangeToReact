@@ -29,7 +29,6 @@ import { getRatioNonExp } from './viewOpsService';
 import { emptyTrash } from './batchOpsService';
 import { emptyRestore, newFolder } from './folderCoreService';
 import { openLayoutPanelChannel } from '../global/bus';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { clickEl, qaHasEl, addClassEl, removeClassEl } from '../utils/domQuery';
 import { machineryOpenDuplicate } from '../core/itemDomain';
 import { machineryImportLinks, machineryNewSmartFolder, machineryOpenArtstation, machineryOpenHuaban, machineryOpenPinterest } from '../core/libraryDomain';
@@ -106,20 +105,20 @@ export function openRatioContextMenu(...args: any[]) {
     return (function() {
             ContextMenu.open({
                 items: [
-                    { label: '5%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 5, click: () => { machineryUpdateZoomRatio(getRatioNonExp(5), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 5; scopeEvalAsync(); } },
-                    { label: '10%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 10, click: () => { machineryUpdateZoomRatio(getRatioNonExp(10), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 10; scopeEvalAsync(); } },
-                    { label: '25%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 25, click: () => { machineryUpdateZoomRatio(getRatioNonExp(25), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 25; scopeEvalAsync(); } },
-                    { label: '50%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 50, click: () => { machineryUpdateZoomRatio(getRatioNonExp(50), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 50; scopeEvalAsync(); } },
-                    { label: '100%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 100, click: () => { machineryUpdateZoomRatio(getRatioNonExp(100), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 100; scopeEvalAsync(); } },
-                    { label: '125%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 125, click: () => { machineryUpdateZoomRatio(getRatioNonExp(125), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 125; scopeEvalAsync(); } },
-                    { label: '150%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 150, click: () => { machineryUpdateZoomRatio(getRatioNonExp(150), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 150; scopeEvalAsync(); } },
-                    { label: '200%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 200, click: () => { machineryUpdateZoomRatio(getRatioNonExp(200), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 200; scopeEvalAsync(); } },
-                    { label: '300%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 300, click: () => { machineryUpdateZoomRatio(getRatioNonExp(300), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 300; scopeEvalAsync(); } },
-                    { label: '400%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 400, click: () => { machineryUpdateZoomRatio(getRatioNonExp(400), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 400; scopeEvalAsync(); } },
-                    { label: '800%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 800, click: () => { machineryUpdateZoomRatio(getRatioNonExp(800), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 800; scopeEvalAsync(); } },
+                    { label: '5%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 5, click: () => { machineryUpdateZoomRatio(getRatioNonExp(5), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 5; } },
+                    { label: '10%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 10, click: () => { machineryUpdateZoomRatio(getRatioNonExp(10), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 10; } },
+                    { label: '25%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 25, click: () => { machineryUpdateZoomRatio(getRatioNonExp(25), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 25; } },
+                    { label: '50%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 50, click: () => { machineryUpdateZoomRatio(getRatioNonExp(50), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 50; } },
+                    { label: '100%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 100, click: () => { machineryUpdateZoomRatio(getRatioNonExp(100), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 100; } },
+                    { label: '125%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 125, click: () => { machineryUpdateZoomRatio(getRatioNonExp(125), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 125; } },
+                    { label: '150%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 150, click: () => { machineryUpdateZoomRatio(getRatioNonExp(150), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 150; } },
+                    { label: '200%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 200, click: () => { machineryUpdateZoomRatio(getRatioNonExp(200), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 200; } },
+                    { label: '300%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 300, click: () => { machineryUpdateZoomRatio(getRatioNonExp(300), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 300; } },
+                    { label: '400%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 400, click: () => { machineryUpdateZoomRatio(getRatioNonExp(400), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 400; } },
+                    { label: '800%', checked: parseInt(useLayoutState.getState().imageSize.zoomRatioExp) == 800, click: () => { machineryUpdateZoomRatio(getRatioNonExp(800), undefined, undefined, true); useLayoutState.getState().imageSize.zoomRatioExp = 800; } },
                     { role: 'separator' },
-                    { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { machineryZoomActual(); scopeEvalAsync(); } },
-                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { machineryZoomFit(); scopeEvalAsync(); } },
+                    { label: i18n.__('context.zoom.zoomActural'), accelerator: preferences.shortcuts.keybinds['view.zoom.actual'], click: () => { machineryZoomActual(); } },
+                    { label: i18n.__('context.zoom.zoomFit'), accelerator: preferences.shortcuts.keybinds['view.zoom.fit'], click: () => { machineryZoomFit(); } },
                 ],
                 showSearch: false,
             });            
@@ -139,14 +138,14 @@ export function openTrashContextMenu(...args: any[]) {
                         label: i18n.__('context.emptyTrash.empty'),
                         keywords: `empty delete remove trash`,
                         icon: 'ic-trash-empty.svg',
-                        click: () => { scopeEvalAsync(() => { emptyTrash(); }); }
+                        click: () => { emptyTrash(); }
                     },
                     {
                         disabled: disabled,
                         label: $filter('i18n')('context.emptyTrash.restoreAll'),
                         keywords: `restore`,
                         icon: 'ic-trash-restore.svg',
-                        click: () => { scopeEvalAsync(() => { emptyRestore(); }); }
+                        click: () => { emptyRestore(); }
                     }
                 ],
                 showSearch: false,
@@ -195,7 +194,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['color'],
                     toggle: (pinned) => {
                         pinFilter('color', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('color');
@@ -211,7 +209,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['tags'],
                     toggle: (pinned) => {
                         pinFilter('tags', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('tags');
@@ -227,7 +224,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['folders'],
                     toggle: (pinned) => {
                         pinFilter('folders', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('folders');
@@ -243,11 +239,9 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['shape'],
                     toggle: (pinned) => {
                         pinFilter('shape', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         getToggleFilterByTypeFn()('shape');
-                        scopeEvalAsync();
                     }
                 },
                 // 評分
@@ -260,7 +254,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['rating'],
                     toggle: (pinned) => {
                         pinFilter('rating', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('rating');
@@ -276,7 +269,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['types'],
                     toggle: (pinned) => {
                         pinFilter('types', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('types');
@@ -292,7 +284,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['import'],
                     toggle: (pinned) => {
                         pinFilter('import', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('import');
@@ -308,7 +299,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['mtime'],
                     toggle: (pinned) => {
                         pinFilter('mtime', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('mtime');
@@ -324,7 +314,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['resolution'],
                     toggle: (pinned) => {
                         pinFilter('resolution', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('resolution');
@@ -340,7 +329,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['duration'],
                     toggle: (pinned) => {
                         pinFilter('duration', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('duration');
@@ -356,7 +344,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['size'],
                     toggle: (pinned) => {
                         pinFilter('size', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('size');
@@ -372,7 +359,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['annotation'],
                     toggle: (pinned) => {
                         pinFilter('annotation', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('annotation');
@@ -389,7 +375,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['note'],
                     toggle: (pinned) => {
                         pinFilter('note', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('note');
@@ -405,7 +390,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['url'],
                     toggle: (pinned) => {
                         pinFilter('url', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('url');
@@ -422,7 +406,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['fontActivated'],
                     toggle: (pinned) => {
                         pinFilter('fontActivated', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('fontActivated');
@@ -439,7 +422,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['bpm'],
                     toggle: (pinned) => {
                         pinFilter('bpm', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('bpm');
@@ -456,7 +438,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                     pinned: eagle.filter.pinned['camera'],
                     toggle: (pinned) => {
                         pinFilter('camera', pinned);
-                        scopeEvalAsync();
                     },
                     click: () => {
                         openFilter('camera');
@@ -489,7 +470,6 @@ export function openFilterAddContextMenu(...args: any[]) {
                         });
                         localStorage.setItem("eagle.filter.toolbar.orders", JSON.stringify(toolbarOrders));
                         eagle.filter.initOrders();
-                        scopeEvalAsync();
                     }
                 }
             });
@@ -517,7 +497,6 @@ export function openNewContextMenu(...args: any[]) {
                         icon: 'ic-smart-folder-new.svg',
                         click: function() {
                             machineryNewSmartFolder();
-                            scopeEvalAsync();
                         }
                     },
                     {
@@ -602,7 +581,6 @@ export function openNewContextMenu(...args: any[]) {
                                     keywords: 'duplicate 重複 搜索 尋找 repeat',
                                     click: function () {
                                         machineryOpenDuplicate();
-                                        scopeEvalAsync();
                                     }
                                 },
                                 {
@@ -613,7 +591,6 @@ export function openNewContextMenu(...args: any[]) {
                                         machineryOpenDuplicate({
                                             currentPage: true
                                         });
-                                        scopeEvalAsync();
                                     }
                                 },
                                 {
@@ -624,7 +601,6 @@ export function openNewContextMenu(...args: any[]) {
                                         machineryOpenDuplicate({
                                             selected: true
                                         });
-                                        scopeEvalAsync();
                                     }
                                 }
                             ]
@@ -639,25 +615,25 @@ export function openNewContextMenu(...args: any[]) {
                         label: "Sketch " + i18n.__("general.document"),
                         keywords: 'template 模板 file',
                         icon: '/templates/ic-sketch.png',
-                        click: function() { machineryNewFileFromTemplate("sketch"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("sketch"); }
                     },
                     {
                         label: "Photoshop " + i18n.__("general.document"),
                         icon: '/templates/ic-photoshop.png',
                         keywords: 'template 模板 file adobe psd photoshop',
-                        click: function() { machineryNewFileFromTemplate("psd"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("psd"); }
                     },
                     {
                         label: "Illustrator " + i18n.__("general.document"),
                         icon: '/templates/ic-illustration.png',
                         keywords: 'template 模板 file adobe ai illustrator',
-                        click: function() { machineryNewFileFromTemplate("ai"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("ai"); }
                     },
                     {
                         label: "XD " + i18n.__("general.document"),
                         icon: '/templates/ic-xd.png',
                         keywords: 'template 模板 file adobe xd',
-                        click: function() { machineryNewFileFromTemplate("xd"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("xd"); }
                     },
                     {
                         role: 'separator'
@@ -668,60 +644,60 @@ export function openNewContextMenu(...args: any[]) {
                         label: i18n.__("general.txtDocument"),
                         icon: '/templates/ic-txt.png',
                         keywords: 'template 模板 file note txt text',
-                        click: function() { machineryNewFileFromTemplate("txt"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("txt"); }
                     },
                     {
                         label: "Word " + i18n.__("general.document"),
                         icon: '/templates/ic-word.png',
                         keywords: 'template 模板 file office microsoft doc docx word',
-                        click: function() { machineryNewFileFromTemplate("docx"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("docx"); }
                     },
                     {
                         label: "PowerPoint " + i18n.__("general.document"),
                         icon: '/templates/ic-powerpoint.png',
                         keywords: 'template 模板 file office microsoft ppt pptx powerpoint',
-                        click: function() { machineryNewFileFromTemplate("pptx"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("pptx"); }
                     },
                     {
                         label: "Excel " + i18n.__("general.document"),
                         icon: '/templates/ic-excel.png',
                         keywords: 'template 模板 file office microsoft xls xlsx csv excel',
-                        click: function() { machineryNewFileFromTemplate("xlsx"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("xlsx"); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Keynote " + i18n.__("general.document"),
                         icon: '/templates/ic-keynote.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { machineryNewFileFromTemplate("key"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("key"); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Pages " + i18n.__("general.document"),
                         icon: '/templates/ic-pages.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { machineryNewFileFromTemplate("pages"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("pages"); }
                     },
                     {
                         visible: process.platform == 'darwin',
                         label: "Numbers " + i18n.__("general.document"),
                         icon: '/templates/ic-numbers.png',
                         keywords: 'template 模板 file apple office',
-                        click: function() { machineryNewFileFromTemplate("numbers"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("numbers"); }
                     },
                     {
                         visible: process.platform == 'darwin' && installedApplications["mindnode"].isInstalled,
                         label: "MindNode " + i18n.__("general.document"),
                         icon: '/templates/ic-mindnode.png',
                         keywords: 'template 模板 file mind 脑图 心智图',
-                        click: function() { machineryNewFileFromTemplate("mindnode"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("mindnode"); }
                     },
                     {
                         visible: (process.platform == 'darwin')? installedApplications["xmind"].isInstalled : true,
                         label: "XMind " + i18n.__("general.document"),
                         icon: '/templates/ic-xmind.png',
                         keywords: 'template 模板 file mind 脑图 心智图',
-                        click: function() { machineryNewFileFromTemplate("xmind"); scopeEvalAsync(); }
+                        click: function() { machineryNewFileFromTemplate("xmind"); }
                     },
                     {
                         role: 'separator'
@@ -764,7 +740,6 @@ export function openQuickAccessContextMenu(...args: any[]) {
                             const __lv_idx = useMiscRawState.getState().quickAccess.indexOf(item);
                             if (__lv_idx !== -1) {
                                 QuickAccessManager.removeIndex(__lv_idx);
-                                scopeEvalAsync();
                             }
                         }
                     }
@@ -907,7 +882,6 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                         icon: 'ic-expand.svg',
                         click: () => {
                             machineryToggleSelectSmartFolder(event, smartFolder);
-                            scopeEvalAsync();
                         }
                     },
                     {
@@ -915,7 +889,6 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                         icon: 'ic-expand-same.svg',
                         click: () => {
                             machineryToggleCurrentLevelSmartFolders(event, smartFolder);
-                            scopeEvalAsync();
                         }
                     },
                     {
@@ -923,18 +896,15 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                         icon: 'ic-expand-all.svg',
                         click: () => {
                             machineryToggleAllSmartFolderExpand(event, smartFolder);
-                            scopeEvalAsync();
                         }
                     },
                 ],
                 showSearch: false,
                 onOpened: () => {
                     smartFolder.isSelected = true;
-                    scopeEvalAsync();
                 },
                 onClosed: () => {
                     smartFolder.isSelected = false;
-                    scopeEvalAsync();
                 }
             });
         }).apply(null, args);

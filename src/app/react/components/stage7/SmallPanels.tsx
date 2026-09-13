@@ -20,7 +20,6 @@ import { showListSubfolderContent } from '../../services/folderMenuService';
 import { openApplicationContextMenu } from '../../services/miscMenuService';
 import { switchLibrary } from '../../services/folderCoreService';
 import { openAboutPanelChannel, openLayoutPanelChannel, openMousewheelPreferenceWindowChannel, openNotificationChannel, setFolderPasswordChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../../utils/domQuery';
 
 import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';
@@ -559,7 +558,6 @@ export function NewVersionModal() {
       setSize(process.platform === 'darwin' ? updateResult.file?.size || 0 : updateResult.windows?.size || 0);
       setResult(updateResult);
       setOpen(true);
-      scopeEvalAsync();
       void pjson;
     };
     ipc?.on?.('show-update-message', handler);
@@ -963,19 +961,16 @@ export function WelcomePage() {
       } else {
         setTimeout(() => setStep(1), 500);
       }
-      scopeEvalAsync();
     };
     const onDirsLoaded = () => {
       document.body.classList.remove('is-welcome-page');
       win?.setMinimumSize?.(500, 375);
       setOpen(false);
-      scopeEvalAsync();
     };
     const onCacheLoaded = () => {
       document.body.classList.remove('is-welcome-page');
       win?.setMinimumSize?.(500, 375);
       setOpen(false);
-      scopeEvalAsync();
     };
     ipc?.on?.('app-status-welcome', onWelcome);
     ipc?.on?.('app-status-library-dirs-loaded', onDirsLoaded);

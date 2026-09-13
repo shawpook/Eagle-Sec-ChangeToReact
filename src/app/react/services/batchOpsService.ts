@@ -35,7 +35,6 @@ import { checkDiskSpace, exportFolder } from './folderCoreService';
 import { select } from './selectionService';
 import { addImagesToFolder } from './folderCoreService';
 import { cleanAllErrorChannel, glRemoveitemsChannel, openAddFolderModalChannel } from '../global/bus';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { q, qa, cssSet, outerWidthOf } from '../utils/domQuery';
 import { machineryGetRecentFolders } from '../core/libraryDomain';
 import { machineryRelayout } from './gridService';
@@ -84,7 +83,7 @@ const $filter: any = (name: string) => {
 };
 // $timeout 语义 = 延时执行 + digest（controllerFns 同源）
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+  if (typeof fn === 'function') fn();
 }, ms || 0);
 
 /* b1-9bz-B：ToastAlerts 的「清空全部错误」此前只能经 callScope 字符串路由命中（条目在
@@ -477,7 +476,6 @@ export function scrollToSelectedItem(...args: any[]) {
                                 cssSet("#box-container", { visibility: "initial" });
                             }, 50);
                         }, 200);
-                        scopeEvalAsync();
                         break;
                     }
                 }

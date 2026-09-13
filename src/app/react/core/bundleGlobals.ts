@@ -29,7 +29,6 @@ import { installArtstation } from './artstation';
 import { installFlatpickr } from './flatpickrLite';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
-import { scopeEvalAsync } from './scopeRuntime';
 import { getWindowScope } from './scopeFace';
 import { glRemoveitemsChannel } from '../global/bus';
 
@@ -427,7 +426,6 @@ function _hiddenByCurrentFilter(items: any[]): void {
           glRemoveitemsChannel.emit(hiddenElements);
           if (bs.currentSmartFolder) {
             bs.currentSmartFolder.imageCount = machinerySmartFolderCount(bs.currentSmartFolder);
-            scopeEvalAsync();
           }
         }
       }
@@ -972,14 +970,14 @@ function _buildSlowNotify(): any {
     },
     show: function () {
       writeScopeField('showSlowNotify', true);
-      scopeEvalAsync(function () {
+      (function () {
         setTimeout(function () {
           addClass("#library-warning", "show active");
           setTimeout(function () {
             removeClass("#library-warning", "active");
           }, 10000);
         }, 300);
-      });
+      })();
       w.SlowNotify.hasShow = true;
       console.log("跳出提示");
       w.electronLog && w.electronLog.error(`[app] Warning: hard drive performance too slow`);

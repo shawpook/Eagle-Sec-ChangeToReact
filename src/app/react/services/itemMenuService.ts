@@ -31,7 +31,6 @@ import { newFolderWidthSelection } from './folderCoreService';
 import { activateFonts, changeFontDefaultLang, deactivateFonts, isFontActivate, renameFontsWithFullName } from './fontTagService';
 import { regenerateThumbnail, replaceFile } from './imageOpsService';
 import { addToLibraryChannel, glRemoveitemsChannel, webpConvertStartChannel } from '../global/bus';
-import { scopeEvalAsync } from '../core/scopeRuntime';
 import { machineryGetRecentFolders } from '../core/libraryDomain';
 import { machineryCheckOperationSafety } from './viewOpsService';
 import { machinerySetFolderCover } from '../core/libraryDomain';
@@ -95,7 +94,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                 keywords: 'open 打開 location 位置 eagle',
                 click: () => {
                     openItemLocation(useSelectionState.getState().selected[0], folder);
-                    scopeEvalAsync();
                 }
             });
             return acc;
@@ -135,7 +133,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                         items: items,
                         library: history
                     });
-                    scopeEvalAsync();
                 }
             }
         });
@@ -254,7 +251,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                         glRemoveitemsChannel.emit(itemElements);
                         ayncsImagesChange(items);
                         try { electronLog && electronLog.info(`[app] Restore ${items.length} files from trash`); } catch (err) {};
-                        scopeEvalAsync();
                     }
                 },
                 // --- (還原)
@@ -352,7 +348,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-open-default.svg',
                     click: () => {
                         openFilesWithDefault(useSelectionState.getState().selected);
-                        scopeEvalAsync();
                     },
                 },
                 // 其它應用打開
@@ -378,7 +373,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                             keywords: `${i18n.__("context.image.openItemLocation")} open eagle 打開 location 位置`,
                             click: () => {
                                 openItemLocation(item, null);
-                                scopeEvalAsync();
                             }
                         }, ...openInFolderMenuItems],
                     }
@@ -410,7 +404,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     accelerator: preferences.shortcuts.keybinds['organize.folder.addLast'],
                     click: () => {
                         addToLastUsedFolder();
-                        scopeEvalAsync();
                     },
                 },
                 // 添加至文件夹...
@@ -421,7 +414,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-folder-add-to.svg',
                     click: () => {
                         addToFolders();
-                        scopeEvalAsync();
                     },
                 },
                 // 添加至其它资源库...
@@ -463,7 +455,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 accelerator:  preferences.shortcuts.keybinds['file.export.item.as'],
                                 click: () => {
                                     exportSelectedAsFormat();
-                                    scopeEvalAsync();
                                 }
                             },
                             {
@@ -473,7 +464,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 accelerator:  preferences.shortcuts.keybinds['file.export.csv'],
                                 click: () => {
                                     exportSelectedToCsv();
-                                    scopeEvalAsync();
                                 }
                             }
                         ]
@@ -533,7 +523,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                             });
                             machineryRebindRefresh();
                             // scrollToSelectedItem();
-                            scopeEvalAsync();
                         });
                     },
                 },
@@ -577,7 +566,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                             syncInspectorFromScope();
                             machineryRebindRefresh();
                             // scrollToSelectedItem();
-                            scopeEvalAsync();
                         });
                     },
                 },
@@ -595,7 +583,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-folder-set-cover.svg',
                     click: () => {
                         machinerySetFolderCover();
-                        scopeEvalAsync();
                     },
                 },
                 // ---（文件夾列表）
@@ -624,7 +611,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-rename.svg',
                     click: () => {
                         renameImages();
-                        scopeEvalAsync();
                     },
                 },
                 // 重命名(單選)
@@ -636,7 +622,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-rename.svg',
                     click: () => {
                         renameImages();
-                        scopeEvalAsync();
                     },
                 },
                 // 复制文件
@@ -647,7 +632,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-file-copy.svg',
                     click: () => {
                         machineryCopyImages(event);
-                        scopeEvalAsync();
                     },
                 },
                 // 复制文件路径
@@ -658,7 +642,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-file-copy-path.svg',
                     click: () => {
                         copyAsPath();
-                        scopeEvalAsync();
                     },
                 },
                 // 复制...
@@ -676,7 +659,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 icon: '',
                                 click: () => {
                                     copyAsLink(undefined, items);
-                                    scopeEvalAsync();
                                 },
                             },
                             // 文件夹路径
@@ -687,7 +669,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 icon: '',
                                 click: () => {
                                     copyAsFolderPath();
-                                    scopeEvalAsync();
                                 },
                             },
                             // 缩略图
@@ -698,7 +679,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 icon: '',
                                 click: () => {
                                     copyAsThumbnail();
-                                    scopeEvalAsync();
                                 },
                             },
                             // Base64
@@ -710,7 +690,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 icon: '',
                                 click: () => {
                                     copyAsBase64();
-                                    scopeEvalAsync();
                                 },
                             },
                             // 名称
@@ -721,7 +700,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 icon: '',
                                 click: () => {
                                     copyAsProperity("name");
-                                    scopeEvalAsync();
                                 },
                             },
                         ]
@@ -762,7 +740,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-file-combine.svg',
                     click: () => {
                         eagle.combineImages.open(useSelectionState.getState().selected);
-                        scopeEvalAsync();
                     }
                 },
                 // 创建副本(單選)
@@ -774,7 +751,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-copy-duplicate.svg',
                     click: () => {
                         duplicateItem();
-                        scopeEvalAsync();
                     },
                 },
                 // ---
@@ -810,7 +786,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 accelerator: preferences.shortcuts.keybinds['find.reverse.google'],
                                 click: () => {
                                     eagle.reverseImageSearch.search(item, ReverseImageSearch.ENGINES.GOOGLE);
-                                    scopeEvalAsync();
                                 }
                             },
                             // Bing
@@ -916,7 +891,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     click: () => {
                         writeScopeField('isHideNavigator', !useBodyState.getState().isHideNavigator);
                         localStorage["isHideNavigator"] = useBodyState.getState().isHideNavigator;
-                        scopeEvalAsync();
                     },
                 },
                 // 缩略图背景
@@ -984,7 +958,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     keepOpen: true,
                     click: () => {
                         writeScopeField('isGrayscaleMode', !useBodyState.getState().isGrayscaleMode);
-                        scopeEvalAsync();
                     }
                 },
                 // ---(Webp)
@@ -1004,14 +977,14 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 visible: item.ext === 'webp',
                                 label: "PNG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert png 轉換`,
-                                click: () => { webpConvertStartChannel.emit({ images: useSelectionState.getState().selected, format: "png" }); scopeEvalAsync(); }
+                                click: () => { webpConvertStartChannel.emit({ images: useSelectionState.getState().selected, format: "png" }); }
                             },
                             // JPG
                             {
                                 visible: item.ext === 'webp',
                                 label: "JPG",
                                 keywords: `${i18n.__("context.image.webpConvert")} webp convert jpg 轉換`,
-                                click: () => { webpConvertStartChannel.emit({ images: useSelectionState.getState().selected, format: "jpg" }); scopeEvalAsync(); }
+                                click: () => { webpConvertStartChannel.emit({ images: useSelectionState.getState().selected, format: "jpg" }); }
                             },
                         ]
                     }
@@ -1069,7 +1042,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 icon: '',
                                 click: () => {
                                     regenerateThumbnail();
-					                    scopeEvalAsync();
                                 },
                             },
                             // 重新分析颜色
@@ -1117,7 +1089,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 keywords: 'font english en us 字體 字型 英文',
                                 click: () => {
                                     changeFontDefaultLang(items, 'en');
-                                    scopeEvalAsync();
                                 }
                             },
                             {
@@ -1126,7 +1097,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 keywords: 'font japanese jp 字體 字型 日文',
                                 click: () => {
                                     changeFontDefaultLang(items, 'jp');
-                                    scopeEvalAsync();
                                 }
                             },
                             {
@@ -1135,7 +1105,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 keywords: 'font korean kr 字體 字型 韓文',
                                 click: () => {
                                     changeFontDefaultLang(items, 'kr');
-                                    scopeEvalAsync();
                                 }
                             },
                             {
@@ -1144,7 +1113,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 keywords: 'font chinese simplified zh_CN 字體 字型 簡體中文',
                                 click: () => {
                                     changeFontDefaultLang(items, 'zh_CN');
-                                    scopeEvalAsync();
                                 }
                             },
                             {
@@ -1153,7 +1121,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 keywords: 'font chinese traditional zh_TW 字體 字型 繁體中文',
                                 click: () => {
                                     changeFontDefaultLang(items, 'zh_TW');
-                                    scopeEvalAsync();
                                 }
                             },
                         ]
@@ -1172,7 +1139,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-file-remove-folder.svg',
                     click: () => {
                         removeFromFolder(event, useFolderState.getState().currentFolder.id);
-                        scopeEvalAsync();
                     },
                 },
                 // 丢到回收站
@@ -1184,7 +1150,6 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-file-move-trash.svg',
                     click: () => {
                         machineryRemoveSelected();
-                        scopeEvalAsync();
                     },
                 },
                 // 永久刪除
@@ -1209,12 +1174,12 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                             confirmButtonText: i18n.__('dialog.permanentlyDelay.button'),
                             cancelButtonText: i18n.__("general.cancel"),
                         }).then(() => {
-                            scopeEvalAsync(() => {
+                            (() => {
                                 machineryRemovePermanently();
                                 if (usePreferencesState.getState().preferences.notification.soundEffect.enable != 'false' && usePreferencesState.getState().preferences.notification.soundEffect.when.deleteFolder == 'true') {
                                     useMiscRawState.getState().removeSound.play();
                                 }
-                            });
+                            })();
                         });
                     },
                 },

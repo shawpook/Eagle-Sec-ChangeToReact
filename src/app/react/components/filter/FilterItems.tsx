@@ -11,7 +11,6 @@ import { runInBodyScope } from '../../core/appCore';
 import { calcuteContainFolders, excludeWithFolder, filterWithColor, filterWithFolder, filterWithHexColor, hexToRGB } from '../../core/filterDomain';
 import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
 import { useMiscRawState } from '../../store/miscRawState';
@@ -168,7 +167,6 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
       // E4：原 `$root.currentColor`（Angular ngModel 控制器）在去 Angular 后恒缺席——直走 hexColor 分支。
       writeScopeField('hexColor', color);
       filterWithColor(hexToRGB(color));
-      scopeEvalAsync();
     }, 33);
     const valueInput = document.getElementById('colors-picker-value') as HTMLInputElement | null;
     const colorInput = document.getElementById('colors-picker') as HTMLInputElement | null;
@@ -370,7 +368,6 @@ function FoldersItem({ snapshot }: { snapshot: FilterSnapshot }) {
       } else {
         calcuteContainFolders(useItemState.getState().allData);
       }
-      scopeEvalAsync();
     });
   };
 

@@ -177,17 +177,16 @@ try {
   })()`);
   await assertExpr('m1-A2-c8-write-through', `window.__c8w === true && window.__c8r === true && window.__c8keys === true`);
 
-  // ═══ A3. c9 数据机器域（scope 函数替换生效 + 契约）═══
+  // ═══ A3. c9 数据机器域（machinery 导出就位 + 契约）═══
   await assertExpr('m1-A3-c9-machinery', `(() => {
-    const m = window.__eagleDataMachinery;
     const s = window.$bodyScope;
     const M = window.__eagleMachinery;
-    if (!m || !m.applied || m.version < 2 || !M) return false;
+    if (!M) return false;
     return ['calculateImageBinding', 'sortRawData', 'rebindRefresh', 'rebindRefreshLazy',
-      'updateSidebarList', 'updateItemsView', 'switchLayout', 'prependImages', 'reload',
+      'updateSidebarList', 'updateItemsView', 'switchLayout', 'prependImages',
       'getRatioExp', 'getRatioNonExp', 'updateZoomRatio', 'toggleSlideshow',
       'smartFolderCount', 'getRecentFolders']
-      .every((k) => m[k] === 'machinery')
+      .every((k) => typeof M[k] === 'function')
       && typeof M.calculateImageBinding === 'function'
       && typeof M.rebindRefresh === 'function'
       && typeof M.updateSidebarList === 'function';
@@ -262,10 +261,8 @@ try {
       && typeof w.ig.getGroupKeys === 'function' && !w.eg;
   })()`);
   await assertExpr('m1-A8-relayout-machinery', `(() => {
-    const m = window.__eagleDataMachinery;
     const M = window.__eagleMachinery;
-    return m && m.version >= 7 && m.relayout === 'machinery'
-      && M && typeof M.relayout === 'function';
+    return !!M && typeof M.relayout === 'function';
   })()`);
 
   // ═══ A9. c14 智能文件夹规则匹配（26 规则函数在位 + existInSmartFilter 实调）═══
@@ -291,13 +288,10 @@ try {
   })()`);
   await assertExpr('m1-A9-smart-filter', `window.__a9 === 'ok'`);
 
-  // ═══ A10. c14b 筛选引擎契约（filterData/calcuteFilterResult machinery 标记）═══
+  // ═══ A10. c14b 筛选引擎契约（filterData/calcuteFilterResult 导出就位）═══
   await assertExpr('m1-A10-filter-engine', `(() => {
-    const m = window.__eagleDataMachinery;
     const M = window.__eagleMachinery;
-    return m && m.version >= 9 && m.filterData === 'machinery'
-      && m.calcuteFilterResult === 'machinery'
-      && M && typeof M.filterData === 'function'
+    return !!M && typeof M.filterData === 'function'
       && typeof M.calcuteFilterResult === 'function';
   })()`);
 

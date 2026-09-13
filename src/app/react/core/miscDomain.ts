@@ -41,7 +41,6 @@ import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../serv
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
 import { openErrorChannel } from '../global/bus';
-import { scopeEvalAsync } from './scopeRuntime';
 import { q, qaNot, widthOf, heightOf, hasClass, addClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
 import { machineryNewSmartFolder } from './libraryDomain';
 import { machineryGetRecentFolders } from './libraryDomain';
@@ -81,7 +80,7 @@ let done = false;
 
 function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+    if (typeof fn === 'function') fn();
   }, ms || 0);
 }
 
@@ -145,7 +144,7 @@ export function takeoverMiscDomain(): void {
     ['window-close', ['$(".detail-wrap video")[0]']],
     ['open-preferences', ['open.preferences']],
     ['toggle-slideshow', ['$scope.toggleSlideshow()']],
-    ['leave-slideshow', ['scopeEvalAsync();']],
+    ['leave-slideshow', ['leave-slideshow']],
     ['show-sidebar-badge', ['showSidebarBadge = true']],
     ['hide-sidebar-badge', ['showSidebarBadge = false']],
     ['import-folders', ['$scope.importFolders()']],
@@ -337,7 +336,6 @@ export function takeoverMiscDomain(): void {
   // ── lock-now（22392 逐字）──
   ipc.on('lock-now', function () {
     machineryLockApp();
-    scopeEvalAsync();
   });
 
   // ── window.maximize / window.unmaximize（22465/22483 逐字）──
@@ -349,7 +347,6 @@ export function takeoverMiscDomain(): void {
     writeScopeField('isMaximize', true);
     syncToolbarFromScope();
     writeScopeField('lastItemStates', {});
-    scopeEvalAsync();
   });
 
   ipc.on('window.unmaximize', function () {
@@ -360,7 +357,6 @@ export function takeoverMiscDomain(): void {
     writeScopeField('isMaximize', false);
     syncToolbarFromScope();
     writeScopeField('lastItemStates', {});
-    scopeEvalAsync();
   });
 
   // ── analytics.* / log（22518-22544 逐字）──
@@ -480,28 +476,27 @@ export function takeoverMiscDomain(): void {
 
   // ── update-progress / add-download-task(s) / extension-server-init-failed（22639-22662 逐字）──
   ipc.on('update-progress', function (_e: any, progress: any) {
-    scopeEvalAsync(function () {
+    (function () {
       writeScopeField('progress', progress);
       syncUploadFromScope();
-    });
+    })();
   });
   ipc.on('add-download-task', function () {
-    scopeEvalAsync(function () {
+    (function () {
       useMiscRawState.getState().uploadQueue.push({});
       syncUploadFromScope();
-    });
+    })();
   });
   ipc.on('add-download-tasks', function (_event: any, count: any) {
-    scopeEvalAsync(function () {
+    (function () {
       for (let i = 0; i < count; i++) {
         useMiscRawState.getState().uploadQueue.push({});
         syncUploadFromScope();
       }
-    });
+    })();
   });
   ipc.on('extension-server-init-failed', function (_e: any, _total: any) {
     writeScopeField('localhostError', true);
-    scopeEvalAsync();
   });
 
   // ── load-open-with（23527 逐字）──
@@ -509,14 +504,12 @@ export function takeoverMiscDomain(): void {
     if (openWithInfo && openWithInfo["png"]) {
       openWithInfo["jpg"] = openWithInfo["jpeg"];
       writeScopeField('openWithInfo', openWithInfo);
-      scopeEvalAsync();
     }
   });
 
   // ── move-to-folders / rebind-refresh / open-item / go-folder / go-smart-folder（23718-23782）──
   ipc.on('move-to-folders', function (event: any) {
     machineryMoveToFolders(event);
-    scopeEvalAsync();
   });
 
   ipc.on('rebind-refresh', function (_e: any) {
@@ -531,7 +524,7 @@ export function takeoverMiscDomain(): void {
       if (folders && folders.length > 0) {
         const firstFolder = useItemState.getState().folderMappings[folders[0]];
         openFolder(firstFolder);
-        setTimeout(function () { machineryChangeSidebarIndex(firstFolder); scopeEvalAsync(); }, 200);
+        setTimeout(function () { machineryChangeSidebarIndex(firstFolder); }, 200);
       }
       else {
         machineryOpenAll();
@@ -543,7 +536,6 @@ export function takeoverMiscDomain(): void {
         machineryEnterDetailMode(undefined, item);
         scrollToSelectedItem();
       }, 250);
-      scopeEvalAsync();
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
         cw.restore();
@@ -556,8 +548,7 @@ export function takeoverMiscDomain(): void {
     const folder = useItemState.getState().folderMappings[folderId];
     if (folder) {
       openFolder(folder);
-      setTimeout(function () { machineryChangeSidebarIndex(folder); scopeEvalAsync(); }, 200);
-      scopeEvalAsync();
+      setTimeout(function () { machineryChangeSidebarIndex(folder); }, 200);
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
         cw.restore();
@@ -570,8 +561,7 @@ export function takeoverMiscDomain(): void {
     const smartFolder = useItemState.getState().smartFolderMappings[smartFolderId];
     if (smartFolder) {
       openSmartFolder(smartFolder);
-      setTimeout(function () { machineryChangeSidebarIndex(smartFolder); scopeEvalAsync(); }, 200);
-      scopeEvalAsync();
+      setTimeout(function () { machineryChangeSidebarIndex(smartFolder); }, 200);
       const cw = currentWindow();
       if (cw && cw.isMinimized()) {
         cw.restore();
@@ -584,11 +574,9 @@ export function takeoverMiscDomain(): void {
   ipc.on('add-history-tag', function (_e: any, tag: any) {
     useMiscRawState.getState().TagManager.addHistoryTag(tag);
     useMiscRawState.getState().TagManager.save();
-    scopeEvalAsync();
   });
   ipc.on('add-history-tags', function (_e: any, tags: any) {
     useMiscRawState.getState().TagManager.addHistoryTags(tags);
-    scopeEvalAsync();
   });
   ipc.on('clear-history-tag', function (_e: any, _tag: any) {
     useMiscRawState.getState().TagManager.historyTags = [];
@@ -596,26 +584,21 @@ export function takeoverMiscDomain(): void {
     syncTagManagerFromScope();
     writeScopeField('availableHistoryTags', []);
     useMiscRawState.getState().TagManager.save();
-    scopeEvalAsync();
   });
   ipc.on('prepend-folder', function (_e: any, folder: any) {
     machineryPrependFolder(folder);
-    scopeEvalAsync();
   });
   ipc.on('new-folder', function (_e: any) {
     newFolder();
-    scopeEvalAsync();
   });
   ipc.on('new-smart-folder', function (_e: any) {
     machineryNewSmartFolder();
-    scopeEvalAsync();
   });
 
   // ── 上传队列隐藏 / 揭示图片 / 电源 / 窗口关闭（23877-23940 逐字）──
   ipc.on('hide-upload-queue', function () {
     if (useMiscRawState.getState().uploadQueue.length === 0) {
       machineryHideUploadQueue();
-      scopeEvalAsync();
     }
   });
 
@@ -647,7 +630,6 @@ export function takeoverMiscDomain(): void {
       syncInspectorFromScope();
       machineryOpenAll();
     }
-    scopeEvalAsync();
   });
 
   ipc.on('power-suspend', function (_event: any) {
@@ -686,11 +668,9 @@ export function takeoverMiscDomain(): void {
 
   ipc.on('toggle-slideshow', function (_e: any) {
     machineryToggleSlideshow();
-    scopeEvalAsync();
   });
 
   ipc.on('leave-slideshow', function (_e: any) {
-    scopeEvalAsync();
   });
 
   ipc.on('show-sidebar-badge', function (_e: any) {
@@ -698,7 +678,6 @@ export function takeoverMiscDomain(): void {
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
-    scopeEvalAsync();
   });
 
   ipc.on('hide-sidebar-badge', function (_e: any) {
@@ -706,12 +685,10 @@ export function takeoverMiscDomain(): void {
     syncToolbarFromScope();
     syncBodyFromScope();
     syncDetailFromScope();
-    scopeEvalAsync();
   });
 
   ipc.on('import-folders', function (_e: any) {
     importFolders();
-    scopeEvalAsync();
   });
 
   ipc.on('activate-font', function (_e: any, item: any) {
@@ -730,7 +707,6 @@ export function takeoverMiscDomain(): void {
       folder = useItemState.getState().folderMappings[item.folders[0]];
     }
     machineryQuickOpenFolder(folder, item);
-    scopeEvalAsync();
   });
 
   // ── open-unregister（24013 逐字；$http → $.ajax Promise 等价；Registration/machineID = window）──
@@ -751,8 +727,7 @@ export function takeoverMiscDomain(): void {
         electronLog && electronLog.info(`[app] Unregister successfully, email: ${useMiscRawState.getState().email}`);
         domainTimeout(function () {
           const result = data.data;
-          try { ipc.send('electron-info', result); }
-          catch (err) { /* noop */ }
+          try { ipc.send('electron-info', result); } catch (err) { /* noop */ }
           if (result && result.error !== undefined) {
           }
           else {
@@ -764,7 +739,7 @@ export function takeoverMiscDomain(): void {
       });
     }
 
-    scopeEvalAsync(function () {
+    (function () {
       if (!swal) return;
       swal({
         html: `
@@ -819,14 +794,14 @@ export function takeoverMiscDomain(): void {
           electronLog && electronLog.info(`[app] Unregister successfully, email: ${email}`);
         }, 2000);
       });
-    });
+    })();
   });
 
   // ── get-current-folder / get-recent-folders / add-recent-folders（24095-24110 逐字）──
   ipc.on('get-current-folder', function (_event: any) {
-    scopeEvalAsync(function () {
+    (function () {
       ipc.send("current-folder", useFolderState.getState().currentFolder);
-    });
+    })();
   });
 
   ipc.on('get-recent-folders', function (_event: any) {
@@ -861,7 +836,6 @@ export function takeoverMiscDomain(): void {
         ipc.send('show-inactive');
       }, 500);
     }
-    scopeEvalAsync();
   });
 
   // ── remove-trash-item（36999 逐字）──
@@ -869,14 +843,12 @@ export function takeoverMiscDomain(): void {
     writeScopeField('currentTrashRemoved', useMiscRawState.getState().currentTrashRemoved + 1);
     writeScopeField('removeProgress', useMiscRawState.getState().currentTrashRemoved / useMiscRawState.getState().trashRemoved * 100);
     writeScopeField('removeProgress', (useBodyState.getState().removeProgress > 100) ? 100 : useBodyState.getState().removeProgress);
-    scopeEvalAsync();
     if (useMiscRawState.getState().currentTrashRemoved >= useMiscRawState.getState().trashRemoved || useBodyState.getState().removeProgress > 98) {
       writeScopeField('isCleaningTrash', false);
       syncSidebarFromScope();
       writeScopeField('trashRemoved', 0);
       writeScopeField('currentTrashRemoved', 0);
       IPCHelper.send('palette-resume');
-      scopeEvalAsync();
     }
   });
 
@@ -906,7 +878,6 @@ export function takeoverMiscDomain(): void {
     else {
       writeScopeField('theme', theme.css || "gray");
     }
-    scopeEvalAsync();
   });
 
   ipc.on('change.zoom', function (_e: any, zoom: any) {
@@ -975,7 +946,6 @@ export function takeoverMiscDomain(): void {
     });
     syncFilterFromScope();
     syncTagManagerFromScope();
-    scopeEvalAsync();
   });
 }
 
@@ -994,7 +964,7 @@ const systemPreferences: any = _req('@electron/remote')?.systemPreferences;
 const remote: any = _req('@electron/remote');
 
 const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
-  try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+  if (typeof fn === 'function') fn();
 }, ms || 0);
 // b1-9bz-A 收口：`$timeout.cancel(timer)` 是 Angular 注入服务的第二形态（详见 filterDomain
 // 同款注释）。本落点此前只有调用形态 → __lv_zoomInitTimeout 取消点 `$timeout.cancel is not a
@@ -1034,7 +1004,6 @@ export function changeOrderBy(...args: any[]) {
                     localStorage.setItem(`eagle.list.orderBy.${useMiscRawState.getState().rootDir}`, useMiscRawState.getState().orderBy);
                     machinerySortRawData(useMiscRawState.getState().orderBy);
                     machineryRebindRefresh();
-                    scopeEvalAsync();
                     try { electronLog && electronLog.info(`[app] Change global list order to: ${orderBy}`); } catch (err) {};
                 }
             }
@@ -1550,7 +1519,6 @@ export function machineryEnterDetailMode($event: any, image: any): void {
   // shim 世界的 body 类走 watcher flush → store → React effect，若不在此显式 flush，
   // 初始化会赶在类名之前跑，#bitmap-viewer 高度为 0 → BitmapViewer 不建 canvas、
   // 无瓦片 → 详情原图交付闸门超时（m1 detail original delivery）。
-  scopeEvalAsync();
 
   $timeout.cancel(zoomInitTimeout);
   zoomInitTimeout = $timeout(function () {

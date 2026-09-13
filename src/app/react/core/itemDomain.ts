@@ -28,7 +28,6 @@ import { machineryRememberVideoCurrentTime } from '../services/mediaService';
 import { resetFilter } from './filterDomain';
 import { scrollToSelectedItem } from '../services/batchOpsService';
 import { glRemoveitemsChannel, openDuplicateChannel, openDuplicateScanPanelChannel } from '../global/bus';
-import { scopeEvalAsync } from './scopeRuntime';
 import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setHtml, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
 import { machineryGetAncestorFolders, machinerySaveFolder } from './libraryDomain';
 import { machineryRelayout } from '../services/gridService';
@@ -91,7 +90,7 @@ let domainMuteRebind: any = null;
 
 function domainTimeout(fn: any, ms?: number): any {
   return setTimeout(() => {
-    try { if (typeof fn === 'function') fn(); } finally { try { scopeEvalAsync(); } catch (err) { /* noop */ } }
+    if (typeof fn === 'function') fn();
   }, ms || 0);
 }
 
@@ -349,7 +348,6 @@ export function takeoverItemDomain(): void {
         machineryUpdateSelection();
       });
     }
-    scopeEvalAsync();
   });
 
   // ── image.removed（23602 逐字）──
@@ -372,7 +370,6 @@ export function takeoverItemDomain(): void {
     domainMuteCalcuteImageBinding({ ignoreSort: true }, function () {
       machineryRebindRefresh(true);
       machineryUpdateSelection();
-      scopeEvalAsync();
     });
   });
 
@@ -397,7 +394,6 @@ export function takeoverItemDomain(): void {
       return;
     }
 
-    scopeEvalAsync();
   });
 
   // ── image.changed.mute（23651 逐字）──
@@ -411,7 +407,6 @@ export function takeoverItemDomain(): void {
     else {
       machineryUpdateItemView(newImage);
     }
-    scopeEvalAsync();
 
     const img = useItemState.getState().itemMappings[newImage.id];
     if (img) {
@@ -455,7 +450,6 @@ export function takeoverItemDomain(): void {
     domainMuteCalcuteImageBinding({ ignoreSort: true }, function () {
       machineryRebindRefresh(true);
       machineryUpdateSelection();
-      scopeEvalAsync();
     });
     void hashID;
   });
@@ -580,12 +574,10 @@ export function takeoverItemDomain(): void {
     // 仅更新包含此图片的列表
     if (useMiscRawState.getState().finishQueue.length === useMiscRawState.getState().uploadQueue.length) {
       machineryCalculateImageBinding({}, function () {
-        scopeEvalAsync();
       });
     }
     else {
       domainMuteCalcuteImageBinding({ ignoreSort: true }, function () {
-        scopeEvalAsync();
       });
     }
   });
@@ -631,7 +623,6 @@ export function takeoverItemDomain(): void {
       else {
         ipc.send("file-uploaded-end", generated);
       }
-      scopeEvalAsync();
     }
   });
 
@@ -641,7 +632,6 @@ export function takeoverItemDomain(): void {
     if (item) {
       item.text = params.text;
       machineryUpdateTxtItem(item);
-      scopeEvalAsync();
     }
   });
 
@@ -651,7 +641,6 @@ export function takeoverItemDomain(): void {
     if (converted && useItemState.getState().itemMappings[converted.id]) {
       domainUpdateItemListView(converted);
     }
-    scopeEvalAsync();
   });
 
   // ── calculateImageBinding（30549 逐字）──
@@ -660,7 +649,6 @@ export function takeoverItemDomain(): void {
       ensureMuteRebind() && ensureMuteRebind()();
       machineryUpdateSelection();
     });
-    scopeEvalAsync();
   });
 
   // ── new-folders（30560 逐字）──
@@ -673,7 +661,6 @@ export function takeoverItemDomain(): void {
 
     machineryCalculateImageBinding({ ignoreSort: true }, function () {
       machineryRebindRefresh();
-      scopeEvalAsync();
       machinerySaveFolder();
     });
 
@@ -1417,7 +1404,6 @@ export function machineryOpenDuplicate(options: any = {}): void {
           return !item.isDeleted;
         }));
         syncInspectorFromScope();
-        scopeEvalAsync();
       },
     });
   }
@@ -1852,7 +1838,6 @@ export function machineryCopyImages(event: any): void {
 export function machineryCreateTxtFileFromTemplate(event: any): void {
   event && event.preventDefault();
   machineryNewFileFromTemplate("txt");
-  scopeEvalAsync();
 }
 
 export function machineryEnableImageNameEditable(event: any, $name: any): void {
@@ -1936,7 +1921,6 @@ export function machineryEnableImageNameEditable(event: any, $name: any): void {
       w.ayncsImagesChange([image]);
       w.hiddenByCurrentFilter([image]);
       // TagManager.getSuggestTags([image]);
-      scopeEvalAsync();
       try { w.electronLog && w.electronLog.info(`[app] Change list item's name: ${originalName}(${image.id}) > ${newName}`); } catch (err) { }
     }
   }, 200, true));
@@ -2412,7 +2396,6 @@ export async function machineryRebindRefresh(muteMode: any, contentFilterCache: 
   if (w.HoverPreview.isShow) {
     w.HoverPreview.hide();
   }
-  scopeEvalAsync();
 }
 
 /* rebindRefreshLazy（bundle 27007-27013 逐字；1000ms 防抖，rebindRefreshLazyTimeout 域内自管） */
@@ -2455,7 +2438,6 @@ function machineryResetImageData(images: any[]): void {
   const w = window as any;
   if (useBodyState.getState().viewMode == "all" || (useFolderState.getState().currentFolder && images[0].folders[0] && images[0].folders.indexOf(useFolderState.getState().currentFolder.id) > -1) || (images[0].folders && images[0].folders.length === 0 && useBodyState.getState().viewMode == "unfiled")) {
     w.resetNgGridLayoutData(useItemState.getState().allData, 0);
-    scopeEvalAsync();
   }
 }
 
@@ -2485,7 +2467,6 @@ export function machineryShowUploadQueue(): void {
   setHtml("#upload-queue-progress .message .percentage", useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
   addImageTimeLeftInterval = setInterval(function () {
     machineryCalcuteAddImageTimeLeft();
-    scopeEvalAsync();
   }, 1000);
 }
 

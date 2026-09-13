@@ -12,7 +12,6 @@ import { makeResizable } from '../interactions/resizable';
 import { onDetailClick } from '../../services/selectionService';
 import { openItemContextMenu } from '../../services/itemMenuService';
 import { refreshVideoCommentsChannel } from '../../global/bus';
-import { scopeEvalAsync } from '../../core/scopeRuntime';
 import { q, qa, widthOf, heightOf, offsetOf, setCssEl, cssSet, addClass, removeClass, onEl, offEl, offAllEl, createEl, setHtml, show, hide } from '../../utils/domQuery';
 
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
@@ -226,7 +225,6 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         return (window as any).throttle(function (event: any) {
           event && event.preventDefault();
           func(event);
-          scopeEvalAsync();
         }, 24);
       }
 
@@ -838,7 +836,6 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         machineryLeaveDetailMode();
       } else {
         useMiscRawState.getState().toggleFullScreen();
-        scopeEvalAsync();
       }
     });
 
@@ -1188,7 +1185,6 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         machineryLeaveDetailMode();
       } else {
         useMiscRawState.getState().toggleFullScreen();
-        scopeEvalAsync();
       }
     };
     onEl(video, 'dblclick', onDblClick);
@@ -1324,7 +1320,6 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         return (window as any).throttle(function (event: any) {
           event && event.preventDefault();
           func(event);
-          scopeEvalAsync();
         }, 24);
       }
 
@@ -1609,7 +1604,6 @@ export function useAudioMediaElement(videoRef: React.RefObject<HTMLVideoElement 
         return (window as any).throttle(function (event: any) {
           event && event.preventDefault();
           func(event);
-          scopeEvalAsync();
         }, 24);
       }
 

@@ -105,6 +105,10 @@ P5（删 shims.js）。详见 `docs/rewrite-closing-2026-09-13.md` §6.1 的「�
 
 ### 0.3 P3 实测更正：source-mode UI 是**功能补建**，不是搬迁
 
+> **P3-b 已落地（2026-09-14）**：功能补建 + 迁移完成（React/store 实现 + `tests/source-mode-browse-closed-loop.mjs`
+> 收口验收 3/3 绿；shims source-mode 块约 500 行删除）。**不再按本节「本批已做安全切片」理解**——
+> 已从切片推进到全量实现，详见 `docs/rewrite-closing-2026-09-13.md` §6.1 P3 行。
+
 `shims.js` 的 source-mode 块（现约 `3311-3856`，594 行）在 React 下**部分可用**：
 `installModeSwitch`（靠 `Sidebar.tsx:699` 有意保留的 `ng-click` 钩子识别切换按钮）可开/关，
 `#source-mode-add-folder` → `handleSourceAdd` 可加来源。

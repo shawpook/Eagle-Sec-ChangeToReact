@@ -25,6 +25,8 @@ import { machineryOpenAll } from '../../services/folderCoreService';
 import { machineryOpenUnfiled } from '../../core/libraryDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { useItemState } from '../../store/itemState';
+import { toggleSourceMode, handleSourceAdd } from '../../core/sourceMode';
+import { SourceModeSidebar } from './SourceModeSidebar';
 
 /**
  * 阶段2：侧栏接管。
@@ -696,9 +698,8 @@ function SidebarHeader({ snapshot }: { snapshot: ReturnType<typeof useSidebarSta
           tippy=""
           tippy-placement="bottom"
           tippy-content={`${t('sidebar.switchFolderBtn')}<key>J</key>`}
-          // 兼容钩子：shims 的 source-mode 拦截器靠 ng-click 属性识别该按钮（shims.js:3711）。
-          ng-click="openQuickSearch()"
-          onClick={(e) => runInBodyScope(() => machineryOpenQuickSearch(e))}
+          // P3-b：原「切换文件夹」按钮改为来源模式切换入口（OrcaBox 模式设计）。
+          onClick={(e) => runInBodyScope(() => toggleSourceMode(e))}
         >
           <img src={iconSrc(theme, 'ic_switch.svg')} />
         </div>
@@ -904,8 +905,16 @@ export function Sidebar() {
         {/* 原版为静态 inline display:none（Angular 不再重写它）；这里同样只在挂载时设一次，
             之后由 source-mode 逻辑直接改写 display，React 不回收。 */}
         <div id="source-mode-footer-add">
-          <button id="source-mode-add-folder" type="button" className="source-mode-footer-button">＋ 添加来源文件夹</button>
+          <button
+            id="source-mode-add-folder"
+            type="button"
+            className="source-mode-footer-button"
+            onClick={() => void handleSourceAdd()}
+          >
+            ＋ 添加来源文件夹
+          </button>
         </div>
+        <SourceModeSidebar />
         <FolderSearchInput keyword={snapshot.folderKeyword} />
       </div>
     </div>,

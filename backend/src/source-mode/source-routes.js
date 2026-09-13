@@ -74,6 +74,15 @@ export function createSourceModeRouter({ service, getService }) {
       res.status(400).json(fail('id is required'));
       return;
     }
+    // 测试旋钮（仅收口测试设置）：EAGLE_SOURCE_RESCAN_FAIL=<根名或路径后缀> 时该根重扫强制失败，
+    // 用于验证「失败保留上次成功数据 + 重试提示」语义。
+    const failRoot = process.env.EAGLE_SOURCE_RESCAN_FAIL || '';
+    if (failRoot) {
+      const root = svc().indexer.getSourceRoot && svc().indexer.getSourceRoot(id);
+      if (root && (root.name === failRoot || String(root.path || '').endsWith(failRoot))) {
+        throw new Error(`[test-knob] rescan forced failure for ${root.name}`);
+      }
+    }
     const result = await svc().scanRoot(id, req.body.relativePath || null);
     res.json(ok(result));
   }));

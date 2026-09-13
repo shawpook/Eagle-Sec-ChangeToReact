@@ -161,7 +161,8 @@ React 单源状态 + 自研总线承担全部 UI；主窗不再存在 `window.$b
 
 | 项 | 状态 |
 |---|---|
-| `docs/plan.md` 已删，但 `docs/EAGLE_ORCABOX_MODE_EXECUTION.md` 仍引用其路径 | 内容在 git 历史（`git show <删除前提交>:docs/plan.md`）；建议改引或恢复 |
+| `docs/plan.md` 已删，但 `docs/EAGLE_ORCABOX_MODE_EXECUTION.md` 仍引用其路径 | ✅ 已在 E6-1 修正：改引 `git show d736dba0:docs/plan.md` |
+| `main-ui-workflow` 当日不可作 Electron 门禁用 | 该测试是**唯一**覆盖 Electron 侧 item 持久化（`images-change`→`updateMany`）的端到端测试，但 2026-09-14 实测在本机持续失败，且失败步**逐次不同**（tags/folder/star → annotation → multi inspector persistence），日志中**无任何渲染层 TypeError**（仅驱动侧 `poll` 等超时）。三向对照排除回归：① `git stash` 掉 P2 后在 pre-P2 树失败；② `git checkout bb538f9e -- src electron frontend` 回到 **pre-P1-a** 树同样失败（且换了一步）；③ 当前树失败。故属其自陈的 `updateMany` 后端路径负载/环境 flake。**含义**：P1-c-2（把 item 持久化路径迁入接缝）在改动前需先让该测试在本机稳定，或补一个不经后端 HTTP 的 Electron 级 UI 写路径测试，否则新路径无可靠验证手段 |
 | `npm test`（47 项后端/渲染面）与 `test:isolated` | **本宿主不可绿**：`tests/roadmap-panels.mjs` 崩于 `fs.cpSync(recursive)`（PROGRESS 第 41 行登记的宿主缺陷；`test:isolated` 需入树临时补丁，且该补丁规定不入库）。本次未跑 |
 | `browser-capture-electron-extension-e2e` | 需 41593 端口空闲；本次因本机 dev 栈在跑而 **BLOCKED**（测试自身按 skip 处理，exit 0） |
 | QA 观察项 Q9 / Q15 | 导入后 store 条目 size 偶发 `0.00 bytes`（重启自愈）；偏好窗 X 按钮命中区偏小（手测正常）。均未定位到代码缺陷 |

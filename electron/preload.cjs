@@ -11,6 +11,21 @@ const api = {
   onIpc: (channel, callback) => {
     ipcRenderer.on(channel, (_event, value) => callback(value));
   },
+  // P1-b：通用 IPC 桥。渲染层 `core/channelBridge.ts` 的 facade 用它把「纯原生直通」频道直达
+  // 主进程（其余频道仍走 shims 的路由表）。此前渲染层没有通用 send 能力（preload 只暴露具名 API），
+  // 这也是 shims 长期兼任 IPC 路由器的原因之一。
+  ipc: {
+    send: (channel, params) => ipcRenderer.send(channel, params),
+    sendTo: (webContentsId, channel, params) => ipcRenderer.sendTo(webContentsId, channel, params),
+    on: (channel, callback) => { ipcRenderer.on(channel, (_event, value) => callback(value)); },
+    once: (channel, callback) => { ipcRenderer.once(channel, (_event, value) => callback(value)); },
+    off: (channel, callback) => { ipcRenderer.removeListener(channel, callback); },
+    removeListener: (channel, callback) => { ipcRenderer.removeListener(channel, callback); },
+    removeAllListeners: (channel) => { ipcRenderer.removeAllListeners(channel); },
+    invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+    sendSync: (channel, ...args) => ipcRenderer.sendSync(channel, ...args),
+    r2r: (channel, ...args) => (typeof ipcRenderer.r2r === 'function' ? ipcRenderer.r2r(channel, ...args) : undefined),
+  },
   getCurrentLibrary: () => ipcRenderer.invoke('library:get-current'),
   library: {
     current: () => ipcRenderer.invoke('library:get-current'),

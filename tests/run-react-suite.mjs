@@ -21,6 +21,9 @@ function killLeftoverElectron() {
 const tests = [
   'tests/react-rewrite-sentinel.mjs',
   'tests/react-utils-native.mjs',
+  // P1-b：IPC 接缝（core/channelBridge）单路由不变量 —— 纯原生直通频道走 preload 通用 ipc、
+  // 其余走 shims 总线，事件面前转。无 Electron、秒级。
+  'tests/react-ipc-bridge-routing.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',

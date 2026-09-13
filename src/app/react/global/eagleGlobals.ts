@@ -41,8 +41,9 @@ export function eagleDesktop(): any {
 
 /** 原生 IPC（浏览器预览态由 shims 提供 mock，Electron 态由 preload 提供真实通道）。 */
 export function ipcRenderer(): any {
-  const desktop = eagleDesktop();
-  if (desktop && desktop.ipc) return desktop.ipc;
+  // P1-b：一律走 channelBridge 接缝（事件面前转 shims 总线；发送面按通道二分——纯原生直通走
+  // preload 的通用 ipc，其余仍走 shims 路由表）。不能直接返回 preload 的 `desktop.ipc`：
+  // 那会绕过接缝，使非原生频道丢掉 shims 的路由与合成事件。
   return getIpcBus();
 }
 

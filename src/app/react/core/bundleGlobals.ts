@@ -1695,10 +1695,10 @@ export function installBundleGlobals(): void {
           var willSendImages = images.slice(start, start + once);
           countOfSend += 1;
           if (w.backgroundWindowID === undefined) {
-            w.__eagleIpc.send('regenerate-palette', willSendImages);
+            getIpcBus()?.send('regenerate-palette', willSendImages);
           }
           else {
-            w.__eagleIpc.sendTo(w.backgroundWindowID, 'regenerate-palette', willSendImages);
+            getIpcBus()?.sendTo(w.backgroundWindowID, 'regenerate-palette', willSendImages);
           }
           loop();
         }
@@ -1758,10 +1758,10 @@ export function installBundleGlobals(): void {
           var willSendImages = images.slice(start, start + once);
           countOfSend += 1;
           if (w.backgroundWindowID === undefined) {
-            w.__eagleIpc.send('regenerate-thumbnail', willSendImages);
+            getIpcBus()?.send('regenerate-thumbnail', willSendImages);
           }
           else {
-            w.__eagleIpc.sendTo(w.backgroundWindowID, 'regenerate-thumbnail', willSendImages);
+            getIpcBus()?.sendTo(w.backgroundWindowID, 'regenerate-thumbnail', willSendImages);
           }
           loop();
         }
@@ -1780,7 +1780,7 @@ export function installBundleGlobals(): void {
   // 'open-preview-window' 由 electron/main.cjs preview 窗链路承接）
   if (!w.openInNewWindow) {
     w.openInNewWindow = function (items: any) {
-      w.__eagleIpc.send('open-preview-window', {
+      getIpcBus()?.send('open-preview-window', {
         images: items,
         pluginModule: {
           plugins: w.pluginModule.plugins,

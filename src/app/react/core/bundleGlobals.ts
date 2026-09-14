@@ -32,9 +32,10 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { getWindowScope } from './scopeFace';
 import { glRemoveitemsChannel } from '../global/bus';
 
-import { q, qa, addClass, removeClass, offsetTopOf } from '../utils/domQuery';
+import { q, qa, addClass, removeClass } from '../utils/domQuery';
 
 import { machinerySmartZoom } from '../services/viewOpsService';
+import { buildScrollbarSaver } from '../services/gridService';
 import { machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryContentFilter, machineryFilterData } from './filterDomain';
 import { writeScopeField } from './scopeFieldBridge';
@@ -1178,85 +1179,6 @@ function _buildAnalytics(): any {
   return analyticsObj;
 }
 
-/* ScrollbarSaver（bundle 46754-46828 逐字——controller init 赋值；$scope → getBodyScope；
-   ig → w.ig（网格实例，b1-9c 归口）） */
-function _buildScrollbarSaver(): any {
-  const w = window as any;
-  return {
-    positionMapping: {},
-    getId: function (this: any) {
-      var id;
-      if (useFolderState.getState().currentFolder) { id = useFolderState.getState().currentFolder.id; }
-      else if (useFolderState.getState().currentSmartFolder) { id = useFolderState.getState().currentSmartFolder.id; }
-      else if (useBodyState.getState().viewMode == "all") { id = "all"; }
-      else if (useBodyState.getState().viewMode == "unfiled") { id = "unfiled"; }
-      else if (useBodyState.getState().viewMode == "untagged") { id = "untagged"; }
-      else if (useBodyState.getState().viewMode == "trash") { id = "trash"; }
-      else if (useBodyState.getState().viewMode == "random") { id = "random"; }
-      else if (useBodyState.getState().viewMode == "recent") { id = "recent"; }
-      return id;
-    },
-    saveScrollPosition: function (this: any) {
-      if (w.eagle.filter.filterBadge > 0) return;
-      if (useListState.getState().keyword) return;
-      if (qa(".box").length + qa(".sub-folder").length === 0) return;
-      var scrollTop = q("#box-container")?.scrollTop || 0;
-      var obj: any = {};
-      var id = w.ScrollbarSaver.getId();
-
-      if (scrollTop === 0) {
-        delete w.ScrollbarSaver.positionMapping[id];
-        return;
-      }
-
-      var startCursor = 0;
-      var offsetTop = q(".box-list")?.offsetTop || 0;
-      var scrollOffset;
-      if (qa(".sub-folder").length > 0 && useFolderState.getState().startCursor === 0) {
-        scrollOffset = q("#box-container")?.scrollTop || 0;
-      }
-      else {
-        if (qa(".box").length === 0) return;
-        scrollOffset = Math.abs(offsetTopOf(q(".box")) - 44) + offsetTop;
-      }
-      var its = w.ig.getItems();
-      if (its[0]) { startCursor = its[0].groupKey - 1000000; }
-
-      if (!id) return;
-
-      if (startCursor) { obj.cursor = startCursor; }
-      obj.offset = scrollOffset;
-      w.ScrollbarSaver.positionMapping[id] = obj;
-    },
-    restoreScrollPosition: function (this: any) {
-
-      if (useBodyState.getState().viewMode === 'random') return;
-      if (w.eagle.filter.filterBadge > 0) return;
-      var id = w.ScrollbarSaver.getId();
-
-      if (!id) return;
-
-      var obj = w.ScrollbarSaver.positionMapping[id];
-      var boxContainer = q("#box-container");
-      if (obj) {
-        writeScopeField('startCursor', obj.cursor || 0);
-        var offset = obj.offset || 0;
-        var times = [20, 300];
-        for (var i = times[0]; i < times[1]; i += 20) {
-          setTimeout(function () {
-            if (w.ScrollbarSaver.getId() !== id || (boxContainer?.scrollTop || 0) !== offset) {
-              if (boxContainer) boxContainer.scrollTop = offset;
-            }
-          }, i);
-        }
-      }
-      else {
-        writeScopeField('startCursor', 0);
-      }
-    }
-  };
-}
-
 /* ── b1-9c：网格耦合收口 + 目录枚举批 ── */
 
 /* walk（bundle 52664-52697 逐字：递归目录枚举——getExt/junk.is/IS_DIRECTORY.check 过滤 +
@@ -2151,7 +2073,7 @@ export function installBundleGlobals(): void {
   if (!w.RecentFileManager) w.RecentFileManager = _buildRecentFileManager();
   if (!w.SlowNotify) w.SlowNotify = _buildSlowNotify();
   // ScrollbarSaver（bundle 19062 undefined var + controller init 46754 赋值）
-  if (!w.ScrollbarSaver) w.ScrollbarSaver = _buildScrollbarSaver();
+  if (!w.ScrollbarSaver) w.ScrollbarSaver = buildScrollbarSaver();
   // Registration（bundle 19208 逐字；activated 运行时更新走 bundle 22666 ipc 路径——post-b1
   // 由 libraryDomain 注册域接管时接线，登记）
   if (!w.Registration) w.Registration = { activated: false };

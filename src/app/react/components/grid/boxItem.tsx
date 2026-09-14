@@ -1,21 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import { FileUrlHelper } from '../../core/fileUrlHelper';
-;
 import { getRawUrl } from '../../core/itemDomain';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useFolderState } from '../../store/folderState';
 import { usePreferencesState } from '../../store/preferencesState';
 import { useItemState } from '../../store/itemState';
 
-/**
- * b1-9be2：box 条目 JSX —— ng-grid-layout 模板（bundle:66524-66963）逐字 JSX 化。
- *
- * 模板字符串结构/类名/属性零改动；ng-grid 时代由 onLayoutComplete 在布局完成后补写
- * 的类（selected/tagged/pinned）与 raw/lsrc 属性，改为渲染时直读 bodyScope 等价实现
- * （v4 虚拟化下条目重挂即等价「每次布局后刷新」语义）。
- * 拖拽/错误 handler 走 window 全局函数（onDragStartContainer 等——bundle 时代即全局
- * 命名空间解析，见 gridDirectives 注记）。
- */
+/** Eagle item markup. BoxList supplies stable geometry; each mounted item owns its
+ * lazy-load subscription and restores selection, pin and thumbnail state on remount. */
 
 const AUDIO_TYPES = () => (window as any).AUDIO_TYPES || {};
 const VIDEO_TYPES = () => (window as any).VIDEO_TYPES || {};
@@ -297,6 +289,8 @@ function buildTemplateData(item: any): any {
 export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
   const data = buildTemplateData(item);
   const ref = useRef<HTMLDivElement>(null);
+  const previousSource = useRef('');
+  const manager = useMiscRawState((state) => state.lazyLoadManager);
 
   // ng-grid 时代 onLayoutComplete 补写的类/属性（bundle:67247-67294 逐字语义）：
   // selected/tagged/pinned 类 + raw/lsrc 属性 —— 渲染时直读 scope。
@@ -305,11 +299,17 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
     !!(useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy !== 'RANDOM' &&
       item.pinned && item.pinned[useFolderState.getState().currentFolder.id]);
 
-  useEffect(() => {
-    // v4 布局引擎在条目挂载后自行定位；raw 属性按 onLayoutComplete 语义补写
+  useLayoutEffect(() => {
+    // Lazy-load ownership follows the mounted item, independently of the full-list geometry.
     const el = ref.current;
     if (!el) return;
     const img = el.querySelector('img');
+    const source = JSON.stringify([data.src, data.rawPath, data.thumbnailPath]);
+    if (previousSource.current && previousSource.current !== source) {
+      el.classList.remove('show', 'from-cache', 'with-animation', 'enlarge-thumbnail', 'error');
+      manager?.loadedCache.delete(item.id);
+    }
+    previousSource.current = source;
     if (img) {
       // raw/lsrc/lazysrc 为应用自定义裸属性（LazyLoadManager/懒加载链读取），React JSX
       // 不承载 —— 挂载后命令式补写（v3 模板 innerHTML 同形态）。
@@ -325,7 +325,12 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
         img.setAttribute('lsrc', lazysrc);
       }
     }
-  });
+    manager?.observe(el);
+    return () => {
+      manager?.unobserve(el);
+      manager?.cancelLoad(el);
+    };
+  }, [manager, item.id, item.ext, item.orientation, data.src, data.rawPath, data.thumbnailPath]);
 
   const imgStyle = data.imgStyle || undefined;
   let imgEl: React.ReactNode = (
@@ -336,7 +341,10 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
       onDragEnd={(e) => (window as any).onDragEndContainer(e)}
       onDragStart={(e) => (window as any).onDragStartContainer(e)}
       onDrag={(e) => (window as any).onImageDrag(e)}
-      onError={(e) => (window as any).listImageError(e)}
+      onError={(e) => {
+        // Cancelling an offscreen load clears src and fires error. It is not a broken file.
+        if (e.currentTarget.getAttribute('src')) (window as any).listImageError?.(e);
+      }}
     />
   );
   if (data.noPreview) {
@@ -368,6 +376,7 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
   const cls = [
     'box', `ext-${data.ext}`, data.ext, data.medium, data.css, `bg-${data.background}`,
     selected ? 'selected' : '', pinned ? 'pinned' : '',
+    ...['show', 'from-cache', 'with-animation', 'enlarge-thumbnail', 'error'].filter((name) => ref.current?.classList.contains(name)),
   ].filter(Boolean).join(' ');
 
   return (
@@ -390,16 +399,6 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
       />
       <div
         className={`thumbnail ${data.thumbnailClass || ''}`}
-        // F23（实机 QA 2026-09-14）：v4 JustifiedGrid 的 item ratio 来源是「box 的实测尺寸」
-        // （orgInlineSize/orgContentSize）。而 .box 高度 = thumbnail 高 + 文件名/元信息块
-        // （实测 49~91px，随文件名换行浮动）→ 测得的比例 (boxW/boxH) 严重偏离真实图片比例
-        // （16:9 图实测成 1.13），且随每次布局自我反馈漂移 → 行高在 116~478 之间乱跳、
-        // 同缩放下尺寸差异巨大（用户报告的核心症状）。
-        // v4 的 data-grid-maintained-target 语义：以指定子元素的比例为准，把其余部分作为
-        // contentOffset 扣除 —— 落在 .thumbnail 上即得 contentOffset = 标签块高（逐项实测），
-        // ratio = boxW/(boxH-标签块) = 缩略图真实比例。bundle 时代 v3 布局直接用 item.width/
-        // height 元数据算比例，不依赖 DOM 实测，本属性是 v4 下等价语义的官方出口。
-        data-grid-maintained-target=""
         draggable={true}
         onDragStart={(e) => (window as any).onDragStartContainer(e)}
         onDrag={(e) => (window as any).onImageDrag(e)}

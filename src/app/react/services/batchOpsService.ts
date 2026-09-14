@@ -21,6 +21,7 @@
 // @ts-nocheck
 import { IPCHelper } from '../core/ipcHelper';
 import { ContextMenu } from '../core/contextMenuDomain';
+import { scrollGridToItem } from '../components/grid/boxGridEngine';
 
 import { throttle } from '../utils/func';
 import { syncFolderLock } from '../store/lockState';
@@ -434,54 +435,10 @@ export function getSelectedItemElements(...args: any[]) {
 }
 
 export function scrollToSelectedItem(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
-    return (function() {
-            var __lv_target = useSelectionState.getState().selected[0];
-            // 自动定位
-            if (__lv_target) {
-
-                if (__lv_target.id) {
-                    var boxEl = q(`#box-${__lv_target.id}`);
-                    if (boxEl && isElementVisible(boxEl) ) {
-                        console.log("无须滚动");
-                        return;
-                    }
-                }
-                // var originSelected = [];
-                // originSelected = originSelected.concat(s.selected);
-                if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy === "RANDOM") {
-                    return;        
-                }
-
-                for (var i = useItemState.getState().allData.length - 1; i >= 0; i--) {
-                    var __lv_image = useItemState.getState().allData[i];
-                    if (__lv_target && __lv_target === __lv_image) {
-                        var startPage = parseInt(i / 60);
-                        console.log(`目标在第 ${startPage} 页`);
-                        console.log(qa(`#box-${__lv_target.id}`).length);
-                        // 東西不在畫面上，強制更新畫面然後定位
-                        if (!q(`#box-${__lv_target.id}`) || startPage !== useFolderState.getState().startCursor) {
-                            machineryRebindRefresh(undefined, undefined, startPage);
-                            machineryRelayout();    
-                        }
-                        cssSet("#box-container", { visibility: "hidden" });
-                        writeScopeField('startCursor', startPage);
-                        writeScopeField('currentFocus', "content");
-                        $timeout(function () {
-                            // s.selected = originSelected;
-                            useSelectionState.getState().selected.forEach(function (item) {
-                                select(undefined, item);
-                            })
-                            machineryAutoScroll();
-                            setTimeout(function () {
-                                cssSet("#box-container", { visibility: "initial" });
-                            }, 50);
-                        }, 200);
-                        break;
-                    }
-                }
-            }
-        }).apply(null, args);
+    const target = useSelectionState.getState().selected[0];
+    if (!target?.id) return;
+    writeScopeField('currentFocus', 'content');
+    scrollGridToItem(target.id, 'nearest');
 }
 
 export function excludeWithTag(...args: any[]) {

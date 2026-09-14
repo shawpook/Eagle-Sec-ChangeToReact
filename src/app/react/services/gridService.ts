@@ -1,15 +1,6 @@
-/**
- * b1-9bd：网格服务 —— zoom 族 + 布局尺寸链归位（自 dataMachinery 逐字搬移）。
- *
- * 覆盖：adjustLayoutWidth（列数/步进换算 + egjs relayout）、saveListHeight（150ms 防抖
- * per-view localStorage）、zoomIn/zoomOut（网格分支直算；详情分支的 zoomRatio 梯度仍经
- * scope 解析 getRatioExp/getRatioNonExp/updateZoomRatio——S4 详情竖切归位）、zoomFit。
- *
- * 约定：函数显式收 `s`（body scope），s.* 读写仍走 scope 世界——machinery 的挂载
- * （s.zoomIn = (e) => machineryZoomIn(s, e)）已改为委托本模块，行为零变化；
- * imageSize 对象态的 store 单源化随 S1-be（infinitegrid 交换）一并落地——
- * 对象嵌套写不经 scopeShim 顶层 set 陷阱，先行镜像会造成第三份拷贝。
- */
+/** Grid sizing, zoom and navigation shared by React and the existing command ports.
+ * boxGridEngine owns full-list geometry and one-time scroll requests; detail zoom stays
+ * with the viewer engine. */
 import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -18,12 +9,11 @@ import { syncToolbarFromScope } from '../store/toolbarState';
 import { detailZoom } from '../core/smoothZoomEngine';
 
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
-import { q, qa, cssSet, widthOf, heightOf, addClass, removeClass, setAttr, setScrollTop, scrollTopValue, outerHeightOf, offsetTopOf } from '../utils/domQuery';
+import { q, qa, cssSet, widthOf, heightOf, addClass, removeClass, setAttr, scrollTopValue, outerHeightOf } from '../utils/domQuery';
 import { debounce, throttle } from '../utils/func';
 
 import { machinerySmartZoom, machineryUpdateZoomRatio, machineryZoomIn } from './viewOpsService';
 import { machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem } from '../core/itemDomain';
-import { autoscrollChannel } from '../global/bus';
 import { machineryZoomFitEdge } from './viewOpsService';
 import { syncListFromScope } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
@@ -42,6 +32,8 @@ import { useItemState } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
+import { autoscrollChannel } from '../global/bus';
+import { getGridScrollPosition, restoreGridScrollPosition, scrollGridToBottom, scrollGridToOffset, scrollGridToItem } from '../components/grid/boxGridEngine';
 let saveListHeightTimeout: any = null;
 
 /* saveListHeight（bundle 33720-33742 逐字；150ms 防抖，per-view localStorage 键逐字） */
@@ -261,14 +253,9 @@ export function gridSwitchLayout(layout: any, forceLayout: any): void {
   if (typeof useMiscRawState.getState().initMenu === 'function') useMiscRawState.getState().initMenu();
 }
 
-/* ── b1-9be：@egjs/react-infinitegrid 交换的 window.ig facade 契约（交换批施工依据）──
-   现存 vanilla InfiniteGrid 实例（libraryDomain 创建 `new w.eg.InfiniteGrid("#box-container
-   .box-list")`）被以下方法面消费（全树普查）：
-   - remove ×7 / getItems ×6 / clear ×5 / trigger ×2（'prepend' 等）/ layout ×2 /
-     getGroupKeys ×1 / _layout._columnLength ×2（gridAdjustLayoutWidth 列数换算）
-   交换批保留 window.ig 为 facade 对象：方法子集委托 React InfiniteGrid ref，
-   machinery/scope 世界调用面零改动；React 侧条目渲染改由 React 组件承载。
-*/
+/* window.ig is a compatibility facade for existing layout/selection commands.
+   Layout commands invalidate metadata geometry; getItems returns mounted elements,
+   and _layout._columnLength supplies the full layout's column count for zoom steps. */
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
@@ -296,7 +283,7 @@ export function machineryUpdateSliderPosition(): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-/* ScrollbarSaver（bundle 46754-46812 逐字；隐式全局赋值 → if-absent 接装 window） */
+/** Shared by both boot paths: save an item anchor and restore once after the result commits. */
 export function buildScrollbarSaver(): any {
   const w = window as any;
   const ScrollbarSaver: any = {
@@ -305,6 +292,7 @@ export function buildScrollbarSaver(): any {
       var id;
       if (useFolderState.getState().currentFolder) { id = useFolderState.getState().currentFolder.id; }
       else if (useFolderState.getState().currentSmartFolder) { id = useFolderState.getState().currentSmartFolder.id; }
+      else if (useMiscRawState.getState().currentTag) { id = 'tag:' + useMiscRawState.getState().currentTag; }
       else if (useBodyState.getState().viewMode == "all") { id = "all"; }
       else if (useBodyState.getState().viewMode == "unfiled") { id = "unfiled"; }
       else if (useBodyState.getState().viewMode == "untagged") { id = "untagged"; }
@@ -318,7 +306,6 @@ export function buildScrollbarSaver(): any {
       if (useListState.getState().keyword) return;
       if (qa(".box").length + qa(".sub-folder").length === 0) return;
       var scrollTop = scrollTopValue("#box-container");
-      var obj: any = {};
       var id = ScrollbarSaver.getId();
 
       if (scrollTop === 0) {
@@ -326,24 +313,8 @@ export function buildScrollbarSaver(): any {
         return;
       }
 
-      var startCursor = 0;
-      var offsetTop = (q(".box-list")?.offsetTop) || 0;
-      var scrollOffset;
-      if (qa(".sub-folder").length > 0 && useFolderState.getState().startCursor === 0) {
-        scrollOffset = scrollTopValue("#box-container");
-      }
-      else {
-        if (qa(".box").length === 0) return;
-        scrollOffset = Math.abs(offsetTopOf(q(".box")) - 44) + offsetTop;
-      }
-      var its = w.ig.getItems();
-      if (its[0]) { startCursor = its[0].groupKey - 1000000; }
-
       if (!id) return;
-
-      if (startCursor) { obj.cursor = startCursor; }
-      obj.offset = scrollOffset;
-      ScrollbarSaver.positionMapping[id] = obj;
+      ScrollbarSaver.positionMapping[id] = getGridScrollPosition();
     },
     restoreScrollPosition: function () {
       if (useBodyState.getState().viewMode === 'random') return;
@@ -352,23 +323,9 @@ export function buildScrollbarSaver(): any {
 
       if (!id) return;
 
-      var obj = ScrollbarSaver.positionMapping[id];
-      var $boxContainer = q("#box-container");
-      if (obj) {
-        writeScopeField('startCursor', obj.cursor || 0);
-        var offset = obj.offset || 0;
-        var times = [20, 300];
-        for (var i = times[0]; i < times[1]; i += 20) {
-          setTimeout(function () {
-            if (ScrollbarSaver.getId() !== id || ($boxContainer?.scrollTop || 0) !== offset) {
-              if ($boxContainer) $boxContainer.scrollTop = offset;
-            }
-          }, i);
-        }
-      }
-      else {
-        writeScopeField('startCursor', 0);
-      }
+      writeScopeField('startCursor', 0);
+      // Consume once after the destination list commits; no timers can fight later input.
+      restoreGridScrollPosition(ScrollbarSaver.positionMapping[id] || { top: 0 });
     }
   };
   return ScrollbarSaver;
@@ -435,66 +392,23 @@ export function machineryGetArroundBox(index: any): any {
 }
 
 export function machineryGotoBottom(): void {
-  const w = window as any;
-  if (useItemState.getState().allData.length < useMiscRawState.getState().options.page) {
-    var offset = (q("#box-container") as HTMLElement | null)?.scrollHeight;
-    setScrollTop("#box-container", offset as any);
-  }
-  else {
-    var endCursor = Math.ceil(useItemState.getState().allData.length / useMiscRawState.getState().options.page) - 1 || 0;
-    w.resetNgGridLayoutData(useItemState.getState().allData, endCursor);
-    var times = [100, 400];
-    for (var i = times[0]; i < times[1]; i += 100) {
-      writeScopeField('gotoBottomTimeout', setTimeout(function () { setScrollTop("#box-container", 1000000); }, i));
-    }
-  }
+  scrollGridToBottom();
 }
 
 export function machineryGotoTop(): void {
-  const w = window as any;
-  if (useItemState.getState().allData.length < useMiscRawState.getState().options.page) {
-    setScrollTop("#box-container", 0);
-  }
-  else {
-    clearTimeout(useMiscRawState.getState().gotoBottomTimeout);
-    w.resetNgGridLayoutData(useItemState.getState().allData, 0);
-    setScrollTop("#box-container", 0);
-  }
+  scrollGridToOffset(0);
 }
 
 export function machineryOffsetScrollbar(): any {
-  const w = window as any;
   return debounce(function offsetScrollbar(delay: any, forceScroll: any) {
     machineryOffsetScrollbarImm(delay, forceScroll);
   }, 100, true);
 }
 
 export function machineryOffsetScrollbarImm(delay: any, forceScroll: any): void {
-  setTimeout(function () {
-    var container = q("#box-container") as HTMLElement | null;
-    if (useSelectionState.getState().selected.length > 0) {
-      var $current = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
-      if (container && $current) {
-        var offsetTop = container.clientHeight / 2 - $current.offsetHeight / 2;
-        var delta = $current.getBoundingClientRect().top - container.getBoundingClientRect().top;
-        container.scrollTop = container.scrollTop + delta - offsetTop;
-      }
-    }
-    else {
-      // Note: 這段程式馬主要用來避免因為列表縮放，
-      // Container 的 scrollTop 超過最後一個 box 的位置，造成畫面變成空白的
-      // 判斷方式：找到最後一個 box 並與 container 進行高度比較
-      var $lastBox = qa(".box").slice(-1)[0] as HTMLElement | undefined;
-      if ($lastBox) {
-        var lastBoxY: any = $lastBox.style.transform.split(',')[1];
-        lastBoxY = parseInt(lastBoxY);
-        if (container && container.scrollTop > lastBoxY) {
-          var delta2 = $lastBox.getBoundingClientRect().top - container.getBoundingClientRect().top;
-          container.scrollTop = container.scrollTop + delta2 - container.clientHeight;
-        }
-      }
-    }
-  }, delay || 1);
+  const selected = useSelectionState.getState().selected;
+  const current = selected[selected.length - 1];
+  if (current?.id) scrollGridToItem(current.id, 'center');
   machineryUpdateContainerHieght();
 }
 
@@ -554,20 +468,8 @@ export function machinerySaveListHeight(height: any): void {
 }
 
 export function machineryScrollbarTo(element: any, to: any, duration: any): void {
-  var start = element.scrollTop,
-    change = to - start,
-    currentTime = 0,
-    increment = 20;
-
-  var animateScroll = function () {
-    currentTime += increment;
-    var val = (Math as any).easeInOutQuad(currentTime, start, change, duration);
-    element.scrollTop = val;
-    if (currentTime < duration) {
-      setTimeout(animateScroll, increment);
-    }
-  };
-  animateScroll();
+  if (element?.id === 'box-container') scrollGridToOffset(to);
+  else element?.scrollTo({ top: to, behavior: duration > 0 ? 'smooth' : 'auto' });
 }
 
 export function machinerySwitchLayout(layout: any, forceLayout: any): void {
@@ -644,7 +546,8 @@ export function machineryResetPage(): void {
   // 本函数其余状态复位语义不变。
   (document.activeElement as any)?.blur?.();
   writeScopeField('listDone', false);
-  setTimeout(() => { w.ig.clear(); }, 40);
+  // Clear the old view now; a delayed clear can erase a destination that has already loaded.
+  w.ig?.clear();
   writeScopeField('isOpenWebpagePanel', false);
   writeScopeField('currentTag', undefined);
   syncToolbarFromScope();

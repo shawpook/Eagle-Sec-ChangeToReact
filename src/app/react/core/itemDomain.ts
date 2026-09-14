@@ -31,6 +31,7 @@ import { glRemoveitemsChannel, openDuplicateChannel, openDuplicateScanPanelChann
 import { q, findEl, getAttr, setAttrEl, setTextEl, setHtmlEl, setHtml, setCssEl, removeClassEl, setWidthEl, cssGet, dataSet } from '../utils/domQuery';
 import { machineryGetAncestorFolders, machinerySaveFolder } from './libraryDomain';
 import { machineryRelayout } from '../services/gridService';
+import { scrollGridToItem } from '../components/grid/boxGridEngine';
 import { machineryCheckOperationSafety } from '../services/viewOpsService';
 import { machineryQuickOpenFolder, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryCurrentIndex, machineryUpdateListSlider } from '../services/gridService';
@@ -2458,19 +2459,11 @@ function machineryResetImageData(images: any[]): void {
   }
 }
 
-/* scrollToCurrentItem（bundle 34118-34130 逐字：selected 末盒 posy 属性 → 容器居中定位） */
+/* Full-list geometry also locates selected items that are not currently mounted. */
 export function machineryScrollToCurrentItem(): void {
-  const w = window as any;
-  if (useSelectionState.getState().selected.length > 0) {
-    var $lastItem = qa(".box.selected").slice(-1)[0] as HTMLElement | undefined;
-    if ($lastItem) {
-      let y = $lastItem.getAttribute("posy");
-      if (y != null) {
-        let offsetTop = heightOf(q("#box-container")) / 2 - heightOf($lastItem) / 2;
-        setScrollTop("#box-container", parseInt(y as any) - offsetTop);
-      }
-    }
-  }
+  const selected = useSelectionState.getState().selected;
+  const item = selected[selected.length - 1];
+  if (item?.id) scrollGridToItem(item.id, 'center');
 }
 
 export function machineryShowUploadQueue(): void {

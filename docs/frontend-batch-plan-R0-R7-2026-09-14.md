@@ -9,7 +9,7 @@
 | 批次 | 名称 | 状态 | 前置 |
 | --- | --- | --- | --- |
 | R0 | 基线与首个遗漏修正 | 已完成（本次） | 当前工作区 |
-| R1 | 正式构建与运行入口 | 待实施 | R0 |
+| R1 | 正式构建与运行入口 | 主线完成（PDF/3D 入口待办） | R0 |
 | R2 | 启动层与环境边界 | 待实施 | R1 的入口清单 |
 | R3 | 完整类型检查 | 待实施 | R0；结合 R2 接口推进 |
 | R4 | 主应用业务与状态收敛 | 待实施 | R2 / R3 的共享边界 |
@@ -97,6 +97,17 @@ npm run build
 # 产物入口/资源检查（主窗口、偏好、预览、采集、六个查看器、文档查看器、PDF、3D）
 node tests/electron-smoke.cjs
 ```
+
+### 实施结果（2026-09-14，主线）
+
+- React 入口改为**写在源 HTML 中**（10 个窗口页），dev 与 build 共用同一份 HTML；dev 中间件只补 API 地址与 refresh 前置脚本（不再注入入口）。
+- `rollupOptions.input` 纳入 11 个页面 + `pages.html`（`pages`、`document-viewer` 原有；新增 index/preferences/preview-window/collect-window/六个查看器）。
+- 新增 `eagle-production-assets`（`apply:'build'`，`closeBundle`）：交付 `src/app`（排除 `.html`/`react`）、`src/my_modules`、`src/i18n`、`src/config.js`；从产物删除 `mock-library`/`mock-assets`。**不用 `fs.cpSync`**——本机复制含 `.node` 的 my_modules 会令进程硬崩（exit 127），改手工遍历。
+- 删除 `frontend/public/src/app/text-editor/*`（同路径冲突）；4 个查看器壳的 XHTML doctype 归一为 HTML5（否则 Vite HTML 解析失败）。
+- 新增 `scripts/serve-frontend.mjs`（提供 dist + 代理 `/file` 到缩略图服务）、`scripts/start-production.mjs`；Electron 子窗/工作台 URL 从 `EAGLE_PREVIEW_URL` 的 origin 推导（去掉硬编码 5176）。
+- 新增 `tests/dist-entry-check.mjs`（产物入口/资源检查）与 `tests/production-smoke.mjs`（Electron 正式启动冒烟，Vite dev 关闭）；`npm run test:production`。
+- **实测定位并修复**：生产态 `appRoot=/src`，运行时 `require('/src/config.js')` 取 `EagleConfig`；缺 `src/config.js`/`src/i18n` 交付导致 `hoverPreview` 的 `EagleConfig.VIDEO_FORMATS.map` 崩溃、主窗未挂载。补齐交付后 `PRODUCTION_SMOKE_OK`（`hasRegistry/hasDriver` 为真，入口指向 `/assets/*.js`）。
+- **待办**：PDF 查看器与 3D 查看器的多页入口与资源路径（本轮未纳入）；既有源缺陷（`icon.svg`、`tippy.js`、collect-window 的两处相对路径）以 WARN 记录，归 R5/R6。
 
 ## R2：拆分启动兼容层，明确窗口运行环境
 

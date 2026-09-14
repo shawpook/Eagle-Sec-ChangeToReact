@@ -8301,3 +8301,36 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   - **口径（重要）**：R0 完成 **≠** 类型验收——存量 492 条未清零、`frontend/document-viewer` 未纳入
     检查、16 个有效 `@ts-nocheck` 未撤销；最终 0 诊断在 **R3**（见批次计划 R3）。R1–R7 见
     `docs/frontend-batch-plan-R0-R7-2026-09-14.md`。
+
+- **R1（正式构建与运行入口，主线）**：**主应用首次拥有可运行的正式产物**——关闭 Vite dev，
+  仅本地静态服务 + Electron 即可启动主窗口（`PRODUCTION_SMOKE_OK`）。
+  - **入口上源 HTML**：10 个窗口页写入 `<script type="module" src="/src/app/react/...">`，dev 与 build
+    共用一份 HTML；dev 中间件（vite 配置 105–170）不再注入入口，只补 API 地址与 react-refresh 前置
+    脚本（该钩子在 dev 由 plugin-react 注入，但这些页走中间件直出、绕过它）。**dev 行为与改造前一致**
+    （`react-stage-smoke`、`d3-boot-render` 实跑通过）。
+  - **多页构建**：`rollupOptions.input` 纳入 11 页 + `pages.html`（主窗/偏好/预览/采集/六查看器/
+    文档查看器/pages），产物路径与 URL 形状一致；`transformIndexHtml` 按文件路径补 API 地址与
+    collect 模板清洗。原先「开发态注入、生产态无产物」的分叉消除。
+  - **资源交付**：新增 `eagle-production-assets` 插件（`apply:'build'` + `closeBundle`），交付
+    `src/app`（排除 `.html`/`react`）、`src/my_modules`、`src/i18n`、`src/config.js`；从产物删除
+    `mock-library`/`mock-assets` 开发数据。**踩坑**：`fs.cpSync` 在本机复制含 `.node` 的
+    `src/my_modules` 会令进程硬崩（exit 127、无异常），改手工遍历复制后稳定。
+  - **修复生产态启动崩溃（实测定位）**：`appRoot` 为 `/src`，shimsLegacy 以
+    `require(appRoot + '/config.js')` 取 `EagleConfig`；只交付 `src/app` 时，`/src/config.js`、
+    `/src/i18n` 在产物中缺失 → `EagleConfig.VIDEO_FORMATS` 为 undefined →
+    `hoverPreview`（bundle 中 `qv()`）在 `EagleConfig.VIDEO_FORMATS.map` 抛错 → 主窗未挂载
+    （`__eagleScopeRegistry` 未创建）。补齐交付即通过。
+  - **冲突与兼容**：删除 `frontend/public/src/app/text-editor/*`（与 React 文本编辑页同路径两套实现）；
+    4 个查看器壳的 XHTML doctype 归一为 HTML5（否则 vite:build-html 解析失败）。
+  - **Electron**：新增 `scripts/serve-frontend.mjs`（提供 `dist/frontend`，并把 `/file` 代理到缩略图
+    服务，等价 dev 的 Vite proxy）与 `scripts/start-production.mjs`；子窗/工作台 URL 从
+    `EAGLE_PREVIEW_URL` 的 origin 推导，去掉硬编码 5176（main.cjs）。
+  - **门禁**：`tests/dist-entry-check.mjs`（产物入口/资源检查：入口须为 `/assets/*.js`、无
+    `/src/app/react/*` 源码路径残留、资源可解析、开发数据已排除）+ `tests/production-smoke.mjs`
+    （Electron 正式启动冒烟，不依赖 Vite dev 与源码导入）；`npm run test:production`。
+  - **验证**：`npm run build` exit 0；`test:production` 两者均 OK；dev 侧 `react-stage-smoke`、
+    `d3-boot-render` OK；`typecheck` TYPECHECK_OK（未新增诊断）。
+  - **待办（R1 余项）**：PDF 查看器（`src/app/pdf-viewer/web/viewer.html`）与 3D 查看器
+    （`src/app/model-viewer/website/*`）的多页入口与资源路径未纳入本轮；既有源缺陷
+    （`icon.svg`、`js/vendors/tippy.js`、collect-window 的 `../css/jquery-ui.min.css` 与
+    `js/lib/api/url-enlarger.js`）源码与产物均缺（dev 同样 404），由 dist 检查以 WARN 记录，归 R5/R6。

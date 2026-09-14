@@ -7,6 +7,10 @@ const { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, shell
 
 const previewUrl = process.env.EAGLE_PREVIEW_URL || 'http://localhost:5176/src/app/index.html';
 const apiBase = process.env.EAGLE_API_URL || 'http://localhost:41695';
+// R1：工作台等 URL 从预览 URL 推导，生产态不再硬编码开发端口 5176。
+const frontendOrigin = (() => {
+  try { return new URL(previewUrl).origin; } catch { return 'http://localhost:5176'; }
+})();
 const mockLibraryRoot = path.resolve(__dirname, '../frontend/public/mock-library/Eagle Reverse Demo.library');
 const smokeMode = process.argv.includes('--smoke');
 const pluginSmokeMode = process.argv.includes('--smoke-plugin');
@@ -1683,7 +1687,7 @@ function setupMenu() {
     {
       label: 'Help',
       submenu: [
-        { label: 'Eagle Reverse Workbench', click: () => shell.openExternal('http://localhost:5176/workbench.html') },
+        { label: 'Eagle Reverse Workbench', click: () => shell.openExternal(`${frontendOrigin}/workbench.html`) },
       ],
     },
   ];
@@ -1698,7 +1702,7 @@ function setupTray() {
   tray.setToolTip('Eagle Reverse');
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: 'Open Workbench', click: () => createWindow({ url: 'http://localhost:5176/workbench.html' }) },
+      { label: 'Open Workbench', click: () => createWindow({ url: `${frontendOrigin}/workbench.html` }) },
       { label: 'Quit', click: () => app.quit() },
     ])
   );

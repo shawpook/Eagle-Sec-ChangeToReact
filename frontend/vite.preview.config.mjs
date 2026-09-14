@@ -33,12 +33,17 @@ function injectPreviewScripts(html) {
   );
 }
 
-// React 化入口：仅注入主界面 index.html（随各子系统迁移逐步扩展到其它窗口）。
-function injectReactMount(html) {
-  return html.replace(
-    '</body>',
-    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/main.tsx"></script>\n</body>`
-  );
+// R1：React 入口已写入各页源 HTML（`<script type="module" src="/src/app/react/...">`），
+// 因此开发态不再注入入口脚本，只补 react-refresh 前置脚本（该钩子在 dev 由 plugin-react
+// 注入，但这些页面走自定义中间件直出、绕过它）。生产构建由 Vite 正常处理源 HTML 的入口。
+function injectDevPreamble(html) {
+  return html.replace('</head>', `    ${REACT_REFRESH_PREAMBLE}\n</head>`);
+}
+
+function readEntryPage(file, { collect = false } = {}) {
+  let html = fs.readFileSync(file, 'utf8');
+  if (collect) html = sanitizeCollectTemplates(allowSingleColorPalette(html));
+  return injectDevPreamble(injectPreviewScripts(html));
 }
 
 // b1-9af：viewer 窗接管通用路由——iframe 查看器页逐个切 React 后在此登记
@@ -52,43 +57,17 @@ const REACT_VIEWER_ENTRIES = {
   '/src/app/font-viewer/font-viewer.html': '/src/app/react/viewers/font/entry.tsx',
 };
 
-function injectReactViewer(html, entry) {
-  return html.replace(
-    '</body>',
-    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="${entry}"></script>\n</body>`
-  );
-}
-
-// 阶段8：偏好窗口（独立页面）React 化入口——保留 shims 注入，另挂 preferences entry。
-function readPreviewPreferences() {
-  const file = path.join(workspaceRoot, 'src/app/preferences.html');
-  const html = injectPreviewScripts(fs.readFileSync(file, 'utf8'));
-  return html.replace(
-    '</body>',
-    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/preferences/entry.tsx"></script>\n</body>`
-  );
-}
-
-// 阶段9a-1：预览大窗（独立页面）React 化入口——保留 shims 注入，另挂 preview-window entry。
-function readPreviewWindow() {
-  const file = path.join(workspaceRoot, 'src/app/preview-window.html');
-  const html = injectPreviewScripts(fs.readFileSync(file, 'utf8'));
-  return html.replace(
-    '</body>',
-    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/preview-window/entry.tsx"></script>\n</body>`
-  );
-}
-
-// 阶段9b-1：采集窗（独立页面）React 化入口——保留 shims 注入与 collect 模板清洗，另挂 collect entry。
-function readCollectWindow() {
-  const file = path.join(workspaceRoot, 'src/app/collect-window/index.html');
-  let html = injectPreviewScripts(fs.readFileSync(file, 'utf8'));
-  html = sanitizeCollectTemplates(allowSingleColorPalette(html));
-  return html.replace(
-    '</body>',
-    `    ${REACT_REFRESH_PREAMBLE}\n    <script type="module" src="/src/app/react/collect-window/entry.tsx"></script>\n</body>`
-  );
-}
+// R1：正式构建的多页入口表——以「工作区相对路径」为键；入口脚本同时写在源 HTML 中，
+// build 经 rollupOptions.input + transformIndexHtml（仅补 API 地址/collect 清洗）产出。
+const REACT_PAGE_ENTRIES = {
+  'src/app/index.html': '/src/app/react/main.tsx',
+  'src/app/preferences.html': '/src/app/react/preferences/entry.tsx',
+  'src/app/preview-window.html': '/src/app/react/preview-window/entry.tsx',
+  'src/app/collect-window/index.html': '/src/app/react/collect-window/entry.tsx',
+  ...Object.fromEntries(
+    Object.entries(REACT_VIEWER_ENTRIES).map(([url, entry]) => [url.replace(/^\//, ''), entry]),
+  ),
+};
 
 function injectViewerConfig(html) {
   return html.replace(
@@ -111,13 +90,25 @@ function allowSingleColorPalette(html) {
   );
 }
 
-function readPreviewIndex() {
-  const file = path.join(workspaceRoot, 'src/app/index.html');
-  return injectReactMount(injectPreviewScripts(fs.readFileSync(file, 'utf8')));
-}
-
 function readReplacement(name) {
   return fs.readFileSync(path.join(frontendPublic, 'replaced', name), 'utf8');
+}
+
+// R1：把页面在运行时仍按相对路径/`/src/...` 路径引用的资源交付到产物（页面 HTML 由 Vite 产出，
+// 故 src/app 下排除 .html；src/app/react 已打包，排除）。appRoot 为 `/src`，运行时 require 会取
+// `/src/config.js`、`/src/i18n`、`/src/my_modules/*`、`/src/app/js/*`（见 shimsLegacy 的 require 链）。
+//
+// 注：不用 fs.cpSync——在本机（Windows/Node 22）复制含 `.node` 原生二进制的 src/my_modules 时
+// 会令进程硬崩（exit 127，无异常）；手工遍历复制稳定。
+function copyTree(from, to, filter) {
+  fs.mkdirSync(to, { recursive: true });
+  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    const src = path.join(from, entry.name);
+    const dst = path.join(to, entry.name);
+    if (filter && !filter(src)) continue;
+    if (entry.isDirectory()) copyTree(src, dst, filter);
+    else fs.copyFileSync(src, dst);
+  }
 }
 
 export default defineConfig({
@@ -139,22 +130,22 @@ export default defineConfig({
           }
           if (url === '/src/app/index.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readPreviewIndex());
+            res.end(readEntryPage(path.join(workspaceRoot, 'src/app/index.html')));
             return;
           }
           if (url === '/src/app/preferences.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readPreviewPreferences());
+            res.end(readEntryPage(path.join(workspaceRoot, 'src/app/preferences.html')));
             return;
           }
           if (url === '/src/app/preview-window.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readPreviewWindow());
+            res.end(readEntryPage(path.join(workspaceRoot, 'src/app/preview-window.html')));
             return;
           }
           if (url === '/src/app/collect-window/index.html') {
             res.setHeader('Content-Type', 'text/html; charset=utf-8');
-            res.end(readCollectWindow());
+            res.end(readEntryPage(path.join(workspaceRoot, 'src/app/collect-window/index.html'), { collect: true }));
             return;
           }
           if (url === '/src/app/registration.html') {
@@ -168,19 +159,11 @@ export default defineConfig({
             return;
           }
           if (url.startsWith('/src/app/') && url.endsWith('.html')) {
+            // R1：viewer/其余页的 React 入口已写入源 HTML，这里只补 API 地址与 refresh 前置脚本。
             const file = path.join(workspaceRoot, url);
             if (fs.existsSync(file)) {
-              let html = fs.readFileSync(file, 'utf8');
-              if (url.startsWith('/src/app/collect-window/')) {
-                html = sanitizeCollectTemplates(html);
-              }
-              html = injectPreviewScripts(allowSingleColorPalette(html));
-              const viewerEntry = REACT_VIEWER_ENTRIES[url];
-              if (viewerEntry) {
-                html = injectReactViewer(html, viewerEntry);
-              }
               res.setHeader('Content-Type', 'text/html; charset=utf-8');
-              res.end(html);
+              res.end(readEntryPage(file, { collect: url.startsWith('/src/app/collect-window/') }));
               return;
             }
           }
@@ -195,13 +178,68 @@ export default defineConfig({
           next();
         });
       },
-      transformIndexHtml(html) {
+      transformIndexHtml(html, ctx) {
         if (html.includes('<title>Eagle Document Viewer</title>')) {
           return injectViewerConfig(html);
         }
-        // b1-9bz-E9（P5）：`<title>Eagle</title>` 分支的 mock-data/shims 注入摘除
-        // （启动契约在 React 入口 shimsLegacy）。
-        return html;
+        // R1：正式构建按文件路径补 API 地址与 collect 模板清洗（React 入口已在源 HTML 中，
+        // 由 Vite 正常打包；开发态由上面的中间件直出，不走到这里）。
+        const filename = ctx?.filename || (ctx?.path ? path.join(workspaceRoot, ctx.path) : '');
+        const rel = filename ? path.relative(workspaceRoot, filename).split(path.sep).join('/') : '';
+        if (!REACT_PAGE_ENTRIES[rel]) {
+          // b1-9bz-E9（P5）：`<title>Eagle</title>` 分支的 mock-data/shims 注入摘除
+          // （启动契约在 React 入口 shimsLegacy）。
+          return html;
+        }
+        let out = injectPreviewScripts(html);
+        if (rel.startsWith('src/app/collect-window/')) {
+          out = sanitizeCollectTemplates(allowSingleColorPalette(out));
+        }
+        return out;
+      },
+    },
+    {
+      name: 'eagle-production-assets',
+      apply: 'build',
+      closeBundle() {
+        const outDir = path.resolve(here, '../dist/frontend');
+        console.log('[eagle] copying runtime assets ->', outDir);
+        let copied = 0;
+        for (const dir of [
+          { from: 'src/app', to: 'src/app', filterPages: true },
+          { from: 'src/my_modules', to: 'src/my_modules', filterPages: false },
+          { from: 'src/i18n', to: 'src/i18n', filterPages: false },
+        ]) {
+          const from = path.join(workspaceRoot, dir.from);
+          if (!fs.existsSync(from)) { console.log(`[eagle] skip (absent) ${dir.from}`); continue; }
+          try {
+            copyTree(from, path.join(outDir, dir.to), dir.filterPages
+              ? (src) => !src.endsWith('.html') && !src.split(path.sep).includes('react')
+              : null);
+            copied += 1;
+            console.log(`[eagle] copied ${dir.from} -> ${dir.to}`);
+          } catch (err) {
+            console.error(`[eagle] FAILED copying ${dir.from}:`, err && err.message);
+          }
+        }
+        for (const rel of ['src/config.js']) {
+          const abs = path.join(workspaceRoot, rel);
+          if (!fs.existsSync(abs)) { console.log(`[eagle] skip (absent) ${rel}`); continue; }
+          try {
+            fs.mkdirSync(path.dirname(path.join(outDir, rel)), { recursive: true });
+            fs.copyFileSync(abs, path.join(outDir, rel));
+            copied += 1;
+            console.log(`[eagle] copied ${rel}`);
+          } catch (err) {
+            console.error(`[eagle] FAILED copying ${rel}:`, err && err.message);
+          }
+        }
+        // R1：publicDir（frontend/public）会整目录复制，其中 mock-library / mock-assets 是
+        // 开发/演示数据，不进生产产物（开发态仍由 public 提供）。
+        for (const devOnly of ['mock-library', 'mock-assets']) {
+          fs.rmSync(path.join(outDir, devOnly), { recursive: true, force: true });
+        }
+        console.log(`[eagle] runtime assets copied (${copied} item(s)); dev-only public data pruned`);
       },
     },
   ],
@@ -225,6 +263,17 @@ export default defineConfig({
       input: {
         pages: path.join(frontendPublic, 'pages.html'),
         'document-viewer': documentViewerEntry,
+        // R1：交付页面多页入口（路径与开发态一致，产物落 dist/frontend/<相对路径>）。
+        index: path.join(workspaceRoot, 'src/app/index.html'),
+        preferences: path.join(workspaceRoot, 'src/app/preferences.html'),
+        'preview-window': path.join(workspaceRoot, 'src/app/preview-window.html'),
+        'collect-window': path.join(workspaceRoot, 'src/app/collect-window/index.html'),
+        'exif-viewer': path.join(workspaceRoot, 'src/app/exif-viewer/index.html'),
+        'raw-viewer': path.join(workspaceRoot, 'src/app/raw-viewer/index.html'),
+        'native-viewer': path.join(workspaceRoot, 'src/app/native-viewer/index.html'),
+        'gif-viewer': path.join(workspaceRoot, 'src/app/gif-viewer/index.html'),
+        'text-editor': path.join(workspaceRoot, 'src/app/text-editor/text-editor.html'),
+        'font-viewer': path.join(workspaceRoot, 'src/app/font-viewer/font-viewer.html'),
       },
     },
   },

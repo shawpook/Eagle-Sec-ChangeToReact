@@ -8728,3 +8728,30 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - **剩余 5 个文件**（实测 1244 条）：`core/{bitmapViewer 141, hoverPreview 273,
   smoothZoomEngine 292, eagleClasses 297}`、`services/itemMenuService.ts 207`
   （其中 146 条是裸引用旧全局 i18n/preferences/eagle，需按既有约定逐个定性）。
+
+### R3 收尾：下一批起点（bitmapViewer 等 5 个文件）
+
+本批在干净边界停下（全部已提交、`typecheck` 0 诊断、`build` exit 0、台账一致）。
+
+**`core/bitmapViewer.ts`（141 条，类式文件，已实测归类，可直接据此动手）**：
+- `TS7008`（9，私有成员缺类型）：`#canvas #createBitmapWorker #preloadBitmapWorker
+  #thumbBitmap #renderTimeout #renderTimeoutDuration #thumbRatio #height #width #viewport`
+  → 补 `: any`。
+- `TS2339 Property 'url'/'preloadData' does not exist on type 'BitmapViewer'`（48 集中于此二名）
+  → 是**未声明的公开字段**（代码里 `this.url` / `this.preloadData`），需补 `url: any;
+  preloadData: any;`。
+- `TS2339 ... on type 'never'`（`close/tile/x/y/w/h`）：源于 `#bitmapTiles = []` 被推断为
+  `never[]` → 声明 `#bitmapTiles: any[] = []` 可一并消解。
+- `TS18047 'ctx'/'tempCtx' is possibly 'null'`（24）：各 `const ctx = …getContext('2d')`
+  改为显式 `: any`（vendor 原码无空值守卫，逐字保留）。
+- `TS2794`（6）：`new Promise(...)` 内 `resolve()` 无参 → 需 `new Promise<void>(...)`。
+- `TS2345 Argument of type 'number' is not assignable to parameter of type 'string'`（12）：
+  集中在 `#viewport.width / #canvas.width` 的 ratio 计算行，动手前需先看该行完整调用
+  （测量脚本的列号已给出，尚差最后一句上下文）。
+- `TS7006`（31）/`TS2591 require`（3）：形参补 `: any`；`declare const require: any;`。
+- 另需 `declare const FileUrlHelper: any;`（363 行）。
+
+**其余 4 个文件**：`services/itemMenuService.ts`（207，其中 146 条为裸引用旧全局
+`i18n`(101)/`preferences`(35)/`eagle`(10)，需逐个定性为「ambient 声明」还是「应走模块导入」）、
+`core/hoverPreview.ts`（273）、`core/smoothZoomEngine.ts`（292，其中 163 条 TS2683
+「`this` 隐式 any」，集中在 angular 风格 `$elem.on(...)` 回调）、`core/eagleClasses.ts`（297）。

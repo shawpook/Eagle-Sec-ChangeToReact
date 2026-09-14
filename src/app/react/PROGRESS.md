@@ -8870,3 +8870,26 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   用 `(error as any)`（Error 类型无这些字段）；`context` 空值用 `(context as any)`。
 - **验证**：`typecheck` 0 诊断、`shim-module-boundaries` OK、收敛台账 OK、`npm run build` exit 0；
   `menu-popup`、`d3-selection` 全绿。随后按用户指示执行**全套测试**。
+
+### R3 收官与全套测试（2026-09-15）
+
+- **R3 撤销面清零**：12 个文件 / **1670 条**诊断全部清零并删除 `// @ts-nocheck`
+  （miscMenuService 34、folderMenuService 30、fontTagService 38、batchOpsService 47、
+  folderCoreService 90、tagManagerDomain 92、imageOpsService 126、bitmapViewer 141、
+  hoverPreview 273、smoothZoomEngine 292、itemMenuService 207、eagleClasses 297）。
+- **门禁**：`tests/typecheck.mjs` 为**零容忍 + 范围守卫 + `@ts-nocheck` 面台账**。台账现为
+  **8 个 `core/shim/*`**（R2 整段搬移的启动层，各由 `shim-module-boundaries` 以「剥离 nocheck
+  后的未解析标识符」单独守卫），**待撤销 0**。台账双向校验：未登记而带 nocheck → 失败；
+  已撤销却未移除 → 失败。
+- **本阶段修出的真实缺陷**（撤销 `@ts-nocheck` 的直接产出，均已逐个给出证据）：
+  `getAllChildFolder` 未定义、`machineryVideoScreenShot` 未定义、`GeneralTagSelectPanel.open`
+  指向已删类、`paddingNumber`/`canvasResizeTo`/`JAPANESE_CHAR_MAP` 主窗无人安装、
+  `exportFolder` 同名遮蔽致保存目录对话框永不弹出、`originalWidth/originalHeight` 块级作用域
+  越界、`smoothZoomEngine.updateLocations` 的 `self` 未绑定（解析到 DOM 全局）、三处对象字面量
+  重复键、以及一批「应走模块导入却写成了裸全局」的引用。
+- **全套测试（react 套件 71 项）**：**ALL GREEN**（71/71 OK，含全部 `d3-*` 闭环、
+  连续网格（布局/滚动）、依赖导入导出、删除/恢复、拖拽、菜单、通道接线、
+  `residue`（零控制台错误）、`shim-module-boundaries`、`typecheck`、`scope-field-convergence`）。
+  此前记录为环境级偶发的 `main-ui-workflow-closed-loop` 本轮亦通过。
+- **R3 完成后的状态**：R0–R4 全部完成；`@ts-nocheck` 仅剩设计内的 8 个 shim 文件；
+  `writeScopeField` 字符串键数据写入为 0（剩余 57 个挂载槽归 R6）。**下一阶段 = R5**。

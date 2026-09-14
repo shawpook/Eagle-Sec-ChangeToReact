@@ -390,6 +390,16 @@ export function BoxItem({ item, ...rest }: { item: any; [key: string]: any }) {
       />
       <div
         className={`thumbnail ${data.thumbnailClass || ''}`}
+        // F23（实机 QA 2026-09-14）：v4 JustifiedGrid 的 item ratio 来源是「box 的实测尺寸」
+        // （orgInlineSize/orgContentSize）。而 .box 高度 = thumbnail 高 + 文件名/元信息块
+        // （实测 49~91px，随文件名换行浮动）→ 测得的比例 (boxW/boxH) 严重偏离真实图片比例
+        // （16:9 图实测成 1.13），且随每次布局自我反馈漂移 → 行高在 116~478 之间乱跳、
+        // 同缩放下尺寸差异巨大（用户报告的核心症状）。
+        // v4 的 data-grid-maintained-target 语义：以指定子元素的比例为准，把其余部分作为
+        // contentOffset 扣除 —— 落在 .thumbnail 上即得 contentOffset = 标签块高（逐项实测），
+        // ratio = boxW/(boxH-标签块) = 缩略图真实比例。bundle 时代 v3 布局直接用 item.width/
+        // height 元数据算比例，不依赖 DOM 实测，本属性是 v4 下等价语义的官方出口。
+        data-grid-maintained-target=""
         draggable={true}
         onDragStart={(e) => (window as any).onDragStartContainer(e)}
         onDrag={(e) => (window as any).onImageDrag(e)}

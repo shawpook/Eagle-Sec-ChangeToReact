@@ -32,6 +32,8 @@ import { syncBodyFromScope } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
+import { useLayoutState } from '../store/layoutState';
+import { useToolbarState } from '../store/toolbarState';
 import { detailZoom } from '../core/smoothZoomEngine';
 import { openFolder, openSmartFolder } from '../services/folderCoreService';
 import { select } from '../services/selectionService';
@@ -42,12 +44,17 @@ import { addToRecentFolders, cleanSelected, scrollToSelectedItem } from '../serv
 import { newFolder } from '../services/folderCoreService';
 import { activateFont, deactivateFont } from '../services/fontTagService';
 import { openErrorChannel } from '../global/bus';
+import { machineryRelayout, machineryOffsetScrollbar } from '../services/gridService';
+import { setFolderSortIncrease, setSmartFolderSortIncrease } from '../services/folderMenuService';
+import { cancelAllTasks } from '../services/uploadService';
+import { ContextMenu } from './contextMenuDomain';
+import { machineryFilterContent } from './filterDomain';
 import { q, qaNot, widthOf, heightOf, hasClass, addClass, removeClass, cssSet, setScrollLeft } from '../utils/domQuery';
 import { machineryNewSmartFolder } from './libraryDomain';
 import { machineryGetRecentFolders } from './libraryDomain';
 import { machineryRememberScrollTops } from '../services/gridService';
 import { machineryChangeSidebarIndex, machineryPrependFolder, machineryQuickOpenFolder, machinerySetFolderOrder, machinerySetSmartFolderOrder, machineryUpdateSidebarList } from './libraryDomain';
-import { machineryFindDupclipate, machineryHideUploadQueue, machineryRebindRefresh } from './itemDomain';
+import { machineryEnlargeThumbnails, machineryFindDupclipate, machineryHideUploadQueue, machineryRebindRefresh, machineryShrinkThumbnails } from './itemDomain';
 import { machineryOpenAll } from '../services/folderCoreService';
 import { openMousewheelPreferenceWindowChannel, openPluginPanelChannel } from '../global/bus';
 import { detailToggleDetailMode } from '../services/detailService';
@@ -1467,7 +1474,8 @@ const cgStack: any[] = [];        // m：已附加的消息元素栈
 /* languageBCP 重算（bundle 20053 逐字；初值 "en"） */
 export function getLanguageBCP(): string {
   try {
-    const lang = useBodyState.getState().language ?? useBodyState.getState().language ?? 'en';
+    // '' ?? 'en' 不回退（?? 只挡 null/undefined）——空串传 Collator 即 RangeError（F15b boot 卡死根因）
+    const lang = (useBodyState.getState().language || 'en');
     return String(lang).replace('_', '-');
   } catch (err) {
     return 'en';
@@ -1874,3 +1882,417 @@ export function machineryToggleSlideshow(): void {
 
 // ── c16a 域内自管（原 controller 闭包 var：zoomInitTimeout，31586）──
 let zoomInitTimeout: any = null;
+
+// ═══ F15（Q20 家族）：排列方式面板 + openLibrary scope 函数补端口 ═══
+// 原版 controller 初始化即挂载（bundle 45293/45346/45360/45374/45388/45398/45407/30923/
+// 33785/26179/26328/26275/37213），迁移后 store 字段恒 null → SmallPanels/apiServerDomain
+// 消费点静默 no-op。$evalAsync 语义（无 watcher）已是 no-op，不再派发。
+
+/* changeSortIncrease（bundle 45293 逐字） */
+export function machineryChangeSortIncrease(sortIncrease: any): void {
+  const w = window as any;
+  if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy) {
+    setFolderSortIncrease(useFolderState.getState().currentFolder, sortIncrease);
+  }
+  else if (useFolderState.getState().currentSmartFolder && useFolderState.getState().currentSmartFolder.orderBy) {
+    setSmartFolderSortIncrease(useFolderState.getState().currentSmartFolder, sortIncrease);
+  }
+  else {
+    if (sortIncrease !== undefined) {
+      writeScopeField('sortIncrease', sortIncrease);
+      localStorage.setItem("eagle.list.sortIncrease", sortIncrease);
+      localStorage.setItem("eagle.list.sortIncrease." + w.rootDir, sortIncrease);
+      machineryRebindRefresh(undefined, undefined, undefined);
+    }
+  }
+  updateCurrentOrderAndIncrease();
+}
+
+/* toggleShowOriginalImageWhenLarge（bundle 45346 逐字） */
+export function machineryToggleShowOriginalImageWhenLarge(): void {
+  const w = window as any;
+  writeScopeField('showOriginalImageWhenLarge', !useMiscRawState.getState().showOriginalImageWhenLarge);
+  localStorage.setItem("eagle.list.show.originalImageWhenLarge", useMiscRawState.getState().showOriginalImageWhenLarge);
+  if (useLayoutState.getState().imageSize.height > 600 && useMiscRawState.getState().showOriginalImageWhenLarge) {
+    machineryEnlargeThumbnails();
+  }
+  else {
+    machineryShrinkThumbnails();
+  }
+}
+
+/* showListName（bundle 45360 逐字） */
+export function machineryShowListName(): void {
+  const w = window as any;
+  writeScopeField('showName', !useMiscRawState.getState().showName);
+  localStorage.setItem("eagle.list.show.name", useMiscRawState.getState().showName);
+  const bc = q("#box-container");
+  if (bc) {
+    if (useMiscRawState.getState().showName) bc.classList.remove("hide-box-name"); else bc.classList.add("hide-box-name");
+  }
+  machineryRelayout(undefined);
+  machineryOffsetScrollbar()(30);
+  if (useMiscRawState.getState().showName) { w.electronLog && w.electronLog.info("[app] Show item name on list: ON"); }
+  else { w.electronLog && w.electronLog.info("[app] Show item name on list: OFF"); }
+}
+
+/* showListMetas（bundle 45374 逐字） */
+export function machineryShowListMetas(event: any): void {
+  const w = window as any;
+  event && event.stopPropagation && event.stopPropagation();
+  writeScopeField('showMetas', !useMiscRawState.getState().showMetas);
+  localStorage.setItem("eagle.list.show.meta", useMiscRawState.getState().showMetas);
+  const bc = q("#box-container");
+  if (bc) {
+    if (useMiscRawState.getState().showMetas) bc.classList.remove("hide-box-metas"); else bc.classList.add("hide-box-metas");
+  }
+  machineryRelayout(undefined);
+  machineryOffsetScrollbar()(30);
+  if (useMiscRawState.getState().showMetas) { w.electronLog && w.electronLog.info("[app] Show item meta on list: ON"); }
+  else { w.electronLog && w.electronLog.info("[app] Show item meta on list: OFF"); }
+}
+
+/* showListAnnotation（bundle 45388 逐字） */
+export function machineryShowListAnnotation(): void {
+  const w = window as any;
+  writeScopeField('showAnnotation', !useMiscRawState.getState().showAnnotation);
+  localStorage.setItem("eagle.list.show.annotation", useMiscRawState.getState().showAnnotation);
+  const bc = q("#box-container");
+  if (bc) {
+    if (useMiscRawState.getState().showAnnotation) bc.classList.remove("hide-box-annotation"); else bc.classList.add("hide-box-annotation");
+  }
+  machineryRelayout(undefined);
+  if (useMiscRawState.getState().showAnnotation) { w.electronLog && w.electronLog.info("[app] Show item annotation count on list: ON"); }
+  else { w.electronLog && w.electronLog.info("[app] Show item annotation count on list: OFF"); }
+}
+
+/* showListExtension（bundle 45398 逐字） */
+export function machineryShowListExtension(): void {
+  const w = window as any;
+  writeScopeField('showFileExtension', !useMiscRawState.getState().showFileExtension);
+  localStorage.setItem("eagle.list.show.extension", useMiscRawState.getState().showFileExtension);
+  const bc = q("#box-container");
+  if (bc) {
+    if (useMiscRawState.getState().showFileExtension) bc.classList.remove("hide-box-extension"); else bc.classList.add("hide-box-extension");
+  }
+  if (useMiscRawState.getState().showFileExtension) { w.electronLog && w.electronLog.info("[app] Show item file extension on list: ON"); }
+  else { w.electronLog && w.electronLog.info("[app] Show item file extension on list: OFF"); }
+}
+
+/* showListExtensionLabel（bundle 45407 逐字） */
+export function machineryShowListExtensionLabel(): void {
+  const w = window as any;
+  writeScopeField('showFileExtensionLabel', !useMiscRawState.getState().showFileExtensionLabel);
+  localStorage.setItem("eagle.list.show.extension_LABEL", useMiscRawState.getState().showFileExtensionLabel);
+  const bc = q("#box-container");
+  if (bc) {
+    if (useMiscRawState.getState().showFileExtensionLabel) bc.classList.remove("hide-box-extension-label"); else bc.classList.add("hide-box-extension-label");
+  }
+  if (useMiscRawState.getState().showFileExtensionLabel) { w.electronLog && w.electronLog.info("[app] Show item extension label on list: ON"); }
+  else { w.electronLog && w.electronLog.info("[app] Show item extension label on list: OFF"); }
+}
+
+/* toggleSidebar（bundle 30923 逐字） */
+export function machineryToggleSidebar(event: any): void {
+  const w = window as any;
+  const $timeout = getTimeout();
+  writeScopeField('isHideSidebar', !useBodyState.getState().isHideSidebar);
+  $timeout(function() {
+    writeScopeField('lastItemStates', {});
+    w.$(window).trigger("orientationchange");
+    const bc = q("#box-container") as HTMLElement | null;
+    writeScopeField('boxContianerWidth', (bc ? bc.offsetWidth : 0) || useMiscRawState.getState().boxContianerWidth);
+    writeScopeField('boxContianerHeight', (bc ? bc.offsetHeight : 0) || useMiscRawState.getState().boxContianerHeight);
+    machineryRelayout(undefined);
+    machineryOffsetScrollbar()(30);
+    if (useBodyState.getState().isDetailMode && useMiscRawState.getState().lastZoomMode === "edge") {
+      // 原 $scope.zoomFitEdge（c18b 注释下未移植）；window 面存在则沿用以保语义
+      w.zoomFitEdge && w.zoomFitEdge(event);
+    }
+  }, 100);
+  localStorage.setItem("isHideSidebar", String(useBodyState.getState().isHideSidebar));
+}
+
+/* switchLayoutOtpions（bundle 33785 逐字；typo 原样） */
+export function machinerySwitchLayoutOtpions(layoutOptions: any): void {
+  localStorage.setItem("eagle.list.layout.options", layoutOptions);
+  writeScopeField('layoutOptions', layoutOptions);
+}
+
+/* createLibrary（bundle 26179 + chooseLibraryPath 逐字） */
+export function machineryCreateLibrary(): void {
+  const w = window as any;
+  const swal = w.swal;
+  swal({
+    html: `
+        <div class="alert">
+            <div class="alert-icon library"></div>
+            <h4 class="alert-title">${w.i18n.__("Dialog.CreateLibrary.Title")}</h4>
+            <p class="alert-desc">${w.i18n.__("Dialog.CreateLibrary.Descript")}</p>
+        </div>
+    `,
+    showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+    width: 400,
+    input: 'text',
+    inputPlaceholder: w.i18n.__('Dialog.CreateLibrary.Placeholder'),
+    inputValue: '',
+    inputValidator: function (value: any) {
+        return new Promise(function (resolve, reject) {
+            if (value && !/[@#$%^&*<>:'"\/\\|?*]+/.test(value)) {
+               resolve(undefined);
+            }
+            else {
+                reject(w.i18n.__('Dialog.CreateLibrary.Error'));
+            }
+        });
+    },
+    customClass: "alert-box",
+    cancelButtonColor: "#777777",
+    confirmButtonText: w.i18n.__("Dialog.CreateLibrary.Create"),
+    cancelButtonText: w.i18n.__("general.cancel"),
+  }).then(function (result: any) {
+    chooseLibraryPath(result && result.value);
+  }, function () {});
+}
+
+/* chooseLibraryPath（bundle 26204 逐字） */
+function chooseLibraryPath(libraryName: any): void {
+  const w = window as any;
+  const remote = w.electron && w.electron.remote;
+  var name = libraryName || "Eagle";
+  name = name.replace(/[@#$%^&*<>:'"\/\\|?*]+/g, '').replace(/%/g, "");
+  name = name.substr(0, 127);
+
+  const unrom = w.require(w.appRoot.path + '/app/js/utils/unorm.js');
+  const nfc = (text: any) => {
+    try { return unrom.nfc(text); }
+    catch (err) { return text; }
+  };
+  name = nfc(name);
+
+  remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
+    title: getFilter()('i18n')('dialog.createLibrary.title'),
+    filters: [],
+    properties: ['openDirectory'],
+    buttonLabel: getFilter()('i18n')("dialog.createLibrary.botton"),
+    defaultPath: (w.process && w.process.env && w.process.env.USERPROFILE ? w.process.env.USERPROFILE + '\\Pictures' : undefined),
+  }).then((result: any) => {
+    var paths = result.filePaths;
+    if (paths && paths[0]) {
+        var savePath = paths[0];
+        if (savePath.indexOf("Desktop") > -1 || savePath.indexOf("Downloads") > -1) {
+            w.swal({
+                html: `
+                    <div class="alert">
+                        <div class="alert-icon warning"></div>
+                        <h4 class="alert-title">${w.i18n.__("dialog.createLibraryPath.title")}</h4>
+                        <p class="alert-desc">${w.i18n.__("dialog.createLibraryPath.desc")}</p>
+                    </div>
+                `,
+                showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                width: 400,
+                customClass: "alert-box",
+                cancelButtonColor: "#777777",
+                confirmButtonText: w.i18n.__("dialog.createLibraryPath.chooseBtn"),
+                cancelButtonText: w.i18n.__("dialog.createLibraryPath.saveBtn"),
+                allowEscapeKey: false
+            }).then(function () {
+                chooseLibraryPath(libraryName);
+            }, function () {
+                (w.__eagleIpc || w.electron.ipcRenderer).send('create-library', {
+                    name: name,
+                    savePath: savePath
+                });
+            });
+        }
+        else {
+            (w.__eagleIpc || w.electron.ipcRenderer).send('create-library', {
+                name: name,
+                savePath: savePath
+            });
+        }
+    }
+  });
+}
+
+/* importLibrary（bundle 26328 逐字） */
+export function machineryImportLibrary(): void {
+  const w = window as any;
+  const remote = w.electron && w.electron.remote;
+  remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
+    title: w.i18n.__('dialog.changeLibrary.title'),
+    filters: [
+        { name: 'Eagle Library', extensions: ['library'] },
+    ],
+    properties: ['openDirectory', 'openFile']
+  }).then((result: any) => {
+    var paths = result.filePaths;
+    if (paths && paths.length > 0) {
+        var path = paths[0];
+        if (!w.require('fs').existsSync(path + "/metadata.json")) {
+            w.swal({
+                html: `
+                    <div class="alert">
+                        <div class="alert-icon error"></div>
+                        <h4 class="alert-title">${w.i18n.__('dialog.libraryNotFount.title')}</h4>
+                        <p class="alert-desc">${w.i18n.__('dialog.libraryNotFount.desc')}</p>
+                    </div>
+                `,
+                showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+                width: 400,
+                customClass: "alert-box",
+                cancelButtonColor: "#777777",
+                confirmButtonText: w.i18n.__("dialog.libraryNotFount.button"),
+                cancelButtonText: w.i18n.__("general.cancel"),
+            }).then(function () {
+                machineryImportLibrary();
+            });
+        } else {
+            machineryOpenLibrary(path);
+        }
+    }
+  });
+}
+
+/* refresh（bundle 26275 逐字） */
+export function machineryRefresh(): void {
+  const w = window as any;
+  (w.__eagleIpc || w.electron.ipcRenderer).send('reload-app');
+}
+
+/* openLibrary（bundle 37213 逐字） */
+export function machineryOpenLibrary(libPath: any): void {
+  const w = window as any;
+  // 優先檢查 AI Action 插件是否正在執行
+  if (w.eagle.action.isVisible()) {
+    w.swal({
+      html: `
+          <div class="alert">
+              <div class="alert-icon warning"></div>
+              <h4 class="alert-title">${w.i18n.__('Dialog.AIActionRunning.Title')}</h4>
+              <p class="alert-desc">${w.i18n.__("Dialog.AIActionRunning.Descript")}</p>
+          </div>
+      `,
+      showCloseButton: false, showCancelButton: false, allowOutsideClick: false, focusConfirm: true, padding: 24,
+      width: 400,
+      customClass: "alert-box",
+      confirmButtonText: w.i18n.__("general.close"),
+    }).then(() => {
+      w.eagle.action.show();
+    });
+    return;
+  }
+
+  var showAlert = useMiscRawState.getState().isLibrarySaving || useMiscRawState.getState().uploadQueue.length > 0 || useMiscRawState.getState().downloadQueueLength > 0 || useMiscRawState.getState().metadataQueueLength > 0 || useBodyState.getState().isCleaningTrash || useMiscRawState.getState().isImporting || qa(".progress-dialog.open").filter(function (el: any) { return !el.className.includes("library-loading-dialog"); }).length > 0 || ((() => { const spb = q("#saving-progress-bar"); return !!spb && spb.className.includes("open"); })())
+  if (showAlert) {
+    w.swal({
+      html: `
+          <div class="alert">
+              <div class="alert-icon warning"></div>
+              <h4 class="alert-title">${w.i18n.__('Dialog.BeforeSwitchLibrary.Title')}</h4>
+              <p class="alert-desc">${w.i18n.__("Dialog.BeforeSwitchLibrary.Descript")}</p>
+          </div>
+      `,
+      showCloseButton: false, showCancelButton: true, allowOutsideClick: false, focusConfirm: true, focusCancel: false, padding: 24,
+      width: 400,
+      customClass: "alert-box",
+      cancelButtonColor: "#777777",
+      confirmButtonText: w.i18n.__("Dialog.BeforeSwitchLibrary.Quit"),
+      cancelButtonText: w.i18n.__("general.cancel"),
+      icon: "success"
+    }).then(function () {
+      // 取消所有任务
+      cancelAllTasks();
+      (w.__eagleIpc || w.electron.ipcRenderer).send('add-to-history-and-open', libPath);
+    });
+  }
+  else {
+    (w.__eagleIpc || w.electron.ipcRenderer).send('add-to-history-and-open', libPath);
+  }
+}
+
+/* openSearchScopeMenu（bundle 44987-45080 逐字；F15d：搜索范围下拉此前未移植、按钮静默无效） */
+export function machineryOpenSearchScopeMenu(event: any): void {
+  const w = window as any;
+  event && event.stopPropagation();
+
+  const updateUI = () => {
+    if (useToolbarState.getState().snapshot.keyword) {
+      machineryFilterContent();
+    }
+  };
+
+  const M: any = useMiscRawState.getState();
+  const toggle = (key: string, lsKey: string) => {
+    const next = !M[key];
+    writeScopeField(key, next);
+    localStorage.setItem(lsKey, String(next));
+    updateUI();
+  };
+
+  ContextMenu.open({
+    items: [
+      {
+        role: 'label',
+        label: w.i18n.__('Context.SearchScope.Label') + ':',
+      },
+      {
+        label: w.i18n.__('general.imageName'),
+        icon: 'ic-search-scope-name.svg',
+        checked: useMiscRawState.getState().isSearchScopeName,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeName', 'eagle.search.scope.name'),
+      },
+      {
+        label: w.i18n.__('general.folderName'),
+        icon: 'ic-search-scope-folder.svg',
+        checked: useMiscRawState.getState().isSearchScopeFolderName,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeFolderName', 'eagle.search.scope.folderName'),
+      },
+      {
+        label: w.i18n.__('general.folderDesc'),
+        icon: 'ic-search-scope-folder-desc.svg',
+        checked: useMiscRawState.getState().isSearchScopeFolderDesc,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeFolderDesc', 'eagle.search.scope.folderDesc'),
+      },
+      {
+        label: w.i18n.__('general.imageExt'),
+        icon: 'ic-search-scope-ext.svg',
+        checked: useMiscRawState.getState().isSearchScopeExt,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeExt', 'eagle.search.scope.ext'),
+      },
+      {
+        label: w.i18n.__('general.imageTags'),
+        icon: 'ic-search-scope-tag.svg',
+        checked: useMiscRawState.getState().isSearchScopeTag,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeTag', 'eagle.search.scope.tag'),
+      },
+      {
+        label: w.i18n.__('general.imageUrl'),
+        icon: 'ic-search-scope-link.svg',
+        checked: useMiscRawState.getState().isSearchScopeUrl,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeUrl', 'eagle.search.scope.url'),
+      },
+      {
+        label: w.i18n.__('general.imageAnnotation'),
+        icon: 'ic-search-scope-comment.svg',
+        checked: useMiscRawState.getState().isSearchScopeAnnotation,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeAnnotation', 'eagle.search.scope.annotation'),
+      },
+      {
+        label: w.i18n.__('general.imageNote'),
+        icon: 'ic-search-scope-note.svg',
+        checked: useMiscRawState.getState().isSearchScopeNote,
+        keepOpen: true,
+        click: () => toggle('isSearchScopeNote', 'eagle.search.scope.note'),
+      }
+    ],
+    showSearch: false,
+  });
+}

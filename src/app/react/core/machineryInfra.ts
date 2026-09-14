@@ -20,6 +20,8 @@ import { machineryCalcuteFilterResult, machineryColorFilter, machineryContentFil
 import { machineryCalculateImageBinding, machineryPrependImages, machineryRebindRefresh, machineryRebindRefreshLazy, machineryReload, machinerySortRawData, machineryUpdateItemsView } from './itemDomain';
 import { buildRecentFileManager, machineryGetRecentFolders, machinerySaveFolder, machinerySaveFolderDebounce, machinerySmartFolderCount, machineryUpdateSidebarList } from './libraryDomain';
 import { machineryChangeFolderName, machineryChangeSmartFolderName } from '../services/folderCoreService';
+import { machineryBoxListSizeChange, machineryOnListSizeChange } from '../services/gridService';
+import { machineryChangeSortIncrease, machineryCreateLibrary, machineryImportLibrary, machineryOpenLibrary, machineryRefresh, machineryShowListAnnotation, machineryShowListExtension, machineryShowListExtensionLabel, machineryShowListMetas, machineryShowListName, machinerySwitchLayoutOtpions, machineryOpenSearchScopeMenu, machineryToggleShowOriginalImageWhenLarge, machineryToggleSidebar } from './miscDomain';
 import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
@@ -147,7 +149,31 @@ export function applyDataMachineryScope(): void {
   // c16c-2：changeFolderName/changeSmartFolderName（bundle 42290/42338 初始化即挂载）——
   // Sidebar RenameInput 经 scope[commitFn] 派发，未挂载时提交静默 TypeError（F12）。
   writeScopeField('changeFolderName', machineryChangeFolderName);
-  writeScopeField('changeSmartFolderName', machineryChangeSmartFolderName);  // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
+  writeScopeField('changeSmartFolderName', machineryChangeSmartFolderName);
+  // c16c-3：排列方式面板 + openLibrary 族（bundle 45293/45346/45360/45374/45388/45398/
+  // 45407/30923/33785/26179/26328/26275/37213 初始化即挂载）——SmallPanels 字符串派发与
+  // apiServerDomain 直调的 13 个死槽位（F15）。
+  writeScopeField('changeSortIncrease', machineryChangeSortIncrease);
+  writeScopeField('toggleShowOriginalImageWhenLarge', machineryToggleShowOriginalImageWhenLarge);
+  writeScopeField('showListName', machineryShowListName);
+  writeScopeField('showListMetas', machineryShowListMetas);
+  writeScopeField('showListAnnotation', machineryShowListAnnotation);
+  writeScopeField('showListExtension', machineryShowListExtension);
+  writeScopeField('showListExtensionLabel', machineryShowListExtensionLabel);
+  writeScopeField('toggleSidebar', machineryToggleSidebar);
+  writeScopeField('switchLayoutOtpions', machinerySwitchLayoutOtpions);
+  writeScopeField('createLibrary', machineryCreateLibrary);
+  writeScopeField('importLibrary', machineryImportLibrary);
+  writeScopeField('refresh', machineryRefresh);
+  writeScopeField('openLibrary', machineryOpenLibrary);
+  // initMenu：旧 shims eagleDesktop.initMenu(){} no-op stub（E9 迁移丢失）——'initial' 处理器
+  // 每次调用即 TypeError（F15b 实机 reload 报错），按 stub 语义恢复。
+  writeScopeField('initMenu', () => {});
+  // openSearchScopeMenu（bundle 44987 逐字）——搜索范围下拉（F15d）
+  writeScopeField('openSearchScopeMenu', machineryOpenSearchScopeMenu);
+  // onListSizeChange/boxListSizeChange（bundle 21070/21082）——缩放滑条 onChange 的派发目标（F16）
+  writeScopeField('onListSizeChange', machineryOnListSizeChange);
+  writeScopeField('boxListSizeChange', machineryBoxListSizeChange);  // c17b：notify（root scope 函数——bundle $rootScope.notify 20157 的等价实现，root/body
   // 双写保证 $rootScope.notify 直调与 s.notify 原型链解析都走移植版）
   const notifyFn = (params: any, restoreCallbackk: any) => machineryNotify(params, restoreCallbackk);
   writeScopeField('notify', notifyFn);

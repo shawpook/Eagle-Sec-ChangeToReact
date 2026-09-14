@@ -2515,13 +2515,13 @@ export function machinerySortData(data: any, orderBy: any): any {
   switch (orderBy) {
     case 'NAME':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
+      var collator = new Intl.Collator(w.languageBCP || "en", { numeric: true, sensitivity: 'base' });
       clone.sort(function (a: any, b: any) {
         return collator.compare(a.name, b.name);
       });
       break;
     case 'EXT':
-      var collator2 = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
+      var collator2 = new Intl.Collator(w.languageBCP || "en", { numeric: true, sensitivity: 'base' });
       clone.sort(function (a: any, b: any) {
         return collator2.compare(a.ext, b.ext);
       });
@@ -2604,7 +2604,7 @@ export function machinerySortData(data: any, orderBy: any): any {
       break;
     case 'TAGS':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator3 = new Intl.Collator(w.languageBCP, { numeric: true, sensitivity: 'base' });
+      var collator3 = new Intl.Collator(w.languageBCP || "en", { numeric: true, sensitivity: 'base' });
       clone.sort(function (a: any, b: any) {
         const aTag1 = a?.tags?.[0] ?? '';
         const bTag1 = b?.tags?.[0] ?? '';
@@ -2927,14 +2927,14 @@ export function machinerySortRawData(orderBy: any): void {
   switch (orderBy) {
     case 'NAME':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
+      var collator = new Intl.Collator(languageBCP || "en", { numeric: true, sensitivity: 'base' } );
       writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
         return collator.compare(a.name, b.name);
       }));
       syncListFromScope();
       break;
     case 'EXT':
-      var collator2 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
+      var collator2 = new Intl.Collator(languageBCP || "en", { numeric: true, sensitivity: 'base' } );
       writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
         return collator2.compare(a.ext, b.ext);
       }));
@@ -3000,7 +3000,7 @@ export function machinerySortRawData(orderBy: any): void {
       break;
     case 'TAGS':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
-      var collator3 = new Intl.Collator(languageBCP, { numeric: true, sensitivity: 'base' } );
+      var collator3 = new Intl.Collator(languageBCP || "en", { numeric: true, sensitivity: 'base' } );
       writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
         const aTag1 = a?.tags?.[0] ?? '';
         const bTag1 = b?.tags?.[0] ?? '';

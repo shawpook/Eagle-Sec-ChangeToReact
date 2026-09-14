@@ -3129,6 +3129,14 @@ if (!self._mousedown) return;
 		return instance;
 	}
 
+	/* F15f 调试/诊断口：实例状态与 focusTo 直调（QA fit 无效定位用；无实例时为 null） */
+	if (typeof window !== 'undefined') {
+		(window as any).__eagleDetailZoomProbe = () => instance ? {
+			rA: instance.rA, sW: instance.sW, sH: instance.sH,
+			iW: instance.iW, iH: instance.iH,
+		} : null;
+	}
+
 	export function ensureDetailZoom(params: any): any {
 		const elem = document.getElementById('detail-container');
 		if (!elem) return instance;

@@ -138,7 +138,13 @@ function installFacade() {
       },
     },
     // gridDirectives 页跳机器（591/620/937/1105）读组元数据：groupKey + outlines
-    // {start:[top], end:[bottom]} —— v4 组不保留 outlines，从 item.rect 现算。
+    // {start:[top], end:[bottom]} —— v4 组不保留 outlines，从 item 现算。
+    // F23e（实机 QA 2026-09-14）：坐标源必须用 **cssRect**（布局后写入 style 的坐标），
+    // 不能用 `rect`。v4 GridItem 的 `rect`/`orgRect` 是「测量阶段」的原始矩形，与最终
+    // 布局位置无关（实测第 1 页 60 条：rect.top 恒 3、内容 0~2044 而 rect 算出 outlines
+    // start=[3] end=[423]）→ gridDirectives 的 calculatePrecisePagePosition /
+    // applyPreciseScrollPosition 用该区间反推页内小数比例，于是滚动位置与滑块位移彻底
+    // 对不上（用户报告「右侧拉滚动条与实机滚动速率不匹配」）+ 拖拽切页后页内定位错位。
     get _items() {
       const groups = (gridRef && gridRef.getGroups ? gridRef.getGroups() : []) || [];
       const items = (gridRef && gridRef.getItems ? gridRef.getItems() : []) || [];
@@ -152,8 +158,9 @@ function installFacade() {
           const its = byGroup[String(g.groupKey)] || [];
           let outlines = { start: [0], end: [0] };
           if (its.length > 0) {
-            const top = Math.min(...its.map((i: any) => (i.rect ? i.rect.top : 0)));
-            const bottom = Math.max(...its.map((i: any) => (i.rect ? i.rect.top + (i.rect.height || 0) : 0)));
+            const rectOf = (i: any) => i.cssRect || i.rect || { top: 0, height: 0 };
+            const top = Math.min(...its.map((i: any) => rectOf(i).top || 0));
+            const bottom = Math.max(...its.map((i: any) => { const r = rectOf(i); return (r.top || 0) + (r.height || 0); }));
             outlines = { start: [top], end: [bottom] };
           }
           return { groupKey: g.groupKey, outlines };

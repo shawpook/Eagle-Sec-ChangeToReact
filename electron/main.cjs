@@ -944,6 +944,16 @@ function registerIpc() {
     return library;
   });
 
+
+  // F15c：原版 refresh（bundle 26275）/ refreshList（26282）的渲染层通道——此前无 handler 静默死。
+  ipcMain.on('reload-app', () => {
+    app.relaunch();
+    app.exit(0);
+  });
+  ipcMain.on('refresh-library', async () => {
+    const library = await refreshCachedCurrentLibrary();
+    if (library) await notifyLibraryLoaded(library);
+  });
   ipcMain.handle('library:open', async (event, libraryPath) => switchLibrary(libraryPath));
   ipcMain.handle('library:switch', async (event, libraryPath) => switchLibrary(libraryPath));
 

@@ -19,7 +19,7 @@ import { detailZoom } from '../core/smoothZoomEngine';
 
 import { getRatioExp, getRatioNonExp } from './viewOpsService';
 import { q, qa, cssSet, widthOf, heightOf, addClass, removeClass, setAttr, setScrollTop, scrollTopValue, outerHeightOf, offsetTopOf } from '../utils/domQuery';
-import { debounce } from '../utils/func';
+import { debounce, throttle } from '../utils/func';
 
 import { machinerySmartZoom, machineryUpdateZoomRatio, machineryZoomIn } from './viewOpsService';
 import { machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem } from '../core/itemDomain';
@@ -721,3 +721,18 @@ export function machineryToggleAll($event: any): void {
   if (w.eagle.inspector.isHideInspector) { w.electronLog && w.electronLog.info("[app] Sidebar: OFF"); }
   else { w.electronLog && w.electronLog.info("[app] Sidebar: ON"); }
 }
+
+/* F16（Q25）：onListSizeChange / boxListSizeChange（bundle 21070/21082 逐字）——
+   缩放滑条 onChange 的 call('onListSizeChange') 此前未移植恒 no-op：拖滑条只改内存值，
+   布局从不重排（图片大小不变）、尺寸也不写入 localStorage（滑条显示与内存值三方不一致）。 */
+export function machineryBoxListSizeChange(): void {
+  let height = useLayoutState.getState().imageSize.height;
+  height = Math.floor(height / 5) * 5;
+  machineryChangeListHeight(height);
+}
+
+export const machineryOnListSizeChange = throttle(function onListSizeChange(): void {
+  machineryBoxListSizeChange();
+  machinerySaveListHeight(useLayoutState.getState().imageSize.height);
+  machineryCheckListItemsLessThanContainer();
+}, 100, true);

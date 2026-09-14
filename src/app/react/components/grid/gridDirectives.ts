@@ -333,6 +333,48 @@ export function initBoxContainerScrollbar() {
                 
             })); // 使用動態節流替代固定的 throttle
 
+            // F25（实机 QA 2026-09-14，用户复测「滚轮下拉到切页时会卡住，需要拖动滚动条才能继续」）
+            // 原版（bundle 时代）是 v3 InfiniteGrid + isOverflowScroll:false + threshold:2000：
+            // 滚动接近末尾时触发 requestAppend 把下一页 append 成新组，容器随之变高 —— 也就是
+            // 「分页数据模型 + 连续滚动」，滚轮不需要碰滚动条；右侧自定义滚动条只是额外的
+            // 「按页跳转/精确定位」手段。v4 迁移后 children 只覆盖当前页（见 BoxList F23c），
+            // 滚到底就是容器底 → 卡住。
+            // 这里不改变「一页一容器」模型（保住已修好的行高/比例/懒加载链路），改为在页边界
+            // 接住滚轮方向并翻页：向下越界 → 下一页页首，向上越界 → 上一页页尾，手感与拖滚动条一致。
+            (function () {
+                var wheelAccum = 0;
+                var wheelLastTs = 0;
+                onEl($boxContainer, "wheel", function (e) {
+                    var allData = useItemState.getState().allData;
+                    var perPage = useMiscRawState.getState().options.page || 60;
+                    if (!allData || allData.length <= perPage) return;   // 只有一页，无需翻页
+                    if (e.ctrlKey || e.altKey || e.metaKey) return;      // 缩放/系统手势放行
+                    if (isDragging) return;
+                    var el = $boxContainer;
+                    if (!el) return;
+                    var dir = e.deltaY > 0 ? 1 : -1;
+                    var atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+                    var atTop = el.scrollTop <= 2;
+                    var now = Date.now();
+                    if (now - wheelLastTs > 400) wheelAccum = 0;          // 停顿后重新累计
+                    wheelLastTs = now;
+                    if (!((dir > 0 && atBottom) || (dir < 0 && atTop))) {
+                        wheelAccum = 0;
+                        return;
+                    }
+                    // 累计到一定滚轮量才翻页，避免一个微小 delta 就跳页（触控板/惯性滚动）
+                    wheelAccum += Math.abs(e.deltaY);
+                    if (wheelAccum < 80) return;
+                    wheelAccum = 0;
+                    var page = useFolderState.getState().startCursor || 0;
+                    var lastPage = Math.ceil(allData.length / perPage) - 1;
+                    var next = page + dir;
+                    if (next < 0 || next > lastPage) return;
+                    // 向下 → 新页页首；向上 → 上一页页尾（视觉上接续）
+                    goToPage(next, { updatePosition: true, scrollPercentage: dir > 0 ? 0 : 1 });
+                });
+            })();
+
             function switchNormalMode() {
                 const sfc = q("#sub-folder-container"); if (sfc) sfc.style.display = '';
                 removeClass("#box-container", "hide-scrollbar");
@@ -343,8 +385,14 @@ export function initBoxContainerScrollbar() {
                 addClass("#box-container", "hide-scrollbar");
                 if (element) element.style.display = '';
                 // 觸發一次重新計算以更新快取值
-                this._scrollBarHeight = null;
-                this._thumbnailHeight = null;
+                // F15e：原 `this._scrollBarHeight` 依賴 bundle 非嚴格模式（this=window 靜默寫全局）；
+                // ESM 嚴格模式下 this=undefined → TypeError 中斷 rebind 鏈。快取真身是 scroll
+                // handler 的 this（=$boxContainer），此處重置其上的快取。
+                const bc = q("#box-container") as any;
+                if (bc) {
+                    bc._scrollBarHeight = null;
+                    bc._thumbnailHeight = null;
+                }
             };
 
             function updateThumbHeight(total) {
@@ -932,13 +980,18 @@ export function initBoxContainerScrollbar() {
                     if (decimalPart > 1) decimalPart = 1;
                     
                     // 處理子資料夾容器顯示（使用快取）
+                    // F20：原版 jQuery `$(null).hide()` 是靜默 no-op；移植版原生元素調用對 null
+                    // 拋 TypeError → 中斷 handleDrag 後續的切頁邏輯（滾動條拖拽「無實際效果」、
+                    // 列表無法切到下一頁 = 「顯示不全」）。此處補 null 守衛並保留 jQuery 語義。
                     if (!subFolderContainerCache) {
                         subFolderContainerCache = q("#sub-folder-container");
                     }
-                    if (targetPageWithDecimal < 0.1) {
-                        subFolderContainerCache.show();
-                    } else {
-                        subFolderContainerCache.hide();
+                    if (subFolderContainerCache) {
+                        if (targetPageWithDecimal < 0.1) {
+                            subFolderContainerCache.show();
+                        } else {
+                            subFolderContainerCache.hide();
+                        }
                     }
                     
                     // 檢查目標頁面是否已經在畫面上（相鄰頁面）

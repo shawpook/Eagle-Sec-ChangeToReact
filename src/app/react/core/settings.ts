@@ -70,7 +70,8 @@ export function applyPreferencesToCurrentDocument(): void {
   emit('update-preferences');
   if (preferences.theme && preferences.theme.name) emit('change.current.theme', preferences.theme);
   if (preferences.general && preferences.general.zoom) emit('change.zoom', preferences.general.zoom);
-  if (preferences.general && typeof (window as any).languageBCP !== 'undefined') {
+  // F15b：原 typeof!=='undefined' 守卫恒 false（语言刷新永不生效）；bundle 20053 为无条件赋值。
+  if (preferences.general) {
     (window as any).languageBCP = String(preferences.general.language || 'en').replace('_', '-');
   }
 }

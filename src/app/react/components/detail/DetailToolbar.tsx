@@ -22,7 +22,7 @@ import { openRatioContextMenu } from '../../services/miscMenuService';
 import { machineryNextGifFrame, machineryPrevGifFrame } from '../../services/mediaService';
 
 import { machineryCancelCrop } from '../../services/imageOpsService';
-import { machineryToggleZoom, machineryZoomActual } from '../../services/viewOpsService';
+import { machineryToggleZoom, machineryZoomActual, machineryUpdateZoomRatio } from '../../services/viewOpsService';
 import { machineryToggleCommentMode } from '../../core/itemDomain';
 import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionViewDomain';
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
@@ -296,6 +296,21 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
                 const value = Number(e.target.value);
                 runInBodyScope(() => {
                   writeScopeField('sliderZoomRatio', value);
+                  syncDetailFromScope();
+                  // F24（实机 QA 2026-09-14）：原 Angular 侧 `$watch("sliderZoomRatio")` 的
+                  // listener（把滑条百分比落到 smoothZoom 引擎）未移植 —— 旧实现只写 scope
+                  // 字段 + syncDetailFromScope()，滑条数值/进度条会动，但 detailZoom 实例的
+                  // rA 与图像尺寸恒不变（实测拖到 150/40：rA 恒 0.73、img 恒 1076×788）＝
+                  // 用户报告「进入图像详情后拉缩放图像比例不变」。
+                  // 应用路径与 machineryZoomActual 同源：imageSize.zoomRatio(非 exp 空间) →
+                  // machineryUpdateZoomRatio → detailUpdateZoomRatio → zoomRatioExp +
+                  // detailZoom().focusTo({zoom, pageX, pageY, speed:0})。锚点不传 = 视口中心
+                  // （detailUpdateZoomRatio 对 undefined x/y 的既有语义），拖拽期间不加过渡。
+                  machineryUpdateZoomRatio(value, undefined, undefined, false);
+                  // detailUpdateZoomRatio 内部顺序是「先 set zoomRatio → sync → 再 set
+                  // zoomRatioExp」，本仓 sync*FromScope 是快照式（非 Angular digest 的
+                  // 二次触发）→ 右上角百分比徽标会固定滞后一次拖拽。补一次同步让 exp 值
+                  // 与滑条同帧落地。
                   syncDetailFromScope();
                 });
               }}

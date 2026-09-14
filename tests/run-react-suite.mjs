@@ -1,7 +1,8 @@
 /**
- * React 全量回归套件（65 项，顺序隔离执行）。
+ * React 全量回归套件（68 项，顺序隔离执行）。
  * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
+ * R0 起并入连续网格几何与滚动/自动定位两项（见数组内注释）。
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -24,6 +25,9 @@ const tests = [
   // P1-b：IPC 接缝（core/channelBridge）单路由不变量 —— 纯原生直通频道走 preload 通用 ipc、
   // 其余走 shims 总线，事件面前转。无 Electron、秒级。
   'tests/react-ipc-bridge-routing.mjs',
+  // R0：连续网格几何单元测试（纯 Node + typescript 内存转译，无 Electron、秒级）。
+  // 覆盖四布局 10,000 条的总高度/坐标/可见窗口与锚点还原。
+  'tests/continuous-grid-layout.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',
@@ -77,6 +81,9 @@ const tests = [
   'tests/native-preview-closed-loop.mjs',
   'tests/ui-interactions-closed-loop.mjs',
   'tests/residue-closed-loop.mjs',
+  // R0：连续网格滚动/自动定位闭环（600 条隔离库 + 全栈）。守护“全列表单一高度、
+  // 滚轮与滑块方向一致、停住不回跳、图片加载不改变坐标、AutoScroll 频道到离屏选中项”。
+  'tests/continuous-grid-scroll.mjs',
   // ── b1-9bz-D-3：10 项 React 状态→渲染闭环（store/scope 驱动 + 实测 DOM 断言）──
   'tests/d3-boot-render-closed-loop.mjs',
   'tests/d3-viewmode-closed-loop.mjs',

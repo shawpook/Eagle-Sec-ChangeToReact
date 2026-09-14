@@ -126,10 +126,13 @@ try {
   })()`);
   await assertExpr('b0-autoscroll-broadcast-ok', `!window.__eagleGridDirectiveErrors`);
 
-  // ── boxContainerScrollbar ──
-  await assertExpr('b0-scrollbar-thumb-style', `(() => {
-    const thumb = document.querySelector('#box-container-scrollbar .box-container-scrollbar-thumb');
-    return !!thumb && getComputedStyle(thumb).willChange === 'transform';
+  // ── boxContainerScrollbar：连续列表改造（195dc3ab）起改用原生滚动条 ──
+  // 旧自定义滚轴浮层被隐藏，不再以 thumb 的 will-change/transform 驱动
+  // （见 components/grid/gridDirectives.ts initBoxContainerScrollbar）。
+  await assertExpr('b0-scrollbar-native-overlay', `(() => {
+    const overlay = document.getElementById('box-container-scrollbar');
+    const container = document.getElementById('box-container');
+    return !!overlay && overlay.hidden === true && !!container && !container.classList.contains('hide-scrollbar');
   })()`);
   await evalNow(`(() => {
     const bar = document.getElementById('box-container-scrollbar');
@@ -141,10 +144,15 @@ try {
     return !!bar && getComputedStyle(bar).display === 'none';
   })()`);
 
-  // ── scrollToTopSentinel 初始化样式 ──
+  // ── scrollToTopSentinel 初始化契约 ──
+  // React 版不再写内联 height:1px/opacity:0（旧 Angular 指令行为），改为属性接线 +
+  // 顶部时目标 #scroll-to-top 不带 show（见 gridDirectives.initScrollToTopSentinel）。
   await assertExpr('b0-sentinel-init', `(() => {
     const el = document.getElementById('scroll-to-top-sentinel');
-    return !!el && el.style.height === '1px' && el.style.opacity === '0';
+    if (!el) return false;
+    if (el.getAttribute('scroll-container') !== '#box-container') return false;
+    const target = document.getElementById('scroll-to-top');
+    return !target || !target.classList.contains('show');
   })()`);
 
   // ── 属性移除核验 ──

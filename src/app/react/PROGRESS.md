@@ -8273,3 +8273,31 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 `npm test`/`test:isolated` 宿主限制（`roadmap-panels` 的 `fs.cpSync` 缺陷）；
 `browser-capture-electron-extension-e2e` 端口占用 BLOCKED；P2 详情门控为可见行为变化待实机走查；
 **shims.js 与 mock-data.js 已删除**（E9，P4-b/P5 完成）：启动契约迁 `core/shimsLegacy.ts`（React 模块图内，~2.9k 行）——其 Angular 死代码清扫与 browser arms 独立拆分留作后续纯重构（无行为差异）。
+
+- **R0（本批，基线收束 / 入口台账 / 测试门禁）**：新阶段编号 **R0–R7** 依
+  `docs/2026-09-14_frontend-migration-remaining-report.md`；本批只做 **R0**，交付入口台账、
+  类型基线门禁与连续网格套件接入，**不改业务行为**。
+  - **入口台账**：新增 `docs/frontend-entry-ledger-2026-09-14.md`——17 类交付入口登记
+    （URL / HTML 来源 / React 入口 / 父子窗口 / 专用引擎 / 开发·生产加载方式）；登记主界面仍载
+    旧脚本（`src/app/index.html:195,196,241,245,247-249`）、`frontend/public` 整目录复制进产物的
+    开发资产（mock-library / mock-assets）、文本编辑页**同路径两套实现**冲突
+    （`frontend/public/src/app/text-editor/text-editor.html:28` → `text-editor.js`）。
+  - **死链处置**：`frontend/public/pages.html` 移除指向缺失 `/src/app/progress.html` 的链接。
+  - **套件接入**：`tests/continuous-grid-layout.mjs`（纯 Node + typescript 内存转译，无 Electron）
+    与 `tests/continuous-grid-scroll.mjs`（600 条隔离库全栈 + AutoScroll 频道闭环）并入
+    `tests/run-react-suite.mjs`（**66 → 68**）；新增 npm 脚本 `test:continuous-grid`、`test:react-suite`。
+  - **陈旧断言纠正（非 R0 引入）**：全套 68 项首跑得 1 项失败——`react-stage11b0-smoke.mjs` 的
+    `b0-scrollbar-thumb-style`（断言旧自定义滚轴 thumb 的 `will-change: transform`）与
+    `b0-sentinel-init`（断言 sentinel 内联 `height:1px/opacity:0`）在**基点提交 `195dc3ab`**
+    的连续列表/原生滚动条改造后即已失效（`gridDirectives.ts` 最后改动即 `195dc3ab`；该改造
+    明确隐藏旧滚轴浮层）。已按**新契约**改写为 `b0-scrollbar-native-overlay`（浮层 `hidden` +
+    容器无 `hide-scrollbar`）与 sentinel 属性接线/顶部不显示，**不是放宽断言**；单跑
+    `react-stage11b0-smoke` 8/8 PASS。
+  - **验证**：`continuous-grid-layout` 四布局 PASS；`continuous-grid-scroll` exit 0；
+    `typecheck-baseline` TYPECHECK_OK；`react-rewrite-sentinel` SENTINEL_OK；`d3-selection` /
+    `d3-focus` / `d3-alltags-view` / `library-switch-ui` 均 OK；`react-stage11b0-smoke` 8/8 PASS。
+    全套 68 项首跑唯一失败项即上述 stage11b0（已修）；**未在修正后重跑全套**，绿以各项单跑为准
+    （`main-ui-workflow` 在套件内 1 次偶发失败经重试转绿，属已知低频变体）。
+  - **口径（重要）**：R0 完成 **≠** 类型验收——存量 492 条未清零、`frontend/document-viewer` 未纳入
+    检查、16 个有效 `@ts-nocheck` 未撤销；最终 0 诊断在 **R3**（见批次计划 R3）。R1–R7 见
+    `docs/frontend-batch-plan-R0-R7-2026-09-14.md`。

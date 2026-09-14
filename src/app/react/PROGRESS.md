@@ -8798,3 +8798,27 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`menu-popup`（含 folder/smart-folder
   右键菜单的 labelCount/子菜单断言）、`d3-selection` 全绿。
 - **剩余 3 个文件**：`core/{hoverPreview 273, smoothZoomEngine 292, eagleClasses 297}`（共 862 条）。
+
+### R3 收尾：撤销 `@ts-nocheck`（第六批：hoverPreview，273 条）
+
+- **撤销对象**：`core/hoverPreview.ts`（273 条清零，删除 `// @ts-nocheck`）。累计已撤销
+  **10 个**（808+273 = 1081 条），台账 10 个（8 个 `core/shim/*` + 2 个待撤销）。
+- **该文件的诊断高度同构**（vendor hover-preview 全量搬迁，内含 YouTube/Vimeo 两套近乎重复的
+  播放器分支），故用**模式化替换**而非逐处手改，几类一次性收口：
+  - `^var x;$` 未初始化声明 → `var x: any;`（22 处，消掉 TS7034/TS7005 成对报错）。
+  - jQuery `on(...)`/`each(...)` 回调 → `function(this: any, event: any) {`（60 处）：
+    这些回调里 `this` 指向 DOM 元素（jQuery 绑定语义），加 `this` 类型注解即可，运行期不变。
+  - `parseInt/parseFloat(数值或变量)` → 包 `String(...)`（9 处，等价：二者本就把实参转字符串）；
+    `localStorage.setItem(key, 布尔)` → `String(布尔)`（3 处，等价：隐式强转即 "true"/"false"）。
+  - 状态容器补类型：`HoverPreview`、`_ytPlayerState`/`_vimeoPlayerState`（`= {}` 推断成 `{}`
+    导致 60+ 条「Property … does not exist on type '{}'」）、`topArea/bottomArea/leftArea/
+    rightArea/finalArea`、`mpvElement`（`createElement("mpv-video")` 推断成 `HTMLElement`，
+    缺 `autoplay/volume/duration/currentTime/pause/play`）、`data`（`{ method }` 后补 `value`）。
+  - 签名改可选而非调用点硬塞：`vimeoPostMessage(..., value?)`、`ytPostCommand(..., args?)`
+    （各有多处两参调用）。
+  - 元素私有字段 `sentinel._hoverBox` → 显式 `(sentinel as any)._hoverBox`（3 处，vendor 在 DOM
+    元素上挂私有字段，不做全局 `Element` 接口扩展以免放宽整仓检查）。
+  - ambient：`throttle`（bundle 版签名 fn/delay/immediate，与 `utils/func` 版不同，故不换导入）、
+    `rectSelecting`、`FileUrlHelper`、`currentWindow`、`EagleConfig`。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`react-stage11b0-smoke`、
+  `d3-detail-mode` 全绿。

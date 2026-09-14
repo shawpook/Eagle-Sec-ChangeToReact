@@ -10,13 +10,18 @@
  * openItemContextMenu 与 controllerFns 清理点同源）。vendor 脚本与 c16b fetch 注入/
  * if-absent 重复定义随本批退役；install 由 bundleGlobals 在 _throttle 挂载后同步调用。
  */
-// @ts-nocheck
 import { getRawUrl } from './itemDomain';
 
 import { dom } from '../utils/domLite';
 
 import { machineryGetItemByElement } from './itemDomain';
 const _w: any = window as any;
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const throttle: any;
+declare const rectSelecting: any;
+declare const FileUrlHelper: any;
+declare const currentWindow: any;
+declare const EagleConfig: any;
 import { getWindowScope } from './scopeFace';
 // b1-9bz-E5-3：原 window 上 body scope 直读 → 本窗 scope 面访问器（主窗 store 面 / 预览窗 controllerScope）。
 function ws(): any { return getWindowScope(); }
@@ -34,9 +39,9 @@ var hoverPreviewObserver = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
         if (!entry.isIntersecting) {
             var sentinelEl = entry.target;
-            var $box = dom(sentinelEl).closest('.box');
-            if (!$box.length && sentinelEl._hoverBox) {
-                $box = dom(sentinelEl._hoverBox);
+            var $box: any = dom(sentinelEl).closest('.box');
+            if (!$box.length && (sentinelEl as any)._hoverBox) {
+                $box = dom((sentinelEl as any)._hoverBox);
             }
             // box 還在被 hover 時不由 observer 清理，避免 cleanup→mouseenter 循環
             if ($box.length && $box.is(':hover')) return;
@@ -45,12 +50,12 @@ var hoverPreviewObserver = new IntersectionObserver(function (entries) {
         }
     });
 }, { threshold: [0] });
-var mouseoverAudioTimeout;
-var updateCursorInterval;
-var mouseoverAudioProgressTimeout;   // b1-9bu-A：提取片缺失声明补齐（vendor:116 裸引用全仓无声明）
+var mouseoverAudioTimeout: any;
+var updateCursorInterval: any;
+var mouseoverAudioProgressTimeout: any;   // b1-9bu-A：提取片缺失声明补齐（vendor:116 裸引用全仓无声明）
 _w.HoverPreviewKeydown = false;
 
-function cleanupBoxHoverPreview($box) {
+function cleanupBoxHoverPreview($box: any) {
     if (!$box || !$box.length || !$box.hasClass('hover-active')) return;
     $box.removeClass('hover-active');
     clearTimeout($box[0]._spinnerTimeout);
@@ -60,25 +65,25 @@ function cleanupBoxHoverPreview($box) {
     $image.show();
 
     // Video — pause 停渲染 → remove 脫離 DOM → 清 src 釋放資源
-    $thumbnail.find('video').each(function () {
+    $thumbnail.find('video').each(function (this: any) {
         try { this.pause(); } catch (e) {}
         dom(this).remove();
         try { this.src = ''; this.load(); } catch (e) {}
     });
 
     // MPV
-    $thumbnail.find('mpv-video').each(function () {
+    $thumbnail.find('mpv-video').each(function (this: any) {
         try { this.destroy(); } catch (e) {}
     }).remove();
 
     // Audio
-    $thumbnail.find('audio').each(function () {
+    $thumbnail.find('audio').each(function (this: any) {
         try { this.pause(); this.src = ''; } catch (e) {}
     }).remove();
     _w.playingAudiosElements = [];
 
     // Iframe (YouTube/Vimeo)
-    $thumbnail.find('.iframe-wrap').each(function () {
+    $thumbnail.find('.iframe-wrap').each(function (this: any) {
         try { dom(this).find('iframe')[0].src = ''; } catch (e) {}
     }).remove();
 
@@ -96,15 +101,15 @@ function cleanupBoxHoverPreview($box) {
 }
 
 
-function startHoverPreviewWatch($box) {
-    $box.find('.hover-sentinel').each(function () {
+function startHoverPreviewWatch($box: any) {
+    $box.find('.hover-sentinel').each(function (this: any) {
         hoverPreviewObserver.unobserve(this);
         dom(this).remove();
     });
     $box.addClass('hover-active');
     var sentinel = document.createElement('div');
     sentinel.className = 'hover-sentinel';
-    sentinel._hoverBox = $box[0];
+    (sentinel as any)._hoverBox = $box[0];
     $box.find('.thumbnail').append(sentinel);
     requestAnimationFrame(function () {
         hoverPreviewObserver.observe(sentinel);
@@ -113,13 +118,13 @@ function startHoverPreviewWatch($box) {
 
 
 function removePlayingAudios () {
-    dom('#box-container .box.hover-active').each(function () {
+    dom('#box-container .box.hover-active').each(function (this: any) {
         cleanupBoxHoverPreview(dom(this));
     });
 };
 
 
-function removeBoxAudioPlayer (event) {
+function removeBoxAudioPlayer (event: any) {
     
     if (event) {
         if (event.originalEvent) {
@@ -152,7 +157,7 @@ function removeBoxAudioPlayer (event) {
     $box.find(".controls").remove();
 
     if (_w.playingAudiosElements.length > 0) {
-        _w.playingAudiosElements.forEach(function (audio) {
+        _w.playingAudiosElements.forEach(function (audio: any) {
             audio.pause();
             audio.src = "";
             dom(audio).remove();
@@ -162,7 +167,7 @@ function removeBoxAudioPlayer (event) {
 }
 
 
-var HoverPreview = {
+var HoverPreview: any = {
     isShow: false,
     lastElem: undefined,
     keyupTimeout: undefined,
@@ -174,7 +179,7 @@ var HoverPreview = {
     defaultDelay: 200,
     // 獲取元素對應的延遲時間
     // 優先檢查元素的 data-hover-delay 屬性，如果沒有則使用預設值
-    getDelay: function(element) {
+    getDelay: function(element: any) {
         var $element = dom(element);
         // 先檢查元素本身或其父元素是否有 data-hover-delay 屬性
         var delayAttr = $element.attr('data-hover-delay') || $element.closest('[data-hover-delay]').attr('data-hover-delay');
@@ -186,7 +191,7 @@ var HoverPreview = {
         }
         return this.defaultDelay;
     },
-    show: function (event) {
+    show: function (event: any) {
         if (!HoverPreview.lastElem) return;
         if (HoverPreview.isShow) return;
         if (dom("input:focus").length > 0) { return; }
@@ -198,7 +203,7 @@ var HoverPreview = {
         var image = machineryGetItemByElement(HoverPreview.lastElem.parentElement);
         if (image.noPreview) return;
         var thumbnailPath = FileUrlHelper.getLastestThumbnailUrl(image);
-        var offset = dom(HoverPreview.lastElem).offset();
+        var offset: any = dom(HoverPreview.lastElem).offset();
         var x = offset.left;
         var y = offset.top;
         var width = Math.min(480, image.width);
@@ -212,9 +217,9 @@ var HoverPreview = {
         var imageWidth = 0;
         var imageHeight = 0;
 
-        var getMaxImageSizeRatio = function (w1, h1, w2, h2) {
+        var getMaxImageSizeRatio = function (w1: any, h1: any, w2: any, h2: any) {
             if (w2 > w1 && h2 > h1) return 1;
-            var ratio;
+            var ratio: any;
             if (w2 < h2) {
                 ratio = h1/h2;
             }
@@ -254,14 +259,14 @@ var HoverPreview = {
         $hoverImage.attr("src", thumbnailPath);
 
         // 计算上下左右哪一个区域，图片可以最大呈现
-        var topArea = { name: "top", x: 0, y: 0, w: windowWidth, h: y };
-        var bottomArea = { name: "bottom", x: 0, y: y + boxHeight, w: windowWidth, h: windowHeight - y - boxHeight };
-        var leftArea = { name: "left", x: 0, y: 0, w: x, h: windowHeight };
-        var rightArea = { name: "right", x: x + boxWidth, y: 0, w: windowWidth - boxWidth - x, h: windowHeight };
+        var topArea: any = { name: "top", x: 0, y: 0, w: windowWidth, h: y };
+        var bottomArea: any = { name: "bottom", x: 0, y: y + boxHeight, w: windowWidth, h: windowHeight - y - boxHeight };
+        var leftArea: any = { name: "left", x: 0, y: 0, w: x, h: windowHeight };
+        var rightArea: any = { name: "right", x: x + boxWidth, y: 0, w: windowWidth - boxWidth - x, h: windowHeight };
 
-        var maxDisplayWidthArea;
-        var maxDisplayHeightArea;
-        var finalArea;
+        var maxDisplayWidthArea: any;
+        var maxDisplayHeightArea: any;
+        var finalArea: any;
 
         if (topArea.h > bottomArea.h) {
             maxDisplayWidthArea = topArea;
@@ -317,7 +322,7 @@ var HoverPreview = {
         // 图靠上，y 轴位置 = 当前缩图 y - 放大后图片高
         // 图靠下，y 轴位置 = 当前缩图 y + 缩图高
         // finalArea.ratio = Math.min(finalArea.ratio, 1);
-        var transform;
+        var transform: any;
         if (finalArea.name === "top") {
             imageWidth = Math.min(finalArea.w, image.width);
             imageHeight = Math.min(finalArea.h, imageWidth / image.width * image.height, image.height);
@@ -380,7 +385,7 @@ var HoverPreview = {
             imageX = x;
         }
 
-        var ofy;
+        var ofy: any;
         if (imageY + imageHeight > windowHeight) {
             ofy = (imageY + imageHeight) - windowHeight;
             imageY -= ofy;
@@ -390,7 +395,7 @@ var HoverPreview = {
             imageY = 10;
         }
 
-        var ofx;
+        var ofx: any;
         if (imageX + imageWidth > windowWidth) {
             ofx = (imageX + imageWidth) - windowWidth;
             imageX -= ofx;
@@ -414,7 +419,7 @@ var HoverPreview = {
         }
 
         $hoverImage.css({
-            height: parseInt(imageHeight),
+            height: parseInt(String(imageHeight)),
             // transform: transform,
             // opacity: 0,
         });
@@ -457,7 +462,7 @@ var HoverPreview = {
     }
 };
 
-// $("#box-container").on('mouseover', '.box .thumbnail', function(event) {
+// $("#box-container").on('mouseover', '.box .thumbnail', function(this: any, event: any) {
 //     clearTimeout(HoverPreview.keyupTimeout);
 //     HoverPreview.lastElem = this;
 
@@ -467,14 +472,14 @@ var HoverPreview = {
 //     }
 // });
 
-// $("#box-container").on('mouseleave', '.box .thumbnail', function(event) {
+// $("#box-container").on('mouseleave', '.box .thumbnail', function(this: any, event: any) {
 //     if (HoverPreview.lastElem) {
 //         HoverPreview.hide();
 //     }
 //     HoverPreview.lastElem = undefined;
 // });
 
-dom("body").on('mouseover', '.box', throttle(function(event) {
+dom("body").on('mouseover', '.box', throttle(function(this: any, event: any) {
     event.stopPropagation();
     clearTimeout(HoverPreview.keyupTimeout);
     let thumbnail = dom(this).find(".thumbnail")[0];
@@ -485,7 +490,7 @@ dom("body").on('mouseover', '.box', throttle(function(event) {
     }
 }, 200, true));
 
-dom("body").on('mouseleave', '.box', throttle(function(event) {
+dom("body").on('mouseleave', '.box', throttle(function(this: any, event: any) {
     event.stopPropagation();
     if (HoverPreview.lastElem) {
         HoverPreview.hide();
@@ -494,7 +499,7 @@ dom("body").on('mouseleave', '.box', throttle(function(event) {
 }, 200, true));
 
 
-dom("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
+dom("body").on('mouseover', '.box .thumbnail .zoom-btn', function(this: any, event: any) {
     if (ws().preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         
@@ -511,7 +516,7 @@ dom("body").on('mouseover', '.box .thumbnail .zoom-btn', function(event) {
     }
 });
 
-dom("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
+dom("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(this: any, event: any) {
     if (ws().preferences.habits.hoverZoom === "on") {
         clearTimeout(HoverPreview.zoomBtnTimeout);
         if (HoverPreview.lastElem) {
@@ -525,11 +530,11 @@ dom("body").on('mouseleave', '.box .thumbnail .zoom-btn', function(event) {
 
 // ── b1-9bu-A：Z 键监听回填（js/hover-preview.js 361-387 逐字；b1-9am 提取片缺失段，
 // Z 键悬停预览自 React 切换起死——本段即复活路径；scope 面/HoverPreviewKeydown → _w）──
-dom(window).on("keydown.hover-preview", function (event) {
+dom(window).on("keydown.hover-preview", function (event: any) {
     if (_w.HoverPreviewKeydown || event.ctrlKey || event.metaKey || event.shiftKey) return;
 
     // Check the currently focused element
-    const focusedElement = document.activeElement;
+    const focusedElement: any = document.activeElement;
     const tagName = focusedElement.tagName.toLowerCase();
 
     // Check if the focused element is an input, textarea, select, or contenteditable
@@ -545,7 +550,7 @@ dom(window).on("keydown.hover-preview", function (event) {
     }
 });
 
-dom(window).on("keyup.hover-preview", function (event) {
+dom(window).on("keyup.hover-preview", function (event: any) {
     if (event.ctrlKey || event.metaKey || event.shiftKey) return;
     if (event.keyCode === 90) {
         _w.HoverPreviewKeydown = false;
@@ -565,9 +570,9 @@ dom(window).on("keyup.hover-preview", function (event) {
 // ── disarmHoverSentinel（video-hover-preview.js 78-84 逐字；vendor 提取片缺失，
 // 本模块 removeBoxAudioPlayer 裸调用的哑雷随本批拆除）──
 
-function disarmHoverSentinel($box) {
+function disarmHoverSentinel($box: any) {
     $box.removeClass('hover-active');
-    $box.find('.hover-sentinel').each(function () {
+    $box.find('.hover-sentinel').each(function (this: any) {
         hoverPreviewObserver.unobserve(this);
         dom(this).remove();
     });
@@ -576,12 +581,12 @@ function disarmHoverSentinel($box) {
 var mouseX;   // bundle 隐式全局显式化（strict 模式裸赋值即炸）
 
 // MP4 文件悬停自动播放
-var mouseoverVideoTimeout;
-var updateVideoCursorInterval;
-var videoHoverSelector = EagleConfig.VIDEO_FORMATS.map(function(ext) {
+var mouseoverVideoTimeout: any;
+var updateVideoCursorInterval: any;
+var videoHoverSelector = EagleConfig.VIDEO_FORMATS.map(function(ext: any) {
     return '.box.ext-' + ext + ' .thumbnail';
 }).join(', ');
-dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
+dom("#box-container").on('mouseenter', videoHoverSelector, function(this: any, event: any) {
     event.stopPropagation();
 
     // 避免拖拽时重复触发又在背景无限播放
@@ -645,11 +650,11 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
         $controls.hide();
 
         var volume = localStorage.getItem("eagle.videoPlayer.volume") || 100;
-        video[0].volume = parseInt(volume) / 100;
+        video[0].volume = parseInt(String(volume)) / 100;
 
         if ($box.find("video").length === 0) {
 
-            video.on('dragstart', function (event) {
+            video.on('dragstart', function (event: any) {
                 event.preventDefault();
                 _w.onDragStartContainer?.(event);
             });
@@ -664,13 +669,13 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 _w.onDragEndContainer?.(event);
             });
 
-            video.on('mouseover', function (event) {
+            video.on('mouseover', function (event: any) {
                 event.stopPropagation();
             });
 
-            var autoPlayTimeout;
-            var currentTimeTimeout;
-            video.on('mousemove', throttle(function (event) {
+            var autoPlayTimeout: any;
+            var currentTimeTimeout: any;
+            video.on('mousemove', throttle(function (event: any) {
                 if (rectSelecting) return;
                 mouseX = event.offsetX;
                 var duration = video.get(0).duration;
@@ -687,7 +692,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
                 mouseTime = Math.round(mouseTime * 100) / 100;
                 if (mouseTime && !isNaN(mouseTime) && isFinite(mouseTime)) {
-                    _w.videoHelper.setCurrentTime(video.get(0), parseFloat(mouseTime));
+                    _w.videoHelper.setCurrentTime(video.get(0), parseFloat(String(mouseTime)));
                     video.get(0).pause();
                     clearTimeout(autoPlayTimeout);
                     autoPlayTimeout = setTimeout(function () {
@@ -712,19 +717,19 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
             }
             video.hide();
 
-            $muteToggle.on("mousedown", function (event) {
+            $muteToggle.on("mousedown", function (event: any) {
                 event.stopPropagation();
             });
 
-            $muteToggle.on("dblclick", function (event) {
+            $muteToggle.on("dblclick", function (event: any) {
                 event.stopPropagation();
             });
 
-            $muteToggle.on("mouseover", function (event) {
+            $muteToggle.on("mouseover", function (event: any) {
                 event.stopPropagation();
             });
 
-            $muteToggle.on("click", function (event) {
+            $muteToggle.on("click", function (event: any) {
                 console.log("click");
                 event.stopPropagation();
                 video.get(0).muted = !video.get(0).muted;
@@ -735,7 +740,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 else {
                     $muteToggle.removeClass("muted");
                 }
-                localStorage.setItem("eagle.list.video.muted", muted);
+                localStorage.setItem("eagle.list.video.muted", String(muted));
             });
 
             var $spinner = dom('<div class="video-loading-spinner"></div>');
@@ -771,7 +776,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
             // if (mouseTime) {
             //     video.get(0).muted = muted;
-            //     video.get(0).currentTime = parseFloat(mouseTime);
+            //     video.get(0).currentTime = parseFloat(String(mouseTime));
             // }
 
             
@@ -806,12 +811,12 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 dom(nativeVideoEl).remove();
 
                 // 建立 <mpv-video> 元素（不設定 controls，不顯示 control bar）
-                var mpvElement = document.createElement("mpv-video");
+                var mpvElement: any = document.createElement("mpv-video");
                 mpvElement.src = getRawUrl(image);
                 mpvElement.autoplay = true;
                 mpvElement.muted = muted;
                 mpvElement.loop = true;
-                mpvElement.volume = parseInt(volume) / 100;
+                mpvElement.volume = parseInt(String(volume)) / 100;
 
                 // 尺寸與原生 video 相同
                 var $mpv = dom(mpvElement);
@@ -842,9 +847,9 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 });
 
                 // 重新綁定 mousemove 事件（滑鼠拖曳 seek）
-                var autoPlayTimeout;
-                var currentTimeTimeout;
-                $mpv.on('mousemove', throttle(function (event) {
+                var autoPlayTimeout: any;
+                var currentTimeTimeout: any;
+                $mpv.on('mousemove', throttle(function (event: any) {
                     if (rectSelecting) return;
                     mouseX = event.offsetX;
                     var duration = mpvElement.duration;
@@ -861,7 +866,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
                     mouseTime = Math.round(mouseTime * 100) / 100;
                     if (mouseTime && !isNaN(mouseTime) && isFinite(mouseTime)) {
-                        mpvElement.currentTime = parseFloat(mouseTime);
+                        mpvElement.currentTime = parseFloat(String(mouseTime));
                         mpvElement.pause();
                         clearTimeout(autoPlayTimeout);
                         autoPlayTimeout = setTimeout(function () {
@@ -875,7 +880,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                 }, 50, true));
 
                 // drag 事件
-                $mpv.on('dragstart', function (event) {
+                $mpv.on('dragstart', function (event: any) {
                     event.preventDefault();
                     _w.onDragStartContainer?.(event);
                 });
@@ -887,13 +892,13 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
                     event.preventDefault();
                     _w.onDragEndContainer?.(event);
                 });
-                $mpv.on('mouseover', function (event) {
+                $mpv.on('mouseover', function (event: any) {
                     event.stopPropagation();
                 });
             }
 
             // Layer 1: error 事件 → 立即 fallback
-            function onNativeVideoError(event) {
+            function onNativeVideoError(event: any) {
                 if (!nativeVideoEl.error) return;
                 // 忽略 cleanup 時 src='' 觸發的 Empty src error
                 if (nativeVideoEl.error.message && nativeVideoEl.error.message.indexOf('Empty src') > -1) return;
@@ -931,7 +936,7 @@ dom("#box-container").on('mouseenter', videoHoverSelector, function(event) {
 
 dom("#box-container").on('mouseleave', videoHoverSelector, removeBoxVideoPlayer);
 
-function removeBoxVideoPlayer(event) {
+function removeBoxVideoPlayer(this: any, event: any) {
     event.stopPropagation();
     var $box = dom(".box").has(this);
     disarmHoverSentinel($box);
@@ -965,7 +970,7 @@ function removeBoxVideoPlayer(event) {
 }
 
 // ── audio 悬停播放（audio-hover-preview.js 7-167/169 逐字）──
-dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', function(event) {
+dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail, .box.flac .thumbnail, .box.ogg .thumbnail, .box.aac .thumbnail, .box.m4a .thumbnail', function(this: any, event: any) {
     event.stopPropagation();
 
     // if (dragging) return;
@@ -1025,25 +1030,25 @@ dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail
         $controls.append($autoPlayBtn);
         
         var volume = localStorage.getItem("eagle.videoPlayer.volume") || 100;
-        audio[0].volume = parseInt(volume) / 100;
+        audio[0].volume = parseInt(String(volume)) / 100;
 
         _w.playingAudiosElements.push(audio[0]);
 
         if ($box.find("audio").length === 0) {
 
-            $autoPlayBtn.on("mouseover", function (event) {
+            $autoPlayBtn.on("mouseover", function (event: any) {
                 event.stopPropagation();
             });
 
-            $autoPlayBtn.on("mousedown", function (event) {
+            $autoPlayBtn.on("mousedown", function (event: any) {
                 event.stopPropagation();
             });
 
-            $autoPlayBtn.on("dblclick", function (event) {
+            $autoPlayBtn.on("dblclick", function (event: any) {
                 event.stopPropagation();
             });
 
-            $autoPlayBtn.on("click", function (event) {
+            $autoPlayBtn.on("click", function (event: any) {
                 console.log("click");
                 event.stopPropagation();
                 // audio.get(0).muted = !audio.get(0).muted;
@@ -1058,13 +1063,13 @@ dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail
                     $autoPlayBtn.addClass("pause");
                     autoplay = true;
                 }
-                localStorage.setItem("listAudioAutoPlay", autoplay);
+                localStorage.setItem("listAudioAutoPlay", String(autoplay));
             });
 
             $box.find(".thumbnail").prepend($controls);
 
-            audio.on('ended', function() {
-                var delay = setTimeout(function(){
+            audio.on('ended', function(this: any) {
+                var delay = setTimeout(function(this: any){
                     this.currentTime = 0;
                     audio[0].play();
                     clearTimeout(delay);
@@ -1074,14 +1079,14 @@ dom("#box-container").on('mouseenter', '.box.mp3 .thumbnail, .box.wav .thumbnail
             audio.on('playing', function() {
                 mouseoverAudioProgressTimeout = setTimeout(function () {
                     $box.find(".thumbnail").prepend($progressbar).prepend($progressbarCurosr);
-                    $image.on('mousemove.progressCursor', function (event) {
+                    $image.on('mousemove.progressCursor', function (event: any) {
                         var mouseX = event.offsetX;
                         $progressbarCurosr.css({
                             left: `${mouseX}px`
                         });
                     });
                     setTimeout(function () {
-                        $image.on('mousedown.duration', function (event) {
+                        $image.on('mousedown.duration', function (event: any) {
                             var mouseX = event.offsetX;
                             var duration = audio.get(0).duration;
                             var mouseTime = (duration * mouseX / $image.width());
@@ -1138,14 +1143,14 @@ currentWindow.on('hide', removePlayingAudios);   // b1-9bu-B：窗口隐藏即�
 // 清理引用与 handlers 同 install 作用域（var 提升语义一致）。
 
 // ── youtube 悬停预览（全文逐字）──
-var youtubeMouseoverVideoTimeout;
-var youtubeUpdateVideoCursorInterval;
+var youtubeMouseoverVideoTimeout: any;
+var youtubeUpdateVideoCursorInterval: any;
 
 // === YouTube postMessage API helpers ===
 // 使用 postMessage 與 YouTube iframe 通訊，避免跨域 DOM 存取導致 renderer crash
-var _ytPlayerState = {};
+var _ytPlayerState: any = {};
 
-function ytPostCommand(iframe, func, args) {
+function ytPostCommand(iframe: any, func: any, args?: any) {
     if (!iframe || !iframe.contentWindow) return;
     var msg = { event: 'command', func: func, args: args || [] };
     try {
@@ -1153,9 +1158,9 @@ function ytPostCommand(iframe, func, args) {
     } catch (err) {}
 }
 
-function _onYouTubeMessage(event) {
+function _onYouTubeMessage(event: any) {
     if (!event.data) return;
-    var data;
+    var data: any;
     if (typeof event.data === 'string') {
         try { data = JSON.parse(event.data); } catch (e) { return; }
     } else if (typeof event.data === 'object') {
@@ -1205,7 +1210,7 @@ function _onYouTubeMessage(event) {
 
 window.addEventListener('message', _onYouTubeMessage);
 
-dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(event) {
+dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(this: any, event: any) {
     event.stopPropagation();
 
     if (rectSelecting) return;
@@ -1309,29 +1314,29 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
         });
 
         // Drag 事件
-        $iframeWrap.on('dragstart', function (event) {
+        $iframeWrap.on('dragstart', function (event: any) {
             event.preventDefault();
             _w.onDragStartContainer?.(event);
         });
 
-        $iframeWrap.on('drag', function (event) {
+        $iframeWrap.on('drag', function (event: any) {
             event.preventDefault();
             _w.onImageDrag?.(event);
         });
 
-        $iframeWrap.on('dragend', function (event) {
+        $iframeWrap.on('dragend', function (event: any) {
             event.preventDefault();
             _w.onDragEndContainer?.(event);
         });
 
-        $iframeWrap.on('mouseover', function (event) {
+        $iframeWrap.on('mouseover', function (event: any) {
             event.stopPropagation();
         });
 
         // Mousemove seeking — 透過 postMessage 控制
-        var autoPlayTimeout;
-        var seekResumeTimeout;
-        $iframeWrap.on('mousemove', throttle(function (event) {
+        var autoPlayTimeout: any;
+        var seekResumeTimeout: any;
+        $iframeWrap.on('mousemove', throttle(function (event: any) {
             mouseX = event.offsetX;
             var duration = _ytPlayerState.duration;
             if (!duration || !isFinite(duration) || duration <= 0) return;
@@ -1349,7 +1354,7 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
             mouseTime = Math.round(mouseTime * 100) / 100;
             if (mouseTime && !isNaN(mouseTime) && isFinite(mouseTime)) {
                 $currentTime.html(_w.getDurationString(mouseTime, duration));
-                ytPostCommand(iframe, 'seekTo', [parseFloat(mouseTime), true]);
+                ytPostCommand(iframe, 'seekTo', [parseFloat(String(mouseTime)), true]);
                 ytPostCommand(iframe, 'pauseVideo');
                 clearTimeout(autoPlayTimeout);
                 autoPlayTimeout = setTimeout(function () {
@@ -1381,19 +1386,19 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
         }, 16);
 
         // 靜音按鈕 — 透過 postMessage 控制
-        $muteToggle.on("mousedown", function (event) {
+        $muteToggle.on("mousedown", function (event: any) {
             event.stopPropagation();
         });
 
-        $muteToggle.on("dblclick", function (event) {
+        $muteToggle.on("dblclick", function (event: any) {
             event.stopPropagation();
         });
 
-        $muteToggle.on("mouseover", function (event) {
+        $muteToggle.on("mouseover", function (event: any) {
             event.stopPropagation();
         });
 
-        $muteToggle.on("click", function (event) {
+        $muteToggle.on("click", function (event: any) {
             event.stopPropagation();
             muted = !muted;
             _ytPlayerState.muted = muted;
@@ -1403,13 +1408,13 @@ dom("#box-container").on('mouseenter', '.box.url.youtube .thumbnail', function(e
             } else {
                 $muteToggle.removeClass("muted");
             }
-            localStorage.setItem("eagle.list.video.muted", muted);
+            localStorage.setItem("eagle.list.video.muted", String(muted));
         });
 
     }, 200);
 });
 
-dom("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(event) {
+dom("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(this: any, event: any) {
     event.stopPropagation();
     let $box = dom(".box").has(this);
     disarmHoverSentinel($box);
@@ -1442,27 +1447,27 @@ dom("#box-container").on('mouseleave', '.box.url.youtube .thumbnail', function(e
 });
 
 // ── vimeo 悬停预览（全文逐字）──
-var vimeoMouseoverVideoTimeout;
-var vimeoUpdateVideoCursorInterval;
+var vimeoMouseoverVideoTimeout: any;
+var vimeoUpdateVideoCursorInterval: any;
 
 // === Vimeo postMessage API helpers ===
 // 使用 postMessage 與 Vimeo iframe 通訊，避免跨域 DOM 存取導致 renderer crash
-var _vimeoPlayerState = {};
+var _vimeoPlayerState: any = {};
 
-function vimeoPostMessage(iframe, method, value) {
+function vimeoPostMessage(iframe: any, method: any, value?: any) {
     if (!iframe || !iframe.contentWindow) return;
-    var data = { method: method };
+    var data: any = { method: method };
     if (value !== undefined) data.value = value;
     try {
         iframe.contentWindow.postMessage(JSON.stringify(data), '*');
     } catch (err) {}
 }
 
-function _onVimeoMessage(event) {
+function _onVimeoMessage(event: any) {
     if (!event.data || typeof event.data !== 'string') return;
     // 只處理來自 Vimeo 的訊息
     if (event.origin && !/^https?:\/\/player\.vimeo\.com/.test(event.origin)) return;
-    var data;
+    var data: any;
     try { data = JSON.parse(event.data); } catch (e) { return; }
 
     var state = _vimeoPlayerState;
@@ -1498,7 +1503,7 @@ function _onVimeoMessage(event) {
 
 window.addEventListener('message', _onVimeoMessage);
 
-dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(event) {
+dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(this: any, event: any) {
     event.stopPropagation();
 
     if (rectSelecting) return;
@@ -1599,29 +1604,29 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
         });
 
         // Drag 事件
-        $iframeWrap.on('dragstart', function (event) {
+        $iframeWrap.on('dragstart', function (event: any) {
             event.preventDefault();
             _w.onDragStartContainer?.(event);
         });
 
-        $iframeWrap.on('drag', function (event) {
+        $iframeWrap.on('drag', function (event: any) {
             event.preventDefault();
             _w.onImageDrag?.(event);
         });
 
-        $iframeWrap.on('dragend', function (event) {
+        $iframeWrap.on('dragend', function (event: any) {
             event.preventDefault();
             _w.onDragEndContainer?.(event);
         });
 
-        $iframeWrap.on('mouseover', function (event) {
+        $iframeWrap.on('mouseover', function (event: any) {
             event.stopPropagation();
         });
 
         // Mousemove seeking — 透過 postMessage 控制
-        var autoPlayTimeout;
-        var seekResumeTimeout;
-        $iframeWrap.on('mousemove', throttle(function (event) {
+        var autoPlayTimeout: any;
+        var seekResumeTimeout: any;
+        $iframeWrap.on('mousemove', throttle(function (event: any) {
             mouseX = event.offsetX;
             var duration = _vimeoPlayerState.duration;
             if (!duration || !isFinite(duration) || duration <= 0) return;
@@ -1639,7 +1644,7 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
             mouseTime = Math.round(mouseTime * 100) / 100;
             if (mouseTime && !isNaN(mouseTime) && isFinite(mouseTime)) {
                 $currentTime.html(_w.getDurationString(mouseTime, duration));
-                vimeoPostMessage(iframe, 'setCurrentTime', parseFloat(mouseTime));
+                vimeoPostMessage(iframe, 'setCurrentTime', parseFloat(String(mouseTime)));
                 vimeoPostMessage(iframe, 'pause');
                 clearTimeout(autoPlayTimeout);
                 autoPlayTimeout = setTimeout(function () {
@@ -1673,19 +1678,19 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
         }, 16);
 
         // 靜音按鈕 — 透過 postMessage 控制
-        $muteToggle.on("mousedown", function (event) {
+        $muteToggle.on("mousedown", function (event: any) {
             event.stopPropagation();
         });
 
-        $muteToggle.on("dblclick", function (event) {
+        $muteToggle.on("dblclick", function (event: any) {
             event.stopPropagation();
         });
 
-        $muteToggle.on("mouseover", function (event) {
+        $muteToggle.on("mouseover", function (event: any) {
             event.stopPropagation();
         });
 
-        $muteToggle.on("click", function (event) {
+        $muteToggle.on("click", function (event: any) {
             event.stopPropagation();
             muted = !muted;
             _vimeoPlayerState.muted = muted;
@@ -1695,13 +1700,13 @@ dom("#box-container").on('mouseenter', '.box.url.vimeo .thumbnail', function(eve
             } else {
                 $muteToggle.removeClass("muted");
             }
-            localStorage.setItem("eagle.list.video.muted", muted);
+            localStorage.setItem("eagle.list.video.muted", String(muted));
         });
 
     }, 200);
 });
 
-dom("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(event) {
+dom("#box-container").on('mouseleave', '.box.url.vimeo .thumbnail', function(this: any, event: any) {
     event.stopPropagation();
     let $box = dom(".box").has(this);
     disarmHoverSentinel($box);

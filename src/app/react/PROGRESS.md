@@ -8468,3 +8468,16 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     1–6 处的零散字段，适合按「域窗口」成批收尾而不必逐字段开刀。
   - **验证**：`typecheck` 0 诊断；`build` exit 0（8.36s）；收敛台账 OK；
     `d3-alltags-view`、`d3-selection` 全绿。
+
+- **R4 收敛不变量（切片③附带）**：`scope-field-convergence` 守卫升级为**双重判定**：
+  ①已收敛域不得回退为字符串键；②**任何未注册字段的写入即失败**——因为未注册字段会落
+  `writeScopeField` 的通用对象回退分支（`scope[name] = value`），那是 R4 要删除的最后一块。
+  - **实测结论（重要）**：剩余 229 个字符串键写入字段中，**未注册数据字段 = 0**——
+    也就是说**所有数据写入都已由 store 承接**，回退分支当前的唯一使用者是
+    **16 个旧 scope 动作槽**（`machineryInfra` 把 `machinery*` 函数挂到 scope 面：
+    changeSmartFolderName / toggleSidebar / createLibrary / importLibrary / refresh …）。
+    这些是 R6 的退役对象，已在守卫中以 `ALLOWED_ACTION_SLOTS` **显式登记**（不是默认放过）。
+  - 排除初判误报：分类器已同时识别 `MIGRATED*` 数组与 `migrateScopeFieldToStore('<名>'`
+    直调两种注册形态（`isAppLocked` 属后者，初版漏判，已修）。
+  - **反向验证**：把任一数据写入改成未注册名后守卫立即 FAIL 并指名文件；改回即 OK。
+  - 含义：R4 的「删除普通对象回退」已具备**可测前提**，只差 R6 摘除 16 个动作槽。

@@ -53,6 +53,36 @@ function stripComments(text) {
     .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 }
 
+/**
+ * 旧 scope **动作槽**（`writeScopeField('<名>', machinery*)` 把函数挂到 scope 面）。
+ * 它们不是数据字段，是 R6 要退役的旧 scope 函数 API；在此显式登记，使「未登记的落回退」
+ * 成为可测不变量，而不是靠人记得。
+ */
+const ALLOWED_ACTION_SLOTS = new Set([
+  'changeSmartFolderName', 'changeSortIncrease', 'toggleShowOriginalImageWhenLarge',
+  'showListName', 'showListMetas', 'showListAnnotation', 'showListExtension',
+  'showListExtensionLabel', 'toggleSidebar', 'switchLayoutOtpions',
+  'createLibrary', 'importLibrary', 'refresh', 'openSearchScopeMenu',
+  'onListSizeChange', 'boxListSizeChange',
+]);
+
+/** 从 store 文件收集已注册字段：`MIGRATED*` 数组字面量 + `migrateScopeFieldToStore('<名>'` 直调。 */
+function collectRegisteredFields() {
+  const registered = new Set();
+  const storeDir = path.join(reactRoot, 'store');
+  for (const entry of fs.readdirSync(storeDir)) {
+    if (!entry.endsWith('.ts')) continue;
+    const text = stripComments(fs.readFileSync(path.join(storeDir, entry), 'utf8'));
+    for (const array of text.matchAll(/const\s+MIGRATED[A-Z_]*[^=]*=\s*\[([\s\S]*?)\]/g)) {
+      for (const name of array[1].matchAll(/['"]([A-Za-z_$][\w$]*)['"]/g)) registered.add(name[1]);
+    }
+    for (const call of text.matchAll(/migrateScopeFieldToStore\(\s*['"]([A-Za-z_$][\w$]*)['"]/g)) {
+      registered.add(call[1]);
+    }
+  }
+  return registered;
+}
+
 const files = [];
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -64,6 +94,8 @@ const files = [];
 
 const failures = [];
 const ledger = new Map();
+const registered = collectRegisteredFields();
+const unregisteredData = new Set();
 
 for (const file of files) {
   const rel = path.relative(projectRoot, file).replace(/\\/g, '/');
@@ -76,7 +108,20 @@ for (const file of files) {
         failures.push(`${rel}: writeScopeField('${field}') 属已收敛域 ${domain}，应改用具体写点`);
       }
     }
+    // R4 不变量：数据字段必须已注册（否则写入落回退分支 `scope[name] = value`）。
+    // 未登记的旧动作槽由 ALLOWED_ACTION_SLOTS 显式豁免（R6 退役对象）。
+    if (!registered.has(field) && !ALLOWED_ACTION_SLOTS.has(field)) {
+      unregisteredData.add(`${field} (${rel})`);
+    }
   }
+}
+
+if (unregisteredData.size > 0) {
+  failures.push(
+    ...Array.from(unregisteredData).map(
+      (entry) => `未注册字段写入将落回退分支：${entry}（应注册到 store 或登记为动作槽）`,
+    ),
+  );
 }
 
 // 写点必须真的存在于声明的模块里
@@ -98,8 +143,9 @@ if (failures.length > 0) {
 }
 
 const convergedFields = Object.values(CONVERGED).flatMap((spec) => spec.fields);
-const pending = [...ledger.entries()].sort((a, b) => b[1] - a[1]);
-console.log(`SCOPE_CONVERGENCE_OK：已收敛 ${convergedFields.length} 个字段（${convergedFields.join(', ')}）无字符串键残留`);
+const pending = [...ledger.entries()].filter(([field]) => !convergedFields.includes(field)).sort((a, b) => b[1] - a[1]);
+console.log(`SCOPE_CONVERGENCE_OK：已收敛 ${convergedFields.length} 个字段 / ${Object.keys(CONVERGED).length} 个域，无字符串键残留`);
+console.log(`  注册表 ${registered.size} 字段；剩余字符串键写入 ${pending.length} 个字段、其中动作槽 ${[...ledger.keys()].filter((f) => ALLOWED_ACTION_SLOTS.has(f)).length} 个（R6 退役面）；未注册数据字段 0`);
 if (pending.length > 0) {
   const top = pending.slice(0, 12).map(([field, count]) => `${field}(${count})`).join(' ');
   console.log(`  待收敛字段台账（${pending.length} 个，调用量降序）：${top}${pending.length > 12 ? ' …' : ''}`);

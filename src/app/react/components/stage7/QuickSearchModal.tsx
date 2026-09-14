@@ -14,11 +14,11 @@ import { openTag } from '../../services/batchOpsService';
 import { closeQuickSearch } from '../../core/filterDomain';
 import { closeQuickSearchModalChannel, openQuickSearchModalChannel } from '../../global/bus';
 import { machineryChangeSidebarIndex } from '../../core/libraryDomain';
-import { useListState } from '../../store/listState';
+import { useListState, writeKeyword } from '../../store/listState';
 import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useMiscRawState } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
 import { writeCurrentFocus, writeViewMode } from '../../store/bodyState';
 /**
  * 阶段7c-2：quickSearchModal 接管。
@@ -548,7 +548,7 @@ export function QuickSearchModal() {
 
   useEffect(() => {
     const offOpen = openQuickSearchModalChannel.on(() => {
-      writeScopeField('keyword', '');
+      writeKeyword('');
       setView((prev) => ({ ...prev, open: true, active: prev.active || 0 }));
       setTimeout(() => {
         inputRef.current?.focus();

@@ -47,7 +47,7 @@ import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGe
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryAutoScroll, machineryResetPage } from './gridService';
 import { useMiscRawState } from '../store/miscRawState';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeTrash, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useFolderState, writeCurrentFolder } from '../store/folderState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
@@ -157,7 +157,7 @@ export function emptyTrash(...args: any[]) {
                     try { electronLog && electronLog.info(`[app] Empty trash`); } catch (err) {};
                     ayncsImagesRemove(useItemState.getState().trash);
 
-                    writeScopeField('trash', []);
+                    writeTrash([]);
                     syncSidebarFromScope();
                     syncListFromScope();
                     machineryUpdateSelection();
@@ -272,7 +272,7 @@ export function cleanSelected(...args: any[]) {
             __lv_cleanSelectedTimeout = $timeout(function() {
                 writeSelected([]);
                 syncInspectorFromScope();
-                writeScopeField('selectedFolderMappings', {});
+                writeSelectedFolderMappings({});
                 syncListFromScope();
                 machineryUpdateSelection();
             }, 100);

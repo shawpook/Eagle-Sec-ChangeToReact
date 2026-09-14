@@ -8448,3 +8448,14 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   - **未做（下一批）**：剩余 245 个字段按域推进（`miscRawState` 的 tag 族、
     `itemState` 的 raw/shuffle/trash、`listState` 的 keyword 等）；`writeScopeField` 的
     **通用对象回退分支**要等未注册写入归零后才能删除。
+
+- **R4 切片②（列表域 + 条目域）**：同一机制续推——`list`（keyword/listDone/unfiledCount/
+  untaggedCount，32 处）与 `item`（raw/shuffle/trash/selectedMappings/selectedFolderMappings，
+  37 处）共 **9 个字段 / 69 处**。累计 R4 已收敛 **20 个字段 / 274 处**。
+  - 守卫 `tests/scope-field-convergence.mjs` 的已收敛域表同步扩充为 5 个域
+    （selection/body/folder/list/item）；待收敛台账降至 236 个字段，top：
+    `currentTagGroup(16) selectedTags(12) tagViewMode(10) tagViewModeName(9) hexColor(8)
+    isCropMode(8) isGifReady(8) subFolders(8) …`。
+  - **验证**：`typecheck` 0 诊断；`build` exit 0；收敛台账 OK；针对性闭环
+    `d3-selection`、`library-switch-ui`、`residue`（导入去重/残留不变量）、
+    `d3-alltags-view` 全绿。

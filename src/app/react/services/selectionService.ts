@@ -12,7 +12,7 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeSelectedFolderMappings } from '../store/itemState';
 import { getIpcBus } from '../core/channelBridge';
 
 import { emojiRegex, getRemainingFilenameLength, getSanitize } from '../utils/normalize';
@@ -271,7 +271,7 @@ export function select(...args: any[]) {
             }
 
             writeCurrentFocus("content");
-            writeScopeField('selectedFolderMappings', {});
+            writeSelectedFolderMappings({});
             syncListFromScope();
 
             blurEl("input:focus");

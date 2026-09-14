@@ -7,7 +7,7 @@ import { syncBodyFromScope, writeCurrentFocus, writeLayout } from '../store/body
 import { syncDetailFromScope } from '../store/detailState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncInspectorFromScope } from '../store/inspectorState';
-import { syncListFromScope } from '../store/listState';
+import { syncListFromScope, writeUnfiledCount, writeUntaggedCount } from '../store/listState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
@@ -30,6 +30,7 @@ import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
 import { writeSelected } from '../store/selectionState';
+import { writeShuffle, writeTrash, writeSelectedMappings } from '../store/itemState';
 
 /**
  * b1-9bz-D-1 B-17：dataMachinery 收尾——挂载基础设施域（scope 面供给层）。
@@ -450,21 +451,21 @@ export function machinerySeedControllerState(): void {
         useMiscRawState.getState().sidebarIndex;
         writeScopeField('all', []);
         syncSidebarFromScope();
-        writeScopeField('trash', []);
+        writeTrash([]);
         syncSidebarFromScope();
         syncListFromScope();
-        writeScopeField('untaggedCount', 0);
-        writeScopeField('unfiledCount', 0);
+        writeUntaggedCount(0);
+        writeUnfiledCount(0);
         writeScopeField('images', []);
         writeSelected([]);
         syncInspectorFromScope();
-        writeScopeField('selectedMappings', {});
+        writeSelectedMappings({});
         writeScopeField('lockedImages', {});
         writeScopeField('filtereds', []);
         syncListFromScope();
         writeScopeField('allData', []);
         syncListFromScope();
-        writeScopeField('shuffle', []);
+        writeShuffle([]);
         writeScopeField('selectedFolders', []);
         syncListFromScope();
         writeScopeField('selectedFoldersMappings', {});

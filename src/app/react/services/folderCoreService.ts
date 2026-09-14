@@ -50,7 +50,7 @@ import { machineryLeaveDetailMode, machineryNotify } from '../core/miscDomain';
 import { machineryResetPage } from './gridService';
 import { getTimeout } from '../core/machineryInfra';
 import { useMiscRawState } from '../store/miscRawState';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeTrash } from '../store/itemState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
@@ -671,7 +671,7 @@ export function emptyRestore(...args: any[]) {
                         ayncsImagesChange(changes);
                         try { electronLog && electronLog.info(`[app] Restore ${changes.length} files from trash`); } catch (err) {};
                     }
-                    writeScopeField('trash', []);
+                    writeTrash([]);
                     syncSidebarFromScope();
                     syncListFromScope();
 

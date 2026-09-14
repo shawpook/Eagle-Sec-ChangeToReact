@@ -44,7 +44,7 @@ import { machineryRemovePermanently } from '../services/batchOpsService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryAutoScroll } from '../services/gridService';
 import { getTimeout, machineryCalls } from './machineryInfra';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeSelectedMappings, writeSelectedFolderMappings } from '../store/itemState';
 import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
@@ -109,7 +109,7 @@ export function takeoverSelectionViewDomain(): void {
   };
   onSelectedChanged(function (oldValue: any) {
 
-    writeScopeField('selectedMappings', {});
+    writeSelectedMappings({});
     writeScopeField('zoomFitSize', 0);
 
     useSelectionState.getState().selected.forEach(function (image: any, index: any) {
@@ -850,7 +850,7 @@ export function machinerySelectAll(event: any): void {
     Array.prototype.push.apply(selected, useItemState.getState().allData);
     writeSelected(selected);
     syncInspectorFromScope();
-    writeScopeField('selectedMappings', {});
+    writeSelectedMappings({});
     $timeout.cancel(cleanSelectedTimeout);
     writeCurrentFocus("content");
   }
@@ -897,7 +897,7 @@ export function machinerySelectDown(event: any): void {
     var image = machineryGetItemByElement(target);
     writeSelected([image]);
     syncInspectorFromScope();
-    writeScopeField('selectedFolderMappings', {});
+    writeSelectedFolderMappings({});
     syncListFromScope();
     if (useBodyState.getState().isDetailMode) {
       writeCurrent(useSelectionState.getState().selected[0]);
@@ -924,9 +924,9 @@ export function machinerySelectDown(event: any): void {
 export function machinerySelectFolder(event: any, folder: any): void {
   (document.activeElement as any).blur();
   if (folder) {
-    writeScopeField('selectedFolderMappings', {});
+    writeSelectedFolderMappings({});
     syncListFromScope();
-    writeScopeField('selectedMappings', {});
+    writeSelectedMappings({});
     useItemState.getState().selectedFolderMappings[folder.id] = true;
     syncListFromScope();
     writeCurrentFocus("content");
@@ -963,7 +963,7 @@ export function machinerySelectNext(event?: any): void {
 
   writeSelected([useItemState.getState().allData[end]]);
   syncInspectorFromScope();
-  writeScopeField('selectedFolderMappings', {});
+  writeSelectedFolderMappings({});
   syncListFromScope();
   writeCurrentFocus("content");
 
@@ -1044,7 +1044,7 @@ export function machinerySelectPrev(event?: any): void {
     syncInspectorFromScope();
     machineryAutoScroll(0);
   }
-  writeScopeField('selectedFolderMappings', {});
+  writeSelectedFolderMappings({});
   syncListFromScope();
   writeCurrentFocus("content");
   if (useSelectionState.getState().current) {
@@ -1105,7 +1105,7 @@ export function machinerySelectUp(event: any): void {
     var image = machineryGetItemByElement(target);
     writeSelected([image]);
     syncInspectorFromScope();
-    writeScopeField('selectedFolderMappings', {});
+    writeSelectedFolderMappings({});
     syncListFromScope();
     if (useBodyState.getState().isDetailMode) {
       writeCurrent(useSelectionState.getState().selected[0]);

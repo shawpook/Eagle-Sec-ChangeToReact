@@ -15,7 +15,7 @@ import { debounce, throttle } from '../utils/func';
 import { machinerySmartZoom, machineryUpdateZoomRatio, machineryZoomIn } from './viewOpsService';
 import { machineryCheckListItemsLessThanContainer, machineryScrollToCurrentItem } from '../core/itemDomain';
 import { machineryZoomFitEdge } from './viewOpsService';
-import { syncListFromScope } from '../store/listState';
+import { syncListFromScope, writeKeyword, writeListDone } from '../store/listState';
 import { syncFolderLock } from '../store/lockState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -28,7 +28,7 @@ import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStart
 import { useListState } from '../store/listState';
 import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from '../core/scopeFieldBridge';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
@@ -545,7 +545,7 @@ export function machineryResetPage(): void {
   // b1-9ba：RESET_PAGE 广播全树无接收者（原接收者随 bundle 摘除退役）——广播体移除，
   // 本函数其余状态复位语义不变。
   (document.activeElement as any)?.blur?.();
-  writeScopeField('listDone', false);
+  writeListDone(false);
   // Clear the old view now; a delayed clear can erase a destination that has already loaded.
   w.ig?.clear();
   writeScopeField('isOpenWebpagePanel', false);
@@ -564,7 +564,7 @@ export function machineryResetPage(): void {
   writeScopeField('selectedFoldersMappings', {});
   writeScopeField('selectedFolders', []);
   syncListFromScope();
-  writeScopeField('selectedFolderMappings', {});
+  writeSelectedFolderMappings({});
   syncListFromScope();
   writeScopeField('selectedSmartFoldersMappings', {});
   writeScopeField('selectedSmartFolders', []);
@@ -574,7 +574,7 @@ export function machineryResetPage(): void {
 
   if (!w.eagle.filter.isLock) {
     resetFilter();
-    writeScopeField('keyword', undefined);
+    writeKeyword(undefined);
   }
   hide("#image-drop-area");
 

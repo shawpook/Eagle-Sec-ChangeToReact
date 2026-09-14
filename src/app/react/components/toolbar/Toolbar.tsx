@@ -29,6 +29,7 @@ import { useMiscRawState } from '../../store/miscRawState';
 import { useFolderState } from '../../store/folderState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
 import { useLayoutState } from '../../store/layoutState';
+import { writeKeyword } from '../../store/listState';
 /**
  * 阶段3a：工具栏接管。
  *
@@ -191,16 +192,16 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
             clearTimeout(debounceRef.current);
             debounceRef.current = setTimeout(() => {
               runInBodyScope(() => {
-                writeScopeField('keyword', value);
+                writeKeyword(value);
                 search(value);
               });
             }, 200);
           } else {
-            runInBodyScope(() => { writeScopeField('keyword', value); });
+            runInBodyScope(() => { writeKeyword(value); });
           }
         }}
         onKeyDown={(e) => {
-          runInBodyScope(() => { writeScopeField('keyword', (e.target as HTMLInputElement).value); });
+          runInBodyScope(() => { writeKeyword((e.target as HTMLInputElement).value); });
           call('seachKeyup')(e);
         }}
         onFocus={onFocus}
@@ -208,7 +209,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
           if (randomMode) {
             clearTimeout(debounceRef.current);
             runInBodyScope(() => {
-              writeScopeField('keyword', draft);
+              writeKeyword(draft);
               search(draft);
             });
           }

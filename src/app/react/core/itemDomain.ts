@@ -19,7 +19,7 @@ import { persistSweep, removeChannelListenersBySource, sweepForeignWatchers } fr
 import { detailZoom } from './smoothZoomEngine';
 import { ipcRenderer } from '../global/eagleGlobals';
 import { syncUploadFromScope } from '../store/uploadState';
-import { syncListFromScope } from '../store/listState';
+import { syncListFromScope, writeKeyword, writeListDone, writeUnfiledCount, writeUntaggedCount } from '../store/listState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { IPCHelper } from '../core/ipcHelper';
 import { debounce } from '../utils/func';
@@ -64,7 +64,7 @@ import { useListState } from '../store/listState';
 import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeRaw, writeTrash } from '../store/itemState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
@@ -974,7 +974,7 @@ export function openItemLocation(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (item, folder) {
             resetFilter();
-            writeScopeField('keyword', "");
+            writeKeyword("");
             machineryQuickOpenFolder(folder, item);
         } as (...__args: any[]) => any).apply(null, args);
   }
@@ -1493,9 +1493,9 @@ export function machineryCalculateImageBinding(params?: any, callback?: any): vo
       writeScopeField('all', []);
       syncSidebarFromScope();
       writeScopeField('untagged', []);
-      writeScopeField('unfiledCount', 0);
-      writeScopeField('untaggedCount', 0);
-      writeScopeField('trash', []);
+      writeUnfiledCount(0);
+      writeUntaggedCount(0);
+      writeTrash([]);
       syncSidebarFromScope();
       syncListFromScope();
       writeScopeField('folderMappings', {});
@@ -1604,27 +1604,27 @@ export function machineryCalculateImageBinding(params?: any, callback?: any): vo
             syncSidebarFromScope();
             exts[image.ext] = true;
             if (image.tags && image.tags.length == 0) {
-              writeScopeField('untaggedCount', useListState.getState().untaggedCount + 1);
+              writeUntaggedCount(useListState.getState().untaggedCount + 1);
             }
 
             if (!image.folders) {
-              writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
+              writeUnfiledCount(useListState.getState().unfiledCount + 1);
             }
             else if (image.folders.length === 0) {
-              writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
+              writeUnfiledCount(useListState.getState().unfiledCount + 1);
             }
             else {
               // 修复异常 folders
               if (image.folders.length === 1 && !useItemState.getState().folderMappings[image.folders[0]]) {
                 if (useMiscRawState.getState().libraryModificationTime && image.lastModified && image.lastModified < useMiscRawState.getState().libraryModificationTime) {
                   image.folders = [];
-                  writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
+                  writeUnfiledCount(useListState.getState().unfiledCount + 1);
                 }
               }
               else if (image.folders[0] === null || image.folders[1] === null) {
                 image.folders = [...new Set(image.folders)].filter(function (obj: any) { return obj != null; });
                 if (image.folders.length === 0) {
-                  writeScopeField('unfiledCount', useListState.getState().unfiledCount + 1);
+                  writeUnfiledCount(useListState.getState().unfiledCount + 1);
                   try {
                     w.electronLog && w.electronLog.error(`[app] ${image.id} 's folder properity is incorrect[2], move to Uncategorized`);
                   } catch (err) { /* noop */ }
@@ -2897,7 +2897,7 @@ export function machineryReload(): any {
     if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") {
       machineryAdjustLayoutWidth(0);
     }
-    writeScopeField('listDone', true);
+    writeListDone(true);
 
     if (scrollTopValue("#box-container") !== 0) {
       setScrollTop("#box-container", 0);
@@ -2921,20 +2921,20 @@ export function machinerySortRawData(orderBy: any): void {
     case 'NAME':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
       var collator = new Intl.Collator(languageBCP || "en", { numeric: true, sensitivity: 'base' } );
-      writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function (a: any, b: any) {
         return collator.compare(a.name, b.name);
       }));
       syncListFromScope();
       break;
     case 'EXT':
       var collator2 = new Intl.Collator(languageBCP || "en", { numeric: true, sensitivity: 'base' } );
-      writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function (a: any, b: any) {
         return collator2.compare(a.ext, b.ext);
       }));
       syncListFromScope();
       break;
     case 'RESOLUTION':
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var ra = a.width * a.height;
         var rb = b.width * b.height;
         if(ra > rb) return 1;
@@ -2944,7 +2944,7 @@ export function machinerySortRawData(orderBy: any): void {
       syncListFromScope();
       break;
     case 'FILESIZE':
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var sizeA = parseInt(a.size);
         var sizeB = parseInt(b.size);
         if(sizeA > sizeB) return 1;
@@ -2954,7 +2954,7 @@ export function machinerySortRawData(orderBy: any): void {
       syncListFromScope();
       break;
     case 'RATING':
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var starA = parseInt(a.star) || 0;
         var starB = parseInt(b.star) || 0;
         if(starA > starB) return 1;
@@ -2964,7 +2964,7 @@ export function machinerySortRawData(orderBy: any): void {
       syncListFromScope();
       break;
     case 'DURATION':
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var durationA = parseInt(a.duration) || 0;
         var durationB = parseInt(b.duration) || 0;
         if(durationA > durationB) return 1;
@@ -2974,7 +2974,7 @@ export function machinerySortRawData(orderBy: any): void {
       syncListFromScope();
       break;
     case 'BTIME':
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var btimeA = a.btime || a.modificationTime;
         var btimeB = b.btime || b.modificationTime;
         if(btimeA > btimeB) return -1;
@@ -2983,7 +2983,7 @@ export function machinerySortRawData(orderBy: any): void {
       syncListFromScope();
       break;
     case 'MTIME':
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var mtimeA = a.mtime || a.modificationTime;
         var mtimeB = b.mtime || b.modificationTime;
         if(mtimeA > mtimeB) return -1;
@@ -2994,7 +2994,7 @@ export function machinerySortRawData(orderBy: any): void {
     case 'TAGS':
       // 使用 collator 会比直接呼叫 localeCompare 快上 20x 以上
       var collator3 = new Intl.Collator(languageBCP || "en", { numeric: true, sensitivity: 'base' } );
-      writeScopeField('raw', useItemState.getState().raw.sort(function (a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function (a: any, b: any) {
         const aTag1 = a?.tags?.[0] ?? '';
         const bTag1 = b?.tags?.[0] ?? '';
         return collator3.compare(aTag1, bTag1);
@@ -3002,7 +3002,7 @@ export function machinerySortRawData(orderBy: any): void {
       syncListFromScope();
       break;
     default:
-      writeScopeField('raw', useItemState.getState().raw.sort(function(a: any, b: any) {
+      writeRaw(useItemState.getState().raw.sort(function(a: any, b: any) {
         var mtimeA = a.modificationTime || a.mtime;
         var mtimeB = b.modificationTime || b.mtime;
         if(mtimeA > mtimeB) return -1;

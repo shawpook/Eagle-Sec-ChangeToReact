@@ -34,7 +34,7 @@ import { ipcRenderer } from '../global/eagleGlobals';
 import { isInFolder } from './itemDomain';
 import { syncErrorCount } from '../store/toastState';
 import { syncFolderLock } from '../store/lockState';
-import { syncListFromScope } from '../store/listState';
+import { syncListFromScope, writeKeyword, writeUnfiledCount, writeUntaggedCount } from '../store/listState';
 import { syncUploadFromScope } from '../store/uploadState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
@@ -67,7 +67,7 @@ import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryAutoScroll, machineryResetPage } from '../services/gridService';
 import { getTimeout } from './machineryInfra';
 import { usePreferencesState } from '../store/preferencesState';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
@@ -533,12 +533,12 @@ export function takeoverLibraryDomain(): void {
     writeScopeField('winMenu', []);
     writeScopeField('all', []);
     syncSidebarFromScope();
-    writeScopeField('shuffle', []);
-    writeScopeField('trash', []);
+    writeShuffle([]);
+    writeTrash([]);
     syncSidebarFromScope();
     syncListFromScope();
-    writeScopeField('untaggedCount', 0);
-    writeScopeField('unfiledCount', 0);
+    writeUntaggedCount(0);
+    writeUnfiledCount(0);
     writeScopeField('tags', []);
     syncSidebarFromScope();
     writeScopeField('selectedTags', {});
@@ -566,7 +566,7 @@ export function takeoverLibraryDomain(): void {
     writeCurrent(undefined);
     syncDetailFromScope();
     syncInspectorFromScope();
-    writeScopeField('selectedMappings', {});
+    writeSelectedMappings({});
     writeScopeField('folderMappings', {});
     writeCurrentFolder(undefined);
     syncPanelFromScope();
@@ -755,7 +755,7 @@ export function takeoverLibraryDomain(): void {
     // 均无缓存参数、隐式重建；shim 世界 filterContent 传 s.contentFilterCache，缓存若在
     // raw 为空时建立会永久保留空快照，11a49 的 a4 空态无法闭合即此）
     writeScopeField('contentFilterCache', null);
-    writeScopeField('raw', images);
+    writeRaw(images);
     syncListFromScope();
 
     machineryCalculateImageBinding({}, function () {
@@ -1260,7 +1260,7 @@ export function machineryImportLinks(): void {
 
 export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: any): void {
   resetFilter();
-  writeScopeField('keyword', "");
+  writeKeyword("");
   writeCurrentFocus("sidebar");
   writeViewMode(undefined);
   writeScopeField('currentTag', undefined);
@@ -1452,7 +1452,7 @@ export function machineryRefreshRandom(): void {
     (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.orderBy === "RANDOM") ||
     (useFolderState.getState().currentSmartFolder && useFolderState.getState().currentSmartFolder.orderBy === "RANDOM")
   ) {
-    writeScopeField('shuffle', []);
+    writeShuffle([]);
     addClass("#refresh-random", "active");
     setTimeout(function () {
       removeClass("#refresh-random", "active");
@@ -1937,7 +1937,7 @@ export function machineryGetSmartFolderList(): any[] {
 export function machineryMultipleOpenFolder(folder: any, needReload: any): void {
   const w = window as any;
   resetFilter();
-  writeScopeField('keyword', "");
+  writeKeyword("");
   writeCurrentFocus("sidebar");
   writeViewMode(undefined);
   writeScopeField('currentTag', undefined);

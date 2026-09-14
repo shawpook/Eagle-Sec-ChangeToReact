@@ -54,17 +54,24 @@ const MIGRATED: ReadonlyArray<keyof ItemState> = [
   'selectedMappings', 'selectedFolderMappings', 'modifiedMappings',
   'duplicateMappings', 'lockedImages', 'lastItemStates',
 ];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED) {
-  migrateScopeFieldToStore(
-    fieldName as string,
-    () => useItemState.getState()[fieldName],
-    (value: any) => {
-      if (useItemState.getState()[fieldName] !== value) {
-        useItemState.setState({ [fieldName]: value } as Partial<ItemState>);
-      }
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (useItemState.getState()[fieldName] !== value) {
+      useItemState.setState({ [fieldName]: value } as Partial<ItemState>);
+    }
+  };
+  migrateScopeFieldToStore(key, () => useItemState.getState()[fieldName], writers[key]);
 }
+
+/** R4 条目域写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeRaw(value: any): void { writers.raw(value); }
+export function writeShuffle(value: any): void { writers.shuffle(value); }
+export function writeTrash(value: any): void { writers.trash(value); }
+export function writeSelectedMappings(value: any): void { writers.selectedMappings(value); }
+export function writeSelectedFolderMappings(value: any): void { writers.selectedFolderMappings(value); }
 
 let bound = false;
 

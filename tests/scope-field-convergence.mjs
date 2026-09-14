@@ -30,6 +30,16 @@ const CONVERGED = {
     fields: ['currentFolder', 'currentSmartFolder', 'startCursor'],
     actions: ['writeCurrentFolder', 'writeCurrentSmartFolder', 'writeStartCursor'],
   },
+  list: {
+    module: 'src/app/react/store/listState.ts',
+    fields: ['keyword', 'listDone', 'unfiledCount', 'untaggedCount'],
+    actions: ['writeKeyword', 'writeListDone', 'writeUnfiledCount', 'writeUntaggedCount'],
+  },
+  item: {
+    module: 'src/app/react/store/itemState.ts',
+    fields: ['raw', 'shuffle', 'trash', 'selectedMappings', 'selectedFolderMappings'],
+    actions: ['writeRaw', 'writeShuffle', 'writeTrash', 'writeSelectedMappings', 'writeSelectedFolderMappings'],
+  },
 };
 
 function stripComments(text) {

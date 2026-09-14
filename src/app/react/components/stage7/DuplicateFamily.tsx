@@ -19,9 +19,9 @@ import { calculateImageBindingChannel, glResetChannel, openDuplicateChannel, ope
 
 import { machineryOpenUnfiled, machineryQuickOpenFolder } from '../../core/libraryDomain';
 import { machineryAddToDuplicateMapping, machineryRebindRefresh } from '../../core/itemDomain';
-import { useItemState } from '../../store/itemState';
+import { useItemState, writeSelectedMappings } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
 import { useMiscRawState } from '../../store/miscRawState';
 import { writeSelected } from '../../store/selectionState';
 /**
@@ -1643,7 +1643,7 @@ export function DuplicateModal() {
         loadFirst();
       } else {
         if (useItemState.getState().selectedMappings[image.id]) {
-          writeScopeField('selectedMappings', {});
+          writeSelectedMappings({});
           writeSelected([]);
           syncInspectorFromScope();
           updateSelection();

@@ -74,17 +74,22 @@ const MIGRATED_LIST_FIELDS: ReadonlyArray<keyof ListState> = [
   'keyword', 'listDone', 'isHideSubFolder', 'showSubfolderContent',
   'currentOrderBy', 'currentSortIncrease', 'unfiledCount', 'untaggedCount',
 ];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED_LIST_FIELDS) {
-  migrateScopeFieldToStore(
-    fieldName,
-    () => useListState.getState()[fieldName],
-    // 同值守卫（b1-9az 批 1 教训）：scope watcher 每次 flush 回写同值字段时不得触发
-    // setState（否则整写型 DOM 绑定组件被无谓重渲染）
-    (value: any) => {
-      if (useListState.getState()[fieldName] !== value) useListState.setState({ [fieldName]: value } as Partial<ListState>);
-    },
-  );
+  // 同值守卫（b1-9az 批 1 教训）：scope watcher 每次 flush 回写同值字段时不得触发
+  // setState（否则整写型 DOM 绑定组件被无谓重渲染）
+  writers[fieldName as string] = (value: any) => {
+    if (useListState.getState()[fieldName] !== value) useListState.setState({ [fieldName]: value } as Partial<ListState>);
+  };
+  migrateScopeFieldToStore(fieldName as string, () => useListState.getState()[fieldName], writers[fieldName as string]);
 }
+
+/** R4 列表域写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeKeyword(value: any): void { writers.keyword(value); }
+export function writeListDone(value: any): void { writers.listDone(value); }
+export function writeUnfiledCount(value: any): void { writers.unfiledCount(value); }
+export function writeUntaggedCount(value: any): void { writers.untaggedCount(value); }
 
 // b1-9by-A：快照深比较守卫（scopeBridge startScopeSync 同款语义——subFolders slice()
 // 逐元素引用比较，元素相同则不触发 setState，整写型组件不被无谓重渲染）。

@@ -47,7 +47,7 @@ import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './ta
 
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
-import { useItemState } from '../store/itemState';
+import { useItemState, writeShuffle } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useBodyState, writeIsDetailMode } from '../store/bodyState';
@@ -463,7 +463,7 @@ export function filterContent(...args: any[]) {
     return (function(type) {
             if (!useMiscRawState.getState().isItemBindCalculated) return;
             // 重新计算画面图片列表
-            writeScopeField('shuffle', []);
+            writeShuffle([]);
             machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
             setScrollTop("#box-container", 0);
         } as (...__args: any[]) => any).apply(null, args);
@@ -1520,7 +1520,7 @@ export function machineryFilterContent(type?: any): void {
   syncFilterFromScope();
   if (!useMiscRawState.getState().isItemBindCalculated) return;
   // 重新计算画面图片列表
-  writeScopeField('shuffle', []);
+  writeShuffle([]);
   machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
   setScrollTop("#box-container", 0);
   void type;
@@ -2065,7 +2065,7 @@ function machineryFilterDataPart2(w: any, data: any): any[] {
         data[current] = data[top];
         data[top] = tmp;
       }
-      writeScopeField('shuffle', data);
+      writeShuffle(data);
     }
     console.timeEnd("shuffle");
   }

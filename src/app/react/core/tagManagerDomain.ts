@@ -33,7 +33,7 @@ import { getFilter as machineryGetFilter, machineryFilterContent } from './filte
 import { machineryUpdateListHeight } from '../services/gridService';
 import { syncBodyFromScope, writeCurrentFocus, writeViewMode, writeIsDetailMode } from '../store/bodyState';
 import { syncInspectorFromScope } from '../store/inspectorState';
-import { syncListFromScope } from '../store/listState';
+import { syncListFromScope, writeKeyword } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
 import { blurEl, focusEl, hasClass, offEl, onEl, qaVisible, selectEl, selectText, setHtmlEl, setScrollTop, textEl, triggerEl } from '../utils/domQuery';
 import { unescape } from '../utils/lang';
@@ -1475,7 +1475,7 @@ export function machineryBuildTagManager(): any {
         writeScopeField('openTagAllGroup', function () {
             if (useMiscRawState.getState().tagViewMode === "ALL") return;
             (window as any).tagRectSelecting = false;
-            writeScopeField('keyword', "");
+            writeKeyword("");
             writeScopeField('tagViewMode', "ALL");
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', "ALL");
@@ -1491,7 +1491,7 @@ export function machineryBuildTagManager(): any {
         writeScopeField('openUnfiledGroup', function () {
             if (useMiscRawState.getState().tagViewMode === "UNFILED") return;
             (window as any).tagRectSelecting = false;
-            writeScopeField('keyword', "");
+            writeKeyword("");
             writeScopeField('tagViewMode', "UNFILED");
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', "UNFILED");
@@ -1507,7 +1507,7 @@ export function machineryBuildTagManager(): any {
         writeScopeField('openStarredGroup', function () {
             if (useMiscRawState.getState().tagViewMode === "STARRED") return;
             (window as any).tagRectSelecting = false;
-            writeScopeField('keyword', "");
+            writeKeyword("");
             writeScopeField('tagViewMode', "STARRED");
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', "STARRED");
@@ -1522,7 +1522,7 @@ export function machineryBuildTagManager(): any {
 
         writeScopeField('openTagGroup', function (group: any) {
             (window as any).tagRectSelecting = false;
-            writeScopeField('keyword', "");
+            writeKeyword("");
             writeScopeField('tagViewMode', "GROUP");
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', `GROUP-${group.id}`);
@@ -2958,7 +2958,7 @@ export function machineryOpenPrevGroup(): void {
 export function machineryOpenStarredGroup(): void {
   if (useMiscRawState.getState().tagViewMode === "STARRED") return;
   tagRectSelecting = false;
-  writeScopeField('keyword', "");
+  writeKeyword("");
   writeScopeField('tagViewMode', "STARRED");
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', "STARRED");
@@ -2974,7 +2974,7 @@ export function machineryOpenStarredGroup(): void {
 export function machineryOpenTagAllGroup(): void {
   if (useMiscRawState.getState().tagViewMode === "ALL") return;
   tagRectSelecting = false;
-  writeScopeField('keyword', "");
+  writeKeyword("");
   writeScopeField('tagViewMode', "ALL");
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', "ALL");
@@ -2990,7 +2990,7 @@ export function machineryOpenTagAllGroup(): void {
 export function machineryOpenTagGroup(group: any): void {
   const w = window as any;
   tagRectSelecting = false;
-  writeScopeField('keyword', "");
+  writeKeyword("");
   writeScopeField('tagViewMode', "GROUP");
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', `GROUP-${group.id}`);
@@ -3008,7 +3008,7 @@ export function machineryOpenTagGroup(group: any): void {
 export function machineryOpenUnfiledGroup(): void {
   if (useMiscRawState.getState().tagViewMode === "UNFILED") return;
   tagRectSelecting = false;
-  writeScopeField('keyword', "");
+  writeKeyword("");
   writeScopeField('tagViewMode', "UNFILED");
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', "UNFILED");

@@ -8374,3 +8374,52 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     套件头部 68 → **69 项**。
   - **明确未做（留待 R5）**：按窗口类**收窄**实际安装面。十窗当前仍安装同一份全量契约——
     收窄需先完成各窗数据面迁移，否则会改变行为；判据与记录口已就位。
+
+- **R3（完整类型检查，阶段性完成）**：检查范围内诊断 **492 → 0**，门禁升级为零容忍。
+  - **根因归并（不是逐条硬压）**：492 条里绝大多数出自**四类可机械化的根因**，先改造根因
+    再收尾零散项。
+    1. **`(...).apply(null, args)` 元组不匹配（193 处 / TS2345 87 条）**：Angular 编译产物
+       的「位置参数 IIFE + apply」形态，TS 从函数表达式推出**元组**形参类型，`args: any[]`
+       无法赋给它。统一改为 `} as (...__args: any[]) => any).apply(null, args)`——运行期零变化。
+    2. **facade 形参声明比实际调用更严（TS2554 171 条）**：`machinery*` 家族与
+       `defineChannel().emit()` 在 Angular 世界是位置参数签名，React 侧按需省略实参。
+       把 **31 个 machinery 声明**的形参、`defineChannel` 的 `emit(payload?)`、
+       `_throttle` 的后两参、`machineryZoom/PrevHistory/NextHistory` 的补参一并改为可选——
+       「让签名说真话」，而非抑制。
+    3. **隐式 any 家族（TS7006 130 / TS7005 9 / TS7034 8 / TS7022-23 4）**：以**诊断位置驱动**
+       的 codemod 精确补标注（形参 `: any`、裸箭头形参包裹为 `(v: any) =>`、`arr = []` →
+       `arr: any[]`）；逐文件从后往前插入，避免位移失效。
+    4. **TS2304 真缺失名（44 条）**：分两种处置——有真实模块归属的补 import
+       （`emojiRegex`/`getRemainingFilenameLength`/`getSanitize`/`FileUrlHelper`/
+       `enableImageNameEditable`）；运行期全局（bundleGlobals/shims/旧经典脚本挂到 window）
+       以 ambient `declare const` 固定类型（纯类型层，运行期零变化；同仓 `itemDomain` 已有先例）。
+  - **顺带修出的真缺陷（非抑制，是改正）**：
+    - `selectionService` 两处把「取用口」当函数直用——`remainingFilenameLength(x)` /
+      `sanitize(x)` 实为 `getRemainingFilenameLength()(x)` / `getSanitize()(x)`（getter 返回函数）；
+      与 `itemDomain` 的既有正确写法对齐。
+    - `itemDomain` 三个 `declare const __cc_open*` 被赋值（`declare const` 不可赋值）→ 改为**真实
+      模块级 `let ... = null`**：原形态在首次调用时必然抛错，属延迟暴露的坏点。
+    - `itemDomain` 同时 import `IPCHelper` 与 `declare const IPCHelper`（重复声明）→ 保留 import。
+    - `miscDomain` 两处重复声明 `remote` → 保留真身。
+    - `global/bus.ts` 的 `EventBus.listenerCount` 逐字重复实现（TS2393）→ 删除后者（死代码）。
+    - `sidebarService` 对象字面量重复键 `'editable'`（TS1117，取值完全相同）→ 删除其一。
+    - `dialog.ts`/`mediaService`/`selectionService` 的可空 DOM 取值（TS2531/18047）按调用点语义
+      补 `!` / `?.` / `as any`（保留原调用形状）。
+    - 运行期语义保持：`document.execCommand(..., null)` 用 `null as any` 原样保留（不改传参）。
+  - **范围与门禁**：`tsconfig.include` 纳入 `frontend/document-viewer/src/**`，
+    `exclude` 移除整体 `frontend`；document-viewer 侧 5 条诊断已修（悬空类型路径 `@shared/types`
+    → 真实相对路径 `../shared/types`；与 app `globals.d.ts` 冲突的局部 `eagleDesktop` 声明移除；
+    `ModeButton` 补必填 `active`；`error.code` 归一 `undefined`）。
+    **门禁升级**：`tests/typecheck-baseline.mjs` + `tests/tsc-baseline.json`（R0 的基线 diff 形态）
+    退役，改为 `tests/typecheck.mjs` **零容忍**：任何一条诊断即失败，并带**范围守卫**
+    （断言 `include` 覆盖主应用与 document-viewer、`exclude` 未整体排除 `frontend`），
+    防止后续靠缩小范围「清零」。本项已并入套件（69 → **70 项**）。
+  - **`@ts-nocheck` 撤销（部分，4/16）**：`core/fileUrlHelper.ts`（其注释原在第 9 行、import 之后
+    → TS 本就不认，文件一直是全程受检；本次删除该无效注释）、`core/contextMenuDomain.ts`、
+    `core/ipcHelper.ts`、`core/eagleApi.ts` 已撤销并清零。
+    **剩余 12 个文件**（撤销后诊断量实测）：`eagleClasses`(298)、`smoothZoomEngine`(292)、
+    `hoverPreview`(273)、`itemMenuService`(207)、`bitmapViewer`(141)、`imageOpsService`(126)、
+    `tagManagerDomain`(92)、`folderCoreService`(90)、`batchOpsService`(50)、`fontTagService`(38)、
+    `miscMenuService`(34)、`folderMenuService`(30)，合计约 1671 条——以 TS7006/TS2304/TS2339/
+    TS2683（`this` 隐式 any）为主，需按文件逐个补 import / ambient 声明 / 形参与 this 标注。
+    这部分与 R4/R5 的域迁移同域，随各域迁移顺带撤销更经济（避免同一文件反复处理）。

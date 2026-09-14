@@ -14,6 +14,20 @@ import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useItemState } from '../store/itemState';
 import { getIpcBus } from '../core/channelBridge';
+
+import { emojiRegex, getRemainingFilenameLength, getSanitize } from '../utils/normalize';
+
+// R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
+// 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
+declare const debounce: any;
+declare const eagle: any;
+declare const ayncsImagesChange: any;
+declare const hiddenByCurrentFilter: any;
+declare const electronLog: any;
+declare const openInNewWindow: any;
+declare const RecentFileManager: any;
+declare const analytics: any;
+declare const HoverPreview: any;
 /**
  * b1-9bb：选中集服务 —— updateSelection 热点收编。
  *
@@ -46,7 +60,7 @@ let preferences: any = (window as any).electronSettings?.getPreferences?.() || {
 
 const remote: any = _req('@electron/remote');
 
-function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
+export function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
   if (!nameEl) return;
   if (hasClass(nameEl, 'editable')) return;
   var originalName = textEl(nameEl).trim();
@@ -56,7 +70,7 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
   setTimeout(function () {
     focusOn(nameEl);
     selectText(nameEl);
-    document.execCommand('selectAll', false, null);
+    document.execCommand('selectAll', false, null as any);
   }, 50);
 
   onEl(nameEl, 'mousedown', function (event: any) {
@@ -69,7 +83,7 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
       case 13:
         event.preventDefault();
         event.stopPropagation();
-        nameEl.blur();
+        nameEl!.blur();
         break;
       case 27:
         event.preventDefault();
@@ -81,7 +95,7 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
         if (event.metaKey || event.ctrlKey) {
           event.preventDefault();
           event.stopPropagation();
-          document.execCommand('selectAll', false, null);
+          document.execCommand('selectAll', false, null as any);
         }
         break;
     }
@@ -103,8 +117,8 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
     if (newName !== originalName && useSelectionState.getState().selected[0]) {
       var name = newName;
       var image = useSelectionState.getState().selected[0];
-      name = name.substr(0, remainingFilenameLength(useMiscRawState.getState().libraryPath));
-      name = sanitize(name).replace(/%/g, '').replace(/&lt;/g, '').replace(/&gt;/g, '').trim();
+      name = name.substr(0, getRemainingFilenameLength()(useMiscRawState.getState().libraryPath));
+      name = getSanitize()(name).replace(/%/g, '').replace(/&lt;/g, '').replace(/&gt;/g, '').trim();
       name = unescape(name);
       eagle.inspector.newName = name;
 
@@ -130,7 +144,7 @@ function enableImageNameEditable(event: any, nameEl: HTMLElement | null) {
     setAttrEl(nameEl, 'contenteditable', 'false');
     removeClassEl(nameEl, 'editable');
     offAllEl(nameEl);
-    nameEl.blur();
+    nameEl!.blur();
   }
 }
 
@@ -170,7 +184,7 @@ export function onBoxMouseup(...args: any[]) {
                     return;
                 }
             }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function onBoxListDblClick(...args: any[]) {
@@ -204,7 +218,7 @@ export function onBoxListDblClick(...args: any[]) {
                     openFileWithDefault(item);
                 }
             }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function onDetailClick(...args: any[]) {
@@ -213,7 +227,7 @@ export function onDetailClick(...args: any[]) {
             if ($event.which == 2) {
                 ipcRenderer.send('toggle-slideshow');
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function select(...args: any[]) {
@@ -268,7 +282,7 @@ export function select(...args: any[]) {
                 writeScopeField('isPreviewing', false);
                 currentWindow.closeFilePreview();
             }
-            window.getSelection().removeAllRanges();
+            window.getSelection()?.removeAllRanges();
 
             if (!__lv_image) {
                 return;
@@ -369,5 +383,5 @@ export function select(...args: any[]) {
             }
             writeScopeField('selected', [...new Set(useSelectionState.getState().selected)]);
             syncInspectorFromScope();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }

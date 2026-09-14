@@ -90,5 +90,5 @@ Set-Location -LiteralPath 'H:/dev/Eagle-Sec-development - 副本'
 npm run build
 npm run test:production     # 产物入口/资源检查 + Electron 正式启动冒烟
 npm run start:prod          # 本地静态服务 + 后端 + Electron（真实使用）
-node tests/typecheck-baseline.mjs
+node tests/typecheck.mjs
 ```

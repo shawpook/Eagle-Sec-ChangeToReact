@@ -100,7 +100,7 @@ export function machineryMHandler($event: any): void {
 }
 
 /* openQuickSearch（bundle 32512-32514 逐字） */
-export function machineryOpenQuickSearch(event: any): void {
+export function machineryOpenQuickSearch(event?: any): void {
   openQuickSearchModalChannel.emit();
 }
 

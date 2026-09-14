@@ -81,7 +81,7 @@ function _guid(): string {
 }
 
 /* throttle（bundle 2400-2438 逐字，含原码乱码注释） */
-function _throttle(fn: any, delay: any, immediate: any, debounce: any): any {
+function _throttle(fn: any, delay: any, immediate?: any, debounce?: any): any {
   var curr = +new Date(), //µ±Ç°ÊÂ¼þ
     last_call = 0,
     last_exec = 0,
@@ -1917,11 +1917,11 @@ export function installBundleGlobals(): void {
      window.videoHelper 活雷同批修复） */
   var _videoHelper = {
       // 这是个很白痴的设定，浏览器默认会使用 throttle 功能，如果短时间疯狂修改 currentTime 画面不会立即更新，以列方式是加大更新 currentTime 的时间差，骗过浏览器的节流功能
-      setCurrentTime: _throttle(function setCurrentTime(v, currentTime) {
+      setCurrentTime: _throttle(function setCurrentTime(v: any, currentTime: any) {
           v.currentTime = currentTime;
       }, 33),
-      setVideosCurrentTime: _throttle(function setCurrentTime(vs, currentTime) {
-          vs.forEach(v => {
+      setVideosCurrentTime: _throttle(function setCurrentTime(vs: any, currentTime: any) {
+          vs.forEach((v: any) => {
               v.currentTime = currentTime;
           });
       }, 33)
@@ -1929,9 +1929,9 @@ export function installBundleGlobals(): void {
   if (!w.videoHelper) w.videoHelper = _videoHelper;
 
   /* b1-9bu-B：getDurationString（global.js 891-909 逐字；悬停播放 current-time 依赖） */
-  function _getDurationString(number, total) {
+  function _getDurationString(number: any, total: any) {
       if (number) {
-          var date = new Date(null);
+          var date = new Date(null as any);
           var seconds = Math.max(1, parseInt(number));
           date.setSeconds(seconds);
           if (total && total <= 60 && seconds < 3600) {

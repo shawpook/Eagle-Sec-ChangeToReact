@@ -136,7 +136,7 @@ export function refreshSubfolderList(...args: any[]) {
         writeScopeField('subFolders', []);
         syncListFromScope();
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setFolderPassword(...args: any[]) {
@@ -144,7 +144,7 @@ export function setFolderPassword(...args: any[]) {
       var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
       setFolderPasswordChannel.emit({ folder: f, mode: 'new' });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeFolderPassword(...args: any[]) {
@@ -152,7 +152,7 @@ export function changeFolderPassword(...args: any[]) {
       var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
       setFolderPasswordChannel.emit({ folder: f, mode: 'change' });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function resetFolderPassword(...args: any[]) {
@@ -160,7 +160,7 @@ export function resetFolderPassword(...args: any[]) {
       var f = folder || useFolderState.getState().currentFolder;
       if (!f) return;
       setFolderPasswordChannel.emit({ folder: f, mode: 'reset' });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setFoldersOrder(...args: any[]) {
@@ -170,7 +170,7 @@ export function setFoldersOrder(...args: any[]) {
       });
       machinerySortRawData(orderBy);
       machineryRebindRefresh();
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setFolderOrder(...args: any[]) {
@@ -184,7 +184,7 @@ export function setFoldersSortIncrease(...args: any[]) {
       folders.forEach(function (folder: any) {
         setFolderSortIncrease(folder, sortIncrease);
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setFolderSortIncrease(...args: any[]) {
@@ -195,7 +195,7 @@ export function setFolderSortIncrease(...args: any[]) {
         useMiscRawState.getState().reload();
       }
       machinerySaveFolder();
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function lockFolder(...args: any[]) {
@@ -213,7 +213,7 @@ export function lockFolder(...args: any[]) {
         machineryUpdateSelection();
         writeScopeField('isLoading', false);
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function settingFolder(...args: any[]) {
@@ -239,7 +239,7 @@ export function settingFolder(...args: any[]) {
       else {
         folderSettingsChannel.emit(f);
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function renameFolder(...args: any[]) {
@@ -298,7 +298,7 @@ export function cloneFolder(...args: any[]) {
         try { wElectronLogInfo(`[app] Clone folder: ${folder.name}(${folder.id}), new folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
       machineryCalculateImageBinding({ ignoreSort: true }, function () {});
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeFolderIcon(...args: any[]) {
@@ -313,7 +313,7 @@ export function changeFolderIcon(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeSelectedFoldersIcon(...args: any[]) {
@@ -331,7 +331,7 @@ export function changeSelectedFoldersIcon(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'Folder', icon);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeFolderColor(...args: any[]) {
@@ -347,7 +347,7 @@ export function changeFolderColor(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${folder.name}(${folder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeSelectedFoldersColor(...args: any[]) {
@@ -366,7 +366,7 @@ export function changeSelectedFoldersColor(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedFolders.length} folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'Folder', color);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function folderExportAsPack(...args: any[]) {
@@ -420,7 +420,7 @@ export function folderExportAsPack(...args: any[]) {
           });
         }
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function folderExportAsFolder(...args: any[]) {
@@ -552,7 +552,7 @@ export function folderExportAsFolder(...args: any[]) {
           exportFolder(folder2, savePath);
         });
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function moveFolders(...args: any[]) {
@@ -565,7 +565,7 @@ export function moveFolders(...args: any[]) {
           selectedFolders: selected
         });
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function copyFolderLink(...args: any[]) {
@@ -577,7 +577,7 @@ export function copyFolderLink(...args: any[]) {
           duration: 750
         });
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function showListSubfolderContent(...args: any[]) {
@@ -595,7 +595,7 @@ export function showListSubfolderContent(...args: any[]) {
 
       if (useListState.getState().showSubfolderContent) { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: ON'); }
       else { w.electronLog && w.electronLog.info('[app] Show sub-folder on list: OFF'); }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openFolderContextMenu(...args: any[]) {
@@ -1107,7 +1107,7 @@ export function openFolderContextMenu(...args: any[]) {
           try { folderEl && folderEl.classList && folderEl.classList.remove('context-activate'); } catch (err2) {}
         }
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setSmartFoldersOrder(...args: any[]) {
@@ -1117,7 +1117,7 @@ export function setSmartFoldersOrder(...args: any[]) {
       });
       machinerySortRawData(orderBy);
       machineryRebindRefresh();
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setSmartFolderOrder(...args: any[]) {
@@ -1131,7 +1131,7 @@ export function setSmartFoldersSortIncrease(...args: any[]) {
       smartFolders.forEach(function (folder: any) {
         setSmartFolderSortIncrease(folder, sortIncrease);
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function setSmartFolderSortIncrease(...args: any[]) {
@@ -1142,7 +1142,7 @@ export function setSmartFolderSortIncrease(...args: any[]) {
         useMiscRawState.getState().reload();
       }
       machinerySaveFolder();
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function batchRenameSmartFolders(...args: any[]) {
@@ -1163,7 +1163,7 @@ export function changeSmartFolderIcon(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change folder: ${smartFolder.name}(${smartFolder.id}) icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeSmartFolderColor(...args: any[]) {
@@ -1179,7 +1179,7 @@ export function changeSmartFolderColor(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change smart-folder: ${smartFolder.name}(${smartFolder.id}) icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeSelectedSmartFoldersIcon(...args: any[]) {
@@ -1198,7 +1198,7 @@ export function changeSelectedSmartFoldersIcon(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon to: ${icon}`); } catch (err) {}
       w.analytics.event('ChangeIcon', 'SmartFolder', icon);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeSelectedSmartFoldersColor(...args: any[]) {
@@ -1217,7 +1217,7 @@ export function changeSelectedSmartFoldersColor(...args: any[]) {
       machinerySaveFolder();
       try { w.electronLog && w.electronLog.info(`[app] Change ${useMiscRawState.getState().selectedSmartFolders.length} smart-folders icon color to: ${color}`); } catch (err) {}
       w.analytics.event('ChangeColor', 'SmartFolder', color);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function cloneSmartFolder(...args: any[]) {
@@ -1250,7 +1250,7 @@ export function cloneSmartFolder(...args: any[]) {
         machinerySaveFolder();
         try { w.electronLog && w.electronLog.info(`[app] Clone smart-folder: ${smartFolder.name}(${smartFolder.id}), new smart-folder: ${newFolder.name}(${newFolder.id})`); } catch (err) {}
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function renameSmartFolder(...args: any[]) {
@@ -1268,7 +1268,7 @@ export function copySmartFolderLink(...args: any[]) {
           duration: 750
         });
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function smartFolderExportAsPack(...args: any[]) {
@@ -1336,7 +1336,7 @@ export function smartFolderExportAsPack(...args: any[]) {
           });
         }
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function smartFolderExportAsFolder(...args: any[]) {
@@ -1435,7 +1435,7 @@ export function smartFolderExportAsFolder(...args: any[]) {
           }
         }
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function newSmartFolder(...args: any[]) {
@@ -1447,7 +1447,7 @@ export function newSmartFolder(...args: any[]) {
 export function newChildSmartFolder(...args: any[]) {
     return (function (event: any, smartFolder: any) {
       newSmartFolderChannel.emit({ smartFolder: smartFolder || useFolderState.getState().currentSmartFolder, parent: smartFolder });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function newSmartFolderGroup(...args: any[]) {
@@ -1466,7 +1466,7 @@ export function newSmartFolderGroup(...args: any[]) {
       machinerySaveFolder();
       w.analytics.event('SmartFolder', 'CreateGroup');
       return smartFolderGroup;
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function prependFolder(...args: any[]) {
@@ -1501,7 +1501,7 @@ export function openNewSmartFolderContextMenu(...args: any[]) {
         ],
         showSearch: false,
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openSmartFolderContextMenu(...args: any[]) {
@@ -1850,7 +1850,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
           try { folderEl && folderEl.classList && folderEl.classList.remove('context-activate'); } catch (err2) {}
         }
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 /* ── b1-9bz-B-8：以下 3 个函数由 installFolderMenuFns 的匿名表项提升为模块级具名导出 ──
@@ -1933,7 +1933,7 @@ export function reorderFolderByTitle(...args: any[]) {
       machinerySaveFolder();
       try { wElectronLogInfo('[app] Sort folders by folder name'); } catch (err) {}
     });
-  }).apply(null, args);
+  } as (...__args: any[]) => any).apply(null, args);
 };
 
 export function reorderAllFolderByTitle(...args: any[]) {
@@ -1960,11 +1960,11 @@ export function reorderAllFolderByTitle(...args: any[]) {
       machinerySaveFolder();
       try { wElectronLogInfo('[app] Sort all folders by folder name'); } catch (err) {}
     });
-  }).apply(null, args);
+  } as (...__args: any[]) => any).apply(null, args);
 };
 
 export function refreshSmartFolderCount(...args: any[]) {
   return (function () {
     ayncsUpdateSmartFoldersCount(useMiscRawState.getState().smartFolderList, () => {});
-  }).apply(null, args);
+  } as (...__args: any[]) => any).apply(null, args);
 };

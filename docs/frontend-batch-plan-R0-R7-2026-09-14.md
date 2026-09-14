@@ -11,7 +11,7 @@
 | R0 | 基线与首个遗漏修正 | 已完成（本次） | 当前工作区 |
 | R1 | 正式构建与运行入口 | 主线完成（PDF/3D 入口待办） | R0 |
 | R2 | 启动层与环境边界 | **已完成**（2026-09-14） | R1 的入口清单 |
-| R3 | 完整类型检查 | 待实施 | R0；结合 R2 接口推进 |
+| R3 | 完整类型检查 | 范围清零完成；12 文件 nocheck 待随域撤销 | R0；结合 R2 接口推进 |
 | R4 | 主应用业务与状态收敛 | 待实施 | R2 / R3 的共享边界 |
 | R5 | 独立窗口与查看器 | 待实施 | R1 / R2 / R3；共享服务沿用 R4 |
 | R6 | 旧代码、资产与文档收尾 | 待实施 | 对应消费者已迁出 |
@@ -28,7 +28,7 @@
 - `docs/frontend-entry-ledger-2026-09-14.md`：页面入口台账。
 - `tests/run-react-suite.mjs`、`tests/continuous-grid-layout.mjs`、`tests/continuous-grid-scroll.mjs`。
 - `tests/react-stage11b0-smoke.mjs`（陈旧断言纠正）。
-- `tests/typecheck-baseline.mjs`、`tests/tsc-baseline.json`。
+- `tests/typecheck.mjs`（R3 起：零容忍 + 范围守卫；R0 期的 `typecheck-baseline.mjs`/`tsc-baseline.json` 已退役）。
 - `package.json`（脚本）。
 - `frontend/public/pages.html:64`（死链 progress.html）。
 
@@ -54,7 +54,7 @@
 ```powershell
 node tests/continuous-grid-layout.mjs
 node tests/continuous-grid-scroll.mjs
-node tests/typecheck-baseline.mjs
+node tests/typecheck.mjs
 node tests/react-rewrite-sentinel.mjs
 node tests/run-react-suite.mjs
 ```
@@ -184,6 +184,36 @@ node tests/run-react-suite.mjs
 - `core/driverApi.ts`、`core/scopeFieldBridge.ts`（`writeScopeField`）、事件总线载荷。
 - 17 个含 `@ts-nocheck` 的文件（实际生效 16 个）；`src/app/react/core/fileUrlHelper.ts` 注释在第 9 行、import 在第 1 行，未生效，现产生 12 条诊断。修正方式是把注释放到文件首行前以真正生效，而不是保留原位置。
 - 豁免文件归属清单：`docs/2026-09-14_frontend-migration-remaining-report.md` §8.3。
+
+### 实施结果（2026-09-14，阶段性：检查范围清零；12 个 nocheck 文件待随域迁移撤销）
+
+**检查范围内诊断 492 → 0**，门禁由「基线 diff」升级为**零容忍**。
+
+| 根因 | 规模 | 处置 |
+| --- | --- | --- |
+| `(...).apply(null, args)` 元组形参不匹配（TS2345） | 193 处 / 87 条 | 统一加 `as (...__args: any[]) => any` 断言（运行期零变化） |
+| facade 形参比调用更严（TS2554） | 171 条 | 31 个 `machinery*` 声明形参可选化；`defineChannel().emit(payload?)`；`_throttle` 后两参可选 |
+| 隐式 any 家族（TS7006/7005/7034/7022/7023） | 151 条 | 诊断位置驱动的 codemod：形参 `: any`、裸箭头形参包裹、`arr = [] → arr: any[]` |
+| TS2304 真缺失名 | 44 条 | 有模块归属的补 import；运行期全局用 ambient `declare const`（同仓 `itemDomain` 先例） |
+| 其余（TS7053/2339/2531/2564/2588/2451/2393/2440/1117 等） | 39 条 | 逐点修复，含 6 处真缺陷（见 PROGRESS R3 记录） |
+
+**范围**：`tsconfig.include` 纳入 `frontend/document-viewer/src/**`；document-viewer 的 5 条诊断（悬空
+类型路径、与 app 冲突的 `eagleDesktop` 声明、`ModeButton` 必填 `active`、`error.code`）已修。
+
+**门禁**：`tests/typecheck-baseline.mjs` + `tests/tsc-baseline.json` 退役 → `tests/typecheck.mjs`
+（零容忍 + **范围守卫**：断言 `include` 覆盖主应用与 document-viewer、`exclude` 未整体排除 `frontend`）。
+已并入套件（69 → 70 项）。
+
+**`@ts-nocheck` 撤销进度：4 / 16**。已撤销：`core/fileUrlHelper.ts`（原注释在第 9 行 import 之后，
+TS 本就不认——该文件一直全程受检，本次删除无效注释）、`core/contextMenuDomain.ts`、`core/ipcHelper.ts`、
+`core/eagleApi.ts`。
+**剩余 12 个**（撤销后实测诊断量）：`eagleClasses` 298、`smoothZoomEngine` 292、`hoverPreview` 273、
+`itemMenuService` 207、`bitmapViewer` 141、`imageOpsService` 126、`tagManagerDomain` 92、
+`folderCoreService` 90、`batchOpsService` 50、`fontTagService` 38、`miscMenuService` 34、
+`folderMenuService` 30（合计约 1671）。主因是 TS7006（形参）、TS2304（bundle 全局）、TS2339、
+TS2683（`this` 隐式 any）。**这些文件与 R4/R5 的域迁移同域**，故撤销随各域迁移推进更经济
+（避免同一文件反复开刀）——这是把 R3 收尾与 R4/R5 交错安排的理由。
+
 
 诊断分类（492 条基线）：
 

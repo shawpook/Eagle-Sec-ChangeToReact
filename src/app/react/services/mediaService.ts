@@ -9,6 +9,15 @@ import { machineryToggleSlideshow } from '../core/miscDomain';
 import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { getIpcBus } from '../core/channelBridge';
+
+import { FileUrlHelper } from '../core/fileUrlHelper';
+
+// R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
+// 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
+declare const decodeBase64Image: any;
+declare const EAGLE_THUMBNAIL_TEMP_PATH: any;
+declare const guid: any;
+declare const path: any;
 /**
  * b1-9bm：媒体服务 —— 视频族函数归位（自 dataMachinery 逐字搬移；machinery 留委托壳，
  * 挂载面不变）。覆盖：addVideoComment（swal textarea 输入 → comments 落库 + 广播刷新）、
@@ -243,7 +252,7 @@ export function flipVideo(...args: any[]) {
                     addClassEl(videoEl, "flip");
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function rotateVideo(...args: any[]) {
@@ -272,7 +281,7 @@ export function rotateVideo(...args: any[]) {
                     setCssEl(__lv_video, { "max-height": "" });
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleGifPlay(...args: any[]) {
@@ -294,7 +303,7 @@ export function toggleGifPlay(...args: any[]) {
                     cssSet(".gif-viewer", { opacity: 1 });
                 }, 100);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleSlideshow(...args: any[]) {
@@ -320,7 +329,7 @@ export function setAsVideoThumbnail(...args: any[]) {
                 var canvas = document.createElement('canvas');
                 canvas.width = imageData.width;
                 canvas.height = imageData.height;
-                canvas.getContext('2d').putImageData(imageData, 0, 0);
+                canvas.getContext('2d')!.putImageData(imageData, 0, 0);
                 var base64 = canvas.toDataURL("image/jpeg", 0.95);
                 var decode = decodeBase64Image(base64);
                 if (!decode || !decode.data) return;
@@ -347,7 +356,7 @@ export function setAsVideoThumbnail(...args: any[]) {
                         height: useSelectionState.getState().current.height
                     });
                 }
-            } catch (err) {
+            } catch (err: any) {
                 electronLog && electronLog.error(err.stack || err);
             }
         }
@@ -358,7 +367,7 @@ export function setAsVideoThumbnail(...args: any[]) {
                 startAt: currentTime
             });
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function loadSubtitles(...args: any[]) {
@@ -372,7 +381,7 @@ export function loadSubtitles(...args: any[]) {
             filters: [
                 { name: 'Subtitles', extensions: ['srt', 'vtt'] }
             ]
-        }).then((result) => {
+        }).then((result: any) => {
             if (!result.canceled) {
                 const filePath = result.filePaths[0];
                 const itemName = item.name;
@@ -381,7 +390,7 @@ export function loadSubtitles(...args: any[]) {
                 const infoPath = path.dirname(rawPath);
                 const subtitlePath = `${infoPath}/${itemName}${ext}`;
 
-                fs.copyFile(filePath, subtitlePath, (err) => {
+                fs.copyFile(filePath, subtitlePath, (err: any) => {
                     if (err) {
                         alert("An error ocurred updating the file" + err.message);
                     }
@@ -396,7 +405,7 @@ export function loadSubtitles(...args: any[]) {
                 });
             }
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 /* ── D-1 / Track B / B-4：dataMachinery 媒体族归位（薄包装 + 纯函数）──

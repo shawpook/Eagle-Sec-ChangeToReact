@@ -254,7 +254,7 @@ function buildContainer(params: any) {
 function applyParams(params: any) {
   if (typeof params.target === 'string' && !document.querySelector(params.target)) params.target = 'body';
   const modal: any = buildContainer(params);
-  const container = getContainer();
+  const container: any = getContainer();
   modal.style.width = typeof params.width === 'number' ? params.width + 'px' : params.width;
   modal.style.padding = params.padding + 'px';
   modal.style.background = params.background;
@@ -512,8 +512,8 @@ function swal(options: any): Promise<any> {
       }
       return out;
     }
-    for (const btn of Array.from(modal.querySelectorAll('button'))) {
-      btn.onclick = buttonHandler;
+    for (const btn of Array.from(modal.querySelectorAll('button')) as Element[]) {
+      (btn as any).onclick = buttonHandler;
       (btn as any).onmouseover = buttonHandler;
       (btn as any).onmouseout = buttonHandler;
       (btn as any).onmousedown = buttonHandler;
@@ -626,7 +626,7 @@ function swal(options: any): Promise<any> {
         : params.focusConfirm && isVisibleEl(confirmBtn) ? confirmBtn.focus()
           : focusCycle(-1, 1);
     } else if (_w.document.activeElement && _w.document.activeElement.blur) _w.document.activeElement.blur();
-    getContainer().scrollTop = 0;
+    (getContainer() as any).scrollTop = 0;
     if (typeof MutationObserver !== 'undefined' && !observerSingletonStarted) {
       observerSingletonStarted = true;
       let timer: any = null;

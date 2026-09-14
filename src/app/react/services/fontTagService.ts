@@ -110,7 +110,7 @@ export function deactivateFont(...args: any[]) {
                     duration: 1000
                 });
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function activateFont(...args: any[]) {
@@ -160,7 +160,7 @@ export function activateFont(...args: any[]) {
                     duration: 1000
                 });
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function renameFontsWithFullName(...args: any[]) {
@@ -207,7 +207,7 @@ export function renameFontsWithFullName(...args: any[]) {
                 });
             }, 10);
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function activateFonts(...args: any[]) {
@@ -230,7 +230,7 @@ export function activateFonts(...args: any[]) {
             duration: 1000
         });
         analytics.event("Font", "Install");
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function deactivateFonts(...args: any[]) {
@@ -251,7 +251,7 @@ export function deactivateFonts(...args: any[]) {
             duration: 1000
         });
         analytics.event("Font", "Uninstall");
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeFontDefaultLang(...args: any[]) {
@@ -265,7 +265,7 @@ export function changeFontDefaultLang(...args: any[]) {
                 ipcRenderer.send('regenerate-thumbnail', items);
             }, 10);
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function isFontActivate(...args: any[]) {
@@ -279,7 +279,7 @@ export function isFontActivate(...args: any[]) {
             catch (err) {
                 return false;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function getFontPath(...args: any[]) {
@@ -288,7 +288,7 @@ export function getFontPath(...args: any[]) {
             if (useSelectionState.getState().current) {
                 return `./font-viewer/font-viewer.html?id=${useSelectionState.getState().current.id}&theme=${useBodyState.getState().theme}&language=${useBodyState.getState().language}`;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function filterWithTag(...args: any[]) {
@@ -334,7 +334,7 @@ export function filterWithTag(...args: any[]) {
 
             machineryFilterContent();
             machineryCalculateFilterCounts();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function renameTagGroupKeyup(...args: any[]) {
@@ -351,7 +351,7 @@ export function renameTagGroupKeyup(...args: any[]) {
                 __lv_group.editable = false;
             }
             return false;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function renameTagGroupBlur(...args: any[]) {
@@ -361,7 +361,7 @@ export function renameTagGroupBlur(...args: any[]) {
                 __lv_TagManager.renameGroup(__lv_group.id, newName);
                 delete __lv_group.editable;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function onTagSidebarResize(...args: any[]) {
@@ -381,5 +381,5 @@ export function onTagSidebarResize(...args: any[]) {
                     localStorage.setItem("eagle.containerSize.tagSidebar", ui.size.width);
                 }, 500);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }

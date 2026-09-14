@@ -338,7 +338,7 @@ export function machineryAdjustLayoutWidth(increases: any): void {
   gridAdjustLayoutWidth(increases);
 }
 
-export function machineryChangeListHeight(height: any): void {
+export function machineryChangeListHeight(height?: any): void {
   const w = window as any;
   if (!height) height = useLayoutState.getState().imageSize.height;
   if (Number.isFinite(height) && height > 0) {
@@ -412,7 +412,7 @@ export function machineryOffsetScrollbarImm(delay: any, forceScroll: any): void 
   machineryUpdateContainerHieght();
 }
 
-export function machineryRelayout(margin: any): void {
+export function machineryRelayout(margin?: any): void {
   const w = window as any;
   if (!useMiscRawState.getState().isItemBindCalculated) return;
   var $container = q("#box-container");
@@ -472,12 +472,12 @@ export function machineryScrollbarTo(element: any, to: any, duration: any): void
   else element?.scrollTo({ top: to, behavior: duration > 0 ? 'smooth' : 'auto' });
 }
 
-export function machinerySwitchLayout(layout: any, forceLayout: any): void {
+export function machinerySwitchLayout(layout?: any, forceLayout?: any): void {
   gridSwitchLayout(layout, forceLayout);
 }
 
 /* updateContainerHieght（bundle 34078-34119 逐字；typo 逐字保留） */
-export function machineryUpdateContainerHieght(hasAnimation: any, delay: any = 1): void {
+export function machineryUpdateContainerHieght(hasAnimation?: any, delay: any = 1): void {
   const w = window as any;
   let duration = 170;
   if (!hasAnimation) duration = 1;
@@ -531,7 +531,7 @@ let updateListHeightTimeout: any = null;
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 export function getOffsetScrollbarFn(): any { return scopeSingleton('offsetScrollbar', () => machineryOffsetScrollbar()); }
 
-export function machineryAutoScroll(index: any): void {
+export function machineryAutoScroll(index?: any): void {
   const $timeout = getTimeout();
   $timeout(function () {
     autoscrollChannel.emit(index);

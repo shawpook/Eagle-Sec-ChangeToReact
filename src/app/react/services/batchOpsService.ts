@@ -98,7 +98,7 @@ export function cleanAllError(...args: any[]) {
           cleanAllErrorChannel.emit({
               errorList: useMiscRawState.getState().errorList
           });
-      }).apply(null, args);
+      } as (...__args: any[]) => any).apply(null, args);
 }
 
 /* 19 fns（逐字；fns/getScope 为闭包注入） */
@@ -111,7 +111,7 @@ export function cancelEmptyTrash(...args: any[]) {
             writeScopeField('currentTrashRemoved', 0);
             IPCHelper.send('palette-resume');
             IPCHelper.sendTo((window as any).backgroundWindowID, 'cancel-empty-trash');
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function emptyTrash(...args: any[]) {
@@ -178,7 +178,7 @@ export function emptyTrash(...args: any[]) {
                     }
                 });
             }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function addToFolders(...args: any[]) {
@@ -192,7 +192,7 @@ export function addToFolders(...args: any[]) {
                     existsFolders: eagle.inspector.calculateFolders(useSelectionState.getState().selected),
                 });
             }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function addToRecentFolders(...args: any[]) {
@@ -213,7 +213,7 @@ export function addToRecentFolders(...args: any[]) {
             recentMoveFolders = recentMoveFolders.slice(0, 50);
 
             localStorage.setItem("recentMoveFolders", JSON.stringify(recentMoveFolders));
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function addToLastUsedFolder(...args: any[]) {
@@ -254,7 +254,7 @@ export function addToLastUsedFolder(...args: any[]) {
                 }
             }
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function cleanSelected(...args: any[]) {
@@ -275,7 +275,7 @@ export function cleanSelected(...args: any[]) {
                 syncListFromScope();
                 machineryUpdateSelection();
             }, 100);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function copyTags(...args: any[]) {
@@ -310,7 +310,7 @@ export function pasteTags(...args: any[]) {
             hiddenByCurrentFilter(useSelectionState.getState().selected);
             electronLog.info(`[app] Paste tags ${JSON.stringify(copiedTags)} to ${useSelectionState.getState().selected.length} files`);
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function removeFromFolder(...args: any[]) {
@@ -419,7 +419,7 @@ export function removeFromFolder(...args: any[]) {
 
             ayncsImagesChange(origins);
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function getSelectedTags(...args: any[]) {
@@ -474,7 +474,7 @@ export function excludeWithTag(...args: any[]) {
             writeScopeField('tagKeyword', "");
             syncFilterFromScope();
             machineryFilterContent();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openTag(...args: any[]) {
@@ -488,7 +488,7 @@ export function openTag(...args: any[]) {
             syncListFromScope();
             writeScopeField('currentFolderChildren', undefined);
             __lv_TagManager.filterWithTags([tag], ignoreHistory);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function exportSelectedAsFolder(...args: any[]) {
@@ -578,7 +578,7 @@ export function exportSelectedAsFolder(...args: any[]) {
                 });
             }
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function exportSelectedAsEaglepack(...args: any[]) {
@@ -607,7 +607,7 @@ export function exportSelectedAsEaglepack(...args: any[]) {
                 });
             }
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function exportSelectedAsFormat(...args: any[]) {
@@ -615,7 +615,7 @@ export function exportSelectedAsFormat(...args: any[]) {
     return (function () {
         if (useSelectionState.getState().selected.length === 0) return;
         eagle.customExport.open(useSelectionState.getState().selected);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function exportSelectedToCsv(...args: any[]) {
@@ -710,7 +710,7 @@ export function exportSelectedToCsv(...args: any[]) {
         } catch (error) {
             electronLog.error('[App] Export CSV failed:', error);
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 

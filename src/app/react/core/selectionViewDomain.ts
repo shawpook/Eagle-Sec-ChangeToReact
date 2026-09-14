@@ -935,7 +935,7 @@ export function machinerySelectFolder(event: any, folder: any): void {
   }
 }
 
-export function machinerySelectNext(event: any): void {
+export function machinerySelectNext(event?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (useBodyState.getState().isCropMode) {
@@ -994,7 +994,7 @@ export function machinerySelectNext(event: any): void {
   }
 }
 
-export function machinerySelectPrev(event: any): void {
+export function machinerySelectPrev(event?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (useBodyState.getState().isCropMode) {

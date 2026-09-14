@@ -308,7 +308,7 @@ export function calculateDateFilter(...args: any[]) {
                     }
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function calcuteContainFolders(...args: any[]) {
@@ -331,21 +331,21 @@ export function calcuteContainFolders(...args: any[]) {
                 syncFilterFromScope();
             }
 
-            eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder, parent, depth) {
+            eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function (folder: any, parent: any, depth: any) {
                 var __lv_folderId = folder.id;
                 if (foldersMappings[__lv_folderId]) {
                     useMiscRawState.getState().containFolders.push(foldersMappings[__lv_folderId]);
                     syncFilterFromScope();
                 }
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function closeQuickSearch(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event) {
             closeQuickSearchModalChannel.emit();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function contentFilter(...args: any[]) {
@@ -434,7 +434,7 @@ export function contentFilter(...args: any[]) {
             catch (err) {
                 return false;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function excludeWithFolder(...args: any[]) {
@@ -455,7 +455,7 @@ export function excludeWithFolder(...args: any[]) {
             machineryFilterContent();
             machineryCalculateFilterCounts();
             analytics.event('Filter', 'Folder');
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function filterContent(...args: any[]) {
@@ -466,7 +466,7 @@ export function filterContent(...args: any[]) {
             writeScopeField('shuffle', []);
             machineryRebindRefresh(undefined, useMiscRawState.getState().contentFilterCache);
             setScrollTop("#box-container", 0);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function filterWithColor(...args: any[]) {
@@ -516,7 +516,7 @@ export function filterWithColor(...args: any[]) {
                 machineryCalculateFilterCounts();
             }, 50);
             analytics.event('Filter', 'Color');
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function filterWithFolder(...args: any[]) {
@@ -545,7 +545,7 @@ export function filterWithFolder(...args: any[]) {
             machineryFilterContent();
             machineryCalculateFilterCounts();
             analytics.event('Filter', 'Folder');
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function filterWithHexColor(...args: any[]) {
@@ -562,14 +562,14 @@ export function filterWithHexColor(...args: any[]) {
             else if (hex && hex == "gray") {
                 filterWithColor("gray");
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getDateFilterCountsArray(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (type) {
             try {
-                var arr = [];
+                var arr: any[] = [];
                 Object.keys(eagle.filter.filterCounts[type]['year/month']).forEach(function (key) {
                     arr.push({
                         key: key,
@@ -581,7 +581,7 @@ export function getDateFilterCountsArray(...args: any[]) {
             catch (err) {
                 return [];
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function hexToRGB(...args: any[]) {
@@ -591,7 +591,7 @@ export function hexToRGB(...args: any[]) {
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16);
             return [r, g, b];
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openQuickSearch(...args: any[]) {
@@ -622,7 +622,7 @@ export function resetFilter(...args: any[]) {
             writeScopeField('startCursor', 0);
             resetFilterChannel.emit();
             machineryCalculateFilterCounts();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function search(...args: any[]) {
@@ -640,7 +640,7 @@ export function search(...args: any[]) {
                     writeScopeField('keywords', parseKeywordsWithOR(keywordStr));
                     
                     // 將所有關鍵字轉為小寫（但保留結構）
-                    writeScopeField('keywords', useMiscRawState.getState().keywords.map(kw => {
+                    writeScopeField('keywords', useMiscRawState.getState().keywords.map((kw: any) => {
                         if (Array.isArray(kw)) {
                             return kw.map(k => k.toLowerCase());
                         } else {
@@ -651,7 +651,7 @@ export function search(...args: any[]) {
                     // 處理繁簡體轉換
                     if (keyword && !useMiscRawState.getState().isContainAlphabet) {
                         // 需要處理 OR 群組的繁簡體轉換
-                        writeScopeField('keywords_cn', useMiscRawState.getState().keywords.map(kw => {
+                        writeScopeField('keywords_cn', useMiscRawState.getState().keywords.map((kw: any) => {
                             if (Array.isArray(kw)) {
                                 // OR 群組
                                 return kw.map(k => {
@@ -669,7 +669,7 @@ export function search(...args: any[]) {
                             }
                         }));
                         
-                        writeScopeField('keywords_tw', useMiscRawState.getState().keywords.map(kw => {
+                        writeScopeField('keywords_tw', useMiscRawState.getState().keywords.map((kw: any) => {
                             if (Array.isArray(kw)) {
                                 // OR 群組
                                 return kw.map(k => {
@@ -708,7 +708,7 @@ export function search(...args: any[]) {
                     }
                 }, 1000);
             }, useMiscRawState.getState().keywordDebounce);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function searchFocus(...args: any[]) {
@@ -724,7 +724,7 @@ export function searchFocus(...args: any[]) {
             updateSuggestions();
             writeScopeField('showSuggestions', true);
             syncToolbarFromScope();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleExtFilter(...args: any[]) {
@@ -737,7 +737,7 @@ export function toggleExtFilter(...args: any[]) {
             else {
                 delete eagle.filter.filterRules.type.includes[__lv_ext];
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleExtFilterExclude(...args: any[]) {
@@ -750,7 +750,7 @@ export function toggleExtFilterExclude(...args: any[]) {
             else {
                 delete eagle.filter.filterRules.type.excludes[__lv_ext];
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function updateFilterCounts(...args: any[]) {
@@ -760,11 +760,11 @@ export function updateFilterCounts(...args: any[]) {
   machineryUpdateFilterCounts(args[0], args[1], args[2]);
 }
 
-export function parseKeywordsWithOR(keywordStr) {
+export function parseKeywordsWithOR(keywordStr: any) {
             // 先處理括號表達式
-            function parseWithParentheses(str) {
+            function parseWithParentheses(str: any) {
                 // 標記化：將字串分解成 tokens
-                function tokenize(input) {
+                function tokenize(input: any) {
                     let tokens = [];
                     let current = '';
                     let inQuotes = false;
@@ -827,11 +827,11 @@ export function parseKeywordsWithOR(keywordStr) {
                 }
                 
                 // 解析 tokens 成表達式樹
-                function parseExpression(tokens) {
+                function parseExpression(tokens: any) {
                     let index = 0;
                     
-                    function parseOr() {
-                        let left = parseAnd();
+                    function parseOr(): any {
+                        let left: any = parseAnd();
                         
                         while (index < tokens.length && tokens[index] === 'OR') {
                             index++; // 消耗 OR
@@ -842,13 +842,13 @@ export function parseKeywordsWithOR(keywordStr) {
                         return left;
                     }
                     
-                    function parseAnd() {
+                    function parseAnd(): any {
                         let terms = [];
                         
                         while (index < tokens.length && tokens[index] !== 'OR' && tokens[index] !== ')') {
                             if (tokens[index] === '(') {
                                 index++; // 消耗 (
-                                let expr = parseOr();
+                                let expr: any = parseOr();
                                 if (index < tokens.length && tokens[index] === ')') {
                                     index++; // 消耗 )
                                 }
@@ -872,15 +872,15 @@ export function parseKeywordsWithOR(keywordStr) {
             }
             
             // 將表達式樹轉換為扁平化的關鍵字陣列
-            function flattenExpression(expr) {
+            function flattenExpression(expr: any) {
                 if (!expr) return [];
                 
                 if (expr.type === 'TERM') {
                     return [expr.value];
                 } else if (expr.type === 'OR') {
                     // 收集所有 OR 的子項
-                    let orTerms = [];
-                    function collectOrTerms(node) {
+                    let orTerms: any[] = [];
+                    function collectOrTerms(node: any) {
                         if (node.type === 'OR') {
                             node.children.forEach(collectOrTerms);
                         } else if (node.type === 'TERM') {
@@ -888,8 +888,8 @@ export function parseKeywordsWithOR(keywordStr) {
                         } else if (node.type === 'AND') {
                             // OR 中包含 AND，整個 AND 群組作為一個單位
                             // 例如: dog || (cat black) 中的 (cat black)
-                            let andTerms = [];
-                            node.children.forEach(child => {
+                            let andTerms: any[] = [];
+                            node.children.forEach((child: any) => {
                                 if (child.type === 'TERM') {
                                     andTerms.push(child.value);
                                 }
@@ -900,8 +900,8 @@ export function parseKeywordsWithOR(keywordStr) {
                     collectOrTerms(expr);
                     return [orTerms];
                 } else if (expr.type === 'AND') {
-                    let __lv_result = [];
-                    expr.children.forEach(child => {
+                    let __lv_result: any[] = [];
+                    expr.children.forEach((child: any) => {
                         let flattened = flattenExpression(child);
                         __lv_result = __lv_result.concat(flattened);
                     });
@@ -1535,7 +1535,7 @@ export async function machineryFilterData(data: any[]): Promise<any[]> {
   return data;
 }
 
-function machineryFilterDataPart1(w: any, data: any[]): any[] {
+function machineryFilterDataPart1(w: any, data: any): any[] {
 
   if (Object.keys(w.eagle.filter.filterRules.import.selectedMonths).length > 0) {
     data = data.filter(function (image: any) {
@@ -1844,7 +1844,7 @@ function machineryFilterDataPart1(w: any, data: any[]): any[] {
   return data;
 }
 
-function machineryFilterDataPart2(w: any, data: any[]): any[] {
+function machineryFilterDataPart2(w: any, data: any): any[] {
 
   // 图片注释筛选
   // 有注释
@@ -2181,7 +2181,7 @@ export function machineryToggleFilterByType(): any {
   }, 300);
 }
 
-export function machineryUpdateFilterCounts(image: any, inc: any, now: any): void {
+export function machineryUpdateFilterCounts(image?: any, inc?: any, now?: any): void {
   const w = window as any;
 
   if (!image) return;
@@ -2293,7 +2293,7 @@ export function getToggleFilterByTypeFn(): any { return scopeSingleton('toggleFi
 // ── c14b 域内自管（原 controller 闭包 var：27004/27005）──
 let imageSearchController: any = null;
 
-export async function machineryFilterDataPart3(w: any, data: any[]): Promise<any[]> {
+export async function machineryFilterDataPart3(w: any, data: any): Promise<any[]> {
 
   // 如果是 OR 逻辑需要保留所有 tags filter 的结果，为了计算 containTags
   if (w.eagle.filter.tagFilterLogic === "OR") {

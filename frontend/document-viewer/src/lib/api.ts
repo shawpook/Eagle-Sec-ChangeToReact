@@ -24,13 +24,6 @@ declare global {
     __EAGLE_API_BASE_URL?: string
     __EAGLE_THUMBNAIL_URL?: string
     __EAGLE_EXTENSION_BASE_URL?: string
-    eagleDesktop?: {
-      item?: {
-        reveal?: (id: string) => Promise<unknown>
-        copyPath?: (id: string) => Promise<unknown>
-        openDefault?: (id: string) => Promise<unknown>
-      }
-    }
   }
 }
 
@@ -72,7 +65,7 @@ async function httpJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
   if (!response.ok || !body || body.status !== 'success') {
     const error = new Error((body && body.message) || `Request failed: HTTP ${response.status}`) as HttpError
-    error.code = body && body.code
+    error.code = (body && body.code) || undefined
     error.status = response.status
     throw error
   }

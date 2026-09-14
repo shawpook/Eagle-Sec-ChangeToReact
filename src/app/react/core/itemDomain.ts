@@ -70,16 +70,15 @@ import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
 declare const RecentFileManager: any;
-declare const __cc_openFilesWithDefault: any;
-declare const __cc_openInFinder: any;
-declare const __cc_openWithOther: any;
+let __cc_openFilesWithDefault: any = null;
+let __cc_openInFinder: any = null;
+let __cc_openWithOther: any = null;
 declare const analytics: any;
 declare const eagle: any;
 declare const openInNewWindow: any;
 declare const path: any;
 declare const pluginModule: any;
 declare const swal: any;
-declare const IPCHelper: any;
 declare const remote: any;
 
 let done = false;
@@ -777,7 +776,7 @@ export function openFileWithDefault(...args: any[]) {
             var rawPath = __lv_path.normalize(folderPath + file.name + "." + file.ext);
             IPCHelper.send('open-with-default', rawPath);
             RecentFileManager.addFile(file);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function copyAsLink(...args: any[]) {
@@ -785,7 +784,7 @@ export function copyAsLink(...args: any[]) {
     return (function (event, items) {
             if (!items || !items[0]) return;
             let text = ``;
-            items.forEach(function (item, index) {
+            items.forEach(function (item: any, index: any) {
                 if (item && item.id) {
                     // http://localhost:41595/item?id=:item.id
                     text += `http://localhost:41595/item?id=${item.id}`;
@@ -801,7 +800,7 @@ export function copyAsLink(...args: any[]) {
                 message: i18n.__("notify.colorCopySuccess"),
                 duration: 750
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function copyAsPath(...args: any[]) {
@@ -809,7 +808,7 @@ export function copyAsPath(...args: any[]) {
     return (function (event) {
             if (!useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
             let copyText = "";
-            useSelectionState.getState().selected.forEach(function (item, index) {
+            useSelectionState.getState().selected.forEach(function (item: any, index: any) {
                 var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + item.id + ".info/");
                 var rawPath = __lv_path.normalize(folderPath + item.name + "." + item.ext);
                 if (index == 0) {
@@ -824,7 +823,7 @@ export function copyAsPath(...args: any[]) {
                 message: $filter('i18n')("notify.copyPath.successMsg"),
                 duration: 750
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getFolderFullPath(...args: any[]) {
@@ -850,7 +849,7 @@ export function getFolderFullPath(...args: any[]) {
                 }
             }
             return "";
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getGIFPath(...args: any[]) {
@@ -862,7 +861,7 @@ export function getGIFPath(...args: any[]) {
                 var renderBehavior = usePreferencesState.getState().preferences.habits.renderBehavior;
                 return "gif-viewer/index.html?path=" + encodeURIComponent(gifPath) + "&url=" + encodeURIComponent(gifUrl) + "&name=" + encodeURIComponent(useSelectionState.getState().current.name + ".gif") + `&render=${renderBehavior}`;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getModelPath(...args: any[]) {
@@ -874,7 +873,7 @@ export function getModelPath(...args: any[]) {
                 var type = useSelectionState.getState().current.ext;
 				return `model-viewer/website/index.html#model=${rawUrl}`;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getNativeViewerPath(...args: any[]) {
@@ -884,7 +883,7 @@ export function getNativeViewerPath(...args: any[]) {
                 var __lv_filePath = useMiscRawState.getState().imagesDir + useSelectionState.getState().current.id + ".info/";
                 return "native-viewer/index.html?path=" + encodeURIComponent(__lv_filePath) + "&name=" + encodeURIComponent(useSelectionState.getState().current.name + "." + useSelectionState.getState().current.ext) + "&ext=" + useSelectionState.getState().current.ext + "&width=" + useSelectionState.getState().current.width + "&height=" + useSelectionState.getState().current.height + "&id=" + useSelectionState.getState().current.id;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getPDFPath(...args: any[]) {
@@ -895,7 +894,7 @@ export function getPDFPath(...args: any[]) {
                 var locale = preferences.general.language.replace("_", "-");
                 return `pdf-viewer/web/viewer.html?path=${encodeURIComponent(pdfPath)}&locale=${locale}&theme=${useBodyState.getState().theme}`;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getRawPath(...args: any[]) {
@@ -908,7 +907,7 @@ export function getRawPath(...args: any[]) {
             else {
                 return "file://" +  getRawPath(useMiscRawState.getState().imagesDir, __lv_image) + "?v=" + useItemState.getState().modifiedMappings[__lv_image.id];
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getRawUrl(...args: any[]) {
@@ -924,7 +923,7 @@ export function getRawUrl(...args: any[]) {
                 rawUrl = `${rawUrl}?v=${_ws.modifiedMappings[__lv_image.id]}`;
             }
         	return rawUrl;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getRawViewerPath(...args: any[]) {
@@ -935,7 +934,7 @@ export function getRawViewerPath(...args: any[]) {
                 var rawPath = useMiscRawState.getState().imagesDir + useSelectionState.getState().current.id + ".info/";
                 return `./raw-viewer/index.html?orientation=${__lv_image.orientation}&path=${encodeURIComponent(rawPath)}&name=${encodeURIComponent(__lv_image.name)}&ext=${__lv_image.ext}&width=${__lv_image.width}&height=${__lv_image.height}`;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getTxtPath(...args: any[]) {
@@ -944,7 +943,7 @@ export function getTxtPath(...args: any[]) {
             if (useSelectionState.getState().current) {
                 return `./text-editor/text-editor.html?id=${useSelectionState.getState().current.id}&theme=${useBodyState.getState().theme}&name=${useSelectionState.getState().current.name}&language=${useBodyState.getState().language}`;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getURLSrc(...args: any[]) {
@@ -967,7 +966,7 @@ export function getURLSrc(...args: any[]) {
             else {
                 return FileUrlHelper.getRawUrl(useSelectionState.getState().current);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openItemLocation(...args: any[]) {
@@ -976,7 +975,7 @@ export function openItemLocation(...args: any[]) {
             resetFilter();
             writeScopeField('keyword', "");
             machineryQuickOpenFolder(folder, item);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openWithOther(...args: any[]) {
@@ -996,7 +995,7 @@ export function openInFinder(...args: any[]) {
         function openInFinderImpl() {
             if (useSelectionState.getState().selected.length > 0) {
                 machineryCheckOperationSafety(function () {
-                    useSelectionState.getState().selected.forEach(function (file, index) {
+                    useSelectionState.getState().selected.forEach(function (file: any, index: any) {
                         if (index > 30) return;
                         var folderPath = path.normalize(useMiscRawState.getState().libraryPath + "/images/" + file.id + ".info/");
                         var rawPath = path.normalize(folderPath + file.name + "." + file.ext);
@@ -1043,7 +1042,7 @@ export function openInFinder(...args: any[]) {
                     customClass: "alert-box",
                     input: 'checkbox',
                     inputValue: 0,
-                    inputValidator: function (result) {
+                    inputValidator: function (result: any) {
                         return new Promise(function (resolve, reject) {
                             resolve(result);
                         })
@@ -1052,7 +1051,7 @@ export function openInFinder(...args: any[]) {
                     cancelButtonColor: "#777777",
                     confirmButtonText: btnLable,
                     cancelButtonText: i18n.__("general.cancel"),
-                }).then(function (result) {
+                }).then(function (result: any) {
                     __lv_showFinderAlert = (result === 0);
                     if (!__lv_showFinderAlert) {
                         localStorage.setItem("eagle.hint.showInFinder", __lv_showFinderAlert);
@@ -1076,7 +1075,7 @@ export function openFilesWithDefault(...args: any[]) {
       __cc_openFilesWithDefault = debounce(function(files) {
         if (q(".swal2-container")) { return; }
         machineryCheckOperationSafety(function () {
-            files.forEach(function (file, index) {
+            files.forEach(function (file: any, index: any) {
                 if (!file || !file.id) return;
                 if (index < 40) {
                     var folderPath = __lv_path.normalize(useMiscRawState.getState().libraryPath + "/images/" + file.id + ".info/");
@@ -1095,7 +1094,7 @@ export function openInPreviewWindow(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         if (useSelectionState.getState().selected.length <= 20000) {
-            var items = useSelectionState.getState().selected.filter(function (item) {
+            var items = useSelectionState.getState().selected.filter(function (item: any) {
                 return (EagleConfig.SUPPORT_FORMATS[item.ext] || pluginModule?.previewExtension.thumbnailPluginMap[item.ext]) && !AUDIO_TYPES[item.ext];
             });
             if (items.length > 0) {
@@ -1104,7 +1103,7 @@ export function openInPreviewWindow(...args: any[]) {
                 RecentFileManager.addFiles(items);
             }
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function copyAsProperity(...args: any[]) {
@@ -1112,7 +1111,7 @@ export function copyAsProperity(...args: any[]) {
     return (function (properity) {
         if (!useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
         let copyText = "";
-        useSelectionState.getState().selected.forEach(function (item, index) {
+        useSelectionState.getState().selected.forEach(function (item: any, index: any) {
             if (index == 0) {
                 copyText += `${item[properity] || ""}`;
             }
@@ -1125,7 +1124,7 @@ export function copyAsProperity(...args: any[]) {
             message: $filter('i18n')("notify.copyPath.successMsg"),
             duration: 750
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function copyAsFolderPath(...args: any[]) {
@@ -1133,7 +1132,7 @@ export function copyAsFolderPath(...args: any[]) {
     return (function (event) {
         if (!useSelectionState.getState().selected || !useSelectionState.getState().selected[0]) return;
         let copyText = "";
-        useSelectionState.getState().selected.forEach(function (item, index) {
+        useSelectionState.getState().selected.forEach(function (item: any, index: any) {
             var folderPath = path.normalize(useMiscRawState.getState().libraryPath + "/images/" + item.id + ".info/");
             if (index == 0) {
                 copyText += folderPath;
@@ -1147,7 +1146,7 @@ export function copyAsFolderPath(...args: any[]) {
             message: $filter('i18n')("notify.copyPath.successMsg"),
             duration: 750
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function copyAsThumbnail(...args: any[]) {
@@ -1166,7 +1165,7 @@ export function copyAsThumbnail(...args: any[]) {
                 duration: 1000
             });
         }, 150);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function copyAsBase64(...args: any[]) {
@@ -1182,8 +1181,8 @@ export function copyAsBase64(...args: any[]) {
         let base64;
 
         try {
-            if (imageType[item.ext]) {
-                type = ext2type[item.ext];
+            if ((imageType as any)[item.ext]) {
+                type = (ext2type as any)[item.ext];
                 base64 = fs.readFileSync(rawPath, 'base64');
             }
             else {
@@ -1197,13 +1196,13 @@ export function copyAsBase64(...args: any[]) {
                 duration: 1000
             });
         }
-        catch (err) {
+        catch (err: any) {
             electronLog && electronLog.error(err.stack || err);
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
-export function isInFolder (__lv_image, folder) {
+export function isInFolder (__lv_image: any, folder: any) {
             try {
             	if (!folder) return false;
                 if (!__lv_image) return false;
@@ -1224,7 +1223,7 @@ export function isInFolder (__lv_image, folder) {
                         }
                     }
                     else {
-                        eagle.utils.tree.walk(folder.children, 'children', function (child, parent) {
+                        eagle.utils.tree.walk(folder.children, 'children', function (child: any, parent: any) {
                             if (__lv_image.folders && __lv_image.folders.length > 0 && __lv_image.folders.indexOf(child.id) > -1) {
                                 isContain = true;
                                 return;
@@ -1464,7 +1463,7 @@ export let calculateImageBindingTimeout: any = null;
 let checkListItemsLessThanContainerTimeout: any = null;
 
 /* calculateImageBinding（bundle 28684-28965 逐字） */
-export function machineryCalculateImageBinding(params: any, callback: any): void {
+export function machineryCalculateImageBinding(params?: any, callback?: any): void {
   const w = window as any;
   var duration = 50;
   if (calculateImageBindingTimeout) {
@@ -2017,7 +2016,7 @@ export function machineryFilterSidebarItem(folders: any[], keyword: any): any[] 
   return result;
 }
 
-export function machineryFindDupclipate(currentFolder: any, hasColorInfo: any): void {
+export function machineryFindDupclipate(currentFolder?: any, hasColorInfo?: any): void {
   const w = window as any;
   var duplicates: any[] = [];
   var pushedMapping: any = {};
@@ -2182,7 +2181,7 @@ export function machineryFindDupclipate(currentFolder: any, hasColorInfo: any): 
   }
 }
 
-export function machineryForceFitImageSize(image: any, usingThumbnail: any): void {
+export function machineryForceFitImageSize(image?: any, usingThumbnail?: any): void {
   const w = window as any;
   if (!image) return;
   if (!useBodyState.getState().isDetailMode) return;
@@ -2316,7 +2315,7 @@ export function machineryPrependImages(images: any[], updateView: any): void {
   }
 }
 
-export async function machineryRebindRefresh(muteMode: any, contentFilterCache: any, startCursor: any): Promise<void> {
+export async function machineryRebindRefresh(muteMode?: any, contentFilterCache?: any, startCursor?: any): Promise<void> {
   machineryCalls.rebindRefresh++;
   const w = window as any;
 

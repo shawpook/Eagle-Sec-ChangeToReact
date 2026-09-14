@@ -1,8 +1,8 @@
 /**
- * React 全量回归套件（69 项，顺序隔离执行）。
+ * React 全量回归套件（70 项，顺序隔离执行）。
  * b1-9ba 起第 1 项为彻底化哨兵、b1-9bc 起第 2 项为自研 utils 单元测试——
  * 两者均无 Electron、秒级以内，放最前让倒退最快暴露。
- * R0 起并入连续网格几何与滚动/自动定位两项（见数组内注释）；R2 起并入 shim 模块边界检查。
+ * R0 起并入连续网格几何与滚动/自动定位两项；R2 并入 shim 模块边界检查；R3 并入类型门禁（见数组内注释）。
  */
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -32,6 +32,8 @@ const tests = [
   // 拆分 core/shim/* 后，「标识符留在别的模块、此处未 import」是运行期 ReferenceError 的主因，
   // 且 @ts-nocheck 与打包器都不报——本项以剥离 nocheck 的类型检查精确拦截。
   'tests/shim-module-boundaries.mjs',
+  // R3：类型门禁（零容忍）——`src/app/react` + `frontend/document-viewer` 全范围 0 诊断。
+  'tests/typecheck.mjs',
   'tests/react-stage-smoke.mjs',
   'tests/react-stage5-smoke.mjs',
   'tests/react-stage6-smoke.mjs',

@@ -2880,7 +2880,7 @@ export function machineryMatchWithRegexGroup(text: any, regexGroup: any): any {
            regexGroup.anyMatch.length > 0;
 }
 
-export function machineryOpenAllTags(ignoreHistory: any): void {
+export function machineryOpenAllTags(ignoreHistory?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (useBodyState.getState().viewMode === 'alltags' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) return;
@@ -3021,7 +3021,7 @@ export function machineryOpenUnfiledGroup(): void {
 }
 
 /* openUntagged（bundle 36805-36833 逐字：同 openUnfiled 模板，untagged 键） */
-export function machineryOpenUntagged(ignoreHistory: any): void {
+export function machineryOpenUntagged(ignoreHistory?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 

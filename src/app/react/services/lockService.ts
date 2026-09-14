@@ -18,6 +18,10 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
+
+// R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
+// 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
+declare const Registration: any;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const electronSettings: any = (window as any).electronSettings;
@@ -58,7 +62,7 @@ export function focusUnlockPassword(...args: any[]) {
             setTimeout(() => {
                 focusOn(q("#lock-password-input"));
             }, 24);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function unlockAppPasswordKeydown(...args: any[]) {
@@ -66,7 +70,7 @@ export function unlockAppPasswordKeydown(...args: any[]) {
     return (function (event) {
             event && event.stopPropagation();
             return false;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function unlockAppPasswordKeyup(...args: any[]) {
@@ -99,7 +103,7 @@ export function unlockAppPasswordKeyup(...args: any[]) {
                     }
                 }, 10);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function unlockPasswordKeyup(...args: any[]) {
@@ -135,5 +139,5 @@ export function unlockPasswordKeyup(...args: any[]) {
                     }, 350);
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }

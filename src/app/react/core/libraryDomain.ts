@@ -1298,7 +1298,7 @@ export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: a
   }
 }
 
-export function machineryNewSmartFolder(event: any, smartFolder: any): void {
+export function machineryNewSmartFolder(event?: any, smartFolder?: any): void {
   newSmartFolderChannel.emit({ smartFolder: smartFolder, parent: undefined });
 }
 
@@ -1418,7 +1418,7 @@ export function machineryGetFolderImages(folder: any, includeSubFolder: any): an
 }
 
 /* getRecentFolders（bundle 31969-31988 逐字） */
-export function machineryGetRecentFolders(length: any): any[] {
+export function machineryGetRecentFolders(length?: any): any[] {
   var len = length;
   if (!length) len = 8;
   var recentMoveFolders: any = localStorage.getItem("recentMoveFolders");
@@ -2088,7 +2088,7 @@ export function machineryOpenPrevSmartFolder(): void {
 }
 
 /* openRecent（bundle 36836-36864 逐字：同 openUnfiled 模板，recent 键） */
-export function machineryOpenRecent(ignoreHistory: any): void {
+export function machineryOpenRecent(ignoreHistory?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 
@@ -2128,7 +2128,7 @@ export function machineryOpenRecent(ignoreHistory: any): void {
   }, 50);
 }
 
-export function machineryOpenTrash(ignoreHistory: any): void {
+export function machineryOpenTrash(ignoreHistory?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (useBodyState.getState().viewMode === 'trash' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {
@@ -2168,7 +2168,7 @@ export function machineryOpenTrash(ignoreHistory: any): void {
   }, 50);
 }
 
-export function machineryOpenUnfiled(ignoreHistory: any): void {
+export function machineryOpenUnfiled(ignoreHistory?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
 
@@ -2805,7 +2805,7 @@ export function machinerySetFolderCover(): void {
   machinerySaveFolder();
 }
 
-export function machinerySetFolderOrder(folder: any, orderBy: any, ignoreReload: any): void {
+export function machinerySetFolderOrder(folder?: any, orderBy?: any, ignoreReload?: any): void {
   var folder = folder;
   if (!folder) return;
   if (!orderBy) {

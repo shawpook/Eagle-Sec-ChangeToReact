@@ -35,6 +35,11 @@ import { useItemState } from '../store/itemState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
+
+// R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
+// 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
+declare const toggleAllFolders: any;
+declare const i18n: any;
 /* clickNode（bundle 21890 逐字：中键/dragCheck 守卫 + meta 多选 + shift 区间选择 +
    普通单击 openFolder） */
 export function sidebarClickNode(event: any, folder: any): void {
@@ -303,19 +308,18 @@ export function dblclickSidebarSmartFolderGroup(...args: any[]) {
         	else {
         		machineryRenameSmartFolder(event, folder);
         	}
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getNodeClass(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (node) {
-            var __lv_result = {
+            var __lv_result: any = {
                 'active active-item': (useMiscRawState.getState().selectedFolders.length === 0 && useMiscRawState.getState().currentId == 'folder-' + node.id) || useMiscRawState.getState().selectedFoldersMappings[node.id],
                 'locked': node.password && !node.isUnLock,
                 'collapsed': !node.isExpand && !useMiscRawState.getState().folderKeyword.length,
                 'editable': node.editable,
                 'selected': node.isSelected,
-                'editable': node.editable,
                 'empty-node': node.children && node.children.length == 0,
                 'show-badge': node.imageCount > 0,
                 'close': node.children && node.children.length <= 0 && node.isExpand,
@@ -333,7 +337,7 @@ export function getNodeClass(...args: any[]) {
 				__lv_result[`parent-color-${parent?.iconColor}`] = true;
 			}
             return __lv_result;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getQuickAccessClass(...args: any[]) {
@@ -349,7 +353,7 @@ export function getQuickAccessClass(...args: any[]) {
             
             if (!node) return;
 
-            var __lv_result = {
+            var __lv_result: any = {
                 'active active-item': useMiscRawState.getState().currentId === ('quickaccess-' + node.id),
                 'locked': node.password && !node.isUnLock,
                 'collapsed': !node.isExpand && !useMiscRawState.getState().folderKeyword.length,
@@ -372,14 +376,14 @@ export function getQuickAccessClass(...args: any[]) {
             }
             __lv_result['icon-' + node.icon] = true;
             return __lv_result;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getSmartFolderClass(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (smartFolder) {
             
-            var __lv_result = {
+            var __lv_result: any = {
                 'editable': smartFolder.editable,
                 'selected': smartFolder.isSelected,
                 'collapsed': !smartFolder.isExpand && !useMiscRawState.getState().folderKeyword.length,
@@ -403,7 +407,7 @@ export function getSmartFolderClass(...args: any[]) {
 				__lv_result[`parent-color-${parent?.iconColor}`] = true;
 			}
             return __lv_result;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function hoverHideSidebar(...args: any[]) {
@@ -416,7 +420,7 @@ export function hoverHideSidebar(...args: any[]) {
                     removeClass("#sidebar", "slide-in");
                 }, 300);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function hoverShowSidebar(...args: any[]) {
@@ -429,7 +433,7 @@ export function hoverShowSidebar(...args: any[]) {
                     addClass("#sidebar", "hover-show");
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function sidebarFocus(...args: any[]) {
@@ -437,7 +441,7 @@ export function sidebarFocus(...args: any[]) {
     return (function($event) {
             $event && $event.stopPropagation();
             writeScopeField('currentFocus', "sidebar");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function onSidebarResize(...args: any[]) {
@@ -457,7 +461,7 @@ export function onSidebarResize(...args: any[]) {
                 localStorage.setItem("eagle.containerSize.sidebar", ui.size.width);
             }, 500);
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleSelectFolder(...args: any[]) {
@@ -466,7 +470,7 @@ export function toggleSelectFolder(...args: any[]) {
       var folders = folderArg.children;
       folderArg.isExpand = expand;
       toggleCurrentLevelFolders(folders, expand);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleCurrentLevelFolders(...args: any[]) {
@@ -478,7 +482,7 @@ export function toggleCurrentLevelFolders(...args: any[]) {
         folders = parent.children;
       }
       toggleCurrentLevelFolders(folders, expand);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleAllFolderExpand(...args: any[]) {
@@ -499,7 +503,7 @@ export function toggleAllFolderExpand(...args: any[]) {
         toggleAllFolders(useFolderState.getState().folders, expand);
         machineryUpdateSidebarList();
       }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleSelectSmartFolder(...args: any[]) {
@@ -552,5 +556,5 @@ export function openFolderExpandContextMenu(...args: any[]) {
           try { folderEl && folderEl.classList && folderEl.classList.remove('context-activate'); } catch (err2) { /* 同上 */ }
         }
       });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }

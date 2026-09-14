@@ -86,7 +86,7 @@ export function getRatioExp(...args: any[]) {
                 ratio = 100 + (ratio - 100) * 7;
             }
             return parseInt(ratio);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function getRatioNonExp(...args: any[]) {
@@ -96,7 +96,7 @@ export function getRatioNonExp(...args: any[]) {
                 ratio = (ratio - 100) / 7 + 100;
             }
             return ratio;
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function lastZoom(...args: any[]) {
@@ -117,7 +117,7 @@ export function switchGridLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout("GridLayout");
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "GridLayout");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function switchJustifiedLayout(...args: any[]) {
@@ -125,7 +125,7 @@ export function switchJustifiedLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout("JustifiedLayout");
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "JustifiedLayout");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function switchListLayout(...args: any[]) {
@@ -133,7 +133,7 @@ export function switchListLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout("ListLayout");
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "ListLayout");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function switchSquareLayout(...args: any[]) {
@@ -141,7 +141,7 @@ export function switchSquareLayout(...args: any[]) {
     return (function () {
             machinerySwitchLayout("SquareLayout");
             machinerySaveLayout(useFolderState.getState().currentFolder || useFolderState.getState().currentSmartFolder, "SquareLayout");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function updateZoomRatio(...args: any[]) {
@@ -176,7 +176,7 @@ export function zoomFit(...args: any[]) {
                     // 如果是視頻格式，撐滿畫面
                     var mpvPlayer = q(".detail-wrap mpv-video");
                     if (mpvPlayer) {
-                        mpvPlayer.scaleMode = 'fit';
+                        (mpvPlayer as any).scaleMode = 'fit';
                     }
                     else {
                         removeClass(".detail-wrap video", "fit");
@@ -199,7 +199,7 @@ export function zoomFit(...args: any[]) {
 
                 machinerySmartZoom(undefined, true);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function zoomIn(...args: any[]) {
@@ -215,7 +215,7 @@ export function getNext(...args: any[]) {
         var start = selection.start;
         var end = selection.end;
         return useItemState.getState().allData[end + 1] || useItemState.getState().allData[end - 1];
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 
@@ -357,7 +357,7 @@ export function machinerySetViewMode(viewMode: any): void {
   setViewModeDebounced(viewMode);
 }
 
-export function machinerySmartZoom(target: any, forceMode: any): void {
+export function machinerySmartZoom(target?: any, forceMode?: any): void {
   detailSmartZoom(target, forceMode);
 }
 
@@ -399,7 +399,7 @@ export function machineryUpdateZoomRatio(ratio: any, x: any, y: any, hasTransiti
 }
 
 /* zoom（bundle 31191-31204 逐字；zoomFitEdge/zoomFit/smartZoom 经 scope 解析） */
-export function machineryZoom(): void {
+export function machineryZoom(zoom?: any): void {
   const w = window as any;
   if (!useBodyState.getState().isDetailMode) return;
   if (useMiscRawState.getState().lastZoomMode === "edge") {
@@ -458,12 +458,12 @@ export function machineryZoomActual(event: any): void {
 }
 
 /* b1-9bd：zoomFit 实现体归位 services/gridService.ts */
-export function machineryZoomFit(event: any, noAnimation: any): void {
+export function machineryZoomFit(event?: any, noAnimation?: any): void {
   gridZoomFit(event, noAnimation);
 }
 
 /* zoomFitEdge（bundle 34015-34077 逐字） */
-export function machineryZoomFitEdge(event: any, hasTransition: any): void {
+export function machineryZoomFitEdge(event?: any, hasTransition?: any): void {
   const w = window as any;
   event && event.preventDefault && event.preventDefault();
 

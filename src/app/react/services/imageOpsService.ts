@@ -238,7 +238,7 @@ export function rotateImage(...args: any[]) {
                     writeScopeField('isRotating', false);
                 }
             }, 200);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 /* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，
@@ -305,7 +305,7 @@ export function flipImage(...args: any[]) {
                     console.error(`Failed to load flipImage module: ${requireErr.message}`);
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 /* b1-9bz-B：原 install 体内匿名注册条目——DetailToolbar 的 call 派发只能字符串命中，
@@ -410,7 +410,7 @@ export function saveCrop(...args: any[]) {
                     }
                 });
             }, 500);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function changeStar(...args: any[]) {
@@ -431,7 +431,7 @@ export function updateSelection(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function() {
             updateInspectorChannel.emit();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function startDrag(...args: any[]) {
@@ -441,21 +441,21 @@ export function startDrag(...args: any[]) {
                 var __lv_transformsJSON = JSON.stringify([useSelectionState.getState().current]);
                 ipcRenderer.send('ondragstart', { images: __lv_transformsJSON, target: useSelectionState.getState().current, resize: 120 });
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function copeVideoFrame(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         	machineryVideoScreenShot(true);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function saveVideoFrame(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         	machineryVideoScreenShot();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function cancelRegenerateThumbnail(...args: any[]) {
@@ -463,7 +463,7 @@ export function cancelRegenerateThumbnail(...args: any[]) {
     return (function () {
             IPCHelper.send('cancel.generate.thumbnail');
             writeScopeField('regenerateThumbnailQueue', []);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function getThumbnailPath(...args: any[]) {
@@ -471,7 +471,7 @@ export function getThumbnailPath(...args: any[]) {
     return (function (__lv_image) {
             if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function getThumbnailUrl(...args: any[]) {
@@ -479,7 +479,7 @@ export function getThumbnailUrl(...args: any[]) {
     return (function (__lv_image) {
             if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function currentIndex(...args: any[]) {
@@ -495,7 +495,7 @@ export function regenerateThumbnail(...args: any[]) {
             useMiscRawState.getState().regenerateThumbnailQueue.push(image);
         });
         ayncsImagesGenerateThumbnail(useSelectionState.getState().selected);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function calculateImageBinding(...args: any[]) {
@@ -786,7 +786,7 @@ export function calculateImageBinding(...args: any[]) {
                     electronLog && electronLog.error(err.stack || err);
                 }
             }, duration);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function replaceFile(...args: any[]) {
@@ -913,7 +913,7 @@ export function replaceFile(...args: any[]) {
                 confirmButtonText: i18n.__('general.ok')
             });
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -937,7 +937,7 @@ export function flipHandler(...args: any[]) {
         	else {
         		flipImage($event, useSelectionState.getState().current, true);
         	}
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function rotateHandler(...args: any[]) {
@@ -949,7 +949,7 @@ export function rotateHandler(...args: any[]) {
         	else {
         		rotateImage($event, useSelectionState.getState().current);
         	}
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function setCustomThumbnail(...args: any[]) {
@@ -1004,7 +1004,7 @@ export function setCustomThumbnail(...args: any[]) {
             }
 
         }).catch(err => {})
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function setCustomThumbnailFromClipboard(...args: any[]) {
@@ -1059,7 +1059,7 @@ export function setCustomThumbnailFromClipboard(...args: any[]) {
                 });
             }
         }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function resetCustomThumbnail(...args: any[]) {
@@ -1068,7 +1068,7 @@ export function resetCustomThumbnail(...args: any[]) {
         delete useSelectionState.getState().selected[0].customThumbnail;
         useMiscRawState.getState().regenerateThumbnailQueue.push(useSelectionState.getState().selected[0]);
         ayncsImagesGenerateThumbnail([useSelectionState.getState().selected[0]]);
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function changeImagesBackground(...args: any[]) {
@@ -1087,7 +1087,7 @@ export function changeImagesBackground(...args: any[]) {
         ayncsImagesChange(images);
         machineryUpdateItemsView(useSelectionState.getState().selected);
         try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 

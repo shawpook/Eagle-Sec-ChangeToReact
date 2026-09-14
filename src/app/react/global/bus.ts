@@ -59,10 +59,6 @@ class EventBus {
     }
   }
 
-  /** 诊断/测试：某频道当前订阅数。 */
-  listenerCount(channel: string): number {
-    return this.channels.get(channel)?.size ?? 0;
-  }
 
   /** 诊断/测试：当前活跃频道名。 */
   channelNames(): string[] {
@@ -82,7 +78,7 @@ export const eagleBus = new EventBus();
 export function defineChannel<P = void>(name: string) {
   return {
     name,
-    emit: (payload: P) => eagleBus.emit(name, payload),
+    emit: (payload?: P) => eagleBus.emit(name, payload),
     on: (handler: (payload: P) => void) => eagleBus.on(name, handler as BusHandler),
   };
 }

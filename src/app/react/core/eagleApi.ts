@@ -3,9 +3,10 @@
  * bundle 执行、var 上 window 的对象）。React 侧实例暂不覆写 window.eagle（bundle 内部
  * 经全局查找仍用其实例）；各 c 域切片逐步切换消费方，cZ 时由 bindEagle() 覆写挂载。
  */
-// @ts-nocheck
 
 class Eagle {
+	utils: any;
+	urlEnlargerRemote: any;
 	constructor() {
         this.utils = {};
 	}
@@ -17,7 +18,7 @@ class TreeUtil {
 	constructor() {
 	}
 
-    walk(tree, property, callback, parentNode = null, depth = 0) {
+    walk(tree: any, property: any, callback: any, parentNode: any = null, depth: any = 0) {
 
         if (tree === undefined) tree = [];
 
@@ -45,7 +46,7 @@ eagle.urlEnlargerRemote = {
             'https://eagleapp.oss-cn-hongkong.aliyuncs.com/js/url-enlarger.js'
         ];
 
-        function loadScript(index) {
+        function loadScript(index: any) {
             if (index >= scripts.length) return;
 
             const script = document.createElement('script');

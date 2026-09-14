@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { AppTheme } from '@shared/types'
+import type { AppTheme } from '../shared/types'
 
 export type SystemTheme = Extract<AppTheme, 'dark' | 'light'>
 

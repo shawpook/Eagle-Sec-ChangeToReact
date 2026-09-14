@@ -78,7 +78,7 @@ export function openFileListContextMenu(...args: any[]) {
   return (function (event: any) {
           event.stopPropagation();
           openOrderMenu();
-  }).apply(null, args);
+  } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openApplicationContextMenu(...args: any[]) {
@@ -94,7 +94,7 @@ export function openApplicationContextMenu(...args: any[]) {
               return;
           }
           applicationMenu.popup(currentWindow);
-      }).apply(null, args);
+      } as (...__args: any[]) => any).apply(null, args);
 }
 
 /* 10 builder（逐字；fns/getScope 为闭包注入） */
@@ -123,7 +123,7 @@ export function openRatioContextMenu(...args: any[]) {
                 ],
                 showSearch: false,
             });            
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openTrashContextMenu(...args: any[]) {
@@ -157,7 +157,7 @@ export function openTrashContextMenu(...args: any[]) {
                     removeClassEl(trashEl, "context-activate");
                 }
             });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openOrderMenu(...args: any[]) {
@@ -165,7 +165,7 @@ export function openOrderMenu(...args: any[]) {
             event && event.stopPropagation();
             openLayoutPanelChannel.emit();
             updateCurrentOrderAndIncrease();
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openFilterAddContextMenu(...args: any[]) {
@@ -474,7 +474,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     }
                 }
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openNewContextMenu(...args: any[]) {
@@ -725,7 +725,7 @@ export function openNewContextMenu(...args: any[]) {
                 ],
                 showSearch: true,
             })
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openQuickAccessContextMenu(...args: any[]) {
@@ -753,7 +753,7 @@ export function openQuickAccessContextMenu(...args: any[]) {
                     removeClassEl(targetEl, "context-activate");
                 }
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openSidebarVisibleContextMenu(...args: any[]) {
@@ -869,7 +869,7 @@ export function openSidebarVisibleContextMenu(...args: any[]) {
                     removeClassEl(targetEl, "context-activate");
                 }
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function openSmartFolderExpandContextMenu(...args: any[]) {
@@ -908,5 +908,5 @@ export function openSmartFolderExpandContextMenu(...args: any[]) {
                     smartFolder.isSelected = false;
                 }
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }

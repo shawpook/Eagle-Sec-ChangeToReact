@@ -6,7 +6,6 @@ import { getWindowScope } from './scopeFace';
  * bareModules，Electron 经 nodeIntegration——与 bundle 内同名全局语义一致）。
  * bundle 的 window.FileUrlHelper 在过渡期共存；React 消费方一律改走本模块 import。
  */
-// @ts-nocheck
 
 const path = (window as any).require
   ? (window as any).require('path')
@@ -29,14 +28,14 @@ const URL_MODULE = (() => {
 })();
 
 export const FileUrlHelper = {
-    getMetadataPath: function (image) {
+    getMetadataPath: function (image: any) {
         try {
             if (!image || !image.name) return "";
             return path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/metadata.json`);
         }
         catch (err) { }
     },
-    getRawPath: function (image) {
+    getRawPath: function (image: any) {
         try {
             if (!image || !image.name) return "";
             let rawPath = path.normalize(`${getWindowScope().libraryImagesPath}/${image.id}.info/${image.name}.${image.ext}`);
@@ -44,7 +43,7 @@ export const FileUrlHelper = {
         }
         catch (err) { }
     },
-    getThumbnailPath: function (image) {
+    getThumbnailPath: function (image: any) {
         try {
             if (!image || !image.name) return "";
 
@@ -64,14 +63,14 @@ export const FileUrlHelper = {
         }
         catch (err) { }
     },
-    getThumbnailUrl: function (image) {
+    getThumbnailUrl: function (image: any) {
         try {
             var thumbnailPath = FileUrlHelper.getThumbnailPath(image);
             return URL_MODULE.pathToFileURL(thumbnailPath).href;
         }
         catch (err) { }
     },
-    getLastestThumbnailUrl: function (image) {
+    getLastestThumbnailUrl: function (image: any) {
         try {
             let thumbnailUrl = FileUrlHelper.getThumbnailUrl(image);
             if (getWindowScope().modifiedMappings && getWindowScope().modifiedMappings[image.id]) {
@@ -81,7 +80,7 @@ export const FileUrlHelper = {
         }
         catch (err) { }
     },
-    getRawUrl: function (image) {
+    getRawUrl: function (image: any) {
         try {
             return URL_MODULE.pathToFileURL(FileUrlHelper.getRawPath(image)).href;
         }
@@ -89,7 +88,7 @@ export const FileUrlHelper = {
     }
 }
 
-function getRawPath(imagesDir, image, force) {
+function getRawPath(imagesDir: any, image: any, force?: any) {
     if (!image || !image.name) return;
     var imageDir = imagesDir + image.id + ".info/";
     var rawPath = "";
@@ -104,7 +103,7 @@ function getRawPath(imagesDir, image, force) {
     return rawPath.replace(/#/g, '%23');
 }
 
-function getThumbnailPath(imagesDir, image) {
+function getThumbnailPath(imagesDir: any, image: any) {
     if (!image || !image.name) return;
     if (image.noThumbnail) {
         return getRawPath(imagesDir, image);

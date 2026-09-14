@@ -3,14 +3,13 @@
  * React 此前无法直用——本模块补齐）。机械替换：ipcRenderer → eagleGlobals ipcRenderer()；
  * electronLog → window.electronLog 兜底 console。
  */
-// @ts-nocheck
 import { ipcRenderer as ipcRendererFn } from '../global/eagleGlobals';
 
 const ipcRenderer: any = ipcRendererFn();
 const electronLog: any = (window as any).electronLog || console;
 
 export const IPCHelper = {
-	send: function (channel, params, ignoreLogging) {
+	send: function (channel: any, params: any, ignoreLogging: any = false) {
 		try {
 			ipcRenderer.send(channel, params);
 			if (!ignoreLogging) {
@@ -21,7 +20,7 @@ export const IPCHelper = {
 
 		}
 	},
-	sendTo: function (id, channel, params, ignoreLogging) {
+	sendTo: function (id: any, channel: any, params: any, ignoreLogging: any) {
 		try {
 			ipcRenderer.sendTo(id, channel, params);
 			if (!ignoreLogging) {

@@ -8,8 +8,8 @@
  * - renameImages：bundle 41480-41495（bare event 为 bundle window.event 怪癖逐字保留）
  * - openWithApplicationPath：bundleGlobals 若缺的等价兜底（正常路径 window 供给）
  */
-// @ts-nocheck
 import { contextMenuCloseChannel, contextMenuOpenChannel, openRenameChannel } from '../global/bus';
+import { enableImageNameEditable } from '../services/selectionService';
 
 import { q, findEl } from '../utils/domQuery';
 import { useSelectionState } from '../store/selectionState';

@@ -141,7 +141,7 @@ export function createFolder(...args: any[]) {
                 }
                 analytics.event('Folder', 'Create');
             });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function newFolder(...args: any[]) {
@@ -269,7 +269,7 @@ export function newFolder(...args: any[]) {
                     analytics.event('Folder', 'Create');
                 });
             }, 300);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function newFolderWidthSelection(...args: any[]) {
@@ -363,7 +363,7 @@ export function newFolderWidthSelection(...args: any[]) {
             electronLog && electronLog.info(`[app] Create new folder ${folder.name}(${folder.id}) with ${useSelectionState.getState().selected.length} files`);
             analytics.event('Folder', 'Create-With-Images', folder.name);
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function addImagesToFolder(...args: any[]) {
@@ -435,7 +435,7 @@ export function addImagesToFolder(...args: any[]) {
 
             electronLog && electronLog.info(`[app] Categorize ${images.length} files to ${folder.name}(${folder.id})`);
             analytics.event('File', 'Categorize', 'Context');
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function moveFoldersAsSibling(...args: any[]) {
@@ -542,7 +542,7 @@ export function moveFoldersAsSibling(...args: any[]) {
                 writeScopeField('folders', clone);
                 electronLog && electronLog.error(err.stack || err);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function moveFoldersToFolder(...args: any[]) {
@@ -637,7 +637,7 @@ export function moveFoldersToFolder(...args: any[]) {
                 writeScopeField('folders', clone);
                 electronLog && electronLog.error(err.stack || err);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function emptyRestore(...args: any[]) {
@@ -680,7 +680,7 @@ export function emptyRestore(...args: any[]) {
                     });
                 });
             }
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
@@ -762,7 +762,7 @@ export function getLibraryHistory(...args: any[]) {
                 }
             });
             return result;
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openFolder(...args: any[]) {
@@ -859,7 +859,7 @@ export function openFolder(...args: any[]) {
                     }, 500);
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openSmartFolder(...args: any[]) {
@@ -944,7 +944,7 @@ export function openSmartFolder(...args: any[]) {
 	            }
 
             }, 25);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openUnfiled(...args: any[]) {
@@ -972,7 +972,7 @@ export function switchLibrary(...args: any[]) {
                 // 掛載，bundle 摘除後徹底死亡）——廣播體移除；程式庫面板豎切時按 React
                 // 語義歸位。
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function duplicateItem(...args: any[]) {
@@ -983,7 +983,7 @@ export function duplicateItem(...args: any[]) {
             if (useSelectionState.getState().selected[0]) {
                 ipcRenderer.send('duplicate-file', useSelectionState.getState().selected[0].id);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function exportFolder(...args: any[]) {
@@ -1004,19 +1004,19 @@ export function exportFolder(...args: any[]) {
                 callback(undefined);
             }
         });
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function checkDiskSpace(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function(path, needSpace, callback) {
         callback && callback();
-    }).apply(null, args);
+    } as (...__args: any[]) => any).apply(null, args);
   }
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryOpenAll(ignoreHistory: any, callback: any): void {
+export function machineryOpenAll(ignoreHistory?: any, callback?: any): void {
     const w = window as any;
     const $timeout = getTimeout();
 
@@ -1065,7 +1065,7 @@ export function machineryOpenAll(ignoreHistory: any, callback: any): void {
   }, 50);
 }
 
-export function machineryOpenCommunity(ignoreHistory: any): void {
+export function machineryOpenCommunity(ignoreHistory?: any): void {
   const w = window as any;
   w.ScrollbarSaver.saveScrollPosition();
   writeScopeField('viewMode', 'community');
@@ -1089,7 +1089,7 @@ export function machineryOpenCommunity(ignoreHistory: any): void {
   machineryLeaveDetailMode();
 }
 
-export function machineryOpenRandom(ignoreHistory: any, callback: any): void {
+export function machineryOpenRandom(ignoreHistory?: any, callback?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   if (useBodyState.getState().viewMode === 'random' && useItemState.getState().allData.length > 0 && w.eagle.filter.filterRules.color.value == undefined) {

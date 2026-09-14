@@ -19,6 +19,10 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { getIpcBus } from '../core/channelBridge';
+
+// R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
+// 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
+declare const guid: any;
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══
 // —— controllerFns 模块级声明随迁（verbatim；按原声明顺序防 TDZ）——
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
@@ -103,7 +107,7 @@ export function cancelAllTasks(...args: any[]) {
             }, 1000);
             removeClass("#upload-queue-progress", "open");
             removeClass("body", "is-uploading");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function importFolders(...args: any[]) {
@@ -112,10 +116,10 @@ export function importFolders(...args: any[]) {
             dialog.showOpenDialog(currentWindow, {
                 title: $filter('i18n')('dialog.importLocalFolder.title'),
                 properties: ['openDirectory', 'multiSelections']
-            }).then(__lv_result => {
+            }).then((__lv_result: any) => {
                 var paths = __lv_result.filePaths;
                 if (paths && paths.length > 0) {
-                    paths.forEach(function (p) {
+                    paths.forEach(function (p: any) {
                         // 避免用户导入资源库
                         if (p.endsWith(".library")) {
                             if (paths.length === 1) {
@@ -131,7 +135,7 @@ export function importFolders(...args: any[]) {
                     });
                 }
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 /* ── 文件夹导入链（bundle 53152 uploadFolderToSidebar / 53200 uploadFilesFromFolder /
@@ -378,8 +382,8 @@ export function uploadFiles(...args: any[]) {
                     star: __lv_file.star || undefined
                 };
 
-                if (__lv_file.cutMode) __lv_image.cutMode = true;
-                if (__lv_file.merged) __lv_image.merged = true;
+                if (__lv_file.cutMode) (__lv_image as any).cutMode = true;
+                if (__lv_file.merged) (__lv_image as any).merged = true;
 
                 images.push(__lv_image);
 
@@ -387,7 +391,7 @@ export function uploadFiles(...args: any[]) {
                     __lv_image.folders.push(folder.id);
                     __lv_image.folders = [...new Set(__lv_image.folders)];
                     if (__lv_image.tags && folder.extendTags) {
-                        folder.extendTags.forEach(function (tag) {
+                        folder.extendTags.forEach(function (tag: any) {
                             __lv_image.tags.push(tag);
                         });
                         __lv_image.tags = [...new Set(__lv_image.tags)];
@@ -409,24 +413,24 @@ export function uploadFiles(...args: any[]) {
             console.timeEnd("s.uploadFiles.ipcRenderer.send");
             setHtmlEl(findEl(q("#upload-queue-progress"), ".message .percentage"), useMiscRawState.getState().finishQueue.length + "/" + useMiscRawState.getState().uploadQueue.length);
             setWidthEl(findEl(q("#upload-queue-progress"), ".current"), useMiscRawState.getState().finishQueue.length/useMiscRawState.getState().uploadQueue.length*100 + "%");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function uploadUrls(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function(urls, __lv_fds, params) {
             var folders = [];
-            let extendTags = [];
+            let extendTags: any[] = [];
 
             if (__lv_fds && __lv_fds.length > 0) {
-                folders = __lv_fds.map(function (fd) {
+                folders = __lv_fds.map(function (fd: any) {
                     return useItemState.getState().folderMappings[fd];
                 });
             }
 
-            folders.forEach((folder) => {
+            folders.forEach((folder: any) => {
                 if (folder?.extendTags) {
-                    folder.extendTags.forEach((tag) => {
+                    folder.extendTags.forEach((tag: any) => {
                         extendTags.push(tag);
                     });
                 }
@@ -434,11 +438,11 @@ export function uploadUrls(...args: any[]) {
 
             extendTags = [...new Set(extendTags)];
 
-            var __lv_files = urls.map(function(url, index) {
+            var __lv_files = urls.map(function(url: any, index: any) {
                 
 				let fileName = params && params.names && params.names[index] || "";
                 let newTags = params?.tags;
-                let __lv_tags = [];
+                let __lv_tags: any[] = [];
                 if (newTags && newTags.length > 0) {
                     __lv_tags = [...extendTags, ...newTags];
                 }
@@ -470,7 +474,7 @@ export function uploadUrls(...args: any[]) {
                 machineryShowUploadQueue();
             }
             ipcRenderer.send('upload-urls', __lv_files);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 

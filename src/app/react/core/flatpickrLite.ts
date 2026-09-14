@@ -100,9 +100,9 @@ class FlatpickrLite {
   _positionElement: any;
   selectedDates: Date[] = [];
   latestSelectedDateObj: any = null;
-  now: Date;
-  currentYear: number;
-  currentMonth: number;
+  now!: Date;
+  currentYear!: number;
+  currentMonth!: number;
   isOpen = false;
   calendarContainer: any;
   monthNav: any;

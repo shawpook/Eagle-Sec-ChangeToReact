@@ -80,10 +80,17 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { useItemState } from '../store/itemState';
+
+// R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
+// 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
+declare const i18n: any;
+declare const AnnotationPreview: any;
+declare const initMousetrap: any;
+declare const fuzzy_match: any;
+declare const chineseConvert: any;
 // 原 bundle controller 闭包 var（唯一写方 machineryNotify 已随迁本域）
 let undoTimeout: any = null;
 declare const IPCHelper: any;
-declare const remote: any;
 
 let done = false;
 
@@ -1017,28 +1024,28 @@ export function changeOrderBy(...args: any[]) {
                 }
             }
             updateCurrentOrderAndIncrease();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function cleanLibraryPathPermissionError(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event) {
             writeScopeField('libraryPathPermissionError', false);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function cleanLocalhostError(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event) {
             writeScopeField('localhostError', false);
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function contentFocus(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function($event) {
             writeScopeField('currentFocus', "content");
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function dblclickContentPanel(...args: any[]) {
@@ -1047,7 +1054,7 @@ export function dblclickContentPanel(...args: any[]) {
             if (!useBodyState.getState().isCropMode) {
                 machineryLeaveDetailMode();
             }    
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function escHandler(...args: any[]) {
@@ -1088,7 +1095,7 @@ export function escHandler(...args: any[]) {
                 }
                 return;
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function leaveDetailMode(...args: any[]) {
@@ -1150,7 +1157,7 @@ export function leaveDetailMode(...args: any[]) {
                 try { initMousetrap(); } catch (err) { /* b1-8b 接装前可达性缺失，忽略 */ }
                 clearInterval(useMiscRawState.getState().gifUpadteInterval);
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function maximize(...args: any[]) {
@@ -1172,7 +1179,7 @@ export function maximize(...args: any[]) {
                     currentWindow.minimize();
                 }
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function openErrorModal(...args: any[]) {
@@ -1181,7 +1188,7 @@ export function openErrorModal(...args: any[]) {
             openErrorChannel.emit({
                 errorList: useMiscRawState.getState().errorList
             });
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleFolderVisible(...args: any[]) {
@@ -1191,7 +1198,7 @@ export function toggleFolderVisible(...args: any[]) {
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.folder.expand", useMiscRawState.getState().isExpandFolder);
             machineryUpdateSidebarList();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function togglePaletteProcessing(...args: any[]) {
@@ -1203,7 +1210,7 @@ export function togglePaletteProcessing(...args: any[]) {
             else {
                 machineryPausePalette();
             }
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleQuickAccessVisible(...args: any[]) {
@@ -1213,7 +1220,7 @@ export function toggleQuickAccessVisible(...args: any[]) {
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.quickAccess.expand", useMiscRawState.getState().isExpandQuickAccess);
             machineryUpdateSidebarList();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function toggleSmartFolderVisible(...args: any[]) {
@@ -1223,7 +1230,7 @@ export function toggleSmartFolderVisible(...args: any[]) {
             syncSidebarFromScope();
             localStorage.setItem("eagle.sidebar.smartFolder.expand", useMiscRawState.getState().isExpandSmartFolder);
             machineryUpdateSidebarList();
-        }).apply(null, args);
+        } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function undo(...args: any[]) {
@@ -1270,7 +1277,7 @@ export function updateSuggestions() {
                 keyword = useListState.getState().keyword.toLowerCase();
             }
 
-            writeScopeField('hsks', useMiscRawState.getState().historySearchKeywords.filter(function (word) {
+            writeScopeField('hsks', useMiscRawState.getState().historySearchKeywords.filter(function (word: any) {
                 if (!keyword || keyword == "") return true;
                 if (word) {
                     return fuzzy_match(word, keyword).length > 0;
@@ -1278,12 +1285,12 @@ export function updateSuggestions() {
                 return false;
             }).slice(0,8));
             syncToolbarFromScope();
-            var suggestions = [];
-            var wordsIndex = {};
+            var suggestions: any[] = [];
+            var wordsIndex: any = {};
             var dataset = [];
-            var currPageTags = [];
+            var currPageTags: any[] = [];
             var allCount = getWindowScope().all.length;
-            useMiscRawState.getState().containTags.forEach(function (tag) {
+            useMiscRawState.getState().containTags.forEach(function (tag: any) {
             	if (tag.imageCount && !tag.isNoTags) {
 	            	currPageTags.push({
 	            		word: tag.name.toLowerCase(),
@@ -1320,7 +1327,7 @@ export function updateSuggestions() {
 	            // }
             	writeScopeField('keywordSuggestions', suggestions);
             	syncToolbarFromScope();
-                writeScopeField('keywordSuggestions', useMiscRawState.getState().keywordSuggestions.filter((suggestion) => {
+                writeScopeField('keywordSuggestions', useMiscRawState.getState().keywordSuggestions.filter((suggestion: any) => {
                     return useMiscRawState.getState().hsks.indexOf(suggestion.word) === -1 && suggestion.word;
                 }));
                 syncToolbarFromScope();
@@ -1371,7 +1378,7 @@ export function updateSuggestions() {
             });
 
             // 去重复
-            var duplicatesMap = {};
+            var duplicatesMap: any = {};
             suggestions = suggestions.filter(function (suggestion) {
             	if (!duplicatesMap[suggestion.word]) {
             		duplicatesMap[suggestion.word] = true;
@@ -1637,7 +1644,7 @@ export function machineryFocusAppUnlockPassword(): void {
   });
 }
 
-export function machineryLeaveDetailMode(): void {
+export function machineryLeaveDetailMode($event?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   // P2：退出详情立即解除原图交付门控（与 shims 原包装体同序：先解除再走原逻辑）。
@@ -1818,12 +1825,12 @@ export function machineryNotify(params: any, restoreCallbackk: any): void {
 }
 
 /* openPluginPanel（bundle 37324 逐字：OPEN_PLUGIN_PANEL 广播，含 // return 注释逐字） */
-export function machineryOpenPluginPanel(event: any): void {
+export function machineryOpenPluginPanel(event?: any): void {
   // return;
   openPluginPanelChannel.emit();
 }
 
-export function machineryQuicklook(event: any): void {
+export function machineryQuicklook(event?: any): void {
   const w = window as any;
   if (qa(".swal2-container").length > 0) {
     return;

@@ -22,7 +22,7 @@ export function machineryBack(): void {
   }
 }
 
-export function machineryNextHistory(): void {
+export function machineryNextHistory(event?: any): void {
   const w = window as any;
   if (useMiscRawState.getState().UrlStateService.canGoForward) {
     w.currentWindow.webContents.goForward();
@@ -67,7 +67,7 @@ export function machineryOpenPrevQuickAccess(): void {
   }
 }
 
-export function machineryPrevHistory(): void {
+export function machineryPrevHistory(event?: any): void {
   const w = window as any;
   if (useMiscRawState.getState().UrlStateService.canGoBack) {
     w.currentWindow.webContents.goBack();

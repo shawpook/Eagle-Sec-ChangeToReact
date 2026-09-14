@@ -8,7 +8,6 @@
  * 消费面切换：`w.$("#detail-container").smoothZoom(m, ...)` → `detailZoom()?.m(...)`。
  * FileUrlHelper 自 react/core/fileUrlHelper 具名导入（裸标识符解析到 import）。
  */
-// @ts-nocheck
 import { FileUrlHelper } from './fileUrlHelper';
 import { BitmapViewer } from './bitmapViewer';
 import { syncDetailFromScope } from '../store/detailState';
@@ -21,6 +20,8 @@ function bodyScopeOf(): any { return getWindowScope(); }
 
 import { makeDraggable } from '../components/interactions/draggable';
 import { dom } from '../utils/domLite';
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const jQuery: any;
 
 
 import { machineryGetRatioNonExp } from '../services/viewOpsService';
@@ -29,9 +30,9 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		For detailed description of individual parameters, see the help document
 	******************************************************************************/
 	var NAVIGATOR_SIZE = 120;
-	var hintTimeout;
-	var pagingTimeout;
-	var mousewheelTimeout;
+	var hintTimeout: any;
+	var pagingTimeout: any;
+	var mousewheelTimeout: any;
 	var defaults = {
 
 		width: '',									//Width of the view area [480, '480px', '100%']
@@ -97,9 +98,9 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		max_HEIGHT: ''								//Maximum allowed height of view area (helpful when 'height' parameter set with % and need limit)
 	};
 
-	var $scope;
+	var $scope: any;
 
-	function Zoomer($elem, params) {
+	function Zoomer(this: any, $elem: any, params: any) {
 
 		var self = this,
 		op = Object.assign({}, defaults, params);
@@ -131,7 +132,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		this.reset_align = op.reset_ALIGN_TO.toLowerCase().split(' ');
 		this.reset_to_zmin = checkBoolean(op.reset_TO_ZOOM_MIN);
 
-		this.bu_size = parseInt((this.hasTouch? op.button_SIZE_TOUCH_DEVICE : op.button_SIZE)/2)*2;
+		this.bu_size = parseInt(String((this.hasTouch? op.button_SIZE_TOUCH_DEVICE : op.button_SIZE)/2))*2;
 		this.bu_color = op.button_COLOR;
 		this.bu_bg = op.button_BG_COLOR;
 		this.bu_bg_alpha = op.button_BG_TRANSPARENCY / 100;
@@ -263,14 +264,14 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		this.use3D = op.use_3D_Transform && supportsTrans3D;
 
 		// Set events to support pointer / touch / mouse
-		if (navigator.pointerEnabled || navigator.msPointerEnabled) {
+		if ((navigator as any).pointerEnabled || (navigator as any).msPointerEnabled) {
 			//Pointer
-			if (navigator.pointerEnabled) {
+			if ((navigator as any).pointerEnabled) {
 				this.pointerDown = 'pointerdown';
 				this.pointerUp = 'pointerup';
 				this.pointerMove = 'pointermove';
 
-			} else if (navigator.msPointerEnabled) {
+			} else if ((navigator as any).msPointerEnabled) {
 				this.pointerDown = 'MSPointerDown';
 				this.pointerUp = 'MSPointerUp';
 				this.pointerMove = 'MSPointerMove';
@@ -349,7 +350,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 			{loaded: false, src: this.image_url == ''? this.$image.attr('src') : this.image_url} // Main image
 		];
 
-		this.imgList.forEach(function (_item, i){
+		this.imgList.forEach(function (_item: any, i: any){
 			var _img = new Image();
 			dom(_img) .bind('load', {id:i, self: self}, self.loadComplete)
 					.bind('error', {id:i, self: self}, self.loadComplete); //Allow initiation even if image is not there :(
@@ -357,7 +358,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		});
 
 		// init draggable
-		function updateByNavigator (offsetX, offsetY) {
+		function updateByNavigator (offsetX: any, offsetY: any) {
 			let maxEdge = NAVIGATOR_SIZE;
             let backgroundHeight;
             let backgroundWidth;
@@ -365,12 +366,12 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
             if (bodyScopeOf().current.width > bodyScopeOf().current.height) {
             	ratio = bodyScopeOf().current.width / bodyScopeOf().current.height;
             	backgroundWidth = NAVIGATOR_SIZE;
-            	backgroundHeight = parseInt(NAVIGATOR_SIZE / ratio);
+            	backgroundHeight = parseInt(String(NAVIGATOR_SIZE / ratio));
             }
             else {
             	ratio = bodyScopeOf().current.height / bodyScopeOf().current.width;
             	backgroundHeight = NAVIGATOR_SIZE;
-            	backgroundWidth = parseInt(NAVIGATOR_SIZE / ratio);
+            	backgroundWidth = parseInt(String(NAVIGATOR_SIZE / ratio));
             }
 			let left = (offsetX - self.scrollbar.navigatorViewport.width() / 2) / backgroundWidth;
 			let top = (offsetY - self.scrollbar.navigatorViewport.height() / 2) / backgroundHeight;
@@ -381,20 +382,20 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 			self.Animate();
 		}
 
-		self.scrollbar.navigator.on("mousedown", function (event) {
+		self.scrollbar.navigator.on("mousedown", function (event: any) {
 			event.stopPropagation();
 			updateByNavigator(event.offsetX, event.offsetY);
 		});
 
-		self.scrollbar.navigatorViewport.on("mousedown", function (event) {
+		self.scrollbar.navigatorViewport.on("mousedown", function (event: any) {
 			event.stopPropagation();
 		});
 
-		self.scrollbar.horizontal.on("mousedown", function (event) {
+		self.scrollbar.horizontal.on("mousedown", function (event: any) {
 			event.stopPropagation();
 		});
 
-		self.scrollbar.vertical.on("mousedown", function (event) {
+		self.scrollbar.vertical.on("mousedown", function (event: any) {
 			event.stopPropagation();
 		});
 
@@ -412,12 +413,12 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 	            if (bodyScopeOf().current.width > bodyScopeOf().current.height) {
 	            	ratio = bodyScopeOf().current.width / bodyScopeOf().current.height;
 	            	backgroundWidth = NAVIGATOR_SIZE;
-	            	backgroundHeight = parseInt(NAVIGATOR_SIZE / ratio);
+	            	backgroundHeight = parseInt(String(NAVIGATOR_SIZE / ratio));
 	            }
 	            else {
 	            	ratio = bodyScopeOf().current.height / bodyScopeOf().current.width;
 	            	backgroundHeight = NAVIGATOR_SIZE;
-	            	backgroundWidth = parseInt(NAVIGATOR_SIZE / ratio);
+	            	backgroundWidth = parseInt(String(NAVIGATOR_SIZE / ratio));
 	            }
 				let left = ui.position.left / backgroundWidth;
 				let top = ui.position.top / backgroundHeight;
@@ -496,7 +497,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 
 		/*Preload the icon and main image
 		*********************************************************************************************************************/
-		loadComplete: function (e) {
+		loadComplete: function (e: any) {
 			var self = e.data.self,
 				complete = true;
 
@@ -522,10 +523,10 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		*********************************************************************************************************************/
 		checkTouchSupport: function (){
 			var touch = 'ontouchstart' in window || 'createTouch' in document;
-			if (navigator.pointerEnabled) {
+			if ((navigator as any).pointerEnabled) {
 				touch =  Boolean(touch || navigator.maxTouchPoints);
-			} else if (navigator.msPointerEnabled) {
-				touch = Boolean(touch || navigator.msMaxTouchPoints);
+			} else if ((navigator as any).msPointerEnabled) {
+				touch = Boolean(touch || (navigator as any).msMaxTouchPoints);
 			}
 			return touch;
 		},
@@ -1066,14 +1067,14 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 
 			//Prevent Controls Bg from double click zoom
 			if (self.mouse_dbl_click) {
-				$controls.bind('dblclick.sz', function (e) {
+				$controls.bind('dblclick.sz', function (e: any) {
 					e.preventDefault();
 					e.stopPropagation();
 				});
 			}
 
 			//Prevent text selection for smoother dragging and button focus
-			// $('.noSel').each(function () {
+			// $('.noSel').each(function (this: any) {
 				// this.onselectstart = function () {
 				// 	return false;
 				// };
@@ -1122,7 +1123,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 					self.show_at_zoom = parseInt(self.$loc_cont.data('show-at-zoom'),10) / 100;
 					self.allow_scale = checkBoolean(self.$loc_cont.data('allow-scale'));
 					self.allow_drag = checkBoolean(self.$loc_cont.data('allow-drag'));
-					locs.each(function () {
+					locs.each(function (this: any) {
 						self.setLocation(dom(this));
 					});
 				}
@@ -1193,7 +1194,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 			//Get Image maps if exists
 			if ($image.attr('usemap') != undefined) {
 				self.mapAreas = dom("map[name='" + ($image.attr('usemap').split('#').join('')) + "']").children('area');
-				self.mapAreas.each(function (i) {
+				self.mapAreas.each(function (this: any, i: any) {
 					var area = dom(this);
 					area.css('cursor', 'pointer');
 					if (self.mouse_drag) {
@@ -1215,7 +1216,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 			self.sH = sH;
 		},
 
-		getContainerSize: function (sW, sH, $holder, w_max, h_max){
+		getContainerSize: function (sW: any, sH: any, $holder: any, w_max: any, h_max: any){
 			// if (sW === '' || sW === 0) {
 			// 	if (this.image_url == '') {
 			// 		sW = Math.max($holder.parent().width(), 100);
@@ -1267,7 +1268,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 
 		/*Each landmark / location / lable initiated here
 		***********************************************************************************************************************/
-		setLocation: function (lc){
+		setLocation: function (lc: any){
 			var self = this,
 				ob = lc,
 				w2, h2, pos, sc;
@@ -1362,7 +1363,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 				ob.css('opacity', 0);
 			}
 			if (!self.allow_drag) {
-				ob.bind(self.event_down, function (e) {
+				ob.bind(self.event_down, function (e: any) {
 					//e.preventDefault();
 					e.stopPropagation();
 				})
@@ -1374,8 +1375,8 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 		getStyle: function () {
 			var el = this.$image;
 			return {
-				prop_origin: [prop_origin, prop_origin !== false && prop_origin !== undefined ? el.css(prop_origin) : null],
-				prop_transform: [prop_transform, prop_transform !== false && prop_transform !== undefined ? el.css(prop_transform) : null],
+				prop_origin: [prop_origin, (prop_origin as any) !== false && prop_origin !== undefined ? el.css(prop_origin) : null],
+				prop_transform: [prop_transform, (prop_transform as any) !== false && prop_transform !== undefined ? el.css(prop_transform) : null],
 				'position': ['position', el.css('position')],
 				'z-index': ['z-index', el.css('z-index')],
 				'cursor': ['cursor', el.css('cursor')],
@@ -1388,7 +1389,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 
 		/*Find the scale ratios
 		***********************************************************************************************************************/
-		checkRatio: function (sW, sH, iW, iH, zoom_fit) {
+		checkRatio: function (sW: any, sH: any, iW: any, iH: any, zoom_fit: any) {
 			var rF;
 			if (iW == sW && iH == sH) {
 				rF = 1;
@@ -1437,14 +1438,14 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 
 		/*Returns distance between 2 points (used for touch gesture)
 		***********************************************************************************************************************/
-		getDistance: function (x1,y1,x2,y2) {
+		getDistance: function (x1: any, y1: any, x2: any, y2: any) {
 			return Math.sqrt(Math.abs(((x2-x1)*(x2-x1)) + ((y2-y1)*(y2-y1))));
 		},
 
 
 		/*Image Events for Dragging and Mouse Wheel
 		***********************************************************************************************************************/
-		mouseDown: function (e) {
+		mouseDown: function (e: any) {
 
 			if (e && e.button >= 3) {
         		return;
@@ -1513,7 +1514,7 @@ import { machineryGetRatioNonExp } from '../services/viewOpsService';
 
 		/*Mouse Drag / Touch swipe operations handled here
 		***********************************************************************************************************************/
-		mouseDrag: function (e) {
+		mouseDrag: function (e: any) {
 
 			var self = e.data.self,
 			te = e.originalEvent,
@@ -1644,7 +1645,7 @@ if (!self._mousedown) return;
 
 		/*Global Mouse Up / Touch End
 		***********************************************************************************************************************/
-		mouseUp: function (e) {
+		mouseUp: function (e: any) {
 			var self = e.data.self;
 			self._mousedown = false;
 			self.pointers = [];
@@ -1710,7 +1711,7 @@ if (!self._mousedown) return;
 
 		/*Mouse wheel zoom in-out
 		***********************************************************************************************************************/
-		mouseWheel: function (e, delta) {
+		mouseWheel: function (e: any, delta: any) {
 
 			if (!$scope) {
 				$scope = bodyScopeOf();
@@ -1755,8 +1756,9 @@ if (!self._mousedown) return;
 						return;
 						break;
 					case 'paging':
-						event.preventDefault();
-						event.stopPropagation();
+						const ev1760: any = event;
+						ev1760.preventDefault();
+						ev1760.stopPropagation();
 						if (!e.deltaX) { e.deltaX = e.originalEvent.deltaX; }
 						if (!e.deltaY) { e.deltaY = -e.originalEvent.deltaY; }
 						if (!e.deltaFactor) { e.deltaFactor = 1; }
@@ -1880,7 +1882,7 @@ if (!self._mousedown) return;
 
 		/*Control buttons Auto hide
 		***********************************************************************************************************************/
-		autoHide: function (e) {
+		autoHide: function (e: any) {
 			var self = e.data.self;
 
 			clearTimeout(self.auto_timer);
@@ -1888,7 +1890,7 @@ if (!self._mousedown) return;
 				self.$controls.fadeOut(0);
 			}, self.bu_delay);
 
-			self.$holder.bind('mouseenter.sz', function (e) {
+			self.$holder.bind('mouseenter.sz', function (e: any) {
 				clearTimeout(self.auto_timer);
 				self.$controls.fadeIn(0);
 			});
@@ -1906,7 +1908,7 @@ if (!self._mousedown) return;
 
 		/*Make sure the dragged position obeying limits
 		***********************************************************************************************************************/
-		setDraggedPos: function (xp, yp, s) {
+		setDraggedPos: function (xp: any, yp: any, s: any) {
 			var self = this;
 
 			if (xp !== '') {
@@ -1938,7 +1940,7 @@ if (!self._mousedown) return;
 
 		/*Called to animate image transformation whenever the navigation events occur
 		***********************************************************************************************************************/
-		Animate: function (noAnimate) {
+		Animate: function (noAnimate: any) {
 			// console.count("Animate")
 			var self = this;
 			var pixTol = .5;
@@ -2312,9 +2314,9 @@ if (!self._mousedown) return;
 				self.bitmapViewer.update({
 					id: bodyScopeOf().current.id,
 					top: parseInt(navigatorZoomData.normY),
-					left: parseInt(navigatorZoomData.normX - navigatorStartX),
-					width: parseInt(navigatorWidth / 100 * bodyScopeOf().current.width),
-					height: parseInt(navigatorHeight / 100 * bodyScopeOf().current.height)
+					left: parseInt(String(navigatorZoomData.normX - navigatorStartX)),
+					width: parseInt(String(navigatorWidth / 100 * bodyScopeOf().current.width)),
+					height: parseInt(String(navigatorHeight / 100 * bodyScopeOf().current.height))
 				});
 
 				// 横向 scrollbar
@@ -2375,7 +2377,7 @@ if (!self._mousedown) return;
 				// 绘制图像
 				// self.$image.css(prop_transform, `translate3d(${transformX}px, ${transformY}px, 0px) scale3d(${self._sc}, ${self._sc}, ${self._sc})`);
 				self.$image.css(prop_transform, `translate(${transformX}px, ${transformY}px) scale(${self._sc}, ${self._sc})`);
-				// self.$image.css(prop_transform, 'translate3d(' + parseInt(self._x.toFixed(14)) + 'px,' + transformY + 'px, 0px) scale3d(' + self._sc + ', ' + self._sc + ',' + self._sc +')');
+				// self.$image.css(prop_transform, 'translate3d(' + parseInt(self._x.toFixed(14)) + 'px,' + transformY + 'px, 0px) scale3d(' + this._sc + ', ' + this._sc + ',' + this._sc +')');
 				// console.log(`transformY: ${transformY}`)
 				// console.log(`self.tY: ${self.tY}`)
 				// console.log(`_lastY: ${self._lastY}`)
@@ -2422,7 +2424,7 @@ if (!self._mousedown) return;
 
 		/*Relocate the landmarks according to main image's position
 		***********************************************************************************************************************/
-		updateLocations: function (_x, _y, _sc, loc) {
+		updateLocations: function (_x: any, _y: any, _sc: any, loc: any) {
 
 			if (this.onLANDMARK !== ''){
 				if (_sc >= this.show_at_zoom) {
@@ -2472,7 +2474,7 @@ if (!self._mousedown) return;
 								loc[p].ob.stop()
 									.animate({
 										opacity: 0
-									}, 0, function() {
+									}, 0, function(this: any) {
 										dom(this).hide();
 									});
 							} else {
@@ -2487,7 +2489,7 @@ if (!self._mousedown) return;
 							loc[p].ob.stop()
 								.animate({
 									opacity: 0
-								}, 0, function() {
+								}, 0, function(this: any) {
 									dom(this).hide();
 								});
 						} else {
@@ -2498,7 +2500,7 @@ if (!self._mousedown) return;
 				if (lpx !== loc[p].lpx || lpy !== loc[p].lpy && loc[p].vis) {
 					if (prop_transform) {
 						// loc[p].ob.css(prop_transform, 'translate(' + parseInt(lpx.toFixed(14)) + 'px,' + parseInt(lpy.toFixed(14)) + 'px)' + (loc[p].scale? ' scale(' + this._sc + ')' : ''));
-						loc[p].ob.css(prop_transform, 'translate(' + parseInt(lpx.toFixed(14)) + 'px,' + parseInt(lpy.toFixed(14)) + 'px)' + (loc[p].scale? ' scale3d(' + self._sc + ', ' + self._sc + ',' + self._sc +')' : ''));
+						loc[p].ob.css(prop_transform, 'translate(' + parseInt(lpx.toFixed(14)) + 'px,' + parseInt(lpy.toFixed(14)) + 'px)' + (loc[p].scale? ' scale3d(' + this._sc + ', ' + this._sc + ',' + this._sc +')' : ''));
 					} else {
 						loc[p].ob.css({
 							left: lpx,
@@ -2514,7 +2516,7 @@ if (!self._mousedown) return;
 
 		/*If the broswer doesn't supports css border radius, we need to go with old school png image for rounded corner
 		***********************************************************************************************************************/
-		roundBG: function (el, _name, _w, _h, _r, _p, _c, _i, _z, _yoff) {
+		roundBG: function (el: any, _name: any, _w: any, _h: any, _r: any, _p: any, _c: any, _i: any, _z: any, _yoff: any) {
 			var w = 50 / 2;
 
 			el.append(dom(
@@ -2556,7 +2558,7 @@ if (!self._mousedown) return;
 
 		/*To calibrate position offset when navigation events supposed to be overlapped
 		***********************************************************************************************************************/
-		changeOffset: function (x, y) {
+		changeOffset: function (x: any, y: any) {
 			if (x) this.oX = (this.tX - ((this.sW - this._w) / 2) - this.focusOffX) / (this._w / this.sW);
 			if (y) this.oY = (this.tY - ((this.sH - this._h) / 2) - this.focusOffY) / (this._h / this.sH);
 		},
@@ -2568,8 +2570,8 @@ if (!self._mousedown) return;
 			var self = this,
 				mapId = 0;
 
-			self.mapAreas.each(function () {
-				var new_vals = [];
+			self.mapAreas.each(function (this: any) {
+				var new_vals: any = [];
 				for (var i = 0; i < self.map_coordinates[mapId].length; i++) {
 					new_vals[i] = self.map_coordinates[mapId][i] * self._sc;
 				}
@@ -2643,7 +2645,7 @@ if (!self._mousedown) return;
 			// self.$image = undefined;
 		},
 
-		moveY: function (offset) {
+		moveY: function (offset: any) {
 			var self = this;
 			self.tY -= offset;
 			self._y = self.tY;
@@ -2651,7 +2653,7 @@ if (!self._mousedown) return;
 			self.Animate();
 		},
 
-		moveX: function (offset) {
+		moveX: function (offset: any) {
 			var self = this;
 			self.tX -= offset;
 			self._x = self.tX;
@@ -2659,7 +2661,7 @@ if (!self._mousedown) return;
 			self.Animate();
 		},
 
-		goToY: function (y) {
+		goToY: function (y: any) {
 			var self = this;
 			self.tY = y;
 			self._y = self.tY;
@@ -2667,7 +2669,7 @@ if (!self._mousedown) return;
 			self.Animate();
 		},
 
-		goTo: function (x, y, ratio) {
+		goTo: function (x: any, y: any, ratio: any) {
 			var self = this;
 			self.rA = ratio;
 			self.Animate();
@@ -2681,7 +2683,7 @@ if (!self._mousedown) return;
 			this.bitmapViewer.clear();
 		},
 
-		rotate: async function ({ angle, item }) {
+		rotate: async function ({ angle, item }: any) {
 			await this.bitmapViewer.hideThumbnail();
 			await this.bitmapViewer.rotate(angle);
 			this.focusTo({
@@ -2691,13 +2693,13 @@ if (!self._mousedown) return;
 			});
 		},
 
-		flip: async function (scaleX, scaleY = 1) {
+		flip: async function (scaleX: any, scaleY = 1) {
 			await this.bitmapViewer.hideThumbnail();
 			await this.bitmapViewer.flip(scaleX, scaleY);
 			this.Animate();
 		},
 
-		preload: async function (item) {
+		preload: async function (item: any) {
 			if (!item) return;
 			this.bitmapViewer.preload(item);
 		},
@@ -2706,7 +2708,7 @@ if (!self._mousedown) return;
 			this.bitmapViewer.clearPreloadData();
 		},
 
-		updateNavigator: async function (image) {
+		updateNavigator: async function (image: any) {
 			if (!image) return;
 			let self = this;
             let thumbnailUrl = FileUrlHelper.getThumbnailUrl(image) + `?t=${Date.now()}`;
@@ -2725,19 +2727,19 @@ if (!self._mousedown) return;
             if (image.width > image.height) {
             	ratio = image.width / image.height;
             	backgroundWidth = NAVIGATOR_SIZE;
-            	backgroundHeight = parseInt(NAVIGATOR_SIZE / ratio);
+            	backgroundHeight = parseInt(String(NAVIGATOR_SIZE / ratio));
             }
             else {
             	ratio = image.height / image.width;
             	backgroundHeight = NAVIGATOR_SIZE;
-            	backgroundWidth = parseInt(NAVIGATOR_SIZE / ratio);
+            	backgroundWidth = parseInt(String(NAVIGATOR_SIZE / ratio));
             }
             $background.css({
             	width: backgroundWidth + "px",
             	height: backgroundHeight + "px"
             });
 
-			const $injector = { get: function (name) { return name === '$rootScope' ? (bodyScopeOf() && bodyScopeOf().$root) : undefined; } };
+			const $injector = { get: function (name: any) { return name === '$rootScope' ? (bodyScopeOf() && bodyScopeOf().$root) : undefined; } };
 			const $rootScope = $injector.get('$rootScope');
 			const rawURL = getRawUrl(image);
 			const thumbnailURL = getThumbnailUrl(image);
@@ -2875,7 +2877,7 @@ if (!self._mousedown) return;
 
 		/*Method to change focus point and level
 		***********************************************************************************************************************/
-		focusTo: function (params) {
+		focusTo: function (params: any) {
 			var self = this;
 			params.pageX = params.pageX || 0;
 			params.pageY = params.pageY || 0;
@@ -2915,49 +2917,49 @@ if (!self._mousedown) return;
 			}
 		},
 
-		zoomIn: function (params) {
+		zoomIn: function (params: any) {
 			// this.buttons[0].$ob.trigger(this.event_down, {
 			// 	id: 0
 			// });
 		},
 
-		zoomOut: function (params) {
+		zoomOut: function (params: any) {
 			// this.buttons[1].$ob.trigger(this.event_down, {
 			// 	id: 1
 			// });
 		},
 
-		moveRight: function (params) {
+		moveRight: function (params: any) {
 			// this.buttons[2].$ob.trigger(this.event_down, {
 			// 	id: 2
 			// });
 		},
 
-		moveLeft: function (params) {
+		moveLeft: function (params: any) {
 			// this.buttons[3].$ob.trigger(this.event_down, {
 			// 	id: 3
 			// });
 		},
 
-		moveUp: function (params) {
+		moveUp: function (params: any) {
 			// this.buttons[4].$ob.trigger(this.event_down, {
 			// 	id: 4
 			// });
 		},
 
-		moveDown: function (params) {
+		moveDown: function (params: any) {
 			// this.buttons[5].$ob.trigger(this.event_down, {
 			// 	id: 5
 			// });
 		},
 
-		Reset: function (params) {
+		Reset: function (params: any) {
 			// this.buttons[6].$ob.trigger(this.event_down, {
 			// 	id: 6
 			// });
 		},
 
-		getChangedData: function (params) {
+		getChangedData: function (params: any) {
 			return {
 				tX: this.tX,
 				tY: this.tY,
@@ -2965,7 +2967,7 @@ if (!self._mousedown) return;
 			};
 		},
 
-		getZoomData: function (params) {
+		getZoomData: function (params: any) {
 			return {
 				//x offset (without scale ratio multiplied)
 				normX: (-this._x / this.rA).toFixed(14),
@@ -3002,7 +3004,7 @@ if (!self._mousedown) return;
 			};
 		},
 
-		addLandmark: function (loc) {
+		addLandmark: function (loc: any) {
 			if (this.$loc_cont) {
 				var total = loc.length;
 
@@ -3018,7 +3020,7 @@ if (!self._mousedown) return;
 			}
 		},
 
-		attachLandmark: function (loc) {
+		attachLandmark: function (loc: any) {
 			if (this.$loc_cont){
 				var total = loc.length;
 				for (var i=0; i<total; i++) {
@@ -3030,7 +3032,7 @@ if (!self._mousedown) return;
 			}
 		},
 
-		removeLandmark: function (loc) {
+		removeLandmark: function (loc: any) {
 			if (this.$loc_cont){
 				if (loc){
 					var total = loc.length;
@@ -3065,7 +3067,7 @@ if (!self._mousedown) return;
 			//Step 1: Remove records for which the elements no longer exist
 			for (var i=0; i<self.locations.length; i++) {
 				var exists = false;
-				locs.each(function () {
+				locs.each(function (this: any) {
 					if (self.locations[i].ob[0] == dom(this)[0]) {
 						exists = true;
 					}
@@ -3077,7 +3079,7 @@ if (!self._mousedown) return;
 			}
 
 			//Step 2: Add new elements to record
-			locs.each(function () {
+			locs.each(function (this: any) {
 				var exists = false;
 				for (var i=0; i<self.locations.length; i++) {
 					if (self.locations[i].ob[0] == dom(this)[0]) {
@@ -3096,7 +3098,7 @@ if (!self._mousedown) return;
 
 		/*On windows resize, adjust some defaults
 		***********************************************************************************************************************/
-		resize: function (e) {
+		resize: function (e: any) {
 
 			if (!$scope) {
 				$scope = bodyScopeOf();
@@ -3123,7 +3125,7 @@ if (!self._mousedown) return;
 
 
 	/* ── b1-9bl：原 $.fn.smoothZoom 插件壳 → 模块单例 API（等价 data('smoothZoom') 守卫）── */
-	let instance = null;
+	let instance: any = null;
 
 	export function detailZoom(): any {
 		return instance;
@@ -3141,12 +3143,12 @@ if (!self._mousedown) return;
 		const elem = document.getElementById('detail-container');
 		if (!elem) return instance;
 		if (!instance) {
-			instance = new Zoomer(dom(elem), params);
+			instance = new (Zoomer as any)(dom(elem), params);
 		}
 		return instance;
 	}
 
-	function checkBoolean (_var) {
+	function checkBoolean (_var: any) {
 		if (_var === true) {
 			return true;
 		} else if (_var) {

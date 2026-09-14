@@ -8822,3 +8822,30 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     `rectSelecting`、`FileUrlHelper`、`currentWindow`、`EagleConfig`。
 - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`react-stage11b0-smoke`、
   `d3-detail-mode` 全绿。
+
+### R3 收尾：撤销 `@ts-nocheck`（第七批：smoothZoomEngine，292 条）
+
+- **撤销对象**：`core/smoothZoomEngine.ts`（292 条清零，删除 `// @ts-nocheck`）。累计已撤销
+  **11 个**（1081+292 = 1373 条），台账 9 个（8 个 `core/shim/*` + 1 个待撤销）。
+- **主因聚簇**：`TS2683`（163 条，「`this` 隐式 any」）几乎全部落在 vendor 的 `Zoomer` 构造函数体内
+  ——`function Zoomer($elem, params) { var self = this; this.$elem = … }` 是旧式构造函数，
+  一处 `function Zoomer(this: any, $elem: any, params: any)` 即消掉 ~155 条；余下 8 条散落在
+  jQuery `each/bind/on` 回调中（回调内 `this` 指向 DOM 元素），补 `this: any` 即可。
+- **修出一处真实缺陷（`self` 未绑定）**：`updateLocations` 方法内用的是 `self._sc`，但该函数
+  **没有 `var self = this`**（最近的绑定在别的函数里）。于是 `self` 解析到 **DOM 全局 `self`
+  （即 window）**——`window._sc` 为 undefined，里程碑标注的 transform 会拼出
+  `scale3d(undefined, undefined,undefined)`。三个调用点都是 `this.updateLocations(…)`，
+  故改为 `this._sc` 即是原意。**这是类型检查直接指出的证据**：
+  错误消息明写 `Property '_sc' does not exist on type 'Window & typeof globalThis'`。
+- 其他：`parseInt(<数值表达式>)` → 包 `String(...)`（9 处，等价）与 3 处 `parseInt(navigator…
+  bodyScopeOf().current.…)`；`navigator.pointerEnabled/msPointerEnabled/msMaxTouchPoints`
+  → `(navigator as any)`（7 处）；`prop_origin !== false` / `prop_transform !== false` 是
+  **故意与布尔比较**（配置项可为 `false`）→ `(x as any) !== false` 保留原语义；
+  `new Zoomer(...)` 补构造签名（`new (Zoomer as any)(...)`）；`new_vals`/`instance`/`$scope`
+  /三个 timeout 变量补类型；约 40 处方法简写与回调形参补 `: any`；
+  `event.preventDefault()`（读 DOM 全局 `event`）在局部以 `const ev: any = event` 收口，
+  保留「event 缺失即抛」的原行为。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`d3-detail-mode`、
+  `continuous-grid-scroll`、`react-stage11b0-smoke` 全绿。
+- **剩余 1 个文件**：`core/eagleClasses.ts`（297 条）；撤销后 `@ts-nocheck` 面只剩 8 个
+  `core/shim/*`（各自由 `shim-module-boundaries` 单独守卫），R3 收尾即告完成。

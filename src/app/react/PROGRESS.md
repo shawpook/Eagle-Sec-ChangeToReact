@@ -8615,3 +8615,45 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   本批针对性闭环 `image-import`（uploadQueue/finishQueue/addImageStartTime）、
   `empty-trash`（trashRemoved/currentTrashRemoved）、`d3-alltags-view`、
   `residue`（含 `zero-console-errors`）全绿。
+
+### R3 收尾：撤销 `@ts-nocheck`（第一批 3 个文件）
+
+- **撤销对象**：`services/miscMenuService.ts`（34 条）、`services/folderMenuService.ts`（30 条）、
+  `services/fontTagService.ts`（38 条）——共 102 条诊断清零，三文件的 `// @ts-nocheck` 删除。
+- **诊断归因与处置**（几乎全是主因，故先聚簇再改）：
+  - **TS2304/TS2552 未解析名**（占多数）：两类——①bundle 全局（`guid`/`analytics`/
+    `installedFonts`/`fontFolder`/`FONT_TYPES`/`hiddenByCurrentFilter`/`ayncsImagesChange`）；
+    ②应走模块导入的（`IPCHelper`←`core/ipcHelper`、`get`←`utils/lang`、`fs`/`fse`←`_req`）。
+    按仓库既有约定分别用 typed ambient `declare const` 与真实 import；**只补类型不改运行期语义**
+    （裸标识符仍走全局解析，与 bundleGlobals 的安装面一致）。
+  - **TS7006/TS7005/TS7034 隐式 any**：参数补 `: any`、`let x: any[]`，逐字保留原码结构。
+  - **签名类 TS2554/TS2551**：修在**签名或调用面**，不迁就报错——`IPCHelper.sendTo` 的
+    `ignoreLogging` 补默认值 `= false`（与 `send` 同形，运行期 undefined→false 等价）；
+    `machineryZoomActual(event?: any)`（体内本就有 `event &&` 守卫）；`machineryBatchRenameFolders`
+    等零参调用点去掉多余实参；`machinerySetSmartFolderOrder` 去掉第三实参（签名只有 2 参）。
+- **修复两处 `@ts-nocheck` 掩盖的真实缺陷**（撤销的直接收益，不是纯类型整理）：
+  1. **`getAllChildFolder` 全仓未定义却被调用**（`folderMenuService.ts` 的 `refreshSubfolderList`）：
+     运行期必抛 `ReferenceError`。改为调用已存在的同源实现 `machineryGetAllChildFolder`
+     （`libraryDomain.ts` 内注释自证为 bundle 42498-42505 逐字移植）。当前 React 侧无调用者，
+     但该函数在 scope 函数表上，故按缺陷修复。
+  2. **`exportFolder` 同名遮蔽致「导出为文件夹」流程失效**（`folderMenuService.folderExportAsFolder`）：
+     该函数内 `var exportFolder = function(folder2, savePath)` 遮蔽了从 `folderCoreService`
+     导入的 `exportFolder(callback)`（弹保存目录对话框、以 savePath 回调）。于是同函数末尾
+     `exportFolder(callback)` 实际调用本地版——回调被当作 `folder`、`savePath` 为 undefined，
+     对话框永不弹出且 IPC 载荷的 folder 是函数。**证据**：另一处同样写法（`folderMenuService.ts:1365`
+     的智能文件夹导出）因无同名局部变量而正常，且其 TS2554 未报错，二者对照可判定为遮蔽缺陷。
+     处置：局部变量改名 `exportFolderToPath`（含 1 处内部调用），恢复调用服务版的原意；
+     已在代码内留注释说明「不得命名为 exportFolder」这一非显然约束。
+- **新增门禁：`@ts-nocheck` 面台账**（`tests/typecheck.mjs`）。零容忍门禁原有一个漏洞——
+  `@ts-nocheck` 可让任意文件整体退出检查而 tsc 不报。现把仍带 nocheck 的文件**显式登记**
+  （17 个 = 8 个 `core/shim/*` + 9 个待撤销），并**双向校验**：未登记却带 nocheck → 失败；
+  台账项已撤销却未移除 → 失败。**台账只允许单向缩短**。反向验证：给干净文件加一行
+  `@ts-nocheck` 即被指名 FAIL。
+- **验证**：`typecheck` 0 诊断（台账 17 文件）；`npm run build` exit 0；
+  `menu-popup`（folder/smart-folder 右键菜单，断言含 exportSubmenu）、`d3-alltags-view`、
+  `library-switch-ui` 全绿。
+- **下一步**：剩余 9 个文件——`core/{eagleClasses,smoothZoomEngine,hoverPreview,bitmapViewer,
+  tagManagerDomain}.ts`、`services/{itemMenuService,imageOpsService,folderCoreService,
+  batchOpsService}.ts`（实测 1568 条：itemMenuService 207、folderCoreService 90、
+  imageOpsService 126、batchOpsService 50、eagleClasses 297、smoothZoomEngine 292、
+  hoverPreview 273、bitmapViewer 141、tagManagerDomain 92）。

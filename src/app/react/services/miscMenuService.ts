@@ -16,7 +16,6 @@
  * - i18n/preferences/swal/dialog/Menu/ipcRenderer/remote/currentWindow/eagle → 模块常量或 window 回退
  * - $filter → scope $root → machinery getFilter 双轨
  */
-// @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
 
 import { updateCurrentOrderAndIncrease } from '../core/miscDomain';
@@ -60,6 +59,11 @@ const $filter: any = (name: string) => {
   const inst: any = machineryGetFilter();
   return inst ? inst(name) : undefined;
 };
+
+/* bundle 全局（bundleGlobals 安装 `window.installedApplications` / `window.QuickAccessManager`）：
+   typed ambient 声明（**只补类型、不改运行期**——裸标识符仍走全局解析）。 */
+declare const installedApplications: any;
+declare const QuickAccessManager: any;
 
 /* b1-9bz-B 收口：本文件 7 处迁移体/shell 头部统一带 `try { initLinkVars(); }` 序言，但
    install 体内此前从未定义 initLinkVars（运行期 ReferenceError 被空 catch 吞掉，无症状）。
@@ -174,13 +178,13 @@ export function openFilterAddContextMenu(...args: any[]) {
             machineryOpenFilter();
             clickEl("#filter-toolbar-overlay");
 
-            const pinFilter = (id, pinned) => {
+            const pinFilter = (id: any, pinned: any) => {
                 eagle.filter.pinned[id] = pinned;
                 eagle.filter.savePinned();
                 setTimeout(function () { machineryUpdateContainerHieght(); }, 50);
             };
 
-            const openFilter = (id) => {
+            const openFilter = (id: any) => {
                 clickEl(`#${id}-filter-item`);
                 setTimeout(function () { machineryUpdateContainerHieght(); }, 50);
             }
@@ -193,7 +197,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-color.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['color'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('color', pinned);
                     },
                     click: () => {
@@ -208,7 +212,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-tag.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['tags'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('tags', pinned);
                     },
                     click: () => {
@@ -223,7 +227,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-folder.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['folders'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('folders', pinned);
                     },
                     click: () => {
@@ -238,7 +242,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-shape.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['shape'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('shape', pinned);
                     },
                     click: () => {
@@ -253,7 +257,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-rating.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['rating'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('rating', pinned);
                     },
                     click: () => {
@@ -268,7 +272,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-ext.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['types'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('types', pinned);
                     },
                     click: () => {
@@ -283,7 +287,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-import.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['import'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('import', pinned);
                     },
                     click: () => {
@@ -298,7 +302,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-modify.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['mtime'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('mtime', pinned);
                     },
                     click: () => {
@@ -313,7 +317,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-resolution.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['resolution'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('resolution', pinned);
                     },
                     click: () => {
@@ -328,7 +332,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-duration.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['duration'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('duration', pinned);
                     },
                     click: () => {
@@ -343,7 +347,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-size.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['size'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('size', pinned);
                     },
                     click: () => {
@@ -358,7 +362,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-comment.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['annotation'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('annotation', pinned);
                     },
                     click: () => {
@@ -374,7 +378,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-note.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['note'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('note', pinned);
                     },
                     click: () => {
@@ -389,7 +393,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-url.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['url'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('url', pinned);
                     },
                     click: () => {
@@ -405,7 +409,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-font.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['fontActivated'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('fontActivated', pinned);
                     },
                     click: () => {
@@ -421,7 +425,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-bpm.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['bpm'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('bpm', pinned);
                     },
                     click: () => {
@@ -437,7 +441,7 @@ export function openFilterAddContextMenu(...args: any[]) {
                     icon: 'ic-filter-item-camera.svg',
                     role: "toggle",
                     pinned: eagle.filter.pinned['camera'],
-                    toggle: (pinned) => {
+                    toggle: (pinned: any) => {
                         pinFilter('camera', pinned);
                     },
                     click: () => {
@@ -447,10 +451,10 @@ export function openFilterAddContextMenu(...args: any[]) {
             ];
 
             items = items.sort(function (a, b) {
-                let aIndex = eagle.filter.toolbar.findIndex(function (item) {
+                let aIndex = eagle.filter.toolbar.findIndex(function (item: any) {
                     return item.type === a.id;
                 });
-                let bIndex = eagle.filter.toolbar.findIndex(function (item) {
+                let bIndex = eagle.filter.toolbar.findIndex(function (item: any) {
                     return item.type === b.id;
                 });
                 return aIndex - bIndex;
@@ -462,11 +466,11 @@ export function openFilterAddContextMenu(...args: any[]) {
                 showSearch: true,
                 sortable: true,
                 sortableHelper: true,
-                onSorted: (items) => {
+                onSorted: (items: any) => {
                     if (!items) return;
                     if (eagle.filter.toolbar && eagle.filter.toolbar.length > 0) {
-                        let toolbarOrders = [];
-                        items.forEach((item) => {
+                        let toolbarOrders: any[] = [];
+                        items.forEach((item: any) => {
                             toolbarOrders.push(item.id);
                         });
                         localStorage.setItem("eagle.filter.toolbar.orders", JSON.stringify(toolbarOrders));
@@ -536,7 +540,7 @@ export function openNewContextMenu(...args: any[]) {
                                     { name: 'Eagle Pack', extensions: ['eaglepack'] },
                                 ],
                                 properties: ['openFile']
-                            }).then(__lv_result => {
+                            }).then((__lv_result: any) => {
                                 var paths = __lv_result.filePaths;
                                 if (!paths || paths.length === 0) return;
                                 var __lv_packPath = paths[0];
@@ -759,7 +763,7 @@ export function openQuickAccessContextMenu(...args: any[]) {
 export function openSidebarVisibleContextMenu(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-            const targetEl = qaHasEl(".sidebar-item-container .item", event.target);
+            const targetEl = qaHasEl(".sidebar-item-container .item", (window as any).event.target);
             ContextMenu.open({
                 items: [
                     {

@@ -13,7 +13,6 @@
  * - fs/sanitize → _req 惰性（app-root-path 定位）
  * - $filter → 双轨 shim；ipcRenderer → electron 同源
  */
-// @ts-nocheck
 
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
@@ -34,14 +33,15 @@ import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
+import { get } from '../utils/lang';
 import { getIpcBus } from '../core/channelBridge';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
-var __lv_TagManager;
-var __lv_onTagSidebarResizeTimeout;
-var __lv_path;
+var __lv_TagManager: any;
+var __lv_onTagSidebarResizeTimeout: any;
+var __lv_path: any;
 const initLinkVars = () => {
 	if (useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 	if (!__lv_path) __lv_path = _req('path');
@@ -52,6 +52,14 @@ const eagle: any = (window as any).eagle;
 const swal: any = (...args: any[]) => (window as any).swal(...args);
 const ipcRenderer: any = getIpcBus();
 const fs: any = _req('fs');
+const fse: any = _req('fs-extra');
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const fontFolder: any;
+declare const installedFonts: any;
+declare const analytics: any;
+declare const FONT_TYPES: any;
+declare const ayncsImagesChange: any;
+declare const hiddenByCurrentFilter: any;
 const sanitize: any = (function () {
   const arp: any = _req('app-root-path');
   try { return arp ? _req(String(arp) + '/my_modules/sanitize-filename') : undefined; } catch (err) { return undefined; }
@@ -168,7 +176,7 @@ export function renameFontsWithFullName(...args: any[]) {
     return (function (items) {
         if (items && items.length > 0) {
             machineryCheckOperationSafety(function () {
-                var updates = [];
+                var updates: any[] = [];
                 var lng = usePreferencesState.getState().preferences.general.language;
                 var preferLng = 'en';
                 switch (lng) {
@@ -179,7 +187,7 @@ export function renameFontsWithFullName(...args: any[]) {
                     default:
                         preferLng = "en";
                 }
-                items.forEach(function (item) {
+                items.forEach(function (item: any) {
                     if (item && FONT_TYPES[item.ext]) {
                         if (item.fontMetas) {
                             try {
@@ -217,7 +225,7 @@ export function activateFonts(...args: any[]) {
         if (!fs.existsSync(fontFolder)) {
             fs.mkdirSync(fontFolder);
         }
-        items.forEach(function (font) {
+        items.forEach(function (font: any) {
             activateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
@@ -237,7 +245,7 @@ export function deactivateFonts(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (items) {
         if (!fs.existsSync(fontFolder)) { return; }
-        items.forEach(function (font) {
+        items.forEach(function (font: any) {
             deactivateFont(font, {showNotify: false, updateView: false});
         });
         if (process.platform === 'darwin') {
@@ -259,7 +267,7 @@ export function changeFontDefaultLang(...args: any[]) {
     return (function (items, lang) {
         if (items && items.length > 0) {
             machineryCheckOperationSafety(function () {
-                items.forEach(function (item) {
+                items.forEach(function (item: any) {
                     item.fontMetas.preferLng = lang;
                 });
                 ipcRenderer.send('regenerate-thumbnail', items);

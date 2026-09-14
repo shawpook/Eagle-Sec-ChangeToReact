@@ -31,6 +31,62 @@ if (exclude.some((entry) => entry === 'frontend' || entry === 'frontend/')) {
   process.exit(1);
 }
 
+// ── @ts-nocheck 面守卫 ──────────────────────────────────────────────────────
+// 零容忍门禁有一个漏洞：`// @ts-nocheck` 能让任意文件整体退出检查，且 tsc 不会报。
+// 故把仍带 @ts-nocheck 的文件**显式登记**（R3 的撤销进度台账），并双向校验：
+// 未登记的文件新加 nocheck → 失败；已登记的文件撤销后未从台账移除（僵尸项）→ 失败。
+// 台账只允许单向缩短。
+const NOCHECK_LEDGER = [
+  // ── core/shim/*：R2 整段搬移的启动层（各模块已由 shim-module-boundaries 精确守卫）──
+  'src/app/react/core/shim/browserRuntime.ts',
+  'src/app/react/core/shim/demoSeed.ts',
+  'src/app/react/core/shim/desktopCapability.ts',
+  'src/app/react/core/shim/environment.ts',
+  'src/app/react/core/shim/install.ts',
+  'src/app/react/core/shim/ipcBus.ts',
+  'src/app/react/core/shim/moduleRegistry.ts',
+  'src/app/react/core/shim/settingsI18n.ts',
+  // ── R3 待撤销（bundle 原码宽松类型逐字保留，按文件逐个补注解/声明）──
+  'src/app/react/core/bitmapViewer.ts',
+  'src/app/react/core/eagleClasses.ts',
+  'src/app/react/core/hoverPreview.ts',
+  'src/app/react/core/smoothZoomEngine.ts',
+  'src/app/react/core/tagManagerDomain.ts',
+  'src/app/react/services/batchOpsService.ts',
+  'src/app/react/services/folderCoreService.ts',
+  'src/app/react/services/imageOpsService.ts',
+  'src/app/react/services/itemMenuService.ts',
+];
+
+function collectNoCheckFiles() {
+  const found = [];
+  (function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) { walk(full); continue; }
+      if (!/\.(ts|tsx)$/.test(entry.name)) continue;
+      const text = fs.readFileSync(full, 'utf8');
+      // 只认文件头注释区（前 40 行）的 @ts-nocheck——TS 亦只认首个注释块。
+      const head = text.split('\n').slice(0, 40).join('\n');
+      if (/^\s*\/\/\s*@ts-nocheck\s*$/m.test(head)) {
+        found.push(path.relative(projectRoot, full).replace(/\\/g, '/'));
+      }
+    }
+  })(path.join(projectRoot, 'src/app/react'));
+  return found.sort();
+}
+
+const noCheckFiles = collectNoCheckFiles();
+const ledgerSet = new Set(NOCHECK_LEDGER);
+const unlisted = noCheckFiles.filter((f) => !ledgerSet.has(f));
+const stale = NOCHECK_LEDGER.filter((f) => !noCheckFiles.includes(f));
+if (unlisted.length > 0 || stale.length > 0) {
+  console.error('TYPECHECK_NOCHECK_ERROR: @ts-nocheck 台账与实际不符（台账只允许单向缩短）');
+  for (const f of unlisted) console.error(`  未登记却带 @ts-nocheck：${f}`);
+  for (const f of stale) console.error(`  已撤销却仍在台账（请移除）：${f}`);
+  process.exit(1);
+}
+
 // ── 类型检查 ────────────────────────────────────────────────────────────────
 const result = spawnSync(
   process.execPath,
@@ -53,4 +109,7 @@ if (result.status !== 0) {
   process.exit(1);
 }
 
-console.log('TYPECHECK_OK: 0 诊断（范围 = src/app/react + frontend/document-viewer）');
+console.log(
+  `TYPECHECK_OK: 0 诊断（范围 = src/app/react + frontend/document-viewer）；`
+  + `@ts-nocheck 台账 ${NOCHECK_LEDGER.length} 个文件（待撤销 ${NOCHECK_LEDGER.filter((f) => !f.includes('/shim/')).length}）`,
+);

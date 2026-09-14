@@ -15,7 +15,6 @@
  * - $timeout → bundle 同源 shim（延时 + digest）
  * - treeWalkSafe/wElectronLogInfo/wQueryFocusFolderInput → 模块级逐字（原 b1-9ap 辅助）
  */
-// @ts-nocheck
 import { ContextMenu } from '../core/contextMenuDomain';
 
 import { syncFolderLock } from '../store/lockState';
@@ -41,6 +40,8 @@ import { useListState } from '../store/listState';
 import { useMiscRawState, writeSubFolders } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { usePreferencesState } from '../store/preferencesState';
+import { IPCHelper } from '../core/ipcHelper';
+import { machineryGetAllChildFolder } from '../core/libraryDomain';
 
 import { writeSelected } from '../store/selectionState';
 import { writeIsLoading } from '../store/bodyState';
@@ -52,6 +53,10 @@ const swal: any = (...args: any[]) => (window as any).swal(...args);
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 const remote: any = _req('@electron/remote');
 const dialog: any = remote?.dialog;
+const clipboard: any = _req('electron')?.clipboard || (window as any).clipboard;
+const fs: any = _req('fs');
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const guid: any;
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
   const inst: any = machineryGetFilter();
@@ -92,7 +97,7 @@ function wQueryFocusFolderInput(folderId: any) {
   const el = document.getElementById('folder-input-' + folderId);
   if (el) {
     (el as HTMLElement).focus();
-    (el as HTMLElement).select && (el as HTMLElement).select();
+    (el as any).select && (el as any).select();
   }
 }
 
@@ -109,7 +114,7 @@ export function refreshSubfolderList(...args: any[]) {
       if (useFolderState.getState().currentFolder) {
         let subFolders: any[] = [];
         if (useListState.getState().showSubfolderContent) {
-          writeSubFolders(getAllChildFolder(useFolderState.getState().currentFolder));
+          writeSubFolders(machineryGetAllChildFolder(useFolderState.getState().currentFolder));
           syncListFromScope();
           if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
         }
@@ -437,7 +442,9 @@ export function folderExportAsFolder(...args: any[]) {
         folders = useMiscRawState.getState().selectedFolders;
       }
 
-      var exportFolder = function (folder2: any, savePath: any) {
+      /* 不得命名为 exportFolder：会同名遮蔽本函数末尾要调用的 folderCoreService.exportFolder
+         （保存目录选择对话框），导致导出流程拿到回调当 folder、对话框永不弹出。 */
+      var exportFolderToPath = function (folder2: any, savePath: any) {
         var images: any[] = [];
         if (savePath) {
           for (var rindex = useItemState.getState().raw.length - 1; rindex >= 0; rindex--) {
@@ -551,7 +558,7 @@ export function folderExportAsFolder(...args: any[]) {
       };
       exportFolder(function (savePath: any) {
         folders.forEach(function (folder2: any) {
-          exportFolder(folder2, savePath);
+          exportFolderToPath(folder2, savePath);
         });
       });
     } as (...__args: any[]) => any).apply(null, args);
@@ -733,7 +740,7 @@ export function openFolderContextMenu(...args: any[]) {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              machineryBatchRenameFolders(event);
+              machineryBatchRenameFolders();
             }
           },
           // 修改排序
@@ -1125,7 +1132,7 @@ export function setSmartFoldersOrder(...args: any[]) {
 export function setSmartFolderOrder(...args: any[]) {
   // b1-9bz-B：双键单源化 —— 与 machinery 版等价。
    // 原 c3 体的 scope 守卫，逐字保留
-  machinerySetSmartFolderOrder(args[0], args[1], args[2]);
+  machinerySetSmartFolderOrder(args[0], args[1]);
 }
 
 export function setSmartFoldersSortIncrease(...args: any[]) {
@@ -1635,7 +1642,7 @@ export function openSmartFolderContextMenu(...args: any[]) {
             keywords: '重命名 重新命名 rename',
             icon: 'ic-rename.svg',
             click: () => {
-              machineryBatchRenameSmartFolders(event);
+              machineryBatchRenameSmartFolders();
             }
           },
           {

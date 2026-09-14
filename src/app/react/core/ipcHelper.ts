@@ -20,7 +20,7 @@ export const IPCHelper = {
 
 		}
 	},
-	sendTo: function (id: any, channel: any, params: any, ignoreLogging: any) {
+	sendTo: function (id: any, channel: any, params: any, ignoreLogging: any = false) {
 		try {
 			ipcRenderer.sendTo(id, channel, params);
 			if (!ignoreLogging) {

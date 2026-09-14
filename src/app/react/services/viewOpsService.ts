@@ -416,7 +416,7 @@ export function machineryZoom(zoom?: any): void {
 }
 
 /* zoomActual（bundle 33915-33937 逐字） */
-export function machineryZoomActual(event: any): void {
+export function machineryZoomActual(event?: any): void {
   const w = window as any;
   event && event.preventDefault && event.preventDefault();
   if (!useBodyState.getState().isDetailMode) {

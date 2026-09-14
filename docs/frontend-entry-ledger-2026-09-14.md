@@ -29,8 +29,8 @@
 | 9 | 文本编辑 | `/src/app/text-editor/text-editor.html` | 同路径 | `react/viewers/text-editor/entry.tsx` | 查看器子窗 | 原生 contenteditable | 已构建（同路径冲突已消除）|
 | 10 | 字体查看器 | `/src/app/font-viewer/font-viewer.html` | 同路径 | `react/viewers/font/entry.tsx` | 查看器子窗 | MediumEditor | 已构建 |
 | 11 | 文档查看器 | `/frontend/document-viewer/index.html` | 同路径（18 个 TS/TSX）| — | iframe 子窗（`core/documentViewer.ts:58`）| 自研渲染 | 已构建 |
-| 12 | PDF 查看器 | `/src/app/pdf-viewer/web/viewer.html` | 同路径 | 无（PDF.js）| 查看器子窗 | PDF.js | **未纳入多页构建（R1 待办）**|
-| 13 | 3D 查看器 | `/src/app/model-viewer/website/{index,embed}.html` | 同路径 | 无（O3DV）| 主+嵌入入口 | O3DV | **未纳入多页构建（R1 待办）**|
+| 12 | PDF 查看器 | `/src/app/pdf-viewer/web/viewer.html` | 同路径 | 无（PDF.js）| 查看器子窗 | PDF.js | 已交付（引擎页原样复制）|
+| 13 | 3D 查看器 | `/src/app/model-viewer/website/{index,embed}.html` | 同路径 | 无（O3DV）| 主+嵌入入口 | O3DV | 已交付（引擎页原样复制）|
 | 14 | 注册 / 设备管理 | `/src/app/{registration,manage-device}.html` | `frontend/public/replaced/*.html` | 无 | 顶层窗口 | — | 中间件直出，未进产物（有意）|
 | 15 | thumbnail.html | `/src/app/thumbnail.html` | 同路径 | 无（空壳）| — | — | 全仓零引用 → R6 退役候选 |
 | 16 | 工具/静态页 | `/pages.html`、`/workbench.html`、`/roadmap.html`、`/media-viewer/*`、`/browser-extension/*`、`/vendor/*` | `frontend/public/*` | 无 | — | 随 public 复制；workbench 被 Electron 菜单引用（main.cjs:1705）|
@@ -59,7 +59,8 @@
 - 交付：`src/app`（排除 `.html`/`react`）、`src/my_modules`、`src/i18n`、`src/config.js`。
   - `src/config.js` 与 `src/i18n` 是关键补充：`appRoot` 为 `/src`，运行时 `require(appRoot + '/config.js')` 取 `EagleConfig`（含 `VIDEO_FORMATS`）。缺这两项时生产态在 `hoverPreview` 初始化处 `EagleConfig.VIDEO_FORMATS.map` 崩溃（R1 冒烟实测定位）。
 - 排除：`frontend/public/mock-library`、`mock-assets`（开发/演示数据）在 `closeBundle` 从产物删除。
-- 已知既有源缺陷（源码与产物均缺，dev 同样 404；非 R1 引入，归 R5/R6）：`icon.svg`、`js/vendors/tippy.js`（preferences / font-viewer）、collect-window 的 `../css/jquery-ui.min.css`（实际在 `collect-window/css/`）与 `js/lib/api/url-enlarger.js`。由 `tests/dist-entry-check.mjs` 以 WARN 记录。
+- 引擎页：`src/app` 内除 10 个 React 页 HTML 外的 `.html`（pdf-viewer、model-viewer、旧指令模板）按原样复制；PDF 与 3D 查看器无 React 入口，作为专用引擎页交付。
+- 已知既有源缺陷（源码与产物均缺，dev 同样 404；非 R1 引入，归 R5/R6）：`icon.svg`、`js/vendors/tippy.js`（preferences / font-viewer）、collect-window 的 `../css/jquery-ui.min.css`（实际在 `collect-window/css/`）与 `js/lib/api/url-enlarger.js`、model-viewer 的 `info/index.html` 与 `../build/o3dv.website.min-dev.js`、pdf-viewer 的 `locale/locale.properties`。由 `tests/dist-entry-check.mjs` 以 WARN 记录。
 
 ## 6. 入口处置清单
 
@@ -68,9 +69,9 @@
 | `pages.html` 指向缺失 `progress.html` | 移除死链 | R0 完成 |
 | `frontend/public/src/app/text-editor/*` 同路径冲突 | 删除旧页 | R1 完成 |
 | `mock-library` / `mock-assets` 进产物 | 产物中删除 | R1 完成 |
-| 十一个交付页面无产物 | 多页入口 + 资源交付 | R1 完成（PDF/3D 除外）|
+| 十一个交付页面无产物 | 多页入口 + 资源交付 | R1 完成 |
 | `/src/config.js`、`/src/i18n` 未交付 | 纳入交付 | R1 完成 |
-| PDF / 3D 查看器入口与资源 | 纳入多页构建 + 资源路径 | R1 待办 → R1.2 |
+| PDF / 3D 查看器入口与资源 | 引擎页原样交付 | R1 完成 |
 | `thumbnail.html` 零引用 | 退役或明确静态用途 | R6 |
 | `src/app/js/directives/*.html`（64）| 核对引用后清理/归档 | R6 |
 | 主界面旧脚本（§3）| 迁移为具名 TS 模块 | R6 |

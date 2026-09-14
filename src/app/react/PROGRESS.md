@@ -8330,7 +8330,10 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     （Electron 正式启动冒烟，不依赖 Vite dev 与源码导入）；`npm run test:production`。
   - **验证**：`npm run build` exit 0；`test:production` 两者均 OK；dev 侧 `react-stage-smoke`、
     `d3-boot-render` OK；`typecheck` TYPECHECK_OK（未新增诊断）。
-  - **待办（R1 余项）**：PDF 查看器（`src/app/pdf-viewer/web/viewer.html`）与 3D 查看器
-    （`src/app/model-viewer/website/*`）的多页入口与资源路径未纳入本轮；既有源缺陷
-    （`icon.svg`、`js/vendors/tippy.js`、collect-window 的 `../css/jquery-ui.min.css` 与
-    `js/lib/api/url-enlarger.js`）源码与产物均缺（dev 同样 404），由 dist 检查以 WARN 记录，归 R5/R6。
+  - **PDF / 3D**：两者无 React 入口，作为专用引擎页原样交付（`src/app/pdf-viewer/web/viewer.html`、
+    `src/app/model-viewer/website/{index,embed}.html`）；`src/app` 内除 10 个 React 页 HTML 外的
+    `.html` 一并按原样复制。
+  - **既有源缺陷（非本轮引入）**：`icon.svg`、`js/vendors/tippy.js`、collect-window 的
+    `../css/jquery-ui.min.css` 与 `js/lib/api/url-enlarger.js`、model-viewer 的 `info/index.html`
+    与 `../build/o3dv.website.min-dev.js`、pdf-viewer 的 `locale/locale.properties` —— 源码与产物均缺
+    （dev 同样 404），由 dist 检查以 WARN 记录，归 R5/R6。

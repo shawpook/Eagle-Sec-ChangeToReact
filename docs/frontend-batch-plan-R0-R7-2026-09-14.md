@@ -107,7 +107,7 @@ node tests/electron-smoke.cjs
 - 新增 `scripts/serve-frontend.mjs`（提供 dist + 代理 `/file` 到缩略图服务）、`scripts/start-production.mjs`；Electron 子窗/工作台 URL 从 `EAGLE_PREVIEW_URL` 的 origin 推导（去掉硬编码 5176）。
 - 新增 `tests/dist-entry-check.mjs`（产物入口/资源检查）与 `tests/production-smoke.mjs`（Electron 正式启动冒烟，Vite dev 关闭）；`npm run test:production`。
 - **实测定位并修复**：生产态 `appRoot=/src`，运行时 `require('/src/config.js')` 取 `EagleConfig`；缺 `src/config.js`/`src/i18n` 交付导致 `hoverPreview` 的 `EagleConfig.VIDEO_FORMATS.map` 崩溃、主窗未挂载。补齐交付后 `PRODUCTION_SMOKE_OK`（`hasRegistry/hasDriver` 为真，入口指向 `/assets/*.js`）。
-- **待办**：PDF 查看器与 3D 查看器的多页入口与资源路径（本轮未纳入）；既有源缺陷（`icon.svg`、`tippy.js`、collect-window 的两处相对路径）以 WARN 记录，归 R5/R6。
+- **待办**：PDF 与 3D 查看器已作为专用引擎页原样交付（无 React 入口）；既有源缺陷（`icon.svg`、`tippy.js`、collect-window 的两处相对路径、model-viewer 的两处、pdf-viewer 的 `locale.properties`）以 WARN 记录，归 R5/R6。
 
 ## R2：拆分启动兼容层，明确窗口运行环境
 

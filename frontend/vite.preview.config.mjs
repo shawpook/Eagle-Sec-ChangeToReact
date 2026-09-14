@@ -214,7 +214,14 @@ export default defineConfig({
           if (!fs.existsSync(from)) { console.log(`[eagle] skip (absent) ${dir.from}`); continue; }
           try {
             copyTree(from, path.join(outDir, dir.to), dir.filterPages
-              ? (src) => !src.endsWith('.html') && !src.split(path.sep).includes('react')
+              ? (src) => {
+                  if (src.split(path.sep).includes('react')) return false;
+                  // 只排除由 Vite 产出的 React 页 HTML；pdf-viewer/model-viewer 等引擎页
+                  // 无 React 入口，按原样交付（R1）。
+                  const rel = path.relative(workspaceRoot, src).split(path.sep).join('/');
+                  if (src.endsWith('.html') && REACT_PAGE_ENTRIES[rel]) return false;
+                  return true;
+                }
               : null);
             copied += 1;
             console.log(`[eagle] copied ${dir.from} -> ${dir.to}`);

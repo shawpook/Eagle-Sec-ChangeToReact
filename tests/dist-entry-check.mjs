@@ -32,8 +32,12 @@ const ENTRY_PAGES = [
 ];
 // 静态页（无 React 入口）：只查存在性与资源解析。
 const STATIC_PAGES = ['pages.html'];
-// 尚未纳入本轮多页构建的交付面（登记为待办，不算失败）。
-const PENDING_ROUTES = ['/src/app/pdf-viewer/', '/src/app/model-viewer/'];
+// 专用引擎页（PDF.js / O3DV）：无 React 入口，按原样交付，只查存在性与资源解析。
+const ENGINE_PAGES = [
+  'src/app/pdf-viewer/web/viewer.html',
+  'src/app/model-viewer/website/index.html',
+  'src/app/model-viewer/website/embed.html',
+];
 // 开发/演示数据或被 publicDir 提供、不进静态产物的路由（有意排除）。
 const EXCLUDED_ROUTES = ['/mock-library/', '/mock-assets/', '/src/app/registration.html', '/src/app/manage-device.html'];
 
@@ -42,7 +46,6 @@ const warnings = [];
 const fail = (msg) => { failures.push(msg); console.log(`FAIL ${msg}`); };
 const warn = (msg) => { warnings.push(msg); console.log(`WARN ${msg}`); };
 const pass = (msg) => console.log(`PASS ${msg}`);
-const pending = (msg) => console.log(`PENDING ${msg}`);
 
 if (!fs.existsSync(distRoot)) {
   console.error(`FAIL 产物不存在：${distRoot}（先运行 npm run build）`);
@@ -71,7 +74,6 @@ function checkResources(pageRel) {
   for (const m of html.matchAll(ATTR_RE)) {
     const ref = m[1];
     if (/^(https?:|data:|mailto:|blob:|\/\/|#)/.test(ref) || ref.includes('${')) continue;
-    if (PENDING_ROUTES.some((p) => ref.startsWith(p))) { pending(`${pageRel} -> ${ref}（未纳入本轮构建）`); continue; }
     if (EXCLUDED_ROUTES.some((p) => ref.startsWith(p))) { warn(`${pageRel} -> ${ref}（有意排除/演示路由）`); continue; }
     if (fs.existsSync(distPathFor(ref, pageRel))) continue;
     // 产物缺失：区分「R1 交付缺口」与「既有源缺陷」。
@@ -95,6 +97,12 @@ for (const rel of ENTRY_PAGES) {
 for (const rel of STATIC_PAGES) {
   if (!fs.existsSync(path.join(distRoot, rel))) { fail(`缺少页面 ${rel}`); continue; }
   pass(`${rel} 存在（静态页，无 React 入口）`);
+  checkResources(rel);
+}
+
+for (const rel of ENGINE_PAGES) {
+  if (!fs.existsSync(path.join(distRoot, rel))) { fail(`缺少引擎页 ${rel}`); continue; }
+  pass(`${rel} 存在（专用引擎页，无 React 入口）`);
   checkResources(rel);
 }
 

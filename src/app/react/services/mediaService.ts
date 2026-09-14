@@ -456,7 +456,7 @@ export function machineryRememberVideoCurrentTime(item: any): void {
 }
 
 /* videoScreenShot（bundle 33233-33288 逐字 async） */
-export async function machineryVideoScreenShot(copyMode: any): Promise<void> {
+export async function machineryVideoScreenShot(copyMode?: any): Promise<void> {
   return mediaVideoScreenShot(copyMode);
 }
 

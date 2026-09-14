@@ -8776,3 +8776,25 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - 其余为形参/回调隐式 any（含 `require`/`FileUrlHelper`/`preferences` 三个 ambient 声明）。
 - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`d3-detail-mode`、`react-stage11b0-smoke`、
   `continuous-grid-scroll`（含 AutoScroll 频道闭环）全绿。
+
+### R3 收尾：撤销 `@ts-nocheck`（第五批：itemMenuService，207 条）
+
+- **撤销对象**：`services/itemMenuService.ts`（207 条清零，删除 `// @ts-nocheck`）。累计已撤销
+  **9 个**（102+232+126+141+207 = 808 条），台账 11 个（8 个 `core/shim/*` + 3 个待撤销）。
+- **诊断构成与处置**：207 条中 **146 条是同一个根因**——本文件缺少其他菜单服务都有的
+  **模块级常量块**（`i18n` 101 处 / `preferences` 35 处 / `eagle` 10 处）。补上
+  `i18n`/`eagle`/`swal`/`path`/`preferences` 常量与 `require`/`appRoot`/`pluginModule`/
+  `ReverseImageSearch`/`FileUrlHelper`/`ayncsImagesChange`/`ayncsImagesGeneratePalette`/
+  `removePlayingAudios` 的 typed ambient 后，一次消掉 160 余条。
+  **这是「同一根因成簇」的又一例**：不补常量块而逐处加注解会把 101 个站点重复处理 101 次。
+- **签名修正（不迁就报错）**：`machineryVideoScreenShot(copyMode?: any)`（`mediaService`，
+  本文件按无参调用）与 `machineryRemoveSelected(event?: any)`（`selectionViewDomain`，
+  体内本就是 `event?.` 空安全写法）——两处都改为可选形参而非在调用点硬塞 `undefined`。
+- 其余：`let submenu`/`pluginsMenuItems`/`lastOpenedPluginsMenuItems`/`otherPluginsMenuItems`
+  /`historyLibraryMenu` 等容器补容器类型（`{items: []}` 推断出的 `never[]` 导致 2 条
+  `TS2345 … not assignable to parameter of type 'never'`）；`reduce`/`forEach`/`filter`/`map`
+  回调形参补 `: any`；末尾 `return run(...args)` 的 `TS2556`（spread 需元组）改为
+  `run(...(args as [any, any]))`（运行期等价）。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`menu-popup`（含 folder/smart-folder
+  右键菜单的 labelCount/子菜单断言）、`d3-selection` 全绿。
+- **剩余 3 个文件**：`core/{hoverPreview 273, smoothZoomEngine 292, eagleClasses 297}`（共 862 条）。

@@ -523,7 +523,7 @@ export function machineryOpenInspectorTagSelectPanel(): void {
   inspectorTagSelectPanelOpenChannel.emit();
 }
 
-export function machineryRemoveSelected(event: any): void {
+export function machineryRemoveSelected(event?: any): void {
   const w = window as any;
   const $timeout = getTimeout();
   event?.preventDefault();

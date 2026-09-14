@@ -50,7 +50,6 @@ const NOCHECK_LEDGER = [
   'src/app/react/core/eagleClasses.ts',
   'src/app/react/core/hoverPreview.ts',
   'src/app/react/core/smoothZoomEngine.ts',
-  'src/app/react/services/itemMenuService.ts',
 ];
 
 function collectNoCheckFiles() {

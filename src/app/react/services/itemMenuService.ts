@@ -14,7 +14,6 @@
  *   removePlayingAudios → window 全局回退（bundleGlobals 供给；Vite 编译后与 controllerFns
  *   既有形态等价，bo 批 CONTEXTMENU 频道切 eagleBus 时一并复核）
  */
-// @ts-nocheck
 import { URL_MODULE, ContextMenu, renameImages, openWithApplicationPath } from '../core/contextMenuDomain';
 import { getWindowScope } from '../core/scopeFace';
 
@@ -57,6 +56,21 @@ const AUDIO_TYPES: any = {}; (EagleConfig.AUDIO_FORMATS || []).forEach(function 
 const FONT_TYPES: any = {}; (EagleConfig.FONT_FORMATS || []).forEach(function (ext: string) { FONT_TYPES[ext] = true; });
 const NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES: any = { tif: true, jpg: true, png: true, bmp: true, webp: true };
 const electronLog: any = (window as any).electronLog || console;
+const i18n: any = (window as any).i18n;
+const eagle: any = (window as any).eagle;
+const swal: any = (...args: any[]) => (window as any).swal(...args);
+const path: any = _req('path');
+let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const require: any;
+declare const appRoot: any;
+declare const pluginModule: any;
+declare const ReverseImageSearch: any;
+declare const FileUrlHelper: any;
+declare const ayncsImagesChange: any;
+declare const ayncsImagesGeneratePalette: any;
+declare const removePlayingAudios: any;
+
 const ipcRenderer: any = getIpcBus();
 const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.() || _req('@electron/remote')?.getCurrentWindow?.();
 const remote: any = _req('@electron/remote');
@@ -88,7 +102,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
         const canPreview = (isSupportFormat || pluginModule?.previewExtension.thumbnailPluginMap[item.ext]);
 
         // 檔案可以打開的資料夾
-        const openInFolderMenuItems = item?.folders?.reduce((acc, folderId) => {
+        const openInFolderMenuItems = item?.folders?.reduce((acc: any, folderId: any) => {
             const folder = useItemState.getState().folderMappings[folderId];
             if (!folder) return acc;
             acc.push({
@@ -104,7 +118,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
         // 檔案是否可以被 Eagle 正常解析預覽
         let canPin = false;
         if (isInFolderList) {
-            canPin = items.slice(0, 100).reduce((acc, item) => {
+            canPin = items.slice(0, 100).reduce((acc: any, item: any) => {
                 if (!item.pinned || !item.pinned[useFolderState.getState().currentFolder?.id]) {
                     acc = false;
                 }
@@ -113,15 +127,15 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
         }
 
         // 添加到其它資源庫
-        let historyLibraryMenu = {};
-        historyLibraryMenu.items = getLibraryHistory().filter((history) => {
+        let historyLibraryMenu: any = {};
+        historyLibraryMenu.items = getLibraryHistory().filter((history: any) => {
             var isCurrent = false;
             const _ws: any = getWindowScope();
             if (_ws.libraryPath) {
                 isCurrent = path.normalize(history.path) == path.normalize(_ws.libraryPath);
             }
             return !isCurrent;
-        }).map((history) => {
+        }).map((history: any) => {
             let iconPath = path.normalize(`${history.path}/icon.png`);
             let iconUrl = URL_MODULE.pathToFileURL(iconPath).href;
             return {
@@ -141,12 +155,12 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
 
         let openWithOtherMenuItem = {};
         if (process.platform === 'darwin') {
-            let submenu = { items: [] };
+            let submenu: any = { items: [] };
             try {
                 const rawPath = FileUrlHelper.getRawPath(item);
                 const getAssociatedApplications = require(appRoot + '/my_modules/get-associated-application');
                 let asso = await getAssociatedApplications(FileUrlHelper.getRawPath(item));
-                asso.forEach((result) => {
+                asso.forEach((result: any) => {
                     try {
                         if (result.name === "Eagle.app") return;
                         submenu.items.push({
@@ -182,17 +196,17 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
             }
         }
 
-        let pluginsMenuItems = [];
+        let pluginsMenuItems: any[] = [];
         const lastOpenedPluginsIds = pluginModule.getLastOpenedPlugins(3);
-        const lastOpenedPluginsIdsMap = lastOpenedPluginsIds.reduce((acc, cur) => {
+        const lastOpenedPluginsIdsMap = lastOpenedPluginsIds.reduce((acc: any, cur: any) => {
             acc[cur] = true;
             return acc;
         }, {});
 
-        let lastOpenedPluginsMenuItems = [];
-        let otherPluginsMenuItems = [];
+        let lastOpenedPluginsMenuItems: any[] = [];
+        let otherPluginsMenuItems: any[] = [];
 
-        pluginModule.plugins.forEach((plugin) => {
+        pluginModule.plugins.forEach((plugin: any) => {
             const manifest = plugin.manifest;
             const icon = `${URL_MODULE.pathToFileURL(`${plugin.path}/${manifest.logo}`).href}?t=${Date.now()}`;
             const name = manifest.name;
@@ -243,7 +257,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     keywords: 'restore 還原 戻す',
                     icon: 'ic-trash-restore.svg',
                     click: () => {
-                        useSelectionState.getState().selected.forEach((item) => {
+                        useSelectionState.getState().selected.forEach((item: any) => {
                             item.isDeleted = false;
                         });
                         machineryCalculateImageBinding({ ignoreSort: true }, () => {
@@ -479,7 +493,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-share.svg',
                     keepOpen: true,
                     click: () => {
-                        const filePaths = items.map((item) => {
+                        const filePaths = items.map((item: any) => {
                             return FileUrlHelper.getRawPath(item);
                         });
                         const shareMenu = new remote.ShareMenu( { filePaths: filePaths } );
@@ -500,14 +514,14 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                         // TODO 需重構獨立成 function
                         machineryCheckOperationSafety(() => {
                             var now = Date.now();
-                            useSelectionState.getState().selected.forEach((item, index) => {
+                            useSelectionState.getState().selected.forEach((item: any, index: any) => {
                                 if (!item.pinned) { item.pinned = {} };
                                 if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
-                                    const folders = item.folders.filter((folderId) => {
+                                    const folders = item.folders.filter((folderId: any) => {
                                         return useMiscRawState.getState().selectedFoldersMappings[folderId];
                                     });
-                                    folders.forEach((folderId) => {
+                                    folders.forEach((folderId: any) => {
                                         item.pinned[folderId] = now - index;
                                     });
                                 }
@@ -538,14 +552,14 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                         // TODO 需重構獨立成 function
                         machineryCheckOperationSafety(() => {
                             var now = Date.now();
-                            useSelectionState.getState().selected.forEach((item, index) => {
+                            useSelectionState.getState().selected.forEach((item: any, index: any) => {
                                 if (!item.pinned) return;
                                 if (useMiscRawState.getState().selectedFolders?.length > 0) {
                                     // 取得 item folders 和 s.$root.selectedFolders 的交集
-                                    const folders = item.folders.filter((folderId) => {
+                                    const folders = item.folders.filter((folderId: any) => {
                                         return useMiscRawState.getState().selectedFoldersMappings[folderId];
                                     });
-                                    folders.forEach((folderId) => {
+                                    folders.forEach((folderId: any) => {
                                         delete item.pinned[folderId];
                                     });
                                 }
@@ -1189,7 +1203,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
             showSearch: true,
         });
         writeCurrentFocus("content");  };
-  return run(...args);
+  return run(...(args as [any, any]));
 }
 
 // ═══ b1-9bz-A：controllerFns 表体归位（逐字平移；getScope()→getBodyScope()；表项指针化）═══

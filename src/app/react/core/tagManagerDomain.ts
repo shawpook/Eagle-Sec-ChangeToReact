@@ -47,7 +47,7 @@ import { machineryOpenAll } from '../services/folderCoreService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryResetPage } from '../services/gridService';
 import { applyDataMachineryScope } from './machineryInfra';
-import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders, writeGifPlayer, writeGifUpadteInterval } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
@@ -2015,7 +2015,7 @@ export function machineryBuildTagManager(): any {
                     syncDetailFromScope();
                     useMiscRawState.getState().gifViewer.range = undefined;
                     syncDetailFromScope();
-                    writeScopeField('gifPlayer', undefined);
+                    writeGifPlayer(undefined);
                     syncDetailFromScope();
                 }
                 updateGifProgressbar(progress);
@@ -2024,7 +2024,7 @@ export function machineryBuildTagManager(): any {
             onFinished: function (result: any) {
                 useMiscRawState.getState().gifViewer.range = undefined;
                 syncDetailFromScope();
-                writeScopeField('gifPlayer', result.gifPlayer);
+                writeGifPlayer(result.gifPlayer);
                 syncDetailFromScope();
                 writeIsGifReady(true);
                 syncDetailFromScope();
@@ -2157,7 +2157,7 @@ export function machineryBuildTagManager(): any {
                 });
 
 
-                writeScopeField('gifUpadteInterval', setInterval(function () {
+                writeGifUpadteInterval(setInterval(function () {
                     try {
                         var c = useMiscRawState.getState().gifPlayer.get_current_frame();
                         var length = useMiscRawState.getState().gifPlayer.get_length();

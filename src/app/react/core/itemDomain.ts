@@ -63,7 +63,7 @@ import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
 import { useFolderState, writeStartCursor, writeTags, writeFolderList } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState, writeHexColor } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor, writeBoxContianerWidth, writeLastImageHeight, writeContentFilterCache } from '../store/miscRawState';
 import { useItemState, writeRaw, writeTrash, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings } from '../store/itemState';
 import { useBodyState, writeCurrentFocus, writeIsCommentMode } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
@@ -339,7 +339,7 @@ export function takeoverItemDomain(): void {
       // b1-9o：raw 变更后失效内容过滤缓存（bundle 导入路径走无缓存 rebindRefresh 隐式重建，
       // shim 世界导入路径不经过 rebindRefresh——缓存不失效则 filterContent 永远吃到旧快照，
       // 11a49 的 a4 空态无法闭合即此）
-      writeScopeField('contentFilterCache', null);
+      writeContentFilterCache(null);
       // 判斷是否需要更新畫面，如果 groupkey 屬於前 3 頁面，就更新
       const key = w.ig.getGroupKeys(false)[0] - 1000000;
       const needUpdateView = key <= 1;
@@ -356,7 +356,7 @@ export function takeoverItemDomain(): void {
   ipc.on('image.removed', function (_event: any, id: any) {
     if (!useItemState.getState().raw) return;
     // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
-    writeScopeField('contentFilterCache', null);
+    writeContentFilterCache(null);
     for (let i = 0; i < useItemState.getState().raw.length; i++) {
       const img = useItemState.getState().raw[i];
       if (img.id === id) {
@@ -501,7 +501,7 @@ export function takeoverItemDomain(): void {
       writeScopeField('lastestAddItem', image);
       useItemState.getState().itemMappings[image.id] = image;
       // b1-9o：raw 变更后失效内容过滤缓存（同 image.added 处注）
-      writeScopeField('contentFilterCache', null);
+      writeContentFilterCache(null);
       // 判斷是否重複，如果重復，就先紀錄在 $scope.duplicateQueue 裡面
       const existsImage = machineryIsDuplicateImage(image);
       const needCheckRepeat = usePreferencesState.getState().preferences.notification.notification.enable !== 'false' && usePreferencesState.getState().preferences.notification.notification.when.repeatImage === 'true';
@@ -2884,8 +2884,8 @@ export function machineryReload(): any {
     }
 
     writeScopeField('loadMoreDisable', false);
-    writeScopeField('lastImageHeight', useLayoutState.getState().imageSize.height);
-    writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+    writeLastImageHeight(useLayoutState.getState().imageSize.height);
+    writeBoxContianerWidth(widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
     machineryRebindRefresh();
     machineryRelayout();
     machineryUpdateSelection();

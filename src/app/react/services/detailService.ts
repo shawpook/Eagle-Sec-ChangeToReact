@@ -22,8 +22,9 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState, writeIsInlineMode, writeIsCommentMode } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { useSelectionState } from '../store/selectionState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { useItemState } from '../store/itemState';
+import { writeShowLargeImage } from '../store/miscRawState';
 // ── 域内自管（原 controller 闭包 var：updateZoomRatioTimeout，31389 邻域）——
 // updateZoomRatio/homeHandler/endHandler 三处共用的 zooming 类 300ms 护栏 ──
 let updateZoomRatioTimeout: any = null;
@@ -191,7 +192,7 @@ export function detailSmartZoom(target: any, forceMode: any): void {
     machineryOnZoomRatioChanged();
     useLayoutState.getState().imageSize.zoomRatioExp = machineryGetRatioExp(useLayoutState.getState().imageSize.zoomRatio);
   }
-  writeScopeField('showLargeImage', true);
+  writeShowLargeImage(true);
   detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,

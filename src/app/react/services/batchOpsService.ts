@@ -46,7 +46,7 @@ import { getFilter as machineryGetFilter } from '../core/filterDomain';
 import { machineryGetSelectedItemElements, machineryGetSelectedTags, machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machineryAutoScroll, machineryResetPage } from './gridService';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeLastIndex } from '../store/miscRawState';
 import { useItemState, writeTrash, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useFolderState, writeCurrentFolder, writeCurrentFolderChildren } from '../store/folderState';
@@ -231,7 +231,7 @@ export function addToLastUsedFolder(...args: any[]) {
                 var itemElements = machineryGetSelectedItemElements();
                 glRemoveitemsChannel.emit(itemElements);
                 // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-                writeScopeField('lastIndex', machineryGetSelection().start);
+                writeLastIndex(machineryGetSelection().start);
                 var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
                 var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
                 if (next) {
@@ -350,7 +350,7 @@ export function removeFromFolder(...args: any[]) {
 
         // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
         if (useFolderState.getState().currentFolder && useFolderState.getState().currentFolder.id === folderId) {
-            writeScopeField('lastIndex', machineryGetSelection().start);
+            writeLastIndex(machineryGetSelection().start);
             var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
             var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
             if (next) {

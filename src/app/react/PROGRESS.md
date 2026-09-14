@@ -8543,3 +8543,19 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
     `d3-alltags-view`（标签组）、`library-switch-ui`（切库 → currentFolder/folders）、
     `d3-selection`、`empty-trash`（trash/lockedImages/lastItemStates）全绿。
+
+- **R4 切片⑧（miscRawState 长尾 A 组：选择/智能文件夹/网格几何/媒体详情 23 字段）**：
+  长尾按主题分三组收尾，本组收敛 **23 个字段 / 100 处**：selectedSmartFolders、
+  selectedSmartFoldersMappings、selectedFolders、selectedFoldersMappings、selectedFolder、
+  lastIndex、boxContianerWidth、boxContianerHeight、zoomFitSize、lastZoomMode、
+  sliderZoomRatio、isRotating、showLargeImage、showDetailImage、useMpvPlayer、gifPlayer、
+  usingGifPlayer、gifUpadteInterval、ratio、commentRect、lastImageHeight、contentFilterCache、
+  isPreviewing。
+  - **codemod 也改为规格驱动**：`.tmp/r4/codemod-domain-actions.mjs` 现在直接读
+    `.tmp/r4/domains.json`（域→字段）并派生 `write` + 首字母大写的写点名，
+    不再维护独立的 `DOMAINS.map`——域表只有一份，守卫与 codemod 共用。
+  - 累计 R4 已收敛 **91 个字段 / 437 处 / 10 个域**；待办数据字段 131 → **108**（237 处）。
+  - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
+    `continuous-grid-layout`（boxContianer* 几何/锚点恢复）、`d3-detail-mode`
+    （showDetailImage/showLargeImage）、`d3-selection`（lastIndex/选区映射）、
+    `react-stage11b0-smoke` 全绿。

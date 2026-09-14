@@ -46,12 +46,12 @@ import { machineryAutoScroll } from '../services/gridService';
 import { getTimeout, machineryCalls } from './machineryInfra';
 import { useItemState, writeSelectedMappings, writeSelectedFolderMappings } from '../store/itemState';
 import { useListState } from '../store/listState';
-import { useMiscRawState, writeSelectedTags, writeIsGifReady } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedTags, writeIsGifReady, writeSelectedSmartFolders, writeLastIndex, writeZoomFitSize, writeShowLargeImage } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState } from '../store/folderState';
-import { writeScopeField } from './scopeFieldBridge';
+
 import { getIpcBus } from './channelBridge';
 import { writeSelected, writeCurrent, writeLastSelectedIndex } from '../store/selectionState';
 let done = false;
@@ -110,7 +110,7 @@ export function takeoverSelectionViewDomain(): void {
   onSelectedChanged(function (oldValue: any) {
 
     writeSelectedMappings({});
-    writeScopeField('zoomFitSize', 0);
+    writeZoomFitSize(0);
 
     useSelectionState.getState().selected.forEach(function (image: any, index: any) {
       if (image) {
@@ -126,7 +126,7 @@ export function takeoverSelectionViewDomain(): void {
       // 只在「詳情模式中切換圖片」時執行。（bundle 原注：剛進入詳情模式時 smoothZoomDone
       // 為 false，#detail-image 尚未渲染，這些 DOM 操作無意義，且 updateNavigator 會在
       // enterDetailMode 的 $timeout 中重做。）
-      writeScopeField('showLargeImage', false);
+      writeShowLargeImage(false);
       machineryRememberVideoCurrentTime(oldValue[0]);
       if (w.AnnotationPreview) w.AnnotationPreview.hide();
       dataSet(q("#detail-image"), "degree", 0);
@@ -592,7 +592,7 @@ export function machineryRemoveSelected(event: any): void {
     }
     else {
       machineryCheckOperationSafety(function () {
-        writeScopeField('lastIndex', machineryGetSelection().start);
+        writeLastIndex(machineryGetSelection().start);
 
         if (useFolderState.getState().currentFolder) {
 
@@ -705,7 +705,7 @@ export function machineryRemoveSelected(event: any): void {
           w.hiddenByCurrentFilter(useSelectionState.getState().selected);
 
           // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-          writeScopeField('lastIndex', machineryGetSelection().start);
+          writeLastIndex(machineryGetSelection().start);
           var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
           var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
 
@@ -829,7 +829,7 @@ export function machineryRemoveSelectedSmartFolders(): void {
     useMiscRawState.getState().selectedSmartFolders.forEach(function (smartFolder: any) {
       machineryRemoveSmartFolderInner(smartFolder, { ignoreRestore: true });
     });
-    writeScopeField('selectedSmartFolders', []);
+    writeSelectedSmartFolders([]);
   }, function () { });
 }
 

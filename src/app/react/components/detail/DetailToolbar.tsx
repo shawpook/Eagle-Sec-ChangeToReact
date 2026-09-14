@@ -28,8 +28,8 @@ import { machinerySelectNext, machinerySelectPrev } from '../../core/selectionVi
 import { machineryLeaveDetailMode, machineryOpenPluginPanel } from '../../core/miscDomain';
 import { machineryToggleAll } from '../../services/gridService';
 import { applyDataMachineryScope } from '../../core/machineryInfra';
-import { useMiscRawState } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState, writeSliderZoomRatio } from '../../store/miscRawState';
+
 /**
  * 阶段5：详情模式工具列/悬浮层 —— index.html 391-634 行逐字转写。
  * （面包屑、缩放滑条、webview-toolbar、裁切工具列、插件工具列、通用工具列、
@@ -295,7 +295,7 @@ export function DetailToolbar({ snapshot }: { snapshot: DetailSnapshot }) {
               onChange={(e) => {
                 const value = Number(e.target.value);
                 runInBodyScope(() => {
-                  writeScopeField('sliderZoomRatio', value);
+                  writeSliderZoomRatio(value);
                   syncDetailFromScope();
                   // F24（实机 QA 2026-09-14）：原 Angular 侧 `$watch("sliderZoomRatio")` 的
                   // listener（把滑条百分比落到 smoothZoom 引擎）未移植 —— 旧实现只写 scope

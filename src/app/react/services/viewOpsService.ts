@@ -21,10 +21,10 @@ import { getFilter } from '../core/filterDomain';
 import { machineryGetSelection } from '../core/selectionViewDomain';
 import { useFolderState } from '../store/folderState';
 import { useBodyState } from '../store/bodyState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeZoomFitSize, writeLastZoomMode, writeSliderZoomRatio, writeShowLargeImage } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { useLayoutState } from '../store/layoutState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
 // 原 bundle controller 闭包 var（viewOpsService 内 __lv_saveListHeight 唯一使用方）
@@ -183,8 +183,8 @@ export function zoomFit(...args: any[]) {
                     }
                     return;
                 }
-                writeScopeField('zoomFitSize', 0);
-                writeScopeField('lastZoomMode', "fit");
+                writeZoomFitSize(0);
+                writeLastZoomMode("fit");
                 syncDetailFromScope();
                 localStorage["eagle.viewer.lastZoomMode"] = useMiscRawState.getState().lastZoomMode;
                 useLayoutState.getState().imageSize.zoomRatio = 100;
@@ -342,7 +342,7 @@ export function machineryLastZoom(): boolean {
 /** imageSize.zoomRatio 变化后的统一处理（原 $watch("imageSize.zoomRatio") 的 listener）。 */
 export function machineryOnZoomRatioChanged(): void {
   if (!useLayoutState.getState().imageSize) return;
-  writeScopeField('sliderZoomRatio', useLayoutState.getState().imageSize.zoomRatio);
+  writeSliderZoomRatio(useLayoutState.getState().imageSize.zoomRatio);
   syncDetailFromScope();
 }
 
@@ -368,26 +368,26 @@ export function machineryToggleZoom(event: any): void {
   if (useMiscRawState.getState().VIDEO_TYPES[useSelectionState.getState().current.ext]) {
     if (useMiscRawState.getState().lastZoomMode !== "edge") {
       machineryZoomFit(event);
-      writeScopeField('lastZoomMode', "edge");
+      writeLastZoomMode("edge");
       syncDetailFromScope();
-      writeScopeField('zoomFitSize', useLayoutState.getState().imageSize.zoomRatioExp);
+      writeZoomFitSize(useLayoutState.getState().imageSize.zoomRatioExp);
     }
     else {
       machineryZoomActual(event);
-      writeScopeField('lastZoomMode', "fit");
+      writeLastZoomMode("fit");
       syncDetailFromScope();
-      writeScopeField('zoomFitSize', 0);
+      writeZoomFitSize(0);
     }
   }
   else {
     if (useMiscRawState.getState().lastZoomMode !== "edge") {
       machineryZoomFitEdge(event, true);
-      writeScopeField('lastZoomMode', "edge");
+      writeLastZoomMode("edge");
       syncDetailFromScope();
     }
     else {
       machineryZoomFit(event);
-      writeScopeField('lastZoomMode', "fit");
+      writeLastZoomMode("fit");
       syncDetailFromScope();
     }
   }
@@ -521,9 +521,9 @@ export function machineryZoomFitEdge(event?: any, hasTransition?: any): void {
     useLayoutState.getState().imageSize.zoomRatio = machineryGetRatioNonExp(ratio);
     machineryOnZoomRatioChanged();
     useLayoutState.getState().imageSize.zoomRatioExp = ratio;
-    writeScopeField('zoomFitSize', ratio);
+    writeZoomFitSize(ratio);
   }
-  writeScopeField('showLargeImage', true);
+  writeShowLargeImage(true);
   detailZoom()?.focusTo( {
     x: width / 2,
     y: height / 2 + offsetY,

@@ -8,10 +8,10 @@ import { q, hasClass, textEl, setAttrEl, addClassEl, removeClassEl, setHtmlEl, f
 import { machineryGetSelection, machineryUpdateSelection } from '../core/selectionViewDomain';
 import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../core/miscDomain';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeIsPreviewing } from '../store/miscRawState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { useItemState, writeSelectedFolderMappings } from '../store/itemState';
 import { getIpcBus } from '../core/channelBridge';
 
@@ -280,7 +280,7 @@ export function select(...args: any[]) {
             cancelCleanSelectedTimeout();
 
             if (useMiscRawState.getState().isPreviewing) {
-                writeScopeField('isPreviewing', false);
+                writeIsPreviewing(false);
                 currentWindow.closeFilePreview();
             }
             window.getSelection()?.removeAllRanges();

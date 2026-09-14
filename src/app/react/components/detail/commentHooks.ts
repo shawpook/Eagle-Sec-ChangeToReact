@@ -11,8 +11,8 @@ import { moveCropToolChannel, rebindRefreshChannel, resizeCropToolChannel } from
 import { makeResizable } from '../interactions/resizable';
 import { useSelectionState } from '../../store/selectionState';
 import { useBodyState } from '../../store/bodyState';
-import { useMiscRawState } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState, writeRatio } from '../../store/miscRawState';
+
 /**
  * 阶段5：批注/评论/裁切 hooks —— rectComment（72439-72564）、commentsContainer
  * （72353-72439）、commentItem（72215-72353）、cropImage（71520-72215）、
@@ -209,7 +209,7 @@ export function recomputeCommentRatio() {
   const $image = q('#detail-image');
   if (image && image.width && $image) {
     runInBodyScope(function () {
-      writeScopeField('ratio', image.width / widthOf($image));
+      writeRatio(image.width / widthOf($image));
       syncDetailFromScope();
     });
   }
@@ -236,7 +236,7 @@ export function useCommentsContainer(currentId: string | undefined, hasComments:
           const image = useSelectionState.getState().current;
           if (!image) return;
           runInBodyScope(function () {
-            writeScopeField('ratio', image.width / widthOf($image));
+            writeRatio(image.width / widthOf($image));
             syncDetailFromScope();
           });
           offEl($image, 'load');

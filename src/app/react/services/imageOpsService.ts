@@ -42,7 +42,7 @@ import { machineryCheckOperationSafety } from '../services/viewOpsService';
 import { getFilter } from '../core/filterDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machinerySortRawData } from '../core/itemDomain';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeIsRotating } from '../store/miscRawState';
 import { useBodyState, writeIsCropMode } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -151,14 +151,14 @@ export function rotateImage(...args: any[]) {
 
             __lv_lastRotateImage = rotatedImage;
 
-            writeScopeField('isRotating', true);
+            writeIsRotating(true);
             __lv_rotateImageSaveTimeout = setTimeout(async function () {
 
                 // 检查度数，如果不为 0 并且设定为写入文件时执行写入动作
                 if (degree % 360 != 0 && usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
                     var rawPath = FileUrlHelper.getRawPath(rotatedImage);
                     if (!rawPath) {
-                        writeScopeField('isRotating', false);
+                        writeIsRotating(false);
                         return;
                     }
 
@@ -166,7 +166,7 @@ export function rotateImage(...args: any[]) {
                         fs.accessSync(rawPath, fs.W_OK)
                     }
                     catch (err) {
-                        writeScopeField('isRotating', false);
+                        writeIsRotating(false);
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
                         setCssEl(q("#detail-image"), {
@@ -209,7 +209,7 @@ export function rotateImage(...args: any[]) {
                         });
                         
                         // 旋轉成功
-                        writeScopeField('isRotating', false);
+                        writeIsRotating(false);
                         delete rotatedImage.orientation;
                         machineryUpdateItemView(rotatedImage);
                         ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
@@ -220,7 +220,7 @@ export function rotateImage(...args: any[]) {
                         
                     } catch (err) {
                         // 旋轉失敗，恢復原狀
-                        writeScopeField('isRotating', false);
+                        writeIsRotating(false);
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
                         setCssEl(q("#detail-image"), {
@@ -235,7 +235,7 @@ export function rotateImage(...args: any[]) {
                     }
                 }
                 else {
-                    writeScopeField('isRotating', false);
+                    writeIsRotating(false);
                 }
             }, 200);
         } as (...__args: any[]) => any).apply(null, args);

@@ -73,7 +73,7 @@ import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
 import { getTimeout } from './machineryInfra';
 import { useFolderState } from '../store/folderState';
 import { useListState, writeCurrentOrderBy, writeCurrentSortIncrease } from '../store/listState';
-import { useMiscRawState, writeIsGifReady } from '../store/miscRawState';
+import { useMiscRawState, writeIsGifReady, writeSelectedFolder, writeBoxContianerWidth, writeBoxContianerHeight, writeShowDetailImage, writeGifPlayer, writeUsingGifPlayer, writeCommentRect, writeIsPreviewing } from '../store/miscRawState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLockState, writeIsAppLocked } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -358,8 +358,8 @@ export function takeoverMiscDomain(): void {
   // ── window.maximize / window.unmaximize（22465/22483 逐字）──
   ipc.on('window.maximize', function () {
     setTimeout(function () {
-      writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
-      writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
+      writeBoxContianerWidth(widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+      writeBoxContianerHeight(heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     }, 200);
     writeIsMaximize(true);
     syncToolbarFromScope();
@@ -368,8 +368,8 @@ export function takeoverMiscDomain(): void {
 
   ipc.on('window.unmaximize', function () {
     setTimeout(function () {
-      writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
-      writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
+      writeBoxContianerWidth(widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+      writeBoxContianerHeight(heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     }, 200);
     writeIsMaximize(false);
     syncToolbarFromScope();
@@ -1066,7 +1066,7 @@ export function escHandler(...args: any[]) {
                 removeClass(".select-panel.open", "open");
                 return;
             }
-            writeScopeField('selectedFolder', undefined);
+            writeSelectedFolder(undefined);
             if (useBodyState.getState().isSlideshowMode) {
                 writeIsSlideshowMode(false);
                 __cf_ipcRenderer.send("leave-slideshow");
@@ -1092,7 +1092,7 @@ export function escHandler(...args: any[]) {
             if (useMiscRawState.getState().isPreviewing) {
                 if (process.platform == 'darwin') {
                     __cf_ipcRenderer.send('quicklook', useSelectionState.getState().selected[0]);
-                    writeScopeField('isPreviewing', false);
+                    writeIsPreviewing(false);
                 }
                 return;
             }
@@ -1105,18 +1105,18 @@ export function leaveDetailMode(...args: any[]) {
 
             writeIsCropMode(false);
             syncDetailFromScope();
-            writeScopeField('usingGifPlayer', false);
+            writeUsingGifPlayer(false);
             syncDetailFromScope();
             if (useBodyState.getState().isDetailMode) {
                 
                 machineryRememberScrollTops(useSelectionState.getState().current);
 
                 writeIsDetailMode(false);
-                writeScopeField('showDetailImage', false);
+                writeShowDetailImage(false);
                 syncDetailFromScope();
                 writeSmoothZoomDone(false);
                 syncDetailFromScope();
-                writeScopeField('commentRect', undefined);
+                writeCommentRect(undefined);
                 syncDetailFromScope();
                 // 記住上次播放位置
                 machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeCurrent(undefined);
@@ -1149,7 +1149,7 @@ export function leaveDetailMode(...args: any[]) {
                     syncDetailFromScope();
                     useMiscRawState.getState().gifViewer.range = undefined;
                     syncDetailFromScope();
-                    writeScopeField('gifPlayer', undefined);
+                    writeGifPlayer(undefined);
                     syncDetailFromScope();
                 }
 
@@ -1529,7 +1529,7 @@ export function machineryEnterDetailMode($event: any, image: any): void {
   syncInspectorFromScope();
   writeSelected([image]);
   syncInspectorFromScope();
-  writeScopeField('showDetailImage', true);
+  writeShowDetailImage(true);
   syncDetailFromScope();
   // 移除 $scope.zoom(image) — 此時 Angular 尚未跑 digest，
   // body 還沒有 is-detail-mode class，$(".content-panel").width() 讀到的是列表模式尺寸，
@@ -1566,7 +1566,7 @@ export function machineryEnterDetailMode($event: any, image: any): void {
         on_IMAGE_LOAD: function () {
           $timeout(function () {
             window.dispatchEvent(new Event("orientationchange"));
-            writeScopeField('showDetailImage', true);
+            writeShowDetailImage(true);
             syncDetailFromScope();
             writeSmoothZoomDone(true);
             syncDetailFromScope();
@@ -1653,18 +1653,18 @@ export function machineryLeaveDetailMode($event?: any): void {
 
   writeIsCropMode(false);
   syncDetailFromScope();
-  writeScopeField('usingGifPlayer', false);
+  writeUsingGifPlayer(false);
   syncDetailFromScope();
   if (useBodyState.getState().isDetailMode) {
 
     machineryRememberScrollTops(useSelectionState.getState().current);
 
     writeIsDetailMode(false);
-    writeScopeField('showDetailImage', false);
+    writeShowDetailImage(false);
     syncDetailFromScope();
     writeSmoothZoomDone(false);
     syncDetailFromScope();
-    writeScopeField('commentRect', undefined);
+    writeCommentRect(undefined);
     syncDetailFromScope();
     // 記住上次播放位置
     machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeCurrent(undefined);
@@ -1697,7 +1697,7 @@ export function machineryLeaveDetailMode($event?: any): void {
       syncDetailFromScope();
       useMiscRawState.getState().gifViewer.range = undefined;
       syncDetailFromScope();
-      writeScopeField('gifPlayer', undefined);
+      writeGifPlayer(undefined);
       syncDetailFromScope();
     }
 
@@ -1863,7 +1863,7 @@ export function machineryQuicklook(event?: any): void {
     else if (usePreferencesState.getState().preferences.habits.keyspace === "preview-native") {
       if (useSelectionState.getState().selected.length > 0) {
         if (w.process.platform == 'darwin' && !useBodyState.getState().isDetailMode) {
-          writeScopeField('isPreviewing', !useMiscRawState.getState().isPreviewing);
+          writeIsPreviewing(!useMiscRawState.getState().isPreviewing);
           w.IPCHelper.send('quicklook', useSelectionState.getState().selected[0]);
         }
       }
@@ -2009,8 +2009,8 @@ export function machineryToggleSidebar(event: any): void {
     writeLastItemStates({});
     w.$(window).trigger("orientationchange");
     const bc = q("#box-container") as HTMLElement | null;
-    writeScopeField('boxContianerWidth', (bc ? bc.offsetWidth : 0) || useMiscRawState.getState().boxContianerWidth);
-    writeScopeField('boxContianerHeight', (bc ? bc.offsetHeight : 0) || useMiscRawState.getState().boxContianerHeight);
+    writeBoxContianerWidth((bc ? bc.offsetWidth : 0) || useMiscRawState.getState().boxContianerWidth);
+    writeBoxContianerHeight((bc ? bc.offsetHeight : 0) || useMiscRawState.getState().boxContianerHeight);
     machineryRelayout(undefined);
     machineryOffsetScrollbar()(30);
     if (useBodyState.getState().isDetailMode && useMiscRawState.getState().lastZoomMode === "edge") {

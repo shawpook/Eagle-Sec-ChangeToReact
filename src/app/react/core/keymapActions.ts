@@ -15,9 +15,9 @@ import { clickEl } from '../utils/domQuery';
 
 import { machinerySaveHandler } from './keymap';
 import { useBodyState } from '../store/bodyState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeIsPreviewing } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
-import { writeScopeField } from './scopeFieldBridge';
+
 /** destoryMousetrap（bundle 49326-49330 邻域逐字：清空 scope.mousetrap 表并解绑全局键）。 */
 export function machineryDestoryMousetrap(): void {
   const w = window as any;
@@ -83,7 +83,7 @@ export function machineryCloseWindowHandler($event: any): void {
       w.event && w.event.stopPropagation();
       w.event && w.event.preventDefault();
       w.IPCHelper.send('quicklook', useSelectionState.getState().selected[0]);
-      writeScopeField('isPreviewing', false);
+      writeIsPreviewing(false);
     }
   }
 }

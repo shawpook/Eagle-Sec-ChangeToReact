@@ -48,7 +48,7 @@ import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './ta
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
 import { useItemState, writeShuffle } from '../store/itemState';
-import { useMiscRawState, writeHexColor } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor, writeContentFilterCache } from '../store/miscRawState';
 import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useBodyState, writeIsDetailMode } from '../store/bodyState';
 declare const RecentFileManager: any;
@@ -1297,7 +1297,7 @@ export async function machineryCalcuteFilterResult(data: any[], contentFilterCac
       }
       else {
         result = useItemState.getState().raw.filter((x: any) => machineryContentFilter(x));
-        writeScopeField('contentFilterCache', result.slice(0));
+        writeContentFilterCache(result.slice(0));
       }
       const filtered = await machineryFilterData(result);
       resolve(filtered);

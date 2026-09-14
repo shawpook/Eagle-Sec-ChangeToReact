@@ -23,8 +23,8 @@ import { machineryLeaveDetailMode } from '../../core/miscDomain';
 import { useItemState, writeAllData } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useSelectionState } from '../../store/selectionState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
-import { useMiscRawState } from '../../store/miscRawState';
+
+import { useMiscRawState, writeLastIndex } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
 import { writeSelected, writeCurrent } from '../../store/selectionState';
 /**
@@ -1100,7 +1100,7 @@ export function AddToFolderModal() {
     });
 
     if (hasRemoved) {
-      writeScopeField('lastIndex', machineryGetSelection().start);
+      writeLastIndex(machineryGetSelection().start);
 
       // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
       const next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];

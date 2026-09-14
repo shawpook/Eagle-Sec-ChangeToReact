@@ -582,3 +582,29 @@ export function bindMiscRawSync(): void {
   bound = true;
   (window as any).__eagleMiscRawState = useMiscRawState;
 }
+
+// R4 写点：
+/** R4 miscRawState 域长尾写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeSelectedSmartFolders(value: any): void { writers.selectedSmartFolders(value); }
+export function writeSelectedSmartFoldersMappings(value: any): void { writers.selectedSmartFoldersMappings(value); }
+export function writeSelectedFolders(value: any): void { writers.selectedFolders(value); }
+export function writeSelectedFoldersMappings(value: any): void { writers.selectedFoldersMappings(value); }
+export function writeSelectedFolder(value: any): void { writers.selectedFolder(value); }
+export function writeLastIndex(value: any): void { writers.lastIndex(value); }
+export function writeBoxContianerWidth(value: any): void { writers.boxContianerWidth(value); }
+export function writeBoxContianerHeight(value: any): void { writers.boxContianerHeight(value); }
+export function writeZoomFitSize(value: any): void { writers.zoomFitSize(value); }
+export function writeLastZoomMode(value: any): void { writers.lastZoomMode(value); }
+export function writeSliderZoomRatio(value: any): void { writers.sliderZoomRatio(value); }
+export function writeIsRotating(value: any): void { writers.isRotating(value); }
+export function writeShowLargeImage(value: any): void { writers.showLargeImage(value); }
+export function writeShowDetailImage(value: any): void { writers.showDetailImage(value); }
+export function writeUseMpvPlayer(value: any): void { writers.useMpvPlayer(value); }
+export function writeGifPlayer(value: any): void { writers.gifPlayer(value); }
+export function writeUsingGifPlayer(value: any): void { writers.usingGifPlayer(value); }
+export function writeGifUpadteInterval(value: any): void { writers.gifUpadteInterval(value); }
+export function writeRatio(value: any): void { writers.ratio(value); }
+export function writeCommentRect(value: any): void { writers.commentRect(value); }
+export function writeLastImageHeight(value: any): void { writers.lastImageHeight(value); }
+export function writeContentFilterCache(value: any): void { writers.contentFilterCache(value); }
+export function writeIsPreviewing(value: any): void { writers.isPreviewing(value); }

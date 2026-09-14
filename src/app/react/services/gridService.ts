@@ -30,7 +30,7 @@ import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useItemState, writeSelectedFolderMappings, writeLastItemStates } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeBoxContianerWidth, writeBoxContianerHeight, writeZoomFitSize, writeLastZoomMode, writeLastImageHeight } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { autoscrollChannel } from '../global/bus';
 import { getGridScrollPosition, restoreGridScrollPosition, scrollGridToBottom, scrollGridToOffset, scrollGridToItem } from '../components/grid/boxGridEngine';
@@ -70,8 +70,8 @@ export function gridAdjustLayoutWidth(increases: any): void {
 
   increases = increases || 0;
   var height;
-  writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
-  writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
+  writeBoxContianerWidth(widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+  writeBoxContianerHeight(heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
   if (useBodyState.getState().layout === "GridLayout" || useBodyState.getState().layout === "SquareLayout") {
     if (!w.ig._layout._columnLength) return;
     var containerWidth = widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth;
@@ -101,7 +101,7 @@ export function gridAdjustLayoutWidth(increases: any): void {
   syncInspectorFromScope();
   if (!height) height = useLayoutState.getState().imageSize.height;
   if (Number.isFinite(height) && height > 0) {
-    writeScopeField('lastImageHeight', useLayoutState.getState().imageSize.height);
+    writeLastImageHeight(useLayoutState.getState().imageSize.height);
     setAttr("#box-container", "box-size", height);
     var margin = Math.floor((containerWidth % height) / (parseInt(containerWidth / height as any) - 1));
     if (margin === Infinity) margin = 10;
@@ -139,8 +139,8 @@ export function gridZoomFit(event: any, noAnimation: any): void {
       }
       return;
     }
-    writeScopeField('zoomFitSize', 0);
-    writeScopeField('lastZoomMode', "fit");
+    writeZoomFitSize(0);
+    writeLastZoomMode("fit");
     syncDetailFromScope();
     localStorage["eagle.viewer.lastZoomMode"] = useMiscRawState.getState().lastZoomMode;
     useLayoutState.getState().imageSize.zoomRatio = 100;
@@ -345,7 +345,7 @@ export function machineryChangeListHeight(height?: any): void {
 
     height = parseInt(height / 5 as any) * 5;
 
-    writeScopeField('lastImageHeight', useLayoutState.getState().imageSize.height);
+    writeLastImageHeight(useLayoutState.getState().imageSize.height);
 
     clearTimeout(changeListHeightTimeout);
     changeListHeightTimeout = setTimeout(function () {
@@ -561,13 +561,13 @@ export function machineryResetPage(): void {
   writeCurrentSmartFolder(undefined);
   syncPanelFromScope();
   syncListFromScope();
-  writeScopeField('selectedFoldersMappings', {});
-  writeScopeField('selectedFolders', []);
+  writeSelectedFoldersMappings({});
+  writeSelectedFolders([]);
   syncListFromScope();
   writeSelectedFolderMappings({});
   syncListFromScope();
-  writeScopeField('selectedSmartFoldersMappings', {});
-  writeScopeField('selectedSmartFolders', []);
+  writeSelectedSmartFoldersMappings({});
+  writeSelectedSmartFolders([]);
   writeScopeField('currentId', undefined);
   syncSidebarFromScope();
   writeLayout(localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout");
@@ -601,8 +601,8 @@ export function machineryToggleAll($event: any): void {
   $timeout(function () {
     writeLastItemStates({});
     window.dispatchEvent(new Event("orientationchange"));
-    writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
-    writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
+    writeBoxContianerWidth(widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
+    writeBoxContianerHeight(heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     machineryRelayout();
     getOffsetScrollbarFn()(30);
     if (useBodyState.getState().isDetailMode) {

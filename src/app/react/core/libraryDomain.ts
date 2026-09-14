@@ -68,7 +68,7 @@ import { machineryAutoScroll, machineryResetPage } from '../services/gridService
 import { getTimeout } from './machineryInfra';
 import { usePreferencesState, writeTrialRemain } from '../store/preferencesState';
 import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings, writeLastItemStates, writeImages, writeAllData, writeAll, writeFolderMappings, writeLockedImages, writeDuplicateMappings, writeItemMappings, writeSmartFolderMappings } from '../store/itemState';
-import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastIndex, writeShowDetailImage, writeUsingGifPlayer, writeContentFilterCache } from '../store/miscRawState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor, writeFolders, writeCurrentFolderChildren, writeTags, writeSmartFolders, writeNavigationHistory, writeNavigationHistoryIndex } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useSelectionState } from '../store/selectionState';
@@ -583,9 +583,9 @@ export function takeoverLibraryDomain(): void {
     writeIsDetailMode(false);
     writeIsInlineMode(false);
     writeIsGrayscaleMode(false);
-    writeScopeField('usingGifPlayer', false);
+    writeUsingGifPlayer(false);
     syncDetailFromScope();
-    writeScopeField('showDetailImage', false);
+    writeShowDetailImage(false);
     syncDetailFromScope();
     writeCurrentTagGroup(undefined);
     syncTagManagerFromScope();
@@ -754,7 +754,7 @@ export function takeoverLibraryDomain(): void {
     // b1-9o：库装载整表重建 raw——内容过滤缓存必须失效（bundle 导入/装载路径的 rebind
     // 均无缓存参数、隐式重建；shim 世界 filterContent 传 s.contentFilterCache，缓存若在
     // raw 为空时建立会永久保留空快照，11a49 的 a4 空态无法闭合即此）
-    writeScopeField('contentFilterCache', null);
+    writeContentFilterCache(null);
     writeRaw(images);
     syncListFromScope();
 
@@ -1270,9 +1270,9 @@ export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: a
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
-  writeScopeField('selectedFolders', []);
+  writeSelectedFolders([]);
   syncListFromScope();
-  writeScopeField('selectedFoldersMappings', {});
+  writeSelectedFoldersMappings({});
   var idx = useMiscRawState.getState().selectedSmartFolders.indexOf(smartFolder);
   if (idx === -1) {
     useMiscRawState.getState().selectedSmartFolders.push(smartFolder);
@@ -1946,8 +1946,8 @@ export function machineryMultipleOpenFolder(folder: any, needReload: any): void 
   writeCurrentSmartFolder(undefined);
   syncPanelFromScope();
   syncListFromScope();
-  writeScopeField('selectedSmartFolders', []);
-  writeScopeField('selectedSmartFoldersMappings', {});
+  writeSelectedSmartFolders([]);
+  writeSelectedSmartFoldersMappings({});
   var idx = useMiscRawState.getState().selectedFolders.indexOf(folder);
   if (idx === -1) {
     useMiscRawState.getState().selectedFolders.push(folder);
@@ -2392,7 +2392,7 @@ export function machineryRemoveFolderContents(params: any): void {
   w.hiddenByCurrentFilter(useSelectionState.getState().selected);
 
   // 自動選取下一個圖片，如果沒有下一個，選上一個，都沒有就空
-  writeScopeField('lastIndex', machineryGetSelection().start);
+  writeLastIndex(machineryGetSelection().start);
   var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
   var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
   if (next) {

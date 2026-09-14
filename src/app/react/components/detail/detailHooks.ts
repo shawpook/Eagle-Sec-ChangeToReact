@@ -20,8 +20,8 @@ import { useSelectionState } from '../../store/selectionState';
 import { useLayoutState } from '../../store/layoutState';
 import { useItemState } from '../../store/itemState';
 import { usePreferencesState } from '../../store/preferencesState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
-import { useMiscRawState } from '../../store/miscRawState';
+
+import { useMiscRawState, writeUseMpvPlayer } from '../../store/miscRawState';
 /**
  * 阶段5：详情模式交互 hooks —— mediaElement/mpvMediaElement/audioMediaElement
  * （bundle 64843-66496）、mouseGesture（70837-71140）、rectSelect（72564-72799）
@@ -265,7 +265,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
           }
           console.log('[mediaElement] Falling back to MPV player');
           runInBodyScope(function () {
-            writeScopeField('useMpvPlayer', true);
+            writeUseMpvPlayer(true);
             syncDetailFromScope();
           });
         } catch (err) {}
@@ -344,7 +344,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
       if ((!video.videoWidth && !video.videoHeight) || !isFinite(video.duration) || video.duration <= 0) {
         console.log('[mediaElement] Unplayable video detected (no dimensions or duration), falling back to MPV');
         runInBodyScope(function () {
-          writeScopeField('useMpvPlayer', true);
+          writeUseMpvPlayer(true);
           syncDetailFromScope();
         });
         return;
@@ -356,7 +356,7 @@ export function useMediaElement(videoRef: React.RefObject<HTMLVideoElement | nul
         if (!frameRendered && !video.paused) {
           console.log('[mediaElement] No frames rendered during playback, falling back to MPV');
           runInBodyScope(function () {
-            writeScopeField('useMpvPlayer', true);
+            writeUseMpvPlayer(true);
             syncDetailFromScope();
           });
         }
@@ -1037,7 +1037,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
       const id = state.snapshot.current?.id;
       if (id !== lastCurrentId && lastCurrentId !== undefined) {
         runInBodyScope(function () {
-          writeScopeField('useMpvPlayer', false);
+          writeUseMpvPlayer(false);
           syncDetailFromScope();
         });
       }
@@ -1060,7 +1060,7 @@ export function useMpvMediaElement(videoRef: React.RefObject<HTMLElement | null>
         video.destroy?.();
 
         runInBodyScope(function () {
-          writeScopeField('useMpvPlayer', false);
+          writeUseMpvPlayer(false);
           syncDetailFromScope();
         });
       } catch (err) {

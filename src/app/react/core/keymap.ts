@@ -19,7 +19,7 @@ import { detailZoom } from './smoothZoomEngine';
 import { machineryOpenAllTags, machineryOpenNextGroup, machineryOpenPrevGroup, machineryOpenUntagged } from './tagManagerDomain';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from './scopeFieldBridge';
@@ -450,11 +450,11 @@ export function machineryKeyDownHandler(event: any): void {
     }
   }
   else if (useBodyState.getState().currentFocus == "sidebar") {
-    writeScopeField('selectedFolders', []);
+    writeSelectedFolders([]);
     syncListFromScope();
-    writeScopeField('selectedFoldersMappings', {});
-    writeScopeField('selectedSmartFoldersMappings', {});
-    writeScopeField('selectedSmartFolders', []);
+    writeSelectedFoldersMappings({});
+    writeSelectedSmartFoldersMappings({});
+    writeSelectedSmartFolders([]);
     if (useBodyState.getState().viewMode == "all") {
       if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {
         machineryOpenUnfiled();
@@ -671,11 +671,11 @@ export function machineryKeyUpHandler(event: any): void {
     }
   }
   else if (useBodyState.getState().currentFocus == "sidebar") {
-    writeScopeField('selectedFolders', []);
+    writeSelectedFolders([]);
     syncListFromScope();
-    writeScopeField('selectedFoldersMappings', {});
-    writeScopeField('selectedSmartFoldersMappings', {});
-    writeScopeField('selectedSmartFolders', []);
+    writeSelectedFoldersMappings({});
+    writeSelectedSmartFoldersMappings({});
+    writeSelectedSmartFolders([]);
     if (useBodyState.getState().viewMode == "all") { } else if (useBodyState.getState().viewMode == "unfiled") { machineryOpenAll() }
       else if (useBodyState.getState().viewMode == "untagged") {
         if (usePreferencesState.getState().preferences.sidebar.unfiled != 'false') {

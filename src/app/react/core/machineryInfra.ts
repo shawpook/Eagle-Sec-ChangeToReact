@@ -25,7 +25,7 @@ import { machineryChangeSortIncrease, machineryCreateLibrary, machineryImportLib
 import { machineryEnterDetailMode, machineryLeaveDetailMode, machineryNotify, machineryToggleSlideshow } from './miscDomain';
 import { machineryRemoveSelected, machinerySelectNext, machinerySelectPrev, machineryUpdateSelection } from './selectionViewDomain';
 import { machineryBuildTagManager } from './tagManagerDomain';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedSmartFolders, writeSelectedSmartFoldersMappings, writeSelectedFolders, writeSelectedFoldersMappings, writeLastZoomMode, writeSliderZoomRatio } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState, writeContainerSize, writeImageSize } from '../store/layoutState';
@@ -467,11 +467,11 @@ export function machinerySeedControllerState(): void {
         writeAllData([]);
         syncListFromScope();
         writeShuffle([]);
-        writeScopeField('selectedFolders', []);
+        writeSelectedFolders([]);
         syncListFromScope();
-        writeScopeField('selectedFoldersMappings', {});
-        writeScopeField('selectedSmartFolders', []);
-        writeScopeField('selectedSmartFoldersMappings', {});
+        writeSelectedFoldersMappings({});
+        writeSelectedSmartFolders([]);
+        writeSelectedSmartFoldersMappings({});
         writeFolderMappings({});
         writeSmartFolderMappings({});
         writeScopeField('uploadQueue', []);
@@ -824,9 +824,9 @@ export function machinerySeedControllerState(): void {
         syncBodyFromScope();
         syncDetailFromScope();
         syncInspectorFromScope();
-        writeScopeField('sliderZoomRatio', 100);
+        writeSliderZoomRatio(100);
         syncDetailFromScope();
-        writeScopeField('lastZoomMode', localStorage["eagle.viewer.lastZoomMode"] || "fit");
+        writeLastZoomMode(localStorage["eagle.viewer.lastZoomMode"] || "fit");
         syncDetailFromScope();
         writeScopeField('tagsSuggestion', []);
         writeFolders([]);

@@ -8755,3 +8755,24 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 `i18n`(101)/`preferences`(35)/`eagle`(10)，需逐个定性为「ambient 声明」还是「应走模块导入」）、
 `core/hoverPreview.ts`（273）、`core/smoothZoomEngine.ts`（292，其中 163 条 TS2683
 「`this` 隐式 any」，集中在 angular 风格 `$elem.on(...)` 回调）、`core/eagleClasses.ts`（297）。
+
+### R3 收尾：撤销 `@ts-nocheck`（第四批：bitmapViewer，141 条）
+
+- **撤销对象**：`core/bitmapViewer.ts`（141 条清零，删除 `// @ts-nocheck`）。累计已撤销
+  **8 个**（102+232+126+141 = 601 条），台账 12 个（8 个 `core/shim/*` + 4 个待撤销）。
+- **类字段面补齐**（该文件是 vendor `eagle-smooth-zoom.js` 的整类逐字搬迁，原码不声明属性）：
+  公开字段 `url`/`preloadData`（代码里 `this.url` 直接用，属**未声明字段**而非类型缺失）与
+  私有字段 `#zoomer #createBitmapWorker #preloadBitmapWorker #container #canvas
+  #bitmapTileCount #thumbBitmap #renderTimeout #renderTimeoutDuration #thumbRatio
+  #height #width #viewport` 逐一补 `: any`；`#bitmapTiles = []` 被推断为 `never[]`（连带
+  `tile.tile.close()` 等 6 处 `Property … does not exist on type 'never'`）→ 改 `any[]`；
+  `#nativeHeicParser`/`#viewportBitmap` 的 `= null` 推断为 `null` → `: any = null`。
+- **取值姿势统一**：9 处 `getContext('2d')` 显式 `const ctx: any = …`（vendor 原码无空值守卫，
+  逐字保留，不用 `!` 断言改变语义）；4 处 `parseInt(this.#viewport.left * this.#thumbRatio)`
+  形式的**数值实参**改为 `parseInt(String(…))`（`parseInt` 本就把实参转字符串，行为等价）。
+- **Promise 泛型**：`#loadURLFromWorker` 的内部 Promise 全路径无参 `resolve()` → `Promise<void>`；
+  `loadURL` 的 Promise 有一处携带对象、一处无参 → `Promise<any>` 并把无参那处写成
+  `resolve(undefined)`（值等价，语义更明确）。
+- 其余为形参/回调隐式 any（含 `require`/`FileUrlHelper`/`preferences` 三个 ambient 声明）。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`d3-detail-mode`、`react-stage11b0-smoke`、
+  `continuous-grid-scroll`（含 AutoScroll 频道闭环）全绿。

@@ -6,38 +6,44 @@
  * vendor 脚本随本批自 index.html 摘除；压缩版（js/vendors/jquery.smoothZoom.min.js）
  * 留 bl-B 预览窗切换时一并退役。
  */
-// @ts-nocheck
 import { getRawUrl } from './itemDomain';
 import { q, getAttr, setAttrEl, setCssEl, widthOf, heightOf } from '../utils/domQuery';
+/* bundle/主窗全局：typed ambient 声明，只补类型不改运行期。 */
+declare const require: any;
+declare const FileUrlHelper: any;
+declare const preferences: any;
 
 export class BitmapViewer {
-	#zoomer;
-	#createBitmapWorker;
-	#preloadBitmapWorker;
-	#container;
+	/* bundle 逐字搬迁的类：属性面宽且原码不声明，此处只补类型（不改运行期）。 */
+	url: any;
+	preloadData: any;
+	#zoomer: any;
+	#createBitmapWorker: any;
+	#preloadBitmapWorker: any;
+	#container: any;
 	#dpr = 1;
-	#canvas
-	#bitmapTileCount;
-	#bitmapTiles = [];
-    #thumbBitmap;
+	#canvas: any;
+	#bitmapTileCount: any;
+	#bitmapTiles: any[] = [];
+    #thumbBitmap: any;
     #thumbBitmapFromWorker = false;  // ✅ 新增：追蹤 bitmap 是否來自 Worker
-    #nativeHeicParser = null;  // ✅ 新增：原生 HEIC 解析器
-	#viewportBitmap = null;  // 新增：viewport 優化用的 bitmap
+    #nativeHeicParser: any = null;  // ✅ 新增：原生 HEIC 解析器
+	#viewportBitmap: any = null;  // 新增：viewport 優化用的 bitmap
 	#totalTiles = 0;         // 新增：總磁磚數
 	#imageWidth = 0;         // 新增：原始圖片寬度
 	#imageHeight = 0;        // 新增：原始圖片高度
 	#lastViewportWidth = 0;  // 新增：上次 viewport 寬度（用於動態更新）
 	#requestVersion = 0;      // ✅ 新增：請求版本控制
-	#viewport
-    #renderTimeout;
-    #renderTimeoutDuration;
-    #thumbRatio;
-	#height
-	#width
+	#viewport: any;
+    #renderTimeout: any;
+    #renderTimeoutDuration: any;
+    #thumbRatio: any;
+	#height: any
+	#width: any
 	#thumbnailMode = false
 	#tileSize = 500
 
-	constructor (parentElement, zoomer) {
+	constructor (parentElement: any, zoomer: any) {
 		this.#zoomer = zoomer;
         this.#container = parentElement;
         this.#canvas = null;
@@ -66,15 +72,15 @@ export class BitmapViewer {
 	}
 	
 	// ✅ 設置 Worker 的原生 HEIC 支持
-	#setupWorkerNativeHeic(worker) {
+	#setupWorkerNativeHeic(worker: any) {
 		if (!this.#nativeHeicParser) return;
 		
 		// 設置消息處理
-		worker.addEventListener('message', (e) => {
+		worker.addEventListener('message', (e: any) => {
 			if (e.data.type === 'NATIVE_HEIC_PARSE_REQUEST') {
 				const { filePath, requestId } = e.data.data;
 				
-				this.#nativeHeicParser.parseHeic(filePath).then(result => {
+				this.#nativeHeicParser.parseHeic(filePath).then((result: any) => {
 					worker.postMessage({
 						type: 'NATIVE_HEIC_PARSE_RESPONSE',
 						data: {
@@ -84,7 +90,7 @@ export class BitmapViewer {
 							error: result.error
 						}
 					});
-				}).catch(error => {
+				}).catch((error: any) => {
 					worker.postMessage({
 						type: 'NATIVE_HEIC_PARSE_RESPONSE',
 						data: {
@@ -121,7 +127,7 @@ export class BitmapViewer {
         this.clearPreloadData();
         
         if (this.#canvas) {
-            const ctx = this.#canvas.getContext('2d');
+            const ctx: any = this.#canvas.getContext('2d');
             ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
 			this.url = null;
             
@@ -169,7 +175,7 @@ export class BitmapViewer {
         }
     }
 
-	isSupportFormat(ext) {
+	isSupportFormat(ext: any) {
 		return ['jpg', 'jpeg', 'png', 'webp', 'avif', 'insp', 'jfif', 'jpe', 'jxl', 'bmp', 'svg', 'tif', 'tiff', 'heif', 'heic', 'hif'].includes(ext.toLowerCase());
 	}
 
@@ -178,7 +184,7 @@ export class BitmapViewer {
 			Object.keys(this.preloadData).forEach((key) => {
 				const preloadData = this.preloadData[key];
 				if (preloadData?.tiles) {
-					preloadData.tiles.forEach((tile) => {
+					preloadData.tiles.forEach((tile: any) => {
 						try {
 							tile?.tile?.close();
 						} catch(e) {
@@ -202,7 +208,7 @@ export class BitmapViewer {
 		}
 	}
 
-	preload(item) {
+	preload(item: any) {
 		if (!this.isSupportFormat(item.ext)) return;
 		const url = getRawUrl(item);
 
@@ -215,7 +221,7 @@ export class BitmapViewer {
 		this.#setupWorkerNativeHeic(this.#preloadBitmapWorker);  // ✅ 設置原生 HEIC 支持
 		this.#preloadBitmapWorker.postMessage({ url, item: {...item, url: url}, tileSize: this.#tileSize });
 
-		this.#preloadBitmapWorker.onmessage = (e) => {
+		this.#preloadBitmapWorker.onmessage = (e: any) => {
 			if (e.data.error) {
 				this.#preloadBitmapWorker.terminate();
 				delete this.preloadData[url];
@@ -241,7 +247,7 @@ export class BitmapViewer {
 					keysToDelete.forEach(key => {
 						const preloadData = this.preloadData[key];
 						if (preloadData?.tiles) {
-							preloadData.tiles.forEach((tile) => {
+							preloadData.tiles.forEach((tile: any) => {
 								try {
 									tile?.tile?.close();
 								} catch(e) {
@@ -279,8 +285,8 @@ export class BitmapViewer {
 		}
 	}
 
-	async #loadURLFromWorker(url, item, onBitmapCallback, onTilesCallback, requestVersion) {
-		return new Promise((resolve, reject) => {
+	async #loadURLFromWorker(url: any, item: any, onBitmapCallback: any, onTilesCallback: any, requestVersion: any) {
+		return new Promise<void>((resolve, reject) => {
 
 			// if preloadData has current url, use it
 			const preloadData = this.preloadData[url];
@@ -306,7 +312,7 @@ export class BitmapViewer {
 			this.#setupWorkerNativeHeic(this.#createBitmapWorker);  // ✅ 設置原生 HEIC 支持
 			this.#createBitmapWorker.postMessage({ url, item, tileSize: this.#tileSize });
 
-			this.#createBitmapWorker.onmessage = (e) => {
+			this.#createBitmapWorker.onmessage = (e: any) => {
 				// ✅ 使用版本控制而不是 URL 比較
 				if (requestVersion !== this.#requestVersion) {
 					console.log('Request version outdated, ignore');
@@ -342,7 +348,7 @@ export class BitmapViewer {
 				}
 			};
 
-			this.#createBitmapWorker.onerror = (error) => {
+			this.#createBitmapWorker.onerror = (error: any) => {
 				this.#createBitmapWorker.terminate();
 				console.error('BitmapWorker error:', error);
 				onBitmapCallback({ usingImgTag: true });
@@ -351,8 +357,8 @@ export class BitmapViewer {
 		});
 	}
 
-	async loadURL(url, item) {
-		return new Promise((resolve, reject) => {
+	async loadURL(url: any, item: any) {
+		return new Promise<any>((resolve, reject) => {
 			try {
 				if (this.url === url && this.#bitmapTiles.length > 0) return {};
 				this.url = url;
@@ -366,7 +372,7 @@ export class BitmapViewer {
 				}
 
 				// 修改後版本 - 傳入版本號
-				this.#loadURLFromWorker(url, item, (result) => {
+				this.#loadURLFromWorker(url, item, (result: any) => {
 					// ✅ 檢查版本是否仍然有效
 					if (currentVersion !== this.#requestVersion) {
 						reject(new Error('Request version outdated'));
@@ -400,8 +406,8 @@ export class BitmapViewer {
 
 					this.#renderTimeoutDuration = this.#width * this.#height < 16000000 ? 10 : 200;
 					this.#initCanvas();
-					resolve();
-				}, (tiles) => {
+					resolve(undefined);
+				}, (tiles: any) => {
 					// ✅ 檢查版本是否仍然有效
 					if (currentVersion !== this.#requestVersion) {
 						return; // 忽略過時的回調
@@ -426,7 +432,7 @@ export class BitmapViewer {
 	}
 
 	// 根據 viewport 取得 bitmap 的 tiles
-	getBitmapTiles(viewport) {
+	getBitmapTiles(viewport: any) {
 		const tiles = [];
 		for (let i = 0; i < this.#bitmapTiles.length; i++) {
 			const tile = this.#bitmapTiles[i];
@@ -483,7 +489,7 @@ export class BitmapViewer {
 		});
 	}
 
-	update(viewport) {
+	update(viewport: any) {
 		const containerEl = this.#container;
         if (!containerEl || !this.#canvas || !viewport?.id) return;
 		const parentRect = { height: heightOf(containerEl), width: widthOf(containerEl) };
@@ -502,7 +508,7 @@ export class BitmapViewer {
 
 	#getCanvas() {
 		const canvas = document.createElement('canvas');
-		const ctx = canvas.getContext('2d');
+		const ctx: any = canvas.getContext('2d');
 		// 設置高品質渲染
 		ctx.imageSmoothingEnabled = true;
 		ctx.imageSmoothingQuality = 'high';
@@ -524,7 +530,7 @@ export class BitmapViewer {
 		return canvas;
 	}
 
-	async rotate(degree) {
+	async rotate(degree: any) {
 		const canvas = this.#getCanvas();
 		const rotatedCanvas = this.#rotateCanvas(canvas, degree);
 		this.#thumbBitmap = await createImageBitmap(rotatedCanvas);
@@ -533,12 +539,12 @@ export class BitmapViewer {
 		this.#thumbRatio = 1;
 	}
 
-	#rotateCanvas(canvas, degree) {
+	#rotateCanvas(canvas: any, degree: any) {
 		const rotatedCanvas = document.createElement('canvas');
 		rotatedCanvas.width = canvas.height;
 		rotatedCanvas.height = canvas.width;
 
-		const ctx = rotatedCanvas.getContext('2d');
+		const ctx: any = rotatedCanvas.getContext('2d');
 
 		if (degree === 90) {
 			ctx.translate(rotatedCanvas.width, 0);
@@ -564,12 +570,12 @@ export class BitmapViewer {
 		this.#thumbRatio = 1;
 	}
 
-	#flipCanvas(canvas, scaleX = -1, scaleY = 1) {
+	#flipCanvas(canvas: any, scaleX = -1, scaleY = 1) {
 		const flippedCanvas = document.createElement('canvas');
 		flippedCanvas.width = canvas.width;
 		flippedCanvas.height = canvas.height;
 
-		const ctx = flippedCanvas.getContext('2d');
+		const ctx: any = flippedCanvas.getContext('2d');
 		
 		// 根據 scaleX 和 scaleY 設定翻轉
 		if (scaleX === -1 && scaleY === 1) {
@@ -616,7 +622,7 @@ export class BitmapViewer {
 	}
 
 	// 新增：動態更新 viewport bitmap（可選，未來優化用）
-	async updateViewportBitmap(originalBitmap, actualViewportSize) {
+	async updateViewportBitmap(originalBitmap: any, actualViewportSize: any) {
 		// 只在 viewport 變化很大時更新
 		if (!this.#lastViewportWidth || 
 		    Math.abs(actualViewportSize.width - this.#lastViewportWidth) > 200) {
@@ -659,14 +665,14 @@ export class BitmapViewer {
 
 	// 新增：使用 viewport bitmap 渲染
 	#renderViewportBitmap() {
-		const ctx = this.#canvas.getContext('2d');
+		const ctx: any = this.#canvas.getContext('2d');
 		ctx.imageSmoothingEnabled = true;
 		ctx.imageSmoothingQuality = 'high';
 		
 		// 使用與 #renderRaw 相同的 ratio 計算方式
 		const ratio = this.#viewport.width / this.#canvas.width;
-		const viewportWidth = parseInt(this.#canvas.width * ratio);
-		const viewportHeight = parseInt(this.#canvas.height * ratio);
+		const viewportWidth = parseInt(String(this.#canvas.width * ratio));
+		const viewportHeight = parseInt(String(this.#canvas.height * ratio));
 		
 		// viewport bitmap 與原圖的比例
 		const scaleX = this.#viewportBitmap.width / this.#imageWidth;
@@ -707,13 +713,13 @@ export class BitmapViewer {
 		);
 	}
 
-	#renderRaw(tiles) {
-		const ctx = this.#canvas.getContext('2d');
+	#renderRaw(tiles: any) {
+		const ctx: any = this.#canvas.getContext('2d');
         ctx.imageSmoothingEnabled = (this.#zoomer.rA < 2) || (preferences.habits.renderBehavior !== 'pixelated');
         ctx.imageSmoothingQuality = 'high';
 		const ratio = this.#viewport.width / this.#canvas.width;
-		const viewportWidth = parseInt(this.#canvas.width * ratio);
-		const viewportHeight = parseInt(this.#canvas.height * ratio);
+		const viewportWidth = parseInt(String(this.#canvas.width * ratio));
+		const viewportHeight = parseInt(String(this.#canvas.height * ratio));
 
 		for (let i = 0; i < tiles.length; i++) {
 			const tile = tiles[i];
@@ -723,8 +729,8 @@ export class BitmapViewer {
 			const tileHeight = tile.h;
 			const viewportLeft = this.#viewport.left;
 			const viewportTop = this.#viewport.top;
-			const viewportWidth = parseInt(this.#canvas.width * ratio);
-			const viewportHeight = parseInt(this.#canvas.height * ratio);
+			const viewportWidth = parseInt(String(this.#canvas.width * ratio));
+			const viewportHeight = parseInt(String(this.#canvas.height * ratio));
 			const left = tileLeft;
 			const top = tileTop;
 			const right = tileLeft + tileWidth;
@@ -743,7 +749,7 @@ export class BitmapViewer {
 			if (minScale < 0.5 && tile.tile.width > 512 && tile.tile.height > 512) {
 				// 創建臨時 canvas 進行漸進式縮放
 				const tempCanvas = document.createElement('canvas');
-				const tempCtx = tempCanvas.getContext('2d');
+				const tempCtx: any = tempCanvas.getContext('2d');
 				tempCtx.imageSmoothingEnabled = true;
 				tempCtx.imageSmoothingQuality = 'high';
 				
@@ -764,7 +770,7 @@ export class BitmapViewer {
 					if (minScale < 0.125) {
 						// 再縮小一次
 						const temp2Canvas = document.createElement('canvas');
-						const temp2Ctx = temp2Canvas.getContext('2d');
+						const temp2Ctx: any = temp2Canvas.getContext('2d');
 						temp2Ctx.imageSmoothingEnabled = true;
 						temp2Ctx.imageSmoothingQuality = 'high';
 						
@@ -796,16 +802,16 @@ export class BitmapViewer {
 	}
 
 	#renderThumb() {
-		const ctx = this.#canvas.getContext('2d');
+		const ctx: any = this.#canvas.getContext('2d');
 		ctx.imageSmoothingEnabled = true;
 		ctx.imageSmoothingQuality = 'high';
-		const thumbLeft = parseInt(this.#viewport.left * this.#thumbRatio);
-        const thumbTop = parseInt(this.#viewport.top * this.#thumbRatio);
-        const thumbWidth = parseInt(this.#viewport.width * this.#thumbRatio);
-        const thumbHeight = parseInt(this.#viewport.height * this.#thumbRatio);
+		const thumbLeft = parseInt(String(this.#viewport.left * this.#thumbRatio));
+        const thumbTop = parseInt(String(this.#viewport.top * this.#thumbRatio));
+        const thumbWidth = parseInt(String(this.#viewport.width * this.#thumbRatio));
+        const thumbHeight = parseInt(String(this.#viewport.height * this.#thumbRatio));
         const ratio = thumbWidth / this.#canvas.width;
-        const viewportWidth = parseInt(this.#canvas.width * ratio);
-        const viewportHeight = parseInt(this.#canvas.height * ratio);
+        const viewportWidth = parseInt(String(this.#canvas.width * ratio));
+        const viewportHeight = parseInt(String(this.#canvas.height * ratio));
         ctx.drawImage(this.#thumbBitmap, thumbLeft, thumbTop, viewportWidth, viewportHeight, 0, 0, this.#canvas.width, this.#canvas.height);
 	}
 }

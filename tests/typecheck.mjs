@@ -47,7 +47,6 @@ const NOCHECK_LEDGER = [
   'src/app/react/core/shim/moduleRegistry.ts',
   'src/app/react/core/shim/settingsI18n.ts',
   // ── R3 待撤销（bundle 原码宽松类型逐字保留，按文件逐个补注解/声明）──
-  'src/app/react/core/bitmapViewer.ts',
   'src/app/react/core/eagleClasses.ts',
   'src/app/react/core/hoverPreview.ts',
   'src/app/react/core/smoothZoomEngine.ts',

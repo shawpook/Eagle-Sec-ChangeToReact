@@ -40,6 +40,11 @@ const CONVERGED = {
     fields: ['raw', 'shuffle', 'trash', 'selectedMappings', 'selectedFolderMappings'],
     actions: ['writeRaw', 'writeShuffle', 'writeTrash', 'writeSelectedMappings', 'writeSelectedFolderMappings'],
   },
+  misc: {
+    module: 'src/app/react/store/miscRawState.ts',
+    fields: ['currentTagGroup', 'selectedTags', 'tagViewMode', 'tagViewModeName', 'hexColor', 'isGifReady', 'subFolders'],
+    actions: ['writeCurrentTagGroup', 'writeSelectedTags', 'writeTagViewMode', 'writeTagViewModeName', 'writeHexColor', 'writeIsGifReady', 'writeSubFolders'],
+  },
 };
 
 function stripComments(text) {

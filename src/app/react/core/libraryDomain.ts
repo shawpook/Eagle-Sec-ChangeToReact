@@ -68,7 +68,7 @@ import { machineryAutoScroll, machineryResetPage } from '../services/gridService
 import { getTimeout } from './machineryInfra';
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState, writeRaw, writeShuffle, writeTrash, writeSelectedMappings } from '../store/itemState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode } from '../store/miscRawState';
 import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useSelectionState } from '../store/selectionState';
@@ -541,7 +541,7 @@ export function takeoverLibraryDomain(): void {
     writeUnfiledCount(0);
     writeScopeField('tags', []);
     syncSidebarFromScope();
-    writeScopeField('selectedTags', {});
+    writeSelectedTags({});
     syncTagManagerFromScope();
     writeScopeField('selectingTags', {});
     syncTagManagerFromScope();
@@ -587,9 +587,9 @@ export function takeoverLibraryDomain(): void {
     syncDetailFromScope();
     writeScopeField('showDetailImage', false);
     syncDetailFromScope();
-    writeScopeField('currentTagGroup', undefined);
+    writeCurrentTagGroup(undefined);
     syncTagManagerFromScope();
-    writeScopeField('tagViewMode', "ALL");
+    writeTagViewMode("ALL");
     syncTagManagerFromScope();
     writeScopeField('folderKeyword', "");
     syncSidebarFromScope();

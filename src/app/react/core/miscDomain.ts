@@ -73,7 +73,7 @@ import { getPageDownHandlerFn, machineryInitMousetrap } from './keymap';
 import { getTimeout } from './machineryInfra';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeIsGifReady } from '../store/miscRawState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLockState } from '../store/lockState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -1136,7 +1136,7 @@ export function leaveDetailMode(...args: any[]) {
                 detailZoom()?.clearPreloadData();
                 
                 if (useMiscRawState.getState().isGifReady === true) {
-                    writeScopeField('isGifReady', false);
+                    writeIsGifReady(false);
                     syncDetailFromScope();
                     delete useMiscRawState.getState().gifViewer.frames;
                     useMiscRawState.getState().gifViewer.frames = [];
@@ -1684,7 +1684,7 @@ export function machineryLeaveDetailMode($event?: any): void {
     detailZoom()?.clearPreloadData();
 
     if (useMiscRawState.getState().isGifReady === true) {
-      writeScopeField('isGifReady', false);
+      writeIsGifReady(false);
       syncDetailFromScope();
       delete useMiscRawState.getState().gifViewer.frames;
       useMiscRawState.getState().gifViewer.frames = [];

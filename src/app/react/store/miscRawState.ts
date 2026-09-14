@@ -554,17 +554,26 @@ const MIGRATED: ReadonlyArray<keyof MiscRawState> = [
   'VIDEO_TYPES', 'AUDIO_TYPES', 'FONT_TYPES', 'URL_TYPES', 'MODEL_TYPES', 'DISABLE_ZOOM_TYPES', 'SUPPORT_FORMATS',
   'mousetrap', 'isImporting', 'openWithInfo', 'lastestAddItem', 'email', 'fontFolder', 'draggedFolders', 'draggedSmartFolders', 'draggedQuickAccess',
 ];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED) {
-  migrateScopeFieldToStore(
-    fieldName as string,
-    () => useMiscRawState.getState()[fieldName],
-    (value: any) => {
-      if (useMiscRawState.getState()[fieldName] !== value) {
-        useMiscRawState.setState({ [fieldName]: value } as Partial<MiscRawState>);
-      }
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (useMiscRawState.getState()[fieldName] !== value) {
+      useMiscRawState.setState({ [fieldName]: value } as Partial<MiscRawState>);
+    }
+  };
+  migrateScopeFieldToStore(key, () => useMiscRawState.getState()[fieldName], writers[key]);
 }
+
+/** R4 标签/杂项域写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeCurrentTagGroup(value: any): void { writers.currentTagGroup(value); }
+export function writeSelectedTags(value: any): void { writers.selectedTags(value); }
+export function writeTagViewMode(value: any): void { writers.tagViewMode(value); }
+export function writeTagViewModeName(value: any): void { writers.tagViewModeName(value); }
+export function writeHexColor(value: any): void { writers.hexColor(value); }
+export function writeIsGifReady(value: any): void { writers.isGifReady(value); }
+export function writeSubFolders(value: any): void { writers.subFolders(value); }
 
 let bound = false;
 

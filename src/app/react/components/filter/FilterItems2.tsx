@@ -15,8 +15,8 @@ import { calculateDateFilter, filterWithColor, getDateFilterCountsArray, hexToRG
 import { openFilterAddContextMenu } from '../../services/miscMenuService';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryFilterContent } from '../../core/filterDomain';
-import { useMiscRawState } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useMiscRawState, writeHexColor } from '../../store/miscRawState';
+
 /** 阶段3b（续）：types/shape/rating/fonts/camera/import/mtime/duration/bpm/size/resolution/annotation/note/url + 容器。 */
 
 const num0 = (value: number | undefined | null): string => {
@@ -1036,7 +1036,7 @@ export function FilterPanel() {
           onChange={(e) => {
             const v = e.target.value;
             runInBodyScope(() => {
-              writeScopeField('hexColor', v.toUpperCase());
+              writeHexColor(v.toUpperCase());
               filterWithColor(hexToRGB(useMiscRawState.getState().hexColor));
             });
           }}

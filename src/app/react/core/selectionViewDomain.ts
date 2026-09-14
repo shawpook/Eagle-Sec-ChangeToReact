@@ -46,7 +46,7 @@ import { machineryAutoScroll } from '../services/gridService';
 import { getTimeout, machineryCalls } from './machineryInfra';
 import { useItemState, writeSelectedMappings, writeSelectedFolderMappings } from '../store/itemState';
 import { useListState } from '../store/listState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeSelectedTags, writeIsGifReady } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -838,7 +838,7 @@ export function machinerySelectAll(event: any): void {
   const $timeout = getTimeout();
   event && event.stopPropagation();
   if (useBodyState.getState().viewMode == 'alltags') {
-    writeScopeField('selectedTags', {});
+    writeSelectedTags({});
     syncTagManagerFromScope();
     useMiscRawState.getState().TagManager.tagsResult.tags.forEach((tagName: any) => {
       useMiscRawState.getState().selectedTags[tagName] = true;
@@ -911,7 +911,7 @@ export function machinerySelectDown(event: any): void {
     writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
-    writeScopeField('isGifReady', false);
+    writeIsGifReady(false);
     syncDetailFromScope();
     detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {
@@ -973,7 +973,7 @@ export function machinerySelectNext(event?: any): void {
     writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
-    writeScopeField('isGifReady', false);
+    writeIsGifReady(false);
     syncDetailFromScope();
   }
 
@@ -1017,7 +1017,7 @@ export function machinerySelectPrev(event?: any): void {
   if (useBodyState.getState().isDetailMode) {
     detailZoom()?.cleanBitmapViewer();
     machineryRememberScrollTops(useSelectionState.getState().current);
-    writeScopeField('isGifReady', false);
+    writeIsGifReady(false);
     syncDetailFromScope();
   }
 
@@ -1119,7 +1119,7 @@ export function machinerySelectUp(event: any): void {
     writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
-    writeScopeField('isGifReady', false);
+    writeIsGifReady(false);
     syncDetailFromScope();
     detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {

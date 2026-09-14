@@ -8459,3 +8459,12 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
   - **验证**：`typecheck` 0 诊断；`build` exit 0；收敛台账 OK；针对性闭环
     `d3-selection`、`library-switch-ui`、`residue`（导入去重/残留不变量）、
     `d3-alltags-view` 全绿。
+
+- **R4 切片③（标签/杂项域）**：`misc` 域 7 个字段 / 71 处——currentTagGroup、selectedTags、
+  tagViewMode、tagViewModeName、hexColor、isGifReady、subFolders。累计 R4 已收敛
+  **27 个字段 / 345 处 / 6 个域**（selection/body/folder/list/item/misc）。
+  - 待收敛台账降至 229 个字段（top：`isCropMode(8) selectedSmartFolders(7) lastZoomMode(7)
+    lastIndex(6) isMaximize(6) boxContianerWidth(6) …`）——长尾已明显变薄，剩余多为
+    1–6 处的零散字段，适合按「域窗口」成批收尾而不必逐字段开刀。
+  - **验证**：`typecheck` 0 诊断；`build` exit 0（8.36s）；收敛台账 OK；
+    `d3-alltags-view`、`d3-selection` 全绿。

@@ -38,7 +38,7 @@ import { machineryRemoveSelectedFolders, machineryRemoveSelectedSmartFolders, ma
 import { machinerySortRawData } from '../core/itemDomain';
 import { useFolderState } from '../store/folderState';
 import { useListState } from '../store/listState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeSubFolders } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
@@ -109,17 +109,17 @@ export function refreshSubfolderList(...args: any[]) {
       if (useFolderState.getState().currentFolder) {
         let subFolders: any[] = [];
         if (useListState.getState().showSubfolderContent) {
-          writeScopeField('subFolders', getAllChildFolder(useFolderState.getState().currentFolder));
+          writeSubFolders(getAllChildFolder(useFolderState.getState().currentFolder));
           syncListFromScope();
           if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
         }
         else {
-          writeScopeField('subFolders', useFolderState.getState().currentFolder.children);
+          writeSubFolders(useFolderState.getState().currentFolder.children);
           syncListFromScope();
           if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = false;
         }
         if (useListState.getState().keyword) {
-          writeScopeField('subFolders', useMiscRawState.getState().subFolders.filter(function (folder: any) {
+          writeSubFolders(useMiscRawState.getState().subFolders.filter(function (folder: any) {
             if (folder.name.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
               return true;
             }
@@ -135,7 +135,7 @@ export function refreshSubfolderList(...args: any[]) {
         }
       }
       else {
-        writeScopeField('subFolders', []);
+        writeSubFolders([]);
         syncListFromScope();
       }
     } as (...__args: any[]) => any).apply(null, args);

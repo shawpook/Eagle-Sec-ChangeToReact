@@ -13,7 +13,7 @@ import { excludeWithTag } from '../../services/batchOpsService';
 import { filterWithTag } from '../../services/fontTagService';
 import { machineryUpdateContainerHieght } from '../../services/gridService';
 import { machineryCalculateFilterCounts, machineryFilterContent } from '../../core/filterDomain';
-import { useMiscRawState } from '../../store/miscRawState';
+import { useMiscRawState, writeHexColor } from '../../store/miscRawState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
 import { useItemState } from '../../store/itemState';
 /** 阶段3b（1/2）：color/folders/tags + 组件注册表（其余 items 与容器在 FilterItems2）。 */
@@ -165,7 +165,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
     clearTimeout(colorChangeTimeout.current);
     colorChangeTimeout.current = setTimeout(() => {
       // E4：原 `$root.currentColor`（Angular ngModel 控制器）在去 Angular 后恒缺席——直走 hexColor 分支。
-      writeScopeField('hexColor', color);
+      writeHexColor(color);
       filterWithColor(hexToRGB(color));
     }, 33);
     const valueInput = document.getElementById('colors-picker-value') as HTMLInputElement | null;
@@ -244,7 +244,7 @@ function ColorItem({ snapshot }: { snapshot: FilterSnapshot }) {
                     value={hexDraft}
                     onChange={(e) => {
                       setHexDraft(e.target.value);
-                      runInBodyScope(() => { writeScopeField('hexColor', e.target.value); });
+                      runInBodyScope(() => { writeHexColor(e.target.value); });
                       runInBodyScope(() => filterWithHexColor(e.target.value));
                     }}
                   />

@@ -63,7 +63,7 @@ import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
 import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor } from '../store/miscRawState';
 import { useItemState, writeRaw, writeTrash } from '../store/itemState';
 import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
@@ -2869,7 +2869,7 @@ export let rebindRefreshLazyTimeout: any = null;
 export function machineryReload(): any {
   const w = window as any;
   return debounce(function reload(keepDetailMode: any) {
-    writeScopeField('hexColor', undefined);
+    writeHexColor(undefined);
     writeScopeField('unlockPassword', "");
 
     if (!keepDetailMode) {

@@ -47,7 +47,7 @@ import { machineryOpenAll } from '../services/folderCoreService';
 import { machineryLeaveDetailMode } from './miscDomain';
 import { machineryResetPage } from '../services/gridService';
 import { applyDataMachineryScope } from './machineryInfra';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeCurrentTagGroup, writeSelectedTags, writeTagViewMode, writeTagViewModeName, writeIsGifReady, writeSubFolders } from '../store/miscRawState';
 import { useLayoutState } from '../store/layoutState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
@@ -1450,7 +1450,7 @@ export function machineryBuildTagManager(): any {
                 writeScopeField('lastSelectedTag', tag.name);
             }
             else {
-                writeScopeField('selectedTags', {});
+                writeSelectedTags({});
                 syncTagManagerFromScope();
                 useMiscRawState.getState().selectedTags[tag.name] = true;
                 syncTagManagerFromScope();
@@ -1460,14 +1460,14 @@ export function machineryBuildTagManager(): any {
 
         writeScopeField('createTagGroup', function () {
             var newGroup = TagManager.createGroup($filter('i18n')('general.untitled.tagGroup'));
-            writeScopeField('tagViewMode', "GROUP");
+            writeTagViewMode("GROUP");
             syncTagManagerFromScope();
-            writeScopeField('tagViewModeName', `GROUP-${newGroup.id}`);
+            writeTagViewModeName(`GROUP-${newGroup.id}`);
             syncTagManagerFromScope();
-            writeScopeField('currentTagGroup', newGroup);
+            writeCurrentTagGroup(newGroup);
             syncTagManagerFromScope();
             machineryRenameTagGroup(newGroup);
-            writeScopeField('selectedTags', {});
+            writeSelectedTags({});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
         });
@@ -1476,14 +1476,14 @@ export function machineryBuildTagManager(): any {
             if (useMiscRawState.getState().tagViewMode === "ALL") return;
             (window as any).tagRectSelecting = false;
             writeKeyword("");
-            writeScopeField('tagViewMode', "ALL");
+            writeTagViewMode("ALL");
             syncTagManagerFromScope();
-            writeScopeField('tagViewModeName', "ALL");
+            writeTagViewModeName("ALL");
             syncTagManagerFromScope();
             writeCurrentFocus('tags');
-            writeScopeField('currentTagGroup', undefined);
+            writeCurrentTagGroup(undefined);
             syncTagManagerFromScope();
-            writeScopeField('selectedTags', {});
+            writeSelectedTags({});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
         });
@@ -1492,14 +1492,14 @@ export function machineryBuildTagManager(): any {
             if (useMiscRawState.getState().tagViewMode === "UNFILED") return;
             (window as any).tagRectSelecting = false;
             writeKeyword("");
-            writeScopeField('tagViewMode', "UNFILED");
+            writeTagViewMode("UNFILED");
             syncTagManagerFromScope();
-            writeScopeField('tagViewModeName', "UNFILED");
+            writeTagViewModeName("UNFILED");
             syncTagManagerFromScope();
             writeCurrentFocus('tags');
-            writeScopeField('currentTagGroup', undefined);
+            writeCurrentTagGroup(undefined);
             syncTagManagerFromScope();
-            writeScopeField('selectedTags', {});
+            writeSelectedTags({});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
         });
@@ -1508,14 +1508,14 @@ export function machineryBuildTagManager(): any {
             if (useMiscRawState.getState().tagViewMode === "STARRED") return;
             (window as any).tagRectSelecting = false;
             writeKeyword("");
-            writeScopeField('tagViewMode', "STARRED");
+            writeTagViewMode("STARRED");
             syncTagManagerFromScope();
-            writeScopeField('tagViewModeName', "STARRED");
+            writeTagViewModeName("STARRED");
             syncTagManagerFromScope();
             writeCurrentFocus('tags');
-            writeScopeField('currentTagGroup', undefined);
+            writeCurrentTagGroup(undefined);
             syncTagManagerFromScope();
-            writeScopeField('selectedTags', {});
+            writeSelectedTags({});
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
         });
@@ -1523,17 +1523,17 @@ export function machineryBuildTagManager(): any {
         writeScopeField('openTagGroup', function (group: any) {
             (window as any).tagRectSelecting = false;
             writeKeyword("");
-            writeScopeField('tagViewMode', "GROUP");
+            writeTagViewMode("GROUP");
             syncTagManagerFromScope();
-            writeScopeField('tagViewModeName', `GROUP-${group.id}`);
+            writeTagViewModeName(`GROUP-${group.id}`);
             syncTagManagerFromScope();
             writeCurrentFocus('tags');
-            writeScopeField('currentTagGroup', group);
+            writeCurrentTagGroup(group);
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
             q("input:focus")?.blur();
             if (useMiscRawState.getState().currentTagGroup === group) return;
-            writeScopeField('selectedTags', {});
+            writeSelectedTags({});
             syncTagManagerFromScope();
         });
 
@@ -1704,7 +1704,7 @@ export function machineryBuildTagManager(): any {
         });        
 
         writeScopeField('renameTagGroup', function (group: any) {
-            writeScopeField('currentTagGroup', group);
+            writeCurrentTagGroup(group);
             syncTagManagerFromScope();
             writeScopeField('newGroupName', group.name);
             syncTagManagerFromScope();
@@ -1750,11 +1750,11 @@ export function machineryBuildTagManager(): any {
             const remove = function (group: any) {
                 var idx = TagManager.removeGroup(group.id);
                 if (TagManager.groups[idx]) {
-                    writeScopeField('currentTagGroup', TagManager.groups[idx]);
+                    writeCurrentTagGroup(TagManager.groups[idx]);
                     syncTagManagerFromScope();
                 }
                 else if (TagManager.groups[idx - 1]) {
-                    writeScopeField('currentTagGroup', TagManager.groups[idx - 1]);
+                    writeCurrentTagGroup(TagManager.groups[idx - 1]);
                     syncTagManagerFromScope();
                 }
                 else {
@@ -2002,7 +2002,7 @@ export function machineryBuildTagManager(): any {
             onProgress: function (progress: any, length: any) {
                 clearInterval(useMiscRawState.getState().gifUpadteInterval);
                 if (useMiscRawState.getState().isGifReady === true) {
-                    writeScopeField('isGifReady', false);
+                    writeIsGifReady(false);
                     syncDetailFromScope();
                     delete useMiscRawState.getState().gifViewer.frames;
                     useMiscRawState.getState().gifViewer.frames = [];
@@ -2026,7 +2026,7 @@ export function machineryBuildTagManager(): any {
                 syncDetailFromScope();
                 writeScopeField('gifPlayer', result.gifPlayer);
                 syncDetailFromScope();
-                writeScopeField('isGifReady', true);
+                writeIsGifReady(true);
                 syncDetailFromScope();
                 useMiscRawState.getState().gifViewer.frames = result.frames;
                 syncDetailFromScope();
@@ -2959,14 +2959,14 @@ export function machineryOpenStarredGroup(): void {
   if (useMiscRawState.getState().tagViewMode === "STARRED") return;
   tagRectSelecting = false;
   writeKeyword("");
-  writeScopeField('tagViewMode', "STARRED");
+  writeTagViewMode("STARRED");
   syncTagManagerFromScope();
-  writeScopeField('tagViewModeName', "STARRED");
+  writeTagViewModeName("STARRED");
   syncTagManagerFromScope();
   writeCurrentFocus('tags');
-  writeScopeField('currentTagGroup', undefined);
+  writeCurrentTagGroup(undefined);
   syncTagManagerFromScope();
-  writeScopeField('selectedTags', {});
+  writeSelectedTags({});
   syncTagManagerFromScope();
   useMiscRawState.getState().TagManager.renderTagsResult();
 }
@@ -2975,14 +2975,14 @@ export function machineryOpenTagAllGroup(): void {
   if (useMiscRawState.getState().tagViewMode === "ALL") return;
   tagRectSelecting = false;
   writeKeyword("");
-  writeScopeField('tagViewMode', "ALL");
+  writeTagViewMode("ALL");
   syncTagManagerFromScope();
-  writeScopeField('tagViewModeName', "ALL");
+  writeTagViewModeName("ALL");
   syncTagManagerFromScope();
   writeCurrentFocus('tags');
-  writeScopeField('currentTagGroup', undefined);
+  writeCurrentTagGroup(undefined);
   syncTagManagerFromScope();
-  writeScopeField('selectedTags', {});
+  writeSelectedTags({});
   syncTagManagerFromScope();
   useMiscRawState.getState().TagManager.renderTagsResult();
 }
@@ -2991,17 +2991,17 @@ export function machineryOpenTagGroup(group: any): void {
   const w = window as any;
   tagRectSelecting = false;
   writeKeyword("");
-  writeScopeField('tagViewMode', "GROUP");
+  writeTagViewMode("GROUP");
   syncTagManagerFromScope();
-  writeScopeField('tagViewModeName', `GROUP-${group.id}`);
+  writeTagViewModeName(`GROUP-${group.id}`);
   syncTagManagerFromScope();
   writeCurrentFocus('tags');
-  writeScopeField('currentTagGroup', group);
+  writeCurrentTagGroup(group);
   syncTagManagerFromScope();
   useMiscRawState.getState().TagManager.renderTagsResult();
   blurEl("input:focus");
   if (useMiscRawState.getState().currentTagGroup === group) return;
-  writeScopeField('selectedTags', {});
+  writeSelectedTags({});
   syncTagManagerFromScope();
 }
 
@@ -3009,14 +3009,14 @@ export function machineryOpenUnfiledGroup(): void {
   if (useMiscRawState.getState().tagViewMode === "UNFILED") return;
   tagRectSelecting = false;
   writeKeyword("");
-  writeScopeField('tagViewMode', "UNFILED");
+  writeTagViewMode("UNFILED");
   syncTagManagerFromScope();
-  writeScopeField('tagViewModeName', "UNFILED");
+  writeTagViewModeName("UNFILED");
   syncTagManagerFromScope();
   writeCurrentFocus('tags');
-  writeScopeField('currentTagGroup', undefined);
+  writeCurrentTagGroup(undefined);
   syncTagManagerFromScope();
-  writeScopeField('selectedTags', {});
+  writeSelectedTags({});
   syncTagManagerFromScope();
   useMiscRawState.getState().TagManager.renderTagsResult();
 }
@@ -3066,17 +3066,17 @@ export function machineryRefreshSubfolderList(): void {
   // 过滤子文件夹
   if (useFolderState.getState().currentFolder) {
     if (useListState.getState().showSubfolderContent) {
-      writeScopeField('subFolders', machineryGetAllChildFolder(useFolderState.getState().currentFolder));
+      writeSubFolders(machineryGetAllChildFolder(useFolderState.getState().currentFolder));
       syncListFromScope();
       if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = true;
     }
     else {
-      writeScopeField('subFolders', useFolderState.getState().currentFolder.children);
+      writeSubFolders(useFolderState.getState().currentFolder.children);
       syncListFromScope();
       if (useMiscRawState.getState().subFolderSortableOptions) useMiscRawState.getState().subFolderSortableOptions.disabled = false;
     }
     if (useListState.getState().keyword) {
-      writeScopeField('subFolders', useMiscRawState.getState().subFolders.filter(function (folder: any) {
+      writeSubFolders(useMiscRawState.getState().subFolders.filter(function (folder: any) {
         if (folder.name.toLowerCase().indexOf(useListState.getState().keyword.toLowerCase()) > -1) {
           return true;
         }
@@ -3092,7 +3092,7 @@ export function machineryRefreshSubfolderList(): void {
     }
   }
   else {
-    writeScopeField('subFolders', []);
+    writeSubFolders([]);
     syncListFromScope();
   }
 }
@@ -3103,11 +3103,11 @@ export function machineryRemoveTagGroup(group: any): void {
   const remove = function (group: any) {
     var idx = useMiscRawState.getState().TagManager.removeGroup(group.id);
     if (useMiscRawState.getState().TagManager.groups[idx]) {
-      writeScopeField('currentTagGroup', useMiscRawState.getState().TagManager.groups[idx]);
+      writeCurrentTagGroup(useMiscRawState.getState().TagManager.groups[idx]);
       syncTagManagerFromScope();
     }
     else if (useMiscRawState.getState().TagManager.groups[idx - 1]) {
-      writeScopeField('currentTagGroup', useMiscRawState.getState().TagManager.groups[idx - 1]);
+      writeCurrentTagGroup(useMiscRawState.getState().TagManager.groups[idx - 1]);
       syncTagManagerFromScope();
     }
     else {
@@ -3142,7 +3142,7 @@ export function machineryRemoveTagGroup(group: any): void {
 /* renameTagGroup（bundle 48582-48592 逐字：双 100/200ms focus 双写原样） */
 export function machineryRenameTagGroup(group: any): void {
   const w = window as any;
-  writeScopeField('currentTagGroup', group);
+  writeCurrentTagGroup(group);
   syncTagManagerFromScope();
   writeScopeField('newGroupName', group.name);
   syncTagManagerFromScope();

@@ -48,7 +48,7 @@ import { machineryConvertToRegexGroup, machineryMatchWithRegexGroup } from './ta
 import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
 import { useItemState, writeShuffle } from '../store/itemState';
-import { useMiscRawState } from '../store/miscRawState';
+import { useMiscRawState, writeHexColor } from '../store/miscRawState';
 import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useBodyState, writeIsDetailMode } from '../store/bodyState';
 declare const RecentFileManager: any;
@@ -476,12 +476,12 @@ export function filterWithColor(...args: any[]) {
             if (!color || eagle.filter.filterRules.color.value == color) {
                 eagle.filter.filterRules.color.value = undefined;
                 eagle.filter.filterRules.color.gray = false;
-                writeScopeField('hexColor', "");
+                writeHexColor("");
             }
             else if (color === "gray") {
                 eagle.filter.filterRules.color.value = undefined;
                 eagle.filter.filterRules.color.gray = true;
-                writeScopeField('hexColor', "");
+                writeHexColor("");
             }
             else {
                 eagle.filter.filterRules.color.gray = false;
@@ -490,7 +490,7 @@ export function filterWithColor(...args: any[]) {
                 // b1-9bj：原 ColorPickerSetColor 随 vendor 退役——自研 picker 经 props 从
                 // rules.color.value 派生，此处写面即外部同步
                 if (hexColor.length > 6) {
-                    writeScopeField('hexColor', hexColor);
+                    writeHexColor(hexColor);
                 }
             }
             eagle.filter.isOpen = true;
@@ -553,7 +553,7 @@ export function filterWithHexColor(...args: any[]) {
     return (function(hex) {
             if (hex.length === 6 && !hex.startsWith("#") && /^[0-9A-F]{6}$/i.test(hex) ) {
                 hex = "#" + hex;
-                writeScopeField('hexColor', hex);
+                writeHexColor(hex);
             }
             if (hex && hex.length == 7) {
                 var rgb = hexToRGB(hex);

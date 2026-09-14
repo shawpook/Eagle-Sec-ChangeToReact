@@ -8699,3 +8699,32 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
 - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`d3-alltags-view`（标签管理器族：
   建组/改色/描述/右键菜单）、`menu-popup`（folder/smart-folder 右键菜单）、
   `empty-trash`（batchOpsService 的 trash 族）、`library-switch-ui` 全绿。
+
+### R3 收尾：撤销 `@ts-nocheck`（第三批：imageOpsService，126 条）
+
+- **撤销对象**：`services/imageOpsService.ts`（126 条清零，删除 `// @ts-nocheck`）。累计已撤销
+  **7 个**（102 + 232 + 126 = 460 条清零），台账 13 个（8 个 `core/shim/*` + 5 个待撤销）。
+- **两处真实缺陷**（@ts-nocheck 掩盖）：
+  1. **`originalWidth`/`originalHeight` 块内 `const` 声明、块外引用**：`rotateImage` 在
+     `if (imageRotateMode === 'write')` 块内以 `const [originalWidth, originalHeight] = ...` 声明，
+     而**失败回滚路径**（`fs.accessSync` 抛错 / 旋转抛错，两处共 4 个引用点）在该块之外——
+     块级作用域下运行期必抛 ReferenceError。修法：提到函数作用域（`let ... : any`，未赋值时
+     为 undefined，与原 `var` 语义一致），失败回滚恢复尺寸的意图得以成立。
+  2. **`machineryVideoScreenShot` 全仓未定义**：`copeVideoFrame`/`saveVideoFrame` 两个导出
+     条目调用它，但仓内既有实现名为 `videoScreenShot(copyMode?)`（`services/mediaService.ts`，
+     形参与 `copeVideoFrame` 传入的 `true` 正好对应）。改为直接调该实现（已确认 mediaService
+     不反向依赖本文件，无新增环）。
+- **另修**：剪贴写入新文件的 `newFile` 对象字面量**重复 `lastModified` 键**（TS1117；后者胜，
+  删去前者即行为等价）。
+- 其余为缺类型/隐式 any：`appRoot require guid fse tinyPinyin EAGLE_THUMBNAIL_TEMP_PATH
+  ayncsImagesChange ayncsImagesGenerateThumbnail getExt getClipboardImage`（均已由
+  bundleGlobals 安装）用 typed ambient；`path`/`isString` 走既有 `_req`/`utils/lang` 导入；
+  `FileUrlHelper` 补 import；遍历与 `catch`/promise 形参、映射对象（`__lv_tags`
+  `defaultFolderCoverIdMap` `extList` `support_ext` `increaseAncestors` `ancestorsCache` `exts`）
+  逐一补注解。
+- **验证**：`typecheck` 0 诊断；`npm run build` exit 0；`image-import`（导入/缩略图/
+  ayncsImagesGenerateThumbnail）、`image-export`（导出/星标/contentFilterCache）、
+  `custom-thumbnail`（自定义缩略图重生成）全绿。
+- **剩余 5 个文件**（实测 1244 条）：`core/{bitmapViewer 141, hoverPreview 273,
+  smoothZoomEngine 292, eagleClasses 297}`、`services/itemMenuService.ts 207`
+  （其中 146 条是裸引用旧全局 i18n/preferences/eagle，需按既有约定逐个定性）。

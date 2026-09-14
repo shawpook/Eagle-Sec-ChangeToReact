@@ -16,7 +16,6 @@
  * - $filter/$timeout → 双轨 shim
  * - IPCHelper → core 同源；dialog/currentWindow/remote/ipcRenderer → electron 同源
  */
-// @ts-nocheck
 import { detailZoom } from '../core/smoothZoomEngine';
 import { IPCHelper } from '../core/ipcHelper';
 
@@ -51,20 +50,35 @@ import { useFolderState, writeTags, writeFolderList } from '../store/folderState
 import { useListState } from '../store/listState';
 
 import { getIpcBus } from '../core/channelBridge';
+import { isString } from '../utils/lang';
+import { FileUrlHelper } from '../core/fileUrlHelper';
+import { videoScreenShot } from './mediaService';
 // b1-9bl-B：bo-bt 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // 服务侧本地重建解析（controllerFns initLinkVars 同式），使各 fn 首行
 // try { initLinkVars(); } 从 no-op 转为真实供给。
-var __lv_TagManager;
-var __lv_calculateImageBindingTimeout;
-var __lv_lastRotateImage;
-var __lv_rotateImageSaveTimeout;
-var __lv_rotateImageTimeout;
-var __lv_pinyinCache = {};
+/* bundle 全局（bundleGlobals 安装 on window）：typed ambient 声明，只补类型不改运行期。 */
+declare const appRoot: any;
+declare const require: any;
+declare const guid: any;
+declare const fse: any;
+declare const tinyPinyin: any;
+declare const EAGLE_THUMBNAIL_TEMP_PATH: any;
+declare const ayncsImagesChange: any;
+declare const getExt: any;
+declare const getClipboardImage: any;
+declare const ayncsImagesGenerateThumbnail: any;
+
+var __lv_TagManager: any;
+var __lv_calculateImageBindingTimeout: any;
+var __lv_lastRotateImage: any;
+var __lv_rotateImageSaveTimeout: any;
+var __lv_rotateImageTimeout: any;
+var __lv_pinyinCache: Record<string, any> = {};
 const initLinkVars = () => {
 	if (useMiscRawState.getState().TagManager) __lv_TagManager = useMiscRawState.getState().TagManager;
 };
 
-const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
+const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err: any) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
 const eagle: any = (window as any).eagle;
@@ -75,9 +89,10 @@ const currentWindow: any = (window as any).electron?.remote?.getCurrentWindow?.(
 const ipcRenderer: any = getIpcBus();
 const electronLog: any = (window as any).electronLog || console;
 const fs: any = _req('fs');
+const path: any = _req('path');
 const sanitize: any = (function () {
   const arp: any = _req('app-root-path');
-  try { return arp ? _req(String(arp) + '/my_modules/sanitize-filename') : undefined; } catch (err) { return undefined; }
+  try { return arp ? _req(String(arp) + '/my_modules/sanitize-filename') : undefined; } catch (err: any) { return undefined; }
 })();
 const $filter: any = (name: string) => {
   // E4：原 `s.$root.$filter`（Angular injector 滤镜服务）在去 Angular 后恒缺席——直接走移植表。
@@ -93,7 +108,7 @@ const $timeout: any = (fn: any, ms?: number) => setTimeout(() => {
 // `$timeout.cancel is not a function` 即抛，且被上层 electronLog 缺席的 catch 静默吞掉。
 $timeout.cancel = function (timer: any): boolean {
   if (timer === null || timer === undefined) return false;
-  try { clearTimeout(timer); } catch (err) { /* noop */ }
+  try { clearTimeout(timer); } catch (err: any) { /* noop */ }
   return true;
 };
 
@@ -102,7 +117,7 @@ $timeout.cancel = function (timer: any): boolean {
    提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
    组件侧改直 import，零行为变化。 */
 export function rotateImage(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event, __lv_image) {
 
             if (useBodyState.getState().isCropMode) return;
@@ -120,8 +135,12 @@ export function rotateImage(...args: any[]) {
             let rotatedImage = __lv_image || useSelectionState.getState().selected[0];
             if (!rotatedImage) return;
 
+            // 原码在 if 块内以 const 声明、块外的失败回滚路径引用 → ReferenceError；提到函数作用域。
+            let originalWidth: any;
+            let originalHeight: any;
             if (usePreferencesState.getState().preferences.habits.imageRotateMode === 'write') {
-                const [originalWidth, originalHeight] = [rotatedImage.width, rotatedImage.height];
+                originalWidth = rotatedImage.width;
+                originalHeight = rotatedImage.height;
                 [rotatedImage.width, rotatedImage.height] = [originalHeight, originalWidth];
             }
             
@@ -165,7 +184,7 @@ export function rotateImage(...args: any[]) {
                     try {
                         fs.accessSync(rawPath, fs.W_OK)
                     }
-                    catch (err) {
+                    catch (err: any) {
                         writeIsRotating(false);
                         rotatedImage.width = originalWidth;
                         rotatedImage.height = originalHeight;
@@ -197,7 +216,7 @@ export function rotateImage(...args: any[]) {
                     try {
                         const rotateImage = require(appRoot.path + '/app/js/utils/rotateImage.js');
                         const __lv_result = await rotateImage(rawPath, degree, {
-                            onSuccess: function(newWidth, newHeight) {
+                            onSuccess: function(newWidth: any, newHeight: any) {
                                 // 如果 utils 返回了新的尺寸，更新圖片尺寸
                                 if (newWidth && newHeight) {
                                     rotatedImage.width = newWidth;
@@ -216,9 +235,9 @@ export function rotateImage(...args: any[]) {
                         
                         try { 
                             electronLog && electronLog.info(`[app] Rotate image: ${rotatedImage.name}(${rotatedImage.id})`); 
-                        } catch (err) {};
+                        } catch (err: any) {};
                         
-                    } catch (err) {
+                    } catch (err: any) {
                         // 旋轉失敗，恢復原狀
                         writeIsRotating(false);
                         rotatedImage.width = originalWidth;
@@ -245,7 +264,7 @@ export function rotateImage(...args: any[]) {
    提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
    组件侧改直 import，零行为变化。 */
 export function flipImage(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event, __lv_image, writeToFile = false) {
 
             if (useBodyState.getState().isCropMode) return;
@@ -273,7 +292,7 @@ export function flipImage(...args: any[]) {
             var shouldWriteToFile = writeToFile && usePreferencesState.getState().preferences.habits.imageRotateMode === 'write';
             if (shouldWriteToFile && rotatedImage) {
                 // 根據 scaleX 和 scaleY 決定翻轉類型
-                var flipType;
+                var flipType: any;
                 if (scaleX === -1 && scaleY === -1) {
                     flipType = 'both';
                 } else if (scaleX === -1) {
@@ -298,10 +317,10 @@ export function flipImage(...args: any[]) {
                             // 重新生成縮圖
                             ipcRenderer.send('regenerate-thumbnail', [rotatedImage]);
                         })
-                        .catch(err => {
+                        .catch((err: any) => {
                             console.error(`Failed to save flipped image: ${err.message}`);
                         });
-                } catch (requireErr) {
+                } catch (requireErr: any) {
                     console.error(`Failed to load flipImage module: ${requireErr.message}`);
                 }
             }
@@ -312,7 +331,7 @@ export function flipImage(...args: any[]) {
    提升为具名导出（install 注入的 getScope 等价 getBodyScope），表项改指针，
    组件侧改直 import，零行为变化。 */
 export function saveCrop(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (saveAsNewFile) {
             var cropAreaEl = q("#crop-image-tool .crop-area");
             var [top, left] = [cssGet(cropAreaEl, "top").replace("px", ""), cssGet(cropAreaEl, "left").replace("px", "")];
@@ -329,7 +348,7 @@ export function saveCrop(...args: any[]) {
             }
             setTimeout(() => {
                 const imageCropper = require(appRoot + '/my_modules/image-cropper');
-                imageCropper(imagePath, croppedImage, top, left, __lv_width, __lv_height, function (err, { buffer, base64 }) {
+                imageCropper(imagePath, croppedImage, top, left, __lv_width, __lv_height, function (err: any, { buffer, base64 }: any) {
                     electronLog.info(`[app] Prepare to write to file: ${imagePath}`);
 
                     if (buffer && buffer.length > 0) {
@@ -337,11 +356,10 @@ export function saveCrop(...args: any[]) {
                         if (saveAsNewFile) {
                             let newId = guid();
                             let newFilePath = `${EAGLE_THUMBNAIL_TEMP_PATH}/${newId}.${croppedImage.ext}`;
-                            fs.writeFile(newFilePath, buffer, function (err) {
+                            fs.writeFile(newFilePath, buffer, function (err: any) {
                                 let newFile = {
                                     name: croppedImage.name,
                                     path: newFilePath,
-                                    lastModified: Date.now(),
                                     tags: croppedImage.tags || [],
                                     folders: croppedImage.folders || [],
                                     url: croppedImage.url || "",
@@ -377,7 +395,7 @@ export function saveCrop(...args: any[]) {
                                 cancelButtonText: i18n.__("general.cancel"),
                             }).then(function() {
                                 fse.copySync(imagePath, imagePath + ".bk", { preserveTimestamps: true });
-                                    fs.writeFile(imagePath, buffer, function (err) {
+                                    fs.writeFile(imagePath, buffer, function (err: any) {
                                         if (!err) {
                                             fse.removeSync(imagePath + ".bk");
                                             ipcRenderer.send('regenerate-thumbnail', [croppedImage]);
@@ -386,7 +404,7 @@ export function saveCrop(...args: any[]) {
 
                                             // 强制更新相关 folder 封面
                                             if (croppedImage.folders) {
-                                                croppedImage.folders.forEach(function (fid) {
+                                                croppedImage.folders.forEach(function (fid: any) {
                                                     machineryResetFolderCover(useItemState.getState().folderMappings[fid]);
                                                 });
                                             }
@@ -428,14 +446,14 @@ export function updateItemView(...args: any[]) {
 }
 
 export function updateSelection(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function() {
             updateInspectorChannel.emit();
         } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function startDrag(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (event) {
             if (useSelectionState.getState().current) {
                 var __lv_transformsJSON = JSON.stringify([useSelectionState.getState().current]);
@@ -445,21 +463,21 @@ export function startDrag(...args: any[]) {
 }
 
 export function copeVideoFrame(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-        	machineryVideoScreenShot(true);
+        	videoScreenShot(true);
         } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function saveVideoFrame(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-        	machineryVideoScreenShot();
+        	videoScreenShot();
         } as (...__args: any[]) => any).apply(null, args);
 }
 
 export function cancelRegenerateThumbnail(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
             IPCHelper.send('cancel.generate.thumbnail');
             writeRegenerateThumbnailQueue([]);
@@ -467,7 +485,7 @@ export function cancelRegenerateThumbnail(...args: any[]) {
 }
 
 export function getThumbnailPath(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (__lv_image) {
             if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
@@ -475,7 +493,7 @@ export function getThumbnailPath(...args: any[]) {
 }
 
 export function getThumbnailUrl(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (__lv_image) {
             if (!useMiscRawState.getState().imagesDir || !__lv_image) return;
             return FileUrlHelper.getThumbnailUrl(__lv_image);
@@ -489,9 +507,9 @@ export function currentIndex(...args: any[]) {
 }
 
 export function regenerateThumbnail(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-        useSelectionState.getState().selected.forEach(function(image) {
+        useSelectionState.getState().selected.forEach(function(image: any) {
             useMiscRawState.getState().regenerateThumbnailQueue.push(image);
         });
         ayncsImagesGenerateThumbnail(useSelectionState.getState().selected);
@@ -499,7 +517,7 @@ export function regenerateThumbnail(...args: any[]) {
 }
 
 export function calculateImageBinding(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function(params = { ignoreSort : false }, callback) {
 
             var duration = 50;
@@ -523,8 +541,8 @@ export function calculateImageBinding(...args: any[]) {
 
                     console.time("calculateImageBinding");
                     var __lv_path = require('path');
-                    var __lv_tags = {};
-                    var exts = {};
+                    var __lv_tags: Record<string, any> = {};
+                    var exts: Record<string, any> = {};
                     writeAll([]);
                     syncSidebarFromScope();
                     writeUntagged([]);
@@ -539,10 +557,10 @@ export function calculateImageBinding(...args: any[]) {
                     syncSidebarFromScope();
                     writeLockedImages({});
 
-                    let ancestorsCache = {};
-                    let defaultFolderCoverIdMap = {};
+                    let ancestorsCache: Record<string, any> = {};
+                    let defaultFolderCoverIdMap: Record<string, any> = {};
 
-                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent, depth) {
+                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder: any, parent: any, depth: any) {
 
                         if (folder && parent) {
                             folder.parent = parent.id;
@@ -565,7 +583,7 @@ export function calculateImageBinding(...args: any[]) {
                         }
 
                         if (folder.tags && folder.tags.length > 0) {
-                            folder.tags.forEach(function(tag) {
+                            folder.tags.forEach(function(tag: any) {
                                 useMiscRawState.getState().tagsSuggestion.push({
                                     value: tag,
                                     text: tag
@@ -578,13 +596,13 @@ export function calculateImageBinding(...args: any[]) {
                         useItemState.getState().folderMappings[folder.id] = folder;
                     });
 
-                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent) {
+                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder: any, parent: any) {
                         folder.extendTags = machineryGetExtendTags(folder, []);
 						folder.covers = [];
                     });
 
 
-                    eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder, parent, depth) {
+                    eagle.utils.tree.walk(useFolderState.getState().smartFolders, 'children', function (smartFolder: any, parent: any, depth: any) {
                         useItemState.getState().smartFolderMappings[smartFolder.id] = smartFolder;
                     });
 
@@ -605,8 +623,8 @@ export function calculateImageBinding(...args: any[]) {
 
                             // 計算資料夾圖片總數
                             if (__lv_image.folders && __lv_image.folders.length > 0) {
-                                var increaseAncestors = {};
-                                __lv_image.folders.forEach(function(__lv_folderId) {
+                                var increaseAncestors: Record<string, any> = {};
+                                __lv_image.folders.forEach(function(__lv_folderId: any) {
                                     var folder = useItemState.getState().folderMappings[__lv_folderId];
                                     if (folder) {
                                         folder.imageCount++;
@@ -617,7 +635,7 @@ export function calculateImageBinding(...args: any[]) {
 
                                         // 祖先们也都 + 1 , 记录在其他栏位上
                                         var ancestors = ancestorsCache[folder.id] || machineryGetAncestorFolders(folder, [folder]);
-                                        ancestors.forEach(function (ancestor) {
+                                        ancestors.forEach(function (ancestor: any) {
                                             // 避免重复加总
                                             if (increaseAncestors[ancestor.id]) {
                                                 return;
@@ -662,7 +680,7 @@ export function calculateImageBinding(...args: any[]) {
 											useListState.getState().unfiledCount++;
 											try {
 												electronLog && electronLog.error(`[app] ${__lv_image.id} 's folder properity is incorrect[2], move to Uncategorized`);
-											} catch (err) {}
+											} catch (err: any) {}
 										}
                                     }
                                 }
@@ -677,10 +695,10 @@ export function calculateImageBinding(...args: any[]) {
 
                         if (!__lv_image.isDeleted && __lv_image.tags && __lv_image.tags.length > 0) {
                             if (!useItemState.getState().lockedImages[__lv_image.id]) {
-                                __lv_image.tags.forEach(function(tag) {
+                                __lv_image.tags.forEach(function(tag: any) {
                                     var tagName = tag;
                                     if (!tagName || tagName.length > 500) return;
-                                    var tempTag = __lv_tags[tagName];
+                                    var tempTag: any = __lv_tags[tagName];
                                     if (!tempTag) {
                                         __lv_tags[tagName] = {
                                             name: tag,
@@ -713,7 +731,7 @@ export function calculateImageBinding(...args: any[]) {
                     }
 
                     // 計算當前資料有哪些檔案類型
-                    var extList = [];
+                    var extList: any[] = [];
                     Object.keys(exts).map(function(key) {
                         extList.push(key);
                     });
@@ -725,7 +743,7 @@ export function calculateImageBinding(...args: any[]) {
                     syncFilterFromScope();
 
                     // 如果祖先门没有封面，补上封面
-                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder, parent) {
+                    eagle.utils.tree.walk(useFolderState.getState().folders, 'children', function(folder: any, parent: any) {
                         try {
                             let converId = folder.coverId || defaultFolderCoverIdMap[folder.id];
                             if (!folder.covers) folder.covers = [];
@@ -745,13 +763,13 @@ export function calculateImageBinding(...args: any[]) {
                                 }
                             }
                             if (folder.covers.length == 0) {
-                                folder.children.forEach(function (child) {
+                                folder.children.forEach(function (child: any) {
                                     Array.prototype.push.apply(folder.covers, child.covers);
                                     if (folder.covers.length > 3) return;
                                 });
                             }
                         }
-                        catch (err) {}
+                        catch (err: any) {}
                     });
 
                     // 初始化 Tags
@@ -782,7 +800,7 @@ export function calculateImageBinding(...args: any[]) {
                         callback();
                     }
                 }
-                catch (err) {
+                catch (err: any) {
                     electronLog && electronLog.error(err.stack || err);
                 }
             }, duration);
@@ -790,7 +808,7 @@ export function calculateImageBinding(...args: any[]) {
 }
 
 export function replaceFile(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         // 檢查是否只選擇了一個檔案
         if (!useSelectionState.getState().selected || useSelectionState.getState().selected.length !== 1) return;
@@ -802,10 +820,10 @@ export function replaceFile(...args: any[]) {
             title: i18n.__('Dialog.ReplaceFile.SelectTitle'),
             properties: ['openFile'],
             filters: [{ name: 'All Files', extensions: ['*'] }]
-        }).then(function(result) {
+        }).then(function(result: any) {
             if (result.canceled || !result.filePaths?.length) return;
 
-            const newFilePath = result.filePaths[0];
+            const newFilePath = (result as any).filePaths[0];
             const newFileName = path.basename(newFilePath);
 
             // 使用 swal 確認對話框
@@ -828,7 +846,7 @@ export function replaceFile(...args: any[]) {
                 cancelButtonColor: "#777777",
                 confirmButtonText: i18n.__("Dialog.ReplaceFile.Confirm"),
                 cancelButtonText: i18n.__("general.cancel"),
-            }).then(function (confirm) {
+            }).then(function (confirm: any) {
                 if (!confirm) return;
 
                 // 執行替換邏輯
@@ -836,11 +854,11 @@ export function replaceFile(...args: any[]) {
             }, function () {
                 // 使用者取消
             });
-        }).catch(function(err) {
+        }).catch(function(err: any) {
             electronLog.error('[App] Failed to open file dialog:', err);
         });
 
-        function executeFileReplacement(item, newFilePath) {
+        function executeFileReplacement(item: any, newFilePath: any) {
             const libraryPath = useMiscRawState.getState().libraryPath;
             const currentFilePath = path.join(libraryPath, 'images', item.id + '.info', item.name + '.' + item.ext);
             const backupFilePath = currentFilePath + '.bk';
@@ -848,7 +866,7 @@ export function replaceFile(...args: any[]) {
             electronLog.info('[App] User replace file %s with %s', currentFilePath, newFilePath);
 
             // Step 1: 備份原文件
-            fs.rename(currentFilePath, backupFilePath, function(err) {
+            fs.rename(currentFilePath, backupFilePath, function(err: any) {
                 if (err) {
                     electronLog.error('[App] Failed to backup original file:', err);
                     handleError(err);
@@ -859,11 +877,11 @@ export function replaceFile(...args: any[]) {
                 const newExt = path.extname(newFilePath).slice(1).toLowerCase() || 'unknown';
                 const targetPath = path.join(path.dirname(currentFilePath), item.name + '.' + newExt);
 
-                fs.copyFile(newFilePath, targetPath, function(copyErr) {
+                fs.copyFile(newFilePath, targetPath, function(copyErr: any) {
                     if (copyErr) {
                         electronLog.error('[App] Failed to copy new file:', copyErr);
                         // 恢復原文件
-                        fs.rename(backupFilePath, currentFilePath, function(restoreErr) {
+                        fs.rename(backupFilePath, currentFilePath, function(restoreErr: any) {
                             if (restoreErr) {
                                 electronLog.error('[App] Failed to restore original file:', restoreErr);
                             }
@@ -888,7 +906,7 @@ export function replaceFile(...args: any[]) {
                     // Step 5: 更新 UI
 
                     // Step 6: 刪除備份文件
-                    fs.unlink(backupFilePath, function(unlinkErr) {
+                    fs.unlink(backupFilePath, function(unlinkErr: any) {
                         if (unlinkErr) {
                             electronLog.warn('[App] Failed to delete backup file:', unlinkErr);
                             // 備份文件刪除失敗不影響主流程
@@ -904,7 +922,7 @@ export function replaceFile(...args: any[]) {
             });
         }
 
-        function handleError(err) {
+        function handleError(err: any) {
             electronLog.error('[App] Failed to replace file:', err);
             swal({
                 type: 'error',
@@ -929,7 +947,7 @@ const NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES: any = { tif: true, jpg: true, png: tr
 
 
 export function flipHandler(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function ($event) {
         	if (VIDEO_TYPES[useSelectionState.getState().current.ext] || AUDIO_TYPES[useSelectionState.getState().current.ext]) {
         		flipVideo($event, useSelectionState.getState().current);
@@ -941,7 +959,7 @@ export function flipHandler(...args: any[]) {
   }
 
 export function rotateHandler(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function ($event) {
         	if (VIDEO_TYPES[useSelectionState.getState().current.ext] || AUDIO_TYPES[useSelectionState.getState().current.ext]) {
         		rotateVideo($event, useSelectionState.getState().current);
@@ -953,7 +971,7 @@ export function rotateHandler(...args: any[]) {
   }
 
 export function setCustomThumbnail(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         let item = useSelectionState.getState().selected[0];
         if (!item || NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES[item.ext]) return;
@@ -963,7 +981,7 @@ export function setCustomThumbnail(...args: any[]) {
                 { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp', 'webp'] },
             ],
             properties: ['openFile']
-        }).then(result => {
+        }).then((result: any) => {
             let paths = result.filePaths;
             if (!paths || paths.length === 0) return;
             let filePath = paths[0];
@@ -1003,12 +1021,12 @@ export function setCustomThumbnail(...args: any[]) {
                 });
             }
 
-        }).catch(err => {})
+        }).catch((err: any) => {})
     } as (...__args: any[]) => any).apply(null, args);
   }
 
 export function setCustomThumbnailFromClipboard(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (async function() {
         let item = useSelectionState.getState().selected[0];
         if (!item || NOT_SUPPORT_CUSTEOM_THUMBNAIL_TYPES[item.ext]) return;
@@ -1020,7 +1038,7 @@ export function setCustomThumbnailFromClipboard(...args: any[]) {
         if (filePath) {
             try {
                 let ext = getExt({path: filePath});
-                let support_ext = { jpg: true, png: true, gif: true, bmp: true, webp: true };
+                let support_ext: Record<string, boolean> = { jpg: true, png: true, gif: true, bmp: true, webp: true };
                 if (support_ext[ext]) {
                     fse.copySync(filePath, newFilePath);
                     // b1-9ae：同上——undefined → send 走 main（b1-9aa handler）
@@ -1039,7 +1057,7 @@ export function setCustomThumbnailFromClipboard(...args: any[]) {
                     return;
                 }
             }
-            catch (err) {}
+            catch (err: any) {}
         }
 
         if (image) {
@@ -1063,7 +1081,7 @@ export function setCustomThumbnailFromClipboard(...args: any[]) {
   }
 
 export function resetCustomThumbnail(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
         delete useSelectionState.getState().selected[0].customThumbnail;
         useMiscRawState.getState().regenerateThumbnailQueue.push(useSelectionState.getState().selected[0]);
@@ -1072,7 +1090,7 @@ export function resetCustomThumbnail(...args: any[]) {
   }
 
 export function changeImagesBackground(...args: any[]) {
-    try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
+    try { initLinkVars(); } catch (err: any) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function (images, color) {
         if (!images || images.length === 0) return;
         for (let i = 0; i < images.length; i++) {
@@ -1086,7 +1104,7 @@ export function changeImagesBackground(...args: any[]) {
         }
         ayncsImagesChange(images);
         machineryUpdateItemsView(useSelectionState.getState().selected);
-        try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err) {};
+        try { electronLog && electronLog.info(`[app] Change ${images.length} files thumbnail background to: ${color}`); } catch (err: any) {};
     } as (...__args: any[]) => any).apply(null, args);
   }
 
@@ -1100,7 +1118,7 @@ export function machineryCancelCrop(): void {
 
 
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
-export function machineryChangeStar(star: any, showNotify: any, force: any): void {
+export function machineryChangeStar(star: any, showNotify: any, force?: any): void {
   const w = window as any;
   if (useSelectionState.getState().selected.length === 0) return;
   if (!star && useSelectionState.getState().selected.length === 1 && !useSelectionState.getState().selected[0].star) {

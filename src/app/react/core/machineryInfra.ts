@@ -3,7 +3,7 @@ import { buildScrollbarSaver, machineryRelayout, machinerySwitchLayout, machiner
 import { machineryChangeStar } from '../services/imageOpsService';
 import { machineryOnDropContainer } from '../services/uploadService';
 import { machineryGetRatioExp, machineryGetRatioNonExp, machineryUpdateZoomRatio, machineryZoom } from '../services/viewOpsService';
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeLayout } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -29,6 +29,7 @@ import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
+import { writeSelected } from '../store/selectionState';
 
 /**
  * b1-9bz-D-1 B-17：dataMachinery 收尾——挂载基础设施域（scope 面供给层）。
@@ -455,7 +456,7 @@ export function machinerySeedControllerState(): void {
         writeScopeField('untaggedCount', 0);
         writeScopeField('unfiledCount', 0);
         writeScopeField('images', []);
-        writeScopeField('selected', []);
+        writeSelected([]);
         syncInspectorFromScope();
         writeScopeField('selectedMappings', {});
         writeScopeField('lockedImages', {});
@@ -479,7 +480,7 @@ export function machinerySeedControllerState(): void {
         writeScopeField('regenerateThumbnailQueue', []);
         
         writeScopeField('duplicateQueue', []);
-        writeScopeField('currentFocus', "sidebar");
+        writeCurrentFocus("sidebar");
         writeScopeField('showSubfolderContent', false);
         writeScopeField('showOriginalImageWhenLarge', localStorage.getItem("eagle.list.show.originalImageWhenLarge") !== 'false')
         syncPanelFromScope();
@@ -507,7 +508,7 @@ export function machinerySeedControllerState(): void {
         writeScopeField('listMetaType', localStorage.getItem("eagle.list.meta.type") || "RESOLUTION");
         syncPanelFromScope();
         writeScopeField('sortIncrease', true);
-        writeScopeField('layout', "");
+        writeLayout("");
         writeScopeField('layoutOptions', localStorage["eagle.list.layout.options"] || "Fit");
         syncPanelFromScope();
         writeScopeField('paletteQueuePaused', false);

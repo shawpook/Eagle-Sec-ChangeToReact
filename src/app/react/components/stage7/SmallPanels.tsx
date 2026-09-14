@@ -25,8 +25,8 @@ import { q, qa, isVisible, widthOf, heightOf, addClass, removeClass } from '../.
 import { machineryChangeMetaItems, machineryRebindRefresh } from '../../core/itemDomain';
 import { useMiscRawState } from '../../store/miscRawState';
 import { usePreferencesState } from '../../store/preferencesState';
-import { useBodyState } from '../../store/bodyState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useBodyState, writeLayout } from '../../store/bodyState';
+
 /**
  * 阶段7c-1：小弹窗族接管。
  *
@@ -154,7 +154,7 @@ export function LayoutPanel() {
 
   const onLayoutChange = (layout: string) => {
     runInBodyScope(() => {
-      writeScopeField('layout', layout);
+      writeLayout(layout);
       switch (layout) {
         case 'GridLayout':
           switchGridLayout();

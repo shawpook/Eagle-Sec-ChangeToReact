@@ -48,11 +48,12 @@ import { useItemState } from '../store/itemState';
 import { useListState } from '../store/listState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useSelectionState } from '../store/selectionState';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useFolderState } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
 import { getIpcBus } from './channelBridge';
+import { writeSelected, writeCurrent, writeLastSelectedIndex } from '../store/selectionState';
 let done = false;
 
 function domainTimeout(fn: any, ms?: number): any {
@@ -138,12 +139,12 @@ export function takeoverSelectionViewDomain(): void {
     }
 
     if (useSelectionState.getState().selected.length === 1) {
-      writeScopeField('lastSelectedIndex', machineryCurrentIndex() - 1);
+      writeLastSelectedIndex(machineryCurrentIndex() - 1);
     }
 
     // 全选
     if (useSelectionState.getState().selected.length === useItemState.getState().allData.length) {
-      writeScopeField('lastSelectedIndex', useSelectionState.getState().selected.length - 1);
+      writeLastSelectedIndex(useSelectionState.getState().selected.length - 1);
       addClass(".box", "selected");
     }
     else {
@@ -495,9 +496,9 @@ export function machineryOpenInspectorFolderSelectPanel(event: any): void {
                   item.isDeleted = originDeleted[index];
                 }
               });
-              writeScopeField('selected', origin);
+              writeSelected(origin);
               syncInspectorFromScope();
-              writeScopeField('current', origin[0]);
+              writeCurrent(origin[0]);
               syncDetailFromScope();
               syncInspectorFromScope();
               calculateImageBindingChannel.emit();
@@ -672,10 +673,10 @@ export function machineryRemoveSelected(event: any): void {
               delete image.deletedTime;
               machineryUpdateFilterCounts(image, 1, now);
             });
-            writeScopeField('selected', origin);
+            writeSelected(origin);
             syncInspectorFromScope();
             if (useBodyState.getState().isDetailMode) {
-              writeScopeField('current', origin[0]);
+              writeCurrent(origin[0]);
               syncDetailFromScope();
               syncInspectorFromScope();
             }
@@ -709,23 +710,23 @@ export function machineryRemoveSelected(event: any): void {
           var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
 
           if (next) {
-            writeScopeField('selected', [next]);
+            writeSelected([next]);
             syncInspectorFromScope();
             if (useBodyState.getState().isDetailMode) {
-              writeScopeField('current', next);
+              writeCurrent(next);
               syncDetailFromScope();
               syncInspectorFromScope();
             }
           } else if (prev) {
-            writeScopeField('selected', [prev]);
+            writeSelected([prev]);
             syncInspectorFromScope();
             if (useBodyState.getState().isDetailMode) {
-              writeScopeField('current', prev);
+              writeCurrent(prev);
               syncDetailFromScope();
               syncInspectorFromScope();
             }
           } else {
-            writeScopeField('selected', []);
+            writeSelected([]);
             syncInspectorFromScope();
             if (useBodyState.getState().isDetailMode) {
               machineryLeaveDetailMode();
@@ -741,7 +742,7 @@ export function machineryRemoveSelected(event: any): void {
 
           glRemoveitemsChannel.emit(itemElements);
 
-          writeScopeField('lastSelectedIndex', machineryCurrentIndex() - 1);
+          writeLastSelectedIndex(machineryCurrentIndex() - 1);
           machineryAutoScroll();
 
           machineryCalculateImageBinding({ ignoreSort: true }, function () {
@@ -847,11 +848,11 @@ export function machinerySelectAll(event: any): void {
   else {
     var selected: any[] = [];
     Array.prototype.push.apply(selected, useItemState.getState().allData);
-    writeScopeField('selected', selected);
+    writeSelected(selected);
     syncInspectorFromScope();
     writeScopeField('selectedMappings', {});
     $timeout.cancel(cleanSelectedTimeout);
-    writeScopeField('currentFocus', "content");
+    writeCurrentFocus("content");
   }
 }
 
@@ -894,12 +895,12 @@ export function machinerySelectDown(event: any): void {
   });
   if (target) {
     var image = machineryGetItemByElement(target);
-    writeScopeField('selected', [image]);
+    writeSelected([image]);
     syncInspectorFromScope();
     writeScopeField('selectedFolderMappings', {});
     syncListFromScope();
     if (useBodyState.getState().isDetailMode) {
-      writeScopeField('current', useSelectionState.getState().selected[0]);
+      writeCurrent(useSelectionState.getState().selected[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
@@ -907,7 +908,7 @@ export function machinerySelectDown(event: any): void {
   }
   if (useBodyState.getState().isDetailMode) {
     machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
-    writeScopeField('current', useSelectionState.getState().selected[0]);
+    writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
     writeScopeField('isGifReady', false);
@@ -928,8 +929,8 @@ export function machinerySelectFolder(event: any, folder: any): void {
     writeScopeField('selectedMappings', {});
     useItemState.getState().selectedFolderMappings[folder.id] = true;
     syncListFromScope();
-    writeScopeField('currentFocus', "content");
-    writeScopeField('selected', []);
+    writeCurrentFocus("content");
+    writeSelected([]);
     syncInspectorFromScope();
     machineryUpdateSelection();
   }
@@ -960,16 +961,16 @@ export function machinerySelectNext(event?: any): void {
     detailZoom()?.cleanBitmapViewer();
   }
 
-  writeScopeField('selected', [useItemState.getState().allData[end]]);
+  writeSelected([useItemState.getState().allData[end]]);
   syncInspectorFromScope();
   writeScopeField('selectedFolderMappings', {});
   syncListFromScope();
-  writeScopeField('currentFocus', "content");
+  writeCurrentFocus("content");
 
   if (useBodyState.getState().isDetailMode) {
     $timeout.cancel(nextTimeout);
     machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
-    writeScopeField('current', useSelectionState.getState().selected[0]);
+    writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
     writeScopeField('isGifReady', false);
@@ -1021,31 +1022,31 @@ export function machinerySelectPrev(event?: any): void {
   }
 
   if (useItemState.getState().allData[start - 1]) {
-    writeScopeField('selected', []);
+    writeSelected([]);
     syncInspectorFromScope();
     useSelectionState.getState().selected.push(useItemState.getState().allData[start - 1]);
     syncInspectorFromScope();
     if (useBodyState.getState().isDetailMode) {
       machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
-      writeScopeField('current', useSelectionState.getState().selected[0]);
+      writeCurrent(useSelectionState.getState().selected[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
     machineryAutoScroll(start - 1);
   } else {
-    writeScopeField('selected', []);
+    writeSelected([]);
     syncInspectorFromScope();
     useSelectionState.getState().selected.push(useItemState.getState().allData[0]);
     syncInspectorFromScope();
     machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
-    writeScopeField('current', useSelectionState.getState().selected[0]);
+    writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
     machineryAutoScroll(0);
   }
   writeScopeField('selectedFolderMappings', {});
   syncListFromScope();
-  writeScopeField('currentFocus', "content");
+  writeCurrentFocus("content");
   if (useSelectionState.getState().current) {
     detailZoom()?.updateNavigator( useSelectionState.getState().current);
     if (!machineryLastZoom()) {
@@ -1102,12 +1103,12 @@ export function machinerySelectUp(event: any): void {
   });
   if (target) {
     var image = machineryGetItemByElement(target);
-    writeScopeField('selected', [image]);
+    writeSelected([image]);
     syncInspectorFromScope();
     writeScopeField('selectedFolderMappings', {});
     syncListFromScope();
     if (useBodyState.getState().isDetailMode) {
-      writeScopeField('current', useSelectionState.getState().selected[0]);
+      writeCurrent(useSelectionState.getState().selected[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
@@ -1115,7 +1116,7 @@ export function machinerySelectUp(event: any): void {
   }
   if (useBodyState.getState().isDetailMode) {
     machineryForceFitImageSize(useSelectionState.getState().selected[0], true);
-    writeScopeField('current', useSelectionState.getState().selected[0]);
+    writeCurrent(useSelectionState.getState().selected[0]);
     syncDetailFromScope();
     syncInspectorFromScope();
     writeScopeField('isGifReady', false);

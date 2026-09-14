@@ -40,7 +40,7 @@ import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeViewMode, writeIsLoading, writeIsDetailMode } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -69,12 +69,13 @@ import { getTimeout } from './machineryInfra';
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
-import { useFolderState } from '../store/folderState';
+import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor } from '../store/folderState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useSelectionState } from '../store/selectionState';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { useToastState } from '../store/toastState';
+import { writeSelected, writeCurrent } from '../store/selectionState';
 declare const ga4track: any;
 declare const IPCHelper: any;
 declare const ACCESS: any;
@@ -266,19 +267,19 @@ export function takeoverLibraryDomain(): void {
     (function () {
       writeScopeField('libraryPath', "");
       syncSidebarFromScope();
-      writeScopeField('isLoading', false);
+      writeIsLoading(false);
       useMiscRawState.getState().initMenu();
     })();
   });
 
   // ── app-status-library-dirs-loaded（22753 逐字）──
   ipc.on('app-status-library-dirs-loaded', function (_e: any, _count: any) {
-    writeScopeField('isLoading', true);
+    writeIsLoading(true);
   });
 
   // ── app-status-library-cache-loaded（22758 逐字）──
   ipc.on('app-status-library-cache-loaded', function (_e: any) {
-    writeScopeField('isLoading', true);
+    writeIsLoading(true);
   });
 
   // ── library.changed（23535 逐字；parent = window.parent，原码行为保留）──
@@ -426,8 +427,8 @@ export function takeoverLibraryDomain(): void {
     closeTagsPopupChannel.emit();
     writeScopeField('allData', []);
     syncListFromScope();
-    writeScopeField('isLoading', false);
-    writeScopeField('startCursor', 0);
+    writeIsLoading(false);
+    writeStartCursor(0);
     if (w.ScrollbarSaver) { w.ScrollbarSaver.positionMapping = {}; }
 
     clearInterval(w.heartbeatInterval);
@@ -550,7 +551,7 @@ export function takeoverLibraryDomain(): void {
     writeScopeField('lastItemStates', {});
     writeScopeField('isCropMode', false);
     syncDetailFromScope();
-    writeScopeField('startCursor', 0);
+    writeStartCursor(0);
     if (w.eagle && w.eagle.filter) {
       w.eagle.filter.filterExtensions = {};
       w.eagle.filter.filterCameras = [];
@@ -560,18 +561,18 @@ export function takeoverLibraryDomain(): void {
 
     writeScopeField('duplicateMappings', {});
     writeScopeField('images', []);
-    writeScopeField('selected', []);
+    writeSelected([]);
     syncInspectorFromScope();
-    writeScopeField('current', undefined);
+    writeCurrent(undefined);
     syncDetailFromScope();
     syncInspectorFromScope();
     writeScopeField('selectedMappings', {});
     writeScopeField('folderMappings', {});
-    writeScopeField('currentFolder', undefined);
+    writeCurrentFolder(undefined);
     syncPanelFromScope();
     syncFolderLock();
     syncListFromScope();
-    writeScopeField('currentSmartFolder', undefined);
+    writeCurrentSmartFolder(undefined);
     syncPanelFromScope();
     syncListFromScope();
     writeScopeField('smartFolderMappings', {});
@@ -579,7 +580,7 @@ export function takeoverLibraryDomain(): void {
     syncUploadFromScope();
     writeScopeField('finishQueue', []);
     syncUploadFromScope();
-    writeScopeField('isDetailMode', false);
+    writeIsDetailMode(false);
     writeScopeField('isInlineMode', false);
     writeScopeField('isGrayscaleMode', false);
     writeScopeField('usingGifPlayer', false);
@@ -758,7 +759,7 @@ export function takeoverLibraryDomain(): void {
     syncListFromScope();
 
     machineryCalculateImageBinding({}, function () {
-      writeScopeField('viewMode', localStorage.getItem(`eagle.viewMode.${useMiscRawState.getState().rootDir}`) || "all");
+      writeViewMode(localStorage.getItem(`eagle.viewMode.${useMiscRawState.getState().rootDir}`) || "all");
       writeScopeField('isItemBindCalculated', true);
       if (useBodyState.getState().viewMode == "all") {
         const lastFolderId = localStorage.getItem(`eagle.lastFolder.${useMiscRawState.getState().rootDir}`);
@@ -777,7 +778,7 @@ export function takeoverLibraryDomain(): void {
                 (lastItem && lastItem.folders && isInFolder(lastItem, lastFolder)) &&
                 !useItemState.getState().lockedImages[lastItem.id]
               ) {
-                writeScopeField('selected', [lastItem]);
+                writeSelected([lastItem]);
                 syncInspectorFromScope();
                 scrollToSelectedItem();
               }
@@ -792,7 +793,7 @@ export function takeoverLibraryDomain(): void {
               if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) &&
                 machineryExistInSmartFilter(lastSmartFolder, lastItem)
               ) {
-                writeScopeField('selected', [lastItem]);
+                writeSelected([lastItem]);
                 syncInspectorFromScope();
                 scrollToSelectedItem();
               }
@@ -804,7 +805,7 @@ export function takeoverLibraryDomain(): void {
             setTimeout(function () {
               const DAY_7 = 604800000;
               if ((lastItemTime && Date.now() - parseInt(lastItemTime) < DAY_7) && lastItem && !useItemState.getState().lockedImages[lastItem.id]) {
-                writeScopeField('selected', [lastItem]);
+                writeSelected([lastItem]);
                 syncInspectorFromScope();
                 scrollToSelectedItem();
               }
@@ -863,7 +864,7 @@ export function takeoverLibraryDomain(): void {
         }
       }
 
-      writeScopeField('isLoading', false);
+      writeIsLoading(false);
       writeScopeField('libraryLoadedProgress', 0);
       machineryUpdateSidebarList();
 
@@ -1260,12 +1261,12 @@ export function machineryImportLinks(): void {
 export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: any): void {
   resetFilter();
   writeScopeField('keyword', "");
-  writeScopeField('currentFocus', "sidebar");
-  writeScopeField('viewMode', undefined);
+  writeCurrentFocus("sidebar");
+  writeViewMode(undefined);
   writeScopeField('currentTag', undefined);
   syncToolbarFromScope();
-  writeScopeField('startCursor', 0);
-  writeScopeField('currentFolder', undefined);
+  writeStartCursor(0);
+  writeCurrentFolder(undefined);
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
@@ -1277,7 +1278,7 @@ export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: a
     useMiscRawState.getState().selectedSmartFolders.push(smartFolder);
     useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id] = smartFolder;
     if (needReload) {
-      writeScopeField('startCursor', 0);
+      writeStartCursor(0);
       useMiscRawState.getState().reload();
     }
     writeScopeField('currentId', 'smart-folder-' + smartFolder.id);
@@ -1288,7 +1289,7 @@ export function machineryMultipleOpenSmartFolder(smartFolder: any, needReload: a
       useMiscRawState.getState().selectedSmartFolders.splice(idx, 1);
       delete useMiscRawState.getState().selectedSmartFoldersMappings[smartFolder.id];
       if (needReload) {
-        writeScopeField('startCursor', 0);
+        writeStartCursor(0);
         useMiscRawState.getState().reload();
       }
     }
@@ -1463,8 +1464,8 @@ export function machineryRefreshRandom(): void {
 export function machineryRenameFolder(event: any, folder: any): void {
   const w = window as any;
   // if (folder.password && !folder.isUnLock) return;
-  writeScopeField('viewMode', undefined);
-  writeScopeField('currentFolder', folder);
+  writeViewMode(undefined);
+  writeCurrentFolder(folder);
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
@@ -1484,8 +1485,8 @@ export function machineryRenameFolder(event: any, folder: any): void {
 
 export function machineryRenameSmartFolder(event: any, smartFolder: any): void {
   const w = window as any;
-  writeScopeField('viewMode', undefined);
-  writeScopeField('currentSmartFolder', smartFolder);
+  writeViewMode(undefined);
+  writeCurrentSmartFolder(smartFolder);
   syncPanelFromScope();
   syncListFromScope();
   smartFolder.editable = true;
@@ -1937,12 +1938,12 @@ export function machineryMultipleOpenFolder(folder: any, needReload: any): void 
   const w = window as any;
   resetFilter();
   writeScopeField('keyword', "");
-  writeScopeField('currentFocus', "sidebar");
-  writeScopeField('viewMode', undefined);
+  writeCurrentFocus("sidebar");
+  writeViewMode(undefined);
   writeScopeField('currentTag', undefined);
   syncToolbarFromScope();
-  writeScopeField('startCursor', 0);
-  writeScopeField('currentSmartFolder', undefined);
+  writeStartCursor(0);
+  writeCurrentSmartFolder(undefined);
   syncPanelFromScope();
   syncListFromScope();
   writeScopeField('selectedSmartFolders', []);
@@ -1953,7 +1954,7 @@ export function machineryMultipleOpenFolder(folder: any, needReload: any): void 
     syncListFromScope();
     useMiscRawState.getState().selectedFoldersMappings[folder.id] = folder;
     if (needReload) {
-      writeScopeField('startCursor', 0);
+      writeStartCursor(0);
       useMiscRawState.getState().reload();
     }
     writeScopeField('currentId', 'folder-' + folder.id);
@@ -1965,7 +1966,7 @@ export function machineryMultipleOpenFolder(folder: any, needReload: any): void 
       syncListFromScope();
       delete useMiscRawState.getState().selectedFoldersMappings[folder.id];
       if (needReload) {
-        writeScopeField('startCursor', 0);
+        writeStartCursor(0);
         useMiscRawState.getState().reload();
       }
     }
@@ -2100,8 +2101,8 @@ export function machineryOpenRecent(ignoreHistory?: any): void {
   }
 
   w.ScrollbarSaver.saveScrollPosition();
-  writeScopeField('viewMode', 'recent');
-  writeScopeField('currentFocus', "sidebar");
+  writeViewMode('recent');
+  writeCurrentFocus("sidebar");
   machineryResetPage();
 
   $timeout.cancel(openRecentTimeout);
@@ -2139,9 +2140,9 @@ export function machineryOpenTrash(ignoreHistory?: any): void {
   }
   w.ScrollbarSaver.saveScrollPosition();
 
-  writeScopeField('viewMode', 'trash');
+  writeViewMode('trash');
   machineryResetPage();
-  writeScopeField('currentFocus', "sidebar");
+  writeCurrentFocus("sidebar");
 
   hide("#image-drop-area");
   $timeout.cancel(openTrashTimeout);
@@ -2180,8 +2181,8 @@ export function machineryOpenUnfiled(ignoreHistory?: any): void {
   }
 
   w.ScrollbarSaver.saveScrollPosition();
-  writeScopeField('viewMode', 'unfiled');
-  writeScopeField('currentFocus', "sidebar");
+  writeViewMode('unfiled');
+  writeCurrentFocus("sidebar");
   machineryResetPage();
 
   $timeout.cancel(openUnfiledTimeout);
@@ -2240,10 +2241,10 @@ export function machineryQuickOpenFolder(folder: any, t: any): void {
         if (target === image) {
           var startPage = parseInt(i / 60 as any);
           console.log(`目标在第 ${startPage} 页`);
-          writeScopeField('startCursor', startPage);
+          writeStartCursor(startPage);
           cssSet("#box-container", { visibility: "hidden" });
           useMiscRawState.getState().reload();
-          writeScopeField('selected', []);
+          writeSelected([]);
           syncInspectorFromScope();
           $timeout(function () {
             callExternal('select', undefined, target);
@@ -2372,10 +2373,10 @@ export function machineryRemoveFolderContents(params: any): void {
       delete image.deletedTime;
       machineryUpdateFilterCounts(image, 1, now);
     });
-    writeScopeField('selected', origin);
+    writeSelected(origin);
     syncInspectorFromScope();
     if (useBodyState.getState().isDetailMode) {
-      writeScopeField('current', origin[0]);
+      writeCurrent(origin[0]);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
@@ -2395,23 +2396,23 @@ export function machineryRemoveFolderContents(params: any): void {
   var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
   var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
   if (next) {
-    writeScopeField('selected', [next]);
+    writeSelected([next]);
     syncInspectorFromScope();
     if (useBodyState.getState().isDetailMode) {
-      writeScopeField('current', next);
+      writeCurrent(next);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
   } else if (prev) {
-    writeScopeField('selected', [prev]);
+    writeSelected([prev]);
     syncInspectorFromScope();
     if (useBodyState.getState().isDetailMode) {
-      writeScopeField('current', prev);
+      writeCurrent(prev);
       syncDetailFromScope();
       syncInspectorFromScope();
     }
   } else {
-    writeScopeField('selected', []);
+    writeSelected([]);
     syncInspectorFromScope();
     machineryLeaveDetailMode();
   }
@@ -2639,7 +2640,7 @@ export function machineryRemoveSmartFolderInner(smartFolder: any, { ignoreSelect
     if (children[idx]) {
       openSmartFolder(children[idx]);
     } else {
-      writeScopeField('currentSmartFolder', undefined);
+      writeCurrentSmartFolder(undefined);
       syncPanelFromScope();
       syncListFromScope();
       machineryOpenAll();
@@ -2653,7 +2654,7 @@ export function machineryRemoveSmartFolderInner(smartFolder: any, { ignoreSelect
       if (children[idx - 1]) {
         openSmartFolder(children[idx - 1]);
       } else {
-        writeScopeField('currentSmartFolder', undefined);
+        writeCurrentSmartFolder(undefined);
         syncPanelFromScope();
         syncListFromScope();
         machineryOpenAll();
@@ -3013,12 +3014,12 @@ export async function machineryUnlockFolderWithTouchID(event: any): Promise<void
     useFolderState.getState().currentFolder.isUnLock = true;
     syncFolderLock();
     syncListFromScope();
-    writeScopeField('isLoading', true);
+    writeIsLoading(true);
     machineryUpdateSidebarList();
     machineryCalculateImageBinding({ ignoreSort: true }, function () {
       useMiscRawState.getState().reload();
       machineryUpdateSelection();
-      writeScopeField('isLoading', false);
+      writeIsLoading(false);
       writeScopeField('unlockPassword', "");
     });
   } catch (err) {

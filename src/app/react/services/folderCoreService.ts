@@ -22,7 +22,7 @@ import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncDetailFromScope } from '../store/detailState';
 ;
 
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeViewMode, writeIsDetailMode } from '../store/bodyState';
 import { syncFolderLock } from '../store/lockState';
 import { syncPanelFromScope } from '../store/panelState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -51,12 +51,13 @@ import { machineryResetPage } from './gridService';
 import { getTimeout } from '../core/machineryInfra';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
-import { useFolderState } from '../store/folderState';
+import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useBodyState } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { getIpcBus } from '../core/channelBridge';
+import { writeSelected, writeCurrent } from '../store/selectionState';
 // 原 bundle controller 闭包 var（folderCoreService 内 __lv_updateListHeight 唯一使用方）
 let updateListHeightTimeout: any = null;
 const i18n: any = (window as any).i18n;
@@ -423,7 +424,7 @@ export function addImagesToFolder(...args: any[]) {
                     image.tags = originTags[index];
                 });
                 writeScopeField('images', origin);
-                writeScopeField('current', origin[0]);
+                writeCurrent(origin[0]);
                 syncDetailFromScope();
                 syncInspectorFromScope();
                 machineryCalculateImageBinding({ ignoreSort: true }, function () {
@@ -785,18 +786,18 @@ export function openFolder(...args: any[]) {
 
             ScrollbarSaver.saveScrollPosition();
 
-            writeScopeField('currentSmartFolder', undefined);
+            writeCurrentSmartFolder(undefined);
             syncPanelFromScope();
             syncListFromScope();
-            writeScopeField('currentFocus', focus || "sidebar");
+            writeCurrentFocus(focus || "sidebar");
             machineryResetPage();
-            writeScopeField('viewMode', undefined);
+            writeViewMode(undefined);
             writeScopeField('currentId', currentId || "folder-" + folder.id);
             syncSidebarFromScope();
             writeScopeField('currentFolderPath', getFolderFullPath(folder));
             syncToolbarFromScope();
             if (useFolderState.getState().currentFolder != folder) {
-                writeScopeField('currentFolder', folder);
+                writeCurrentFolder(folder);
                 syncPanelFromScope();
                 syncFolderLock();
                 syncListFromScope();
@@ -880,7 +881,7 @@ export function openSmartFolder(...args: any[]) {
             if (useFolderState.getState().currentFolder) { useFolderState.getState().currentFolder.editable = false; }
             if (useFolderState.getState().currentSmartFolder) { useFolderState.getState().currentSmartFolder.editable = false; }
 
-            writeScopeField('currentFolder', undefined);
+            writeCurrentFolder(undefined);
             syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
@@ -888,14 +889,14 @@ export function openSmartFolder(...args: any[]) {
             writeScopeField('currentFolderChildren', undefined);
             writeScopeField('selectedSmartFoldersMappings', {});
             writeScopeField('selectedSmartFolders', []);
-            writeScopeField('currentFocus', "sidebar");
+            writeCurrentFocus("sidebar");
             machineryResetPage();
-            writeScopeField('viewMode', undefined);
+            writeViewMode(undefined);
             writeScopeField('currentId', currentId || "smart-folder-" + smartFolder.id);
             syncSidebarFromScope();
 
             if (useFolderState.getState().currentSmartFolder != smartFolder) {
-                writeScopeField('currentSmartFolder', smartFolder);
+                writeCurrentSmartFolder(smartFolder);
                 syncPanelFromScope();
                 syncListFromScope();
             }
@@ -1032,8 +1033,8 @@ export function machineryOpenAll(ignoreHistory?: any, callback?: any): void {
 
   w.ScrollbarSaver.saveScrollPosition();
 
-  writeScopeField('viewMode', 'all');
-  writeScopeField('currentFocus', "sidebar");
+  writeViewMode('all');
+  writeCurrentFocus("sidebar");
   machineryResetPage();
 
   $timeout.cancel(openAllTimeout);
@@ -1068,12 +1069,12 @@ export function machineryOpenAll(ignoreHistory?: any, callback?: any): void {
 export function machineryOpenCommunity(ignoreHistory?: any): void {
   const w = window as any;
   w.ScrollbarSaver.saveScrollPosition();
-  writeScopeField('viewMode', 'community');
-  writeScopeField('currentFocus', "sidebar");
+  writeViewMode('community');
+  writeCurrentFocus("sidebar");
   machineryResetPage();
   writeScopeField('images', []);
-  writeScopeField('isDetailMode', false);
-  writeScopeField('selected', []);
+  writeIsDetailMode(false);
+  writeSelected([]);
   syncInspectorFromScope();
   if (!ignoreHistory) {
     w.UrlStateService.setState({ view: 'community', folder: null, smartfolder: null, tag: null, color: null });
@@ -1102,9 +1103,9 @@ export function machineryOpenRandom(ignoreHistory?: any, callback?: any): void {
     return;
   }
 
-  writeScopeField('viewMode', 'random');
+  writeViewMode('random');
   machineryResetPage();
-  writeScopeField('currentFocus', "sidebar");
+  writeCurrentFocus("sidebar");
 
   hide("#image-drop-area");
   $timeout.cancel(openRandomTimeout);

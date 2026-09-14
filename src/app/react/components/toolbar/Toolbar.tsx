@@ -5,7 +5,7 @@ import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
-import { syncBodyFromScope } from '../../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
@@ -156,7 +156,7 @@ function SearchBox({ snapshot, randomMode }: { snapshot: ToolbarSnapshot; random
   // $("#search").on("focus") → $rootScope.currentFocus = "content"（bundle:21830，原直绑元素已被 React 接管）
   const onFocus = (e: any) => {
     runInBodyScope(() => {
-      writeScopeField('currentFocus', 'content');
+      writeCurrentFocus('content');
       searchFocus(e);
     });
   };

@@ -45,10 +45,11 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useSelectionState } from '../store/selectionState';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
 import { useItemState } from '../store/itemState';
 import { getIpcBus } from '../core/channelBridge';
+import { writeSelected } from '../store/selectionState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const EagleConfig: any = (window as any).EagleConfig || {};
 const VIDEO_TYPES: any = {}; (EagleConfig.VIDEO_FORMATS || []).forEach(function (ext: string) { VIDEO_TYPES[ext] = true; });
@@ -563,7 +564,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                                 message: message,
                                 duration: 1500
                             });
-                            writeScopeField('selected', [getNext()]);
+                            writeSelected([getNext()]);
                             syncInspectorFromScope();
                             machineryRebindRefresh();
                             // scrollToSelectedItem();
@@ -1187,7 +1188,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
             ],
             showSearch: true,
         });
-        writeScopeField('currentFocus', "content");  };
+        writeCurrentFocus("content");  };
   return run(...args);
 }
 

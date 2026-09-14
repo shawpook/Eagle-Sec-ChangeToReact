@@ -1,10 +1,10 @@
 import { glRemoveitemsChannel, glResetChannel, glScrolltotopChannel } from '../../global/bus';
 import { useBodyState } from '../../store/bodyState';
-import { useFolderState } from '../../store/folderState';
+import { useFolderState, writeStartCursor } from '../../store/folderState';
 import { useItemState } from '../../store/itemState';
 import { useListState } from '../../store/listState';
 import { useMiscRawState } from '../../store/miscRawState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
 import {
   captureGridPosition, restoreGridPosition,
   type ContinuousLayout, type GridScrollPosition,
@@ -169,7 +169,7 @@ function applyReset(items: any[], cursor = 0, fraction?: number): void {
     }
   }
   // Retain the field for older callers. There is no longer a current page to advance.
-  writeScopeField('startCursor', 0);
+  writeStartCursor(0);
   notify();
 }
 

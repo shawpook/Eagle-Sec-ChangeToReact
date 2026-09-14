@@ -61,14 +61,15 @@ import { getTimeout, machineryCalls } from './machineryInfra';
 import { getWindowScope } from './scopeFace';
 import { getIpcBus } from './channelBridge';
 import { useListState } from '../store/listState';
-import { useFolderState } from '../store/folderState';
+import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
+import { writeSelected, writeLastSelectedIndex } from '../store/selectionState';
 declare const RecentFileManager: any;
 let __cc_openFilesWithDefault: any = null;
 let __cc_openInFinder: any = null;
@@ -342,7 +343,7 @@ export function takeoverItemDomain(): void {
       // 判斷是否需要更新畫面，如果 groupkey 屬於前 3 頁面，就更新
       const key = w.ig.getGroupKeys(false)[0] - 1000000;
       const needUpdateView = key <= 1;
-      writeScopeField('startCursor', 0);
+      writeStartCursor(0);
       machineryPrependImages([newImage], needUpdateView);
       machineryCalculateImageBinding({ ignoreSort: false }, function () {
         ensureMuteRebind() && ensureMuteRebind()();
@@ -1318,11 +1319,11 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
         if (useBodyState.getState().viewMode !== 'random') {
           var MAX_AUTO_SELECT = 1000;
           if (newItems && newItems.length <= MAX_AUTO_SELECT) {
-            writeScopeField('selected', newItems);
+            writeSelected(newItems);
             syncInspectorFromScope();
             var targetSelectedIndex = useItemState.getState().allData.indexOf(useSelectionState.getState().selected[0]);
-            writeScopeField('lastSelectedIndex', targetSelectedIndex);
-            writeScopeField('currentFocus', "content");
+            writeLastSelectedIndex(targetSelectedIndex);
+            writeCurrentFocus("content");
             if (newItems.length === 1) {
               domainTimeout(function () {
                 scrollToSelectedItem();
@@ -1343,7 +1344,7 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
             }
             const needReload = isInFolder(lastImage, useFolderState.getState().currentFolder);
             if (needReload) {
-              writeScopeField('startCursor', 0);
+              writeStartCursor(0);
               useMiscRawState.getState().reload(true);
               autoSelectUploadedItems();
             }
@@ -1359,7 +1360,7 @@ function handleFinishQueueChanged(newValue: any, oldValue: any): void {
         }
         // 如果来自全部图片、未归类、未分类，一律进行刷新
         else if (useBodyState.getState().viewMode == "all" || useBodyState.getState().viewMode == "unfiled" || useBodyState.getState().viewMode == "untagged") {
-          writeScopeField('startCursor', 0);
+          writeStartCursor(0);
           useMiscRawState.getState().reload(true);
           autoSelectUploadedItems();
         }
@@ -1417,7 +1418,7 @@ export function machineryOpenDuplicate(options: any = {}): void {
     openDuplicateScanPanelChannel.emit({
       items: [...useSelectionState.getState().selected],
       onMergedCallback: () => {
-        writeScopeField('selected', useSelectionState.getState().selected.filter((item: any) => {
+        writeSelected(useSelectionState.getState().selected.filter((item: any) => {
           return !item.isDeleted;
         }));
         syncInspectorFromScope();
@@ -2405,7 +2406,7 @@ export async function machineryRebindRefresh(muteMode?: any, contentFilterCache?
   console.timeEnd("rebindRefresh");
 
   if (!muteMode) {
-    if (w.eagle.filter.filterBadge > 0) writeScopeField('startCursor', 0);
+    if (w.eagle.filter.filterBadge > 0) writeStartCursor(0);
     w.resetNgGridLayoutData(useItemState.getState().allData, startCursor || useFolderState.getState().startCursor);
   }
   machineryUpdateItemsView(useSelectionState.getState().selected);
@@ -2877,7 +2878,7 @@ export function machineryReload(): any {
       }
 
       if (useSelectionState.getState().selected.length > 0) {
-        writeScopeField('selected', []);
+        writeSelected([]);
         syncInspectorFromScope();
       }
     }

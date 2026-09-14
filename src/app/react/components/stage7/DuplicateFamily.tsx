@@ -23,6 +23,7 @@ import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
 import { useMiscRawState } from '../../store/miscRawState';
+import { writeSelected } from '../../store/selectionState';
 /**
  * 阶段7d-4：duplicateScanPanel + mergeEditor + duplicateModal 接管。
  *
@@ -1468,7 +1469,7 @@ export function DuplicateModal() {
   const revealInUnfiled = (item: any) => {
     machineryOpenUnfiled(undefined);
     setTimeout(() => {
-      writeScopeField('selected', [item]);
+      writeSelected([item]);
       syncInspectorFromScope();
       scrollToSelectedItem();
     }, 500);
@@ -1643,7 +1644,7 @@ export function DuplicateModal() {
       } else {
         if (useItemState.getState().selectedMappings[image.id]) {
           writeScopeField('selectedMappings', {});
-          writeScopeField('selected', []);
+          writeSelected([]);
           syncInspectorFromScope();
           updateSelection();
         }

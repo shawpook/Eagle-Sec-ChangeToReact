@@ -49,11 +49,12 @@ import { machineryAutoScroll, machineryResetPage } from './gridService';
 import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
-import { useFolderState } from '../store/folderState';
-import { useBodyState } from '../store/bodyState';
+import { useFolderState, writeCurrentFolder } from '../store/folderState';
+import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { getIpcBus } from '../core/channelBridge';
+import { writeSelected, writeCurrent } from '../store/selectionState';
 // b1-9bl-B：bq 迁移漏带的闭包 link 变量（原 controllerFns closure 层共享 var）。
 // initLinkVars 本体留在 controllerFns（闭包私有）；服务侧本地重建 TagManager 解析
 // （原 initLinkVars 278 行同式：getBodyScope().TagManager 晚挂载兜底），使各 fn 首行
@@ -234,21 +235,21 @@ export function addToLastUsedFolder(...args: any[]) {
                 var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
                 var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
                 if (next) {
-                    writeScopeField('selected', [next]);
+                    writeSelected([next]);
                     syncInspectorFromScope();
-                    writeScopeField('current', next);
+                    writeCurrent(next);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
                 else if (prev) {
-                    writeScopeField('selected', [prev]);
+                    writeSelected([prev]);
                     syncInspectorFromScope();
-                    writeScopeField('current', prev);
+                    writeCurrent(prev);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
                 else {
-                    writeScopeField('selected', []);
+                    writeSelected([]);
                     syncInspectorFromScope();
                     machineryLeaveDetailMode();
                 }
@@ -269,7 +270,7 @@ export function cleanSelected(...args: any[]) {
             // event && event.stopPropagation();
             if (event.metaKey || event.shiftKey || event.ctrlKey) return;
             __lv_cleanSelectedTimeout = $timeout(function() {
-                writeScopeField('selected', []);
+                writeSelected([]);
                 syncInspectorFromScope();
                 writeScopeField('selectedFolderMappings', {});
                 syncListFromScope();
@@ -353,23 +354,23 @@ export function removeFromFolder(...args: any[]) {
             var next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
             var prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
             if (next) {
-                writeScopeField('selected', [next]);
+                writeSelected([next]);
                 syncInspectorFromScope();
                 if (useBodyState.getState().isDetailMode) {
-                    writeScopeField('current', next);
+                    writeCurrent(next);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
             } else if (prev) {
-                writeScopeField('selected', [prev]);
+                writeSelected([prev]);
                 syncInspectorFromScope();
                 if (useBodyState.getState().isDetailMode) {
-                    writeScopeField('current', prev);
+                    writeCurrent(prev);
                     syncDetailFromScope();
                     syncInspectorFromScope();
                 }
             } else {
-                writeScopeField('selected', []);
+                writeSelected([]);
                 syncInspectorFromScope();
                 machineryLeaveDetailMode();
             }
@@ -437,7 +438,7 @@ export function getSelectedItemElements(...args: any[]) {
 export function scrollToSelectedItem(...args: any[]) {
     const target = useSelectionState.getState().selected[0];
     if (!target?.id) return;
-    writeScopeField('currentFocus', 'content');
+    writeCurrentFocus('content');
     scrollGridToItem(target.id, 'nearest');
 }
 
@@ -481,8 +482,8 @@ export function openTag(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function(tag, ignoreHistory) {
             machineryResetPage();
-            writeScopeField('currentFocus', "content");
-            writeScopeField('currentFolder', undefined);
+            writeCurrentFocus("content");
+            writeCurrentFolder(undefined);
             syncPanelFromScope();
             syncFolderLock();
             syncListFromScope();
@@ -732,7 +733,7 @@ export function machineryRemovePermanently(): void {
 
   var itemElements = machineryGetSelectedItemElements();
   glRemoveitemsChannel.emit(itemElements);
-  writeScopeField('selected', []);
+  writeSelected([]);
   syncInspectorFromScope();
   machineryCalculateImageBinding({ ignoreSort: true }, function () {
     machineryRebindRefresh(true);

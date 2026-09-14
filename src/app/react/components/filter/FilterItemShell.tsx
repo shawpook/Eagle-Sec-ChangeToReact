@@ -3,7 +3,8 @@ import { runInBodyScope } from '../../core/appCore';
 
 
 import { machineryUpdateContainerHieght } from '../../services/gridService';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
+import { writeCurrentFocus } from '../../store/bodyState';
 /**
  * filterItem 基础指令移植（bundle:67305-67559，attribute 指令）。
  *
@@ -82,7 +83,7 @@ export function FilterItemShell({ id, active, hideFilter, onOpen, onClear, class
       runInBodyScope(() => machineryUpdateContainerHieght());
     }, 50);
     runInBodyScope(() => {
-      writeScopeField('currentFocus', 'content');
+      writeCurrentFocus('content');
     });
   };
 

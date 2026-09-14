@@ -31,7 +31,7 @@ import { machineryCheckOperationSafety2 } from '../services/viewOpsService';
 import { machineryCalculateImageBinding, machineryUpdateItemsView } from './itemDomain';
 import { getFilter as machineryGetFilter, machineryFilterContent } from './filterDomain';
 import { machineryUpdateListHeight } from '../services/gridService';
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeViewMode, writeIsDetailMode } from '../store/bodyState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncListFromScope } from '../store/listState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -56,6 +56,7 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useItemState } from '../store/itemState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
+import { writeSelected } from '../store/selectionState';
 const $filter: any = machineryGetFilter;
 const getTimeout: any = machineryGetTimeout;
 
@@ -1355,7 +1356,7 @@ export function machineryBuildTagManager(): any {
         };
 
         TagManager.filterWithTags = function (tags: any, ignoreHistory: any) {
-            writeScopeField('viewMode', '');
+            writeViewMode('');
             machineryOpenAll(false, function () {
                 getTimeout()(function () {
                     w.eagle.filter.isOpen = true;
@@ -1401,7 +1402,7 @@ export function machineryBuildTagManager(): any {
 
             if (event.button !== 0 && useMiscRawState.getState().selectedTags[tag.name]) return;
 
-            writeScopeField('currentFocus', 'content');
+            writeCurrentFocus('content');
 
             // Shift 多選
             if (event.shiftKey) {
@@ -1479,7 +1480,7 @@ export function machineryBuildTagManager(): any {
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', "ALL");
             syncTagManagerFromScope();
-            writeScopeField('currentFocus', 'tags');
+            writeCurrentFocus('tags');
             writeScopeField('currentTagGroup', undefined);
             syncTagManagerFromScope();
             writeScopeField('selectedTags', {});
@@ -1495,7 +1496,7 @@ export function machineryBuildTagManager(): any {
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', "UNFILED");
             syncTagManagerFromScope();
-            writeScopeField('currentFocus', 'tags');
+            writeCurrentFocus('tags');
             writeScopeField('currentTagGroup', undefined);
             syncTagManagerFromScope();
             writeScopeField('selectedTags', {});
@@ -1511,7 +1512,7 @@ export function machineryBuildTagManager(): any {
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', "STARRED");
             syncTagManagerFromScope();
-            writeScopeField('currentFocus', 'tags');
+            writeCurrentFocus('tags');
             writeScopeField('currentTagGroup', undefined);
             syncTagManagerFromScope();
             writeScopeField('selectedTags', {});
@@ -1526,7 +1527,7 @@ export function machineryBuildTagManager(): any {
             syncTagManagerFromScope();
             writeScopeField('tagViewModeName', `GROUP-${group.id}`);
             syncTagManagerFromScope();
-            writeScopeField('currentFocus', 'tags');
+            writeCurrentFocus('tags');
             writeScopeField('currentTagGroup', group);
             syncTagManagerFromScope();
             TagManager.renderTagsResult();
@@ -2887,12 +2888,12 @@ export function machineryOpenAllTags(ignoreHistory?: any): void {
 
   w.ScrollbarSaver.saveScrollPosition();
 
-  writeScopeField('viewMode', 'alltags');
-  writeScopeField('currentFocus', "sidebar");
+  writeViewMode('alltags');
+  writeCurrentFocus("sidebar");
   machineryResetPage();
   writeScopeField('images', []);
-  writeScopeField('isDetailMode', false);
-  writeScopeField('selected', []);
+  writeIsDetailMode(false);
+  writeSelected([]);
   syncInspectorFromScope();
   if (!ignoreHistory) {
     w.UrlStateService.setState({ view: 'alltags', folder: null, smartfolder: null, tag: null, color: null });
@@ -2962,7 +2963,7 @@ export function machineryOpenStarredGroup(): void {
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', "STARRED");
   syncTagManagerFromScope();
-  writeScopeField('currentFocus', 'tags');
+  writeCurrentFocus('tags');
   writeScopeField('currentTagGroup', undefined);
   syncTagManagerFromScope();
   writeScopeField('selectedTags', {});
@@ -2978,7 +2979,7 @@ export function machineryOpenTagAllGroup(): void {
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', "ALL");
   syncTagManagerFromScope();
-  writeScopeField('currentFocus', 'tags');
+  writeCurrentFocus('tags');
   writeScopeField('currentTagGroup', undefined);
   syncTagManagerFromScope();
   writeScopeField('selectedTags', {});
@@ -2994,7 +2995,7 @@ export function machineryOpenTagGroup(group: any): void {
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', `GROUP-${group.id}`);
   syncTagManagerFromScope();
-  writeScopeField('currentFocus', 'tags');
+  writeCurrentFocus('tags');
   writeScopeField('currentTagGroup', group);
   syncTagManagerFromScope();
   useMiscRawState.getState().TagManager.renderTagsResult();
@@ -3012,7 +3013,7 @@ export function machineryOpenUnfiledGroup(): void {
   syncTagManagerFromScope();
   writeScopeField('tagViewModeName', "UNFILED");
   syncTagManagerFromScope();
-  writeScopeField('currentFocus', 'tags');
+  writeCurrentFocus('tags');
   writeScopeField('currentTagGroup', undefined);
   syncTagManagerFromScope();
   writeScopeField('selectedTags', {});
@@ -3033,8 +3034,8 @@ export function machineryOpenUntagged(ignoreHistory?: any): void {
   }
 
   w.ScrollbarSaver.saveScrollPosition();
-  writeScopeField('viewMode', 'untagged');
-  writeScopeField('currentFocus', "sidebar");
+  writeViewMode('untagged');
+  writeCurrentFocus("sidebar");
   machineryResetPage();
 
   $timeout.cancel(openUntaggedTimeout);

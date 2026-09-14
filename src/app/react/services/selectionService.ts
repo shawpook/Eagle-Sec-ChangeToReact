@@ -9,13 +9,14 @@ import { machineryGetSelection, machineryUpdateSelection } from '../core/selecti
 import { machineryEnterDetailMode, machineryOpenPluginPanel } from '../core/miscDomain';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState } from '../store/miscRawState';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useItemState } from '../store/itemState';
 import { getIpcBus } from '../core/channelBridge';
 
 import { emojiRegex, getRemainingFilenameLength, getSanitize } from '../utils/normalize';
+import { writeSelected, writeLastSelectedIndex } from '../store/selectionState';
 
 // R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
 // 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
@@ -165,7 +166,7 @@ export function onBoxMouseup(...args: any[]) {
                 // 如果從 sidebar focus 狀態點擊列表已選擇圖片，不該造成已選擇圖片選取狀態消失
                 if (useBodyState.getState().currentFocus !== "content" && useSelectionState.getState().selected.length > 1) {
                     if (image && useItemState.getState().selectedMappings[image.id]) {
-                        writeScopeField('currentFocus', "content");
+                        writeCurrentFocus("content");
                         return;
                     }
                 }
@@ -176,9 +177,9 @@ export function onBoxMouseup(...args: any[]) {
                         // 符合系统操作逻辑
                         else {
                             var targetSelectedIndex = useItemState.getState().allData.indexOf(image);
-                            writeScopeField('selected', [image]);
+                            writeSelected([image]);
                             syncInspectorFromScope();
-                            writeScopeField('lastSelectedIndex', targetSelectedIndex);
+                            writeLastSelectedIndex(targetSelectedIndex);
                         }
                     }
                     return;
@@ -269,7 +270,7 @@ export function select(...args: any[]) {
             	}
             }
 
-            writeScopeField('currentFocus', "content");
+            writeCurrentFocus("content");
             writeScopeField('selectedFolderMappings', {});
             syncListFromScope();
 
@@ -317,12 +318,12 @@ export function select(...args: any[]) {
             var targetSelectedIndex = useItemState.getState().allData.indexOf(__lv_image);
 
             if (event && !event.metaKey && !event.shiftKey && !event.ctrlKey) {
-                writeScopeField('selected', []);
+                writeSelected([]);
                 syncInspectorFromScope();
-                writeScopeField('lastSelectedIndex', targetSelectedIndex);
+                writeLastSelectedIndex(targetSelectedIndex);
             }
             if (event && (event.metaKey || event.ctrlKey) ) {
-                writeScopeField('lastSelectedIndex', targetSelectedIndex);
+                writeLastSelectedIndex(targetSelectedIndex);
             }
             if (event && event.shiftKey) {
                 useSelectionState.getState().selected.push(__lv_image);
@@ -381,7 +382,7 @@ export function select(...args: any[]) {
                     useItemState.getState().selectedMappings[__lv_image.id] = true;
                 }
             }
-            writeScopeField('selected', [...new Set(useSelectionState.getState().selected)]);
+            writeSelected([...new Set(useSelectionState.getState().selected)]);
             syncInspectorFromScope();
         } as (...__args: any[]) => any).apply(null, args);
   }

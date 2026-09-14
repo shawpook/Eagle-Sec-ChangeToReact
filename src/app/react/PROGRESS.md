@@ -8423,3 +8423,28 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     `miscMenuService`(34)、`folderMenuService`(30)，合计约 1671 条——以 TS7006/TS2304/TS2339/
     TS2683（`this` 隐式 any）为主，需按文件逐个补 import / ambient 声明 / 形参与 this 标注。
     这部分与 R4/R5 的域迁移同域，随各域迁移顺带撤销更经济（避免同一文件反复处理）。
+
+- **R4（主应用状态收敛，切片①：列表/视图/文件夹三域去字符串键）**：把
+  `writeScopeField('<字段>', v)` 改为对应 store 导出的**具名写点**，字符串键的拼写错误
+  从「静默落到 scope 面 plain 槽」变成编译错误。
+  - **改造方式（语义零变化）**：每个 store 的注册循环抽出**单一 writer 工厂**，注册表与
+    具名写点**共用同一 writer**（同值守卫只有一处实现，不重建第二套）；具名写点即
+    `writers.<field>(v)`。
+  - **迁移规模**：`selection`（selected/current/lastSelectedIndex，85 处）、
+    `body`（currentFocus/viewMode/isLoading/layout/isDetailMode，84 处）、
+    `folder`（currentFolder/currentSmartFolder/startCursor，36 处）——共 **11 个字段 / 205 处
+    / 44 个文件**。codemod 只替换「调用头」（函数名 + 第一个实参），闭合括号原样保留，
+    故多行/嵌套实参安全；用尽 `writeScopeField` 的文件同步清理其 import 具名项。
+  - **新增守卫 `tests/scope-field-convergence.mjs`**（已并入套件，70 → **71 项**）：断言
+    已收敛域**不得回退**为字符串键调用，并校验具名写点确实从声明的 store 模块导出；
+    同时输出**待收敛字段台账**（按调用量降序）作为下一批 R4 切片的待办清单。当前台账：
+    `keyword(17) currentTagGroup(16) selectedTags(12) raw(11) tagViewMode(10) …`，
+    共 245 个字段。
+  - **验证**：`npm run typecheck` TYPECHECK_OK（0 诊断）；`npm run build` exit 0；
+    `tests/scope-field-convergence.mjs` OK；针对性闭环
+    `d3-selection`（选区）、`d3-focus`（键盘导航 → currentFocus/startCursor）、
+    `library-switch-ui`（切库 → currentFolder）、`react-stage11b0-smoke`（网格/初始化）
+    全绿；`shim-module-boundaries` OK。
+  - **未做（下一批）**：剩余 245 个字段按域推进（`miscRawState` 的 tag 族、
+    `itemState` 的 raw/shuffle/trash、`listState` 的 keyword 等）；`writeScopeField` 的
+    **通用对象回退分支**要等未注册写入归零后才能删除。

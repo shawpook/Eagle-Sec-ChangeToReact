@@ -19,8 +19,8 @@ import { machineryRebindRefresh } from '../../core/itemDomain';
 import { machineryContentFilter } from '../../core/filterDomain';
 import { useItemState } from '../../store/itemState';
 import { useBodyState } from '../../store/bodyState';
-import { useFolderState } from '../../store/folderState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+import { useFolderState, writeCurrentSmartFolder } from '../../store/folderState';
+
 /**
  * 阶段7d-1c-2：folderSelectPanel + foldersInput + NewSmartFolderController 接管。
  *
@@ -913,7 +913,7 @@ export function NewSmartFolderModal() {
 
   const recalculateResult = () => {
 
-    writeScopeField('currentSmartFolder', {
+    writeCurrentSmartFolder({
       name: '',
       conditions: conditionsRef.current,
     });
@@ -1037,9 +1037,9 @@ export function NewSmartFolderModal() {
     const input = document.getElementById('smart-folder-name-input');
     if (input) input.setAttribute('tabindex', '-1');
     if (isEditModeRef.current) {
-      writeScopeField('currentSmartFolder', smartFolderRef.current || undefined);
+      writeCurrentSmartFolder(smartFolderRef.current || undefined);
     } else {
-      writeScopeField('currentSmartFolder', originSmartFolderRef.current || undefined);
+      writeCurrentSmartFolder(originSmartFolderRef.current || undefined);
     }
     isEditModeRef.current = undefined;
     setIsOpen(false);

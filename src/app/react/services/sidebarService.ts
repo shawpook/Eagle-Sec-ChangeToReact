@@ -16,7 +16,7 @@ import { syncListFromScope } from '../store/listState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 ;
 import { contextMenuOpenChannel, rebindRefreshcontainsizeChannel } from '../global/bus';
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus } from '../store/bodyState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { openFolder, openSmartFolder } from './folderCoreService';
 import { q, hasClass, addClass, removeClass } from '../utils/domQuery';
@@ -440,7 +440,7 @@ export function sidebarFocus(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function($event) {
             $event && $event.stopPropagation();
-            writeScopeField('currentFocus', "sidebar");
+            writeCurrentFocus("sidebar");
         } as (...__args: any[]) => any).apply(null, args);
   }
 

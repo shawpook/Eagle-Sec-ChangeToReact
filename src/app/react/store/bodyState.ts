@@ -110,17 +110,41 @@ const MIGRATED_SCOPE_FIELDS: ReadonlyArray<keyof BodyState> = [
   'isHideSidebar', 'isSlideshowMode', 'vibrancyEnabled',
   'isCleaningTrash', 'removeProgress',
 ];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED_SCOPE_FIELDS) {
-  migrateScopeFieldToStore(
-    fieldName,
-    () => useBodyState.getState()[fieldName],
-    // b1-9az：同值守卫——scope 侧 watcher 在每次 $evalAsync flush 都会回写同值字段
-    // （libraryDomain 注册信息链，7c welcome-open 实锚），无守卫则每次 flush 都 setState
-    // → BodyBindings（整写 body.className）重渲染抹掉外部命令式 class（is-welcome-page）
-    (value: any) => {
-      if (useBodyState.getState()[fieldName] !== value) useBodyState.setState({ [fieldName]: value } as Partial<BodyState>);
-    },
-  );
+  const key = fieldName as string;
+  // b1-9az：同值守卫——scope 侧 watcher 在每次 $evalAsync flush 都会回写同值字段
+  // （libraryDomain 注册信息链，7c welcome-open 实锚），无守卫则每次 flush 都 setState
+  // → BodyBindings（整写 body.className）重渲染抹掉外部命令式 class（is-welcome-page）
+  writers[key] = (value: any) => {
+    if (useBodyState.getState()[fieldName] !== value) useBodyState.setState({ [fieldName]: value } as Partial<BodyState>);
+  };
+  migrateScopeFieldToStore(key, () => useBodyState.getState()[fieldName], writers[key]);
+}
+
+/**
+ * R4 视图/body 域写点（取代字符串键 `writeScopeField('<字段>', v)`）。
+ * 与注册表同一 writer（同值守卫一致），不再走通用对象回退。
+ */
+export function writeCurrentFocus(value: any): void {
+  writers.currentFocus(value);
+}
+
+export function writeViewMode(value: any): void {
+  writers.viewMode(value);
+}
+
+export function writeIsLoading(value: any): void {
+  writers.isLoading(value);
+}
+
+export function writeLayout(value: any): void {
+  writers.layout(value);
+}
+
+export function writeIsDetailMode(value: any): void {
+  writers.isDetailMode(value);
 }
 
 let bound = false;

@@ -28,7 +28,7 @@ import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeIsDetailMode } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -80,6 +80,7 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useBodyState } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { useItemState } from '../store/itemState';
+import { writeSelected, writeCurrent } from '../store/selectionState';
 
 // R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
 // 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
@@ -545,7 +546,7 @@ export function takeoverMiscDomain(): void {
       else {
         machineryOpenAll();
       }
-      writeScopeField('selected', []);
+      writeSelected([]);
       syncInspectorFromScope();
       domainTimeout(function () {
         select(undefined, item);
@@ -624,7 +625,7 @@ export function takeoverMiscDomain(): void {
       const folders = useMiscRawState.getState().lastestAddItem.folders;
       if (folders && folders.length > 0 && folders[0] && useItemState.getState().folderMappings[folders[0]]) {
         openFolder(useItemState.getState().folderMappings[folders[0]]);
-        writeScopeField('selected', []);
+        writeSelected([]);
         syncInspectorFromScope();
         domainTimeout(function () {
           select(undefined, image);
@@ -633,7 +634,7 @@ export function takeoverMiscDomain(): void {
       }
       else {
         machineryOpenAll();
-        writeScopeField('selected', []);
+        writeSelected([]);
         syncInspectorFromScope();
         domainTimeout(function () {
           select(undefined, image);
@@ -642,7 +643,7 @@ export function takeoverMiscDomain(): void {
       }
     }
     else {
-      writeScopeField('selected', []);
+      writeSelected([]);
       syncInspectorFromScope();
       machineryOpenAll();
     }
@@ -1044,7 +1045,7 @@ export function cleanLocalhostError(...args: any[]) {
 export function contentFocus(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function($event) {
-            writeScopeField('currentFocus', "content");
+            writeCurrentFocus("content");
         } as (...__args: any[]) => any).apply(null, args);
   }
 
@@ -1110,7 +1111,7 @@ export function leaveDetailMode(...args: any[]) {
                 
                 machineryRememberScrollTops(useSelectionState.getState().current);
 
-                writeScopeField('isDetailMode', false);
+                writeIsDetailMode(false);
                 writeScopeField('showDetailImage', false);
                 syncDetailFromScope();
                 writeScopeField('smoothZoomDone', false);
@@ -1118,7 +1119,7 @@ export function leaveDetailMode(...args: any[]) {
                 writeScopeField('commentRect', undefined);
                 syncDetailFromScope();
                 // 記住上次播放位置
-                machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeScopeField('current', undefined);
+                machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeCurrent(undefined);
                 syncDetailFromScope();
                 syncInspectorFromScope();
                 $timeout.cancel(__lv_zoomInitTimeout);
@@ -1522,11 +1523,11 @@ export function machineryEnterDetailMode($event: any, image: any): void {
     : null));
   if (useSelectionState.getState().selected.length <= 0) return;
   image = image || useSelectionState.getState().selected[useSelectionState.getState().selected.length - 1];
-  writeScopeField('isDetailMode', true);
-  writeScopeField('current', image);
+  writeIsDetailMode(true);
+  writeCurrent(image);
   syncDetailFromScope();
   syncInspectorFromScope();
-  writeScopeField('selected', [image]);
+  writeSelected([image]);
   syncInspectorFromScope();
   writeScopeField('showDetailImage', true);
   syncDetailFromScope();
@@ -1658,7 +1659,7 @@ export function machineryLeaveDetailMode($event?: any): void {
 
     machineryRememberScrollTops(useSelectionState.getState().current);
 
-    writeScopeField('isDetailMode', false);
+    writeIsDetailMode(false);
     writeScopeField('showDetailImage', false);
     syncDetailFromScope();
     writeScopeField('smoothZoomDone', false);
@@ -1666,7 +1667,7 @@ export function machineryLeaveDetailMode($event?: any): void {
     writeScopeField('commentRect', undefined);
     syncDetailFromScope();
     // 記住上次播放位置
-    machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeScopeField('current', undefined);
+    machineryRememberVideoCurrentTime(useSelectionState.getState().current); writeCurrent(undefined);
     syncDetailFromScope();
     syncInspectorFromScope();
     $timeout.cancel(zoomInitTimeout);

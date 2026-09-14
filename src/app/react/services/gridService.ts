@@ -1,7 +1,7 @@
 /** Grid sizing, zoom and navigation shared by React and the existing command ports.
  * boxGridEngine owns full-list geometry and one-time scroll requests; detail zoom stays
  * with the viewer engine. */
-import { syncBodyFromScope } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeLayout } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -24,7 +24,7 @@ import { resetFilter } from '../core/filterDomain';
 import { machineryFindDupclipate } from '../core/itemDomain';
 
 import { getTimeout, scopeSingleton } from '../core/machineryInfra';
-import { useFolderState } from '../store/folderState';
+import { useFolderState, writeCurrentFolder, writeCurrentSmartFolder, writeStartCursor } from '../store/folderState';
 import { useListState } from '../store/listState';
 import { useBodyState } from '../store/bodyState';
 import { writeScopeField } from '../core/scopeFieldBridge';
@@ -211,7 +211,7 @@ export function gridSwitchLayout(layout: any, forceLayout: any): void {
       window.requestAnimationFrame(() => {
         removeClass("body", "is-square-layout is-list-layout");
       });
-      writeScopeField('layout', "GridLayout");
+      writeLayout("GridLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
       machineryRelayout();
       // $scope.adjustLayoutWidth(0);
@@ -222,7 +222,7 @@ export function gridSwitchLayout(layout: any, forceLayout: any): void {
         removeClass("body", "is-square-layout is-list-layout");
         addClass("body", "is-square-layout");
       });
-      writeScopeField('layout', "SquareLayout");
+      writeLayout("SquareLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "grid-layout");
       machineryRelayout();
       // $scope.adjustLayoutWidth(0);
@@ -233,7 +233,7 @@ export function gridSwitchLayout(layout: any, forceLayout: any): void {
         removeClass("body", "is-square-layout is-list-layout");
         addClass("body", "is-list-layout");
       });
-      writeScopeField('layout', "ListLayout");
+      writeLayout("ListLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "list-layout");
       machineryRelayout();
       w.electronLog && w.electronLog.info("[app] Layout: List");
@@ -242,7 +242,7 @@ export function gridSwitchLayout(layout: any, forceLayout: any): void {
       window.requestAnimationFrame(() => {
         removeClass("body", "is-square-layout is-list-layout");
       });
-      writeScopeField('layout', "JustifiedLayout");
+      writeLayout("JustifiedLayout");
       removeClass("#box-container", allLayout); addClass("#box-container", "justified-layout");
       machineryRelayout();
       w.electronLog && w.electronLog.info("[app] Layout: Justified");
@@ -323,7 +323,7 @@ export function buildScrollbarSaver(): any {
 
       if (!id) return;
 
-      writeScopeField('startCursor', 0);
+      writeStartCursor(0);
       // Consume once after the destination list commits; no timers can fight later input.
       restoreGridScrollPosition(ScrollbarSaver.positionMapping[id] || { top: 0 });
     }
@@ -551,14 +551,14 @@ export function machineryResetPage(): void {
   writeScopeField('isOpenWebpagePanel', false);
   writeScopeField('currentTag', undefined);
   syncToolbarFromScope();
-  writeScopeField('startCursor', 0);
-  writeScopeField('currentFolder', undefined);
+  writeStartCursor(0);
+  writeCurrentFolder(undefined);
   syncPanelFromScope();
   syncFolderLock();
   syncListFromScope();
   w.eagle.inspector.reset();
   writeScopeField('currentFolderChildren', undefined);
-  writeScopeField('currentSmartFolder', undefined);
+  writeCurrentSmartFolder(undefined);
   syncPanelFromScope();
   syncListFromScope();
   writeScopeField('selectedFoldersMappings', {});
@@ -570,7 +570,7 @@ export function machineryResetPage(): void {
   writeScopeField('selectedSmartFolders', []);
   writeScopeField('currentId', undefined);
   syncSidebarFromScope();
-  writeScopeField('layout', localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout");
+  writeLayout(localStorage.getItem(`eagle.list.layout.${useMiscRawState.getState().rootDir}`) || localStorage.getItem("eagle.list.layout") || "JustifiedLayout");
 
   if (!w.eagle.filter.isLock) {
     resetFilter();
@@ -606,7 +606,7 @@ export function machineryToggleAll($event: any): void {
     machineryRelayout();
     getOffsetScrollbarFn()(30);
     if (useBodyState.getState().isDetailMode) {
-      writeScopeField('currentFocus', "content");
+      writeCurrentFocus("content");
     }
     if (useBodyState.getState().isDetailMode && useMiscRawState.getState().lastZoomMode === "edge") {
       machineryZoomFitEdge(w.event);

@@ -17,7 +17,7 @@ import { machineryBack, machineryNextHistory, machineryOpenNextQuickAccess, mach
 import { machineryMultipleSelectDown, machineryMultipleSelectNext, machineryMultipleSelectPrev, machineryMultipleSelectUp, machineryOpenInspectorFolderSelectPanel, machineryOpenInspectorTagSelectPanel, machineryRemoveSelected, machinerySelectAll, machinerySelectDown, machinerySelectNext, machinerySelectPrev, machinerySelectUp } from './selectionViewDomain';
 import { detailZoom } from './smoothZoomEngine';
 import { machineryOpenAllTags, machineryOpenNextGroup, machineryOpenPrevGroup, machineryOpenUntagged } from './tagManagerDomain';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
 import { useMiscRawState } from '../store/miscRawState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -575,7 +575,7 @@ export function machineryKeyLeftHandler(event: any): void {
     machinerySelectPrev(event);
   }
   else if (useBodyState.getState().currentFocus == "tags") {
-    writeScopeField('currentFocus', "sidebar");
+    writeCurrentFocus("sidebar");
   }
   else {
     if (useMiscRawState.getState().selectedFolders.length > 1) {
@@ -648,7 +648,7 @@ export function machineryKeyRightHandler(event: any): void {
       w.localStorage.setItem("eagle.sidebar.smartFolder.expand." + useFolderState.getState().currentSmartFolder.id, true);
     }
     else if (useBodyState.getState().viewMode == "alltags") {
-      writeScopeField('currentFocus', "tags");
+      writeCurrentFocus("tags");
     }
   }
 }

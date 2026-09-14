@@ -17,7 +17,8 @@ import { useFolderState } from '../../store/folderState';
 import { useItemState } from '../../store/itemState';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
+import { writeSelected } from '../../store/selectionState';
 
 /**
  * 阶段7d-3b：batchSavePanel + batchRectSelect 指令接管。
@@ -493,7 +494,7 @@ export function BatchSavePanel() {
   const init = (params: any) => {
 
     // Note: 取消全域选取的图片
-    writeScopeField('selected', []);
+    writeSelected([]);
     syncInspectorFromScope();
     itemsRef.current = [];
     displayedRef.current = [];

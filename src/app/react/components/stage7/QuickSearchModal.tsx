@@ -19,6 +19,7 @@ import { useItemState } from '../../store/itemState';
 import { useFolderState } from '../../store/folderState';
 import { useMiscRawState } from '../../store/miscRawState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
+import { writeCurrentFocus, writeViewMode } from '../../store/bodyState';
 /**
  * 阶段7c-2：quickSearchModal 接管。
  *
@@ -542,7 +543,7 @@ export function QuickSearchModal() {
   const close = () => {
     setView((prev) => ({ ...prev, open: false }));
     inputRef.current?.blur();
-    writeScopeField('currentFocus', 'content');
+    writeCurrentFocus('content');
   };
 
   useEffect(() => {
@@ -607,7 +608,7 @@ export function QuickSearchModal() {
       }, 200);
     } else if (mode === 'TAGS') {
       runInBodyScope(() => {
-        writeScopeField('viewMode', undefined);
+        writeViewMode(undefined);
         openTag(target.name);
       });
     } else if (mode === 'ITEMS') {

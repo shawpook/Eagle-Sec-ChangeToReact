@@ -18,6 +18,7 @@ import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { useFolderState } from '../store/folderState';
+import { writeIsLoading } from '../store/bodyState';
 
 // R3：以下标识符是**运行期全局**（由 bundleGlobals / shims / 旧经典脚本挂到 window；
 // 全局对象的属性在 ESM 中同样作为自由变量解析）。ambient 声明只作用于类型层，运行期无变化。
@@ -123,12 +124,12 @@ export function unlockPasswordKeyup(...args: any[]) {
                     useFolderState.getState().currentFolder.isUnLock = true;
                     syncFolderLock();
                     syncListFromScope();
-                    writeScopeField('isLoading', true);
+                    writeIsLoading(true);
                     machineryUpdateSidebarList();
                     machineryCalculateImageBinding({ ignoreSort: true }, function () {
                         useMiscRawState.getState().reload();
                         machineryUpdateSelection();
-                        writeScopeField('isLoading', false);
+                        writeIsLoading(false);
                         writeScopeField('unlockPassword', "");
                     });
                 }

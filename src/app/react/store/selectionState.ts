@@ -24,16 +24,35 @@ export const useSelectionState = create<SelectionState>(() => ({
 }));
 
 const MIGRATED: ReadonlyArray<keyof SelectionState> = ['selected', 'current', 'lastSelectedIndex'];
+
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED) {
-  migrateScopeFieldToStore(
-    fieldName as string,
-    () => useSelectionState.getState()[fieldName],
-    (value: any) => {
-      if (useSelectionState.getState()[fieldName] !== value) {
-        useSelectionState.setState({ [fieldName]: value } as Partial<SelectionState>);
-      }
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (useSelectionState.getState()[fieldName] !== value) {
+      useSelectionState.setState({ [fieldName]: value } as Partial<SelectionState>);
+    }
+  };
+  migrateScopeFieldToStore(key, () => useSelectionState.getState()[fieldName], writers[key]);
+}
+
+/**
+ * R4 选区域写点（取代字符串键 `writeScopeField('selected'|'current'|'lastSelectedIndex', v)`）。
+ *
+ * 语义等价：与注册表同一个 writer（同值守卫），且同样只走 store——不再是通用对象回退。
+ * 字符串键的拼写错误从此是编译错误，而不是静默落到 scope 面 plain 槽。
+ */
+export function writeSelected(value: any): void {
+  writers.selected(value);
+}
+
+export function writeCurrent(value: any): void {
+  writers.current(value);
+}
+
+export function writeLastSelectedIndex(value: any): void {
+  writers.lastSelectedIndex(value);
 }
 
 let bound = false;

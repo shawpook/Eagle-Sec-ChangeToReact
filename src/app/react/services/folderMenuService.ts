@@ -42,6 +42,8 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useItemState } from '../store/itemState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
+import { writeSelected } from '../store/selectionState';
+import { writeIsLoading } from '../store/bodyState';
 const _req: any = (n: string) => { try { return (window as any).require(n); } catch (err) { return undefined; } };
 const i18n: any = (window as any).i18n;
 let preferences: any = (window as any).electronSettings?.getPreferences?.() || {};
@@ -204,14 +206,14 @@ export function lockFolder(...args: any[]) {
       if (!folder) return;
       if (!folder.isUnLock || !folder.password) return;
       delete folder.isUnLock;
-      writeScopeField('isLoading', true);
-      writeScopeField('selected', []);
+      writeIsLoading(true);
+      writeSelected([]);
       syncInspectorFromScope();
       machineryUpdateSidebarList();
       machineryCalculateImageBinding({ ignoreSort: true }, function () {
         machineryRebindRefresh();
         machineryUpdateSelection();
-        writeScopeField('isLoading', false);
+        writeIsLoading(false);
       });
     } as (...__args: any[]) => any).apply(null, args);
 }

@@ -26,6 +26,7 @@ import { useSelectionState } from '../../store/selectionState';
 import { writeScopeField } from '../../core/scopeFieldBridge';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useBodyState } from '../../store/bodyState';
+import { writeSelected, writeCurrent } from '../../store/selectionState';
 /**
  * 阶段7d-1a：AddToFolderController（bundle 74733-75636）+ MoveFolderController
  * （bundle 75637-76134）接管，模板 = index.html 411-617 逐字转写。
@@ -1105,23 +1106,23 @@ export function AddToFolderModal() {
       const next = useItemState.getState().allData[useMiscRawState.getState().lastIndex + useSelectionState.getState().selected.length];
       const prev = useItemState.getState().allData[useMiscRawState.getState().lastIndex - 1];
       if (next) {
-        writeScopeField('selected', [next]);
+        writeSelected([next]);
         syncInspectorFromScope();
-        writeScopeField('current', next);
+        writeCurrent(next);
         syncDetailFromScope();
         syncInspectorFromScope();
         // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
         smartZoom();
       } else if (prev) {
-        writeScopeField('selected', [prev]);
+        writeSelected([prev]);
         syncInspectorFromScope();
-        writeScopeField('current', prev);
+        writeCurrent(prev);
         syncDetailFromScope();
         syncInspectorFromScope();
         // b1-9bk：直调 detailService（原 body.smartZoom() 绕 scope）
         smartZoom();
       } else {
-        writeScopeField('selected', []);
+        writeSelected([]);
         syncInspectorFromScope();
         machineryLeaveDetailMode();
       }
@@ -1178,9 +1179,9 @@ export function AddToFolderModal() {
             image.tags = originTags[index];
             image.isDeleted = originDeleted[index];
           });
-          writeScopeField('selected', origin);
+          writeSelected(origin);
           syncInspectorFromScope();
-          writeScopeField('current', origin[0]);
+          writeCurrent(origin[0]);
           syncDetailFromScope();
           syncInspectorFromScope();
           calculateImageBindingChannel.emit();

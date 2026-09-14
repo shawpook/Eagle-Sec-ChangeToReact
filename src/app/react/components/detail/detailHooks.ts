@@ -5,7 +5,7 @@ import { ipcRenderer } from '../../global/eagleGlobals';
 import { updateZoomRatio } from '../../services/detailService';
 import { addVideoComment, setAsVideoThumbnail, videoScreenShot } from '../../services/mediaService';
 import { syncDetailFromScope, useDetailState } from '../../store/detailState';
-import { useBodyState } from '../../store/bodyState';
+import { useBodyState, writeCurrentFocus } from '../../store/bodyState';
 import { runInBodyScope } from '../../core/appCore';
 
 import { makeResizable } from '../interactions/resizable';
@@ -2117,7 +2117,7 @@ export function useRectSelect() {
 
       rectEl.style.display = '';
       runInBodyScope(function (sc) {
-        writeScopeField('currentFocus', 'content');
+        writeCurrentFocus('content');
       });
     };
     element.addEventListener('mousedown', onMouseDown);

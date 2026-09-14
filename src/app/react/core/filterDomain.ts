@@ -49,8 +49,8 @@ import { getTimeout, machineryCalls, scopeSingleton } from './machineryInfra';
 import { writeScopeField } from './scopeFieldBridge';
 import { useItemState } from '../store/itemState';
 import { useMiscRawState } from '../store/miscRawState';
-import { useFolderState } from '../store/folderState';
-import { useBodyState } from '../store/bodyState';
+import { useFolderState, writeStartCursor } from '../store/folderState';
+import { useBodyState, writeIsDetailMode } from '../store/bodyState';
 declare const RecentFileManager: any;
 declare const UrlStateService: any;
 declare const analytics: any;
@@ -495,7 +495,7 @@ export function filterWithColor(...args: any[]) {
             }
             eagle.filter.isOpen = true;
             syncFilterFromScope();
-            writeScopeField('isDetailMode', false);
+            writeIsDetailMode(false);
             machineryUpdateContainerHieght();
             writeScopeField('page', 1);
 
@@ -619,7 +619,7 @@ export function resetFilter(...args: any[]) {
             eagle.filter.filterRules.mtime.selectedMonths = {};
 
             removeClass("[filter-item].open", "open");
-            writeScopeField('startCursor', 0);
+            writeStartCursor(0);
             resetFilterChannel.emit();
             machineryCalculateFilterCounts();
         } as (...__args: any[]) => any).apply(null, args);
@@ -694,7 +694,7 @@ export function search(...args: any[]) {
                     writeScopeField('searchRegexGroup', null);
                     
                     updateSuggestions();
-                    writeScopeField('startCursor', 0);
+                    writeStartCursor(0);
                     machineryFilterContent();
                     machineryCalculateFilterCounts();
                 }

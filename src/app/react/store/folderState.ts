@@ -41,16 +41,32 @@ const MIGRATED: ReadonlyArray<keyof FolderState> = [
   'currentFolder', 'currentSmartFolder', 'folders', 'smartFolders', 'folderList', 'tags',
   'currentFolderChildren', 'navigationHistory', 'navigationHistoryIndex', 'startCursor',
 ];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED) {
-  migrateScopeFieldToStore(
-    fieldName as string,
-    () => useFolderState.getState()[fieldName],
-    (value: any) => {
-      if (useFolderState.getState()[fieldName] !== value) {
-        useFolderState.setState({ [fieldName]: value } as Partial<FolderState>);
-      }
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (useFolderState.getState()[fieldName] !== value) {
+      useFolderState.setState({ [fieldName]: value } as Partial<FolderState>);
+    }
+  };
+  migrateScopeFieldToStore(key, () => useFolderState.getState()[fieldName], writers[key]);
+}
+
+/**
+ * R4 文件夹/导航域写点（取代字符串键 `writeScopeField('<字段>', v)`）。
+ * 与注册表同一 writer（同值守卫一致），不再走通用对象回退。
+ */
+export function writeCurrentFolder(value: any): void {
+  writers.currentFolder(value);
+}
+
+export function writeCurrentSmartFolder(value: any): void {
+  writers.currentSmartFolder(value);
+}
+
+export function writeStartCursor(value: any): void {
+  writers.startCursor(value);
 }
 
 let bound = false;

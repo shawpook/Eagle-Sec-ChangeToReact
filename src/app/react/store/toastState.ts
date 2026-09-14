@@ -30,14 +30,14 @@ export const useToastState = create<ToastState>(() => ({
 const MIGRATED_TOAST_FIELDS: ReadonlyArray<keyof ToastState> = [
   'localhostError', 'libraryPathPermissionError',
 ];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED_TOAST_FIELDS) {
-  migrateScopeFieldToStore(
-    fieldName,
-    () => useToastState.getState()[fieldName],
-    (value: any) => {
-      if (useToastState.getState()[fieldName] !== value) useToastState.setState({ [fieldName]: value } as Partial<ToastState>);
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (useToastState.getState()[fieldName] !== value) useToastState.setState({ [fieldName]: value } as Partial<ToastState>);
+  };
+  migrateScopeFieldToStore(key, () => useToastState.getState()[fieldName], writers[key]);
 }
 
 /**
@@ -60,3 +60,8 @@ export function bindToastSync(): void {
   // 校正 store 初值），后续由写入点直调驱动。
   syncErrorCount();
 }
+
+// R4 写点：
+/** R4 写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeLocalhostError(value: any): void { writers.localhostError(value); }
+export function writeLibraryPathPermissionError(value: any): void { writers.libraryPathPermissionError(value); }

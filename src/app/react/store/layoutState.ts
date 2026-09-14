@@ -20,16 +20,16 @@ export const useLayoutState = create<LayoutState>(() => ({
 }));
 
 const MIGRATED: ReadonlyArray<keyof LayoutState> = ['imageSize', 'containerSize'];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED) {
-  migrateScopeFieldToStore(
-    fieldName as string,
-    () => useLayoutState.getState()[fieldName],
-    (value: any) => {
-      if (useLayoutState.getState()[fieldName] !== value) {
-        useLayoutState.setState({ [fieldName]: value } as Partial<LayoutState>);
-      }
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (useLayoutState.getState()[fieldName] !== value) {
+      useLayoutState.setState({ [fieldName]: value } as Partial<LayoutState>);
+    }
+  };
+  migrateScopeFieldToStore(key, () => useLayoutState.getState()[fieldName], writers[key]);
 }
 
 let bound = false;
@@ -39,3 +39,8 @@ export function bindLayoutSync(): void {
   bound = true;
   (window as any).__eagleLayoutState = useLayoutState;
 }
+
+// R4 写点：
+/** R4 写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeContainerSize(value: any): void { writers.containerSize(value); }
+export function writeImageSize(value: any): void { writers.imageSize(value); }

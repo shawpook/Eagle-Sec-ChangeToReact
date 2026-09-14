@@ -40,7 +40,7 @@ import { syncPanelFromScope } from '../store/panelState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
-import { syncBodyFromScope, writeCurrentFocus, writeViewMode, writeIsLoading, writeIsDetailMode } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeViewMode, writeIsLoading, writeIsDetailMode, writeIsCropMode, writeIsInlineMode, writeLayoutOptions, writeIsGrayscaleMode } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -549,7 +549,7 @@ export function takeoverLibraryDomain(): void {
     writeScopeField('lockedImages', {});
     writeScopeField('itemMappings', {});
     writeScopeField('lastItemStates', {});
-    writeScopeField('isCropMode', false);
+    writeIsCropMode(false);
     syncDetailFromScope();
     writeStartCursor(0);
     if (w.eagle && w.eagle.filter) {
@@ -581,8 +581,8 @@ export function takeoverLibraryDomain(): void {
     writeScopeField('finishQueue', []);
     syncUploadFromScope();
     writeIsDetailMode(false);
-    writeScopeField('isInlineMode', false);
-    writeScopeField('isGrayscaleMode', false);
+    writeIsInlineMode(false);
+    writeIsGrayscaleMode(false);
     writeScopeField('usingGifPlayer', false);
     syncDetailFromScope();
     writeScopeField('showDetailImage', false);
@@ -637,7 +637,7 @@ export function takeoverLibraryDomain(): void {
     }
 
     const userLayoutOptions = localStorage.getItem("eagle.list.layout.options") || "Fit";
-    writeScopeField('layoutOptions', userLayoutOptions);
+    writeLayoutOptions(userLayoutOptions);
     syncPanelFromScope();
     machinerySwitchLayout(userLayout);
 

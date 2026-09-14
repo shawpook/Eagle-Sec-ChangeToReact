@@ -19,16 +19,16 @@ export const usePreferencesState = create<PreferencesState>(() => ({
 }));
 
 const MIGRATED: ReadonlyArray<keyof PreferencesState> = ['preferences', 'trialRemain'];
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
 for (const fieldName of MIGRATED) {
-  migrateScopeFieldToStore(
-    fieldName as string,
-    () => usePreferencesState.getState()[fieldName],
-    (value: any) => {
-      if (usePreferencesState.getState()[fieldName] !== value) {
-        usePreferencesState.setState({ [fieldName]: value } as Partial<PreferencesState>);
-      }
-    },
-  );
+  const key = fieldName as string;
+  writers[key] = (value: any) => {
+    if (usePreferencesState.getState()[fieldName] !== value) {
+      usePreferencesState.setState({ [fieldName]: value } as Partial<PreferencesState>);
+    }
+  };
+  migrateScopeFieldToStore(key, () => usePreferencesState.getState()[fieldName], writers[key]);
 }
 
 let bound = false;
@@ -38,3 +38,7 @@ export function bindPreferencesSync(): void {
   bound = true;
   (window as any).__eaglePreferencesState = usePreferencesState;
 }
+
+// R4 写点：
+/** R4 写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeTrialRemain(value: any): void { writers.trialRemain(value); }

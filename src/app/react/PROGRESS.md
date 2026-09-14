@@ -8508,3 +8508,18 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     已完成的是「数据写入全部由 store 承接」；未完成的是 172 个字段的**具名写点收敛**，
     现在这份账逐字段可核对、可勾销。回退分支（`scope[name] = value`）的删除依旧只差 R6
     摘除 57 个挂载槽。
+
+- **R4 切片⑤（bodyState 长尾 14 字段）**：按切片④的闭合台账逐域勾销。本切片收敛
+  `bodyState` 剩余 14 个字段 / **51 处**：`isCropMode isMaximize isHideSidebar smoothZoomDone
+  isInlineMode layoutOptions isHideNavigator removeProgress isCleaningTrash theme
+  isSlideshowMode isCommentMode isGrayscaleMode platform`。累计 R4 已收敛 **41 个字段 / 396 处**。
+  - 长尾的机制与前三批一致：store 的 `writers` 工厂已存在，只需补具名写点（
+    `.tmp/r4/add-writers.mjs` 幂等追加），再以同一 codemod 换调用头。**语义零变化**——
+    具名写点与注册表共用同一 writer（同值守卫唯一）。
+  - 为让 `toastState`/`layoutState`/`lockState`/`preferencesState` 也能被同一 codemod 处理，
+    本切片顺带把它们的注册循环统一为「单一 writer 工厂」形态（`lockState` 的 `!!value`
+    强转语义原样保留在 writer 内）。
+  - 台账：待办数据字段 172 → **158**（413 处）。
+  - **验证**：`typecheck` 0 诊断；`npm run build` exit 0；收敛台账 OK；针对性闭环
+    `d3-theme`（theme）、`d3-detail-mode`（isDetailMode/isInlineMode）、
+    `d3-viewmode`、`d3-loading`（isLoading）、`react-stage11b0-smoke`（网格/初始化）全绿。

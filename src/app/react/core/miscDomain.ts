@@ -28,7 +28,7 @@ import { syncUploadFromScope } from '../store/uploadState';
 import { syncSidebarFromScope } from '../store/sidebarState';
 import { syncTagManagerFromScope } from '../store/tagManagerState';
 import { syncFilterFromScope } from '../store/filterState';
-import { syncBodyFromScope, writeCurrentFocus, writeIsDetailMode } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeIsDetailMode, writeIsCropMode, writeIsMaximize, writeIsHideSidebar, writeSmoothZoomDone, writeIsInlineMode, writeLayoutOptions, writeRemoveProgress, writeIsCleaningTrash, writeTheme, writeIsSlideshowMode } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -361,7 +361,7 @@ export function takeoverMiscDomain(): void {
       writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
       writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     }, 200);
-    writeScopeField('isMaximize', true);
+    writeIsMaximize(true);
     syncToolbarFromScope();
     writeScopeField('lastItemStates', {});
   });
@@ -371,7 +371,7 @@ export function takeoverMiscDomain(): void {
       writeScopeField('boxContianerWidth', widthOf(q("#box-container")) || useMiscRawState.getState().boxContianerWidth);
       writeScopeField('boxContianerHeight', heightOf(q("#box-container")) || useMiscRawState.getState().boxContianerHeight);
     }, 200);
-    writeScopeField('isMaximize', false);
+    writeIsMaximize(false);
     syncToolbarFromScope();
     writeScopeField('lastItemStates', {});
   });
@@ -858,10 +858,10 @@ export function takeoverMiscDomain(): void {
   // ── remove-trash-item（36999 逐字）──
   ipc.on('remove-trash-item', function (_e: any) {
     writeScopeField('currentTrashRemoved', useMiscRawState.getState().currentTrashRemoved + 1);
-    writeScopeField('removeProgress', useMiscRawState.getState().currentTrashRemoved / useMiscRawState.getState().trashRemoved * 100);
-    writeScopeField('removeProgress', (useBodyState.getState().removeProgress > 100) ? 100 : useBodyState.getState().removeProgress);
+    writeRemoveProgress(useMiscRawState.getState().currentTrashRemoved / useMiscRawState.getState().trashRemoved * 100);
+    writeRemoveProgress((useBodyState.getState().removeProgress > 100) ? 100 : useBodyState.getState().removeProgress);
     if (useMiscRawState.getState().currentTrashRemoved >= useMiscRawState.getState().trashRemoved || useBodyState.getState().removeProgress > 98) {
-      writeScopeField('isCleaningTrash', false);
+      writeIsCleaningTrash(false);
       syncSidebarFromScope();
       writeScopeField('trashRemoved', 0);
       writeScopeField('currentTrashRemoved', 0);
@@ -886,14 +886,14 @@ export function takeoverMiscDomain(): void {
   ipc.on('change.current.theme', function (_e: any, theme: any) {
     if (theme.name === "Auto") {
       if (remote.nativeTheme.shouldUseDarkColors) {
-        writeScopeField('theme', "gray");
+        writeTheme("gray");
       }
       else {
-        writeScopeField('theme', "light");
+        writeTheme("light");
       }
     }
     else {
-      writeScopeField('theme', theme.css || "gray");
+      writeTheme(theme.css || "gray");
     }
   });
 
@@ -1068,7 +1068,7 @@ export function escHandler(...args: any[]) {
             }
             writeScopeField('selectedFolder', undefined);
             if (useBodyState.getState().isSlideshowMode) {
-                writeScopeField('isSlideshowMode', false);
+                writeIsSlideshowMode(false);
                 __cf_ipcRenderer.send("leave-slideshow");
                 return;
             }
@@ -1079,7 +1079,7 @@ export function escHandler(...args: any[]) {
             } 
             else {
                 if (useBodyState.getState().isCropMode) {
-                    writeScopeField('isCropMode', false);
+                    writeIsCropMode(false);
                     syncDetailFromScope();
                 }
                 else if (AnnotationPreview.isShow) {
@@ -1103,7 +1103,7 @@ export function leaveDetailMode(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function() {
 
-            writeScopeField('isCropMode', false);
+            writeIsCropMode(false);
             syncDetailFromScope();
             writeScopeField('usingGifPlayer', false);
             syncDetailFromScope();
@@ -1114,7 +1114,7 @@ export function leaveDetailMode(...args: any[]) {
                 writeIsDetailMode(false);
                 writeScopeField('showDetailImage', false);
                 syncDetailFromScope();
-                writeScopeField('smoothZoomDone', false);
+                writeSmoothZoomDone(false);
                 syncDetailFromScope();
                 writeScopeField('commentRect', undefined);
                 syncDetailFromScope();
@@ -1130,7 +1130,7 @@ export function leaveDetailMode(...args: any[]) {
                     setScrollLeft(".smooth_zoom_preloader", 0);
                 }, 50);
 
-                writeScopeField('isInlineMode', false);
+                writeIsInlineMode(false);
                 machineryFadeOutDetailMode();
                 detailZoom()?.cleanBitmapViewer();
                 detailZoom()?.clearPreloadData();
@@ -1169,11 +1169,11 @@ export function maximize(...args: any[]) {
                 if (isMax) {
                     if (!currentWindow.isMaximized()) {
                         currentWindow.maximize();
-                        writeScopeField('isMaximize', true);
+                        writeIsMaximize(true);
                         syncToolbarFromScope();
                     } else {
                         currentWindow.unmaximize();
-                        writeScopeField('isMaximize', false);
+                        writeIsMaximize(false);
                         syncToolbarFromScope();
                     }
                 } else {
@@ -1535,7 +1535,7 @@ export function machineryEnterDetailMode($event: any, image: any): void {
   // body 還沒有 is-detail-mode class，$(".content-panel").width() 讀到的是列表模式尺寸，
   // 算出的 zoom 一定是錯的。正確的 zoom 會在下方 $timeout 回調中執行。
   w.eagle.inspector.activeTab = "ITEM";
-  writeScopeField('smoothZoomDone', false);
+  writeSmoothZoomDone(false);
   syncDetailFromScope();
   // bundle 依赖 Angular digest：ng-click 处理器返回后本轮 digest 立即把 body 的
   // is-detail-mode 落到 DOM，100ms 后的 smoothZoom 初始化才量得到详情面板尺寸。
@@ -1568,7 +1568,7 @@ export function machineryEnterDetailMode($event: any, image: any): void {
             window.dispatchEvent(new Event("orientationchange"));
             writeScopeField('showDetailImage', true);
             syncDetailFromScope();
-            writeScopeField('smoothZoomDone', true);
+            writeSmoothZoomDone(true);
             syncDetailFromScope();
             if (!machineryLastZoom()) {
               machineryZoom(image);
@@ -1588,7 +1588,7 @@ export function machineryEnterDetailMode($event: any, image: any): void {
         }
       });
     } else {
-      writeScopeField('smoothZoomDone', true);
+      writeSmoothZoomDone(true);
       syncDetailFromScope();
       detailZoom()?.updateNavigator( useSelectionState.getState().current);
       window.dispatchEvent(new Event("orientationchange"));
@@ -1614,7 +1614,7 @@ export function machineryEnterSlideshowMode(): void {
   if ((!useSelectionState.getState().selected.length as any) === 0) return;
   w.currentWindow.setFullScreen(true);
   machineryEnterDetailMode(null, useSelectionState.getState().selected[0]);
-  writeScopeField('isSlideshowMode', true);
+  writeIsSlideshowMode(true);
   $timeout(function () {
     window.dispatchEvent(new Event("orientationchange"));
     window.dispatchEvent(new Event("resize"));
@@ -1651,7 +1651,7 @@ export function machineryLeaveDetailMode($event?: any): void {
   // P2：退出详情立即解除原图交付门控（与 shims 原包装体同序：先解除再走原逻辑）。
   onDetailLeave();
 
-  writeScopeField('isCropMode', false);
+  writeIsCropMode(false);
   syncDetailFromScope();
   writeScopeField('usingGifPlayer', false);
   syncDetailFromScope();
@@ -1662,7 +1662,7 @@ export function machineryLeaveDetailMode($event?: any): void {
     writeIsDetailMode(false);
     writeScopeField('showDetailImage', false);
     syncDetailFromScope();
-    writeScopeField('smoothZoomDone', false);
+    writeSmoothZoomDone(false);
     syncDetailFromScope();
     writeScopeField('commentRect', undefined);
     syncDetailFromScope();
@@ -1678,7 +1678,7 @@ export function machineryLeaveDetailMode($event?: any): void {
       setScrollLeft(".smooth_zoom_preloader", 0);
     }, 50);
 
-    writeScopeField('isInlineMode', false);
+    writeIsInlineMode(false);
     machineryFadeOutDetailMode();
     detailZoom()?.cleanBitmapViewer();
     detailZoom()?.clearPreloadData();
@@ -1712,7 +1712,7 @@ export function machineryLeaveSlideshowMode(): void {
   const $timeout = getTimeout();
   const duration = (w.process.platform === 'darwin') ? 300 : 100;
   w.currentWindow.setFullScreen(false);
-  writeScopeField('isSlideshowMode', false);
+  writeIsSlideshowMode(false);
   w.currentWindow.setFullScreen(false);
   $timeout(function () {
     window.dispatchEvent(new Event("orientationchange"));
@@ -2004,7 +2004,7 @@ export function machineryShowListExtensionLabel(): void {
 export function machineryToggleSidebar(event: any): void {
   const w = window as any;
   const $timeout = getTimeout();
-  writeScopeField('isHideSidebar', !useBodyState.getState().isHideSidebar);
+  writeIsHideSidebar(!useBodyState.getState().isHideSidebar);
   $timeout(function() {
     writeScopeField('lastItemStates', {});
     w.$(window).trigger("orientationchange");
@@ -2024,7 +2024,7 @@ export function machineryToggleSidebar(event: any): void {
 /* switchLayoutOtpions（bundle 33785 逐字；typo 原样） */
 export function machinerySwitchLayoutOtpions(layoutOptions: any): void {
   localStorage.setItem("eagle.list.layout.options", layoutOptions);
-  writeScopeField('layoutOptions', layoutOptions);
+  writeLayoutOptions(layoutOptions);
 }
 
 /* createLibrary（bundle 26179 + chooseLibraryPath 逐字） */

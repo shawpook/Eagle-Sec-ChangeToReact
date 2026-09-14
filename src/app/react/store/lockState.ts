@@ -52,13 +52,12 @@ function checkCanUseTouchID(): boolean {
 // `s.$root.isAppLocked = x` 经同一 set 陷阱落本 store。folderLocked/folderPasswordTips
 // 为 currentFolder 嵌套派生，b1-9by-A 起由写入点直调 syncFolderLock 驱动。
 // 同值守卫同 bodyState（b1-9az 批 1 教训）。
-migrateScopeFieldToStore(
-  'isAppLocked',
-  () => useLockState.getState().isAppLocked,
-  (value: any) => {
-    if (useLockState.getState().isAppLocked !== value) useLockState.setState({ isAppLocked: !!value });
-  },
-);
+/** 单一守卫实现：注册表与 R4 的具体写点共用同一 writer（不得各留一套）。 */
+const writers: Record<string, (value: any) => void> = {};
+writers.isAppLocked = (value: any) => {
+  if (useLockState.getState().isAppLocked !== value) useLockState.setState({ isAppLocked: !!value });
+};
+migrateScopeFieldToStore('isAppLocked', () => useLockState.getState().isAppLocked, writers.isAppLocked);
 
 /**
  * b1-9by-A：folderLocked/folderPasswordTips 直写收敛——currentFolder 对象替换
@@ -99,3 +98,7 @@ export function bindLockSync(): void {
 export function refreshTouchID(): void {
   useLockState.setState({ canUseTouchID: checkCanUseTouchID() });
 }
+
+// R4 写点：
+/** R4 写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeIsAppLocked(value: any): void { writers.isAppLocked(value); }

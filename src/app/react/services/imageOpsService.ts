@@ -43,7 +43,7 @@ import { getFilter } from '../core/filterDomain';
 import { machineryLeaveDetailMode } from '../core/miscDomain';
 import { machinerySortRawData } from '../core/itemDomain';
 import { useMiscRawState } from '../store/miscRawState';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeIsCropMode } from '../store/bodyState';
 import { useSelectionState } from '../store/selectionState';
 import { usePreferencesState } from '../store/preferencesState';
 import { useItemState, writeTrash } from '../store/itemState';
@@ -351,7 +351,7 @@ export function saveCrop(...args: any[]) {
                                     merged: true
                                 };
                                 uploadFiles([newFile]);
-                                writeScopeField('isCropMode', false);
+                                writeIsCropMode(false);
                                 syncDetailFromScope();
                                 machineryLeaveDetailMode();
                             });
@@ -398,14 +398,14 @@ export function saveCrop(...args: any[]) {
                                             fse.copySync(imagePath + ".bk", imagePath, { preserveTimestamps: true });
                                             fse.removeSync(imagePath + ".bk");
                                         }
-                                        writeScopeField('isCropMode', false);
+                                        writeIsCropMode(false);
                                         syncDetailFromScope();
                                     });
                             });
                         }, 200);
                     }
                     else {
-                        writeScopeField('isCropMode', false);
+                        writeIsCropMode(false);
                         syncDetailFromScope();
                     }
                 });
@@ -1094,7 +1094,7 @@ export function changeImagesBackground(...args: any[]) {
 // ═══ b1-9bz-D-1 B-5：零依赖声明归位（dataMachinery 剪出，逐字）═══
 /* cancelCrop（bundle 36091-36093 逐字） */
 export function machineryCancelCrop(): void {
-  writeScopeField('isCropMode', false);
+  writeIsCropMode(false);
   syncDetailFromScope();
 }
 

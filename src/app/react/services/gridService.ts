@@ -1,7 +1,7 @@
 /** Grid sizing, zoom and navigation shared by React and the existing command ports.
  * boxGridEngine owns full-list geometry and one-time scroll requests; detail zoom stays
  * with the viewer engine. */
-import { syncBodyFromScope, writeCurrentFocus, writeLayout } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeLayout, writeIsHideSidebar } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncInspectorFromScope } from '../store/inspectorState';
 import { syncToolbarFromScope } from '../store/toolbarState';
@@ -592,10 +592,10 @@ export function machineryToggleAll($event: any): void {
     $event.stopPropagation();
   }
   if (useBodyState.getState().isHideSidebar) {
-    w.eagle.inspector.isHideInspector = writeScopeField('isHideSidebar', false);
+    w.eagle.inspector.isHideInspector = writeIsHideSidebar(false);
     syncPanelFromScope();
   } else {
-    w.eagle.inspector.isHideInspector = writeScopeField('isHideSidebar', true);
+    w.eagle.inspector.isHideInspector = writeIsHideSidebar(true);
     syncPanelFromScope();
   }
   $timeout(function () {

@@ -3,7 +3,7 @@ import { buildScrollbarSaver, machineryRelayout, machinerySwitchLayout, machiner
 import { machineryChangeStar } from '../services/imageOpsService';
 import { machineryOnDropContainer } from '../services/uploadService';
 import { machineryGetRatioExp, machineryGetRatioNonExp, machineryUpdateZoomRatio, machineryZoom } from '../services/viewOpsService';
-import { syncBodyFromScope, writeCurrentFocus, writeLayout } from '../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeLayout, writeIsHideSidebar, writeLayoutOptions, writeIsHideNavigator, writePlatform } from '../store/bodyState';
 import { syncDetailFromScope } from '../store/detailState';
 import { syncFilterFromScope } from '../store/filterState';
 import { syncInspectorFromScope } from '../store/inspectorState';
@@ -345,9 +345,9 @@ export function machinerySeedControllerState(): void {
         syncToolbarFromScope();
         writeScopeField('MAX_DIMENSION', 120000000);
         writeScopeField('isHideMainNav', true);	// 3.0 侧栏
-        writeScopeField('isHideSidebar', false);
+        writeIsHideSidebar(false);
         writeScopeField('isHideSubFolder', true);
-        writeScopeField('isHideNavigator', false);
+        writeIsHideNavigator(false);
         writeScopeField('unlockPassword', "");
         // 音效三件套（bundle 20238-20254 逐字；$.playSound 由 js/vendors/jquery-audio.js 提供，
         // 该插件原内联在 app.bundle.js 内，b1-9d 后由 index.html 独立引入）
@@ -369,7 +369,7 @@ export function machinerySeedControllerState(): void {
         // b1-9l：controller init 接线补种三件（b1-9g 台账根因 5 + fx/fc 补种）
         // platform（bundle 20066 `$scope.platform = process.platform`——BodyBindings 的
         // data-platform 属性唯一数据源，shim 世界此前无人写入）
-        writeScopeField('platform', w.process && w.process.platform ? w.process.platform : undefined);
+        writePlatform(w.process && w.process.platform ? w.process.platform : undefined);
         // containerSize（bundle 21095-21121 逐字；React 侧 bodyState:159 直接消费
         // scope.containerSize.sidebar、BodyBindings 面板 left = sidebarWidth+1——bundle 默认
         // 240 与 React 旧兜底 220 不一致，以 bundle 为准。$$rebind::refreshContainSize 广播
@@ -510,7 +510,7 @@ export function machinerySeedControllerState(): void {
         syncPanelFromScope();
         writeScopeField('sortIncrease', true);
         writeLayout("");
-        writeScopeField('layoutOptions', localStorage["eagle.list.layout.options"] || "Fit");
+        writeLayoutOptions(localStorage["eagle.list.layout.options"] || "Fit");
         syncPanelFromScope();
         writeScopeField('paletteQueuePaused', false);
         syncSidebarFromScope();
@@ -720,7 +720,7 @@ export function machinerySeedControllerState(): void {
         }
 
         if (localStorage.getItem("isHideSidebar") == 'true') {
-            writeScopeField('isHideSidebar', true);
+            writeIsHideSidebar(true);
         }
 
         if (localStorage.getItem("isHideSubFolder") == 'false') {
@@ -732,7 +732,7 @@ export function machinerySeedControllerState(): void {
         }
 
         if (localStorage.getItem("isHideNavigator") == 'true') {
-            writeScopeField('isHideNavigator', true);
+            writeIsHideNavigator(true);
         }
 
         if (localStorage.getItem("eagle.search.scope.name") === 'false') { writeScopeField('isSearchScopeName', false); }

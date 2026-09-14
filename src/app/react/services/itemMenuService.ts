@@ -43,9 +43,9 @@ import { machineryOpenAll } from './folderCoreService';
 import { machineryToggleSlideshow } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
 import { useMiscRawState } from '../store/miscRawState';
-import { writeScopeField } from '../core/scopeFieldBridge';
+
 import { useSelectionState } from '../store/selectionState';
-import { useBodyState, writeCurrentFocus } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus, writeIsHideNavigator, writeIsGrayscaleMode } from '../store/bodyState';
 import { useFolderState } from '../store/folderState';
 import { useItemState } from '../store/itemState';
 import { getIpcBus } from '../core/channelBridge';
@@ -891,7 +891,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     keywords: 'show navigator 導航器 顯示',
                     icon: 'ic-navigator.svg',
                     click: () => {
-                        writeScopeField('isHideNavigator', !useBodyState.getState().isHideNavigator);
+                        writeIsHideNavigator(!useBodyState.getState().isHideNavigator);
                         localStorage["isHideNavigator"] = useBodyState.getState().isHideNavigator;
                     },
                 },
@@ -959,7 +959,7 @@ export async function itemMenuOpenItemContextMenu(...args: any[]): Promise<any> 
                     icon: 'ic-grayscale.svg',
                     keepOpen: true,
                     click: () => {
-                        writeScopeField('isGrayscaleMode', !useBodyState.getState().isGrayscaleMode);
+                        writeIsGrayscaleMode(!useBodyState.getState().isGrayscaleMode);
                     }
                 },
                 // ---(Webp)

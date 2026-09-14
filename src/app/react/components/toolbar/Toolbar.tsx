@@ -5,7 +5,7 @@ import { t } from '../../global/eagleGlobals';
 import { shortcuts, shortcutsWrapper } from '../../app/filters';
 import { useTippy, useSelectAll } from '../hooks';
 import { zoomIn as gridZoomIn, zoomOut as gridZoomOut } from '../../services/gridService';
-import { syncBodyFromScope, writeCurrentFocus } from '../../store/bodyState';
+import { syncBodyFromScope, writeCurrentFocus, writeIsMaximize } from '../../store/bodyState';
 import { syncDetailFromScope } from '../../store/detailState';
 import { syncInspectorFromScope } from '../../store/inspectorState';
 import { syncToolbarFromScope } from '../../store/toolbarState';
@@ -27,7 +27,7 @@ import { machineryNextHistory, machineryPrevHistory } from '../../core/navHistor
 import { machineryToggleAll } from '../../services/gridService';
 import { useMiscRawState } from '../../store/miscRawState';
 import { useFolderState } from '../../store/folderState';
-import { writeScopeField } from '../../core/scopeFieldBridge';
+
 import { useLayoutState } from '../../store/layoutState';
 import { writeKeyword } from '../../store/listState';
 /**
@@ -90,8 +90,8 @@ export function CornerBtns({ snapshot, hideAlwaysOnTop }: { snapshot: ToolbarSna
     const win = currentWindow();
     if (!win) return;
     if (win.isFullScreen()) win.setFullScreen(false);
-    else if (!win.isMaximized()) { win.maximize();  writeScopeField('isMaximize', true); }
-    else { win.unmaximize();  writeScopeField('isMaximize', false); }
+    else if (!win.isMaximized()) { win.maximize();  writeIsMaximize(true); }
+    else { win.unmaximize();  writeIsMaximize(false); }
     syncToolbarFromScope();
   };
   const restore = maximize;

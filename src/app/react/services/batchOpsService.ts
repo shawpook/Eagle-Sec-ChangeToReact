@@ -50,7 +50,7 @@ import { useMiscRawState } from '../store/miscRawState';
 import { useItemState, writeTrash, writeSelectedFolderMappings } from '../store/itemState';
 import { useSelectionState } from '../store/selectionState';
 import { useFolderState, writeCurrentFolder } from '../store/folderState';
-import { useBodyState, writeCurrentFocus } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus, writeRemoveProgress, writeIsCleaningTrash } from '../store/bodyState';
 import { usePreferencesState } from '../store/preferencesState';
 import { writeScopeField } from '../core/scopeFieldBridge';
 import { getIpcBus } from '../core/channelBridge';
@@ -106,7 +106,7 @@ export function cleanAllError(...args: any[]) {
 export function cancelEmptyTrash(...args: any[]) {
     try { initLinkVars(); } catch (err) { /* link var 初始化失败不阻塞（bundle 后备仍在） */ }
     return (function () {
-            writeScopeField('isCleaningTrash', false);
+            writeIsCleaningTrash(false);
             syncSidebarFromScope();
             writeScopeField('trashRemoved', 0);
             writeScopeField('currentTrashRemoved', 0);
@@ -165,10 +165,10 @@ export function emptyTrash(...args: any[]) {
                     machineryFindDupclipate(undefined);
 
                     // 更新進度
-                    writeScopeField('removeProgress', 0);
+                    writeRemoveProgress(0);
                     writeScopeField('currentTrashRemoved', 0);
                     writeScopeField('trashRemoved', useMiscRawState.getState().trashRemoved + (removeCount));
-                    writeScopeField('isCleaningTrash', true);
+                    writeIsCleaningTrash(true);
                     syncSidebarFromScope();
                     // 觸發 AI Search 全量同步
                     eagle.aiSearch.fullSync();

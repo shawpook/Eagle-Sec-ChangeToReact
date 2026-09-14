@@ -19,7 +19,7 @@ import { machineryGetRatioExp, machineryGetRatioNonExp, machineryOnZoomRatioChan
 import { machineryRenameCurrentFolder } from '../core/libraryDomain';
 import { machineryEnterDetailMode, machineryLeaveDetailMode } from '../core/miscDomain';
 import { usePreferencesState } from '../store/preferencesState';
-import { useBodyState } from '../store/bodyState';
+import { useBodyState, writeIsInlineMode, writeIsCommentMode } from '../store/bodyState';
 import { useLayoutState } from '../store/layoutState';
 import { useSelectionState } from '../store/selectionState';
 import { writeScopeField } from '../core/scopeFieldBridge';
@@ -209,9 +209,9 @@ export function detailToggleDetailMode($event: any, isInline: any): void {
     return;
   }
   if (isInline !== undefined) {
-    writeScopeField('isInlineMode', !!isInline);
+    writeIsInlineMode(!!isInline);
     if (useBodyState.getState().isInlineMode) {
-      writeScopeField('isCommentMode', false);
+      writeIsCommentMode(false);
       syncDetailFromScope();
     }
   }

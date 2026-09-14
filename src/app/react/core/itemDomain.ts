@@ -65,7 +65,7 @@ import { useFolderState, writeStartCursor } from '../store/folderState';
 import { useSelectionState } from '../store/selectionState';
 import { useMiscRawState, writeHexColor } from '../store/miscRawState';
 import { useItemState, writeRaw, writeTrash } from '../store/itemState';
-import { useBodyState, writeCurrentFocus } from '../store/bodyState';
+import { useBodyState, writeCurrentFocus, writeIsCommentMode } from '../store/bodyState';
 import { writeScopeField } from './scopeFieldBridge';
 import { useLayoutState } from '../store/layoutState';
 import { usePreferencesState } from '../store/preferencesState';
@@ -2618,7 +2618,7 @@ export function machinerySortData(data: any, orderBy: any): any {
 /* toggleCommentMode（bundle 21166-21169 逐字） */
 export function machineryToggleCommentMode(event: any): void {
   event.preventDefault();
-  writeScopeField('isCommentMode', !useBodyState.getState().isCommentMode);
+  writeIsCommentMode(!useBodyState.getState().isCommentMode);
   syncDetailFromScope();
 }
 

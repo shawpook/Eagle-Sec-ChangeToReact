@@ -210,3 +210,20 @@ export function bindBodySync(): void {
   // 启动期一次性对齐。
   syncBodyFromScope();
 }
+
+// R4 写点：
+/** R4 bodyState 域长尾写点（取代字符串键 writeScopeField('<字段>', v)）。与注册表同一 writer。 */
+export function writeIsCropMode(value: any): void { writers.isCropMode(value); }
+export function writeIsMaximize(value: any): void { writers.isMaximize(value); }
+export function writeIsHideSidebar(value: any): void { writers.isHideSidebar(value); }
+export function writeSmoothZoomDone(value: any): void { writers.smoothZoomDone(value); }
+export function writeIsInlineMode(value: any): void { writers.isInlineMode(value); }
+export function writeLayoutOptions(value: any): void { writers.layoutOptions(value); }
+export function writeIsHideNavigator(value: any): void { writers.isHideNavigator(value); }
+export function writeRemoveProgress(value: any): void { writers.removeProgress(value); }
+export function writeIsCleaningTrash(value: any): void { writers.isCleaningTrash(value); }
+export function writeTheme(value: any): void { writers.theme(value); }
+export function writeIsSlideshowMode(value: any): void { writers.isSlideshowMode(value); }
+export function writeIsCommentMode(value: any): void { writers.isCommentMode(value); }
+export function writeIsGrayscaleMode(value: any): void { writers.isGrayscaleMode(value); }
+export function writePlatform(value: any): void { writers.platform(value); }

@@ -61,7 +61,13 @@ try {
   const mainSource = fs.readFileSync(path.join(projectRoot, 'electron', 'main.cjs'), 'utf8');
   if (!mainSource.includes("ipcMain.on('update-txt-item'")) throw new Error('update-txt-item handler not registered in main.cjs');
   // b1-9bz-E9：shims.js 删除，源码契约面改指 shimsLegacy（同段代码原样迁移）
-  const shimSource = fs.readFileSync(path.join(projectRoot, 'src', 'app', 'react', 'core', 'shimsLegacy.ts'), 'utf8');
+  // R2：启动契约（shimsLegacy 原 IIFE）已拆分至 core/shim/*；契约面断言改读该目录全部模块。
+  const shimDir = path.join(projectRoot, 'src', 'app', 'react', 'core', 'shim');
+  const shimSource = fs
+    .readdirSync(shimDir)
+    .filter((entry) => entry.endsWith('.ts'))
+    .map((entry) => fs.readFileSync(path.join(shimDir, entry), 'utf8'))
+    .join('\n');
   if (!shimSource.includes("channel === 'update-txt-item'")) throw new Error('update-txt-item send passthrough missing in shimsLegacy');
   if (!shimSource.includes("'update-txt-item',")) throw new Error('update-txt-item onIpc bridge missing in shimsLegacy');
 

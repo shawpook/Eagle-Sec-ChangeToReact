@@ -36,7 +36,12 @@
 | 16 | 工具/静态页 | `/pages.html`、`/workbench.html`、`/roadmap.html`、`/media-viewer/*`、`/browser-extension/*`、`/vendor/*` | `frontend/public/*` | 无 | — | 随 public 复制；workbench 被 Electron 菜单引用（main.cjs:1705）|
 | 17 | 旧指令模板 | — | `src/app/js/directives/*.html`（64 个）| 无 | — | — | 非页面；未交付（R6 核对引用后清理）|
 
-> 十个窗口入口（1–4、5–10）第一条 import 均为 `core/shimsLegacy.ts`——R2 的拆分对象。
+> 十个窗口入口（1–4、5–10）第一条 import 均为 `core/shimsLegacy.ts`。
+> **R2 已完成**：该文件由 3401 行单 IIFE 拆为 `core/shim/` 下 8 个模块
+> （`environment`/`browserRuntime`/`moduleRegistry`/`settingsI18n`/`ipcBus`/`desktopCapability`/`demoSeed`/`install`），
+> `shimsLegacy.ts` 退化为 5 行兼容入口（入口 import 未变）。装配顺序、全局契约面与测试门禁见
+> `docs/frontend-batch-plan-R0-R7-2026-09-14.md` 的 R2「实施结果」。
+> 十窗当前仍安装同一份全量契约；**按窗收窄安装面留待 R5**（判据 `resolveWindowClass()` 已就位）。
 
 ## 3. 主界面仍加载的旧脚本（R6 迁移对象）
 

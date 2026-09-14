@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | R0 | 基线与首个遗漏修正 | 已完成（本次） | 当前工作区 |
 | R1 | 正式构建与运行入口 | 主线完成（PDF/3D 入口待办） | R0 |
-| R2 | 启动层与环境边界 | 待实施 | R1 的入口清单 |
+| R2 | 启动层与环境边界 | **已完成**（2026-09-14） | R1 的入口清单 |
 | R3 | 完整类型检查 | 待实施 | R0；结合 R2 接口推进 |
 | R4 | 主应用业务与状态收敛 | 待实施 | R2 / R3 的共享边界 |
 | R5 | 独立窗口与查看器 | 待实施 | R1 / R2 / R3；共享服务沿用 R4 |
@@ -145,6 +145,32 @@ node tests/channel-wiring-closed-loop.mjs
 node tests/react-rewrite-sentinel.mjs
 node tests/run-react-suite.mjs
 ```
+
+### 实施结果（2026-09-14）
+
+**拆分落点**（`src/app/react/core/shim/`，共 8 个模块；原 3401 行 `shimsLegacy.ts` 仅余 5 行兼容入口）：
+
+| 模块 | 职责 | 来源区间（原 `shimsLegacy.ts`） |
+| --- | --- | --- |
+| `environment.ts` | 原生桥探针 + 扩展名集合 + **显式运行模式/窗口类判据** | 469–517 |
+| `browserRuntime.ts` | node 内置模块面、Buffer/path/os/fs 兜底、fetch 与媒体 duration 补丁 | 519–796、2305–2460 |
+| `moduleRegistry.ts` | `require` 链 + 裸模块装配表 + 反编译目录拼音/简繁模块 | 2669–2952 |
+| `settingsI18n.ts` | settingsMemory/localStorage/electron-settings 门面 + MockI18n | 2462–2667 |
+| `ipcBus.ts` | EventEmitter 总线 + `ipcRenderer` 路由表 + 预览面助手 + 回程回退注册 | 798–910、1268–1837 |
+| `desktopCapability.ts` | currentWindow/app/dialog/Menu/BrowserWindow/remote/clipboard/shell + 原子写 | 1838–2303 |
+| `demoSeed.ts` | mock 库种子、浏览器导入、非媒体 meta 修补、重复检测转接、capture 轮询、**窗口生命周期驱动** | 9–464、1085–1265、3009–3383 |
+| `install.ts` | **显式幂等装配 + teardown**（按原求值顺序调用各层） | 由原全局契约段 2954–3007、3385–3400 重组成安装函数 |
+
+**语义口径**：所有函数体逐字搬移（脚本按行切片，不重写），差异只有三类，均为显式化而非行为改动：
+① 装配时机由「IIFE 求值即生效」改为 `installLegacyShimContract()` 内按原顺序显式调用（仍在模块求值期，早于 DCL）；
+② `writeState()` 不再另存第二套写路径真身，改为 `getIpcWriteState()` 取 `core/ipcWriteState.ts` 同一实例（原主窗 React 亦已共享该实例，等价）；
+③ 演示种子判据由 `!window.eagleDesktop` 改为 `resolveRuntimeMode() === 'demo'`（未显式标记时等价，新增 `window.__EAGLE_SHIM_MODE` 强制口）。
+
+**明确未做（留待 R5）**：按窗口类**收窄**实际安装面（各窗只装自己需要的层）。当前十窗仍安装同一份全量契约——收窄需要各窗数据面先完成迁移，否则会改变行为；`resolveWindowClass()` 已就位并记录在 `window.__eagleShim`，供 R5 使用。
+**明确未做（留待 R5）**：`teardown()` 的**调用方**。释放口已就位（清计时器 + 摘 storage 监听 + 250ms 原生偏好同步，幂等），但未自动挂到 `unload`/`beforeunload` —— 原实现本就没有退出释放，自动挂载会在窗口卸载顺序上引入新行为；R5 逐窗接管生命周期时由各窗入口显式持有并调用。同理，`installBrowserFetchRewrite` / `installMediaDurationPatch` 已加一次性守卫（重复安装不二次包装），但 teardown 不还原这两处补丁（原实现亦无还原语义）。
+
+**新增门禁**：`tests/shim-module-boundaries.mjs` —— 用 TypeScript `CompilerHost` 在内存中剥离 `@ts-nocheck` 后只收集 TS2304/TS2552/TS2451/TS2305/TS2459（未解析标识符 / 未导出成员）。
+拆分后最危险的失败模式是「标识符留在别的模块、此处未 import」→ 运行期 ReferenceError，而 `@ts-nocheck` 与打包器都不报；本项精确拦截（已用 `pluginModuleX` 反向验证可拦截）。
 
 ## R3：从模型与共享契约开始解决类型问题
 

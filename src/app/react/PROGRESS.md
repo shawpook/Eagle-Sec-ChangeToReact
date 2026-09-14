@@ -8337,3 +8337,40 @@ E 阶段批次与提交链、实机 QA 阶段摘要、已知行为差异、遗�
     `../css/jquery-ui.min.css` 与 `js/lib/api/url-enlarger.js`、model-viewer 的 `info/index.html`
     与 `../build/o3dv.website.min-dev.js`、pdf-viewer 的 `locale/locale.properties` —— 源码与产物均缺
     （dev 同样 404），由 dist 检查以 WARN 记录，归 R5/R6。
+
+- **R2（启动层与环境边界）**：把 `core/shimsLegacy.ts`（3401 行单 IIFE）拆为
+  `core/shim/` 下 **8 个模块**，`shimsLegacy.ts` 仅余 5 行兼容入口（十个窗口入口无需改动）。
+  - **拆分方式（可复核）**：用一次性脚本按**行区间切片**搬移，函数体逐字保留（脚本在 `.tmp/`，
+    不入库）；仅做整段去缩进、函数包裹、头尾改写三类机械变换。
+  - **模块与来源区间**：`environment`(469–517) / `browserRuntime`(519–796、2305–2460) /
+    `moduleRegistry`(2669–2952) / `settingsI18n`(2462–2667) / `ipcBus`(798–910、1268–1837) /
+    `desktopCapability`(1838–2303) / `demoSeed`(9–464、1085–1265、3009–3383) /
+    `install`（原全局契约 2954–3007、3385–3400 重组为安装函数）。
+  - **装配显式化**：原「IIFE 求值即生效」改为 `installLegacyShimContract()` 按原顺序调用各层
+    （仍在模块求值期，早于 DCL 链），保持 `window.__eagleBrowserShimLoaded` 幂等守卫，并返回
+    `teardown()` 释放周期计时器（tinyPinyin 保鲜、duplicateChecker 保鲜、capture 轮询、非媒体
+    meta 重扫）、storage 监听与 250ms 原生偏好同步。`window.__eagleShim` 记录
+    `{ mode, windowClass, installedAt, teardown }` 供诊断与 R5 收窄安装面。
+  - **模式显式化**：新增 `resolveRuntimeMode()`（`'electron' | 'demo'`）作为唯一判据，
+    支持 `window.__EAGLE_SHIM_MODE` 强制指定；演示种子只在 demo 态安装（未标记时与旧
+    `!window.eagleDesktop` 等价）。新增 `resolveWindowClass()`（十二类）。
+  - **去重复真身**：`ipcBus` 不再自带 `installLocalWriteStateFallback`（原 170 行），
+    `writeState()` 改为 `getIpcWriteState()` 取 `core/ipcWriteState.ts` 同一实例——主窗 React
+    启动期本就安装同一实例，消费方语义不变（详见 `core/ipcWriteState.ts` 的 P1-c-2 注释）。
+  - **新增门禁 `tests/shim-module-boundaries.mjs`**（已并入套件第 4 项）：以 TypeScript
+    `CompilerHost` **在内存中**剥离 shim 模块的 `@ts-nocheck`，只收集
+    TS2304/2552/2451/2305/2459（未解析标识符 / 模块无此导出）。原因是拆分后最危险的失败模式
+    「标识符留在别的模块、此处未 import」→ 运行期 ReferenceError，而 `@ts-nocheck` 与打包器
+    都不报。**反向验证**：把 `./desktopCapability` 的导入改成不存在的 `pluginModuleX` 后本项
+    立即 FAIL（TS2305），改回即 OK。本条同时补齐了三处原依赖「同文件全局可见」的隐性耦合：
+    `demoSeed` 的 `isElectronRuntime`、`install` 的 `pluginModule`（实为 `browserRuntime` 导出）。
+  - **验证**：`npm run build` exit 0；`tests/dist-entry-check.mjs` FAIL 0 / WARN 9（与 R1 相同，
+    全是既有源缺陷）；`tests/production-smoke.mjs` `PRODUCTION_SMOKE_OK`（主窗正式产物挂载）；
+    dev 侧 `react-stage11b0-smoke` 8/8 PASS、`native-preview-closed-loop`、
+    `txt-update-closed-loop`、`empty-trash-closed-loop` 全绿；`typecheck` `TYPECHECK_OK`
+    （492 条 / 258 键，未新增）。
+  - **测试同步**：`empty-trash`/`native-preview`/`txt-update` 三项闭环测试的「源码契约面」
+    断言原读 `shimsLegacy.ts` 文本，改读 `core/shim/*.ts` 全量拼接（断言内容不变）；
+    套件头部 68 → **69 项**。
+  - **明确未做（留待 R5）**：按窗口类**收窄**实际安装面。十窗当前仍安装同一份全量契约——
+    收窄需先完成各窗数据面迁移，否则会改变行为；判据与记录口已就位。
